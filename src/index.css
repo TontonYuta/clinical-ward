@@ -46,34 +46,80 @@
   animation: alert-flash 1s infinite ease-in-out;
 }
 
-/* Print stylesheet for official Vietnamese A4 medical forms */
+/* Print stylesheet for official Vietnamese A4 medical forms (Zero Overflow) */
 @media print {
-  body {
+  html, body {
     background: white !important;
     color: black !important;
-  }
-  body * {
-    visibility: hidden;
-  }
-  #printable-medical-document,
-  #printable-medical-document * {
-    visibility: visible;
-  }
-  #printable-medical-document {
-    position: absolute;
-    left: 0;
-    top: 0;
     width: 100% !important;
-    min-height: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
-    padding: 10mm 15mm !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Completely remove non-printable components from print rendering */
+  .print-hidden,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset React root */
+  #root {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* Reset all modal ancestor containers so they don't clip, offset, or trap scroll */
+  div:has(#printable-medical-document) {
+    position: static !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    transform: none !important;
+    inset: auto !important;
+  }
+
+  #printable-medical-document {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
     background: white !important;
+    transform: none !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
+
+  .page-break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm;
+    margin: 10mm 12mm 10mm 12mm;
   }
 }
 

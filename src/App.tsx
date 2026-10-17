@@ -1264,29 +1264,31 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   };
 
   return (
-    <div className="flex flex-row h-screen w-screen overflow-hidden bg-slate-900 text-slate-800">
+    <div className="flex flex-row h-screen w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block">
       {/* 1. Left Enterprise Navigation Sidebar */}
-      <Sidebar
-        currentTab={currentTab}
-        onTabChange={(tab) => setCurrentTab(tab)}
-        currentUserRole={currentUserRole}
-        onSelectUserRole={handleSelectUserRole}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        debtCount={debts.filter(d => d.status === 'debt').length}
-        urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
-        nearExpiryAndLowStockCount={batches.filter(b => b.isNearExpiry || b.isLowStock || b.currentStock <= b.minThreshold).length}
-        coldChainTemp={coldChainState.currentTemp}
-        isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
-        misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
-        onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
-        onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
-        onOpenUserGuide={() => setIsUserGuideOpen(true)}
-        onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
-      />
+      <div className="shrink-0 print:hidden">
+        <Sidebar
+          currentTab={currentTab}
+          onTabChange={(tab) => setCurrentTab(tab)}
+          currentUserRole={currentUserRole}
+          onSelectUserRole={handleSelectUserRole}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          debtCount={debts.filter(d => d.status === 'debt').length}
+          urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
+          nearExpiryAndLowStockCount={batches.filter(b => b.isNearExpiry || b.isLowStock || b.currentStock <= b.minThreshold).length}
+          coldChainTemp={coldChainState.currentTemp}
+          isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
+          misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
+          onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
+          onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
+          onOpenUserGuide={() => setIsUserGuideOpen(true)}
+          onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
+        />
+      </div>
 
       {/* 2. Main Workspace: Sleek Top Header + Central Clinical Dashboard */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70">
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70 print:hidden">
         <Header
           currentTab={currentTab}
           currentUserRole={currentUserRole}
@@ -1338,7 +1340,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       {!isCopilotOpen && (
         <button
           onClick={() => setIsCopilotOpen(true)}
-          className="fixed bottom-5 right-6 z-40 flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-teal-500/30 group"
+          className="fixed bottom-5 right-6 z-40 flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-teal-500/30 group print:hidden"
           title="Mở Trợ lý AI Lâm Sàng"
         >
           <div className="relative flex items-center justify-center">
@@ -1351,7 +1353,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
       {/* 4. Floating Bottom-Right AI Assistant Pop-up Window */}
       {isCopilotOpen && (
-        <div className="fixed bottom-5 right-6 z-50 w-[420px] max-w-[calc(100vw-32px)] h-[620px] max-h-[calc(100vh-100px)] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed bottom-5 right-6 z-50 w-[420px] max-w-[calc(100vw-32px)] h-[620px] max-h-[calc(100vh-100px)] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 print:hidden">
           <ChatWindow
             messages={chatMessages}
             suggestionChips={ROLE_SUGGESTION_CHIPS[currentUserRole] || QUICK_SUGGESTION_CHIPS}
@@ -1373,41 +1375,39 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         </div>
       )}
 
-      {/* 3. Floating Telegram/Zalo 07:00 AM Reminder Toast */}
-      <TelegramToast
-        isOpen={showTelegramToast}
-        onClose={() => setShowTelegramToast(false)}
-        debtCount={debts.filter(d => d.status === 'debt').length}
-      />
+      {/* 3-7. Non-printable Modals & Floating Overlays */}
+      <div className="print:hidden">
+        <TelegramToast
+          isOpen={showTelegramToast}
+          onClose={() => setShowTelegramToast(false)}
+          debtCount={debts.filter(d => d.status === 'debt').length}
+        />
 
-      {/* 4. Legal Decrees & Regulations Modal */}
-      <LegalDocsModal
-        isOpen={isLegalDocsOpen}
-        onClose={() => setIsLegalDocsOpen(false)}
-      />
+        <LegalDocsModal
+          isOpen={isLegalDocsOpen}
+          onClose={() => setIsLegalDocsOpen(false)}
+        />
 
-      {/* 5. Comprehensive Standalone User Manual Modal (HDSD) */}
-      <UserGuideModal
-        isOpen={isUserGuideOpen}
-        onClose={() => setIsUserGuideOpen(false)}
-      />
+        <UserGuideModal
+          isOpen={isUserGuideOpen}
+          onClose={() => setIsUserGuideOpen(false)}
+        />
 
-      {/* 6. Clinical Authentication & Electronic Signature Modal (FDA 21 CFR Part 11 / NĐ 130) */}
-      <ClinicalAuthModal
-        isOpen={Boolean(authRequest)}
-        request={authRequest}
-        currentUserRole={currentUserRole}
-        onSwitchRole={handleSelectUserRole}
-        onClose={() => setAuthRequest(null)}
-        isAudioMuted={isAudioMuted}
-      />
+        <ClinicalAuthModal
+          isOpen={Boolean(authRequest)}
+          request={authRequest}
+          currentUserRole={currentUserRole}
+          onSwitchRole={handleSelectUserRole}
+          onClose={() => setAuthRequest(null)}
+          isAudioMuted={isAudioMuted}
+        />
 
-      {/* 7. Immutable Clinical Audit Trail Modal */}
-      <AuditTrailModal
-        isOpen={isAuditTrailOpen}
-        onClose={() => setIsAuditTrailOpen(false)}
-        records={auditRecords}
-      />
+        <AuditTrailModal
+          isOpen={isAuditTrailOpen}
+          onClose={() => setIsAuditTrailOpen(false)}
+          records={auditRecords}
+        />
+      </div>
 
       {/* 8. Printable Medical Documents Modal (Option A: Bộ Y Tế & Bộ Tài Chính) */}
       <PrintableFormModal
