@@ -9,14 +9,12 @@ import {
   Printer,
   Download,
   FileCheck2,
-  ShieldCheck,
   CheckCircle2,
   FileText,
   Boxes,
   Building2,
   AlertTriangle,
   Stethoscope,
-  Copy,
   ExternalLink,
   Thermometer,
   ClipboardCheck,
@@ -82,7 +80,6 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
   const [activeDebtId, setActiveDebtId] = useState<string>(selectedDebtRecord?.id || debts[0]?.id || '');
   const [activeTicketId, setActiveTicketId] = useState<string>(selectedEquipmentTicket?.id || tickets[0]?.id || '');
   const [activeAssetId, setActiveAssetId] = useState<string>(selectedAssetRecord?.id || assets[0]?.id || '');
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [zoomMode, setZoomMode] = useState<'fit' | '100%'>('fit');
 
   useEffect(() => {
@@ -140,13 +137,6 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
   // Trigger browser print
   const handlePrint = () => {
     window.print();
-  };
-
-  // Copy electronic signature hash
-  const handleCopyHash = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopyFeedback('Đã sao chép mã xác thực HMAC-SHA256!');
-    setTimeout(() => setCopyFeedback(null), 2500);
   };
 
   // Download raw document
@@ -219,7 +209,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 </span>
               </h2>
               <p className="text-[11px] text-slate-400">
-                Định dạng nén vừa vặn 1 trang A4, không tràn trang, tích hợp chữ ký số và xác thực băm HMAC-SHA256.
+                Định dạng chuẩn thể thức văn bản hành chính y tế, in ấn vừa vặn 1 trang A4 (Zero Overflow).
               </p>
             </div>
           </div>
@@ -475,7 +465,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     <div className="text-[11.5px] uppercase font-bold text-black">BỆNH VIỆN ĐA KHOA TỈNH</div>
                     <div className="text-[10.5px] font-bold text-black">HỘI ĐỒNG TIÊU HỦY VỎ THUỐC</div>
                     <div className="w-16 mx-auto border-b border-black my-0.5"></div>
-                    <div className="text-[11px] font-normal text-black italic">Số: 16/BB-HĐH/2026</div>
+                    <div className="text-[11px] font-normal text-black italic">Số: 16/BB-THV/2026</div>
                   </div>
                   <div className="col-span-7 text-center">
                     <div className="text-[11.5px] uppercase font-bold text-black tracking-wide">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -488,38 +478,39 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 {/* Title */}
                 <div className="text-center py-1">
                   <h1 className="text-[13.5px] font-bold uppercase tracking-wide">
-                    BIÊN BẢN TIÊU HỦY VỎ ỐNG THUỐC PHẢI KIỂM SOÁT ĐẶC BIỆT
+                    BIÊN BẢN TIÊU HỦY VỎ THUỐC PHẢI KIỂM SOÁT ĐẶC BIỆT
                   </h1>
                   <p className="italic text-[11px] text-slate-800">
-                    (Ban hành kèm theo Mẫu số 16 Phụ lục II Nghị định số 54/2017/NĐ-CP &amp; Điều 15, Điều 16 Thông tư số 20/2017/TT-BYT)
+                    (Ban hành kèm theo Mẫu số 16 Phụ lục II Nghị định số 54/2017/NĐ-CP &amp; Thông tư số 20/2017/TT-BYT)
                   </p>
                 </div>
 
                 {/* Legal Preamble */}
                 <div className="text-[11px] space-y-0.5 text-justify text-slate-900">
-                  <p>- Căn cứ Luật Dược 105/2016/QH13; Nghị định 54/2017/NĐ-CP; Thông tư 20/2017/TT-BYT &amp; Thông tư 20/2021/TT-BYT;</p>
-                  <p>- Căn cứ Quyết định số 104/QĐ-BVĐK của Giám đốc Bệnh viện về việc thành lập Hội đồng tiêu hủy vỏ ống thuốc gây nghiện.</p>
+                  <p>- Căn cứ Luật Dược số 105/2016/QH13 ngày 06 tháng 4 năm 2016;</p>
+                  <p>- Căn cứ Nghị định số 54/2017/NĐ-CP và Thông tư số 20/2017/TT-BYT của Bộ Y tế quy định chi tiết một số điều của Luật Dược về thuốc phải kiểm soát đặc biệt;</p>
+                  <p>- Căn cứ Quyết định số 104/QĐ-BVĐK của Giám đốc Bệnh viện về việc thành lập Hội đồng tiêu hủy vỏ thuốc phải kiểm soát đặc biệt.</p>
                 </div>
 
-                {/* Council Members (Compact Grid) */}
+                {/* Council Members */}
                 <div className="text-[11px] pt-0.5">
-                  <p className="font-bold">Hôm nay, vào hồi 10h30 ngày {day}/{month}/{year}, tại Kho Dược, Hội đồng gồm có:</p>
+                  <p className="font-bold">Hôm nay, vào hồi 10 giờ 30 phút ngày {day} tháng {month} năm {year}, tại Kho Dược, Hội đồng gồm có:</p>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 pl-2 text-[10.5px] pt-0.5">
-                    <p>1. <strong>DS. CKI Nguyễn Văn Hoàng</strong> - Trưởng Khoa Dược (Chủ tịch HĐ) - CCHN: 002341/HN</p>
-                    <p>2. <strong>BS. CKII Trần Văn Hùng</strong> - Trưởng Khoa Cấp Cứu A9 (Ủy viên) - CCHN: 009125/BYT</p>
-                    <p>3. <strong>ĐD. Lê Thị Thu</strong> - ĐD Trưởng ca A9 (Ủy viên kiêm Thư ký) - CCHN: 004812/HN</p>
-                    <p>4. <strong>DS. Nguyễn Bích Ngọc</strong> - Dược sĩ Kho Dược (Ủy viên Giám sát) - CCHN: 005721/HN</p>
+                    <p>1. Ông: <strong>DS. CKI Nguyễn Văn Hoàng</strong> - Trưởng Khoa Dược (Chủ tịch Hội đồng)</p>
+                    <p>2. Ông: <strong>BS. CKII Trần Văn Hùng</strong> - Trưởng Khoa Cấp Cứu A9 (Ủy viên)</p>
+                    <p>3. Bà: <strong>ĐD. Lê Thị Thu</strong> - Điều dưỡng Trưởng ca A9 (Ủy viên kiêm Thư ký)</p>
+                    <p>4. Bà: <strong>DS. Nguyễn Bích Ngọc</strong> - Dược sĩ Kho Dược (Ủy viên giám sát)</p>
                   </div>
                 </div>
 
                 {/* Table of Destroyed Items */}
                 <div className="pt-0.5">
                   <p className="font-bold text-[11px] mb-0.5">
-                    Hội đồng đã kiểm kê, đối soát đối chiếu 100% vỏ ống thuốc đã sử dụng thực tế như sau:
+                    Hội đồng đã kiểm kê, đối soát đối chiếu 100% vỏ thuốc đã sử dụng thực tế như sau:
                   </p>
                   <table className="w-full border-collapse border border-black text-[10.5px]">
                     <thead>
-                      <tr className="bg-slate-100 font-bold text-center">
+                      <tr className="font-bold text-center">
                         <th className="border border-black py-1 px-1 w-7">STT</th>
                         <th className="border border-black py-1 px-1.5 text-left">Tên thuốc, nồng độ, hàm lượng</th>
                         <th className="border border-black py-1 px-1 w-14">Dạng bào chế</th>
@@ -557,7 +548,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                         <td className="border border-black py-1 px-1.5 text-center font-mono">LOT-DZ24-11 (08/2026)</td>
                         <td className="border border-black py-1 px-1.5">Lê Hoàng Nam (BN-8830) - Cấp cứu TK</td>
                       </tr>
-                      <tr className="font-bold bg-slate-50">
+                      <tr className="font-bold">
                         <td colSpan={4} className="border border-black py-1 px-1 text-right uppercase">Tổng cộng:</td>
                         <td className="border border-black py-1 px-1 text-center font-bold">05 ống</td>
                         <td colSpan={2} className="border border-black py-1 px-1.5 italic font-normal text-slate-700">
@@ -571,45 +562,32 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 {/* Method & Conclusion */}
                 <div className="text-[11px] space-y-0.5 text-justify text-slate-800">
                   <p>
-                    - <strong>Quy trình &amp; Phương pháp tiêu hủy:</strong> Đập vỡ vụn nát hoàn toàn vỏ thủy tinh trong khay inox chuyên dụng dưới sự giám sát trực tiếp của 100% thành viên Hội đồng; ngâm dung dịch Chloramin B 0.5% trong 30 phút; đóng gói niêm phong vào thùng rác chuyên dụng màu vàng "CHẤT THẢI Y TẾ SẮC NHỌN NGUY HẠI" bàn giao xử lý theo Thông tư 20/2021/TT-BYT.
+                    - <strong>Quy trình &amp; Phương pháp tiêu hủy:</strong> Đập vỡ vụn nát hoàn toàn vỏ thủy tinh trong khay inox chuyên dụng dưới sự giám sát trực tiếp của 100% thành viên Hội đồng; ngâm dung dịch Chloramin B 0.5% trong 30 phút; đóng gói niêm phong vào thùng rác chuyên dụng màu vàng đựng chất thải y tế sắc nhọn nguy hại bàn giao xử lý theo quy định của Bộ Y tế.
                   </p>
                   <p>
-                    - <strong>Lưu trữ hồ sơ:</strong> Biên bản này cùng cuống phiếu xuất được lưu trữ tối thiểu <strong>02 năm</strong> kể từ ngày tiêu hủy theo Khoản 5 Điều 16 Thông tư số 20/2017/TT-BYT. Lập thành 03 bản lưu Kho Dược, Khoa Cấp Cứu A9 và Báo cáo Ban Giám Đốc.
+                    - <strong>Lưu trữ hồ sơ:</strong> Biên bản này cùng cuống phiếu xuất được lưu trữ tối thiểu <strong>02 năm</strong> kể từ ngày tiêu hủy theo quy định. Lập thành 03 bản lưu Kho Dược, Khoa Cấp Cứu A9 và Báo cáo Ban Giám Đốc.
                   </p>
-                </div>
-
-                {/* Compact Electronic Stamp */}
-                <div className="my-1 py-1 px-2.5 rounded border border-emerald-600 bg-emerald-50 text-[10px] text-emerald-950 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span className="font-bold uppercase text-[9.5px]">XÁC THỰC KÝ SỐ Y TẾ (NĐ 130/2018/NĐ-CP):</span>
-                    <span className="font-mono text-[9px] text-emerald-800">HMAC-SHA256: 7a82f9c011e4d82b4937a01fa281ce919d7b21e84a20bfa492c10</span>
-                  </div>
-                  <span className="px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-bold text-[9px] font-mono">HỢP LỆ 100%</span>
                 </div>
 
                 {/* Signatures 3 Columns */}
-                <div className="grid grid-cols-3 text-center text-[11px] pt-1.5 page-break-inside-avoid">
+                <div className="grid grid-cols-3 text-center text-[11px] pt-2 page-break-inside-avoid">
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">THƯ KÝ HỘI ĐỒNG</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold italic text-[10.5px]">[Đã ký điện tử]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">ĐD. Lê Thị Thu</div>
-                    <div className="text-[9.5px] text-slate-600 font-mono">004812/HN-CCHN</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">ỦY VIÊN HỘI ĐỒNG</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold italic text-[10.5px]">[Đã ký điện tử]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">BS. CKII Trần Văn Hùng</div>
-                    <div className="text-[9.5px] text-slate-600 font-mono">009125/BYT-CCHN</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">CHỦ TỊCH HỘI ĐỒNG</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, đóng dấu hoặc ký số)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold italic text-[10.5px]">[Đã ký số phê duyệt]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">DS. CKI Nguyễn Văn Hoàng</div>
-                    <div className="text-[9.5px] text-slate-600 font-mono">002341/HN-CCHN</div>
                   </div>
                 </div>
               </div>
@@ -625,7 +603,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     <div className="text-[11px] uppercase text-black font-normal">BỆNH VIỆN ĐA KHOA TỈNH</div>
                     <div className="text-[11.5px] uppercase font-bold text-black">KHOA CẤP CỨU A9</div>
                     <div className="w-16 mx-auto border-b border-black my-0.5"></div>
-                    <div className="text-[11px] font-normal text-black italic">Mã phiếu: DTT-2026-088</div>
+                    <div className="text-[11px] font-normal text-black italic">Số phiếu: DTT-2026-088</div>
                   </div>
                   <div className="col-span-7 text-center">
                     <div className="text-[11.5px] uppercase font-bold text-black tracking-wide">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -645,13 +623,13 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 </div>
 
                 <div className="text-[11px] space-y-0.5 text-justify text-slate-900">
-                  <p>- Kính gửi: <strong>Kho Dược Bệnh Viện Đa Khoa</strong> | Khoa yêu cầu: <strong>Khoa Cấp Cứu A9 - Xe tiêm &amp; Tủ trực đêm</strong></p>
-                  <p>- Căn cứ Quyết định 45/QĐ-BV về cơ số tủ trực cố định. Lĩnh bù theo chuẩn FEFO (First Expired, First Out).</p>
+                  <p>- Kính gửi: <strong>Khoa Dược Bệnh Viện Đa Khoa</strong> | Khoa yêu cầu: <strong>Khoa Cấp Cứu A9 - Xe tiêm &amp; Tủ trực đêm</strong></p>
+                  <p>- Căn cứ Quyết định 45/QĐ-BV về cơ số tủ trực cố định. Thực hiện lĩnh bù theo định mức an toàn.</p>
                 </div>
 
                 <table className="w-full border-collapse border border-black text-[10.5px] my-1">
                   <thead>
-                    <tr className="bg-slate-100 font-bold text-center">
+                    <tr className="font-bold text-center">
                       <th className="border border-black py-1 px-1 w-7">STT</th>
                       <th className="border border-black py-1 px-1.5 text-left">Tên thuốc, nồng độ, hàm lượng, quy cách</th>
                       <th className="border border-black py-1 px-1 w-12">ĐVT</th>
@@ -672,9 +650,9 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                             <td className="border border-black py-1 px-1.5 font-bold">{b.itemName}</td>
                             <td className="border border-black py-1 px-1 text-center">{b.unit}</td>
                             <td className="border border-black py-1 px-1 text-center font-mono font-bold">{b.maxThreshold}</td>
-                            <td className="border border-black py-1 px-1 text-center font-mono text-rose-700 font-bold">{b.currentStock}</td>
-                            <td className="border border-black py-1 px-1 text-center font-mono font-bold bg-amber-50">+{needed}</td>
-                            <td className="border border-black py-1 px-1 text-center font-mono font-bold">+{needed}</td>
+                            <td className="border border-black py-1 px-1 text-center font-mono font-bold">{b.currentStock}</td>
+                            <td className="border border-black py-1 px-1 text-center font-mono font-bold">{needed}</td>
+                            <td className="border border-black py-1 px-1 text-center font-mono font-bold">{needed}</td>
                             <td className="border border-black py-1 px-1.5 text-[10px] text-slate-700">Bù cơ số TT 22</td>
                           </tr>
                         );
@@ -685,13 +663,13 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                         <td className="border border-black py-1 px-1.5 font-bold">Adrenalin 1mg/1ml (Hộp chống sốc phản vệ)</td>
                         <td className="border border-black py-1 px-1 text-center">Ống</td>
                         <td className="border border-black py-1 px-1 text-center font-mono">10</td>
-                        <td className="border border-black py-1 px-1 text-center font-mono text-rose-700 font-bold">2</td>
-                        <td className="border border-black py-1 px-1 text-center font-mono font-bold bg-amber-50">+8</td>
-                        <td className="border border-black py-1 px-1 text-center font-mono font-bold">+8</td>
+                        <td className="border border-black py-1 px-1 text-center font-mono font-bold">2</td>
+                        <td className="border border-black py-1 px-1 text-center font-mono font-bold">8</td>
+                        <td className="border border-black py-1 px-1 text-center font-mono font-bold">8</td>
                         <td className="border border-black py-1 px-1.5 text-[10px]">Bù cơ số cấp bách</td>
                       </tr>
                     )}
-                    <tr className="font-bold bg-slate-50">
+                    <tr className="font-bold">
                       <td colSpan={5} className="border border-black py-1 px-1 text-right uppercase">
                         Tổng số khoản dự trù:
                       </td>
@@ -710,26 +688,26 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 <div className="grid grid-cols-4 text-center text-[10.5px] pt-2 page-break-inside-avoid">
                   <div>
                     <div className="font-bold uppercase text-[10px]">NGƯỜI LẬP DỰ TRÙ</div>
-                    <div className="italic text-[9px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã ký]</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">ĐD. Lê Thị Thu</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10px]">TRƯỞNG KHOA LÂM SÀNG</div>
-                    <div className="italic text-[9px] text-slate-500">(Ký xác nhận)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã duyệt]</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">BS. CKII Trần Văn Hùng</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10px]">TRƯỞNG KHOA DƯỢC</div>
                     <div className="italic text-[9px] text-slate-500">(Ký duyệt xuất kho)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã duyệt phát]</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">DS. CKI Nguyễn Văn Hoàng</div>
                   </div>
                   <div>
-                    <div className="font-bold uppercase text-[10px]">THỦ KHO GIAO NHẬN</div>
-                    <div className="italic text-[9px] text-slate-500">(Kho dược cấp phát)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã nhận]</div>
+                    <div className="font-bold uppercase text-[10px]">NGƯỜI CẤP PHÁT</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">DS. Phạm Minh Khoa</div>
                   </div>
                 </div>
@@ -761,30 +739,29 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     BIÊN BẢN BÀN GIAO, TIẾP NHẬN TÀI SẢN CÔNG (ĐIỀU CHUYỂN TBYT)
                   </h1>
                   <p className="italic text-[11px] text-slate-800">
-                    (Ban hành kèm theo Nghị định số 151/2017/NĐ-CP, Nghị định số 114/2024/NĐ-CP &amp; Thông tư số 23/2023/TT-BTC)
+                    (Ban hành kèm theo Nghị định số 151/2017/NĐ-CP &amp; Nghị định số 114/2024/NĐ-CP của Chính phủ)
                   </p>
                 </div>
 
                 <div className="text-[11px] space-y-0.5 text-justify text-slate-900">
-                  <p>- Căn cứ Luật Quản lý, sử dụng tài sản công 15/2017/QH14; Nghị định 151/2017/NĐ-CP &amp; NĐ 114/2024/NĐ-CP;</p>
+                  <p>- Căn cứ Luật Quản lý, sử dụng tài sản công số 15/2017/QH14; Nghị định 151/2017/NĐ-CP &amp; NĐ 114/2024/NĐ-CP;</p>
                   <p>- Căn cứ Quyết định điều chuyển tài sản công số 88/QĐ-BVĐK của Giám đốc Bệnh viện;</p>
-                  <p>- Hôm nay, ngày {day}/{month}/{year}, các bên tiến hành bàn giao và tiếp nhận tài sản công gồm có:</p>
+                  <p>- Hôm nay, ngày {day} tháng {month} năm {year}, các bên tiến hành bàn giao và tiếp nhận tài sản công gồm có:</p>
                   <div className="pl-3 space-y-0.5 text-[10.5px]">
                     <p><strong>A. BÊN GIAO:</strong> {currentAsset?.registeredDepartment || 'Khoa Cấp Cứu A9'} - Đại diện: BS. CKII Trần Văn Hùng (Trưởng khoa)</p>
                     <p><strong>B. BÊN NHẬN:</strong> {currentAsset?.actualDepartment || 'Khoa Phẫu Thuật Gây Mê Hồi Sức'} - Đại diện: BS. Vũ Hải Long (Phụ trách phòng mổ)</p>
-                    <p><strong>C. ĐƠN VỊ GIÁM SÁT KỸ THUẬT:</strong> Phòng Vật tư - TBYT (KS. Đặng Văn Nam) &amp; Phòng Kế toán.</p>
+                    <p><strong>C. ĐƠN VỊ GIÁM SÁT KỸ THUẬT:</strong> Phòng Vật tư - TBYT (KS. Đặng Văn Nam) &amp; Phòng Tài chính - Kế toán.</p>
                   </div>
                 </div>
 
                 <table className="w-full border-collapse border border-black text-[10.5px] my-1.5">
                   <thead>
-                    <tr className="bg-slate-100 font-bold text-center">
+                    <tr className="font-bold text-center">
                       <th className="border border-black py-1 px-1 w-7">STT</th>
                       <th className="border border-black py-1 px-1.5 text-left">Tên trang thiết bị y tế</th>
-                      <th className="border border-black py-1 px-1 w-24">Số Serial / Model</th>
-                      <th className="border border-black py-1 px-1 w-12">Năm SD</th>
-                      <th className="border border-black py-1 px-1 w-20">Nguyên giá (VNĐ)</th>
-                      <th className="border border-black py-1 px-1 w-14">Hao mòn</th>
+                      <th className="border border-black py-1 px-1 w-28">Số Serial / Model</th>
+                      <th className="border border-black py-1 px-1 w-16">Năm SD</th>
+                      <th className="border border-black py-1 px-1 w-24">Nguyên giá (VNĐ)</th>
                       <th className="border border-black py-1 px-1.5 text-left">Tình trạng kỹ thuật khi giao</th>
                     </tr>
                   </thead>
@@ -795,8 +772,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                       <td className="border border-black py-1 px-1 text-center font-mono">{currentAsset?.serialNumber || 'PB840-VN-2021-998'}</td>
                       <td className="border border-black py-1 px-1 text-center">2021</td>
                       <td className="border border-black py-1 px-1 text-right font-mono">1.250.000.000</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold">35%</td>
-                      <td className="border border-black py-1 px-1.5 text-[10px]">Hoạt động tốt, phụ kiện thở đầy đủ, tem KĐ còn hạn</td>
+                      <td className="border border-black py-1 px-1.5 text-[10px]">Hoạt động tốt, phụ kiện thở đầy đủ, tem kiểm định còn hạn</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">2</td>
@@ -804,8 +780,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                       <td className="border border-black py-1 px-1 text-center font-mono">ZOLL-R-8831</td>
                       <td className="border border-black py-1 px-1 text-center">2020</td>
                       <td className="border border-black py-1 px-1 text-right font-mono">450.000.000</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold">42%</td>
-                      <td className="border border-black py-1 px-1.5 text-[10px]">Bản cực nhạy, pin tích điện &gt; 2.5h</td>
+                      <td className="border border-black py-1 px-1.5 text-[10px]">Bản cực nhạy, pin tích điện &gt; 2.5 giờ</td>
                     </tr>
                   </tbody>
                 </table>
@@ -815,27 +790,27 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     - <strong>Hồ sơ kèm theo:</strong> 01 bộ Sổ lý lịch máy, Sách HDSD tiếng Việt, Giấy chứng nhận kiểm định an toàn điện còn hiệu lực.
                   </p>
                   <p>
-                    - <strong>Trách nhiệm:</strong> Bên nhận có trách nhiệm quản lý, theo dõi sử dụng đúng quy trình và báo Phòng KHTC ghi tăng/giảm tài sản cố định theo Thông tư 23/2023/TT-BTC.
+                    - <strong>Trách nhiệm:</strong> Bên nhận có trách nhiệm quản lý, theo dõi sử dụng đúng quy trình và báo Phòng Tài chính - Kế toán ghi tăng/giảm tài sản cố định theo quy định hiện hành.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-3 text-center text-[10.5px] pt-2 page-break-inside-avoid">
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">ĐẠI DIỆN BÊN GIAO</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã ký giao]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">BS. CKII Trần Văn Hùng</div>
                   </div>
                   <div>
-                    <div className="font-bold uppercase text-[10.5px]">KỸ SƯ TBYT GIÁM SÁT</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã kiểm định]</div>
+                    <div className="font-bold uppercase text-[10.5px]">KỸ SƯ GIÁM SÁT KỸ THUẬT</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">KS. Đặng Văn Nam</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">ĐẠI DIỆN BÊN NHẬN</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã nhận máy]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">BS. Vũ Hải Long</div>
                   </div>
                 </div>
@@ -852,42 +827,42 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     <div className="text-[11px] uppercase text-black font-normal">BỆNH VIỆN ĐA KHOA TỈNH</div>
                     <div className="text-[11.5px] uppercase font-bold text-black">KHOA CẤP CỨU A9</div>
                     <div className="w-16 mx-auto border-b border-black my-0.5"></div>
-                    <div className="text-[11px] font-mono font-bold text-rose-700">MÃ PHIẾU: {currentDebt?.code || 'PN-2026-089'}</div>
+                    <div className="text-[11px] font-normal text-black italic">Số phiếu: {currentDebt?.code || 'PN-2026-089'}</div>
                   </div>
                   <div className="col-span-7 text-center">
                     <div className="text-[11.5px] uppercase font-bold text-black tracking-wide">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                     <div className="text-[12px] font-bold text-black">Độc lập - Tự do - Hạnh phúc</div>
                     <div className="w-32 mx-auto border-b border-black my-0.5"></div>
                     <div className="text-[11px] italic text-black">
-                      {currentDebt?.borrowTime || '01:40 AM'}, ngày {day} tháng {month} năm {year}
+                      Hà Nội, hồi {currentDebt?.borrowTime || '01:40'}, ngày {day} tháng {month} năm {year}
                     </div>
                   </div>
                 </div>
 
                 <div className="text-center py-1">
                   <h1 className="text-[13.5px] font-bold uppercase tracking-wide">
-                    PHIẾU XUẤT MƯỢN KHẨN CẤP THUỐC / VẬT TƯ Y TẾ TỦ TRỰC
+                    PHIẾU XUẤT MƯỢN KHẨN CẤP THUỐC, VẬT TƯ Y TẾ TỦ TRỰC
                   </h1>
                   <p className="italic text-[11px] text-slate-800">
                     (Chứng từ pháp lý kẹp Hồ sơ bệnh án - Căn cứ Điều 10 Thông tư số 22/2011/TT-BYT &amp; Thông tư số 31/2021/TT-BYT)
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-1.5 text-[11px] p-2 rounded bg-slate-50 border border-black/80">
+                <div className="grid grid-cols-2 gap-1.5 text-[11px] p-2 border border-black">
                   <div><strong>Họ và tên người bệnh:</strong> <span className="uppercase font-bold">{currentDebt?.patientName || 'Võ Minh Trí (BN-8820)'}</span></div>
                   <div><strong>Mã bệnh án (PID):</strong> <span className="font-mono font-bold">BA-2026-CC088</span></div>
                   <div><strong>Vị trí buồng / giường:</strong> {currentDebt?.patientRoom || 'Buồng cấp cứu 3 - Giường 02'}</div>
                   <div><strong>Thời điểm xuất rút:</strong> {currentDebt?.borrowTime} - {currentDebt?.borrowDate}</div>
-                  <div><strong>Bác sĩ y lệnh:</strong> BS. CKII Trần Văn Hùng</div>
+                  <div><strong>Bác sĩ ra y lệnh:</strong> BS. CKII Trần Văn Hùng</div>
                   <div><strong>Điều dưỡng xuất tủ:</strong> {currentDebt?.borrowerName || 'ĐD. Lê Thị Thu'}</div>
-                  <div className="col-span-2 pt-0.5 border-t border-slate-200">
+                  <div className="col-span-2 pt-0.5 border-t border-black/40">
                     <strong>Chỉ định lâm sàng:</strong> {currentDebt?.note || 'Cấp cứu sốc chấn thương / giảm đau tiền phẫu khẩn cấp ca trực đêm'}
                   </div>
                 </div>
 
                 <table className="w-full border-collapse border border-black text-[10.5px] my-1.5">
                   <thead>
-                    <tr className="bg-slate-100 font-bold text-center">
+                    <tr className="font-bold text-center">
                       <th className="border border-black py-1 px-1 w-8">STT</th>
                       <th className="border border-black py-1 px-1.5 text-left">Tên thuốc, hàm lượng, vật tư y tế</th>
                       <th className="border border-black py-1 px-1 w-20">Phân loại</th>
@@ -910,21 +885,21 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                   </tbody>
                 </table>
 
-                <div className="text-[10.5px] italic text-slate-800 bg-amber-50 p-1.5 rounded border border-amber-300">
-                  <strong>Cam kết trách nhiệm:</strong> Bác sĩ ra y lệnh có trách nhiệm kê đơn thuốc hoàn trả cơ số tủ trực trước <strong>07:30 sáng</strong> để Điều dưỡng trưởng ca tổng hợp lĩnh bù tại Kho Dược theo Điều 10 Thông tư 22/2011/TT-BYT.
+                <div className="text-[10.5px] italic text-slate-800 pt-0.5">
+                  * Trách nhiệm: Bác sĩ ra y lệnh có trách nhiệm kê đơn thuốc hoàn trả cơ số tủ trực trong ca trực hoặc trước 07h30 sáng để Điều dưỡng trưởng ca tổng hợp lĩnh bù tại Kho Dược theo Điều 10 Thông tư 22/2011/TT-BYT.
                 </div>
 
                 <div className="grid grid-cols-2 text-center text-[11px] pt-3 page-break-inside-avoid">
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">ĐIỀU DƯỠNG XUẤT THUỐC</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã ký xác nhận PIN]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">{currentDebt?.borrowerName || 'ĐD. Lê Thị Thu'}</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">BÁC SĨ RA Y LỆNH CẤP CỨU</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã ký y lệnh]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">BS. CKII Trần Văn Hùng</div>
                   </div>
                 </div>
@@ -956,19 +931,19 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     BIÊN BẢN KIỂM ĐỊNH AN TOÀN ĐIỆN VÀ THỬ TẢI LÂM SÀNG TRANG THIẾT BỊ Y TẾ
                   </h1>
                   <p className="italic text-[11px] text-slate-800">
-                    (Căn cứ Điều 34, 55, 56, 57, 58 Nghị định 98/2021/NĐ-CP &amp; Tiêu chuẩn Quốc gia TCVN 7303-1:2009 / IEC 60601-1)
+                    (Căn cứ Điều 34 Nghị định số 98/2021/NĐ-CP &amp; Tiêu chuẩn Quốc gia TCVN 7303-1:2009 / IEC 60601-1)
                   </p>
                 </div>
 
                 <div className="text-[11px] space-y-0.5 text-justify text-slate-900">
                   <p>- Thiết bị kiểm định: <strong>{currentTicket?.deviceName || 'Máy thở Puritan Bennett 840 (PB840)'}</strong> - Model: <strong>{currentTicket?.deviceModel || 'PB840 Ventilator'}</strong></p>
-                  <p>- Số Serial: <span className="font-mono font-bold">{currentTicket?.serialNumber || 'PB840-VN-2021-998'}</span> | Phân loại rủi ro: <strong className="text-rose-700">Loại {currentTicket?.riskClass || 'D'} (Can thiệp hô hấp sống còn)</strong></p>
-                  <p>- Vị trí khoa phòng: <strong>{currentTicket?.location || 'Phòng Mổ 2 - Tầng 3 (Khu Phẫu Thuật)'}</strong> | Kỹ sư: <strong>KS. Đặng Văn Nam (BME)</strong></p>
+                  <p>- Số Serial: <span className="font-mono font-bold">{currentTicket?.serialNumber || 'PB840-VN-2021-998'}</span> | Phân loại mức độ rủi ro: <strong>Loại {currentTicket?.riskClass || 'D'} (Can thiệp hô hấp sống còn)</strong></p>
+                  <p>- Vị trí khoa phòng: <strong>{currentTicket?.location || 'Phòng Mổ 2 - Tầng 3 (Khu Phẫu Thuật)'}</strong> | Kỹ sư thực hiện: <strong>KS. Đặng Văn Nam (Phòng TBYT)</strong></p>
                 </div>
 
                 <table className="w-full border-collapse border border-black text-[10.5px] my-1">
                   <thead>
-                    <tr className="bg-slate-100 font-bold text-center">
+                    <tr className="font-bold text-center">
                       <th className="border border-black py-1 px-1 w-7">STT</th>
                       <th className="border border-black py-1 px-1.5 text-left">Hạng mục an toàn điện theo IEC 60601-1</th>
                       <th className="border border-black py-1 px-1 w-24">Tiêu chuẩn cho phép</th>
@@ -982,61 +957,61 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                       <td className="border border-black py-1 px-1.5">Điện trở nối đất bảo vệ (Protective Earth)</td>
                       <td className="border border-black py-1 px-1 text-center">&le; 0.20 &Omega;</td>
                       <td className="border border-black py-1 px-1 text-center font-mono font-bold">0.08 &Omega;</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">ĐẠT</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">ĐẠT</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">2</td>
                       <td className="border border-black py-1 px-1.5">Dòng rò tiếp đất (Earth Leakage Current)</td>
                       <td className="border border-black py-1 px-1 text-center">&le; 500 &mu;A</td>
                       <td className="border border-black py-1 px-1 text-center font-mono font-bold">115 &mu;A</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">ĐẠT</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">ĐẠT</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">3</td>
                       <td className="border border-black py-1 px-1.5">Dòng rò qua vỏ thiết bị (Enclosure Leakage)</td>
                       <td className="border border-black py-1 px-1 text-center">&le; 100 &mu;A</td>
                       <td className="border border-black py-1 px-1 text-center font-mono font-bold">24 &mu;A</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">ĐẠT</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">ĐẠT</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">4</td>
                       <td className="border border-black py-1 px-1.5">Dòng rò bệnh nhân bộ phận CF (Patient Leakage)</td>
                       <td className="border border-black py-1 px-1 text-center">&le; 10 &mu;A</td>
                       <td className="border border-black py-1 px-1 text-center font-mono font-bold">2.1 &mu;A</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">ĐẠT</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">ĐẠT</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">5</td>
                       <td className="border border-black py-1 px-1.5">Thử tải phổi giả 120 phút (Test Lung Compliance)</td>
                       <td className="border border-black py-1 px-1 text-center">Sai số Ppeak &lt; 5%</td>
                       <td className="border border-black py-1 px-1 text-center font-mono font-bold">Sai số 1.8%</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">ĐẠT</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">ĐẠT</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">6</td>
                       <td className="border border-black py-1 px-1.5">Thử nghiệm ngắt nguồn 220V chạy ắc quy dự phòng</td>
                       <td className="border border-black py-1 px-1 text-center">Tự ngắt, pin &gt; 120p</td>
                       <td className="border border-black py-1 px-1 text-center font-mono font-bold">160 phút</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">ĐẠT</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">ĐẠT</td>
                     </tr>
                   </tbody>
                 </table>
 
                 <div className="text-[11px] font-bold text-slate-900 pt-0.5">
-                  Kết luận &amp; Cấp tem: Đạt 100% tiêu chuẩn an toàn điện &amp; thông khí lâm sàng. Tem kiểm định số: <span className="font-mono text-teal-800">KD-2026-PB840</span>, hiệu lực: <strong>12 tháng</strong> ({day}/{month}/2027).
+                  Kết luận &amp; Cấp tem: Đạt 100% tiêu chuẩn an toàn điện &amp; thông khí lâm sàng. Đủ điều kiện đưa vào phục vụ điều trị. Cấp tem kiểm định số: KD-2026-PB840, hiệu lực: <strong>12 tháng</strong> ({day}/{month}/2027).
                 </div>
 
                 <div className="grid grid-cols-2 text-center text-[11px] pt-3 page-break-inside-avoid">
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">KỸ SƯ KIỂM ĐỊNH TBYT</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã ký nghiệm thu]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">KS. Đặng Văn Nam</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">ĐIỀU DƯỠNG TRƯỞNG TIẾP NHẬN</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã nhận máy an toàn]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">ĐD. Lê Thị Thu</div>
                   </div>
                 </div>
@@ -1074,13 +1049,13 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
 
                 <div className="text-[11px] space-y-0.5 text-justify text-slate-900">
                   <p>- Căn cứ Quyết định 12/QĐ-BVĐK của Giám đốc Bệnh viện về việc thành lập Hội đồng kiểm kê tài sản định kỳ;</p>
-                  <p>- Thời điểm kiểm kê: 08h00 ngày {day}/{month}/{year} tại Khoa Cấp Cứu A9;</p>
-                  <p>- Hội đồng: <strong>DS. CKI Nguyễn Văn Hoàng</strong> (Trưởng ban), <strong>KS. Đặng Văn Nam</strong> (TBYT), <strong>BS. CKII Trần Văn Hùng</strong> (Trưởng khoa), <strong>CN. Phạm Thu Thảo</strong> (Kế toán).</p>
+                  <p>- Thời điểm kiểm kê: 08 giờ 00 phút ngày {day} tháng {month} năm {year} tại Khoa Cấp Cứu A9;</p>
+                  <p>- Hội đồng kiểm kê: <strong>DS. CKI Nguyễn Văn Hoàng</strong> (Trưởng ban), <strong>KS. Đặng Văn Nam</strong> (TBYT), <strong>BS. CKII Trần Văn Hùng</strong> (Trưởng khoa), <strong>CN. Phạm Thu Thảo</strong> (Kế toán).</p>
                 </div>
 
                 <table className="w-full border-collapse border border-black text-[10.5px] my-1.5">
                   <thead>
-                    <tr className="bg-slate-100 font-bold text-center">
+                    <tr className="font-bold text-center">
                       <th className="border border-black py-1 px-1 w-7">STT</th>
                       <th className="border border-black py-1 px-1.5 text-left">Tên tài sản / Thiết bị y tế</th>
                       <th className="border border-black py-1 px-1 w-20">Mã tài sản</th>
@@ -1098,9 +1073,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                         <td className="border border-black py-1 px-1 text-center font-mono">{a.code}</td>
                         <td className="border border-black py-1 px-1 text-center">{a.registeredDepartment}</td>
                         <td className="border border-black py-1 px-1 text-center font-medium">
-                          <span className={a.isMisallocated ? 'text-amber-800 font-bold' : ''}>
-                            {a.actualDepartment}
-                          </span>
+                          {a.actualDepartment}
                         </td>
                         <td className="border border-black py-1 px-1 text-center">
                           {a.condition === 'operational' ? 'Hoạt động tốt' : a.pendingLiquidation ? 'Chờ thanh lý' : 'Cần bảo trì'}
@@ -1115,33 +1088,33 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
 
                 <div className="text-[11px] space-y-0.5 text-justify pt-0.5">
                   <p>
-                    - <strong>Đánh giá chung:</strong> 100% trang thiết bị được dán mã QR/RFID kiểm kê. Đã lập phương án xử lý đối với máy thở di dời phục vụ cấp cứu người bệnh nặng.
+                    - <strong>Đánh giá chung:</strong> 100% trang thiết bị được kiểm kê, dán nhãn quản lý theo quy định. Hội đồng kiến nghị các khoa phòng tiếp tục theo dõi, bảo dưỡng định kỳ đúng quy trình.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-4 text-center text-[10.5px] pt-2 page-break-inside-avoid">
                   <div>
-                    <div className="font-bold uppercase text-[10px]">KỸ SƯ VẬT TƯ TBYT</div>
-                    <div className="italic text-[9px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã ký]</div>
+                    <div className="font-bold uppercase text-[10px]">KỸ SƯ PHÒNG TBYT</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">KS. Đặng Văn Nam</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10px]">KẾ TOÁN TÀI SẢN</div>
-                    <div className="italic text-[9px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã đối soát]</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">CN. Phạm Thu Thảo</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10px]">TRƯỞNG KHOA LÂM SÀNG</div>
-                    <div className="italic text-[9px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã xác nhận]</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">BS. CKII Trần Văn Hùng</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10px]">TRƯỞNG BAN KIỂM KÊ</div>
-                    <div className="italic text-[9px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã duyệt]</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">TS.BS. Nguyễn Văn An</div>
                   </div>
                 </div>
@@ -1174,18 +1147,18 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     BIÊN BẢN XỬ LÝ SỰ CỐ QUÁ NHIỆT CHUỖI LẠNH &amp; THẨM ĐỊNH LÔ VẮC XIN BIỆT TRỮ
                   </h1>
                   <p className="italic text-[11px] text-slate-800">
-                    (Theo nguyên tắc GSP - Thông tư số 36/2018/TT-BYT &amp; Quy định bảo quản Dự án TCMR Quốc Gia)
+                    (Theo nguyên tắc Thực hành tốt bảo quản thuốc GSP - Thông tư số 36/2018/TT-BYT)
                   </p>
                 </div>
 
                 <div className="text-[11px] space-y-0.5 text-justify text-slate-900">
-                  <p>- Căn cứ Thông tư số 36/2018/TT-BYT về Thực hành tốt bảo quản thuốc (GSP) &amp; QĐ 1570/2000/QĐ-BYT;</p>
-                  <p>- Thiết bị: <strong>Tủ lạnh Vắc xin B Medical Systems (TCW 3000AC)</strong> | Nhiệt độ đỉnh sự cố: <strong>{coldChainState?.currentTemp ?? 11.0}°C</strong> do cúp điện lưới, hệ thống đã kích hoạt máy phát và niêm phong Biệt trữ (Quarantine).</p>
+                  <p>- Căn cứ Thông tư số 36/2018/TT-BYT về Thực hành tốt bảo quản thuốc (GSP) và quy định của Dự án Tiêm chủng mở rộng;</p>
+                  <p>- Thiết bị theo dõi: <strong>Tủ lạnh Vắc xin B Medical Systems (TCW 3000AC)</strong> | Nhiệt độ đỉnh sự cố ghi nhận: <strong>{coldChainState?.currentTemp ?? 11.0}°C</strong> do mất điện lưới cục bộ, kíp trực đã kích hoạt máy phát và thực hiện niêm phong biệt trữ.</p>
                 </div>
 
                 <table className="w-full border-collapse border border-black text-[10.5px] my-1.5">
                   <thead>
-                    <tr className="bg-slate-100 font-bold text-center">
+                    <tr className="font-bold text-center">
                       <th className="border border-black py-1 px-1 w-7">STT</th>
                       <th className="border border-black py-1 px-1.5 text-left">Tên Vắc xin / Sinh phẩm y tế</th>
                       <th className="border border-black py-1 px-1 w-24">Số lô / Hạn dùng</th>
@@ -1201,27 +1174,27 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                       <td className="border border-black py-1 px-1.5 font-bold">Vắc xin Uốn ván hấp phụ (VAT 0.5ml)</td>
                       <td className="border border-black py-1 px-1 text-center font-mono">LOT-VAT24 (09/2026)</td>
                       <td className="border border-black py-1 px-1 text-center font-mono">200 liều</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">Giai đoạn 1 (An toàn)</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">Giai đoạn 1 (An toàn)</td>
                       <td className="border border-black py-1 px-1 text-center">Âm tính</td>
-                      <td className="border border-black py-1 px-1.5 text-emerald-800 font-bold">ĐỦ ĐIỀU KIỆN GIẢI PHÓNG</td>
+                      <td className="border border-black py-1 px-1.5 font-bold">Đủ điều kiện giải phóng</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">2</td>
                       <td className="border border-black py-1 px-1.5 font-bold">Vắc xin Viêm gan B (Engerix-B)</td>
                       <td className="border border-black py-1 px-1 text-center font-mono">LOT-HBV24 (11/2026)</td>
                       <td className="border border-black py-1 px-1 text-center font-mono">150 liều</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">Giai đoạn 1 (An toàn)</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">Giai đoạn 1 (An toàn)</td>
                       <td className="border border-black py-1 px-1 text-center">Âm tính</td>
-                      <td className="border border-black py-1 px-1.5 text-emerald-800 font-bold">ĐỦ ĐIỀU KIỆN GIẢI PHÓNG</td>
+                      <td className="border border-black py-1 px-1.5 font-bold">Đủ điều kiện giải phóng</td>
                     </tr>
                     <tr>
                       <td className="border border-black py-1 px-1 text-center">3</td>
                       <td className="border border-black py-1 px-1.5 font-bold">Huyết thanh kháng uốn ván (SAT 1500)</td>
                       <td className="border border-black py-1 px-1 text-center font-mono">LOT-SAT24 (08/2026)</td>
                       <td className="border border-black py-1 px-1 text-center font-mono">100 lọ</td>
-                      <td className="border border-black py-1 px-1 text-center font-bold text-emerald-800">Giai đoạn 1 (An toàn)</td>
+                      <td className="border border-black py-1 px-1 text-center font-bold">Giai đoạn 1 (An toàn)</td>
                       <td className="border border-black py-1 px-1 text-center">Đạt chuẩn</td>
-                      <td className="border border-black py-1 px-1.5 text-emerald-800 font-bold">ĐỦ ĐIỀU KIỆN GIẢI PHÓNG</td>
+                      <td className="border border-black py-1 px-1.5 font-bold">Đủ điều kiện giải phóng</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1234,21 +1207,21 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
 
                 <div className="grid grid-cols-3 text-center text-[10.5px] pt-2 page-break-inside-avoid">
                   <div>
-                    <div className="font-bold uppercase text-[10.5px]">THỦ KHO CHUỖI LẠNH</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã ký xác nhận]</div>
+                    <div className="font-bold uppercase text-[10.5px]">CÁN BỘ CHUỖI LẠNH</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">DS. Nguyễn Bích Ngọc</div>
                   </div>
                   <div>
-                    <div className="font-bold uppercase text-[10.5px]">BS. PHỤ TRÁCH TIÊM CHỦNG</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký, họ tên)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã kiểm định hoạt lực]</div>
+                    <div className="font-bold uppercase text-[10.5px]">PHỤ TRÁCH TIÊM CHỦNG</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">BS. CKII Trần Văn Hùng</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10.5px]">TRƯỞNG KHOA DƯỢC</div>
-                    <div className="italic text-[9.5px] text-slate-500">(Ký duyệt giải phóng lô)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10.5px]">[Đã ký lệnh giải phóng]</div>
+                    <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[11px]">DS. CKI Nguyễn Văn Hoàng</div>
                   </div>
                 </div>
@@ -1265,13 +1238,13 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     <div className="text-[11px] uppercase text-black font-normal">BỆNH VIỆN ĐA KHOA TỈNH</div>
                     <div className="text-[11.5px] uppercase font-bold text-black">KHOA CẤP CỨU A9</div>
                     <div className="w-16 mx-auto border-b border-black my-0.5"></div>
-                    <div className="text-[11px] font-normal text-black italic">Sổ trực: GB-2026-CA01</div>
+                    <div className="text-[11px] font-normal text-black italic">Sổ trực: GB-2026/01</div>
                   </div>
                   <div className="col-span-7 text-center">
                     <div className="text-[11.5px] uppercase font-bold text-black tracking-wide">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                     <div className="text-[12px] font-bold text-black">Độc lập - Tự do - Hạnh phúc</div>
                     <div className="w-32 mx-auto border-b border-black my-0.5"></div>
-                    <div className="text-[11px] italic text-black">Hà Nội, 07h00 ngày {day}/{month}/{year}</div>
+                    <div className="text-[11px] italic text-black">Hà Nội, 07 giờ 00 ngày {day}/{month}/{year}</div>
                   </div>
                 </div>
 
@@ -1285,7 +1258,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 </div>
 
                 <div className="text-[11px] space-y-0.5">
-                  <p>- Giao ca: <strong>07h00 ngày {day}/{month}/{year}</strong> | Ca giao: <strong>Đêm (19h-07h) - ĐD. Lê Thị Thu</strong> | Ca nhận: <strong>Ngày (07h-13h30) - ĐD. Hoàng Thị Mai</strong></p>
+                  <p>- Giao ca: <strong>07 giờ 00 ngày {day}/{month}/{year}</strong> | Ca giao: <strong>Đêm (19h-07h) - ĐD. Lê Thị Thu</strong> | Ca nhận: <strong>Ngày (07h-13h30) - ĐD. Hoàng Thị Mai</strong></p>
                   <p>- Bác sĩ Trưởng ca trực kiểm duyệt: <strong>BS. CKII Trần Văn Hùng</strong></p>
                 </div>
 
@@ -1294,10 +1267,10 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                   <h3 className="font-bold text-[11px] text-black uppercase mb-0.5">
                     1. Tình hình người bệnh trong ca trực:
                   </h3>
-                  <div className="p-1.5 rounded border border-black text-[10.5px] space-y-0.5 bg-slate-50">
-                    <p>• Tổng BN hiện diện: <strong>24 người bệnh</strong> (Mới vào: 08; Mổ cấp cứu: 02; Tử vong/Nặng xin về: 00).</p>
-                    <p>• Bệnh nhân nặng thở máy xâm lấn: <strong>03 bệnh nhân</strong> (Buồng 1-G01; Buồng 2-G04; Buồng 3-G02).</p>
-                    <p>• Bệnh nhân truyền thuốc vận mạch (Noradrenalin/Adrenalin): <strong>02 bệnh nhân</strong> huyết áp kiểm soát ổn.</p>
+                  <div className="p-1.5 border border-black text-[10.5px] space-y-0.5">
+                    <p>• Tổng người bệnh hiện diện: <strong>24 người bệnh</strong> (Mới vào: 08; Mổ cấp cứu: 02; Tử vong/Nặng xin về: 00).</p>
+                    <p>• Người bệnh nặng thở máy xâm lấn: <strong>03 người bệnh</strong> (Buồng 1-G01; Buồng 2-G04; Buồng 3-G02).</p>
+                    <p>• Người bệnh truyền thuốc vận mạch (Noradrenalin/Adrenalin): <strong>02 người bệnh</strong> huyết áp kiểm soát ổn.</p>
                   </div>
                 </div>
 
@@ -1308,13 +1281,13 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                   </h3>
                   <table className="w-full border-collapse border border-black text-[10.5px]">
                     <thead>
-                      <tr className="bg-slate-100 font-bold text-center">
+                      <tr className="font-bold text-center">
                         <th className="border border-black py-1 px-1 w-7">STT</th>
                         <th className="border border-black py-1 px-1.5 text-left">Tên thuốc / Hàm lượng</th>
                         <th className="border border-black py-1 px-1 w-14">Cơ số</th>
                         <th className="border border-black py-1 px-1 w-14">Tồn TT</th>
-                        <th className="border border-black py-1 px-1 w-20">Vỏ ống thu hồi</th>
-                        <th className="border border-black py-1 px-1.5 text-left">Phiếu nợ / Bác sĩ y lệnh</th>
+                        <th className="border border-black py-1 px-1 w-20">Vỏ thu hồi</th>
+                        <th className="border border-black py-1 px-1.5 text-left">Phiếu xuất mượn / Bác sĩ y lệnh</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1323,7 +1296,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                         <td className="border border-black py-1 px-1.5 font-bold">Morphin sulfat 10mg/1ml</td>
                         <td className="border border-black py-1 px-1 text-center font-mono">10</td>
                         <td className="border border-black py-1 px-1 text-center font-mono font-bold">08</td>
-                        <td className="border border-black py-1 px-1 text-center font-mono font-bold text-emerald-800">02 (Đã khóa)</td>
+                        <td className="border border-black py-1 px-1 text-center font-mono font-bold">02 vỏ</td>
                         <td className="border border-black py-1 px-1.5">Phiếu PN-2026-089 (BS. Trần Văn Hùng)</td>
                       </tr>
                       <tr>
@@ -1331,7 +1304,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                         <td className="border border-black py-1 px-1.5 font-bold">Fentanyl 0.1mg/2ml</td>
                         <td className="border border-black py-1 px-1 text-center font-mono">05</td>
                         <td className="border border-black py-1 px-1 text-center font-mono font-bold">04</td>
-                        <td className="border border-black py-1 px-1 text-center font-mono font-bold text-emerald-800">01 (Đã khóa)</td>
+                        <td className="border border-black py-1 px-1 text-center font-mono font-bold">01 vỏ</td>
                         <td className="border border-black py-1 px-1.5">Phiếu PN-2026-087 (BS. Nguyễn Minh Tuấn)</td>
                       </tr>
                       <tr>
@@ -1339,7 +1312,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                         <td className="border border-black py-1 px-1.5 font-bold">Adrenalin 1mg/1ml</td>
                         <td className="border border-black py-1 px-1 text-center font-mono">10</td>
                         <td className="border border-black py-1 px-1 text-center font-mono font-bold">07</td>
-                        <td className="border border-black py-1 px-1 text-center">Không áp dụng</td>
+                        <td className="border border-black py-1 px-1 text-center">-</td>
                         <td className="border border-black py-1 px-1.5">Phiếu PN-2026-085 (BS. Trần Văn Hùng)</td>
                       </tr>
                     </tbody>
@@ -1351,7 +1324,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                   <h3 className="font-bold text-[11px] text-black uppercase mb-0.5">
                     3. Bàn giao trang thiết bị y tế cấp cứu sống còn:
                   </h3>
-                  <div className="p-1.5 rounded border border-black text-[10.5px] space-y-0.5 bg-slate-50">
+                  <div className="p-1.5 border border-black text-[10.5px] space-y-0.5">
                     <p>• 02 Máy thở Puritan Bennett 840 (PB840) hoạt động ổn định, áp lực oxy trung tâm 4.2 bar.</p>
                     <p>• 01 Máy sốc tim Zoll R xả chuẩn 200J, pin sạc 100% | 04 Bơm tiêm điện &amp; 02 Máy truyền dịch chuẩn tốc độ.</p>
                   </div>
@@ -1359,21 +1332,21 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
 
                 <div className="grid grid-cols-3 text-center text-[10.5px] pt-1.5 page-break-inside-avoid">
                   <div>
-                    <div className="font-bold uppercase text-[10px]">ĐIỀU DƯỠNG CA TRƯỚC</div>
-                    <div className="italic text-[9px] text-slate-500">(Bàn giao)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã bàn giao]</div>
+                    <div className="font-bold uppercase text-[10px]">ĐIỀU DƯỠNG GIAO CA</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">ĐD. Lê Thị Thu</div>
                   </div>
                   <div>
-                    <div className="font-bold uppercase text-[10px]">ĐIỀU DƯỠNG CA SAU</div>
-                    <div className="italic text-[9px] text-slate-500">(Tiếp nhận)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã kiểm nhận]</div>
+                    <div className="font-bold uppercase text-[10px]">ĐIỀU DƯỠNG NHẬN CA</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">ĐD. Hoàng Thị Mai</div>
                   </div>
                   <div>
                     <div className="font-bold uppercase text-[10px]">BÁC SĨ TRƯỞNG CA TRỰC</div>
-                    <div className="italic text-[9px] text-slate-500">(Ký duyệt giao ban)</div>
-                    <div className="h-9 flex items-center justify-center font-mono text-teal-800 font-bold text-[10px]">[Đã duyệt giao ban]</div>
+                    <div className="italic text-[9px] text-slate-500">(Ký, ghi rõ họ tên)</div>
+                    <div className="h-14"></div>
                     <div className="font-bold text-[10.5px]">BS. CKII Trần Văn Hùng</div>
                   </div>
                 </div>
@@ -1383,23 +1356,14 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
           </div>
         </div>
 
-        {/* Footer Info & Verification Bar */}
+        {/* Footer Info Bar */}
         <div className="px-5 py-2 bg-slate-100 border-t border-slate-200 text-xs text-slate-600 flex items-center justify-between shrink-0 print:hidden">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Hệ thống biểu mẫu hành chính lâm sàng số hóa: Hợp chuẩn Nghị định 30/2020/NĐ-CP &amp; Thông tư Bộ Y tế.</span>
+            <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+            <span>Hệ thống biểu mẫu hành chính y tế: Hợp chuẩn thể thức Nghị định 30/2020/NĐ-CP &amp; các Thông tư chuyên ngành Bộ Y tế.</span>
           </div>
-          {copyFeedback && (
-            <span className="text-emerald-700 font-bold animate-in fade-in">{copyFeedback}</span>
-          )}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleCopyHash('HMAC-SHA256:7a82f9c011e4d82b4937a01fa281ce919d7b21e84a20bfa492c10')}
-              className="text-slate-700 hover:text-slate-900 flex items-center gap-1 cursor-pointer font-medium hover:underline"
-            >
-              <Copy className="w-3.5 h-3.5 text-teal-700" />
-              <span>Sao chép mã xác thực băm</span>
-            </button>
+          <div className="text-[11px] text-slate-500 font-mono">
+            Khổ giấy: A4 (210 × 297 mm) · Tỉ lệ co giãn chuẩn 100%
           </div>
         </div>
 
