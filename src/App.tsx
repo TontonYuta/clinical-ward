@@ -100,7 +100,7 @@ export default function App() {
       setSelectedDebtForPrint((item as DebtRecord) || debts[0] || null);
     } else if (formType === 'EQUIPMENT_HANDOVER_INSPECT') {
       setSelectedTicketForPrint((item as EquipmentTicket) || tickets[0] || null);
-    } else if (formType === 'TSC_HANDOVER_TRANSFER') {
+    } else if (formType === 'TSC_HANDOVER_TRANSFER' || formType === 'TSC_ANNUAL_AUDIT') {
       setSelectedAssetForPrint((item as AssetAuditRecord) || assets[0] || null);
     }
     setIsPrintableFormOpen(true);
@@ -1421,6 +1421,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         tickets={tickets}
         batches={batches}
         assets={assets}
+        coldChainState={coldChainState}
         currentUserRole={currentUserRole}
       />
     </div>

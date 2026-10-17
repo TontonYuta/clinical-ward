@@ -265,6 +265,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
         }}
         ticket={selectedTicketForHandover}
         onConfirmResolved={handleConfirmHandover}
+        onOpenPrintForm={onOpenPrintForm}
         isAudioMuted={isAudioMuted}
       />
 

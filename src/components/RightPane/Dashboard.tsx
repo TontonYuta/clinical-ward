@@ -149,6 +149,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onTriggerOutage={onTriggerOutage}
                 onRestorePower={onRestorePower}
                 onReleaseQuarantine={onReleaseQuarantine}
+                onOpenPrintForm={onOpenPrintForm}
                 isAudioMuted={isAudioMuted}
               />
             )}

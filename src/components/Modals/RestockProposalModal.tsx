@@ -4,15 +4,17 @@
  */
 
 import React, { useState } from 'react';
-import { X, Boxes, AlertTriangle, Send, CheckCircle2, FileText } from 'lucide-react';
+import { X, Boxes, AlertTriangle, Send, CheckCircle2, FileText, Printer } from 'lucide-react';
 import { InventoryBatch } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
+import { PrintableFormType } from './PrintableFormModal';
 
 interface RestockProposalModalProps {
   isOpen: boolean;
   onClose: () => void;
   lowStockBatches: InventoryBatch[];
   onConfirmRestock: (batchIds: string[]) => void;
+  onOpenPrintForm?: (formType: PrintableFormType) => void;
   isAudioMuted: boolean;
 }
 
@@ -21,6 +23,7 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
   onClose,
   lowStockBatches,
   onConfirmRestock,
+  onOpenPrintForm,
   isAudioMuted,
 }) => {
   const [urgencyReason, setUrgencyReason] = useState('Chạm cơ số an toàn tối thiểu, nguy cơ đứt gãy cung ứng cấp cứu');
@@ -162,6 +165,17 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
             Số phiếu: DT-KD-{new Date().getFullYear()}/042 · Ngày: {todayStr}
           </div>
           <div className="flex items-center gap-2">
+            {onOpenPrintForm && (
+              <button
+                type="button"
+                onClick={() => onOpenPrintForm('TT22_RESTOCK_PROPOSAL')}
+                className="h-9 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Xem & in phiếu dự trù A4 chuẩn Mẫu 01/TT22 Thông tư 22/2011/TT-BYT"
+              >
+                <Printer className="w-3.5 h-3.5 text-teal-700" />
+                <span>Xem bản in A4</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="h-9 px-4 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"

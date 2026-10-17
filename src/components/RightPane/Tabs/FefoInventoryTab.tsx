@@ -263,6 +263,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         onClose={() => setIsRestockModalOpen(false)}
         lowStockBatches={lowStockBatches}
         onConfirmRestock={handleConfirmRestock}
+        onOpenPrintForm={onOpenPrintForm}
         isAudioMuted={isAudioMuted}
       />
     </div>

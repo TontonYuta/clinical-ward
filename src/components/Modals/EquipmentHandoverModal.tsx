@@ -4,15 +4,17 @@
  */
 
 import React, { useState } from 'react';
-import { X, Wrench, ShieldCheck, CheckCircle2, FileSignature, Check } from 'lucide-react';
+import { X, Wrench, ShieldCheck, CheckCircle2, FileSignature, Check, Printer } from 'lucide-react';
 import { EquipmentTicket } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
+import { PrintableFormType } from './PrintableFormModal';
 
 interface EquipmentHandoverModalProps {
   isOpen: boolean;
   onClose: () => void;
   ticket: EquipmentTicket | null;
   onConfirmResolved: (ticketId: string) => void;
+  onOpenPrintForm?: (formType: PrintableFormType, ticket?: EquipmentTicket) => void;
   isAudioMuted: boolean;
 }
 
@@ -21,6 +23,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
   onClose,
   ticket,
   onConfirmResolved,
+  onOpenPrintForm,
   isAudioMuted,
 }) => {
   const [testResult, setTestResult] = useState('Đạt 100% tiêu chuẩn an toàn điện & áp lực thở');
@@ -55,7 +58,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
             <div>
               <h2 className="text-sm font-bold">Biên Bản Thử Tải, Kiểm Định &amp; Bàn Giao Thiết Bị</h2>
               <span className="text-[11px] text-slate-400 font-mono">
-                Căn cứ Nghị định 98/2021/NĐ-CP &amp; Thông tư 05/2022/TT-BYT
+                Điều 34, 55 NĐ 98/2021/NĐ-CP &amp; Tiêu chuẩn IEC 60601-1
               </span>
             </div>
           </div>
@@ -128,6 +131,17 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
             Biên bản số: BB-BG-{ticket.code} · Ngày: {todayStr}
           </div>
           <div className="flex items-center gap-2">
+            {onOpenPrintForm && ticket && (
+              <button
+                type="button"
+                onClick={() => onOpenPrintForm('EQUIPMENT_HANDOVER_INSPECT', ticket)}
+                className="h-9 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Xem & in biên bản kiểm định an toàn điện A4 chuẩn Nghị định 98/2021"
+              >
+                <Printer className="w-3.5 h-3.5 text-teal-700" />
+                <span>Xem bản in A4</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="h-9 px-4 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"

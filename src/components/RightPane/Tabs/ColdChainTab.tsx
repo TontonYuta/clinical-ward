@@ -17,16 +17,19 @@ import {
   FileCheck2,
   Shield,
   FlaskConical,
-  CheckCheck
+  CheckCheck,
+  Printer
 } from 'lucide-react';
 import { ColdChainMonitorState } from '../../../types/clinical';
 import { clinicalAudio } from '../../../utils/audio';
+import { PrintableFormType } from '../../Modals/PrintableFormModal';
 
 interface ColdChainTabProps {
   coldChainState: ColdChainMonitorState;
   onTriggerOutage: () => void;
   onRestorePower: () => void;
   onReleaseQuarantine?: () => void;
+  onOpenPrintForm?: (formType: PrintableFormType) => void;
   isAudioMuted: boolean;
 }
 
@@ -35,6 +38,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
   onTriggerOutage,
   onRestorePower,
   onReleaseQuarantine,
+  onOpenPrintForm,
   isAudioMuted
 }) => {
   const isAlarm = coldChainState.alarmActive || coldChainState.currentTemp > 8.0;
@@ -85,6 +89,15 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => onOpenPrintForm?.('COLD_CHAIN_INCIDENT_REPORT')}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+            title="In Biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP (Thông tư 36/2018/TT-BYT)"
+          >
+            <Printer className="w-3.5 h-3.5 text-cyan-700" />
+            <span className="hidden sm:inline">In Biên Bản GSP (A4)</span>
+          </button>
+
           {isAlarm ? (
             <button
               onClick={handleRestore}

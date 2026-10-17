@@ -326,6 +326,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
         onClose={() => setIsDestructionModalOpen(false)}
         returnedAmpoules={returnedAmpoules}
         onDestroyConfirm={handleDestroyConfirm}
+        onOpenPrintForm={onOpenPrintForm}
         isAudioMuted={isAudioMuted}
       />
 

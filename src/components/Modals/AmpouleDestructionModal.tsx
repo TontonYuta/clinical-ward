@@ -4,15 +4,17 @@
  */
 
 import React, { useState } from 'react';
-import { X, ShieldAlert, CheckCircle2, FileSignature, AlertOctagon } from 'lucide-react';
+import { X, ShieldAlert, CheckCircle2, FileSignature, AlertOctagon, Printer } from 'lucide-react';
 import { DebtRecord } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
+import { PrintableFormType } from './PrintableFormModal';
 
 interface AmpouleDestructionModalProps {
   isOpen: boolean;
   onClose: () => void;
   returnedAmpoules: DebtRecord[];
   onDestroyConfirm: (ids: string[]) => void;
+  onOpenPrintForm?: (formType: PrintableFormType) => void;
   isAudioMuted: boolean;
 }
 
@@ -21,6 +23,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
   onClose,
   returnedAmpoules,
   onDestroyConfirm,
+  onOpenPrintForm,
   isAudioMuted,
 }) => {
   const [method, setMethod] = useState('Nghiền nát thủy tinh thành bột vô hại');
@@ -55,7 +58,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
             <div>
               <h2 className="text-sm font-bold">Biên Bản Hội Đồng Tiêu Hủy Vỏ Ống Thuốc Gây Nghiện</h2>
               <span className="text-[11px] text-slate-400 font-mono">
-                Mẫu số 10 · Căn cứ Điều 15 Thông tư 20/2017/TT-BYT
+                Mẫu số 16 Phụ lục II NĐ 54/2017 &amp; Điều 15, 16 Thông tư 20/2017/TT-BYT
               </span>
             </div>
           </div>
@@ -154,8 +157,8 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
               onChange={(e) => setMethod(e.target.value)}
               className="w-full h-9 px-3 text-xs bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-hidden focus:border-teal-700"
             >
-              <option value="Nghiền nát thủy tinh thành bột vô hại">
-                Nghiền nát hoàn toàn vỏ ống thủy tinh thành vụn bột, chôn lấp chất thải y tế
+              <option value="Đập vỡ nát cơ học trong khay inox, ngâm Chloramin B 0.5% và đóng bao nguy hại">
+                Đập vỡ nát cơ học trong khay inox, ngâm Chloramin B 0.5% &amp; đóng bao rác nguy hại (TT 20/2021/TT-BYT)
               </option>
               <option value="Hủy bằng lò đốt rác thải y tế nhiệt độ cao >1100°C">
                 Đốt tiêu hủy lò đốt rác thải y tế chuyên dụng nhiệt độ cao &gt; 1100°C
@@ -167,9 +170,20 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
         {/* Footer */}
         <div className="h-16 px-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
           <div className="text-[11px] text-slate-500 font-mono">
-            Biên bản số: BB-HUY-{new Date().getFullYear()}/089 · Ngày: {todayStr}
+            Biên bản số: 16/BB-HĐH/{new Date().getFullYear()} · Ngày: {todayStr}
           </div>
           <div className="flex items-center gap-2">
+            {onOpenPrintForm && (
+              <button
+                type="button"
+                onClick={() => onOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
+                className="h-9 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Xem & in biên bản A4 chuẩn theo Mẫu 16 Phụ lục II NĐ 54/2017"
+              >
+                <Printer className="w-3.5 h-3.5 text-teal-700" />
+                <span>Xem bản in A4</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="h-9 px-4 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"

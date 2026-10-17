@@ -109,12 +109,21 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
 
         <div className="flex items-center gap-2 shrink-0">
           <button
+            onClick={() => onOpenPrintForm?.('TSC_ANNUAL_AUDIT')}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+            title="In Biên bản kiểm kê tài sản cố định & TBYT định kỳ (Mẫu 05-TSC Thông tư 23/2023/TT-BTC & Nghị định 151/2017)"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-700" />
+            <span className="hidden sm:inline">In Mẫu 05-TSC Kiểm Kê</span>
+          </button>
+
+          <button
             onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER')}
             className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
             title="In Biên bản bàn giao, tiếp nhận tài sản công TBYT (Mẫu 01/TSC-BBGN Nghị định 151/2017 & NĐ 114/2024)"
           >
             <Printer className="w-3.5 h-3.5 text-teal-700" />
-            <span className="hidden sm:inline">In Mẫu 01/TSC-BBGN</span>
+            <span className="hidden sm:inline">In Mẫu 01/TSC Điều Chuyển</span>
           </button>
 
           <button
