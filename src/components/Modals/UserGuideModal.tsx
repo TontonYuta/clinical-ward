@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  Download
+  Download,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface UserGuideModalProps {
@@ -27,6 +29,7 @@ interface UserGuideModalProps {
 
 export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState<'overview' | 'roles' | 'tab1' | 'tab2' | 'tab3' | 'tab4' | 'tab5' | 'ai' | 'auth'>('overview');
+  const [showPinCodes, setShowPinCodes] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -196,14 +199,28 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
 
             {activeSection === 'roles' && (
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-slate-900">
-                  Phân Quyền Vai Trò Người Dùng (Role-Based Access Control)
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-teal-700" />
+                    <span>Phân Quyền Vai Trò Người Dùng (Role-Based Access Control)</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowPinCodes(prev => !prev)}
+                    className="text-[11px] text-slate-600 hover:text-teal-800 font-semibold flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition cursor-pointer"
+                    title={showPinCodes ? "Ẩn mã PIN bảo mật" : "Hiện mã PIN demo"}
+                  >
+                    {showPinCodes ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-teal-700" />}
+                    <span>{showPinCodes ? 'Ẩn mã PIN' : 'Hiện mã PIN demo'}</span>
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
                       <span>1. Điều Dưỡng Ca Trực (ĐD. Lê Thị Thu)</span>
-                      <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">PIN: 1111</span>
+                      <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">
+                        PIN: {showPinCodes ? '1111' : '••••'}
+                      </span>
                     </div>
                     <p className="text-slate-600 text-[11px]">
                       • <strong>Phân hệ truy cập:</strong> Sổ nợ tủ trực.<br/>
@@ -214,7 +231,9 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
                       <span>2. Bác Sĩ Điều Trị (BS. Trần Văn Hùng)</span>
-                      <span className="text-[10px] font-mono bg-teal-100 text-teal-800 px-1.5 py-0.2 rounded font-bold">PIN: 4444</span>
+                      <span className="text-[10px] font-mono bg-teal-100 text-teal-800 px-1.5 py-0.2 rounded font-bold">
+                        PIN: {showPinCodes ? '4444' : '••••'}
+                      </span>
                     </div>
                     <p className="text-slate-600 text-[11px]">
                       • <strong>Phân hệ truy cập:</strong> Sổ nợ tủ trực, Sự cố thiết bị y tế.<br/>
@@ -225,7 +244,9 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
                       <span>3. Dược Sĩ Kho Dược (DS. Nguyễn Bích Ngọc)</span>
-                      <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">PIN: 2222</span>
+                      <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">
+                        PIN: {showPinCodes ? '2222' : '••••'}
+                      </span>
                     </div>
                     <p className="text-slate-600 text-[11px]">
                       • <strong>Phân hệ truy cập:</strong> Sổ nợ tủ trực, Kho Dược FEFO, Chuỗi lạnh vắc xin.<br/>
@@ -236,7 +257,9 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
                       <span>4. Kỹ Sư Trang Thiết Bị Y Tế (KS. Đặng Văn Nam)</span>
-                      <span className="text-[10px] font-mono bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">PIN: 3333</span>
+                      <span className="text-[10px] font-mono bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">
+                        PIN: {showPinCodes ? '3333' : '••••'}
+                      </span>
                     </div>
                     <p className="text-slate-600 text-[11px]">
                       • <strong>Phân hệ truy cập:</strong> Sự cố thiết bị y tế, Kiểm kê &amp; Quản lý tài sản.<br/>
@@ -247,7 +270,9 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg md:col-span-2">
                     <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
                       <span>5. Ban Giám Đốc Bệnh Viện (TS.BS. Nguyễn Văn An)</span>
-                      <span className="text-[10px] font-mono bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded font-bold">PIN: 9999</span>
+                      <span className="text-[10px] font-mono bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded font-bold">
+                        PIN: {showPinCodes ? '9999' : '••••'}
+                      </span>
                     </div>
                     <p className="text-slate-700 text-[11px]">
                       • <strong>Phân hệ truy cập:</strong> Toàn quyền 5/5 phân hệ lâm sàng.<br/>

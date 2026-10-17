@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   Users,
   Fingerprint,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { UserRole, UserProfile, ClinicalAuthRequest } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
@@ -48,6 +50,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [rfidSuccess, setRfidSuccess] = useState<boolean>(false);
+  const [showDemoPin, setShowDemoPin] = useState<boolean>(false);
 
   // Sync state when opened or request changes
   useEffect(() => {
@@ -120,7 +123,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
 
     // Validate PIN
     if (pinInput.trim() !== currentSigner.pinCode) {
-      setErrorMessage(`Mã PIN của ${currentSigner.name} không chính xác (Gợi ý demo: ${currentSigner.pinCode}).`);
+      setErrorMessage(`Mã PIN của ${currentSigner.name} không chính xác. Vui lòng kiểm tra lại.`);
       if (!isAudioMuted) clinicalAudio.playAuthDeniedBeep();
       return;
     }
@@ -133,7 +136,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
         return;
       }
       if (witnessPinInput.trim() !== currentWitness.pinCode) {
-        setErrorMessage(`Mã PIN của người chứng kiến (${currentWitness.name}) không chính xác (Gợi ý demo: ${currentWitness.pinCode}).`);
+        setErrorMessage(`Mã PIN của người chứng kiến (${currentWitness.name}) không chính xác. Vui lòng kiểm tra lại.`);
         if (!isAudioMuted) clinicalAudio.playAuthDeniedBeep();
         return;
       }
@@ -319,7 +322,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                   <span className="font-bold text-slate-900">{currentWitness.name}</span>
                   <span className="text-[10px] text-slate-500 ml-1.5">({currentWitness.roleName})</span>
                   <p className="text-[10px] font-mono text-slate-500">
-                    CCHN: {currentWitness.practiceCertificate} · PIN demo: <strong className="text-purple-700">{currentWitness.pinCode}</strong>
+                    CCHN: {currentWitness.practiceCertificate} · PIN xác thực: <strong className="text-purple-700">{showDemoPin ? currentWitness.pinCode : '••••'}</strong>
                   </p>
                 </div>
                 {authMethod === 'PIN' && (
@@ -389,13 +392,25 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                       <KeyRound className="w-3.5 h-3.5 text-teal-700" />
                       <span>Nhập mã PIN lâm sàng của {currentSigner.name}:</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleQuickFillPin}
-                      className="text-[11px] text-teal-700 hover:text-teal-900 font-semibold underline cursor-pointer"
-                    >
-                      Điền nhanh PIN demo ({currentSigner.pinCode})
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleQuickFillPin}
+                        className="text-[11px] text-teal-700 hover:text-teal-900 font-semibold underline cursor-pointer"
+                        title="Tự động điền mã PIN demo"
+                      >
+                        Điền nhanh PIN demo {showDemoPin ? `(${currentSigner.pinCode})` : '(••••)'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDemoPin(prev => !prev)}
+                        className="p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                        title={showDemoPin ? "Ẩn mã PIN bảo mật" : "Hiện mã PIN demo"}
+                        aria-label="Ẩn hiện mã PIN"
+                      >
+                        {showDemoPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-teal-700" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="relative w-48 my-1">
