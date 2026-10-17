@@ -471,14 +471,44 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         {/* Footer */}
         <div className="h-12 px-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0 text-xs">
           <span className="text-slate-500">
-            Tài liệu lưu trữ đầy đủ tại: <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-[11px]">docs/Tai_Lieu_Huong_Dan_Su_Dung_App_Y_Te_Do_An_2.md</code>
+            Tài liệu lưu trữ đầy đủ tại: <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-[11px]">docs/01_Cam_Nang_Toan_Dien_Nghiep_Vu_Y_Te.md</code>
           </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold transition cursor-pointer"
-          >
-            Đã Hiểu &amp; Đóng
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const guideText = `# CẨM NANG TOÀN DIỆN VỀ NGHIỆP VỤ Y TẾ LÂM SÀNG & QUẢN LÝ KHO BỆNH VIỆN
+## HỆ THỐNG QUẢN LÝ KHO DƯỢC, VẬT TƯ, TỦ TRỰC LÂM SÀNG & TRANG THIẾT BỊ Y TẾ BỆNH VIỆN
+
+1. Sổ nợ tủ trực ca đêm: Thông tư 22/2011/TT-BYT & Điều 15 Thông tư 20/2017/TT-BYT (Khóa nợ vỏ ống Morphin).
+2. Sự cố & Bàn giao thiết bị y tế: Điều 34, 55 Nghị định 98/2021/NĐ-CP & Nghị định 07/2023/NĐ-CP.
+3. Kho Dược FEFO & Định mức: Khoản 2 Điều 12 Thông tư 36/2018/TT-BYT (GSP) & Điều 7 TT 22/2011.
+4. Giám sát chuỗi lạnh vắc xin: Chuẩn GSP 2.0°C - 8.0°C, SOP xử lý mất điện & Quy chế Biệt trữ (Quarantine).
+5. Kiểm kê & Thanh lý tài sản công: Điều 39, 40 Nghị định 151/2017/NĐ-CP & NĐ 114/2024.
+6. Ký số chuyên môn & Sổ kiểm toán lâm sàng: Nghị định 130/2018/NĐ-CP.`;
+                const blob = new Blob([guideText], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Cam_Nang_Nghiep_Vu_Y_Te_Do_An_2.md';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold transition cursor-pointer shadow-2xs active:scale-98"
+              title="Tải tệp cẩm nang hướng dẫn nghiệp vụ lâm sàng (.md)"
+            >
+              <Download className="w-3.5 h-3.5 text-teal-700" />
+              <span>Tải Cẩm Nang (.md)</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold transition cursor-pointer active:scale-98"
+            >
+              Đã Hiểu &amp; Đóng
+            </button>
+          </div>
         </div>
       </div>
     </div>

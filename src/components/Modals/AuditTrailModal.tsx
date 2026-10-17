@@ -34,6 +34,53 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [exportSuccess, setExportSuccess] = useState<boolean>(false);
+
+  const handleExportCsv = () => {
+    const headers = [
+      'Mã kiểm toán',
+      'Thời gian',
+      'Nghiệp vụ lâm sàng',
+      'Căn cứ pháp lý',
+      'Đối tượng tác động',
+      'Người ký xác thực',
+      'Chứng chỉ hành nghề (CCHN)',
+      'Người làm chứng',
+      'CCHN người làm chứng',
+      'Phương thức xác thực',
+      'Mã băm toàn vẹn SHA-256',
+      'Tình trạng xác nhận'
+    ];
+
+    const rows = filteredRecords.map(r => [
+      `"${r.id}"`,
+      `"${r.timestamp}"`,
+      `"${(r.actionTitle || '').replace(/"/g, '""')}"`,
+      `"${(r.legalBasis || '').replace(/"/g, '""')}"`,
+      `"${(r.targetItem || '').replace(/"/g, '""')}"`,
+      `"${r.signerName || ''}"`,
+      `"${r.signerCertificate || ''}"`,
+      `"${r.witnessName || '-'}"`,
+      `"${r.witnessCertificate || '-'}"`,
+      `"${r.authMethod === 'RFID_NFC' ? 'Thẻ định danh RFID/NFC' : 'Mã PIN chuyên môn'}"`,
+      `"${r.integrityHash || ''}"`,
+      `"${r.status === 'verified' ? 'Hợp lệ 100%' : 'Bị chỉnh sửa'}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Nhat_Ky_Kiem_Toan_Lam_Sang_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setExportSuccess(true);
+    setTimeout(() => setExportSuccess(false), 3000);
+  };
 
   if (!isOpen) return null;
 
@@ -158,11 +205,16 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
             </div>
 
             <button
-              onClick={() => alert('Đã trích xuất biên bản đối soát nhật ký lâm sàng của kíp trực.')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer shadow-2xs"
+              onClick={handleExportCsv}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer shadow-2xs transition active:scale-98 ${
+                exportSuccess
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  : 'border-slate-300 hover:bg-slate-50 text-slate-700'
+              }`}
+              title="Trích xuất toàn bộ bản ghi kiểm toán ra tệp CSV (mở được bằng Excel)"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Xuất PDF/Excel</span>
+              <Download className={`w-3.5 h-3.5 ${exportSuccess ? 'text-emerald-600' : 'text-slate-600'}`} />
+              <span>{exportSuccess ? 'Đã xuất file Excel/CSV!' : 'Xuất CSV / Excel'}</span>
             </button>
           </div>
         </div>

@@ -219,24 +219,20 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                   </button>
 
                   {!isResolved ? (
-                    currentUserRole === 'biomedical_engineer' || currentUserRole === 'director' ? (
-                      <button
-                        onClick={() => handleOpenHandover(ticket)}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-2xs cursor-pointer active:scale-98"
-                        title="Mở biên bản kiểm định thử tải và bàn giao lâm sàng NĐ 98/2021"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Nghiệm thu &amp; Bàn giao</span>
-                      </button>
-                    ) : (
-                      <span
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs font-medium"
-                        title="Theo NĐ 98/2021, kỹ sư P.VTYT chịu trách nhiệm kiểm định an toàn điện và thử tải kỹ thuật"
-                      >
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Chờ Kỹ sư nghiệm thu</span>
-                      </span>
-                    )
+                    <button
+                      onClick={() => handleOpenHandover(ticket)}
+                      className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-bold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap ${
+                        currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
+                          ? 'bg-teal-700 hover:bg-teal-800 text-white'
+                          : 'bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-300 hover:border-teal-400'
+                      }`}
+                      title={currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
+                        ? "Mở biên bản kiểm định thử tải và bàn giao lâm sàng NĐ 98/2021"
+                        : "Theo NĐ 98/2021, kỹ sư P.VTYT chịu trách nhiệm kiểm định an toàn điện. Bấm để mở biên bản bàn giao & ký chứng thực."}
+                    >
+                      <ShieldCheck className={`w-3.5 h-3.5 ${currentUserRole === 'biomedical_engineer' || currentUserRole === 'director' ? 'text-white' : 'text-teal-700'}`} />
+                      <span>Nghiệm thu &amp; Bàn giao</span>
+                    </button>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold">
                       <Check className="w-3.5 h-3.5" />

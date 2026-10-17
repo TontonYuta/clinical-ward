@@ -120,24 +120,16 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
             <span>+ Mượn Khẩn Thuốc / Vật Tư</span>
           </button>
 
-          {returnedAmpoules.length > 0 && (currentUserRole === 'pharmacist' || currentUserRole === 'director') ? (
+          {returnedAmpoules.length > 0 && (
             <button
               onClick={() => setIsDestructionModalOpen(true)}
               className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 hover:border-slate-400 text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-              title="Lập biên bản Hội đồng tiêu hủy vỏ ống thuốc gây nghiện theo Thông tư 20/2017/TT-BYT"
+              title="Lập biên bản Hội đồng tiêu hủy vỏ ống thuốc gây nghiện theo Thông tư 20/2017/TT-BYT (Xem danh mục & in Mẫu 16)"
             >
               <Flame className="w-3.5 h-3.5 text-rose-600" />
               <span>Hội đồng hủy vỏ ({returnedAmpoules.length})</span>
             </button>
-          ) : returnedAmpoules.length > 0 ? (
-            <span
-              className="hidden md:inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-slate-50 text-slate-500 border border-slate-200 text-xs font-medium"
-              title="Theo Thông tư 20/2017/TT-BYT, Hội đồng hủy vỏ do Dược sĩ Kho Dược chủ trì có sự tham gia của ĐD Trưởng"
-            >
-              <Flame className="w-3.5 h-3.5 text-slate-400" />
-              <span>{returnedAmpoules.length} vỏ chờ Dược sĩ hủy</span>
-            </span>
-          ) : null}
+          )}
 
           <button
             onClick={onSimulateMorningReminder}
@@ -288,15 +280,14 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                         </button>
                         {isDebt ? (
                           isNarcotic && !item.ampouleReturned ? (
-                            <div
-                              className="inline-flex items-center gap-1"
-                              title="BẮT BUỘC THU HỒI VỎ: Theo Điều 15 Thông tư 20/2017/TT-BYT, phải nộp vỏ ống thuốc gây nghiện vào khay kiểm soát trước khi được duyệt hoàn bù cơ số."
+                            <button
+                              onClick={() => handleAmpouleReturn(item.id)}
+                              className="inline-flex items-center gap-1 h-6 px-2 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-semibold cursor-pointer active:scale-98 transition shadow-2xs whitespace-nowrap"
+                              title="BẮT BUỘC THU HỒI VỎ: Theo Điều 15 TT 20/2017/TT-BYT, phải nộp vỏ ống thuốc gây nghiện vào khay kiểm soát trước khi được duyệt hoàn bù cơ số. Bấm để nộp vỏ ngay."
                             >
-                              <span className="inline-flex items-center gap-1 h-6 px-2 rounded bg-slate-100 text-slate-400 border border-slate-200 text-[10px] font-semibold cursor-not-allowed select-none">
-                                <Lock className="w-2.5 h-2.5 text-slate-400" />
-                                <span>Chờ thu hồi vỏ (TT 20)</span>
-                              </span>
-                            </div>
+                              <ShieldAlert className="w-2.5 h-2.5 text-amber-600" />
+                              <span>Thu hồi vỏ để bù</span>
+                            </button>
                           ) : (
                             <button
                               onClick={() => handleSettle(item.id)}

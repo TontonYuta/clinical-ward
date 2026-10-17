@@ -260,24 +260,24 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                             <span>Điều chuyển</span>
                           </button>
                         ) : !asset.pendingLiquidation && asset.operatingYears >= 8 ? (
-                          currentUserRole === 'director' ? (
-                            <button
-                              onClick={() => handleLiquidation(asset.id)}
-                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
-                              title="Lập tờ trình hội đồng thanh lý tài sản nhà nước (Thẩm quyền Giám Đốc NĐ 151/2017)"
-                            >
+                          <button
+                            onClick={() => handleLiquidation(asset.id)}
+                            className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap ${
+                              currentUserRole === 'director'
+                                ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
+                                : 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-800 border border-slate-300 hover:border-rose-300'
+                            }`}
+                            title={currentUserRole === 'director'
+                              ? "Lập tờ trình hội đồng thanh lý tài sản nhà nước (Thẩm quyền Giám Đốc NĐ 151/2017)"
+                              : "Thẩm quyền ký duyệt thanh lý thuộc Ban Giám Đốc theo NĐ 151/2017. Bấm để mở hộp thoại xác thực/chuyển vai trò ký."}
+                          >
+                            {currentUserRole === 'director' ? (
                               <Trash2 className="w-3 h-3 text-rose-600" />
-                              <span>Thanh lý</span>
-                            </button>
-                          ) : (
-                            <span
-                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 text-xs font-medium whitespace-nowrap"
-                              title="Theo NĐ 151/2017 & NĐ 114/2024, thẩm quyền ký tờ trình thanh lý tài sản thuộc Ban Giám Đốc"
-                            >
-                              <Lock className="w-3 h-3 text-slate-400" />
-                              <span>Chờ Giám đốc duyệt thanh lý</span>
-                            </span>
-                          )
+                            ) : (
+                              <Lock className="w-3 h-3 text-slate-500" />
+                            )}
+                            <span>{currentUserRole === 'director' ? 'Thanh lý' : 'Đề xuất thanh lý'}</span>
+                          </button>
                         ) : (
                           <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded whitespace-nowrap">
                             <FileCheck2 className="w-3 h-3 text-emerald-600" />

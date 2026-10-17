@@ -40,6 +40,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
   const [patientRoom, setPatientRoom] = useState<string>('ICU - Buồng 03 (Giường 01)');
   const [doctorName, setDoctorName] = useState<string>('BS.CKII Nguyễn Minh Tuấn');
   const [clinicalReason, setClinicalReason] = useState<string>('Hội chứng vành cấp ST chênh lên, đau thắt ngực dữ dội');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -49,12 +50,13 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
     setItemName(item.name);
     setItemType(item.type);
     setQuantity(item.defaultQty);
+    setValidationError(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!itemName || !quantity || !patientName || !patientRoom) {
-      alert('Vui lòng điền đầy đủ các thông tin bắt buộc.');
+    if (!itemName.trim() || !quantity.trim() || !patientName.trim() || !patientRoom.trim()) {
+      setValidationError('Vui lòng điền đầy đủ các thông tin bắt buộc (Tên thuốc, số lượng, tên bệnh nhân, buồng cấp cứu).');
       return;
     }
 
@@ -102,7 +104,14 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
+        <form onSubmit={handleSubmit} noValidate className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
+          {validationError && (
+            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{validationError}</span>
+            </div>
+          )}
+
           {/* Quick Preset Selector */}
           <div>
             <label className="font-bold text-slate-900 block mb-1.5">

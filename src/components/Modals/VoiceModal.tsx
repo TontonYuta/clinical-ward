@@ -292,7 +292,23 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-lg bg-teal-800 group-hover:bg-teal-900 text-white text-xs font-medium flex items-center gap-1 shadow-xs cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUsePreset(clip.text, false);
+                      }}
+                      className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition cursor-pointer border border-slate-200 shadow-2xs"
+                      title="Chèn khẩu lệnh vào khung nhập để xem hoặc chỉnh sửa"
+                    >
+                      Điền lệnh
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUsePreset(clip.text, true);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 transition"
+                      title="Gửi khẩu lệnh lâm sàng này đến AI Copilot ngay lập tức"
                     >
                       <Check className="w-3.5 h-3.5 text-teal-300" />
                       <span>Gửi ngay</span>

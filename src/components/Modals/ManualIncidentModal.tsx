@@ -69,6 +69,7 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
   const [accessoryIssue, setAccessoryIssue] = useState<string>(COMMON_DEVICES[0].commonIssue);
   const [urgency, setUrgency] = useState<UrgencyLevel>(COMMON_DEVICES[0].urgency);
   const [assignedEngineer, setAssignedEngineer] = useState<string>('KS. Đặng Văn Nam (Kỹ sư TBYT trực)');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -82,12 +83,13 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
     setLocation(d.defaultLocation);
     setAccessoryIssue(d.commonIssue);
     setUrgency(d.urgency);
+    setValidationError(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!deviceName || !serialNumber || !location || !accessoryIssue) {
-      alert('Vui lòng điền đầy đủ các thông tin sự cố.');
+    if (!deviceName.trim() || !serialNumber.trim() || !location.trim() || !accessoryIssue.trim()) {
+      setValidationError('Vui lòng điền đầy đủ các thông tin sự cố (Tên máy, số serial, vị trí khoa phòng và mô tả hỏng hóc).');
       return;
     }
 
@@ -139,7 +141,14 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
+        <form onSubmit={handleSubmit} noValidate className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
+          {validationError && (
+            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{validationError}</span>
+            </div>
+          )}
+
           {/* Quick Preset Selector */}
           <div>
             <label className="font-bold text-slate-900 block mb-1.5">
