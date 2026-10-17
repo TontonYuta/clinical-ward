@@ -3,8 +3,9 @@
  * Adheres to Thông tư 22/2011, TT 20/2017, TT 36/2018, NĐ 98/2021, NĐ 151/2017, NĐ 130/2018
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-const ROOT_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE_URL = import.meta.env.VITE_API_URL || (isLocalhost ? 'http://localhost:8000/api/v1' : '/api/v1');
+const ROOT_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '') || (isLocalhost ? 'http://localhost:8000' : '');
 
 export async function checkBackendHealth(): Promise<{ status: string; system: string; legal_compliance: string[] } | null> {
   try {
