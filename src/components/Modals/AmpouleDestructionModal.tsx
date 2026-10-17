@@ -1,0 +1,201 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { X, ShieldAlert, CheckCircle2, FileSignature, AlertOctagon } from 'lucide-react';
+import { DebtRecord } from '../../types/clinical';
+import { clinicalAudio } from '../../utils/audio';
+
+interface AmpouleDestructionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  returnedAmpoules: DebtRecord[];
+  onDestroyConfirm: (ids: string[]) => void;
+  isAudioMuted: boolean;
+}
+
+export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = ({
+  isOpen,
+  onClose,
+  returnedAmpoules,
+  onDestroyConfirm,
+  isAudioMuted,
+}) => {
+  const [method, setMethod] = useState('Nghiền nát thủy tinh thành bột vô hại');
+  const [isSigned, setIsSigned] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    if (!isAudioMuted) clinicalAudio.playSuccessChime();
+    setIsSigned(true);
+    setTimeout(() => {
+      onDestroyConfirm(returnedAmpoules.map(a => a.id));
+      onClose();
+    }, 700);
+  };
+
+  const todayStr = new Date().toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="h-14 px-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold">Biên Bản Hội Đồng Tiêu Hủy Vỏ Ống Thuốc Gây Nghiện</h2>
+              <span className="text-[11px] text-slate-400 font-mono">
+                Mẫu số 10 · Căn cứ Điều 15 Thông tư 20/2017/TT-BYT
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700">
+          {/* Legal Notice */}
+          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 flex items-start gap-2.5">
+            <AlertOctagon className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              <strong>Quy định pháp lý bắt buộc:</strong> Vỏ ống thuốc gây nghiện (Morphin, Fentanyl) sau khi tiêm cho bệnh nhân phải được thu hồi 100% vào khay khóa. Hội đồng tiêu hủy phải gồm ít nhất 03 thành viên độc lập, lập biên bản và lưu hồ sơ tối thiểu <strong>02 năm</strong>.
+            </div>
+          </div>
+
+          {/* Council Members */}
+          <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-2">
+            <span className="font-bold text-slate-900 block text-[11px] uppercase tracking-wider">
+              Thành phần Hội đồng Tiêu hủy (Bệnh viện Đa Khoa):
+            </span>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="p-2 bg-white rounded border border-slate-200">
+                <span className="text-[10px] text-slate-400 block">Chủ tịch Hội đồng</span>
+                <strong className="text-slate-800">DS. Nguyễn Bích Ngọc</strong>
+                <span className="text-[10px] text-slate-500 block">Trưởng Khoa Dược</span>
+              </div>
+              <div className="p-2 bg-white rounded border border-slate-200">
+                <span className="text-[10px] text-slate-400 block">Ủy viên giám sát</span>
+                <strong className="text-slate-800">ĐD. Lê Thị Thu</strong>
+                <span className="text-[10px] text-slate-500 block">Điều dưỡng Trưởng ca</span>
+              </div>
+              <div className="p-2 bg-white rounded border border-slate-200">
+                <span className="text-[10px] text-slate-400 block">Ủy viên chuyên môn</span>
+                <strong className="text-slate-800">BS. Trần Văn Hùng</strong>
+                <span className="text-[10px] text-slate-500 block">Bác sĩ Điều trị ICU</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Ampoule Table */}
+          <div>
+            <span className="font-bold text-slate-900 block text-[11px] uppercase tracking-wider mb-1.5">
+              Danh mục vỏ ống đề nghị tiêu hủy ({returnedAmpoules.length} vỏ đã thu hồi):
+            </span>
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold">
+                    <th className="py-2 px-3">Mã phiếu</th>
+                    <th className="py-2 px-3">Mặt hàng thuốc</th>
+                    <th className="py-2 px-3">Bệnh nhân sử dụng</th>
+                    <th className="py-2 px-3">Thời gian tiêm</th>
+                    <th className="py-2 px-3 text-right">Tình trạng</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {returnedAmpoules.length > 0 ? (
+                    returnedAmpoules.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50">
+                        <td className="py-2 px-3 font-mono font-bold text-slate-800">{item.code}</td>
+                        <td className="py-2 px-3 font-semibold text-slate-900">{item.itemName}</td>
+                        <td className="py-2 px-3 text-slate-700">{item.patientName} ({item.patientRoom})</td>
+                        <td className="py-2 px-3 font-mono text-slate-600">{item.borrowTime}</td>
+                        <td className="py-2 px-3 text-right">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Đã thu hồi khay khóa
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-4 text-center text-slate-400">
+                        Hiện chưa có vỏ ống nào được đánh dấu thu hồi vào khay khóa.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Destruction Method */}
+          <div className="space-y-1.5">
+            <label className="font-bold text-slate-900 block text-xs">
+              Phương pháp tiêu hủy thực hiện:
+            </label>
+            <select
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              className="w-full h-9 px-3 text-xs bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-hidden focus:border-teal-700"
+            >
+              <option value="Nghiền nát thủy tinh thành bột vô hại">
+                Nghiền nát hoàn toàn vỏ ống thủy tinh thành vụn bột, chôn lấp chất thải y tế
+              </option>
+              <option value="Hủy bằng lò đốt rác thải y tế nhiệt độ cao >1100°C">
+                Đốt tiêu hủy lò đốt rác thải y tế chuyên dụng nhiệt độ cao &gt; 1100°C
+              </option>
+            </select>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="h-16 px-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <div className="text-[11px] text-slate-500 font-mono">
+            Biên bản số: BB-HUY-{new Date().getFullYear()}/089 · Ngày: {todayStr}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="h-9 px-4 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={returnedAmpoules.length === 0 || isSigned}
+              className="h-9 px-4 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-98"
+            >
+              {isSigned ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 animate-spin" />
+                  <span>Đang ghi biên bản số...</span>
+                </>
+              ) : (
+                <>
+                  <FileSignature className="w-4 h-4" />
+                  <span>Ký Biên Bản Tiêu Hủy (Hội Đồng 3 Bên)</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

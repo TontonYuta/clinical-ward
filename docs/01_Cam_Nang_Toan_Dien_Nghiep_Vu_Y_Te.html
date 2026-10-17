@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>01 - Cẩm Nang Toàn Diện Nghiệp Vụ Y Tế Lâm Sàng & Bảo Vệ Đồ Án 2</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --secondary: #0d9488;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border: #cbd5e1;
+      --bg-subtle: #f8fafc;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.55;
+      color: var(--text-main);
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page-break {
+      page-break-after: always;
+      break-after: page;
+    }
+    .no-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Cover Page */
+    .cover-page {
+      padding: 35px 25px;
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 3px double #0369a1;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 60%, #f0f9ff 100%);
+      page-break-after: always;
+    }
+
+    .cover-header {
+      text-align: center;
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 16px;
+    }
+    .cover-institution {
+      font-size: 11pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #1e293b;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+    .cover-sub-institution {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    .cover-body {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .cover-badge {
+      display: inline-block;
+      background-color: #0284c7;
+      color: #ffffff;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .cover-title {
+      font-size: 19pt;
+      font-weight: 800;
+      line-height: 1.3;
+      color: #0f172a;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .cover-subtitle {
+      font-size: 10.5pt;
+      font-weight: 500;
+      color: #334155;
+      line-height: 1.5;
+      max-width: 90%;
+      margin: 0 auto 24px auto;
+    }
+
+    .cover-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 95%;
+      margin: 0 auto;
+      text-align: left;
+      background: #ffffff;
+      padding: 14px 18px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .cover-meta-item {
+      font-size: 8.5pt;
+    }
+    .cover-meta-item strong {
+      color: #0369a1;
+      display: block;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .cover-footer {
+      text-align: center;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 12px;
+      font-size: 8pt;
+      color: #64748b;
+    }
+
+    /* Headings */
+    h1 {
+      font-size: 14pt;
+      font-weight: 800;
+      color: #0369a1;
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 5px;
+      margin-top: 22px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    h2 {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #0f172a;
+      border-left: 4px solid #0284c7;
+      padding-left: 10px;
+      margin-top: 18px;
+      margin-bottom: 8px;
+    }
+    h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
+    /* Callout Boxes */
+    .callout {
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 8.8pt;
+      line-height: 1.5;
+      border-left: 4px solid;
+    }
+    .callout-info {
+      background-color: var(--primary-light);
+      border-color: var(--primary);
+      color: #0c4a6e;
+    }
+    .callout-warning {
+      background-color: var(--warning-bg);
+      border-color: var(--warning);
+      color: #78350f;
+    }
+    .callout-danger {
+      background-color: var(--danger-bg);
+      border-color: var(--danger);
+      color: #7f1d1d;
+    }
+    .callout-success {
+      background-color: var(--success-bg);
+      border-color: var(--success);
+      color: #14532d;
+    }
+    .callout-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-size: 8pt;
+      letter-spacing: 0.4px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 8.5pt;
+      line-height: 1.4;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 6px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+      border-bottom: 2px solid #94a3b8;
+    }
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-blue { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-red { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .badge-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+    /* Mermaid */
+    .mermaid {
+      text-align: center;
+      margin: 14px 0;
+      padding: 8px;
+      background: #ffffff;
+      border-radius: 6px;
+      page-break-inside: avoid;
+    }
+
+    /* Q&A Section */
+    .qa-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #ffffff;
+      margin: 10px 0;
+      padding: 10px 14px;
+      page-break-inside: avoid;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .qa-question {
+      font-weight: 700;
+      color: #0369a1;
+      font-size: 9pt;
+      margin-bottom: 5px;
+    }
+    .qa-answer {
+      color: #1e293b;
+      font-size: 8.8pt;
+      line-height: 1.5;
+      border-left: 3px solid #0284c7;
+      padding-left: 9px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TRANG BÌA -->
+  <div class="cover-page">
+    <div class="cover-header">
+      <div class="cover-institution">BỘ GIÁO DỤC VÀ ĐÀO TẠO — TRƯỜNG ĐẠI HỌC BÁCH KHOA / CÔNG NGHỆ</div>
+      <div class="cover-sub-institution">KHOA CÔNG NGHỆ THÔNG TIN — BỘ MÔN KỸ THUẬT PHẦN MỀM & Y SINH</div>
+    </div>
+    
+    <div class="cover-body">
+      <div class="cover-badge">HỒ SƠ BẢO VỆ ĐỒ ÁN 2 — TÀI LIỆU CHUYÊN SÂU SỐ 01</div>
+      <div class="cover-title">CẨM NANG TOÀN DIỆN<br>NGHIỆP VỤ Y TẾ LÂM SÀNG & BẢO VỆ ĐỒ ÁN 2</div>
+      <div class="cover-subtitle">
+        Khảo sát chuẩn mực quy trình quản lý tủ trực cấp cứu, kiểm soát thuốc gây nghiện (TT 20/2017 & NĐ 54/2017), 
+        nghiệm thu an toàn thiết bị y tế (NĐ 98/2021 & IEC 60601-1), dây chuyền lạnh GSP (TT 36/2018), 
+        05 biểu mẫu hành chính A4 và bộ câu hỏi phản biện hội đồng.
+      </div>
+      
+      <div class="cover-meta-grid">
+        <div class="cover-meta-item">
+          <strong>Đề tài nghiên cứu</strong>
+          Hệ thống Quản lý Kho Dược, Tủ trực Lâm sàng & Trang thiết bị Y tế Bệnh viện
+        </div>
+        <div class="cover-meta-item">
+          <strong>Căn cứ pháp lý chuẩn</strong>
+          TT 22/2011, TT 20/2017, NĐ 98/2021, TT 36/2018, NĐ 151/2017, NĐ 114/2024
+        </div>
+        <div class="cover-meta-item">
+          <strong>Bản mẫu phần mềm trực tuyến</strong>
+          https://clinical-ward.vercel.app (Public Access Production)
+        </div>
+        <div class="cover-meta-item">
+          <strong>Phiên bản tài liệu</strong>
+          Release 2.5 — Định dạng In ấn Pháp quy A4 (Publication Quality)
+        </div>
+      </div>
+    </div>
+    
+    <div class="cover-footer">
+      Lưu hành nội bộ phục vụ Đồ Án Tốt Nghiệp 2 & Thẩm định Hội đồng Chấm điểm Khoa học — Năm học 2026
+    </div>
+  </div>
+
+  <!-- MỤC LỤC & TỔNG QUAN -->
+  <h1>MỤC LỤC TỔNG QUAN HỒ SƠ</h1>
+  <table style="margin-bottom: 20px;">
+    <thead>
+      <tr>
+        <th style="width: 10%;">Mục</th>
+        <th style="width: 50%;">Nội dung trọng tâm</th>
+        <th style="width: 40%;">Văn bản pháp luật & Tiêu chuẩn kỹ thuật</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phần 1</strong></td>
+        <td>Bản chất vấn đề: Tại sao bệnh viện cần hệ thống tủ trực lâm sàng chuyên dụng?</td>
+        <td>Quy chuẩn khám chữa bệnh Bộ Y Tế, Phân biệt Retail ERP vs Clinical Ward</td>
+      </tr>
+      <tr>
+        <td><strong>Phần 2</strong></td>
+        <td>Hệ thống 8 văn bản quy phạm pháp luật Y tế Việt Nam bắt buộc</td>
+        <td>TT 22, TT 20, NĐ 54, NĐ 98, TT 05, TT 36 GSP, NĐ 151, NĐ 130</td>
+      </tr>
+      <tr>
+        <td><strong>Phần 3</strong></td>
+        <td>Chi tiết 5 quy trình nghiệp vụ lâm sàng cốt lõi (Clinical SOPs)</td>
+        <td>Mượn khẩn ca đêm, Khóa nợ vỏ Morphin, Báo hỏng LOTO, FEFO, Chuỗi lạnh</td>
+      </tr>
+      <tr>
+        <td><strong>Phần 4</strong></td>
+        <td>Hệ thống 05 biểu mẫu hành chính y tế chuẩn hóa A4 tích hợp trong app</td>
+        <td>Mẫu 07/TT20, Mẫu 01/TT22, Mẫu 01-TSC/NĐ151, Phiếu mượn khẩn, Biên bản BME</td>
+      </tr>
+      <tr>
+        <td><strong>Phần 5</strong></td>
+        <td>Ma trận phân quyền 5 vai trò lâm sàng (RBAC) & Xác thực chữ ký kép</td>
+        <td>Điều dưỡng, BME, Dược sĩ, Bác sĩ, Giám đốc viện (FDA 21 CFR Part 11)</td>
+      </tr>
+      <tr>
+        <td><strong>Phần 6</strong></td>
+        <td>Bộ câu hỏi phản biện & đáp án đắt giá nhất khi bảo vệ trước Hội đồng</td>
+        <td>12 tình huống thực tế lâm sàng & giải pháp công nghệ thuyết phục</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PHẦN 1 -->
+  <h1>PHẦN 1: BẢN CHẤT VẤN ĐỀ — TẠI SAO CẦN HỆ THỐNG KHO LÂM SÀNG BỆNH VIỆN?</h1>
+  
+  <h3>1.1. Sự khác biệt sống còn giữa Kho Thương Mại (Retail ERP) và Kho Lâm Sàng Bệnh Viện</h3>
+  <p>
+    Một sai lầm rất phổ biến của sinh viên ngành CNTT khi làm đồ án quản lý kho y tế là áp dụng tư duy <em>Thương mại điện tử (Retail/E-commerce)</em> vào bệnh viện. Trong kho bán lẻ thông thường, chu trình chỉ đơn giản là: <code>Nhập kho -> Lưu kho -> Khách trả tiền -> Xuất bán</code>.
+  </p>
+  <p>
+    Tuy nhiên, trong môi trường lâm sàng thực tế, quy trình bị chi phối bởi <strong>03 yếu tố cốt tử</strong>:
+  </p>
+  
+  <div class="callout callout-danger">
+    <div class="callout-title">1. Tính mạng người bệnh là ưu tiên tối thượng (Patient Safety First)</div>
+    Trong ca trực cấp cứu ban đêm (01:00 AM - 04:00 AM), bệnh nhân ngừng tim, sốc phản vệ hoặc phù phổi cấp không thể chờ người nhà đi đóng viện phí hay chờ Dược sĩ mở cửa kho phát thuốc. Điều dưỡng bắt buộc phải được quyền <strong>"rút khẩn cấp thuốc/vật tư từ Tủ trực lâm sàng"</strong> để cứu sống người bệnh trong tích tắc, sau đó mới hợp thức hóa thủ tục giấy tờ bù cơ số vào sáng hôm sau.
+  </div>
+
+  <div class="callout callout-warning">
+    <div class="callout-title">2. Kiểm soát tuyệt đối ma túy & tiền chất (Closed-loop Controlled Substances)</div>
+    Thuốc gây nghiện (Morphin sulfat, Fentanyl) có nguy cơ cực cao bị tuồn ra chợ đen hoặc lạm dụng. Pháp luật Việt Nam quy định nghiêm ngặt: <strong>"Dùng bao nhiêu ống phải nộp lại bấy nhiêu vỏ ống rỗng bằng thủy tinh thì mới được cấp bù ống mới"</strong>. Nếu không có cơ chế khóa tự động trên phần mềm, nguy cơ thất thoát ma túy là không thể kiểm soát.
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-title">3. Trang thiết bị y tế can thiệp sự sống (Life-support Devices)</div>
+    Máy thở, máy sốc tim, bơm tiêm điện là những thiết bị gắn liền với sinh mệnh người bệnh. Sau khi sửa chữa, không thể cắm vào bệnh nhân ngay mà bắt buộc phải qua bước <strong>đo kiểm an toàn điện (dòng rò &lt; 100µA theo IEC 60601-1)</strong> và nghiệm thu ký tá 2 bên giữa Kỹ sư Thiết bị y tế (BME) và Điều dưỡng trưởng buồng bệnh.
+  </div>
+
+  <h3>1.2. Mối quan hệ giữa Kho Dược Trung Tâm (GSP) và Tủ Trực Khoa Lâm Sàng</h3>
+  <div class="mermaid">
+    flowchart TD
+      subgraph KhoaDuoc["Kho Dược Trung Tâm (Kho GSP Chuẩn Bộ Y Tế)"]
+        KD_Stock["Kho dự trữ lớn (Lô, Date, Hạn dùng FEFO)"]
+        KD_Pharm["Dược sĩ Kho Dược điều phối cấp phát"]
+      end
+
+      subgraph KhoaLamSang["Khoa Cấp Cứu A9 / ICU / Ngoại Chấn Thương"]
+        TuTruc["Tủ Trực Cấp Cứu (Cơ số định mức cố định)"]
+        BN["Bệnh nhân cấp cứu ban đêm (01:30 AM)"]
+        DD["Điều dưỡng ca trực"]
+        BS["Bác sĩ điều trị buồng bệnh"]
+      end
+
+      TuTruc -->|"1. Rút thuốc tiêm khẩn cấp"| BN
+      DD -->|"2. Lập Phiếu Nợ Tủ Trực (TT 22)"| TuTruc
+      DD -->|"3. Nộp vỏ ống Morphin rỗng (TT 20)"| KD_Pharm
+      BS -->|"4. Kê đơn bù thuốc vào hồ sơ EMR"| KD_Pharm
+      KD_Pharm -->|"5. Xuất kho FEFO hoàn bù đủ cơ số"| TuTruc
+  </div>
+
+  <p>
+    <strong>Nguyên tắc "Đầu ca nhận bao nhiêu, cuối ca phải đủ bấy nhiêu":</strong> Tủ trực mỗi khoa có một cơ số định mức (Ví dụ: 10 ống Morphin 10mg, 10 ống Adrenalin 1mg). Khi giao ban lúc 07:00 AM, nếu kiểm đếm thiếu 02 ống Morphin, điều dưỡng phải trình ra đầy đủ:
+  </p>
+  <ul>
+    <li>01 Phiếu nợ thuốc mượn khẩn có ghi rõ mã bệnh nhân và chỉ định lâm sàng.</li>
+    <li>02 vỏ ống Morphin thủy tinh rỗng đã bẻ nắp đựng trong khay niêm phong.</li>
+    <li>01 Đơn thuốc điện tử bù cơ số có chữ ký của Bác sĩ trực điều trị.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <!-- PHẦN 2 -->
+  <h1>PHẦN 2: HỆ THỐNG VĂN BẢN PHÁP QUY Y TẾ VIỆT NAM BẮT BUỘC</h1>
+  <p>
+    Hệ thống phần mềm được xây dựng dựa trên sự tuân thủ nghiêm ngặt 8 văn bản quy phạm pháp luật hiện hành của Chính phủ và Bộ Y tế:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 5%;">STT</th>
+        <th style="width: 25%;">Văn bản pháp luật</th>
+        <th style="width: 15%;">Cơ quan ban hành</th>
+        <th style="width: 55%;">Nội dung trọng tâm bắt buộc áp dụng trong phần mềm</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>01</strong></td>
+        <td><strong>Thông tư 22/2011/TT-BYT</strong></td>
+        <td>Bộ Y tế</td>
+        <td>
+          <strong>Quy định tổ chức và hoạt động của Khoa Dược bệnh viện:</strong> Quy định cơ số thuốc tủ trực lâm sàng, sổ theo dõi mượn thuốc, thời hạn giao ban đối soát 07:00 AM hằng ngày, và biểu mẫu dự trù bù thuốc số 01/TT22.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>02</strong></td>
+        <td><strong>Thông tư 20/2017/TT-BYT & NĐ 54/2017/NĐ-CP</strong></td>
+        <td>Bộ Y tế & Chính phủ</td>
+        <td>
+          <strong>Quản lý thuốc phải kiểm soát đặc biệt (Gây nghiện, Hướng thần, Tiền chất):</strong>
+          <br>• <em>Điều 15:</em> Bắt buộc thu hồi vỏ ống thuốc gây nghiện đã tiêm vào khay kiểm soát.
+          <br>• <em>Điều 16:</em> Bắt buộc thành lập Hội đồng 3 bên (Dược sĩ, Bác sĩ/Lãnh đạo, Điều dưỡng) để lập biên bản tiêu hủy vỏ ống.
+          <br>• Hồ sơ sổ sách theo dõi phải lưu trữ tối thiểu 02 năm kể từ ngày thuốc hết hạn dùng.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>03</strong></td>
+        <td><strong>Nghị định 98/2021/NĐ-CP & TT 05/2022/TT-BYT</strong></td>
+        <td>Chính phủ & Bộ Y tế</td>
+        <td>
+          <strong>Quản lý Trang thiết bị y tế:</strong> Phân loại mức độ rủi ro 4 cấp (A, B, C, D). Thiết bị loại D (Máy thở, máy sốc tim, lọc máu liên tục) can thiệp trực tiếp sự sống, bắt buộc kiểm định an toàn định kỳ, dán tem kiểm định và lập sổ lý lịch máy theo dõi sự cố.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>04</strong></td>
+        <td><strong>Thông tư 36/2018/TT-BYT (GSP)</strong></td>
+        <td>Bộ Y tế</td>
+        <td>
+          <strong>Thực hành tốt bảo quản thuốc (Good Storage Practices):</strong> Bắt buộc áp dụng nguyên tắc <strong>FEFO (First Expired, First Out)</strong> trong quản lý kho; duy trì chuỗi lạnh bảo quản vắc xin, sinh phẩm ở dải nhiệt độ 2.0°C – 8.0°C; ghi nhận dữ liệu Datalogger liên tục.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>05</strong></td>
+        <td><strong>Nghị định 151/2017/NĐ-CP & NĐ 114/2024/NĐ-CP</strong></td>
+        <td>Chính phủ</td>
+        <td>
+          <strong>Quản lý, sử dụng tài sản công trong đơn vị y tế:</strong> Bắt buộc thực hiện tổng kiểm kê tài sản thời điểm 00:00 ngày 31/12 hằng năm; lập biên bản điều chuyển tài sản Mẫu 01-TSC khi máy móc dịch chuyển buồng phòng; quy định thẩm quyền phê duyệt thanh lý tài sản nhà nước.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>06</strong></td>
+        <td><strong>Nghị định 130/2018/NĐ-CP & QĐ 3149/QĐ-BYT</strong></td>
+        <td>Chính phủ & Bộ Y tế</td>
+        <td>
+          <strong>Chữ ký số & Bệnh án điện tử (EMR):</strong> Quy định định danh người hành nghề y tế qua CCHN (Chứng chỉ hành nghề), mã PIN lâm sàng, chữ ký kép (Dual-Witness) và tính bất biến của sổ nhật ký kiểm toán (Audit Trail) chống sửa đổi dữ liệu.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>07</strong></td>
+        <td><strong>Tiêu chuẩn IEC 60601-1</strong></td>
+        <td>Ủy ban Kỹ thuật Điện Quốc tế</td>
+        <td>
+          <strong>An toàn thiết bị điện y tế:</strong> Quy định dòng rò vỏ máy và dòng rò qua bệnh nhân không được vượt quá 100µA đối với thiết bị tiếp xúc trực tiếp buồng tim (Type CF) sau khi hoàn tất sửa chữa.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>08</strong></td>
+        <td><strong>Tiêu chuẩn WHO PQS & Chỉ số MKT</strong></td>
+        <td>Tổ chức Y tế Thế giới</td>
+        <td>
+          <strong>Giám sát chuỗi lạnh vắc xin:</strong> Áp dụng công thức tính Nhiệt độ động học trung bình (Mean Kinetic Temperature - MKT) theo phương trình Arrhenius để đánh giá mức độ thoái biến sinh học của vắc xin khi xảy ra sự cố mất điện.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PHẦN 3 -->
+  <h1>PHẦN 3: CHI TIẾT 5 QUY TRÌNH NGHIỆP VỤ LÂM SÀNG CỐT LÕI</h1>
+
+  <h3>Quy trình 1: Mượn Khẩn Thuốc Ca Đêm & Khóa Nợ Vỏ Ống Morphin (TT 22 & TT 20)</h3>
+  <p>
+    Đây là quy trình lâm sàng phức tạp và nhạy cảm nhất trong bệnh viện, kết nối giữa Khoa Cấp Cứu và Kho Dược Trung Tâm:
+  </p>
+
+  <div class="mermaid">
+    sequenceDiagram
+      autonumber
+      actor DD as Điều Dưỡng Ca Trực
+      actor TuTruc as Tủ Trực Cấp Cứu
+      actor DS as Dược Sĩ Kho Dược
+      actor BS as Bác Sĩ Điều Trị
+      participant Sys as Hệ Thống Phần Mềm
+      
+      Note over DD,TuTruc: 02:15 AM: Bệnh nhân sốc đau do nhồi máu cơ tim
+      DD->>Sys: 1. Tạo phiếu mượn khẩn 02 ống Morphin 10mg (POST /debts/borrow)
+      Sys-->>DD: Ghi nhận nợ PN-2026-089, cờ ampoule_returned = False
+      DD->>TuTruc: Rút thuốc tiêm cấp cứu trực tiếp cho bệnh nhân
+      
+      Note over DD,DS: 07:00 AM: Giao ban ca trực, Điều dưỡng xin hoàn bù cơ số
+      DD->>Sys: 2. Thao tác hoàn bù cơ số (PUT /debts/{id}/settle)
+      Sys-->>DD: CHẶN LẠI! HTTP 409 CONFLICT (Thiếu vỏ ống Morphin theo Đ15 TT20)
+      
+      Note over DD,DS: Điều dưỡng mang khay chứa 02 vỏ ống thủy tinh sang Kho Dược
+      DD->>Sys: 3. Xác nhận nộp vỏ ống rỗng vào khay niêm phong (PUT /debts/{id}/return-ampoule)
+      Sys-->>DD: Đã tiếp nhận vỏ ống, mở khóa nút hoàn bù
+      
+      BS->>DS: Kê đơn thuốc điện tử bù cơ số tủ trực
+      DS->>Sys: 4. Dược sĩ duyệt hoàn bù (PUT /debts/{id}/settle)
+      Sys-->>DS: Trả cơ số tủ trực về định mức ban đầu, ghi sổ Audit Trail SHA-256
+      
+      Note over DS,BS: Cuối tuần: Hội đồng 3 bên họp tiêu hủy vỏ ống
+      DS->>Sys: 5. Ký biên bản tiêu hủy vỏ ống theo Điều 16 TT 20/2017
+  </div>
+
+  <div class="callout callout-danger">
+    <div class="callout-title">Quy tắc "Khóa an toàn vỏ ống" (Ampoule Lockout):</div>
+    Nếu một ca trực mượn thuốc gây nghiện mà đến 07:00 AM hôm sau chưa nộp lại vỏ ống rỗng, hệ thống sẽ <strong>tự động khóa quyền xuất mượn thuốc gây nghiện tiếp theo</strong> của ca trực đó cho đến khi có xác nhận nộp vỏ hoặc có Biên bản giải trình mất/vỡ vỏ có xác nhận của Bác sĩ trưởng ca.
+  </div>
+
+  <div class="page-break"></div>
+
+  <h3>Quy trình 2: Báo Hỏng, Cảnh Báo LOTO & Nghiệm Thu An Toàn TBYT (NĐ 98/2021)</h3>
+  <p>
+    Đối với các thiết bị can thiệp sự sống (Loại D như Máy thở Puritan Bennett 840, Máy sốc tim Zoll R Series), quy trình xử lý sự cố phải tuân thủ nghiêm ngặt quy tắc Lockout/Tagout (LOTO):
+  </p>
+
+  <div class="mermaid">
+    flowchart TD
+      A["Phát hiện sự cố buồng bệnh<br/>(Máy thở PB840 báo lỗi xì khí rách sensor O2)"] --> B["Điều dưỡng bấm Báo Hỏng trên phần mềm<br/>(Chọn mức ưu tiên: Khẩn cấp - Loại D)"]
+      B --> C["Hệ thống gắn cờ cảnh báo đỏ LOTO:<br/>'KHÔNG ĐƯỢC DÙNG - ĐANG CHỜ BME SỬA CHỮA'"]
+      C --> D["Đẩy thông báo khẩn qua Telegram Bot<br/>đến Kỹ sư BME trực ca bệnh viện"]
+      D --> E["Kỹ sư mang linh kiện chuẩn CO/CQ<br/>(dây thở silicon tiệt trùng) thay thế ngay"]
+      E --> F["Thực hiện đo kiểm an toàn điện (IEC 60601-1)<br/>Dòng rò vỏ &lt; 100µA + Thử tải áp lực kín khí"]
+      F --> G["Nghiệm thu bàn giao lâm sàng 2 bên:<br/>Kỹ sư BME ký bàn giao + Điều dưỡng trưởng ký nhận"]
+      G --> H["Máy phục hồi trạng thái 'Sẵn Sàng Sử Dụng'<br/>Lưu vào Sổ lý lịch máy & Audit Trail"]
+  </div>
+
+  <h3>Quy trình 3: Quản Lý Kho Dược Theo Hạn Dùng FEFO & Dự Trù Mẫu 01/TT22</h3>
+  <p>
+    Trong ngành dược bệnh viện, nguyên tắc <strong>FEFO (First Expired, First Out - Hết hạn trước, Xuất trước)</strong> là yêu cầu pháp lý bắt buộc theo Thông tư 36/2018/TT-BYT GSP:
+  </p>
+  <ul>
+    <li>
+      <strong>Tại sao không dùng FIFO?</strong> Các nhà thầu dược phẩm có thể giao một lô thuốc nhập sau nhưng ngày sản xuất lại cũ hơn và hạn dùng ngắn hơn lô nhập trước. Nếu xuất theo FIFO (nhập trước xuất trước), lô thuốc có hạn dùng ngắn sẽ bị tồn lại cho đến khi hết hạn, gây thiệt hại nghiêm trọng cho ngân sách bệnh viện.
+    </li>
+    <li>
+      <strong>Hệ thống phân loại cảnh báo 3 cấp độ:</strong>
+      <br>• <span class="badge badge-green">An Toàn</span>: Hạn dùng &gt; 6 tháng.
+      <br>• <span class="badge badge-amber">Cận Hạn (Cảnh báo vàng)</span>: Hạn dùng từ 3 – 6 tháng (Hệ thống ưu tiên tự động xuất lô này trước).
+      <br>• <span class="badge badge-red">Nguy Cơ Quá Hạn (Cảnh báo đỏ)</span>: Hạn dùng &lt; 3 tháng (Kích hoạt đề xuất điều chuyển sang khoa có lượng dùng lớn hoặc hoàn trả Kho Dược trung tâm).
+    </li>
+  </ul>
+
+  <h3>Quy trình 4: Giám Sát Chuỗi Lạnh Datalogger & Biệt Trữ Vắc Xin (TT 36 & WHO)</h3>
+  <div class="callout callout-warning">
+    <div class="callout-title">Xử lý tình huống khẩn cấp: Tủ lạnh bảo quản vắc xin mất điện</div>
+    1. Cảm biến Datalogger ghi nhận nhiệt độ tăng vọt từ 4.5°C lên 11.2°C trong 15 phút. Hệ thống lập tức kích hoạt chuông cảnh báo visual đỏ và gửi tin khẩn cấp.<br>
+    2. Điều dưỡng trực chuyển vắc xin sang phích đá bảo quản chuyên dụng đạt chuẩn WHO.<br>
+    3. Hệ thống tự động chuyển toàn bộ vắc xin trong tủ sang trạng thái <strong>"BIỆT TRỮ CÁCH LY (QUARANTINE MODE)"</strong> — Khóa quyền xuất tiêm.<br>
+    4. Khi có điện trở lại, hệ thống <strong>KHÔNG ĐƯỢC TỰ Ý MỞ KHÓA</strong>. Dược sĩ QA phải tính toán chỉ số động học nhiệt Arrhenius (MKT) và kiểm tra chỉ thị màu lọ vắc xin (VVM Level 1). Chỉ khi Ban Giám Đốc và Dược sĩ Kho cùng ký lệnh thẩm định an toàn thì lô vắc xin mới được giải phóng.
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- PHẦN 4 -->
+  <h1>PHẦN 4: HỆ THỐNG 05 BIỂU MẪU HÀNH CHÍNH Y TẾ CHUẨN A4 TÍCH HỢP SẴN</h1>
+  <p>
+    Nhằm đáp ứng yêu cầu số hóa bệnh viện và in ấn hồ sơ bệnh án chuẩn pháp quy khi đoàn thanh tra Bộ Y tế kiểm tra, hệ thống đã tích hợp sẵn <strong>05 biểu mẫu hành chính chuẩn A4</strong>, có thể xem và in trực tiếp từ giao diện phần mềm:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 8%;">STT</th>
+        <th style="width: 25%;">Tên biểu mẫu hành chính</th>
+        <th style="width: 22%;">Căn cứ pháp lý</th>
+        <th style="width: 45%;">Mục đích nghiệp vụ & Các trường thông tin bắt buộc</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>01</strong></td>
+        <td><strong>Sổ Theo Dõi Thuốc Gây Nghiện & Hướng Thần</strong></td>
+        <td>Mẫu số 07, Thông tư 20/2017/TT-BYT</td>
+        <td>Theo dõi nhập - xuất - tồn, số lô, hạn dùng, tên bệnh nhân, số bệnh án, chữ ký người nhận và người phát, kiểm đếm số lượng vỏ ống thủy tinh thu hồi hằng ngày.</td>
+      </tr>
+      <tr>
+        <td><strong>02</strong></td>
+        <td><strong>Phiếu Dự Trù Thuốc / Vật Tư Tiêu Hao</strong></td>
+        <td>Mẫu số 01, Thông tư 22/2011/TT-BYT</td>
+        <td>Dự trù định kỳ bổ sung cơ số tủ trực lâm sàng: Số lượng tồn kho thực tế, cơ số trần an toàn (Max Quota), số lượng đề nghị cấp bù, chữ ký Trưởng khoa lâm sàng và Trưởng khoa Dược.</td>
+      </tr>
+      <tr>
+        <td><strong>03</strong></td>
+        <td><strong>Biên Bản Bàn Giao & Điều Chuyển Tài Sản</strong></td>
+        <td>Mẫu 01-TSC, Nghị định 151/2017 & NĐ 114/2024</td>
+        <td>Hợp thức hóa điều chuyển máy thở, máy sốc tim giữa các khoa phòng (Cấp cứu sang Phòng mổ): Nguyên giá, tỷ lệ hao mòn, lý do điều chuyển, chữ ký 3 bên (Bên giao, Bên nhận, Phòng Vật tư TBYT).</td>
+      </tr>
+      <tr>
+        <td><strong>04</strong></td>
+        <td><strong>Phiếu Mượn Khẩn & Bù Cơ Số Thuốc Ca Đêm</strong></td>
+        <td>Quy chế nội bộ Bệnh viện đa khoa chuẩn</td>
+        <td>Phục vụ rút thuốc khẩn cấp lúc 01:00 AM - 04:00 AM: Mã bệnh án, chỉ định cấp cứu, chữ ký Điều dưỡng mượn thuốc, hạn chốt hoàn bù 07:00 AM sáng hôm sau.</td>
+      </tr>
+      <tr>
+        <td><strong>05</strong></td>
+        <td><strong>Biên Bản Kiểm Định & Nghiệm Thu An Toàn TBYT</strong></td>
+        <td>Nghị định 98/2021 & Chuẩn IEC 60601-1</td>
+        <td>Nghiệm thu kỹ thuật sau sửa chữa máy loại D: Số serial, phụ kiện CO/CQ thay thế, kết quả đo dòng rò vỏ (&lt; 100µA), kết quả đo tải áp lực kín khí, chữ ký kép Kỹ sư BME và Bác sĩ/Điều dưỡng trưởng.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PHẦN 5 -->
+  <h1>PHẦN 5: MA TRẬN PHÂN QUYỀN VAI TRÒ LÂM SÀNG (RBAC)</h1>
+  <p>
+    Hệ thống phân lập nghiêm ngặt trách nhiệm và quyền hạn giữa 5 vị trí nhân sự trong bệnh viện:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Nghiệp vụ / Chức năng</th>
+        <th style="width: 15%; text-align:center;">Điều dưỡng</th>
+        <th style="width: 15%; text-align:center;">Kỹ sư BME</th>
+        <th style="width: 15%; text-align:center;">Dược sĩ</th>
+        <th style="width: 15%; text-align:center;">Bác sĩ</th>
+        <th style="width: 15%; text-align:center;">Giám đốc viện</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Tạo phiếu mượn thuốc khẩn ca đêm</td>
+        <td style="text-align:center;"><span class="badge badge-green">Thực hiện</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-blue">Toàn quyền</span></td>
+      </tr>
+      <tr>
+        <td>Nộp vỏ ống Morphin đã tiêm</td>
+        <td style="text-align:center;"><span class="badge badge-green">Thực hiện</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-blue">Toàn quyền</span></td>
+      </tr>
+      <tr>
+        <td>Duyệt hoàn bù cơ số tủ trực</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-green">Chủ trì</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-blue">Toàn quyền</span></td>
+      </tr>
+      <tr>
+        <td>Ký biên bản tiêu hủy vỏ thuốc độc 3 bên</td>
+        <td style="text-align:center;"><span class="badge badge-blue">Thành viên</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-green">Chủ trì</span></td>
+        <td style="text-align:center;"><span class="badge badge-blue">Làm chứng</span></td>
+        <td style="text-align:center;"><span class="badge badge-amber">Phê duyệt</span></td>
+      </tr>
+      <tr>
+        <td>Báo hỏng máy & phụ kiện TBYT</td>
+        <td style="text-align:center;"><span class="badge badge-green">Thực hiện</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-green">Thực hiện</span></td>
+        <td style="text-align:center;"><span class="badge badge-blue">Toàn quyền</span></td>
+      </tr>
+      <tr>
+        <td>Sửa chữa & Ký nghiệm thu an toàn điện</td>
+        <td style="text-align:center;">(Ký nhận)</td>
+        <td style="text-align:center;"><span class="badge badge-green">Chủ trì</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">(Ký nhận)</td>
+        <td style="text-align:center;"><span class="badge badge-blue">Toàn quyền</span></td>
+      </tr>
+      <tr>
+        <td>Xuất kho dược phẩm theo FEFO</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-green">Thực hiện</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-blue">Toàn quyền</span></td>
+      </tr>
+      <tr>
+        <td>Ký lệnh giải phóng vắc xin biệt trữ</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-blue">Thẩm định QA</span></td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-amber">Ký duyệt</span></td>
+      </tr>
+      <tr>
+        <td>Phê duyệt thanh lý tài sản nhà nước</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">(Đề xuất)</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;">—</td>
+        <td style="text-align:center;"><span class="badge badge-red">Quyết định</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <!-- PHẦN 6 -->
+  <h1>PHẦN 6: BỘ CÂU HỎI & PHẢN BIỆN ĐẮT GIÁ KHI BẢO VỆ ĐỒ ÁN (DEFENSE Q&A)</h1>
+  <p>
+    Dưới đây là 12 câu hỏi thực tế sâu sắc nhất mà Hội đồng chấm điểm (Giảng viên CNTT & Chuyên gia Y tế) thường đặt ra, kèm phương án trả lời hoàn hảo:
+  </p>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 1: "Tại sao em lại chọn làm hệ thống kho lâm sàng bệnh viện thay vì kho hàng thương mại thông thường?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, kho thương mại chỉ giải quyết bài toán mua - bán hàng hóa đơn thuần để tối ưu lợi nhuận. Còn Kho Lâm Sàng Bệnh Viện là bài toán <strong>bảo vệ tính mạng con người và tuân thủ pháp luật y tế nghiêm ngặt</strong>. Đồ án của em giải quyết 3 bài toán đặc thù mà thương mại không có: (1) Cơ chế nợ thuốc cấp cứu ca đêm cứu bệnh nhân trước - hợp thức hóa sau; (2) Cơ chế khóa nợ vỏ ống Morphin theo Thông tư 20 để chống thất thoát ma túy; và (3) Nghiệm thu an toàn điện máy thở theo Nghị định 98 và chuẩn IEC 60601-1. Đề tài này có độ phức tạp nghiệp vụ cao và mang giá trị thực tiễn phụng sự xã hội sâu sắc."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 2: "Tại sao trong y tế bắt buộc áp dụng nguyên tắc FEFO mà không dùng FIFO?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, FIFO căn cứ theo ngày nhập kho, còn FEFO căn cứ theo ngày hết hạn in trên bao bì thuốc. Trong chuỗi cung ứng dược phẩm, nhà phân phối có thể giao một lô thuốc nhập sau nhưng hạn dùng lại ngắn hơn lô nhập trước đó. Nếu máy móc dùng FIFO, lô thuốc cận hạn sẽ bị đọng lại trong kho đến khi hết hạn và phải tiêu hủy, gây lãng phí hàng trăm triệu đồng ngân sách. Do đó, Thông tư 36/2018/TT-BYT GSP bắt buộc mọi phần mềm quản lý kho dược bệnh viện phải ưu tiên xuất theo <strong>FEFO (First Expired, First Out)</strong>."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 3: "Nếu điều dưỡng vô tình làm rơi vỡ ống Morphin trong lúc bẻ nắp thì hệ thống xử lý thế nào?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, theo Điều 15 Thông tư 20/2017/TT-BYT, điều dưỡng không được tự ý xóa nợ. Quy trình thực tế bắt buộc: Điều dưỡng phải thu gom các mảnh thủy tinh vỡ, lập <em>Biên bản giải trình vỡ ống thuốc gây nghiện</em> có chữ ký xác nhận của Bác sĩ trực buồng bệnh làm chứng, sau đó nộp biên bản và mảnh vỡ về Kho Dược. Dược sĩ đối chiếu biên bản thì mới mở khóa xác nhận thu hồi vỏ ống trên phần mềm để cấp bù ống mới."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 4: "Tại sao khi khôi phục điện lưới, buồng vắc xin không tự mở khóa mà phải cần Giám đốc và Dược sĩ ký duyệt?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, đây là nguyên lý an toàn sinh học của WHO. Khi tủ vắc xin mất điện lên 11°C, protein kháng nguyên có thể đã bị biến tính mà mắt thường không thấy được. Việc có điện trở lại chỉ hạ nhiệt độ về 4.5°C chứ không thể phục hồi được hoạt tính sinh học đã mất nếu phơi nhiễm quá lâu. Vì vậy hệ thống bắt buộc duy trì trạng thái <strong>Biệt trữ (Quarantine)</strong> để Dược sĩ QA thẩm định nhiệt độ động học Arrhenius (MKT) và chỉ thị màu lọ vắc xin (VVM Level 1). Chỉ khi Hội đồng xác nhận vắc xin an toàn thì Giám đốc mới ký lệnh giải phóng lô."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 5: "Cơ chế bảo mật chuỗi băm HMAC-SHA256 trong đồ án giải quyết vấn đề gì?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, trong các phần mềm thông thường, quản trị viên CSDL có thể dùng quyền root để can thiệp xóa dấu vết sai phạm (ví dụ sửa giờ tiêm sau khi bệnh nhân tử vong, hoặc xóa lịch sử máy thở báo hỏng). Trong hệ thống của em, mỗi hành động lâm sàng được băm bằng HMAC-SHA256 kết hợp giữa khóa bí mật server, nội dung hành động và <strong>chữ ký băm của bản ghi liền trước</strong>. Bất kỳ sự sửa đổi trực tiếp nào vào CSDL sẽ làm gãy chuỗi băm. Khi chạy endpoint <code>verify-integrity</code>, hệ thống sẽ lập tức phát hiện bản ghi bị can thiệp, bảo đảm tính bất biến theo FDA 21 CFR Part 11 và Nghị định 130/2018/NĐ-CP."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 6: "Vai trò của Trợ lý AI Copilot trong đồ án là gì? Có sợ AI bị ảo giác (hallucination) kê sai thuốc không?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, em quán triệt nguyên tắc kiến trúc: <strong>AI chỉ là một Client phụ trợ (Decoupled Copilot), không can thiệp logic cứng của Backend</strong>. Toàn bộ logic nghiệp vụ (kiểm tra vỏ ống Morphin, sắp xếp FEFO, phân quyền RBAC, xác thực PIN/RFID, khóa chuỗi băm) đều do Backend FastAPI và CSDL thực thi 100% độc lập, hoạt động hoàn hảo ngay cả khi không có AI. AI Copilot chỉ có nhiệm vụ lắng nghe câu lệnh tự nhiên của y bác sĩ để trích dẫn căn cứ luật và mở sẵn biểu mẫu thao tác, đồng thời luôn yêu cầu nhập mã PIN chuyên môn mới được ghi nhận vào hệ thống, do đó loại bỏ hoàn toàn rủi ro ảo giác gây nguy hiểm cho người bệnh."
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 7: "Làm thế nào để phân biệt sự cố TBYT loại D với các loại khác trên giao diện?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, theo Điều 4 Nghị định 98/2021/NĐ-CP, thiết bị loại D (máy thở, máy sốc tim, lọc máu) can thiệp trực tiếp sự sống của người bệnh. Khi người dùng báo hỏng máy loại D, hệ thống tự động gắn badge đỏ khẩn cấp, kích hoạt cờ LOTO 'Ngừng sử dụng', đồng thời đẩy cảnh báo ưu tiên cao qua Telegram Bot đến Kỹ sư BME trực ca bệnh viện. Đối với thiết bị loại B/C (máy điện tim, máy hút dịch), sự cố được xếp vào diện bảo trì theo kế hoạch thông thường."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 8: "Khái niệm 'Chữ ký kép' (Dual-Witness Verification) trong y tế là gì và được lập trình như thế nào?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, trong y tế, các thao tác có rủi ro cao như tiêu hủy thuốc gây nghiện hoặc nghiệm thu máy can thiệp sự sống không được phép thực hiện bởi một cá nhân đơn lẻ. Hệ thống của em áp dụng cơ chế Chữ ký kép: Sau khi người chủ trì (Dược sĩ hoặc Kỹ sư BME) ký xác nhận bằng mã PIN của mình, giao diện hiển thị thêm bước yêu cầu Người làm chứng thứ 2 (Bác sĩ trực hoặc Điều dưỡng trưởng) nhập mã PIN và số CCHN của họ. Bản ghi kiểm toán sau đó lưu trữ cả 2 mã định danh và được đóng gói vào hàm băm HMAC-SHA256."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 9: "Nếu ca trực nửa đêm cúp điện hoặc mất kết nối mạng internet thì làm thế nào?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, hệ thống được thiết kế theo chuẩn máy trạm y tế Offline-First: Frontend duy trì bộ nhớ cục bộ độ trung thực cao (High-Fidelity Reactive State). Khi mất mạng, điều dưỡng vẫn có thể tra cứu danh mục cơ số tủ trực và ghi nhận tạm thời trên máy trạm cục bộ qua Local Storage / IndexedDB. Ngay khi kết nối mạng được khôi phục, hệ thống tự động kích hoạt đồng bộ hóa dữ liệu ngầm lên Backend FastAPI và gửi cảnh báo đối soát."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 10: "Tại sao kiểm kê tài sản công y tế phải chốt vào thời điểm 00:00 ngày 31/12?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, đây là quy định bắt buộc theo Điều 37 Nghị định 151/2017/NĐ-CP và Nghị định 114/2024/NĐ-CP về quản lý tài sản công. Thời điểm 31/12 là thời điểm chốt sổ sách kế toán nhà nước để tính toán tỷ lệ khấu hao, hao mòn tài sản cố định trong năm tài chính, phát hiện tài sản thừa/thiếu, lệch buồng phòng để lập biên bản điều chuyển Mẫu 01-TSC và lập phương án thanh lý tài sản hết niên hạn."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 11: "Chỉ số MKT (Mean Kinetic Temperature) trong bảo quản thuốc có ý nghĩa gì hơn nhiệt độ trung bình cộng thông thường?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, nhiệt độ trung bình cộng số học xem mọi biến thiên nhiệt độ là tuyến tính. Tuy nhiên, tốc độ phân hủy protein và sinh phẩm y tế tăng theo hàm số mũ khi nhiệt độ tăng cao, tuân theo phương trình nhiệt hóa Arrhenius. Do đó, nếu nhiệt độ vọt lên 15°C trong 2 giờ thì tác hại sinh học lớn hơn rất nhiều so với việc duy trì ở 5°C. Chỉ số MKT đưa các biến thiên nhiệt độ vào phương trình Arrhenius để tính ra một mức nhiệt độ tương đương duy nhất phản ánh chính xác mức độ thoái biến sinh học của vắc xin."
+    </div>
+  </div>
+
+  <div class="qa-card">
+    <div class="qa-question">Câu 12: "Nếu tích hợp vào bệnh viện thực tế, hệ thống sẽ kết nối với HIS, EMR, LIS như thế nào?"</div>
+    <div class="qa-answer">
+      <strong>Trả lời:</strong> "Thưa Thầy/Cô, toàn bộ hệ thống được xây dựng theo chuẩn RESTful API với Pydantic Schemas và chuẩn thông điệp y tế HL7/FHIR: (1) Kết nối với HIS để đồng bộ thông tin nhập viện và buồng giường của bệnh nhân; (2) Kết nối với EMR (Bệnh án điện tử) để nhận đơn thuốc bù cơ số có ký số của Bác sĩ điều trị theo Thông tư 46/2018/TT-BYT; (3) Kết nối với hệ thống ERP/Tài chính bệnh viện để đồng bộ biên bản điều chuyển tài sản Mẫu 01-TSC phục vụ kiểm kê nhà nước."
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+      themeVariables: {
+        primaryColor: '#e0f2fe',
+        primaryTextColor: '#0369a1',
+        primaryBorderColor: '#0284c7',
+        lineColor: '#64748b',
+        secondaryColor: '#f1f5f9',
+        tertiaryColor: '#ffffff'
+      }
+    });
+  </script>
+</body>
+</html>

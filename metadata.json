@@ -1,0 +1,6 @@
+{
+  "name": "Trợ Lý Kho Y Tế Ảo - MedStore AI Assistant",
+  "description": "Trợ lý ảo AI quản lý kho thiết bị, vật tư y tế và dược phẩm lâm sàng theo Nghị định 98/2021, Thông tư 22/2011 và Thông tư 36/2018 GSP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

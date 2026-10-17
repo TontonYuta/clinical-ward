@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đồ Án 2: Chatbot / AI Agent Quản Lý Kho Y Tế Lâm Sàng</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .slide {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-screen overflow-hidden flex flex-col select-none">
+
+  <!-- Top Slim Progress Bar -->
+  <div class="h-1.5 bg-slate-800 w-full shrink-0 relative overflow-hidden">
+    <div id="progressBar" class="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-300" style="width: 8.33%;"></div>
+  </div>
+
+  <!-- Header Bar -->
+  <header class="h-12 px-6 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-6 h-6 rounded bg-teal-500/20 text-teal-400 flex items-center justify-center font-black text-xs border border-teal-500/30">
+        +
+      </div>
+      <span class="text-xs font-bold tracking-wider text-slate-300 uppercase">
+        Đồ Án 2 · Trợ Lý Kho Y Tế Lâm Sàng &amp; AI Agent
+      </span>
+      <span class="text-slate-600">|</span>
+      <span class="text-xs font-medium text-slate-400 hidden md:inline">
+        Chuẩn Bộ Y Tế: TT 22, TT 20, NĐ 98, TT 36 GSP, NĐ 151
+      </span>
+    </div>
+
+    <div class="flex items-center gap-4 text-xs font-mono">
+      <span id="slideCounter" class="text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60">
+        01 / 12
+      </span>
+      <button onclick="toggleFullScreen()" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition" title="Toàn màn hình (F)">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Slide Canvas Container -->
+  <main class="flex-1 overflow-hidden relative p-4 md:p-8 flex items-center justify-center">
+
+    <!-- ========================================== -->
+    <!-- SLIDE 1: BÌA BÁO CÁO ĐỒ ÁN 2 -->
+    <!-- ========================================== -->
+    <section class="slide active flex-col items-center justify-center text-center max-w-5xl mx-auto h-full space-y-6">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-400 text-xs font-semibold tracking-wide uppercase">
+        <i data-lucide="shield-check" class="w-4 h-4"></i>
+        <span>Báo Cáo Nghiệm Thu Đồ Án 2 (Capstone Project)</span>
+      </div>
+
+      <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight max-w-4xl">
+        Nghiên Cứu, Xây Dựng Chatbot / AI Agent Quản Lý Kho Thiết Bị, Vật Tư Y Tế &amp; Dược Phẩm
+      </h1>
+
+      <p class="text-sm md:text-base text-slate-400 max-w-3xl leading-relaxed">
+        Giải pháp "Trợ lý kho y tế ảo hiện trường" giải phóng nhân viên y tế khỏi áp lực sổ sách ca đêm, chống nợ cơ số tủ trực đền tiền túi, quản trị hạn dùng FEFO và bảo đảm an toàn người bệnh theo luật định.
+      </p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 w-full max-w-3xl">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-left">
+          <div class="text-[11px] text-slate-400">Chuyên ngành</div>
+          <div class="text-xs font-bold text-slate-200 mt-0.5">Khoa học máy tính / HTTT</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-left">
+          <div class="text-[11px] text-slate-400">Kiến trúc</div>
+          <div class="text-xs font-bold text-teal-400 mt-0.5">Action-Oriented AI Agent</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-left">
+          <div class="text-[11px] text-slate-400">Quy chuẩn</div>
+          <div class="text-xs font-bold text-emerald-400 mt-0.5">100% Luật Y Tế Việt Nam</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-left">
+          <div class="text-[11px] text-slate-400">Bảo mật &amp; Ký số</div>
+          <div class="text-xs font-bold text-amber-400 mt-0.5">FDA 21 CFR Part 11 / NĐ 130</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 2: BỐI CẢNH THỰC TẾ & PAIN POINTS -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-5">
+      <div class="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+        <span>Bối cảnh hiện trường bệnh viện Việt Nam</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        5 Áp Lực Nghiêm Trọng Khiến Nhân Viên Y Tế Bế Tắc
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-2">
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold">1</div>
+          <h3 class="text-sm font-bold text-slate-200">Nợ phiếu &amp; Đền tiền túi ca đêm</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Ưu tiên cứu sinh mạng lúc 1h sáng, bốc thuốc/vật tư dùng trước. Sáng hôm sau quên bù cơ số trước khi BN xuất viện &rarr; BHYT từ chối &rarr; Điều dưỡng tự bỏ tiền túi đền.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">2</div>
+          <h3 class="text-sm font-bold text-slate-200">Mất vỏ ống Morphin &rarr; Trách nhiệm hình sự</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Thuốc gây nghiện bảo quản nghiêm ngặt. Thiếu 1 vỏ ống thủy tinh rỗng sau tiêm là kíp trực bị dừng việc để giải trình thanh tra y tế và công an.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">3</div>
+          <h3 class="text-sm font-bold text-slate-200">Máy tiền tỷ đắp chiếu vì hỏng phụ kiện</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Máy thở, máy sốc tim dừng hoạt động chỉ vì xì dây thở, đứt cáp điện tim. Thủ tục báo hỏng giấy tờ mất 1-2 tuần làm chậm trễ cấp cứu.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center font-bold">4</div>
+          <h3 class="text-sm font-bold text-slate-200">Tủ vắc xin mất điện âm thầm ban đêm</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Tủ lạnh GSP trữ sinh phẩm, vắc xin nhảy cầu dao lúc 2h sáng. Không có cảm biến cảnh báo tức thời làm hỏng lô thuốc tiền tỷ do quá nhiệt 8°C.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 col-span-1 md:col-span-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">5</div>
+          <h3 class="text-sm font-bold text-slate-200">Kiểm kê 31/12 &rarr; Máy một đằng, sổ một nẻo</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Bệnh nhân nặng chuyển khoa kéo theo máy thở từ Cấp cứu lên Hồi sức ICU mà không kịp làm biên bản điều chuyển NĐ 151. Cuối năm đối soát lệch hàng trăm thiết bị.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 3: KIẾN TRÚC GIẢI PHÁP & AI AGENT -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-5">
+      <div class="flex items-center gap-2 text-teal-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="cpu" class="w-4 h-4"></i>
+        <span>Mô hình kỹ thuật hệ thống</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Kiến Trúc Action-Oriented AI Agent &amp; Trợ Lý Hiện Trường
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="mic" class="w-4 h-4"></i>
+            <span>1. Đa Phương Thức Hiện Trường</span>
+          </div>
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li>• <strong>Giọng nói (Voice):</strong> Ra lệnh bằng micro lúc đang đeo găng vô trùng.</li>
+            <li>• <strong>Ảnh chụp hiện trường:</strong> Chụp dây thở xì, màn hình máy báo lỗi.</li>
+            <li>• <strong>Quét mã QR:</strong> Quét Barcode/QR trên thân máy tra cứu sổ lý lịch.</li>
+            <li>• <strong>Tin nhắn văn bản:</strong> Gõ tắt siêu tốc trong 10 giây.</li>
+          </ul>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+            <span>2. Lõi Trí Tuệ Lâm Sàng</span>
+          </div>
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li>• <strong>Clinical NLP Engine:</strong> Trích xuất thuốc, số lượng, buồng bệnh.</li>
+            <li>• <strong>Function Calling:</strong> Tự động kích hoạt hành động ghi nợ, tạo ticket.</li>
+            <li>• <strong>Khóa an toàn logic:</strong> Chặn hoàn bù khi chưa thu vỏ Morphin.</li>
+            <li>• <strong>Cron Service:</strong> Bắn chuông báo nhắc nợ lúc 07:00 sáng.</li>
+          </ul>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="database" class="w-4 h-4"></i>
+            <span>3. Kho Dữ Liệu &amp; Kiểm Toán</span>
+          </div>
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li>• <strong>Liên thông khép kín:</strong> Duyệt nợ Tủ trực &rarr; Tự trừ kho FEFO.</li>
+            <li>• <strong>Mất điện tủ lạnh:</strong> Tự động tạo Ticket kỹ thuật cho BME.</li>
+            <li>• <strong>Bất biến (Audit Trail):</strong> Mã băm SHA256, CCHN, thời gian thực.</li>
+            <li>• <strong>Dual-Witness:</strong> Bắt buộc 2 nhân viên độc lập cùng ký số.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 4: PHÂN QUYỀN RBAC & CÁCH LY GIAO DIỆN -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="shield" class="w-4 h-4"></i>
+        <span>Role-Based Access Control (RBAC)</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Cách Ly Giao Diện: Chức Vụ Nào Thấy Đúng Phân Hệ Đó
+      </h2>
+
+      <div class="overflow-hidden border border-slate-800 rounded-xl bg-slate-900/90">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-800/80 text-slate-300 font-bold border-b border-slate-700">
+            <tr>
+              <th class="py-2.5 px-3">Vai trò chức danh</th>
+              <th class="py-2.5 px-3">Số phân hệ</th>
+              <th class="py-2.5 px-3">Các phân hệ hiển thị</th>
+              <th class="py-2.5 px-3">Tác vụ chuyên trách &amp; Khóa an toàn</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 text-slate-300">
+            <tr>
+              <td class="py-2.5 px-3 font-bold text-teal-400">Điều Dưỡng Trực A9</td>
+              <td class="py-2.5 px-3 font-mono font-bold">1 / 5</td>
+              <td class="py-2.5 px-3">Sổ nợ tủ trực</td>
+              <td class="py-2.5 px-3">Mượn khẩn, Thu vỏ TT 20. <em>Ẩn nút Hội đồng hủy vỏ</em>.</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3 font-bold text-blue-400">Kỹ Sư Y Sinh (BME)</td>
+              <td class="py-2.5 px-3 font-mono font-bold">2 / 5</td>
+              <td class="py-2.5 px-3">Sự cố &amp; Kiểm định · Quản lý tài sản</td>
+              <td class="py-2.5 px-3">Thử tải an toàn điện NĐ 98, Điều chuyển NĐ 151. <em>Khóa nút Thanh lý</em>.</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3 font-bold text-emerald-400">Dược Sĩ Kho Dược</td>
+              <td class="py-2.5 px-3 font-mono font-bold">3 / 5</td>
+              <td class="py-2.5 px-3">Sổ nợ · Kho Dược FEFO · Chuỗi lạnh GSP</td>
+              <td class="py-2.5 px-3">Duyệt xuất bù TT 22, Chủ trì HĐ hủy vỏ TT 20, Xuất FEFO, Thẩm định VVM.</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3 font-bold text-cyan-400">Bác Sĩ Điều Trị</td>
+              <td class="py-2.5 px-3 font-mono font-bold">2 / 5</td>
+              <td class="py-2.5 px-3">Sổ nợ tủ trực · Sự cố &amp; Kiểm định</td>
+              <td class="py-2.5 px-3">Kê đơn hoàn bù, Báo hỏng. <em>Nút chuyển 'Chờ BME nghiệm thu'</em>.</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3 font-bold text-amber-400">Ban Giám Đốc</td>
+              <td class="py-2.5 px-3 font-mono font-bold">5 / 5</td>
+              <td class="py-2.5 px-3">Toàn bộ 5 phân hệ lâm sàng &amp; tài sản</td>
+              <td class="py-2.5 px-3 font-bold text-amber-300">Độc quyền: Phê duyệt quyết định thanh lý tài sản công NĐ 151 &amp; NĐ 114.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 5: PHÂN HỆ 1 - SỔ NỢ TỦ TRỰC (TT 22) -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-teal-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span>Phân hệ 1 · Thông tư 22/2011 &amp; TT 23/2011/TT-BYT</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Sổ Nợ Tủ Trực: Mượn Khẩn Đêm &amp; Chuông Nhắc 07:00 Sáng
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs text-slate-300">
+          <div class="font-bold text-sm text-teal-300 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center text-xs">1</span>
+            Ghi nhận mượn khẩn trong 10 giây (Fast Logging)
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            Điều dưỡng ra lệnh thoại hoặc nhắn tin: <em>"Lấy 2 lọ Morphin và 1 bộ dây truyền cấp cứu buồng 3"</em>. AI tự động lập mã phiếu <code>PN-2026-089</code> gắn trạng thái <strong>Đang nợ</strong>.
+          </p>
+          <div class="font-bold text-sm text-amber-300 flex items-center gap-2 pt-2">
+            <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs">2</span>
+            Chuông nhắc giao ban tự động 07:00 sáng
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            Đúng 07:00 sáng, hệ thống phát tín hiệu âm thanh và đẩy thông báo nhắc điều dưỡng trưởng và bác sĩ kê đơn thuốc hoàn bù trước khi BN làm thủ tục xuất viện.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs text-slate-300">
+          <div class="font-bold text-sm text-emerald-300 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">3</span>
+            Hoàn bù khép kín &amp; Tự động trừ kho FEFO
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            Dược sĩ tiếp nhận đơn thuốc, xác thực mã PIN / thẻ RFID để duyệt. Hệ thống đóng sổ nợ tại tủ trực cấp cứu, đồng thời tự động trừ kho Dược bệnh viện theo nguyên tắc hạn gần xuất trước.
+          </p>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[11px] text-emerald-400 mt-2">
+            &gt; PN-2026-089: Morphin sulfat 10mg &rarr; ĐÃ HOÀN BÙ<br>
+            &gt; Kho Dược: Lô MP24-X4 trừ 2 ống (Tồn: 48, Cạn kho &lt; Min)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 6: PHÂN HỆ 1 (ĐẶC THÙ) - VỎ MORPHIN (TT 20) -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="flame" class="w-4 h-4"></i>
+        <span>Phân hệ 1 (Đặc thù) · Thông tư 20/2017/TT-BYT</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Khóa Logic Thuốc Gây Nghiện &amp; Hội Đồng Tiêu Hủy Vỏ Ống
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-rose-400 uppercase">1. Khóa Hoàn Bù (Narcotic Lockout)</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Theo Điều 15 Thông tư 20, tiêm xong bắt buộc phải thu hồi vỏ ống rỗng. Nếu chưa nộp vỏ, nút "Hoàn bù" bị <strong>khóa cứng</strong> với nhãn <code>🔒 Khóa: Chờ nộp vỏ (TT 20)</code>.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-amber-400 uppercase">2. Nộp Vỏ Vào Khay Khóa</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Điều dưỡng kiểm đếm vỏ ống thực tế, bấm nút "Thu hồi vỏ", xác thực chữ ký điện tử. Hệ thống chuyển trạng thái sang <code>Đã nộp khay</code> và mở khóa nút hoàn bù.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-purple-400 uppercase">3. Hội Đồng Hủy Vỏ (Dual-Witness)</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Dược sĩ chủ trì, Điều dưỡng trưởng đồng ký chứng kiến. Hai bên nhập mã PIN xác thực lập biên bản nghiền nát vỏ ống thủy tinh xử lý rác y tế nguy hại.
+          </p>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-center gap-3">
+        <i data-lucide="shield-alert" class="w-5 h-5 shrink-0 text-rose-400"></i>
+        <span><strong>Nguyên tắc sống còn:</strong> 100% thuốc gây nghiện phải khép kín vòng đời từ lúc mở két &rarr; tiêm BN &rarr; thu vỏ &rarr; lập hội đồng hủy vỏ. Không thể làm giả phiếu bù.</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 7: PHÂN HỆ 2 - THIẾT BỊ Y TẾ (NĐ 98 & TT 05) -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-blue-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="wrench" class="w-4 h-4"></i>
+        <span>Phân hệ 2 · Nghị định 98/2021 &amp; Thông tư 05/2022/TT-BYT</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Sổ Lý Lịch Máy, Báo Hỏng Phụ Kiện &amp; Thử Tải An Toàn Điện
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 text-xs text-slate-300">
+          <div class="font-bold text-sm text-blue-300">1. Báo Hỏng Phụ Kiện &amp; Phân Loại Rủi Ro C/D</div>
+          <p class="text-slate-400 leading-relaxed">
+            Điều dưỡng chụp ảnh dây thở máy Bennett 840 bị xì khí hoặc bản cực sốc tim bong tróc gửi AI. Chatbot phân tích mức độ khẩn cấp (Loại D - can thiệp sinh mạng) và sinh ticket tức thời cho Kỹ sư BME.
+          </p>
+          <div class="font-bold text-sm text-indigo-300 pt-1">2. Sổ Lý Lịch Máy &amp; Cảnh Báo Tem An Toàn</div>
+          <p class="text-slate-400 leading-relaxed">
+            Tra cứu toàn bộ lịch sử sửa chữa, phụ tùng CO/CQ đã thay. Hệ thống nhắc nhở trước 30 ngày khi tem kiểm định đo lường của Viện Đo Lường (NIEMET) sắp hết hạn.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 text-xs text-slate-300">
+          <div class="font-bold text-sm text-emerald-300">3. Bắt Buộc "Thử Tải An Toàn Điện" Trước Bàn Giao</div>
+          <p class="text-slate-400 leading-relaxed">
+            Bác sĩ không được tự ý đưa máy vào dùng lại ngay sau khi sửa. Kỹ sư BME bắt buộc phải thực hiện đo dòng rò (Leakage Current), đo điện trở nối đất và thử tải thông khí trên phổi giả.
+          </p>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
+            <div class="font-bold text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+              <span>Biên bản kiểm định đạt chuẩn NĐ 98:</span>
+            </div>
+            <div>• Dòng rò vỏ máy: &lt; 100 &micro;A (Đạt)</div>
+            <div>• Áp lực đỉnh Ppeak: 25 cmH2O (Đạt)</div>
+            <div>• Trạng thái: Chuyển sang <strong>Đã bàn giao buồng</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 8: PHÂN HỆ 3 - KHO DƯỢC FEFO (TT 36 GSP) -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="boxes" class="w-4 h-4"></i>
+        <span>Phân hệ 3 · Thông tư 36/2018/TT-BYT (GSP) &amp; TT 22/2011</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Kho Dược FEFO, Hạn Tiệt Trùng &amp; Dự Trù Mua Sắm Bổ Sung
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-emerald-400 uppercase">1. Nguyên Tắc FEFO Bắt Buộc</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            First Expired, First Out: Bất kể nhập ngày nào, lô thuốc hoặc chỉ phẫu thuật có hạn dùng/hạn tiệt trùng ngắn hơn bắt buộc xếp ở vị trí ưu tiên để xuất dùng trước.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-amber-400 uppercase">2. Cảnh Báo Cạn Kho (Min Stock)</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Khi lượng xuất kho làm tồn kho hạ xuống dưới ngưỡng cơ số bảo đảm an toàn (Min Threshold), hệ thống bật cảnh báo màu hổ phách để tránh đứt gãy nguồn cung cấp cứu.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-teal-400 uppercase">3. Dự Trù Bổ Sung Lên Giám Đốc</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Dược sĩ bấm "Lập phiếu dự trù", hệ thống tự động gom các lô cạn kho vào danh mục dự trù theo mẫu Thông tư 22, ký số điện tử gửi Ban Giám Đốc phê duyệt mua sắm.
+          </p>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+        <span>Ví dụ thực tế: Chỉ phẫu thuật Catgut 3/0 (Lô C624 còn 36 ngày) &rarr; Xuất trước lô C625 (còn 304 ngày)</span>
+        <span class="text-emerald-400 font-mono font-bold">FEFO COMPLIANT</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 9: PHÂN HỆ 4 - CHUỖI LẠNH GSP (TT 36) -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="thermometer-snowflake" class="w-4 h-4"></i>
+        <span>Phân hệ 4 · Thông tư 36/2018/TT-BYT GSP &amp; Chuỗi Lạnh WHO PQS</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Giám Sát Chuỗi Lạnh 2-8°C &amp; Biệt Trữ Vắc Xin (Quarantine)
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs text-slate-300">
+          <div class="font-bold text-sm text-rose-400 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs">1</span>
+            Sự Cố Mất Điện 2h Sáng (Nhiệt độ vọt lên 11°C)
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            Hệ thống hú còi báo động khẩn cấp, đẩy thông báo Telegram cho Dược sĩ trực. <strong>AI tự động sinh Ticket SC-2026-045</strong> chuyển thẳng cho Kỹ sư BME đến kiểm tra nguồn điện dự phòng.
+          </p>
+
+          <div class="font-bold text-sm text-amber-400 flex items-center gap-2 pt-1">
+            <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs">2</span>
+            Kích Hoạt Quy Chế Biệt Trữ (Điều 12 TT 36)
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            Khi điện lưới phục hồi (nhiệt độ về 4.5°C), vắc xin <strong>tuyệt đối không được tiêm ngay</strong>. Hệ thống tự động niêm phong biệt trữ 1.250 liều vắc xin sang trạng thái Quarantine.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs text-slate-300">
+          <div class="font-bold text-sm text-emerald-400 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">3</span>
+            Thẩm Định VVM &amp; Lệnh Phóng Thích Lô (Batch Release)
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            Tổ QA Dược kiểm tra chỉ thị nhiệt độ lọ vắc xin (VVM Stage 1 - Đạt) và tính toán Nhiệt độ Động học Trung bình (MKT = 5.6°C). Hội đồng Dược ký số kép giải phóng lô để đưa vào tiêm chủng an toàn.
+          </p>
+
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono text-cyan-300">
+            &gt; VVM Status: Cấp 1 (Chưa đổi màu)<br>
+            &gt; MKT Temp: 5.6°C (Ngưỡng an toàn &lt; 8°C)<br>
+            &gt; Lệnh phóng thích: DS. Bích Ngọc &amp; KS. Đặng Nam ký duyệt
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 10: PHÂN HỆ 5 - TÀI SẢN NĐ 151 -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-purple-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="building-2" class="w-4 h-4"></i>
+        <span>Phân hệ 5 · Nghị định 151/2017/NĐ-CP &amp; NĐ 114/2024/NĐ-CP</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Kiểm Kê 31/12, Điều Chuyển &amp; Thẩm Quyền Thanh Lý Tài Sản
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 text-xs text-slate-300">
+          <div class="font-bold text-sm text-purple-300">1. Quét QR Phát Hiện Máy Lệch Buồng Bệnh</div>
+          <p class="text-slate-400 leading-relaxed">
+            Tổ kiểm kê quét QR máy thở Bennett 840 tại Phòng Mổ 2: Hệ thống cảnh báo máy đang nằm sai buồng so với sổ sách kế toán (Khoa Cấp cứu A9).
+          </p>
+          <div class="font-bold text-sm text-indigo-300">2. Biên Bản Điều Chuyển (Mẫu 01/TSC-ĐC)</div>
+          <p class="text-slate-400 leading-relaxed">
+            Kỹ sư BME và Điều dưỡng trưởng bấm "Điều chuyển", ký số biên bản bàn giao hai bên để cập nhật sổ sách kế toán khớp 100% với hiện trường.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 text-xs text-slate-300">
+          <div class="font-bold text-sm text-amber-300">3. Thẩm Quyền Thanh Lý Độc Quyền Của Giám Đốc</div>
+          <p class="text-slate-400 leading-relaxed">
+            Theo Điều 3 Nghị định 114/2024, chỉ Giám đốc mới có thẩm quyền quyết định thanh lý tài sản công. Kỹ sư BME chỉ thấy nhãn <code>🔒 Chờ GĐ thanh lý</code>.
+          </p>
+          <p class="text-slate-400 leading-relaxed">
+            Khi Ban Giám Đốc đăng nhập, nút <strong>Thanh lý</strong> mở khóa để Giám đốc ký tờ trình Hội đồng thanh lý máy X-quang hỏng ngưng dùng trên 10 năm hao mòn 95%.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 11: AN NINH NGẦM & BẢO VỆ DỮ LIỆU LÂM SÀNG -->
+    <!-- ========================================== -->
+    <section class="slide flex-col justify-center max-w-5xl mx-auto h-full space-y-4">
+      <div class="flex items-center gap-2 text-teal-400 text-xs font-bold uppercase tracking-wider">
+        <i data-lucide="shield-check" class="w-4 h-4"></i>
+        <span>An Ninh Vận Hành Ngầm &amp; Bảo Vệ Dữ Liệu Lâm Sàng</span>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+        Bảo Mật Hoạt Động Ngầm (Security by Design) · Giao Diện Thuần Y Tế
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-teal-400 uppercase">1. Trải Nghiệm Thuần Y Tế</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Ứng dụng ẩn toàn bộ mã băm kỹ thuật và chuỗi ký tự mật mã rườm rà. Nhân viên y tế chỉ thao tác với giao diện lâm sàng: Mã bệnh nhân, tên thuốc, số lô, chứng chỉ hành nghề.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-purple-400 uppercase">2. Ký Số Có Người Làm Chứng</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Bắt buộc 2 nhân viên y tế độc lập thuộc 2 chức danh cùng xác thực qua mã PIN/Thẻ khi hủy vỏ Morphin, bàn giao máy thở, giải phóng lô vắc xin theo Thông tư 20/2017 &amp; NĐ 130.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="text-xs font-bold text-amber-400 uppercase">3. Kiểm Toán &amp; Khóa Sổ Bất Biến</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Mọi thao tác được hệ thống tự động băm SHA-256 và niêm phong ngầm vào sổ nhật ký lưu trữ cố định. Trạng thái hiển thị thân thiện: <em>Đã xác nhận &amp; Khóa sổ</em>.
+          </p>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 flex items-center justify-between">
+        <span>Giao diện lâm sàng: Tự động khóa sổ &amp; liên kết CCHN · Mã băm bảo mật chạy ngầm 100%</span>
+        <span class="text-emerald-400 font-bold">AN TOÀN PHÁP LÝ</span>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SLIDE 12: TỔNG KẾT & DEMO VIDEO -->
+    <!-- ========================================== -->
+    <section class="slide flex-col items-center justify-center text-center max-w-5xl mx-auto h-full space-y-5">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wide uppercase">
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+        <span>Tổng Kết Nghiệm Thu Đồ Án 2</span>
+      </div>
+
+      <h2 class="text-3xl md:text-4xl font-black text-white tracking-tight">
+        Hệ Thống Đã Hoàn Thiện 100% Nghiệp Vụ &amp; Sẵn Sàng Vận Hành
+      </h2>
+
+      <p class="text-sm text-slate-400 max-w-3xl leading-relaxed">
+        Toàn bộ 5 quy trình nghiệp vụ lâm sàng đã được mã hóa, liên thông tự động khép kín, vượt qua 100% bài kiểm thử tự động Playwright và đã được ghi hình video demo chi tiết.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-3xl pt-2">
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left">
+          <div class="text-xs font-bold text-teal-400">Kiểm Thử Playwright</div>
+          <div class="text-sm font-black text-white mt-1">100% PASS</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Biên dịch 0 lỗi TypeScript</div>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left">
+          <div class="text-xs font-bold text-emerald-400">Video Demo 1080p</div>
+          <div class="text-sm font-black text-white mt-1">Full-HD Walkthrough</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Test từng chức năng nhiều lần</div>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left">
+          <div class="text-xs font-bold text-amber-400">Hồ Sơ Tài Liệu</div>
+          <div class="text-sm font-black text-white mt-1">Chuẩn Hóa Đầy Đủ</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Cẩm nang, Báo cáo RBAC, SRS</div>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <span class="text-xs text-slate-500 font-mono">Dự án Đồ Án 2 · Học Viện / Đại Học Khoa Học Máy Tính &amp; HTTT</span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <footer class="h-14 px-6 border-t border-slate-800/80 bg-slate-900/60 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-2 text-xs text-slate-400">
+      <span>Dùng phím <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[11px] text-slate-200">&larr;</kbd> <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[11px] text-slate-200">&rarr;</kbd> hoặc Space để chuyển slide</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="prevSlide()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition shadow-xs cursor-pointer">
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        <span>Trước</span>
+      </button>
+
+      <button onclick="nextSlide()" class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-xs cursor-pointer">
+        <span>Tiếp theo</span>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const counter = document.getElementById('slideCounter');
+    const progressBar = document.getElementById('progressBar');
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        if (idx === currentSlide) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+
+      const displayNum = String(currentSlide + 1).padStart(2, '0');
+      const totalNum = String(totalSlides).padStart(2, '0');
+      counter.innerText = `${displayNum} / ${totalNum}`;
+      progressBar.style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullScreen();
+      }
+    });
+
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
