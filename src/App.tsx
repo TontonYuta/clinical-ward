@@ -1171,6 +1171,41 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       setPrintableInitialType(formType as any);
       setIsPrintableFormOpen(true);
       markExecuted();
+    } else if (actionType === 'IMPORT_OCR_INVOICE') {
+      const items = cardData?.items || [];
+      const newBatches: InventoryBatch[] = items.map((it: any, idx: number) => ({
+        id: `batch-ocr-${Date.now()}-${idx}`,
+        itemCode: `VT-${Math.floor(1000 + Math.random() * 9000)}`,
+        itemName: it.name,
+        category: it.isNarcotic ? 'Thuốc gây nghiện' : 'Kháng sinh',
+        batchNumber: it.batch || it.batchNumber,
+        expiryDate: it.expiry || it.expiryDate,
+        daysLeft: 180,
+        isNearExpiry: false,
+        currentStock: it.quantity,
+        unit: it.unit || 'lọ',
+        warehouseLocation: it.isNarcotic ? 'Tủ sắt thuốc độc 2 khóa' : 'Kệ A1 - Tầng 2',
+        storageCondition: '15-25°C GSP',
+        priorityOrder: 10,
+        minThreshold: 20,
+        maxThreshold: 300,
+        isLowStock: false
+      }));
+
+      setBatches(prev => [...newBatches, ...prev]);
+      markExecuted();
+      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('fefo')) {
+        setCurrentTab('fefo');
+      }
+      if (!isAudioMuted) clinicalAudio.playSuccessChime();
+
+      const confirmMsg: ChatMessage = {
+        id: `msg-ocr-confirm-${Date.now()}`,
+        sender: 'system',
+        text: `📦 **Nhập kho FEFO tự động thành công từ Hóa đơn GTGT (${cardData.invoiceNumber || 'HĐ-2026'})**:\n• **Nhà cung cấp**: ${cardData.supplier || 'CPC1'}\n• **Tổng số mặt hàng đã nhập**: ${newBatches.length} danh mục\n• **Nguyên tắc áp dụng**: First Expired, First Out (Thông tư 36/2018/TT-BYT GSP).`,
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatMessages(prev => [...prev, confirmMsg]);
     }
   };
 

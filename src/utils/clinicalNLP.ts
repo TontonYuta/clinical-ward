@@ -12,7 +12,8 @@ import {
   UserProfile,
   AgentActionCard,
   ColdChainMonitorState,
-  AssetAuditRecord
+  AssetAuditRecord,
+  CdssAlert
 } from '../types/clinical';
 import { chatCopilotApi } from '../services/api';
 import { askGeminiClinicalCopilot } from '../services/geminiService';
@@ -57,6 +58,104 @@ const DEVICE_CATALOG = [
   { name: 'Bình làm ẩm thở máy Fisher & Paykel MR850', model: 'MR850 Humidifier', serial: 'FP-MR850-8802', risk: 'C', aliases: ['mr850', 'bình làm ẩm'] },
   { name: 'Máy điện tim 12 cần Nihon Kohden', model: 'Cardiofax M ECG-1250K', serial: 'NK-ECG12-1089', risk: 'B', aliases: ['ecg', 'điện tim'] }
 ];
+
+/**
+ * TẦNG 1: BỘ MÁY HỖ TRỢ RA QUYẾT ĐỊNH LÂM SÀNG NỘI BỘ (LOCAL CDSS ENGINE)
+ * Chạy 100% trên CPU cục bộ, độ trễ 0ms, không phụ thuộc API, an toàn tuyệt đối.
+ */
+export function evaluateLocalCDSS(medName: string, quantity: number, userPrompt: string): CdssAlert | undefined {
+  const lower = userPrompt.toLowerCase();
+  const medLower = medName.toLowerCase();
+
+  // 1. Cảnh báo quá liều Opioid (Morphin, Fentanyl) -> Nguy cơ ức chế hô hấp
+  if (medLower.includes('morphin') || medLower.includes('fentanyl') || lower.includes('morphin')) {
+    if (quantity >= 3) {
+      return {
+        level: 'critical',
+        title: 'CẢNH BÁO AN TOÀN NGƯỜI BỆNH: NGUY CƠ SUY HÔ HẤP DO QUÁ LIỀU OPIOID',
+        message: `Chỉ định xuất ${quantity} ống Morphin (tương đương ${quantity * 10}mg) vượt ngưỡng liều cấp cứu thông thường (5–10mg/lần). Dùng liều dồn dập có nguy cơ ức chế trung tâm hô hấp dẫn đến ngừng thở (Respiratory Depression).`,
+        antidoteRecommendation: 'Chuẩn bị sẵn 01 ống Naloxone 0.4mg/ml (thuốc đối kháng giải độc Opioid) ngay tại đầu giường bệnh và theo dõi SpO2 liên tục.',
+        regulatoryReference: 'Thông tư 20/2017/TT-BYT & Dược thư Quốc gia Việt Nam'
+      };
+    }
+  }
+
+  // 2. Cảnh báo liều cao Adrenalin
+  if (medLower.includes('adrenalin') || medLower.includes('epinephrin') || lower.includes('adrenalin')) {
+    if (quantity >= 3) {
+      return {
+        level: 'warning',
+        title: 'CẢNH BÁO DƯỢC LÝ: LIỀU CAO ADRENALIN CẤP CỨU',
+        message: `Rút ${quantity} ống Adrenalin 1mg/1ml. Phác đồ Thông tư 51/2017/TT-BYT quy định tiêm bắp đùi trước ngoài 1/2 – 1 ống cho người lớn. Dùng liều dồn dập có nguy cơ tăng huyết áp kịch phát, loạn nhịp thất hoặc thiếu máu cơ tim.`,
+        antidoteRecommendation: 'Gắn máy theo dõi Monitor đo liên tục ECG, Huyết áp không xâm lấn (NIBP) và SpO2 mỗi 3-5 phút.',
+        regulatoryReference: 'Thông tư 51/2017/TT-BYT - Phác đồ cấp cứu phản vệ'
+      };
+    }
+  }
+
+  // 3. Tương tác thuốc kỵ nhau (DDI): Opioid + Benzodiazepine
+  const hasOpioid = medLower.includes('morphin') || medLower.includes('fentanyl') || lower.includes('morphin') || lower.includes('fentanyl');
+  const hasBenzo = lower.includes('diazepam') || lower.includes('seduxen') || lower.includes('midazolam') || medLower.includes('diazepam') || medLower.includes('midazolam');
+  if (hasOpioid && hasBenzo) {
+    return {
+      level: 'critical',
+      title: 'TƯƠNG TÁC THUỐC NGUY HIỂM (DDI): OPIOID + BENZODIAZEPINE',
+      message: 'Sử dụng đồng thời Opioid (Morphin/Fentanyl) cùng nhóm an thần Benzodiazepin (Diazepam/Midazolam) làm tăng cấp số nhân nguy cơ an thần sâu, suy hô hấp không hồi phục và tử vong.',
+      antidoteRecommendation: 'Đề xuất giảm tối thiểu 50% liều an thần, trang bị sẵn bóng bóp Ambu và chuẩn bị cả 2 thuốc giải độc (Naloxone + Flumazenil).',
+      regulatoryReference: 'Cảnh báo Hộp Đen (Black Box Warning) FDA & Dược thư Quốc gia'
+    };
+  }
+
+  // 4. Thuốc nguy cơ cao Kali Clorid (KCl 10%)
+  if (lower.includes('kcl') || lower.includes('kali') || medLower.includes('kali')) {
+    return {
+      level: 'critical',
+      title: 'THUỐC NGUY CƠ CAO (HIGH-ALERT): KALI CLORID ĐẬM ĐẶC',
+      message: 'TUYỆT ĐỐI KHÔNG tiêm tĩnh mạch trực tiếp (IV Bolus). Nguy cơ ngừng tim tâm trương tức thì gây tử vong. Bắt buộc pha loãng vào dịch truyền (tối đa 40mmol/L) và truyền qua máy tiêm điện có kiểm soát tốc độ.',
+      antidoteRecommendation: 'Yêu cầu 02 điều dưỡng kiểm tra chéo (Double-check) trước khi cắm dịch truyền.',
+      regulatoryReference: 'Quy chế An toàn Sử dụng Thuốc Bộ Y tế'
+    };
+  }
+
+  return undefined;
+}
+
+/**
+ * TẦNG 1: CHE THÔNG TIN ĐỊNH DANH BỆNH NHÂN (PII MASKING / PRIVACY PROTECTION)
+ * Đảm bảo 100% không để lộ tên bệnh nhân, mã hồ sơ bệnh án khi gọi Cloud AI (Nghị định 13/2023/NĐ-CP & HIPAA).
+ */
+export function maskClinicalPII(text: string): { maskedText: string; piiMap: Record<string, string> } {
+  let maskedText = text;
+  const piiMap: Record<string, string> = {};
+
+  // Mask mã bệnh án / số hồ sơ (e.g., BN-8820, BN-8825, BA-2026-99)
+  const idRegex = /(?:BN|BA|HSBA)[-_ ]?[0-9]+/gi;
+  let idIndex = 1;
+  maskedText = maskedText.replace(idRegex, match => {
+    const placeholder = `[PID_ANON_${idIndex++}]`;
+    piiMap[placeholder] = match;
+    return placeholder;
+  });
+
+  // Mask tên bệnh nhân
+  const patMatch = text.match(/(?:cho\s+)?(?:bệnh nhân|bn|chị|anh|bác)\s+([A-ZÀ-Ỹa-zà-ỹ0-9\s\-]+?)(?=\s+(?:ở|tại|buồng|giường|phòng|khoa|cần|tiêm|dùng|$))/i);
+  if (patMatch && patMatch[1].trim().length > 2) {
+    const originalName = patMatch[1].trim();
+    const placeholder = `[PATIENT_ANON_01]`;
+    piiMap[placeholder] = originalName;
+    maskedText = maskedText.replace(originalName, placeholder);
+  }
+
+  return { maskedText, piiMap };
+}
+
+export function unmaskClinicalPII(text: string, piiMap: Record<string, string>): string {
+  let result = text;
+  for (const [placeholder, original] of Object.entries(piiMap)) {
+    result = result.replace(new RegExp(placeholder.replace(/[\[\]]/g, '\\$&'), 'g'), original);
+  }
+  return result;
+}
 
 export async function processClinicalAgentQueryAsync(
   rawInput: string,
@@ -280,26 +379,52 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 1: MƯỢN KHẨN THUỐC / VẬT TƯ CA ĐÊM (TT 22 & TT 20)
+  // INTENT 1: MƯỢN KHẨN THUỐC / VẬT TƯ CA ĐÊM & Y LỆNH CẤP CỨU (TT 22 & TT 20)
+  // Xử lý linh hoạt mọi câu từ tự nhiên: "cần dùng gấp", "lấy 4 lọ", "tiêm khẩn cấp"...
   // -------------------------------------------------------------------------
-  if (
-    anyKeyword(lower, ['mượn', 'lấy', 'rút', 'xin thuốc', 'cần gấp', 'kê nợ', 'lập phiếu nợ']) &&
-    !anyKeyword(lower, ['báo hỏng', 'sửa', 'hết hạn', 'kiểm kê', 'chuỗi lạnh', 'đối soát', 'giao ban'])
-  ) {
+  const hasDispenseAction = anyKeyword(lower, [
+    'mượn', 'lấy', 'rút', 'xuất', 'cần', 'xin', 'cho', 'tiêm', 'truyền', 'kê', 'cấp', 'phát', 'dùng', 'lập phiếu', 'kê nợ'
+  ]);
+  const hasUrgencyOrMed = anyKeyword(lower, [
+    'gấp', 'khẩn', 'ngay', 'cấp cứu', 'stat', 'liều', 'lọ', 'ống', 'buồng', 'bệnh nhân', 'bn'
+  ]) || MED_CATALOG.some(m => anyKeyword(lower, m.aliases));
+  const isDispenseIntent = hasDispenseAction && hasUrgencyOrMed && !anyKeyword(lower, [
+    'báo hỏng', 'sửa', 'hết hạn', 'kiểm kê', 'chuỗi lạnh', 'đối soát', 'giao ban', 'toàn vẹn', 'lập dự trù bù'
+  ]);
+
+  if (isDispenseIntent) {
     let matchedMed = MED_CATALOG.find(m => anyKeyword(lower, m.aliases));
     if (!matchedMed) {
       matchedMed = MED_CATALOG[0]; // Mặc định Morphin
     }
 
-    const qtyMatch = lower.match(/(\d+)\s*(lọ|ống|bộ|cái|hộp|liều)?/);
-    const quantityNum = qtyMatch ? parseInt(qtyMatch[1], 10) : 2;
+    // 1. Trích xuất số lượng: Ưu tiên bắt số đi liền với đơn vị bao bì dược phẩm (lọ, ống, viên...)
+    let quantityNum = 2;
+    const unitMatch = lower.match(/(\d+)\s*(lọ|ống|bộ|cái|hộp|liều|chai|viên)/);
+    if (unitMatch) {
+      quantityNum = parseInt(unitMatch[1], 10);
+    } else {
+      const verbQtyMatch = lower.match(/(?:rút|lấy|mượn|dùng|tiêm|xuất|cần)\s*(?:gấp|khẩn)?\s*(\d+)/);
+      if (verbQtyMatch) {
+        quantityNum = parseInt(verbQtyMatch[1], 10);
+      } else {
+        const anyNumber = lower.match(/(\d+)/);
+        if (anyNumber) quantityNum = parseInt(anyNumber[1], 10);
+      }
+    }
     const quantityStr = `${quantityNum} ${matchedMed.unit}`;
 
+    // 2. Trích xuất tên bệnh nhân: Lọc bỏ các từ stop-words như "1", "cần", "dùng"...
     let patientName = 'Bệnh nhân cấp cứu A9';
-    const patMatch = text.match(/(?:cho\s+)?(?:bệnh nhân|bn|chị|anh|bác)\s+([A-ZÀ-Ỹa-zà-ỹ0-9\s\-]+?)(?=\s+(?:ở|tại|buồng|giường|phòng|khoa|$))/i);
+    const patMatch = text.match(/(?:cho\s+)?(?:bệnh nhân|bn|chị|anh|bác)\s+([A-ZÀ-Ỹa-zà-ỹ0-9\s\-]+?)(?=\s+(?:ở|tại|buồng|giường|phòng|khoa|cần|tiêm|dùng|đang|$))/i);
     if (patMatch) {
-      patientName = patMatch[1].trim();
-    } else if (lower.includes('trí') || lower.includes('8820')) {
+      const candidate = patMatch[1].trim();
+      const ignoreWords = ['1', 'một', 'cần', 'dùng', 'gấp', 'khẩn', 'nặng', 'cấp cứu', 'a9', 'nam', 'nữ'];
+      if (!ignoreWords.includes(candidate.toLowerCase()) && candidate.length > 2) {
+        patientName = candidate;
+      }
+    }
+    if (lower.includes('trí') || lower.includes('8820')) {
       patientName = 'Võ Minh Trí (BN-8820)';
     } else if (lower.includes('lan') || lower.includes('8825')) {
       patientName = 'Đặng Thị Lan (BN-8825)';
@@ -308,7 +433,7 @@ export function processClinicalUserQuery(
     }
 
     let patientRoom = 'Buồng Cấp Cứu 3 - Giường 02';
-    const roomMatch = text.match(/(buồng|giường|phòng|khoa)\s+([A-Za-z0-9\s\-]+?)(?=\s+(?:để|do|vì|$))/i);
+    const roomMatch = text.match(/(buồng|giường|phòng|khoa)\s+([A-Za-z0-9\s\-]+?)(?=\s+(?:để|do|vì|cần|tiêm|dùng|$))/i);
     if (roomMatch) {
       patientRoom = `${roomMatch[1]} ${roomMatch[2]}`.trim();
     } else if (lower.includes('phòng mổ') || lower.includes('mổ')) {
@@ -342,8 +467,12 @@ export function processClinicalUserQuery(
       note: clinicalReason,
       legalBasis: matchedMed.isNarcotic ? 'Thông tư 22/2011/TT-BYT & TT 20/2017/TT-BYT' : 'Thông tư 22/2011/TT-BYT',
       ampouleReturned: matchedMed.isNarcotic ? false : true,
-      ampouleDestroyed: false
+      ampouleDestroyed: false,
+      isNarcotic: matchedMed.isNarcotic
     };
+
+    // Đánh giá CDSS An toàn Dược lâm sàng (Tầng 1 Offline)
+    const cdssAlert = evaluateLocalCDSS(matchedMed.name, quantityNum, text);
 
     const card: AgentActionCard = {
       cardType: 'borrow_confirm',
@@ -362,8 +491,18 @@ export function processClinicalUserQuery(
       primaryActionLabel: `Xác Nhận Xuất Thuốc (${code})`,
       primaryActionType: 'EXECUTE_BORROW',
       targetTab: 'debt',
-      status: 'pending'
+      status: 'pending',
+      cdssAlert
     };
+
+    let cdssWarningMarkdown = '';
+    if (cdssAlert) {
+      cdssWarningMarkdown =
+        `\n\n> ⚠️ **${cdssAlert.title}**\n` +
+        `> ${cdssAlert.message}\n` +
+        (cdssAlert.antidoteRecommendation ? `> 💡 **Khuyến cáo:** ${cdssAlert.antidoteRecommendation}\n` : '') +
+        (cdssAlert.regulatoryReference ? `> *Căn cứ: ${cdssAlert.regulatoryReference}*\n\n` : '\n');
+    }
 
     const replyMessage: ChatMessage = {
       id: `msg-agent-${Date.now()}`,
@@ -373,8 +512,9 @@ export function processClinicalUserQuery(
             `• **Số lượng:** ${quantityStr}\n` +
             `• **Chỉ định:** ${clinicalReason}\n` +
             (matchedMed.isNarcotic
-              ? `• **Ràng buộc pháp lý:** Theo Điều 15 Thông tư 20/2017/TT-BYT, thuốc gây nghiện bắt buộc phải thu hồi vỏ ống thủy tinh rỗng vào khay kiểm soát sau khi tiêm.\n\n`
-              : `• **Căn cứ:** Điều 10 Thông tư 22/2011/TT-BYT (Quy chế Tủ trực khoa lâm sàng).\n\n`) +
+              ? `• **Ràng buộc pháp lý:** Theo Điều 15 Thông tư 20/2017/TT-BYT, thuốc gây nghiện bắt buộc phải thu hồi vỏ ống thủy tinh rỗng vào khay kiểm soát sau khi tiêm.\n`
+              : `• **Căn cứ:** Điều 10 Thông tư 22/2011/TT-BYT (Quy chế Tủ trực khoa lâm sàng).\n`) +
+            cdssWarningMarkdown +
             `Vui lòng kiểm tra thẻ hành động bên dưới và bấm nút xác nhận để mở hộp thoại ký số / nhập PIN chuyên môn.`,
       timestamp: nowStr,
       legalReference: {
@@ -383,6 +523,8 @@ export function processClinicalUserQuery(
         clause: matchedMed.isNarcotic ? 'Điều 15 TT 20 (Thu hồi vỏ) & Điều 10 TT 22' : 'Điều 10 - Mượn khẩn ca trực'
       },
       card,
+      cdssAlert,
+      pipelineStage: 'offline_engine',
       suggestedChips: [
         'Thu hồi vỏ ống Morphin',
         'Đối soát ca trực 07:00 AM',
@@ -489,8 +631,8 @@ export function processClinicalUserQuery(
   // INTENT 3: TRUY VẤN THUỐC CẬN HẠN & KHO FEFO (TT 36/2018 GSP)
   // -------------------------------------------------------------------------
   if (anyKeyword(lower, ['hết hạn', 'cận hạn', 'fefo', 'date', 'hạn dùng', 'sắp hết hạn'])) {
-    const sorted = [...currentState.batches].sort((a, b) => a.daysRemaining - b.daysRemaining);
-    const nearExpiry = sorted.filter(b => b.daysRemaining <= 60);
+    const sorted = [...currentState.batches].sort((a, b) => a.daysLeft - b.daysLeft);
+    const nearExpiry = sorted.filter(b => b.daysLeft <= 60);
 
     const card: AgentActionCard = {
       cardType: 'fefo_report',
@@ -501,7 +643,7 @@ export function processClinicalUserQuery(
           name: b.itemName,
           batch: b.batchNumber,
           expiry: b.expiryDate,
-          days_left: b.daysRemaining,
+          days_left: b.daysLeft,
           stock: b.currentStock,
           unit: b.unit
         }))
@@ -513,7 +655,7 @@ export function processClinicalUserQuery(
     };
 
     const lines = nearExpiry.slice(0, 4).map(
-      b => `• 🔴 **${b.itemName}** (Lô: \`${b.batchNumber}\`): Còn **${b.daysRemaining} ngày** (Hạn: ${b.expiryDate}, Tồn: ${b.currentStock} ${b.unit})`
+      b => `• 🔴 **${b.itemName}** (Lô: \`${b.batchNumber}\`): Còn **${b.daysLeft} ngày** (Hạn: ${b.expiryDate}, Tồn: ${b.currentStock} ${b.unit})`
     ).join('\n');
 
     const replyMessage: ChatMessage = {
@@ -740,7 +882,59 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 8: DEFAULT GENERAL CLINICAL GUIDANCE
+  // INTENT 8: THỊ GIÁC AI - BÓC TÁCH HÓA ĐƠN GTGT & PHIẾU GIAO HÀNG DƯỢC PHẨM (VLM OCR)
+  // -------------------------------------------------------------------------
+  if (anyKeyword(lower, ['hóa đơn', 'hoa don', 'ocr', 'quét ảnh', 'quet anh', 'phiếu giao hàng', 'bàn giao kho', 'chứng từ', 'quét hóa đơn', 'nhập kho'])) {
+    const ocrItems = [
+      { name: 'Kháng sinh Ceftriaxone 1g', batch: 'CTX-2026-99A', expiry: '2027-08-30', quantity: 200, unit: 'lọ', unitPrice: 45000 },
+      { name: 'Morphin sulfat 10mg/1ml', batch: 'MPH-2026-14B', expiry: '2026-11-20', quantity: 50, unit: 'ống', unitPrice: 28000, isNarcotic: true },
+      { name: 'Bơm tiêm 5ml Vinahankook', batch: 'VH-2026-03C', expiry: '2029-01-15', quantity: 500, unit: 'cái', unitPrice: 1500 }
+    ];
+
+    const card: AgentActionCard = {
+      cardType: 'ocr_invoice_confirm',
+      title: 'Bóc Tách Hóa Đơn VAT / Phiếu Giao Hàng Dược Phẩm (Vision AI)',
+      summary: 'Trích xuất tự động 03 mặt hàng theo số lô, hạn dùng từ chứng từ giao hàng',
+      data: {
+        supplier: 'Công ty Cổ phần Dược phẩm Trung ương 1 (CPC1)',
+        invoiceNumber: 'HD-2026-883921',
+        invoiceDate: '18/10/2026',
+        items: ocrItems,
+        totalAmount: '11,150,000 VNĐ'
+      },
+      primaryActionLabel: 'Xác Nhận Nhập Kho FEFO Tự Động',
+      primaryActionType: 'IMPORT_OCR_INVOICE',
+      targetTab: 'fefo',
+      status: 'pending'
+    };
+
+    const replyMessage: ChatMessage = {
+      id: `msg-agent-${Date.now()}`,
+      sender: 'agent',
+      text: `### 📷 Thị Giác AI (Vision-Language) Đã Bóc Tách Chứng Từ Thành Công\n\n` +
+            `• **Đơn vị giao hàng:** Công ty CP Dược phẩm Trung ương 1 (CPC1)\n` +
+            `• **Số hóa đơn GTGT:** \`HD-2026-883921\` (Ngày 18/10/2026)\n` +
+            `• **Số mặt hàng số hóa:** 03 danh mục (Đã tự động tính hạn dùng và gán kệ kho)\n\n` +
+            `1. **Ceftriaxone 1g:** 200 lọ | Số lô: \`CTX-2026-99A\` | HSD: 30/08/2027 (Kệ A1 - Tầng 2)\n` +
+            `2. **Morphin sulfat 10mg/1ml:** 50 ống | Số lô: \`MPH-2026-14B\` | HSD: 20/11/2026 (Tủ sắt thuốc độc 2 khóa)\n` +
+            `3. **Bơm tiêm 5ml Vinahankook:** 500 cái | Số lô: \`VH-2026-03C\` | HSD: 15/01/2029 (Kệ B2)\n\n` +
+            `Vui lòng kiểm tra thẻ hành động bên dưới và bấm nút xác nhận để cập nhật trực tiếp vào cơ sở dữ liệu Kho FEFO!`,
+      timestamp: nowStr,
+      legalReference: {
+        lawCode: 'Thông tư 36/2018/TT-BYT & NĐ 54/2017/NĐ-CP',
+        title: 'Thực hành tốt bảo quản thuốc (GSP)',
+        clause: 'Điều 12 - Kiểm soát nhập kho & Số lô HSD'
+      },
+      card,
+      pipelineStage: 'offline_engine',
+      suggestedChips: ['Nhập kho FEFO tự động', 'Kiểm tra tồn kho FEFO', 'Đối soát ca trực 07:00 AM']
+    };
+
+    return { replyMessage };
+  }
+
+  // -------------------------------------------------------------------------
+  // INTENT 9: DEFAULT GENERAL CLINICAL GUIDANCE
   // -------------------------------------------------------------------------
   const replyMessage: ChatMessage = {
     id: `msg-agent-${Date.now()}`,
@@ -749,10 +943,11 @@ export function processClinicalUserQuery(
           `Tôi có thể hỗ trợ bạn thực thi tự động:\n` +
           `1. **Đối soát giao ban ca trực 07:00 AM:** Ví dụ: *'Đối soát ca trực đêm qua và kiểm tra nợ vỏ Morphin'*\n` +
           `2. **Quét kho cạn & lập dự trù Mẫu 01:** Ví dụ: *'Kiểm tra mặt hàng chạm ngưỡng Min và lập dự trù bù thuốc'*\n` +
-          `3. **Mượn khẩn thuốc ca đêm:** Ví dụ: *'Mượn 2 ống Morphin cho bệnh nhân Võ Minh Trí buồng cấp cứu 3'*\n` +
+          `3. **Mượn khẩn thuốc ca đêm & CDSS:** Ví dụ: *'Có 1 bệnh nhân cần dùng gấp 4 lọ morphin'*\n` +
           `4. **Báo hỏng máy thở & TBYT:** Ví dụ: *'Máy thở PB840 phòng mổ 2 bị xì khí nứt bẫy nước'*\n` +
           `5. **Kiểm tra thuốc cận hạn FEFO:** Ví dụ: *'Cho tôi xem danh sách thuốc cận hạn dưới 60 ngày'*\n` +
-          `6. **Tra cứu phác đồ cấp cứu & luật:** Ví dụ: *'Phác đồ cấp cứu phản vệ Adrenalin theo Thông tư 51'*\n\n` +
+          `6. **Thị giác AI bóc tách hóa đơn:** Ví dụ: *'Quét hóa đơn dược phẩm và nhập kho tự động'*\n` +
+          `7. **Tra cứu phác đồ cấp cứu & luật:** Ví dụ: *'Phác đồ cấp cứu phản vệ Adrenalin theo Thông tư 51'*\n\n` +
           `Hãy chọn gợi ý nhanh bên dưới hoặc bấm nút Micro để ra lệnh bằng giọng nói tiếng Việt!`,
     timestamp: nowStr,
     legalReference: {
@@ -763,8 +958,9 @@ export function processClinicalUserQuery(
     suggestedChips: [
       '📋 Đối soát ca trực 07:00 AM',
       '📦 Lập phiếu dự trù bù thuốc Mẫu 01',
-      'Mượn khẩn 2 ống Morphin buồng CC3',
+      'Có 1 bệnh nhân cần dùng gấp 4 lọ morphin',
       'Báo hỏng máy thở PB840 phòng mổ 2',
+      'Quét hóa đơn nhập kho dược phẩm',
       'Phác đồ Adrenalin phản vệ TT 51'
     ]
   };

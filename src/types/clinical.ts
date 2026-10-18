@@ -79,6 +79,7 @@ export interface DebtRecord {
   code: string; // PN-2026-xxx
   itemName: string;
   itemType: 'Thuốc gây nghiện' | 'Thuốc hướng thần' | 'Thuốc cấp cứu' | 'Vật tư tiêu hao' | 'Vật tư phẫu thuật';
+  isNarcotic?: boolean;
   quantity: string;
   patientName: string;
   patientRoom: string;
@@ -120,10 +121,11 @@ export interface InventoryBatch {
   id: string;
   itemCode: string;
   itemName: string;
-  category: 'Thuốc gây nghiện' | 'Kháng sinh' | 'Dịch truyền & Cấp cứu' | 'Chỉ phẫu thuật & Khâu' | 'Vật tư tiêu hao';
+  category: 'Thuốc gây nghiện' | 'Kháng sinh' | 'Dịch truyền & Cấp cứu' | 'Chỉ phẫu thuật & Khâu' | 'Vật tư tiêu hao' | 'Thuốc cấp cứu' | 'Vắc xin & Chuỗi lạnh';
   batchNumber: string; // Số lô
   expiryDate: string; // YYYY-MM-DD
   daysLeft: number;
+  daysRemaining?: number; // alias
   isNearExpiry: boolean; // Dưới 60 ngày -> FEFO ưu tiên đỏ
   currentStock: number;
   unit: string;
@@ -195,8 +197,16 @@ export interface ActionPayload {
   targetTab?: 'debt' | 'equipment' | 'fefo' | 'coldchain' | 'asset_audit';
 }
 
+export interface CdssAlert {
+  level: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  antidoteRecommendation?: string;
+  regulatoryReference?: string;
+}
+
 export interface AgentActionCard {
-  cardType: 'borrow_confirm' | 'incident_confirm' | 'fefo_report' | 'low_stock_report' | 'equipment_report' | 'coldchain_status' | 'audit_integrity' | 'legal_guide' | 'shift_handover_report';
+  cardType: 'borrow_confirm' | 'incident_confirm' | 'fefo_report' | 'low_stock_report' | 'equipment_report' | 'coldchain_status' | 'audit_integrity' | 'legal_guide' | 'shift_handover_report' | 'ocr_invoice_confirm' | 'biomedical_diagnostics';
   title: string;
   summary: string;
   data: any;
@@ -204,6 +214,7 @@ export interface AgentActionCard {
   primaryActionType?: string;
   targetTab?: 'debt' | 'equipment' | 'fefo' | 'coldchain' | 'asset_audit';
   status?: 'pending' | 'executed' | 'cancelled';
+  cdssAlert?: CdssAlert;
 }
 
 export interface ChatMessage {
@@ -220,6 +231,8 @@ export interface ChatMessage {
   actionPayload?: ActionPayload;
   card?: AgentActionCard;
   suggestedChips?: string[];
+  cdssAlert?: CdssAlert;
+  pipelineStage?: 'offline_engine' | 'cloud_gemini_vision' | 'cloud_gemini_reasoning';
 }
 
 export interface QuickSuggestionChip {

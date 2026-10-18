@@ -135,9 +135,13 @@ async def chat_with_copilot(
         )
 
     # -------------------------------------------------------------
-    # 1. INTENT: MƯỢN KHẨN THUỐC / VẬT TƯ CA ĐÊM (TT 22 & TT 20)
+    # 1. INTENT: MƯỢN KHẨN THUỐC / VẬT TƯ CA ĐÊM & CDSS (TT 22 & TT 20)
     # -------------------------------------------------------------
-    if any(k in lower for k in ["mượn", "lấy", "rút", "xin thuốc", "cần gấp", "kê nợ"]) and not any(k in lower for k in ["báo hỏng", "sửa", "hết hạn", "kiểm kê"]):
+    has_dispense_action = any(k in lower for k in ["mượn", "lấy", "rút", "xuất", "cần", "cần dùng", "cần gấp", "xin", "cho", "tiêm", "truyền", "kê", "cấp", "phát", "dùng", "lập phiếu"])
+    has_urgency_or_med = any(k in lower for k in ["gấp", "khẩn", "ngay", "cấp cứu", "stat", "liều", "lọ", "ống", "buồng", "bệnh nhân", "bn"]) or any(any(k in lower for k in m["keywords"]) for m in MEDICATION_CATALOG)
+    is_dispense_intent = has_dispense_action and has_urgency_or_med and not any(k in lower for k in ["báo hỏng", "sửa", "hết hạn", "kiểm kê", "chuỗi lạnh", "đối soát", "giao ban", "toàn vẹn"])
+
+    if is_dispense_intent:
         # Extract item
         matched_med = None
         for med in MEDICATION_CATALOG:
@@ -194,6 +198,11 @@ async def chat_with_copilot(
         is_narcotic = matched_med["type"] == "Thuốc gây nghiện"
         narcotic_warning = "\n> [!WARNING]\n> **Thuốc gây nghiện (TT 20/2017):** Bắt buộc thu hồi vỏ ống đã tiêm vào khay kiểm soát trước khi được duyệt hoàn bù cơ số tủ trực." if is_narcotic else ""
 
+        # CDSS Engine: Safety overdose evaluation
+        cdss_alert = ""
+        if "morphin" in matched_med["name"].lower() and quantity >= 3:
+            cdss_alert = f"\n\n> ⚠️ **CẢNH BÁO AN TOÀN NGƯỜI BỆNH: NGUY CƠ SUY HÔ HẤP**\n> Liều {quantity * 10}mg Morphin vượt ngưỡng cấp cứu thông thường (5–10mg/lần). Nguy cơ ức chế trung tâm hô hấp dẫn đến ngừng thở.\n> 💡 **Khuyến cáo:** Chuẩn bị sẵn 01 ống Naloxone 0.4mg/ml (thuốc đối kháng giải độc Opioid) cạnh giường bệnh và theo dõi SpO2 liên tục."
+
         return CopilotResponse(
             intent="BORROW_EMERGENCY_ITEM",
             reply_text=f"Tôi đã phân tích lệnh mượn khẩn của bạn và soạn sẵn **Phiếu Mượn Thuốc Tủ Trực Cấp Cứu**:\n\n"
@@ -202,7 +211,7 @@ async def chat_with_copilot(
                        f"• **Bệnh nhân:** {patient_name}\n"
                        f"• **Địa điểm:** {room_name}\n"
                        f"• **Chỉ định:** {clinical_reason}\n\n"
-                       f"Bạn có thể xác nhận mượn trực tiếp bằng thẻ bên dưới hoặc mở biểu mẫu để bổ sung chi tiết.{narcotic_warning}",
+                       f"Bạn có thể xác nhận mượn trực tiếp bằng thẻ bên dưới hoặc mở biểu mẫu để bổ sung chi tiết.{narcotic_warning}{cdss_alert}",
             card=CopilotActionCard(
                 card_type="borrow_confirm",
                 title=f"Xác Nhận Rút Khẩn {quantity} {matched_med['unit']} {matched_med['name']}",

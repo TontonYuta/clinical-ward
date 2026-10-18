@@ -26,7 +26,12 @@ import {
   RotateCcw,
   Sparkles,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  AlertOctagon,
+  Wrench,
+  FileSpreadsheet,
+  Cpu,
+  Cloud
 } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, AgentActionCard } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
@@ -311,6 +316,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             {card.cardType === 'coldchain_status' && <Thermometer className="w-3.5 h-3.5 text-cyan-600" />}
             {card.cardType === 'audit_integrity' && <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />}
             {card.cardType === 'legal_guide' && <FileText className="w-3.5 h-3.5 text-purple-600" />}
+            {card.cardType === 'ocr_invoice_confirm' && <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-700" />}
+            {card.cardType === 'biomedical_diagnostics' && <Wrench className="w-3.5 h-3.5 text-orange-600" />}
             <span className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">{formatInlineMarkdown(card.title)}</span>
           </div>
 
@@ -327,6 +334,42 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
         {/* Card Body Content */}
         <div className="p-3 text-[11px] text-slate-700 space-y-2">
+          {/* CDSS Safety Alert Banner */}
+          {card.cdssAlert && (
+            <div className={`p-2.5 rounded-lg border text-[11px] leading-relaxed flex items-start gap-2 shadow-2xs ${
+              card.cdssAlert.level === 'critical'
+                ? 'bg-rose-50 border-rose-300 text-rose-900'
+                : card.cdssAlert.level === 'warning'
+                ? 'bg-amber-50 border-amber-300 text-amber-900'
+                : 'bg-blue-50 border-blue-300 text-blue-900'
+            }`}>
+              <AlertOctagon className={`w-4 h-4 shrink-0 mt-0.5 ${
+                card.cdssAlert.level === 'critical' ? 'text-rose-600' : 'text-amber-600'
+              }`} />
+              <div className="space-y-1 w-full">
+                <div className="font-bold uppercase tracking-tight flex items-center justify-between">
+                  <span>{card.cdssAlert.title}</span>
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                    card.cdssAlert.level === 'critical' ? 'bg-rose-200 text-rose-800' : 'bg-amber-200 text-amber-800'
+                  }`}>
+                    CDSS Alert
+                  </span>
+                </div>
+                <div className="text-[10.5px] font-medium leading-normal">{formatInlineMarkdown(card.cdssAlert.message)}</div>
+                {card.cdssAlert.antidoteRecommendation && (
+                  <div className="text-[10.5px] bg-white/90 p-1.5 rounded border border-rose-200 font-semibold text-rose-800 mt-1">
+                    💡 <b>Khuyến cáo an toàn:</b> {formatInlineMarkdown(card.cdssAlert.antidoteRecommendation)}
+                  </div>
+                )}
+                {card.cdssAlert.regulatoryReference && (
+                  <div className="text-[9.5px] opacity-75 font-mono">
+                    Căn cứ: {card.cdssAlert.regulatoryReference}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* 0. Shift Handover Report Card */}
           {card.cardType === 'shift_handover_report' && (
             <div className="space-y-2">
@@ -498,6 +541,69 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <div className="p-2 rounded bg-white border border-slate-200 text-[10px] text-slate-700">
               <div className="font-bold text-purple-900 mb-0.5">{card.data.doc_title}</div>
               <div className="line-clamp-3 text-slate-600 leading-snug">{formatInlineMarkdown(card.data.content)}</div>
+            </div>
+          )}
+
+          {/* 8. OCR Invoice Confirm Card (Vision AI) */}
+          {card.cardType === 'ocr_invoice_confirm' && card.data.items && (
+            <div className="space-y-2">
+              <div className="p-2 rounded bg-white border border-slate-200 text-[10px] space-y-1">
+                <div className="flex justify-between text-slate-600">
+                  <span>Nhà cung ứng:</span>
+                  <span className="font-bold text-slate-900">{card.data.supplier}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Số hóa đơn / Ngày:</span>
+                  <span className="font-mono text-slate-800 font-semibold">{card.data.invoiceNumber} ({card.data.invoiceDate})</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Tổng giá trị chứng từ:</span>
+                  <span className="font-bold text-indigo-700">{card.data.totalAmount}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  Danh mục bóc tách tự động ({card.data.items.length} mặt hàng):
+                </span>
+                <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                  {card.data.items.map((it: any, idx: number) => (
+                    <div key={idx} className="p-1.5 rounded bg-white border border-slate-200 flex items-center justify-between text-[10px]">
+                      <div className="truncate max-w-[190px]">
+                        <div className="font-bold text-slate-900 truncate">{it.name}</div>
+                        <div className="text-slate-500 font-mono text-[9px]">Lô: {it.batch || it.batchNumber} • Hạn: {it.expiry || it.expiryDate}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-bold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                          +{it.quantity} {it.unit}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 9. Biomedical Diagnostics Card */}
+          {card.cardType === 'biomedical_diagnostics' && (
+            <div className="p-2 rounded bg-white border border-slate-200 text-[10px] space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Model thiết bị:</span>
+                <span className="font-bold text-slate-900 font-mono">{card.data.model}</span>
+              </div>
+              <div className="text-slate-700">
+                <span className="text-slate-500">Chẩn đoán sự cố: </span>
+                <span className="font-semibold text-rose-700">{card.data.diagnosis}</span>
+              </div>
+              {card.data.checklist && (
+                <div className="p-1.5 rounded bg-slate-50 border border-slate-200 space-y-0.5 text-slate-600">
+                  <span className="font-bold text-slate-800 block text-[9.5px]">Checklist kỹ thuật IEC 60601-1:</span>
+                  {card.data.checklist.map((c: string, idx: number) => (
+                    <div key={idx}>• {c}</div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
