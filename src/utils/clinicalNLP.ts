@@ -25,39 +25,58 @@ export interface ProcessedQueryResult {
 
 // Danh mục dược phẩm & vật tư y tế để nhận diện thực thể (NER)
 const MED_CATALOG = [
-  { name: 'Morphin sulfat 10mg/1ml', type: 'Thuốc gây nghiện', unit: 'ống', isNarcotic: true, aliases: ['morphin', 'moocphin', 'morfin'] },
+  { name: 'Morphin sulfat 10mg/1ml', type: 'Thuốc gây nghiện', unit: 'ống', isNarcotic: true, aliases: ['morphin', 'moocphin', 'morfin', 'morphine'] },
   { name: 'Fentanyl 0.1mg/2ml', type: 'Thuốc gây nghiện', unit: 'ống', isNarcotic: true, aliases: ['fentanyl', 'fentanin'] },
   { name: 'Diazepam 10mg/2ml', type: 'Thuốc gây nghiện', unit: 'ống', isNarcotic: true, aliases: ['diazepam', 'seduxen'] },
   { name: 'Midazolam 5mg/ml', type: 'Thuốc gây nghiện', unit: 'ống', isNarcotic: true, aliases: ['midazolam', 'mida'] },
-  { name: 'Adrenalin 1mg/1ml (Epinephrin)', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['adrenalin', 'epinephrine', 'sốc phản vệ'] },
+  { name: 'Adrenalin 1mg/1ml (Epinephrin)', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['adrenalin', 'adre', 'adr', 'epinephrine', 'epinephrin'] },
   { name: 'Noradrenalin 4mg/4ml', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['noradrenalin', 'norepinephrine', 'vận mạch'] },
   { name: 'Atropin sulfat 0.25mg/ml', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['atropin', 'nhịp chậm'] },
   { name: 'Cordarone 150mg/3ml', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['cordarone', 'amiodarone', 'chống loạn nhịp'] },
   { name: 'Kháng sinh Ceftriaxone 1g', type: 'Thuốc cấp cứu', unit: 'lọ', isNarcotic: false, aliases: ['ceftriaxone', 'kháng sinh'] },
   { name: 'Kháng sinh Meropenem 1g (Meronem)', type: 'Thuốc cấp cứu', unit: 'lọ', isNarcotic: false, aliases: ['meropenem', 'meronem'] },
   { name: 'Nhũ dịch Lipid 20% Lipofundin 100ml', type: 'Thuốc cấp cứu', unit: 'chai', isNarcotic: false, aliases: ['lipid', 'lipofundin'] },
+  { name: 'Kali Clorid 10% (KCl 10ml)', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['kali', 'kcl', 'kali clorid'] },
   { name: 'Vắc xin phòng dại Verorab 0.5ml', type: 'Thuốc cấp cứu', unit: 'liều', isNarcotic: false, aliases: ['verorab', 'dại'] },
   { name: 'Huyết thanh kháng uốn ván SAT 1500 UI', type: 'Thuốc cấp cứu', unit: 'liều', isNarcotic: false, aliases: ['sat', 'uốn ván'] },
   { name: 'Dây truyền dịch có bầu đếm giọt', type: 'Vật tư tiêu hao', unit: 'bộ', isNarcotic: false, aliases: ['dây truyền', 'dây truyền dịch', 'bầu đếm giọt'] },
   { name: 'Chỉ phẫu thuật Catgut 3/0', type: 'Vật tư tiêu hao', unit: 'hộp', isNarcotic: false, aliases: ['catgut', 'chỉ phẫu thuật', 'chỉ khâu'] },
-  { name: 'Bơm tiêm 5ml Vinahankook tiệt trùng', type: 'Vật tư tiêu hao', unit: 'cái', isNarcotic: false, aliases: ['bơm tiêm', 'bơm tiêm 5ml'] },
+  { name: 'Bơm tiêm 5ml Vinahankook tiệt trùng', type: 'Vật tư tiêu hao', unit: 'cái', isNarcotic: false, aliases: ['bơm tiêm 5ml', 'bơm tiêm', 'kim tiêm'] },
   { name: 'Catheter tĩnh mạch trung tâm 3 nòng CVC', type: 'Vật tư tiêu hao', unit: 'bộ', isNarcotic: false, aliases: ['cvc', 'catheter'] },
   { name: 'Kim luồn tĩnh mạch ngoại vi 20G', type: 'Vật tư tiêu hao', unit: 'cái', isNarcotic: false, aliases: ['kim luồn', 'kim luồn 20g'] }
 ];
 
 // Danh mục thiết bị y tế (NĐ 98/2021)
 const DEVICE_CATALOG = [
-  { name: 'Máy thở Puritan Bennett 840 (PB840)', model: 'PB840 Ventilator - Medtronic', serial: 'PB840-VN-2021-998', risk: 'D', aliases: ['pb840', 'máy thở pb840', 'bennett', 'máy thở'] },
-  { name: 'Máy sốc tim Zoll R Series', model: 'Zoll R Series ALS Defibrillator', serial: 'ZOLL-R-8831', risk: 'D', aliases: ['zoll', 'sốc tim', 'máy sốc tim'] },
+  { name: 'Máy thở Puritan Bennett 840 (PB840)', model: 'PB840 Ventilator - Medtronic', serial: 'PB840-VN-2021-998', risk: 'D', aliases: ['pb840', 'pb 840', 'puritan bennett', 'bennett', 'máy thở'] },
+  { name: 'Máy sốc tim Zoll R Series', model: 'Zoll R Series ALS Defibrillator', serial: 'ZOLL-R-8831', risk: 'D', aliases: ['zoll', 'sốc tim', 'máy sốc tim', 'phá rung'] },
   { name: 'Hệ thống lọc máu liên tục CRRT Prismaflex', model: 'Prismaflex v8.0 - Baxter', serial: 'PRISMA-VN-2022-014', risk: 'D', aliases: ['crrt', 'lọc máu', 'prismaflex'] },
-  { name: 'Máy theo dõi bệnh nhân Philips MP50', model: 'IntelliVue MP50 Monitor', serial: 'PHI-MP50-4102', risk: 'C', aliases: ['mp50', 'monitor', 'philips'] },
-  { name: 'Bơm tiêm điện B.Braun Perfusor Space', model: 'Perfusor Space - B.Braun', serial: 'BBR-PERF-9921', risk: 'C', aliases: ['bơm tiêm điện', 'perfusor', 'b.braun'] },
+  { name: 'Máy theo dõi bệnh nhân Philips MP50', model: 'IntelliVue MP50 Monitor', serial: 'PHI-MP50-4102', risk: 'C', aliases: ['mp50', 'mp 50', 'monitor', 'philips'] },
+  { name: 'Bơm tiêm điện B.Braun Perfusor Space', model: 'Perfusor Space - B.Braun', serial: 'BBR-PERF-9921', risk: 'C', aliases: ['bơm tiêm điện', 'perfusor', 'b.braun', 'bbraun'] },
   { name: 'Máy thở Maquet Servo-i Universal', model: 'Servo-i - Getinge', serial: 'MAQ-SERVOI-3104', risk: 'D', aliases: ['servo-i', 'servo i', 'maquet'] },
-  { name: 'Máy phá rung tim Philips HeartStart XL', model: 'HeartStart XL M4735A', serial: 'PHI-HSXL-7712', risk: 'D', aliases: ['heartstart', 'phá rung'] },
-  { name: 'Máy đo khí máu Radiometer ABL90 FLEX', model: 'ABL90 FLEX - Radiometer', serial: 'RAD-ABL90-5541', risk: 'C', aliases: ['abl90', 'khí máu'] },
+  { name: 'Máy phá rung tim Philips HeartStart XL', model: 'HeartStart XL M4735A', serial: 'PHI-HSXL-7712', risk: 'D', aliases: ['heartstart', 'heartstart xl', 'phá rung'] },
+  { name: 'Máy đo khí máu Radiometer ABL90 FLEX', model: 'ABL90 FLEX - Radiometer', serial: 'RAD-ABL90-5541', risk: 'C', aliases: ['abl90', 'abl 90', 'khí máu', 'máy khí máu', 'radiometer'] },
   { name: 'Bình làm ẩm thở máy Fisher & Paykel MR850', model: 'MR850 Humidifier', serial: 'FP-MR850-8802', risk: 'C', aliases: ['mr850', 'bình làm ẩm'] },
-  { name: 'Máy điện tim 12 cần Nihon Kohden', model: 'Cardiofax M ECG-1250K', serial: 'NK-ECG12-1089', risk: 'B', aliases: ['ecg', 'điện tim'] }
+  { name: 'Máy điện tim 12 cần Nihon Kohden', model: 'Cardiofax M ECG-1250K', serial: 'NK-ECG12-1089', risk: 'B', aliases: ['ecg', 'điện tim', 'nihon kohden'] }
 ];
+
+function findMatchedMed(lowerText: string) {
+  const isElectricPump = lowerText.includes('bơm tiêm điện');
+  for (const m of MED_CATALOG) {
+    if (m.name.includes('Bơm tiêm') && isElectricPump) continue;
+    if (m.aliases.some(alias => {
+      if (alias === 'bơm tiêm' && isElectricPump) return false;
+      return lowerText.includes(alias);
+    })) {
+      return m;
+    }
+  }
+  return undefined;
+}
+
+function findMatchedDevice(lowerText: string) {
+  return DEVICE_CATALOG.find(d => d.aliases.some(alias => lowerText.includes(alias)));
+}
 
 /**
  * TẦNG 1: BỘ MÁY HỖ TRỢ RA QUYẾT ĐỊNH LÂM SÀNG NỘI BỘ (LOCAL CDSS ENGINE)
@@ -290,9 +309,130 @@ export function processClinicalUserQuery(
   const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
   // -------------------------------------------------------------------------
-  // INTENT 0: ĐỐI SOÁT GIAO BAN CA TRỰC 07:00 AM & PHÁT HIỆN LỆCH SỔ (TT 22 & TT 20)
+  // INTENT 1: TƯ VẤN QUY CHUẨN PHÁP LUẬT Y TẾ & PHÁC ĐỒ CẤP CỨU (LEGAL & PROTOCOLS)
+  // Ưu tiên cao nhất đối với các câu hỏi tra cứu kiến thức, luật, phác đồ, giải trình
   // -------------------------------------------------------------------------
-  if (anyKeyword(lower, ['đối soát', 'giao ban', 'ca trực', 'ca đêm', 'báo cáo ca', 'chốt ca', 'bàn giao ca', '07:00', 'lệch sổ', 'tổng hợp nợ'])) {
+  const isLegalInquiry = anyKeyword(lower, [
+    'phác đồ', 'quy định', 'thông tư', 'nghị định', 'tiêu chuẩn', 'luật', 'điều khoản', 'pháp lý',
+    'hướng dẫn', 'tại sao', 'làm sao', 'xử lý thế nào', 'nguyên tắc', 'quy trình', 'căn cứ', 'tiêu hủy',
+    'kiểm định máy', 'chu kỳ kiểm định', 'nghi ngờ rò điện'
+  ]) || ((lower.includes('vỡ') || lower.includes('làm mất')) && (lower.includes('vỏ') || lower.includes('ống')));
+
+  const hasExplicitActionCommand = anyKeyword(lower, [
+    'báo hỏng ngay', 'lập phiếu báo hỏng', 'xuất khẩn', 'tiêm khẩn', 'tiêm ngay', 'rút khẩn', 'mượn khẩn', 'lập phiếu dự trù'
+  ]);
+
+  if (isLegalInquiry && !hasExplicitActionCommand) {
+    let topic = 'Tổng quan Khung Pháp lý Y tế Bệnh viện';
+    let explanation = 'Hệ thống vận hành đồng bộ theo 6 trụ cột pháp lý: TT 22/2011 (Tủ trực), TT 20/2017 (Gây nghiện & Vỏ ống), TT 51/2017 (Cấp cứu phản vệ), TT 36/2018 (FEFO & GSP), NĐ 98/2021 (Thiết bị y tế loại D), và NĐ 151/2017 (Tài sản công).';
+    let legalDoc = 'Văn bản quy phạm pháp luật Y tế Việt Nam';
+
+    if (lower.includes('phản vệ') || lower.includes('51') || lower.includes('adrenalin') || lower.includes('sốc')) {
+      topic = 'Thông tư 51/2017/TT-BYT - Phác đồ Cấp cứu Sốc Phản Vệ';
+      explanation = 'Thông tư 51 quy định **Adrenalin 1mg/1ml** là thuốc thiết yếu cấp cứu sốc phản vệ hàng đầu, phải có sẵn tại tất cả các buồng tiêm và tủ trực cấp cứu. Tiêm bắp ngay lập tức khi xuất hiện triệu chứng phản vệ từ độ II trở lên (khó thở, tụt huyết áp, nổi mề đay toàn thân, phù Quincke). Liều người lớn: 1/2 - 1 ống (0.5 - 1mg); trẻ em: 1/5 - 1/2 ống tùy cân nặng. Tiêm bắp mặt trước ngoài đùi, nhắc lại sau mỗi 3 - 5 phút nếu huyết áp chưa cải thiện. Tuyệt đối không chờ hội chẩn làm lỡ thời gian vàng cứu sống người bệnh.';
+      legalDoc = 'Thông tư 51/2017/TT-BYT';
+    } else if (lower.includes('vỡ') || lower.includes('làm mất') || lower.includes('hỏng vỏ')) {
+      topic = 'Quy trình xử lý vỡ/mất vỏ ống thuốc gây nghiện (TT 20/2017)';
+      explanation = 'Theo Điều 15 Thông tư 20/2017/TT-BYT, trường hợp vỏ ống thuốc gây nghiện bị rơi vỡ ngoài ý muốn trong quá trình bẻ ống hoặc tiêm cho người bệnh, điều dưỡng không được tự ý xóa nợ. Bắt buộc: (1) Thu gom toàn bộ các mảnh vỡ thủy tinh còn lại; (2) Lập **Biên bản giải trình vỡ ống thuốc gây nghiện** có chữ ký xác nhận của Bác sĩ trực buồng bệnh làm chứng; (3) Mang biên bản kèm mảnh vỡ sang Kho Dược nộp cho Dược sĩ để được mở khóa xác nhận và duyệt cấp bù cơ số tủ trực.';
+      legalDoc = 'Điều 15 Thông tư 20/2017/TT-BYT';
+    } else if (lower.includes('20') || lower.includes('vỏ ống') || lower.includes('gây nghiện') || (lower.includes('morphin') && lower.includes('quy định'))) {
+      topic = 'Thông tư 20/2017/TT-BYT - Quản lý thuốc kiểm soát đặc biệt';
+      explanation = 'Quy định thuốc gây nghiện (Morphin, Fentanyl) bắt buộc phải bảo quản trong tủ sắt có 2 lớp khóa. **Điều 15** quy định phải thu hồi 100% vỏ ống đã tiêm vào khay kiểm soát trước khi cấp bù ống mới. **Điều 16** quy định Hội đồng 3 bên (Dược sĩ, Điều dưỡng, Bác sĩ/Lãnh đạo) tổ chức nghiền nát tiêu hủy vỏ ống định kỳ.';
+      legalDoc = 'Thông tư 20/2017/TT-BYT';
+    } else if (lower.includes('98') || lower.includes('thiết bị') || lower.includes('loại d') || lower.includes('kiểm định') || lower.includes('máy thở')) {
+      topic = 'Nghị định 98/2021/NĐ-CP & TT 05/2022/TT-BYT - Quản lý TBYT';
+      explanation = 'Phân loại trang thiết bị y tế theo mức độ rủi ro: Loại A (bông gạc), Loại B (máy điện tim), Loại C (bơm tiêm điện, monitor), Loại D (máy thở, máy sốc tim can thiệp trực tiếp tính mạng). Thiết bị loại D bắt buộc kiểm định an toàn điện lực (dòng rò < 100µA) và dán tem chu kỳ hằng năm bởi các tổ chức được Bộ Y tế cấp phép (Quatest 1, NIEMET).';
+      legalDoc = 'Nghị định 98/2021/NĐ-CP';
+    } else if (lower.includes('22') || lower.includes('tủ trực') || lower.includes('cơ số')) {
+      topic = 'Thông tư 22/2011/TT-BYT - Quy chế Khoa Dược & Tủ trực lâm sàng';
+      explanation = 'Quy định danh mục cơ số thuốc cấp cứu tủ trực buồng bệnh do Giám đốc Bệnh viện phê duyệt. Bắt buộc bàn giao đủ cơ số giữa các ca trực. Cho phép điều dưỡng rút khẩn cấp thuốc cấp cứu và hoàn bù theo Phiếu dự trù Mẫu số 01/TT22.';
+      legalDoc = 'Thông tư 22/2011/TT-BYT';
+    } else if (lower.includes('36') || lower.includes('fefo') || lower.includes('gsp')) {
+      topic = 'Thông tư 36/2018/TT-BYT - Thực hành tốt bảo quản thuốc (GSP)';
+      explanation = 'Bắt buộc áp dụng nguyên tắc xuất kho FEFO (First Expired, First Out) đối với toàn bộ dược phẩm và sinh phẩm để hạn chế tối đa việc thuốc hết hạn phải tiêu hủy. Quy định điều kiện bảo quản dây chuyền lạnh 2°C - 8°C.';
+      legalDoc = 'Thông tư 36/2018/TT-BYT';
+    }
+
+    const card: AgentActionCard = {
+      cardType: 'legal_guide',
+      title: `Tài Liệu Pháp Quy: ${topic}`,
+      summary: 'Căn cứ áp dụng trực tiếp trong quy trình lâm sàng Đồ án 2',
+      data: { doc_title: topic, content: explanation },
+      primaryActionLabel: 'Mở Thư Viện Văn Bản Luật',
+      primaryActionType: 'OPEN_LEGAL_MODAL',
+      status: 'pending'
+    };
+
+    const replyMessage: ChatMessage = {
+      id: `msg-agent-${Date.now()}`,
+      sender: 'agent',
+      text: `### Cố Vấn Pháp Quy Y Tế: ${topic}\n\n${explanation}\n\nBạn có thể mở Thư viện văn bản pháp luật để xem nguyên văn thông tư và nghị định.`,
+      timestamp: nowStr,
+      legalReference: {
+        lawCode: legalDoc,
+        title: topic,
+        clause: 'Quy chuẩn bắt buộc'
+      },
+      card,
+      suggestedChips: ['Quy định vỏ ống Morphin TT 20', 'Phác đồ Adrenalin phản vệ TT 51', 'Đối soát ca trực 07:00 AM']
+    };
+
+    return { replyMessage };
+  }
+
+  // -------------------------------------------------------------------------
+  // INTENT 2: ĐIỀU HƯỚNG TAB & TRUY XUẤT NHANH (TAB NAVIGATION & QUICK VIEW)
+  // -------------------------------------------------------------------------
+  if (anyKeyword(lower, ['xem tủ trực', 'mở tủ trực', 'vào tủ trực', 'chuyển sang tủ trực', 'tôi muốn xem tủ trực', 'xem sổ nợ', 'mở sổ nợ'])) {
+    const activeDebts = currentState.debts.filter(d => d.status === 'debt');
+    const narcoticDebts = activeDebts.filter(d => d.isNarcotic || d.itemType === 'Thuốc gây nghiện');
+    const pendingAmpoules = narcoticDebts.filter(d => !d.ampouleReturned);
+
+    const card: AgentActionCard = {
+      cardType: 'shift_handover_report',
+      title: 'Tủ Trực Cấp Cứu & Sổ Nợ Thuốc Lâm Sàng',
+      summary: `Hiện đang quản lý ${activeDebts.length} phiếu nợ trực, ${pendingAmpoules.length} vỏ ống Morphin chờ hoàn bù`,
+      data: {
+        active_debts_count: activeDebts.length,
+        narcotic_count: narcoticDebts.length,
+        pending_ampoules_count: pendingAmpoules.length,
+        formType: 'EMERGENCY_BORROW_TICKET'
+      },
+      primaryActionLabel: 'Chuyển Đến Sổ Nợ Tủ Trực',
+      primaryActionType: 'NAVIGATE',
+      targetTab: 'debt',
+      status: 'pending'
+    };
+
+    const replyMessage: ChatMessage = {
+      id: `msg-agent-${Date.now()}`,
+      sender: 'agent',
+      text: `Đang mở phân hệ **Tủ Trực Lâm Sàng & Sổ Nợ Mượn Khẩn** (Điều 10 Thông tư 22/2011/TT-BYT):\n\n` +
+            `• **Phiếu mượn đang lưu hành:** **${activeDebts.length} phiếu**\n` +
+            `• **Thuốc gây nghiện đã rút:** **${narcoticDebts.length} ống**\n` +
+            `• **Vỏ ống chưa hoàn nộp:** **${pendingAmpoules.length} vỏ** ${pendingAmpoules.length > 0 ? '🔴 (Yêu cầu thu hồi)' : '🟢'}\n\n` +
+            `Bạn có thể kiểm tra trực tiếp danh sách phiếu nợ hoặc thao tác hoàn nộp vỏ ống tại tab Sổ nợ.`,
+      timestamp: nowStr,
+      legalReference: {
+        lawCode: 'Thông tư 22/2011/TT-BYT',
+        title: 'Quy chế Tủ trực lâm sàng',
+        clause: 'Điều 10 - Quản lý cơ số thuốc trực'
+      },
+      card,
+      suggestedChips: ['Đối soát ca trực 07:00 AM', 'Lập phiếu dự trù Mẫu 01', 'Xem bảng kho FEFO']
+    };
+
+    return { replyMessage };
+  }
+
+  // -------------------------------------------------------------------------
+  // INTENT 3: ĐỐI SOÁT GIAO BAN CA TRỰC 07:00 AM & PHÁT HIỆN LỆCH SỔ (TT 22 & TT 20)
+  // -------------------------------------------------------------------------
+  if (anyKeyword(lower, [
+    'đối soát', 'giao ban', 'ca trực', 'ca đêm', 'báo cáo ca', 'chốt ca', 'bàn giao ca', '07:00',
+    'lệch sổ', 'tổng hợp nợ', 'nợ vỏ', 'kiểm tra nợ', 'sổ nợ', 'phiếu nợ', 'vỏ morphin', 'vỏ ống',
+    'chưa nộp vỏ', 'thu hồi vỏ'
+  ])) {
     const activeDebts = currentState.debts.filter(d => d.status === 'debt');
     const narcoticDebts = activeDebts.filter(d => d.isNarcotic || d.itemType === 'Thuốc gây nghiện');
     const pendingAmpoules = narcoticDebts.filter(d => !d.ampouleReturned);
@@ -379,195 +519,60 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 1: MƯỢN KHẨN THUỐC / VẬT TƯ CA ĐÊM & Y LỆNH CẤP CỨU (TT 22 & TT 20)
-  // Xử lý linh hoạt mọi câu từ tự nhiên: "cần dùng gấp", "lấy 4 lọ", "tiêm khẩn cấp"...
+  // INTENT 4: BÁO HỎNG TRANG THIẾT BỊ Y TẾ (NĐ 98/2021)
+  // Ưu tiên chạy TRƯỚC mượn thuốc để tránh nhầm lẫn thiết bị có từ "cấp cứu" hoặc "bơm tiêm"
   // -------------------------------------------------------------------------
-  const hasDispenseAction = anyKeyword(lower, [
-    'mượn', 'lấy', 'rút', 'xuất', 'cần', 'xin', 'cho', 'tiêm', 'truyền', 'kê', 'cấp', 'phát', 'dùng', 'lập phiếu', 'kê nợ'
+  const hasEquipmentKeyword = anyKeyword(lower, [
+    'hỏng', 'báo hỏng', 'sự cố', 'báo lỗi', 'lỗi máy', 'xì khí', 'nứt bẫy', 'rách', 'chập', 'hư',
+    'mất tín hiệu', 'mất nguồn', 'không nạp', 'không lên', 'hết pin', 'pin chai', 'chai pin', 'chai',
+    'kẹt', 'chập chờn', 'rò điện', 'đơ', 'treo', 'kêu', 'hỏng máy', 'sửa máy', 'lỗi kẹt', 'nứt', 'trục trặc'
   ]);
-  const hasUrgencyOrMed = anyKeyword(lower, [
-    'gấp', 'khẩn', 'ngay', 'cấp cứu', 'stat', 'liều', 'lọ', 'ống', 'buồng', 'bệnh nhân', 'bn'
-  ]) || MED_CATALOG.some(m => anyKeyword(lower, m.aliases));
-  const isDispenseIntent = hasDispenseAction && hasUrgencyOrMed && !anyKeyword(lower, [
-    'báo hỏng', 'sửa', 'hết hạn', 'kiểm kê', 'chuỗi lạnh', 'đối soát', 'giao ban', 'toàn vẹn', 'lập dự trù bù'
-  ]);
+  const matchedDevice = findMatchedDevice(lower);
+  const isEquipmentIntent = (hasEquipmentKeyword && (matchedDevice || anyKeyword(lower, ['máy', 'thiết bị', 'bơm tiêm điện', 'monitor', 'sensor', 'dây thở']))) ||
+    (lower.includes('hỏng') && anyKeyword(lower, ['máy', 'thiết bị']));
 
-  if (isDispenseIntent) {
-    let matchedMed = MED_CATALOG.find(m => anyKeyword(lower, m.aliases));
-    if (!matchedMed) {
-      matchedMed = MED_CATALOG[0]; // Mặc định Morphin
-    }
-
-    // 1. Trích xuất số lượng: Ưu tiên bắt số đi liền với đơn vị bao bì dược phẩm (lọ, ống, viên...)
-    let quantityNum = 2;
-    const unitMatch = lower.match(/(\d+)\s*(lọ|ống|bộ|cái|hộp|liều|chai|viên)/);
-    if (unitMatch) {
-      quantityNum = parseInt(unitMatch[1], 10);
-    } else {
-      const verbQtyMatch = lower.match(/(?:rút|lấy|mượn|dùng|tiêm|xuất|cần)\s*(?:gấp|khẩn)?\s*(\d+)/);
-      if (verbQtyMatch) {
-        quantityNum = parseInt(verbQtyMatch[1], 10);
-      } else {
-        const anyNumber = lower.match(/(\d+)/);
-        if (anyNumber) quantityNum = parseInt(anyNumber[1], 10);
-      }
-    }
-    const quantityStr = `${quantityNum} ${matchedMed.unit}`;
-
-    // 2. Trích xuất tên bệnh nhân: Lọc bỏ các từ stop-words như "1", "cần", "dùng"...
-    let patientName = 'Bệnh nhân cấp cứu A9';
-    const patMatch = text.match(/(?:cho\s+)?(?:bệnh nhân|bn|chị|anh|bác)\s+([A-ZÀ-Ỹa-zà-ỹ0-9\s\-]+?)(?=\s+(?:ở|tại|buồng|giường|phòng|khoa|cần|tiêm|dùng|đang|$))/i);
-    if (patMatch) {
-      const candidate = patMatch[1].trim();
-      const ignoreWords = ['1', 'một', 'cần', 'dùng', 'gấp', 'khẩn', 'nặng', 'cấp cứu', 'a9', 'nam', 'nữ'];
-      if (!ignoreWords.includes(candidate.toLowerCase()) && candidate.length > 2) {
-        patientName = candidate;
-      }
-    }
-    if (lower.includes('trí') || lower.includes('8820')) {
-      patientName = 'Võ Minh Trí (BN-8820)';
-    } else if (lower.includes('lan') || lower.includes('8825')) {
-      patientName = 'Đặng Thị Lan (BN-8825)';
-    } else if (lower.includes('đăng') || lower.includes('8791')) {
-      patientName = 'Nguyễn Hải Đăng (BN-8791)';
-    }
-
-    let patientRoom = 'Buồng Cấp Cứu 3 - Giường 02';
-    const roomMatch = text.match(/(buồng|giường|phòng|khoa)\s+([A-Za-z0-9\s\-]+?)(?=\s+(?:để|do|vì|cần|tiêm|dùng|$))/i);
-    if (roomMatch) {
-      patientRoom = `${roomMatch[1]} ${roomMatch[2]}`.trim();
-    } else if (lower.includes('phòng mổ') || lower.includes('mổ')) {
-      patientRoom = 'Phòng mổ 1 - Khu Phẫu thuật';
-    } else if (lower.includes('icu')) {
-      patientRoom = 'Hồi sức tích cực ICU - Giường 05';
-    }
-
-    let clinicalReason = 'Cấp cứu đau thắt ngực nhồi máu cơ tim cấp';
-    if (lower.includes('sốc phản vệ')) {
-      clinicalReason = 'Cấp cứu sốc phản vệ độ 3 sau tiêm thuốc (Phác đồ Thông tư 51/2017)';
-    } else if (lower.includes('khởi mê')) {
-      clinicalReason = 'Khởi mê phẫu thuật sọ não cấp cứu';
-    } else if (lower.includes('gãy') || lower.includes('chấn thương')) {
-      clinicalReason = 'Đa chấn thương gãy hở xương, giảm đau tiền phẫu';
-    }
-
-    const code = `PN-2026-${Math.floor(100 + Math.random() * 900)}`;
-    const newDebt: DebtRecord = {
-      id: `debt-${Date.now()}`,
-      code,
-      itemName: matchedMed.name,
-      itemType: matchedMed.type as any,
-      quantity: quantityStr,
-      patientName,
-      patientRoom,
-      borrowTime: nowStr,
-      borrowDate: 'Hôm nay',
-      borrowerName: 'ĐD. Lê Thị Thu (Ca trực đêm)',
-      status: 'debt',
-      note: clinicalReason,
-      legalBasis: matchedMed.isNarcotic ? 'Thông tư 22/2011/TT-BYT & TT 20/2017/TT-BYT' : 'Thông tư 22/2011/TT-BYT',
-      ampouleReturned: matchedMed.isNarcotic ? false : true,
-      ampouleDestroyed: false,
-      isNarcotic: matchedMed.isNarcotic
-    };
-
-    // Đánh giá CDSS An toàn Dược lâm sàng (Tầng 1 Offline)
-    const cdssAlert = evaluateLocalCDSS(matchedMed.name, quantityNum, text);
-
-    const card: AgentActionCard = {
-      cardType: 'borrow_confirm',
-      title: `Xác nhận rút mượn khẩn ${matchedMed.name}`,
-      summary: `Rút ${quantityStr} từ cơ số tủ trực cấp cứu ban đêm`,
-      data: {
-        item_name: matchedMed.name,
-        quantity: quantityNum,
-        quantity_str: quantityStr,
-        patient_name: patientName,
-        patient_room: patientRoom,
-        clinical_reason: clinicalReason,
-        is_narcotic: matchedMed.isNarcotic,
-        debt_record: newDebt
-      },
-      primaryActionLabel: `Xác Nhận Xuất Thuốc (${code})`,
-      primaryActionType: 'EXECUTE_BORROW',
-      targetTab: 'debt',
-      status: 'pending',
-      cdssAlert
-    };
-
-    let cdssWarningMarkdown = '';
-    if (cdssAlert) {
-      cdssWarningMarkdown =
-        `\n\n> ⚠️ **${cdssAlert.title}**\n` +
-        `> ${cdssAlert.message}\n` +
-        (cdssAlert.antidoteRecommendation ? `> 💡 **Khuyến cáo:** ${cdssAlert.antidoteRecommendation}\n` : '') +
-        (cdssAlert.regulatoryReference ? `> *Căn cứ: ${cdssAlert.regulatoryReference}*\n\n` : '\n');
-    }
-
-    const replyMessage: ChatMessage = {
-      id: `msg-agent-${Date.now()}`,
-      sender: 'agent',
-      text: `Tôi đã lập dự thảo **Phiếu Nợ Mượn Khẩn Cấp (${code})** cho bệnh nhân **${patientName}** tại **${patientRoom}**:\n\n` +
-            `• **Mặt hàng:** ${matchedMed.name} (Phân loại: *${matchedMed.type}*)\n` +
-            `• **Số lượng:** ${quantityStr}\n` +
-            `• **Chỉ định:** ${clinicalReason}\n` +
-            (matchedMed.isNarcotic
-              ? `• **Ràng buộc pháp lý:** Theo Điều 15 Thông tư 20/2017/TT-BYT, thuốc gây nghiện bắt buộc phải thu hồi vỏ ống thủy tinh rỗng vào khay kiểm soát sau khi tiêm.\n`
-              : `• **Căn cứ:** Điều 10 Thông tư 22/2011/TT-BYT (Quy chế Tủ trực khoa lâm sàng).\n`) +
-            cdssWarningMarkdown +
-            `Vui lòng kiểm tra thẻ hành động bên dưới và bấm nút xác nhận để mở hộp thoại ký số / nhập PIN chuyên môn.`,
-      timestamp: nowStr,
-      legalReference: {
-        lawCode: matchedMed.isNarcotic ? 'Thông tư 20/2017 & TT 22/2011' : 'Thông tư 22/2011/TT-BYT',
-        title: matchedMed.isNarcotic ? 'Quản lý thuốc gây nghiện & Tủ trực' : 'Quy chế Tủ trực lâm sàng',
-        clause: matchedMed.isNarcotic ? 'Điều 15 TT 20 (Thu hồi vỏ) & Điều 10 TT 22' : 'Điều 10 - Mượn khẩn ca trực'
-      },
-      card,
-      cdssAlert,
-      pipelineStage: 'offline_engine',
-      suggestedChips: [
-        'Thu hồi vỏ ống Morphin',
-        'Đối soát ca trực 07:00 AM',
-        'Báo hỏng máy thở PB840'
-      ]
-    };
-
-    return { replyMessage };
-  }
-
-  // -------------------------------------------------------------------------
-  // INTENT 2: BÁO HỎNG TRANG THIẾT BỊ Y TẾ (NĐ 98/2021)
-  // -------------------------------------------------------------------------
-  if (anyKeyword(lower, ['hỏng', 'báo hỏng', 'sự cố', 'xì khí', 'lỗi máy', 'hở', 'chập', 'hư'])) {
-    let matchedDevice = DEVICE_CATALOG.find(d => anyKeyword(lower, d.aliases));
-    if (!matchedDevice) {
-      matchedDevice = DEVICE_CATALOG[0]; // Mặc định PB840
-    }
+  if (isEquipmentIntent) {
+    const device = matchedDevice || DEVICE_CATALOG[0]; // Mặc định PB840
 
     let location = 'Phòng mổ 2 - Khu Phẫu thuật';
-    if (lower.includes('cấp cứu') || lower.includes('a9')) {
+    const locMatch = text.match(/(phòng mổ\s*\d*|buồng\s*[A-Za-z0-9\-]+|khoa\s*[A-Za-z0-9\s\-]+|icu)/i);
+    if (locMatch) {
+      location = locMatch[0].trim();
+    } else if (lower.includes('cấp cứu') || lower.includes('a9')) {
       location = 'Khoa Cấp Cứu A9 - Buồng Hồi sức 1';
     } else if (lower.includes('icu') || lower.includes('hồi sức')) {
       location = 'Khoa Hồi sức tích cực ICU';
+    } else if (lower.includes('buồng 3') || lower.includes('cc3')) {
+      location = 'Buồng Cấp Cứu 3';
     }
 
     let issue = 'Dây thở silicon nứt bẫy nước rách sensor O2, áp lực Ppeak tụt';
-    if (lower.includes('pin') || lower.includes('nguồn')) {
+    if (lower.includes('pin') || lower.includes('nguồn') || lower.includes('mất nguồn') || lower.includes('chai')) {
       issue = 'Lỗi pin dự phòng chai, mất nguồn khi ngắt điện lưới 220V';
-    } else if (lower.includes('dòng rò') || lower.includes('giật')) {
+    } else if (lower.includes('dòng rò') || lower.includes('giật') || lower.includes('rò điện')) {
       issue = 'Nghi ngờ rò điện vỏ máy, không đạt chuẩn an toàn IEC 60601-1';
+    } else if (lower.includes('nạp năng lượng') || lower.includes('không nạp')) {
+      issue = 'Không nạp được năng lượng tụ điện, lỗi mạch nạp xả sốc tim';
+    } else if (lower.includes('kẹt') || lower.includes('pít-tông') || lower.includes('pit-tong') || lower.includes('piston')) {
+      issue = 'Kẹt cơ cấu pít-tông đẩy bơm tiêm, motor bước không truyền động';
+    } else if (lower.includes('mất tín hiệu') || lower.includes('ecg') || lower.includes('spo2') || lower.includes('tín hiệu')) {
+      issue = 'Mất tín hiệu cảm biến theo dõi, chập chờn cáp kết nối module';
+    } else if (lower.includes('xì khí') || lower.includes('nứt') || lower.includes('áp lực')) {
+      issue = 'Xì khí nứt bẫy nước, tụt áp lực đường thở Ppeak';
+    } else if (lower.includes('báo lỗi') || lower.includes('lỗi')) {
+      issue = 'Hệ thống báo mã lỗi kỹ thuật, cần kỹ sư phòng TBYT kiểm tra';
     }
 
-    const urgency = matchedDevice.risk === 'D' ? 'urgent' : 'warning';
+    const urgency = device.risk === 'D' ? 'urgent' : 'warning';
     const code = `SC-2026-${Math.floor(100 + Math.random() * 900)}`;
 
     const newTicket: EquipmentTicket = {
       id: `eq-${Date.now()}`,
       code,
-      deviceName: matchedDevice.name,
-      deviceModel: matchedDevice.model,
-      serialNumber: matchedDevice.serial,
-      riskClass: matchedDevice.risk as any,
+      deviceName: device.name,
+      deviceModel: device.model,
+      serialNumber: device.serial,
+      riskClass: device.risk as any,
       accessoryIssue: issue,
       location,
       urgency: urgency as any,
@@ -577,18 +582,18 @@ export function processClinicalUserQuery(
       lastInspectionDate: '15/04/2026',
       nextInspectionDue: '15/04/2027',
       inspectionUnit: 'Quatest 1',
-      legalBasis: `Điều 34 Nghị định 98/2021/NĐ-CP - Quản lý thiết bị loại ${matchedDevice.risk}`
+      legalBasis: `Điều 34 Nghị định 98/2021/NĐ-CP - Quản lý thiết bị loại ${device.risk}`
     };
 
     const card: AgentActionCard = {
       cardType: 'incident_confirm',
       title: `Phiếu Báo Hỏng Thiết Bị Y Tế (${code})`,
-      summary: `Thiết bị Loại ${matchedDevice.risk} (${matchedDevice.name}) gặp sự cố tại ${location}`,
+      summary: `Thiết bị Loại ${device.risk} (${device.name}) gặp sự cố tại ${location}`,
       data: {
-        device_name: matchedDevice.name,
-        device_model: matchedDevice.model,
-        serial_number: matchedDevice.serial,
-        risk_class: matchedDevice.risk,
+        device_name: device.name,
+        device_model: device.model,
+        serial_number: device.serial,
+        risk_class: device.risk,
         location,
         accessory_issue: issue,
         urgency,
@@ -604,8 +609,8 @@ export function processClinicalUserQuery(
       id: `msg-agent-${Date.now()}`,
       sender: 'agent',
       text: `Đã thiết lập dự thảo **Phiếu Báo Hỏng Sự Cố TBYT (${code})**:\n\n` +
-            `• **Thiết bị:** ${matchedDevice.name} (Model: *${matchedDevice.model}* - SN: \`${matchedDevice.serial}\`)\n` +
-            `• **Mức độ rủi ro:** Phân loại **Loại ${matchedDevice.risk}** theo Nghị định 98/2021/NĐ-CP (${urgency === 'urgent' ? '🔴 Ưu tiên khẩn cấp P1 can thiệp sự sống' : '🟡 Ưu tiên tiêu chuẩn'})\n` +
+            `• **Thiết bị:** ${device.name} (Model: *${device.model}* - SN: \`${device.serial}\`)\n` +
+            `• **Mức độ rủi ro:** Phân loại **Loại ${device.risk}** theo Nghị định 98/2021/NĐ-CP (${urgency === 'urgent' ? '🔴 Ưu tiên khẩn cấp P1 can thiệp sự sống' : '🟡 Ưu tiên tiêu chuẩn'})\n` +
             `• **Vị trí:** ${location}\n` +
             `• **Hiện tượng lỗi:** ${issue}\n` +
             `• **Điều phối kỹ thuật:** Gửi cảnh báo Telegram Bot đến KS. Đặng Văn Nam (Đội TBYT trực ca).\n\n` +
@@ -614,7 +619,7 @@ export function processClinicalUserQuery(
       legalReference: {
         lawCode: 'Nghị định 98/2021/NĐ-CP & TT 05/2022/TT-BYT',
         title: 'Quản lý Trang thiết bị y tế',
-        clause: `Điều 34 & Điều 40 - Phân loại loại ${matchedDevice.risk}`
+        clause: `Điều 34 & Điều 40 - Phân loại loại ${device.risk}`
       },
       card,
       suggestedChips: [
@@ -628,7 +633,7 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 3: TRUY VẤN THUỐC CẬN HẠN & KHO FEFO (TT 36/2018 GSP)
+  // INTENT 5: TRUY VẤN THUỐC CẬN HẠN & KHO FEFO (TT 36/2018 GSP)
   // -------------------------------------------------------------------------
   if (anyKeyword(lower, ['hết hạn', 'cận hạn', 'fefo', 'date', 'hạn dùng', 'sắp hết hạn'])) {
     const sorted = [...currentState.batches].sort((a, b) => a.daysLeft - b.daysLeft);
@@ -678,9 +683,12 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 4: CẢNH BÁO CẠN KHO & DỰ TRÙ BÙ TỒN KHO (TT 22 MẪU 01)
+  // INTENT 6: CẢNH BÁO CẠN KHO & DỰ TRÙ BÙ TỒN KHO (TT 22 MẪU 01)
   // -------------------------------------------------------------------------
-  if (anyKeyword(lower, ['cạn kho', 'thiếu thuốc', 'dự trù', 'mẫu 01', 'bù cơ số', 'hết hàng', 'dưới min', 'bù thuốc'])) {
+  if (anyKeyword(lower, [
+    'cạn kho', 'thiếu thuốc', 'dự trù', 'mẫu 01', 'bù cơ số', 'hết hàng', 'sắp hết',
+    'chạm ngưỡng', 'ngưỡng min', 'dưới min', 'bù thuốc', 'cần bù', 'hết thuốc', 'cạn tồn', 'tồn kho thấp', 'tồn min'
+  ])) {
     const lowBatches = currentState.batches.filter(b => b.currentStock <= b.minThreshold);
     let totalNeeded = 0;
     const items = lowBatches.map(b => {
@@ -740,9 +748,9 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 5: GIÁM SÁT CHUỖI LẠNH & BIỆT TRỮ VẮC XIN (WHO PQS)
+  // INTENT 7: GIÁM SÁT CHUỖI LẠNH & BIỆT TRỮ VẮC XIN (WHO PQS)
   // -------------------------------------------------------------------------
-  if (anyKeyword(lower, ['chuỗi lạnh', 'nhiệt độ', 'vắc xin', 'datalogger', 'buồng lạnh', 'mkt', 'tủ lạnh'])) {
+  if (anyKeyword(lower, ['chuỗi lạnh', 'nhiệt độ', 'vắc xin', 'datalogger', 'buồng lạnh', 'mkt', 'tủ lạnh', 'mất điện tủ', 'arrhenius'])) {
     const temp = currentState.coldChainTemp;
     const isNormal = temp >= 2.0 && temp <= 8.0;
 
@@ -783,9 +791,9 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 6: ĐỐI SOÁT KIỂM TOÁN BẤT BIẾN (NĐ 130 HMAC-SHA256)
+  // INTENT 8: ĐỐI SOÁT KIỂM TOÁN BẤT BIẾN (NĐ 130 HMAC-SHA256)
   // -------------------------------------------------------------------------
-  if (anyKeyword(lower, ['kiểm toán', 'toàn vẹn', 'chuỗi băm', 'chữ ký số', 'gian lận', 'audit', 'sha256', 'bảo mật'])) {
+  if (anyKeyword(lower, ['kiểm toán', 'toàn vẹn', 'chuỗi băm', 'chữ ký số', 'gian lận', 'audit', 'sha256', 'bảo mật', 'sổ kiểm toán'])) {
     const card: AgentActionCard = {
       cardType: 'audit_integrity',
       title: 'Sổ Kiểm Toán Lâm Sàng Bất Biến (HMAC-SHA256)',
@@ -821,70 +829,9 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 7: TƯ VẤN QUY CHUẨN PHÁP LUẬT Y TẾ & PHÁC ĐỒ CẤP CỨU
+  // INTENT 9: THỊ GIÁC AI - BÓC TÁCH HÓA ĐƠN GTGT & PHIẾU GIAO HÀNG DƯỢC PHẨM (VLM OCR)
   // -------------------------------------------------------------------------
-  if (anyKeyword(lower, ['luật', 'thông tư', 'nghị định', 'quy định', 'điều khoản', 'pháp lý', 'nguyên tắc', 'tại sao', 'phản vệ', 'adrenalin', 'vỡ'])) {
-    let topic = 'Tổng quan Khung Pháp lý Y tế Bệnh viện';
-    let explanation = 'Hệ thống vận hành đồng bộ theo 6 trụ cột pháp lý: TT 22/2011 (Tủ trực), TT 20/2017 (Gây nghiện & Vỏ ống), TT 51/2017 (Cấp cứu phản vệ), TT 36/2018 (FEFO & GSP), NĐ 98/2021 (Thiết bị y tế loại D), và NĐ 151/2017 (Tài sản công).';
-    let legalDoc = 'Văn bản quy phạm pháp luật Y tế Việt Nam';
-
-    if (lower.includes('phản vệ') || lower.includes('51') || lower.includes('adrenalin') || lower.includes('sốc')) {
-      topic = 'Thông tư 51/2017/TT-BYT - Phác đồ Cấp cứu Sốc Phản Vệ';
-      explanation = 'Thông tư 51 quy định **Adrenalin 1mg/1ml** là thuốc thiết yếu cấp cứu sốc phản vệ hàng đầu, phải có sẵn tại tất cả các buồng tiêm và tủ trực cấp cứu. Tiêm bắp ngay lập tức khi xuất hiện triệu chứng phản vệ từ độ II trở lên (khó thở, tụt huyết áp, nổi mề đay toàn thân, phù Quincke). Liều người lớn: 1/2 - 1 ống (0.5 - 1mg); trẻ em: 1/5 - 1/2 ống tùy cân nặng. Tiêm bắp mặt trước ngoài đùi, nhắc lại sau mỗi 3 - 5 phút nếu huyết áp chưa cải thiện. Tuyệt đối không chờ hội chẩn làm lỡ thời gian vàng cứu sống người bệnh.';
-      legalDoc = 'Thông tư 51/2017/TT-BYT';
-    } else if (lower.includes('vỡ') || lower.includes('làm mất') || lower.includes('hỏng vỏ')) {
-      topic = 'Quy trình xử lý vỡ/mất vỏ ống thuốc gây nghiện (TT 20/2017)';
-      explanation = 'Theo Điều 15 Thông tư 20/2017/TT-BYT, trường hợp vỏ ống thuốc gây nghiện bị rơi vỡ ngoài ý muốn trong quá trình bẻ ống hoặc tiêm cho người bệnh, điều dưỡng không được tự ý xóa nợ. Bắt buộc: (1) Thu gom toàn bộ các mảnh vỡ thủy tinh còn lại; (2) Lập **Biên bản giải trình vỡ ống thuốc gây nghiện** có chữ ký xác nhận của Bác sĩ trực buồng bệnh làm chứng; (3) Mang biên bản kèm mảnh vỡ sang Kho Dược nộp cho Dược sĩ để được mở khóa xác nhận và duyệt cấp bù cơ số tủ trực.';
-      legalDoc = 'Điều 15 Thông tư 20/2017/TT-BYT';
-    } else if (lower.includes('20') || lower.includes('vỏ ống') || lower.includes('gây nghiện') || lower.includes('morphin')) {
-      topic = 'Thông tư 20/2017/TT-BYT - Quản lý thuốc kiểm soát đặc biệt';
-      explanation = 'Quy định thuốc gây nghiện (Morphin, Fentanyl) bắt buộc phải bảo quản trong tủ sắt có 2 lớp khóa. **Điều 15** quy định phải thu hồi 100% vỏ ống đã tiêm vào khay kiểm soát trước khi cấp bù ống mới. **Điều 16** quy định Hội đồng 3 bên (Dược sĩ, Điều dưỡng, Bác sĩ/Lãnh đạo) tổ chức nghiền nát tiêu hủy vỏ ống định kỳ.';
-      legalDoc = 'Thông tư 20/2017/TT-BYT';
-    } else if (lower.includes('98') || lower.includes('thiết bị') || lower.includes('loại d') || lower.includes('kiểm định')) {
-      topic = 'Nghị định 98/2021/NĐ-CP & TT 05/2022/TT-BYT - Quản lý TBYT';
-      explanation = 'Phân loại trang thiết bị y tế theo mức độ rủi ro: Loại A (bông gạc), Loại B (máy điện tim), Loại C (bơm tiêm điện, monitor), Loại D (máy thở, máy sốc tim can thiệp trực tiếp tính mạng). Thiết bị loại D bắt buộc kiểm định an toàn điện lực (dòng rò < 100µA) và dán tem chu kỳ hằng năm bởi các tổ chức được Bộ cấp phép (Quatest 1, NIEMET).';
-      legalDoc = 'Nghị định 98/2021/NĐ-CP';
-    } else if (lower.includes('22') || lower.includes('tủ trực') || lower.includes('cơ số')) {
-      topic = 'Thông tư 22/2011/TT-BYT - Quy chế Khoa Dược & Tủ trực lâm sàng';
-      explanation = 'Quy định danh mục cơ số thuốc cấp cứu tủ trực buồng bệnh do Giám đốc Bệnh viện phê duyệt. Bắt buộc bàn giao đủ cơ số giữa các ca trực. Cho phép điều dưỡng rút khẩn cấp thuốc cấp cứu và hoàn bù theo Phiếu dự trù Mẫu số 01/TT22.';
-      legalDoc = 'Thông tư 22/2011/TT-BYT';
-    } else if (lower.includes('36') || lower.includes('fefo') || lower.includes('gsp')) {
-      topic = 'Thông tư 36/2018/TT-BYT - Thực hành tốt bảo quản thuốc (GSP)';
-      explanation = 'Bắt buộc áp dụng nguyên tắc xuất kho FEFO (First Expired, First Out) đối với toàn bộ dược phẩm và sinh phẩm để hạn chế tối đa việc thuốc hết hạn phải tiêu hủy. Quy định điều kiện bảo quản dây chuyền lạnh 2°C - 8°C.';
-      legalDoc = 'Thông tư 36/2018/TT-BYT';
-    }
-
-    const card: AgentActionCard = {
-      cardType: 'legal_guide',
-      title: `Tài Liệu Pháp Quy: ${topic}`,
-      summary: 'Căn cứ áp dụng trực tiếp trong quy trình lâm sàng Đồ án 2',
-      data: { doc_title: topic, content: explanation },
-      primaryActionLabel: 'Mở Thư Viện Văn Bản Luật',
-      primaryActionType: 'OPEN_LEGAL_MODAL',
-      status: 'pending'
-    };
-
-    const replyMessage: ChatMessage = {
-      id: `msg-agent-${Date.now()}`,
-      sender: 'agent',
-      text: `### Cố Vấn Pháp Quy Y Tế: ${topic}\n\n${explanation}\n\nBạn có thể mở Thư viện văn bản pháp luật để xem nguyên văn thông tư và nghị định.`,
-      timestamp: nowStr,
-      legalReference: {
-        lawCode: legalDoc,
-        title: topic,
-        clause: 'Quy chuẩn bắt buộc'
-      },
-      card,
-      suggestedChips: ['Quy định vỏ ống Morphin TT 20', 'Phác đồ Adrenalin phản vệ TT 51', 'Đối soát ca trực 07:00 AM']
-    };
-
-    return { replyMessage };
-  }
-
-  // -------------------------------------------------------------------------
-  // INTENT 8: THỊ GIÁC AI - BÓC TÁCH HÓA ĐƠN GTGT & PHIẾU GIAO HÀNG DƯỢC PHẨM (VLM OCR)
-  // -------------------------------------------------------------------------
-  if (anyKeyword(lower, ['hóa đơn', 'hoa don', 'ocr', 'quét ảnh', 'quet anh', 'phiếu giao hàng', 'bàn giao kho', 'chứng từ', 'quét hóa đơn', 'nhập kho'])) {
+  if (anyKeyword(lower, ['hóa đơn', 'hoa don', 'ocr', 'quét ảnh', 'quet anh', 'phiếu giao hàng', 'bàn giao kho', 'chứng từ', 'quét hóa đơn', 'nhập kho', 'bóc tách'])) {
     const ocrItems = [
       { name: 'Kháng sinh Ceftriaxone 1g', batch: 'CTX-2026-99A', expiry: '2027-08-30', quantity: 200, unit: 'lọ', unitPrice: 45000 },
       { name: 'Morphin sulfat 10mg/1ml', batch: 'MPH-2026-14B', expiry: '2026-11-20', quantity: 50, unit: 'ống', unitPrice: 28000, isNarcotic: true },
@@ -934,7 +881,165 @@ export function processClinicalUserQuery(
   }
 
   // -------------------------------------------------------------------------
-  // INTENT 9: DEFAULT GENERAL CLINICAL GUIDANCE
+  // INTENT 10: MƯỢN KHẨN THUỐC / VẬT TƯ CA ĐÊM & Y LỆNH CẤP CỨU (TT 22 & TT 20)
+  // Xử lý linh hoạt mọi câu từ tự nhiên: "cần dùng gấp", "lấy 4 lọ", "tiêm khẩn cấp"...
+  // -------------------------------------------------------------------------
+  const matchedMed = findMatchedMed(lower);
+  const hasDispenseAction = anyKeyword(lower, [
+    'mượn', 'lấy', 'rút', 'xuất', 'cần', 'xin', 'cho', 'tiêm', 'truyền', 'kê', 'cấp phát', 'dùng', 'lập phiếu nợ', 'kê nợ'
+  ]);
+  const hasUrgencyOrMed = anyKeyword(lower, [
+    'gấp', 'khẩn', 'ngay', 'cấp cứu', 'stat', 'liều', 'lọ', 'ống', 'buồng', 'bệnh nhân', 'bn'
+  ]) || !!matchedMed;
+
+  const isDispenseIntent = (hasDispenseAction && hasUrgencyOrMed) || (!!matchedMed && anyKeyword(lower, ['tiêm', 'uống', 'cho', 'rút', 'lấy', 'xuất', 'cần']));
+
+  if (isDispenseIntent) {
+    const medToUse = matchedMed || MED_CATALOG[0]; // Mặc định Morphin
+
+    // 1. Trích xuất số lượng: Ưu tiên bắt số đi liền với đơn vị bao bì dược phẩm (lọ, ống, viên...)
+    let quantityNum = 2;
+    const unitMatch = lower.match(/(\d+)\s*(lọ|ống|bộ|cái|hộp|liều|chai|viên)/);
+    if (unitMatch) {
+      quantityNum = parseInt(unitMatch[1], 10);
+    } else {
+      const verbQtyMatch = lower.match(/(?:rút|lấy|mượn|dùng|tiêm|xuất|cần|cho)\s*(?:gấp|khẩn)?\s*(\d+)/);
+      if (verbQtyMatch) {
+        quantityNum = parseInt(verbQtyMatch[1], 10);
+      } else {
+        const anyNumber = lower.match(/(\d+)/);
+        if (anyNumber) quantityNum = parseInt(anyNumber[1], 10);
+      }
+    }
+    const quantityStr = `${quantityNum} ${medToUse.unit}`;
+
+    // 2. Trích xuất tên bệnh nhân
+    let patientName = 'Bệnh nhân cấp cứu A9';
+    const patMatch = text.match(/(?:cho\s+)?(?:bệnh nhân|bn|chị|anh|bác)\s+([A-ZÀ-Ỹa-zà-ỹ0-9\s\-]+?)(?=\s+(?:ở|tại|buồng|giường|phòng|khoa|cần|tiêm|dùng|đang|$))/i);
+    if (patMatch) {
+      const candidate = patMatch[1].trim();
+      const ignoreWords = ['1', 'một', 'cần', 'dùng', 'gấp', 'khẩn', 'nặng', 'cấp cứu', 'a9', 'nam', 'nữ'];
+      if (!ignoreWords.includes(candidate.toLowerCase()) && candidate.length > 2) {
+        patientName = candidate;
+      }
+    }
+    if (lower.includes('trí') || lower.includes('8820')) {
+      patientName = 'Võ Minh Trí (BN-8820)';
+    } else if (lower.includes('lan') || lower.includes('8825')) {
+      patientName = 'Đặng Thị Lan (BN-8825)';
+    } else if (lower.includes('đăng') || lower.includes('8791')) {
+      patientName = 'Nguyễn Hải Đăng (BN-8791)';
+    }
+
+    let patientRoom = 'Buồng Cấp Cứu 3 - Giường 02';
+    const roomMatch = text.match(/(buồng|giường|phòng|khoa)\s+([A-Za-z0-9\s\-]+?)(?=\s+(?:để|do|vì|cần|tiêm|dùng|$))/i);
+    if (roomMatch) {
+      patientRoom = `${roomMatch[1]} ${roomMatch[2]}`.trim();
+    } else if (lower.includes('phòng mổ') || lower.includes('mổ')) {
+      patientRoom = 'Phòng mổ 1 - Khu Phẫu thuật';
+    } else if (lower.includes('icu')) {
+      patientRoom = 'Hồi sức tích cực ICU - Giường 05';
+    }
+
+    let clinicalReason = 'Cấp cứu đau thắt ngực nhồi máu cơ tim cấp';
+    if (lower.includes('sốc phản vệ') || lower.includes('phản vệ')) {
+      clinicalReason = 'Cấp cứu sốc phản vệ độ 3 sau tiêm thuốc (Phác đồ Thông tư 51/2017)';
+    } else if (lower.includes('khởi mê')) {
+      clinicalReason = 'Khởi mê phẫu thuật sọ não cấp cứu';
+    } else if (lower.includes('gãy') || lower.includes('chấn thương')) {
+      clinicalReason = 'Đa chấn thương gãy hở xương, giảm đau tiền phẫu';
+    } else if (lower.includes('co giật')) {
+      clinicalReason = 'Cắt cơn co giật cấp cứu';
+    } else if (lower.includes('thuốc tê')) {
+      clinicalReason = 'Giải độc ngộ độc toàn thân do thuốc tê (LAST Protocol)';
+    }
+
+    const code = `PN-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const newDebt: DebtRecord = {
+      id: `debt-${Date.now()}`,
+      code,
+      itemName: medToUse.name,
+      itemType: medToUse.type as any,
+      quantity: quantityStr,
+      patientName,
+      patientRoom,
+      borrowTime: nowStr,
+      borrowDate: 'Hôm nay',
+      borrowerName: 'ĐD. Lê Thị Thu (Ca trực đêm)',
+      status: 'debt',
+      note: clinicalReason,
+      legalBasis: medToUse.isNarcotic ? 'Thông tư 22/2011/TT-BYT & TT 20/2017/TT-BYT' : 'Thông tư 22/2011/TT-BYT',
+      ampouleReturned: medToUse.isNarcotic ? false : true,
+      ampouleDestroyed: false,
+      isNarcotic: medToUse.isNarcotic
+    };
+
+    // Đánh giá CDSS An toàn Dược lâm sàng (Tầng 1 Offline)
+    const cdssAlert = evaluateLocalCDSS(medToUse.name, quantityNum, text);
+
+    const card: AgentActionCard = {
+      cardType: 'borrow_confirm',
+      title: `Xác nhận rút mượn khẩn ${medToUse.name}`,
+      summary: `Rút ${quantityStr} từ cơ số tủ trực cấp cứu ban đêm`,
+      data: {
+        item_name: medToUse.name,
+        quantity: quantityNum,
+        quantity_str: quantityStr,
+        patient_name: patientName,
+        patient_room: patientRoom,
+        clinical_reason: clinicalReason,
+        is_narcotic: medToUse.isNarcotic,
+        debt_record: newDebt
+      },
+      primaryActionLabel: `Xác Nhận Xuất Thuốc (${code})`,
+      primaryActionType: 'EXECUTE_BORROW',
+      targetTab: 'debt',
+      status: 'pending',
+      cdssAlert
+    };
+
+    let cdssWarningMarkdown = '';
+    if (cdssAlert) {
+      cdssWarningMarkdown =
+        `\n\n> ⚠️ **${cdssAlert.title}**\n` +
+        `> ${cdssAlert.message}\n` +
+        (cdssAlert.antidoteRecommendation ? `> 💡 **Khuyến cáo:** ${cdssAlert.antidoteRecommendation}\n` : '') +
+        (cdssAlert.regulatoryReference ? `> *Căn cứ: ${cdssAlert.regulatoryReference}*\n\n` : '\n');
+    }
+
+    const replyMessage: ChatMessage = {
+      id: `msg-agent-${Date.now()}`,
+      sender: 'agent',
+      text: `Tôi đã lập dự thảo **Phiếu Nợ Mượn Khẩn Cấp (${code})** cho bệnh nhân **${patientName}** tại **${patientRoom}**:\n\n` +
+            `• **Mặt hàng:** ${medToUse.name} (Phân loại: *${medToUse.type}*)\n` +
+            `• **Số lượng:** ${quantityStr}\n` +
+            `• **Chỉ định:** ${clinicalReason}\n` +
+            (medToUse.isNarcotic
+              ? `• **Ràng buộc pháp lý:** Theo Điều 15 Thông tư 20/2017/TT-BYT, thuốc gây nghiện bắt buộc phải thu hồi vỏ ống thủy tinh rỗng vào khay kiểm soát sau khi tiêm.\n`
+              : `• **Căn cứ:** Điều 10 Thông tư 22/2011/TT-BYT (Quy chế Tủ trực khoa lâm sàng).\n`) +
+            cdssWarningMarkdown +
+            `Vui lòng kiểm tra thẻ hành động bên dưới và bấm nút xác nhận để mở hộp thoại ký số / nhập PIN chuyên môn.`,
+      timestamp: nowStr,
+      legalReference: {
+        lawCode: medToUse.isNarcotic ? 'Thông tư 20/2017 & TT 22/2011' : 'Thông tư 22/2011/TT-BYT',
+        title: medToUse.isNarcotic ? 'Quản lý thuốc gây nghiện & Tủ trực' : 'Quy chế Tủ trực lâm sàng',
+        clause: medToUse.isNarcotic ? 'Điều 15 TT 20 (Thu hồi vỏ) & Điều 10 TT 22' : 'Điều 10 - Mượn khẩn ca trực'
+      },
+      card,
+      cdssAlert,
+      pipelineStage: 'offline_engine',
+      suggestedChips: [
+        'Thu hồi vỏ ống Morphin',
+        'Đối soát ca trực 07:00 AM',
+        'Báo hỏng máy thở PB840'
+      ]
+    };
+
+    return { replyMessage };
+  }
+
+  // -------------------------------------------------------------------------
+  // INTENT 11: DEFAULT GENERAL CLINICAL GUIDANCE
   // -------------------------------------------------------------------------
   const replyMessage: ChatMessage = {
     id: `msg-agent-${Date.now()}`,
