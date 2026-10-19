@@ -199,6 +199,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             ) : null}
 
             {/* Tab: Chuỗi lạnh vắc xin */}
+            {/* ========================================================================= */}
+            {/* [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:                                             */}
+            {/* Tạm ẩn tab "Chuỗi lạnh vắc xin" để tập trung sâu vào nghiệp vụ Tủ trực    */}
+            {/* cấp cứu & Kho Dược FEFO theo phản hồi của Giảng viên hướng dẫn.           */}
+            {/* Để kích hoạt lại: Bỏ comment khối mã dưới đây.                             */}
+            {/* ========================================================================= */}
+            {/*
             {allowedTabs.includes('coldchain') ? (
               <button
                 onClick={() => {
@@ -239,6 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
               </button>
             ) : null}
+            */}
           </div>
         </div>
         )}
@@ -285,6 +293,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ) : null}
 
               {/* Tab: Kiểm kê tài sản công */}
+              {/* ========================================================================= */}
+              {/* [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:                                             */}
+              {/* Tạm ẩn tab "Kiểm kê tài sản công" (NĐ 151) vì thuộc thẩm quyền Kế toán,    */}
+              {/* giúp bài thuyết trình tập trung 100% vào Bác sĩ / Điều dưỡng buồng bệnh. */}
+              {/* Để kích hoạt lại: Bỏ comment khối mã dưới đây.                             */}
+              {/* ========================================================================= */}
+              {/*
               {allowedTabs.includes('asset_audit') ? (
                 <button
                   onClick={() => {
@@ -315,6 +330,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </button>
               ) : null}
+              */}
             </div>
           </div>
         )}

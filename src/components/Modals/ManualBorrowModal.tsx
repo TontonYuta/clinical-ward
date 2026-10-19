@@ -7,6 +7,8 @@ import React, { useState } from 'react';
 import { X, PlusCircle, AlertCircle, Shield, FileText, Pill } from 'lucide-react';
 import { DebtRecord } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
+import { ClinicalMacroAutocomplete } from '../Common/ClinicalMacroAutocomplete';
+import { ClinicalMacro, CLINICAL_MACROS } from '../../data/clinicalMacros';
 
 interface ManualBorrowModalProps {
   isOpen: boolean;
@@ -238,15 +240,58 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </div>
           </div>
 
-          {/* Clinical Reason */}
-          <div className="space-y-1">
-            <label className="font-bold text-slate-900 block text-xs sm:text-sm">
-              Chỉ định lâm sàng / Lý do mượn khẩn:
-            </label>
+          {/* Clinical Reason with Smart ICD-10 Macro Autocomplete */}
+          <div className="space-y-1 relative">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-900 block text-xs sm:text-sm">
+                Chỉ định lâm sàng / Lý do mượn khẩn <span className="text-slate-400 font-normal">(Gõ tắt ICD-10)</span>:
+              </label>
+              <span className="text-[11px] text-teal-700 font-medium">Chuẩn HL7 FHIR Condition</span>
+            </div>
+
+            <ClinicalMacroAutocomplete
+              currentText={clinicalReason}
+              onSelectMacro={(macro) => {
+                if (!clinicalReason.trim()) {
+                  setClinicalReason(macro.expansion);
+                } else {
+                  const words = clinicalReason.trimEnd().split(/\s+/);
+                  const lastWord = words[words.length - 1];
+                  if (
+                    lastWord &&
+                    (lastWord.toLowerCase() === macro.shortcut.toLowerCase() ||
+                      macro.shortcut.toLowerCase().startsWith(lastWord.toLowerCase().replace(/^\//, '')))
+                  ) {
+                    words[words.length - 1] = macro.expansion;
+                    setClinicalReason(words.join(' ') + ' ');
+                  } else {
+                    setClinicalReason((prev) => prev + '; ' + macro.expansion);
+                  }
+                }
+              }}
+              placement="top"
+              showQuickBar={true}
+            />
+
             <textarea
               rows={2}
               value={clinicalReason}
               onChange={(e) => setClinicalReason(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  const words = clinicalReason.trimEnd().split(/\s+/);
+                  if (words.length > 0) {
+                    const lastWord = words[words.length - 1]?.replace(/^\//, '').toUpperCase();
+                    const matched = CLINICAL_MACROS.find((m) => m.shortcut.toUpperCase() === lastWord);
+                    if (matched) {
+                      e.preventDefault();
+                      words[words.length - 1] = matched.expansion;
+                      setClinicalReason(words.join(' ') + ' ');
+                    }
+                  }
+                }
+              }}
+              placeholder="VD: Nhập THA, NMCT, PUV, COPD... hoặc chọn từ thanh phím tắt phía trên"
               className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:border-teal-600 focus:outline-hidden resize-none"
             />
           </div>

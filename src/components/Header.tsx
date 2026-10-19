@@ -116,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 text-slate-700 text-xs font-medium border border-slate-200/80">
           <Shield className="w-4 h-4 text-teal-700 shrink-0" />
           <span>
-            Phân quyền: <strong className="text-slate-900 font-semibold">{currentProfile.roleName}</strong> ({allowedTabs.length}/5 phân hệ)
+            Phân quyền: <strong className="text-slate-900 font-semibold">{currentProfile.roleName}</strong> ({allowedTabs.length} phân hệ lâm sàng)
           </span>
         </div>
 

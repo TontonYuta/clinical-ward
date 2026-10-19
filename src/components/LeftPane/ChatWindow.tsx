@@ -38,6 +38,8 @@ import { USER_PROFILES } from '../../data/initialData';
 import { VoiceModal } from '../Modals/VoiceModal';
 import { ImageModal } from '../Modals/ImageModal';
 import { clinicalAudio } from '../../utils/audio';
+import { ClinicalMacroAutocomplete } from '../Common/ClinicalMacroAutocomplete';
+import { ClinicalMacro, CLINICAL_MACROS } from '../../data/clinicalMacros';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -115,6 +117,51 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       title,
       description: 'Ảnh đính kèm'
     });
+  };
+
+  // Smart Clinical Macro Handler (ICD-10 & HL7 FHIR Auto-expansion)
+  const handleSelectMacro = (macro: ClinicalMacro, mode?: 'replace_word' | 'full_prompt' | 'append') => {
+    if (mode === 'full_prompt') {
+      setInputText(macro.suggestedPrompt);
+      return;
+    }
+
+    const trimmed = inputText.trimEnd();
+    const words = trimmed ? trimmed.split(/\s+/) : [];
+    if (words.length > 0) {
+      const lastWord = words[words.length - 1];
+      if (
+        lastWord.toLowerCase() === macro.shortcut.toLowerCase() ||
+        lastWord.toLowerCase() === `/${macro.shortcut.toLowerCase()}` ||
+        macro.shortcut.toLowerCase().startsWith(lastWord.toLowerCase().replace(/^\//, ''))
+      ) {
+        words[words.length - 1] = macro.expansion;
+        setInputText(words.join(' ') + ' ');
+        return;
+      }
+    }
+
+    if (!inputText.trim()) {
+      setInputText(macro.expansion + ' ');
+    } else {
+      setInputText(inputText + ' ' + macro.expansion + ' ');
+    }
+  };
+
+  // Listen for Tab or Enter to quickly expand abbreviations like THA, NMCT, PUV
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const words = inputText.trimEnd().split(/\s+/);
+      if (words.length > 0) {
+        const lastWord = words[words.length - 1]?.replace(/^\//, '').toUpperCase();
+        const matched = CLINICAL_MACROS.find((m) => m.shortcut.toUpperCase() === lastWord);
+        if (matched) {
+          e.preventDefault();
+          words[words.length - 1] = matched.expansion;
+          setInputText(words.join(' ') + ' ');
+        }
+      }
+    }
   };
 
   // Robust inline markdown formatter (supports **bold**, `code`, *italic*, _italic_, [link](url))
@@ -954,15 +1001,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       )}
 
-      {/* 4. Input Area */}
-      <div className="p-3 sm:p-3.5 bg-white border-t border-slate-200 shrink-0">
+      {/* 4. Input Area with Smart Clinical Macros (ICD-10 / FHIR) */}
+      <div className="p-3 sm:p-3.5 bg-white border-t border-slate-200 shrink-0 space-y-1.5">
+        <ClinicalMacroAutocomplete
+          currentText={inputText}
+          onSelectMacro={handleSelectMacro}
+          placement="top"
+          showQuickBar={true}
+        />
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <div className="relative flex-1">
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Nhập yêu cầu lâm sàng (VD: Lấy 2 lọ Morphin...)"
+              onKeyDown={handleInputKeyDown}
+              placeholder="Nhập yêu cầu hoặc gõ tắt (VD: THA, NMCT, PUV, COPD...)"
               className="w-full pl-4 pr-22 h-11 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
               disabled={isProcessing}
             />

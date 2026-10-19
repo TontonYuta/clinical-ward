@@ -1515,7 +1515,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           <span className="text-xs mt-0.5 tracking-tight font-medium">Kho FEFO</span>
         </button>
 
-        {/* Tab 4: Chuỗi lạnh vắc xin */}
+        {/* ========================================================================= */}
+        {/* [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:                                             */}
+        {/* Tạm ẩn 2 tab mở rộng (Chuỗi lạnh & Kiểm kê) trên thanh điều hướng mobile   */}
+        {/* để giao diện gọn gàng, tập trung vào 3 phân hệ cấp cứu trọng tâm.          */}
+        {/* Bỏ comment khối mã bên dưới nếu muốn kích hoạt lại toàn bộ 5 tab.          */}
+        {/* ========================================================================= */}
+        {/*
+        Tab 4: Chuỗi lạnh vắc xin
         <button
           onClick={() => setCurrentTab('coldchain')}
           className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer relative ${
@@ -1531,7 +1538,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           <span className="text-xs mt-0.5 tracking-tight font-medium">Chuỗi lạnh</span>
         </button>
 
-        {/* Tab 5: Kiểm kê tài sản */}
+        Tab 5: Kiểm kê tài sản
         <button
           onClick={() => setCurrentTab('asset_audit')}
           className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer relative ${
@@ -1541,6 +1548,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           <Building2 className={`w-5 h-5 ${currentTab === 'asset_audit' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
           <span className="text-xs mt-0.5 tracking-tight font-medium">Tài sản</span>
         </button>
+        */}
       </nav>
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}

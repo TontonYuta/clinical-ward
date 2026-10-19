@@ -40,8 +40,11 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     pinCode: '3333',
     rfidCardId: 'RFID-BME-6672',
     allowedActions: ['HANDOVER_EQUIPMENT', 'TRANSFER_ASSET', 'RESTORE_POWER', 'CREATE_INCIDENT'],
-    allowedTabs: ['equipment', 'asset_audit'],
-    responsibilities: 'Tiếp nhận sửa máy, quản lý sổ lý lịch máy, theo dõi hạn dán tem an toàn đo lường (NĐ 98), kiểm kê 31/12 (NĐ 151)',
+    // [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:
+    // Tinh giản tập trung 100% vào phân hệ Sự cố & Thiết bị y tế cấp cứu (NĐ 98).
+    // Bỏ comment 'asset_audit' nếu muốn mở lại Kiểm kê tài sản công 31/12 (NĐ 151).
+    allowedTabs: ['equipment' /*, 'asset_audit' */],
+    responsibilities: 'Tiếp nhận sửa máy, quản lý sổ lý lịch máy, theo dõi hạn dán tem an toàn đo lường (NĐ 98)',
     defaultTab: 'equipment',
     badgeColor: 'bg-blue-50 text-blue-800 border-blue-300'
   },
@@ -54,8 +57,11 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     pinCode: '2222',
     rfidCardId: 'RFID-PHARM-4491',
     allowedActions: ['BORROW_EMERGENCY', 'SETTLE_DEBT', 'DESTROY_AMPOULES', 'DISPATCH_FEFO', 'RESTOCK_MEDICATION', 'RESTORE_POWER', 'RELEASE_VACCINE_QUARANTINE'],
-    allowedTabs: ['fefo', 'debt', 'coldchain'],
-    responsibilities: 'Duyệt bù phiếu nợ tủ trực (TT 22), điều phối xuất thuốc theo hạn dùng FEFO, theo dõi nhiệt độ tủ lạnh vaccine (TT 36 GSP), giải phóng lô vắc xin biệt trữ',
+    // [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:
+    // Tinh giản tập trung vào Kho Dược FEFO & Sổ nợ thuốc gây nghiện tủ trực (TT 22 & TT 20).
+    // Bỏ comment 'coldchain' nếu muốn mở lại Giám sát nhiệt độ chuỗi lạnh vắc xin (TT 36 GSP).
+    allowedTabs: ['fefo', 'debt' /*, 'coldchain' */],
+    responsibilities: 'Duyệt bù phiếu nợ tủ trực (TT 22), điều phối xuất thuốc theo hạn dùng FEFO, đối soát cơ số thuốc cấp cứu',
     defaultTab: 'fefo',
     badgeColor: 'bg-purple-50 text-purple-800 border-purple-300'
   },
@@ -96,8 +102,11 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
       'RELEASE_VACCINE_QUARANTINE',
       'SWITCH_ROLE'
     ],
-    allowedTabs: ['debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'],
-    responsibilities: 'Phê duyệt mua sắm bổ sung, quyết định thanh lý tài sản nhà nước theo NĐ 151/2017 & NĐ 114/2024',
+    // [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:
+    // Tinh giản phạm vi thành 3 phân hệ lâm sàng trọng tâm buồng bệnh (Tủ trực, Thiết bị, Kho Dược).
+    // Bỏ comment để khôi phục toàn diện 5 phân hệ bệnh viện khi cần.
+    allowedTabs: ['debt', 'equipment', 'fefo' /*, 'coldchain', 'asset_audit' */],
+    responsibilities: 'Phê duyệt mua sắm bổ sung, duyệt cơ số thuốc tủ trực cấp cứu và điều phối thiết bị liên khoa',
     defaultTab: 'debt',
     badgeColor: 'bg-amber-50 text-amber-800 border-amber-300'
   }
