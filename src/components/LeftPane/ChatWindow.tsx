@@ -31,7 +31,9 @@ import {
   Wrench,
   FileSpreadsheet,
   Cpu,
-  Cloud
+  Cloud,
+  Scale,
+  BookOpen
 } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, AgentActionCard } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
@@ -585,9 +587,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
           {/* 7. Legal Guide Card */}
           {card.cardType === 'legal_guide' && (
-            <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-700">
-              <div className="font-bold text-purple-900 mb-1">{card.data.doc_title}</div>
-              <div className="line-clamp-3 text-slate-600 leading-relaxed">{formatInlineMarkdown(card.data.content)}</div>
+            <div className="p-3.5 sm:p-4 rounded-xl bg-purple-50/70 border border-purple-200/80 text-xs sm:text-sm text-slate-700 space-y-2 shadow-2xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-200/70 text-purple-900 flex items-center justify-center shrink-0">
+                  <Scale className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-purple-950 text-xs sm:text-sm truncate">{card.data.doc_title}</div>
+                  <span className="text-[11px] text-purple-700 font-medium block">Quy chuẩn y tế &amp; Căn cứ pháp luật hiện hành</span>
+                </div>
+              </div>
+              <div className="text-slate-700 leading-relaxed text-xs sm:text-sm whitespace-pre-wrap">{formatInlineMarkdown(card.data.content)}</div>
+              {onOpenLegalDocs && (
+                <button
+                  type="button"
+                  onClick={onOpenLegalDocs}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-800 hover:bg-purple-900 text-white font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Mở Căn Cứ Pháp Lý &amp; Toàn Văn Văn Bản</span>
+                </button>
+              )}
             </div>
           )}
 
