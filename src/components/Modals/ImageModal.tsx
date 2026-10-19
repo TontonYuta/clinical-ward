@@ -134,16 +134,16 @@ export const ImageModal: React.FC<ImageModalProps> = ({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
                       {item.badge}
                     </span>
                     {isSelected && <Check className="w-4 h-4 text-cyan-700 shrink-0" />}
                   </div>
 
-                  <h4 className="text-xs font-bold text-slate-900 line-clamp-1 mb-1">
+                  <h4 className="text-sm font-bold text-slate-900 line-clamp-1 mb-1">
                     {item.title}
                   </h4>
-                  <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
                     {item.description}
                   </p>
                 </div>

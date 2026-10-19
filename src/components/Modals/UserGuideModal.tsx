@@ -43,15 +43,15 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold">Tài Liệu Hướng Dẫn Sử Dụng Ứng Dụng Y Tế Lâm Sàng</h2>
-              <span className="text-[11px] text-slate-400 font-mono">
+              <h2 className="text-sm sm:text-base font-bold">Tài Liệu Hướng Dẫn Sử Dụng Ứng Dụng Y Tế Lâm Sàng</h2>
+              <span className="text-xs text-slate-400 font-mono">
                 Sổ Tay Hướng Dẫn Vận Hành Nghiệp Vụ Lâm Sàng Bệnh Viện
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -60,8 +60,8 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         {/* Body Split: Left Navigation + Right Content */}
         <div className="flex-1 flex flex-row overflow-hidden min-h-0">
           {/* Left Navigation Bar */}
-          <div className="w-64 border-r border-slate-200 bg-slate-50/80 p-3 flex flex-col gap-1 overflow-y-auto shrink-0 text-xs">
-            <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="w-64 border-r border-slate-200 bg-slate-50/80 p-3 flex flex-col gap-1 overflow-y-auto shrink-0 text-xs sm:text-sm">
+            <span className="px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
               Mục lục hướng dẫn
             </span>
 
@@ -200,14 +200,14 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             {activeSection === 'roles' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-teal-700" />
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                    <ShieldCheck className="w-4.5 h-4.5 text-teal-700" />
                     <span>Phân Quyền Vai Trò Người Dùng (Role-Based Access Control)</span>
                   </h3>
                   <button
                     type="button"
                     onClick={() => setShowPinCodes(prev => !prev)}
-                    className="text-[11px] text-slate-600 hover:text-teal-800 font-semibold flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition cursor-pointer"
+                    className="text-xs text-slate-600 hover:text-teal-800 font-semibold flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
                     title={showPinCodes ? "Ẩn mã PIN bảo mật" : "Hiện mã PIN demo"}
                   >
                     {showPinCodes ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-teal-700" />}
@@ -215,66 +215,66 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                    <div className="font-bold text-slate-900 text-sm flex items-center justify-between mb-1">
                       <span>1. Điều Dưỡng Ca Trực (ĐD. Lê Thị Thu)</span>
-                      <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">
+                      <span className="text-xs font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
                         PIN: {showPinCodes ? '1111' : '••••'}
                       </span>
                     </div>
-                    <p className="text-slate-600 text-[11px]">
+                    <p className="text-slate-600 text-xs leading-relaxed">
                       • <strong>Phân hệ truy cập:</strong> Sổ nợ tủ trực.<br/>
                       • <strong>Thẩm quyền:</strong> Lập phiếu mượn khẩn thuốc/vật tư ca đêm, thu hồi vỏ ống Morphin nộp vào khay niêm phong, làm chứng biên bản kỹ thuật.
                     </p>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                    <div className="font-bold text-slate-900 text-sm flex items-center justify-between mb-1">
                       <span>2. Bác Sĩ Điều Trị (BS. Trần Văn Hùng)</span>
-                      <span className="text-[10px] font-mono bg-teal-100 text-teal-800 px-1.5 py-0.2 rounded font-bold">
+                      <span className="text-xs font-mono bg-teal-100 text-teal-800 px-2 py-0.5 rounded-md font-bold">
                         PIN: {showPinCodes ? '4444' : '••••'}
                       </span>
                     </div>
-                    <p className="text-slate-600 text-[11px]">
+                    <p className="text-slate-600 text-xs leading-relaxed">
                       • <strong>Phân hệ truy cập:</strong> Sổ nợ tủ trực, Sự cố thiết bị y tế.<br/>
                       • <strong>Thẩm quyền:</strong> Ra y lệnh cấp cứu mượn thuốc, ký đơn thuốc hoàn bù tủ trực, nghiệm thu thử tải máy thở bàn giao buồng bệnh.
                     </p>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                    <div className="font-bold text-slate-900 text-sm flex items-center justify-between mb-1">
                       <span>3. Dược Sĩ Kho Dược (DS. Nguyễn Bích Ngọc)</span>
-                      <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold">
+                      <span className="text-xs font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md font-bold">
                         PIN: {showPinCodes ? '2222' : '••••'}
                       </span>
                     </div>
-                    <p className="text-slate-600 text-[11px]">
+                    <p className="text-slate-600 text-xs leading-relaxed">
                       • <strong>Phân hệ truy cập:</strong> Sổ nợ tủ trực, Kho Dược FEFO, Chuỗi lạnh vắc xin.<br/>
                       • <strong>Thẩm quyền:</strong> Duyệt hoàn bù trừ kho, chủ trì Hội đồng hủy vỏ Morphin (TT 20), ký lệnh xuất kho FEFO, lập dự trù bổ sung cơ số, ký lệnh giải phóng lô vắc xin.
                     </p>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                    <div className="font-bold text-slate-900 text-sm flex items-center justify-between mb-1">
                       <span>4. Kỹ Sư Trang Thiết Bị Y Tế (KS. Đặng Văn Nam)</span>
-                      <span className="text-[10px] font-mono bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold">
+                      <span className="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold">
                         PIN: {showPinCodes ? '3333' : '••••'}
                       </span>
                     </div>
-                    <p className="text-slate-600 text-[11px]">
+                    <p className="text-slate-600 text-xs leading-relaxed">
                       • <strong>Phân hệ truy cập:</strong> Sự cố thiết bị y tế, Kiểm kê &amp; Quản lý tài sản.<br/>
                       • <strong>Thẩm quyền:</strong> Tiếp nhận sửa chữa máy móc, thử tải an toàn điện lực và ký biên bản bàn giao NĐ 98, quét mã QR kiểm kê, lập biên bản điều chuyển tài sản Mẫu 01/TSC-ĐC.
                     </p>
                   </div>
 
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg md:col-span-2">
-                    <div className="font-bold text-slate-900 text-xs flex items-center justify-between mb-1">
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl md:col-span-2 space-y-1.5">
+                    <div className="font-bold text-slate-900 text-sm flex items-center justify-between mb-1">
                       <span>5. Ban Giám Đốc Bệnh Viện (TS.BS. Nguyễn Văn An)</span>
-                      <span className="text-[10px] font-mono bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded font-bold">
+                      <span className="text-xs font-mono bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md font-bold">
                         PIN: {showPinCodes ? '9999' : '••••'}
                       </span>
                     </div>
-                    <p className="text-slate-700 text-[11px]">
+                    <p className="text-slate-700 text-xs leading-relaxed">
                       • <strong>Phân hệ truy cập:</strong> Toàn quyền 5/5 phân hệ lâm sàng.<br/>
                       • <strong>Thẩm quyền độc quyền:</strong> Ký Tờ trình thành lập Hội đồng thanh lý tài sản công (NĐ 151/2017 &amp; NĐ 114/2024), phê duyệt các quyết định đầu tư bổ sung cơ số lớn.
                     </p>

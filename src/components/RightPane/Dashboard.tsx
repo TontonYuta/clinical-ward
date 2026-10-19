@@ -85,23 +85,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/60 overflow-hidden">
+    <div className="flex flex-col h-full bg-slate-50/70 overflow-hidden">
       {/* Main Tab Viewport (Pinned Controls & Isolated Scroll Table) */}
-      <div className="flex-1 overflow-hidden p-2 sm:p-3 pb-20 md:pb-3 min-h-0 flex flex-col">
+      <div className="flex-1 overflow-hidden p-3 sm:p-4 pb-20 md:pb-4 min-h-0 flex flex-col">
         {!allowedTabs.includes(currentTab) ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200 rounded-xl m-2 shadow-xs">
-            <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-3 shadow-xs">
-              <Lock className="w-7 h-7" />
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200/80 rounded-2xl m-2 shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-600 mb-4 shadow-xs">
+              <Lock className="w-8 h-8" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 mb-1">
+            <h3 className="text-lg font-bold text-slate-900 mb-1.5">
               Phân Hệ Nằm Ngoài Thẩm Quyền Truy Cập (RBAC Isolation)
             </h3>
-            <p className="text-xs text-slate-600 max-w-md mb-4 leading-relaxed">
-              Tài khoản hiện tại (<strong className="text-slate-900">{currentProfile.name}</strong> - {currentProfile.roleName}) không có quyền thao tác trên phân hệ này theo quy chế quản trị bệnh viện.
+            <p className="text-sm text-slate-600 max-w-md mb-5 leading-relaxed">
+              Tài khoản hiện tại (<strong className="text-slate-900 font-semibold">{currentProfile.name}</strong> - {currentProfile.roleName}) không có quyền thao tác trên phân hệ này theo quy chế quản trị bệnh viện.
             </p>
             <button
               onClick={() => onTabChange(currentProfile.defaultTab || allowedTabs[0] || 'debt')}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-98"
+              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold transition shadow-xs cursor-pointer active:scale-98"
             >
               Quay về phân hệ được phân quyền ({currentProfile.defaultTab || allowedTabs[0]})
             </button>

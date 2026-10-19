@@ -67,49 +67,49 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden space-y-2 w-full">
       {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
-        <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-          <h2 className="hidden sm:inline text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0 flex-wrap sm:flex-nowrap">
+          <h2 className="hidden sm:inline text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
             Sự Cố &amp; Kiểm Định Thiết Bị
           </h2>
-          <span className="text-[11px] font-mono text-slate-400 border-l border-slate-200 pl-2 hidden md:inline">
+          <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2.5 hidden md:inline">
             Căn cứ: NĐ 98/2021 &amp; NĐ 07/2023
           </span>
           {/* Subtle inline summary */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2.5">
-            <span className="text-slate-500 font-mono text-[11px]">{tickets.length} máy</span>
+          <div className="flex items-center gap-2 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2.5">
+            <span className="text-slate-600 font-mono text-xs font-medium">{tickets.length} máy</span>
             <span className="text-slate-300">·</span>
             {urgentCount > 0 && (
-              <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[10px] sm:text-[11px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              <span className="inline-flex items-center gap-1.5 font-medium text-rose-800 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200/80 text-xs">
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                 {urgentCount} khẩn cấp (Loại D)
               </span>
             )}
             {inProgressCount > 0 && (
-              <span className="inline-flex items-center gap-1 font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px] sm:text-[11px]">
+              <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/80 text-xs">
                 {inProgressCount} đang sửa
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT')}
-            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-[11px] sm:text-xs transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
             title="In Biên bản kiểm định an toàn điện & thử tải lâm sàng TBYT (Nghị định 98/2021/NĐ-CP & NĐ 07/2023/NĐ-CP)"
           >
-            <Printer className="w-3.5 h-3.5 text-teal-700" />
+            <Printer className="w-4 h-4 text-teal-700" />
             <span className="hidden sm:inline">In Biên Bản Kỹ Thuật (NĐ 98)</span>
             <span className="sm:hidden">In NĐ 98</span>
           </button>
 
           <button
             onClick={() => setIsIncidentModalOpen(true)}
-            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-[11px] sm:text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
             title="Lập phiếu báo hỏng / sự cố thiết bị y tế (Nghị định 98/2021/NĐ-CP)"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
+            <PlusCircle className="w-4 h-4" />
             <span className="hidden sm:inline">+ Báo Hỏng Thiết Bị</span>
             <span className="sm:hidden">+ Báo Hỏng</span>
           </button>
@@ -117,47 +117,47 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
       </div>
 
       {/* 3. Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm máy thở, sốc tim, số serial..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-md focus:outline-hidden focus:border-slate-400 text-slate-800 placeholder-slate-400"
+            className="w-full pl-9 pr-3.5 py-2 text-sm bg-white border border-slate-200/90 rounded-lg focus:outline-hidden focus:border-teal-500 text-slate-800 placeholder-slate-400 shadow-2xs"
           />
         </div>
 
-        <div className="flex items-center gap-1 text-xs bg-slate-100 p-0.5 rounded-md overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-xs bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
           <button
             onClick={() => setSelectedUrgency('all')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
-              selectedUrgency === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+              selectedUrgency === 'all' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Tất cả ({tickets.length})
           </button>
           <button
             onClick={() => setSelectedUrgency('urgent')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
-              selectedUrgency === 'urgent' ? 'bg-white text-rose-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+              selectedUrgency === 'urgent' ? 'bg-white text-rose-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Khẩn cấp ({urgentCount})
           </button>
           <button
             onClick={() => setSelectedUrgency('in_progress')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
-              selectedUrgency === 'in_progress' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+              selectedUrgency === 'in_progress' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Đang sửa ({inProgressCount})
           </button>
           <button
             onClick={() => setSelectedUrgency('resolved')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
-              selectedUrgency === 'resolved' ? 'bg-white text-emerald-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+              selectedUrgency === 'resolved' ? 'bg-white text-emerald-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Đã xong ({resolvedCount})
@@ -166,7 +166,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
       </div>
 
       {/* 2. Isolated Scrollable List (No-Scroll Viewport Ergonomics) */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
         {filteredTickets.map((ticket) => {
           const isUrgent = ticket.urgency === 'urgent';
           const isResolved = ticket.status === 'resolved';
@@ -174,21 +174,21 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
           return (
             <div
               key={ticket.id}
-              className={`bg-white rounded-xl border p-3.5 hover:border-slate-300 transition shadow-xs space-y-2.5 ${
-                isUrgent && !isResolved ? 'border-rose-200/90 bg-rose-50/20' : 'border-slate-200/90'
+              className={`bg-white rounded-2xl border p-4 hover:border-slate-300 transition shadow-xs space-y-3 ${
+                isUrgent && !isResolved ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200/80'
               }`}
             >
               {/* Header: Code + Risk Class + Urgency */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/60">
                     {ticket.code}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold border ${
                       ticket.riskClass === 'D'
-                        ? 'bg-rose-50 text-rose-700 border-rose-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200/80'
+                        : 'bg-amber-50 text-amber-700 border-amber-200/80'
                     }`}
                   >
                     Loại {ticket.riskClass}
@@ -196,22 +196,22 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                 </div>
                 <div>
                   <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                    className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${
                       isUrgent && !isResolved
-                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200/80'
                         : isResolved
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
                         : 'bg-slate-100 text-slate-700 border-slate-200'
                     }`}
                   >
                     {isUrgent && !isResolved ? (
                       <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                         Khẩn cấp P1 (Sự sống)
                       </>
                     ) : isResolved ? (
                       <>
-                        <Check className="w-3 h-3 text-emerald-600" />
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
                         Đã nghiệm thu
                       </>
                     ) : (
@@ -223,56 +223,56 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
 
               {/* Device Title & Issue Box */}
               <div>
-                <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                <h3 className="text-base font-bold text-slate-900 leading-snug">
                   {ticket.deviceName}
                 </h3>
-                <div className="mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200/60 text-xs text-slate-800 font-medium flex items-start gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 text-xs sm:text-sm text-slate-800 font-medium flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>{ticket.accessoryIssue}</span>
                 </div>
               </div>
 
               {/* Meta information */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-xs text-slate-600 pt-2 border-t border-slate-100">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm text-slate-600 pt-2.5 border-t border-slate-100">
                 <div>
-                  <span className="text-slate-400 text-[11px]">Vị trí:</span>{' '}
-                  <strong className="text-slate-800 font-medium">{ticket.location}</strong>
+                  <span className="text-slate-500 text-xs">Vị trí:</span>{' '}
+                  <strong className="text-slate-900 font-semibold">{ticket.location}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[11px]">Kỹ sư:</span>{' '}
-                  <strong className="text-slate-800 font-medium">{ticket.assignedEngineer}</strong>
+                  <span className="text-slate-500 text-xs">Kỹ sư:</span>{' '}
+                  <strong className="text-slate-900 font-semibold">{ticket.assignedEngineer}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[11px]">Hạn kiểm định:</span>{' '}
-                  <strong className="text-slate-800 font-medium">{ticket.nextInspectionDue}</strong>
+                  <span className="text-slate-500 text-xs">Hạn kiểm định:</span>{' '}
+                  <strong className="text-slate-900 font-semibold">{ticket.nextInspectionDue}</strong>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
                 <button
                   onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
-                  className="flex-1 sm:flex-initial py-1.5 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                  className="flex-1 sm:flex-initial py-2 px-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
                   title="In Biên bản kiểm định an toàn điện & thử tải thiết bị này (NĐ 98/2021)"
                 >
-                  <Printer className="w-3.5 h-3.5 text-teal-700" />
+                  <Printer className="w-4 h-4 text-teal-700" />
                   <span>In Biên Bản (NĐ 98)</span>
                 </button>
 
                 {!isResolved ? (
                   <button
                     onClick={() => handleOpenHandover(ticket)}
-                    className={`flex-2 sm:flex-initial py-1.5 px-3.5 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-98 flex items-center justify-center gap-1.5 ${
+                    className={`flex-2 sm:flex-initial py-2 px-4 rounded-xl text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer active:scale-98 flex items-center justify-center gap-1.5 ${
                       currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
                         ? 'bg-teal-700 hover:bg-teal-800 text-white'
                         : 'bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-300'
                     }`}
                   >
-                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <ShieldCheck className="w-4 h-4" />
                     <span>Nghiệm thu thử tải &amp; Bàn giao</span>
                   </button>
                 ) : (
-                  <div className="flex-2 sm:flex-initial py-1.5 px-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold text-center">
+                  <div className="flex-2 sm:flex-initial py-2 px-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-bold text-center">
                     ✓ Đã bàn giao buồng bệnh
                   </div>
                 )}

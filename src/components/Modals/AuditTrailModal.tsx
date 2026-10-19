@@ -113,31 +113,31 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold tracking-tight text-white">
+                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
                   Sổ Nhật Ký Thao Tác Lâm Sàng
                 </h2>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-500/30">
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-md bg-teal-950 text-teal-300 border border-teal-500/30">
                   Hồ Sơ Nội Bộ Bệnh Viện
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-xs text-slate-300">
                 Theo dõi lịch sử ký duyệt, phân định trách nhiệm chuyên môn của kíp trực và bảo đảm an toàn lâm sàng
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Executive Summary Metrics */}
-        <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 text-xs">
-          <div className="bg-white p-2.5 rounded-lg border border-slate-200/90 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">Tổng bản ghi xác thực</span>
-            <span className="text-base font-black text-slate-900 mt-0.5 block font-mono">{records.length}</span>
+        <div className="bg-slate-50 border-b border-slate-200 px-5 py-3.5 grid grid-cols-2 sm:grid-cols-4 gap-3.5 shrink-0 text-xs sm:text-sm">
+          <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-2xs">
+            <span className="text-xs uppercase font-bold text-slate-400 block">Tổng bản ghi xác thực</span>
+            <span className="text-lg font-black text-slate-900 mt-0.5 block font-mono">{records.length}</span>
             <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
               <CheckCircle2 className="w-3 h-3" />
               100% nguyên vẹn dữ liệu
@@ -237,37 +237,37 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
               {filteredRecords.map((record) => (
                 <tr key={record.id} className="hover:bg-slate-50/80 transition">
                   {/* Timestamp & Code */}
-                  <td className="py-2.5 px-4 whitespace-nowrap">
-                    <span className="font-mono font-bold text-slate-900 block">{record.id}</span>
-                    <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-slate-400" />
+                  <td className="py-3 px-4 whitespace-nowrap">
+                    <span className="font-mono font-bold text-slate-900 block text-xs sm:text-sm">{record.id}</span>
+                    <span className="text-xs font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
                       {record.timestamp}
                     </span>
                   </td>
 
                   {/* Action & Legal */}
-                  <td className="py-2.5 px-3 whitespace-nowrap">
-                    <span className="font-bold text-slate-900 block">{record.actionTitle}</span>
-                    <span className="text-[10px] font-mono text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                  <td className="py-3 px-3.5 whitespace-nowrap">
+                    <span className="font-bold text-slate-900 block text-xs sm:text-sm">{record.actionTitle}</span>
+                    <span className="inline-block mt-0.5 text-xs font-mono text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
                       {record.legalBasis}
                     </span>
                   </td>
 
                   {/* Target Item */}
-                  <td className="py-2.5 px-3 whitespace-nowrap">
-                    <span className="font-semibold text-slate-800 block text-xs">{record.targetItem}</span>
-                    <span className="text-[10px] font-mono text-slate-400">Hành động: {record.actionType}</span>
+                  <td className="py-3 px-3.5 whitespace-nowrap">
+                    <span className="font-semibold text-slate-800 block text-xs sm:text-sm">{record.targetItem}</span>
+                    <span className="text-xs font-mono text-slate-400 mt-0.5 block">Hành động: {record.actionType}</span>
                   </td>
 
                   {/* Signer */}
-                  <td className="py-2.5 px-3 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-[10px]">
+                  <td className="py-3 px-3.5 whitespace-nowrap">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
                         {record.signerName.charAt(0)}
                       </div>
                       <div>
-                        <span className="font-bold text-slate-900 block">{record.signerName}</span>
-                        <span className="text-[10px] font-mono text-slate-500">
+                        <span className="font-bold text-slate-900 block text-xs sm:text-sm">{record.signerName}</span>
+                        <span className="text-xs font-mono text-slate-500">
                           CCHN: <strong className="text-slate-800">{record.signerCertificate}</strong>
                         </span>
                       </div>
@@ -275,13 +275,13 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   </td>
 
                   {/* Witness */}
-                  <td className="py-2.5 px-3 whitespace-nowrap">
+                  <td className="py-3 px-3.5 whitespace-nowrap">
                     {record.witnessName ? (
-                      <div className="flex items-center gap-1.5 text-purple-900 bg-purple-50 px-2 py-1 rounded border border-purple-200">
-                        <Users className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                      <div className="flex items-center gap-2 text-purple-900 bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-200">
+                        <Users className="w-4 h-4 text-purple-700 shrink-0" />
                         <div>
-                          <span className="font-bold block text-[11px]">{record.witnessName}</span>
-                          <span className="text-[9px] font-mono text-purple-700">
+                          <span className="font-bold block text-xs sm:text-sm">{record.witnessName}</span>
+                          <span className="text-xs font-mono text-purple-700">
                             {record.witnessCertificate}
                           </span>
                         </div>
@@ -292,27 +292,27 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   </td>
 
                   {/* Auth Method */}
-                  <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                  <td className="py-3 px-3.5 text-center whitespace-nowrap">
                     {record.authMethod === 'RFID_NFC' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-teal-50 text-teal-800 border border-teal-300">
-                        <CreditCard className="w-3 h-3 text-teal-600" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-300">
+                        <CreditCard className="w-3.5 h-3.5 text-teal-600" />
                         <span>Thẻ RFID</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-300">
-                        <KeyRound className="w-3 h-3 text-slate-600" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                        <KeyRound className="w-3.5 h-3.5 text-slate-600" />
                         <span>Mã PIN</span>
                       </span>
                     )}
                   </td>
 
                   {/* Status & Medical Verification */}
-                  <td className="py-2.5 px-4 text-right whitespace-nowrap">
+                  <td className="py-3 px-4 text-right whitespace-nowrap">
                     <span
                       title={`Mã bảo mật hệ thống: ${record.integrityHash}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-default"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-default"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>Đã xác nhận &amp; Khóa sổ</span>
                     </span>
                   </td>

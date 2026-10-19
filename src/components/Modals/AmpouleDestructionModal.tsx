@@ -56,15 +56,15 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold">Biên Bản Hội Đồng Tiêu Hủy Vỏ Ống Thuốc Gây Nghiện</h2>
-              <span className="text-[11px] text-slate-400 font-mono">
+              <h2 className="text-sm sm:text-base font-bold">Biên Bản Hội Đồng Tiêu Hủy Vỏ Ống Thuốc Gây Nghiện</h2>
+              <span className="text-xs text-slate-400 font-mono">
                 Mẫu số 16 Phụ lục II NĐ 54/2017 &amp; Điều 15, 16 Thông tư 20/2017/TT-BYT
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -73,63 +73,63 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
         {/* Content */}
         <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700">
           {/* Legal Notice */}
-          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 flex items-start gap-2.5">
-            <AlertOctagon className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start gap-2.5">
+            <AlertOctagon className="w-4.5 h-4.5 text-amber-700 shrink-0 mt-0.5" />
             <div className="leading-relaxed">
               <strong>Quy định pháp lý bắt buộc:</strong> Vỏ ống thuốc gây nghiện (Morphin, Fentanyl) sau khi tiêm cho bệnh nhân phải được thu hồi 100% vào khay khóa. Hội đồng tiêu hủy phải gồm ít nhất 03 thành viên độc lập, lập biên bản và lưu hồ sơ tối thiểu <strong>02 năm</strong>.
             </div>
           </div>
 
           {/* Council Members */}
-          <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-2">
-            <span className="font-bold text-slate-900 block text-[11px] uppercase tracking-wider">
+          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+            <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider">
               Thành phần Hội đồng Tiêu hủy (Bệnh viện Đa Khoa):
             </span>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="p-2 bg-white rounded border border-slate-200">
-                <span className="text-[10px] text-slate-400 block">Chủ tịch Hội đồng</span>
-                <strong className="text-slate-800">DS. Nguyễn Bích Ngọc</strong>
-                <span className="text-[10px] text-slate-500 block">Trưởng Khoa Dược</span>
+            <div className="grid grid-cols-3 gap-2.5 text-xs sm:text-sm">
+              <div className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                <span className="text-xs text-slate-400 block">Chủ tịch Hội đồng</span>
+                <strong className="text-slate-800 block text-sm">DS. Nguyễn Bích Ngọc</strong>
+                <span className="text-xs text-slate-500 block">Trưởng Khoa Dược</span>
               </div>
-              <div className="p-2 bg-white rounded border border-slate-200">
-                <span className="text-[10px] text-slate-400 block">Ủy viên giám sát</span>
-                <strong className="text-slate-800">ĐD. Lê Thị Thu</strong>
-                <span className="text-[10px] text-slate-500 block">Điều dưỡng Trưởng ca</span>
+              <div className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                <span className="text-xs text-slate-400 block">Ủy viên giám sát</span>
+                <strong className="text-slate-800 block text-sm">ĐD. Lê Thị Thu</strong>
+                <span className="text-xs text-slate-500 block">Điều dưỡng Trưởng ca</span>
               </div>
-              <div className="p-2 bg-white rounded border border-slate-200">
-                <span className="text-[10px] text-slate-400 block">Ủy viên chuyên môn</span>
-                <strong className="text-slate-800">BS. Trần Văn Hùng</strong>
-                <span className="text-[10px] text-slate-500 block">Bác sĩ Điều trị ICU</span>
+              <div className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                <span className="text-xs text-slate-400 block">Ủy viên chuyên môn</span>
+                <strong className="text-slate-800 block text-sm">BS. Trần Văn Hùng</strong>
+                <span className="text-xs text-slate-500 block">Bác sĩ Điều trị ICU</span>
               </div>
             </div>
           </div>
 
           {/* Ampoule Table */}
           <div>
-            <span className="font-bold text-slate-900 block text-[11px] uppercase tracking-wider mb-1.5">
+            <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider mb-2">
               Danh mục vỏ ống đề nghị tiêu hủy ({returnedAmpoules.length} vỏ đã thu hồi):
             </span>
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
-              <table className="w-full text-left text-xs">
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs sm:text-sm">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold">
-                    <th className="py-2 px-3">Mã phiếu</th>
-                    <th className="py-2 px-3">Mặt hàng thuốc</th>
-                    <th className="py-2 px-3">Bệnh nhân sử dụng</th>
-                    <th className="py-2 px-3">Thời gian tiêm</th>
-                    <th className="py-2 px-3 text-right">Tình trạng</th>
+                  <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold text-xs">
+                    <th className="py-2.5 px-3.5">Mã phiếu</th>
+                    <th className="py-2.5 px-3">Mặt hàng thuốc</th>
+                    <th className="py-2.5 px-3">Bệnh nhân sử dụng</th>
+                    <th className="py-2.5 px-3">Thời gian tiêm</th>
+                    <th className="py-2.5 px-3.5 text-right">Tình trạng</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {returnedAmpoules.length > 0 ? (
                     returnedAmpoules.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50">
-                        <td className="py-2 px-3 font-mono font-bold text-slate-800">{item.code}</td>
-                        <td className="py-2 px-3 font-semibold text-slate-900">{item.itemName}</td>
-                        <td className="py-2 px-3 text-slate-700">{item.patientName} ({item.patientRoom})</td>
-                        <td className="py-2 px-3 font-mono text-slate-600">{item.borrowTime}</td>
-                        <td className="py-2 px-3 text-right">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <tr key={item.id} className="hover:bg-slate-50 transition">
+                        <td className="py-2.5 px-3.5 font-mono font-bold text-slate-800">{item.code}</td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-900">{item.itemName}</td>
+                        <td className="py-2.5 px-3 text-slate-700">{item.patientName} ({item.patientRoom})</td>
+                        <td className="py-2.5 px-3 font-mono text-slate-600">{item.borrowTime}</td>
+                        <td className="py-2.5 px-3.5 text-right">
+                          <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                             Đã thu hồi khay khóa
                           </span>
                         </td>
@@ -149,13 +149,13 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
 
           {/* Destruction Method */}
           <div className="space-y-1.5">
-            <label className="font-bold text-slate-900 block text-xs">
+            <label className="font-bold text-slate-900 block text-xs sm:text-sm">
               Phương pháp tiêu hủy thực hiện:
             </label>
             <select
               value={method}
               onChange={(e) => setMethod(e.target.value)}
-              className="w-full h-9 px-3 text-xs bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-hidden focus:border-teal-700"
+              className="w-full h-10 px-3 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-hidden focus:border-teal-700"
             >
               <option value="Đập vỡ nát cơ học trong khay inox, ngâm Chloramin B 0.5% và đóng bao nguy hại">
                 Đập vỡ nát cơ học trong khay inox, ngâm Chloramin B 0.5% &amp; đóng bao rác nguy hại (TT 20/2021/TT-BYT)
@@ -169,7 +169,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
 
         {/* Footer */}
         <div className="h-16 px-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-xs text-slate-500 font-mono">
             Biên bản số: 16/BB-HĐH/{new Date().getFullYear()} · Ngày: {todayStr}
           </div>
           <div className="flex items-center gap-2">

@@ -35,15 +35,15 @@ export const LegalDocsModal: React.FC<LegalDocsModalProps> = ({ isOpen, onClose 
               <Scale className="w-4 h-4 text-teal-200" />
             </div>
             <div>
-              <h2 className="text-sm font-bold tracking-tight">Căn Cứ Pháp Lý &amp; Quy Chế Vận Hành Kho Y Tế</h2>
-              <p className="text-[11px] text-teal-200">
+              <h2 className="text-sm sm:text-base font-bold tracking-tight">Căn Cứ Pháp Lý &amp; Quy Chế Vận Hành Kho Y Tế</h2>
+              <p className="text-xs text-teal-200">
                 Toàn bộ quy trình vận hành lâm sàng được chuẩn hóa dựa trên các văn bản quy phạm pháp luật hiện hành
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-slate-300 hover:text-white hover:bg-white/10 transition"
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -52,69 +52,69 @@ export const LegalDocsModal: React.FC<LegalDocsModalProps> = ({ isOpen, onClose 
         {/* Content Body: Sidebar + Detail Pane */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Sidebar selector */}
-          <div className="w-full md:w-72 bg-slate-50 border-r border-slate-200 p-3 space-y-1.5 overflow-y-auto shrink-0">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 block mb-1">
+          <div className="w-full md:w-76 bg-slate-50 border-r border-slate-200 p-3 space-y-1.5 overflow-y-auto shrink-0">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 block mb-1.5">
               Danh mục văn bản chính
             </span>
 
             <button
               onClick={() => setSelectedLaw('nd98')}
-              className={`w-full text-left p-2.5 rounded-lg text-xs transition border ${
+              className={`w-full text-left p-3 rounded-xl text-xs sm:text-sm transition border cursor-pointer ${
                 selectedLaw === 'nd98'
                   ? 'bg-white border-teal-600 shadow-xs font-semibold text-teal-900'
                   : 'border-transparent text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <span className="font-bold block">NĐ 98/2021 &amp; NĐ 07/2023</span>
-              <span className="text-[11px] text-slate-500 line-clamp-1">Quản lý trang thiết bị, phụ kiện &amp; kiểm định</span>
+              <span className="font-bold block text-sm">NĐ 98/2021 &amp; NĐ 07/2023</span>
+              <span className="text-xs text-slate-500 line-clamp-1 mt-0.5">Quản lý trang thiết bị, phụ kiện &amp; kiểm định</span>
             </button>
 
             <button
               onClick={() => setSelectedLaw('tt22')}
-              className={`w-full text-left p-2.5 rounded-lg text-xs transition border ${
+              className={`w-full text-left p-3 rounded-xl text-xs sm:text-sm transition border cursor-pointer ${
                 selectedLaw === 'tt22'
                   ? 'bg-white border-teal-600 shadow-xs font-semibold text-teal-900'
                   : 'border-transparent text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <span className="font-bold block">Thông tư 22/2011 &amp; TT 23/2011</span>
-              <span className="text-[11px] text-slate-500 line-clamp-1">Tủ trực cấp cứu &amp; Xóa nợ phiếu bù</span>
+              <span className="font-bold block text-sm">Thông tư 22/2011 &amp; TT 23/2011</span>
+              <span className="text-xs text-slate-500 line-clamp-1 mt-0.5">Tủ trực cấp cứu &amp; Xóa nợ phiếu bù</span>
             </button>
 
             <button
               onClick={() => setSelectedLaw('tt20')}
-              className={`w-full text-left p-2.5 rounded-lg text-xs transition border ${
+              className={`w-full text-left p-3 rounded-xl text-xs sm:text-sm transition border cursor-pointer ${
                 selectedLaw === 'tt20'
                   ? 'bg-white border-teal-600 shadow-xs font-semibold text-teal-900'
                   : 'border-transparent text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <span className="font-bold block">Thông tư 20/2017/TT-BYT</span>
-              <span className="text-[11px] text-slate-500 line-clamp-1">Thuốc gây nghiện &amp; Quản lý vỏ ống Morphin</span>
+              <span className="font-bold block text-sm">Thông tư 20/2017/TT-BYT</span>
+              <span className="text-xs text-slate-500 line-clamp-1 mt-0.5">Thuốc gây nghiện &amp; Quản lý vỏ ống Morphin</span>
             </button>
 
             <button
               onClick={() => setSelectedLaw('tt36')}
-              className={`w-full text-left p-2.5 rounded-lg text-xs transition border ${
+              className={`w-full text-left p-3 rounded-xl text-xs sm:text-sm transition border cursor-pointer ${
                 selectedLaw === 'tt36'
                   ? 'bg-white border-teal-600 shadow-xs font-semibold text-teal-900'
                   : 'border-transparent text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <span className="font-bold block">Thông tư 36/2018 &amp; NĐ 96/2023</span>
-              <span className="text-[11px] text-slate-500 line-clamp-1">Tiêu chuẩn GSP: Hạn dùng FEFO &amp; Kho lạnh 2-8°C</span>
+              <span className="font-bold block text-sm">Thông tư 36/2018 &amp; NĐ 96/2023</span>
+              <span className="text-xs text-slate-500 line-clamp-1 mt-0.5">Tiêu chuẩn GSP: Hạn dùng FEFO &amp; Kho lạnh 2-8°C</span>
             </button>
 
             <button
               onClick={() => setSelectedLaw('nd151')}
-              className={`w-full text-left p-2.5 rounded-lg text-xs transition border ${
+              className={`w-full text-left p-3 rounded-xl text-xs sm:text-sm transition border cursor-pointer ${
                 selectedLaw === 'nd151'
                   ? 'bg-white border-teal-600 shadow-xs font-semibold text-teal-900'
                   : 'border-transparent text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <span className="font-bold block">NĐ 151/2017 &amp; NĐ 114/2024</span>
-              <span className="text-[11px] text-slate-500 line-clamp-1">Kiểm kê 31/12 &amp; Đề xuất thanh lý tài sản</span>
+              <span className="font-bold block text-sm">NĐ 151/2017 &amp; NĐ 114/2024</span>
+              <span className="text-xs text-slate-500 line-clamp-1 mt-0.5">Kiểm kê 31/12 &amp; Đề xuất thanh lý tài sản</span>
             </button>
           </div>
 

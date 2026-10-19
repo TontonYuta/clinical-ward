@@ -89,15 +89,15 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               <Pill className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold">Lập Phiếu Mượn Khẩn Thuốc / Vật Tư Tủ Trực</h2>
-              <span className="text-[11px] text-slate-400 font-mono">
+              <h2 className="text-sm sm:text-base font-bold">Lập Phiếu Mượn Khẩn Thuốc / Vật Tư Tủ Trực</h2>
+              <span className="text-xs text-slate-400 font-mono">
                 Kho Dược Lâm Sàng · Căn cứ Thông tư 22/2011 &amp; TT 20/2017/TT-BYT
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -106,7 +106,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
         {/* Content Form */}
         <form onSubmit={handleSubmit} noValidate className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
           {validationError && (
-            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{validationError}</span>
             </div>
@@ -114,28 +114,28 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
 
           {/* Quick Preset Selector */}
           <div>
-            <label className="font-bold text-slate-900 block mb-1.5">
+            <label className="font-bold text-slate-900 block mb-1.5 text-xs sm:text-sm">
               Chọn nhanh cơ số thuốc cấp cứu thường gặp:
             </label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-2">
               {COMMON_EMERGENCY_ITEMS.map((item, idx) => (
                 <button
                   type="button"
                   key={idx}
                   onClick={() => handleSelectPreset(idx)}
-                  className={`text-left p-2 rounded border transition cursor-pointer flex flex-col ${
+                  className={`text-left p-2.5 rounded-lg border transition cursor-pointer flex flex-col ${
                     selectedPreset === idx
                       ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-semibold shadow-2xs'
                       : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="truncate">{item.name}</span>
-                    <span className="text-[10px] px-1 rounded bg-slate-200/80 text-slate-700 font-mono">
+                    <span className="truncate text-xs sm:text-sm font-medium">{item.name}</span>
+                    <span className="text-xs px-1.5 py-0.2 rounded bg-slate-200/80 text-slate-700 font-mono">
                       {item.defaultQty}
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-normal mt-0.5">{item.type}</span>
+                  <span className="text-xs text-slate-500 font-normal mt-0.5">{item.type}</span>
                 </button>
               ))}
             </div>
@@ -205,27 +205,27 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-slate-600 block">Mã bệnh nhân:</label>
+                <label className="text-xs font-semibold text-slate-600 block">Mã bệnh nhân:</label>
                 <input
                   type="text"
                   value={patientCode}
                   onChange={(e) => setPatientCode(e.target.value)}
-                  className="w-full px-2.5 py-1 text-xs bg-white border border-slate-300 rounded font-mono"
+                  className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg font-mono focus:outline-hidden focus:border-teal-600"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-slate-600 block">Họ và tên bệnh nhân:</label>
+                <label className="text-xs font-semibold text-slate-600 block">Họ và tên bệnh nhân:</label>
                 <input
                   type="text"
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
                   required
-                  className="w-full px-2.5 py-1 text-xs bg-white border border-slate-300 rounded font-medium"
+                  className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg font-medium focus:outline-hidden focus:border-teal-600"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-600 block">
+              <label className="text-xs font-semibold text-slate-600 block">
                 Vị trí buồng bệnh / Giường cấp cứu:
               </label>
               <input
@@ -233,27 +233,27 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
                 value={patientRoom}
                 onChange={(e) => setPatientRoom(e.target.value)}
                 required
-                className="w-full px-2.5 py-1 text-xs bg-white border border-slate-300 rounded"
+                className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-600"
               />
             </div>
           </div>
 
           {/* Clinical Reason */}
           <div className="space-y-1">
-            <label className="font-bold text-slate-900 block">
+            <label className="font-bold text-slate-900 block text-xs sm:text-sm">
               Chỉ định lâm sàng / Lý do mượn khẩn:
             </label>
             <textarea
               rows={2}
               value={clinicalReason}
               onChange={(e) => setClinicalReason(e.target.value)}
-              className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:border-slate-800 focus:outline-hidden resize-none"
+              className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:border-teal-600 focus:outline-hidden resize-none"
             />
           </div>
 
           {/* Legal Notice */}
-          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4.5 h-4.5 text-amber-600 shrink-0 mt-0.5" />
             <div className="leading-relaxed">
               <strong>Quy định hoàn bù (Điều 10 Thông tư 22/2011/TT-BYT):</strong> Mọi cơ số mượn khẩn ca trực phải được Bác sĩ kê đơn bù và hoàn trả cho tủ trực trước <strong>07:00 sáng hôm sau</strong>.
               {itemType === 'Thuốc gây nghiện' && (
@@ -265,24 +265,24 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
           </div>
 
           {/* Footer buttons */}
-          <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
-              <Shield className="w-3.5 h-3.5 text-teal-600" />
+          <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-slate-500 text-xs">
+              <Shield className="w-4 h-4 text-teal-600" />
               <span>Xác nhận bằng mã PIN / Thẻ nhân viên chuyên môn</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+                className="h-8.5 px-3.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold cursor-pointer transition"
               >
                 Hủy bỏ
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-98"
+                className="h-8.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-98"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
+                <PlusCircle className="w-4 h-4" />
                 <span>Ký Lập Phiếu Mượn</span>
               </button>
             </div>

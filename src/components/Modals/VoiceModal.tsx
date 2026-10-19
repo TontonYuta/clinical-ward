@@ -269,11 +269,11 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
           {/* Quick clinical presets */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
-                <Volume2 className="w-3.5 h-3.5 text-teal-700" />
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                <Volume2 className="w-4 h-4 text-teal-700" />
                 Mẫu khẩu lệnh lâm sàng chuẩn hóa
               </span>
-              <span className="text-[11px] text-slate-400">Bấm để gửi tức thì</span>
+              <span className="text-xs text-slate-400">Bấm để gửi tức thì</span>
             </div>
 
             <div className="space-y-2">
