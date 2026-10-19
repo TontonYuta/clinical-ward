@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={`h-full flex flex-col shrink-0 bg-white border-r border-slate-200/90 z-30 transition-all duration-200 select-none ${
-        isCollapsed ? 'w-16' : 'w-64'
+        isCollapsed ? 'w-16' : 'w-72 max-w-[85vw] md:w-64'
       }`}
     >
       {/* 1. Header: Branding & Collapse Toggle */}

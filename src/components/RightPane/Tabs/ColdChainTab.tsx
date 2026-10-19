@@ -61,7 +61,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
       {/* 1. Slim Integrated Executive Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
+          <h2 className="hidden sm:inline-block text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
             Giám Sát Chuỗi Lạnh Vắc Xin
           </h2>
           <span className="text-[11px] font-mono text-slate-400 border-l border-slate-200 pl-2 hidden md:inline">

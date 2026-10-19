@@ -83,7 +83,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       {/* 1. Slim Integrated Executive Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
+          <h2 className="hidden sm:inline text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
             Sổ Nợ Tủ Trực Cấp Cứu
           </h2>
           <span className="text-[11px] font-mono text-slate-400 border-l border-slate-200 pl-2 hidden md:inline">
@@ -204,8 +204,144 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
         </div>
       </div>
 
-      {/* 4. Table (Maximized Viewport Height & Sticky Thead) */}
-      <div className="flex-1 min-h-0 bg-white rounded-lg border border-slate-200/90 overflow-hidden shadow-2xs flex flex-col">
+      {/* 4A. Mobile Card-Based List (md:hidden) - Modern, touch-friendly, no horizontal cut-off */}
+      <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pr-0.5">
+        {filteredDebts.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 text-xs">
+            Không tìm thấy phiếu mượn nào phù hợp với bộ lọc.
+          </div>
+        ) : (
+          filteredDebts.map((item) => {
+            const isDebt = item.status === 'debt';
+            const isNarcotic = item.itemType === 'Thuốc gây nghiện';
+            return (
+              <div
+                key={item.id}
+                className="bg-white rounded-xl border border-slate-200/90 p-3 shadow-xs space-y-2.5 hover:border-slate-300 transition"
+              >
+                {/* Card Top: Code + Time + Status */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
+                      {item.code}
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      {item.borrowTime}
+                    </span>
+                  </div>
+                  <div>
+                    {isDebt ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        Đang nợ
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        ✓ Đã hoàn bù
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Drug & Quantity */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm text-slate-900 leading-snug">
+                      {item.itemName}
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          isNarcotic
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200 font-bold'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                        }`}
+                      >
+                        {item.itemType}
+                      </span>
+                      <span className="text-xs text-slate-600">
+                        BN: <strong className="text-slate-800">{item.patientName}</strong>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="font-mono text-base font-black text-teal-900 bg-teal-50 border border-teal-200/90 px-2.5 py-1 rounded-lg inline-block shadow-2xs">
+                      {item.quantity}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Room & Ampoule status */}
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                  <div className="text-slate-600 text-[11px]">
+                    📍 <span className="font-medium text-slate-800">{item.patientRoom}</span>
+                  </div>
+                  <div>
+                    {isNarcotic ? (
+                      item.ampouleDestroyed ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                          Đã tiêu hủy vỏ
+                        </span>
+                      ) : item.ampouleReturned ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          Đã nộp vỏ
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                          Nợ vỏ Morphin
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-slate-400 text-[11px]">Cơ số thường</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mobile Actions */}
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() =>
+                      onOpenPrintForm?.(
+                        isNarcotic ? 'TT20_AMPOULE_DESTRUCTION' : 'EMERGENCY_BORROW_TICKET',
+                        item
+                      )
+                    }
+                    className="flex-1 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-teal-700" />
+                    <span>In phiếu</span>
+                  </button>
+                  {isDebt && (
+                    isNarcotic && !item.ampouleReturned ? (
+                      <button
+                        onClick={() => handleAmpouleReturn(item.id)}
+                        className="flex-2 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition cursor-pointer active:scale-98"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span>Thu hồi vỏ nộp khay</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSettle(item.id)}
+                        className="flex-2 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition cursor-pointer active:scale-98"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Duyệt hoàn bù</span>
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* 4B. Desktop Table (hidden md:flex) - Pinned Sticky Header, Isolated Scroll Body */}
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200/90 overflow-hidden shadow-2xs flex-col">
         <div className="overflow-auto flex-1 w-full">
           <table className="w-full text-left text-xs min-w-[720px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">

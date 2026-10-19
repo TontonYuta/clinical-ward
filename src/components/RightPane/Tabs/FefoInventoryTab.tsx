@@ -63,7 +63,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       {/* 1. Slim Integrated Executive Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
+          <h2 className="hidden sm:inline text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
             Kho Dược - Hạn Dùng &amp; Định Mức
           </h2>
           <span className="text-[11px] font-mono text-slate-400 border-l border-slate-200 pl-2 hidden md:inline">
@@ -154,8 +154,121 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         </div>
       </div>
 
-      {/* 4. Table (Pinned Sticky Header, Isolated Scroll Body) */}
-      <div className="flex-1 min-h-0 bg-white rounded-lg border border-slate-200/90 overflow-hidden shadow-2xs flex flex-col">
+      {/* 4A. Mobile Card-Based List (md:hidden) - Modern, touch-friendly, no horizontal cut-off */}
+      <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pr-0.5">
+        {filteredBatches.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 text-xs">
+            Không tìm thấy lô thuốc nào phù hợp với bộ lọc.
+          </div>
+        ) : (
+          filteredBatches.map((batch) => {
+            const isUnderMin = batch.currentStock <= batch.minThreshold;
+            const stockPercent = Math.min(100, Math.max(8, Math.round((batch.currentStock / batch.maxThreshold) * 100)));
+            return (
+              <div
+                key={batch.id}
+                className="bg-white rounded-xl border border-slate-200/90 p-3 shadow-xs space-y-2.5 hover:border-slate-300 transition"
+              >
+                {/* Card Top: Batch Number + Expiry Badge */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
+                      {batch.batchNumber}
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      HSD: {batch.expiryDate}
+                    </span>
+                  </div>
+                  <div>
+                    {batch.isNearExpiry ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                        Còn {batch.daysLeft} ngày
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        Còn {batch.daysLeft} ngày
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Drug Name & Category */}
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 leading-snug">
+                    {batch.itemName}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                      {batch.category}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      📍 {batch.warehouseLocation}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Stock Level & Visual Meter */}
+                <div className="bg-slate-50 rounded-lg p-2 border border-slate-200/60">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-slate-600 font-medium">Tồn kho hiện tại:</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-sm font-black font-mono ${isUnderMin ? 'text-rose-600' : 'text-slate-900'}`}>
+                        {batch.currentStock} {batch.unit}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        (Min: {batch.minThreshold} · Max: {batch.maxThreshold})
+                      </span>
+                    </div>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        isUnderMin ? 'bg-rose-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${stockPercent}%` }}
+                    />
+                  </div>
+                  {isUnderMin && (
+                    <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-amber-800">
+                      <AlertOctagon className="w-3 h-3 text-amber-600" />
+                      <span>Cảnh báo: Tồn kho dưới định mức tối thiểu!</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile Actions */}
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                  {isUnderMin && (
+                    <button
+                      onClick={() => setIsRestockModalOpen(true)}
+                      className="flex-1 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center justify-center gap-1 shadow-2xs transition cursor-pointer active:scale-98"
+                    >
+                      <PackagePlus className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Lập dự trù bù</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleQuickDispatch(batch)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition cursor-pointer active:scale-98 ${
+                      batch.isNearExpiry
+                        ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    }`}
+                  >
+                    <span>Xuất kho FEFO (10)</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* 4B. Desktop Table (hidden md:flex) - Pinned Sticky Header, Isolated Scroll Body */}
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200/90 overflow-hidden shadow-2xs flex-col">
         <div className="overflow-auto flex-1">
           <table className="w-full text-left text-xs min-w-[700px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-2xs">

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Bot } from 'lucide-react';
+import { Bot, FileText, Wrench, Boxes, ThermometerSnowflake, Building2 } from 'lucide-react';
 import {
   DebtRecord,
   EquipmentTicket,
@@ -1431,20 +1431,117 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         </main>
       </div>
 
-      {/* 5. Floating Bottom-Right AI Assistant Bubble */}
+      {/* 5A. Desktop Floating AI Assistant Bubble (hidden md:flex) */}
       {!isCopilotOpen && (
         <button
           onClick={() => setIsCopilotOpen(true)}
-          className="fixed bottom-4 right-4 sm:bottom-5 sm:right-6 z-40 flex items-center gap-2 sm:gap-2.5 px-3.5 py-2.5 sm:px-4 sm:py-3 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-teal-500/30 group print:hidden"
+          className="hidden md:flex fixed bottom-5 right-6 z-40 items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-teal-500/30 group print:hidden"
           title="Mở Trợ lý AI Lâm Sàng"
         >
           <div className="relative flex items-center justify-center">
-            <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <Bot className="w-5 h-5 text-white" />
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-teal-800 animate-pulse" />
           </div>
           <span className="text-xs font-semibold tracking-wide">Trợ Lý AI</span>
         </button>
       )}
+
+      {/* 5B. Modern Mobile Bottom Navigation Bar (md:hidden) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1 flex items-center justify-around select-none print:hidden">
+        {/* Tab 1: Sổ nợ tủ trực */}
+        <button
+          onClick={() => setCurrentTab('debt')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
+            currentTab === 'debt' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <div className="relative">
+            <FileText className={`w-5 h-5 ${currentTab === 'debt' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
+            {debts.filter(d => d.status === 'debt').length > 0 && (
+              <span className="absolute -top-1 -right-2 bg-amber-500 text-white text-[9px] font-bold px-1 rounded-full ring-1 ring-white">
+                {debts.filter(d => d.status === 'debt').length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-0.5 tracking-tight">Tủ trực</span>
+        </button>
+
+        {/* Tab 2: Sự cố TBYT */}
+        <button
+          onClick={() => setCurrentTab('equipment')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
+            currentTab === 'equipment' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <div className="relative">
+            <Wrench className={`w-5 h-5 ${currentTab === 'equipment' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
+            {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length > 0 && (
+              <span className="absolute -top-1 -right-2 bg-rose-500 text-white text-[9px] font-bold px-1 rounded-full ring-1 ring-white animate-pulse">
+                {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-0.5 tracking-tight">Sự cố</span>
+        </button>
+
+        {/* Center: AI Copilot Circle Action Button */}
+        <button
+          onClick={() => setIsCopilotOpen(true)}
+          className="flex flex-col items-center justify-center -mt-4 group cursor-pointer"
+          title="Mở Trợ lý AI Lâm Sàng"
+        >
+          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-teal-700 to-teal-800 text-white flex items-center justify-center shadow-lg shadow-teal-800/30 ring-4 ring-white group-active:scale-95 transition relative">
+            <Bot className="w-6 h-6 text-white" />
+            <span className="absolute top-0.5 right-0.5 w-3 h-3 bg-emerald-400 rounded-full ring-2 ring-white animate-pulse" />
+          </div>
+          <span className="text-[10px] font-extrabold text-teal-800 mt-0.5">Trợ Lý AI</span>
+        </button>
+
+        {/* Tab 3: Kho Dược FEFO */}
+        <button
+          onClick={() => setCurrentTab('fefo')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
+            currentTab === 'fefo' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <div className="relative">
+            <Boxes className={`w-5 h-5 ${currentTab === 'fefo' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
+            {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length > 0 && (
+              <span className="absolute -top-1 -right-2 bg-amber-500 text-white text-[9px] font-bold px-1 rounded-full ring-1 ring-white">
+                {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-0.5 tracking-tight">Kho FEFO</span>
+        </button>
+
+        {/* Tab 4: Chuỗi lạnh vắc xin */}
+        <button
+          onClick={() => setCurrentTab('coldchain')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
+            currentTab === 'coldchain' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <div className="relative">
+            <ThermometerSnowflake className={`w-5 h-5 ${currentTab === 'coldchain' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
+            {(coldChainState.alarmActive || coldChainState.currentTemp > 8.0) && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-1 ring-white animate-pulse" />
+            )}
+          </div>
+          <span className="text-[10px] mt-0.5 tracking-tight">Chuỗi lạnh</span>
+        </button>
+
+        {/* Tab 5: Kiểm kê tài sản */}
+        <button
+          onClick={() => setCurrentTab('asset_audit')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
+            currentTab === 'asset_audit' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Building2 className={`w-5 h-5 ${currentTab === 'asset_audit' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
+          <span className="text-[10px] mt-0.5 tracking-tight">Tài sản</span>
+        </button>
+      </nav>
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
       {isCopilotOpen && (
