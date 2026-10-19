@@ -167,8 +167,8 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
         </div>
       </div>
 
-      {/* 2. Isolated Scrollable List (No-Scroll Viewport Ergonomics) */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
+      {/* 2A. Mobile Card-Based List (md:hidden) - Modern, touch-friendly, no horizontal cut-off */}
+      <div className="md:hidden flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-2.5">
         {filteredTickets.map((ticket) => {
           const isUrgent = ticket.urgency === 'urgent';
           const isResolved = ticket.status === 'resolved';
@@ -176,18 +176,18 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
           return (
             <div
               key={ticket.id}
-              className={`bg-white rounded-2xl border p-4 hover:border-slate-300 transition shadow-xs space-y-3 ${
+              className={`bg-white rounded-xl border p-3 hover:border-slate-300 transition shadow-2xs space-y-2.5 ${
                 isUrgent && !isResolved ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200/80'
               }`}
             >
               {/* Header: Code + Risk Class + Urgency */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/60">
+                  <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
                     {ticket.code}
                   </span>
                   <span
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold border ${
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
                       ticket.riskClass === 'D'
                         ? 'bg-rose-50 text-rose-700 border-rose-200/80'
                         : 'bg-amber-50 text-amber-700 border-amber-200/80'
@@ -198,7 +198,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                 </div>
                 <div>
                   <span
-                    className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${
+                    className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border ${
                       isUrgent && !isResolved
                         ? 'bg-rose-50 text-rose-700 border-rose-200/80'
                         : isResolved
@@ -208,16 +208,16 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                   >
                     {isUrgent && !isResolved ? (
                       <>
-                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                        Khẩn cấp P1 (Sự sống)
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                        Khẩn cấp P1
                       </>
                     ) : isResolved ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <Check className="w-3 h-3 text-emerald-600" />
                         Đã nghiệm thu
                       </>
                     ) : (
-                      'Đang xử lý kỹ thuật'
+                      'Đang xử lý'
                     )}
                   </span>
                 </div>
@@ -225,63 +225,185 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
 
               {/* Device Title & Issue Box */}
               <div>
-                <h3 className="text-base font-bold text-slate-900 leading-snug">
+                <h3 className="text-sm font-bold text-slate-900 leading-snug">
                   {ticket.deviceName}
                 </h3>
-                <div className="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 text-xs sm:text-sm text-slate-800 font-medium flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200/70 text-xs text-slate-800 font-medium flex items-start gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                   <span>{ticket.accessoryIssue}</span>
                 </div>
               </div>
 
               {/* Meta information */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm text-slate-600 pt-2.5 border-t border-slate-100">
+              <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-600 pt-2 border-t border-slate-100">
                 <div>
-                  <span className="text-slate-500 text-xs">Vị trí:</span>{' '}
-                  <strong className="text-slate-900 font-semibold">{ticket.location}</strong>
+                  <span className="text-slate-400">Vị trí:</span>{' '}
+                  <strong className="text-slate-900">{ticket.location}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-xs">Kỹ sư:</span>{' '}
-                  <strong className="text-slate-900 font-semibold">{ticket.assignedEngineer}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-xs">Hạn kiểm định:</span>{' '}
-                  <strong className="text-slate-900 font-semibold">{ticket.nextInspectionDue}</strong>
+                  <span className="text-slate-400">Hạn KĐ:</span>{' '}
+                  <strong className="text-slate-900 font-mono">{ticket.nextInspectionDue}</strong>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100">
                 <button
                   onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
-                  className="flex-1 sm:flex-initial py-2 px-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  className="flex-1 py-1.5 px-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
                   title="In Biên bản kiểm định an toàn điện & thử tải thiết bị này (NĐ 98/2021)"
                 >
-                  <Printer className="w-4 h-4 text-teal-700" />
-                  <span>In Biên Bản (NĐ 98)</span>
+                  <Printer className="w-3.5 h-3.5 text-teal-700" />
+                  <span>In NĐ 98</span>
                 </button>
 
                 {!isResolved ? (
                   <button
                     onClick={() => handleOpenHandover(ticket)}
-                    className={`flex-2 sm:flex-initial py-2 px-4 rounded-xl text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer active:scale-98 flex items-center justify-center gap-1.5 ${
+                    className={`flex-2 py-1.5 px-3 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-98 flex items-center justify-center gap-1 ${
                       currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
                         ? 'bg-teal-700 hover:bg-teal-800 text-white'
                         : 'bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-300'
                     }`}
                   >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Nghiệm thu thử tải &amp; Bàn giao</span>
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Nghiệm thu &amp; Bàn giao</span>
                   </button>
                 ) : (
-                  <div className="flex-2 sm:flex-initial py-2 px-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-bold text-center">
-                    ✓ Đã bàn giao buồng bệnh
+                  <div className="flex-2 py-1.5 px-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold text-center">
+                    ✓ Đã bàn giao
                   </div>
                 )}
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* 2B. Desktop High-Density Table (hidden md:flex) - Sticky Thead, Zero Redundant Scroll */}
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs flex-col">
+        <div className="flex-1 min-h-0 overflow-auto">
+          <table className="w-full text-left text-sm min-w-[700px]">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+              <tr className="text-slate-500 font-semibold text-xs uppercase tracking-wider">
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Mã &amp; Cấp độ</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Thiết bị &amp; Model</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Sự cố ghi nhận (NĐ 98)</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Vị trí khoa phòng</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Hạn kiểm định</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredTickets.map((ticket) => {
+                const isUrgent = ticket.urgency === 'urgent';
+                const isResolved = ticket.status === 'resolved';
+                return (
+                  <tr key={ticket.id} className="hover:bg-slate-50/80 transition">
+                    {/* Code & Risk Class */}
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <span className="font-mono font-bold text-slate-800 text-xs sm:text-sm block">{ticket.code}</span>
+                      <span
+                        className={`inline-block mt-0.5 px-2 py-0.2 rounded text-[10px] font-bold border ${
+                          ticket.riskClass === 'D'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}
+                      >
+                        Loại {ticket.riskClass}
+                      </span>
+                    </td>
+
+                    {/* Device & Model */}
+                    <td className="py-2.5 px-3">
+                      <span className="font-bold text-slate-900 block text-sm">{ticket.deviceName}</span>
+                      <span className="text-xs text-slate-500 font-mono">SN: {ticket.serialNumber} · {ticket.deviceModel}</span>
+                    </td>
+
+                    {/* Issue */}
+                    <td className="py-2.5 px-3 max-w-xs">
+                      <span className="text-xs sm:text-sm text-slate-800 font-medium line-clamp-1" title={ticket.accessoryIssue}>
+                        {ticket.accessoryIssue}
+                      </span>
+                      <span className="text-[11px] text-slate-500 block">KS: {ticket.assignedEngineer}</span>
+                    </td>
+
+                    {/* Location */}
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <span className="font-medium text-slate-800 text-xs sm:text-sm block">📍 {ticket.location}</span>
+                    </td>
+
+                    {/* Inspection */}
+                    <td className="py-2.5 px-3 whitespace-nowrap font-mono text-xs text-slate-700">
+                      <span>{ticket.nextInspectionDue}</span>
+                      <span className="text-[10px] text-slate-400 block font-sans">Viện TBYT NIEMET</span>
+                    </td>
+
+                    {/* Urgency & Status */}
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                          isUrgent && !isResolved
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : isResolved
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {isUrgent && !isResolved ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            Khẩn cấp
+                          </>
+                        ) : isResolved ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            Đã bàn giao
+                          </>
+                        ) : (
+                          'Đang xử lý'
+                        )}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
+                          className="h-7.5 px-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                          title="In Biên bản kỹ thuật NĐ 98"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-teal-700" />
+                          <span className="hidden xl:inline">In NĐ 98</span>
+                        </button>
+
+                        {!isResolved ? (
+                          <button
+                            onClick={() => handleOpenHandover(ticket)}
+                            className={`h-7.5 px-3 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-98 flex items-center gap-1 ${
+                              currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
+                                ? 'bg-teal-700 hover:bg-teal-800 text-white'
+                                : 'bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-300'
+                            }`}
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>Bàn giao</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-emerald-700 font-medium px-2 py-1">
+                            ✓ Hoàn tất
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 3. Closed-Loop Handover Modal */}

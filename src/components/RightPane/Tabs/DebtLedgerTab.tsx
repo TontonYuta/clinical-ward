@@ -341,17 +341,17 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       {/* 4B. Desktop Table (hidden md:flex) - Pinned Sticky Header, Isolated Scroll Body */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs flex-col">
         <div className="overflow-auto flex-1 w-full">
-          <table className="w-full text-left text-sm min-w-[760px]">
+          <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
               <tr className="text-slate-500 font-semibold text-xs uppercase tracking-wider">
-                <th className="py-3 px-4 whitespace-nowrap">Mã phiếu</th>
-                <th className="py-3 px-3.5 whitespace-nowrap">Mặt hàng</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">SL</th>
-                <th className="py-3 px-3.5 whitespace-nowrap">Bệnh nhân / Vị trí</th>
-                <th className="py-3 px-3.5 whitespace-nowrap">Thời gian</th>
-                <th className="py-3 px-3.5 text-center whitespace-nowrap">Vỏ ống (TT 20)</th>
-                <th className="py-3 px-3.5 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Mã phiếu</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Mặt hàng</th>
+                <th className="py-2.5 px-2.5 text-center whitespace-nowrap">SL</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Bệnh nhân / Vị trí</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Thời gian</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Vỏ ống (TT 20)</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -360,34 +360,34 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                 const isNarcotic = item.itemType === 'Thuốc gây nghiện';
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-mono text-slate-700 font-bold text-xs sm:text-sm whitespace-nowrap">{item.code}</td>
-                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 font-mono text-slate-700 font-bold text-xs sm:text-sm whitespace-nowrap">{item.code}</td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
                       <span className="font-semibold text-slate-900 block text-sm">{item.itemName}</span>
                       <span className="text-xs text-slate-500 font-medium">{item.itemType}</span>
                     </td>
-                    <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-900 text-sm whitespace-nowrap">
+                    <td className="py-2.5 px-2.5 text-center font-mono font-bold text-slate-900 text-sm whitespace-nowrap">
                       {item.quantity}
                     </td>
-                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                    <td className="py-2.5 px-3 whitespace-nowrap">
                       <span className="text-slate-900 font-semibold block text-sm">{item.patientName}</span>
                       <span className="text-xs text-slate-500 font-medium">{item.patientRoom}</span>
                     </td>
-                    <td className="py-3.5 px-3.5 text-slate-600 text-xs font-mono whitespace-nowrap">{item.borrowTime}</td>
-                    <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
+                    <td className="py-2.5 px-3 text-slate-600 text-xs font-mono whitespace-nowrap">{item.borrowTime}</td>
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       {isNarcotic ? (
                         item.ampouleDestroyed ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                             Đã tiêu hủy
                           </span>
                         ) : item.ampouleReturned ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">
                             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                             Đã nộp khay
                           </span>
                         ) : (
                           <button
                             onClick={() => handleAmpouleReturn(item.id)}
-                            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition cursor-pointer active:scale-98 whitespace-nowrap"
+                            className="inline-flex items-center gap-1.5 h-6.5 px-2.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition cursor-pointer active:scale-98 whitespace-nowrap"
                             title="Xác nhận đã nộp lại vỏ ống thủy tinh rỗng vào khay theo TT 20/2017"
                           >
                             <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
@@ -398,16 +398,16 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                         <span className="text-slate-300 text-sm">-</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       <span
-                        className={`inline-block px-2.5 py-1 rounded-md text-xs font-semibold ${
+                        className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold ${
                           isDebt ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-slate-100 text-slate-700 border border-slate-200'
                         }`}
                       >
                         {isDebt ? 'Đang nợ' : 'Đã hoàn bù'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-2 justify-end">
                         <button
                           onClick={() => onOpenPrintForm?.(isNarcotic ? 'TT20_AMPOULE_DESTRUCTION' : 'EMERGENCY_BORROW_TICKET', item)}

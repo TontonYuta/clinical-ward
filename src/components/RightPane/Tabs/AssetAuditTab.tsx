@@ -299,31 +299,31 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
       {/* 2B. Desktop Table (hidden md:flex) - Sticky Thead, Isolated Scroll Body */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs flex-col">
         <div className="flex-1 min-h-0 overflow-auto">
-          <table className="w-full text-left text-sm min-w-[880px]">
+          <table className="w-full text-left text-sm min-w-[720px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
               <tr className="text-slate-600 font-semibold text-xs uppercase tracking-wider">
-                <th className="py-3 px-4 whitespace-nowrap">Mã tài sản</th>
-                <th className="py-3 px-4 whitespace-nowrap">Thiết bị &amp; Cấp rủi ro</th>
-                <th className="py-3 px-4 whitespace-nowrap">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
-                <th className="py-3 px-4 whitespace-nowrap">Hao mòn &amp; Hiện trạng</th>
-                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Mã tài sản</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Thiết bị &amp; Cấp rủi ro</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Hao mòn &amp; Hiện trạng</th>
+                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredAssets.map((asset) => {
                 return (
                   <tr key={asset.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-mono text-slate-800 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 font-mono text-slate-800 whitespace-nowrap">
                       <span className="font-bold text-sm block">{asset.code}</span>
                       <span className="text-xs text-slate-500">SN: {asset.serialNumber}</span>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       <span className="font-bold text-sm text-slate-900 block">{asset.deviceName}</span>
                       <span className="text-xs text-slate-500">
                         Model: <span className="text-slate-700 font-medium">{asset.model}</span> · <span className="font-semibold text-slate-700">Loại {asset.riskClass}</span>
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-slate-600 flex items-center gap-1.5 font-medium">
                           <Building2 className="w-3.5 h-3.5 text-slate-400" />
@@ -342,7 +342,7 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono text-sm text-slate-800 font-bold">{asset.depreciationRatePercent}%</span>
@@ -358,7 +358,7 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-2 justify-end">
                         <button
                           onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
