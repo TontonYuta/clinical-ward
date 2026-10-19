@@ -59,17 +59,17 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden space-y-2 w-full">
       {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <h2 className="text-sm font-bold text-slate-900 whitespace-nowrap">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+          <h2 className="text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
             Giám Sát Chuỗi Lạnh Vắc Xin
           </h2>
           <span className="text-[11px] font-mono text-slate-400 border-l border-slate-200 pl-2 hidden md:inline">
             Chuẩn 2.0°C - 8.0°C (GSP - TT 36/2018)
           </span>
           {/* Subtle inline summary */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 border-l border-slate-200 pl-2.5">
-            <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded text-[11px] border ${
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2.5">
+            <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded text-[10px] sm:text-[11px] border ${
               isAlarm
                 ? 'bg-rose-50 text-rose-800 border-rose-200'
                 : isQuarantined
@@ -80,52 +80,56 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
                 isAlarm ? 'bg-rose-500 animate-pulse' : isQuarantined ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
               }`}></span>
               {isAlarm
-                ? 'MẤT ĐIỆN LƯỚI - QUÁ NHIỆT (11.0°C)'
+                ? 'MẤT ĐIỆN (11.0°C)'
                 : isQuarantined
-                ? 'BIỆT TRỮ CHỜ KIỂM ĐỊNH CHẤT LƯỢNG (QUARANTINE)'
-                : 'Dây chuyền lạnh GSP ổn định'}
+                ? 'BIỆT TRỮ (QUARANTINE)'
+                : 'Chuỗi lạnh GSP ổn định'}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => onOpenPrintForm?.('COLD_CHAIN_INCIDENT_REPORT')}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-[11px] sm:text-xs transition shadow-2xs cursor-pointer active:scale-98"
             title="In Biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP (Thông tư 36/2018/TT-BYT)"
           >
             <Printer className="w-3.5 h-3.5 text-cyan-700" />
             <span className="hidden sm:inline">In Biên Bản GSP (A4)</span>
+            <span className="sm:hidden">In GSP</span>
           </button>
 
           {isAlarm ? (
             <button
               onClick={handleRestore}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] sm:text-xs transition shadow-2xs cursor-pointer active:scale-98"
               title="Khôi phục nguồn điện máy phát dự phòng, đưa nhiệt độ về dải an toàn 4.5°C"
             >
               <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Khôi phục điện (4.5°C)</span>
+              <span className="hidden sm:inline">Khôi phục điện (4.5°C)</span>
+              <span className="sm:hidden">Phục hồi điện</span>
             </button>
           ) : isQuarantined ? (
             onReleaseQuarantine && (
               <button
                 onClick={onReleaseQuarantine}
-                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+                className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] sm:text-xs transition shadow-2xs cursor-pointer active:scale-98"
                 title="Hội đồng Dược & ĐT: Ký lệnh giải phóng lô vắc xin sau sự cố nhiệt độ theo GSP"
               >
                 <FileCheck2 className="w-3.5 h-3.5 text-slate-950" />
-                <span>Giải phóng lô biệt trữ</span>
+                <span className="hidden sm:inline">Giải phóng lô biệt trữ</span>
+                <span className="sm:hidden">Giải phóng</span>
               </button>
             )
           ) : (
             <button
               onClick={handleSimulateOutage}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-rose-50 text-rose-800 border border-rose-200 hover:border-rose-300 font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-white hover:bg-rose-50 text-rose-800 border border-rose-200 hover:border-rose-300 font-semibold text-[11px] sm:text-xs transition shadow-2xs cursor-pointer active:scale-98"
               title="Mô phỏng sự cố mất lưới điện 220V khiến nhiệt độ tăng vọt lên 11°C"
             >
               <ZapOff className="w-3.5 h-3.5 text-rose-600" />
-              <span>Mô phỏng mất điện (11°C)</span>
+              <span className="hidden sm:inline">Mô phỏng mất điện (11°C)</span>
+              <span className="sm:hidden">Mất điện</span>
             </button>
           )}
         </div>

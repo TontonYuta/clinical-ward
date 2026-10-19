@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Shield,
   Lock,
-  Printer
+  Printer,
+  X
 } from 'lucide-react';
 import { DashboardTab } from './RightPane/Dashboard';
 import { UserRole } from '../types/clinical';
@@ -31,6 +32,7 @@ export interface SidebarProps {
   onSelectUserRole: (role: UserRole) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onCloseMobile?: () => void;
   debtCount: number;
   urgentTicketsCount: number;
   nearExpiryAndLowStockCount: number;
@@ -50,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectUserRole,
   isCollapsed,
   onToggleCollapse,
+  onCloseMobile,
   debtCount,
   urgentTicketsCount,
   nearExpiryAndLowStockCount,
@@ -94,15 +97,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {!isCollapsed && (
-          <button
-            onClick={onToggleCollapse}
-            className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
-            title="Thu gọn thanh menu (Tối đa chiều rộng bảng)"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="md:hidden p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              title="Đóng menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+
+          {!isCollapsed && (
+            <button
+              onClick={onToggleCollapse}
+              className="hidden md:flex p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
+              title="Thu gọn thanh menu (Tối đa chiều rộng bảng)"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 2. Navigation Modules List (Filtered strictly by RBAC) */}
@@ -122,7 +137,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Tab: Sổ nợ tủ trực */}
             {allowedTabs.includes('debt') ? (
               <button
-                onClick={() => onTabChange('debt')}
+                onClick={() => {
+                  onTabChange('debt');
+                  onCloseMobile?.();
+                }}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   currentTab === 'debt'
                     ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200/80 shadow-2xs'
@@ -151,7 +169,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Tab: Kho Dược FEFO */}
             {allowedTabs.includes('fefo') ? (
               <button
-                onClick={() => onTabChange('fefo')}
+                onClick={() => {
+                  onTabChange('fefo');
+                  onCloseMobile?.();
+                }}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   currentTab === 'fefo'
                     ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200/80 shadow-2xs'
@@ -180,7 +201,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Tab: Chuỗi lạnh vắc xin */}
             {allowedTabs.includes('coldchain') ? (
               <button
-                onClick={() => onTabChange('coldchain')}
+                onClick={() => {
+                  onTabChange('coldchain');
+                  onCloseMobile?.();
+                }}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   currentTab === 'coldchain'
                     ? isColdAlarm
@@ -231,7 +255,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Tab: Sự cố & Kiểm định */}
               {allowedTabs.includes('equipment') ? (
                 <button
-                  onClick={() => onTabChange('equipment')}
+                  onClick={() => {
+                    onTabChange('equipment');
+                    onCloseMobile?.();
+                  }}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     currentTab === 'equipment'
                       ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200/80 shadow-2xs'
@@ -260,7 +287,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Tab: Kiểm kê tài sản công */}
               {allowedTabs.includes('asset_audit') ? (
                 <button
-                  onClick={() => onTabChange('asset_audit')}
+                  onClick={() => {
+                    onTabChange('asset_audit');
+                    onCloseMobile?.();
+                  }}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     currentTab === 'asset_audit'
                       ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200/80 shadow-2xs'
@@ -298,7 +328,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           <div className="space-y-1">
             <button
-              onClick={onOpenAuditTrail}
+              onClick={() => {
+                onOpenAuditTrail();
+                onCloseMobile?.();
+              }}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
@@ -309,7 +342,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={onOpenLegalDocs}
+              onClick={() => {
+                onOpenLegalDocs();
+                onCloseMobile?.();
+              }}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
@@ -320,7 +356,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={onOpenUserGuide}
+              onClick={() => {
+                onOpenUserGuide();
+                onCloseMobile?.();
+              }}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
@@ -331,7 +370,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={onOpenPrintableForms}
+              onClick={() => {
+                onOpenPrintableForms?.();
+                onCloseMobile?.();
+              }}
               className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
@@ -369,7 +411,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </label>
               <select
                 value={currentUserRole}
-                onChange={(e) => onSelectUserRole(e.target.value as UserRole)}
+                onChange={(e) => {
+                  onSelectUserRole(e.target.value as UserRole);
+                  onCloseMobile?.();
+                }}
                 className="w-full bg-white text-[11px] font-semibold text-slate-800 border border-slate-200 rounded-md px-1.5 py-1 focus:outline-hidden focus:border-teal-500 cursor-pointer shadow-2xs"
                 title="Chuyển đổi phân quyền người dùng (RBAC)"
               >

@@ -58,6 +58,7 @@ export default function App() {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('nurse');
   const [authRequest, setAuthRequest] = useState<ClinicalAuthRequest | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
   const [isLegalDocsOpen, setIsLegalDocsOpen] = useState<boolean>(false);
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
@@ -1299,9 +1300,62 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   };
 
   return (
-    <div className="flex flex-row h-screen w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block">
-      {/* 1. Left Enterprise Navigation Sidebar */}
-      <div className="shrink-0 print:hidden">
+    <div className="flex flex-row h-screen w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block relative">
+      {/* 1. Mobile Drawer Backdrop Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 md:hidden animate-in fade-in duration-200"
+        />
+      )}
+
+      {/* 2. Mobile Drawer Navigation Sidebar */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl md:hidden transition-transform duration-300 ease-in-out transform ${
+          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } print:hidden`}
+      >
+        <Sidebar
+          currentTab={currentTab}
+          onTabChange={(tab) => {
+            setCurrentTab(tab);
+            setIsMobileSidebarOpen(false);
+          }}
+          currentUserRole={currentUserRole}
+          onSelectUserRole={(role) => {
+            handleSelectUserRole(role);
+            setIsMobileSidebarOpen(false);
+          }}
+          isCollapsed={false}
+          onToggleCollapse={() => setIsMobileSidebarOpen(false)}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          debtCount={debts.filter(d => d.status === 'debt').length}
+          urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
+          nearExpiryAndLowStockCount={batches.filter(b => b.isNearExpiry || b.isLowStock || b.currentStock <= b.minThreshold).length}
+          coldChainTemp={coldChainState.currentTemp}
+          isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
+          misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
+          onOpenLegalDocs={() => {
+            setIsLegalDocsOpen(true);
+            setIsMobileSidebarOpen(false);
+          }}
+          onOpenAuditTrail={() => {
+            setIsAuditTrailOpen(true);
+            setIsMobileSidebarOpen(false);
+          }}
+          onOpenUserGuide={() => {
+            setIsUserGuideOpen(true);
+            setIsMobileSidebarOpen(false);
+          }}
+          onOpenPrintableForms={() => {
+            handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION');
+            setIsMobileSidebarOpen(false);
+          }}
+        />
+      </div>
+
+      {/* 3. Desktop Left Enterprise Navigation Sidebar */}
+      <div className="hidden md:block shrink-0 print:hidden h-full">
         <Sidebar
           currentTab={currentTab}
           onTabChange={(tab) => setCurrentTab(tab)}
@@ -1322,13 +1376,19 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         />
       </div>
 
-      {/* 2. Main Workspace: Sleek Top Header + Central Clinical Dashboard */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70 print:hidden">
+      {/* 4. Main Workspace: Sleek Top Header + Central Clinical Dashboard */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70 print:hidden w-full">
         <Header
           currentTab={currentTab}
           currentUserRole={currentUserRole}
           isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onToggleSidebar={() => {
+            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+              setIsMobileSidebarOpen(prev => !prev);
+            } else {
+              setIsSidebarCollapsed(prev => !prev);
+            }
+          }}
           isAudioMuted={isAudioMuted}
           onToggleAudio={() => {
             if (!isAudioMuted) clinicalAudio.stopAlarm();
@@ -1371,31 +1431,36 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         </main>
       </div>
 
-      {/* 3. Floating Bottom-Right AI Assistant Bubble */}
+      {/* 5. Floating Bottom-Right AI Assistant Bubble */}
       {!isCopilotOpen && (
         <button
           onClick={() => setIsCopilotOpen(true)}
-          className="fixed bottom-5 right-6 z-40 flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-teal-500/30 group print:hidden"
+          className="fixed bottom-4 right-4 sm:bottom-5 sm:right-6 z-40 flex items-center gap-2 sm:gap-2.5 px-3.5 py-2.5 sm:px-4 sm:py-3 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-teal-500/30 group print:hidden"
           title="Mở Trợ lý AI Lâm Sàng"
         >
           <div className="relative flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-teal-800 animate-pulse" />
           </div>
           <span className="text-xs font-semibold tracking-wide">Trợ Lý AI</span>
         </button>
       )}
 
-      {/* 4. Floating Bottom-Right AI Assistant Pop-up Window */}
+      {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
       {isCopilotOpen && (
-        <div className="fixed bottom-5 right-6 z-50 w-[420px] max-w-[calc(100vw-32px)] h-[620px] max-h-[calc(100vh-100px)] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 print:hidden">
+        <div className="fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-6 z-50 sm:w-[420px] sm:max-w-[calc(100vw-32px)] sm:h-[620px] sm:max-h-[calc(100vh-100px)] h-full w-full flex flex-col bg-white sm:rounded-2xl rounded-none shadow-2xl border sm:border-slate-200/90 border-transparent overflow-hidden ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 print:hidden">
           <ChatWindow
             messages={chatMessages}
             suggestionChips={ROLE_SUGGESTION_CHIPS[currentUserRole] || QUICK_SUGGESTION_CHIPS}
             onSendMessage={handleSendMessage}
             isProcessing={isProcessing}
             isAudioMuted={isAudioMuted}
-            onSelectTab={(tab) => setCurrentTab(tab)}
+            onSelectTab={(tab) => {
+              setCurrentTab(tab);
+              if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                setIsCopilotOpen(false);
+              }
+            }}
             currentUserRole={currentUserRole}
             onClose={() => setIsCopilotOpen(false)}
             pendingDebtsCount={debts.filter(d => d.status === 'debt').length}

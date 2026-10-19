@@ -81,79 +81,83 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden space-y-2 w-full">
       {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <h2 className="text-sm font-bold text-slate-900 whitespace-nowrap">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+          <h2 className="text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
             Sổ Nợ Tủ Trực Cấp Cứu
           </h2>
           <span className="text-[11px] font-mono text-slate-400 border-l border-slate-200 pl-2 hidden md:inline">
             Căn cứ: TT 22/2011 &amp; TT 20/2017/TT-BYT
           </span>
           {/* Subtle inline summary */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 border-l border-slate-200 pl-2.5">
-            <span className="inline-flex items-center gap-1 font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2.5">
+            <span className="inline-flex items-center gap-1 font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[10px] sm:text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
               {activeDebts.length} đang nợ
             </span>
             {pendingAmpoules.length > 0 && (
-              <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[11px]">
+              <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[10px] sm:text-[11px]">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                 {pendingAmpoules.length} nợ vỏ
               </span>
             )}
-            <span className="text-slate-400 font-medium">·</span>
-            <span className="text-slate-500 text-[11px]">
+            <span className="text-slate-400 font-medium hidden sm:inline">·</span>
+            <span className="text-slate-500 text-[11px] hidden sm:inline">
               {settledDebts.length} đã hoàn bù
             </span>
           </div>
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           {/* Manual Borrow Button (100% Standalone Clinical Workstation) */}
           <button
             onClick={() => setIsBorrowModalOpen(true)}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
             title="Lập phiếu mượn khẩn thuốc / vật tư từ tủ trực cấp cứu ca đêm (TT 22/2011/TT-BYT)"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Mượn Khẩn Thuốc / Vật Tư</span>
+            <span className="hidden sm:inline">+ Mượn Khẩn Thuốc / Vật Tư</span>
+            <span className="sm:hidden">+ Mượn Khẩn</span>
           </button>
 
           {returnedAmpoules.length > 0 && (
             <button
               onClick={() => setIsDestructionModalOpen(true)}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 hover:border-slate-400 text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 hover:border-slate-400 text-[11px] sm:text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
               title="Lập biên bản Hội đồng tiêu hủy vỏ ống thuốc gây nghiện theo Thông tư 20/2017/TT-BYT (Xem danh mục & in Mẫu 16)"
             >
               <Flame className="w-3.5 h-3.5 text-rose-600" />
-              <span>Hội đồng hủy vỏ ({returnedAmpoules.length})</span>
+              <span className="hidden sm:inline">Hội đồng hủy vỏ ({returnedAmpoules.length})</span>
+              <span className="sm:hidden">Hủy vỏ ({returnedAmpoules.length})</span>
             </button>
           )}
 
           <button
             onClick={onSimulateMorningReminder}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-[11px] sm:text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
             title="Mô phỏng chuông nhắc đối soát hoàn bù lúc 07:00 sáng theo TT 22"
           >
             <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span>Nhắc hoàn bù 07:00</span>
+            <span className="hidden sm:inline">Nhắc hoàn bù 07:00</span>
+            <span className="sm:hidden">Nhắc 07:00</span>
           </button>
 
           <button
             onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 text-[11px] sm:text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
             title="In Biểu Mẫu Hành Chính Y Tế (Mẫu 16/TT20 Hủy Vỏ Ống / Mẫu Phiếu Mượn TT22)"
           >
             <Printer className="w-3.5 h-3.5 text-teal-700" />
             <span className="hidden sm:inline">In Biểu Mẫu A4</span>
+            <span className="sm:hidden">In A4</span>
           </button>
         </div>
       </div>
 
       {/* 3. Search & Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+        <div className="relative w-full sm:max-w-xs">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -164,10 +168,10 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-1 text-xs bg-slate-100 p-0.5 rounded-md">
+        <div className="flex items-center gap-1 text-xs bg-slate-100 p-0.5 rounded-md overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
           <button
             onClick={() => setFilterStatus('all')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               filterStatus === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -175,7 +179,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
           </button>
           <button
             onClick={() => setFilterStatus('debt')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               filterStatus === 'debt' ? 'bg-white text-amber-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -183,7 +187,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
           </button>
           <button
             onClick={() => setFilterStatus('narcotics')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               filterStatus === 'narcotics' ? 'bg-white text-rose-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -191,7 +195,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
           </button>
           <button
             onClick={() => setFilterStatus('settled')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               filterStatus === 'settled' ? 'bg-white text-emerald-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -202,8 +206,8 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
 
       {/* 4. Table (Maximized Viewport Height & Sticky Thead) */}
       <div className="flex-1 min-h-0 bg-white rounded-lg border border-slate-200/90 overflow-hidden shadow-2xs flex flex-col">
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-auto flex-1 w-full">
+          <table className="w-full text-left text-xs min-w-[720px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
               <tr className="text-slate-500 font-semibold">
                 <th className="py-2.5 px-3.5 whitespace-nowrap">Mã phiếu</th>

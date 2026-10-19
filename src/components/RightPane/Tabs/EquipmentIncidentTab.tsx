@@ -67,61 +67,58 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden space-y-2 w-full">
       {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <h2 className="text-sm font-bold text-slate-900 whitespace-nowrap">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200/90 shadow-2xs shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+          <h2 className="text-xs sm:text-sm font-bold text-slate-900 whitespace-nowrap">
             Sự Cố &amp; Kiểm Định Thiết Bị
           </h2>
           <span className="text-[11px] font-mono text-slate-400 border-l border-slate-200 pl-2 hidden md:inline">
             Căn cứ: NĐ 98/2021 &amp; NĐ 07/2023
           </span>
           {/* Subtle inline summary */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 border-l border-slate-200 pl-2.5">
-            <span className="text-slate-500 font-mono text-[11px]">{tickets.length} thiết bị</span>
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2.5">
+            <span className="text-slate-500 font-mono text-[11px]">{tickets.length} máy</span>
             <span className="text-slate-300">·</span>
             {urgentCount > 0 && (
-              <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[11px]">
+              <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[10px] sm:text-[11px]">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                 {urgentCount} khẩn cấp (Loại D)
               </span>
             )}
             {inProgressCount > 0 && (
-              <span className="inline-flex items-center gap-1 font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+              <span className="inline-flex items-center gap-1 font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px] sm:text-[11px]">
                 {inProgressCount} đang sửa
               </span>
             )}
-            <span className="text-slate-400 font-medium">·</span>
-            <span className="text-slate-500 text-[11px]">Hạn tem máy sốc tim: 26 ngày</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT')}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-[11px] sm:text-xs transition shadow-2xs cursor-pointer active:scale-98"
             title="In Biên bản kiểm định an toàn điện & thử tải lâm sàng TBYT (Nghị định 98/2021/NĐ-CP & NĐ 07/2023/NĐ-CP)"
           >
             <Printer className="w-3.5 h-3.5 text-teal-700" />
             <span className="hidden sm:inline">In Biên Bản Kỹ Thuật (NĐ 98)</span>
+            <span className="sm:hidden">In NĐ 98</span>
           </button>
 
           <button
             onClick={() => setIsIncidentModalOpen(true)}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-[11px] sm:text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
             title="Lập phiếu báo hỏng / sự cố thiết bị y tế (Nghị định 98/2021/NĐ-CP)"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Báo Hỏng Thiết Bị</span>
+            <span className="hidden sm:inline">+ Báo Hỏng Thiết Bị</span>
+            <span className="sm:hidden">+ Báo Hỏng</span>
           </button>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 pl-1 border-l border-slate-200">
-            <span>Kỹ sư trực: <strong className="text-slate-800 font-semibold">KS. Đặng Văn Nam</strong></span>
-          </div>
         </div>
       </div>
 
       {/* 3. Search & Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+        <div className="relative w-full sm:max-w-xs">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -132,10 +129,10 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-1 text-xs bg-slate-100 p-0.5 rounded-md">
+        <div className="flex items-center gap-1 text-xs bg-slate-100 p-0.5 rounded-md overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
           <button
             onClick={() => setSelectedUrgency('all')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               selectedUrgency === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -143,7 +140,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('urgent')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               selectedUrgency === 'urgent' ? 'bg-white text-rose-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -151,7 +148,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('in_progress')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               selectedUrgency === 'in_progress' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -159,7 +156,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('resolved')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
               selectedUrgency === 'resolved' ? 'bg-white text-emerald-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -181,9 +178,9 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                 isUrgent && !isResolved ? 'border-rose-200 bg-rose-50/10' : 'border-slate-200'
               }`}
             >
-              <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 mb-2">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-mono text-xs font-bold text-slate-600">
                       {ticket.code}
                     </span>
@@ -208,7 +205,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                   </p>
                 </div>
 
-                <div className="shrink-0 text-right">
+                <div className="flex items-center gap-1.5 sm:shrink-0 sm:text-right mt-1 sm:mt-0 flex-wrap">
                   <button
                     onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
                     className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold transition shadow-2xs cursor-pointer"
