@@ -1,0 +1,344 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{vietnam}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{geometry}
+\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+\usepackage{setspace}
+\setstretch{1.22}
+\setlength{\parskip}{0.6em}
+\usepackage{booktabs,tabularx,array,ragged2e}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!80!black,
+    citecolor=blue!80!black,
+    urlcolor=teal!80!black
+}
+
+% Định nghĩa kiểu cột căn trái tự nhiên không bị kéo giãn khoảng cách từ
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\title{\textbf{\Large Hướng dẫn đọc hiểu nghiệp vụ y tế lâm sàng\\[0.2em]qua các câu chuyện thực tế}\\[0.5em]
+\large Cẩm nang thực hành quy định pháp luật y tế,\\[0.2em]quản lý kho dược, thiết bị và tài sản bệnh viện}
+\author{\textbf{Nhóm Phát triển Hệ thống Trợ lý Lâm sàng}\\[0.2em]\textbf{và Quản lý Kho Dược Bệnh viện}}
+\date{Tháng 10 Năm 2026}
+
+\begin{document}
+
+\maketitle
+
+\hrule
+\vspace{0.8em}
+
+\section*{Lời nói đầu}
+
+Xây dựng phần mềm y tế và bệnh viện luôn là một trong những thử thách phức tạp nhất đối với các kỹ sư công nghệ thông tin. Khác với các hệ thống thương mại điện tử hay quản lý bán hàng thông thường, trong y tế, mỗi cú nhấp chuột, mỗi thao tác xác nhận đơn thuốc, hay một dòng dữ liệu nhiệt độ tủ lạnh bị sai lệch đều liên quan trực tiếp đến tính mạng con người và trách nhiệm pháp lý trước pháp luật.
+
+Tài liệu này được biên soạn nhằm giúp các bạn sinh viên, lập trình viên và những người tham gia phát triển hệ thống hiểu sâu sắc nghiệp vụ y tế bệnh viện. Thay vì liệt kê khô khan các điều khoản luật pháp, tài liệu dẫn dắt người đọc qua bốn câu chuyện thực tế diễn ra trong ca trực bệnh viện. Qua từng tình huống cụ thể, các quy định pháp luật quan trọng như Thông tư 22/2011/TT-BYT (quản lý thuốc tủ trực), Thông tư 20/2017/TT-BYT (thuốc gây nghiện), Thông tư 36/2018/TT-BYT (thực hành tốt bảo quản thuốc GSP), Nghị định 98/2021/NĐ-CP (quản lý trang thiết bị y tế) và Nghị định 151/2017/NĐ-CP (quản lý tài sản công) sẽ trở nên sống động, gần gũi và dễ nhớ.
+
+Cuối tài liệu là bộ 15 câu hỏi trắc nghiệm tình huống lâm sàng kèm đáp án và phân tích chi tiết, giúp bạn tự kiểm tra và củng cố kiến thức để tự tin thuyết trình cũng như phát triển tính năng phần mềm chuẩn xác.
+
+\vspace{1em}
+\hrule
+\vspace{1.5em}
+
+\section{Những câu chuyện thực tế trong ca trực bệnh viện}
+
+\subsection{Ca trực cấp cứu lúc 02 giờ sáng và bài học quản lý thuốc gây nghiện}
+
+Đồng hồ điểm 02:15 sáng tại Khoa Cấp cứu của một bệnh viện đa khoa. Tiếng còi xe cứu thương xé toang không gian tĩnh mịch của màn đêm. Băng ca nhanh chóng được đẩy vào phòng cấp cứu số 1: một nam thanh niên 28 tuổi bị tai nạn giao thông nghiêm trọng, gãy hở xương đùi kèm chấn thương ngực kín, mạch nhanh 120 lần/phút, huyết áp tụt còn 85/50 mmHg, bệnh nhân đau đớn dữ dội và có dấu hiệu kích động vật vã vì sốc chấn thương.
+
+Bác sĩ Hùng, trưởng kíp trực, ngay lập tức ra y lệnh: \textit{``Thiết lập ngay hai đường truyền tĩnh mạch lớn, thở oxy qua mask 8 lít/phút. Cho bệnh nhân dùng ngay một ống Morphin 10mg tiêm tĩnh mạch chậm để chống sốc giảm đau khẩn cấp!''}
+
+Điều dưỡng Thu chạy nhanh đến tủ thuốc trực cấp cứu của khoa. Tủ thuốc này được bố trí ngay tại vị trí thuận lợi nhất của phòng cấp cứu. Theo quy định tại Thông tư 22/2011/TT-BYT của Bộ Y tế, mỗi khoa lâm sàng được phép lưu giữ một số lượng thuốc và vật tư y tế nhất định gọi là ``cơ số tủ trực'' để kịp thời cứu chữa bệnh nhân trong các tình huống khẩn cấp mà không cần chờ Kho Dược cấp phát.
+
+Tuy nhiên, Morphin là thuốc giảm đau nhóm gây nghiện, chịu sự quản lý nghiêm ngặt theo Thông tư 20/2017/TT-BYT. Tủ trực đựng Morphin phải có khóa chắc chắn, người giữ chìa khóa là điều dưỡng trực được phân công bằng văn bản. Thu lấy chìa khóa mở ngăn thuốc gây nghiện, lấy ra một ống Morphin 10mg/1ml, bẻ ống và tiêm chậm cho người bệnh dưới sự giám sát trực tiếp của Bác sĩ Hùng. Sau khi tiêm, mạch và huyết áp của bệnh nhân dần ổn định, cơn đau dịu đi và kíp trực khẩn trương chuyển bệnh nhân vào phòng mổ.
+
+Lúc này, một tình huống bất ngờ xảy ra: một bạn sinh viên điều dưỡng thực tập trong lúc dọn dẹp khay tiêm đã lỡ tay làm rơi vỏ ống Morphin thủy tinh xuống nền gạch, khiến vỏ ống vỡ tan thành nhiều mảnh. Bạn sinh viên hoảng sợ định quét gom vứt vào thùng rác y tế.
+
+Điều dưỡng Thu vội ngăn lại ngay lập tức: \textit{``Em tuyệt đối không được vứt mảnh vỡ vào thùng rác! Theo quy định quản lý thuốc gây nghiện, mỗi ống Morphin xuất ra khỏi tủ trực đều phải có vỏ ống rỗng mang về đối soát để nộp lại cho Kho Dược. Nếu mất vỏ ống mà không có lý do chính đáng, toàn bộ kíp trực sẽ bị đình chỉ công tác để thanh tra giải trình, vì thuốc gây nghiện có nguy cơ bị tuồn ra ngoài làm chất cấm.''}
+
+Thu bình tĩnh hướng dẫn kíp trực xử lý đúng quy trình:
+\begin{enumerate}[leftmargin=*]
+    \item Thu nhặt toàn bộ các mảnh vỡ thủy tinh của vỏ ống Morphin (bao gồm cả phần cổ ống và phần thân có dán nhãn thuốc) cho vào một hộp nhựa trong suốt có dán niêm phong.
+    \item Lập ngay một biên bản làm vỡ vỏ thuốc gây nghiện tại chỗ. Biên bản ghi rõ ngày giờ, họ tên bệnh nhân nhận thuốc, số bệnh án, lý do vỡ và có chữ ký xác nhận của Bác sĩ Hùng (người ra y lệnh) và Điều dưỡng Thu (người thực hiện).
+    \item Sáng hôm sau, kíp trực mang biên bản kèm hộp chứa mảnh vỡ vỏ ống lên bàn giao cho Dược sĩ phụ trách kho dược để làm thủ tục hủy vỏ theo đúng biên bản hội đồng.
+\end{enumerate}
+
+Một bài học quan trọng khác là nguyên tắc bù cơ số tủ trực: lấy bao nhiêu thuốc từ tủ cấp cứu thì sáng hôm sau phải tổng hợp phiếu xuất xin Kho Dược cấp bù lại bấy nhiêu để tủ thuốc luôn luôn đủ số lượng dự phòng sẵn sàng cho kíp trực tiếp theo. Đồng thời, toàn bộ thông tin chỉ định Morphin phải được ghi chép đầy đủ, thống nhất trong hồ sơ bệnh án và đơn thuốc điện tử. Nếu bác sĩ chỉ định trên miệng mà quên ghi hồ sơ, cơ quan Bảo hiểm y tế khi giám định sẽ từ chối chi trả toàn bộ chi phí này, và bệnh viện sẽ bắt kíp trực hoặc điều dưỡng tự bỏ tiền túi ra đền bù.
+
+\vspace{0.8em}
+\noindent\rule{\textwidth}{0.4pt}
+
+\subsection{Đêm hè mất điện và bài học từ chiếc nhiệt kế tự ghi tủ vắc xin}
+
+Một đêm giữa tháng 7, một trận mưa dông kèm sấm sét lớn quét qua thành phố khiến lưới điện khu vực bị ngắt đột ngột lúc 03:15 sáng. Hệ thống máy phát điện dự phòng của bệnh viện tự động khởi động sau 3 phút để cấp điện cho các khu vực trọng yếu: phòng mổ, phòng hồi sức tích cực và khu vực cấp cứu.
+
+Tuy nhiên, tại Kho Dược, sự cố sét đánh lan truyền đã làm nhảy atomat của nhánh cấp nguồn cho tủ lạnh chuyên dụng bảo quản vắc xin và huyết thanh kháng độc tố uốn ván. 
+
+Theo Thông tư 36/2018/TT-BYT về thực hành tốt bảo quản thuốc (GSP), vắc xin và các sinh phẩm y tế nhạy cảm nhiệt độ bắt buộc phải được duy trì liên tục trong dải nhiệt độ tiêu chuẩn từ 2°C đến 8°C. Nếu nhiệt độ tăng quá mức hoặc tụt xuống dưới 0°C làm đông băng, các phân tử protein kháng thể trong vắc xin sẽ bị phá hủy hoàn toàn, làm mất hiệu lực sinh miễn dịch hoặc thậm chí gây ra phản ứng sốc phản vệ nguy hiểm khi tiêm cho người bệnh.
+
+Dược sĩ Ngọc, người trực Kho Dược đêm hôm đó, đang chuẩn bị thuốc tại bàn làm việc thì ứng dụng giám sát trên điện thoại thông minh rung chuông báo động liên hồi: \textit{``Cảnh báo khẩn cấp: Tủ lạnh Vắc xin số 02 mất điện nguồn, nhiệt độ hiện tại 9.5°C và đang tăng nhanh!''}
+
+Nhờ có hệ thống cảm biến nhiệt độ tự ghi liên tục (datalogger) kết nối mạng, Dược sĩ Ngọc đã nắm bắt sự cố ngay tức thì thay vì chờ đến sáng mới phát hiện. Trước đây, khi còn quản lý thủ công bằng sổ tay, tình trạng bỏ quên cả tuần không đo rồi đến cuối tháng mới lấy bút tự chép bù số liệu khống vào sổ để đối phó thanh tra diễn ra khá phổ biến. Nhưng với cảm biến tự ghi, từng phút biến thiên nhiệt độ đều được lưu lại khách quan, không thể làm giả.
+
+Ngọc chạy ngay vào phòng bảo quản. Nhiệt độ trên màn hình hiển thị đã chạm ngưỡng 11°C. Cô lập tức kích hoạt quy trình ứng phó khẩn cấp dây chuyền lạnh:
+\begin{enumerate}[leftmargin=*]
+    \item Lấy hòm lạnh chuyên dụng bảo quản vắc xin, lót các túi đá gel đã được làm lạnh chuẩn bị sẵn từ ngăn đông dự phòng.
+    \item Nhanh chóng chuyển toàn bộ các hộp vắc xin và huyết thanh từ tủ lạnh gặp sự cố sang hòm lạnh bảo quản tạm thời, đậy kín nắp và cắm đầu dò nhiệt kế phụ vào hòm lạnh.
+    \item Kiểm tra chỉ thị đông băng (nhãn VVM - Vaccine Vial Monitor) dán trên các lọ vắc xin nhạy cảm nhiệt. Rất may mắn, ô vuông chỉ thị ở giữa vẫn sáng màu hơn vòng tròn bên ngoài, chứng tỏ nhiệt tích lũy chưa vượt ngưỡng gây hỏng thuốc.
+    \item Báo cho kỹ thuật viên điện trực đêm đến kiểm tra và bật lại atomat nguồn điện, đồng thời kiểm tra máy nén của tủ lạnh.
+\end{enumerate}
+
+Sau khi tủ lạnh hoạt động ổn định trở lại và nhiệt độ buồng lạnh hạ về 4.5°C, Ngọc chuyển vắc xin trở lại. Tuy nhiên, đối với hai lọ vắc xin dại nằm sát cánh cửa tủ nơi nhiệt độ đo được cao nhất 11.2°C, cô không đưa về vị trí sử dụng ngay mà chuyển chúng vào một khay riêng có dán biển cảnh báo rõ ràng: \textbf{``KHU VỰC CÁCH LY THEO DÕI - CHỜ HỘI ĐỒNG CHUYÊN MÔN KIỂM ĐỊNH''}. 
+
+Đây là nguyên tắc bắt buộc trong quy trình GSP: khu vực cách ly để riêng thuốc nghi ngờ bị hỏng giúp ngăn chặn hoàn toàn nguy cơ điều dưỡng viên trong lúc vội vàng lấy nhầm thuốc kém chất lượng tiêm cho bệnh nhân.
+
+\vspace{0.8em}
+\noindent\rule{\textwidth}{0.4pt}
+
+\subsection{Tiếng chuông báo động của máy thở phòng hồi sức tích cực}
+
+Tại Khoa Hồi sức tích cực (ICU), âm thanh quen thuộc là tiếng bíp đều đặn của các máy theo dõi nhịp tim và tiếng bơm xả khí của hàng chục máy thở nhân tạo. Buồng bệnh số 4 là nơi điều trị một bệnh nhân viêm phổi nặng có biến chứng suy hô hấp tiến triển (ARDS), đang được hỗ trợ hô hấp bằng máy thở cao cấp Puritan Bennett 840 qua ống nội khí quản.
+
+Lúc 05:30 sáng, máy thở số 04 đột ngột phát ra tiếng còi báo động ưu tiên cao nhất: màn hình nhấp nháy đỏ rực kèm dòng thông báo lỗi áp lực đường thở tụt dốc (\textit{Airway Pressure Low / Circuit Disconnect}). Bác sĩ trực và điều dưỡng lập tức có mặt bên giường bệnh. Bệnh nhân có dấu hiệu tím tái quanh môi, chỉ số oxy trong máu (SpO2) tụt từ 96\% xuống 84\%.
+
+Bác sĩ trực nhanh chóng tháo dây máy thở, gắn bóng bóp Ambu tự phồng có túi trữ oxy 100\% và giao cho điều dưỡng bóp bóng liên tục bằng tay để duy trì sự sống cho người bệnh. Trong lúc đó, bác sĩ kiểm tra đường dây máy thở và phát hiện bẫy nước (water trap) bằng nhựa trên dây thở bị nứt vỡ do va đập trước đó, gây rò rỉ khí nghiêm trọng khiến áp lực thông khí tụt về 0.
+
+Sau khi thay một bộ dây thở dự phòng mới và kết nối lại máy, áp lực thông khí trở lại bình thường, SpO2 của bệnh nhân tăng dần lên 98\%. Kíp trực thở phào nhẹ nhõm, nhưng câu chuyện quản lý thiết bị y tế chỉ mới bắt đầu.
+
+Theo Nghị định 98/2021/NĐ-CP của Chính phủ về quản lý trang thiết bị y tế, máy thở nhân tạo là thiết bị y tế thuộc nhóm C và D (nhóm có mức độ rủi ro cao đối với tính mạng con người). Thiết bị này bắt buộc phải trải qua quy trình kiểm định an toàn kỹ thuật và đo lường định kỳ theo tiêu chuẩn an toàn điện y tế IEC 60601-1 trước khi đưa vào sử dụng, đồng thời phải có hồ sơ lý lịch máy ghi chép đầy đủ nhật ký vận hành và sự cố.
+
+Kỹ sư Nam, chuyên viên Phòng Vật tư - Thiết bị y tế của bệnh viện, nhận được tin báo sự cố qua phần mềm quản lý nội bộ. Khi đến hiện trường, Nam thực hiện ba bước chuẩn:
+\begin{enumerate}[leftmargin=*]
+    \item Kiểm tra tem kiểm định dán trên sườn máy thở: tem kiểm định vẫn còn hiệu lực 4 tháng. Nguyên nhân sự cố không phải do lỗi phần mềm hay động cơ máy mà do vật tư tiêu hao (bẫy nước đường thở) bị lão hóa nhựa và nứt vỡ cơ học.
+    \item Lập tức treo biển cảnh báo to màu đỏ: \textbf{``THIẾT BỊ ĐANG SỰ CỐ - NGỪNG SỬ DỤNG''} lên trên máy thở. Việc dán biển cảnh báo này là cực kỳ quan trọng; nếu không có biển cảnh báo rõ ràng, điều dưỡng của kíp trực ca sáng khi nhận bàn giao rất có thể sẽ tưởng máy đang rảnh rỗi và mang đi gắn cho một bệnh nhân cấp cứu khác, gây nguy hiểm khôn lường.
+    \item Lập biên bản ghi nhận sự cố kỹ thuật trên phần mềm, xuất kho một cụm bẫy nước mới đạt chuẩn để thay thế ngay trong vòng 30 phút. Nhờ kho vật tư có sẵn linh kiện thay thế, thời gian máy bị hỏng nằm chờ sửa được rút ngắn tối đa, đưa máy trở lại trạng thái sẵn sàng trực chiến phục vụ người bệnh.
+\end{enumerate}
+
+\vspace{0.8em}
+\noindent\rule{\textwidth}{0.4pt}
+
+\subsection{Ngày cuối năm và buổi quét mã QR kiểm kê tài sản công}
+
+Ngày 31 tháng 12 hàng năm là thời điểm tất cả các bệnh viện công lập trên cả nước tiến hành tổng kiểm kê tài sản theo quy định của Luật Quản lý, sử dụng tài sản công, Nghị định 151/2017/NĐ-CP và Thông tư 23/2023/TT-BTC của Bộ Tài chính.
+
+Đoàn kiểm kê gồm Kế toán trưởng, Trưởng phòng Vật tư - Thiết bị y tế và Trưởng khoa phòng bắt đầu đi từng buồng bệnh để rà soát toàn bộ máy móc, trang thiết bị y tế. Kỹ sư Nam cầm máy quét mã QR di động kết nối với phần mềm quản lý tài sản bệnh viện.
+
+Khi đến phòng hồi tỉnh sau mổ của Khoa Cấp cứu, Nam quét mã QR dán trên thân một chiếc máy theo dõi bệnh nhân 5 thông số (Monitor) hiệu Philips:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Mã tài sản trên tem QR:} \texttt{TS-MON-2018-042}.
+    \item \textbf{Khoa phòng ghi nhận trên sổ sách kế toán:} Khoa Gây mê Hồi sức.
+    \item \textbf{Vị trí thực tế đang kiểm kê:} Khoa Cấp cứu.
+\end{itemize}
+
+Màn hình phần mềm lập tức bật đèn cảnh báo màu cam: \textbf{``PHÁT HIỆN LỆCH KHOA PHÒNG GIỮA SỔ SÁCH VÀ THỰC TẾ!''}.
+
+Kế toán trưởng hỏi rõ sự tình. Bác sĩ trực khoa Cấp cứu giải thích: \textit{``Cách đây 3 tháng, trong đợt dịch sốt xuất huyết cao điểm, bệnh nhân nhập viện quá đông làm khoa Cấp cứu thiếu monitor trầm trọng. Anh em đã chạy sang Khoa Gây mê Hồi sức mượn tạm chiếc máy này về dùng. Do bận rộn chống dịch nên hai khoa chưa làm giấy tờ bàn giao chính thức.''}
+
+Trong thực tế tại các bệnh viện, việc các khoa tự ý mượn thiết bị của nhau mà không báo phòng kế toán và phòng vật tư xảy ra rất phổ biến. Hậu quả là khi đoàn kiểm toán nhà nước kiểm tra, sổ sách một đằng nhưng hiện vật một nẻo, không ai chịu trách nhiệm nếu máy móc bị hư hỏng hoặc thất thoát linh kiện.
+
+Đoàn kiểm kê hướng dẫn hai khoa xử lý chuẩn theo quy định:
+\begin{enumerate}[leftmargin=*]
+    \item Kế toán viên lập tức tạo \textbf{Biên bản bàn giao điều chuyển tài sản nội bộ} trực tiếp trên hệ thống phần mềm, cập nhật lại vị trí quản lý thực tế của máy monitor này sang Khoa Cấp cứu. Trưởng hai khoa cùng ký xác nhận điện tử.
+    \item Đoàn kiểm kê tiếp tục rà soát chiếc máy sốc tim đặt ở góc phòng cấp cứu mang mã hiệu \texttt{TS-DEF-2014-003}. Dữ liệu trên hệ thống cho thấy chiếc máy này được mua từ năm 2014 (đã hoạt động 12 năm), tỷ lệ hao mòn tính lũy kế theo Thông tư 23/2023/TT-BTC đã đạt 100\% (hết khấu hao), pin tích điện bên trong bị chai phồng không còn khả năng phóng điện cấp cứu, chi phí thay pin và bo mạch cao hơn tiền mua máy mới.
+    \item Kỹ sư Nam đề xuất đưa máy sốc tim này vào danh mục chờ thanh lý. Tuy nhiên, Nam không thể tự ý vứt bỏ chiếc máy. Theo Nghị định 151/2017/NĐ-CP, việc thanh lý tài sản công phải qua Hội đồng thẩm định và \textbf{thẩm quyền ký quyết định thanh lý tài sản thuộc về Giám đốc Bệnh viện}. Chiếc máy được đưa vào kho niêm phong bảo quản chờ quyết định phê duyệt chính thức từ ban giám đốc.
+\end{enumerate}
+
+\vspace{1.5em}
+\hrule
+\vspace{1.5em}
+
+\section{Hệ thống câu hỏi trắc nghiệm kiểm tra kiến thức}
+
+Dưới đây là bộ 15 câu hỏi trắc nghiệm tình huống được thiết kế bám sát các nghiệp vụ thực tế đã trình bày trong các câu chuyện trên. Hãy đọc kỹ từng tình huống trước khi lựa chọn đáp án đúng nhất.
+
+\begin{enumerate}[label=\textbf{Câu \arabic*:}, leftmargin=*]
+
+\item Theo Thông tư 22/2011/TT-BYT, mục đích chính của việc lập và duy trì ``cơ số tủ trực'' tại các khoa lâm sàng trong bệnh viện là gì?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Giúp khoa lâm sàng tích trữ thuốc để bán lẻ cho người nhà bệnh nhân vào ban đêm nhằm tăng nguồn thu.
+    \item Cung ứng kịp thời thuốc và vật tư y tế để cấp cứu người bệnh trong các tình huống khẩn cấp ngoài giờ hành chính khi Kho Dược chưa kịp xuất cấp.
+    \item Giảm bớt khối lượng công việc cho các dược sĩ Kho Dược để họ không phải trực đêm.
+    \item Thay thế hoàn toàn kho dược chính của bệnh viện trong việc cấp phát thuốc định kỳ hàng ngày.
+\end{enumerate}
+
+\item Trong ca trực cấp cứu, điều dưỡng đã lấy 2 ống Morphin từ tủ trực tiêm cho bệnh nhân sốc đa chấn thương. Sau khi bệnh nhân qua cơn nguy kịch, quy định nào sau đây về xử lý vỏ ống rỗng là đúng theo Thông tư 20/2017/TT-BYT?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Vứt ngay vỏ ống vào thùng rác y tế màu vàng để tránh lây nhiễm chéo.
+    \item Rửa sạch vỏ ống rồi cho vào túi nilông cá nhân mang về nhà tái chế.
+    \item Giữ lại toàn bộ vỏ ống rỗng, ghi sổ theo dõi và nộp lại cho Kho Dược khi làm thủ tục xin cấp bù cơ số tủ trực.
+    \item Đập nát vỏ ống thành bột mịn rồi xả vào bồn rửa tay của phòng bệnh.
+\end{enumerate}
+
+\item Nếu trong lúc thao tác, một điều dưỡng vô ý làm rơi vỡ vỏ ống thuốc giảm đau gây nghiện Morphin xuống sàn nhà, kíp trực cần phải làm gì ngay lúc đó?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Giấu kín sự việc, tự bỏ tiền ra mua một ống Morphin ngoài chợ đen đặt bù vào tủ trực.
+    \item Thu nhặt toàn bộ các mảnh vỡ, lập biên bản làm vỡ vỏ thuốc gây nghiện tại chỗ có chữ ký của bác sĩ điều trị và điều dưỡng trực để làm căn cứ nộp Kho Dược.
+    \item Nhanh chóng quét dọn vứt mảnh vỡ đi và báo cáo miệng với điều dưỡng trưởng ca sau là không dùng ống thuốc nào.
+    \item Làm phiếu báo mất cắp tài sản và yêu cầu bảo vệ bệnh viện phong tỏa toàn bộ khoa phòng.
+\end{enumerate}
+
+\item Nguyên tắc ``bù cơ số tủ trực'' thuốc cấp cứu tại các khoa phòng được hiểu chính xác là:
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Lấy bao nhiêu thuốc từ tủ cấp cứu dùng cho bệnh nhân thì sau ca trực phải tổng hợp làm phiếu xin Kho Dược cấp lại đúng bấy nhiêu để tủ luôn đủ định mức quy định.
+    \item Cứ sau mỗi tuần thì Kho Dược tự động chuyển xuống khoa 100 ống thuốc bất kỳ mà không cần biết khoa đã dùng những gì.
+    \item Bệnh nhân nào dùng thuốc tủ trực thì người nhà bệnh nhân phải tự ra nhà thuốc tư nhân mua đúng loại thuốc đó mang trả lại vào tủ.
+    \item Khi nào tủ trực hết sạch toàn bộ thuốc mới được làm phiếu dự trù xin cấp một lần.
+\end{enumerate}
+
+\item Cơ quan Bảo hiểm xã hội (BHYT) sẽ từ chối chi trả (xuất toán) tiền thuốc của bệnh nhân trong trường hợp nào sau đây?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Thuốc được dùng đúng chỉ định chuyên môn và có ghi chép đầy đủ trong hồ sơ bệnh án.
+    \item Bác sĩ ra y lệnh tiêm thuốc trên miệng nhưng quên không ghi chép vào hồ sơ bệnh án hoặc chỉ định sai so với chẩn đoán bệnh.
+    \item Thuốc được lĩnh từ kho dược bệnh viện theo đúng quy trình phân phối nội bộ.
+    \item Bệnh nhân có thẻ bảo hiểm y tế hợp lệ và đúng tuyến đăng ký khám chữa bệnh.
+\end{enumerate}
+
+\item Theo Thông tư 36/2018/TT-BYT về thực hành tốt bảo quản thuốc (GSP), dải nhiệt độ chuẩn bắt buộc để bảo quản hầu hết các loại vắc xin và sinh phẩm y tế thông thường trong tủ lạnh chuyên dụng là:
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Từ $-20^\circ\text{C}$ đến $-10^\circ\text{C}$.
+    \item Từ $2^\circ\text{C}$ đến $8^\circ\text{C}$.
+    \item Từ $15^\circ\text{C}$ đến $25^\circ\text{C}$.
+    \item Từ $0^\circ\text{C}$ đến $4^\circ\text{C}$ và được phép để đông đá hoàn toàn.
+\end{enumerate}
+
+\item Việc sử dụng thiết bị cảm biến nhiệt độ tự ghi liên tục (datalogger) trong kho vắc xin thay thế cho việc ghi chép sổ tay thủ công nhằm mục đích gì?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Tự động ngắt điện toàn bộ bệnh viện khi trời mưa bão để tiết kiệm năng lượng.
+    \item Giám sát nhiệt độ liên tục $24/7$, cảnh báo kịp thời khi có sự cố và loại bỏ hoàn toàn việc nhân viên bỏ quên không đo rồi tự chép bù số liệu khống vào sổ sách.
+    \item Giúp hạ nhiệt độ tủ lạnh xuống âm độ để vắc xin bảo quản được lâu hơn quy định.
+    \item Thay thế hoàn toàn nhân viên kho dược trong việc bốc dỡ và vận chuyển các thùng thuốc.
+\end{enumerate}
+
+\item Trong quá trình bảo quản vắc xin, chỉ thị nhiệt độ lọ vắc xin (VVM - Vaccine Vial Monitor) có hình vuông nằm trong hình tròn. Khi nào thì vắc xin được xem là đã bị hỏng do tích lũy quá nhiều nhiệt và không được phép sử dụng?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Khi hình vuông bên trong có màu trắng sáng hơn hình tròn bên ngoài.
+    \item Khi hình vuông bên trong chuyển sang màu tối tương đương hoặc tối hơn màu của hình tròn bên ngoài.
+    \item Khi hình vuông bên trong biến mất hoàn toàn và chỉ còn lại hình tròn.
+    \item Khi nhãn lọ vắc xin bị ướt do nước đá tan ra.
+\end{enumerate}
+
+\item Khi phát hiện một lô thuốc hoặc vắc xin bị nghi ngờ biến chất do tủ lạnh bị mất điện nhiều giờ, hành động nào sau đây của nhân viên kho dược là đúng quy định?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Vội vàng mang đi cấp phát ngay cho các khoa lâm sàng trước khi thuốc bị hỏng nặng hơn.
+    \item Vứt bỏ toàn bộ thuốc ngay vào bồn rửa trôi mà không cần báo cáo cấp trên.
+    \item Chuyển lô thuốc vào khu vực cách ly để riêng, dán nhãn niêm phong chờ hội đồng chuyên môn kiểm định, tuyệt đối không để lẫn vào khu vực thuốc đang dùng.
+    \item Cho thêm đá lạnh vào tủ và coi như không có chuyện gì xảy ra.
+\end{enumerate}
+
+\item Theo Nghị định 98/2021/NĐ-CP, máy thở nhân tạo và máy phá rung tim trong bệnh viện được phân loại vào nhóm trang thiết bị y tế nào?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Nhóm A (mức độ rủi ro thấp nhất, tương tự bông băng y tế).
+    \item Nhóm B (mức độ rủi ro trung bình thấp, tương tự kim tiêm, nhiệt kế).
+    \item Nhóm C hoặc D (mức độ rủi ro trung bình cao và rủi ro cao, ảnh hưởng trực tiếp đến tính mạng người bệnh).
+    \item Nhóm tài sản văn phòng thông thường, không cần quản lý kỹ thuật y tế.
+\end{enumerate}
+
+\item Khi phát hiện máy thở tại buồng bệnh cấp cứu bị rò rỉ khí và phát chuông báo động, sau khi đã chuyển bệnh nhân sang máy thở an toàn, kỹ sư thiết bị y tế cần làm gì đầu tiên trước khi tiến hành sửa chữa?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Treo biển cảnh báo to \textit{``THIẾT BỊ HỎNG - NGỪNG SỬ DỤNG''} lên thân máy để ngăn không cho nhân viên khác vô tình lấy dùng cho bệnh nhân tiếp theo.
+    \item Tự ý tháo tung toàn bộ bo mạch máy thở vứt ra sàn nhà buồng bệnh.
+    \item Bỏ mặc máy ở đó và đi về nhà ngủ vì ca trực đã sắp kết thúc.
+    \item Xóa mã lỗi trên màn hình máy rồi bật lại cho máy chạy tiếp.
+\end{enumerate}
+
+\item Tiêu chuẩn an toàn kỹ thuật quốc tế nào thường được áp dụng bắt buộc trong việc kiểm định an toàn điện đối với các thiết bị y tế tiếp xúc trực tiếp với bệnh nhân?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Tiêu chuẩn ISO 9001 về quản lý chất lượng hành chính văn phòng.
+    \item Tiêu chuẩn IEC 60601-1 về an toàn cơ bản và tính năng thiết yếu của thiết bị điện y tế.
+    \item Tiêu chuẩn IP68 về khả năng chống nước của điện thoại di động.
+    \item Tiêu chuẩn HACCP về an toàn vệ sinh thực phẩm nhà bếp.
+\end{enumerate}
+
+\item Trong buổi kiểm kê tài sản cuối năm, đoàn kiểm tra phát hiện một máy theo dõi bệnh nhân (Monitor) đang đặt tại Khoa Cấp cứu nhưng dữ liệu phần mềm lại ghi nhận thuộc Khoa Gây mê Hồi sức. Biện pháp xử lý chuẩn xác nhất là gì?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Tịch thu máy monitor mang về giấu trong kho riêng của phòng tài chính.
+    \item Bắt điều dưỡng trưởng Khoa Cấp cứu nộp phạt tiền mặt 50 triệu đồng vì mượn máy trái phép.
+    \item Lập biên bản bàn giao điều chuyển tài sản nội bộ trên hệ thống, cập nhật lại vị trí quản lý thực tế theo đúng quy định tại Nghị định 151/2017/NĐ-CP.
+    \item Giữ nguyên hiện trạng và làm ngơ xem như không nhìn thấy sự việc.
+\end{enumerate}
+
+\item Theo Nghị định 151/2017/NĐ-CP về quản lý tài sản công tại các đơn vị sự nghiệp y tế, ai là người có thẩm quyền cao nhất ký quyết định thanh lý một chiếc máy sốc tim đã hết niên hạn sử dụng và hư hỏng nặng?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Bất kỳ điều dưỡng viên nào đang trực tại khoa phòng vào ngày kiểm kê.
+    \item Nhân viên bảo vệ hoặc nhân viên tạp vụ của bệnh viện.
+    \item Giám đốc Bệnh viện (hoặc cấp có thẩm quyền theo phân cấp quản lý tài sản công của Nhà nước).
+    \item Kỹ sư sửa chữa máy móc của công ty thiết bị bên ngoài.
+\end{enumerate}
+
+\item Mục tiêu lớn nhất của việc ứng dụng công nghệ thông tin và chuyển đổi số trong quản lý bệnh viện (như mã QR tài sản, cảm biến IoT nhiệt độ, bệnh án điện tử) là gì?
+\begin{enumerate}[label=\textbf{\Alph*.}]
+    \item Nhằm làm khó và tăng thêm thủ tục rườm rà cho các y bác sĩ lâm sàng.
+    \item Tăng tính minh bạch, hạn chế tối đa sai sót y khoa do con người, đảm bảo an toàn tuyệt đối cho người bệnh và tuân thủ chặt chẽ pháp luật.
+    \item Để bệnh viện có cớ thu thêm viện phí thật cao của người bệnh nghèo.
+    \item Chỉ nhằm mục đích trình diễn công nghệ để phục vụ các chuyến tham quan của đoàn kiểm tra.
+\end{enumerate}
+
+\end{enumerate}
+
+\vspace{1.5em}
+\hrule
+\vspace{1.5em}
+
+\section{Bảng đáp án và giải thích chi tiết}
+
+\subsection{Bảng tổng hợp đáp án}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{C{1.1cm} C{1.2cm} Y C{1.1cm} C{1.2cm} Y}
+\toprule
+\textbf{Câu} & \textbf{Đáp án} & \textbf{Căn cứ pháp lý chính} & \textbf{Câu} & \textbf{Đáp án} & \textbf{Căn cứ pháp lý chính} \\
+\midrule
+1 & \textbf{B} & Thông tư 22/2011/TT-BYT & 9 & \textbf{C} & Thông tư 36/2018/TT-BYT \\
+2 & \textbf{C} & Thông tư 20/2017/TT-BYT & 10 & \textbf{C} & Nghị định 98/2021/NĐ-CP \\
+3 & \textbf{B} & Thông tư 20/2017/TT-BYT & 11 & \textbf{A} & Nghị định 98/2021/NĐ-CP \\
+4 & \textbf{A} & Thông tư 22/2011/TT-BYT & 12 & \textbf{B} & Chuẩn an toàn IEC 60601-1 \\
+5 & \textbf{B} & Quy chế giám định BHYT & 13 & \textbf{C} & Nghị định 151/2017/NĐ-CP \\
+6 & \textbf{B} & Thông tư 36/2018/TT-BYT & 14 & \textbf{C} & Nghị định 151/2017/NĐ-CP \\
+7 & \textbf{B} & Quy chuẩn GSP Kho Dược & 15 & \textbf{B} & Tiêu chuẩn chuyển đổi số y tế \\
+8 & \textbf{B} & Hướng dẫn sử dụng nhãn VVM & & & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Giải thích chi tiết từng câu hỏi}
+
+\paragraph{\textbf{Câu 1 (Đáp án B):}} Theo Thông tư 22/2011/TT-BYT quy định về tổ chức và hoạt động của khoa Dược bệnh viện, tủ thuốc trực tại các khoa lâm sàng được lập ra nhằm mục tiêu duy nhất là bảo đảm cơ số thuốc, dịch truyền và vật tư y tế sẵn sàng cấp cứu người bệnh bất kể ngày đêm, đặc biệt ngoài giờ hành chính khi Kho Dược đóng cửa. Các phương án A, C, D đều sai hoàn toàn về bản chất và mục đích y tế.
+
+\paragraph{\textbf{Câu 2 (Đáp án C):}} Thông tư 20/2017/TT-BYT của Bộ Y tế quy định rất chặt chẽ về quản lý thuốc kiểm soát đặc biệt (gồm thuốc gây nghiện, thuốc hướng thần và tiền chất). Vỏ ống thuốc Morphin sau khi sử dụng bắt buộc phải được thu gom nguyên vẹn, giữ gìn cẩn thận và bàn giao lại cho Kho Dược để đối soát số lượng trước khi cấp bù ống mới. Việc tự ý vứt vào thùng rác hay đập vỡ đều vi phạm quy định kiểm soát dược chất gây nghiện của Nhà nước.
+
+\paragraph{\textbf{Câu 3 (Đáp án B):}} Tai nạn làm rơi vỡ vỏ thủy tinh thuốc gây nghiện là điều có thể xảy ra trong thực tế cấp cứu. Cách xử lý minh bạch và hợp pháp duy nhất là thu gom toàn bộ mảnh vỡ (đặc biệt là phần nhãn và cổ ống), lập biên bản tại chỗ có chữ ký của bác sĩ điều trị và điều dưỡng trực để nộp lại Kho Dược. Mọi hành vi giấu diếm, vứt bỏ hoặc tìm cách mua thuốc trôi nổi bù vào đều vi phạm pháp luật hình sự về quản lý chất gây nghiện.
+
+\paragraph{\textbf{Câu 4 (Đáp án A):}} Bản chất của quy trình bù cơ số tủ trực là giữ cho số lượng thuốc trong tủ luôn luôn bằng định mức cố định đã được Giám đốc bệnh viện phê duyệt. Lấy bao nhiêu thuốc dùng cho bệnh nhân nào thì phải tổng hợp vào phiếu xin cấp bù để Kho Dược xuất trả lại đúng số lượng đó.
+
+\paragraph{\textbf{Câu 5 (Đáp án B):}} Cơ quan Bảo hiểm xã hội chỉ thanh toán chi phí thuốc khi có đủ chứng từ y khoa hợp lệ: thuốc nằm trong danh mục thanh toán BHYT, được chỉ định đúng với mã chẩn đoán bệnh (ICD-10) và phải có diễn biến ghi chép rõ ràng trong hồ sơ bệnh án. Nếu bác sĩ chỉ ra y lệnh miệng mà quên ký hồ sơ hoặc ghi chép thiếu sót, chi phí đó sẽ bị từ chối thanh toán và bệnh viện buộc nhân viên phải tự bỏ tiền túi ra đền.
+
+\paragraph{\textbf{Câu 6 (Đáp án B):}} Theo Phụ lục về dây chuyền lạnh của Thông tư 36/2018/TT-BYT (tiêu chuẩn GSP), nhiệt độ bảo quản vắc xin thông thường (như uốn ván, viêm gan B, lao...) là từ $2^\circ\text{C}$ đến $8^\circ\text{C}$. Không được để nhiệt độ vượt quá $8^\circ\text{C}$ và đặc biệt không được để vắc xin bị đông đá dưới $0^\circ\text{C}$ vì sẽ phá hủy cấu trúc kháng thể của sinh phẩm.
+
+\paragraph{\textbf{Câu 7 (Đáp án B):}} Thiết bị ghi nhiệt độ tự động (datalogger) kết nối mạng giúp ghi dữ liệu khách quan theo từng phút. Việc này ngăn chặn triệt để tình trạng ghi sổ đối phó của con người, đồng thời phát cảnh báo tự động qua tin nhắn và còi báo động ngay khi nhiệt độ buồng lạnh vượt ngưỡng an toàn.
+
+\paragraph{\textbf{Câu 8 (Đáp án B):}} Nhãn chỉ thị nhiệt độ VVM là công cụ trực quan trên nhãn lọ vắc xin. Nguyên tắc đọc nhãn: khi ô vuông ở giữa còn sáng màu hơn vòng tròn bên ngoài thì vắc xin vẫn an toàn. Khi ô vuông chuyển màu sẫm lại bằng hoặc tối hơn vòng tròn ngoài, chứng tỏ lọ vắc xin đã tiếp nhận tổng lượng nhiệt quá mức cho phép và bắt buộc phải tiêu hủy, không được phép tiêm cho người.
+
+\paragraph{\textbf{Câu 9 (Đáp án C):}} Quy định GSP yêu cầu khi thuốc hoặc sinh phẩm gặp sự cố điều kiện bảo quản, chúng phải được đưa ngay vào ``khu vực cách ly'' để riêng biệt với biển hiệu cảnh báo rõ ràng. Việc này ngăn chặn nguy cơ nhân viên trong lúc bận rộn lấy nhầm thuốc hỏng dùng cho bệnh nhân, trong khi chờ hội đồng chuyên môn kiểm tra và ra quyết định xử lý.
+
+\paragraph{\textbf{Câu 10 (Đáp án C):}} Nghị định 98/2021/NĐ-CP phân loại trang thiết bị y tế theo 4 mức độ rủi ro: A, B, C, D. Máy thở, máy sốc tim, máy lọc máu nhân tạo trực tiếp can thiệp và duy trì chức năng sống của bệnh nhân nên được xếp vào loại C hoặc D (mức độ rủi ro cao nhất), chịu sự quản lý nghiêm ngặt nhất về kiểm định kỹ thuật và bảo dưỡng.
+
+\paragraph{\textbf{Câu 11 (Đáp án A):}} Dán biển cảnh báo rõ ràng \textit{``THIẾT BỊ HỎNG - NGỪNG SỬ DỤNG''} là hành động quan trọng hàng đầu trong an toàn người bệnh. Hành động này giúp đồng nghiệp ca sau nhận biết ngay tình trạng máy, tuyệt đối không lấy máy đi cấp cứu cho bệnh nhân khác.
+
+\paragraph{\textbf{Câu 12 (Đáp án B):}} Tiêu chuẩn IEC 60601-1 là chuẩn quốc tế bắt buộc về an toàn điện và tính năng thiết yếu của thiết bị điện y tế, nhằm bảo vệ người bệnh và nhân viên y tế khỏi các nguy cơ rò rỉ dòng điện gây điện giật hoặc ngừng tim trong quá trình điều trị.
+
+\paragraph{\textbf{Câu 13 (Đáp án C):}} Khi kiểm kê phát hiện thiết bị đặt sai vị trí so với sổ sách do việc mượn tạm thời giữa các khoa, giải pháp chuẩn theo Nghị định 151/2017/NĐ-CP là lập biên bản bàn giao điều chuyển tài sản nội bộ trên hệ thống phần mềm, có sự xác nhận của hai trưởng khoa để cập nhật lại dữ liệu kế toán chuẩn xác.
+
+\paragraph{\textbf{Câu 14 (Đáp án C):}} Trang thiết bị y tế trong bệnh viện công lập là tài sản công của Nhà nước. Việc thanh lý phải tuân thủ trình tự pháp luật: thành lập hội đồng kiểm tra đánh giá chất lượng còn lại và Giám đốc Bệnh viện (người đứng đầu đơn vị) là người có thẩm quyền ký quyết định thanh lý tài sản. Nhân viên khoa phòng không được tự ý xử lý hay bán thanh lý ra bên ngoài.
+
+\paragraph{\textbf{Câu 15 (Đáp án B):}} Mục tiêu cao nhất của chuyển đổi số và phát triển phần mềm y tế là hướng tới an toàn người bệnh và hỗ trợ nhân viên y tế làm việc chính xác hơn, minh bạch hóa mọi dòng chảy thuốc và vật tư, loại bỏ các lỗi bất cẩn của con người và tuân thủ các quy định pháp luật y tế một cách khoa học.
+
+\end{document}
