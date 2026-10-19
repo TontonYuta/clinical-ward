@@ -85,7 +85,7 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
             <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider mb-2">
               Danh mục mặt hàng cạn kho cần dự trù bổ sung ({lowStockBatches.length} mặt hàng):
             </span>
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="border border-slate-200 rounded-xl overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead>
                   <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold text-xs">

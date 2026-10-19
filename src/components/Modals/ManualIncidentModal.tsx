@@ -149,32 +149,47 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
             </div>
           )}
 
-          {/* Quick Preset Selector */}
-          <div>
-            <label className="font-bold text-slate-900 block mb-1.5">
-              Chọn nhanh máy trong danh mục thiết bị của viện:
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {COMMON_DEVICES.map((d, idx) => (
+          {/* Quick Preset Selector (Sleek Horizontal Pill Strip) */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                <span className="text-rose-600 font-bold">⚡</span> Chọn nhanh thiết bị viện:
+              </label>
+              {selectedPreset !== null && (
                 <button
                   type="button"
-                  key={idx}
-                  onClick={() => handleSelectPreset(idx)}
-                  className={`text-left p-2 rounded border transition cursor-pointer flex flex-col ${
-                    selectedPreset === idx
-                      ? 'bg-rose-50 border-rose-400 text-rose-950 font-semibold shadow-2xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
-                  }`}
+                  onClick={() => setSelectedPreset(null)}
+                  className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer underline"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate">{d.deviceName}</span>
-                    <span className="text-[10px] px-1 rounded bg-rose-100 text-rose-800 font-mono font-bold">
+                  Xóa chọn
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-1 px-1">
+              {COMMON_DEVICES.map((d, idx) => {
+                const isSelected = selectedPreset === idx;
+                return (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={() => handleSelectPreset(idx)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0 border shadow-2xs whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-rose-700 text-white border-rose-700 font-semibold shadow-xs'
+                        : 'bg-slate-50 border-slate-200/90 hover:bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    <span className="font-medium">{d.deviceName}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium ${
+                        isSelected ? 'bg-rose-800 text-white' : 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                      }`}
+                    >
                       Loại {d.riskClass}
                     </span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 font-mono mt-0.5">SN: {d.serialNumber}</span>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

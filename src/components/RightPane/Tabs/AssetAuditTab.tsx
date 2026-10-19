@@ -77,105 +77,107 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
 
   return (
     <div className="h-full flex flex-col overflow-hidden space-y-2 w-full">
-      {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/90 shadow-2xs shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0 flex-wrap sm:flex-nowrap">
-          <h2 className="hidden sm:inline text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
-            Kiểm Kê &amp; Quản Lý Tài Sản
-          </h2>
-          <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2.5 hidden md:inline">
-            Căn cứ: NĐ 151/2017 &amp; NĐ 114/2024
-          </span>
-          {/* Subtle inline summary */}
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 sm:border-l sm:border-slate-200 sm:pl-3">
-            <span className="text-slate-500 font-mono text-xs">{assets.length} máy</span>
-            <span className="text-slate-300">·</span>
-            {misallocatedAssets.length > 0 && (
-              <span className="inline-flex items-center gap-1 font-medium text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200 text-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                {misallocatedAssets.length} lệch khoa
-              </span>
-            )}
-            {liquidationAssets.length > 0 && (
-              <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200 text-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                {liquidationAssets.length} chờ thanh lý
-              </span>
-            )}
+      {/* 1. Unified Clinical Command Ribbon */}
+      <div className="bg-white p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/90 shadow-2xs shrink-0 space-y-2">
+        {/* Row 1: Title, Legal Basis, Key Stat Badges, Action Buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
+              Kiểm Kê &amp; Quản Lý Tài Sản
+            </h2>
+            <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2 hidden md:inline">
+              NĐ 151/2017 &amp; NĐ 114/2024
+            </span>
+            {/* Subtle inline summary */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2">
+              <span className="text-slate-500 font-mono text-xs">{assets.length} máy</span>
+              {misallocatedAssets.length > 0 && (
+                <span className="inline-flex items-center gap-1 font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  {misallocatedAssets.length} lệch khoa
+                </span>
+              )}
+              {liquidationAssets.length > 0 && (
+                <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 text-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  {liquidationAssets.length} thanh lý
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={() => onOpenPrintForm?.('TSC_ANNUAL_AUDIT')}
+              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
+              title="In Biên bản kiểm kê tài sản cố định & TBYT định kỳ (Mẫu 05-TSC Thông tư 23/2023/TT-BTC & Nghị định 151/2017)"
+            >
+              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700" />
+              <span className="hidden sm:inline">In Mẫu 05-TSC</span>
+              <span className="sm:hidden">Mẫu 05</span>
+            </button>
+
+            <button
+              onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER')}
+              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
+              title="In Biên bản bàn giao, tiếp nhận tài sản công TBYT (Mẫu 01/TSC-BBGN Nghị định 151/2017 & NĐ 114/2024)"
+            >
+              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-700" />
+              <span className="hidden sm:inline">In Mẫu 01/TSC</span>
+              <span className="sm:hidden">Mẫu 01</span>
+            </button>
+
+            <button
+              onClick={handleScanClick}
+              className="inline-flex items-center gap-1 h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shrink-0 shadow-2xs cursor-pointer active:scale-98"
+              title="Mô phỏng máy đọc mã vạch QR kiểm đếm máy thở tại buồng bệnh"
+            >
+              <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-400" />
+              <span className="hidden sm:inline">Quét QR đối soát</span>
+              <span className="sm:hidden">Quét QR</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-          <button
-            onClick={() => onOpenPrintForm?.('TSC_ANNUAL_AUDIT')}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
-            title="In Biên bản kiểm kê tài sản cố định & TBYT định kỳ (Mẫu 05-TSC Thông tư 23/2023/TT-BTC & Nghị định 151/2017)"
-          >
-            <Printer className="w-4 h-4 text-emerald-700" />
-            <span className="hidden sm:inline">In Mẫu 05-TSC Kiểm Kê</span>
-            <span className="sm:hidden">Mẫu 05</span>
-          </button>
+        {/* Row 2: Search Input & Status Filter Pills */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm mã tài sản, tên máy, khoa phòng..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm bg-slate-50/60 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-500 focus:bg-white text-slate-800 placeholder-slate-400 shadow-2xs transition"
+            />
+          </div>
 
-          <button
-            onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER')}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
-            title="In Biên bản bàn giao, tiếp nhận tài sản công TBYT (Mẫu 01/TSC-BBGN Nghị định 151/2017 & NĐ 114/2024)"
-          >
-            <Printer className="w-4 h-4 text-teal-700" />
-            <span className="hidden sm:inline">In Mẫu 01/TSC Điều Chuyển</span>
-            <span className="sm:hidden">Mẫu 01</span>
-          </button>
-
-          <button
-            onClick={handleScanClick}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shrink-0 shadow-2xs cursor-pointer active:scale-98"
-            title="Mô phỏng máy đọc mã vạch QR kiểm đếm máy thở tại buồng bệnh"
-          >
-            <QrCode className="w-4 h-4 text-teal-400" />
-            <span className="hidden sm:inline">Quét QR đối soát buồng</span>
-            <span className="sm:hidden">Quét QR</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm mã tài sản, tên máy, khoa phòng..."
-            className="w-full pl-9 pr-3.5 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-slate-800 placeholder-slate-400 transition"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
-          <button
-            onClick={() => setFilterMode('all')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-              filterMode === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Tất cả ({assets.length})
-          </button>
-          <button
-            onClick={() => setFilterMode('misallocated')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-              filterMode === 'misallocated' ? 'bg-white text-amber-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Lệch buồng phòng ({misallocatedAssets.length})
-          </button>
-          <button
-            onClick={() => setFilterMode('liquidation')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-              filterMode === 'liquidation' ? 'bg-white text-rose-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Chờ thanh lý ({liquidationAssets.length})
-          </button>
+          <div className="flex items-center gap-1 text-xs bg-slate-100/80 p-0.5 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
+            <button
+              onClick={() => setFilterMode('all')}
+              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+                filterMode === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Tất cả ({assets.length})
+            </button>
+            <button
+              onClick={() => setFilterMode('misallocated')}
+              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+                filterMode === 'misallocated' ? 'bg-white text-amber-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Lệch khoa ({misallocatedAssets.length})
+            </button>
+            <button
+              onClick={() => setFilterMode('liquidation')}
+              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+                filterMode === 'liquidation' ? 'bg-white text-rose-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Chờ thanh lý ({liquidationAssets.length})
+            </button>
+          </div>
         </div>
       </div>
 

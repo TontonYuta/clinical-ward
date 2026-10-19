@@ -114,32 +114,47 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </div>
           )}
 
-          {/* Quick Preset Selector */}
-          <div>
-            <label className="font-bold text-slate-900 block mb-1.5 text-xs sm:text-sm">
-              Chọn nhanh cơ số thuốc cấp cứu thường gặp:
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {COMMON_EMERGENCY_ITEMS.map((item, idx) => (
+          {/* Quick Preset Selector (Sleek Horizontal Pill Strip) */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                <span className="text-emerald-600 font-bold">⚡</span> Chọn nhanh cơ số cấp cứu:
+              </label>
+              {selectedPreset !== null && (
                 <button
                   type="button"
-                  key={idx}
-                  onClick={() => handleSelectPreset(idx)}
-                  className={`text-left p-2.5 rounded-lg border transition cursor-pointer flex flex-col ${
-                    selectedPreset === idx
-                      ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-semibold shadow-2xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
-                  }`}
+                  onClick={() => setSelectedPreset(null)}
+                  className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer underline"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate text-xs sm:text-sm font-medium">{item.name}</span>
-                    <span className="text-xs px-1.5 py-0.2 rounded bg-slate-200/80 text-slate-700 font-mono">
-                      {item.defaultQty}
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-500 font-normal mt-0.5">{item.type}</span>
+                  Xóa chọn
                 </button>
-              ))}
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-1 px-1">
+              {COMMON_EMERGENCY_ITEMS.map((item, idx) => {
+                const isSelected = selectedPreset === idx;
+                return (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={() => handleSelectPreset(idx)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0 border shadow-2xs whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-emerald-700 text-white border-emerald-700 font-semibold shadow-xs'
+                        : 'bg-slate-50 border-slate-200/90 hover:bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    <span className="font-medium">{item.name}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium ${
+                        isSelected ? 'bg-emerald-800 text-white' : 'bg-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      {item.defaultQty} {item.unit}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

@@ -80,127 +80,125 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden space-y-2 w-full">
-      {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0 flex-wrap sm:flex-nowrap">
-          <h2 className="hidden sm:inline text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
-            Sổ Nợ Tủ Trực Cấp Cứu
-          </h2>
-          <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2.5 hidden md:inline">
-            Căn cứ: TT 22/2011 &amp; TT 20/2017/TT-BYT
-          </span>
-          {/* Subtle inline summary */}
-          <div className="flex items-center gap-2 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2.5">
-            <span className="inline-flex items-center gap-1.5 font-medium text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/80 text-xs">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-              {activeDebts.length} đang nợ
+      {/* 1. Unified Clinical Command Ribbon (Reclaiming Vertical Space) */}
+      <div className="bg-white p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0 space-y-2">
+        {/* Row 1: Title, Legal Basis, Key Stat Badges, Primary Action Buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
+              Sổ Nợ Tủ Trực Cấp Cứu
+            </h2>
+            <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2 hidden md:inline">
+              TT 22 &amp; TT 20
             </span>
-            {pendingAmpoules.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 font-medium text-rose-800 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200/80 text-xs">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                {pendingAmpoules.length} nợ vỏ
+            {/* Subtle inline summary */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2">
+              <span className="inline-flex items-center gap-1 font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80 text-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                {activeDebts.length} đang nợ
               </span>
+              {pendingAmpoules.length > 0 && (
+                <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200/80 text-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  {pendingAmpoules.length} nợ vỏ
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={() => setIsBorrowModalOpen(true)}
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+              title="Lập phiếu mượn khẩn thuốc / vật tư từ tủ trực cấp cứu ca đêm (TT 22/2011/TT-BYT)"
+            >
+              <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">+ Mượn Khẩn Thuốc</span>
+              <span className="sm:hidden">+ Mượn Khẩn</span>
+            </button>
+
+            {returnedAmpoules.length > 0 && (
+              <button
+                onClick={() => setIsDestructionModalOpen(true)}
+                className="inline-flex items-center gap-1 h-8 px-2.5 sm:px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+                title="Lập biên bản Hội đồng tiêu hủy vỏ ống thuốc gây nghiện theo Thông tư 20/2017/TT-BYT (Xem danh mục & in Mẫu 16)"
+              >
+                <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />
+                <span className="hidden sm:inline">Hội đồng hủy vỏ ({returnedAmpoules.length})</span>
+                <span className="sm:hidden">Hủy vỏ ({returnedAmpoules.length})</span>
+              </button>
             )}
-            <span className="text-slate-400 font-medium hidden sm:inline">·</span>
-            <span className="text-slate-600 text-xs font-medium hidden sm:inline">
-              {settledDebts.length} đã hoàn bù
-            </span>
+
+            <button
+              onClick={onSimulateMorningReminder}
+              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+              title="Mô phỏng chuông nhắc đối soát hoàn bù lúc 07:00 sáng theo TT 22"
+            >
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+              <span className="hidden sm:inline">Nhắc hoàn bù 07:00</span>
+              <span className="sm:hidden">Nhắc 07:00</span>
+            </button>
+
+            <button
+              onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
+              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+              title="In Biểu Mẫu Hành Chính Y Tế (Mẫu 16/TT20 Hủy Vỏ Ống / Mẫu Phiếu Mượn TT22)"
+            >
+              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-700" />
+              <span className="hidden sm:inline">In Biểu Mẫu A4</span>
+              <span className="sm:hidden">In A4</span>
+            </button>
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-          {/* Manual Borrow Button (100% Standalone Clinical Workstation) */}
-          <button
-            onClick={() => setIsBorrowModalOpen(true)}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-            title="Lập phiếu mượn khẩn thuốc / vật tư từ tủ trực cấp cứu ca đêm (TT 22/2011/TT-BYT)"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">+ Mượn Khẩn Thuốc / Vật Tư</span>
-            <span className="sm:hidden">+ Mượn Khẩn</span>
-          </button>
+        {/* Row 2: Search Input & Status Filter Pills */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm thuốc, buồng bệnh..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm bg-slate-50/60 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-500 focus:bg-white text-slate-800 placeholder-slate-400 shadow-2xs transition"
+            />
+          </div>
 
-          {returnedAmpoules.length > 0 && (
+          <div className="flex items-center gap-1 text-xs bg-slate-100/80 p-0.5 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
             <button
-              onClick={() => setIsDestructionModalOpen(true)}
-              className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-              title="Lập biên bản Hội đồng tiêu hủy vỏ ống thuốc gây nghiện theo Thông tư 20/2017/TT-BYT (Xem danh mục & in Mẫu 16)"
+              onClick={() => setFilterStatus('all')}
+              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+                filterStatus === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <Flame className="w-4 h-4 text-rose-600" />
-              <span className="hidden sm:inline">Hội đồng hủy vỏ ({returnedAmpoules.length})</span>
-              <span className="sm:hidden">Hủy vỏ ({returnedAmpoules.length})</span>
+              Tất cả ({debts.length})
             </button>
-          )}
-
-          <button
-            onClick={onSimulateMorningReminder}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-            title="Mô phỏng chuông nhắc đối soát hoàn bù lúc 07:00 sáng theo TT 22"
-          >
-            <Clock className="w-4 h-4 text-amber-400" />
-            <span className="hidden sm:inline">Nhắc hoàn bù 07:00</span>
-            <span className="sm:hidden">Nhắc 07:00</span>
-          </button>
-
-          <button
-            onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-            title="In Biểu Mẫu Hành Chính Y Tế (Mẫu 16/TT20 Hủy Vỏ Ống / Mẫu Phiếu Mượn TT22)"
-          >
-            <Printer className="w-4 h-4 text-teal-700" />
-            <span className="hidden sm:inline">In Biểu Mẫu A4</span>
-            <span className="sm:hidden">In A4</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 3. Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm thuốc, buồng bệnh..."
-            className="w-full pl-9 pr-3.5 py-2 text-sm bg-white border border-slate-200/90 rounded-lg focus:outline-hidden focus:border-teal-500 text-slate-800 placeholder-slate-400 shadow-2xs"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-              filterStatus === 'all' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Tất cả ({debts.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('debt')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-              filterStatus === 'debt' ? 'bg-white text-amber-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Đang nợ ({activeDebts.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('narcotics')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-              filterStatus === 'narcotics' ? 'bg-white text-rose-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Thuốc gây nghiện ({narcoticDebts.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('settled')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-              filterStatus === 'settled' ? 'bg-white text-emerald-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Đã hoàn bù ({settledDebts.length})
-          </button>
+            <button
+              onClick={() => setFilterStatus('debt')}
+              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+                filterStatus === 'debt' ? 'bg-white text-amber-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Đang nợ ({activeDebts.length})
+            </button>
+            <button
+              onClick={() => setFilterStatus('narcotics')}
+              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+                filterStatus === 'narcotics' ? 'bg-white text-rose-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Thuốc gây nghiện ({narcoticDebts.length})
+            </button>
+            <button
+              onClick={() => setFilterStatus('settled')}
+              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+                filterStatus === 'settled' ? 'bg-white text-emerald-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Đã hoàn bù ({settledDebts.length})
+            </button>
+          </div>
         </div>
       </div>
 

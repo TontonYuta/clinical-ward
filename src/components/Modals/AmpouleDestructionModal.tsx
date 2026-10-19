@@ -109,7 +109,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
             <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider mb-2">
               Danh mục vỏ ống đề nghị tiêu hủy ({returnedAmpoules.length} vỏ đã thu hồi):
             </span>
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="border border-slate-200 rounded-xl overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead>
                   <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold text-xs">

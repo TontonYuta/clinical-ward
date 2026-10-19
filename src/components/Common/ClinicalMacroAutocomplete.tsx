@@ -11,13 +11,16 @@ interface ClinicalMacroAutocompleteProps {
   placement?: 'top' | 'bottom';
   /** Có hiển thị thanh shortcut nhanh hay không */
   showQuickBar?: boolean;
+  /** Nội dung bổ sung trong thanh công cụ (ví dụ: suggestion chips) */
+  children?: React.ReactNode;
 }
 
 export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps> = ({
   currentText,
   onSelectMacro,
   placement = 'top',
-  showQuickBar = true
+  showQuickBar = true,
+  children
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả');
@@ -240,15 +243,15 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
         </div>
       )}
 
-      {/* 3. QUICK CHIPS BAR (Thanh phím gõ nhanh tiện lợi) */}
+      {/* 3. QUICK CHIPS BAR (Thanh phím gõ nhanh tiện lợi - hợp nhất 1 dòng) */}
       {showQuickBar && (
-        <div className="flex items-center gap-1.5 py-1.5 overflow-x-auto scrollbar-none text-xs">
+        <div className="flex items-center gap-1.5 py-1.5 overflow-x-auto scrollbar-none text-xs shrink-0">
           <button
             type="button"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 border ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 border shadow-2xs ${
               isDrawerOpen
-                ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
+                ? 'bg-teal-800 text-white border-teal-800'
                 : 'bg-teal-50 text-teal-900 border-teal-300 hover:bg-teal-100'
             }`}
             title="Mở thư viện gõ tắt Y khoa & ICD-10"
@@ -257,6 +260,7 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
             <span>Macros ICD-10</span>
           </button>
 
+          {children}
           {/* Frequent Macros Chips */}
           {[
             { key: 'PUV', label: '⚡ PUV (Phản vệ)' },
