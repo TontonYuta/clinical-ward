@@ -90,29 +90,29 @@ export const ImageModal: React.FC<ImageModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2.5 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-4 bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/10 rounded-lg">
+        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-900 text-white flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="p-2 bg-white/10 rounded-lg shrink-0">
               <Camera className="w-5 h-5 text-cyan-300" />
             </div>
-            <div>
-              <h3 className="font-bold text-base">Đính kèm ảnh hiện trường / Thiết bị</h3>
-              <p className="text-xs text-cyan-200">Báo hỏng phụ kiện, đối chiếu tem kiểm định &amp; vỏ thuốc</p>
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm sm:text-base truncate">Đính kèm ảnh hiện trường / Thiết bị</h3>
+              <p className="text-[11px] text-cyan-200 truncate">Báo hỏng phụ kiện, đối chiếu tem kiểm định &amp; vỏ thuốc</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition"
+            className="p-1 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           <p className="text-xs text-slate-600 mb-3 font-semibold uppercase tracking-wider">
             Chọn mẫu ảnh chụp hiện trường lâm sàng có sẵn:
           </p>
@@ -170,7 +170,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+        <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition"

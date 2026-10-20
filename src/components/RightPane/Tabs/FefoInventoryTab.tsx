@@ -62,10 +62,10 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
     <div className="flex flex-col h-full overflow-hidden space-y-2 w-full">
       {/* 1. Unified Clinical Command Ribbon */}
       <div className="bg-white p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0 space-y-2">
-        {/* Row 1: Title, Legal Basis, Key Stat Badges, Action Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-            <h2 className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
+        {/* Row 1: Key Stat Badges & Primary Action */}
+        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="hidden sm:inline-block text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
               Kho Dược - Hạn Dùng &amp; Định Mức
             </h2>
             <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2 hidden md:inline">
@@ -76,7 +76,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
               <span className="text-slate-600 font-mono text-xs font-medium">{batches.length} lô</span>
               {nearExpiryBatches.length > 0 && (
                 <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200/80 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
                   {nearExpiryBatches.length} cận hạn
                 </span>
               )}
@@ -89,15 +89,14 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => onOpenPrintForm?.('TT22_RESTOCK_PROPOSAL')}
-              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
+              className="hidden sm:inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
               title="In Phiếu dự trù bổ sung cơ số thuốc tủ trực (Mẫu 01/TT22 Thông tư 22/2011/TT-BYT)"
             >
               <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-700" />
-              <span className="hidden sm:inline">In Mẫu 01/TT22</span>
-              <span className="sm:hidden">In Mẫu 01</span>
+              <span>In Mẫu 01/TT22</span>
             </button>
 
             {lowStockBatches.length > 0 && (
@@ -107,14 +106,24 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
                 title="Lập phiếu dự trù bổ sung cơ số thuốc kho dược theo TT 22/2011"
               >
                 <PackagePlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                <span className="hidden sm:inline">Lập phiếu dự trù ({lowStockBatches.length})</span>
-                <span className="sm:hidden">Dự trù ({lowStockBatches.length})</span>
+                <span>Dự trù ({lowStockBatches.length})</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Row 2: Search Input & Status Filter Pills */}
+        {/* Row 2: Secondary Quick Actions on Mobile (Horizontal Scroll Strip) */}
+        <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 border-t border-slate-100 whitespace-nowrap text-xs">
+          <button
+            onClick={() => onOpenPrintForm?.('TT22_RESTOCK_PROPOSAL')}
+            className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-semibold transition shadow-2xs cursor-pointer shrink-0"
+          >
+            <Printer className="w-3 h-3 text-teal-700" />
+            <span>In Mẫu 01/TT22</span>
+          </button>
+        </div>
+
+        {/* Row 3: Search Input & Status Filter Pills */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
           <div className="relative w-full sm:max-w-xs">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -157,7 +166,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       </div>
 
       {/* 4A. Mobile Card-Based List (md:hidden) - Modern, touch-friendly, no horizontal cut-off */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5">
+      <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
         {filteredBatches.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
             Không tìm thấy lô thuốc nào phù hợp với bộ lọc.

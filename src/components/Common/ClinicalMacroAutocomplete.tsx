@@ -90,7 +90,7 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
             <span className="text-slate-400 font-mono text-[11px]">Nhấn Tab / Enter hoặc click để chọn</span>
           </div>
 
-          <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-48 sm:max-h-56 overflow-y-auto divide-y divide-slate-100">
             {matchedMacros.map((macro, idx) => (
               <div
                 key={macro.shortcut}
@@ -188,7 +188,7 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
           </div>
 
           {/* List */}
-          <div className="max-h-72 overflow-y-auto p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="max-h-56 sm:max-h-72 overflow-y-auto p-2.5 sm:p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {filteredDrawerMacros.map((macro) => (
               <div
                 key={macro.shortcut}

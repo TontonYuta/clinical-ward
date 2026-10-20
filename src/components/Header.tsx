@@ -25,6 +25,7 @@ import { DashboardTab } from './RightPane/Dashboard';
 interface HeaderProps {
   currentTab: DashboardTab;
   currentUserRole: UserRole;
+  onSelectUserRole?: (role: UserRole) => void;
   isSidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   isAudioMuted: boolean;
@@ -63,6 +64,7 @@ const TAB_METADATA: Record<DashboardTab, { title: string; subtitle: string; icon
 export const Header: React.FC<HeaderProps> = ({
   currentTab,
   currentUserRole,
+  onSelectUserRole,
   isSidebarCollapsed,
   onToggleSidebar,
   isAudioMuted,
@@ -75,12 +77,12 @@ export const Header: React.FC<HeaderProps> = ({
   const TabIcon = tabInfo.icon;
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200/80 px-3 sm:px-5 flex items-center justify-between shrink-0 select-none z-20 shadow-2xs">
+    <header className="h-16 bg-white border-b border-slate-200/80 px-2.5 sm:px-5 flex items-center justify-between shrink-0 select-none z-20 shadow-2xs gap-2">
       {/* 1. Left: Sidebar Toggle & Active Section Breadcrumb */}
-      <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer shrink-0"
+          className="p-1.5 sm:p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer shrink-0"
           title={isSidebarCollapsed ? 'Mở rộng thanh menu bên trái' : 'Thu gọn thanh menu bên trái'}
         >
           <Menu className="w-5 h-5 text-slate-700 md:hidden" />
@@ -93,13 +95,13 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </button>
 
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-200/70 flex items-center justify-center text-teal-700 shrink-0 shadow-2xs">
-            <TabIcon className="w-4.5 h-4.5" />
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-50 border border-teal-200/70 flex items-center justify-center text-teal-700 shrink-0 shadow-2xs">
+            <TabIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 truncate tracking-tight">
+              <h1 className="text-xs sm:text-base md:text-lg font-bold text-slate-900 truncate tracking-tight">
                 {tabInfo.title}
               </h1>
             </div>
@@ -110,9 +112,27 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. Right: RBAC Badge, System Status, Audio Toggle */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* RBAC Scope Indicator */}
+      {/* 2. Right: RBAC Badge (Desktop), Mobile Role Switcher, System Status, Audio Toggle */}
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* Mobile Quick Role Switcher */}
+        {onSelectUserRole && (
+          <div className="flex sm:hidden items-center">
+            <select
+              value={currentUserRole}
+              onChange={(e) => onSelectUserRole(e.target.value as UserRole)}
+              className="bg-teal-50 text-teal-900 border border-teal-200/90 text-[11px] font-bold rounded-lg px-2 py-1 focus:outline-hidden cursor-pointer max-w-[125px] truncate shadow-2xs"
+              title="Đổi phân quyền tài khoản lâm sàng (RBAC)"
+            >
+              <option value="nurse">ĐD. Thu</option>
+              <option value="biomedical_engineer">KS. Nam</option>
+              <option value="pharmacist">DS. Ngọc</option>
+              <option value="doctor">BS. Hùng</option>
+              <option value="director">TS. An</option>
+            </select>
+          </div>
+        )}
+
+        {/* RBAC Scope Indicator (Desktop) */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 text-slate-700 text-xs font-medium border border-slate-200/80">
           <Shield className="w-4 h-4 text-teal-700 shrink-0" />
           <span>
@@ -122,9 +142,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Cold Chain Alarm or Healthy Status */}
         {coldChainAlarm ? (
-          <div className="flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-rose-600 text-white text-xs font-bold animate-pulse shadow-2xs">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span className="truncate max-w-[120px] sm:max-w-none">Quá nhiệt 11.0°C!</span>
+          <div className="flex items-center gap-1.5 h-8 px-2 sm:px-3 rounded-lg bg-rose-600 text-white text-xs font-bold animate-pulse shadow-2xs">
+            <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate max-w-[90px] sm:max-w-none">11.0°C!</span>
           </div>
         ) : (
           <div className="hidden xl:flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80">
@@ -137,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onToggleAudio}
           title={isAudioMuted ? 'Bật âm thanh cảnh báo lâm sàng' : 'Tắt âm thanh cảnh báo'}
-          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 border border-slate-200 text-slate-600 transition shrink-0 cursor-pointer"
+          className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 border border-slate-200 text-slate-600 transition shrink-0 cursor-pointer"
         >
           {isAudioMuted ? (
             <VolumeX className="w-4 h-4 text-rose-500" />

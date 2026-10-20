@@ -47,31 +47,31 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="h-14 px-5 bg-teal-900 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center border border-teal-500/30">
+        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-teal-900 text-white flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center border border-teal-500/30 shrink-0">
               <Boxes className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold">Phiếu Dự Trù Bổ Sung Cơ Số Thuốc &amp; Vật Tư Kho Dược</h2>
-              <span className="text-xs text-teal-200 font-mono">
+            <div className="min-w-0">
+              <h2 className="text-xs sm:text-base font-bold truncate">Phiếu Dự Trù Bổ Sung Cơ Số Thuốc &amp; Vật Tư</h2>
+              <span className="text-[11px] text-teal-200 font-mono truncate block">
                 Mẫu số 01/TT22 · Điều 7 Thông tư 22/2011/TT-BYT &amp; GSP TT 36
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-teal-200 hover:text-white hover:bg-teal-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-teal-200 hover:text-white hover:bg-teal-800 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700">
+        <div className="p-3.5 sm:p-5 overflow-y-auto space-y-4 text-xs text-slate-700">
           {/* Alert Notice */}
           <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start gap-2.5">
             <AlertTriangle className="w-4.5 h-4.5 text-amber-700 shrink-0 mt-0.5" />
@@ -86,7 +86,7 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
               Danh mục mặt hàng cạn kho cần dự trù bổ sung ({lowStockBatches.length} mặt hàng):
             </span>
             <div className="border border-slate-200 rounded-xl overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
+              <table className="w-full text-left text-xs sm:text-sm min-w-[500px]">
                 <thead>
                   <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold text-xs">
                     <th className="py-2.5 px-3.5">Tên thuốc / Quy cách</th>

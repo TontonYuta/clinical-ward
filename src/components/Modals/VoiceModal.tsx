@@ -176,34 +176,34 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2.5 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-4 bg-gradient-to-r from-teal-800 to-cyan-700 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/10 rounded-lg">
+        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-teal-800 to-cyan-700 text-white flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="p-2 bg-white/10 rounded-lg shrink-0">
               <Mic className="w-5 h-5 text-cyan-200" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base">Ra Lệnh Giọng Nói Y Tế (Web Speech API)</h3>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                <h3 className="font-bold text-sm sm:text-base truncate">Ra Lệnh Giọng Nói Y Tế</h3>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 shrink-0">
                   vi-VN Live
                 </span>
               </div>
-              <p className="text-xs text-cyan-100">Hỗ trợ nhận diện giọng nói tiếng Việt rảnh tay cho kíp mổ &amp; cấp cứu</p>
+              <p className="text-[11px] text-cyan-100 truncate">Nhận diện giọng nói tiếng Việt rảnh tay cho kíp trực</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition cursor-pointer"
+            className="p-1 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {/* Waveform & Recording Area */}
           <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl border border-slate-200/80 mb-5">
             <div className="h-16 flex items-center gap-1.5 mb-4">
@@ -321,7 +321,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 shrink-0">
           <span>Tương thích Web Speech API trên Chrome, Edge &amp; Safari</span>
           <button
             onClick={onClose}

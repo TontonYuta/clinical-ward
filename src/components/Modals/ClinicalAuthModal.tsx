@@ -220,7 +220,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
               ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
               : 'bg-amber-50/70 border-amber-300 text-amber-950'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 {isSignerAuthorized ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -235,7 +235,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
               </div>
 
               {/* Quick switch signer role selector */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <span className="text-[10px] text-slate-500 font-medium">Người ký:</span>
                 <select
                   value={selectedSignerRole}
@@ -258,17 +258,17 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
             </div>
 
             {/* Signer credentials card */}
-            <div className="bg-white/80 rounded p-2.5 border border-slate-200/80 flex items-center justify-between">
+            <div className="bg-white/80 rounded p-2.5 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
                   {currentSigner.name.charAt(0)}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900">{currentSigner.name}</span>
                     <span className="text-[10px] font-semibold text-slate-500">· {currentSigner.roleName}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-0.5">
+                  <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-0.5 flex-wrap">
                     <span>CCHN: <strong className="text-slate-800">{currentSigner.practiceCertificate}</strong></span>
                     <span>Thẻ RFID: <strong className="text-slate-800">{currentSigner.rfidCardId}</strong></span>
                   </div>
@@ -284,14 +284,14 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
           {/* 3. Dual-Witness Verification (Mandatory for TT 20 Narcotics destruction) */}
           {request.requiresDualWitness && (
             <div className="p-3 rounded-lg border border-purple-200 bg-purple-50/50 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-purple-950">
                   <Users className="w-4 h-4 text-purple-700 shrink-0" />
                   <span className="font-bold text-xs">
                     Chứng thực kép (Dual-Witness Sign-off) - Bắt buộc theo TT 20/2017/TT-BYT
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span className="text-[10px] text-purple-700 font-medium">Người chứng kiến:</span>
                   <select
                     value={selectedWitnessRole}
@@ -317,7 +317,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                 Điều 15 Thông tư 20/2017/TT-BYT bắt buộc 02 nhân viên y tế độc lập thuộc 2 khoa phòng cùng ký tên vào Biên bản tiêu hủy vỏ thuốc gây nghiện.
               </p>
 
-              <div className="bg-white/80 rounded p-2 border border-purple-200/80 flex items-center justify-between">
+              <div className="bg-white/80 rounded p-2.5 border border-purple-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <span className="font-bold text-slate-900">{currentWitness.name}</span>
                   <span className="text-[10px] text-slate-500 ml-1.5">({currentWitness.roleName})</span>
@@ -326,7 +326,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                   </p>
                 </div>
                 {authMethod === 'PIN' && (
-                  <div className="w-28">
+                  <div className="w-full sm:w-28">
                     <input
                       type="password"
                       maxLength={4}
@@ -343,11 +343,11 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
 
           {/* 4. Authentication Method Selector */}
           <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
               <span className="font-bold text-slate-700 text-xs">
                 Phương thức xác thực lâm sàng:
               </span>
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 self-start sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setAuthMethod('PIN')}

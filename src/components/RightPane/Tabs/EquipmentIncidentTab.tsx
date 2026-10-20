@@ -68,10 +68,10 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
     <div className="h-full flex flex-col overflow-hidden space-y-2 w-full">
       {/* 1. Unified Clinical Command Ribbon */}
       <div className="bg-white p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0 space-y-2">
-        {/* Row 1: Title, Legal Basis, Key Stat Badges, Action Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-            <h2 className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
+        {/* Row 1: Key Stat Badges & Primary Action */}
+        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="hidden sm:inline-block text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
               Sự Cố &amp; Kiểm Định Thiết Bị
             </h2>
             <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2 hidden md:inline">
@@ -94,15 +94,14 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT')}
-              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
+              className="hidden sm:inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
               title="In Biên bản kiểm định an toàn điện & thử tải lâm sàng TBYT (Nghị định 98/2021/NĐ-CP & NĐ 07/2023/NĐ-CP)"
             >
               <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-700" />
-              <span className="hidden sm:inline">In Biên Bản NĐ 98</span>
-              <span className="sm:hidden">In NĐ 98</span>
+              <span>In Biên Bản NĐ 98</span>
             </button>
 
             <button
@@ -111,13 +110,23 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
               title="Lập phiếu báo hỏng / sự cố thiết bị y tế (Nghị định 98/2021/NĐ-CP)"
             >
               <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">+ Báo Hỏng Thiết Bị</span>
-              <span className="sm:hidden">+ Báo Hỏng</span>
+              <span>+ Báo Hỏng</span>
             </button>
           </div>
         </div>
 
-        {/* Row 2: Search Input & Status Filter Pills */}
+        {/* Row 2: Secondary Quick Actions on Mobile (Horizontal Scroll Strip) */}
+        <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 border-t border-slate-100 whitespace-nowrap text-xs">
+          <button
+            onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT')}
+            className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-semibold transition shadow-2xs cursor-pointer shrink-0"
+          >
+            <Printer className="w-3 h-3 text-teal-700" />
+            <span>In Biên Bản NĐ 98</span>
+          </button>
+        </div>
+
+        {/* Row 3: Search Input & Status Filter Pills */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
           <div className="relative w-full sm:max-w-xs">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -168,7 +177,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
       </div>
 
       {/* 2A. Mobile Card-Based List (md:hidden) - Modern, touch-friendly, no horizontal cut-off */}
-      <div className="md:hidden flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-2.5">
+      <div className="md:hidden flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-2.5 pb-8">
         {filteredTickets.map((ticket) => {
           const isUrgent = ticket.urgency === 'urgent';
           const isResolved = ticket.status === 'resolved';

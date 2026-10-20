@@ -206,7 +206,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
       </div>
 
       {/* 2. Isolated Scrollable Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3 pb-8">
         {/* Quarantine Assessment Banner (GSP TT 36/2018 & WHO PQS) */}
         {isQuarantined && (
           <div className="bg-amber-50/80 border border-amber-300 rounded-2xl p-4 shadow-2xs text-xs sm:text-sm ring-1 ring-amber-200">

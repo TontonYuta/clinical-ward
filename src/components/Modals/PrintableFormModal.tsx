@@ -196,50 +196,51 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
       >
         
         {/* Top Control Bar */}
-        <div className="px-5 py-2.5 bg-slate-900 text-white flex items-center justify-between shrink-0 print:hidden">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white shadow-2xs">
+        <div className="px-3 sm:px-5 py-2 sm:py-2.5 bg-slate-900 text-white flex items-center justify-between shrink-0 print:hidden gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white shadow-2xs shrink-0">
               <Printer className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold tracking-tight flex items-center gap-2">
-                <span>Trung Tâm Xuất &amp; In Biểu Mẫu Hành Chính Y Tế</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono">
-                  Hợp Chuẩn NĐ 30/2020 · Chuẩn In 1 Trang A4 (Zero Overflow)
+            <div className="min-w-0">
+              <h2 className="text-xs sm:text-sm font-bold tracking-tight flex items-center gap-1.5 sm:gap-2">
+                <span className="truncate">Biểu Mẫu Hành Chính Y Tế</span>
+                <span className="hidden md:inline px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono">
+                  Chuẩn In 1 Trang A4
                 </span>
               </h2>
-              <p className="text-[11px] text-slate-400">
-                Định dạng chuẩn thể thức văn bản hành chính y tế, in ấn vừa vặn 1 trang A4 (Zero Overflow).
+              <p className="text-[11px] text-slate-400 truncate hidden sm:block">
+                Định dạng chuẩn thể thức văn bản hành chính y tế (NĐ 30/2020)
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => setZoomMode(prev => prev === 'fit' ? '100%' : 'fit')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition border border-slate-700 cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition border border-slate-700 cursor-pointer"
               title={zoomMode === 'fit' ? "Xem tỉ lệ thật 100%" : "Thu vừa màn hình để xem trọn vẹn trang"}
             >
               {zoomMode === 'fit' ? <Maximize2 className="w-3.5 h-3.5 text-teal-400" /> : <ZoomOut className="w-3.5 h-3.5 text-teal-400" />}
-              <span>{zoomMode === 'fit' ? 'Tỉ lệ 100%' : 'Vừa trang (Fit)'}</span>
+              <span>{zoomMode === 'fit' ? '100%' : 'Fit'}</span>
             </button>
 
             <button
               onClick={handleDownloadHtml}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700 cursor-pointer"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700 cursor-pointer"
               title="Tải văn bản định dạng HTML chuẩn in ấn"
             >
               <Download className="w-3.5 h-3.5 text-teal-400" />
-              <span>Tải file HTML</span>
+              <span>HTML</span>
             </button>
 
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-98"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-98"
               title="In trực tiếp ra máy in hoặc lưu file PDF (Ctrl + P)"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>In Biểu Mẫu (A4 / PDF)</span>
+              <span className="hidden sm:inline">In Biểu Mẫu (A4 / PDF)</span>
+              <span className="sm:hidden">In A4</span>
             </button>
 
             <button
@@ -247,7 +248,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
               onClick={onClose}
               title="Đóng biểu mẫu (Esc)"
               aria-label="Đóng biểu mẫu"
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer ml-1"
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer ml-0.5"
             >
               <X className="w-5 h-5" />
             </button>
@@ -443,8 +444,14 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
           </div>
         </div>
 
+        {/* Mobile Horizontal Panning Guide */}
+        <div className="sm:hidden px-3.5 py-1.5 bg-amber-50/90 border-b border-amber-200/80 text-[11px] text-amber-900 flex items-center justify-between shrink-0 font-medium">
+          <span>👉 Vuốt ngang để xem toàn bộ bảng &amp; chữ ký A4</span>
+          <span className="font-mono text-[10px] bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">210mm</span>
+        </div>
+
         {/* Document Preview Canvas (Simulating pure white A4 Paper) */}
-        <div className="flex-1 overflow-y-auto bg-slate-300/60 p-3 sm:p-5 flex justify-center items-start print:overflow-visible print:p-0 print:bg-transparent print:block">
+        <div className="flex-1 overflow-auto bg-slate-300/60 p-2 sm:p-5 flex justify-start sm:justify-center items-start print:overflow-visible print:p-0 print:bg-transparent print:block">
           <div
             id="printable-medical-document"
             className={`w-[210mm] max-w-[210mm] bg-white text-black p-6 sm:p-7 shadow-xl border border-slate-300 rounded-xs text-[11.5px] leading-snug font-serif transition-transform duration-150 ${

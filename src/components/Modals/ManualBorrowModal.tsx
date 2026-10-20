@@ -82,24 +82,24 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="h-14 px-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
               <Pill className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold">Lập Phiếu Mượn Khẩn Thuốc / Vật Tư Tủ Trực</h2>
-              <span className="text-xs text-slate-400 font-mono">
-                Kho Dược Lâm Sàng · Căn cứ Thông tư 22/2011 &amp; TT 20/2017/TT-BYT
+            <div className="min-w-0">
+              <h2 className="text-xs sm:text-base font-bold truncate">Lập Phiếu Mượn Khẩn Thuốc / Vật Tư Tủ Trực</h2>
+              <span className="text-[11px] text-slate-400 font-mono truncate block">
+                Kho Dược Lâm Sàng · Thông tư 22/2011 &amp; TT 20/2017
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>

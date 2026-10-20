@@ -710,14 +710,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-slate-50/70 relative overflow-hidden">
-      {/* 1. Header (Clean 44px) */}
-      <div className="h-11 px-4 bg-white border-b border-slate-200/90 flex items-center justify-between shrink-0 shadow-2xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-teal-800 flex items-center justify-center text-white shadow-2xs">
+      {/* 1. Header (Clean 48px on mobile, 44px on desktop) */}
+      <div className="h-13 sm:h-11 px-3.5 sm:px-4 bg-white border-b border-slate-200/90 flex items-center justify-between shrink-0 shadow-2xs">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg bg-teal-800 flex items-center justify-center text-white shadow-2xs">
             <Bot className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="text-sm font-bold text-slate-900">Trợ Lý Agent Lâm Sàng</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Agent Live REST API" />
             </div>
@@ -728,7 +728,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           {onClearMessages && (
             <button
               onClick={onClearMessages}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95"
               title="Làm mới phiên hội thoại"
             >
               <RotateCcw className="w-4 h-4" />
@@ -738,10 +738,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="p-2 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95"
               title="Thu nhỏ Trợ lý AI"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
           )}
         </div>
@@ -1002,7 +1002,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* 3. Input Area with Unified Accessory Row (Suggestion Chips + Smart Clinical Macros ICD-10) */}
-      <div className="p-2.5 sm:p-3 bg-white border-t border-slate-200 shrink-0 space-y-1.5">
+      <div className="p-2 sm:p-3 bg-white border-t border-slate-200 shrink-0 space-y-1.5 pb-3 sm:pb-3">
         <ClinicalMacroAutocomplete
           currentText={inputText}
           onSelectMacro={handleSelectMacro}
@@ -1030,34 +1030,34 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </>
           )}
         </ClinicalMacroAutocomplete>
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2">
           <div className="relative flex-1">
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleInputKeyDown}
-              placeholder="Nhập yêu cầu hoặc gõ tắt (VD: THA, NMCT, PUV, COPD...)"
-              className="w-full pl-4 pr-22 h-11 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
+              placeholder="Yêu cầu hoặc gõ tắt (THA, NMCT, PUV)..."
+              className="w-full pl-3.5 pr-18 sm:pr-22 h-10.5 sm:h-11 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
               disabled={isProcessing}
             />
 
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
               <button
                 type="button"
                 onClick={() => setIsVoiceOpen(true)}
                 title="Giọng nói lâm sàng"
-                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
               >
-                <Mic className="w-4.5 h-4.5" />
+                <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setIsImageOpen(true)}
                 title="Đính kèm ảnh hiện trường sự cố"
-                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
               >
-                <ImageIcon className="w-4.5 h-4.5" />
+                <ImageIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
             </div>
           </div>
@@ -1065,10 +1065,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           <button
             type="submit"
             disabled={!inputText.trim() || isProcessing}
-            className="h-11 w-11 rounded-xl bg-teal-800 text-white hover:bg-teal-900 disabled:opacity-40 transition shrink-0 flex items-center justify-center shadow-2xs cursor-pointer active:scale-98"
+            className="h-10.5 w-10.5 sm:h-11 sm:w-11 rounded-xl bg-teal-800 text-white hover:bg-teal-900 disabled:opacity-40 transition shrink-0 flex items-center justify-center shadow-2xs cursor-pointer active:scale-98"
             title="Gửi lệnh"
           >
-            <Send className="w-4.5 h-4.5" />
+            <Send className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
         </form>
       </div>

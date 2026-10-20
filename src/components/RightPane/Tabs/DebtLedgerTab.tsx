@@ -82,10 +82,10 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
     <div className="flex flex-col h-full overflow-hidden space-y-2 w-full">
       {/* 1. Unified Clinical Command Ribbon (Reclaiming Vertical Space) */}
       <div className="bg-white p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0 space-y-2">
-        {/* Row 1: Title, Legal Basis, Key Stat Badges, Primary Action Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-            <h2 className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
+        {/* Row 1: Key Stat Badges & Primary Action */}
+        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="hidden sm:inline-block text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
               Sổ Nợ Tủ Trực Cấp Cứu
             </h2>
             <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2 hidden md:inline">
@@ -99,7 +99,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
               </span>
               {pendingAmpoules.length > 0 && (
                 <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200/80 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
                   {pendingAmpoules.length} nợ vỏ
                 </span>
               )}
@@ -107,52 +107,57 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setIsBorrowModalOpen(true)}
               className="inline-flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
               title="Lập phiếu mượn khẩn thuốc / vật tư từ tủ trực cấp cứu ca đêm (TT 22/2011/TT-BYT)"
             >
               <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">+ Mượn Khẩn Thuốc</span>
-              <span className="sm:hidden">+ Mượn Khẩn</span>
-            </button>
-
-            {returnedAmpoules.length > 0 && (
-              <button
-                onClick={() => setIsDestructionModalOpen(true)}
-                className="inline-flex items-center gap-1 h-8 px-2.5 sm:px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-                title="Lập biên bản Hội đồng tiêu hủy vỏ ống thuốc gây nghiện theo Thông tư 20/2017/TT-BYT (Xem danh mục & in Mẫu 16)"
-              >
-                <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />
-                <span className="hidden sm:inline">Hội đồng hủy vỏ ({returnedAmpoules.length})</span>
-                <span className="sm:hidden">Hủy vỏ ({returnedAmpoules.length})</span>
-              </button>
-            )}
-
-            <button
-              onClick={onSimulateMorningReminder}
-              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-              title="Mô phỏng chuông nhắc đối soát hoàn bù lúc 07:00 sáng theo TT 22"
-            >
-              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-              <span className="hidden sm:inline">Nhắc hoàn bù 07:00</span>
-              <span className="sm:hidden">Nhắc 07:00</span>
+              <span>+ Mượn Khẩn</span>
             </button>
 
             <button
               onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
-              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+              className="hidden sm:inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
               title="In Biểu Mẫu Hành Chính Y Tế (Mẫu 16/TT20 Hủy Vỏ Ống / Mẫu Phiếu Mượn TT22)"
             >
               <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-700" />
-              <span className="hidden sm:inline">In Biểu Mẫu A4</span>
-              <span className="sm:hidden">In A4</span>
+              <span>In Biểu Mẫu A4</span>
             </button>
           </div>
         </div>
 
-        {/* Row 2: Search Input & Status Filter Pills */}
+        {/* Row 2: Secondary Quick Actions on Mobile (Horizontal Scroll Strip) */}
+        <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 border-t border-slate-100 whitespace-nowrap text-xs">
+          {returnedAmpoules.length > 0 && (
+            <button
+              onClick={() => setIsDestructionModalOpen(true)}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-[11px] font-semibold transition shadow-2xs cursor-pointer shrink-0"
+            >
+              <Flame className="w-3 h-3 text-rose-600" />
+              <span>Hủy vỏ ({returnedAmpoules.length})</span>
+            </button>
+          )}
+
+          <button
+            onClick={onSimulateMorningReminder}
+            className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold transition shadow-2xs cursor-pointer shrink-0"
+          >
+            <Clock className="w-3 h-3 text-amber-400" />
+            <span>Nhắc 07:00</span>
+          </button>
+
+          <button
+            onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
+            className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-semibold transition shadow-2xs cursor-pointer shrink-0"
+          >
+            <Printer className="w-3 h-3 text-teal-700" />
+            <span>In A4</span>
+          </button>
+        </div>
+
+        {/* Row 3: Search Input & Status Filter Pills */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
           <div className="relative w-full sm:max-w-xs">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -203,7 +208,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       </div>
 
       {/* 4A. Mobile Card-Based List (md:hidden) - Modern, touch-friendly, no horizontal cut-off */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5">
+      <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
         {filteredDebts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
             Không tìm thấy phiếu mượn nào phù hợp với bộ lọc.

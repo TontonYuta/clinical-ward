@@ -47,31 +47,31 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="h-14 px-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
+        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30 shrink-0">
               <Wrench className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold">Biên Bản Thử Tải, Kiểm Định &amp; Bàn Giao Thiết Bị</h2>
-              <span className="text-xs text-slate-400 font-mono">
-                Điều 34, 55 NĐ 98/2021/NĐ-CP &amp; Tiêu chuẩn IEC 60601-1
+            <div className="min-w-0">
+              <h2 className="text-xs sm:text-base font-bold truncate">Biên Bản Thử Tải, Kiểm Định &amp; Bàn Giao Thiết Bị</h2>
+              <span className="text-[11px] text-slate-400 font-mono truncate block">
+                Nghị định 98/2021/NĐ-CP &amp; Tiêu chuẩn IEC 60601-1
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700">
+        <div className="p-3.5 sm:p-5 overflow-y-auto space-y-4 text-xs text-slate-700">
           {/* Device Profile */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
@@ -81,7 +81,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
               </span>
             </div>
             <div className="text-sm sm:text-base font-bold text-slate-900">{ticket.deviceName}</div>
-            <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm pt-1.5 border-t border-slate-200 text-slate-600">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm pt-1.5 border-t border-slate-200 text-slate-600">
               <div>Số serial: <strong className="text-slate-800 font-mono">{ticket.serialNumber}</strong></div>
               <div>Model: <strong className="text-slate-800">{ticket.deviceModel}</strong></div>
               <div>Vị trí khoa phòng: <strong className="text-slate-800">{ticket.location}</strong></div>
@@ -111,7 +111,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
           </div>
 
           {/* Handover Signatures */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-2 gap-3 text-xs sm:text-sm">
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
             <div>
               <span className="text-xs text-slate-400 block font-semibold">Kỹ sư y sinh thực hiện:</span>
               <strong className="text-slate-800 block text-sm">{ticket.assignedEngineer}</strong>

@@ -117,24 +117,24 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="h-14 px-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
+        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30 shrink-0">
               <AlertTriangle className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold">Lập Phiếu Báo Hỏng / Sự Cố Trang Thiết Bị Y Tế</h2>
-              <span className="text-[11px] text-slate-400 font-mono">
-                Phòng Vật Tư - TBYT · Căn cứ Nghị định 98/2021/NĐ-CP &amp; NĐ 07/2023
+            <div className="min-w-0">
+              <h2 className="text-xs sm:text-base font-bold truncate">Báo Hỏng / Sự Cố Trang Thiết Bị Y Tế</h2>
+              <span className="text-[11px] text-slate-400 font-mono truncate block">
+                Phòng Vật Tư - TBYT · Nghị định 98/2021 &amp; NĐ 07/2023
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
