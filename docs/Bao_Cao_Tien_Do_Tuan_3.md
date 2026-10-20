@@ -215,7 +215,7 @@ Thay vì dùng các bảng biểu kỹ thuật nặng nề, phần này mô tả
 
 ---
 
-### 4.3. Đặc tả 3 quy tắc cảnh báo an toàn thuốc (CDSS Safety Rules)
+### 4.3. Đặc tả 4 quy tắc cảnh báo an toàn thuốc (CDSS Safety Rules)
 
 1. **Quy tắc Quá liều Opioid (Opioid Overdose Prevention)**:
    - *Ngưỡng kích hoạt:* Khi y lệnh Morphin $\ge 30\text{mg}$ hoặc Fentanyl $\ge 100\mu\text{g}$ trong một lần chỉ định.
@@ -229,10 +229,14 @@ Thay vì dùng các bảng biểu kỹ thuật nặng nề, phần này mô tả
    - *Ngưỡng kích hoạt:* Phát hiện y lệnh tiêm tĩnh mạch trực tiếp (IV bolus/push) dung dịch Kali Clorid 10%.
    - *Hậu quả lâm sàng:* Làm tăng kali máu cấp tính, gây rung thất và ngừng tim ngay lập tức trên bàn tiêm.
    - *Phản ứng của hệ thống:* Chặn tuyệt đối hành động tiêm trực tiếp, bắt buộc phải pha loãng trong chai dịch truyền (nồng độ tối đa 40mmol/L) và truyền qua máy truyền dịch kiểm soát tốc độ giọt.
+4. **Quy tắc Dị ứng chéo nhóm $\beta$-lactam (Penicillin – Cephalosporin Cross-Allergy)**:
+   - *Ngưỡng kích hoạt:* Bệnh nhân có tiền sử sốc phản vệ hoặc dị ứng nặng với Penicillin/Amoxicillin nhưng được kê Cephalosporin thế hệ 1 (như Cefazolin, Cephalexin).
+   - *Hậu quả lâm sàng:* Cấu trúc vòng $\beta$-lactam tương đồng gây phản ứng quá mẫn Type I, sốc phản vệ và phù thanh quản cấp.
+   - *Phản ứng của hệ thống:* Cảnh báo mức độ Nguy kịch, chặn xác nhận y lệnh và khuyến cáo chuyển sang nhóm Macrolide hoặc Quinolone an toàn.
 
 ---
 
-### 4.4. Đặc tả Gõ tắt lâm sàng (Macros) & Gợi ý mã ICD-10 tự động
+### 4.4. Đặc tả Gõ tắt lâm sàng (Macros) & 3 Trụ cột thiết kế Bệnh án điện tử (EHR)
 
 Giúp bác sĩ giảm $80\%$ thời gian nhập liệu, tập trung toàn bộ tâm trí cho việc khám và chữa bệnh:
 
@@ -244,6 +248,11 @@ Giúp bác sĩ giảm $80\%$ thời gian nhập liệu, tập trung toàn bộ t
 | `HCVC` | Hội chứng vành cấp / Cơn đau thắt ngực | **I20.0** | Tự động gợi ý chỉ định làm điện tâm đồ và Troponin |
 | `ROLO` | Rối loạn chuyển hóa lipoprotein và lipid khác | **E78** | Đi kèm lời dặn kiêng dầu mỡ |
 | `STT` | Suy thận mạn giai đoạn cuối | **N18.5** | Cảnh báo điều chỉnh giảm liều các loại kháng sinh |
+
+#### 3 Trụ cột thiết kế EHR theo khuyến nghị chuyên môn y khoa:
+1. **Gõ tắt thông minh & Bộ phác đồ mẫu (Order Sets):** Nhập liệu bằng bàn phím tối thiểu thông qua auto-complete chẩn đoán ICD-10 và bộ chỉ định y lệnh gói (Order Sets) cho từng mặt bệnh, có tính năng "Sao chép diễn biến bệnh" từ ngày trước sang ngày sau.
+2. **Giao diện Dòng thời gian (Timeline View) & Hộp tóm tắt (Clinical Summary Box):** Hiển thị diễn biến bệnh án theo trục thời gian kèm đồ thị sinh hiệu trực quan thay cho việc duyệt cây thư mục rời rạc; góc màn hình cố định hộp tóm tắt thông tin sống còn: Tiền sử dị ứng (màu đỏ nổi bật), chẩn đoán chính và danh mục thuốc đang sử dụng.
+3. **Cấu trúc dữ liệu theo chuẩn liên thông HL7 FHIR R4:** Tương thích với các đối tượng lâm sàng chuẩn quốc tế gồm `MedicationRequest`, `MedicationStatement`, `Observation` và `Condition`, tạo tiền đề tích hợp liên thông với hệ sinh thái y tế số quốc gia.
 
 ---
 
