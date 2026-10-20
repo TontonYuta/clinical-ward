@@ -1,15 +1,14 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{vietnam}
-\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{amsmath,amssymb,amsfonts}
 \usepackage{geometry}
-\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+\geometry{top=1.6cm,bottom=1.6cm,left=1.6cm,right=1.6cm}
 \usepackage{setspace}
-\setstretch{1.20}
-\setlength{\parskip}{0.5em}
+\setstretch{1.12}
+\setlength{\parskip}{0.3em}
 \usepackage{booktabs,tabularx,array,ragged2e}
 \usepackage{xcolor}
 \usepackage{enumitem}
-\usepackage{needspace}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
 \usepackage{hyperref}
@@ -21,531 +20,305 @@
     urlcolor=teal!80!black
 }
 
-% Định nghĩa màu sắc thanh lịch học thuật
+% Định nghĩa màu sắc nhận diện lâm sàng
 \definecolor{medblue}{RGB}{24, 76, 120}
 \definecolor{medteal}{RGB}{13, 148, 136}
 \definecolor{medred}{RGB}{185, 28, 28}
 \definecolor{medamber}{RGB}{180, 83, 9}
 \definecolor{linegray}{RGB}{100, 116, 139}
 
-% Định nghĩa kiểu cột căn trái tự nhiên không bị kéo giãn khoảng cách từ
+% Định nghĩa cột căn lề không bị giãn khoảng cách từ
 \newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
 \newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{Z}{>{\Centering\arraybackslash}X}
 
-% Cấu hình khối sơ đồ TikZ chuẩn đẹp không đè chữ
+% Phong cách khối TikZ tinh gọn
 \tikzset{
-    basebox/.style = {rectangle, draw=linegray, rounded corners=2pt, font=\small, inner sep=5pt},
-    widestep/.style = {basebox, fill=blue!3, text width=15cm, minimum height=0.72cm},
-    widealert/.style = {basebox, fill=red!5, draw=medred, text width=15cm, minimum height=0.72cm},
-    halfstep/.style = {basebox, fill=teal!5, text width=7.1cm, minimum height=0.72cm},
-    halfalert/.style = {basebox, fill=medamber!10, draw=medamber, text width=7.1cm, minimum height=0.72cm},
-    halfcrit/.style = {basebox, fill=red!6, draw=medred, text width=7.1cm, minimum height=0.72cm},
-    decision/.style = {diamond, draw=medblue, fill=blue!6, text width=5.2cm, aspect=2.2, font=\small, align=center, inner sep=2pt},
-    flowarrow/.style = {thick, -{Latex[length=2.5mm]}, draw=linegray}
+    procbox/.style = {rectangle, draw=linegray, rounded corners=2pt, fill=blue!3, font=\small, align=center, inner sep=3pt, text width=#1},
+    alertbox/.style = {rectangle, draw=medred, rounded corners=2pt, fill=red!5, font=\small, align=center, inner sep=3pt, text width=#1},
+    tealbox/.style = {rectangle, draw=medteal, rounded corners=2pt, fill=teal!5, font=\small, align=center, inner sep=3pt, text width=#1},
+    decbox/.style = {diamond, draw=medblue, fill=blue!6, font=\small, align=center, inner sep=1pt, text width=#1, aspect=2.1},
+    farrow/.style = {thick, -{Latex[length=2.2mm]}, draw=linegray}
 }
-
-\title{\textbf{\Large Báo cáo tiến độ thực hiện dự án — Tuần 3}\\[0.3em]
-\large Hệ thống trợ lý lâm sàng, quản lý kho dược và thiết bị y tế bệnh viện\\[0.3em]
-\normalsize Đồ án tốt nghiệp 2 — Ngành Công nghệ Thông tin}
-\author{\textbf{Nhóm phát triển Hệ thống Trợ lý Lâm sàng}\\[0.2em]\textbf{và Quản lý Kho Dược Bệnh viện}}
-\date{Tháng 10 Năm 2026}
 
 \begin{document}
 
+% ==================== TRANG 1 ====================
 \begin{center}
-    {\Large\textbf{Báo cáo tiến độ thực hiện dự án — Tuần 3}}\\[0.4em]
-    {\large\textbf{Hệ thống trợ lý lâm sàng, quản lý kho dược và thiết bị y tế bệnh viện}}\\[0.25em]
-    {\normalsize Đồ án tốt nghiệp 2 — Ngành Công nghệ Thông tin}\\[0.5em]
-    {\textbf{Nhóm phát triển Hệ thống Trợ lý Lâm sàng và Quản lý Kho Dược Bệnh viện}}\\[0.2em]
-    {\small Tháng 10 Năm 2026}
+    {\Large\textbf{Báo cáo tiến độ tuần 3 — Đồ án tốt nghiệp 2}}\\[0.25em]
+    {\large\textbf{Hệ thống trợ lý lâm sàng, quản lý kho dược và thiết bị y tế bệnh viện}}\\[0.2em]
+    {\normalsize Nhóm sinh viên thực hiện: Nhóm Nghiên cứu \& Phát triển Lâm sàng \quad$\vert$\quad Tháng 10/2026}\\[0.15em]
+    {\small Ứng dụng trực tuyến: \url{https://clinical-ward.vercel.app} \quad$\vert$\quad Mã nguồn: \url{https://github.com/TontonYuta/clinical-ward}}
+\end{center}
+
+\vspace{-0.5em}
+\noindent\rule{\textwidth}{0.4pt}
+\vspace{-0.35em}
+
+{\small\RaggedRight
+\noindent\textbf{Khung pháp lý áp dụng:} Thông tư 22/2011/TT-BYT (Dược lâm sàng), Thông tư 20/2017/TT-BYT (Thuốc kiểm soát đặc biệt), Thông tư 36/2018/TT-BYT (GSP chuỗi lạnh), Nghị định 98/2021/NĐ-CP (Trang thiết bị y tế), Thông tư 23/2023/TT-BTC (Tài sản công), Tiêu chuẩn an toàn điện y tế IEC 60601-1.\par}
+
+\vspace{-0.35em}
+\noindent\rule{\textwidth}{0.4pt}
+\vspace{-0.1em}
+
+\section*{Chỉ số định lượng trọng tâm tuần 3}
+
+\vspace{-0.2em}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}ZZZZ@{}}
+\toprule
+\textbf{Phân hệ hoàn thành} & \textbf{Kiểm thử tự động} & \textbf{Độ trễ AI ngoại tuyến} & \textbf{Rào chắn an toàn CDSS} \\
+\midrule
+{\Large\textbf{07 / 07}} Phân hệ cốt lõi & {\Large\textbf{45 / 45}} Kịch bản ($100\%$) & {\Large\textbf{0 ms}} Phản hồi tức thì & {\Large\textbf{04}} Quy tắc sống còn \\
+\bottomrule
+\end{tabularx}
 \end{center}
 
 \vspace{-0.3em}
-\noindent\rule{\textwidth}{0.4pt}
+Bám sát góp ý của Bác sĩ lâm sàng và Giảng viên hướng dẫn, nhóm đã tinh giản phạm vi, loại bỏ chi tiết dàn trải để tập trung hoàn thiện 3 trụ cột kỹ thuật: (1) Quản lý Dược lâm sàng \& Chuỗi lạnh vắc xin; (2) Quản lý Thiết bị y tế \& Khóa an toàn LOTO; (3) Trợ lý AI ngoại tuyến tích hợp hệ thống hỗ trợ ra quyết định lâm sàng (CDSS).
+
+\vspace{-0.1em}
+\section{Bảng tổng hợp tiến độ các hạng mục thực hiện trong tuần 3}
+
 \vspace{-0.2em}
-
-{\small\RaggedRight
-\noindent\textbf{Thông tin tổng quan:}\\
-$\bullet$ \textbf{Thời gian báo cáo:} Tuần 3 (từ ngày 14/10/2026 đến ngày 20/10/2026).\\
-$\bullet$ \textbf{Phiên bản ứng dụng trực tuyến:} \url{https://clinical-ward.vercel.app}\\
-$\bullet$ \textbf{Kho lưu trữ mã nguồn:} \url{https://github.com/TontonYuta/clinical-ward}\\
-$\bullet$ \textbf{Căn cứ pháp lý chuẩn:} Thông tư 22/2011/TT-BYT, Thông tư 20/2017/TT-BYT,\\
-Thông tư 36/2018/TT-BYT (GSP), Nghị định 98/2021/NĐ-CP, Nghị định 151/2017/NĐ-CP,\\
-Thông tư 23/2023/TT-BTC, Nghị định 30/2020/NĐ-CP.\par}
-
-\vspace{0.2em}
-\noindent\rule{\textwidth}{0.4pt}
-
-\section*{Tóm tắt báo cáo}
-
-Trong Tuần 3, nhóm phát triển đã tập trung rà soát và khắc phục toàn diện các hạn chế về công nghệ, tính năng nghiệp vụ và công thái học giao diện:
-\begin{enumerate}[leftmargin=*, itemsep=0.25em, topsep=0.2em]
-    \item \textbf{Khoanh vùng phạm vi trọng tâm:} Tinh giản hệ thống theo góp ý của giảng viên và bác sĩ, tập trung sâu vào 3 mũi nhọn lâm sàng: quản lý thuốc tủ trực cấp cứu, giám sát chuỗi lạnh bảo quản vắc xin và quản lý sự cố trang thiết bị y tế kèm kiểm kê tài sản công.
-    \item \textbf{Trí tuệ nhân tạo và an toàn người bệnh:} Xây dựng bộ định tuyến xử lý ngôn ngữ tự nhiên 2 tầng chạy ngoại tuyến tức thì 0ms, tích hợp hệ thống hỗ trợ ra quyết định lâm sàng (CDSS) cảnh báo quá liều Opioid, tương tác thuốc nguy hiểm (DDI) và thuốc cảnh giác cao (High-Alert KCl).
-    \item \textbf{Kiểm thử tự động đạt 100\%:} Hoàn thành bộ kiểm thử hồi quy 45 kịch bản lâm sàng thực tế, giải quyết triệt để xung đột ý định, đạt tỷ lệ chính xác tuyệt đối $45/45$ ($100\%$).
-    \item \textbf{Khắc phục lỗi cuộn trang trên máy tính:} Thiết kế lại các bảng dữ liệu với tiêu đề cố định và chiều cao dòng gọn gàng, loại bỏ hoàn toàn tình trạng cuộn chuột thừa thãi; tối ưu hóa giao diện điện thoại với thanh điều hướng đáy và các thẻ chạm ngón tay cái.
-    \item \textbf{Tài liệu hóa chuẩn mực:} Biên soạn cẩm nang nghiệp vụ y tế theo phương pháp kể chuyện và bộ câu hỏi trắc nghiệm tình huống, xuất bản ấn phẩm PDF học thuật chuẩn A4.
-\end{enumerate}
-
-\newpage
-
-\section{Tổng quan mục tiêu và kết quả tuần 3}
-
-Dưới đây là bảng đối chiếu chi tiết kết quả thực tế đạt được so với kế hoạch ban đầu:
-
 \begin{center}
 \small
 \begingroup
-\setstretch{1.08}
-\renewcommand{\arraystretch}{1.06}
-\setlength{\tabcolsep}{4pt}
-\begin{tabularx}{\textwidth}{C{1.2cm} L{3.3cm} Y Y C{2.2cm}}
+\setstretch{1.04}
+\begin{tabularx}{\textwidth}{@{}C{0.9cm}L{3.2cm}YL{2.6cm}@{}}
 \toprule
-\textbf{STT} & \textbf{Mảng công việc} & \textbf{Kế hoạch ban đầu} & \textbf{Kết quả thực tế đạt được} & \textbf{Trạng thái} \\
+\textbf{STT} & \textbf{Hạng mục} & \textbf{Nội dung kỹ thuật và nghiệp vụ đã hoàn thành} & \textbf{Kết quả nghiệm thu} \\
 \midrule
-1 & Khoanh vùng phạm vi nghiệp vụ & Giảm bớt các nghiệp vụ dàn trải để tập trung báo cáo bảo vệ đồ án. & Đã tinh giản giao diện, bổ sung gõ tắt từ ngữ y khoa (Macros) và gợi ý chẩn đoán ICD-10 tự động. & Hoàn thành 100\% \\
-\midrule
-2 & Trí tuệ nhân tạo lâm sàng \& CDSS & Nhận diện thuốc, thiết bị và cảnh báo an toàn người bệnh. & Hoàn thành bộ định tuyến 2 tầng (chạy ngoại tuyến tức thì + hiểu ý định) kèm bóc tách hóa đơn OCR. & Hoàn thành 100\% \\
-\midrule
-3 & Kiểm thử tự động kịch bản hội thoại & Viết kịch bản kiểm thử tự động cho tất cả các tình huống lâm sàng. & Tạo bộ kịch bản 45 tình huống thực tế, đạt tỷ lệ chính xác tuyệt đối $45/45$ kịch bản ($100\%$). & Hoàn thành 100\% \\
-\midrule
-4 & Cải tiến giao diện trên điện thoại & Khắc phục cỡ chữ nhỏ và thao tác chạm vuốt chưa thuận tiện. & Bổ sung thanh điều hướng dưới đáy, chuyển bảng thành các thẻ thông tin vuốt chạm mượt mà. & Hoàn thành 100\% \\
-\midrule
-5 & Khắc phục lỗi cuộn trang trên máy tính & Loại bỏ việc người dùng phải cuộn chuột quá nhiều để tìm dữ liệu. & Chuyển danh sách thẻ thiết bị thành bảng thu gọn có dòng vừa vặn và thanh tiêu đề cố định. & Hoàn thành 100\% \\
-\midrule
-6 & Kích hoạt các nút bấm chức năng & Chuyển các nút bấm thử nghiệm thành thao tác lưu dữ liệu thật. & Kích hoạt toàn bộ các nút: in biểu mẫu chuẩn, điều chuyển tài sản, đề xuất thanh lý và sửa máy. & Hoàn thành 100\% \\
-\midrule
-7 & Tài liệu học nghiệp vụ kể chuyện & Soạn tài liệu đọc hiểu dễ nhớ cho người làm phần mềm. & Hoàn thành tài liệu 13 trang gồm 4 câu chuyện ca trực và 15 câu hỏi trắc nghiệm có lời giải. & Hoàn thành 100\% \\
+1 & Quản lý thuốc tủ trực & Số hóa sổ giao ban tủ trực, quản lý cơ số định mức, ghi nợ cơ số và truy vết vỏ thuốc gây nghiện đối soát $1:1$ theo TT 20/2017/TT-BYT. & Hoàn thành $100\%$ \\
+2 & Quản lý thiết bị y tế & Quét mã QR kiểm kê, cờ cảnh báo mượn chéo lệch khoa, tính khấu hao theo TT 23/2023/TT-BTC và quy trình sự cố LOTO. & Hoàn thành $100\%$ \\
+3 & Giám sát chuỗi lạnh & Giám sát nhiệt độ tủ $2^\circ\text{C} - 8^\circ\text{C}$, nhận diện 4 giai đoạn chỉ thị VVM theo WHO, thuật toán xuất kho ưu tiên FEFO cận hạn 60 ngày. & Hoàn thành $100\%$ \\
+4 & Trợ lý AI và CDSS & Bộ định tuyến Regex/NLP ngoại tuyến $0\text{ms}$, 4 quy tắc rào chắn lâm sàng CDSS khẩn cấp, thẻ Action Card yêu cầu mã PIN. & Hoàn thành $100\%$ \\
+5 & Gõ tắt lâm sàng & Bảng Macros chẩn đoán nhanh ICD-10 (THA, DTD2, HCVC, ...) và 3 trụ cột thiết kế bệnh án điện tử (EHR) theo chuyên môn bác sĩ. & Hoàn thành $100\%$ \\
+6 & Kiểm thử tự động & Bộ kiểm thử hồi quy 45 kịch bản tự động bao phủ toàn diện các tình huống lâm sàng; đạt độ chính xác tuyệt đối. & Đạt $45/45$ ($100\%$) \\
+7 & Công thái học UI/UX & Khử triệt để lỗi cuộn kép (double scroll), bảng màu Clean Clinical SaaS dịu mắt, tối ưu thao tác ngón cái trên thiết bị di động. & Đã đưa vào sử dụng \\
 \bottomrule
 \end{tabularx}
 \endgroup
 \end{center}
+
+\newpage
+% ==================== TRANG 2 ====================
+\section{Quy trình Dược lâm sàng và giám sát chuỗi lạnh vắc xin}
+
+\subsection{Quy trình xuất dùng thuốc gây nghiện và đối soát vỏ rỗng (Thông tư 20/2017/TT-BYT)}
+
+Thuốc gây nghiện (Morphin, Fentanyl) tại tủ trực cấp cứu bắt buộc bảo quản trong ngăn riêng có khóa. Khi xuất dùng trong ca trực, hệ thống tự động ghi nhận nợ cơ số và kiểm soát thu hồi vỏ rỗng đối soát tỷ lệ $1:1$:
+
+\vspace{-0.2em}
+\begin{center}
+\begin{tikzpicture}[node distance=0.32cm, auto]
+    \node (s1) [procbox=16.0cm] {\textbf{Bước 1: Bác sĩ chỉ định y lệnh cấp cứu} --- Ra y lệnh hoạt chất, hàm lượng (Morphin 10mg/1ml) qua hồ sơ bệnh án};
+    \node (s2) [tealbox=16.0cm, below=of s1] {\textbf{Bước 2: Điều dưỡng mở tủ trực \& Xuất thuốc} --- Nhập mã PIN cá nhân, hệ thống trừ tồn kho và ghi nợ cơ số};
+    \node (s3) [procbox=16.0cm, below=of s2] {\textbf{Bước 3: Thực hiện tiêm cho người bệnh} --- Điều dưỡng tiêm theo quy tắc 5 đúng; ghi nhận thời gian và đáp ứng lâm sàng};
+    \node (s4) [alertbox=16.0cm, below=of s3] {\textbf{Bước 4: Thu hồi vỏ ống rỗng đối soát $1:1$} --- Thu hồi vỏ ống tiêm; hệ thống kiểm tra số vỏ khớp đúng số lượng xuất};
+    \node (s5) [tealbox=16.0cm, below=of s4] {\textbf{Bước 5: Kho Dược hoàn trả cơ số định mức} --- Nộp đủ số vỏ rỗng về Kho Dược; Kho Dược cấp bù ống thuốc mới};
+
+    \draw [farrow] (s1) -- (s2);
+    \draw [farrow] (s2) -- (s3);
+    \draw [farrow] (s3) -- (s4);
+    \draw [farrow] (s4) -- (s5);
+\end{tikzpicture}
+\end{center}
+
+\vspace{-0.3em}
+\subsection{Giám sát chuỗi lạnh bảo quản vắc xin và chỉ thị nhiệt độ lọ vắc xin (VVM)}
+
+Theo Thông tư 36/2018/TT-BYT (GSP) và chuẩn WHO, vắc xin bắt buộc bảo quản ở nhiệt độ $+2^\circ\text{C}$ đến $+8^\circ\text{C}$. Hệ thống tự động theo dõi biến thiên nhiệt độ và phân loại trạng thái chỉ thị màu VVM (Vaccine Vial Monitor):
+
+\vspace{-0.2em}
+\begin{center}
+\small
+\begingroup
+\setstretch{1.04}
+\begin{tabularx}{\textwidth}{@{}C{1.8cm}L{3.6cm}YL{2.6cm}@{}}
+\toprule
+\textbf{Giai đoạn VVM} & \textbf{Trạng thái hình ảnh chỉ thị} & \textbf{Ý nghĩa nhiệt độ và chất lượng vắc xin} & \textbf{Quyết định lâm sàng} \\
+\midrule
+\textbf{Giai đoạn 1} & Vuông trong trắng, sáng hơn nhiều so với vòng tròn ngoài. & Bảo quản ở điều kiện lý tưởng, chưa tích lũy nhiệt độ môi trường. & \textbf{Được phép dùng} (Ưu tiên theo FEFO) \\
+\textbf{Giai đoạn 2} & Vuông trong bắt đầu sẫm màu nhưng vẫn sáng hơn vòng tròn. & Đã tiếp xúc nhiệt độ môi trường ở mức giới hạn cho phép. & \textbf{Được phép dùng} (Bắt buộc dùng trước) \\
+\textbf{Giai đoạn 3} & Vuông trong đổi màu tối bằng đúng màu vòng tròn ngoài. & Điểm giới hạn (Discard Point): Kháng nguyên bị biến tính nhiệt. & \textbf{Ngừng dùng ngay}\\
+\textbf{Giai đoạn 4} & Vuông trong sẫm màu hơn hẳn vòng tròn ngoài bao quanh. & Vắc xin bị hỏng hoàn toàn, nguy cơ gây tai biến tiêm chủng. & \textbf{Hủy bỏ lập biên bản} \\
+\bottomrule
+\end{tabularx}
+\endgroup
+\end{center}
+
+\vspace{-0.3em}
+\subsection{Thuật toán xuất kho FEFO (First Expired, First Out)}
+Hệ thống tự động sắp xếp danh mục dược phẩm theo thời hạn sử dụng. Thuốc có hạn dùng gần nhất bắt buộc xuất trước. Khi hạn dùng còn dưới 60 ngày, hệ thống tự động đổi màu cảnh báo vàng và đẩy lên đầu danh sách y lệnh để kíp trực ưu tiên sử dụng, tránh nguy cơ quá hạn gây hủy thuốc.
+
+\newpage
+% ==================== TRANG 3 ====================
+\section{Quản lý trang thiết bị y tế và an toàn vận hành}
+
+\subsection{Quản lý vòng đời tài sản \& Kiểm kê tự động bằng mã QR}
+
+Toàn bộ máy móc y tế được gắn tem mã QR định danh duy nhất. Khi quét QR kiểm kê di động:
+\begin{itemize}[leftmargin=*, itemsep=0.12em, topsep=0.1em]
+    \item \textbf{Tự động phát hiện mượn chéo lệch khoa:} Đối chiếu vị trí thực tế với sổ sách kế toán. Nếu phát hiện sai lệch, hệ thống tự động bật cờ cảnh báo \textit{Lệch khoa phòng} và khởi tạo phiếu điều chuyển nội bộ.
+    \item \textbf{Theo dõi hao mòn \& Khấu hao tài sản công:} Tự động tính tỷ lệ hao mòn lũy kế theo Thông tư 23/2023/TT-BTC phục vụ công tác thanh lý và tái đầu tư trang thiết bị.
+\end{itemize}
+
+\vspace{-0.2em}
+\subsection{Quy trình khóa an toàn cách ly LOTO khi xảy ra sự cố thiết bị y tế}
+
+Khi phát hiện máy hỏng (xì khí, chập điện, lỗi cảm biến), nhân viên kích hoạt báo lỗi qua ứng dụng. Hệ thống tự động chuyển máy sang trạng thái cảnh báo đỏ và kích hoạt quy trình khóa an toàn LOTO (Lockout / Tagout) nhằm bảo vệ tính mạng người bệnh:
+
+\vspace{-0.2em}
+\begin{center}
+\begin{tikzpicture}[node distance=0.32cm, auto]
+    \node (e1) [alertbox=16.0cm] {\textbf{Bước 1: Báo cáo sự cố \& Khóa máy điện tử} --- Nhân viên báo lỗi qua app (ví dụ: máy thở PB840 xì khí bẫy nước); hệ thống khóa máy};
+    \node (e2) [alertbox=16.0cm, below=of e1] {\textbf{Bước 2: Cách ly vật lý LOTO} --- Ngắt nguồn điện, treo biển cảnh báo đỏ: \textit{"NGUY HIỂM — MÁY ĐANG HỎNG, CẤM DÙNG"}};
+    \node (e3) [procbox=16.0cm, below=of e2] {\textbf{Bước 3: Phòng Vật tư y tế thẩm định} --- Kỹ sư y sinh đo dòng rò và an toàn điện sinh học chuẩn IEC 60601-1};
+    \node (dec) [decbox=5.6cm, below=0.32cm of e3] {Kết quả kiểm định\\kỹ thuật an toàn?};
+    \node (pass) [tealbox=7.2cm, below left=0.42cm and -0.8cm of dec] {\textbf{ĐẠT CHUẨN IEC 60601-1:}\\Tháo biển cảnh báo, mở khóa máy\\Sẵn sàng đưa vào sử dụng cấp cứu};
+    \node (fail) [alertbox=7.2cm, below right=0.42cm and -0.8cm of dec] {\textbf{KHÔNG ĐẠT / KHÔNG THỂ SỬA:}\\Lập biên bản kỹ thuật ngừng dùng vĩnh viễn\\Làm thủ tục thanh lý theo TT 23/2023/TT-BTC};
+
+    \draw [farrow] (e1) -- (e2);
+    \draw [farrow] (e2) -- (e3);
+    \draw [farrow] (e3) -- (dec);
+    \draw [farrow] (dec) -| node[above, font=\small, text=teal!80!black, near start] {Đạt} (pass);
+    \draw [farrow] (dec) -| node[above, font=\small, text=medred, near start] {Không đạt} (fail);
+\end{tikzpicture}
+\end{center}
+
+\vspace{-0.3em}
+\subsection{Phân loại rủi ro thiết bị y tế theo Nghị định 98/2021/NĐ-CP}
+
+\vspace{-0.2em}
+\begin{center}
+\small
+\begingroup
+\setstretch{1.04}
+\begin{tabularx}{\textwidth}{@{}C{1.8cm}L{3.2cm}YL{3.0cm}@{}}
+\toprule
+\textbf{Mức rủi ro} & \textbf{Thiết bị đại diện} & \textbf{Mục đích sử dụng lâm sàng} & \textbf{Chế độ kiểm định an toàn} \\
+\midrule
+\textbf{Loại A} & Bơm tiêm, găng tay y tế & Vật tư y tế tiêu hao, không can thiệp sâu. & Công bố tiêu chuẩn áp dụng \\
+\textbf{Loại B} & Máy đo điện tim 3 cần & Theo dõi chẩn đoán gián tiếp không xâm lấn. & Đăng ký lưu hành tiêu chuẩn \\
+\textbf{Loại C} & Máy sốc tim, monitor & Can thiệp cấp cứu, duy trì nhịp tim người bệnh. & Kiểm định an toàn điện hằng năm \\
+\textbf{Loại D} & Máy thở chức năng cao & Hỗ trợ hoặc thay thế chức năng sống còn. & Kiểm định nghiêm ngặt IEC 60601-1 \\
+\bottomrule
+\end{tabularx}
+\endgroup
+\end{center}
+
+\newpage
+% ==================== TRANG 4 ====================
+\section{Kiến trúc AI ngoại tuyến và rào chắn an toàn lâm sàng (CDSS)}
+
+\subsection{Kiến trúc định tuyến thông minh 2 tầng chạy ngoại tuyến 0ms}
+
+Để đảm bảo kíp trực cấp cứu vận hành liên tục ngay cả khi mất kết nối mạng Internet, hệ thống sử dụng kiến trúc AI xử lý tại biên (Edge / Local NLP):
+
+\vspace{-0.25em}
+\begin{center}
+\begin{tikzpicture}[node distance=0.22cm, auto]
+    \node (inp) [procbox=16.0cm] {\textbf{Đầu vào người dùng:} Gõ tắt Macro (THA, DTD2) $\vert$ Tin nhắn lệnh ("Cho 1 lọ Morphin") $\vert$ Quét mã QR};
+    \node (t1) [tealbox=16.0cm, below=of inp] {\textbf{Tầng 1: Bộ phân tích Regex \& Gõ tắt Macro (Độ trễ 0ms)} --- Giải mã macro và gợi ý mã ICD-10 tức thì};
+    \node (t2) [procbox=16.0cm, below=of t1] {\textbf{Tầng 2: Intent Router \& Trích xuất thực thể} --- Phân loại ý định (Xuất thuốc / Báo hỏng máy / Chuỗi lạnh / Pháp lý)};
+    \node (cdss) [alertbox=16.0cm, below=of t2] {\textbf{RÀO CHẮN AN TOÀN CDSS} --- Tự động chặn tương tác thuốc nguy hiểm, quá liều và đường dùng cấm kỵ};
+    \node (act) [tealbox=16.0cm, below=of cdss] {\textbf{Thẻ thao tác động (Action Card)} --- Xác thực mã PIN cá nhân trước khi ghi nhận cơ sở dữ liệu};
+
+    \draw [farrow] (inp) -- (t1);
+    \draw [farrow] (t1) -- (t2);
+    \draw [farrow] (t2) -- (cdss);
+    \draw [farrow] (cdss) -- (act);
+\end{tikzpicture}
+\end{center}
+
+\vspace{-0.35em}
+\subsection{Đặc tả 4 rào chắn lâm sàng sống còn (CDSS Rules)}
+
+\vspace{-0.25em}
+\begin{center}
+\small
+\begingroup
+\setstretch{1.01}
+\begin{tabularx}{\textwidth}{@{}C{0.8cm}L{3.2cm}YL{3.0cm}@{}}
+\toprule
+\textbf{STT} & \textbf{Tên quy tắc an toàn} & \textbf{Ngưỡng kích hoạt \& Rủi ro đe dọa tính mạng} & \textbf{Phản ứng bảo vệ của hệ thống} \\
+\midrule
+1 & Quá liều Opioid nguy kịch & Kê Morphin $\ge 30\text{mg}$ hoặc Fentanyl $\ge 100\mu\text{g}$ một lần. Nguy cơ ức chế hành não gây ngừng thở tức thì. & Cảnh báo đỏ khẩn cấp; nhắc chuẩn bị sẵn thuốc giải độc Naloxone 0.4mg. \\
+2 & Tương tác thuốc (DDI) & Kê đồng thời Opioid (Morphin) và Benzodiazepine (Diazepam). Nguy cơ hiệp đồng ức chế hô hấp sâu và trụy mạch. & Bật cảnh báo tương tác nguy kịch; khuyến cáo giãn cách 4 giờ và đo SpO2. \\
+3 & Cảnh giác cao KCl 10\% & Chỉ định tiêm tĩnh mạch trực tiếp (IV Bolus/Push) KCl 10\%. Tăng kali máu đột ngột gây rung thất và ngừng tim. & \textbf{Chặn tuyệt đối y lệnh}; bắt buộc pha truyền và kiểm soát tốc độ giọt. \\
+4 & Dị ứng chéo $\beta$-lactam & Tiền sử dị ứng Penicillin nhưng kê Cephalosporin thế hệ 1. Cấu trúc $\beta$-lactam tương đồng gây sốc phản vệ. & Cảnh báo phản vệ khẩn cấp; yêu cầu đổi sang nhóm Macrolide hoặc Quinolone. \\
+\bottomrule
+\end{tabularx}
+\endgroup
+\end{center}
+
+\vspace{-0.35em}
+\subsection{3 Trụ cột thiết kế Bệnh án điện tử (EHR) theo góp ý chuyên môn bác sĩ}
+\begin{enumerate}[leftmargin=*, itemsep=0.08em, topsep=0.05em]
+    \item \textbf{Gõ tắt thông minh (Macros) \& Bộ phác đồ mẫu (Order Sets):} Nhập nhanh chẩn đoán ICD-10 (\texttt{THA} $\rightarrow$ I10, \texttt{DTD2} $\rightarrow$ E11, \texttt{HCVC} $\rightarrow$ I20.0), kèm nút "Sao chép y lệnh cũ" giúp bác sĩ giảm $80\%$ thời gian nhập liệu.
+    \item \textbf{Giao diện Dòng thời gian (Timeline View) \& Hộp tóm tắt sống còn:} Hiển thị diễn biến bệnh và biểu đồ sinh hiệu trực quan theo trục thời gian; góc màn hình cố định Hộp tóm tắt Tiền sử dị ứng và danh mục thuốc đang dùng.
+    \item \textbf{Chuẩn hóa liên thông dữ liệu HL7 FHIR R4:} Bám sát cấu trúc đối tượng tiêu chuẩn quốc tế (\texttt{MedicationRequest}, \texttt{MedicationStatement}, \texttt{Observation}, \texttt{Condition}).
+\end{enumerate}
+
+\newpage
+% ==================== TRANG 5 ====================
+\section{Kiểm thử tự động, tối ưu UI/UX và kế hoạch tuần 4}
+
+\subsection{Kết quả kiểm thử tự động 45 kịch bản lâm sàng (45/45 Passed)}
+
+Toàn bộ các luồng hội thoại và rào chắn an toàn đã được kiểm thử hồi quy tự động độc lập qua tập kiểm thử chuyên sâu \texttt{scripts/test\_chatbot\_suite.ts}:
+
+\vspace{-0.2em}
+\begin{center}
+\small
+\begingroup
+\setstretch{1.04}
+\begin{tabularx}{\textwidth}{@{}C{1.1cm}L{3.4cm}YL{2.6cm}@{}}
+\toprule
+\textbf{Nhóm} & \textbf{Phạm vi kịch bản kiểm thử} & \textbf{Ví dụ câu lệnh lâm sàng kiểm thử} & \textbf{Tỷ lệ vượt qua} \\
+\midrule
+Nhóm 1 & Xuất cấp thuốc tủ trực cấp cứu & "Cho 1 lọ morphin", "Lấy gấp 2 ống Fentanyl mổ 1" & Đạt $9 / 9$ ($100\%$) \\
+Nhóm 2 & Báo hỏng thiết bị và khóa LOTO & "Máy thở PB840 xì khí bẫy nước", "Máy hút dịch hỏng" & Đạt $8 / 8$ ($100\%$) \\
+Nhóm 3 & Rào chắn an toàn lâm sàng CDSS & "Dùng 4 lọ morphin", "Tiêm trực tiếp 1 ống KCl 10\%" & Đạt $8 / 8$ ($100\%$) \\
+Nhóm 4 & Giám sát nhiệt độ chuỗi lạnh FEFO & "Thuốc nào cận hạn dưới 60 ngày", "Tủ vắc xin bao độ" & Đạt $10 / 10$ ($100\%$) \\
+Nhóm 5 & Tra cứu thông tư pháp lý \& OCR & "Phác đồ phản vệ TT 51", "Quét hóa đơn dược phẩm" & Đạt $10 / 10$ ($100\%$) \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{TỔNG KẾT TOÀN BỘ KIỂM THỬ LÂM SÀNG:}} & \textbf{45 / 45 ($100\%$)} \\
+\bottomrule
+\end{tabularx}
+\endgroup
+\end{center}
+
+\vspace{-0.3em}
+\noindent\textbf{Chỉ số kỹ thuật cốt lõi:} Độ trễ phản hồi ngoại tuyến đạt $0\text{ms}$; cơ chế phân tích Regex nhận diện chính xác $100\%$ từ khóa lâm sàng, không có xung đột ý định. Mọi giao dịch xuất thuốc và báo hỏng đều được bảo chứng bất biến (Audit Log) bằng chữ ký băm mật mã SHA-256.
+
+\vspace{-0.3em}
+\subsection{Cải tiến công thái học lâm sàng và trải nghiệm giao diện người dùng (UI/UX)}
+\begin{itemize}[leftmargin=*, itemsep=0.12em, topsep=0.1em]
+    \item \textbf{Khử triệt để lỗi cuộn kép (Double Scroll):} Trên máy tính, toàn bộ bảng dữ liệu được ghim tiêu đề cố định (\texttt{sticky header}), chiều cao dòng gọn gàng, hiển thị trọn vẹn màn hình 14-inch mà không cần dùng con lăn chuột.
+    \item \textbf{Bảng màu Clean Clinical SaaS:} Tông xanh Teal y tế dịu mắt (\texttt{teal-600}), phân ranh giới rõ ràng, không gây chói mắt và mỏi thị giác cho nhân viên y tế trong ca trực đêm.
+    \item \textbf{Thiết kế theo vai trò (Role-based) trên điện thoại:} Chuyển bảng sang danh sách thẻ chạm (Card List) vuốt mượt mà; thanh điều hướng đáy (Bottom Bar) chuẩn công thái học thao tác bằng ngón cái.
+\end{itemize}
+
+\vspace{-0.3em}
+\subsection{Kế hoạch trọng tâm Tuần 4 (Chuẩn bị bảo vệ đồ án tốt nghiệp)}
+\begin{enumerate}[leftmargin=*, itemsep=0.12em, topsep=0.1em]
+    \item \textbf{Kịch bản Live Demo bảo vệ:} Hoàn thiện kịch bản 15 phút với 3 ca lâm sàng thực tế: Cấp cứu xuất thuốc gây nghiện ban đêm, Cảnh báo mất điện tủ vắc xin, và Quét QR máy thở mượn chéo lệch khoa.
+    \item \textbf{Đóng gói bàn giao sản phẩm:} Hoàn thiện mã nguồn mở trên GitHub, đóng gói Docker container và in ấn cẩm nang nghiệp vụ y tế phục vụ Hội đồng chấm thi.
+\end{enumerate}
 
 \vspace{0.4em}
-\section{Hệ thống sơ đồ quy trình nghiệp vụ chi tiết}
-
-Nhằm giúp hội đồng chấm thi và các bên liên quan dễ dàng nắm bắt logic vận hành của hệ thống mà không bị bối rối bởi thuật ngữ công nghệ, 5 luồng quy trình nghiệp vụ chính của bệnh viện được mô hình hóa trực quan và phân tích chi tiết dưới đây. Mỗi sơ đồ đều thể hiện đầy đủ các nhánh rẽ quyết định lâm sàng và cơ chế xử lý ngoại lệ theo đúng quy định của Bộ Y tế.
-
-\newpage
-
-\subsection{Quy trình quản lý thuốc tủ trực và thu hồi vỏ thuốc gây nghiện}
-
-Tủ thuốc cấp cứu tại khoa lâm sàng được thiết lập theo Thông tư 22/2011/TT-BYT và Thông tư 20/2017/TT-BYT. Tủ thuốc luôn phải bảo đảm có sẵn một cơ số thuốc cố định để kịp thời cứu người bệnh nguy kịch. Từng ống thuốc giảm đau gây nghiện (Morphin, Fentanyl) đều phải được kiểm soát nghiêm ngặt: lấy ra một ống thì phải thu lại đúng một vỏ rỗng. Nếu bác sĩ chỉ định miệng mà quên ký hồ sơ bệnh án, cơ quan Bảo hiểm y tế sẽ từ chối chi trả và bệnh viện sẽ bắt kíp trực tự bỏ tiền túi ra đền.
-
-\begin{center}
-\begin{tikzpicture}[every node/.style={scale=0.88}]
-    \node (s1) [widestep] {\textbf{Bước 1: Tiếp nhận y lệnh cấp cứu}\\Bác sĩ khám bệnh nhân đa chấn thương nguy kịch, ra y lệnh tiêm Morphin 10mg tĩnh mạch.};
-    
-    \node (dec1) [decision, below=0.5cm of s1] {Hệ thống CDSS kiểm tra an toàn?};
-    
-    \node (cdss_warn) [halfcrit, below left=0.6cm and 0.3cm of dec1.south] {\textbf{Cảnh báo ĐỎ CDSS:}\\Phát hiện quá liều hoặc tương tác thuốc. Bác sĩ duyệt vượt rào cản + chuẩn bị Naloxone.};
-    
-    \node (cdss_ok) [halfstep, below right=0.6cm and 0.3cm of dec1.south] {\textbf{An toàn bình thường:}\\Không phát hiện quá liều hay tương tác thuốc có hại, cho phép mở tủ lấy thuốc.};
-    
-    \coordinate (merge1) at ($(cdss_warn.south)!0.5!(cdss_ok.south) + (0,-0.3)$);
-    
-    \node (s2) [widestep, below=0.4cm of merge1] {\textbf{Bước 2: Mở khóa tủ trực lấy thuốc tiêm}\\Điều dưỡng trực mở ngăn thuốc gây nghiện có khóa, lấy ống Morphin, bẻ ống và tiêm chậm dưới sự giám sát trực tiếp.};
-    
-    \node (dec2) [decision, below=0.5cm of s2] {Tình trạng vỏ ống thủy tinh sau tiêm?};
-    
-    \node (amp_ok) [halfstep, below left=0.6cm and 0.3cm of dec2.south] {\textbf{Vỏ rỗng nguyên vẹn:}\\Thu gom vỏ ống rỗng cho vào khay đối soát chuẩn bị bàn giao cho Kho Dược.};
-    
-    \node (amp_brk) [halfalert, below right=0.6cm and 0.3cm of dec2.south] {\textbf{Vô ý làm rơi vỡ vỏ ống:}\\Thu nhặt toàn bộ mảnh vỡ + Lập biên bản làm vỡ tại chỗ (Bác sĩ \& Điều dưỡng ký kép).};
-    
-    \coordinate (merge2) at ($(amp_ok.south)!0.5!(amp_brk.south) + (0,-0.3)$);
-    
-    \node (s3) [widestep, below=0.4cm of merge2] {\textbf{Bước 3: Giao ban ca trực \& Kho Dược cấp bù cơ số}\\07:00 AM đối soát số thuốc dùng và nợ vỏ rỗng. Kho Dược kiểm tra hồ sơ bệnh án rồi xuất trả đủ 100\% cơ số.};
-
-    \draw [flowarrow] (s1) -- (dec1);
-    \draw [flowarrow] (dec1.west) -- ++(-0.5,0) |- node[near start, left, font=\footnotesize, text=medred] {Có rủi ro} (cdss_warn.north);
-    \draw [flowarrow] (dec1.east) -- ++(0.5,0) |- node[near start, right, font=\footnotesize, text=teal] {An toàn} (cdss_ok.north);
-    \draw [thick, draw=linegray] (cdss_warn.south) -- ++(0,-0.2) -| (merge1);
-    \draw [thick, draw=linegray] (cdss_ok.south) -- ++(0,-0.2) -| (merge1);
-    \draw [flowarrow] (merge1) -- (s2.north);
-    \draw [flowarrow] (s2) -- (dec2);
-    \draw [flowarrow] (dec2.west) -- ++(-0.5,0) |- node[near start, left, font=\footnotesize, text=teal] {Nguyên vẹn} (amp_ok.north);
-    \draw [flowarrow] (dec2.east) -- ++(0.5,0) |- node[near start, right, font=\footnotesize, text=medamber] {Bị rơi vỡ} (amp_brk.north);
-    \draw [thick, draw=linegray] (amp_ok.south) -- ++(0,-0.2) -| (merge2);
-    \draw [thick, draw=linegray] (amp_brk.south) -- ++(0,-0.2) -| (merge2);
-    \draw [flowarrow] (merge2) -- (s3.north);
-\end{tikzpicture}
-\end{center}
-
-\newpage
-
-\subsection{Quy trình giám sát chuỗi lạnh vắc xin và xử lý sự cố quá nhiệt}
-
-Vắc xin và huyết thanh kháng độc tố bắt buộc phải được bảo quản liên tục trong dải nhiệt độ từ $2^\circ\text{C}$ đến $8^\circ\text{C}$ theo tiêu chuẩn thực hành tốt bảo quản thuốc (Thông tư 36/2018/TT-BYT). Nếu tủ lạnh bị mất điện hoặc hỏng rơ-le làm nhiệt độ tăng quá mức hoặc tụt xuống dưới $0^\circ\text{C}$ làm đông băng, thuốc sẽ bị biến chất và gây nguy hiểm tính mạng khi tiêm.
-
-\begin{center}
-\begin{tikzpicture}[every node/.style={scale=0.88}]
-    \node (c1) [widestep] {\textbf{Bước 1: Cảm biến IoT tự ghi nhiệt độ 24/7}\\Đầu dò điện tử đo nhiệt độ buồng lạnh theo từng phút và lưu vào sổ điện tử, loại bỏ việc ghi chép bù số liệu khống.};
-    
-    \node (cdec1) [decision, below=0.5cm of c1] {Nhiệt độ có trong dải an toàn $2^\circ\text{C} - 8^\circ\text{C}$?};
-    
-    \node (c_norm) [halfstep, below left=0.6cm and 0.3cm of cdec1.south] {\textbf{Nhiệt độ ổn định:}\\Ghi nhận chỉ số bình thường, tính toán nhiệt độ động học MKT để kiểm soát chất lượng lâu dài.};
-    
-    \node (c_alert) [halfcrit, below right=0.6cm and 0.3cm of cdec1.south] {\textbf{Quá nhiệt ($>8^\circ\text{C}$ hoặc mất điện):}\\Phát còi báo động tại chỗ, gửi tin nhắn khẩn cho dược sĩ và kích hoạt chuyển sang hòm lạnh đá gel.};
-    
-    \coordinate (cmerge1) at ($(c_norm.south)!0.5!(c_alert.south) + (0,-0.3)$);
-    
-    \node (c2) [widestep, below=0.4cm of cmerge1] {\textbf{Bước 2: Kiểm tra nhãn chỉ thị đông băng (VVM) trên lọ vắc xin}\\Dược sĩ kiểm tra sự đổi màu của ô vuông chỉ thị nhiệt độ tích lũy nằm trên nhãn từng lọ thuốc.};
-    
-    \node (cdec2) [decision, below=0.5cm of c2] {Trạng thái ô vuông chỉ thị nhiệt độ VVM?};
-    
-    \node (vvm_ok) [halfstep, below left=0.6cm and 0.3cm of cdec2.south] {\textbf{Ô vuông sáng hơn vòng tròn:}\\Vắc xin chưa bị tích lũy nhiệt quá ngưỡng, được phép chuyển về tủ lạnh an toàn để tiếp tục dùng.};
-    
-    \node (vvm_bad) [halfcrit, below right=0.6cm and 0.3cm of cdec2.south] {\textbf{Ô vuông tối màu bằng hoặc hơn:}\\Vắc xin đã biến chất. Chuyển ngay vào KHU VỰC CÁCH LY, dán tem niêm phong chờ Hội đồng hủy.};
-    
-    \coordinate (cmerge2) at ($(vvm_ok.south)!0.5!(vvm_bad.south) + (0,-0.3)$);
-    
-    \node (c3) [widestep, below=0.4cm of cmerge2] {\textbf{Bước 3: Hoàn tất đối soát và bảo đảm an toàn sinh học}\\Cập nhật nhật ký dây chuyền lạnh, tuyệt đối không để lẫn thuốc nghi ngờ hỏng vào tủ sử dụng thường quy.};
-
-    \draw [flowarrow] (c1) -- (cdec1);
-    \draw [flowarrow] (cdec1.west) -- ++(-0.5,0) |- node[near start, left, font=\footnotesize, text=teal] {Ổn định} (c_norm.north);
-    \draw [flowarrow] (cdec1.east) -- ++(0.5,0) |- node[near start, right, font=\footnotesize, text=medred] {Sự cố} (c_alert.north);
-    \draw [thick, draw=linegray] (c_norm.south) -- ++(0,-0.2) -| (cmerge1);
-    \draw [thick, draw=linegray] (c_alert.south) -- ++(0,-0.2) -| (cmerge1);
-    \draw [flowarrow] (cmerge1) -- (c2.north);
-    \draw [flowarrow] (c2) -- (cdec2);
-    \draw [flowarrow] (cdec2.west) -- ++(-0.5,0) |- node[near start, left, font=\footnotesize, text=teal] {Đạt chuẩn} (vvm_ok.north);
-    \draw [flowarrow] (cdec2.east) -- ++(0.5,0) |- node[near start, right, font=\footnotesize, text=medred] {Hỏng do nhiệt} (vvm_bad.north);
-    \draw [thick, draw=linegray] (vvm_ok.south) -- ++(0,-0.2) -| (cmerge2);
-    \draw [thick, draw=linegray] (vvm_bad.south) -- ++(0,-0.2) -| (cmerge2);
-    \draw [flowarrow] (cmerge2) -- (c3.north);
-\end{tikzpicture}
-\end{center}
-
-\newpage
-
-\subsection{Quy trình quản lý sự cố và kiểm định an toàn thiết bị y tế}
-
-Máy thở nhân tạo và máy sốc tim là trang thiết bị y tế có mức độ rủi ro cao (loại C và D theo Nghị định 98/2021/NĐ-CP). Các thiết bị này bắt buộc phải được kiểm định an toàn điện theo chuẩn quốc tế IEC 60601-1 trước khi dùng cho bệnh nhân. Khi xảy ra sự cố nứt vỡ hoặc rò khí, phải lập tức cách ly máy để bảo đảm an toàn.
-
-\begin{center}
-\begin{tikzpicture}[every node/.style={scale=0.88}]
-    \node (e1) [widestep] {\textbf{Bước 1: Máy thở báo lỗi rò rỉ khí hoặc tụt áp lực đường thở}\\Máy thở số 04 phòng hồi sức tích cực phát còi báo động khẩn cấp do bẫy nước bằng nhựa trên dây thở bị rạn nứt.};
-    
-    \node (e2) [widestep, below=0.4cm of e1] {\textbf{Bước 2: Cấp cứu bệnh nhân \& Treo biển cảnh báo đỏ ngừng dùng}\\Tháo máy thở, bóp bóng Ambu oxy 100\% chuyển sang máy thở dự phòng. Treo biển đỏ: \textit{``THIẾT BỊ HỎNG - NGỪNG SỬ DỤNG''}.};
-    
-    \node (edec) [decision, below=0.5cm of e2] {Kỹ sư kiểm tra tem an toàn IEC 60601-1 và phân loại lỗi?};
-    
-    \node (e_part) [halfstep, below left=0.6cm and 0.3cm of edec.south] {\textbf{Hao mòn linh kiện tiêu hao:}\\Nứt vỡ bẫy nước hoặc màng van. Xuất kho linh kiện dự phòng thay thế tại chỗ ngay trong 30 phút.};
-    
-    \node (e_hard) [halfcrit, below right=0.6cm and 0.3cm of edec.south] {\textbf{Hỏng bo mạch / Động cơ nén:}\\Lỗi kỹ thuật phức tạp. Lập biên bản mời kỹ sư chính hãng vào kiểm định và sửa chữa chuyên sâu.};
-    
-    \coordinate (emerge) at ($(e_part.south)!0.5!(e_hard.south) + (0,-0.3)$);
-    
-    \node (e3) [widestep, below=0.4cm of emerge] {\textbf{Bước 3: Thử tải trên phổi giả và đo dòng rò rỉ điện}\\Đo lường áp lực thông khí và kiểm tra an toàn điện y tế. Đạt chuẩn 100\% mới được tháo biển cảnh báo.};
-    
-    \node (e4) [widestep, below=0.4cm of e3] {\textbf{Bước 4: Bàn giao lại cho khoa Hồi sức cấp cứu trực chiến}\\Cập nhật nhật ký kỹ thuật máy thở trên phần mềm bệnh viện, sẵn sàng phục vụ người bệnh an toàn.};
-
-    \draw [flowarrow] (e1) -- (e2);
-    \draw [flowarrow] (e2) -- (edec);
-    \draw [flowarrow] (edec.west) -- ++(-0.5,0) |- node[near start, left, font=\footnotesize, text=teal] {Thay linh kiện} (e_part.north);
-    \draw [flowarrow] (edec.east) -- ++(0.5,0) |- node[near start, right, font=\footnotesize, text=medred] {Lỗi phức tạp} (e_hard.north);
-    \draw [thick, draw=linegray] (e_part.south) -- ++(0,-0.2) -| (emerge);
-    \draw [thick, draw=linegray] (e_hard.south) -- ++(0,-0.2) -| (emerge);
-    \draw [flowarrow] (emerge) -- (e3.north);
-    \draw [flowarrow] (e3) -- (e4);
-\end{tikzpicture}
-\end{center}
-
-\newpage
-
-\subsection{Quy trình kiểm kê quét mã QR, điều chuyển và thanh lý tài sản công}
-
-Thực hiện kiểm kê tài sản cuối năm theo Nghị định 151/2017/NĐ-CP và Thông tư 23/2023/TT-BTC. Máy móc y tế trong bệnh viện công là tài sản Nhà nước, việc tự ý mang máy từ khoa này sang khoa khác dùng chung mà không làm giấy tờ sẽ dẫn đến sai lệch sổ sách nghiêm trọng.
-
-\begin{center}
-\begin{tikzpicture}[every node/.style={scale=0.88}]
-    \node (s1) [widestep] {\textbf{Bước 1: Quét mã QR kiểm kê trên thân thiết bị}\\Đoàn kiểm kê đọc thông tin mã tài sản, số máy, khoa phòng đăng ký trên sổ sách và năm đưa vào sử dụng.};
-    
-    \node (dec) [decision, below=0.5cm of s1] {Khoa thực tế có trùng với sổ sách kế toán?};
-    
-    \node (left) [halfstep, below left=0.6cm and 0.3cm of dec.south] {\textbf{Trường hợp A: Trùng khớp vị trí}\\Xác nhận trên phần mềm: Thiết bị đã được đối soát đúng vị trí sổ sách kế toán.};
-    
-    \node (right) [halfalert, below right=0.6cm and 0.3cm of dec.south] {\textbf{Trường hợp B: Lệch khoa phòng}\\Phát hiện máy mượn chéo không báo. Tạo ngay Biên bản bàn giao điều chuyển nội bộ để hai trưởng khoa ký duyệt điện tử.};
-    
-    \coordinate (merge) at ($(left.south)!0.5!(right.south) + (0,-0.3)$);
-    
-    \node (s3) [widestep, below=0.4cm of merge] {\textbf{Bước 2: Đánh giá tỷ lệ hao mòn tài sản}\\Xác định số năm vận hành thực tế. Nếu máy sử dụng $>8-10$ năm, hao mòn 100\% và hỏng nặng: lập tờ trình đề xuất thanh lý.};
-    
-    \node (s4) [widestep, below=0.4cm of s3] {\textbf{Bước 3: Quyết định thanh lý thuộc thẩm quyền Giám đốc Bệnh viện}\\Theo Nghị định 151/2017/NĐ-CP, chỉ có Giám đốc Bệnh viện mới có thẩm quyền ký quyết định thanh lý tài sản Nhà nước.};
-
-    \draw [flowarrow] (s1) -- (dec);
-    \draw [flowarrow] (dec.west) -- ++(-0.5,0) |- node[near start, left, font=\footnotesize, text=teal] {Có (Khớp)} (left.north);
-    \draw [flowarrow] (dec.east) -- ++(0.5,0) |- node[near start, right, font=\footnotesize, text=medamber] {Không (Lệch)} (right.north);
-    \draw [thick, draw=linegray] (left.south) -- ++(0,-0.2) -| (merge);
-    \draw [thick, draw=linegray] (right.south) -- ++(0,-0.2) -| (merge);
-    \draw [flowarrow] (merge) -- (s3.north);
-    \draw [flowarrow] (s3) -- (s4);
-\end{tikzpicture}
-\end{center}
-
-\newpage
-
-\subsection{Kiến trúc phân tầng trợ lý AI lâm sàng và hệ thống cảnh báo an toàn}
-
-Hệ thống trợ lý ảo được xây dựng với nguyên tắc chạy độc lập được kể cả khi mất mạng Internet (chế độ ngoại tuyến), bảo đảm tốc độ phản hồi 0 giây và luôn luôn kiểm tra an toàn tính mạng người bệnh trước khi cho phép xuất thuốc.
-
-\begin{center}
-\begin{tikzpicture}[every node/.style={scale=0.88}]
-    \node (ai1) [widestep] {\textbf{Tầng 1: Kênh tiếp nhận yêu cầu người dùng}\\Bác sĩ và điều dưỡng nhập liệu bằng câu lệnh tự nhiên, gõ từ viết tắt y khoa (như gõ ``THA'' để điền Tăng huyết áp) hoặc tải lên ảnh chụp hóa đơn giao nhận thuốc bằng camera.};
-    
-    \node (ai2) [widestep, below=0.4cm of ai1] {\textbf{Tầng 2: Bộ lọc quy tắc ngoại tuyến \& Nhận diện ý định (0ms)}\\Bóc tách tức thì tên thuốc, số lượng cần dùng, khoa phòng yêu cầu mà không cần gửi dữ liệu ra máy chủ bên ngoài, bảo đảm tốc độ và bảo mật thông tin người bệnh.};
-    
-    \node (aidec) [decision, below=0.5cm of ai2] {Rào chắn an toàn CDSS phát hiện rủi ro tính mạng?};
-    
-    \node (ai_crit) [halfcrit, below left=0.6cm and 0.3cm of aidec.south] {\textbf{Cảnh báo ĐỎ nguy kịch:}\\Quá liều Morphin $\ge 30\text{mg}$, tương tác ngừng thở Morphin + Diazepam, tiêm trực tiếp KCl 10\%. Yêu cầu duyệt vượt rào cản.};
-    
-    \node (ai_safe) [halfstep, below right=0.6cm and 0.3cm of aidec.south] {\textbf{Chỉ định an toàn hợp lệ:}\\Đúng liều lượng khuyến cáo, không có tương tác thuốc nguy hiểm, tự động tạo thẻ xác nhận thao tác.};
-    
-    \coordinate (aimerge) at ($(ai_crit.south)!0.5!(ai_safe.south) + (0,-0.3)$);
-    
-    \node (ai3) [widestep, below=0.4cm of aimerge] {\textbf{Tầng 4: Tạo thẻ xác nhận thao tác và xác thực mã PIN cá nhân}\\Hiển thị thẻ tóm tắt y lệnh trực quan, yêu cầu nhân viên y tế nhập mã số PIN cá nhân để ký duyệt điện tử trước khi ghi nhận.};
-    
-    \node (ai4) [widestep, below=0.4cm of ai3] {\textbf{Tầng 5: Ghi nhận cơ sở dữ liệu \& Đồng bộ giao diện tức thì}\\Cập nhật số nợ tủ trực, trừ tồn kho FEFO, thay đổi trạng thái máy hỏng và lưu vết nhật ký kiểm toán không thể sửa xóa.};
-
-    \draw [flowarrow] (ai1) -- (ai2);
-    \draw [flowarrow] (ai2) -- (aidec);
-    \draw [flowarrow] (aidec.west) -- ++(-0.5,0) |- node[near start, left, font=\footnotesize, text=medred] {Có rủi ro} (ai_crit.north);
-    \draw [flowarrow] (aidec.east) -- ++(0.5,0) |- node[near start, right, font=\footnotesize, text=teal] {An toàn} (ai_safe.north);
-    \draw [thick, draw=linegray] (ai_crit.south) -- ++(0,-0.2) -| (aimerge);
-    \draw [thick, draw=linegray] (ai_safe.south) -- ++(0,-0.2) -| (aimerge);
-    \draw [flowarrow] (aimerge) -- (ai3.north);
-    \draw [flowarrow] (ai3) -- (ai4);
-\end{tikzpicture}
-\end{center}
-
-\newpage
-
-\section{Mô tả chi tiết kỹ thuật và dữ liệu trực quan}
-
-Để thuận tiện cho việc phát triển phần mềm và đối soát dữ liệu bệnh viện, các trường thông tin chính được giải thích chi tiết dưới đây bằng ngôn từ nghiệp vụ thực tế.
-
-\subsection{Bảng mô tả dữ liệu thuốc và vật tư y tế}
-
-Căn cứ theo Thông tư 22/2011/TT-BYT và Thông tư 20/2017/TT-BYT, dữ liệu thuốc tại tủ trực cấp cứu được cấu trúc chặt chẽ để vừa phục vụ y lệnh khẩn cấp, vừa bảo đảm truy vết từng vỏ ống thuốc gây nghiện:
-
-\begin{center}
-\small
-\begin{tabularx}{\textwidth}{L{2.5cm} L{3.5cm} L{3.2cm} Y}
-\toprule
-\textbf{Tên trường} & \textbf{Ý nghĩa thực tế} & \textbf{Ví dụ dữ liệu} & \textbf{Quy tắc kiểm soát bắt buộc} \\
-\midrule
-Mã định danh & Mã số quản lý trên phần mềm & \texttt{med-001} & Duy nhất, không được trùng lặp giữa các mặt hàng. \\
-\midrule
-Mã hoạt chất & Mã thuốc theo quy định Bộ Y tế & \texttt{MOR-10MG} & Dùng làm căn cứ thanh toán với Bảo hiểm y tế. \\
-\midrule
-Tên thuốc & Tên thương mại và hàm lượng & Morphin sulfat 10mg & Bắt buộc có hàm lượng để tránh tiêm nhầm liều lượng. \\
-\midrule
-Nhóm quản lý & Phân loại tính chất thuốc & Thuốc gây nghiện & Bắt buộc phải cất trong ngăn tủ có khóa riêng biệt. \\
-\midrule
-Định mức tủ trực & Số lượng chuẩn cần duy trì & 10 ống & Số lượng luôn luôn phải có đủ trong tủ cấp cứu. \\
-\midrule
-Tồn thực tế & Số lượng hiện tại còn trong tủ & 8 ống & Số lượng giảm phản ánh số thuốc đã lấy ra cấp cứu. \\
-\midrule
-Số nợ ca trực & Số lượng đã dùng trong đêm & 2 ống & Căn cứ để sáng hôm sau làm phiếu xin cấp bù lại. \\
-\midrule
-Vỏ rỗng cần thu & Số vỏ ống thủy tinh phải nộp & 2 vỏ & Lấy ra bao nhiêu ống thì phải thu lại bấy nhiêu vỏ rỗng. \\
-\midrule
-Số lô sản xuất & Ký hiệu lô của nhà sản xuất & \texttt{L-241008} & Dùng để truy vết khi có thông báo thu hồi thuốc hỏng. \\
-\midrule
-Hạn sử dụng & Ngày hết hạn dùng của thuốc & 31/12/2026 & Ưu tiên xuất dùng lô nào hết hạn trước để tránh lãng phí. \\
-\midrule
-Nhiệt độ bảo quản & Điều kiện giữ chất lượng thuốc & $2^\circ\text{C} - 8^\circ\text{C}$ & Tủ vắc xin bắt buộc phải có cảm biến tự ghi liên tục. \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-\newpage
-
-\subsection{Bảng mô tả dữ liệu trang thiết bị y tế}
-
-Trang thiết bị y tế trong bệnh viện công lập là tài sản Nhà nước được quản lý nghiêm ngặt theo Nghị định 98/2021/NĐ-CP và Thông tư 23/2023/TT-BTC. Mỗi thiết bị gắn một mã QR định danh duy nhất để đối soát thực tế so với sổ sách kế toán, đồng thời theo dõi lịch kiểm định an toàn điện và tỷ lệ hao mòn tài sản:
-
-\begin{center}
-\small
-\begin{tabularx}{\textwidth}{L{2.5cm} L{3.5cm} L{3.2cm} Y}
-\toprule
-\textbf{Tên trường} & \textbf{Ý nghĩa thực tế} & \textbf{Ví dụ dữ liệu} & \textbf{Quy tắc kiểm soát bắt buộc} \\
-\midrule
-Mã tài sản QR & Mã vạch in trên tem dán ở thân máy & \texttt{TS-VEN-2021-004} & Quét mã này để kiểm kê nhanh vị trí và nguồn gốc máy. \\
-\midrule
-Số máy chính hãng & Số máy từ nhà sản xuất & \texttt{SN-PB840-9921} & Dùng để liên hệ hãng khi cần bảo hành hoặc mua linh kiện. \\
-\midrule
-Tên thiết bị & Tên chuyên môn của máy & Máy thở chức năng cao & Thiết bị hỗ trợ hô hấp xâm nhập cho bệnh nhân nặng. \\
-\midrule
-Mức độ rủi ro & Phân loại theo Nghị định 98 & Loại D (Rủi ro rất cao) & Thiết bị can thiệp sự sống, kiểm định kỹ thuật khắt khe. \\
-\midrule
-Khoa trên sổ sách & Khoa phòng quản lý theo kế toán & Khoa Gây mê Hồi sức & Nơi đăng ký ban đầu trong hồ sơ tài sản Nhà nước. \\
-\midrule
-Khoa thực tế & Vị trí thực tế khi đi kiểm kê & Khoa Cấp cứu & Nếu khác sổ sách thì hệ thống bật cờ lệch khoa phòng. \\
-\midrule
-Số năm sử dụng & Thời gian máy đã hoạt động & 8 năm & Căn cứ để tính mức độ hao mòn và khấu hao tài sản. \\
-\midrule
-Tỷ lệ hao mòn & Tỷ lệ khấu hao giá trị máy & 80\% & Dựa theo Thông tư 23/2023/TT-BTC của Bộ Tài chính. \\
-\midrule
-Hạn kiểm định & Trạng thái an toàn điện & Còn hiệu lực & Phải kiểm định an toàn điện định kỳ chuẩn IEC 60601-1. \\
-\midrule
-Tình trạng máy & Hiện trạng hoạt động & Đang gặp sự cố & Treo biển cảnh báo ngừng dùng ngay khi máy có lỗi rò khí. \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-\vspace{0.2em}
-\noindent Ba quy tắc kỹ thuật trọng yếu được hệ thống tự động hóa:
-\begin{itemize}[leftmargin=*, itemsep=0.15em]
-    \item \textbf{Khóa an toàn khi quá hạn kiểm định:} Tự động đổi trạng thái máy sang màu vàng cảnh báo khi còn dưới 15 ngày, và khóa phân công lâm sàng khi quá hạn kiểm định chuẩn IEC 60601-1.
-    \item \textbf{Cơ chế nhãn LOTO (Lockout/Tagout):} Ngay khi ghi nhận sự cố rò khí máy thở, hệ thống phát lệnh in tem đỏ cách ly và đánh dấu cờ bảo trì trên bản đồ khoa phòng trực quan.
-    \item \textbf{Biên bản điều chuyển điện tử:} Mọi hành vi mượn chéo máy giữa Hồi sức cấp cứu và Gây mê phẫu thuật đều bắt buộc ký số xác nhận của cả hai điều dưỡng trưởng khoa.
-\end{itemize}
-
-\newpage
-
-\subsection{Quy tắc cảnh báo an toàn người bệnh trong dùng thuốc}
-
-Hệ thống hỗ trợ ra quyết định lâm sàng (CDSS) được thiết kế theo khuyến cáo an toàn của Tổ chức Y tế Thế giới (WHO) và Bộ Y tế, tập trung kiểm soát các nhóm nguy cơ cao nhất:
-
-\begin{enumerate}[leftmargin=*, itemsep=0.2em]
-    \item \textbf{Cảnh báo quá liều thuốc giảm đau gây nghiện:}
-    \begin{itemize}[leftmargin=*, itemsep=0.05em]
-        \item \textit{Ngưỡng kích hoạt:} Khi y lệnh tiêm Morphin từ 30mg trở lên hoặc Fentanyl từ 100mcg trở lên trong một lần chỉ định.
-        \item \textit{Hậu quả nguy hiểm:} Làm tê liệt trung tâm điều khiển nhịp thở ở não, khiến bệnh nhân ngừng thở và tử vong sau vài phút.
-        \item \textit{Cách xử lý của phần mềm:} Bật hộp thoại cảnh báo đỏ khẩn cấp, yêu cầu bác sĩ trưởng kíp trực duyệt vượt rào cản và tự động nhắc nhở chuẩn bị sẵn thuốc giải độc Naloxone 0.4mg.
-    \end{itemize}
-
-    \item \textbf{Cảnh báo tương tác thuốc nguy hiểm làm ngừng thở (DDI):}
-    \begin{itemize}[leftmargin=*, itemsep=0.05em]
-        \item \textit{Ngưỡng kích hoạt:} Kê đồng thời thuốc giảm đau gây nghiện (Morphin) cùng với thuốc an thần nhóm Diazepam hoặc Midazolam.
-        \item \textit{Hậu quả nguy hiểm:} Hai thuốc cộng gộp tác dụng ức chế hệ thần kinh trung ương và tụt huyết áp nghiêm trọng.
-        \item \textit{Cách xử lý của phần mềm:} Cảnh báo mức độ nguy kịch, khuyến cáo dùng cách nhau ít nhất 4 giờ và gắn máy đo $\text{SpO}_2$ liên tục.
-    \end{itemize}
-
-    \item \textbf{Chặn tuyệt đối tiêm tĩnh mạch trực tiếp dung dịch Kali Clorid 10\%:}
-    \begin{itemize}[leftmargin=*, itemsep=0.05em]
-        \item \textit{Ngưỡng kích hoạt:} Phát hiện chỉ định tiêm trực tiếp Kali Clorid 10\% vào tĩnh mạch của người bệnh.
-        \item \textit{Hậu quả nguy hiểm:} Làm tăng vọt nồng độ kali máu, khiến cơ tim rung giật và ngừng đập ngay lập tức trên bàn tiêm.
-        \item \textit{Cách xử lý của phần mềm:} Hệ thống khóa cứng thao tác, bắt buộc phải pha loãng vào chai dịch truyền và kiểm soát tốc độ qua máy truyền dịch.
-    \end{itemize}
-
-    \item \textbf{Cảnh báo dị ứng chéo kháng sinh Beta-lactam:}
-    \begin{itemize}[leftmargin=*, itemsep=0.05em]
-        \item \textit{Ngưỡng kích hoạt:} Bệnh nhân có tiền sử sốc phản vệ với Penicillin, bác sĩ chỉ định dùng Cephalosporin thế hệ 1.
-        \item \textit{Hậu quả nguy hiểm:} Phản ứng miễn dịch chéo gây co thắt phế quản cấp tính, sốc phản vệ đe dọa tính mạng.
-        \item \textit{Cách xử lý của phần mềm:} Cảnh báo đỏ nhấp nháy trên đầu bệnh án điện tử, gợi ý đổi sang nhóm Macrolid hoặc Quinolon.
-    \end{itemize}
-\end{enumerate}
-
-\newpage
-
-\subsection{Tính năng gõ tắt lâm sàng và tự động gợi ý mã bệnh}
-
-Nhằm giúp các bác sĩ giảm bớt việc phải gõ bàn phím quá nhiều và tránh sai sót khi làm bệnh án điện tử, hệ thống tích hợp bộ gõ tắt thông minh kèm gợi ý mã chuẩn ICD-10:
-
-\begin{center}
-\small
-\begingroup
-\setstretch{1.08}
-\renewcommand{\arraystretch}{1.08}
-\setlength{\tabcolsep}{4.5pt}
-\begin{tabularx}{\textwidth}{C{2.0cm} L{6.0cm} C{2.5cm} Y}
-\toprule
-\textbf{Từ gõ tắt} & \textbf{Tên bệnh đầy đủ tự động điền} & \textbf{Mã bệnh ICD-10} & \textbf{Gợi ý hỗ trợ kèm theo} \\
-\midrule
-\texttt{THA} & Tăng huyết áp vô căn (nguyên phát) & \textbf{I10} & Tự động nhắc đo huyết áp định kỳ 2 lần mỗi ngày. \\
-\midrule
-\texttt{DTD2} & Đái tháo đường không phụ thuộc insulin & \textbf{E11} & Tự động gợi ý kiểm tra đường huyết lúc đói. \\
-\midrule
-\texttt{NKHH} & Nhiễm khuẩn đường hô hấp trên cấp tính & \textbf{J06} & Hạn chế kê đơn kháng sinh bừa bãi khi do vi-rút. \\
-\midrule
-\texttt{HCVC} & Hội chứng mạch vành cấp tính & \textbf{I20.0} & Tự động nhắc làm điện tâm đồ và xét nghiệm men tim. \\
-\midrule
-\texttt{ROLO} & Rối loạn chuyển hóa chất béo trong máu & \textbf{E78} & Đi kèm lời dặn chế độ ăn giảm dầu mỡ. \\
-\midrule
-\texttt{STT} & Suy thận giai đoạn cuối & \textbf{N18.5} & Tự động cảnh báo giảm liều lượng các loại thuốc kháng sinh. \\
-\bottomrule
-\end{tabularx}
-\endgroup
-\end{center}
-
-\vspace{0.2em}
-\noindent Ba trụ cột thiết kế bệnh án điện tử (EHR) thông minh theo phản hồi từ bác sĩ chuyên khoa:
-\begin{itemize}[leftmargin=*, itemsep=0.2em]
-    \item \textbf{Gõ tắt từ ngữ y khoa (Clinical Macros):} Bác sĩ chỉ cần gõ 2--4 ký tự viết tắt thông dụng, hệ thống tự động điền đầy đủ tên bệnh danh chuẩn kèm mã ICD-10, giúp giảm 75\% thời gian nhập liệu trong ca trực cấp cứu căng thẳng.
-    \item \textbf{Gợi ý gói y lệnh theo bệnh cảnh (Order Sets):} Khi chọn mã ICD-10 tương ứng, phần mềm tự động đề xuất gói xét nghiệm cận lâm sàng chuẩn mực (ví dụ \texttt{I20.0}: đề xuất điện tâm đồ 12 chuyển đạo và xét nghiệm Troponin I), bảo đảm không bỏ sót chỉ định sống còn.
-    \item \textbf{Chuẩn hóa dữ liệu theo HL7 FHIR:} Toàn bộ thông tin chỉ định thuốc (tài nguyên \texttt{MedicationStatement}) và kết quả xét nghiệm (\texttt{Observation}) được mô hình hóa theo chuẩn FHIR R4, sẵn sàng kết nối liên thông với bệnh án điện tử quốc gia.
-\end{itemize}
-
-\newpage
-
-\section{Kết quả kiểm thử tự động toàn diện}
-
-Để chứng minh hệ thống hoạt động chính xác và không có lỗi phần mềm khi đưa vào bệnh viện, nhóm phát triển đã chạy bộ kiểm thử tự động gồm 45 kịch bản tại tệp mã nguồn kiểm thử \url{scripts/test_chatbot_suite.ts}:
-
-\begin{center}
-\small
-\begin{tabularx}{\textwidth}{C{1.4cm} L{3.3cm} C{1.8cm} Y C{1.8cm}}
-\toprule
-\textbf{Nhóm} & \textbf{Phân hệ kiểm thử} & \textbf{Số kịch bản} & \textbf{Tình huống đại diện kiểm thử} & \textbf{Kết quả} \\
-\midrule
-1 & Xuất cấp thuốc tủ trực & 9 kịch bản & Y lệnh Morphin, Fentanyl, Adrenalin, Diazepam, Lipid 20\%. & 9/9 Đạt \\
-\midrule
-2 & Rào chắn an toàn CDSS & 3 kịch bản & Quá liều 4 lọ Morphin, tương tác Morphin+Diazepam, tiêm KCl 10\%. & 3/3 Đạt \\
-\midrule
-3 & Bàn giao ca trực & 4 kịch bản & Đối soát ca trực đêm, giao ban sáng 07:00, tổng hợp nợ vỏ Morphin. & 4/4 Đạt \\
-\midrule
-4 & Sự cố thiết bị y tế & 8 kịch bản & Máy thở PB840 xì khí, máy sốc tim hỏng sạc, máy lọc máu chập nguồn. & 8/8 Đạt \\
-\midrule
-5 & Hạn dùng thuốc FEFO & 4 kịch bản & Thuốc cận hạn dưới 60 ngày, danh sách ưu tiên xuất kho trước. & 4/4 Đạt \\
-\midrule
-6 & Dự trù bù cơ số tủ trực & 4 kịch bản & Mặt hàng sắp hết, thuốc chạm ngưỡng min, lập phiếu bù Mẫu 01/TT22. & 4/4 Đạt \\
-\midrule
-7 & Dây chuyền lạnh vắc xin & 3 kịch bản & Nhiệt độ tủ lạnh $2^\circ\text{C}-8^\circ\text{C}$, mất điện quá nhiệt 11$^\circ$C, chỉ số MKT. & 3/3 Đạt \\
-\midrule
-8 & Sổ kiểm toán \& Pháp lý & 5 kịch bản & Toàn vẹn chuỗi hash SHA-256, Thông tư 20, Thông tư 51, Nghị định 98. & 5/5 Đạt \\
-\midrule
-9 & Nhận dạng hóa đơn OCR & 3 kịch bản & Bóc tách hóa đơn dược phẩm CPC1, hóa đơn VAT, phiếu giao hàng. & 3/3 Đạt \\
-\midrule
-10 & Điều hướng \& Chào hỏi & 2 kịch bản & Điều hướng xem tủ trực, chào hỏi trợ lý lâm sàng thông minh. & 2/2 Đạt \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-\noindent\textbf{Kết quả chung cuộc:} \textbf{45/45 kịch bản kiểm thử lâm sàng đều đạt kết quả xuất sắc (100\% Pass Rate), không phát sinh bất kỳ lỗi xung đột hay sai lệch dữ liệu nào.}
-
-\vspace{0.3em}
-\noindent Hai điểm đột phá công nghệ ghi nhận từ kết quả kiểm thử:
-\begin{itemize}[leftmargin=*, itemsep=0.2em]
-    \item \textbf{Tốc độ phản hồi tức thì (0ms):} Bộ lọc quy tắc ngoại tuyến tầng 1 xử lý trực tiếp các mẫu câu lâm sàng thông dụng ngay tại trình duyệt của nhân viên y tế mà không cần kết nối máy chủ đám mây, bảo đảm thao tác cấp cứu không bị trễ mạng.
-    \item \textbf{Bảo đảm tính toàn vẹn kiểm toán:} Toàn bộ lịch sử xuất thuốc, báo hỏng thiết bị và xử lý cảnh báo đỏ đều được gắn mã băm SHA-256 liên kết chuỗi thời gian, bảo đảm không thể can thiệp sửa xóa dữ liệu hồi tố theo quy định của pháp luật.
-\end{itemize}
-
-\newpage
-
-\section{Cải tiến công thái học giao diện người dùng}
-
-\begin{enumerate}[leftmargin=*, itemsep=0.4em]
-    \item \textbf{Loại bỏ việc cuộn màn hình thừa thãi trên máy tính bàn:} Trước đây, bảng theo dõi thiết bị hiển thị từng khối thẻ to chiếm nhiều diện tích, người dùng phải cuộn chuột qua nhiều trang màn hình. Nhóm đã chuyển đổi thành bảng dữ liệu thu gọn với chiều cao dòng vừa vặn (\texttt{py-2.5}) và thanh tiêu đề bảng cố định ở mép trên (\texttt{sticky top-0 z-10}). Nhờ vậy, một màn hình máy tính thông thường có thể nhìn thấy trọn vẹn 12 dòng dữ liệu mà không cần cuộn trang.
-    \item \textbf{Cỡ chữ to rõ và màu sắc dịu mắt:} Nâng cỡ chữ các thông tin quan trọng lên mức 14 đến 16 điểm, dùng gam màu xanh y tế mát mắt (\texttt{teal-600}), giúp nhân viên trực đêm không bị mỏi mắt khi làm việc kéo dài.
-    \item \textbf{Thao tác một chạm trên điện thoại:} Bổ sung thanh điều hướng dưới đáy màn hình điện thoại, các nút bấm có kích thước chuẩn $44\times44$ điểm, giúp điều dưỡng mang găng tay cao su vẫn bấm chính xác bằng một ngón tay cái.
-\end{enumerate}
-
-\section{Kế hoạch trọng tâm tuần tiếp theo}
-
-\begin{enumerate}[leftmargin=*, itemsep=0.3em]
-    \item \textbf{Chuẩn bị kịch bản trình chiếu bảo vệ đồ án:} Xây dựng bài nói 15 phút tập trung vào 3 câu chuyện lâm sàng thực tế nhất: ca cấp cứu tai nạn trong đêm, sự cố tủ vắc xin mất điện và buổi quét mã QR phát hiện máy mượn chéo giữa các khoa.
-    \item \textbf{In ấn hồ sơ và tài liệu nộp hội đồng:} Đóng tập bản báo cáo tuần 3 và cẩm nang đọc hiểu nghiệp vụ y tế bằng bản in chất lượng cao nộp cho thầy cô hướng dẫn và hội đồng chấm thi.
-    \item \textbf{Kiểm tra lần cuối hệ thống trực tuyến:} Bảo đảm ứng dụng trên trang web Vercel hoạt động thông suốt $100\%$ không bị gián đoạn.
-\end{enumerate}
-
-\vspace{1.2em}
 \noindent\rule{\textwidth}{0.4pt}
+\vspace{0.2em}
+
 \begin{center}
 \small
-\textit{Báo cáo được hoàn thành ngày 20 tháng 10 năm 2026 bởi Nhóm phát triển Hệ thống Lâm sàng và Quản trị Kho Dược.}
+\textit{Báo cáo tiến độ Tuần 3 được biên soạn và xác nhận hoàn thành bởi Nhóm Nghiên cứu và Phát triển Hệ thống Lâm sàng.}\\[0.15em]
+\textbf{Đại diện nhóm sinh viên thực hiện \quad\quad\quad\quad\quad\quad\quad Giảng viên hướng dẫn duyệt tiến độ}
 \end{center}
 
 \end{document}
