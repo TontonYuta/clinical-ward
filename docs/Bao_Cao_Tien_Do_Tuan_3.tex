@@ -2,10 +2,10 @@
 \usepackage[utf8]{vietnam}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{geometry}
-\geometry{top=1.6cm,bottom=1.6cm,left=1.6cm,right=1.6cm}
+\geometry{top=1.3cm,bottom=1.3cm,left=1.5cm,right=1.5cm}
 \usepackage{setspace}
-\setstretch{1.12}
-\setlength{\parskip}{0.28em}
+\setstretch{1.10}
+\setlength{\parskip}{0.25em}
 \usepackage{booktabs,tabularx,array,ragged2e}
 \usepackage{xcolor}
 \usepackage{enumitem}
@@ -35,9 +35,9 @@
 
 % Cấu hình khối sơ đồ TikZ
 \tikzset{
-    procbox/.style = {rectangle, draw=linegray, rounded corners=2pt, fill=blue!3, font=\small, align=center, inner sep=3pt, text width=#1},
-    alertbox/.style = {rectangle, draw=medred, rounded corners=2pt, fill=red!5, font=\small, align=center, inner sep=3pt, text width=#1},
-    tealbox/.style = {rectangle, draw=medteal, rounded corners=2pt, fill=teal!5, font=\small, align=center, inner sep=3pt, text width=#1},
+    procbox/.style = {rectangle, draw=linegray, rounded corners=2pt, fill=blue!3, font=\small, align=center, inner sep=2.5pt, text width=#1},
+    alertbox/.style = {rectangle, draw=medred, rounded corners=2pt, fill=red!5, font=\small, align=center, inner sep=2.5pt, text width=#1},
+    tealbox/.style = {rectangle, draw=medteal, rounded corners=2pt, fill=teal!5, font=\small, align=center, inner sep=2.5pt, text width=#1},
     decbox/.style = {diamond, draw=medblue, fill=blue!6, font=\small, align=center, inner sep=1pt, text width=#1, aspect=2.1},
     farrow/.style = {thick, -{Latex[length=2.2mm]}, draw=linegray}
 }
@@ -46,40 +46,40 @@
 
 % ==================== TRANG 1 ====================
 \begin{center}
-    {\Large\textbf{Báo cáo tiến độ tuần 3 — Đồ án tốt nghiệp 2}}\\[0.25em]
-    {\large\textbf{Hệ thống trợ lý lâm sàng, quản lý kho dược và thiết bị y tế bệnh viện}}\\[0.2em]
-    {\normalsize Sinh viên thực hiện: \textbf{Trần Huy Hoàng} \quad$\vert$\quad MSSV: \textbf{20237337} \quad$\vert$\quad Tháng 10/2026}\\[0.15em]
-    {\small Ứng dụng: \url{https://clinical-ward.vercel.app} \quad$\vert$\quad Mã nguồn: \url{https://github.com/TontonYuta/clinical-ward}}
+    {\Large\textbf{Báo cáo tiến độ tuần 3 — Đồ án 2}}\\[0.22em]
+    {\large\textbf{Hệ thống quản lý kho dược và thiết bị y tế trong bệnh viện kết hợp AI chatbot}}\\[0.18em]
+    {\normalsize Sinh viên thực hiện: \textbf{Trần Huy Hoàng} \quad$\vert$\quad MSSV: \textbf{20237337} \quad$\vert$\quad Tháng 10/2026}\\[0.12em]
+    {\small Prototype: \url{https://clinical-ward.vercel.app}}
 \end{center}
 
-\vspace{-0.5em}
+\vspace{-0.6em}
 \noindent\rule{\textwidth}{0.4pt}
-\vspace{-0.2em}
+\vspace{-0.25em}
 
-\section{Đặc thù ca trực cấp cứu bệnh viện \& Đặt vấn đề bài toán}
+\section{Đặt vấn đề}
 
 Trong ca trực cấp cứu ban đêm tại bệnh viện (từ 01:00 đến 04:00 sáng), người bệnh nhập viện trong tình trạng nguy kịch (sốc phản vệ, nhồi máu cơ tim, suy hô hấp). Khác hoàn toàn với mô hình kho hàng thương mại hay mua bán hàng hóa thông thường, hoạt động quản trị buồng bệnh cấp cứu bị chi phối bởi \textbf{ba yếu tố đặc thù}:
-\begin{itemize}[leftmargin=*, itemsep=0.1em, topsep=0.08em]
+\begin{itemize}[leftmargin=*, itemsep=0.08em, topsep=0.06em]
     \item \textbf{Cứu người trước, hoàn tất thủ tục sau:} Người bệnh đe dọa tính mạng không thể chờ đóng viện phí rồi Kho Dược mới phát thuốc. Điều dưỡng phải được phép rút khẩn cấp thuốc từ Tủ trực khoa lâm sàng để tiêm ngay, sau đó mới hợp thức hóa thủ tục bù cơ số sau.
-    \item \textbf{Kiểm soát ma túy y tế nghiêm ngặt:} Thuốc gây nghiện (Morphin, Fentanyl) có nguy cơ lạm dụng cao. Pháp luật y tế (Thông tư 20/2017/TT-BYT) quy định: \textit{"Phải nộp lại vỏ ống thuốc rỗng mới được cấp bù ống thuốc mới"}. Đầu ca nhận bao nhiêu ống, cuối ca bàn giao phải đủ bấy nhiêu.
-    \item \textbf{An toàn thiết bị can thiệp sự sống:} Máy móc y tế như máy thở hay máy sốc tim nếu gặp sự cố phải có quy trình khóa an toàn dứt khoát, tuyệt đối không để người khác dùng nhầm cho người bệnh.
+    \item \textbf{Kiểm soát thuốc ma túy y tế nghiêm ngặt:} Thuốc gây nghiện (Morphin, Fentanyl) có nguy cơ lạm dụng cao. Pháp luật y tế (Thông tư 20/2017/TT-BYT) quy định: \textit{"Phải nộp lại vỏ ống thuốc rỗng mới được cấp bù ống thuốc mới"}. Đầu ca nhận bao nhiêu ống, cuối ca bàn giao phải đủ bấy nhiêu.
+    \item \textbf{An toàn thiết bị can thiệp sự sống:} Máy móc y tế như máy thở hay máy sốc tim nếu gặp sự cố phải có quy trình khóa an toàn, tuyệt đối không để người khác dùng nhầm cho người bệnh.
 \end{itemize}
 
-\vspace{-0.2em}
-\section{Các quy trình nghiệp vụ lâm sàng qua tình huống thực tế}
+\vspace{-0.25em}
+\section{Các quy trình nghiệp vụ lâm sàng qua ví dụ thực tế}
 
-\subsection{Tình huống 1 (02:15 AM) — Mượn khẩn thuốc tủ trực \& Đối soát vỏ ống Morphin}
+\subsection{Tình huống 1 — Mượn khẩn thuốc tủ trực \& Đối soát vỏ ống thuốc gây nghiện}
 
-\textbf{Bối cảnh lâm sàng:} Lúc 02:15 sáng, người bệnh vào cấp cứu trong tình trạng sốc đau dữ dội do nhồi máu cơ tim cấp. Bác sĩ ra y lệnh tiêm khẩn cấp 01 ống Morphin 10mg/1ml. Quy trình luân chuyển thuốc và vỏ rỗng diễn ra qua 5 bước nghiêm ngặt theo Thông tư 20/2017/TT-BYT và Thông tư 22/2011/TT-BYT:
+\textbf{Bối cảnh:} Lúc 02:15 sáng, người bệnh vào cấp cứu trong tình trạng sốc đau dữ dội do nhồi máu cơ tim cấp. Bác sĩ ra y lệnh tiêm khẩn cấp 01 ống Morphin 10mg/1ml. Quy trình luân chuyển thuốc và vỏ rỗng diễn ra qua 5 bước nghiêm ngặt theo Thông tư 20/2017/TT-BYT và Thông tư 22/2011/TT-BYT:
 
 \vspace{-0.2em}
 \begin{center}
-\begin{tikzpicture}[node distance=0.32cm, auto]
-    \node (s1) [procbox=16.0cm] {\textbf{Bước 1: Bác sĩ ra y lệnh cấp cứu} --- Chỉ định tiêm Morphin 10mg/1ml trực tiếp vào bệnh án};
-    \node (s2) [tealbox=16.0cm, below=of s1] {\textbf{Bước 2: Điều dưỡng mở tủ trực lấy thuốc} --- Nhập mã PIN cá nhân, phần mềm trừ tồn kho và ghi nợ cơ số};
-    \node (s3) [procbox=16.0cm, below=of s2] {\textbf{Bước 3: Tiêm thuốc cho người bệnh} --- Điều dưỡng tiêm theo quy tắc 5 đúng, theo dõi giảm đau lâm sàng};
-    \node (s4) [alertbox=16.0cm, below=of s3] {\textbf{Bước 4: Thu hồi vỏ ống rỗng} --- Điều dưỡng giữ lại vỏ ống thủy tinh rỗng, hệ thống khóa nợ $1:1$};
-    \node (s5) [tealbox=16.0cm, below=of s4] {\textbf{Bước 5: Kho Dược cấp bù thuốc mới} --- Nộp đủ vỏ rỗng về Kho Dược; Kho Dược cấp bù ống mới để hoàn cơ số};
+\begin{tikzpicture}[node distance=0.28cm, auto]
+    \node (s1) [procbox=16.2cm] {\textbf{Bước 1: Bác sĩ ra y lệnh cấp cứu} --- Chỉ định tiêm Morphin 10mg/1ml trực tiếp vào bệnh án};
+    \node (s2) [tealbox=16.2cm, below=of s1] {\textbf{Bước 2: Điều dưỡng mở tủ trực lấy thuốc} --- Nhập mã PIN cá nhân, phần mềm trừ tồn kho và ghi nợ cơ số};
+    \node (s3) [procbox=16.2cm, below=of s2] {\textbf{Bước 3: Tiêm thuốc cho người bệnh} --- Điều dưỡng tiêm theo quy tắc 5 đúng, theo dõi giảm đau lâm sàng};
+    \node (s4) [alertbox=16.2cm, below=of s3] {\textbf{Bước 4: Thu hồi vỏ ống rỗng} --- Điều dưỡng giữ lại vỏ ống thủy tinh rỗng, hệ thống khóa nợ $1:1$};
+    \node (s5) [tealbox=16.2cm, below=of s4] {\textbf{Bước 5: Kho Dược cấp bù thuốc mới} --- Nộp đủ vỏ rỗng về Kho Dược; Kho Dược cấp bù ống mới để hoàn cơ số};
 
     \draw [farrow] (s1) -- (s2);
     \draw [farrow] (s2) -- (s3);
@@ -89,25 +89,25 @@ Trong ca trực cấp cứu ban đêm tại bệnh viện (từ 01:00 đến 04:
 \end{center}
 
 \vspace{-0.3em}
-\noindent\textbf{Quy tắc khóa an toàn vỏ ống (Ampoule Lockout):} Khi giao ban lúc 07:00 sáng, nếu thiếu vỏ ống Morphin đã dùng, phần mềm tự động khóa quyền xuất thuốc gây nghiện tiếp theo. Trường hợp điều dưỡng vô tình làm vỡ vỏ ống trong lúc bẻ nắp, theo Điều 15 Thông tư 20/2017, điều dưỡng phải thu gom các mảnh vỡ và lập \textit{Biên bản giải trình vỡ ống thuốc gây nghiện} có chữ ký của bác sĩ trực ca làm chứng, nộp về Kho Dược mới được mở khóa cấp bù.
+\noindent\textbf{Quy tắc an toàn khi xảy ra sự cố:} Khi giao ban lúc 07:00 sáng, nếu thiếu vỏ ống Morphin đã dùng, phần mềm tự động khóa quyền xuất thuốc gây nghiện tiếp theo. Trường hợp điều dưỡng vô tình làm vỡ vỏ ống trong lúc bẻ nắp, theo Điều 15 Thông tư 20/2017, điều dưỡng phải thu gom các mảnh vỡ và lập \textit{Biên bản giải trình vỡ ống thuốc gây nghiện} có chữ ký của bác sĩ trực ca làm chứng, nộp về Kho Dược mới được mở khóa cấp bù.
 
 \newpage
 % ==================== TRANG 2 ====================
-\subsection{Tình huống 2 (03:30 AM) — Sự cố máy thở buồng cấp cứu \& Khóa an toàn LOTO}
+\subsection{Tình huống 2 — Sự cố ở thiết bị cấp cứu \& Khóa an toàn}
 
-\textbf{Bối cảnh lâm sàng:} Lúc 03:30 sáng, máy thở PB840 tại buồng hồi sức báo lỗi xì khí bẫy nước và rách cảm biến oxy. Trong buồng bệnh cấp cứu, nếu máy hỏng để nguyên vị trí mà không có biển báo, kíp trực sau vào cấp cứu có thể nối nhầm máy hỏng cho bệnh nhân nguy kịch tiếp theo.
+\textbf{Bối cảnh:} Lúc 03:30 sáng, máy thở PB840 tại buồng hồi sức báo lỗi xì khí bẫy nước và rách cảm biến oxy. Trong buồng bệnh cấp cứu, nếu máy hỏng để nguyên vị trí mà không có biển báo, kíp trực sau vào cấp cứu có thể nối nhầm máy hỏng cho bệnh nhân nguy kịch tiếp theo.
 
 \noindent Do đó, phần mềm kích hoạt quy trình khóa an toàn \textbf{LOTO (Lockout / Tagout)} kết hợp đo kiểm an toàn điện y tế theo chuẩn quốc tế \textbf{IEC 60601-1} và Nghị định 98/2021/NĐ-CP:
 
 \vspace{-0.2em}
 \begin{center}
-\begin{tikzpicture}[node distance=0.32cm, auto]
-    \node (e1) [alertbox=16.0cm] {\textbf{Bước 1: Báo hỏng qua phần mềm} --- Điều dưỡng báo lỗi máy thở PB840; phần mềm chuyển máy sang trạng thái đỏ};
-    \node (e2) [alertbox=16.0cm, below=of e1] {\textbf{Bước 2: Khóa máy thực tế (LOTO)} --- Ngắt nguồn điện, dán biển cảnh báo đỏ: \textit{"MÁY ĐANG HỎNG — CẤM DÙNG"}};
-    \node (e3) [procbox=16.0cm, below=of e2] {\textbf{Bước 3: Phòng Thiết bị kiểm tra kỹ thuật} --- Kỹ sư BME thay linh kiện và đo kiểm an toàn điện IEC 60601-1};
-    \node (dec) [decbox=5.6cm, below=0.32cm of e3] {Dòng rò vỏ $< 100\mu\text{A}$ và\\đạt kín khí thử tải không?};
-    \node (pass) [tealbox=7.2cm, below left=0.42cm and -0.8cm of dec] {\textbf{SỬA ĐƯỢC \& ĐẠT CHUẨN:}\\Tháo biển cảnh báo, mở khóa trên app\\Hai bên ký biên bản đưa máy vào trực};
-    \node (fail) [alertbox=7.2cm, below right=0.42cm and -0.8cm of dec] {\textbf{KHÔNG SỬA ĐƯỢC / KHÔNG AN TOÀN:}\\Lập biên bản ngừng sử dụng vĩnh viễn\\Chuyển Hội đồng làm thủ tục thanh lý};
+\begin{tikzpicture}[node distance=0.28cm, auto]
+    \node (e1) [alertbox=16.2cm] {\textbf{Bước 1: Báo hỏng qua phần mềm} --- Điều dưỡng báo lỗi máy thở PB840; phần mềm chuyển máy sang trạng thái đỏ};
+    \node (e2) [alertbox=16.2cm, below=of e1] {\textbf{Bước 2: Khóa máy thực tế (LOTO)} --- Ngắt nguồn điện, dán biển cảnh báo đỏ: \textit{"MÁY ĐANG HỎNG — CẤM DÙNG"}};
+    \node (e3) [procbox=16.2cm, below=of e2] {\textbf{Bước 3: Phòng Thiết bị kiểm tra kỹ thuật} --- Kỹ sư BME thay linh kiện và đo kiểm an toàn điện IEC 60601-1};
+    \node (dec) [decbox=5.6cm, below=0.28cm of e3] {Dòng rò vỏ $< 100\mu\text{A}$ và\\đạt kín khí thử tải không?};
+    \node (pass) [tealbox=7.2cm, below left=0.38cm and -0.8cm of dec] {\textbf{SỬA ĐƯỢC \& ĐẠT CHUẨN:}\\Tháo biển cảnh báo, mở khóa trên app\\Hai bên ký biên bản đưa máy vào trực};
+    \node (fail) [alertbox=7.2cm, below right=0.38cm and -0.8cm of dec] {\textbf{KHÔNG SỬA ĐƯỢC / KHÔNG AN TOÀN:}\\Lập biên bản ngừng sử dụng vĩnh viễn\\Chuyển Hội đồng làm thủ tục thanh lý};
 
     \draw [farrow] (e1) -- (e2);
     \draw [farrow] (e2) -- (e3);
@@ -121,7 +121,7 @@ Trong ca trực cấp cứu ban đêm tại bệnh viện (từ 01:00 đến 04:
 \subsection{Tình huống 3 — Quản lý thuốc theo hạn dùng FEFO (Thông tư 36/2018 GSP)}
 
 \textbf{Tại sao kho dược bệnh viện bắt buộc dùng FEFO thay vì FIFO?}
-\begin{itemize}[leftmargin=*, itemsep=0.1em, topsep=0.08em]
+\begin{itemize}[leftmargin=*, itemsep=0.08em, topsep=0.06em]
     \item \textbf{Hạn chế của FIFO (Nhập trước xuất trước):} Trong cung ứng dược phẩm, nhà phân phối có thể giao một lô thuốc nhập sau nhưng hạn sử dụng in trên bao bì lại ngắn hơn lô nhập trước. Nếu máy móc áp dụng FIFO theo kiểu hàng tạp hóa, lô thuốc cận hạn sẽ bị lưu cữu ở đáy kho đến khi hết hạn và phải tiêu hủy, gây lãng phí hàng trăm triệu đồng ngân sách bệnh viện.
     \item \textbf{Nguyên tắc FEFO (Hạn gần dùng trước):} Thông tư 36/2018/TT-BYT GSP bắt buộc mọi phần mềm kho dược phải xếp thuốc theo hạn dùng thực tế: thuốc có hạn dùng gần nhất được ưu tiên xuất trước.
 \end{itemize}
@@ -130,7 +130,7 @@ Trong ca trực cấp cứu ban đêm tại bệnh viện (từ 01:00 đến 04:
 \begin{center}
 \small
 \begingroup
-\setstretch{1.04}
+\setstretch{1.02}
 \begin{tabularx}{\textwidth}{@{}C{2.0cm}L{3.2cm}YL{2.6cm}@{}}
 \toprule
 \textbf{Mức cảnh báo} & \textbf{Thời gian hạn dùng} & \textbf{Hành vi tự động của hệ thống} & \textbf{Cách xử lý của kíp trực} \\
@@ -151,16 +151,16 @@ Trong ca trực cấp cứu ban đêm tại bệnh viện (từ 01:00 đến 04:
 
 Trong ca trực cấp cứu, bác sĩ và điều dưỡng đang đeo găng tay cao su vô trùng, hai tay bận ép tim, đặt ống nội khí quản hoặc giữ ven truyền dịch. Việc bắt nhân viên y tế cởi găng tay ra để cầm chuột bấm qua 4–5 tầng menu phần mềm là nguyên nhân gây chậm trễ cấp cứu.
 
-\noindent Chatbot trong Đồ án 2 đóng vai trò là một \textbf{trợ lý lâm sàng chuyên trách}: lắng nghe câu lệnh tự nhiên hoặc từ gõ tắt của bác sĩ, kiểm tra an toàn y khoa tức thì và tạo sẵn phiếu nghiệp vụ.
+\noindent Chatbot đóng vai trò là một \textbf{trợ lý lâm sàng}: lắng nghe câu lệnh tự nhiên hoặc từ gõ tắt của bác sĩ, kiểm tra an toàn y khoa tức thì và tạo sẵn phiếu nghiệp vụ.
 
 \vspace{-0.2em}
 \begin{center}
-\begin{tikzpicture}[node distance=0.22cm, auto]
-    \node (inp) [procbox=16.0cm] {\textbf{Người dùng ra lệnh:} Gõ tắt bệnh (THA, DTD2) $\vert$ Nói hoặc nhắn ("Cho 1 lọ Morphin") $\vert$ Quét mã QR};
-    \node (t1) [tealbox=16.0cm, below=of inp] {\textbf{Bước 1: Bắt từ khóa \& Giải mã gõ tắt (0ms)} --- Gợi ý mã bệnh ICD-10 và tên thuốc tức thì};
-    \node (t2) [procbox=16.0cm, below=of t1] {\textbf{Bước 2: Phân loại ý định} --- Nhận diện yêu cầu (Lấy thuốc / Báo hỏng máy / Xem tủ vắc xin / Tra cứu)};
-    \node (cdss) [alertbox=16.0cm, below=of t2] {\textbf{Bước 3: Rào chắn an toàn đơn thuốc (CDSS)} --- Tự động phát hiện quá liều, tương tác xấu hoặc đường dùng cấm kỵ};
-    \node (act) [tealbox=16.0cm, below=of cdss] {\textbf{Bước 4: Tạo thẻ xác nhận (Action Card)} --- Người dùng nhập mã PIN cá nhân để ghi nhận vào hệ thống};
+\begin{tikzpicture}[node distance=0.14cm, auto]
+    \node (inp) [procbox=16.2cm] {\textbf{Người dùng ra lệnh:} Gõ tắt bệnh (THA, DTD2) $\vert$ Nói hoặc nhắn ("Cho 1 lọ Morphin") $\vert$ Quét mã QR};
+    \node (t1) [tealbox=16.2cm, below=of inp] {\textbf{Bước 1: Bắt từ khóa \& Giải mã gõ tắt (0ms)} --- Gợi ý mã bệnh ICD-10 và tên thuốc};
+    \node (t2) [procbox=16.2cm, below=of t1] {\textbf{Bước 2: Phân loại ý định} --- Nhận diện yêu cầu (Lấy thuốc / Báo hỏng máy / Xem tủ vắc xin / Tra cứu)};
+    \node (cdss) [alertbox=16.2cm, below=of t2] {\textbf{Bước 3: Phát hiện \& cảnh báo an toàn} --- Tự động phát hiện quá liều, tương tác xấu hoặc đường dùng cấm kỵ};
+    \node (act) [tealbox=16.2cm, below=of cdss] {\textbf{Bước 4: Xác nhận} --- Người dùng nhập mã PIN cá nhân để ghi nhận vào hệ thống};
 
     \draw [farrow] (inp) -- (t1);
     \draw [farrow] (t1) -- (t2);
@@ -169,83 +169,31 @@ Trong ca trực cấp cứu, bác sĩ và điều dưỡng đang đeo găng tay 
 \end{tikzpicture}
 \end{center}
 
-\vspace{-0.3em}
-\subsection{4 Giá trị cốt tử của Chatbot đối với ca trực bệnh viện}
+\vspace{-0.35em}
+\subsection{Tác dụng cụ thể của Chatbot trong ca trực cấp cứu}
+\begin{itemize}[leftmargin=*, itemsep=0.03em, topsep=0.02em]
+    \item \textbf{Ra lệnh siêu tốc và gõ tắt ICD-10:} Bác sĩ gõ \texttt{THA} ra "Tăng huyết áp vô căn (I10)", \texttt{DTD2} ra "Đái tháo đường type 2 (E11)", giúp giảm $80\%$ thao tác nhập liệu khi đang khám chữa bệnh.
+    \item \textbf{Rào chắn an toàn thuốc tự động (CDSS):} Tự động phát hiện và chặn các lỗi kê đơn nguy hiểm: quá liều Morphin $\ge 30\text{mg}$, phối hợp Morphin cùng Diazepam gây ngừng thở, tiêm tĩnh mạch trực tiếp Kali Clorid 10\% hoặc dị ứng Penicillin.
+    \item \textbf{Tự sinh thẻ thao tác (Action Card) có bảo mật:} Trích xuất đúng tên thuốc, khoa phòng, sinh sẵn thẻ mượn thuốc hoặc báo hỏng. Người dùng bắt buộc nhập mã PIN cá nhân để xác nhận chịu trách nhiệm chuyên môn.
+    \item \textbf{Chạy ngoại tuyến 100\% ($0\text{ms}$) và chống ảo giác:} Định tuyến trực tiếp trên trình duyệt, bệnh viện mất mạng Internet vẫn hoạt động bình thường. Logic do backend thực thi độc lập nên loại bỏ hoàn toàn rủi ro AI ảo giác kê sai thuốc.
+\end{itemize}
 
-\vspace{-0.2em}
-\begin{center}
-\small
-\begingroup
-\setstretch{1.02}
-\begin{tabularx}{\textwidth}{@{}C{0.8cm}L{3.2cm}YL{3.0cm}@{}}
-\toprule
-\textbf{STT} & \textbf{Giá trị của Chatbot} & \textbf{Cách thức hoạt động thực tế} & \textbf{Ý nghĩa với kíp trực} \\
-\midrule
-1 & Ra lệnh siêu tốc \& Gõ tắt chẩn đoán & Bác sĩ gõ \texttt{THA} tự gợi ý "Tăng huyết áp vô căn (I10)", \texttt{DTD2} ra "Đái tháo đường type 2 (E11)". & Giảm $80\%$ thời gian gõ bàn phím trong lúc cấp cứu. \\
-2 & Lá chắn an toàn thuốc tự động (CDSS) & Chặn 4 lỗi chết người: Quá liều Morphin $\ge 30\text{mg}$, tương tác Morphin + Diazepam, chặn tiêm trực tiếp KCl 10\%, dị ứng Penicillin. & Ngăn ngừa tai biến y khoa đe dọa tính mạng người bệnh. \\
-3 & Tự tạo Thẻ thao tác (Action Card) có mã PIN & Trích xuất đúng tên thuốc, khoa phòng, tạo thẻ hành động; yêu cầu người dùng nhập mã PIN cá nhân để xác nhận. & Tránh nhầm lẫn dữ liệu và bảo đảm trách nhiệm cá nhân. \\
-4 & Chạy ngoại tuyến hoàn toàn ($0\text{ms}$) & Bộ định tuyến Regex chạy trực tiếp trên máy trình duyệt, không cần Internet, loại bỏ hoàn toàn nguy cơ AI ảo giác. & Hoạt động $24/7$ ngay cả khi bệnh viện mất mạng. \\
-\bottomrule
-\end{tabularx}
-\endgroup
-\end{center}
-
-\vspace{-0.3em}
-\noindent\textbf{Cơ chế chống ảo giác y khoa (Anti-Hallucination):} Chatbot không tự ý can thiệp hay sửa đổi cơ sở dữ liệu. Toàn bộ logic nghiệp vụ (kiểm tra vỏ ống Morphin, sắp xếp FEFO, trừ cơ số tủ trực) đều do hệ thống backend thực thi độc lập. Chatbot chỉ sinh ra Thẻ thao tác tóm tắt để người dùng kiểm tra lại và nhập mã PIN xác nhận, do đó loại bỏ hoàn toàn rủi ro AI kê sai thuốc gây nguy hiểm cho người bệnh.
-
-\newpage
-% ==================== TRANG 4 ====================
-\section{Kiểm chứng thực tế qua 45 tình huống lâm sàng \& Kế hoạch tuần 4}
-
-\subsection{Kết quả kiểm thử tự động 45 tình huống ca trực thực tế}
-
-Toàn bộ 45 tình huống lâm sàng giả định đã được kiểm tra tự động qua bộ mã kiểm thử tích hợp (\texttt{test\_chatbot\_suite.ts}), tỷ lệ vượt qua đạt \textbf{45/45 ($100\%$)}:
-
-\vspace{-0.2em}
-\begin{center}
-\small
-\begingroup
-\setstretch{1.04}
-\begin{tabularx}{\textwidth}{@{}C{1.1cm}L{3.4cm}YL{2.6cm}@{}}
-\toprule
-\textbf{Nhóm} & \textbf{Nhóm tình huống kiểm thử} & \textbf{Ví dụ câu lệnh kiểm thử} & \textbf{Kết quả} \\
-\midrule
-Nhóm 1 & Lấy thuốc tủ trực cấp cứu & "Cho 1 lọ morphin", "Lấy gấp 2 ống Fentanyl mổ 1" & Đạt $9 / 9$ ($100\%$) \\
-Nhóm 2 & Báo hỏng máy thở \& Khóa LOTO & "Máy thở PB840 xì khí bẫy nước", "Máy hút dịch hỏng" & Đạt $8 / 8$ ($100\%$) \\
-Nhóm 3 & Cảnh báo an toàn đơn thuốc CDSS & "Dùng 4 lọ morphin", "Tiêm trực tiếp 1 ống KCl 10\%" & Đạt $8 / 8$ ($100\%$) \\
-Nhóm 4 & Theo dõi hạn dùng FEFO & "Thuốc nào cận hạn dưới 60 ngày", "Tủ vắc xin bao độ" & Đạt $10 / 10$ ($100\%$) \\
-Nhóm 5 & Tra cứu quy định y tế \& OCR & "Phác đồ phản vệ TT 51", "Quét hóa đơn dược phẩm" & Đạt $10 / 10$ ($100\%$) \\
-\midrule
-\multicolumn{3}{@{}l}{\textbf{TỔNG KẾT KIỂM THỬ TỰ ĐỘNG:}} & \textbf{45 / 45 ($100\%$)} \\
-\bottomrule
-\end{tabularx}
-\endgroup
-\end{center}
-
-\vspace{-0.3em}
-\noindent\textbf{Đánh giá kết quả kỹ thuật:} Chatbot phản hồi tức thì ($0\text{ms}$), phân loại chuẩn xác tên thuốc và thiết bị y tế. Mọi lượt xuất thuốc tủ trực và báo hỏng thiết bị đều được ghi nhận vào nhật ký kiểm toán với mã băm SHA-256 bảo đảm tính bất biến, chống giả mạo hồ sơ y tế theo quy định của Luật Giao dịch điện tử.
-
-\vspace{-0.2em}
-\subsection{Kế hoạch trọng tâm Tuần 4 (Chuẩn bị bảo vệ đồ án)}
-\begin{enumerate}[leftmargin=*, itemsep=0.15em, topsep=0.1em]
-    \item \textbf{Xây dựng kịch bản Live Demo 15 phút trước Hội đồng:} Trình diễn 3 tình huống thực tế xuyên suốt:
-    \begin{itemize}[leftmargin=*, itemsep=0.08em]
-        \item \textit{Tình huống 1:} Điều dưỡng rút khẩn 01 ống Morphin lúc 02:15 sáng, giao ban 07:00 sáng đối soát trả vỏ ống $1:1$ để Kho Dược cấp bù.
-        \item \textit{Tình huống 2:} Máy thở PB840 báo lỗi xì khí, kích hoạt quy trình khóa máy LOTO và đo an toàn điện IEC 60601-1.
-        \item \textit{Tình huống 3:} Chatbot phát hiện bác sĩ kê quá liều Morphin $\ge 30\text{mg}$ và chặn tiêm trực tiếp dung dịch Kali Clorid 10\%.
-    \end{itemize}
-    \item \textbf{Đóng gói mã nguồn và hoàn thiện hồ sơ:} Đóng gói toàn bộ hệ thống lên môi trường Docker cục bộ, hoàn thiện slide thuyết trình và in ấn hồ sơ báo cáo nộp cho Giảng viên hướng dẫn và Hội đồng chấm đồ án.
+\vspace{-0.25em}
+\section{Kế hoạch Tuần 4}
+\begin{enumerate}[leftmargin=*, itemsep=0.04em, topsep=0.02em]
+    \item \textbf{Chuẩn bị kịch bản Live Demo 15 phút trước Hội đồng:} Trình diễn 3 tình huống: (1) Rút khẩn Morphin ca đêm và đối soát trả vỏ ống $1:1$; (2) Báo hỏng máy thở khóa LOTO đo an toàn điện IEC 60601-1; (3) Chatbot chặn quá liều Morphin và tiêm nhầm KCl 10\%.
+    \item \textbf{Đóng gói mã nguồn và hoàn thiện hồ sơ:} Đóng gói toàn bộ hệ thống lên môi trường Docker cục bộ, chuẩn bị slide thuyết trình và in ấn hồ sơ báo cáo nộp cho Giảng viên hướng dẫn.
 \end{enumerate}
 
-\vspace{0.6em}
+\vspace{0.25em}
 \noindent\rule{\textwidth}{0.4pt}
-\vspace{0.3em}
+\vspace{0.1em}
 
 \begin{center}
 \small
-\textit{Báo cáo tiến độ Tuần 3 được biên soạn bởi sinh viên Trần Huy Hoàng (MSSV: 20237337).}\\[0.8em]
+\textit{Báo cáo tiến độ Tuần 3 được biên soạn bởi sinh viên Trần Huy Hoàng (MSSV: 20237337).}\\[0.4em]
 \begin{tabular*}{0.85\textwidth}{@{\extracolsep{\fill}}cc@{}}
-\textbf{Sinh viên thực hiện} & \textbf{Giảng viên hướng dẫn duyệt} \\[2.6em]
+\textbf{Sinh viên thực hiện} & \textbf{Giảng viên hướng dẫn duyệt} \\[1.8em]
 \textbf{Trần Huy Hoàng} & \textit{(Ký và ghi rõ họ tên)} \\
 \end{tabular*}
 \end{center}
