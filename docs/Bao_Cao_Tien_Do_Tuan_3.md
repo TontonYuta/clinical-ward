@@ -10,38 +10,34 @@
 
 ---
 
-## 🎯 Kết quả thực hiện chính trong tuần 3
+## 1. Xác định lại phạm vi bài toán của đồ án
 
-| Phân hệ hoàn thành | Kiểm thử tự động | Độ trễ AI ngoại tuyến | Cảnh báo an toàn thuốc |
-| :---: | :---: | :---: | :---: |
-| **07 / 07** Phân hệ chính | **45 / 45** Kịch bản ($100\%$) | **0 ms** Phản hồi tức thì | **04** Tình huống nguy cơ |
+### 1.1. Lý do điều chỉnh và thu gọn phạm vi
+Ban đầu, đề tài hướng tới xây dựng hệ thống quản lý tổng thể bệnh viện (HIS). Tuy nhiên, qua quá trình làm việc thực tế cùng góp ý của giảng viên hướng dẫn và bác sĩ lâm sàng, phạm vi ban đầu bộc lộ hai bất cập lớn:
+1. **Phạm vi quá rộng:** HIS bao trùm tiếp đón, tài chính viện phí, bảo hiểm y tế đến kho tổng khiến đề tài bị dàn trải, khó đi sâu nghiệp vụ và khó trình bày khi bảo vệ.
+2. **Giao diện bị quá tải:** Gom tất cả tính năng vào một màn hình khiến y bác sĩ phải tìm kiếm qua nhiều tầng menu phức tạp và thao tác cuộn chuột liên tục.
 
-Theo góp ý của giảng viên hướng dẫn và bác sĩ lâm sàng, tuần này em tập trung vào 3 nội dung cốt lõi:
-1. **Quản lý thuốc tủ trực cấp cứu và bảo quản vắc xin:** Kiểm soát cơ số tủ trực, ghi nợ khi dùng và theo dõi thu hồi vỏ thuốc gây nghiện đối soát $1:1$ (Thông tư 20/2017); theo dõi nhiệt độ bảo quản vắc xin theo chỉ thị màu VVM (WHO).
-2. **Quản lý thiết bị y tế và quy trình khi máy hỏng:** Quét mã QR kiểm kê máy móc, cảnh báo khi máy để sai khoa phòng và quy trình khóa an toàn LOTO (Lockout / Tagout) kiểm tra an toàn điện IEC 60601-1.
-3. **Trợ lý chatbot hỗ trợ ra y lệnh ngoại tuyến (offline):** Xử lý nhanh $0\text{ms}$, tự động cảnh báo 4 lỗi kê đơn nguy hiểm (CDSS) và yêu cầu mã PIN cá nhân khi xác nhận xuất thuốc.
+### 1.2. Phạm vi trọng tâm sau khi điều chỉnh
+Nhóm quyết định thu hẹp phạm vi, tập trung giải quyết bài toán cốt lõi tại **Khoa Lâm sàng (Clinical Ward)** theo tư duy thiết kế theo vai trò (Role-based Design):
+- **Màn hình Bác sĩ:** Ra y lệnh cấp cứu nhanh, tra cứu mã bệnh ICD-10 và kiểm tra cảnh báo an toàn đơn thuốc (CDSS: quá liều, tương tác thuốc).
+- **Màn hình Điều dưỡng:** Xuất dùng thuốc tại tủ trực cấp cứu, theo dõi thu hồi vỏ thuốc gây nghiện và ghi nhận báo hỏng thiết bị.
+- **Hai nhóm đối tượng trọng tâm:** Thuốc/vắc xin tủ trực (Morphin theo TT 20/2017/TT-BYT, nhiệt độ $2^\circ\text{C} - 8^\circ\text{C}$ VVM) và thiết bị y tế (quét QR vị trí, khóa LOTO theo IEC 60601-1).
 
----
+### 1.3. Bảng phân định phạm vi chức năng thực hiện trong đồ án
 
-## 1. Bảng tổng hợp các công việc đã làm trong tuần 3
-
-| STT | Hạng mục | Nội dung thực hiện chi tiết | Trạng thái |
-| :---: | :--- | :--- | :---: |
-| 1 | **Quản lý thuốc tủ trực** | Quản lý cơ số thuốc trong tủ trực cấp cứu, ghi nợ cơ số khi dùng và theo dõi thu hồi vỏ thuốc gây nghiện theo Thông tư 20/2017/TT-BYT. | Hoàn thành $100\%$ |
-| 2 | **Quản lý thiết bị y tế** | Quét mã QR kiểm kê máy móc, cảnh báo khi máy để sai khoa phòng, tính hao mòn theo TT 23/2023/TT-BTC và ghi nhận báo hỏng. | Hoàn thành $100\%$ |
-| 3 | **Giám sát chuỗi lạnh** | Theo dõi nhiệt độ tủ lạnh vắc xin ($2^\circ\text{C} - 8^\circ\text{C}$), nhận diện 4 mức chỉ thị nhiệt độ VVM theo WHO và ưu tiên dùng thuốc cận hạn trước (FEFO). | Hoàn thành $100\%$ |
-| 4 | **Trợ lý AI và CDSS** | Chatbot xử lý ngoại tuyến nhanh ($0\text{ms}$), phát hiện 4 lỗi kê đơn nguy hiểm (CDSS) và yêu cầu mã PIN khi xác nhận xuất thuốc. | Hoàn thành $100\%$ |
-| 5 | **Gõ tắt lâm sàng** | Bảng gõ tắt tên bệnh gợi ý nhanh mã ICD-10 (THA, DTD2, ...) và hoàn thiện giao diện bệnh án theo góp ý của bác sĩ. | Hoàn thành $100\%$ |
-| 6 | **Kiểm thử tự động** | Chạy kiểm thử tự động 45 kịch bản thường gặp (lấy thuốc, báo hỏng máy, cảnh báo đơn thuốc, tra cứu), tỷ lệ vượt qua đạt $100\%$. | Đạt $45/45$ ($100\%$) |
-| 7 | **Cải tiến giao diện** | Sửa lỗi cuộn trang trên máy tính (double scroll), dùng bảng màu dịu mắt khi trực đêm và tối ưu thao tác trên điện thoại. | Đã đưa vào dùng |
+| Nhóm nghiệp vụ | Nội dung đồ án tập trung thực hiện | Phần lược bỏ (ngoài phạm vi) |
+| :--- | :--- | :--- |
+| **Dược và Tủ trực** | Xuất dùng thuốc cấp cứu, ghi nợ cơ số tủ trực, truy vết vỏ thuốc gây nghiện $1:1$, nhiệt độ vắc xin VVM. | Đấu thầu thuốc tập trung, nhập khẩu dược phẩm, thanh toán BHYT. |
+| **Thiết bị y tế** | Quét mã QR kiểm kê, cờ cảnh báo máy để sai khoa phòng, quy trình khóa an toàn LOTO khi máy hỏng. | Đấu thầu mua sắm máy lớn, bảo dưỡng chuyên sâu của hãng sản xuất. |
+| **Hỗ trợ ra y lệnh** | Chatbot nhận diện giọng nói/gõ tắt, kiểm tra 4 cảnh báo an toàn đơn thuốc, tạo thẻ xác nhận có mã PIN. | Chẩn đoán hình ảnh AI chuyên sâu (MRI/CT), quản lý viện phí thu ngân. |
 
 ---
 
-## 2. Quản lý thuốc tủ trực và theo dõi vắc xin
+## 2. Các quy trình nghiệp vụ đã tìm hiểu (Phần 1: Dược lâm sàng)
 
 ### 2.1. Quy trình xuất dùng thuốc gây nghiện và thu hồi vỏ rỗng (Thông tư 20/2017/TT-BYT)
 
-Thuốc gây nghiện (như Morphin, Fentanyl) tại tủ trực khoa bắt buộc cất trong ngăn riêng có khóa. Khi lấy thuốc tiêm cho người bệnh, hệ thống tự động ghi nợ cơ số và theo dõi trả vỏ ống rỗng để Kho Dược cấp bù:
+Thuốc gây nghiện (như Morphin, Fentanyl) tại tủ trực khoa bắt buộc cất trong ngăn riêng có khóa. Khi lấy thuốc tiêm cho người bệnh, quy trình luân chuyển thuốc và vỏ rỗng qua 5 bước:
 
 ```mermaid
 flowchart TD
@@ -62,39 +58,39 @@ Theo Thông tư 36/2018/TT-BYT và hướng dẫn của WHO, vắc xin cần b�
 | :---: | :--- | :--- | :--- |
 | **Mức 1** | Ô vuông trong màu trắng, sáng hơn nhiều so với vòng tròn ngoài. | Vắc xin được bảo quản tốt, chưa bị nóng. | **Dùng bình thường** (Theo hạn dùng) |
 | **Mức 2** | Ô vuông trong hơi sẫm màu nhưng vẫn sáng hơn vòng tròn ngoài. | Đã tiếp xúc với nhiệt độ môi trường ở mức cho phép, chất lượng còn tốt. | **Được phép dùng** (Ưu tiên dùng trước) |
-| **Mức 3** | Ô vuông trong đổi màu tối bằng đúng màu vòng tròn ngoài. | Điểm giới hạn (Discard Point): Thuốc đã bị nóng, bắt đầu giảm tác dụng. | **Ngừng dùng ngay** |
-| **Mức 4** | Ô vuông trong tối hơn hẳn so với vòng tròn ngoài. | Vắc xin đã bị hỏng do nhiệt độ cao. | **Hủy bỏ lập biên bản** |
+| **Mức 3** | Ô vuông trong đổi màu tối bằng đúng màu vòng tròn ngoài. | Điểm giới hạn (Discard Point): Kháng nguyên bắt đầu bị biến tính. | **Ngừng dùng ngay** |
+| **Mức 4** | Ô vuông trong tối hơn hẳn so với vòng tròn ngoài. | Vắc xin đã bị hỏng hoàn toàn do tích lũy nhiệt độ quá mức. | **Hủy bỏ lập biên bản** |
 
-### 2.3. Xuất thuốc theo hạn dùng (FEFO — Hạn gần dùng trước)
-Hệ thống tự động xếp thuốc cận hạn lên đầu danh sách kê đơn. Thuốc còn hạn dưới 60 ngày sẽ đổi sang màu vàng để nhân viên y tế ưu tiên dùng trước, tránh để thuốc quá hạn gây lãng phí.
+### 2.3. Nguyên tắc xuất kho FEFO (Hạn gần dùng trước)
+Hệ thống tự động xếp danh mục thuốc theo hạn sử dụng. Thuốc có hạn dùng gần nhất được ưu tiên xuất trước. Khi hạn dùng dưới 60 ngày, hệ thống tự động đổi màu cảnh báo vàng và đẩy lên đầu danh sách để kíp trực ưu tiên dùng, tránh lãng phí dược phẩm.
 
 ---
 
-## 3. Quản lý thiết bị y tế và xử lý khi máy hỏng
+## 3. Các quy trình nghiệp vụ đã tìm hiểu (Phần 2: Thiết bị y tế)
 
-### 3.1. Quét mã QR kiểm kê thiết bị y tế
-- **Tự phát hiện máy để sai khoa phòng:** Đối chiếu vị trí thực tế quét được với vị trí trên sổ sách kế toán. Nếu phát hiện mượn chéo lệch khoa, hệ thống báo cờ vàng và tạo phiếu điều chuyển nội bộ.
-- **Theo dõi hao mòn máy:** Tự động tính số năm đã dùng và tỷ lệ hao mòn tài sản theo Thông tư 23/2023/TT-BTC.
+### 3.1. Quy trình kiểm kê thiết bị bằng mã QR và phát hiện máy để sai vị trí
+- **Phát hiện máy mượn chéo lệch khoa:** Đối chiếu vị trí thực tế quét được với vị trí trên sổ sách kế toán. Nếu phát hiện mượn chéo lệch khoa (ví dụ: máy thở thuộc Phòng mổ nhưng quét tại Cấp cứu), hệ thống báo cờ vàng và tạo phiếu điều chuyển nội bộ.
+- **Theo dõi hao mòn máy:** Tự động tính số năm đã dùng và tỷ lệ hao mòn tài sản lũy kế theo Thông tư 23/2023/TT-BTC phục vụ công tác đề xuất mua sắm thay thế.
 
-### 3.2. Quy trình khóa an toàn khi máy hỏng (Lockout / Tagout)
+### 3.2. Quy trình xử lý sự cố thiết bị y tế — Khóa an toàn LOTO (IEC 60601-1)
 
-Khi máy thở hoặc máy theo dõi bị hỏng (xì khí, chập điện, lỗi cảm biến), nhân viên báo lỗi trên ứng dụng. Hệ thống chuyển máy sang trạng thái cảnh báo đỏ và kích hoạt quy trình khóa máy để không ai dùng nhầm cho bệnh nhân:
+Khi máy thở hoặc máy theo dõi bị hỏng (xì khí, chập điện, lỗi cảm biến), nhân viên báo lỗi trên phần mềm. Hệ thống chuyển máy sang trạng thái cảnh báo đỏ và kích hoạt quy trình khóa máy LOTO (Lockout / Tagout) để tránh việc người khác dùng nhầm cho bệnh nhân:
 
 ```mermaid
 flowchart TD
-    E1["Bước 1: Báo hỏng qua ứng dụng (Máy thở PB840 xì khí) -> Phần mềm khóa máy"]
-    E2["Bước 2: Khóa máy thực tế LOTO (Rút nguồn điện, dán biển cảnh báo đỏ CẤM DÙNG)"]
-    E3["Bước 3: Phòng Thiết bị kiểm tra kỹ thuật & Đo an toàn điện chuẩn IEC 60601-1"]
+    E1["Bước 1: Báo hỏng qua phần mềm (Máy thở PB840 xì khí bẫy nước) -> Phần mềm khóa máy"]
+    E2["Bước 2: Khóa máy thực tế LOTO (Ngắt nguồn điện, dán biển cảnh báo đỏ CẤM DÙNG)"]
+    E3["Bước 3: Phòng Thiết bị kiểm tra kỹ thuật & Đo dòng rò an toàn điện IEC 60601-1"]
     DEC{"Máy có sửa được và đạt an toàn điện không?"}
-    PASS["SỬA ĐƯỢC & ĐẠT CHUẨN:<br/>Tháo biển cảnh báo, mở khóa máy, đưa trở lại phục vụ cấp cứu"]
-    FAIL["KHÔNG SỬA ĐƯỢC / KHÔNG AN TOÀN:<br/>Lập biên bản ngừng dùng vĩnh viễn, làm thủ tục thanh lý"]
+    PASS["SỬA ĐƯỢC & ĐẠT CHUẨN:<br/>Tháo biển cảnh báo, mở khóa trên app, đưa máy trở lại phục vụ cấp cứu"]
+    FAIL["KHÔNG SỬA ĐƯỢC / KHÔNG AN TOÀN:<br/>Lập biên bản ngừng dùng vĩnh viễn, làm thủ tục thanh lý máy"]
 
     E1 --> E2 --> E3 --> DEC
     DEC -- "Đạt" --> PASS
     DEC -- "Không đạt" --> FAIL
 ```
 
-### 3.3. Phân loại thiết bị y tế theo mức độ rủi ro (Nghị định 98/2021/NĐ-CP)
+### 3.3. Phân loại rủi ro thiết bị y tế theo Nghị định 98/2021/NĐ-CP
 
 | Mức rủi ro | Thiết bị ví dụ | Mục đích sử dụng lâm sàng | Yêu cầu kiểm tra an toàn |
 | :---: | :--- | :--- | :--- |
@@ -105,44 +101,43 @@ flowchart TD
 
 ---
 
-## 4. Trợ lý AI ngoại tuyến và cảnh báo an toàn kê đơn (CDSS)
+## 4. Tác dụng của Chatbot trong dự án
 
-### 4.1. Mô hình xử lý chatbot chạy ngoại tuyến (0ms)
-
-Để đảm bảo ca trực cấp cứu vẫn tra cứu và ra lệnh được khi mất kết nối mạng Internet, chatbot chạy trực tiếp trên máy với các bước xử lý nội bộ:
+### 4.1. Lý do cần Chatbot trong môi trường bệnh viện
+Trong ca trực cấp cứu ban đêm, bác sĩ và điều dưỡng chịu áp lực thời gian rất lớn. Việc bắt buộc người dùng mở từng thư mục, gõ bàn phím dài dòng hoặc bấm chuột qua 4–5 tầng menu để xuất một ống thuốc là nguyên nhân gây chậm trễ cấp cứu. Chatbot trong đồ án đóng vai trò như một **trợ lý lâm sàng chuyên trách**:
 
 ```mermaid
 flowchart TD
-    INP["Người dùng gõ lệnh: Gõ tắt bệnh (THA, DTD2) | Lệnh xin thuốc | Quét mã QR"]
-    T1["Bước 1: Bắt từ khóa & Giải mã gõ tắt (0ms) — Gợi ý mã ICD-10 tức thì"]
-    T2["Bước 2: Phân loại ý định (Lấy thuốc / Báo hỏng máy / Xem tủ vắc xin / Tra cứu)"]
-    CDSS["Bước 3: Kiểm tra an toàn đơn thuốc (CDSS) — Phát hiện quá liều, tương tác xấu, cấm kỵ"]
-    ACT["Bước 4: Tạo thẻ xác nhận (Action Card) — Nhập mã PIN cá nhân để lưu vào hệ thống"]
+    INP["Người dùng ra lệnh: Gõ tắt bệnh (THA, DTD2) | Lời nói/nhắn ('Cho 1 lọ Morphin') | Quét mã QR"]
+    T1["Bước 1: Bắt từ khóa & Giải mã gõ tắt (0ms) — Gợi ý mã bệnh ICD-10 và tên thuốc tức thì"]
+    T2["Bước 2: Phân loại ý định — Nhận diện yêu cầu (Lấy thuốc / Báo hỏng máy / Xem tủ vắc xin / Tra cứu)"]
+    CDSS["Bước 3: Kiểm tra an toàn đơn thuốc (CDSS) — Phát hiện quá liều, tương tác xấu hoặc đường dùng cấm kỵ"]
+    ACT["Bước 4: Tạo thẻ xác nhận (Action Card) — Người dùng nhập mã PIN cá nhân để ghi nhận"]
 
     INP --> T1 --> T2 --> CDSS --> ACT
 ```
 
-### 4.2. 4 Cảnh báo an toàn thuốc quan trọng (CDSS)
+### 4.2. 4 Tác dụng cụ thể của Chatbot trong dự án
 
-| STT | Tình huống cảnh báo | Nguy cơ khi dùng sai | Cách hệ thống xử lý |
+| STT | Tác dụng của Chatbot | Cách hoạt động thực tế | Giá trị đem lại cho kíp trực |
 | :---: | :--- | :--- | :--- |
-| 1 | **Kê quá liều thuốc Opioid** | Kê Morphin $\ge 30\text{mg}$ hoặc Fentanyl $\ge 100\mu\text{g}$ một lần, dễ gây ức chế hô hấp dẫn đến ngừng thở. | Bật cảnh báo đỏ khẩn cấp; nhắc chuẩn bị sẵn thuốc giải độc Naloxone 0.4mg. |
-| 2 | **Tương tác thuốc xấu** | Kê cùng lúc thuốc giảm đau Morphin và thuốc an thần Diazepam, dễ gây hạ huyết áp và ức chế hô hấp sâu. | Cảnh báo tương tác; khuyên dùng cách nhau tối thiểu 4 giờ và theo dõi SpO2. |
-| 3 | **Tiêm trực tiếp Kali Clorid 10%** | Tiêm tĩnh mạch trực tiếp dung dịch KCl 10% làm tăng kali máu đột ngột gây ngừng tim ngay lập tức. | **Chặn hoàn toàn**; bắt buộc phải pha loãng vào chai dịch truyền. |
-| 4 | **Dị ứng chéo nhóm Penicillin** | Người bệnh có tiền sử dị ứng Penicillin nhưng kê Cephalosporin thế hệ 1, có nguy cơ gây sốc phản vệ. | Bật cảnh báo dị ứng; yêu cầu chuyển sang nhóm kháng sinh an toàn khác. |
+| 1 | **Ra y lệnh và gõ tắt chẩn đoán siêu tốc** | Bác sĩ gõ `THA` tự gợi ý "Tăng huyết áp vô căn (I10)", `DTD2` ra "Đái tháo đường type 2 (E11)". | Giảm $80\%$ thời gian nhập liệu bàn phím trong lúc khám bệnh. |
+| 2 | **Cảnh báo an toàn thuốc tự động (CDSS)** | Tự phát hiện: Quá liều Opioid, tương tác Morphin + Diazepam, chặn tiêm tĩnh mạch trực tiếp KCl 10%, dị ứng Penicillin. | Ngăn ngừa sự cố y khoa đe dọa tính mạng người bệnh. |
+| 3 | **Tạo thẻ thao tác (Action Card) có bảo mật** | Trích xuất đúng tên thuốc, khoa phòng, tạo thẻ hành động; yêu cầu nhập mã PIN cá nhân để xác nhận. | Tránh nhầm lẫn dữ liệu và bảo đảm trách nhiệm cá nhân. |
+| 4 | **Chạy ngoại tuyến hoàn toàn ($0\text{ms}$)** | Bộ định tuyến Regex chạy trực tiếp trên máy trình duyệt, không cần kết nối Internet ra bên ngoài. | Hoạt động liên tục $24/7$ ngay cả khi bệnh viện mất mạng. |
 
-### 4.3. 3 Điểm cải tiến bệnh án điện tử (theo góp ý của bác sĩ)
-1. **Gõ tắt chẩn đoán nhanh:** Gõ `THA` tự điền "Tăng huyết áp vô căn (I10)", `DTD2` ra "Đái tháo đường type 2 (E11)", có nút sao chép diễn biến bệnh từ ngày trước giúp giảm $80\%$ thời gian nhập liệu.
-2. **Xem lịch sử theo dòng thời gian (Timeline):** Hiển thị quá trình khám và biểu đồ nhịp tim, huyết áp dạng đồ thị dễ nhìn; cố định khung thông tin dị ứng màu đỏ ở góc màn hình để bác sĩ không bị bỏ sót.
-3. **Cấu trúc dữ liệu theo chuẩn HL7 FHIR:** Thiết kế bảng dữ liệu tương thích với chuẩn trao đổi thông tin y tế quốc tế (`MedicationRequest`, `MedicationStatement`, `Observation`, `Condition`).
+### 4.3. 3 Điểm cải tiến giao diện theo góp ý chuyên môn bác sĩ
+1. **Gõ tắt phác đồ mẫu (Order Sets):** Có nút sao chép nhanh diễn biến bệnh từ ngày hôm trước sang ngày hôm sau để bác sĩ không phải gõ lại từ đầu.
+2. **Xem lịch sử theo dòng thời gian (Timeline):** Biểu đồ nhịp tim, huyết áp hiển thị trực quan; cố định khung thông tin dị ứng màu đỏ ở góc màn hình để bác sĩ không bị bỏ sót.
+3. **Chuẩn hóa cấu trúc dữ liệu theo HL7 FHIR:** Tương thích với các đối tượng y tế chuẩn quốc tế (`MedicationRequest`, `MedicationStatement`, `Observation`, `Condition`).
 
 ---
 
-## 5. Kiểm thử tự động, giao diện người dùng và kế hoạch tuần 4
+## 5. Kiểm chứng thực tế, giao diện người dùng và kế hoạch tuần 4
 
 ### 5.1. Kết quả kiểm thử tự động 45 kịch bản (45/45 Passed)
 
-Các kịch bản hỏi đáp và cảnh báo an toàn được kiểm tra tự động qua file kiểm thử [`scripts/test_chatbot_suite.ts`](file:///home/tontonyuta/Downloads/DoAn2/scripts/test_chatbot_suite.ts):
+Toàn bộ 45 kịch bản giao tiếp và cảnh báo an toàn được kiểm tra tự động qua bộ mã kiểm thử tích hợp ([`test_chatbot_suite.ts`](file:///home/tontonyuta/Downloads/DoAn2/scripts/test_chatbot_suite.ts)):
 
 | Nhóm | Nhóm kịch bản kiểm thử | Ví dụ câu lệnh kiểm thử | Kết quả |
 | :---: | :--- | :--- | :---: |
@@ -165,4 +160,5 @@ Các kịch bản hỏi đáp và cảnh báo an toàn được kiểm tra tự 
 2. **Đóng gói mã nguồn và tài liệu:** Hoàn thiện mã nguồn trên GitHub, chạy thử môi trường Docker và in ấn tài liệu nộp cho Hội đồng chấm đồ án.
 
 ---
+
 *Báo cáo tiến độ Tuần 3 được biên soạn bởi sinh viên Trần Huy Hoàng (MSSV: 20237337).*
