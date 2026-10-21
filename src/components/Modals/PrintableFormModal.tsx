@@ -47,6 +47,17 @@ export type PrintableFormType =
   | 'COLD_CHAIN_INCIDENT_REPORT'   // Biên bản sự cố chuỗi lạnh & thẩm định vắc xin GSP (Thông tư 36/2018/TT-BYT)
   | 'SHIFT_HANDOVER_RECORD';       // Sổ giao ban và bàn giao ca trực điều dưỡng lâm sàng (TT 31/2021/TT-BYT & QĐ 1895)
 
+export const ALL_PRINTABLE_FORMS: { id: PrintableFormType; shortLabel: string; codeLabel: string }[] = [
+  { id: 'TT20_AMPOULE_DESTRUCTION', shortLabel: 'Mẫu 16 (TT 20) Hủy Vỏ Morphin', codeLabel: '1. Mẫu 16 TT 20' },
+  { id: 'TT22_RESTOCK_PROPOSAL', shortLabel: 'Mẫu 01 (TT 22) Dự Trù Tủ Trực', codeLabel: '2. Mẫu 01 TT 22' },
+  { id: 'TSC_HANDOVER_TRANSFER', shortLabel: 'Mẫu 01 (TSC) Bàn Giao TBYT', codeLabel: '3. Mẫu 01 TSC' },
+  { id: 'EMERGENCY_BORROW_TICKET', shortLabel: 'Phiếu Mượn Khẩn Tủ Trực (Kẹp Bệnh Án)', codeLabel: '4. Phiếu Mượn TT 22' },
+  { id: 'EQUIPMENT_HANDOVER_INSPECT', shortLabel: 'Biên Bản KĐ Điện IEC 60601 (NĐ 98)', codeLabel: '5. KĐ An Toàn NĐ 98' },
+  { id: 'TSC_ANNUAL_AUDIT', shortLabel: 'Mẫu 05 (TSC) Kiểm Kê Tài Sản', codeLabel: '6. Mẫu 05 TSC' },
+  { id: 'COLD_CHAIN_INCIDENT_REPORT', shortLabel: 'Biên Bản Quá Nhiệt Vắc Xin GSP', codeLabel: '7. Chuỗi Lạnh GSP' },
+  { id: 'SHIFT_HANDOVER_RECORD', shortLabel: 'Sổ Bàn Giao Ca Trực Điều Dưỡng', codeLabel: '8. Sổ Bàn Giao Ca' },
+];
+
 interface PrintableFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -185,6 +196,18 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handlePrevForm = () => {
+    const currentIndex = ALL_PRINTABLE_FORMS.findIndex(f => f.id === activeFormType);
+    const prevIndex = (currentIndex - 1 + ALL_PRINTABLE_FORMS.length) % ALL_PRINTABLE_FORMS.length;
+    setActiveFormType(ALL_PRINTABLE_FORMS[prevIndex].id);
+  };
+
+  const handleNextForm = () => {
+    const currentIndex = ALL_PRINTABLE_FORMS.findIndex(f => f.id === activeFormType);
+    const nextIndex = (currentIndex + 1) % ALL_PRINTABLE_FORMS.length;
+    setActiveFormType(ALL_PRINTABLE_FORMS[nextIndex].id);
+  };
+
   return (
     <div
       onClick={onClose}
@@ -255,8 +278,44 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
           </div>
         </div>
 
-        {/* Tab Navigation (8 Comprehensive Medical & Administrative Forms) */}
-        <div className="px-4 py-1.5 bg-slate-100 border-b border-slate-200/90 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0 print:hidden">
+        {/* Mobile Form Picker (sm:hidden) */}
+        <div className="sm:hidden px-3 py-2 bg-slate-100 border-b border-slate-200/90 flex items-center justify-between gap-2 shrink-0 print:hidden">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <span className="text-[11px] font-bold text-slate-600 shrink-0">Biểu mẫu:</span>
+            <select
+              value={activeFormType}
+              onChange={(e) => setActiveFormType(e.target.value as PrintableFormType)}
+              className="flex-1 py-1.5 px-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-hidden focus:border-teal-600 truncate shadow-2xs"
+            >
+              {ALL_PRINTABLE_FORMS.map((form, idx) => (
+                <option key={form.id} value={form.id}>
+                  {idx + 1}. {form.shortLabel}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={handlePrevForm}
+              className="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 shadow-2xs cursor-pointer font-bold"
+              title="Biểu mẫu trước"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={handleNextForm}
+              className="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 shadow-2xs cursor-pointer font-bold"
+              title="Biểu mẫu kế tiếp"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Tab Navigation (hidden sm:flex) (8 Comprehensive Medical & Administrative Forms) */}
+        <div className="hidden sm:flex px-4 py-1.5 bg-slate-100 border-b border-slate-200/90 items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0 print:hidden">
           <button
             onClick={() => setActiveFormType('TT20_AMPOULE_DESTRUCTION')}
             className={`px-2.5 py-1.2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
@@ -355,15 +414,15 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
         </div>
 
         {/* Dynamic Context Selector Bar */}
-        <div className="px-5 py-1.5 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0 print:hidden">
-          <div className="flex items-center gap-3">
+        <div className="px-3 sm:px-5 py-2 sm:py-1.5 bg-slate-50 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 text-xs shrink-0 print:hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
             {activeFormType === 'EMERGENCY_BORROW_TICKET' && (
               <>
                 <span className="font-semibold text-slate-700">Chọn phiếu xuất mượn:</span>
                 <select
                   value={activeDebtId}
                   onChange={(e) => setActiveDebtId(e.target.value)}
-                  className="px-2 py-0.5 text-xs border border-slate-300 rounded bg-white font-medium focus:ring-1 focus:ring-teal-700"
+                  className="w-full sm:w-auto px-2.5 py-1.5 sm:py-0.5 text-xs border border-slate-300 rounded-lg bg-white font-medium focus:ring-1 focus:ring-teal-700 truncate shadow-2xs"
                 >
                   {debts.map(d => (
                     <option key={d.id} value={d.id}>
@@ -380,7 +439,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 <select
                   value={activeTicketId}
                   onChange={(e) => setActiveTicketId(e.target.value)}
-                  className="px-2 py-0.5 text-xs border border-slate-300 rounded bg-white font-medium focus:ring-1 focus:ring-teal-700"
+                  className="w-full sm:w-auto px-2.5 py-1.5 sm:py-0.5 text-xs border border-slate-300 rounded-lg bg-white font-medium focus:ring-1 focus:ring-teal-700 truncate shadow-2xs"
                 >
                   {tickets.map(t => (
                     <option key={t.id} value={t.id}>
@@ -397,7 +456,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 <select
                   value={activeAssetId}
                   onChange={(e) => setActiveAssetId(e.target.value)}
-                  className="px-2 py-0.5 text-xs border border-slate-300 rounded bg-white font-medium focus:ring-1 focus:ring-teal-700"
+                  className="w-full sm:w-auto px-2.5 py-1.5 sm:py-0.5 text-xs border border-slate-300 rounded-lg bg-white font-medium focus:ring-1 focus:ring-teal-700 truncate shadow-2xs"
                 >
                   {assets.map(a => (
                     <option key={a.id} value={a.id}>
@@ -439,15 +498,23 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
             )}
           </div>
 
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-[11px] text-slate-500 font-mono hidden sm:block">
             Khổ in: A4 (210mm × 297mm) · Chuẩn 1 trang không tràn
           </div>
         </div>
 
-        {/* Mobile Horizontal Panning Guide */}
-        <div className="sm:hidden px-3.5 py-1.5 bg-amber-50/90 border-b border-amber-200/80 text-[11px] text-amber-900 flex items-center justify-between shrink-0 font-medium">
-          <span>👉 Vuốt ngang để xem toàn bộ bảng &amp; chữ ký A4</span>
-          <span className="font-mono text-[10px] bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">210mm</span>
+        {/* Mobile Horizontal Panning Guide & Zoom Mode Toggle */}
+        <div className="sm:hidden px-3.5 py-1.5 bg-teal-50/90 border-b border-teal-200/80 text-[11px] text-teal-900 flex items-center justify-between shrink-0 font-medium">
+          <div className="flex items-center gap-1.5">
+            <span>👉 Vuốt ngang để xem toàn trang A4</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setZoomMode(prev => prev === 'fit' ? '100%' : 'fit')}
+            className="text-[10px] font-bold bg-white text-teal-800 px-2 py-0.5 rounded border border-teal-300 shadow-2xs cursor-pointer active:scale-95"
+          >
+            {zoomMode === 'fit' ? '🔍 Xem 100%' : '📱 Thu vừa màn hình'}
+          </button>
         </div>
 
         {/* Document Preview Canvas (Simulating pure white A4 Paper) */}

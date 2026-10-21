@@ -125,33 +125,17 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="h-16 px-5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-          <div className="text-xs text-slate-500 font-mono">
-            Biên bản số: BB-BG-{ticket.code} · Ngày: {todayStr}
-          </div>
-          <div className="flex items-center gap-2">
-            {onOpenPrintForm && ticket && (
-              <button
-                type="button"
-                onClick={() => onOpenPrintForm('EQUIPMENT_HANDOVER_INSPECT', ticket)}
-                className="h-9 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                title="Xem & in biên bản kiểm định an toàn điện A4 chuẩn Nghị định 98/2021"
-              >
-                <Printer className="w-3.5 h-3.5 text-teal-700" />
-                <span>Xem bản in A4</span>
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="h-9 px-4 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
-            >
-              Hủy
-            </button>
+        {/* Footer - Responsive Action Controls */}
+        <div className="p-3 sm:px-5 sm:py-3.5 bg-slate-50 border-t border-slate-200 shrink-0">
+          {/* Mobile Footer */}
+          <div className="sm:hidden space-y-2">
+            <div className="text-[11px] text-slate-500 font-mono text-center">
+              Biên bản số: BB-BG-{ticket.code} · Ngày: {todayStr}
+            </div>
             <button
               onClick={handleConfirm}
               disabled={isDone}
-              className="h-9 px-4 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-98"
+              className="w-full h-11 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             >
               {isDone ? (
                 <>
@@ -165,6 +149,68 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
                 </>
               )}
             </button>
+            <div className="flex items-center gap-2">
+              {onOpenPrintForm && ticket && (
+                <button
+                  type="button"
+                  onClick={() => onOpenPrintForm('EQUIPMENT_HANDOVER_INSPECT', ticket)}
+                  className="flex-1 h-9 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Xem & in biên bản kiểm định an toàn điện A4"
+                >
+                  <Printer className="w-3.5 h-3.5 text-teal-700" />
+                  <span>Xem bản in A4</span>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="flex-1 h-9 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Footer */}
+          <div className="hidden sm:flex items-center justify-between">
+            <div className="text-xs text-slate-500 font-mono">
+              Biên bản số: BB-BG-{ticket.code} · Ngày: {todayStr}
+            </div>
+            <div className="flex items-center gap-2">
+              {onOpenPrintForm && ticket && (
+                <button
+                  type="button"
+                  onClick={() => onOpenPrintForm('EQUIPMENT_HANDOVER_INSPECT', ticket)}
+                  className="h-9 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Xem & in biên bản kiểm định an toàn điện A4 chuẩn Nghị định 98/2021"
+                >
+                  <Printer className="w-3.5 h-3.5 text-teal-700" />
+                  <span>Xem bản in A4</span>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="h-9 px-4 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={isDone}
+                className="h-9 px-4 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-98"
+              >
+                {isDone ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 animate-spin" />
+                    <span>Đang ghi nhận bàn giao...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Ký Nghiệm Thu &amp; Bàn Giao Lâm Sàng</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

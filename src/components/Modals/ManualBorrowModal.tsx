@@ -82,75 +82,93 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
               <Pill className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <h2 className="text-xs sm:text-base font-bold truncate">Lập Phiếu Mượn Khẩn Thuốc / Vật Tư Tủ Trực</h2>
               <span className="text-[11px] text-slate-400 font-mono truncate block">
-                Kho Dược Lâm Sàng · Thông tư 22/2011 &amp; TT 20/2017
+                Kho Dược Lâm Sàng · Điều 10 Thông tư 22/2011/TT-BYT
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
+            title="Đóng modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} noValidate className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
+        <form onSubmit={handleSubmit} noValidate className="p-3 sm:p-5 overflow-y-auto space-y-3.5 text-xs text-slate-700 flex-1">
           {validationError && (
-            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2">
+            <div className="p-2.5 sm:p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{validationError}</span>
             </div>
           )}
 
-          {/* Quick Preset Selector (Sleek Horizontal Pill Strip) */}
-          <div className="space-y-1">
+          {/* Quick Preset Selector */}
+          <div className="bg-slate-50/80 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 space-y-2">
             <div className="flex items-center justify-between">
               <label className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-                <span className="text-emerald-600 font-bold">⚡</span> Chọn nhanh cơ số cấp cứu:
+                <span className="text-emerald-600 font-bold">⚡</span> Chọn nhanh cơ số cấp cứu ca trực:
               </label>
               {selectedPreset !== null && (
                 <button
                   type="button"
                   onClick={() => setSelectedPreset(null)}
-                  className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer underline"
+                  className="text-[11px] text-slate-500 hover:text-slate-800 cursor-pointer underline"
                 >
-                  Xóa chọn
+                  Nhập tự do
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-1 px-1">
+
+            {/* Presets Horizontal Scroll with Visual Badges */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 -mx-0.5 px-0.5">
               {COMMON_EMERGENCY_ITEMS.map((item, idx) => {
                 const isSelected = selectedPreset === idx;
+                const isNarcotic = item.type === 'Thuốc gây nghiện';
                 return (
                   <button
                     type="button"
                     key={idx}
                     onClick={() => handleSelectPreset(idx)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0 border shadow-2xs whitespace-nowrap ${
+                    className={`inline-flex flex-col text-left p-2 rounded-xl text-xs transition cursor-pointer shrink-0 border shadow-2xs min-w-[155px] max-w-[210px] ${
                       isSelected
-                        ? 'bg-emerald-700 text-white border-emerald-700 font-semibold shadow-xs'
-                        : 'bg-slate-50 border-slate-200/90 hover:bg-slate-100 text-slate-700'
+                        ? 'bg-emerald-50 border-emerald-600 ring-1 ring-emerald-600/30'
+                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
                     }`}
                   >
-                    <span className="font-medium">{item.name}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium ${
-                        isSelected ? 'bg-emerald-800 text-white' : 'bg-slate-200/80 text-slate-600'
-                      }`}
-                    >
-                      {item.defaultQty} {item.unit}
+                    <div className="flex items-center justify-between gap-1 w-full mb-1">
+                      <span
+                        className={`text-[9.5px] px-1.5 py-0.2 rounded-md font-semibold ${
+                          isNarcotic
+                            ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                            : item.type === 'Thuốc cấp cứu'
+                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                            : 'bg-teal-100 text-teal-800 border border-teal-200'
+                        }`}
+                      >
+                        {item.type}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100/80 px-1.5 py-0.2 rounded">
+                        {item.defaultQty}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-slate-900 truncate w-full text-xs" title={item.name}>
+                      {item.name}
+                    </span>
+                    <span className="text-[10px] text-slate-500 truncate w-full mt-0.5">
+                      {item.note}
                     </span>
                   </button>
                 );
@@ -158,91 +176,97 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </div>
           </div>
 
-          {/* Item details */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2 space-y-1">
-              <label className="font-bold text-slate-900 block">
-                Tên thuốc / Vật tư y tế <span className="text-rose-500">*</span>:
-              </label>
-              <input
-                type="text"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                required
-                className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:border-slate-800 focus:outline-hidden"
-              />
+          {/* Section 1: Item details */}
+          <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-3">
+            <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider text-slate-500">
+              1. Cơ số thuốc &amp; Vật tư mượn khẩn
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="sm:col-span-2 space-y-1">
+                <label className="font-semibold text-slate-800 block text-xs">
+                  Tên thuốc / Vật tư y tế <span className="text-rose-500">*</span>:
+                </label>
+                <input
+                  type="text"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  required
+                  placeholder="VD: Morphin sulfat 10mg/1ml"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-300 rounded-xl focus:border-emerald-600 focus:bg-white focus:outline-hidden font-medium"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-800 block text-xs">
+                  Số lượng <span className="text-rose-500">*</span>:
+                </label>
+                <input
+                  type="text"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                  placeholder="VD: 2 ống"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-300 rounded-xl focus:border-emerald-600 focus:bg-white focus:outline-hidden font-mono font-bold text-teal-900"
+                />
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="font-bold text-slate-900 block">
-                Số lượng mượn <span className="text-rose-500">*</span>:
-              </label>
-              <input
-                type="text"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                required
-                placeholder="VD: 2 ống"
-                className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:border-slate-800 focus:outline-hidden font-bold"
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-800 block text-xs">Phân loại danh mục:</label>
+                <select
+                  value={itemType}
+                  onChange={(e) => setItemType(e.target.value as any)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-300 rounded-xl focus:border-emerald-600 focus:bg-white focus:outline-hidden font-medium"
+                >
+                  <option value="Thuốc gây nghiện">Thuốc gây nghiện (Bắt buộc thu hồi vỏ TT 20)</option>
+                  <option value="Thuốc cấp cứu">Thuốc cấp cứu tối khẩn</option>
+                  <option value="Thuốc hướng thần">Thuốc hướng thần</option>
+                  <option value="Vật tư tiêu hao">Vật tư tiêu hao</option>
+                  <option value="Vật tư phẫu thuật">Vật tư phẫu thuật</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-800 block text-xs">
+                  Bác sĩ ra y lệnh cấp cứu:
+                </label>
+                <input
+                  type="text"
+                  value={doctorName}
+                  onChange={(e) => setDoctorName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-300 rounded-xl focus:border-emerald-600 focus:bg-white focus:outline-hidden font-medium"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-bold text-slate-900 block">Phân loại danh mục:</label>
-              <select
-                value={itemType}
-                onChange={(e) => setItemType(e.target.value as any)}
-                className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:border-slate-800 focus:outline-hidden"
-              >
-                <option value="Thuốc gây nghiện">Thuốc gây nghiện (Bắt buộc nộp vỏ ống TT 20)</option>
-                <option value="Thuốc cấp cứu">Thuốc cấp cứu tối khẩn</option>
-                <option value="Thuốc hướng thần">Thuốc hướng thần</option>
-                <option value="Vật tư tiêu hao">Vật tư tiêu hao</option>
-                <option value="Vật tư phẫu thuật">Vật tư phẫu thuật</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="font-bold text-slate-900 block">
-                Bác sĩ ra y lệnh cấp cứu:
-              </label>
-              <input
-                type="text"
-                value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:border-slate-800 focus:outline-hidden"
-              />
-            </div>
-          </div>
-
-          {/* Patient Details */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
-            <span className="font-bold text-slate-900 block text-xs">
-              Thông tin bệnh nhân thụ hưởng cơ số khẩn:
+          {/* Section 2: Patient Details */}
+          <div className="p-3 bg-slate-50/90 border border-slate-200 rounded-xl space-y-2.5">
+            <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider text-slate-500">
+              2. Bệnh nhân thụ hưởng cơ số khẩn
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-600 block">Mã bệnh nhân:</label>
+                <label className="text-xs font-semibold text-slate-700 block">Mã bệnh nhân:</label>
                 <input
                   type="text"
                   value={patientCode}
                   onChange={(e) => setPatientCode(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg font-mono focus:outline-hidden focus:border-teal-600"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl font-mono font-medium focus:outline-hidden focus:border-emerald-600"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-600 block">Họ và tên bệnh nhân:</label>
+                <label className="text-xs font-semibold text-slate-700 block">Họ và tên bệnh nhân:</label>
                 <input
                   type="text"
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
                   required
-                  className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg font-medium focus:outline-hidden focus:border-teal-600"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-emerald-600"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-600 block">
+              <label className="text-xs font-semibold text-slate-700 block">
                 Vị trí buồng bệnh / Giường cấp cứu:
               </label>
               <input
@@ -250,18 +274,18 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
                 value={patientRoom}
                 onChange={(e) => setPatientRoom(e.target.value)}
                 required
-                className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-600"
+                className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:border-emerald-600"
               />
             </div>
           </div>
 
-          {/* Clinical Reason with Smart ICD-10 Macro Autocomplete */}
-          <div className="space-y-1 relative">
+          {/* Section 3: Clinical Reason with Smart ICD-10 Macro Autocomplete */}
+          <div className="space-y-1.5 relative">
             <div className="flex items-center justify-between">
               <label className="font-bold text-slate-900 block text-xs sm:text-sm">
-                Chỉ định lâm sàng / Lý do mượn khẩn <span className="text-slate-400 font-normal">(Gõ tắt ICD-10)</span>:
+                3. Chỉ định lâm sàng / Lý do mượn khẩn <span className="text-slate-400 font-normal">(Gõ tắt ICD-10)</span>:
               </label>
-              <span className="text-[11px] text-teal-700 font-medium">Chuẩn HL7 FHIR Condition</span>
+              <span className="text-[11px] text-teal-700 font-medium hidden sm:inline">Chuẩn HL7 FHIR</span>
             </div>
 
             <ClinicalMacroAutocomplete
@@ -306,15 +330,15 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
                   }
                 }
               }}
-              placeholder="VD: Nhập THA, NMCT, PUV, COPD... hoặc chọn từ thanh phím tắt phía trên"
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:border-teal-600 focus:outline-hidden resize-none"
+              placeholder="VD: Nhập THA, NMCT, PUV, COPD... hoặc chọn từ phím tắt phía trên"
+              className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:border-emerald-600 focus:outline-hidden resize-none"
             />
           </div>
 
           {/* Legal Notice */}
-          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
-            <AlertCircle className="w-4.5 h-4.5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="leading-relaxed">
+          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/90 text-amber-900 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="leading-relaxed text-[11.5px]">
               <strong>Quy định hoàn bù (Điều 10 Thông tư 22/2011/TT-BYT):</strong> Mọi cơ số mượn khẩn ca trực phải được Bác sĩ kê đơn bù và hoàn trả cho tủ trực trước <strong>07:00 sáng hôm sau</strong>.
               {itemType === 'Thuốc gây nghiện' && (
                 <span className="text-rose-700 block font-semibold mt-1">
@@ -324,23 +348,23 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </div>
           </div>
 
-          {/* Footer buttons */}
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+          {/* Footer buttons - Clean Responsive Touch Bar */}
+          <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-              <Shield className="w-4 h-4 text-teal-600" />
-              <span>Xác nhận bằng mã PIN / Thẻ nhân viên chuyên môn</span>
+              <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="text-[11px] truncate">Xác thực mã PIN y tế / Thẻ chuyên môn</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8.5 px-3.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold cursor-pointer transition"
+                className="flex-1 sm:flex-initial h-10 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold cursor-pointer transition"
               >
                 Hủy bỏ
               </button>
               <button
                 type="submit"
-                className="h-8.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-98"
+                className="flex-2 sm:flex-initial h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Ký Lập Phiếu Mượn</span>
