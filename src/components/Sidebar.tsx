@@ -70,21 +70,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={`h-full flex flex-col shrink-0 bg-white border-r border-slate-200/90 z-30 transition-all duration-200 select-none ${
-        isCollapsed ? 'w-16' : 'w-72 max-w-[85vw] md:w-64'
+        isCollapsed ? 'w-16' : 'w-72 max-w-[85vw] md:w-70'
       }`}
     >
-      {/* 1. Header: Branding & Collapse Toggle */}
-      <div className="h-14 px-3.5 flex items-center justify-between border-b border-slate-200/80 shrink-0">
+      {/* 1. Header: Branding (Clean & Full Title - No Truncation) */}
+      <div className="h-14 px-4 flex items-center justify-between border-b border-slate-200/80 shrink-0">
         {!isCollapsed ? (
-          <div className="flex items-center gap-2.5 overflow-hidden">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-teal-800 flex items-center justify-center text-white shadow-2xs shrink-0">
-              <Cross className="w-4.5 h-4.5 text-emerald-300" />
+              <Cross className="w-5 h-5 text-emerald-300" />
             </div>
-            <div className="flex flex-col truncate">
-              <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">
-                KHO Y TẾ LÂM SÀNG
+            <div className="flex flex-col min-w-0">
+              <span className="text-[15px] font-bold text-slate-900 tracking-tight whitespace-nowrap leading-tight">
+                Kho Y Tế Lâm Sàng
               </span>
-              <span className="text-xs text-slate-500 font-medium mt-1 leading-none">
+              <span className="text-xs text-slate-500 font-medium whitespace-nowrap mt-0.5">
                 Bệnh Viện Đa Khoa
               </span>
             </div>
@@ -92,32 +92,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           <div className="w-full flex justify-center">
             <div className="w-9 h-9 rounded-xl bg-teal-800 flex items-center justify-center text-white shadow-2xs">
-              <Cross className="w-4.5 h-4.5 text-emerald-300" />
+              <Cross className="w-5 h-5 text-emerald-300" />
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-1">
-          {onCloseMobile && (
-            <button
-              onClick={onCloseMobile}
-              className="md:hidden p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-              title="Đóng menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-
-          {!isCollapsed && (
-            <button
-              onClick={onToggleCollapse}
-              className="hidden md:flex p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
-              title="Thu gọn thanh menu (Tối đa chiều rộng bảng)"
-            >
-              <ChevronLeft className="w-4.5 h-4.5" />
-            </button>
-          )}
-        </div>
+        {onCloseMobile && (
+          <button
+            onClick={onCloseMobile}
+            className="md:hidden p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            title="Đóng menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* 2. Navigation Modules List (Filtered strictly by RBAC) */}
@@ -141,15 +129,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onTabChange('debt');
                   onCloseMobile?.();
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition cursor-pointer ${
                   currentTab === 'debt'
-                    ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200/80 shadow-2xs'
-                    : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    ? 'bg-teal-50 text-teal-950 font-bold border border-teal-200/80 shadow-2xs'
+                    : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title="Sổ nợ tủ trực cấp cứu (TT 22 & TT 20)"
               >
                 <FileText
-                  className={`w-4.5 h-4.5 shrink-0 ${
+                  className={`w-5 h-5 shrink-0 ${
                     currentTab === 'debt' ? 'text-teal-700' : 'text-slate-400'
                   }`}
                 />
@@ -173,15 +161,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onTabChange('fefo');
                   onCloseMobile?.();
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition cursor-pointer ${
                   currentTab === 'fefo'
-                    ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200/80 shadow-2xs'
-                    : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    ? 'bg-teal-50 text-teal-950 font-bold border border-teal-200/80 shadow-2xs'
+                    : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title="Kho Dược - Hạn dùng FEFO & Định mức (TT 36 GSP)"
               >
                 <Boxes
-                  className={`w-4.5 h-4.5 shrink-0 ${
+                  className={`w-5 h-5 shrink-0 ${
                     currentTab === 'fefo' ? 'text-teal-700' : 'text-slate-400'
                   }`}
                 />
@@ -267,15 +255,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onTabChange('equipment');
                     onCloseMobile?.();
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition cursor-pointer ${
                     currentTab === 'equipment'
-                      ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200/80 shadow-2xs'
-                      : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                      ? 'bg-teal-50 text-teal-950 font-bold border border-teal-200/80 shadow-2xs'
+                      : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
                   } ${isCollapsed ? 'justify-center px-0' : ''}`}
                   title="Sự cố & Kiểm định trang thiết bị y tế (NĐ 98/2021)"
                 >
                   <Wrench
-                    className={`w-4.5 h-4.5 shrink-0 ${
+                    className={`w-5 h-5 shrink-0 ${
                       currentTab === 'equipment' ? 'text-teal-700' : 'text-slate-400'
                     }`}
                   />
@@ -348,12 +336,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenAuditTrail();
                 onCloseMobile?.();
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
               title="Nhật Ký Kiểm Toán Lâm Sàng (NĐ 130)"
             >
-              <ShieldCheck className="w-4.5 h-4.5 text-teal-700 shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-teal-700 shrink-0" />
               {!isCollapsed && <span className="flex-1 text-left truncate">Nhật Ký Kiểm Toán</span>}
             </button>
 
@@ -362,12 +350,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenLegalDocs();
                 onCloseMobile?.();
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
               title="Căn Cứ Pháp Lý & Quy Định Bộ Y Tế (Docs)"
             >
-              <Scale className="w-4.5 h-4.5 text-teal-700 shrink-0" />
+              <Scale className="w-5 h-5 text-teal-700 shrink-0" />
               {!isCollapsed && <span className="flex-1 text-left truncate">Căn Cứ Pháp Lý</span>}
             </button>
 
@@ -376,12 +364,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenUserGuide();
                 onCloseMobile?.();
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
               title="Tài Liệu Hướng Dẫn Sử Dụng Chi Tiết (HDSD)"
             >
-              <BookOpen className="w-4.5 h-4.5 text-teal-700 shrink-0" />
+              <BookOpen className="w-5 h-5 text-teal-700 shrink-0" />
               {!isCollapsed && <span className="flex-1 text-left truncate">Hướng Dẫn Sử Dụng</span>}
             </button>
 
@@ -390,12 +378,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenPrintableForms?.();
                 onCloseMobile?.();
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
                 isCollapsed ? 'justify-center px-0' : ''
               }`}
               title="Xuất &amp; In Biểu Mẫu Hành Chính Y Tế (TT 20, TT 22, NĐ 151, NĐ 98)"
             >
-              <Printer className="w-4.5 h-4.5 text-teal-700 shrink-0" />
+              <Printer className="w-5 h-5 text-teal-700 shrink-0" />
               {!isCollapsed && <span className="flex-1 text-left truncate">Biểu Mẫu Y Tế (A4)</span>}
             </button>
           </div>

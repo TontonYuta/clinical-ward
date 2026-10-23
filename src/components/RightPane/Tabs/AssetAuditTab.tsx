@@ -78,41 +78,41 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden space-y-2.5 w-full">
       {/* 1. Unified Minimalist Command Ribbon */}
-      <div className="bg-white p-2 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 shadow-2xs shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-2">
+      <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Left: Search Input & Status Filter Pills */}
-        <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
-          <div className="relative w-full sm:w-60 shrink-0">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+        <div className="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
+          <div className="relative w-full sm:w-64 shrink-0">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm mã tài sản, tên máy, khoa..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-500 focus:bg-white text-slate-800 placeholder-slate-400 transition"
+              className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-hidden focus:border-teal-600 focus:bg-white text-slate-900 placeholder-slate-400 transition"
             />
           </div>
 
-          <div className="flex items-center gap-1 text-xs bg-slate-100/80 p-0.5 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-sm bg-slate-100/90 p-1 rounded-xl overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
             <button
               onClick={() => setFilterMode('all')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer shrink-0 ${
-                filterMode === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1.5 rounded-lg text-sm transition cursor-pointer shrink-0 ${
+                filterMode === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
               Tất cả ({assets.length})
             </button>
             <button
               onClick={() => setFilterMode('misallocated')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer shrink-0 ${
-                filterMode === 'misallocated' ? 'bg-white text-amber-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1.5 rounded-lg text-sm transition cursor-pointer shrink-0 ${
+                filterMode === 'misallocated' ? 'bg-white text-amber-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
               Lệch khoa ({misallocatedAssets.length})
             </button>
             <button
               onClick={() => setFilterMode('liquidation')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer shrink-0 ${
-                filterMode === 'liquidation' ? 'bg-white text-rose-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1.5 rounded-lg text-sm transition cursor-pointer shrink-0 ${
+                filterMode === 'liquidation' ? 'bg-white text-rose-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
               Kiến nghị thanh lý ({liquidationAssets.length})
@@ -121,31 +121,31 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-1.5 shrink-0 justify-end">
+        <div className="flex items-center gap-2 shrink-0 justify-end">
           <button
             onClick={() => onOpenPrintForm?.('TSC_ANNUAL_AUDIT')}
-            className="inline-flex items-center gap-1 h-7.5 px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-semibold transition shadow-2xs cursor-pointer"
             title="In Biên bản kiểm kê định kỳ Mẫu 05-TSC"
           >
-            <Printer className="w-3.5 h-3.5 text-slate-600" />
+            <Printer className="w-4 h-4 text-slate-600" />
             <span className="hidden sm:inline">Mẫu 05</span>
           </button>
 
           <button
             onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER')}
-            className="inline-flex items-center gap-1 h-7.5 px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-semibold transition shadow-2xs cursor-pointer"
             title="In Biên bản bàn giao, điều chuyển tài sản Mẫu 01/TSC"
           >
-            <Printer className="w-3.5 h-3.5 text-slate-600" />
+            <Printer className="w-4 h-4 text-slate-600" />
             <span className="hidden sm:inline">Mẫu 01</span>
           </button>
 
           <button
             onClick={handleScanClick}
-            className="inline-flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shrink-0 shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shrink-0 shadow-2xs cursor-pointer active:scale-98"
             title="Mô phỏng máy đọc mã vạch QR kiểm đếm máy thở tại buồng bệnh"
           >
-            <QrCode className="w-3.5 h-3.5 text-teal-400" />
+            <QrCode className="w-4 h-4 text-teal-400" />
             <span>Quét QR đối soát</span>
           </button>
         </div>
@@ -267,72 +267,74 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
       </div>
 
       {/* 2B. Desktop Table (hidden md:flex) - Sticky Thead, Isolated Scroll Body */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs flex-col">
-        <div className="flex-1 min-h-0 overflow-auto">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs flex-col">
+        <div className="flex-1 min-h-0 overflow-auto pb-24">
           <table className="w-full text-left text-sm min-w-[720px]">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-600 font-semibold text-xs uppercase tracking-wider">
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Mã tài sản</th>
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Thiết bị &amp; Cấp rủi ro</th>
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Hao mòn &amp; Hiện trạng</th>
-                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
+            <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200/90 shadow-2xs">
+              <tr className="text-slate-700 font-bold text-xs uppercase tracking-wider">
+                <th className="py-3.5 px-4 whitespace-nowrap">Mã tài sản</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap">Thiết bị &amp; Cấp rủi ro</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap">Hao mòn &amp; Hiện trạng</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredAssets.map((asset) => {
                 return (
                   <tr key={asset.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-2.5 px-3.5 font-mono text-slate-800 whitespace-nowrap">
-                      <span className="font-bold text-sm block">{asset.code}</span>
-                      <span className="text-xs text-slate-500">SN: {asset.serialNumber}</span>
+                    <td className="py-3.5 px-4 font-mono text-slate-800 whitespace-nowrap">
+                      <span className="font-bold text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200/70 block w-fit">
+                        {asset.code}
+                      </span>
+                      <span className="text-xs text-slate-600 font-medium block mt-1">SN: {asset.serialNumber}</span>
                     </td>
-                    <td className="py-2.5 px-3.5 whitespace-nowrap">
-                      <span className="font-bold text-sm text-slate-900 block">{asset.deviceName}</span>
-                      <span className="text-xs text-slate-500">
-                        Model: <span className="text-slate-700 font-medium">{asset.model}</span> · <span className="font-semibold text-slate-700">Loại {asset.riskClass}</span>
+                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                      <span className="font-bold text-[15px] text-slate-950 block leading-snug">{asset.deviceName}</span>
+                      <span className="text-xs text-slate-600 font-medium block mt-0.5">
+                        Model: <span className="text-slate-800 font-semibold">{asset.model}</span> · <span className="font-bold text-slate-800">Loại {asset.riskClass}</span>
                       </span>
                     </td>
-                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                    <td className="py-3.5 px-3.5 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
-                        <span className="text-xs text-slate-600 flex items-center gap-1.5 font-medium">
+                        <span className="text-xs text-slate-700 flex items-center gap-1.5 font-medium">
                           <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                          Sổ: {asset.registeredDepartment}
+                          Sổ sách: <strong className="text-slate-900">{asset.registeredDepartment}</strong>
                         </span>
                         {asset.isMisallocated ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 w-fit">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 w-fit">
                             <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                             Lệch: {asset.actualDepartment}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-800 font-medium">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-800 font-semibold">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Quét: {asset.actualDepartment}
+                            Khớp thực tế: {asset.actualDepartment}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                    <td className="py-3.5 px-3.5 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-sm text-slate-800 font-bold">{asset.depreciationRatePercent}%</span>
-                          <span className="text-xs text-slate-500">({asset.operatingYears} năm)</span>
+                          <span className="font-mono text-sm text-slate-950 font-extrabold">{asset.depreciationRatePercent}%</span>
+                          <span className="text-xs text-slate-600 font-medium">({asset.operatingYears} năm)</span>
                         </div>
                         {asset.pendingLiquidation ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 w-fit">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300 w-fit">
                             <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                             Chờ thanh lý
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-500">Đang hoạt động tốt</span>
+                          <span className="text-xs text-slate-600 font-medium">Đang hoạt động tốt</span>
                         )}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-2 justify-end">
                         <button
                           onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer"
+                          className="w-8.5 h-8.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-600 hover:text-teal-800 transition cursor-pointer flex items-center justify-center shadow-2xs"
                           title="In Biên bản bàn giao tài sản cho thiết bị này (Mẫu 01/TSC-BBGN)"
                         >
                           <Printer className="w-4 h-4" />
@@ -340,16 +342,16 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                         {asset.isMisallocated ? (
                           <button
                             onClick={() => handleTransfer(asset.id, asset.actualDepartment)}
-                            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
+                            className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
                             title="Xác nhận cập nhật vị trí mới trên sổ sách kế toán theo NĐ 151"
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
                             <span>Điều chuyển</span>
                           </button>
-                        ) : !asset.pendingLiquidation && asset.operatingYears >= 8 ? (
+                        ) : !asset.pendingLiquidation && asset.operatingYears >= 8 && (
                           <button
                             onClick={() => handleLiquidation(asset.id)}
-                            className={`inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap ${
+                            className={`inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap ${
                               currentUserRole === 'director'
                                 ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
                                 : 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-800 border border-slate-300 hover:border-rose-300'
@@ -365,11 +367,6 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                             )}
                             <span>{currentUserRole === 'director' ? 'Thanh lý' : 'Đề xuất thanh lý'}</span>
                           </button>
-                        ) : (
-                          <span className="text-xs text-emerald-800 font-semibold flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md whitespace-nowrap">
-                            <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Đúng vị trí sổ sách
-                          </span>
                         )}
                       </div>
                     </td>
