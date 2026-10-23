@@ -33,6 +33,8 @@ ENV/
 .vercel_python_packages/
 api/pyproject.toml
 api/uv.lock
+api/.python-version
+.python-version
 .env*
 docs/videos/raw/
 

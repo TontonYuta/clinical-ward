@@ -56,9 +56,9 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
               <Wrench className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Biên Bản Thử Tải, Kiểm Định &amp; Bàn Giao Thiết Bị</h2>
+              <h2 className="text-xs sm:text-base font-bold truncate">Kiểm Định &amp; Bàn Giao Thiết Bị</h2>
               <span className="text-[11px] text-slate-400 font-mono truncate block">
-                Nghị định 98/2021/NĐ-CP &amp; Tiêu chuẩn IEC 60601-1
+                Nghị định 98/2021/NĐ-CP · IEC 60601-1
               </span>
             </div>
           </div>

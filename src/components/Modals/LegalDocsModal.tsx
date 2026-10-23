@@ -121,11 +121,11 @@ export const LegalDocsModal: React.FC<LegalDocsModalProps> = ({ isOpen, onClose 
             </div>
             <div className="min-w-0">
               <h2 className="text-sm sm:text-base font-bold tracking-tight truncate">
-                <span className="hidden sm:inline">Căn Cứ Pháp Lý &amp; Quy Chế Vận Hành Bệnh Viện</span>
-                <span className="sm:hidden">Căn Cứ Pháp Lý Y Tế</span>
+                <span className="hidden sm:inline">Căn Cứ Pháp Lý &amp; Quy Chế</span>
+                <span className="sm:hidden">Căn Cứ Pháp Lý</span>
               </h2>
               <p className="text-xs text-teal-200 truncate">
-                Văn bản quy phạm pháp luật Bộ Y Tế &amp; Chính Phủ hiện hành
+                Văn bản quy phạm pháp luật hiện hành
               </p>
             </div>
           </div>

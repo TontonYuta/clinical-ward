@@ -106,30 +106,26 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-6xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 h-[88vh]">
         {/* Header */}
-        <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-600/30 border border-teal-400/40 flex items-center justify-center text-teal-300">
+        <div className="h-14 px-4 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-300 shrink-0">
               <ShieldCheck className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
-                  Sổ Nhật Ký Thao Tác Lâm Sàng
-                </h2>
-                <span className="text-xs font-medium px-2.5 py-0.5 rounded-md bg-teal-950 text-teal-300 border border-teal-500/30">
-                  Hồ Sơ Nội Bộ Bệnh Viện
-                </span>
-              </div>
-              <p className="text-xs text-slate-300">
-                Theo dõi lịch sử ký duyệt, phân định trách nhiệm chuyên môn của kíp trực và bảo đảm an toàn lâm sàng
-              </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="text-sm sm:text-base font-bold tracking-tight text-white truncate">
+                Nhật Ký Kiểm Toán
+              </h2>
+              <span className="text-[11px] font-mono text-slate-400 border border-slate-700/80 bg-slate-800/80 px-2 py-0.5 rounded-md shrink-0">
+                {records.length} bản ghi
+              </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+            className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer flex items-center justify-center shrink-0"
+            title="Đóng (Esc)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -378,16 +374,14 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-teal-700" />
-            <span>
-              Sổ nhật ký tuân thủ nguyên tắc lưu trữ cố định của bệnh viện. Mọi thao tác ký duyệt được bảo vệ chống can thiệp sửa đổi trái phép.
-            </span>
+        <div className="px-4 sm:px-5 py-2.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+            <span>Bảo mật bất biến SHA-256 · NĐ 130/2018</span>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs cursor-pointer shadow-2xs"
+            className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition cursor-pointer"
           >
             Đóng
           </button>

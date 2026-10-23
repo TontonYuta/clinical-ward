@@ -91,9 +91,9 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               <Pill className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Lập Phiếu Mượn Khẩn Thuốc / Vật Tư Tủ Trực</h2>
+              <h2 className="text-xs sm:text-base font-bold truncate">Mượn Khẩn Thuốc &amp; Vật Tư</h2>
               <span className="text-[11px] text-slate-400 font-mono truncate block">
-                Kho Dược Lâm Sàng · Điều 10 Thông tư 22/2011/TT-BYT
+                Cơ số tủ trực · TT 22/2011/TT-BYT
               </span>
             </div>
           </div>

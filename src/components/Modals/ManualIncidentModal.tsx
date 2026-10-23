@@ -126,9 +126,9 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Báo Hỏng / Sự Cố Trang Thiết Bị Y Tế</h2>
+              <h2 className="text-xs sm:text-base font-bold truncate">Báo Hỏng Thiết Bị</h2>
               <span className="text-[11px] text-slate-400 font-mono truncate block">
-                Phòng Vật Tư - TBYT · Nghị định 98/2021 &amp; NĐ 07/2023
+                Nghị định 98/2021/NĐ-CP
               </span>
             </div>
           </div>

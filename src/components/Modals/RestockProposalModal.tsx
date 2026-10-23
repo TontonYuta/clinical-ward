@@ -56,9 +56,9 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
               <Boxes className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Phiếu Dự Trù Bổ Sung Cơ Số Thuốc &amp; Vật Tư</h2>
+              <h2 className="text-xs sm:text-base font-bold truncate">Dự Trù Bổ Sung Thuốc &amp; Vật Tư</h2>
               <span className="text-[11px] text-teal-200 font-mono truncate block">
-                Mẫu số 01/TT22 · Điều 7 Thông tư 22/2011/TT-BYT &amp; GSP TT 36
+                Mẫu 01 · Thông tư 22/2011/TT-BYT
               </span>
             </div>
           </div>

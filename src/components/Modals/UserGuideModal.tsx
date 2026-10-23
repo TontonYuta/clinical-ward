@@ -69,11 +69,11 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             </div>
             <div className="min-w-0">
               <h2 className="text-sm sm:text-base font-bold truncate">
-                <span className="hidden sm:inline">Tài Liệu Hướng Dẫn Vận Hành Lâm Sàng Bệnh Viện</span>
+                <span className="hidden sm:inline">Hướng Dẫn Vận Hành Lâm Sàng</span>
                 <span className="sm:hidden">Hướng Dẫn Vận Hành</span>
               </h2>
               <p className="text-xs text-slate-400 font-mono truncate">
-                Sổ tay nghiệp vụ chuẩn hóa Thông tư 22, TT 20 &amp; NĐ 98
+                Quy chuẩn TT 22 · TT 20 · NĐ 98
               </p>
             </div>
           </div>

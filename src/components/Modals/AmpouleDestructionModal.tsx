@@ -56,9 +56,9 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Hội Đồng Tiêu Hủy Vỏ Ống Thuốc Gây Nghiện</h2>
+              <h2 className="text-xs sm:text-base font-bold truncate">Tiêu Hủy Vỏ Ống Gây Nghiện</h2>
               <span className="text-[11px] text-slate-400 font-mono truncate block">
-                Mẫu số 16 Phụ lục II NĐ 54/2017 &amp; Thông tư 20/2017/TT-BYT
+                Mẫu 16 · Thông tư 20/2017/TT-BYT
               </span>
             </div>
           </div>
