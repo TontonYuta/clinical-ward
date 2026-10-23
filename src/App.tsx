@@ -1434,26 +1434,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         </main>
       </div>
 
-      {/* 5A. Desktop Floating AI Assistant Bubble (hidden md:flex) */}
-      {!isCopilotOpen && (
-        <button
-          onClick={() => setIsCopilotOpen(true)}
-          className="hidden md:flex fixed bottom-5 right-6 z-40 items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-lg hover:shadow-xl active:scale-98 transition duration-150 cursor-pointer border border-slate-700/80 group print:hidden"
-          title="Mở Trợ lý AI Lâm Sàng"
-        >
-          <Bot className="w-4 h-4 text-teal-400" />
-          <span className="text-xs font-semibold tracking-tight">Trợ Lý AI</span>
-        </button>
-      )}
-
       {/* 5B. Modern Mobile Bottom Navigation Bar (md:hidden) - Role-Aware & 100% RBAC Compatible */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-1.5 py-1 flex items-center justify-around select-none print:hidden">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1.5 flex items-center justify-around select-none print:hidden">
         {/* Slot 1: Role Primary Tab 1 */}
         {currentUserRole === 'pharmacist' ? (
           <button
             onClick={() => setCurrentTab('fefo')}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'fefo' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
+              currentTab === 'fefo' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
@@ -1469,10 +1457,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         ) : (
           <button
             onClick={() => setCurrentTab(currentUserRole === 'biomedical_engineer' ? 'equipment' : 'debt')}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
               (currentUserRole === 'biomedical_engineer' ? currentTab === 'equipment' : currentTab === 'debt')
                 ? 'text-teal-800 font-bold'
-                : 'text-slate-400 hover:text-slate-600'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
@@ -1506,18 +1494,18 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         {currentUserRole === 'biomedical_engineer' ? (
           <button
             onClick={() => handleOpenPrintForm('EQUIPMENT_HANDOVER_INSPECT')}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-600 transition cursor-pointer relative"
+            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
           >
             <div className="relative">
-              <Printer className="w-5 h-5 text-slate-500" />
+              <Printer className="w-5 h-5 text-slate-600" />
             </div>
             <span className="text-xs mt-0.5 tracking-tight font-medium">In NĐ 98</span>
           </button>
         ) : currentUserRole === 'pharmacist' ? (
           <button
             onClick={() => setCurrentTab('debt')}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'debt' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
+              currentTab === 'debt' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
@@ -1533,8 +1521,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         ) : (
           <button
             onClick={() => setCurrentTab('equipment')}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'equipment' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
+              currentTab === 'equipment' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
@@ -1549,25 +1537,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           </button>
         )}
 
-        {/* Center: AI Copilot Circle Action Button */}
-        <button
-          onClick={() => setIsCopilotOpen(true)}
-          className="flex flex-col items-center justify-center -mt-4 group cursor-pointer"
-          title="Mở Trợ lý AI Lâm Sàng"
-        >
-          <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg ring-4 ring-white group-active:scale-95 transition relative">
-            <Bot className="w-5 h-5 text-teal-400" />
-            <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-white" />
-          </div>
-          <span className="text-xs font-bold text-teal-800 mt-0.5">Trợ Lý AI</span>
-        </button>
-
-        {/* Slot 4: Role Secondary Tab or Quick Document */}
+        {/* Slot 3: Role Secondary Tab or Quick Document */}
         {currentUserRole === 'director' ? (
           <button
             onClick={() => setCurrentTab('fefo')}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'fefo' ? 'text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-600'
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
+              currentTab === 'fefo' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
@@ -1583,10 +1558,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         ) : currentUserRole === 'biomedical_engineer' ? (
           <button
             onClick={() => setIsAuditTrailOpen(true)}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-600 transition cursor-pointer relative"
+            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
           >
             <div className="relative">
-              <Building2 className="w-5 h-5 text-slate-500" />
+              <Building2 className="w-5 h-5 text-slate-600" />
             </div>
             <span className="text-xs mt-0.5 tracking-tight font-medium">Kiểm toán</span>
           </button>
@@ -1599,25 +1574,25 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
                   : 'TT20_AMPOULE_DESTRUCTION'
               )
             }
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-600 transition cursor-pointer relative"
+            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
           >
             <div className="relative">
-              <Printer className="w-5 h-5 text-slate-500" />
+              <Printer className="w-5 h-5 text-slate-600" />
             </div>
             <span className="text-xs mt-0.5 tracking-tight font-medium">In Biểu Mẫu</span>
           </button>
         )}
 
-        {/* Slot 5: Full Menu / Drawer Trigger */}
+        {/* Slot 4: Full Menu / Drawer Trigger */}
         <button
           onClick={() => setIsMobileSidebarOpen(true)}
-          className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-600 transition cursor-pointer relative"
+          className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
           title="Mở menu & tiện ích"
         >
           <div className="w-5 h-5 flex flex-col justify-center items-center gap-0.5">
-            <span className="w-4 h-0.5 bg-slate-500 rounded-full" />
-            <span className="w-4 h-0.5 bg-slate-500 rounded-full" />
-            <span className="w-4 h-0.5 bg-slate-500 rounded-full" />
+            <span className="w-4 h-0.5 bg-slate-600 rounded-full" />
+            <span className="w-4 h-0.5 bg-slate-600 rounded-full" />
+            <span className="w-4 h-0.5 bg-slate-600 rounded-full" />
           </div>
           <span className="text-xs mt-0.5 tracking-tight font-medium">Menu</span>
         </button>

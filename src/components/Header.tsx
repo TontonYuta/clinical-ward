@@ -151,18 +151,19 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* AI Copilot Toggle */}
+        {/* AI Copilot Toggle - Single Canonical Access Point */}
         {onToggleCopilot && (
           <button
             onClick={onToggleCopilot}
-            className={`h-8.5 px-3 rounded-xl border text-sm font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
+            aria-label="Trợ Lý AI Lâm Sàng"
+            className={`h-9 px-2.5 sm:px-3.5 rounded-xl border text-sm font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
               isCopilotOpen
                 ? 'bg-teal-50 border-teal-300 text-teal-950 font-bold'
                 : 'border-slate-200 hover:bg-slate-50 text-slate-700'
             }`}
-            title="Bật/Tắt Trợ Lý AI Lâm Sàng"
+            title="Bật/Tắt Trợ Lý AI Lâm Sàng (Single Point of Entry)"
           >
-            <Bot className="w-4 h-4 text-teal-700" />
+            <Bot className="w-4.5 h-4.5 text-teal-700 shrink-0" />
             <span className="hidden sm:inline">Trợ Lý AI</span>
           </button>
         )}

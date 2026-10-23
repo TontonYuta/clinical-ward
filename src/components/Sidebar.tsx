@@ -11,7 +11,7 @@ import {
   ThermometerSnowflake,
   Wrench,
   Building2,
-  ShieldCheck,
+  ClipboardList,
   Scale,
   BookOpen,
   ChevronLeft,
@@ -29,7 +29,7 @@ export interface SidebarProps {
   currentTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
   currentUserRole: UserRole;
-  onSelectUserRole: (role: UserRole) => void;
+  onSelectUserRole?: (role: UserRole) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onCloseMobile?: () => void;
@@ -341,7 +341,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
               title="Nhật Ký Kiểm Toán Lâm Sàng (NĐ 130)"
             >
-              <ShieldCheck className="w-5 h-5 text-teal-700 shrink-0" />
+              <ClipboardList className="w-5 h-5 text-teal-700 shrink-0" />
               {!isCollapsed && <span className="flex-1 text-left truncate">Nhật Ký Kiểm Toán</span>}
             </button>
 
@@ -390,26 +390,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* 3. Footer: Active Clinical Staff Profile */}
+      {/* 3. Footer: Hospital Standard & Ward Compliance (Single Source of Role in Top Header) */}
       <div className="border-t border-slate-200/80 p-3 shrink-0 bg-slate-50/70">
         {!isCollapsed ? (
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-teal-800 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-              {currentProfile.name.charAt(0)}
-            </div>
-            <div className="flex flex-col truncate min-w-0">
-              <span className="text-sm font-bold text-slate-900 truncate">
-                {currentProfile.name}
-              </span>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium truncate">
-                <span className="truncate">{currentProfile.roleName}</span>
-                <span>·</span>
-                <span className="font-mono text-teal-700 font-semibold">{currentProfile.practiceCertificate}</span>
-              </div>
-            </div>
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+            <span className="truncate">Chuẩn BYT: TT 22 &amp; NĐ 98</span>
+            <span className="font-mono text-teal-700 font-bold bg-teal-50 px-2 py-0.5 rounded border border-teal-200/60">GSP 2026</span>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center">
             <button
               onClick={onToggleCollapse}
               className="w-9 h-9 rounded-lg bg-teal-50 text-teal-800 flex items-center justify-center hover:bg-teal-100 transition cursor-pointer"
