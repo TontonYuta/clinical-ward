@@ -16,7 +16,7 @@ if not os.path.exists(db_dest) and os.path.exists(db_source):
     except Exception as e:
         pass
 
-db_path = db_dest if os.path.exists(db_dest) else db_source
+db_path = db_dest
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_path}"
 
 import app.config

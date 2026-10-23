@@ -30,6 +30,9 @@ ENV/
 .env.production.local
 !.env.example
 .vercel
+.vercel_python_packages/
+api/pyproject.toml
+api/uv.lock
 .env*
 docs/videos/raw/
 
