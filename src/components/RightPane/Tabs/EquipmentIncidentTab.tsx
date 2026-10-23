@@ -159,7 +159,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                     {ticket.code}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
+                    className={`px-2 py-0.5 rounded text-xs font-bold border ${
                       ticket.riskClass === 'D'
                         ? 'bg-rose-50 text-rose-700 border-rose-200/80'
                         : 'bg-amber-50 text-amber-700 border-amber-200/80'
@@ -254,17 +254,17 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
 
       {/* 2B. Desktop High-Density Table (hidden md:flex) - Sticky Thead, Zero Redundant Scroll */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs flex-col">
-        <div className="flex-1 min-h-0 overflow-auto">
-          <table className="w-full text-left text-sm min-w-[700px]">
+        <div className="flex-1 min-h-0 overflow-auto pb-24">
+          <table className="w-full text-left text-sm min-w-[960px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-500 font-semibold text-xs uppercase tracking-wider">
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Mã &amp; Cấp độ</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Thiết bị &amp; Model</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Sự cố ghi nhận (NĐ 98)</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Vị trí khoa phòng</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Hạn kiểm định</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
+              <tr className="text-slate-600 font-bold text-xs uppercase tracking-wider">
+                <th className="py-3 px-4 whitespace-nowrap">Mã &amp; Cấp độ</th>
+                <th className="py-3 px-3.5 whitespace-nowrap">Thiết bị &amp; Model</th>
+                <th className="py-3 px-3.5 whitespace-nowrap">Sự cố ghi nhận (NĐ 98)</th>
+                <th className="py-3 px-3.5 whitespace-nowrap">Vị trí khoa phòng</th>
+                <th className="py-3 px-3 whitespace-nowrap">Hạn kiểm định</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -274,13 +274,13 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                 return (
                   <tr key={ticket.id} className="hover:bg-slate-50/80 transition">
                     {/* Code & Risk Class */}
-                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span className="font-mono font-bold text-slate-800 text-xs sm:text-sm block">{ticket.code}</span>
                       <span
-                        className={`inline-block mt-0.5 px-2 py-0.2 rounded text-[10px] font-bold border ${
+                        className={`inline-block mt-0.5 px-2 py-0.5 rounded-md text-xs font-bold border ${
                           ticket.riskClass === 'D'
-                            ? 'bg-rose-50 text-rose-700 border-rose-200'
-                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                            ? 'bg-rose-50 text-rose-800 border-rose-300'
+                            : 'bg-amber-50 text-amber-800 border-amber-300'
                         }`}
                       >
                         Loại {ticket.riskClass}
@@ -288,49 +288,49 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                     </td>
 
                     {/* Device & Model */}
-                    <td className="py-2.5 px-3">
+                    <td className="py-3.5 px-3.5">
                       <span className="font-bold text-slate-900 block text-sm">{ticket.deviceName}</span>
-                      <span className="text-xs text-slate-500 font-mono">SN: {ticket.serialNumber} · {ticket.deviceModel}</span>
+                      <span className="text-xs text-slate-600 font-medium">SN: {ticket.serialNumber} · {ticket.deviceModel}</span>
                     </td>
 
                     {/* Issue */}
-                    <td className="py-2.5 px-3 max-w-xs">
-                      <span className="text-xs sm:text-sm text-slate-800 font-medium line-clamp-1" title={ticket.accessoryIssue}>
+                    <td className="py-3.5 px-3.5 max-w-xs">
+                      <span className="text-sm text-slate-900 font-semibold line-clamp-1" title={ticket.accessoryIssue}>
                         {ticket.accessoryIssue}
                       </span>
-                      <span className="text-[11px] text-slate-500 block">KS: {ticket.assignedEngineer}</span>
+                      <span className="text-xs text-slate-600 block mt-0.5">KS: {ticket.assignedEngineer}</span>
                     </td>
 
                     {/* Location */}
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="font-medium text-slate-800 text-xs sm:text-sm block">📍 {ticket.location}</span>
+                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                      <span className="font-semibold text-slate-800 text-xs sm:text-sm block">📍 {ticket.location}</span>
                     </td>
 
                     {/* Inspection */}
-                    <td className="py-2.5 px-3 whitespace-nowrap font-mono text-xs text-slate-700">
-                      <span>{ticket.nextInspectionDue}</span>
-                      <span className="text-[10px] text-slate-400 block font-sans">Viện TBYT NIEMET</span>
+                    <td className="py-3.5 px-3 whitespace-nowrap font-mono text-xs text-slate-800">
+                      <span className="font-semibold block">{ticket.nextInspectionDue}</span>
+                      <span className="text-xs text-slate-600 font-sans">Viện TBYT NIEMET</span>
                     </td>
 
                     {/* Urgency & Status */}
-                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                    <td className="py-3.5 px-3 text-center whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold border ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${
                           isUrgent && !isResolved
-                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            ? 'bg-rose-50 text-rose-800 border-rose-300 font-bold'
                             : isResolved
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                             : 'bg-slate-100 text-slate-700 border-slate-200'
                         }`}
                       >
                         {isUrgent && !isResolved ? (
                           <>
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            <span className="w-2 h-2 rounded-full bg-rose-600" />
                             Khẩn cấp
                           </>
                         ) : isResolved ? (
                           <>
-                            <Check className="w-3 h-3 text-emerald-600" />
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
                             Đã bàn giao
                           </>
                         ) : (
@@ -340,11 +340,11 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                     </td>
 
                     {/* Actions */}
-                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
-                          className="h-7.5 px-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                          className="h-8 px-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
                           title="In Biên bản kỹ thuật NĐ 98"
                         >
                           <Printer className="w-3.5 h-3.5 text-teal-700" />
@@ -354,7 +354,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
                         {!isResolved ? (
                           <button
                             onClick={() => handleOpenHandover(ticket)}
-                            className={`h-7.5 px-3 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-98 flex items-center gap-1 ${
+                            className={`h-8 px-3 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-98 flex items-center gap-1.5 ${
                               currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
                                 ? 'bg-teal-700 hover:bg-teal-800 text-white'
                                 : 'bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-300'

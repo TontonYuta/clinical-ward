@@ -120,7 +120,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
             >
               Thuốc gây nghiện ({narcoticDebts.length})
               {pendingAmpoules.length > 0 && (
-                <span className="ml-1 text-[11px] font-bold text-rose-600">· {pendingAmpoules.length} nợ vỏ</span>
+                <span className="ml-1 text-xs font-bold text-rose-600">· {pendingAmpoules.length} nợ vỏ</span>
               )}
             </button>
             <button
@@ -305,18 +305,18 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
 
       {/* 4B. Desktop Table (hidden md:flex) - Pinned Sticky Header, Isolated Scroll Body */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs flex-col">
-        <div className="overflow-auto flex-1 w-full">
-          <table className="w-full text-left text-sm min-w-[700px]">
+        <div className="overflow-auto flex-1 w-full pb-24">
+          <table className="w-full text-left text-sm table-fixed">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-500 font-medium text-xs uppercase tracking-wider">
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Mã phiếu</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Mặt hàng</th>
-                <th className="py-2.5 px-2.5 text-center whitespace-nowrap">SL</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Bệnh nhân / Vị trí</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Thời gian</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Vỏ ống (TT 20)</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
+              <tr className="text-slate-600 font-bold text-xs uppercase tracking-wider">
+                <th className="py-3 px-3.5 w-28 whitespace-nowrap">Mã phiếu</th>
+                <th className="py-3 px-3 w-[26%]">Mặt hàng</th>
+                <th className="py-3 px-2 text-center w-14 whitespace-nowrap">SL</th>
+                <th className="py-3 px-3 w-[26%]">Bệnh nhân / Vị trí</th>
+                <th className="py-3 px-2 text-center w-24 whitespace-nowrap">Thời gian</th>
+                <th className="py-3 px-2 text-center w-32 whitespace-nowrap">Vỏ ống (TT 20)</th>
+                <th className="py-3 px-2 text-center w-28 whitespace-nowrap">Trạng thái</th>
+                <th className="py-3 px-3.5 text-right w-32 whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -325,33 +325,33 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                 const isNarcotic = item.itemType === 'Thuốc gây nghiện';
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-2.5 px-3.5 font-mono text-slate-700 font-semibold text-xs whitespace-nowrap">{item.code}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="font-semibold text-slate-900 block text-xs sm:text-sm">{item.itemName}</span>
-                      <span className="text-[11px] text-slate-400 font-medium">{item.itemType}</span>
+                    <td className="py-3.5 px-3.5 font-mono text-slate-800 font-semibold text-xs whitespace-nowrap">{item.code}</td>
+                    <td className="py-3.5 px-3 pr-2">
+                      <span className="font-bold text-slate-900 block text-sm truncate" title={item.itemName}>{item.itemName}</span>
+                      <span className="text-xs text-slate-600 font-medium block truncate">{item.itemType}</span>
                     </td>
-                    <td className="py-2.5 px-2.5 text-center font-mono font-bold text-slate-900 text-xs sm:text-sm whitespace-nowrap">
+                    <td className="py-3.5 px-2 text-center font-mono font-bold text-slate-900 text-sm whitespace-nowrap">
                       {item.quantity}
                     </td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="text-slate-900 font-semibold block text-xs sm:text-sm">{item.patientName}</span>
-                      <span className="text-[11px] text-slate-400 font-medium">{item.patientRoom}</span>
+                    <td className="py-3.5 px-3 pr-2">
+                      <span className="text-slate-900 font-bold block text-sm truncate" title={item.patientName}>{item.patientName}</span>
+                      <span className="text-xs text-slate-600 font-medium block truncate" title={item.patientRoom}>{item.patientRoom}</span>
                     </td>
-                    <td className="py-2.5 px-3 text-slate-500 text-xs font-mono whitespace-nowrap">{item.borrowTime}</td>
-                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                    <td className="py-3.5 px-2 text-center text-slate-700 text-xs font-mono font-medium whitespace-nowrap">{item.borrowTime}</td>
+                    <td className="py-3.5 px-2 text-center whitespace-nowrap">
                       {isNarcotic ? (
                         item.ampouleDestroyed ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
                             Đã tiêu hủy
                           </span>
                         ) : item.ampouleReturned ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                             Đã nộp khay
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                            <ShieldAlert className="w-3 h-3 text-rose-600" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300">
+                            <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
                             Chưa nộp vỏ
                           </span>
                         )
@@ -359,46 +359,46 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                         <span className="text-slate-300 text-xs">—</span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                    <td className="py-3.5 px-2 text-center whitespace-nowrap">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
-                          isDebt ? 'bg-amber-50 text-amber-900 border border-amber-200/80' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold ${
+                          isDebt ? 'bg-amber-50 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'
                         }`}
                       >
                         {isDebt ? 'Đang nợ' : 'Đã hoàn bù'}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1.5 justify-end">
+                    <td className="py-3.5 px-3.5 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-2 justify-end">
                         <button
                           onClick={() => onOpenPrintForm?.(isNarcotic ? 'TT20_AMPOULE_DESTRUCTION' : 'EMERGENCY_BORROW_TICKET', item)}
-                          className="p-1 rounded text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-teal-800 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                           title="In phiếu kẹp bệnh án (TT22)"
                         >
-                          <Printer className="w-3.5 h-3.5" />
+                          <Printer className="w-4 h-4" />
                         </button>
                         {isDebt ? (
                           isNarcotic && !item.ampouleReturned ? (
                             <button
                               onClick={() => handleAmpouleReturn(item.id)}
-                              className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-semibold cursor-pointer active:scale-98 transition shadow-2xs whitespace-nowrap"
+                              className="inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 text-xs font-bold cursor-pointer active:scale-98 transition shadow-2xs whitespace-nowrap"
                               title="Thu hồi vỏ ống thuốc gây nghiện nộp vào khay (Điều 15 TT 20)"
                             >
-                              <ShieldAlert className="w-3 h-3 text-rose-600" />
+                              <ShieldAlert className="w-3.5 h-3.5" />
                               <span>Nộp vỏ</span>
                             </button>
                           ) : (
                             <button
                               onClick={() => handleSettle(item.id)}
-                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
+                              className="inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
                               title="Duyệt hoàn bù cơ số tủ trực (TT 22)"
                             >
-                              <Check className="w-3 h-3" />
+                              <Check className="w-3.5 h-3.5" />
                               <span>Hoàn bù</span>
                             </button>
                           )
                         ) : (
-                          <span className="text-[11px] font-medium text-slate-400">Đã chốt sổ</span>
+                          <span className="text-xs font-medium text-slate-500">Đã chốt sổ</span>
                         )}
                       </div>
                     </td>

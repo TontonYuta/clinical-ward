@@ -1396,6 +1396,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             setIsAudioMuted(!isAudioMuted);
           }}
           coldChainAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
+          isCopilotOpen={isCopilotOpen}
+          onToggleCopilot={() => setIsCopilotOpen(prev => !prev)}
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
@@ -1462,7 +1464,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
                 </span>
               )}
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">Kho FEFO</span>
+            <span className="text-xs mt-0.5 tracking-tight font-medium">Kho FEFO</span>
           </button>
         ) : (
           <button
@@ -1478,7 +1480,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
                 <>
                   <Wrench className={`w-5 h-5 ${currentTab === 'equipment' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
                   {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length > 0 && (
-                    <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
+                    <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
                       {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
                     </span>
                   )}
@@ -1487,14 +1489,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
                 <>
                   <FileText className={`w-5 h-5 ${currentTab === 'debt' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
                   {debts.filter(d => d.status === 'debt').length > 0 && (
-                    <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
+                    <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
                       {debts.filter(d => d.status === 'debt').length}
                     </span>
                   )}
                 </>
               )}
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">
+            <span className="text-xs mt-0.5 tracking-tight font-medium">
               {currentUserRole === 'biomedical_engineer' ? 'Sự cố' : 'Tủ trực'}
             </span>
           </button>
@@ -1509,7 +1511,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <div className="relative">
               <Printer className="w-5 h-5 text-slate-500" />
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">In NĐ 98</span>
+            <span className="text-xs mt-0.5 tracking-tight font-medium">In NĐ 98</span>
           </button>
         ) : currentUserRole === 'pharmacist' ? (
           <button
@@ -1521,12 +1523,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <div className="relative">
               <FileText className={`w-5 h-5 ${currentTab === 'debt' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
               {debts.filter(d => d.status === 'debt').length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
+                <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
                   {debts.filter(d => d.status === 'debt').length}
                 </span>
               )}
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">Tủ trực</span>
+            <span className="text-xs mt-0.5 tracking-tight font-medium">Tủ trực</span>
           </button>
         ) : (
           <button
@@ -1538,12 +1540,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <div className="relative">
               <Wrench className={`w-5 h-5 ${currentTab === 'equipment' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
               {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
+                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
                   {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
                 </span>
               )}
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">Sự cố</span>
+            <span className="text-xs mt-0.5 tracking-tight font-medium">Sự cố</span>
           </button>
         )}
 
@@ -1557,7 +1559,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <Bot className="w-5 h-5 text-teal-400" />
             <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-white" />
           </div>
-          <span className="text-[11px] font-bold text-teal-800 mt-0.5">Trợ Lý AI</span>
+          <span className="text-xs font-bold text-teal-800 mt-0.5">Trợ Lý AI</span>
         </button>
 
         {/* Slot 4: Role Secondary Tab or Quick Document */}
@@ -1571,12 +1573,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <div className="relative">
               <Boxes className={`w-5 h-5 ${currentTab === 'fefo' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
               {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
+                <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
                   {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
                 </span>
               )}
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">Kho FEFO</span>
+            <span className="text-xs mt-0.5 tracking-tight font-medium">Kho FEFO</span>
           </button>
         ) : currentUserRole === 'biomedical_engineer' ? (
           <button
@@ -1586,7 +1588,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <div className="relative">
               <Building2 className="w-5 h-5 text-slate-500" />
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">Kiểm toán</span>
+            <span className="text-xs mt-0.5 tracking-tight font-medium">Kiểm toán</span>
           </button>
         ) : (
           <button
@@ -1602,7 +1604,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <div className="relative">
               <Printer className="w-5 h-5 text-slate-500" />
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">In Biểu Mẫu</span>
+            <span className="text-xs mt-0.5 tracking-tight font-medium">In Biểu Mẫu</span>
           </button>
         )}
 
@@ -1617,7 +1619,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <span className="w-4 h-0.5 bg-slate-500 rounded-full" />
             <span className="w-4 h-0.5 bg-slate-500 rounded-full" />
           </div>
-          <span className="text-[11px] mt-0.5 tracking-tight font-medium">Menu</span>
+          <span className="text-xs mt-0.5 tracking-tight font-medium">Menu</span>
         </button>
       </nav>
 

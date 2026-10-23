@@ -402,44 +402,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* 3. Footer: Active Clinical Staff Profile & Role Selector (RBAC) */}
+      {/* 3. Footer: Active Clinical Staff Profile */}
       <div className="border-t border-slate-200/80 p-3 shrink-0 bg-slate-50/70">
         {!isCollapsed ? (
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-teal-800 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-                {currentProfile.name.charAt(0)}
-              </div>
-              <div className="flex flex-col truncate">
-                <span className="text-sm font-bold text-slate-900 truncate">
-                  {currentProfile.name}
-                </span>
-                <span className="text-xs text-teal-700 font-mono font-medium truncate">
-                  CCHN: {currentProfile.practiceCertificate}
-                </span>
-              </div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-teal-800 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+              {currentProfile.name.charAt(0)}
             </div>
-
-            {/* Quick Role Switcher */}
-            <div className="pt-1">
-              <label className="text-xs uppercase font-bold text-slate-400 block mb-1">
-                Phân quyền tài khoản:
-              </label>
-              <select
-                value={currentUserRole}
-                onChange={(e) => {
-                  onSelectUserRole(e.target.value as UserRole);
-                  onCloseMobile?.();
-                }}
-                className="w-full bg-white text-xs font-semibold text-slate-800 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-teal-500 cursor-pointer shadow-2xs"
-                title="Chuyển đổi phân quyền người dùng (RBAC)"
-              >
-                <option value="nurse">ĐD. Thu (Điều Dưỡng A9)</option>
-                <option value="biomedical_engineer">KS. Nam (Kỹ Sư Trang Thiết Bị)</option>
-                <option value="pharmacist">DS. Ngọc (Dược Sĩ Kho Dược)</option>
-                <option value="doctor">BS. Hùng (Bác Sĩ ICU)</option>
-                <option value="director">TS.BS. An (Ban Giám Đốc)</option>
-              </select>
+            <div className="flex flex-col truncate min-w-0">
+              <span className="text-sm font-bold text-slate-900 truncate">
+                {currentProfile.name}
+              </span>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium truncate">
+                <span className="truncate">{currentProfile.roleName}</span>
+                <span>·</span>
+                <span className="font-mono text-teal-700 font-semibold">{currentProfile.practiceCertificate}</span>
+              </div>
             </div>
           </div>
         ) : (

@@ -594,7 +594,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold text-purple-950 text-xs sm:text-sm truncate">{card.data.doc_title}</div>
-                  <span className="text-[11px] text-purple-700 font-medium block">Quy chuẩn y tế &amp; Căn cứ pháp luật hiện hành</span>
+                  <span className="text-xs text-purple-700 font-medium block">Quy chuẩn y tế &amp; Căn cứ pháp luật hiện hành</span>
                 </div>
               </div>
               <div className="text-slate-700 leading-relaxed text-xs sm:text-sm whitespace-pre-wrap">{formatInlineMarkdown(card.data.content)}</div>
@@ -1020,7 +1020,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 >
                   <span>{chip.label}</span>
                   {chip.badge && (
-                    <span className="text-[10px] font-mono text-teal-700 font-semibold bg-white/90 px-1 py-0.2 rounded border border-teal-100">
+                    <span className="text-xs font-mono text-teal-700 font-semibold bg-white/90 px-1.5 py-0.5 rounded border border-teal-100">
                       {chip.badge}
                     </span>
                   )}

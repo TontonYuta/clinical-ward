@@ -87,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="flex flex-col h-full bg-slate-50/70 overflow-hidden">
       {/* Main Tab Viewport (Pinned Controls & Isolated Scroll Table) */}
-      <div className="flex-1 overflow-hidden p-2 sm:p-2.5 pb-20 md:pb-2.5 min-h-0 flex flex-col">
+      <div className="flex-1 overflow-hidden p-3 sm:p-4 min-h-0 flex flex-col">
         {!allowedTabs.includes(currentTab) ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200/80 rounded-2xl m-2 shadow-xs">
             <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-600 mb-4 shadow-xs">

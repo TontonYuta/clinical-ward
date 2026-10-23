@@ -16,7 +16,8 @@ import {
   Boxes,
   ThermometerSnowflake,
   Wrench,
-  Building2
+  Building2,
+  Bot
 } from 'lucide-react';
 import { UserRole } from '../types/clinical';
 import { USER_PROFILES } from '../data/initialData';
@@ -31,6 +32,8 @@ interface HeaderProps {
   isAudioMuted: boolean;
   onToggleAudio: () => void;
   coldChainAlarm: boolean;
+  isCopilotOpen?: boolean;
+  onToggleCopilot?: () => void;
 }
 
 const TAB_METADATA: Record<DashboardTab, { title: string; lawTag: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -70,6 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
   isAudioMuted,
   onToggleAudio,
   coldChainAlarm,
+  isCopilotOpen,
+  onToggleCopilot,
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
@@ -103,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
             <h1 className="text-sm sm:text-base font-bold text-slate-900 truncate tracking-tight">
               {tabInfo.title}
             </h1>
-            <span className="hidden sm:inline-flex text-[11px] font-mono font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60 shrink-0">
+            <span className="hidden sm:inline-flex text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 shrink-0">
               {tabInfo.lawTag}
             </span>
           </div>
@@ -144,6 +149,22 @@ export const Header: React.FC<HeaderProps> = ({
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
             <span>11.0°C Quá Nhiệt</span>
           </div>
+        )}
+
+        {/* AI Copilot Toggle */}
+        {onToggleCopilot && (
+          <button
+            onClick={onToggleCopilot}
+            className={`h-8 px-2.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
+              isCopilotOpen
+                ? 'bg-teal-50 border-teal-300 text-teal-900 font-bold'
+                : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+            }`}
+            title="Bật/Tắt Trợ Lý AI Lâm Sàng"
+          >
+            <Bot className="w-3.5 h-3.5 text-teal-700" />
+            <span className="hidden sm:inline">Trợ Lý AI</span>
+          </button>
         )}
 
         {/* Audio Mute/Unmute */}
