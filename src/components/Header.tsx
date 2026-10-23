@@ -101,14 +101,12 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="w-8.5 h-8.5 rounded-xl bg-teal-50 border border-teal-200/90 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
-            <TabIcon className="w-4.5 h-4.5" />
-          </div>
-          <div className="flex items-center gap-2.5 min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-slate-950 truncate tracking-tight">
+          <TabIcon className="w-5 h-5 text-teal-800 shrink-0" />
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate tracking-tight">
               {tabInfo.title}
             </h1>
-            <span className="hidden sm:inline-flex text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 shrink-0">
+            <span className="hidden sm:inline-flex text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 shrink-0">
               {tabInfo.lawTag}
             </span>
           </div>
@@ -125,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
               <select
                 value={currentUserRole}
                 onChange={(e) => onSelectUserRole(e.target.value as UserRole)}
-                className="bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200 text-sm font-semibold rounded-xl pl-2.5 sm:pl-9 pr-3.5 py-1.5 focus:outline-hidden focus:border-teal-600 cursor-pointer shadow-2xs transition truncate max-w-[140px] sm:max-w-none"
+                className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-sm font-medium rounded-lg pl-2.5 sm:pl-9 pr-3.5 py-1.5 focus:outline-hidden focus:border-teal-700 cursor-pointer transition truncate max-w-[140px] sm:max-w-none"
                 title="Đổi vai trò lâm sàng (RBAC)"
               >
                 <option value="nurse">ĐD. Lê Thị Thu (Điều Dưỡng)</option>
@@ -143,10 +141,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Cold Chain Alarm Badge */}
+        {/* Cold Chain Alarm Badge - Solid Clear Warning Without Annoying Ping */}
         {coldChainAlarm && (
-          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-300 text-xs font-bold shadow-2xs animate-pulse">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-rose-600 text-white text-xs font-bold">
+            <AlertTriangle className="w-3.5 h-3.5 text-white shrink-0" />
             <span>11.0°C Quá Nhiệt</span>
           </div>
         )}
@@ -156,14 +154,14 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleCopilot}
             aria-label="Trợ Lý AI Lâm Sàng"
-            className={`h-9 px-2.5 sm:px-3.5 rounded-xl border text-sm font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
+            className={`h-9 px-2.5 sm:px-3.5 rounded-lg border text-sm font-medium flex items-center gap-1.5 transition cursor-pointer ${
               isCopilotOpen
-                ? 'bg-teal-50 border-teal-300 text-teal-950 font-bold'
+                ? 'bg-teal-800 text-white border-teal-800 font-semibold'
                 : 'border-slate-200 hover:bg-slate-50 text-slate-700'
             }`}
             title="Bật/Tắt Trợ Lý AI Lâm Sàng (Single Point of Entry)"
           >
-            <Bot className="w-4.5 h-4.5 text-teal-700 shrink-0" />
+            <Bot className={`w-4 h-4 shrink-0 ${isCopilotOpen ? 'text-white' : 'text-teal-700'}`} />
             <span className="hidden sm:inline">Trợ Lý AI</span>
           </button>
         )}

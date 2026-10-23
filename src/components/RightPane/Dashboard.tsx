@@ -89,9 +89,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Main Tab Viewport (Pinned Controls & Isolated Scroll Table) */}
       <div className="flex-1 overflow-hidden p-3 sm:p-4 min-h-0 flex flex-col">
         {!allowedTabs.includes(currentTab) ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200/80 rounded-2xl m-2 shadow-xs">
-            <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-600 mb-4 shadow-xs">
-              <Lock className="w-8 h-8" />
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200 rounded-xl m-2">
+            <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-4">
+              <Lock className="w-7 h-7" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-1.5">
               Phân Hệ Nằm Ngoài Thẩm Quyền Truy Cập (RBAC Isolation)
@@ -101,7 +101,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </p>
             <button
               onClick={() => onTabChange(currentProfile.defaultTab || allowedTabs[0] || 'debt')}
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold transition shadow-xs cursor-pointer active:scale-98"
+              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition cursor-pointer active:scale-98"
             >
               Quay về phân hệ được phân quyền ({currentProfile.defaultTab || allowedTabs[0]})
             </button>

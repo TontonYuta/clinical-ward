@@ -93,14 +93,14 @@ export const ImageModal: React.FC<ImageModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2.5 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-900 text-white flex items-center justify-between shrink-0 gap-2">
+        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="p-2 bg-white/10 rounded-lg shrink-0">
-              <Camera className="w-5 h-5 text-cyan-300" />
+            <div className="p-2 bg-slate-800 rounded-lg shrink-0">
+              <Camera className="w-5 h-5 text-teal-400" />
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-sm sm:text-base truncate">Đính kèm ảnh hiện trường / Thiết bị</h3>
-              <p className="text-[11px] text-cyan-200 truncate">Báo hỏng phụ kiện, đối chiếu tem kiểm định &amp; vỏ thuốc</p>
+              <p className="text-[11px] text-slate-300 truncate">Báo hỏng phụ kiện, đối chiếu tem kiểm định &amp; vỏ thuốc</p>
             </div>
           </div>
           <button
@@ -179,7 +179,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
           </button>
           <button
             onClick={handleConfirmSend}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-semibold transition"
           >
             <Check className="w-4 h-4" />
             <span>Đính kèm &amp; Gửi cho AI</span>

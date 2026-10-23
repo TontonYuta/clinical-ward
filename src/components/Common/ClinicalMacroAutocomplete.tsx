@@ -83,8 +83,8 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
           }`}
         >
           <div className="px-3 py-2 bg-slate-900 text-white flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '3s' }} />
+            <div className="flex items-center gap-1.5 font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
               <span>Gợi ý gõ tắt lâm sàng &amp; ICD-10 (Smart Macros)</span>
             </div>
             <span className="text-slate-400 font-mono text-[11px]">Nhấn Tab / Enter hoặc click để chọn</span>
@@ -150,7 +150,7 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
           }`}
         >
           {/* Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-teal-900 to-slate-900 text-white flex items-center justify-between">
+          <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1 rounded-md bg-teal-500/20 text-teal-300">
                 <BookOpen className="w-4 h-4" />

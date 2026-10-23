@@ -59,17 +59,17 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden space-y-2.5 w-full">
       {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-slate-200 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0 flex-wrap sm:flex-nowrap">
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm border ${
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm border ${
             isAlarm
               ? 'bg-rose-50 text-rose-800 border-rose-300 font-bold'
               : isQuarantined
               ? 'bg-amber-50 text-amber-900 border-amber-300 font-bold'
               : 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold'
           }`}>
-            <span className={`w-2.5 h-2.5 rounded-full ${
-              isAlarm ? 'bg-rose-500 animate-pulse' : isQuarantined ? 'bg-amber-500' : 'bg-emerald-500'
+            <span className={`w-2 h-2 rounded-full ${
+              isAlarm ? 'bg-rose-600' : isQuarantined ? 'bg-amber-600' : 'bg-emerald-600'
             }`}></span>
             {isAlarm
               ? 'MẤT ĐIỆN LƯỚI (11.0°C)'
@@ -85,7 +85,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
         <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => onOpenPrintForm?.('COLD_CHAIN_INCIDENT_REPORT')}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-semibold transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-medium transition cursor-pointer"
             title="In Biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP"
           >
             <Printer className="w-4 h-4 text-slate-600" />
@@ -95,7 +95,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
           {isAlarm ? (
             <button
               onClick={handleRestore}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition cursor-pointer active:scale-98"
               title="Khôi phục nguồn điện máy phát dự phòng, đưa nhiệt độ về dải an toàn 4.5°C"
             >
               <Check className="w-4 h-4 text-emerald-400" />
@@ -105,7 +105,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
             onReleaseQuarantine && (
               <button
                 onClick={onReleaseQuarantine}
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm transition shadow-2xs cursor-pointer active:scale-98"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm transition cursor-pointer active:scale-98"
                 title="Hội đồng Dược: Ký lệnh giải phóng lô vắc xin sau sự cố nhiệt độ"
               >
                 <FileCheck2 className="w-4 h-4 text-white" />
@@ -115,7 +115,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
           ) : (
             <button
               onClick={handleSimulateOutage}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-sm font-bold transition shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-sm font-semibold transition cursor-pointer active:scale-98"
               title="Mô phỏng sự cố mất lưới điện 220V khiến nhiệt độ tăng vọt lên 11°C"
             >
               <ZapOff className="w-4 h-4 text-rose-600" />

@@ -992,9 +992,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
 
         {isProcessing && (
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 pl-9 font-medium animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-teal-600 animate-ping"></span>
-            <span>Trợ lý Agent đang phân tích ngữ cảnh lâm sàng...</span>
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 pl-9 font-medium">
+            <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+            <span>Trợ lý đang phân tích ngữ cảnh lâm sàng...</span>
           </div>
         )}
 
@@ -1016,11 +1016,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   key={chip.id}
                   type="button"
                   onClick={() => handleChipClick(chip)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50/80 hover:bg-teal-100 text-xs font-medium text-teal-900 whitespace-nowrap transition cursor-pointer shrink-0 border border-teal-200/80 shadow-2xs active:scale-98"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-medium text-slate-700 hover:text-slate-900 whitespace-nowrap transition cursor-pointer shrink-0 border border-slate-200 active:scale-98"
                 >
                   <span>{chip.label}</span>
                   {chip.badge && (
-                    <span className="text-xs font-mono text-teal-700 font-semibold bg-white/90 px-1.5 py-0.5 rounded border border-teal-100">
+                    <span className="text-xs font-mono text-slate-600 font-semibold bg-white px-1.5 py-0.5 rounded border border-slate-200">
                       {chip.badge}
                     </span>
                   )}

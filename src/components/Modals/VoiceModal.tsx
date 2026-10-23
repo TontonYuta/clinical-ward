@@ -179,10 +179,10 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2.5 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-teal-800 to-cyan-700 text-white flex items-center justify-between shrink-0 gap-2">
+        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="p-2 bg-white/10 rounded-lg shrink-0">
-              <Mic className="w-5 h-5 text-cyan-200" />
+            <div className="p-2 bg-slate-800 rounded-lg shrink-0">
+              <Mic className="w-5 h-5 text-teal-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -191,7 +191,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
                   vi-VN Live
                 </span>
               </div>
-              <p className="text-[11px] text-cyan-100 truncate">Nhận diện giọng nói tiếng Việt rảnh tay cho kíp trực</p>
+              <p className="text-[11px] text-slate-300 truncate">Nhận diện giọng nói tiếng Việt rảnh tay cho kíp trực</p>
             </div>
           </div>
           <button
@@ -212,7 +212,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
                   key={i}
                   style={{ height: `${isRecording ? h : 10}px` }}
                   className={`w-1.5 rounded-full transition-all duration-100 ${
-                    isRecording ? 'bg-gradient-to-t from-teal-600 to-cyan-500' : 'bg-slate-300'
+                    isRecording ? 'bg-teal-600' : 'bg-slate-300'
                   }`}
                 />
               ))}
@@ -222,8 +222,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
               onClick={isRecording ? handleStopRecording : handleStartRealRecording}
               className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all shadow-md cursor-pointer ${
                 isRecording
-                  ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse ring-4 ring-rose-200'
-                  : 'bg-gradient-to-r from-teal-700 to-cyan-700 hover:from-teal-800 hover:to-cyan-800 text-white'
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white ring-4 ring-rose-200'
+                  : 'bg-teal-800 hover:bg-teal-900 text-white'
               }`}
             >
               {isRecording ? (

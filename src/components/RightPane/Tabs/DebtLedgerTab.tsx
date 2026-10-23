@@ -81,7 +81,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden space-y-2.5 w-full">
       {/* 1. Unified Minimalist Command Ribbon */}
-      <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Left: Search input + Segmented Filter Pills */}
         <div className="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
           <div className="relative w-full sm:w-64 shrink-0">
@@ -91,31 +91,31 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm thuốc, bệnh nhân, buồng..."
-              className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-hidden focus:border-teal-600 focus:bg-white text-slate-900 placeholder-slate-400 transition"
+              className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400 transition"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 text-sm bg-slate-100/90 p-1 rounded-xl overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
+          <div className="flex items-center gap-1 text-sm bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
             <button
               onClick={() => setFilterStatus('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm transition cursor-pointer shrink-0 ${
-                filterStatus === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'
+              className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+                filterStatus === 'all' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
               Tất cả ({debts.length})
             </button>
             <button
               onClick={() => setFilterStatus('debt')}
-              className={`px-3 py-1.5 rounded-lg text-sm transition cursor-pointer shrink-0 ${
-                filterStatus === 'debt' ? 'bg-white text-amber-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'
+              className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+                filterStatus === 'debt' ? 'bg-white text-amber-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
               Đang nợ ({activeDebts.length})
             </button>
             <button
               onClick={() => setFilterStatus('narcotics')}
-              className={`px-3 py-1.5 rounded-lg text-sm transition cursor-pointer shrink-0 ${
-                filterStatus === 'narcotics' ? 'bg-white text-rose-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'
+              className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+                filterStatus === 'narcotics' ? 'bg-white text-rose-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
               Thuốc gây nghiện ({narcoticDebts.length})
@@ -125,8 +125,8 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
             </button>
             <button
               onClick={() => setFilterStatus('settled')}
-              className={`px-3 py-1.5 rounded-lg text-sm transition cursor-pointer shrink-0 ${
-                filterStatus === 'settled' ? 'bg-white text-slate-800 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'
+              className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+                filterStatus === 'settled' ? 'bg-white text-slate-800 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
               Đã hoàn bù ({settledDebts.length})
@@ -139,7 +139,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
           {returnedAmpoules.length > 0 && (
             <button
               onClick={() => setIsDestructionModalOpen(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-sm font-semibold transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-sm font-semibold transition cursor-pointer"
               title="Hội đồng tiêu hủy vỏ ống thuốc gây nghiện TT 20"
             >
               <Flame className="w-4 h-4 text-rose-600" />
@@ -149,7 +149,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
 
           <button
             onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-semibold transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-medium transition cursor-pointer"
             title="In biểu mẫu hành chính A4"
           >
             <Printer className="w-4 h-4 text-slate-600" />
@@ -158,7 +158,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
 
           <button
             onClick={() => setIsBorrowModalOpen(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-teal-800 hover:bg-teal-900 text-white text-sm font-bold transition shadow-2xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-sm font-semibold transition cursor-pointer active:scale-98"
             title="Lập phiếu mượn khẩn thuốc / vật tư (TT 22)"
           >
             <PlusCircle className="w-4 h-4" />
@@ -180,7 +180,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-xs space-y-3 hover:border-slate-300 transition"
+                className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-3 hover:border-slate-300 transition"
               >
                 {/* Card Top: Code + Time + Status */}
                 <div className="flex items-center justify-between gap-2">
@@ -304,10 +304,10 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       </div>
 
       {/* 4B. Desktop Table (hidden md:flex) - Pinned Sticky Header, Isolated Scroll Body */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs flex-col">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col">
         <div className="overflow-auto flex-1 w-full pb-24">
           <table className="w-full text-left text-sm table-fixed">
-            <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200/90 shadow-2xs">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
               <tr className="text-slate-700 font-bold text-xs uppercase tracking-wider">
                 <th className="py-3.5 px-4 w-28 whitespace-nowrap">Mã phiếu</th>
                 <th className="py-3.5 px-3.5 w-[26%]">Mặt hàng y tế</th>

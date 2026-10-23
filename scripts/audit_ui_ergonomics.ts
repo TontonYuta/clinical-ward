@@ -37,7 +37,7 @@ async function runAudit() {
       : undefined,
   });
 
-  const context = await browser.new_context ? await browser.new_context({ viewport: { width: 1440, height: 900 } }) : await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
 
   console.log('🧭 Điều hướng đến http://localhost:4173 ...');
