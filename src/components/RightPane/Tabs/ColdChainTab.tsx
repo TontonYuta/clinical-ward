@@ -57,79 +57,69 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden space-y-2 w-full">
+    <div className="h-full flex flex-col overflow-hidden space-y-2.5 w-full">
       {/* 1. Slim Integrated Executive Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white px-3 py-2 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
         <div className="flex items-center gap-2.5 min-w-0 flex-wrap sm:flex-nowrap">
-          <h2 className="hidden sm:inline-block text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
-            Giám Sát Chuỗi Lạnh Vắc Xin
-          </h2>
-          <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2.5 hidden md:inline">
-            Chuẩn 2.0°C - 8.0°C (GSP - TT 36/2018)
+          <span className={`inline-flex items-center gap-1.5 font-medium px-2.5 py-1 rounded-md text-xs border ${
+            isAlarm
+              ? 'bg-rose-50 text-rose-800 border-rose-200 font-bold'
+              : isQuarantined
+              ? 'bg-amber-50 text-amber-900 border-amber-200 font-bold'
+              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${
+              isAlarm ? 'bg-rose-500' : isQuarantined ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}></span>
+            {isAlarm
+              ? 'MẤT ĐIỆN LƯỚI (11.0°C)'
+              : isQuarantined
+              ? 'ĐANG BIỆT TRỮ CÁCH LY'
+              : 'Chuỗi lạnh GSP: 2.0°C – 8.0°C Ổn định'}
           </span>
-          {/* Subtle inline summary */}
-          <div className="flex items-center gap-2 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2.5">
-            <span className={`inline-flex items-center gap-1.5 font-medium px-2.5 py-1 rounded-md text-xs border ${
-              isAlarm
-                ? 'bg-rose-50 text-rose-800 border-rose-200/80 font-bold'
-                : isQuarantined
-                ? 'bg-amber-50 text-amber-900 border-amber-300 font-bold'
-                : 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
-            }`}>
-              <span className={`w-2 h-2 rounded-full ${
-                isAlarm ? 'bg-rose-500 animate-pulse' : isQuarantined ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
-              }`}></span>
-              {isAlarm
-                ? 'MẤT ĐIỆN (11.0°C)'
-                : isQuarantined
-                ? 'BIỆT TRỮ (QUARANTINE)'
-                : 'Chuỗi lạnh GSP ổn định'}
-            </span>
-          </div>
+          <span className="text-xs text-slate-500 hidden sm:inline">
+            Tủ Dometic HC-302 · Cảm biến VAX-LOG-04
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => onOpenPrintForm?.('COLD_CHAIN_INCIDENT_REPORT')}
-            className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
-            title="In Biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP (Thông tư 36/2018/TT-BYT)"
+            className="inline-flex items-center gap-1 h-7.5 px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition shadow-2xs cursor-pointer"
+            title="In Biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP"
           >
-            <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-700" />
-            <span className="hidden sm:inline">In Biên Bản GSP (A4)</span>
-            <span className="sm:hidden">In GSP</span>
+            <Printer className="w-3.5 h-3.5 text-slate-600" />
+            <span className="hidden sm:inline">In Biên Bản GSP</span>
           </button>
 
           {isAlarm ? (
             <button
               onClick={handleRestore}
-              className="inline-flex items-center gap-1 h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1 h-7.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
               title="Khôi phục nguồn điện máy phát dự phòng, đưa nhiệt độ về dải an toàn 4.5°C"
             >
-              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-              <span className="hidden sm:inline">Khôi phục điện (4.5°C)</span>
-              <span className="sm:hidden">Phục hồi điện</span>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Khôi phục điện (4.5°C)</span>
             </button>
           ) : isQuarantined ? (
             onReleaseQuarantine && (
               <button
                 onClick={onReleaseQuarantine}
-                className="inline-flex items-center gap-1 h-8 px-2.5 sm:px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
-                title="Hội đồng Dược & ĐT: Ký lệnh giải phóng lô vắc xin sau sự cố nhiệt độ theo GSP"
+                className="inline-flex items-center gap-1 h-7.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+                title="Hội đồng Dược: Ký lệnh giải phóng lô vắc xin sau sự cố nhiệt độ"
               >
-                <FileCheck2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950" />
-                <span className="hidden sm:inline">Giải phóng lô biệt trữ</span>
-                <span className="sm:hidden">Giải phóng</span>
+                <FileCheck2 className="w-3.5 h-3.5 text-white" />
+                <span>Giải phóng lô biệt trữ</span>
               </button>
             )
           ) : (
             <button
               onClick={handleSimulateOutage}
-              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-rose-50 text-rose-800 border border-rose-200 hover:border-rose-300 font-semibold text-xs sm:text-sm transition shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1 h-7.5 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-medium transition shadow-2xs cursor-pointer active:scale-98"
               title="Mô phỏng sự cố mất lưới điện 220V khiến nhiệt độ tăng vọt lên 11°C"
             >
-              <ZapOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />
-              <span className="hidden sm:inline">Mô phỏng mất điện (11°C)</span>
-              <span className="sm:hidden">Mất điện</span>
+              <ZapOff className="w-3.5 h-3.5 text-rose-600" />
+              <span>Mô phỏng mất điện</span>
             </button>
           )}
         </div>
@@ -145,10 +135,10 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
           {/* Temperature Gauge Indicator */}
           <div className="flex items-center gap-3.5">
             <div className="flex items-baseline gap-1.5">
-              <Thermometer className={`w-5 h-5 ${isAlarm ? 'text-rose-600 animate-pulse' : 'text-slate-500'}`} />
+              <Thermometer className={`w-5 h-5 ${isAlarm ? 'text-rose-600' : 'text-slate-500'}`} />
               <span
                 className={`text-3xl font-black font-mono tabular-nums ${
-                  isAlarm ? 'text-rose-600 animate-pulse' : 'text-slate-900'
+                  isAlarm ? 'text-rose-600' : 'text-slate-900'
                 }`}
               >
                 {coldChainState.currentTemp.toFixed(1)}
@@ -218,7 +208,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
                 </span>
               </div>
               <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5 shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-amber-600"></span>
                 Trạng thái: Đang Biệt Trữ (Chờ Phóng Thích)
               </span>
             </div>

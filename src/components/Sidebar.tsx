@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }`}
     >
       {/* 1. Header: Branding & Collapse Toggle */}
-      <div className="h-16 px-3.5 flex items-center justify-between border-b border-slate-200/80 shrink-0">
+      <div className="h-14 px-3.5 flex items-center justify-between border-b border-slate-200/80 shrink-0">
         {!isCollapsed ? (
           <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="w-9 h-9 rounded-xl bg-teal-800 flex items-center justify-center text-white shadow-2xs shrink-0">
@@ -224,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <ThermometerSnowflake
                   className={`w-4.5 h-4.5 shrink-0 ${
                     isColdAlarm
-                      ? 'text-rose-600 animate-pulse'
+                      ? 'text-rose-600'
                       : currentTab === 'coldchain'
                       ? 'text-teal-700'
                       : 'text-slate-400'
@@ -236,7 +236,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span
                       className={`px-2 py-0.5 rounded-md text-xs font-mono font-bold tabular-nums ${
                         isColdAlarm
-                          ? 'bg-rose-600 text-white animate-pulse'
+                          ? 'bg-rose-600 text-white'
                           : 'bg-slate-100 text-slate-700 border border-slate-200/80'
                       }`}
                     >

@@ -79,126 +79,26 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden space-y-2 w-full">
-      {/* 1. Unified Clinical Command Ribbon (Reclaiming Vertical Space) */}
-      <div className="bg-white p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0 space-y-2">
-        {/* Row 1: Key Stat Badges & Primary Action (Desktop) */}
-        <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-2 min-w-0">
-            <h2 className="hidden sm:inline-block text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">
-              Sổ Nợ Tủ Trực Cấp Cứu
-            </h2>
-            <span className="text-xs font-mono text-slate-500 border-l border-slate-200 pl-2 hidden md:inline">
-              TT 22 &amp; TT 20
-            </span>
-            {/* Stat Badges */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 sm:border-l sm:border-slate-200 sm:pl-2">
-              <span className="inline-flex items-center gap-1 font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80 text-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                {activeDebts.length} đang nợ
-              </span>
-              {pendingAmpoules.length > 0 && (
-                <span className="inline-flex items-center gap-1 font-medium text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200/80 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                  {pendingAmpoules.length} nợ vỏ
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Action buttons (Desktop) */}
-          <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-            {returnedAmpoules.length > 0 && (
-              <button
-                onClick={() => setIsDestructionModalOpen(true)}
-                className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer active:scale-98"
-                title="Hội đồng tiêu hủy vỏ ống thuốc gây nghiện TT 20"
-              >
-                <Flame className="w-3.5 h-3.5 text-rose-600" />
-                <span>Hủy vỏ ({returnedAmpoules.length})</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setIsBorrowModalOpen(true)}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-              title="Lập phiếu mượn khẩn thuốc / vật tư từ tủ trực cấp cứu ca đêm (TT 22/2011/TT-BYT)"
-            >
-              <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>+ Mượn Khẩn</span>
-            </button>
-
-            <button
-              onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
-              className="inline-flex items-center gap-1 h-8 px-2 sm:px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer active:scale-98"
-              title="In Biểu Mẫu Hành Chính Y Tế (Mẫu 16/TT20 Hủy Vỏ Ống / Mẫu Phiếu Mượn TT22)"
-            >
-              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-700" />
-              <span>In Biểu Mẫu A4</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Dedicated Touch Action Ribbon on Mobile (Mượn khẩn, Hủy vỏ, In ấn) */}
-        <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 border-t border-slate-100 whitespace-nowrap text-xs">
-          <button
-            onClick={() => setIsBorrowModalOpen(true)}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
-            title="Lập phiếu mượn khẩn tủ trực (TT 22)"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Mượn Khẩn</span>
-          </button>
-
-          <button
-            onClick={() => setIsDestructionModalOpen(true)}
-            className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer shrink-0 active:scale-95 ${
-              returnedAmpoules.length > 0
-                ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
-            }`}
-            title="Hội đồng tiêu hủy vỏ ống thuốc gây nghiện TT 20"
-          >
-            <Flame className="w-3.5 h-3.5 text-rose-500" />
-            <span>Hủy vỏ ({returnedAmpoules.length})</span>
-          </button>
-
-          <button
-            onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/90 text-xs font-bold transition shadow-2xs cursor-pointer shrink-0 active:scale-95"
-            title="In Biểu Mẫu Hành Chính Y Tế"
-          >
-            <Printer className="w-3.5 h-3.5 text-teal-700" />
-            <span>In Biểu Mẫu</span>
-          </button>
-
-          <button
-            onClick={onSimulateMorningReminder}
-            className="inline-flex items-center gap-1 h-8 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition cursor-pointer shrink-0 active:scale-95"
-            title="Mô phỏng chuông nhắc giao ban 07:00 sáng"
-          >
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Nhắc 07h</span>
-          </button>
-        </div>
-
-        {/* Row 3: Search Input & Status Filter Pills */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
-          <div className="relative w-full sm:max-w-xs">
+    <div className="flex flex-col h-full overflow-hidden space-y-2.5 w-full">
+      {/* 1. Unified Minimalist Command Ribbon */}
+      <div className="bg-white p-2 sm:px-3 sm:py-2 rounded-xl border border-slate-200/80 shadow-2xs shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-2">
+        {/* Left: Search input + Segmented Filter Pills */}
+        <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
+          <div className="relative w-full sm:w-60 shrink-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm thuốc, buồng bệnh..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm bg-slate-50/60 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-500 focus:bg-white text-slate-800 placeholder-slate-400 shadow-2xs transition"
+              placeholder="Tìm thuốc, bệnh nhân, buồng..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-500 focus:bg-white text-slate-800 placeholder-slate-400 transition"
             />
           </div>
 
           <div className="flex items-center gap-1 text-xs bg-slate-100/80 p-0.5 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
             <button
               onClick={() => setFilterStatus('all')}
-              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer shrink-0 ${
                 filterStatus === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -206,29 +106,64 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
             </button>
             <button
               onClick={() => setFilterStatus('debt')}
-              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-                filterStatus === 'debt' ? 'bg-white text-amber-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer shrink-0 ${
+                filterStatus === 'debt' ? 'bg-white text-amber-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Đang nợ ({activeDebts.length})
             </button>
             <button
               onClick={() => setFilterStatus('narcotics')}
-              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-                filterStatus === 'narcotics' ? 'bg-white text-rose-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer shrink-0 ${
+                filterStatus === 'narcotics' ? 'bg-white text-rose-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Thuốc gây nghiện ({narcoticDebts.length})
+              {pendingAmpoules.length > 0 && (
+                <span className="ml-1 text-[11px] font-bold text-rose-600">· {pendingAmpoules.length} nợ vỏ</span>
+              )}
             </button>
             <button
               onClick={() => setFilterStatus('settled')}
-              className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-medium transition cursor-pointer shrink-0 ${
-                filterStatus === 'settled' ? 'bg-white text-emerald-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer shrink-0 ${
+                filterStatus === 'settled' ? 'bg-white text-slate-800 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Đã hoàn bù ({settledDebts.length})
             </button>
           </div>
+        </div>
+
+        {/* Right: Primary Action + Secondary Controls */}
+        <div className="flex items-center gap-1.5 shrink-0 justify-end">
+          {returnedAmpoules.length > 0 && (
+            <button
+              onClick={() => setIsDestructionModalOpen(true)}
+              className="inline-flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition cursor-pointer"
+              title="Hội đồng tiêu hủy vỏ ống thuốc gây nghiện TT 20"
+            >
+              <Flame className="w-3.5 h-3.5 text-rose-600" />
+              <span>Hủy vỏ ({returnedAmpoules.length})</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
+            className="inline-flex items-center gap-1 h-7.5 px-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition shadow-2xs cursor-pointer"
+            title="In biểu mẫu hành chính A4"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-600" />
+            <span className="hidden sm:inline">In biểu mẫu</span>
+          </button>
+
+          <button
+            onClick={() => setIsBorrowModalOpen(true)}
+            className="inline-flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-teal-800 hover:bg-teal-700 text-white text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98"
+            title="Lập phiếu mượn khẩn thuốc / vật tư (TT 22)"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>+ Mượn Khẩn</span>
+          </button>
         </div>
       </div>
 
@@ -261,7 +196,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                   <div>
                     {isDebt ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
                         Đang nợ
                       </span>
                     ) : (
@@ -318,7 +253,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200">
-                          <ShieldAlert className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
                           Nợ vỏ Morphin
                         </span>
                       )
@@ -373,7 +308,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
         <div className="overflow-auto flex-1 w-full">
           <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-500 font-semibold text-xs uppercase tracking-wider">
+              <tr className="text-slate-500 font-medium text-xs uppercase tracking-wider">
                 <th className="py-2.5 px-3.5 whitespace-nowrap">Mã phiếu</th>
                 <th className="py-2.5 px-3 whitespace-nowrap">Mặt hàng</th>
                 <th className="py-2.5 px-2.5 text-center whitespace-nowrap">SL</th>
@@ -390,84 +325,80 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                 const isNarcotic = item.itemType === 'Thuốc gây nghiện';
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-2.5 px-3.5 font-mono text-slate-700 font-bold text-xs sm:text-sm whitespace-nowrap">{item.code}</td>
+                    <td className="py-2.5 px-3.5 font-mono text-slate-700 font-semibold text-xs whitespace-nowrap">{item.code}</td>
                     <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="font-semibold text-slate-900 block text-sm">{item.itemName}</span>
-                      <span className="text-xs text-slate-500 font-medium">{item.itemType}</span>
+                      <span className="font-semibold text-slate-900 block text-xs sm:text-sm">{item.itemName}</span>
+                      <span className="text-[11px] text-slate-400 font-medium">{item.itemType}</span>
                     </td>
-                    <td className="py-2.5 px-2.5 text-center font-mono font-bold text-slate-900 text-sm whitespace-nowrap">
+                    <td className="py-2.5 px-2.5 text-center font-mono font-bold text-slate-900 text-xs sm:text-sm whitespace-nowrap">
                       {item.quantity}
                     </td>
                     <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="text-slate-900 font-semibold block text-sm">{item.patientName}</span>
-                      <span className="text-xs text-slate-500 font-medium">{item.patientRoom}</span>
+                      <span className="text-slate-900 font-semibold block text-xs sm:text-sm">{item.patientName}</span>
+                      <span className="text-[11px] text-slate-400 font-medium">{item.patientRoom}</span>
                     </td>
-                    <td className="py-2.5 px-3 text-slate-600 text-xs font-mono whitespace-nowrap">{item.borrowTime}</td>
+                    <td className="py-2.5 px-3 text-slate-500 text-xs font-mono whitespace-nowrap">{item.borrowTime}</td>
                     <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       {isNarcotic ? (
                         item.ampouleDestroyed ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
                             Đã tiêu hủy
                           </span>
                         ) : item.ampouleReturned ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80">
-                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
                             Đã nộp khay
                           </span>
                         ) : (
-                          <button
-                            onClick={() => handleAmpouleReturn(item.id)}
-                            className="inline-flex items-center gap-1.5 h-6.5 px-2.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition cursor-pointer active:scale-98 whitespace-nowrap"
-                            title="Xác nhận đã nộp lại vỏ ống thủy tinh rỗng vào khay theo TT 20/2017"
-                          >
-                            <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                            <span>Thu hồi vỏ</span>
-                          </button>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            <ShieldAlert className="w-3 h-3 text-rose-600" />
+                            Chưa nộp vỏ
+                          </span>
                         )
                       ) : (
-                        <span className="text-slate-300 text-sm">-</span>
+                        <span className="text-slate-300 text-xs">—</span>
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       <span
-                        className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold ${
-                          isDebt ? 'bg-amber-50 text-amber-800 border border-amber-200/80' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
+                          isDebt ? 'bg-amber-50 text-amber-900 border border-amber-200/80' : 'bg-slate-100 text-slate-700 border border-slate-200'
                         }`}
                       >
                         {isDebt ? 'Đang nợ' : 'Đã hoàn bù'}
                       </span>
                     </td>
                     <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-2 justify-end">
+                      <div className="inline-flex items-center gap-1.5 justify-end">
                         <button
                           onClick={() => onOpenPrintForm?.(isNarcotic ? 'TT20_AMPOULE_DESTRUCTION' : 'EMERGENCY_BORROW_TICKET', item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer"
-                          title="In phiếu mượn kẹp bệnh án (TT22) hoặc Biên bản hủy vỏ (TT20)"
+                          className="p-1 rounded text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer"
+                          title="In phiếu kẹp bệnh án (TT22)"
                         >
-                          <Printer className="w-4 h-4" />
+                          <Printer className="w-3.5 h-3.5" />
                         </button>
                         {isDebt ? (
                           isNarcotic && !item.ampouleReturned ? (
                             <button
                               onClick={() => handleAmpouleReturn(item.id)}
-                              className="inline-flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold cursor-pointer active:scale-98 transition shadow-2xs whitespace-nowrap"
-                              title="BẮT BUỘC THU HỒI VỎ: Theo Điều 15 TT 20/2017/TT-BYT, phải nộp vỏ ống thuốc gây nghiện vào khay kiểm soát trước khi được duyệt hoàn bù cơ số. Bấm để nộp vỏ ngay."
+                              className="inline-flex items-center gap-1 h-7 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-semibold cursor-pointer active:scale-98 transition shadow-2xs whitespace-nowrap"
+                              title="Thu hồi vỏ ống thuốc gây nghiện nộp vào khay (Điều 15 TT 20)"
                             >
-                              <ShieldAlert className="w-3 h-3 text-amber-600" />
-                              <span>Thu hồi vỏ</span>
+                              <ShieldAlert className="w-3 h-3 text-rose-600" />
+                              <span>Nộp vỏ</span>
                             </button>
                           ) : (
                             <button
                               onClick={() => handleSettle(item.id)}
-                              className="inline-flex items-center gap-1.5 h-7.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
-                              title="Hoàn bù cơ số thuốc về tủ trực theo TT 22/2011"
+                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
+                              title="Duyệt hoàn bù cơ số tủ trực (TT 22)"
                             >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Duyệt hoàn bù</span>
+                              <Check className="w-3 h-3" />
+                              <span>Hoàn bù</span>
                             </button>
                           )
                         ) : (
-                          <span className="text-xs font-medium text-slate-400">Đã chốt sổ</span>
+                          <span className="text-[11px] font-medium text-slate-400">Đã chốt sổ</span>
                         )}
                       </div>
                     </td>

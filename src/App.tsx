@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Bot, FileText, Wrench, Boxes, ThermometerSnowflake, Building2 } from 'lucide-react';
+import { Bot, FileText, Wrench, Boxes, ThermometerSnowflake, Building2, Printer } from 'lucide-react';
 import {
   DebtRecord,
   EquipmentTicket,
@@ -1436,14 +1436,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       {!isCopilotOpen && (
         <button
           onClick={() => setIsCopilotOpen(true)}
-          className="hidden md:flex fixed bottom-5 right-6 z-40 items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-teal-500/30 group print:hidden"
+          className="hidden md:flex fixed bottom-5 right-6 z-40 items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-lg hover:shadow-xl active:scale-98 transition duration-150 cursor-pointer border border-slate-700/80 group print:hidden"
           title="Mở Trợ lý AI Lâm Sàng"
         >
-          <div className="relative flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-teal-800 animate-pulse" />
-          </div>
-          <span className="text-sm font-bold tracking-wide">Trợ Lý AI</span>
+          <Bot className="w-4 h-4 text-teal-400" />
+          <span className="text-xs font-semibold tracking-tight">Trợ Lý AI</span>
         </button>
       )}
 
@@ -1481,7 +1478,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
                 <>
                   <Wrench className={`w-5 h-5 ${currentTab === 'equipment' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
                   {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length > 0 && (
-                    <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white animate-pulse">
+                    <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
                       {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
                     </span>
                   )}
@@ -1541,7 +1538,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             <div className="relative">
               <Wrench className={`w-5 h-5 ${currentTab === 'equipment' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
               {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white animate-pulse">
+                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
                   {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
                 </span>
               )}
@@ -1556,9 +1553,9 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           className="flex flex-col items-center justify-center -mt-4 group cursor-pointer"
           title="Mở Trợ lý AI Lâm Sàng"
         >
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-teal-700 to-teal-800 text-white flex items-center justify-center shadow-lg shadow-teal-800/30 ring-4 ring-white group-active:scale-95 transition relative">
-            <Bot className="w-6 h-6 text-white" />
-            <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-white animate-pulse" />
+          <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg ring-4 ring-white group-active:scale-95 transition relative">
+            <Bot className="w-5 h-5 text-teal-400" />
+            <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-white" />
           </div>
           <span className="text-[11px] font-bold text-teal-800 mt-0.5">Trợ Lý AI</span>
         </button>
