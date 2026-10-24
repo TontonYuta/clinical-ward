@@ -78,7 +78,7 @@ export const AssetAuditRow: React.FC<AssetAuditRowProps> = ({
           <button
             onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
             className="w-8 h-8 rounded-md border border-slate-200 hover:bg-slate-100 text-slate-600 transition cursor-pointer flex items-center justify-center"
-            title="In Biên bản bàn giao tài sản cho thiết bị này (Mẫu 01/TSC-BBGN)"
+            title="In biên bản bàn giao tài sản cho thiết bị này (Mẫu 01-TSC)"
           >
             <Printer className="w-3.5 h-3.5" />
           </button>

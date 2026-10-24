@@ -51,7 +51,7 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
           {item.patientName}
         </span>
         <span className="text-xs text-slate-600 font-medium block mt-0.5">
-          📍 {item.patientRoom}
+          <span className="text-slate-400 font-normal">Buồng:</span> {item.patientRoom}
         </span>
       </td>
 
@@ -109,7 +109,7 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
             isNarcotic && !item.ampouleReturned ? (
               <button
                 onClick={() => onAmpouleReturn(item.id)}
-                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer active:scale-98 transition shadow-xs whitespace-nowrap"
+                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer active:scale-98 transition shadow-xs whitespace-nowrap"
                 title="Thu hồi vỏ ống thuốc gây nghiện nộp vào khay (TT 18/2026/TT-BYT)"
               >
                 <ShieldAlert className="w-3.5 h-3.5" />
@@ -118,8 +118,8 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
             ) : (
               <button
                 onClick={() => onSettle(item.id)}
-                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-xs cursor-pointer active:scale-98 whitespace-nowrap"
-                title="Duyệt hoàn bù cơ số tủ trực (VBHN 07)"
+                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-xs cursor-pointer active:scale-98 whitespace-nowrap"
+                title="Xác nhận hoàn trả cơ số tủ trực (VBHN 07)"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Hoàn bù</span>

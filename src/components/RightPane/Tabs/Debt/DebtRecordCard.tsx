@@ -39,13 +39,13 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
         </div>
         <div>
           {isDebt ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
               Đang nợ
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full">
-              ✓ Đã hoàn bù
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+              Đã hoàn bù
             </span>
           )}
         </div>
@@ -65,7 +65,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
               {item.itemType}
             </span>
             <span className="text-xs sm:text-sm text-slate-600">
-              BN: <strong className="text-slate-900 font-semibold">{item.patientName}</strong>
+              Người bệnh: <strong className="text-slate-900 font-semibold">{item.patientName}</strong>
             </span>
           </div>
         </div>
@@ -78,7 +78,8 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
 
       <div className="flex items-center justify-between text-xs sm:text-sm pt-2.5 border-t border-slate-100">
         <div className="text-slate-600">
-          📍 <span className="font-medium text-slate-900">{item.patientRoom}</span>
+          <span className="text-slate-500">Vị trí:</span>{' '}
+          <span className="font-medium text-slate-900">{item.patientRoom}</span>
         </div>
         <div>
           {isNarcotic ? (
@@ -131,7 +132,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
               className="flex-2 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
             >
               <Check className="w-4 h-4" />
-              <span>Duyệt hoàn bù</span>
+              <span>Xác nhận hoàn bù</span>
             </button>
           )
         )}

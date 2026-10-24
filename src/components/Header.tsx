@@ -39,33 +39,33 @@ interface HeaderProps {
 
 const TAB_METADATA: Record<DashboardTab, { title: string; lawTag: string; icon: React.ComponentType<{ className?: string }> }> = {
   cpoe: {
-    title: 'Chỉ Định & Kê Đơn CPOE',
-    lawTag: 'TT 26/2025 & Luật KCB',
+    title: 'Kê đơn thuốc điện tử',
+    lawTag: 'TT 26/2025/TT-BYT & Luật KCB 2023',
     icon: Stethoscope
   },
   debt: {
-    title: 'Sổ Nợ Tủ Trực',
-    lawTag: 'TT 18/2026 & VBHN 07',
+    title: 'Sổ theo dõi nợ thuốc tủ trực',
+    lawTag: 'TT 18/2026/TT-BYT & VBHN 07',
     icon: FileText
   },
   equipment: {
-    title: 'Thiết Bị & Sự Cố',
-    lawTag: 'NĐ 04/2025 & NĐ 98',
+    title: 'Sự cố trang thiết bị y tế',
+    lawTag: 'NĐ 04/2025/NĐ-CP & NĐ 98/2021',
     icon: Wrench
   },
   fefo: {
-    title: 'Kho Dược Bệnh Viện',
-    lawTag: 'TT 26 & VBHN 07',
+    title: 'Quản lý kho dược & Hạn dùng FEFO',
+    lawTag: 'TT 36/2018/TT-BYT GSP & TT 26',
     icon: Boxes
   },
   coldchain: {
-    title: 'Chuỗi Lạnh Vắc Xin',
-    lawTag: 'GSP & WHO PQS',
+    title: 'Giám sát chuỗi lạnh bảo quản vắc xin',
+    lawTag: 'Chuẩn GSP & WHO PQS',
     icon: ThermometerSnowflake
   },
   asset_audit: {
-    title: 'Kiểm Kê Tài Sản',
-    lawTag: 'NĐ 151 & NĐ 114/2024',
+    title: 'Kiểm kê tài sản thiết bị y tế',
+    lawTag: 'NĐ 151/2017/NĐ-CP & NĐ 114/2024',
     icon: Building2
   }
 };
@@ -132,11 +132,11 @@ export const Header: React.FC<HeaderProps> = ({
                 className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-sm font-medium rounded-lg pl-2.5 sm:pl-9 pr-3.5 py-1.5 focus:outline-hidden focus:border-teal-700 cursor-pointer transition truncate max-w-[140px] sm:max-w-none"
                 title={`${currentProfile.name} (${currentProfile.roleName}) - ${currentProfile.responsibilities}`}
               >
-                <option value="nurse">ĐD. Lê Thị Thu (Điều Dưỡng)</option>
-                <option value="biomedical_engineer">KS. Đặng Văn Nam (Kỹ Sư BME)</option>
-                <option value="pharmacist">DS. Nguyễn Bích Ngọc (Dược Sĩ)</option>
-                <option value="doctor">BS. Trần Văn Hùng (Bác Sĩ ICU)</option>
-                <option value="director">TS. Nguyễn Văn An (Giám Đốc)</option>
+                <option value="nurse">ĐD. Lê Thị Thu (Điều dưỡng lâm sàng)</option>
+                <option value="biomedical_engineer">KS. Đặng Văn Nam (Kỹ sư BME)</option>
+                <option value="pharmacist">DS. Nguyễn Bích Ngọc (Dược sĩ lâm sàng)</option>
+                <option value="doctor">BS. Trần Văn Hùng (Bác sĩ điều trị)</option>
+                <option value="director">TS. Nguyễn Văn An (Giám đốc bệnh viện)</option>
               </select>
             </div>
           </div>
@@ -147,11 +147,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Cold Chain Alarm Badge - Solid Clear Warning Without Annoying Ping */}
+        {/* Cold Chain Alarm Badge */}
         {coldChainAlarm && (
           <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-rose-600 text-white text-xs font-bold">
             <AlertTriangle className="w-3.5 h-3.5 text-white shrink-0" />
-            <span>11.0°C Quá Nhiệt</span>
+            <span>Quá nhiệt 11.0°C</span>
           </div>
         )}
 
@@ -159,16 +159,16 @@ export const Header: React.FC<HeaderProps> = ({
         {onToggleCopilot && (
           <button
             onClick={onToggleCopilot}
-            aria-label="Trợ Lý AI Lâm Sàng"
+            aria-label="Trợ lý AI lâm sàng"
             className={`h-9 px-2.5 sm:px-3.5 rounded-md border text-sm font-medium flex items-center gap-1.5 transition cursor-pointer ${
               isCopilotOpen
                 ? 'bg-teal-800 text-white border-teal-800 font-semibold'
                 : 'border-slate-200 hover:bg-slate-50 text-slate-700'
             }`}
-            title="Bật/Tắt Trợ Lý AI Lâm Sàng (Single Point of Entry)"
+            title="Bật/tắt trợ lý AI lâm sàng"
           >
             <Bot className={`w-4 h-4 shrink-0 ${isCopilotOpen ? 'text-white' : 'text-teal-700'}`} />
-            <span className="hidden sm:inline">Trợ Lý AI</span>
+            <span className="hidden sm:inline">Trợ lý AI</span>
           </button>
         )}
 

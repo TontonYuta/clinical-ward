@@ -43,10 +43,10 @@ export const ColdChainHeader: React.FC<ColdChainHeaderProps> = ({
             }`}
           />
           {isAlarm
-            ? 'MẤT ĐIỆN LƯỚI (11.0°C)'
+            ? 'Mất điện lưới (11.0°C)'
             : isQuarantined
-            ? 'ĐANG BIỆT TRỮ CÁCH LY'
-            : 'Chuỗi lạnh GSP: 2.0°C – 8.0°C Ổn định'}
+            ? 'Đang biệt trữ cách ly'
+            : 'Chuỗi lạnh GSP: 2.0°C – 8.0°C (ổn định)'}
         </span>
         <span className="text-xs sm:text-sm text-slate-500 hidden sm:inline font-medium">
           Tủ Dometic HC-302 · Cảm biến VAX-LOG-04
@@ -57,10 +57,10 @@ export const ColdChainHeader: React.FC<ColdChainHeaderProps> = ({
         <button
           onClick={() => onOpenPrintForm?.('COLD_CHAIN_INCIDENT_REPORT')}
           className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In Biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP"
+          title="In biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP"
         >
           <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">In Biên Bản GSP</span>
+          <span className="hidden sm:inline">In biên bản GSP</span>
         </button>
 
         {isAlarm ? (

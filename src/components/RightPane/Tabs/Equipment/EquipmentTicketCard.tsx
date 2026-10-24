@@ -94,28 +94,28 @@ export const EquipmentTicketCard: React.FC<EquipmentTicketCardProps> = ({
       <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100">
         <button
           onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
-          className="flex-1 py-1.5 px-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
-          title="In Biên bản kiểm định NĐ 04/2025 & NĐ 98"
+          className="flex-1 py-1.5 px-2.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+          title="In biên bản kiểm định an toàn kỹ thuật NĐ 04/2025 & NĐ 98"
         >
-          <Printer className="w-3.5 h-3.5 text-teal-700" />
-          <span>In NĐ 98</span>
+          <Printer className="w-3.5 h-3.5 text-slate-600" />
+          <span>In biên bản NĐ 98</span>
         </button>
 
         {!isResolved ? (
           <button
             onClick={() => onOpenHandover(ticket)}
-            className={`flex-2 py-1.5 px-3 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-98 flex items-center justify-center gap-1 ${
+            className={`flex-2 py-1.5 px-3 rounded-md text-xs font-semibold transition shadow-xs cursor-pointer active:scale-98 flex items-center justify-center gap-1 ${
               currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
                 ? 'bg-teal-700 hover:bg-teal-800 text-white'
                 : 'bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-300'
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Nghiệm thu &amp; Bàn giao</span>
+            <span>Nghiệm thu bàn giao</span>
           </button>
         ) : (
-          <div className="flex-2 py-1.5 px-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold text-center">
-            ✓ Đã bàn giao
+          <div className="flex-2 py-1.5 px-3 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-medium text-center">
+            Đã nghiệm thu bàn giao
           </div>
         )}
       </div>

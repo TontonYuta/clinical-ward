@@ -58,7 +58,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
           <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
             {batch.category}
           </span>
-          <span className="text-xs text-slate-500">📍 {batch.warehouseLocation}</span>
+          <span className="text-xs text-slate-500 font-medium">Vị trí: {batch.warehouseLocation}</span>
         </div>
       </div>
 

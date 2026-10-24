@@ -50,15 +50,15 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   const pharmacyDefs: NavDef[] = [
     {
       tab: 'cpoe',
-      label: 'Chỉ Định & Kê Đơn CPOE',
+      label: 'Kê đơn thuốc điện tử',
       icon: Stethoscope,
-      title: 'Chỉ định Y lệnh & Kê đơn điện tử (TT 26/2025/TT-BYT)'
+      title: 'Kê đơn thuốc điện tử ngoại trú và nội trú (TT 26/2025/TT-BYT)'
     },
     {
       tab: 'debt',
-      label: 'Sổ Nợ Tủ Trực',
+      label: 'Sổ nợ thuốc tủ trực',
       icon: FileText,
-      title: 'Sổ nợ tủ trực cấp cứu (TT 22 & TT 20)',
+      title: 'Sổ theo dõi nợ thuốc và hoàn trả vỏ thuốc gây nghiện (TT 18/2026/TT-BYT)',
       badge: debtCount > 0 ? (
         <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/80 tabular-nums">
           {debtCount}
@@ -67,9 +67,9 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
     },
     {
       tab: 'fefo',
-      label: 'Kho Dược & Tủ Trực',
+      label: 'Quản lý kho dược FEFO',
       icon: Boxes,
-      title: 'Kho Dược - Hạn dùng FEFO & Định mức (TT 36 GSP)',
+      title: 'Quản lý hạn dùng FEFO và dự trù cơ số tồn kho (TT 36/2018 GSP)',
       badge: nearExpiryAndLowStockCount > 0 ? (
         <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200/80 tabular-nums">
           {nearExpiryAndLowStockCount}
@@ -78,9 +78,9 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
     },
     {
       tab: 'coldchain',
-      label: 'Chuỗi Lạnh Vắc Xin',
+      label: 'Giám sát chuỗi lạnh',
       icon: Thermometer,
-      title: 'Chuỗi Lạnh Datalogger 2.0°C - 8.0°C (WHO PQS & TT 36)',
+      title: 'Theo dõi nhiệt độ tủ bảo quản vắc xin 2.0°C - 8.0°C (WHO PQS & TT 36)',
       badge: (
         <span className={`px-2 py-0.5 rounded-md text-xs font-mono font-bold border tabular-nums ${
           isColdAlarm ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-cyan-50 text-cyan-800 border-cyan-200'
@@ -94,9 +94,9 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   const equipmentDefs: NavDef[] = [
     {
       tab: 'equipment',
-      label: 'Sự Cố & Kiểm Định',
+      label: 'Sự cố trang thiết bị',
       icon: Wrench,
-      title: 'Sự cố & Kiểm định trang thiết bị y tế (NĐ 04/2025 & NĐ 98/2021)',
+      title: 'Quản lý sự cố và kiểm định an toàn thiết bị y tế (NĐ 04/2025 & NĐ 98/2021)',
       badge: urgentTicketsCount > 0 ? (
         <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200/80 tabular-nums">
           {urgentTicketsCount}
@@ -105,9 +105,9 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
     },
     {
       tab: 'asset_audit',
-      label: 'Kiểm Kê Tài Sản 31/12',
+      label: 'Kiểm kê tài sản công',
       icon: Building2,
-      title: 'Kiểm Kê & Điều Chuyển Tài Sản Công (NĐ 151/2017 & TT 23/2023)',
+      title: 'Kiểm kê và điều chuyển tài sản thiết bị định kỳ (NĐ 151/2017 & NĐ 114/2024)',
       badge: misallocatedAssetsCount > 0 ? (
         <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/80 tabular-nums">
           {misallocatedAssetsCount} lệch
@@ -158,8 +158,8 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
 
   return (
     <>
-      {renderNavList('Dược Lâm Sàng & Chuỗi Lạnh', pharmacyDefs)}
-      {renderNavList('Thiết Bị & Tài Sản Công', equipmentDefs)}
+      {renderNavList('Dược lâm sàng & chuỗi lạnh', pharmacyDefs)}
+      {renderNavList('Thiết bị & tài sản y tế', equipmentDefs)}
     </>
   );
 };

@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Phân Hệ Bác Sĩ CPOE: Đơn Thuốc Điện Tử & Chỉ Định Y Lệnh (<=200 LOC)
+ * Phân Hệ Bác Sĩ CPOE: Đơn Thuốc Điện Tử & Kê Đơn Điều Trị (<=200 LOC)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -59,7 +59,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
             <span className="text-xs text-slate-300">Luật Khám bệnh, chữa bệnh 2023</span>
           </div>
           <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
-            Phân Hệ Chỉ Định &amp; Kê Đơn Điện Tử (CPOE)
+            Kê đơn thuốc điện tử (CPOE)
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
             Quy tắc 1 đơn thuốc duy nhất khi khám nhiều chuyên khoa • Tích hợp CDSS cảnh báo tương tác thuốc • Áp dụng kê đơn mạn tính tối đa 90 ngày.
@@ -74,12 +74,12 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
             className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs sm:text-sm transition shrink-0 cursor-pointer shadow-xs active:scale-98"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Kê Đơn / Y Lệnh Mới</span>
+            <span>Kê đơn thuốc mới</span>
           </button>
         ) : (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700 shrink-0">
             <ShieldAlert className="w-4 h-4 text-teal-400 shrink-0" />
-            <span>Xem y lệnh thực hiện ({roleName})</span>
+            <span>Danh sách đơn thuốc ({roleName})</span>
           </div>
         )}
       </div>
@@ -91,7 +91,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
             <Stethoscope className="w-4.5 h-4.5" />
           </div>
           <div>
-            <div className="text-xs text-slate-500 font-medium">Tổng Đơn Đã Ban Hành</div>
+            <div className="text-xs text-slate-500 font-medium">Tổng số đơn đã kê</div>
             <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">{orders.length} đơn</div>
           </div>
         </div>
@@ -101,7 +101,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
             <FileText className="w-4.5 h-4.5" />
           </div>
           <div>
-            <div className="text-xs text-slate-500 font-medium">Đơn Ngoại Trú (BHYT)</div>
+            <div className="text-xs text-slate-500 font-medium">Đơn thuốc ngoại trú (BHYT)</div>
             <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">{outpatientCount} đơn</div>
           </div>
         </div>
@@ -111,8 +111,8 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
             <CheckCircle2 className="w-4.5 h-4.5" />
           </div>
           <div>
-            <div className="text-xs text-slate-500 font-medium">Y Lệnh Nội Trú (Ngày)</div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">{inpatientCount} y lệnh</div>
+            <div className="text-xs text-slate-500 font-medium">Đơn thuốc điều trị nội trú</div>
+            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">{inpatientCount} đơn</div>
           </div>
         </div>
       </div>

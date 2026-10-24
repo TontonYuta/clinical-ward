@@ -68,7 +68,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
     onConfirmBorrow({
       itemName, itemType, quantity, patientRoom,
       patientName: `${patientName} (${patientCode})`,
-      borrowerName: `ĐD Trực (Y lệnh: ${doctorName})`,
+      borrowerName: `ĐD trực (Bác sĩ chỉ định: ${doctorName})`,
       note: `Cấp cứu: ${clinicalReason}`,
       legalBasis: itemType === 'Thuốc gây nghiện'
         ? 'Thông tư 18/2026/TT-BYT & VBHN 07/VBHN-BYT'
@@ -87,7 +87,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               <Pill className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold">Mượn Khẩn Thuốc &amp; Vật Tư Tủ Trực</h2>
+              <h2 className="text-sm sm:text-base font-bold">Mượn khẩn thuốc &amp; vật tư tủ trực</h2>
               <span className="text-[11px] text-slate-400 font-mono">VBHN 07 &amp; TT 18/2026/TT-BYT</span>
             </div>
           </div>
@@ -105,7 +105,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
           {/* Master Data Drug Search */}
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="font-bold text-slate-900">1. Tra cứu Dược Lâm Sàng (Tủ trực &amp; Toàn viện) *:</label>
+              <label className="font-bold text-slate-900">1. Tra cứu dược lâm sàng (tủ trực &amp; toàn viện) *:</label>
               <span className="text-[10px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">QĐ 2147/BYT</span>
             </div>
             <MedicationSearchAutocomplete selectedMedicationName={itemName} onSelect={handleSelectMed} defaultOnlyCrashCart={true} />
@@ -117,7 +117,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
                   onClick={() => { const f = ALL_MASTER_MEDICATIONS.find((m) => m.id === chip.id); if (f) handleSelectMed(f); }}
                   className="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-200 transition shrink-0 cursor-pointer"
                 >
-                  ⚡ {chip.label}
+                  {chip.label}
                 </button>
               ))}
             </div>
@@ -145,21 +145,21 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
                 </select>
               </div>
               <div>
-                <label className="font-semibold text-slate-800 block mb-1">Bác sĩ ra y lệnh:</label>
+                <label className="font-semibold text-slate-800 block mb-1">Bác sĩ chỉ định:</label>
                 <input type="text" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg font-medium" />
               </div>
             </div>
           </div>
 
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <span className="font-bold text-slate-500 uppercase tracking-wider text-[11px] block">2. Bệnh nhân thụ hưởng</span>
+            <span className="font-bold text-slate-500 uppercase tracking-wider text-[11px] block">2. Người bệnh thụ hưởng</span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
                 <label className="text-slate-700 block mb-1">Mã BN:</label>
                 <input type="text" value={patientCode} onChange={(e) => setPatientCode(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-lg font-mono" />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-slate-700 block mb-1">Họ tên BN *:</label>
+                <label className="text-slate-700 block mb-1">Họ tên người bệnh *:</label>
                 <input type="text" value={patientName} onChange={(e) => setPatientName(e.target.value)} required className="w-full px-3 py-1.5 border rounded-lg font-semibold" />
               </div>
             </div>
@@ -175,11 +175,11 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
           </div>
 
           <div className="pt-2 border-t flex items-center justify-between">
-            <span className="text-slate-500 text-[11px] flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-600" /> Xác thực Y tế TT 18</span>
+            <span className="text-slate-500 text-[11px] flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-600" /> Xác thực theo TT 18/2026/TT-BYT</span>
             <div className="flex gap-2">
               <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-lg border text-slate-700 hover:bg-slate-50 cursor-pointer">Hủy</button>
               <button type="submit" className="px-4 py-1.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-bold flex items-center gap-1.5 cursor-pointer">
-                <PlusCircle className="w-3.5 h-3.5" /> Ký Lập Phiếu
+                <PlusCircle className="w-3.5 h-3.5" /> Ký lập phiếu mượn
               </button>
             </div>
           </div>

@@ -67,7 +67,7 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const categories = ['Tất cả', 'Cấp cứu - Chống độc', 'Tim mạch', 'Hô hấp', 'Nội tiết - Chuyển hóa', 'Thuốc & Y lệnh'];
+  const categories = ['Tất cả', 'Cấp cứu - Chống độc', 'Tim mạch', 'Hô hấp', 'Nội tiết - Chuyển hóa', 'Thuốc & Chỉ định'];
 
   const filteredDrawerMacros = selectedCategory === 'Tất cả'
     ? CLINICAL_MACROS
@@ -130,7 +130,7 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
           </div>
 
           <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
-            <span>💡 Chuẩn hóa dữ liệu theo HL7 FHIR Condition &amp; Observation</span>
+            <span>Chuẩn hóa dữ liệu theo HL7 FHIR Condition &amp; Observation</span>
             <button
               type="button"
               onClick={() => setIsInlineVisible(false)}
@@ -263,7 +263,7 @@ export const ClinicalMacroAutocomplete: React.FC<ClinicalMacroAutocompleteProps>
           {children}
           {/* Frequent Macros Chips */}
           {[
-            { key: 'PUV', label: '⚡ PUV (Phản vệ)' },
+            { key: 'PUV', label: 'PUV (Phản vệ)' },
             { key: 'THA', label: 'THA (Huyết áp)' },
             { key: 'NMCT', label: 'NMCT (Nhồi máu)' },
             { key: 'COPD', label: 'COPD (Phổi mạn)' },

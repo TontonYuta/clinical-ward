@@ -47,10 +47,10 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-1 text-sm bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
+        <div className="flex items-center gap-1 text-sm bg-slate-100 p-1 rounded-md overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
           <button
             onClick={() => setSelectedUrgency('all')}
-            className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
               selectedUrgency === 'all' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -58,7 +58,7 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('urgent')}
-            className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
               selectedUrgency === 'urgent' ? 'bg-white text-rose-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -66,19 +66,19 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('in_progress')}
-            className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
               selectedUrgency === 'in_progress' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Đang sửa ({inProgressCount})
+            Đang sửa chữa ({inProgressCount})
           </button>
           <button
             onClick={() => setSelectedUrgency('resolved')}
-            className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
+            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
               selectedUrgency === 'resolved' ? 'bg-white text-emerald-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Đã xong ({resolvedCount})
+            Đã nghiệm thu ({resolvedCount})
           </button>
         </div>
       </div>
@@ -87,20 +87,20 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
       <div className="flex items-center gap-2 shrink-0 justify-end">
         <button
           onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT')}
-          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-medium transition cursor-pointer"
-          title="In Biên bản kiểm định an toàn điện & thử tải thiết bị (NĐ 04/2025 & NĐ 98)"
+          className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
+          title="In biên bản kiểm định an toàn điện & thử tải thiết bị (NĐ 04/2025 & NĐ 98)"
         >
-          <Printer className="w-4 h-4 text-slate-600" />
+          <Printer className="w-3.5 h-3.5 text-slate-600" />
           <span className="hidden sm:inline">In biên bản</span>
         </button>
 
         <button
           onClick={onOpenIncidentModal}
-          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-rose-700 hover:bg-rose-800 text-white text-sm font-semibold transition cursor-pointer active:scale-98"
-          title="Lập phiếu báo hỏng / sự cố thiết bị y tế"
+          className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-rose-700 hover:bg-rose-800 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 shadow-xs"
+          title="Lập phiếu báo hỏng sự cố thiết bị y tế"
         >
-          <PlusCircle className="w-4 h-4" />
-          <span>+ Báo Hỏng</span>
+          <PlusCircle className="w-3.5 h-3.5" />
+          <span>Báo hỏng thiết bị</span>
         </button>
       </div>
     </div>

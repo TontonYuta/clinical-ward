@@ -56,7 +56,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Tiêu Hủy Vỏ Ống Gây Nghiện</h2>
+              <h2 className="text-xs sm:text-base font-bold truncate">Tiêu hủy vỏ ống thuốc gây nghiện</h2>
               <span className="text-[11px] text-slate-400 font-mono truncate block">
                 Mẫu 16 · Thông tư 20/2017/TT-BYT
               </span>
@@ -175,18 +175,18 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
                         {item.code}
                       </span>
                       <span className="font-mono text-slate-500 text-[11px]">
-                        🕒 {item.borrowTime}
+                        {item.borrowTime}
                       </span>
                     </div>
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <strong className="text-slate-900 font-bold text-xs block">{item.itemName}</strong>
                         <span className="text-[11px] text-slate-600 block mt-0.5">
-                          BN: <strong>{item.patientName}</strong> ({item.patientRoom})
+                          Người bệnh: <strong>{item.patientName}</strong> ({item.patientRoom})
                         </span>
                       </div>
                       <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        ✓ Khay khóa
+                        Khay khóa
                       </span>
                     </div>
                   </div>
@@ -206,7 +206,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
                   <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold text-xs">
                     <th className="py-2.5 px-3.5">Mã phiếu</th>
                     <th className="py-2.5 px-3">Mặt hàng thuốc</th>
-                    <th className="py-2.5 px-3">Bệnh nhân sử dụng</th>
+                    <th className="py-2.5 px-3">Người bệnh sử dụng</th>
                     <th className="py-2.5 px-3">Thời gian tiêm</th>
                     <th className="py-2.5 px-3.5 text-right">Tình trạng</th>
                   </tr>
@@ -278,7 +278,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
               ) : (
                 <>
                   <FileSignature className="w-4 h-4" />
-                  <span>Ký Biên Bản Tiêu Hủy (Hội Đồng 3 Bên)</span>
+                  <span>Ký biên bản tiêu hủy (Hội đồng 3 bên)</span>
                 </>
               )}
             </button>
@@ -339,7 +339,7 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
                 ) : (
                   <>
                     <FileSignature className="w-4 h-4" />
-                    <span>Ký Biên Bản Tiêu Hủy (Hội Đồng 3 Bên)</span>
+                    <span>Ký biên bản tiêu hủy (Hội đồng 3 bên)</span>
                   </>
                 )}
               </button>

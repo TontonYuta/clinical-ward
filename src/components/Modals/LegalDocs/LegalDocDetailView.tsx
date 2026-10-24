@@ -34,7 +34,7 @@ export const LegalDocDetailView: React.FC<LegalDocDetailViewProps> = ({ doc }) =
               <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{doc.title}</p>
               {doc.replacesOrAmends && (
                 <p className="text-xs text-amber-700 font-medium mt-1">
-                  ⚡ {doc.replacesOrAmends}
+                  {doc.replacesOrAmends}
                 </p>
               )}
             </div>

@@ -927,7 +927,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                   <div><strong>Mã bệnh án (PID):</strong> <span className="font-mono font-bold">BA-2026-CC088</span></div>
                   <div><strong>Vị trí buồng / giường:</strong> {currentDebt?.patientRoom || 'Buồng cấp cứu 3 - Giường 02'}</div>
                   <div><strong>Thời điểm xuất rút:</strong> {currentDebt?.borrowTime} - {currentDebt?.borrowDate}</div>
-                  <div><strong>Bác sĩ ra y lệnh:</strong> BS. CKII Trần Văn Hùng</div>
+                  <div><strong>Bác sĩ chỉ định:</strong> BS. CKII Trần Văn Hùng</div>
                   <div><strong>Điều dưỡng xuất tủ:</strong> {currentDebt?.borrowerName || 'ĐD. Lê Thị Thu'}</div>
                   <div className="col-span-2 pt-0.5 border-t border-black/40">
                     <strong>Chỉ định lâm sàng:</strong> {currentDebt?.note || 'Cấp cứu sốc chấn thương / giảm đau tiền phẫu khẩn cấp ca trực đêm'}
@@ -960,7 +960,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                 </table>
 
                 <div className="text-[10.5px] italic text-slate-800 pt-0.5">
-                  * Trách nhiệm: Bác sĩ ra y lệnh có trách nhiệm kê đơn thuốc hoàn trả cơ số tủ trực trong ca trực hoặc trước 07h30 sáng để Điều dưỡng trưởng ca tổng hợp lĩnh bù tại Kho Dược theo Điều 10 Thông tư 22/2011/TT-BYT.
+                  * Trách nhiệm: Bác sĩ chỉ định có trách nhiệm kê đơn thuốc hoàn trả cơ số tủ trực trong ca trực hoặc trước 07h30 sáng để Điều dưỡng trưởng ca tổng hợp lĩnh bù tại Kho Dược theo Điều 10 Thông tư 22/2011/TT-BYT.
                 </div>
 
                 <div className="grid grid-cols-2 text-center text-[11px] pt-3 page-break-inside-avoid">
@@ -971,7 +971,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                     <div className="font-bold text-[11px]">{currentDebt?.borrowerName || 'ĐD. Lê Thị Thu'}</div>
                   </div>
                   <div>
-                    <div className="font-bold uppercase text-[10.5px]">BÁC SĨ RA Y LỆNH CẤP CỨU</div>
+                    <div className="font-bold uppercase text-[10.5px]">BÁC SĨ CHỈ ĐỊNH CẤP CỨU</div>
                     <div className="italic text-[9.5px] text-slate-500">(Ký, ghi rõ họ tên)</div>
                     <div className="h-14"></div>
                     <div className="font-bold text-[11px]">BS. CKII Trần Văn Hùng</div>
@@ -1361,7 +1361,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
                         <th className="border border-black py-1 px-1 w-14">Cơ số</th>
                         <th className="border border-black py-1 px-1 w-14">Tồn TT</th>
                         <th className="border border-black py-1 px-1 w-20">Vỏ thu hồi</th>
-                        <th className="border border-black py-1 px-1.5 text-left">Phiếu xuất mượn / Bác sĩ y lệnh</th>
+                        <th className="border border-black py-1 px-1.5 text-left">Phiếu xuất mượn / Bác sĩ chỉ định</th>
                       </tr>
                     </thead>
                     <tbody>

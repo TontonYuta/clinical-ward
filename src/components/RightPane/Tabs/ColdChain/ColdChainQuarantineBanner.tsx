@@ -22,13 +22,13 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-3 border-b border-amber-100">
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-amber-700 shrink-0" />
-          <span className="font-bold text-slate-900 uppercase text-xs sm:text-sm tracking-wide">
-            Khu Vực Biệt Trữ Cách Ly Lô Vắc Xin (Quarantine - Chuẩn GSP &amp; WHO)
+          <span className="font-bold text-slate-900 text-xs sm:text-sm tracking-wide">
+            Khu vực biệt trữ cách ly lô vắc xin (chuẩn GSP &amp; WHO PQS)
           </span>
         </div>
         <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-amber-600" />
-          Trạng thái: Đang Biệt Trữ (Chờ Phóng Thích)
+          Trạng thái: Đang biệt trữ (chờ thẩm định)
         </span>
       </div>
 
@@ -38,7 +38,7 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3.5">
         <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
-          <span className="text-[11px] text-slate-500 font-semibold block uppercase">1. Chỉ thị nhiệt VVM</span>
+          <span className="text-[11px] text-slate-500 font-semibold block">1. Chỉ thị nhiệt độ lọ vắc xin (VVM)</span>
           <div className="flex items-center gap-2 mt-1.5">
             <span className="w-3.5 h-3.5 rounded-xs bg-emerald-500 inline-block border border-emerald-600" />
             <span className="font-bold text-slate-900 text-sm">Cấp độ 1 (Đạt chuẩn)</span>
@@ -47,7 +47,7 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
         </div>
 
         <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
-          <span className="text-[11px] text-slate-500 font-semibold block uppercase">2. Nhiệt độ MKT (Mean Kinetic Temp)</span>
+          <span className="text-[11px] text-slate-500 font-semibold block">2. Nhiệt độ động học trung bình (MKT)</span>
           <div className="flex items-center gap-2 mt-1.5">
             <FlaskConical className="w-4 h-4 text-slate-600" />
             <span className="font-bold text-slate-900 font-mono text-sm">5.6°C (Đạt chuẩn)</span>
@@ -56,7 +56,7 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
         </div>
 
         <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
-          <span className="text-[11px] text-slate-500 font-semibold block uppercase">3. Thời gian phơi nhiễm sự cố</span>
+          <span className="text-[11px] text-slate-500 font-semibold block">3. Thời gian phơi nhiễm sự cố</span>
           <div className="flex items-center gap-2 mt-1.5">
             <Clock className="w-4 h-4 text-slate-600" />
             <span className="font-bold text-slate-900 font-mono text-sm">12 phút</span>
@@ -75,7 +75,7 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
             className="inline-flex items-center gap-2 h-8.5 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shadow-xs cursor-pointer active:scale-98"
           >
             <FileCheck2 className="w-4 h-4 text-emerald-400" />
-            <span>Ký Lệnh Giải Phóng Lô Vắc Xin</span>
+            <span>Ký lệnh giải phóng lô vắc xin</span>
           </button>
         )}
       </div>

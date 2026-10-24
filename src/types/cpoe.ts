@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Phân hệ Bác sĩ CPOE: Đơn thuốc điện tử & Chỉ định Y lệnh (TT 26/2025/TT-BYT)
+ * Phân hệ bác sĩ CPOE: Kê đơn thuốc điện tử & chỉ định điều trị (TT 26/2025/TT-BYT)
  */
 
 export type PrescriptionType = 'outpatient' | 'inpatient_daily';

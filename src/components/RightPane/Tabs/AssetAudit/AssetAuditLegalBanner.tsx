@@ -15,7 +15,7 @@ export const AssetAuditLegalBanner: React.FC = () => {
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-900">
-              Kiểm Kê Tài Sản Công Bệnh Viện &amp; Quản Lý Hao Mòn Định Kỳ
+              Kiểm kê tài sản công bệnh viện &amp; quản lý hao mòn định kỳ
             </span>
             <span className="bg-slate-200/90 text-slate-800 text-[10px] font-bold px-1.5 py-0.2 rounded border border-slate-300">
               NĐ 151/2017/NĐ-CP &amp; NĐ 114/2024

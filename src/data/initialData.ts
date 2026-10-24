@@ -27,7 +27,7 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     rfidCardId: 'RFID-NURSE-8821',
     allowedActions: ['BORROW_EMERGENCY', 'RETURN_AMPOULE', 'SETTLE_DEBT', 'CREATE_INCIDENT'],
     allowedTabs: ['debt', 'cpoe', 'fefo', 'equipment'],
-    responsibilities: 'Thực hiện y lệnh điều trị, mượn thuốc cấp cứu ca đêm (TT 22), báo hỏng máy/phụ kiện (NĐ 98), hoàn nộp vỏ ống Morphin (TT 20)',
+    responsibilities: 'Thực hiện đơn thuốc & chỉ định điều trị, mượn thuốc cấp cứu ca đêm (TT 22), báo hỏng máy/phụ kiện (NĐ 98), hoàn nộp vỏ ống Morphin (TT 20)',
     defaultTab: 'debt',
     badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-300'
   },
@@ -79,7 +79,7 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     rfidCardId: 'RFID-DOC-1109',
     allowedActions: ['PRESCRIBE_MEDICATION', 'BORROW_EMERGENCY', 'SETTLE_DEBT', 'DESTROY_AMPOULES', 'HANDOVER_EQUIPMENT', 'CREATE_INCIDENT'],
     allowedTabs: ['cpoe', 'debt', 'fefo', 'equipment', 'coldchain'],
-    responsibilities: 'Kê đơn điện tử CPOE (TT 26/2025), ra y lệnh nội trú ngày, tra cứu thuốc tủ trực và thiết bị buồng bệnh',
+    responsibilities: 'Kê đơn điện tử CPOE (TT 26/2025), kê đơn thuốc nội trú hằng ngày, tra cứu thuốc tủ trực và thiết bị buồng bệnh',
     defaultTab: 'cpoe',
     badgeColor: 'bg-teal-50 text-teal-800 border-teal-300'
   },
@@ -882,7 +882,7 @@ export const ROLE_SUGGESTION_CHIPS: Record<UserRole, QuickSuggestionChip[]> = {
   nurse: [
     {
       id: 'nurse-audit',
-      label: '📋 Đối soát ca trực 07:00 AM',
+      label: 'Đối soát giao ban ca trực',
       fullPrompt: 'Chạy đối soát toàn bộ ca trực đêm qua và phát hiện lệch sổ giao ban 07:00 AM',
       badge: 'Giao ban',
       category: 'debt'
@@ -1048,14 +1048,14 @@ export const ROLE_SUGGESTION_CHIPS: Record<UserRole, QuickSuggestionChip[]> = {
 export const QUICK_SUGGESTION_CHIPS: QuickSuggestionChip[] = [
   {
     id: 'chip-handover-audit',
-    label: '📋 Đối soát ca trực 07:00 AM',
+    label: 'Đối soát giao ban ca trực',
     fullPrompt: 'Chạy đối soát toàn bộ ca trực đêm qua và phát hiện lệch sổ giao ban 07:00 AM',
     badge: 'Giao ban',
     category: 'debt'
   },
   {
     id: 'chip-restock-m01',
-    label: '📦 Lập dự trù bù thuốc Mẫu 01',
+    label: 'Lập dự trù bù thuốc Mẫu 01',
     fullPrompt: 'Kiểm tra các mặt hàng chạm ngưỡng Min và lập phiếu dự trù Mẫu 01/TT22',
     badge: 'Mẫu 01',
     category: 'fefo'

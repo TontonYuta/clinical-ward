@@ -79,7 +79,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
         </div>
 
         {/* Bóc tách Thuốc vs Vật tư y tế */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md">
           <button
             onClick={() => setCommodity('all')}
             className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer ${
@@ -94,15 +94,15 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
               commodity === 'medication' ? 'bg-white text-teal-800 font-bold shadow-xs' : 'text-slate-600'
             }`}
           >
-            💊 Dược phẩm
+            Dược phẩm
           </button>
           <button
             onClick={() => setCommodity('medical_supply')}
             className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer ${
-              commodity === 'medical_supply' ? 'bg-white text-amber-900 font-bold shadow-xs' : 'text-slate-600'
+              commodity === 'medical_supply' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600'
             }`}
           >
-            🏷️ Vật tư y tế
+            Vật tư y tế
           </button>
         </div>
       </div>
@@ -117,11 +117,11 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm tên thuốc, số lô, vị trí..."
-              className="w-full pl-9 pr-3.5 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400"
+              className="w-full pl-9 pr-3.5 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400"
             />
           </div>
 
-          <div className="flex items-center gap-1 text-xs bg-slate-100 p-1 rounded-lg overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-1 text-xs bg-slate-100 p-1 rounded-md overflow-x-auto whitespace-nowrap">
             <button
               onClick={() => setStatus('all')}
               className={`px-2.5 py-1 rounded-md transition cursor-pointer ${
@@ -136,7 +136,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
                 status === 'near_expiry' ? 'bg-white text-rose-800 font-bold shadow-xs' : 'text-slate-600'
               }`}
             >
-              Cận hạn &lt; 60d ({nearExpiryCount})
+              Cận hạn &lt; 60 ngày ({nearExpiryCount})
             </button>
             <button
               onClick={() => setStatus('low_stock')}
@@ -144,7 +144,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
                 status === 'low_stock' ? 'bg-white text-amber-900 font-bold shadow-xs' : 'text-slate-600'
               }`}
             >
-              Dưới Min ({lowStockCount})
+              Dưới định mức ({lowStockCount})
             </button>
           </div>
         </div>
@@ -152,20 +152,20 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
         <div className="flex items-center gap-2 shrink-0 justify-end">
           <button
             onClick={() => onOpenPrintForm?.('TT22_RESTOCK_PROPOSAL')}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition cursor-pointer"
-            title="In Phiếu dự trù bổ sung thuốc (Mẫu 01/TT22 & VBHN 07)"
+            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition cursor-pointer"
+            title="In phiếu dự trù bổ sung thuốc (Mẫu 01/TT22 & VBHN 07)"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">In Mẫu 01</span>
+            <span className="hidden sm:inline">In dự trù Mẫu 01</span>
           </button>
 
           {lowStockCount > 0 && (
             <button
               onClick={onOpenRestock}
-              className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs transition cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs transition cursor-pointer active:scale-98 shadow-xs"
             >
               <PackagePlus className="w-3.5 h-3.5 text-teal-300" />
-              <span>Dự trù bù ({lowStockCount})</span>
+              <span>Lập dự trù ({lowStockCount})</span>
             </button>
           )}
         </div>

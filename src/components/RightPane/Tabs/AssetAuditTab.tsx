@@ -111,11 +111,11 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
         <div className="flex-1 min-h-0 overflow-auto pb-24">
           <table className="w-full text-left text-sm min-w-[720px] border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
-              <tr className="font-semibold text-xs uppercase tracking-wider">
+              <tr className="font-semibold text-xs tracking-wider">
                 <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mã tài sản</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị &amp; Cấp rủi ro</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Hao mòn &amp; Hiện trạng</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị &amp; cấp rủi ro</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Đối soát vị trí (sổ sách ➔ thực tế)</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Hao mòn &amp; hiện trạng</th>
                 <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>

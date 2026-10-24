@@ -94,7 +94,7 @@ export const AssetAuditCard: React.FC<AssetAuditCardProps> = ({
           className="flex-1 h-8.5 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
         >
           <Printer className="w-4 h-4 text-slate-600" />
-          <span>In Mẫu 01</span>
+          <span>In Mẫu 01-TSC</span>
         </button>
         {asset.isMisallocated ? (
           <button
@@ -114,7 +114,7 @@ export const AssetAuditCard: React.FC<AssetAuditCardProps> = ({
           </button>
         ) : (
           <div className="flex-2 h-8.5 flex items-center justify-center text-xs font-medium text-emerald-800 bg-emerald-50 rounded-md border border-emerald-200">
-            Đã đối soát QR
+            Đã đối soát mã QR
           </div>
         )}
       </div>

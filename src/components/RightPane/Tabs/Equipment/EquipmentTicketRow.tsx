@@ -56,7 +56,7 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
       </td>
 
       <td className="py-3 px-3 whitespace-nowrap">
-        <span className="font-medium text-slate-800 text-xs block">📍 {ticket.location}</span>
+        <span className="font-medium text-slate-800 text-xs block">{ticket.location}</span>
       </td>
 
       <td className="py-3 px-3 whitespace-nowrap font-mono text-xs text-slate-700">
@@ -94,8 +94,8 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
-            className="h-8 px-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
-            title="In Biên bản kỹ thuật NĐ 04/2025 & NĐ 98"
+            className="h-8 px-2.5 rounded-md border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
+            title="In biên bản kỹ thuật NĐ 04/2025 & NĐ 98"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>In</span>
@@ -104,7 +104,7 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
           {!isResolved && (
             <button
               onClick={() => onOpenHandover(ticket)}
-              className={`h-8 px-3 rounded-lg text-xs font-bold transition cursor-pointer active:scale-98 flex items-center gap-1 ${
+              className={`h-8 px-3 rounded-md text-xs font-semibold transition cursor-pointer active:scale-98 flex items-center gap-1 ${
                 currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
                   ? 'bg-teal-800 hover:bg-teal-900 text-white shadow-xs'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'

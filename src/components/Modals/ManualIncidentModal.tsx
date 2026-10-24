@@ -82,7 +82,7 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold">Báo Hỏng Thiết Bị Y Tế</h2>
+              <h2 className="text-sm sm:text-base font-bold">Báo hỏng thiết bị y tế</h2>
               <span className="text-[11px] text-slate-400 font-mono">Nghị định 04/2025/NĐ-CP &amp; NĐ 98/2021</span>
             </div>
           </div>
@@ -102,7 +102,7 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="text-rose-600">⚡</span> Chọn nhanh thiết bị viện:
+                Chọn nhanh thiết bị viện:
               </label>
               {selectedPreset !== null && (
                 <button type="button" onClick={() => setSelectedPreset(null)} className="text-slate-400 hover:text-slate-600 underline">Xóa chọn</button>
@@ -182,7 +182,7 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
             <div className="flex items-center gap-2">
               <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-lg border text-slate-700 hover:bg-slate-50">Hủy</button>
               <button type="submit" className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center gap-1.5">
-                <PlusCircle className="w-3.5 h-3.5" /> Gửi Báo Hỏng
+                <PlusCircle className="w-3.5 h-3.5" /> Gửi báo hỏng
               </button>
             </div>
           </div>

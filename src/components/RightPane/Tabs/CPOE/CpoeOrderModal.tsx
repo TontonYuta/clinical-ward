@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Modal Kê Đơn Thuốc Điện Tử & Ra Y Lệnh CPOE (<=200 LOC)
+ * Modal Kê Đơn Thuốc Điện Tử Chuẩn CPOE (TT 26/2025/TT-BYT) (<=200 LOC)
  */
 
 import React, { useState } from 'react';
@@ -106,7 +106,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
         <div className="h-14 px-5 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-teal-400" />
-            <h3 className="font-bold text-sm sm:text-base">Kê Đơn Thuốc Điện Tử (TT 26/2025/TT-BYT)</h3>
+            <h3 className="font-bold text-sm sm:text-base">Kê đơn thuốc điện tử (TT 26/2025/TT-BYT)</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/10 text-slate-300 cursor-pointer">
             <X className="w-5 h-5" />
@@ -118,44 +118,44 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             <button
               type="button"
               onClick={() => { setRxType('outpatient'); setDaysPrescribed(30); }}
-              className={`flex-1 py-1.5 rounded-lg font-semibold border cursor-pointer ${rxType === 'outpatient' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+              className={`flex-1 py-1.5 rounded-md font-semibold border cursor-pointer ${rxType === 'outpatient' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
             >
-              Đơn Ngoại Trú (BHYT)
+              Đơn ngoại trú (BHYT)
             </button>
             <button
               type="button"
               onClick={() => { setRxType('inpatient_daily'); setDaysPrescribed(1); setIsChronic(false); }}
-              className={`flex-1 py-1.5 rounded-lg font-semibold border cursor-pointer ${rxType === 'inpatient_daily' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+              className={`flex-1 py-1.5 rounded-md font-semibold border cursor-pointer ${rxType === 'inpatient_daily' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
             >
-              Y Lệnh Nội Trú (Ngày)
+              Đơn nội trú (hằng ngày)
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="block font-semibold text-slate-700 mb-0.5">Tên Người Bệnh *</label>
-              <input type="text" required placeholder="Nguyễn Văn A" value={patientName} onChange={(e) => setPatientName(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-lg" />
+              <label className="block font-semibold text-slate-700 mb-0.5">Tên người bệnh *</label>
+              <input type="text" required placeholder="Nguyễn Văn A" value={patientName} onChange={(e) => setPatientName(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md" />
             </div>
             <div>
               <label className="block font-semibold text-slate-700 mb-0.5">Số CCCD (TT 26) *</label>
-              <input type="text" placeholder="001201019283" value={patientCccd} onChange={(e) => setPatientCccd(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-lg font-mono" />
+              <input type="text" placeholder="001201019283" value={patientCccd} onChange={(e) => setPatientCccd(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md font-mono" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2.5">
             <div>
               <label className="block font-semibold text-slate-700 mb-0.5">Mã ICD-10 *</label>
-              <input type="text" value={diagnosisIcd10} onChange={(e) => setDiagnosisIcd10(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-lg font-mono uppercase" />
+              <input type="text" value={diagnosisIcd10} onChange={(e) => setDiagnosisIcd10(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md font-mono uppercase" />
             </div>
             <div className="col-span-2">
-              <label className="block font-semibold text-slate-700 mb-0.5">Chẩn Đoán Xác Định *</label>
-              <input type="text" value={diagnosisText} onChange={(e) => setDiagnosisText(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-lg" />
+              <label className="block font-semibold text-slate-700 mb-0.5">Chẩn đoán xác định *</label>
+              <input type="text" value={diagnosisText} onChange={(e) => setDiagnosisText(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md" />
             </div>
           </div>
 
           {/* Smart Medication Search */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Tìm &amp; Chỉ Định Thuốc (Cổng Dược Quốc Gia) *</label>
+            <label className="block font-semibold text-slate-700 mb-1">Tìm và chỉ định thuốc (Cổng Dược quốc gia) *</label>
             <MedicationSearchAutocomplete
               selectedMedicationName={medName}
               onSelect={handleSelectMed}
@@ -167,16 +167,16 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
           <div className="grid grid-cols-3 gap-2.5">
             <div className="col-span-2">
               <label className="block font-semibold text-slate-700 mb-0.5">Hoạt chất / Đường dùng</label>
-              <input type="text" readOnly value={`${activeIngredient} (${route})`} className="w-full px-2.5 py-1.5 border rounded-lg bg-slate-50 text-slate-600 font-medium" />
+              <input type="text" readOnly value={`${activeIngredient} (${route})`} className="w-full px-2.5 py-1.5 border rounded-md bg-slate-50 text-slate-600 font-medium" />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-0.5">Số Lượng ({unit})</label>
-              <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="w-full px-2.5 py-1.5 border rounded-lg font-bold text-teal-900" />
+              <label className="block font-semibold text-slate-700 mb-0.5">Số lượng ({unit})</label>
+              <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="w-full px-2.5 py-1.5 border rounded-md font-bold text-teal-900" />
             </div>
           </div>
 
           {hasDdiWarning && (
-            <div className="p-2 bg-rose-50 border border-rose-300 rounded-lg flex items-center gap-2 text-rose-800 text-xs font-semibold">
+            <div className="p-2 bg-rose-50 border border-rose-300 rounded-md flex items-center gap-2 text-rose-800 text-xs font-semibold">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>Cảnh báo CDSS: Chống chỉ định dùng Morphin trên bệnh nhân suy hô hấp!</span>
             </div>
@@ -185,10 +185,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
           <div className="pt-2.5 border-t flex items-center justify-between">
             <span className="text-xs text-slate-500">Bác sĩ: <strong>{doctorName}</strong></span>
             <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-3 py-1.5 border rounded-lg text-slate-700 cursor-pointer">Hủy</button>
-              <button type="submit" className="px-4 py-1.5 bg-teal-800 hover:bg-teal-900 text-white rounded-lg font-bold flex items-center gap-1.5 cursor-pointer">
+              <button type="button" onClick={onClose} className="px-3 py-1.5 border rounded-md text-slate-700 cursor-pointer">Hủy</button>
+              <button type="submit" className="px-3.5 py-1.5 bg-teal-800 hover:bg-teal-900 text-white rounded-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Ký Số Ban Hành</span>
+                <span>Ký số ban hành đơn</span>
               </button>
             </div>
           </div>

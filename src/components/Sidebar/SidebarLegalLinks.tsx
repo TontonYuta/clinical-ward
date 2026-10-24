@@ -32,7 +32,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
     <div>
       {!isCollapsed && (
         <div className="px-2.5 pb-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
-          Quản Trị &amp; Pháp Lý
+          Quản trị &amp; pháp lý
         </div>
       )}
       <div className="space-y-1">
@@ -41,10 +41,10 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
-          title="Nhật Ký Kiểm Toán Lâm Sàng (NĐ 130)"
+          title="Nhật ký kiểm toán lâm sàng và vết băm bảo mật (NĐ 130/2018)"
         >
           <ClipboardList className="w-5 h-5 text-teal-700 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Nhật Ký Kiểm Toán</span>}
+          {!isCollapsed && <span className="flex-1 text-left truncate">Nhật ký kiểm toán</span>}
         </button>
 
         <button
@@ -52,10 +52,10 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
-          title="Căn Cứ Pháp Lý & Quy Định Bộ Y Tế (Docs)"
+          title="Căn cứ pháp lý y tế & quy chế chuyên môn Bộ Y Tế"
         >
           <Scale className="w-5 h-5 text-teal-700 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Căn Cứ Pháp Lý</span>}
+          {!isCollapsed && <span className="flex-1 text-left truncate">Căn cứ pháp lý y tế</span>}
         </button>
 
         <button
@@ -63,10 +63,10 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
-          title="Tài Liệu Hướng Dẫn Sử Dụng Chi Tiết (HDSD)"
+          title="Hướng dẫn sử dụng và quy trình vận hành ca trực"
         >
           <BookOpen className="w-5 h-5 text-teal-700 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Hướng Dẫn Sử Dụng</span>}
+          {!isCollapsed && <span className="flex-1 text-left truncate">Hướng dẫn vận hành</span>}
         </button>
 
         <button
@@ -74,10 +74,10 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
-          title="Xuất &amp; In Biểu Mẫu Hành Chính Y Tế (TT 20, TT 22, NĐ 151, NĐ 98)"
+          title="Xuất và in biểu mẫu hành chính y tế chuẩn A4 (TT 18, TT 26, NĐ 151, NĐ 98)"
         >
           <Printer className="w-5 h-5 text-teal-700 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Biểu Mẫu Y Tế (A4)</span>}
+          {!isCollapsed && <span className="flex-1 text-left truncate">Biểu mẫu in A4</span>}
         </button>
       </div>
     </div>

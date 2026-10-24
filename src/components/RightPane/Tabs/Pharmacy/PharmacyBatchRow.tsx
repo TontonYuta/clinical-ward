@@ -42,7 +42,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           <span className="text-xs text-slate-500 font-medium">{batch.category}</span>
           <span className="text-slate-300">•</span>
           <span className="text-xs text-slate-500 font-medium">
-            {batch.commodityType === 'medical_supply' ? '🏷️ Vật tư y tế' : '💊 Dược phẩm'}
+            {batch.commodityType === 'medical_supply' ? 'Vật tư y tế' : 'Dược phẩm'}
           </span>
         </div>
       </td>
@@ -92,7 +92,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
       </td>
 
       <td className="py-3 px-3 text-slate-700 text-xs truncate max-w-[160px]" title={batch.warehouseLocation}>
-        📍 {batch.warehouseLocation}
+        {batch.warehouseLocation}
       </td>
 
       <td className="py-3 px-3 text-right whitespace-nowrap">
@@ -100,7 +100,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           {isUnderMin && (
             <button
               onClick={onOpenRestock}
-              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 transition cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 transition cursor-pointer active:scale-98"
               title="Lập phiếu dự trù nhập bổ sung cơ số (Mẫu 01/TT22)"
             >
               <PackagePlus className="w-3.5 h-3.5 text-amber-700" />
@@ -109,7 +109,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           )}
           <button
             onClick={() => onQuickDispatch(batch)}
-            className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-98 ${
+            className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-xs font-semibold transition cursor-pointer active:scale-98 ${
               batch.isNearExpiry
                 ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200'
                 : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'

@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Bảng Danh Sách Đơn Thuốc & Y Lệnh Bác Sĩ CPOE (<=200 LOC)
+ * Bảng Danh Sách Đơn Thuốc Bác Sĩ CPOE (<=200 LOC)
  */
 
 import React, { useState } from 'react';
@@ -22,14 +22,14 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
   });
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xs">
       {/* Table Filters Header */}
       <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
               filterType === 'all'
                 ? 'bg-teal-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
@@ -40,28 +40,28 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
           <button
             type="button"
             onClick={() => setFilterType('outpatient')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
               filterType === 'outpatient'
                 ? 'bg-teal-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
-            Đơn Ngoại Trú (TT 26)
+            Đơn ngoại trú (TT 26)
           </button>
           <button
             type="button"
             onClick={() => setFilterType('inpatient_daily')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
               filterType === 'inpatient_daily'
                 ? 'bg-teal-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
-            Y Lệnh Nội Trú (Ngày)
+            Đơn nội trú (hằng ngày)
           </button>
         </div>
         <div className="text-xs text-slate-500 font-medium">
-          Chuẩn Thông tư 26/2025/TT-BYT
+          Thông tư 26/2025/TT-BYT
         </div>
       </div>
 
@@ -70,12 +70,12 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
         <table className="w-full text-left text-xs sm:text-sm border-collapse">
           <thead>
             <tr className="bg-slate-100/90 text-slate-700 border-b border-slate-200 font-semibold text-xs">
-              <th className="py-2.5 px-3 border-r border-slate-200">Mã Đơn / Thời Gian</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Người Bệnh &amp; CCCD</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Chẩn Đoán (ICD-10)</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Loại Đơn &amp; Thời Hạn</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Danh Mục Thuốc Kê</th>
-              <th className="py-2.5 px-3">Chữ Ký Số &amp; Trạng Thái</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Mã đơn / Thời gian</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Người bệnh &amp; CCCD</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Chẩn đoán (ICD-10)</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Loại đơn &amp; Thời hạn</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Thuốc chỉ định</th>
+              <th className="py-2.5 px-3">Chữ ký số &amp; Trạng thái</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -90,7 +90,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                 <tr
                   key={order.id}
                   onClick={() => onSelectOrder?.(order)}
-                  className="even:bg-slate-50/70 hover:bg-teal-50/40 transition cursor-pointer"
+                  className="even:bg-slate-50/70 hover:bg-slate-100/60 transition cursor-pointer"
                 >
                   <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-xs">
                     <span className="font-bold text-teal-900 block">{order.id}</span>
@@ -121,7 +121,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                       </span>
                       {order.isChronicDisease && (
                         <span className="px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800">
-                          Mạn tính ({order.daysPrescribed}d)
+                          Mạn tính ({order.daysPrescribed} ngày)
                         </span>
                       )}
                     </div>
@@ -138,7 +138,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                   <td className="py-2.5 px-3">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>{order.doctorName} (Ký số OK)</span>
+                      <span>{order.doctorName} (Đã ký số)</span>
                     </div>
                   </td>
                 </tr>

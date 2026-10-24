@@ -209,7 +209,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                     <div className="text-xs text-slate-500 font-mono">CCHN: 009125/BYT-CCHN • Hồi Sức Tích Cực (ICU)</div>
                     <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
                       • <strong>Phân hệ truy cập:</strong> Sổ nợ tủ trực, Sự cố thiết bị y tế.<br />
-                      • <strong>Thẩm quyền:</strong> Ra y lệnh cấp cứu mượn thuốc, ký đơn thuốc hoàn bù tủ trực, nghiệm thu thử tải máy thở bàn giao buồng bệnh (NĐ 98).
+                      • <strong>Thẩm quyền:</strong> Chỉ định mượn thuốc cấp cứu, ký đơn thuốc hoàn bù tủ trực, nghiệm thu thử tải máy thở bàn giao buồng bệnh (NĐ 98).
                     </p>
                   </div>
 
@@ -281,7 +281,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                     </p>
                     <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm text-slate-600">
                       <li>Chọn thuốc cấp cứu (Morphin, Fentanyl, Adrenalin, Ceftriaxone, Noradrenalin...).</li>
-                      <li>Nhập số lượng, mã bệnh nhân, buồng bệnh, bác sĩ ra y lệnh và lý do cấp cứu.</li>
+                      <li>Nhập số lượng, mã bệnh nhân, buồng bệnh, bác sĩ chỉ định và lý do cấp cứu.</li>
                       <li>Có thể dùng thanh <strong>Smart Macros ICD-10</strong> để gõ tắt nhanh chẩn đoán (THA, NMCT, PUV, COPD...).</li>
                       <li>Nhấn <strong>Lập Phiếu &amp; Ký Xác Nhận</strong> $\to$ Nhập mã PIN cá nhân $\to$ Phiếu ghi nợ được ghi nhận vào bảng.</li>
                     </ul>

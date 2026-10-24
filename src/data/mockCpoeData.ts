@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Dữ Liệu Mẫu Đơn Thuốc Điện Tử & Y Lệnh Bác Sĩ Chuẩn TT 26/2025/TT-BYT
+ * Dữ Liệu Mẫu Đơn Thuốc Điện Tử Bác Sĩ Chuẩn TT 26/2025/TT-BYT
  */
 
 import { PrescriptionOrder } from '../types/cpoe';
@@ -99,7 +99,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
     doctorName: 'BS. Trần Văn Hùng',
     doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 07:00:00',
-    digitalSignature: 'SHA256:1a84f32e90c88... (Đã ký số y lệnh)',
+    digitalSignature: 'SHA256:1a84f32e90c88... (Đã ký số đơn thuốc)',
     status: 'signed',
     items: [
       {

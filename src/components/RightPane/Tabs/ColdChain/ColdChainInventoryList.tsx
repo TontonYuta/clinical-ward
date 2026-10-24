@@ -44,7 +44,7 @@ export const ColdChainInventoryList: React.FC<ColdChainInventoryListProps> = ({
           <Package className="w-4 h-4 text-slate-600" />
           Danh mục sinh phẩm &amp; vắc xin đang bảo quản (Tổng: {totalDoses.toLocaleString()} liều)
         </span>
-        <span className="text-xs text-slate-600 font-semibold">Kho Lạnh Dược Lâm Sàng GSP</span>
+        <span className="text-xs text-slate-600 font-semibold">Kho lạnh dược lâm sàng GSP</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs sm:text-sm">

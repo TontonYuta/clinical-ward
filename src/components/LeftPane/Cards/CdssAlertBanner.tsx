@@ -49,7 +49,7 @@ export const CdssAlertBanner: React.FC<CdssAlertBannerProps> = ({ alert }) => {
         </div>
         {alert.antidoteRecommendation && (
           <div className="text-xs bg-white/90 p-2 rounded-md border border-rose-200 font-semibold text-rose-800 mt-1">
-            💡 <b>Khuyến cáo an toàn:</b> {formatInlineMarkdown(alert.antidoteRecommendation)}
+            <b>Khuyến cáo an toàn:</b> {formatInlineMarkdown(alert.antidoteRecommendation)}
           </div>
         )}
         {alert.regulatoryReference && (

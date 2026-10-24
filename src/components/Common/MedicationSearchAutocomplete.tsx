@@ -111,7 +111,7 @@ export const MedicationSearchAutocomplete: React.FC<MedicationSearchAutocomplete
               onlyCrashCart ? 'bg-teal-700 text-white border-teal-800 shadow-2xs' : 'bg-slate-100 text-slate-600 border-slate-200'
             }`}
           >
-            ⚡ Cơ số Tủ trực (Crash Cart)
+            Cơ số tủ trực cấp cứu
           </button>
           <button
             type="button"
@@ -120,7 +120,7 @@ export const MedicationSearchAutocomplete: React.FC<MedicationSearchAutocomplete
               !onlyCrashCart ? 'bg-teal-700 text-white border-teal-800 shadow-2xs' : 'bg-slate-100 text-slate-600 border-slate-200'
             }`}
           >
-            🏥 Toàn Bệnh Viện
+            Toàn bệnh viện
           </button>
         </div>
         <span className="text-[10px] text-slate-400 font-mono">Chuẩn QĐ 2147/BYT</span>
@@ -137,7 +137,7 @@ export const MedicationSearchAutocomplete: React.FC<MedicationSearchAutocomplete
                 onClick={() => setOnlyCrashCart(false)}
                 className="mt-1 text-teal-700 font-semibold hover:underline"
               >
-                Mở rộng tìm kiếm trong toàn bộ Kho Dược Bệnh viện
+                Mở rộng tìm kiếm trong toàn bộ kho dược bệnh viện
               </button>
             </div>
           ) : (
@@ -155,7 +155,7 @@ export const MedicationSearchAutocomplete: React.FC<MedicationSearchAutocomplete
                       {med.tallManName || med.brandName}
                       {med.isControlled && (
                         <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
-                          Gây Nghiện (TT 18)
+                          Gây nghiện (TT 18/2026)
                         </span>
                       )}
                       {med.isHighAlert && !med.isControlled && (

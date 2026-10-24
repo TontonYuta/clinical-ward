@@ -99,9 +99,9 @@ export function processClinicalUserQuery(
       clause: 'Căn cứ áp dụng'
     },
     suggestedChips: [
-      '📋 Đối soát ca trực 07:00 AM',
-      '📦 Lập phiếu dự trù bù thuốc Mẫu 01',
-      'Có 1 bệnh nhân cần dùng gấp 4 lọ morphin',
+      'Đối soát giao ban ca trực',
+      'Lập phiếu dự trù bù thuốc Mẫu 01',
+      'Có 1 người bệnh cần dùng gấp 4 lọ morphin',
       'Báo hỏng máy thở PB840 phòng mổ 2',
       'Quét hóa đơn nhập kho dược phẩm',
       'Phác đồ Adrenalin phản vệ TT 51'

@@ -43,3 +43,6 @@ docs/videos/raw/
 *.out
 *.toc
 
+# Test & Playwright artifacts
+playwright_audit/
+

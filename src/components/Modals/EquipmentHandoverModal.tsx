@@ -56,7 +56,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
               <Wrench className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Kiểm Định &amp; Bàn Giao Thiết Bị</h2>
+              <h2 className="text-xs sm:text-base font-bold truncate">Kiểm định &amp; bàn giao thiết bị</h2>
               <span className="text-[11px] text-slate-400 font-mono truncate block">
                 Nghị định 98/2021/NĐ-CP · IEC 60601-1
               </span>
@@ -93,7 +93,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
           <div className="space-y-1.5">
             <span className="font-bold text-slate-900 block text-xs sm:text-sm">Sự cố đã được xử lý:</span>
             <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 font-medium text-xs sm:text-sm leading-relaxed">
-              ✓ Đã thay thế phụ kiện: <strong>{ticket.accessoryIssue}</strong>. Vệ sinh đường khí và khử khuẩn đạt chuẩn y tế.
+              Đã thay thế phụ kiện: <strong>{ticket.accessoryIssue}</strong>. Vệ sinh đường khí và khử khuẩn đạt chuẩn y tế.
             </div>
           </div>
 
@@ -145,7 +145,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Ký Nghiệm Thu &amp; Bàn Giao Lâm Sàng</span>
+                  <span>Ký nghiệm thu &amp; bàn giao lâm sàng</span>
                 </>
               )}
             </button>
@@ -206,7 +206,7 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
                 ) : (
                   <>
                     <Check className="w-4 h-4" />
-                    <span>Ký Nghiệm Thu &amp; Bàn Giao Lâm Sàng</span>
+                    <span>Ký nghiệm thu &amp; bàn giao lâm sàng</span>
                   </>
                 )}
               </button>

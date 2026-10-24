@@ -41,7 +41,7 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm mã tài sản, tên máy, khoa..."
+            placeholder="Tìm mã tài sản, tên thiết bị, khoa phòng..."
             className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400 transition"
           />
         </div>
@@ -65,7 +65,7 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
                 : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Lệch khoa ({misallocatedCount})
+            Lệch khoa phòng ({misallocatedCount})
           </button>
           <button
             onClick={() => setFilterMode('liquidation')}
@@ -75,7 +75,7 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
                 : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Kiến nghị thanh lý ({liquidationCount})
+            Đề xuất thanh lý ({liquidationCount})
           </button>
         </div>
       </div>
@@ -85,19 +85,19 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
         <button
           onClick={() => onOpenPrintForm?.('TSC_ANNUAL_AUDIT')}
           className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In Biên bản kiểm kê định kỳ Mẫu 05-TSC"
+          title="In biên bản kiểm kê định kỳ Mẫu 05-TSC"
         >
           <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">Mẫu 05</span>
+          <span className="hidden sm:inline">Mẫu 05-TSC</span>
         </button>
 
         <button
           onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER')}
           className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In Biên bản bàn giao, điều chuyển tài sản Mẫu 01/TSC"
+          title="In biên bản bàn giao, điều chuyển tài sản Mẫu 01-TSC"
         >
           <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">Mẫu 01</span>
+          <span className="hidden sm:inline">Mẫu 01-TSC</span>
         </button>
 
         <button
@@ -106,7 +106,7 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
           title="Mô phỏng máy đọc mã vạch QR kiểm đếm máy thở tại buồng bệnh"
         >
           <QrCode className="w-3.5 h-3.5 text-teal-400" />
-          <span>Quét QR đối soát</span>
+          <span>Quét mã QR đối soát</span>
         </button>
       </div>
     </div>

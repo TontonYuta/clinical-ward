@@ -17,10 +17,10 @@ export interface ClinicalMacro {
   /** Mã ICD-10 tương ứng (nếu có) */
   icd10?: string;
   /** Nhóm chuyên khoa lâm sàng */
-  category: 'Tim mạch' | 'Hô hấp' | 'Cấp cứu - Chống độc' | 'Nội tiết - Chuyển hóa' | 'Tiêu hóa' | 'Thần kinh' | 'Thuốc & Y lệnh';
+  category: 'Tim mạch' | 'Hô hấp' | 'Cấp cứu - Chống độc' | 'Nội tiết - Chuyển hóa' | 'Tiêu hóa' | 'Thần kinh' | 'Thuốc & Chỉ định';
   /** Chuẩn tài nguyên HL7 FHIR */
   fhirResource: 'Condition' | 'MedicationRequest' | 'Observation' | 'Procedure';
-  /** Gợi ý câu lệnh mẫu cho Chatbot AI / Y lệnh mượn khẩn */
+  /** Gợi ý câu lệnh mẫu cho Chatbot AI / Chỉ định mượn khẩn */
   suggestedPrompt: string;
   /** Mô tả vắn tắt / Mức độ ưu tiên */
   description: string;
@@ -226,11 +226,11 @@ export const CLINICAL_MACROS: ClinicalMacro[] = [
     description: 'Thang điểm tri giác 3-15 điểm đánh giá mắt, lời nói, vận động'
   },
 
-  // 6. THUỐC VÀ DỤNG CỤ TỐI KHẨN (Y LỆNH GIAO BAN)
+  // 6. THUỐC VÀ DỤNG CỤ TỐI KHẨN (CHỈ ĐỊNH DÙNG THUỐC)
   {
     shortcut: 'MOR',
     expansion: 'Morphin hydroclorid 10mg/1ml (Gây nghiện TT 20/2017) [ICD-10: T40.2]',
-    category: 'Thuốc & Y lệnh',
+    category: 'Thuốc & Chỉ định',
     fhirResource: 'MedicationRequest',
     suggestedPrompt: 'Cho 1 lọ morphin 10mg tiêm bắp giảm đau cấp cứu cho bệnh nhân',
     description: 'Giảm đau trung ương bậc 3 - Bắt buộc thu hồi vỏ ống nguyên vẹn theo TT 20'
@@ -238,7 +238,7 @@ export const CLINICAL_MACROS: ClinicalMacro[] = [
   {
     shortcut: 'FEN',
     expansion: 'Fentanyl citrate 0.1mg/2ml (Gây nghiện TT 20/2017)',
-    category: 'Thuốc & Y lệnh',
+    category: 'Thuốc & Chỉ định',
     fhirResource: 'MedicationRequest',
     suggestedPrompt: 'Bệnh nhân phòng mổ cần 2 ống Fentanyl 0.1mg khởi mê khẩn cấp',
     description: 'Thuốc giảm đau gây mê cực mạnh (mạnh gấp 100 lần Morphin)'
@@ -246,7 +246,7 @@ export const CLINICAL_MACROS: ClinicalMacro[] = [
   {
     shortcut: 'ADR',
     expansion: 'Adrenalin (Epinephrine) 1mg/1ml (Tối khẩn Thông tư 51)',
-    category: 'Thuốc & Y lệnh',
+    category: 'Thuốc & Chỉ định',
     fhirResource: 'MedicationRequest',
     suggestedPrompt: 'Lấy khẩn cấp 1 ống Adrenalin 1mg tiêm bắp',
     description: 'Thuốc đầu tay bắt buộc trong hộp thuốc chống sốc phản vệ'
@@ -254,7 +254,7 @@ export const CLINICAL_MACROS: ClinicalMacro[] = [
   {
     shortcut: 'DIAZ',
     expansion: 'Diazepam 10mg/2ml (Thuốc hướng thần TT 20/2017)',
-    category: 'Thuốc & Y lệnh',
+    category: 'Thuốc & Chỉ định',
     fhirResource: 'MedicationRequest',
     suggestedPrompt: 'Tiêm tĩnh mạch 1 ống Diazepam 10mg cắt cơn kích động hoặc co giật',
     description: 'Thuốc an thần chống co giật nhóm Benzodiazepine'
@@ -262,7 +262,7 @@ export const CLINICAL_MACROS: ClinicalMacro[] = [
   {
     shortcut: 'KCL',
     expansion: 'Kali Clorid 10% 10ml (Thuốc cảnh báo cao High-Alert ISMP)',
-    category: 'Thuốc & Y lệnh',
+    category: 'Thuốc & Chỉ định',
     fhirResource: 'MedicationRequest',
     suggestedPrompt: 'Pha 1 ống Kali clorid 10% vào 500ml NaCl 0.9% truyền tĩnh mạch chậm có máy đếm giọt',
     description: 'CẢNH BÁO NGUY HIỂM: Tuyệt đối KHÔNG tiêm tĩnh mạch trực tiếp (nguy cơ ngừng tim đột ngột)'
