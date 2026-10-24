@@ -1,11 +1,14 @@
 {
   "totalAvailableInDav": 55005,
-  "totalIngested": 150,
-  "lastUpdated": "2026-10-24T17:11:04.775Z",
+  "totalIngested": 54885,
+  "lastUpdated": "2026-10-24T17:32:10.835Z",
   "source": "Cục Quản lý Dược - Bộ Y tế (dichvucong.dav.gov.vn)",
   "categoryStats": {
-    "Thuốc hướng thần": 147,
-    "Thuốc gây nghiện": 1,
-    "Thuốc cấp cứu": 2
+    "Thuốc hướng thần": 52696,
+    "Thuốc gây nghiện": 528,
+    "Thuốc cấp cứu": 243,
+    "Kháng sinh": 987,
+    "Thuốc nguy cơ cao": 216,
+    "Dịch truyền": 215
   }
 }

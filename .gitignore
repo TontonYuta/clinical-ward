@@ -47,3 +47,8 @@ docs/videos/raw/
 playwright_audit/
 playwright_mobile/
 
+# Large datasets (>100MB GitHub limit)
+data/vietnam_drug_registry/dav_master_registry.json
+!data/vietnam_drug_registry/dav_master_registry.json.gz
+
+
