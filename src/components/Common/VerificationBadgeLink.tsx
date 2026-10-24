@@ -29,19 +29,19 @@ interface VerificationBadgeLinkProps {
 const SOURCE_CONFIG: Record<VerificationSourceType, { style: string; defaultTitle: string }> = {
   dav: {
     style: 'bg-emerald-50/80 text-emerald-800 border-emerald-200/80 hover:bg-emerald-100',
-    defaultTitle: 'Mở Cổng Dịch vụ công Cục Quản lý Dược (Bộ Y Tế) để đối soát số đăng ký',
+    defaultTitle: 'Cục Quản lý Dược (Bộ Y Tế) - Công bố Đăng ký lưu hành thuốc & SĐK',
   },
   nidqc: {
     style: 'bg-teal-50/80 text-teal-800 border-teal-200/80 hover:bg-teal-100',
-    defaultTitle: 'Tra cứu chuyên luận Dược thư Quốc gia Việt Nam (Viện Kiểm nghiệm Thuốc TW)',
+    defaultTitle: 'Cổng Viện Kiểm nghiệm Thuốc TW (NIDQC - Bộ Y Tế) - Cơ quan biên soạn Dược thư QG',
   },
   fda: {
     style: 'bg-blue-50/80 text-blue-800 border-blue-200/80 hover:bg-blue-100',
-    defaultTitle: 'Tra cứu nhãn SPL, tá dược và Boxed Warning trên US FDA DailyMed',
+    defaultTitle: 'Thư viện Y khoa Quốc gia Hoa Kỳ (NIH) - Cơ sở dữ liệu nhãn SPL US FDA DailyMed',
   },
   law: {
     style: 'bg-amber-50/80 text-amber-900 border-amber-200/80 hover:bg-amber-100',
-    defaultTitle: 'Mở văn bản quy phạm pháp luật y tế Bộ Y Tế (Thư viện Pháp luật)',
+    defaultTitle: 'Cổng Thông tin Điện tử Chính Phủ (vanban.chinhphu.vn) - Văn bản QPPL y tế',
   },
   pdf: {
     style: 'bg-rose-50/80 text-rose-800 border-rose-200/80 hover:bg-rose-100',
@@ -49,7 +49,7 @@ const SOURCE_CONFIG: Record<VerificationSourceType, { style: string; defaultTitl
   },
   generic: {
     style: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100',
-    defaultTitle: 'Mở liên kết kiểm chứng dữ liệu thủ công',
+    defaultTitle: 'Mở liên kết đối soát dữ liệu y tế chính thống',
   },
 };
 
@@ -117,23 +117,24 @@ export const VerificationPanelSection: React.FC<{
       <div className="flex flex-wrap items-center gap-2">
         <VerificationBadgeLink
           href={getDavRegistryUrl(sdk, innName)}
-          label={sdk ? `DAV SĐK: ${sdk}` : 'Cổng Dược DAV'}
+          label={sdk ? `Cục Quản lý Dược (${sdk})` : 'Cục Quản lý Dược (Bộ Y tế)'}
           sourceType="dav"
         />
         <VerificationBadgeLink
           href={getNidqcPharmacopeiaUrl(cleanInn)}
-          label={`Dược Thư QG: ${cleanInn}`}
+          label="Viện Kiểm Nghiệm Thuốc (BYT)"
           sourceType="nidqc"
         />
         <VerificationBadgeLink
           href={getDailyMedFdaUrl(cleanInn)}
-          label="US FDA SPL (DailyMed)"
+          label="Cơ sở dữ liệu FDA (Mỹ)"
           sourceType="fda"
         />
         {legalBasis && (
           <VerificationBadgeLink
             href={getRegulatoryLawUrl(legalBasis)}
-            label={legalBasis.slice(0, 26)}
+            label="Cổng VBQPPL Chính Phủ"
+            subLabel={legalBasis.slice(0, 22)}
             sourceType="law"
           />
         )}

@@ -38,7 +38,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono font-semibold text-teal-800 bg-teal-50/90 hover:bg-teal-100 px-2.5 py-1 rounded-md border border-teal-200/80 text-xs inline-flex items-center gap-1 transition"
-            title="Mở Cổng Dịch vụ công Cục Quản lý Dược đối soát số đăng ký"
+            title="Mở Cổng Đăng ký thuốc Cục Quản lý Dược (Bộ Y tế)"
           >
             <span>{d.nationalCode}</span>
             <ExternalLink className="w-2.5 h-2.5 opacity-60" />
@@ -66,24 +66,32 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           </span>
           {verifyMode && (
             <>
+              <button
+                type="button"
+                onClick={() => onOpenSafetyGuide(d.brandName)}
+                className="text-2xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 inline-flex items-center gap-1 transition cursor-pointer"
+                title="Xem hướng dẫn sử dụng chuẩn từ Bộ Y Tế & Dược điển Việt Nam"
+              >
+                <span>Chuẩn BYT</span>
+              </button>
               <a
-                href={getNidqcPharmacopeiaUrl(cleanInn)}
+                href={getNidqcPharmacopeiaUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-2xs font-medium text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 inline-flex items-center gap-0.5 transition"
-                title="Tra cứu chuyên luận Dược Thư QG Việt Nam"
+                className="text-2xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-0.5 transition"
+                title="Cổng Viện Kiểm nghiệm Thuốc Trung ương (NIDQC - Bộ Y tế)"
               >
-                <span>Dược thư</span>
+                <span>Kiểm nghiệm BYT</span>
                 <ExternalLink className="w-2 h-2 opacity-60" />
               </a>
               <a
                 href={getDailyMedFdaUrl(cleanInn)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-2xs font-medium text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 inline-flex items-center gap-0.5 transition"
-                title="Tra cứu nhãn SPL & tá dược trên US FDA DailyMed"
+                className="text-2xs font-medium text-blue-800 bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 inline-flex items-center gap-0.5 transition"
+                title="Tra cứu thông tin nhãn thuốc từ Cục Quản lý Thực phẩm & Dược phẩm Hoa Kỳ (FDA)"
               >
-                <span>FDA SPL</span>
+                <span>Chuẩn FDA (Mỹ)</span>
                 <ExternalLink className="w-2 h-2 opacity-60" />
               </a>
             </>
@@ -101,7 +109,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           onClick={() => onOpenSafetyGuide(d.brandName)}
           className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition cursor-pointer shadow-2xs"
         >
-          Hồ sơ 5 Đúng
+          Hướng dẫn dùng thuốc
         </button>
       </td>
     </tr>

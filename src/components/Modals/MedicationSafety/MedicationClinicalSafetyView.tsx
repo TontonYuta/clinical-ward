@@ -29,7 +29,7 @@ export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
             {inn && (
               <VerificationBadgeLink
                 href={getDailyMedFdaUrl(inn)}
-                label="FDA Boxed Warning"
+                label="Cảnh báo hộp đen FDA (Mỹ)"
                 sourceType="fda"
               />
             )}

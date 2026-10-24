@@ -86,7 +86,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${
                 verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
-              title="Bật/Tắt hiển thị link đối soát thủ công (Cục Quản lý Dược, Dược thư QG, US FDA)"
+              title="Bật/Tắt hiển thị liên kết đối soát chuẩn Bộ Y Tế & FDA (Mỹ)"
             >
               Link kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}
             </button>

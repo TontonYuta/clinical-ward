@@ -61,7 +61,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Hồ sơ Dược Lâm Sàng & Quy Chuẩn 5 Đúng"
+      aria-label="Thông Tin Thuốc & Hướng Dẫn Sử Dụng An Toàn"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
     >
@@ -69,8 +69,8 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
         {/* Pinned Header */}
         <div className="px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-base sm:text-lg font-bold tracking-tight">Hồ sơ Dược Lâm Sàng &amp; Quy Chuẩn 5 Đúng</h2>
-            <p className="text-xs text-slate-300 font-normal mt-0.5">Dược thư Quốc gia Việt Nam &amp; Cục Quản lý Dược Bộ Y Tế</p>
+            <h2 className="text-base sm:text-lg font-bold tracking-tight">Thông Tin Thuốc &amp; Hướng Dẫn Sử Dụng An Toàn</h2>
+            <p className="text-xs text-slate-300 font-normal mt-0.5">Tiêu chuẩn Dược điển &amp; Cục Quản lý Dược - Bộ Y Tế</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">
             <X className="w-5 h-5" />
@@ -155,7 +155,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
                   : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
               }`}
             >
-              Quy chuẩn 5 Đúng &amp; Liều dùng
+              Liều dùng &amp; Hướng dẫn an toàn
             </button>
             <button
               onClick={() => setActiveTab('clinical_safety')}
@@ -180,7 +180,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
         {/* Pinned Footer */}
         <div className="px-6 py-3 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
           <span className="text-slate-500 text-xs hidden sm:inline">
-            Đối soát chuyên luận Dược thư Quốc gia Việt Nam &amp; Thông tư 31/2021/TT-BYT
+            Đối soát tiêu chuẩn Dược điển &amp; Hướng dẫn sử dụng thuốc Bộ Y Tế
           </span>
           <button
             onClick={onClose}

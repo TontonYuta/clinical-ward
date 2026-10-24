@@ -29,8 +29,8 @@ async function main() {
   await fefoBtn.click();
   await page.waitForTimeout(1000);
 
-  // Check if inventory rows have "Kiểm chứng" badge
-  const verifyBadgeInRow = page.locator('a:has-text("Kiểm chứng"):visible').first();
+  // Check if inventory rows have "Chuẩn BYT" badge
+  const verifyBadgeInRow = page.locator('a:has-text("Chuẩn BYT"):visible').first();
   const hasRowBadge = (await verifyBadgeInRow.count()) > 0;
   console.log(`- FEFO row verification badge present: ${hasRowBadge}`);
   if (hasRowBadge) {
@@ -53,11 +53,11 @@ async function main() {
   console.log(`- DAV SĐK verification link href: ${davHref}`);
 
   // Verify NIDQC & FDA links in table
-  const nidqcLink = page.locator('table a[title*="Dược Thư QG"]').first();
+  const nidqcLink = page.locator('table a[title*="Viện Kiểm nghiệm"]').first();
   const nidqcHref = await nidqcLink.getAttribute('href');
-  console.log(`- NIDQC Dược thư verification link href: ${nidqcHref}`);
+  console.log(`- NIDQC verification link href: ${nidqcHref}`);
 
-  const fdaLink = page.locator('table a[title*="US FDA"]').first();
+  const fdaLink = page.locator('table a[title*="FDA"]').first();
   const fdaHref = await fdaLink.getAttribute('href');
   console.log(`- FDA DailyMed verification link href: ${fdaHref}`);
 
@@ -77,7 +77,7 @@ async function main() {
 
   // Verify links are hidden
   const davLinksCount = await page.locator('table a[title*="Cục Quản lý Dược"]').count();
-  const nidqcLinksCount = await page.locator('table a[title*="Dược Thư QG"]').count();
+  const nidqcLinksCount = await page.locator('table a[title*="Viện Kiểm nghiệm"]').count();
   console.log(`- DAV links count (should be 0): ${davLinksCount}`);
   console.log(`- NIDQC links count (should be 0): ${nidqcLinksCount}`);
 
@@ -91,9 +91,9 @@ async function main() {
   await toggleBtn.click();
   await page.waitForTimeout(500);
 
-  // 5. Open Medication Safety Modal (Hồ sơ 5 Đúng)
-  console.log('6. Opening Hồ sơ 5 Đúng...');
-  const first5DungBtn = page.locator('button:has-text("Hồ sơ 5 Đúng")').first();
+  // 5. Open Medication Safety Modal (Hướng dẫn dùng thuốc)
+  console.log('6. Opening Hướng dẫn dùng thuốc...');
+  const first5DungBtn = page.locator('button:has-text("Hướng dẫn dùng thuốc")').first();
   await first5DungBtn.click();
   await page.waitForTimeout(1000);
 
@@ -106,9 +106,9 @@ async function main() {
   await page.screenshot({ path: shot3 });
   console.log(`📸 Screenshot saved: ${shot3}`);
 
-  // 6. Test Tab "Quy chuẩn 5 Đúng"
-  console.log('7. Switching to tab "Quy chuẩn 5 Đúng"...');
-  const fiveRightsTabBtn = page.locator('button:has-text("Quy chuẩn 5 Đúng")').first();
+  // 6. Test Tab "Liều dùng & Hướng dẫn an toàn"
+  console.log('7. Switching to tab "Liều dùng & Hướng dẫn an toàn"...');
+  const fiveRightsTabBtn = page.locator('button:has-text("Liều dùng & Hướng dẫn an toàn")').first();
   await fiveRightsTabBtn.click();
   await page.waitForTimeout(500);
 

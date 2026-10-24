@@ -77,9 +77,9 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition"
-              title="Kiểm chứng chuyên luận Dược Thư QG Việt Nam (NIDQC)"
+              title="Đối soát tiêu chuẩn chất lượng Viện Kiểm nghiệm Thuốc - Bộ Y Tế"
             >
-              <span>Kiểm chứng</span>
+              <span>Chuẩn BYT</span>
               <ExternalLink className="w-2.5 h-2.5 opacity-60" />
             </a>
           )}
