@@ -7,6 +7,7 @@
 import React from 'react';
 import { ShieldAlert, LifeBuoy, AlertOctagon, GitCompare, Baby, Lock } from 'lucide-react';
 import { FiveRightsSafetyInfo } from '../../../types/medication';
+import { VerificationBadgeLink } from '../../Common/VerificationBadgeLink';
 
 interface Props {
   profile: FiveRightsSafetyInfo;
@@ -18,9 +19,18 @@ export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
       {/* Cảnh báo hộp đen (nếu có) */}
       {profile.blackBoxWarning && (
         <div className="p-3 bg-rose-50 border-2 border-rose-300 rounded-lg text-rose-950 space-y-1">
-          <div className="flex items-center gap-1.5 font-bold text-rose-900 text-xs">
-            <AlertOctagon className="w-4 h-4 text-rose-700 shrink-0" />
-            <span>Cảnh báo nguy cơ cao (Black Box)</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-bold text-rose-900 text-xs">
+              <AlertOctagon className="w-4 h-4 text-rose-700 shrink-0" />
+              <span>Cảnh báo nguy cơ cao (Black Box)</span>
+            </div>
+            {profile.composition?.activeIngredients?.[0]?.innName && (
+              <VerificationBadgeLink
+                href={`https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=${encodeURIComponent(profile.composition.activeIngredients[0].innName)}`}
+                label="FDA Boxed Warning"
+                sourceType="fda"
+              />
+            )}
           </div>
           <p className="text-[11.5px] leading-relaxed font-medium">{profile.blackBoxWarning}</p>
         </div>

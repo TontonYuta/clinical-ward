@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
-import { ArrowUpRight, AlertOctagon, PackagePlus, ShieldAlert } from 'lucide-react';
+import { ArrowUpRight, AlertOctagon, PackagePlus, ShieldAlert, ExternalLink } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
+import { useVerificationLinksVisible } from '../../../Common/VerificationBadgeLink';
 
 interface PharmacyBatchRowProps {
   batch: InventoryBatch;
@@ -22,6 +23,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
   onOpenSafetyGuide,
 }) => {
   const isUnderMin = batch.currentStock <= batch.minThreshold;
+  const verifyMode = useVerificationLinksVisible();
 
   return (
     <tr className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-slate-800">
@@ -44,6 +46,19 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
             >
               Thông tin thuốc
             </button>
+          )}
+          {verifyMode && batch.commodityType !== 'medical_supply' && (
+            <a
+              href={`https://nidqc.org.vn/?s=${encodeURIComponent(batch.itemName.split(' ')[0])}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-0.5 text-3xs font-semibold px-1.5 py-0.2 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
+              title="Kiểm chứng chuyên luận Dược Thư QG Việt Nam (NIDQC)"
+            >
+              <span>Kiểm chứng</span>
+              <ExternalLink className="w-2 h-2 opacity-60" />
+            </a>
           )}
           {batch.isControlledSubstance && (
             <span

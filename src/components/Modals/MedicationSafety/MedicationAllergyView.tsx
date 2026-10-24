@@ -7,6 +7,7 @@
 import React from 'react';
 import { ShieldAlert, AlertTriangle, Activity, Stethoscope, Sparkles, FlaskConical, Package, BookOpen, ShieldCheck } from 'lucide-react';
 import { FiveRightsSafetyInfo } from '../../../types/medication';
+import { VerificationPanelSection } from '../../Common/VerificationBadgeLink';
 
 interface MedicationAllergyViewProps {
   profile: FiveRightsSafetyInfo;
@@ -47,6 +48,14 @@ export const MedicationAllergyView: React.FC<MedicationAllergyViewProps> = ({ pr
           </div>
         </div>
       )}
+
+      {/* LIÊN KẾT ĐỐI SOÁT THỦ CÔNG (TỰ ĐỘNG ẨN KHI TẮT CHẾ ĐỘ KIỂM CHỨNG) */}
+      <VerificationPanelSection
+        sdk={source?.registrationNumber}
+        innName={comp?.activeIngredients?.[0]?.innName || medName}
+        brandName={medName}
+        legalBasis={source?.documentName || profile.highAlertRiskNote}
+      />
 
       {/* 1. KHỐI THÀNH PHẦN THUỐC & DẠNG BÀO CHẾ */}
       <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">

@@ -1,21 +1,22 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Bảng Tra Cứu Dữ Liệu Dược Quốc Gia (Cục Quản lý Dược - Bộ Y tế) (<=200 LOC)
+ * Bảng Tra Cứu Dữ Liệu Dược Quốc Gia & Đối Soát Thủ Công (Cục Quản lý Dược) (<=200 LOC)
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Search, Building2, ChevronLeft, ChevronRight, FileText, CheckCircle2 } from 'lucide-react';
+import { X, Search, Building2, ChevronLeft, ChevronRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { MasterMedication } from '../../types/medication';
+import { isVerificationLinksVisible, setVerificationLinksVisibility } from '../../config/clinicalVerification';
+import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
 
-interface NationalDrugRegistryModalProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSelectMedication?: (medName: string) => void;
 }
 
 const PAGE_SIZE = 12;
-
 const GROUP_STYLES: Record<string, string> = {
   'Kháng sinh': 'bg-blue-50 text-blue-700 border-blue-200/60',
   'Thuốc gây nghiện': 'bg-amber-50 text-amber-800 border-amber-200/60',
@@ -25,15 +26,21 @@ const GROUP_STYLES: Record<string, string> = {
   'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60',
   'Thuốc điều trị chuyên khoa': 'bg-slate-100 text-slate-700 border-slate-200/60',
 };
-
 const CATEGORIES = ['all', 'Kháng sinh', 'Thuốc gây nghiện', 'Thuốc cấp cứu', 'Dịch truyền', 'Thuốc nguy cơ cao', 'Thuốc hướng thần', 'Thuốc điều trị chuyên khoa'];
 
-export const NationalDrugRegistryModal: React.FC<NationalDrugRegistryModalProps> = ({ isOpen, onClose, onSelectMedication }) => {
+export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication }) => {
   const [drugs, setDrugs] = useState<MasterMedication[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [verifyMode, setVerifyMode] = useState(isVerificationLinksVisible());
+
+  const toggleVerify = () => {
+    const next = !verifyMode;
+    setVerificationLinksVisibility(next);
+    setVerifyMode(next);
+  };
 
   useEffect(() => {
     if (!isOpen || drugs.length > 0) return;
@@ -74,12 +81,24 @@ export const NationalDrugRegistryModal: React.FC<NationalDrugRegistryModalProps>
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" /> DAV Bộ Y Tế (55k SĐK)
                 </span>
               </div>
-              <p className="text-2xs text-slate-500 font-normal">Cơ sở dữ liệu số đăng ký lưu hành, tiêu chuẩn DĐVN V & dược lâm sàng chính thống</p>
+              <p className="text-2xs text-slate-500 font-normal">Cơ sở dữ liệu số đăng ký lưu hành, tiêu chuẩn DĐVN V & đối soát lâm sàng</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleVerify}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-2xs font-semibold border transition cursor-pointer shadow-2xs ${
+                verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+              }`}
+              title="Bật/Tắt hiển thị link đối soát thủ công (Cục Quản lý Dược, Dược thư QG, US FDA)"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Link kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}</span>
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Search & Filter Pills */}
@@ -89,7 +108,7 @@ export const NationalDrugRegistryModal: React.FC<NationalDrugRegistryModalProps>
             <input
               type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Tìm theo tên thuốc, hoạt chất (Morphin, Ceftriaxone...), số đăng ký (SĐK)..."
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/80 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:outline-hidden text-slate-900 placeholder:text-slate-400 shadow-2xs transition"
+              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/80 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:outline-hidden text-slate-900 placeholder:text-slate-400 shadow-2xs transition"
             />
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto text-2xs scrollbar-none pb-0.5">
@@ -126,38 +145,15 @@ export const NationalDrugRegistryModal: React.FC<NationalDrugRegistryModalProps>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {currentSlice.map((d) => {
-                    const badgeStyle = GROUP_STYLES[d.group] || 'bg-slate-100 text-slate-700 border-slate-200/60';
-                    return (
-                      <tr key={d.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 px-3.5 whitespace-nowrap align-top">
-                          <span className="font-mono font-semibold text-slate-800 bg-slate-100/80 px-2 py-0.5 rounded border border-slate-200/70 text-2xs inline-block">{d.nationalCode}</span>
-                          <div className="text-3xs text-slate-400 mt-1 font-medium">{d.clinicalProfile?.officialSource?.standardPharmacopeia || 'DĐVN V'}</div>
-                        </td>
-                        <td className="py-3 px-3.5 align-top">
-                          <div className="font-semibold text-slate-900 text-xs sm:text-sm">{d.brandName}</div>
-                          <span className={`inline-block px-2 py-0.5 rounded-md text-3xs font-medium border mt-1 ${badgeStyle}`}>{d.group}</span>
-                        </td>
-                        <td className="py-3 px-3.5 align-top">
-                          <div className="text-slate-800 font-medium text-xs">{d.activeIngredient}</div>
-                          <span className="inline-block text-3xs font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200/50 mt-1">{d.concentration}</span>
-                        </td>
-                        <td className="py-3 px-3.5 hidden md:table-cell align-top">
-                          <div className="text-slate-700 font-normal text-xs">{d.dosageForm}</div>
-                          <div className="text-3xs text-slate-400 truncate max-w-xs mt-0.5">{d.clinicalProfile?.administrationRouteDetails}</div>
-                        </td>
-                        <td className="py-3 px-3.5 text-right whitespace-nowrap align-top">
-                          <button
-                            onClick={() => { onClose(); onSelectMedication?.(d.brandName); }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-2xs font-semibold text-teal-800 bg-teal-50/80 hover:bg-teal-100 border border-teal-200/60 transition cursor-pointer shadow-2xs"
-                          >
-                            <FileText className="w-3.5 h-3.5 text-teal-700" />
-                            <span>Hồ sơ 5 Đúng</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {currentSlice.map((d) => (
+                    <NationalDrugTableRow
+                      key={d.id}
+                      drug={d}
+                      verifyMode={verifyMode}
+                      badgeStyle={GROUP_STYLES[d.group] || 'bg-slate-100 text-slate-700 border-slate-200/60'}
+                      onOpenSafetyGuide={(name) => { onClose(); onSelectMedication?.(name); }}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
