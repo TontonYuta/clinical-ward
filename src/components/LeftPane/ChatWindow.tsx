@@ -35,7 +35,7 @@ import {
   Scale,
   BookOpen
 } from 'lucide-react';
-import { ChatMessage, QuickSuggestionChip, UserRole, AgentActionCard } from '../../types/clinical';
+import { ChatMessage, QuickSuggestionChip, UserRole, AgentActionCard, DashboardTab } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
 import { VoiceModal } from '../Modals/VoiceModal';
 import { ImageModal } from '../Modals/ImageModal';
@@ -49,7 +49,7 @@ interface ChatWindowProps {
   onSendMessage: (text: string, attachment?: any) => void;
   isProcessing: boolean;
   isAudioMuted: boolean;
-  onSelectTab?: (tab: 'debt' | 'equipment' | 'fefo' | 'coldchain' | 'asset_audit') => void;
+  onSelectTab?: (tab: DashboardTab) => void;
   currentUserRole?: UserRole;
   onClose?: () => void;
   pendingDebtsCount?: number;

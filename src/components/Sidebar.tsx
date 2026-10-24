@@ -19,7 +19,8 @@ import {
   Shield,
   Lock,
   Printer,
-  X
+  X,
+  Stethoscope
 } from 'lucide-react';
 import { DashboardTab } from './RightPane/Dashboard';
 import { UserRole } from '../types/clinical';
@@ -122,6 +123,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
             <div className="space-y-1">
+            {/* Tab: Chỉ định Y lệnh & Kê đơn CPOE */}
+            {allowedTabs.includes('cpoe') ? (
+              <button
+                onClick={() => {
+                  onTabChange('cpoe');
+                  onCloseMobile?.();
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition cursor-pointer ${
+                  currentTab === 'cpoe'
+                    ? 'bg-teal-50 text-teal-950 font-bold border border-teal-200/80 shadow-2xs'
+                    : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
+                } ${isCollapsed ? 'justify-center px-0' : ''}`}
+                title="Chỉ định Y lệnh & Kê đơn điện tử (TT 26/2025/TT-BYT)"
+              >
+                <Stethoscope
+                  className={`w-5 h-5 shrink-0 ${
+                    currentTab === 'cpoe' ? 'text-teal-700' : 'text-slate-400'
+                  }`}
+                />
+                {!isCollapsed && (
+                  <span className="flex-1 text-left truncate">Chỉ Định &amp; Kê Đơn CPOE</span>
+                )}
+              </button>
+            ) : null}
+
             {/* Tab: Sổ nợ tủ trực */}
             {allowedTabs.includes('debt') ? (
               <button

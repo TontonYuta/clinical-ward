@@ -12,6 +12,7 @@ export type UserRole =
   | 'director';
 
 export type DashboardTab =
+  | 'cpoe'
   | 'debt'
   | 'equipment'
   | 'fefo'

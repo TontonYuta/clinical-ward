@@ -17,7 +17,8 @@ import {
   ThermometerSnowflake,
   Wrench,
   Building2,
-  Bot
+  Bot,
+  Stethoscope
 } from 'lucide-react';
 import { UserRole } from '../types/clinical';
 import { USER_PROFILES } from '../data/initialData';
@@ -37,6 +38,11 @@ interface HeaderProps {
 }
 
 const TAB_METADATA: Record<DashboardTab, { title: string; lawTag: string; icon: React.ComponentType<{ className?: string }> }> = {
+  cpoe: {
+    title: 'Chỉ Định & Kê Đơn CPOE',
+    lawTag: 'TT 26 & Luật KCB',
+    icon: Stethoscope
+  },
   debt: {
     title: 'Sổ Nợ Tủ Trực',
     lawTag: 'TT 22 & TT 20',

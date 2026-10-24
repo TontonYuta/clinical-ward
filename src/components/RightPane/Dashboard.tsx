@@ -12,6 +12,7 @@ import {
 } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
 import { DebtLedgerTab } from './Tabs/DebtLedgerTab';
+import { CpoePrescriptionTab } from './Tabs/CpoePrescriptionTab';
 import { EquipmentIncidentTab } from './Tabs/EquipmentIncidentTab';
 import { FefoInventoryTab } from './Tabs/FefoInventoryTab';
 import { ColdChainTab } from './Tabs/ColdChainTab';
@@ -108,6 +109,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         ) : (
           <>
+            {currentTab === 'cpoe' && (
+              <CpoePrescriptionTab doctorName={USER_PROFILES[currentUserRole]?.name} />
+            )}
+
             {currentTab === 'debt' && (
               <DebtLedgerTab
                 debts={debts}

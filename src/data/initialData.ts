@@ -73,10 +73,10 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     practiceCertificate: '009125/BYT-CCHN',
     pinCode: '4444',
     rfidCardId: 'RFID-DOC-1109',
-    allowedActions: ['BORROW_EMERGENCY', 'SETTLE_DEBT', 'DESTROY_AMPOULES', 'HANDOVER_EQUIPMENT', 'CREATE_INCIDENT'],
-    allowedTabs: ['debt', 'equipment'],
-    responsibilities: 'Tra cứu máy thở và monitor sẵn sàng buồng bệnh, xem cơ số thuốc cấp cứu',
-    defaultTab: 'debt',
+    allowedActions: ['PRESCRIBE_MEDICATION', 'BORROW_EMERGENCY', 'SETTLE_DEBT', 'DESTROY_AMPOULES', 'HANDOVER_EQUIPMENT', 'CREATE_INCIDENT'],
+    allowedTabs: ['cpoe', 'debt', 'equipment'],
+    responsibilities: 'Kê đơn điện tử (TT 26/2025), ra y lệnh nội trú ngày, tra cứu thiết bị và thuốc tủ trực',
+    defaultTab: 'cpoe',
     badgeColor: 'bg-teal-50 text-teal-800 border-teal-300'
   },
   director: {
@@ -88,6 +88,7 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     pinCode: '9999',
     rfidCardId: 'RFID-EXEC-0001',
     allowedActions: [
+      'PRESCRIBE_MEDICATION',
       'BORROW_EMERGENCY',
       'CREATE_INCIDENT',
       'SETTLE_DEBT',
@@ -102,12 +103,9 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
       'RELEASE_VACCINE_QUARANTINE',
       'SWITCH_ROLE'
     ],
-    // [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:
-    // Tinh giản phạm vi thành 3 phân hệ lâm sàng trọng tâm buồng bệnh (Tủ trực, Thiết bị, Kho Dược).
-    // Bỏ comment để khôi phục toàn diện 5 phân hệ bệnh viện khi cần.
-    allowedTabs: ['debt', 'equipment', 'fefo' /*, 'coldchain', 'asset_audit' */],
+    allowedTabs: ['cpoe', 'debt', 'equipment', 'fefo'],
     responsibilities: 'Phê duyệt mua sắm bổ sung, duyệt cơ số thuốc tủ trực cấp cứu và điều phối thiết bị liên khoa',
-    defaultTab: 'debt',
+    defaultTab: 'cpoe',
     badgeColor: 'bg-amber-50 text-amber-800 border-amber-300'
   }
 };
