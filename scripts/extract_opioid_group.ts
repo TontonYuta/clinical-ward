@@ -70,9 +70,7 @@ export async function runOpioidExtractionPipeline(): Promise<Record<string, Five
         registrationNumber: item.sdk,
         manufacturer: item.manufacturer,
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
-        pharmacopeiaStandard: item.pharmacopeia,
-        issueDate: '2022',
-        legalBasis: 'Thông tư 18/2026/TT-BYT & Quyết định 2147/QĐ-BYT',
+        standardPharmacopeia: item.pharmacopeia,
       },
       composition: {
         activeIngredients: [
@@ -80,7 +78,7 @@ export async function runOpioidExtractionPipeline(): Promise<Record<string, Five
             innName: item.searchInn.toUpperCase(),
             chemicalSalt: item.defaultSalt,
             strength: item.defaultStrength,
-            mEqOrUnit: item.defaultStrength,
+            molarQuantity: item.defaultStrength,
           },
         ],
         excipients: [

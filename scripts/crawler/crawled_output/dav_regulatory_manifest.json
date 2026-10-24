@@ -1,0 +1,78 @@
+[
+  {
+    "source": "Cục Quản Lý Dược (DAV)",
+    "url": "https://dav.gov.vn/dang-ki-thuoc---cong-bo-nguyen-lieu-c311.html",
+    "status": 200,
+    "title": "Cục Quản lý Dược - Bộ Y tế",
+    "html_length": 36195,
+    "extracted_links": [
+      {
+        "text": "Giới thiệu",
+        "href": "https://dav.gov.vn/chuc-nang-nhiem-vu-c1.html"
+      },
+      {
+        "text": "Chức năng nhiệm vụ",
+        "href": "https://dav.gov.vn/chuc-nang-nhiem-vu-c1.html"
+      },
+      {
+        "text": "Cơ cấu tổ chức",
+        "href": "https://dav.gov.vn/co-cau-to-chuc-c2.html"
+      },
+      {
+        "text": "Lãnh đạo đương nhiệm",
+        "href": "https://dav.gov.vn/lanh-dao-duong-nhiem-c19.html"
+      },
+      {
+        "text": "Lãnh đạo qua các thời kỳ",
+        "href": "https://dav.gov.vn/lanh-dao-qua-cac-thoi-ky-c22.html"
+      },
+      {
+        "text": "Thông tin các phòng ban",
+        "href": "https://dav.gov.vn/thong-tin-cac-phong-ban-c4.html"
+      },
+      {
+        "text": "Giới thiệu website mới",
+        "href": "https://dav.gov.vn/gioi-thieu-website-moi-c313.html"
+      },
+      {
+        "text": "Tin tức sự kiện",
+        "href": "https://dav.gov.vn/tin-tuc-su-kien.html"
+      },
+      {
+        "text": "Thông báo",
+        "href": "https://dav.gov.vn/thong-bao-cn1.html"
+      },
+      {
+        "text": "Tin chỉ đạo - điều hành",
+        "href": "https://dav.gov.vn/tin-chi-dao-dieu-hanh-cn2.html"
+      },
+      {
+        "text": "Công bố thông tin Lĩnh vực kinh doanh Dược",
+        "href": "https://dav.gov.vn/cong-bo-thong-tin-linh-vuc-kinh-doanh-duoc-c323.html"
+      },
+      {
+        "text": "Cải cách hành chính",
+        "href": "https://dav.gov.vn/iso-cai-cach-hanh-chinh-cn3.html"
+      },
+      {
+        "text": "Thông tin xử lý vi phạm",
+        "href": "https://dav.gov.vn/thong-tin-xu-ly-vi-pham-cn5.html"
+      },
+      {
+        "text": "Thông tin tuyển dụng",
+        "href": "https://dav.gov.vn/thong-tin-tuyen-dung-cn70.html"
+      },
+      {
+        "text": "Văn bản quản lý",
+        "href": "https://dav.gov.vn/van-ban-quan-ly/van-ban-chi-dao-dieu-hanh-vb42.html"
+      }
+    ],
+    "engine": "Standard-HTTP-Fallback"
+  },
+  {
+    "source": "Viện Kiểm Nghiệm Thuốc TW (NIDQC)",
+    "url": "https://nidqc.org.vn/",
+    "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1081)>",
+    "engine": "Standard-HTTP-Fallback"
+  }
+]

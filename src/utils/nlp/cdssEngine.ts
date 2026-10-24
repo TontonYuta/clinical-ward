@@ -4,6 +4,7 @@
  */
 
 import { CdssAlert } from '../../types/clinical';
+import { checkPairDdi } from '../clinical/drugInteractionMatrix';
 
 export function evaluateLocalCDSS(medName: string, quantity: number, userPrompt: string): CdssAlert | undefined {
   const lower = userPrompt.toLowerCase();
@@ -35,16 +36,15 @@ export function evaluateLocalCDSS(medName: string, quantity: number, userPrompt:
     }
   }
 
-  // 3. Tương tác kỵ nhau (DDI): Opioid + Benzodiazepine
-  const hasOpioid = medLower.includes('morphin') || medLower.includes('fentanyl') || lower.includes('morphin') || lower.includes('fentanyl');
-  const hasBenzo = lower.includes('diazepam') || lower.includes('seduxen') || lower.includes('midazolam') || medLower.includes('diazepam') || medLower.includes('midazolam');
-  if (hasOpioid && hasBenzo) {
+  // 3. Tương tác thuốc xác định (DDI Matrix)
+  const ddiAlert = checkPairDdi(medName, userPrompt);
+  if (ddiAlert) {
     return {
-      level: 'critical',
-      title: 'TƯƠNG TÁC THUỐC NGUY HIỂM (DDI): OPIOID + BENZODIAZEPINE',
-      message: 'Sử dụng đồng thời Opioid (Morphin/Fentanyl) cùng nhóm an thần Benzodiazepin (Diazepam/Midazolam) làm tăng cấp số nhân nguy cơ an thần sâu, suy hô hấp không hồi phục và tử vong.',
-      antidoteRecommendation: 'Đề xuất giảm tối thiểu 50% liều an thần, trang bị sẵn bóng bóp Ambu và chuẩn bị cả 2 thuốc giải độc (Naloxone + Flumazenil).',
-      regulatoryReference: 'Cảnh báo Hộp Đen (Black Box Warning) FDA & Dược thư Quốc gia'
+      level: ddiAlert.severity === 'CONTRAINDICATED' ? 'critical' : 'warning',
+      title: ddiAlert.title,
+      message: `${ddiAlert.clinicalConsequence} (Cơ chế: ${ddiAlert.mechanism})`,
+      antidoteRecommendation: ddiAlert.actionRecommendation,
+      regulatoryReference: ddiAlert.evidenceSource
     };
   }
 
