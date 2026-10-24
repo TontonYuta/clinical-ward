@@ -25,11 +25,13 @@ interface PharmacyHeaderRibbonProps {
   lowStockCount: number;
   onOpenPrintForm?: (type: 'TT22_RESTOCK_PROPOSAL') => void;
   onOpenRestock: () => void;
+  onOpenNationalRegistry?: () => void;
 }
 
 export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
   warehouse, setWarehouse, commodity, setCommodity, status, setStatus,
   searchQuery, setSearchQuery, totalCount, nearExpiryCount, lowStockCount, onOpenRestock,
+  onOpenNationalRegistry,
 }) => {
   return (
     <div className="bg-white p-2.5 sm:p-3 rounded-lg border border-slate-200 shrink-0 space-y-2 sm:space-y-2.5 shadow-2xs">
@@ -90,12 +92,24 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
               <button onClick={() => setStatus('low_stock')} className={`px-2.5 py-1 rounded-md cursor-pointer ${status === 'low_stock' ? 'bg-white text-amber-900 font-bold shadow-xs' : 'text-slate-600'}`}>Dưới min ({lowStockCount})</button>
             </div>
           </div>
-          {lowStockCount > 0 && (
-            <button onClick={onOpenRestock} className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs cursor-pointer shadow-xs shrink-0">
-              <PackagePlus className="w-3.5 h-3.5 text-teal-300" />
-              <span>Dự trù ({lowStockCount})</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenNationalRegistry && (
+              <button
+                onClick={onOpenNationalRegistry}
+                className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-bold text-xs cursor-pointer shadow-2xs shrink-0"
+                title="Tra cứu Cổng Dược Quốc Gia Bộ Y Tế (55.000 SĐK)"
+              >
+                <Building2 className="w-3.5 h-3.5 text-teal-700" />
+                <span>Dược Quốc Gia (55k SĐK)</span>
+              </button>
+            )}
+            {lowStockCount > 0 && (
+              <button onClick={onOpenRestock} className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs cursor-pointer shadow-xs shrink-0">
+                <PackagePlus className="w-3.5 h-3.5 text-teal-300" />
+                <span>Dự trù ({lowStockCount})</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

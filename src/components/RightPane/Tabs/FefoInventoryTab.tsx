@@ -8,6 +8,7 @@ import React, { useState, useMemo } from 'react';
 import { InventoryBatch } from '../../../types/clinical';
 import { clinicalAudio } from '../../../utils/audio';
 import { RestockProposalModal } from '../../Modals/RestockProposalModal';
+import { NationalDrugRegistryModal } from '../../Modals/NationalDrugRegistryModal';
 import { PrintableFormType } from '../../Modals/PrintableFormModal';
 import {
   PharmacyHeaderRibbon,
@@ -40,6 +41,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   const [status, setStatus] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+  const [isRegistryModalOpen, setIsRegistryModalOpen] = useState(false);
 
   const filteredBatches = useMemo(() => {
     return batches.filter((batch) => {
@@ -107,6 +109,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         lowStockCount={lowStockBatches.length}
         onOpenPrintForm={onOpenPrintForm}
         onOpenRestock={() => setIsRestockModalOpen(true)}
+        onOpenNationalRegistry={() => setIsRegistryModalOpen(true)}
       />
 
       {/* Mobile View */}
@@ -165,6 +168,12 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         onConfirmRestock={(ids) => onRestockBatches?.(ids)}
         onOpenPrintForm={onOpenPrintForm}
         isAudioMuted={isAudioMuted}
+      />
+
+      <NationalDrugRegistryModal
+        isOpen={isRegistryModalOpen}
+        onClose={() => setIsRegistryModalOpen(false)}
+        onSelectMedication={onOpenSafetyGuide}
       />
     </div>
   );
