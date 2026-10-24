@@ -96,11 +96,12 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
             {onOpenNationalRegistry && (
               <button
                 onClick={onOpenNationalRegistry}
-                className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-bold text-xs cursor-pointer shadow-2xs shrink-0"
-                title="Tra cứu Cổng Dược Quốc Gia Bộ Y Tế (55.000 SĐK)"
+                className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-teal-800 font-medium text-xs transition cursor-pointer shadow-2xs shrink-0"
+                title="Tra cứu Cổng Dữ Liệu Dược Quốc Gia (Cục Quản lý Dược - Bộ Y Tế)"
               >
-                <Building2 className="w-3.5 h-3.5 text-teal-700" />
-                <span>Dược Quốc Gia (55k SĐK)</span>
+                <Building2 className="w-3.5 h-3.5 text-teal-600" />
+                <span>Dược Quốc Gia</span>
+                <span className="px-1.5 py-0.2 rounded-full text-3xs font-mono font-bold bg-teal-50 text-teal-700 border border-teal-200/60">55k SĐK</span>
               </button>
             )}
             {lowStockCount > 0 && (

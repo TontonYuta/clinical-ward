@@ -88,12 +88,12 @@ export function classifyMedicationGroup(
 ): { group: MedicationGroup; isControlled: boolean; isHighAlert: boolean; isCrashCart: boolean } {
   const text = `${name} ${activeInn}`.toLowerCase();
 
-  const isOpioid = /morphin|fentanyl|oxycodon|pethidin|methadon|tramadol|codein/.test(text);
-  const isSedative = /diazepam|seduxen|midazolam|lorazepam|clonazepam|phenobarbital/.test(text);
-  const isEmergency = /adrenalin|epinephrin|noradrenalin|atropin|amiodaron|lidocain/.test(text);
-  const isHighAlertElec = /kali clorid|kcl|calcium gluconat|magnesi sulfat/.test(text);
-  const isAntibiotic = /ceftriaxon|vancomycin|meropenem|ciprofloxacin|augmentin|ampicillin/.test(text);
-  const isInfusion = /ringer lactat|natri clorid 0\.9%|glucose|dextrose|haes-steril/.test(text);
+  const isOpioid = /morphin|fentanyl|oxycodon|pethidin|methadon|tramadol|codein|buprenorphin/.test(text);
+  const isSedative = /diazepam|seduxen|midazolam|lorazepam|clonazepam|phenobarbital|zolpidem|alprazolam/.test(text);
+  const isEmergency = /adrenalin|epinephrin|noradrenalin|atropin|amiodaron|lidocain|dopamin|dobutamin|nitroglycerin/.test(text);
+  const isHighAlertElec = /kali clorid|kcl|calcium gluconat|magnesi sulfat|insulin|heparin|warfarin|enoxaparin/.test(text);
+  const isAntibiotic = /ceftriaxon|vancomycin|meropenem|ciprofloxacin|augmentin|ampicillin|cef|cillin|mycin|penem|oxacin|metronidazol/.test(text);
+  const isInfusion = /ringer lactat|natri clorid|glucose|dextrose|haes-steril|bicarbonat/.test(text);
 
   if (isOpioid) {
     return { group: 'Thuốc gây nghiện', isControlled: true, isHighAlert: true, isCrashCart: true };
@@ -117,7 +117,7 @@ export function classifyMedicationGroup(
     return { group: 'Thuốc hướng thần', isControlled: true, isHighAlert: false, isCrashCart: false };
   }
 
-  return { group: 'Thuốc cấp cứu', isControlled: false, isHighAlert: false, isCrashCart: false };
+  return { group: 'Thuốc điều trị chuyên khoa', isControlled: false, isHighAlert: false, isCrashCart: false };
 }
 
 export function transformDavToMasterMedication(item: DavRawDrugItem): MasterMedication {
@@ -127,7 +127,8 @@ export function transformDavToMasterMedication(item: DavRawDrugItem): MasterMedi
   const dosageForm = item.thongTinThuocCoBan?.dangBaoChe || 'Dung dịch tiêm';
   const packageSpec = item.thongTinThuocCoBan?.dongGoi || 'Hộp 10 ống';
 
-  const classification = classifyMedicationGroup(cleanName, rawInn, !!item.thuocKiemSoatDacBiet);
+  const hasSpecial = !!(item.thuocKiemSoatDacBiet && (item.thuocKiemSoatDacBiet.isHoSoACTD || item.thuocKiemSoatDacBiet.isControlled || item.thuocKiemSoatDacBiet.ngayQuyetDinhCongVan));
+  const classification = classifyMedicationGroup(cleanName, rawInn, hasSpecial);
 
   let unit = 'Ống';
   const lowerPack = packageSpec.toLowerCase();

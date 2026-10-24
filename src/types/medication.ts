@@ -11,6 +11,7 @@ export type MedicationGroup =
   | 'Thuốc nguy cơ cao'
   | 'Kháng sinh'
   | 'Dịch truyền'
+  | 'Thuốc điều trị chuyên khoa'
   | 'Vật tư tiêu hao';
 
 export interface OfficialMedicalSource {
