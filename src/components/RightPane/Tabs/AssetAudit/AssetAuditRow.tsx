@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Building2, AlertTriangle, CheckCircle2, Trash2, ArrowRightLeft, Lock, Printer } from 'lucide-react';
+import { Building2, AlertTriangle, CheckCircle2, Trash2, ArrowRightLeft, Lock } from 'lucide-react';
 import { AssetAuditRecord, UserRole } from '../../../../types/clinical';
 import { PrintableFormType } from '../../../Modals/PrintableFormModal';
 
@@ -20,7 +20,6 @@ interface AssetAuditRowProps {
 export const AssetAuditRow: React.FC<AssetAuditRowProps> = ({
   asset,
   currentUserRole,
-  onOpenPrintForm,
   onTransfer,
   onLiquidation,
 }) => {
@@ -75,13 +74,6 @@ export const AssetAuditRow: React.FC<AssetAuditRowProps> = ({
       </td>
       <td className="py-2.5 px-4 text-right whitespace-nowrap">
         <div className="inline-flex items-center gap-2 justify-end">
-          <button
-            onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
-            className="w-8 h-8 rounded-md border border-slate-200 hover:bg-slate-100 text-slate-600 transition cursor-pointer flex items-center justify-center"
-            title="In biên bản bàn giao tài sản cho thiết bị này (Mẫu 01-TSC)"
-          >
-            <Printer className="w-3.5 h-3.5" />
-          </button>
           {asset.isMisallocated ? (
             <button
               onClick={() => onTransfer(asset.id, asset.actualDepartment)}

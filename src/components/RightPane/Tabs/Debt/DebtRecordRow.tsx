@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Check, ShieldAlert, ShieldCheck, Printer } from 'lucide-react';
+import { Check, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { DebtRecord } from '../../../../types/clinical';
 import { PrintableFormType } from '../../../Modals/PrintableFormModal';
 
@@ -18,7 +18,6 @@ interface DebtRecordRowProps {
 
 export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
   item,
-  onOpenPrintForm,
   onAmpouleReturn,
   onSettle,
 }) => {
@@ -93,18 +92,6 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
 
       <td className="py-3 px-3 text-right whitespace-nowrap">
         <div className="inline-flex items-center gap-1.5 justify-end">
-          <button
-            onClick={() =>
-              onOpenPrintForm?.(
-                isNarcotic ? 'TT20_AMPOULE_DESTRUCTION' : 'EMERGENCY_BORROW_TICKET',
-                item
-              )
-            }
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
-            title="In phiếu kẹp bệnh án"
-          >
-            <Printer className="w-3.5 h-3.5" />
-          </button>
           {isDebt && (
             isNarcotic && !item.ampouleReturned ? (
               <button

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, CheckCircle2, Trash2, ArrowRightLeft, Printer } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Trash2, ArrowRightLeft } from 'lucide-react';
 import { AssetAuditRecord } from '../../../../types/clinical';
 import { PrintableFormType } from '../../../Modals/PrintableFormModal';
 
@@ -18,7 +18,6 @@ interface AssetAuditCardProps {
 
 export const AssetAuditCard: React.FC<AssetAuditCardProps> = ({
   asset,
-  onOpenPrintForm,
   onTransfer,
   onLiquidation,
 }) => {
@@ -88,18 +87,11 @@ export const AssetAuditCard: React.FC<AssetAuditCardProps> = ({
       </div>
 
       {/* Mobile Actions */}
-      <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-        <button
-          onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
-          className="flex-1 h-8.5 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
-        >
-          <Printer className="w-4 h-4 text-slate-600" />
-          <span>In Mẫu 01-TSC</span>
-        </button>
+      <div className="pt-1 border-t border-slate-100">
         {asset.isMisallocated ? (
           <button
             onClick={() => onTransfer(asset.id, asset.actualDepartment)}
-            className="flex-2 h-8.5 rounded-md bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
+            className="w-full h-8.5 rounded-md bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
           >
             <ArrowRightLeft className="w-4 h-4" />
             <span>Xác nhận điều chuyển</span>
@@ -107,13 +99,13 @@ export const AssetAuditCard: React.FC<AssetAuditCardProps> = ({
         ) : !asset.pendingLiquidation && asset.operatingYears >= 8 ? (
           <button
             onClick={() => onLiquidation(asset.id)}
-            className="flex-2 h-8.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
+            className="w-full h-8.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
           >
             <Trash2 className="w-4 h-4 text-rose-600" />
             <span>Đề xuất thanh lý</span>
           </button>
         ) : (
-          <div className="flex-2 h-8.5 flex items-center justify-center text-xs font-medium text-emerald-800 bg-emerald-50 rounded-md border border-emerald-200">
+          <div className="w-full h-8.5 flex items-center justify-center text-xs font-medium text-emerald-800 bg-emerald-50 rounded-md border border-emerald-200">
             Đã đối soát mã QR
           </div>
         )}

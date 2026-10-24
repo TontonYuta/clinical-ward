@@ -77,7 +77,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           title="Xuất và in biểu mẫu hành chính y tế chuẩn A4 (TT 18, TT 26, NĐ 151, NĐ 98)"
         >
           <Printer className="w-5 h-5 text-teal-700 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Biểu mẫu in A4</span>}
+          {!isCollapsed && <span className="flex-1 text-left truncate">Trung tâm biểu mẫu A4</span>}
         </button>
       </div>
     </div>

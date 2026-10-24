@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, Flame, Printer, PlusCircle } from 'lucide-react';
+import { Search, Flame, PlusCircle } from 'lucide-react';
 
 interface DebtHeaderRibbonProps {
   searchQuery: string;
@@ -35,7 +35,6 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
   settledCount,
   returnedAmpoulesCount,
   onOpenDestruction,
-  onOpenPrintForm,
   onOpenBorrowModal,
 }) => {
   return (
@@ -104,15 +103,6 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
             <span>Tiêu hủy vỏ ({returnedAmpoulesCount})</span>
           </button>
         )}
-
-        <button
-          onClick={() => onOpenPrintForm?.('TT20_AMPOULE_DESTRUCTION')}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In biên bản hành chính A4"
-        >
-          <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">In biên bản</span>
-        </button>
 
         <button
           onClick={onOpenBorrowModal}

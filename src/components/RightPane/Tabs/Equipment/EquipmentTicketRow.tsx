@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Check, ShieldCheck, Printer } from 'lucide-react';
+import { Check, ShieldCheck } from 'lucide-react';
 import { EquipmentTicket, UserRole } from '../../../../types/clinical';
 
 interface EquipmentTicketRowProps {
@@ -18,7 +18,6 @@ interface EquipmentTicketRowProps {
 export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
   ticket,
   onOpenHandover,
-  onOpenPrintForm,
   currentUserRole,
 }) => {
   const isUrgent = ticket.urgency === 'urgent';
@@ -92,15 +91,6 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
 
       <td className="py-3 px-3 text-right whitespace-nowrap">
         <div className="flex items-center justify-end gap-1.5">
-          <button
-            onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT', ticket)}
-            className="h-8 px-2.5 rounded-md border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1 transition cursor-pointer"
-            title="In biên bản kỹ thuật NĐ 04/2025 & NĐ 98"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>In</span>
-          </button>
-
           {!isResolved && (
             <button
               onClick={() => onOpenHandover(ticket)}

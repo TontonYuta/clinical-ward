@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, QrCode, Printer } from 'lucide-react';
+import { Search, QrCode } from 'lucide-react';
 import { PrintableFormType } from '../../../Modals/PrintableFormModal';
 
 interface AssetAuditHeaderRibbonProps {
@@ -28,7 +28,6 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
   totalCount,
   misallocatedCount,
   liquidationCount,
-  onOpenPrintForm,
   onScanClick,
 }) => {
   return (
@@ -82,24 +81,6 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2 shrink-0 justify-end">
-        <button
-          onClick={() => onOpenPrintForm?.('TSC_ANNUAL_AUDIT')}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In biên bản kiểm kê định kỳ Mẫu 05-TSC"
-        >
-          <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">Mẫu 05-TSC</span>
-        </button>
-
-        <button
-          onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER')}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In biên bản bàn giao, điều chuyển tài sản Mẫu 01-TSC"
-        >
-          <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">Mẫu 01-TSC</span>
-        </button>
-
         <button
           onClick={onScanClick}
           className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shrink-0 cursor-pointer active:scale-98 shadow-xs"

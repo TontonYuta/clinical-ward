@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, PlusCircle, Printer } from 'lucide-react';
+import { Search, PlusCircle } from 'lucide-react';
 
 interface EquipmentHeaderRibbonProps {
   searchQuery: string;
@@ -29,7 +29,6 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
   urgentCount,
   inProgressCount,
   resolvedCount,
-  onOpenPrintForm,
   onOpenIncidentModal,
 }) => {
   return (
@@ -85,15 +84,6 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
 
       {/* Buttons */}
       <div className="flex items-center gap-2 shrink-0 justify-end">
-        <button
-          onClick={() => onOpenPrintForm?.('EQUIPMENT_HANDOVER_INSPECT')}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In biên bản kiểm định an toàn điện & thử tải thiết bị (NĐ 04/2025 & NĐ 98)"
-        >
-          <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">In biên bản</span>
-        </button>
-
         <button
           onClick={onOpenIncidentModal}
           className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-rose-700 hover:bg-rose-800 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 shadow-xs"

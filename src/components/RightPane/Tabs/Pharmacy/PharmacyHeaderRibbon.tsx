@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, Printer, PackagePlus, Building2, Store } from 'lucide-react';
+import { Search, PackagePlus, Building2, Store } from 'lucide-react';
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
 export type CommodityFilter = 'all' | 'medication' | 'medical_supply';
@@ -39,7 +39,6 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
   totalCount,
   nearExpiryCount,
   lowStockCount,
-  onOpenPrintForm,
   onOpenRestock,
 }) => {
   return (
@@ -150,15 +149,6 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 justify-end">
-          <button
-            onClick={() => onOpenPrintForm?.('TT22_RESTOCK_PROPOSAL')}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition cursor-pointer"
-            title="In phiếu dự trù bổ sung thuốc (Mẫu 01/TT22 & VBHN 07)"
-          >
-            <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">In dự trù Mẫu 01</span>
-          </button>
-
           {lowStockCount > 0 && (
             <button
               onClick={onOpenRestock}

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Bot, FileText, Wrench, Boxes, ThermometerSnowflake, Building2, Printer } from 'lucide-react';
+import { Bot, FileText, Wrench, Boxes, ThermometerSnowflake, Building2 } from 'lucide-react';
 import {
   DebtRecord,
   EquipmentTicket,

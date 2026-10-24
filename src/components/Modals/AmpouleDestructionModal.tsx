@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, ShieldAlert, CheckCircle2, FileSignature, AlertOctagon, Printer } from 'lucide-react';
+import { X, ShieldAlert, CheckCircle2, FileSignature, AlertOctagon } from 'lucide-react';
 import { DebtRecord } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { PrintableFormType } from './PrintableFormModal';
@@ -282,25 +282,12 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
                 </>
               )}
             </button>
-            <div className="flex items-center gap-2">
-              {onOpenPrintForm && (
-                <button
-                  type="button"
-                  onClick={() => onOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
-                  className="flex-1 h-9 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                  title="Xem & in biên bản A4 chuẩn"
-                >
-                  <Printer className="w-3.5 h-3.5 text-teal-700" />
-                  <span>Xem bản in A4</span>
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="flex-1 h-9 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
-              >
-                Đóng
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="w-full h-9 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"
+            >
+              Đóng
+            </button>
           </div>
 
           {/* Desktop Footer */}
@@ -309,17 +296,6 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
               Biên bản số: 16/BB-HĐH/{new Date().getFullYear()} · Ngày: {todayStr}
             </div>
             <div className="flex items-center gap-2">
-              {onOpenPrintForm && (
-                <button
-                  type="button"
-                  onClick={() => onOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
-                  className="h-9 px-3.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                  title="Xem & in biên bản A4 chuẩn theo Mẫu 16 Phụ lục II NĐ 54/2017"
-                >
-                  <Printer className="w-3.5 h-3.5 text-teal-700" />
-                  <span>Xem bản in A4</span>
-                </button>
-              )}
               <button
                 onClick={onClose}
                 className="h-9 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition cursor-pointer"

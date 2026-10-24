@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Clock, Check, ShieldAlert, ShieldCheck, Printer } from 'lucide-react';
+import { Clock, Check, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { DebtRecord } from '../../../../types/clinical';
 import { PrintableFormType } from '../../../Modals/PrintableFormModal';
 
@@ -18,7 +18,6 @@ interface DebtRecordCardProps {
 
 export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
   item,
-  onOpenPrintForm,
   onAmpouleReturn,
   onSettle,
 }) => {
@@ -104,24 +103,12 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100">
-        <button
-          onClick={() =>
-            onOpenPrintForm?.(
-              isNarcotic ? 'TT20_AMPOULE_DESTRUCTION' : 'EMERGENCY_BORROW_TICKET',
-              item
-            )
-          }
-          className="flex-1 py-1.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
-        >
-          <Printer className="w-4 h-4 text-slate-600" />
-          <span>In phiếu</span>
-        </button>
-        {isDebt && (
-          isNarcotic && !item.ampouleReturned ? (
+      {isDebt && (
+        <div className="pt-2.5 border-t border-slate-100">
+          {isNarcotic && !item.ampouleReturned ? (
             <button
               onClick={() => onAmpouleReturn(item.id)}
-              className="flex-2 py-1.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
+              className="w-full py-1.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
             >
               <ShieldAlert className="w-4 h-4" />
               <span>Thu hồi vỏ nộp khay</span>
@@ -129,14 +116,14 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
           ) : (
             <button
               onClick={() => onSettle(item.id)}
-              className="flex-2 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
+              className="w-full py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
             >
               <Check className="w-4 h-4" />
               <span>Xác nhận hoàn bù</span>
             </button>
-          )
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

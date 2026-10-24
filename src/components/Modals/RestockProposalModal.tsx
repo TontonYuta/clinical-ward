@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Boxes, AlertTriangle, Send, CheckCircle2, Printer } from 'lucide-react';
+import { X, Boxes, AlertTriangle, Send, CheckCircle2 } from 'lucide-react';
 import { InventoryBatch } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { PrintableFormType } from './PrintableFormModal';
@@ -152,21 +152,11 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
         <div className="p-3 sm:px-5 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center justify-between text-xs">
           <div className="text-slate-500 font-mono hidden sm:inline">Số phiếu: DT-KD-{new Date().getFullYear()}/042 · Ngày: {todayStr}</div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            {onOpenPrintForm && (
-              <button
-                type="button"
-                onClick={() => onOpenPrintForm('TT22_RESTOCK_PROPOSAL')}
-                className="h-8.5 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-semibold flex items-center gap-1.5"
-              >
-                <Printer className="w-3.5 h-3.5 text-teal-700" />
-                <span>In Mẫu 01</span>
-              </button>
-            )}
-            <button onClick={onClose} className="h-8.5 px-3.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-semibold">Đóng</button>
+            <button onClick={onClose} className="h-8.5 px-3.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-semibold cursor-pointer hover:bg-slate-50">Đóng</button>
             <button
               onClick={handleConfirm}
               disabled={lowStockBatches.length === 0 || isSubmitted}
-              className="h-8.5 px-4 rounded-lg bg-teal-800 hover:bg-teal-900 disabled:opacity-50 text-white font-bold flex items-center gap-1.5"
+              className="h-8.5 px-4 rounded-lg bg-teal-800 hover:bg-teal-900 disabled:opacity-50 text-white font-bold flex items-center gap-1.5 cursor-pointer active:scale-98 shadow-xs"
             >
               {isSubmitted ? (
                 <>
@@ -176,7 +166,7 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>Gửi Phiếu Dự Trù</span>
+                  <span>Gửi phiếu dự trù</span>
                 </>
               )}
             </button>

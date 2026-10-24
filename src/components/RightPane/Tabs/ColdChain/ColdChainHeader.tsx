@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Check, ZapOff, Printer, FileCheck2 } from 'lucide-react';
+import { Check, ZapOff, FileCheck2 } from 'lucide-react';
 import { PrintableFormType } from '../../../Modals/PrintableFormModal';
 
 interface ColdChainHeaderProps {
@@ -20,7 +20,6 @@ interface ColdChainHeaderProps {
 export const ColdChainHeader: React.FC<ColdChainHeaderProps> = ({
   isAlarm,
   isQuarantined,
-  onOpenPrintForm,
   onRestore,
   onReleaseQuarantine,
   onSimulateOutage,
@@ -54,15 +53,6 @@ export const ColdChainHeader: React.FC<ColdChainHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-        <button
-          onClick={() => onOpenPrintForm?.('COLD_CHAIN_INCIDENT_REPORT')}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-medium transition cursor-pointer"
-          title="In biên bản xử lý sự cố quá nhiệt chuỗi lạnh & thẩm định vắc xin GSP"
-        >
-          <Printer className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">In biên bản GSP</span>
-        </button>
-
         {isAlarm ? (
           <button
             onClick={onRestore}
