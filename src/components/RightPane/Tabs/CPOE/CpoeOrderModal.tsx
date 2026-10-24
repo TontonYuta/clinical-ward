@@ -7,6 +7,8 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, Stethoscope, AlertTriangle } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType } from '../../../../types/cpoe';
+import { MasterMedication } from '../../../../types/medication';
+import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
 import { useModalDismiss } from '../../../../hooks/useModalDismiss';
 
 interface CpoeOrderModalProps {
@@ -30,12 +32,33 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const [diagnosisText, setDiagnosisText] = useState('Tăng huyết áp vô căn');
   const [isChronic, setIsChronic] = useState(false);
   const [daysPrescribed, setDaysPrescribed] = useState(30);
-  const [medName, setMedName] = useState('Amlodipin 5mg');
-  const [quantity, setQuantity] = useState(30);
+  const [medName, setMedName] = useState('Adrenalin Vinphaco 1mg/1ml');
+  const [activeIngredient, setActiveIngredient] = useState('Epinephrin');
+  const [unit, setUnit] = useState('Ống');
+  const [route, setRoute] = useState('Tiêm tĩnh mạch');
+  const [quantity, setQuantity] = useState(2);
 
   if (!isOpen) return null;
 
+  const handleSelectMed = (med: MasterMedication) => {
+    setMedName(med.brandName);
+    setActiveIngredient(med.activeIngredient);
+    setUnit(med.standardUnit);
+    setRoute(med.route);
+    setQuantity(med.defaultDoseQty);
+  };
+
   const hasDdiWarning = medName.toLowerCase().includes('morphin') && diagnosisText.toLowerCase().includes('suy hô hấp');
+
+  const normalizeRoute = (r: string): PrescriptionOrder['items'][0]['route'] => {
+    if (r.includes('bắp')) return 'Tiêm bắp';
+    if (r.includes('Truyền')) return 'Truyền tĩnh mạch';
+    if (r.includes('Uống')) return 'Uống';
+    if (r.includes('Hít') || r.includes('khí dung')) return 'Hít';
+    return r.includes('Đặt') ? 'Đặt' : 'Tiêm tĩnh mạch';
+  };
+  const normalizeUnit = (u: string): PrescriptionOrder['items'][0]['unit'] =>
+    (u === 'Lọ' || u === 'Viên' || u === 'Chai' || u === 'Hộp' || u === 'Vỉ') ? u : 'Ống';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,13 +85,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       items: [{
         id: `rxi-${Date.now()}`,
         medicationName: medName,
-        activeIngredient: medName.split(' ')[0],
+        activeIngredient: activeIngredient || medName.split(' ')[0],
         dosage: 'Chuẩn',
         frequency: '1 lần/ngày',
-        route: rxType === 'outpatient' ? 'Uống' : 'Tiêm tĩnh mạch',
+        route: normalizeRoute(route),
         quantity,
-        unit: rxType === 'outpatient' ? 'Viên' : 'Ống',
-        instructions: 'Dùng theo hướng dẫn bác sĩ'
+        unit: normalizeUnit(unit),
+        instructions: 'Dùng theo phác đồ chỉ định của bác sĩ'
       }]
     });
     onClose();
@@ -85,7 +108,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             <Stethoscope className="w-5 h-5 text-teal-300" />
             <h3 className="font-bold text-sm sm:text-base">Kê Đơn Thuốc Điện Tử (TT 26/2025/TT-BYT)</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -95,14 +118,14 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             <button
               type="button"
               onClick={() => { setRxType('outpatient'); setDaysPrescribed(30); }}
-              className={`flex-1 py-1.5 rounded-lg font-semibold border ${rxType === 'outpatient' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+              className={`flex-1 py-1.5 rounded-lg font-semibold border cursor-pointer ${rxType === 'outpatient' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
             >
               Đơn Ngoại Trú (BHYT)
             </button>
             <button
               type="button"
               onClick={() => { setRxType('inpatient_daily'); setDaysPrescribed(1); setIsChronic(false); }}
-              className={`flex-1 py-1.5 rounded-lg font-semibold border ${rxType === 'inpatient_daily' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+              className={`flex-1 py-1.5 rounded-lg font-semibold border cursor-pointer ${rxType === 'inpatient_daily' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
             >
               Y Lệnh Nội Trú (Ngày)
             </button>
@@ -130,27 +153,25 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             </div>
           </div>
 
-          {rxType === 'outpatient' && (
-            <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl space-y-1.5">
-              <label className="flex items-center gap-2 cursor-pointer font-bold text-amber-900 text-xs">
-                <input type="checkbox" checked={isChronic} onChange={(e) => { setIsChronic(e.target.checked); setDaysPrescribed(e.target.checked ? 60 : 30); }} />
-                <span>Bệnh mạn tính ổn định (Phụ lục VII TT 26/2025 - Tối đa 90 ngày)</span>
-              </label>
-              <div className="text-xs text-slate-600 flex items-center justify-between">
-                <span>Thời hạn kê: <strong>{daysPrescribed} ngày</strong></span>
-                <input type="range" min="7" max={isChronic ? 90 : 30} step="7" value={daysPrescribed} onChange={(e) => setDaysPrescribed(Number(e.target.value))} className="w-28 accent-teal-700" />
-              </div>
-            </div>
-          )}
+          {/* Smart Medication Search */}
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Tìm &amp; Chỉ Định Thuốc (Cổng Dược Quốc Gia) *</label>
+            <MedicationSearchAutocomplete
+              selectedMedicationName={medName}
+              onSelect={handleSelectMed}
+              defaultOnlyCrashCart={false}
+              placeholder="Gõ tìm biệt dược, hoạt chất (adre, mor, ceftri, kcl)..."
+            />
+          </div>
 
           <div className="grid grid-cols-3 gap-2.5">
             <div className="col-span-2">
-              <label className="block font-semibold text-slate-700 mb-0.5">Tên Thuốc Chỉ Định</label>
-              <input type="text" value={medName} onChange={(e) => setMedName(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-lg" />
+              <label className="block font-semibold text-slate-700 mb-0.5">Hoạt chất / Đường dùng</label>
+              <input type="text" readOnly value={`${activeIngredient} (${route})`} className="w-full px-2.5 py-1.5 border rounded-lg bg-slate-50 text-slate-600 font-medium" />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-0.5">Số Lượng</label>
-              <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="w-full px-2.5 py-1.5 border rounded-lg font-bold" />
+              <label className="block font-semibold text-slate-700 mb-0.5">Số Lượng ({unit})</label>
+              <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="w-full px-2.5 py-1.5 border rounded-lg font-bold text-teal-900" />
             </div>
           </div>
 
@@ -164,8 +185,8 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
           <div className="pt-2.5 border-t flex items-center justify-between">
             <span className="text-xs text-slate-500">Bác sĩ: <strong>{doctorName}</strong></span>
             <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-3 py-1.5 border rounded-lg text-slate-700">Hủy</button>
-              <button type="submit" className="px-4 py-1.5 bg-teal-800 text-white rounded-lg font-bold flex items-center gap-1.5">
+              <button type="button" onClick={onClose} className="px-3 py-1.5 border rounded-lg text-slate-700 cursor-pointer">Hủy</button>
+              <button type="submit" className="px-4 py-1.5 bg-teal-800 hover:bg-teal-900 text-white rounded-lg font-bold flex items-center gap-1.5 cursor-pointer">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Ký Số Ban Hành</span>
               </button>

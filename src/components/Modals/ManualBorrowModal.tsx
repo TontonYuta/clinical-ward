@@ -1,49 +1,59 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Modal Mượn Khẩn Thuốc & Vật Tư Tủ Trực (VBHN 07 & TT 18/2026/TT-BYT)
+ * Modal Mượn Khẩn Thuốc & Vật Tư Tủ Trực (VBHN 07 & TT 18/2026/TT-BYT) (<=200 LOC)
  */
 
 import React, { useState } from 'react';
 import { X, PlusCircle, AlertCircle, Shield, Pill } from 'lucide-react';
 import { DebtRecord } from '../../types/clinical';
+import { MasterMedication } from '../../types/medication';
+import { ALL_MASTER_MEDICATIONS } from '../../data/medicationMasterData';
+import { MedicationSearchAutocomplete } from '../Common/MedicationSearchAutocomplete';
 import { clinicalAudio } from '../../utils/audio';
-import { COMMON_EMERGENCY_ITEMS } from '../../data/commonEmergencyItemsData';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 interface ManualBorrowModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirmBorrow: (newRecord: Omit<DebtRecord, 'id' | 'code' | 'borrowDate' | 'borrowTime' | 'status'>) => void;
+  onConfirmBorrow: (record: Omit<DebtRecord, 'id' | 'code' | 'borrowDate' | 'borrowTime' | 'status'>) => void;
   isAudioMuted: boolean;
 }
 
+const QUICK_EMERGENCY_CHIPS = [
+  { label: 'Adrenalin 1mg', id: 'med-em-01' },
+  { label: 'Morphin 10mg', id: 'med-ctrl-01' },
+  { label: 'Fentanyl 0.1mg', id: 'med-ctrl-02' },
+  { label: 'Noradrenalin 1mg', id: 'med-em-02' },
+  { label: 'Diazepam 10mg', id: 'med-em-07' },
+];
+
 export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirmBorrow,
-  isAudioMuted,
+  isOpen, onClose, onConfirmBorrow, isAudioMuted,
 }) => {
   useModalDismiss(isOpen, onClose);
-  const [selectedPreset, setSelectedPreset] = useState<number | null>(0);
-  const [itemName, setItemName] = useState(COMMON_EMERGENCY_ITEMS[0].name);
-  const [itemType, setItemType] = useState<DebtRecord['itemType']>(COMMON_EMERGENCY_ITEMS[0].type);
-  const [quantity, setQuantity] = useState(COMMON_EMERGENCY_ITEMS[0].defaultQty);
+  const def = ALL_MASTER_MEDICATIONS[0];
+  const [itemName, setItemName] = useState(def.brandName);
+  const [itemType, setItemType] = useState<DebtRecord['itemType']>('Thuốc cấp cứu');
+  const [quantity, setQuantity] = useState(`${def.defaultDoseQty} ${def.standardUnit}`);
   const [patientCode, setPatientCode] = useState('BN-2026-9042');
   const [patientName, setPatientName] = useState('Nguyễn Văn An');
   const [patientRoom, setPatientRoom] = useState('ICU - Buồng 03 (Giường 01)');
   const [doctorName, setDoctorName] = useState('BS.CKII Nguyễn Minh Tuấn');
-  const [clinicalReason, setClinicalReason] = useState('Hội chứng vành cấp ST chênh lên, đau thắt ngực dữ dội');
+  const [clinicalReason, setClinicalReason] = useState('Sốc phản vệ độ III / Hội chứng vành cấp');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSelectPreset = (idx: number) => {
-    setSelectedPreset(idx);
-    const item = COMMON_EMERGENCY_ITEMS[idx];
-    setItemName(item.name);
-    setItemType(item.type);
-    setQuantity(item.defaultQty);
+  const handleSelectMed = (med: MasterMedication) => {
+    setItemName(med.brandName);
+    const typeMap: Record<string, DebtRecord['itemType']> = {
+      'Thuốc gây nghiện': 'Thuốc gây nghiện',
+      'Thuốc hướng thần': 'Thuốc hướng thần',
+      'Vật tư tiêu hao': 'Vật tư tiêu hao',
+    };
+    setItemType(typeMap[med.group] || 'Thuốc cấp cứu');
+    setQuantity(`${med.defaultDoseQty} ${med.standardUnit}`);
     setValidationError(null);
   };
 
@@ -69,10 +79,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
   };
 
   return (
-    <div
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4"
-    >
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="h-14 px-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
@@ -84,12 +91,10 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               <span className="text-[11px] text-slate-400 font-mono">VBHN 07 &amp; TT 18/2026/TT-BYT</span>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800">
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={onClose} className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="p-4 sm:p-5 overflow-y-auto space-y-3.5 text-xs text-slate-700 flex-1">
+        <form onSubmit={handleSubmit} noValidate className="p-4 sm:p-5 overflow-y-auto space-y-3 text-xs text-slate-700 flex-1">
           {validationError && (
             <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -97,41 +102,32 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </div>
           )}
 
-          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 space-y-1.5">
+          {/* Master Data Drug Search */}
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="text-emerald-600">⚡</span> Chọn nhanh cơ số cấp cứu ca trực:
-              </label>
-              {selectedPreset !== null && (
-                <button type="button" onClick={() => setSelectedPreset(null)} className="text-slate-400 hover:text-slate-600 underline text-[11px]">Nhập tự do</button>
-              )}
+              <label className="font-bold text-slate-900">1. Tra cứu Dược Lâm Sàng (Tủ trực &amp; Toàn viện) *:</label>
+              <span className="text-[10px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">QĐ 2147/BYT</span>
             </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
-              {COMMON_EMERGENCY_ITEMS.map((item, idx) => (
+            <MedicationSearchAutocomplete selectedMedicationName={itemName} onSelect={handleSelectMed} defaultOnlyCrashCart={true} />
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">
+              <span className="text-[10px] text-slate-400 shrink-0">Chọn nhanh:</span>
+              {QUICK_EMERGENCY_CHIPS.map((chip) => (
                 <button
-                  type="button"
-                  key={idx}
-                  onClick={() => handleSelectPreset(idx)}
-                  className={`inline-flex flex-col text-left p-2 rounded-xl text-xs shrink-0 border ${
-                    selectedPreset === idx ? 'bg-emerald-50 border-emerald-600 ring-1 ring-emerald-600/30' : 'bg-white border-slate-200 hover:bg-slate-50'
-                  }`}
+                  type="button" key={chip.id}
+                  onClick={() => { const f = ALL_MASTER_MEDICATIONS.find((m) => m.id === chip.id); if (f) handleSelectMed(f); }}
+                  className="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-200 transition shrink-0 cursor-pointer"
                 >
-                  <div className="flex items-center justify-between gap-1 w-full mb-0.5">
-                    <span className="text-[9.5px] px-1 py-0.2 rounded font-semibold bg-teal-100 text-teal-800">{item.type}</span>
-                    <span className="text-[10px] font-mono font-bold text-emerald-800">{item.defaultQty}</span>
-                  </div>
-                  <span className="font-semibold text-slate-900 truncate max-w-[140px]">{item.name}</span>
+                  ⚡ {chip.label}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2.5">
-            <span className="font-bold text-slate-500 uppercase tracking-wider text-[11px] block">1. Cơ số mượn khẩn</span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div className="sm:col-span-2">
-                <label className="font-semibold text-slate-800 block mb-1">Tên thuốc / Vật tư *:</label>
-                <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} required className="w-full px-3 py-1.5 border rounded-lg font-medium" />
+                <label className="font-semibold text-slate-800 block mb-1">Tên thuốc đã chọn *:</label>
+                <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} required className="w-full px-3 py-1.5 border rounded-lg font-bold text-slate-900 bg-slate-50" />
               </div>
               <div>
                 <label className="font-semibold text-slate-800 block mb-1">Số lượng *:</label>
@@ -140,7 +136,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label className="font-semibold text-slate-800 block mb-1">Phân loại:</label>
+                <label className="font-semibold text-slate-800 block mb-1">Phân loại quản lý:</label>
                 <select value={itemType} onChange={(e) => setItemType(e.target.value as any)} className="w-full px-2.5 py-1.5 border rounded-lg font-medium">
                   <option value="Thuốc gây nghiện">Thuốc gây nghiện (Thu hồi vỏ TT 18/2026)</option>
                   <option value="Thuốc cấp cứu">Thuốc cấp cứu tối khẩn</option>
@@ -174,20 +170,15 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
           </div>
 
           <div>
-            <label className="font-bold text-slate-900 block mb-1">3. Lý do cấp cứu / Chỉ định:</label>
+            <label className="font-bold text-slate-900 block mb-1">3. Lý do lâm sàng cấp cứu:</label>
             <textarea rows={2} value={clinicalReason} onChange={(e) => setClinicalReason(e.target.value)} placeholder="Nhập lý do lâm sàng..." className="w-full px-3 py-1.5 border rounded-lg resize-none" />
           </div>
 
-          <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div><strong>Quy định hoàn bù (VBHN 07 &amp; TT 18/2026):</strong> Cơ số mượn khẩn phải được kê đơn hoàn trả trước 07:00 sáng hôm sau. Thuốc gây nghiện nộp vỏ ống nguyên vẹn vào khay niêm phong.</div>
-          </div>
-
           <div className="pt-2 border-t flex items-center justify-between">
-            <span className="text-slate-500 text-[11px] flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-600" /> Xác thực y tế</span>
+            <span className="text-slate-500 text-[11px] flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-600" /> Xác thực Y tế TT 18</span>
             <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-lg border text-slate-700 hover:bg-slate-50">Hủy</button>
-              <button type="submit" className="px-4 py-1.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-bold flex items-center gap-1.5">
+              <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-lg border text-slate-700 hover:bg-slate-50 cursor-pointer">Hủy</button>
+              <button type="submit" className="px-4 py-1.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-bold flex items-center gap-1.5 cursor-pointer">
                 <PlusCircle className="w-3.5 h-3.5" /> Ký Lập Phiếu
               </button>
             </div>
