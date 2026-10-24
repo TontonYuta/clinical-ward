@@ -91,7 +91,8 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="p-4 sm:p-5 overflow-y-auto space-y-3.5 text-xs text-slate-700 flex-1">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 text-xs text-slate-700 flex-1">
           {validationError && (
             <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -176,17 +177,19 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
             <Wrench className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
             <div><strong>Quy trình kỹ thuật (NĐ 04/2025/NĐ-CP):</strong> Thử tải an toàn điện trước khi bàn giao lại cho khoa lâm sàng.</div>
           </div>
+        </div>
 
-          <div className="pt-2 border-t flex items-center justify-between">
-            <span className="text-slate-500 text-[11px] flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-teal-600" /> Sổ lý lịch máy &amp; nhật ký</span>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-lg border text-slate-700 hover:bg-slate-50">Hủy</button>
-              <button type="submit" className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center gap-1.5">
-                <PlusCircle className="w-3.5 h-3.5" /> Gửi báo hỏng
-              </button>
-            </div>
+        {/* Pinned Modal Footer */}
+        <div className="p-3 sm:px-5 sm:py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <span className="text-slate-500 text-[11px] hidden sm:flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-teal-600" /> Sổ lý lịch máy &amp; nhật ký</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button type="button" onClick={onClose} className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 font-medium cursor-pointer">Hủy</button>
+            <button type="submit" className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center gap-1.5 cursor-pointer shadow-xs">
+              <PlusCircle className="w-3.5 h-3.5" /> Gửi báo hỏng
+            </button>
           </div>
-        </form>
+        </div>
+      </form>
       </div>
     </div>
   );

@@ -54,8 +54,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = profile.allowedTabs || ['debt'];
-  // Display up to top 4 allowed tabs on mobile for ergonomic touch targets
-  const displayTabs = allowedTabs.slice(0, 4);
+  
+  // Smart dynamic tabs for mobile: include currentTab if active
+  const displayTabs = React.useMemo(() => {
+    if (allowedTabs.length <= 4) return allowedTabs;
+    if (!allowedTabs.slice(0, 4).includes(currentTab) && allowedTabs.includes(currentTab)) {
+      return [...allowedTabs.slice(0, 3), currentTab];
+    }
+    return allowedTabs.slice(0, 4);
+  }, [allowedTabs, currentTab]);
 
   const getBadge = (tab: DashboardTab) => {
     if (tab === 'debt' && debtCount > 0) return { count: debtCount, color: 'bg-amber-500' };
@@ -67,7 +74,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-2 py-1.5 flex items-center justify-around select-none print:hidden shadow-lg">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-1 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around select-none print:hidden shadow-lg">
       {displayTabs.map((tab) => {
         const config = TAB_CONFIG[tab];
         if (!config) return null;

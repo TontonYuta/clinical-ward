@@ -63,8 +63,30 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
           </div>
         </div>
 
-        {/* Quick Metrics */}
-        <div className="flex flex-wrap items-center gap-4 text-slate-600 text-xs sm:text-sm">
+        {/* Mobile Quick Metrics (sm:hidden) */}
+        <div className="grid grid-cols-3 gap-2 w-full pt-2 border-t border-slate-100 sm:hidden text-center text-xs">
+          <div className="bg-slate-50 p-1.5 rounded-md border border-slate-200/60">
+            <div className="text-[10px] text-slate-500 font-medium">Nguồn</div>
+            <div className="font-bold text-slate-900 truncate text-[11px] mt-0.5">
+              {isAlarm ? 'UPS dự phòng' : 'Điện lưới'}
+            </div>
+          </div>
+          <div className="bg-slate-50 p-1.5 rounded-md border border-slate-200/60">
+            <div className="text-[10px] text-slate-500 font-medium">Độ ẩm</div>
+            <div className="font-bold text-slate-900 font-mono text-[11px] mt-0.5">
+              {coldChainState.currentHumidity}% RH
+            </div>
+          </div>
+          <div className="bg-slate-50 p-1.5 rounded-md border border-slate-200/60">
+            <div className="text-[10px] text-slate-500 font-medium">Cơ số vắc xin</div>
+            <div className="font-bold text-slate-900 font-mono text-[11px] mt-0.5">
+              {coldChainState.totalVaccineDoses.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Quick Metrics (hidden sm:flex) */}
+        <div className="hidden sm:flex flex-wrap items-center gap-4 text-slate-600 text-xs sm:text-sm">
           <div className="flex items-center gap-1.5">
             <Zap className={`w-4 h-4 ${isAlarm ? 'text-rose-600' : 'text-emerald-600'}`} />
             <span>

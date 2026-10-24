@@ -45,4 +45,5 @@ docs/videos/raw/
 
 # Test & Playwright artifacts
 playwright_audit/
+playwright_mobile/
 

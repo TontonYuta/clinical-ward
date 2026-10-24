@@ -37,34 +37,40 @@ interface HeaderProps {
   onToggleCopilot?: () => void;
 }
 
-const TAB_METADATA: Record<DashboardTab, { title: string; lawTag: string; icon: React.ComponentType<{ className?: string }> }> = {
+const TAB_METADATA: Record<DashboardTab, { title: string; shortTitle: string; lawTag: string; icon: React.ComponentType<{ className?: string }> }> = {
   cpoe: {
     title: 'Kê đơn thuốc điện tử',
+    shortTitle: 'Kê đơn CPOE',
     lawTag: 'TT 26/2025/TT-BYT & Luật KCB 2023',
     icon: Stethoscope
   },
   debt: {
     title: 'Sổ theo dõi nợ thuốc tủ trực',
+    shortTitle: 'Sổ nợ tủ trực',
     lawTag: 'TT 18/2026/TT-BYT & VBHN 07',
     icon: FileText
   },
   equipment: {
     title: 'Sự cố trang thiết bị y tế',
+    shortTitle: 'Sự cố thiết bị',
     lawTag: 'NĐ 04/2025/NĐ-CP & NĐ 98/2021',
     icon: Wrench
   },
   fefo: {
     title: 'Quản lý kho dược & Hạn dùng FEFO',
+    shortTitle: 'Kho Dược FEFO',
     lawTag: 'TT 36/2018/TT-BYT GSP & TT 26',
     icon: Boxes
   },
   coldchain: {
     title: 'Giám sát chuỗi lạnh bảo quản vắc xin',
+    shortTitle: 'Chuỗi lạnh GSP',
     lawTag: 'Chuẩn GSP & WHO PQS',
     icon: ThermometerSnowflake
   },
   asset_audit: {
     title: 'Kiểm kê tài sản thiết bị y tế',
+    shortTitle: 'Kiểm kê tài sản',
     lawTag: 'NĐ 151/2017/NĐ-CP & NĐ 114/2024',
     icon: Building2
   }
@@ -109,8 +115,9 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <TabIcon className="w-5 h-5 text-teal-800 shrink-0" />
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate tracking-tight">
-              {tabInfo.title}
+            <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 truncate tracking-tight">
+              <span className="sm:hidden">{tabInfo.shortTitle}</span>
+              <span className="hidden sm:inline">{tabInfo.title}</span>
             </h1>
             <span className="hidden sm:inline-flex text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 shrink-0">
               {tabInfo.lawTag}
@@ -120,23 +127,23 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 2. Right: Role Switcher, System Status & Audio Toggle */}
-      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Interactive Role Switcher for both Desktop & Mobile */}
         {onSelectUserRole ? (
           <div className="flex items-center">
             <div className="relative flex items-center">
-              <Shield className="w-4 h-4 text-teal-700 absolute left-3 pointer-events-none hidden sm:block" />
+              <Shield className="w-4 h-4 text-teal-700 absolute left-2.5 pointer-events-none hidden sm:block" />
               <select
                 value={currentUserRole}
                 onChange={(e) => onSelectUserRole(e.target.value as UserRole)}
-                className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-sm font-medium rounded-lg pl-2.5 sm:pl-9 pr-3.5 py-1.5 focus:outline-hidden focus:border-teal-700 cursor-pointer transition truncate max-w-[140px] sm:max-w-none"
+                className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-xs sm:text-sm font-medium rounded-lg pl-2 sm:pl-8.5 pr-2 sm:pr-3.5 py-1.5 focus:outline-hidden focus:border-teal-700 cursor-pointer transition truncate max-w-[100px] sm:max-w-none"
                 title={`${currentProfile.name} (${currentProfile.roleName}) - ${currentProfile.responsibilities}`}
               >
-                <option value="nurse">ĐD. Lê Thị Thu (Điều dưỡng lâm sàng)</option>
-                <option value="biomedical_engineer">KS. Đặng Văn Nam (Kỹ sư BME)</option>
-                <option value="pharmacist">DS. Nguyễn Bích Ngọc (Dược sĩ lâm sàng)</option>
-                <option value="doctor">BS. Trần Văn Hùng (Bác sĩ điều trị)</option>
-                <option value="director">TS. Nguyễn Văn An (Giám đốc bệnh viện)</option>
+                <option value="nurse">ĐD. Thu (Điều dưỡng)</option>
+                <option value="biomedical_engineer">KS. Nam (Kỹ sư BME)</option>
+                <option value="pharmacist">DS. Ngọc (Dược sĩ)</option>
+                <option value="doctor">BS. Hùng (Bác sĩ)</option>
+                <option value="director">GĐ. An (Giám đốc)</option>
               </select>
             </div>
           </div>
@@ -149,9 +156,10 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Cold Chain Alarm Badge */}
         {coldChainAlarm && (
-          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-rose-600 text-white text-xs font-bold">
+          <div className="flex items-center gap-1 h-8 px-2 rounded-md bg-rose-600 text-white text-xs font-bold animate-pulse shrink-0">
             <AlertTriangle className="w-3.5 h-3.5 text-white shrink-0" />
-            <span>Quá nhiệt 11.0°C</span>
+            <span className="hidden sm:inline">Quá nhiệt</span>
+            <span>11.0°C</span>
           </div>
         )}
 
@@ -160,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleCopilot}
             aria-label="Trợ lý AI lâm sàng"
-            className={`h-9 px-2.5 sm:px-3.5 rounded-md border text-sm font-medium flex items-center gap-1.5 transition cursor-pointer ${
+            className={`h-8.5 px-2.5 sm:px-3 rounded-md border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
               isCopilotOpen
                 ? 'bg-teal-800 text-white border-teal-800 font-semibold'
                 : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -168,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Bật/tắt trợ lý AI lâm sàng"
           >
             <Bot className={`w-4 h-4 shrink-0 ${isCopilotOpen ? 'text-white' : 'text-teal-700'}`} />
-            <span className="hidden sm:inline">Trợ lý AI</span>
+            <span className="hidden md:inline">Trợ lý AI</span>
           </button>
         )}
 

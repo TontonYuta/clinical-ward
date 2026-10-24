@@ -5,8 +5,9 @@
  */
 
 import React, { useState } from 'react';
-import { FileText, CheckCircle2, AlertTriangle, Clock, UserCheck } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
+import { CpoeOrderCard } from './CpoeOrderCard';
 
 interface CpoeOrderListProps {
   orders: PrescriptionOrder[];
@@ -24,12 +25,12 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xs">
       {/* Table Filters Header */}
-      <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-1.5">
+      <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-0.5">
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               filterType === 'all'
                 ? 'bg-teal-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
@@ -40,7 +41,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
           <button
             type="button"
             onClick={() => setFilterType('outpatient')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               filterType === 'outpatient'
                 ? 'bg-teal-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
@@ -51,7 +52,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
           <button
             type="button"
             onClick={() => setFilterType('inpatient_daily')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               filterType === 'inpatient_daily'
                 ? 'bg-teal-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
@@ -60,13 +61,26 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
             Đơn nội trú (hằng ngày)
           </button>
         </div>
-        <div className="text-xs text-slate-500 font-medium">
+        <div className="text-xs text-slate-500 font-medium hidden sm:block shrink-0">
           Thông tư 26/2025/TT-BYT
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="overflow-x-auto">
+      {/* Mobile Card List (md:hidden) */}
+      <div className="md:hidden divide-y divide-slate-100">
+        {filteredOrders.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 italic text-xs">
+            Chưa có đơn thuốc nào trong danh mục này.
+          </div>
+        ) : (
+          filteredOrders.map((order) => (
+            <CpoeOrderCard key={order.id} order={order} onSelectOrder={onSelectOrder} />
+          ))
+        )}
+      </div>
+
+      {/* Desktop Orders Table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs sm:text-sm border-collapse">
           <thead>
             <tr className="bg-slate-100/90 text-slate-700 border-b border-slate-200 font-semibold text-xs">

@@ -84,35 +84,35 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
         )}
       </div>
 
-      {/* Metric Cards Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center gap-3 shadow-2xs">
-          <div className="w-9 h-9 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
-            <Stethoscope className="w-4.5 h-4.5" />
+      {/* Metric Cards Summary - Ergonomic 3-col Grid */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="bg-white border border-slate-200 rounded-lg p-2 sm:p-3 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 shadow-2xs text-center sm:text-left">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
+            <Stethoscope className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
           </div>
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Tổng số đơn đã kê</div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">{orders.length} đơn</div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center gap-3 shadow-2xs">
-          <div className="w-9 h-9 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
-            <FileText className="w-4.5 h-4.5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Đơn thuốc ngoại trú (BHYT)</div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">{outpatientCount} đơn</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Tổng số đơn</div>
+            <div className="text-sm sm:text-lg font-bold text-slate-900 font-mono">{orders.length}</div>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center gap-3 shadow-2xs">
-          <div className="w-9 h-9 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4.5 h-4.5" />
+        <div className="bg-white border border-slate-200 rounded-lg p-2 sm:p-3 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 shadow-2xs text-center sm:text-left">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
+            <FileText className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
           </div>
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Đơn thuốc điều trị nội trú</div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">{inpatientCount} đơn</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Đơn ngoại trú</div>
+            <div className="text-sm sm:text-lg font-bold text-slate-900 font-mono">{outpatientCount}</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg p-2 sm:p-3 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 shadow-2xs text-center sm:text-left">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Đơn nội trú</div>
+            <div className="text-sm sm:text-lg font-bold text-slate-900 font-mono">{inpatientCount}</div>
           </div>
         </div>
       </div>
