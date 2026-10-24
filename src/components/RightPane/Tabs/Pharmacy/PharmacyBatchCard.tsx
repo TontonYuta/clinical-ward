@@ -12,12 +12,14 @@ interface PharmacyBatchCardProps {
   batch: InventoryBatch;
   onQuickDispatch: (batch: InventoryBatch) => void;
   onOpenRestock: () => void;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
 export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
   batch,
   onQuickDispatch,
   onOpenRestock,
+  onOpenSafetyGuide,
 }) => {
   const isUnderMin = batch.currentStock <= batch.minThreshold;
   const stockPercent = Math.min(100, Math.max(8, Math.round((batch.currentStock / batch.maxThreshold) * 100)));
@@ -46,8 +48,18 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
       </div>
 
       <div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <h3 className="font-bold text-base text-slate-900 leading-snug">{batch.itemName}</h3>
+          {onOpenSafetyGuide && (
+            <button
+              type="button"
+              onClick={() => onOpenSafetyGuide(batch.itemName)}
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer"
+              title="Xem Dược thư & Quy chuẩn 5 Đúng"
+            >
+              5 Đúng
+            </button>
+          )}
           {batch.isControlledSubstance && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-0.5">
               <ShieldAlert className="w-2.5 h-2.5" /> KSĐB

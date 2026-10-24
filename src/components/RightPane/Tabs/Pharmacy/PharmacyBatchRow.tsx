@@ -12,22 +12,34 @@ interface PharmacyBatchRowProps {
   batch: InventoryBatch;
   onQuickDispatch: (batch: InventoryBatch) => void;
   onOpenRestock: () => void;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
 export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
   batch,
   onQuickDispatch,
   onOpenRestock,
+  onOpenSafetyGuide,
 }) => {
   const isUnderMin = batch.currentStock <= batch.minThreshold;
 
   return (
     <tr className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-slate-800">
       <td className="py-3 px-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-bold text-slate-900 block text-sm leading-snug">
             {batch.itemName}
           </span>
+          {onOpenSafetyGuide && (
+            <button
+              type="button"
+              onClick={() => onOpenSafetyGuide(batch.itemName)}
+              className="text-[10.5px] font-bold px-1.5 py-0.2 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer"
+              title="Xem Dược thư & Quy chuẩn 5 Đúng"
+            >
+              5 Đúng
+            </button>
+          )}
           {batch.isControlledSubstance && (
             <span
               className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-200"

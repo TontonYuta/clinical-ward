@@ -50,7 +50,8 @@ export interface AgentActionCard {
     | 'legal_guide'
     | 'shift_handover_report'
     | 'ocr_invoice_confirm'
-    | 'biomedical_diagnostics';
+    | 'biomedical_diagnostics'
+    | 'medication_safety';
   title: string;
   summary: string;
   data: any;

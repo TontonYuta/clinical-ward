@@ -17,7 +17,8 @@ import {
   Wrench,
   CheckCircle2,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Stethoscope
 } from 'lucide-react';
 import { ChatMessage, DashboardTab } from '../../../types/clinical';
 import { formatInlineMarkdown } from '../ChatMarkdown';
@@ -65,6 +66,7 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
           {card.cardType === 'legal_guide' && <FileText className="w-4 h-4 text-purple-600" />}
           {card.cardType === 'ocr_invoice_confirm' && <FileSpreadsheet className="w-4 h-4 text-indigo-700" />}
           {card.cardType === 'biomedical_diagnostics' && <Wrench className="w-4 h-4 text-orange-600" />}
+          {card.cardType === 'medication_safety' && <Stethoscope className="w-4 h-4 text-teal-700" />}
           <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">
             {formatInlineMarkdown(card.title)}
           </span>
@@ -92,6 +94,19 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
         {card.cardType === 'legal_guide' && <LegalGuideCard data={card.data} onOpenLegalDocs={onOpenLegalDocs} />}
         {card.cardType === 'ocr_invoice_confirm' && <OcrInvoiceCard data={card.data} />}
         {card.cardType === 'biomedical_diagnostics' && <BiomedicalDiagnosticsCard data={card.data} />}
+        {card.cardType === 'medication_safety' && (
+          <div className="space-y-1.5 bg-white p-3 rounded-lg border border-slate-200">
+            <div className="font-bold text-slate-900 text-sm">{card.data.tallMan || card.data.medName}</div>
+            <div className="text-slate-600 text-xs">
+              <strong>Liều thông thường:</strong> {card.data.standardDosing}
+            </div>
+            {card.data.antidote && (
+              <div className="text-emerald-800 text-xs font-semibold bg-emerald-50 p-1.5 rounded border border-emerald-200">
+                🛡️ <strong>Thuốc giải độc:</strong> {card.data.antidote}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="px-3.5 py-2.5 bg-white border-t border-slate-200/90 flex items-center justify-between gap-2.5">

@@ -75,7 +75,14 @@ const testSuite: TestCase[] = [
 
   // 9. Điều hướng Tab & Fallback chung
   { query: 'tôi muốn xem tủ trực', expectedCard: 'shift_handover_report', category: 'Navigation' },
-  { query: 'xin chào trợ lý lâm sàng', expectedCard: 'NO_CARD', category: 'General Guidance' }
+  { query: 'xin chào trợ lý lâm sàng', expectedCard: 'NO_CARD', category: 'General Guidance' },
+
+  // 10. Tra cứu Quy chuẩn 5 Đúng & Dược Thư Lâm Sàng (QĐ 2147/BYT)
+  { query: 'cho tôi xem quy tắc 5 đúng morphin', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
+  { query: 'thông tin thuốc adrenalin cấp cứu', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
+  { query: 'thuốc giải độc fentanyl là gì', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
+  { query: 'phù hợp với ai dùng ceftriaxone', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
+  { query: 'liều tối đa diazepam trong 24h', expectedCard: 'medication_safety', category: 'Medication 5 Rights' }
 ];
 
 const mockState = {

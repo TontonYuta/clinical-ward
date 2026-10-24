@@ -11,9 +11,10 @@ import { PrescriptionOrder } from '../../../../types/cpoe';
 interface CpoeOrderCardProps {
   order: PrescriptionOrder;
   onSelectOrder?: (order: PrescriptionOrder) => void;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
-export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrder }) => {
+export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrder, onOpenSafetyGuide }) => {
   return (
     <div
       onClick={() => onSelectOrder?.(order)}
@@ -66,7 +67,19 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrd
       <div className="text-xs space-y-1 border-t border-slate-100 pt-1.5">
         {order.items.map((it) => (
           <div key={it.id} className="flex justify-between items-center text-slate-700">
-            <span className="font-medium">• {it.medicationName}</span>
+            <span className="font-medium flex items-center gap-1.5">
+              • {it.medicationName}
+              {onOpenSafetyGuide && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onOpenSafetyGuide(it.medicationName); }}
+                  className="text-teal-700 text-[10px] font-bold bg-teal-50 px-1 py-0.2 rounded border border-teal-200 cursor-pointer"
+                  title="Xem Dược thư & Quy chuẩn 5 Đúng"
+                >
+                  5 Đúng
+                </button>
+              )}
+            </span>
             <span className="font-mono text-slate-900 font-semibold">{it.quantity} {it.unit}</span>
           </div>
         ))}

@@ -12,9 +12,10 @@ import { CpoeOrderCard } from './CpoeOrderCard';
 interface CpoeOrderListProps {
   orders: PrescriptionOrder[];
   onSelectOrder?: (order: PrescriptionOrder) => void;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
-export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOrder }) => {
+export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOrder, onOpenSafetyGuide }) => {
   const [filterType, setFilterType] = useState<'all' | 'outpatient' | 'inpatient_daily'>('all');
 
   const filteredOrders = orders.filter((o) => {
@@ -74,7 +75,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <CpoeOrderCard key={order.id} order={order} onSelectOrder={onSelectOrder} />
+            <CpoeOrderCard key={order.id} order={order} onSelectOrder={onSelectOrder} onOpenSafetyGuide={onOpenSafetyGuide} />
           ))
         )}
       </div>
@@ -143,8 +144,18 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                   <td className="py-2.5 px-3 border-r border-slate-200">
                     <div className="space-y-0.5">
                       {order.items.map((it) => (
-                        <div key={it.id} className="text-xs text-slate-800">
-                          • <strong>{it.medicationName}</strong>: {it.quantity} {it.unit}
+                        <div key={it.id} className="text-xs text-slate-800 flex items-center justify-between gap-1">
+                          <span>• <strong>{it.medicationName}</strong>: {it.quantity} {it.unit}</span>
+                          {onOpenSafetyGuide && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); onOpenSafetyGuide(it.medicationName); }}
+                              className="text-teal-700 hover:text-teal-900 text-[10.5px] font-bold underline cursor-pointer shrink-0"
+                              title="Xem Dược thư & Quy chuẩn 5 Đúng"
+                            >
+                              5 Đúng
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>

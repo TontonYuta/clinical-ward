@@ -50,6 +50,7 @@ interface DashboardProps {
   onOpenIncidentModal?: () => void;
   onOpenAuditTrail?: () => void;
   onOpenPrintForm?: (formType: PrintableFormType, item?: any) => void;
+  onOpenMedicationSafety?: (medNameOrId?: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -81,6 +82,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenIncidentModal,
   onOpenAuditTrail,
   onOpenPrintForm,
+  onOpenMedicationSafety,
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
@@ -113,6 +115,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <CpoePrescriptionTab
                 doctorName={USER_PROFILES[currentUserRole]?.name}
                 currentUserRole={currentUserRole}
+                onOpenSafetyGuide={onOpenMedicationSafety}
               />
             )}
 
@@ -148,6 +151,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onRestockBatches={onRestockBatches}
                 onOpenPrintForm={onOpenPrintForm}
                 isAudioMuted={isAudioMuted}
+                onOpenSafetyGuide={onOpenMedicationSafety}
               />
             )}
 

@@ -17,11 +17,13 @@ import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
 interface CpoePrescriptionTabProps {
   doctorName?: string;
   currentUserRole?: UserRole;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
 export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
   doctorName = 'BS. Trần Văn Hùng',
-  currentUserRole = 'doctor'
+  currentUserRole = 'doctor',
+  onOpenSafetyGuide,
 }) => {
   const [orders, setOrders] = useState<PrescriptionOrder[]>(INITIAL_PRESCRIPTIONS);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,21 +69,32 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
         </div>
 
         {/* New Order Button or Read-Only Role Badge */}
-        {canPrescribe ? (
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs sm:text-sm transition shrink-0 cursor-pointer shadow-xs active:scale-98"
+            onClick={() => onOpenSafetyGuide?.('Morphin')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-teal-300 font-semibold text-xs transition cursor-pointer border border-slate-700 shadow-xs"
+            title="Tra cứu Cẩm nang Dược thư & Quy chuẩn 5 Đúng trong Dùng thuốc"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Kê đơn thuốc mới</span>
+            <Stethoscope className="w-3.5 h-3.5 text-teal-400" />
+            <span>Tra cứu 5 Đúng</span>
           </button>
-        ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700 shrink-0">
-            <ShieldAlert className="w-4 h-4 text-teal-400 shrink-0" />
-            <span>Danh sách đơn thuốc ({roleName})</span>
-          </div>
-        )}
+          {canPrescribe ? (
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs transition cursor-pointer shadow-xs active:scale-98"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Kê đơn thuốc mới</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
+              <ShieldAlert className="w-4 h-4 text-teal-400 shrink-0" />
+              <span>Đơn thuốc ({roleName})</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Metric Cards Summary - Ergonomic 3-col Grid */}
@@ -118,7 +131,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       </div>
 
       {/* Orders List Table */}
-      <CpoeOrderList orders={orders} />
+      <CpoeOrderList orders={orders} onOpenSafetyGuide={onOpenSafetyGuide} />
 
       {/* Prescription Creation Modal */}
       {canPrescribe && (
@@ -127,6 +140,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
           onClose={() => setIsModalOpen(false)}
           onSaveOrder={handleSaveOrder}
           doctorName={doctorName}
+          onOpenSafetyGuide={onOpenSafetyGuide}
         />
       )}
     </div>

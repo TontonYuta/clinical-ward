@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ClipboardList, Scale, BookOpen, Printer } from 'lucide-react';
+import { ClipboardList, Scale, BookOpen, Printer, Stethoscope } from 'lucide-react';
 
 interface SidebarLegalLinksProps {
   isCollapsed: boolean;
@@ -13,6 +13,7 @@ interface SidebarLegalLinksProps {
   onOpenLegalDocs: () => void;
   onOpenUserGuide: () => void;
   onOpenPrintableForms?: () => void;
+  onOpenMedicationSafety?: () => void;
 }
 
 export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
@@ -22,6 +23,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
   onOpenLegalDocs,
   onOpenUserGuide,
   onOpenPrintableForms,
+  onOpenMedicationSafety,
 }) => {
   const handleClick = (action: () => void) => {
     action();
@@ -78,6 +80,17 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
         >
           <Printer className="w-5 h-5 text-teal-700 shrink-0" />
           {!isCollapsed && <span className="flex-1 text-left truncate">Trung tâm biểu mẫu A4</span>}
+        </button>
+
+        <button
+          onClick={() => handleClick(() => onOpenMedicationSafety?.())}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+            isCollapsed ? 'justify-center px-0' : ''
+          }`}
+          title="Tra cứu Cẩm nang Dược thư Lâm sàng & Quy chuẩn 5 Đúng trong Dùng thuốc (QĐ 2147/BYT)"
+        >
+          <Stethoscope className="w-5 h-5 text-teal-700 shrink-0" />
+          {!isCollapsed && <span className="flex-1 text-left truncate">Dược thư &amp; 5 Đúng</span>}
         </button>
       </div>
     </div>

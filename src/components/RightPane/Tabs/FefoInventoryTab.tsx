@@ -25,6 +25,7 @@ interface FefoInventoryTabProps {
   onRestockBatches?: (batchIds: string[]) => void;
   onOpenPrintForm?: (formType: PrintableFormType) => void;
   isAudioMuted: boolean;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
 export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
@@ -33,6 +34,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   onRestockBatches,
   onOpenPrintForm,
   isAudioMuted,
+  onOpenSafetyGuide,
 }) => {
   const [warehouse, setWarehouse] = useState<WarehouseFilter>('all');
   const [commodity, setCommodity] = useState<CommodityFilter>('all');
@@ -123,6 +125,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
               batch={batch}
               onQuickDispatch={handleQuickDispatch}
               onOpenRestock={() => setIsRestockModalOpen(true)}
+              onOpenSafetyGuide={onOpenSafetyGuide}
             />
           ))
         )}
@@ -150,6 +153,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
                   batch={batch}
                   onQuickDispatch={handleQuickDispatch}
                   onOpenRestock={() => setIsRestockModalOpen(true)}
+                  onOpenSafetyGuide={onOpenSafetyGuide}
                 />
               ))}
             </tbody>

@@ -41,6 +41,7 @@ import { ClinicalAuthModal } from './components/Modals/ClinicalAuthModal';
 import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { UserGuideModal } from './components/Modals/UserGuideModal';
 import { PrintableFormModal, PrintableFormType } from './components/Modals/PrintableFormModal';
+import { MedicationSafetyModal } from './components/Modals/MedicationSafetyModal';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
@@ -73,6 +74,20 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [showTelegramToast, setShowTelegramToast] = useState<boolean>(false);
+  const [isMedicationSafetyOpen, setIsMedicationSafetyOpen] = useState<boolean>(false);
+  const [safetyModalMedName, setSafetyModalMedName] = useState<string | undefined>(undefined);
+  const [safetyModalMedId, setSafetyModalMedId] = useState<string | undefined>(undefined);
+
+  const handleOpenMedicationSafety = (medNameOrId?: string) => {
+    if (medNameOrId?.startsWith('med-')) {
+      setSafetyModalMedId(medNameOrId);
+      setSafetyModalMedName(undefined);
+    } else {
+      setSafetyModalMedName(medNameOrId);
+      setSafetyModalMedId(undefined);
+    }
+    setIsMedicationSafetyOpen(true);
+  };
 
   // Stop alarm on unmount
   useEffect(() => {
@@ -998,6 +1013,15 @@ Quy trình ứng phó SOP-GSP-09:
       );
     };
 
+    // Handler for Medication Safety Monograph
+    if (actionType === 'OPEN_MEDICATION_SAFETY') {
+      const medName = cardData?.medName || cardData?.itemName;
+      const medId = cardData?.medId;
+      handleOpenMedicationSafety(medId || medName);
+      markExecuted();
+      return;
+    }
+
     if (actionType === 'EXECUTE_BORROW') {
       const itemName = cardData.debt_record?.itemName || cardData.item_name || 'Morphin sulfat 10mg/1ml';
       const itemType = cardData.debt_record?.itemType || cardData.item_type || 'Thuốc gây nghiện';
@@ -1384,6 +1408,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION');
             setIsMobileSidebarOpen(false);
           }}
+          onOpenMedicationSafety={() => {
+            handleOpenMedicationSafety();
+            setIsMobileSidebarOpen(false);
+          }}
         />
       </div>
 
@@ -1406,6 +1434,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
           onOpenUserGuide={() => setIsUserGuideOpen(true)}
           onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
+          onOpenMedicationSafety={() => handleOpenMedicationSafety()}
         />
       </div>
 
@@ -1462,6 +1491,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
               onReleaseQuarantine={handleReleaseVaccineQuarantine}
               onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
               onOpenPrintForm={handleOpenPrintForm}
+              onOpenMedicationSafety={handleOpenMedicationSafety}
             />
           </section>
         </main>
@@ -1542,6 +1572,13 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           isOpen={isAuditTrailOpen}
           onClose={() => setIsAuditTrailOpen(false)}
           records={auditRecords}
+        />
+
+        <MedicationSafetyModal
+          isOpen={isMedicationSafetyOpen}
+          onClose={() => setIsMedicationSafetyOpen(false)}
+          initialMedicationId={safetyModalMedId}
+          initialMedicationName={safetyModalMedName}
         />
       </div>
 

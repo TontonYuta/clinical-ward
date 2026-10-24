@@ -18,18 +18,17 @@ interface ManualBorrowModalProps {
   onClose: () => void;
   onConfirmBorrow: (record: Omit<DebtRecord, 'id' | 'code' | 'borrowDate' | 'borrowTime' | 'status'>) => void;
   isAudioMuted: boolean;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
 const QUICK_EMERGENCY_CHIPS = [
-  { label: 'Adrenalin 1mg', id: 'med-em-01' },
-  { label: 'Morphin 10mg', id: 'med-ctrl-01' },
-  { label: 'Fentanyl 0.1mg', id: 'med-ctrl-02' },
-  { label: 'Noradrenalin 1mg', id: 'med-em-02' },
+  { label: 'Adrenalin 1mg', id: 'med-em-01' }, { label: 'Morphin 10mg', id: 'med-ctrl-01' },
+  { label: 'Fentanyl 0.1mg', id: 'med-ctrl-02' }, { label: 'Noradrenalin 1mg', id: 'med-em-02' },
   { label: 'Diazepam 10mg', id: 'med-em-07' },
 ];
 
 export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
-  isOpen, onClose, onConfirmBorrow, isAudioMuted,
+  isOpen, onClose, onConfirmBorrow, isAudioMuted, onOpenSafetyGuide,
 }) => {
   useModalDismiss(isOpen, onClose);
   const def = ALL_MASTER_MEDICATIONS[0];
@@ -47,12 +46,8 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
 
   const handleSelectMed = (med: MasterMedication) => {
     setItemName(med.brandName);
-    const typeMap: Record<string, DebtRecord['itemType']> = {
-      'Thuốc gây nghiện': 'Thuốc gây nghiện',
-      'Thuốc hướng thần': 'Thuốc hướng thần',
-      'Vật tư tiêu hao': 'Vật tư tiêu hao',
-    };
-    setItemType(typeMap[med.group] || 'Thuốc cấp cứu');
+    const isValid = ['Thuốc gây nghiện', 'Thuốc hướng thần', 'Vật tư tiêu hao'].includes(med.group);
+    setItemType(isValid ? (med.group as DebtRecord['itemType']) : 'Thuốc cấp cứu');
     setQuantity(`${med.defaultDoseQty} ${med.standardUnit}`);
     setValidationError(null);
   };
@@ -70,9 +65,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
       patientName: `${patientName} (${patientCode})`,
       borrowerName: `ĐD trực (Bác sĩ chỉ định: ${doctorName})`,
       note: `Cấp cứu: ${clinicalReason}`,
-      legalBasis: itemType === 'Thuốc gây nghiện'
-        ? 'Thông tư 18/2026/TT-BYT & VBHN 07/VBHN-BYT'
-        : 'Văn bản hợp nhất 07/VBHN-BYT & TT 23/2011',
+      legalBasis: itemType === 'Thuốc gây nghiện' ? 'Thông tư 18/2026/TT-BYT & VBHN 07/VBHN-BYT' : 'Văn bản hợp nhất 07/VBHN-BYT & TT 23/2011',
       ampouleReturned: itemType === 'Thuốc gây nghiện' ? false : undefined,
     });
     onClose();
@@ -107,7 +100,16 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
               <label className="font-bold text-slate-900">1. Tra cứu dược lâm sàng (tủ trực &amp; toàn viện) *:</label>
-              <span className="text-[10px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">QĐ 2147/BYT</span>
+              {onOpenSafetyGuide && (
+                <button
+                  type="button"
+                  onClick={() => onOpenSafetyGuide(itemName)}
+                  className="text-[10.5px] text-teal-800 font-bold bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-300 transition cursor-pointer"
+                  title="Tra cứu Cẩm nang 5 Đúng & Dược thư"
+                >
+                  Quy chuẩn 5 Đúng
+                </button>
+              )}
             </div>
             <MedicationSearchAutocomplete selectedMedicationName={itemName} onSelect={handleSelectMed} defaultOnlyCrashCart={true} />
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">

@@ -19,6 +19,7 @@ import {
   handleOcrIntent
 } from './intents/utilityIntent';
 import { matchBorrowIntent, handleBorrowIntent } from './intents/borrowIntent';
+import { matchMedicationSafetyIntent, handleMedicationSafetyIntent } from './intents/medicationSafetyIntent';
 
 export function processClinicalUserQuery(
   rawInput: string,
@@ -31,6 +32,11 @@ export function processClinicalUserQuery(
   // 1. Legal Protocols & Guides
   if (matchLegalIntent(lower)) {
     return handleLegalIntent(lower, nowStr);
+  }
+
+  // 1b. Medication Safety & Five Rights (QĐ 2147/BYT)
+  if (matchMedicationSafetyIntent(lower)) {
+    return handleMedicationSafetyIntent(text, lower, nowStr);
   }
 
   // 2. Tab Navigation

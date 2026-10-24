@@ -30,6 +30,7 @@ export interface SidebarProps {
   onOpenAuditTrail: () => void;
   onOpenUserGuide: () => void;
   onOpenPrintableForms?: () => void;
+  onOpenMedicationSafety?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -49,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAuditTrail,
   onOpenUserGuide,
   onOpenPrintableForms,
+  onOpenMedicationSafety,
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
@@ -86,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onOpenLegalDocs={onOpenLegalDocs}
           onOpenUserGuide={onOpenUserGuide}
           onOpenPrintableForms={onOpenPrintableForms}
+          onOpenMedicationSafety={onOpenMedicationSafety}
         />
       </div>
 
