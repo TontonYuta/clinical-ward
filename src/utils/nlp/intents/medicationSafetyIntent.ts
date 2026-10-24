@@ -80,7 +80,7 @@ export function handleMedicationSafetyIntent(
 
   const src = profile.officialSource;
 
-  const replyText = `### Dược Thư Lâm Sàng & Cảnh Báo An Toàn: **${profile.tallManLASA || matched.name}**
+  const replyText = `### Dược Thư & Thông Tin Thuốc: **${profile.tallManLASA || matched.name}**
 *(Theo QĐ 2147/QĐ-BYT, Dược điển Việt Nam V & Thông tư 51/2017/TT-BYT)*
 
 ${compBlock}
@@ -90,21 +90,21 @@ ${indicationsText}
 ${profile.pharmacologyMechanism ? `   *(Cơ chế: ${profile.pharmacologyMechanism})*\n` : ''}
 ${allergyWarningText}
 
-🛡️ **Quy Chuẩn 5 Đúng & Kiểm Soát Nguy Cơ Cao**:
-   • **Đúng Liều**: ${profile.standardDosing} (Liều trần 24h: **${profile.maxDailyDose}**)
-   • **Đúng Đường dùng**: ${profile.administrationRouteDetails}
+🛡️ **Liều Dùng & Hướng Dẫn Sử Dụng An Toàn**:
+   • **Liều chỉ định**: ${profile.standardDosing} (Liều trần 24h: **${profile.maxDailyDose}**)
+   • **Đường dùng**: ${profile.administrationRouteDetails}
    ${profile.routeWarning ? `• **Cảnh báo nguy kịch**: ${profile.routeWarning}` : ''}
-   • **Đúng Thời gian**: ${profile.timingAndFrequency}
+   • **Thời gian & Tần suất**: ${profile.timingAndFrequency}
 ${profile.antidote ? `\n🧪 **Thuốc giải độc đặc hiệu (Antidote)**: **${profile.antidote}**` : ''}
 ${profile.blackBoxWarning ? `\n⛔ **${profile.blackBoxWarning}**` : ''}
 ${src ? `\n📚 **Nguồn trích xuất chính thức**: ${src.documentName} (SĐK: ${src.registrationNumber || 'Cục QLD'}, ${src.approvalAuthority || 'Bộ Y Tế'})` : ''}
 
-👉 Bấm nút bên dưới để mở toàn bộ Hồ sơ Dược thư lâm sàng & bảng checklist đối soát điều dưỡng.`;
+👉 Bấm nút bên dưới để mở toàn bộ Hồ sơ Thông tin thuốc & Chuyên luận dược lâm sàng.`;
 
   const card: AgentActionCard = {
     cardType: 'medication_safety',
-    title: `Dược Thư & Thành Phần: ${matched.name}`,
-    summary: 'Thành phần công thức, Chỉ định ("Dùng để làm gì") & Cảnh báo dị ứng',
+    title: `Thông Tin Thuốc: ${matched.name}`,
+    summary: 'Chỉ định điều trị, thành phần công thức, liều dùng & cảnh báo dị ứng',
     data: {
       medName: matched.name,
       tallMan: profile.tallManLASA,
@@ -117,7 +117,7 @@ ${src ? `\n📚 **Nguồn trích xuất chính thức**: ${src.documentName} (S�
       standardDosing: profile.standardDosing,
       officialSource: src ? `${src.documentName} (SĐK: ${src.registrationNumber})` : undefined,
     },
-    primaryActionLabel: 'Mở Dược Thư & Thành Phần Chi Tiết',
+    primaryActionLabel: 'Xem Thông Tin Thuốc Chi Tiết',
     primaryActionType: 'OPEN_MEDICATION_SAFETY',
     status: 'pending',
   };

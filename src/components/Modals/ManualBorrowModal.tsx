@@ -105,9 +105,9 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
                   type="button"
                   onClick={() => onOpenSafetyGuide(itemName)}
                   className="text-[10.5px] text-teal-800 font-bold bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-300 transition cursor-pointer"
-                  title="Tra cứu Cẩm nang 5 Đúng & Dược thư"
+                  title="Tra cứu thông tin thuốc & Dược thư"
                 >
-                  Quy chuẩn 5 Đúng
+                  Thông tin thuốc
                 </button>
               )}
             </div>

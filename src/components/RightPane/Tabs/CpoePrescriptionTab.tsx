@@ -67,10 +67,10 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
             type="button"
             onClick={() => onOpenSafetyGuide?.('Morphin')}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition cursor-pointer border border-slate-200 shadow-2xs"
-            title="Tra cứu Dược thư & Quy chuẩn 5 Đúng"
+            title="Tra cứu Dược thư & Thông tin thuốc"
           >
             <Stethoscope className="w-3.5 h-3.5 text-teal-700" />
-            <span>Dược thư &amp; 5 Đúng</span>
+            <span>Thông tin thuốc</span>
           </button>
           {canPrescribe ? (
             <button

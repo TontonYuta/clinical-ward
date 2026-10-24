@@ -148,9 +148,9 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                               type="button"
                               onClick={(e) => { e.stopPropagation(); onOpenSafetyGuide(it.medicationName); }}
                               className="text-teal-700 hover:text-teal-900 text-[10.5px] font-bold underline cursor-pointer shrink-0"
-                              title="Xem Dược thư & Quy chuẩn 5 Đúng"
+                              title="Tra cứu thông tin thuốc & Dược thư"
                             >
-                              5 Đúng
+                              Thông tin thuốc
                             </button>
                           )}
                         </div>

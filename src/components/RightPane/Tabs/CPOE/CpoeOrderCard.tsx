@@ -73,10 +73,10 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrd
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onOpenSafetyGuide(it.medicationName); }}
-                  className="text-teal-700 text-[10px] font-bold bg-teal-50 px-1 py-0.2 rounded border border-teal-200 cursor-pointer"
-                  title="Xem Dược thư & Quy chuẩn 5 Đúng"
+                  className="text-teal-700 text-[10px] font-bold bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200 cursor-pointer"
+                  title="Tra cứu thông tin thuốc & Dược thư"
                 >
-                  5 Đúng
+                  Thông tin thuốc
                 </button>
               )}
             </span>

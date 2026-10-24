@@ -39,10 +39,10 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
             <button
               type="button"
               onClick={() => onOpenSafetyGuide(batch.itemName)}
-              className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 cursor-pointer"
-              title="Xem Chỉ định, Cảnh báo Dị ứng & Quy chuẩn 5 Đúng"
+              className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer"
+              title="Tra cứu thông tin thuốc, chỉ định & cảnh báo dị ứng"
             >
-              Dị ứng &amp; 5 Đúng
+              Thông tin thuốc
             </button>
           )}
           {batch.isControlledSubstance && (

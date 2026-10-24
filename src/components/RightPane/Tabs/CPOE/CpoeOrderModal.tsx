@@ -148,9 +148,9 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                   type="button"
                   onClick={() => onOpenSafetyGuide(medName)}
                   className="text-[11px] text-teal-800 font-bold bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-300 transition cursor-pointer"
-                  title="Tra cứu Cẩm nang 5 Đúng & Dược thư"
+                  title="Tra cứu thông tin thuốc & Dược thư"
                 >
-                  Tra cứu 5 Đúng
+                  Thông tin thuốc
                 </button>
               )}
             </div>

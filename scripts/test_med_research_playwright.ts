@@ -23,8 +23,8 @@ async function run() {
   await page.waitForTimeout(800);
 
   // 2. Mở Modal Dược Thư & Cảnh báo Dị ứng từ bảng thuốc
-  console.log('2. Bấm nút "Dị ứng & 5 Đúng" trên dòng thuốc...');
-  const allergyBtn = page.locator('button:has-text("Dị ứng & 5 Đúng"):visible').first();
+  console.log('2. Bấm nút "Thông tin thuốc" trên dòng thuốc...');
+  const allergyBtn = page.locator('button:has-text("Thông tin thuốc"):visible').first();
   await allergyBtn.click();
   await page.waitForTimeout(600);
 
@@ -34,9 +34,9 @@ async function run() {
   await page.screenshot({ path: path.join(OUT_DIR, '19_med_research_tab_allergy.png') });
   console.log('   Đã chụp ảnh: 19_med_research_tab_allergy.png');
 
-  // 3. Chuyển sang Tab 2: Quy chuẩn 5 Đúng
-  console.log('3. Chuyển sang Tab Quy chuẩn 5 Đúng (Đúng BN, thuốc, liều trần 24h, đường dùng, thời gian)...');
-  const fiveRightsTab = modal.locator('button:has-text("Quy chuẩn 5 Đúng")').first();
+  // 3. Chuyển sang Tab 2: Liều dùng & Cách dùng
+  console.log('3. Chuyển sang Tab Liều dùng & Cách dùng (đối tượng, liều trần 24h, đường dùng, thời gian)...');
+  const fiveRightsTab = modal.locator('button:has-text("Liều dùng & Cách dùng")').first();
   await fiveRightsTab.click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(OUT_DIR, '20_med_research_tab_five_rights.png') });

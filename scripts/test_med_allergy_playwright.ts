@@ -18,13 +18,13 @@ async function run() {
 
   // 1. Chuyển sang Phân hệ Kho Dược FEFO từ Sidebar hiển thị
   console.log('1. Chuyển sang Phân hệ Kho Dược FEFO...');
-  const fefoBtn = page.locator('button:has-text("Quản lý kho dược FEFO"):visible').first();
+  const fefoBtn = page.locator('button:has-text("Kho dược FEFO"):visible').first();
   await fefoBtn.click();
   await page.waitForTimeout(800);
 
   // 2. Bấm vào một loại thuốc trong kho để xem thông tin và cảnh báo dị ứng
   console.log('2. Bấm chọn thuốc trong bảng Kho Dược (Ceftriaxone / Morphin)...');
-  const allergyBtn = page.locator('button:has-text("Dị ứng & 5 Đúng"):visible').first();
+  const allergyBtn = page.locator('button:has-text("Thông tin thuốc"):visible').first();
   await allergyBtn.click();
   await page.waitForTimeout(600);
 
@@ -43,7 +43,7 @@ async function run() {
   await page.waitForTimeout(600);
 
   console.log('   Gửi câu hỏi: "Morphin dùng để làm gì"...');
-  const inputArea = page.locator('input[placeholder*="Yêu cầu"]:visible').first();
+  const inputArea = page.locator('input[placeholder*="yêu cầu" i]:visible, input[placeholder*="gõ tắt" i]:visible').first();
   await inputArea.fill('Morphin dùng để làm gì');
   await page.keyboard.press('Enter');
   await page.waitForTimeout(1500);
@@ -51,9 +51,9 @@ async function run() {
   await page.screenshot({ path: path.join(OUT_DIR, '17_chatbot_morphin_indication_allergy.png') });
   console.log('   Đã chụp ảnh: 17_chatbot_morphin_indication_allergy.png');
 
-  // 4. Bấm nút hành động trên thẻ "Mở Dược Thư & Cảnh Báo Dị Ứng Chi Tiết"
-  console.log('4. Bấm nút mở Dược thư & Cảnh báo Dị ứng từ thẻ Chatbot...');
-  const cardActionBtn = page.locator('button:has-text("Mở Dược Thư & Cảnh Báo Dị Ứng Chi Tiết"):visible').first();
+  // 4. Bấm nút hành động trên thẻ "Xem Thông Tin Thuốc Chi Tiết"
+  console.log('4. Bấm nút mở Thông Tin Thuốc từ thẻ Chatbot...');
+  const cardActionBtn = page.locator('button:has-text("Xem Thông Tin Thuốc Chi Tiết"):visible, button:has-text("Mở Dược Thư"):visible').first();
   if (await cardActionBtn.isVisible()) {
     await cardActionBtn.click();
     await page.waitForTimeout(600);

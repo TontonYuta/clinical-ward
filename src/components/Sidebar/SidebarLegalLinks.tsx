@@ -87,10 +87,10 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
-          title="Tra cứu Dược thư Lâm sàng & Quy chuẩn 5 Đúng"
+          title="Tra cứu Dược thư Lâm sàng & Thông tin thuốc"
         >
           <Stethoscope className="w-5 h-5 text-teal-700 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Dược thư &amp; 5 Đúng</span>}
+          {!isCollapsed && <span className="flex-1 text-left truncate">Thông tin thuốc</span>}
         </button>
       </div>
     </div>

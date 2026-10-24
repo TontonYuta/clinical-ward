@@ -72,8 +72,8 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
               <Stethoscope className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold">Thông tin an toàn thuốc</h2>
-              <span className="text-xs text-teal-200">Dược thư lâm sàng &amp; 5 Đúng</span>
+              <h2 className="text-sm sm:text-base font-bold">Thông tin thuốc</h2>
+              <span className="text-xs text-teal-200">Dược thư lâm sàng &amp; Chuyên luận</span>
             </div>
           </div>
           <button onClick={onClose} className="p-1 rounded-md text-teal-300 hover:text-white hover:bg-teal-800 transition cursor-pointer">
@@ -142,14 +142,14 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'allergy' ? 'bg-rose-700 text-white shadow-2xs' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
             >
               <AlertCircle className="w-3.5 h-3.5" />
-              <span>Thành phần &amp; Dị ứng</span>
+              <span>Chỉ định, Thành phần &amp; Dị ứng</span>
             </button>
             <button
               onClick={() => setActiveTab('five_rights')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'five_rights' ? 'bg-teal-800 text-white shadow-2xs' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Quy chuẩn 5 Đúng</span>
+              <span>Liều dùng &amp; Cách dùng</span>
             </button>
             <button
               onClick={() => setActiveTab('clinical_safety')}
