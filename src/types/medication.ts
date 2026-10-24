@@ -13,6 +13,25 @@ export type MedicationGroup =
   | 'Dịch truyền'
   | 'Vật tư tiêu hao';
 
+export interface MedicationComposition {
+  activeIngredients: {
+    innName: string; // Tên gốc quốc tế INN
+    chemicalSalt: string; // Dạng muối hóa học (VD: Morphin hydroclorid trihydrat)
+    strength: string; // Nồng độ / Hàm lượng (VD: 10mg/1ml)
+    molarQuantity?: string; // Nồng độ ion / mEq (VD: 13.4 mEq K+ / 10ml)
+  }[];
+  excipients: {
+    name: string; // Tên tá dược (Natri metabisulfit, propylene glycol...)
+    role: string; // Vai trò dược học (Chất chống oxy hóa, dung môi, chỉnh pH...)
+    safetyNotice?: string; // Cảnh báo nhạy cảm đặc biệt
+  }[];
+  dosageForm: string; // Dạng bào chế (Dung dịch tiêm, Bột đông khô pha tiêm...)
+  appearance: string; // Đặc tính cảm quan (Dung dịch trong suốt, Bột trắng...)
+  phAndOsmolarity?: string; // pH dung dịch & Áp lực thẩm thấu
+  packagingSpec: string; // Quy cách đóng gói (Ống thủy tinh 1ml, Hộp 10 ống)
+  pharmacopeiaStandard?: string; // Tiêu chuẩn Dược điển (DĐVN V, USP, EP)
+}
+
 export interface MedicationAllergyProfile {
   allergyClass: string; // Nhóm dị ứng lâm sàng (VD: Opioid, Beta-lactam Cephalosporin, Benzodiazepin...)
   activeAllergens: string[]; // Các hoạt chất có nguy cơ gây dị ứng
@@ -24,6 +43,8 @@ export interface MedicationAllergyProfile {
 }
 
 export interface FiveRightsSafetyInfo {
+  // Thành phần công thức thuốc đầy đủ (Dược điển & Dược thư)
+  composition?: MedicationComposition;
   // Chỉ định điều trị lâm sàng & Cơ chế ("Dùng để làm gì")
   indications?: string[]; // Mục đích & chỉ định điều trị chi tiết
   pharmacologyMechanism?: string; // Cơ chế tác dụng dược lý tóm tắt

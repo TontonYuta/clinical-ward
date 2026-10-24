@@ -9,6 +9,15 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Ceftriaxone 1g
   'med-ab-01': {
+    composition: {
+      activeIngredients: [{ innName: 'Ceftriaxone', chemicalSalt: 'Ceftriaxone natri 3.5 H2O', strength: '1 g (1000mg base)', molarQuantity: 'Chứa ~83 mg (3.6 mEq) Natri / 1g' }],
+      excipients: [{ name: 'Không chứa chất bảo quản', role: 'Bột đông khô tinh khiết 100%' }],
+      dosageForm: 'Bột đông khô pha dung dịch tiêm / truyền',
+      appearance: 'Bột kết tinh màu trắng hoặc trắng ngà ánh vàng',
+      phAndOsmolarity: 'pH sau khi hoàn nguyên: 6.0 - 8.0',
+      packagingSpec: 'Hộp 1 lọ bột vô khuẩn + 1 ống nước cất pha tiêm 5ml',
+      pharmacopeiaStandard: 'Dược điển Việt Nam V (DĐVN V) / USP',
+    },
     indications: [
       'Nhiễm khuẩn nặng đường hô hấp dưới: Viêm phổi thùy, viêm phổi bệnh viện vi khuẩn nhạy cảm.',
       'Viêm màng não mủ do vi khuẩn (Pneumococcus, Meningococcus, H. influenzae).',
@@ -77,6 +86,15 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
 
   // Vancomycin 1g
   'med-ab-02': {
+    composition: {
+      activeIngredients: [{ innName: 'Vancomycin', chemicalSalt: 'Vancomycin hydroclorid', strength: '1 g (1.000.000 UI)' }],
+      excipients: [{ name: 'Acid hydrocloric 10% / Natri hydroxyd', role: 'Chất điều chỉnh pH trước khi đông khô (pH 2.5 - 4.5)' }],
+      dosageForm: 'Bột đông khô pha dung dịch tiêm truyền tĩnh mạch',
+      appearance: 'Bột đông khô màu trắng hoặc trắng ngà vô khuẩn',
+      phAndOsmolarity: 'pH sau khi hoàn nguyên: 2.5 - 4.5',
+      packagingSpec: 'Hộp 1 lọ bột đông khô pha tiêm',
+      pharmacopeiaStandard: 'Dược điển Mỹ (USP) / EP',
+    },
     indications: [
       'Nhiễm khuẩn nặng do tụ cầu vàng kháng methicillin (MRSA): Viêm phổi, nhiễm khuẩn huyết, viêm nội tâm mạc.',
       'Viêm đại tràng giả mạc do Clostridioides difficile tái phát hoặc nặng (dùng đường UỐNG).',

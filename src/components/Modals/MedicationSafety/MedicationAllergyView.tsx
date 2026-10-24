@@ -1,11 +1,11 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * View Chi Tiết: Chỉ Định Điều Trị ("Dùng để làm gì") & Cảnh Báo Dị Ứng / Quá Mẫn (<=200 LOC)
+ * View Chi Tiết: Thành Phần Công Thức, Chỉ Định & Cảnh Báo Dị Ứng (<=200 LOC)
  */
 
 import React from 'react';
-import { ShieldAlert, AlertTriangle, Activity, Stethoscope, Sparkles } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Activity, Stethoscope, Sparkles, FlaskConical, Package } from 'lucide-react';
 import { FiveRightsSafetyInfo } from '../../../types/medication';
 
 interface MedicationAllergyViewProps {
@@ -14,45 +14,101 @@ interface MedicationAllergyViewProps {
 }
 
 export const MedicationAllergyView: React.FC<MedicationAllergyViewProps> = ({ profile, medName }) => {
+  const comp = profile.composition;
   const allergy = profile.allergyProfile;
-  const indications = profile.indications || [
-    'Điều trị các bệnh lý theo chỉ định chuyên khoa của bác sĩ điều trị.',
-    profile.targetPopulation,
-  ];
+  const indications = profile.indications || ['Điều trị các bệnh lý theo chỉ định chuyên khoa.', profile.targetPopulation];
 
   return (
-    <div className="space-y-4 text-xs">
-      {/* 1. Khối Chỉ định: Dùng để làm gì? */}
-      <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-lg">
-        <div className="flex items-center gap-2 mb-2">
-          <Stethoscope className="w-4 h-4 text-blue-700" />
-          <h4 className="font-bold text-blue-900 text-sm">Chỉ định Điều trị ("Dùng để làm gì?")</h4>
+    <div className="space-y-3.5 text-xs">
+      {/* 1. KHỐI THÀNH PHẦN THUỐC & DẠNG BÀO CHẾ (DĐVN V & DƯỢC THƯ) */}
+      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
+        <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-200">
+          <div className="flex items-center gap-2">
+            <FlaskConical className="w-4 h-4 text-teal-700" />
+            <h4 className="font-bold text-slate-900 text-sm">Thành Phần Công Thức &amp; Dạng Bào Chế</h4>
+          </div>
+          {comp?.pharmacopeiaStandard && (
+            <span className="text-[10.5px] font-mono font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-900 border border-teal-200">
+              {comp.pharmacopeiaStandard}
+            </span>
+          )}
         </div>
-        <ul className="space-y-1.5 text-slate-800 list-disc list-inside pl-1">
+
+        {/* Hoạt chất chính */}
+        <div className="space-y-1.5 mb-2.5">
+          <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+            Dược chất chính (Active Pharmaceutical Ingredient - API):
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {(comp?.activeIngredients || [{ innName: medName, chemicalSalt: medName, strength: 'Hàm lượng chuẩn' }]).map((act, i) => (
+              <div key={i} className="bg-white p-2 rounded border border-slate-200 shadow-2xs">
+                <div className="font-bold text-slate-900">{act.innName}</div>
+                <div className="text-[11px] text-slate-600">{act.chemicalSalt} • <strong className="text-teal-800">{act.strength}</strong></div>
+                {act.molarQuantity && <div className="text-[10px] text-purple-700 font-mono mt-0.5">{act.molarQuantity}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Danh mục tá dược */}
+        <div className="space-y-1.5 mb-2.5">
+          <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+            <Package className="w-3.5 h-3.5 text-slate-500" />
+            Thành phần tá dược (Excipients):
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {(comp?.excipients || (allergy?.excipientAllergens || []).map(e => ({ name: e, role: 'Tá dược', safetyNotice: undefined }))).map((exc: { name: string; role: string; safetyNotice?: string }, i) => (
+              <span key={i} className="px-2 py-1 rounded bg-white border border-slate-200 text-slate-800 text-[11px] shadow-2xs">
+                <strong>{exc.name}</strong> <span className="text-slate-500">({exc.role})</span>
+                {exc.safetyNotice && <span className="text-rose-600 font-semibold ml-1">⚠️ {exc.safetyNotice}</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Cảm quan, pH & Quy cách đóng gói */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-200/80 text-[11px]">
+          <div>
+            <span className="text-slate-500 block">Dạng bào chế:</span>
+            <strong className="text-slate-800">{comp?.dosageForm || 'Dung dịch tiêm / Bột pha tiêm'}</strong>
+          </div>
+          <div>
+            <span className="text-slate-500 block">pH &amp; Áp lực thẩm thấu:</span>
+            <strong className="text-slate-800">{comp?.phAndOsmolarity || 'Theo Dược điển'}</strong>
+          </div>
+          <div>
+            <span className="text-slate-500 block">Quy cách &amp; Cảm quan:</span>
+            <span className="text-slate-700 truncate block" title={comp?.packagingSpec}>{comp?.packagingSpec || 'Hộp tiêu chuẩn'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. CHỈ ĐỊNH ĐIỀU TRỊ ("DÙNG ĐỂ LÀM GÌ?") */}
+      <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-lg">
+        <div className="flex items-center gap-2 mb-1.5">
+          <Stethoscope className="w-4 h-4 text-blue-700" />
+          <h4 className="font-bold text-blue-900 text-sm">Chỉ Định Điều Trị ("Dùng để làm gì?")</h4>
+        </div>
+        <ul className="space-y-1 text-slate-800 list-disc list-inside pl-1 text-[11.5px]">
           {indications.map((ind, idx) => (
-            <li key={idx} className="leading-relaxed">
-              <span className="font-medium">{ind}</span>
-            </li>
+            <li key={idx}><span className="font-medium">{ind}</span></li>
           ))}
         </ul>
-
         {profile.pharmacologyMechanism && (
-          <div className="mt-3 pt-2.5 border-t border-blue-100 flex items-start gap-2 text-slate-700">
+          <div className="mt-2.5 pt-2 border-t border-blue-100 flex items-start gap-1.5 text-slate-700 text-[11.5px]">
             <Activity className="w-3.5 h-3.5 text-blue-600 mt-0.5 shrink-0" />
-            <p className="leading-snug">
-              <strong className="text-blue-900">Cơ chế dược lý: </strong>
-              {profile.pharmacologyMechanism}
-            </p>
+            <p className="leading-snug"><strong className="text-blue-900">Cơ chế dược lý: </strong>{profile.pharmacologyMechanism}</p>
           </div>
         )}
       </div>
 
-      {/* 2. Cảnh báo Dị ứng & Thành phần hoạt chất / tá dược */}
+      {/* 3. CẢNH BÁO DỊ ỨNG & DỊ ỨNG CHÉO (CROSS-REACTIVITY) */}
       <div className="p-3.5 bg-rose-50/80 border border-rose-200 rounded-lg">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-rose-700" />
-            <h4 className="font-bold text-rose-900 text-sm">Cảnh Báo Dị Ứng & Phản Vệ Thành Phần</h4>
+            <h4 className="font-bold text-rose-900 text-sm">Cảnh Báo Dị Ứng &amp; Nguy Cơ Dị Ứng Chéo</h4>
           </div>
           {allergy?.allergyClass && (
             <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300">
@@ -61,94 +117,28 @@ export const MedicationAllergyView: React.FC<MedicationAllergyViewProps> = ({ pr
           )}
         </div>
 
-        {/* Thành phần có nguy cơ dị ứng */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
-          <div className="bg-white/80 p-2.5 rounded border border-rose-200">
-            <p className="font-bold text-rose-950 mb-1 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-rose-600" />
-              Hoạt chất chính:
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {(profile.activeIngredients || [medName]).map((ing, i) => (
-                <span key={i} className="px-2 py-0.5 bg-rose-100/70 text-rose-900 font-mono text-[11px] rounded font-semibold">
-                  {ing}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white/80 p-2.5 rounded border border-amber-200">
-            <p className="font-bold text-amber-950 mb-1 flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-              Tá dược có thể gây quá mẫn:
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {(allergy?.excipientAllergens || ['Tá dược thông thường theo dược điển']).map((exc, i) => (
-                <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-900 text-[11px] rounded border border-amber-200">
-                  {exc}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Dị ứng chéo & Chống chỉ định tiền sử */}
         {allergy && (
-          <div className="space-y-2 pt-2 border-t border-rose-100">
+          <div className="space-y-2 text-[11.5px]">
             {allergy.crossReactivities && allergy.crossReactivities.length > 0 && (
               <div>
-                <p className="font-bold text-rose-900 mb-1">
-                  ⚠️ Nguy cơ dị ứng chéo (Cross-reactivity):
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {allergy.crossReactivities.map((cr, idx) => (
-                    <span key={idx} className="px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-semibold text-[11px] border border-rose-200">
-                      {cr}
-                    </span>
-                  ))}
-                </div>
+                <span className="font-bold text-rose-900">⚠️ Nguy cơ dị ứng chéo (Cross-reactivity): </span>
+                <span className="font-semibold text-rose-800">{allergy.crossReactivities.join(', ')}</span>
               </div>
             )}
-
             <div>
-              <p className="font-bold text-slate-900 mb-1">🚫 Chống chỉ định người có tiền sử dị ứng:</p>
-              <ul className="space-y-1 text-slate-800 list-disc list-inside">
-                {(allergy.contraindicatedAllergies || profile.contraindications).map((item, idx) => (
-                  <li key={idx} className="leading-snug font-medium text-rose-900">
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              <span className="font-bold text-slate-900">🚫 Chống chỉ định người có tiền sử: </span>
+              <span className="text-rose-900 font-medium">{(allergy.contraindicatedAllergies || profile.contraindications).join('; ')}</span>
+            </div>
+            <div className="p-2 bg-white rounded border border-rose-200 text-slate-800 flex items-start gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 mt-0.5 shrink-0" />
+              <div>
+                <strong>Xử trí phản vệ (TT 51/2017/TT-BYT): </strong>
+                {allergy.emergencyManagement || 'Ngừng thuốc ngay lập tức. Tiêm bắp Adrenalin 1mg/1ml.'}
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* 3. Dấu hiệu nhận biết & Xử trí phản vệ */}
-      {allergy && (
-        <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-1.5">
-            <AlertTriangle className="w-4 h-4 text-amber-700" />
-            <h5 className="font-bold text-amber-900 text-xs">Triệu Chứng Dị Ứng Lâm Sàng & Xử Trí Khẩn Cấp</h5>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11.5px]">
-            <div>
-              <p className="font-semibold text-slate-700 mb-1">Dấu hiệu nghi ngờ:</p>
-              <ul className="list-disc list-inside text-slate-800 space-y-0.5">
-                {(allergy.commonAllergySigns || ['Phát ban, ngứa, mày đay', 'Khó thở, phù mạch']).map((sign, i) => (
-                  <li key={i}>{sign}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-white/80 p-2 rounded border border-amber-300">
-              <p className="font-bold text-rose-900 mb-1">Nguyên tắc xử trí tức thì:</p>
-              <p className="text-slate-800 font-medium leading-relaxed">
-                {allergy.emergencyManagement || 'Ngừng thuốc ngay lập tức. Tiêm bắp Adrenalin nếu có phản vệ theo Thông tư 51/2017/TT-BYT.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

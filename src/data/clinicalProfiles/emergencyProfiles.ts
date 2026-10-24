@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Hồ Sơ Dược Thư Lâm Sàng & Dị Ứng: Cấp Cứu, Vận Mạch & Điện Giải Nguy Cơ Cao (<=200 LOC)
+ * Dược Thư Lâm Sàng & Thành Phần Thuốc: Cấp Cứu Phản Vệ & Vận Mạch Hồi Sức (<=200 LOC)
  */
 
 import { FiveRightsSafetyInfo } from '../../types/medication';
@@ -9,6 +9,20 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Adrenalin (Epinephrine) 1mg/1ml
   'med-em-01': {
+    composition: {
+      activeIngredients: [{ innName: 'Adrenalin (Epinephrine)', chemicalSalt: 'Epinephrin bitartrat', strength: '1 mg / 1 ml (tương đương 1:1000)' }],
+      excipients: [
+        { name: 'Natri metabisulfit', role: 'Chất chống oxy hóa', safetyNotice: 'Có thể gây dị ứng nhưng KHÔNG được trì hoãn tiêm cấp cứu sốc phản vệ' },
+        { name: 'Natri clorid', role: 'Chất làm đẳng trương hóa' },
+        { name: 'Acid hydrocloric 10%', role: 'Chất điều chỉnh pH (pH 2.2 - 3.5)' },
+        { name: 'Nước cất pha tiêm', role: 'Dung môi vừa đủ 1 ml' },
+      ],
+      dosageForm: 'Dung dịch tiêm bắp / tiêm truyền tĩnh mạch',
+      appearance: 'Dung dịch trong suốt, không màu (loại bỏ nếu dung dịch ngả hồng hoặc nâu)',
+      phAndOsmolarity: 'pH: 2.2 - 3.5',
+      packagingSpec: 'Hộp 10 ống thủy tinh màu nâu bảo quản tránh ánh sáng 1ml',
+      pharmacopeiaStandard: 'Dược điển Việt Nam V (DĐVN V) / USP',
+    },
     indications: [
       'Cấp cứu sốc phản vệ từ độ II trở lên (Thông tư 51/2017/TT-BYT) do mọi nguyên nhân (thuốc, thức ăn, côn trùng đốt).',
       'Cấp cứu ngừng tuần hoàn, hồi sinh tim phổi nâng cao (ACLS/PALS).',
@@ -61,10 +75,25 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
     ddiWarnings: ['Thuốc chẹn beta làm giảm đáp ứng Adrenalin (cần dùng Glucagon hỗ trợ)'],
     pregnancyLactation: 'Được phép dùng trong cấp cứu sốc phản vệ ở phụ nữ có thai (ưu tiên cứu mẹ).',
     storageAndHandling: 'Hộp chống sốc phản vệ và tủ trực cấp cứu. Bảo quản < 25°C, đổi mới nếu dịch đổi màu hồng/nâu.',
+    atcCode: 'C01CA24',
+    bhytCoverage: 'Thanh toán 100% BHYT cấp cứu sốc',
   },
 
   // Noradrenalin 4mg/2ml
   'med-em-02': {
+    composition: {
+      activeIngredients: [{ innName: 'Noradrenalin (Norepinephrine)', chemicalSalt: 'Norepinephrin bitartrat', strength: '4 mg / 2 ml (2 mg/ml)' }],
+      excipients: [
+        { name: 'Natri metabisulfit', role: 'Chất chống oxy hóa' },
+        { name: 'Natri clorid', role: 'Chất làm đẳng trương hóa' },
+        { name: 'Nước cất pha tiêm', role: 'Dung môi vừa đủ 2 ml' },
+      ],
+      dosageForm: 'Dung dịch đậm đặc pha tiêm truyền tĩnh mạch',
+      appearance: 'Dung dịch trong suốt, không màu',
+      phAndOsmolarity: 'pH: 3.0 - 4.5',
+      packagingSpec: 'Hộp 10 ống thủy tinh 2ml',
+      pharmacopeiaStandard: 'Dược điển Châu Âu (EP) / USP',
+    },
     indications: [
       'Sốc nhiễm khuẩn (theo hướng dẫn SSC - Surviving Sepsis Campaign) sau khi đã bù đủ dịch thể tích.',
       'Sốc tim và sốc mất trương lực mạch (sốc thần kinh) có tụt huyết áp nặng.',
@@ -115,61 +144,7 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
     ddiWarnings: ['IMAO và thuốc chống trầm cảm 3 vòng gây tăng co mạch kịch phát nguy hiểm'],
     pregnancyLactation: 'FDA: Nhóm C. Dùng khi lợi ích cứu mẹ vượt trội nguy cơ co mạch tử cung.',
     storageAndHandling: 'Bảo quản 15-30°C, tránh ánh sáng. Không dùng dung dịch đổi màu sẫm.',
-  },
-
-  // Kali clorid (KCl) 10% 10ml
-  'med-em-09': {
-    indications: [
-      'Điều trị hạ kali máu mức độ vừa đến nặng (< 3.0 mmol/L) hoặc có rối loạn nhịp tim trên điện tâm đồ.',
-      'Dự phòng hạ kali máu ở bệnh nhân nuôi dưỡng tĩnh mạch hoàn toàn (TPN) hoặc dùng lợi tiểu quai kéo dài.',
-      'Bù kali trong toan xeton đái tháo đường (DKA) sau khi đã dùng insulin.',
-    ],
-    pharmacologyMechanism: 'Cation nội bào chủ yếu của cơ thể, tham gia trực tiếp vào việc duy trì điện thế màng tế bào, dẫn truyền xung động thần kinh và co bóp cơ trơn, cơ vân, cơ tim.',
-    activeIngredients: ['Potassium chloride (KCl) 10% (1g / 10ml = 13.4 mEq K+)'],
-    allergyProfile: {
-      allergyClass: 'Muối khoáng điện giải thiết yếu',
-      activeAllergens: ['Kali clorid (chất điện giải tự nhiên, không gây dị ứng miễn dịch học)'],
-      excipientAllergens: ['Nước cất pha tiêm vô khuẩn'],
-      crossReactivities: ['Không có'],
-      contraindicatedAllergies: [
-        'Tăng kali máu (K+ > 5.0 mmol/L)',
-        'Suy thận vô niệu hoặc thiểu niệu nặng (chưa lọc máu)',
-        'Bệnh suy vỏ thượng thận (Addison) không điều trị',
-      ],
-      commonAllergySigns: [
-        'Kích ứng đau rát dữ dội dọc tĩnh mạch truyền (do độ thẩm thấu cao, không phải dị ứng)',
-        'Cảm giác tê bì đầu chi, yếu liệt cơ khi nồng độ kali máu tăng vọt',
-      ],
-      emergencyManagement: 'Nếu nhầm lẫn tiêm trực tiếp gây tăng kali cấp: Tiêm ngay Calci Clorid 10% 10ml IV chậm (ổn định tim) + Glucose 20% + Insulin.',
-    },
-    targetPopulation: 'Bệnh nhân hạ kali máu nặng hoặc nguy cơ loạn nhịp tim.',
-    contraindications: [
-      'Tăng kali máu (> 5.0 mmol/L), suy thận thiểu niệu/vô niệu chưa lọc máu, bệnh Addison',
-    ],
-    patientVerificationChecklist: [
-      'Xác nhận kết quả xét nghiệm kali máu trong vòng 2-4 giờ',
-      'Đo ECG kiểm tra sóng T dẹt, sóng U hoặc loạn nhịp',
-      'Kiểm tra lượng nước tiểu (> 0.5 ml/kg/h)',
-    ],
-    tallManLASA: 'Potassium Chloride (KCL) 10%',
-    highAlertRiskNote: 'THUỐC CẢNH BÁO CAO ĐỎ (ISMP) - TIÊM TRỰC TIẾP TĨNH MẠCH GÂY NGỪNG TIM TỬ VONG TỨC THÌ',
-    standardDosing: 'Pha 1-2 ống (10-20 mEq) trong 500ml NaCl 0.9% hoặc Ringer Lactat, truyền chậm 4-8 giờ.',
-    maxDailyDose: 'Không quá 200 mEq/24h (tối đa 2-3 mmol/kg/24h).',
-    renalAdjustment: 'Giảm 50% tốc độ truyền ở suy thận; theo dõi kali máu mỗi 2 giờ.',
-    hepaticAdjustment: 'Không cần chỉnh liều đặc biệt.',
-    administrationRouteDetails: 'BẮT BUỘC PHA LOÃNG TRUYỀN TĨNH MẠCH. Nồng độ tối đa ngoại vi: 40 mmol/L; qua CVC: 80 mmol/L.',
-    compatibleDiluents: ['NaCl 0.9%', 'Ringer Lactat (TRÁNH dùng Glucose ban đầu vì kích thích insulin làm hạ kali thêm)'],
-    infusionRateLimit: 'Tốc độ tối đa qua ngoại vi: KHÔNG QUÁ 10 - 20 mmol/giờ (1-1.5g KCl/giờ).',
-    routeWarning: 'TUYỆT ĐỐI CẤM TIÊM TĨNH MẠCH TRỰC TIẾP HOẶC TIÊM BẮP DƯỚI MỌI HÌNH THỨC.',
-    timingAndFrequency: 'Truyền chậm trong 4 - 8 giờ. Xét nghiệm lại kali sau truyền 1-2 giờ.',
-    mealRelation: 'Uống (nếu dạng uống): uống cùng bữa ăn với nhiều nước.',
-    stabilityAfterPrep: 'Lắc đều chai dịch truyền sau khi bơm KCl vào để tránh đọng nồng độ cao ở đáy chai.',
-    clinicalMonitoring: 'Monitor điện tâm đồ liên tục (sóng T nhọn, khoảng PR giãn), xét nghiệm điện giải máu.',
-    adverseReactions: ['Loạn nhịp thất ngừng tim', 'Viêm đau kích ứng tĩnh mạch', 'Tăng kali máu kịch phát'],
-    antidote: 'Cấp cứu tăng kali máu: Calci clorid 10% 10ml IV (ổn định cơ tim) + Glucose 20% 200ml + 10 UI Insulin thường.',
-    blackBoxWarning: 'CẢNH BÁO TỬ VONG: Độc chất gây ngừng tim nếu tiêm nhanh. Ống tiêm dán nhãn cảnh báo đỏ riêng biệt.',
-    ddiWarnings: ['Thuốc lợi tiểu giữ kali (Spironolactone)', 'Thuốc ức chế men chuyển ACEi'],
-    pregnancyLactation: 'FDA: Nhóm C. Bù kali an toàn khi có chỉ định sinh lý.',
-    storageAndHandling: 'Hộp cảnh báo cao màu đỏ "CHÚ Ý: PHA LOÃNG TRƯỚC KHI DÙNG".',
+    atcCode: 'C01CA03',
+    bhytCoverage: 'Thanh toán 100% BHYT khoa hồi sức tích cực',
   },
 };

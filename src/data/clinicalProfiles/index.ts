@@ -6,13 +6,17 @@
 
 import { FiveRightsSafetyInfo, MasterMedication } from '../../types/medication';
 import { CONTROLLED_CLINICAL_PROFILES } from './controlledProfiles';
+import { SEDATIVE_CLINICAL_PROFILES } from './sedativeProfiles';
 import { EMERGENCY_CLINICAL_PROFILES } from './emergencyProfiles';
+import { ELECTROLYTE_CLINICAL_PROFILES } from './electrolyteProfiles';
 import { ANTIBIOTIC_CLINICAL_PROFILES } from './antibioticProfiles';
 import { GENERAL_CLINICAL_PROFILES } from './generalProfiles';
 
 export const ALL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   ...CONTROLLED_CLINICAL_PROFILES,
+  ...SEDATIVE_CLINICAL_PROFILES,
   ...EMERGENCY_CLINICAL_PROFILES,
+  ...ELECTROLYTE_CLINICAL_PROFILES,
   ...ANTIBIOTIC_CLINICAL_PROFILES,
   ...GENERAL_CLINICAL_PROFILES,
 };
@@ -58,6 +62,14 @@ export function getMedicationClinicalProfile(
   const isHighAlert = medData?.isHighAlert || false;
 
   return {
+    composition: {
+      activeIngredients: [{ innName: active, chemicalSalt: active, strength: medData?.concentration || 'Theo nhãn thuốc' }],
+      excipients: [{ name: 'Tá dược tiêu chuẩn', role: 'Định hình, ổn định và điều hòa độ tan theo DĐVN' }],
+      dosageForm: medData?.dosageForm || 'Dung dịch tiêm / Bột pha tiêm',
+      appearance: 'Đạt tiêu chuẩn cảm quan quy định trong Dược điển',
+      packagingSpec: `Quy cách: ${medData?.standardUnit || 'Đơn vị tiêu chuẩn'}`,
+      pharmacopeiaStandard: 'Dược điển Việt Nam V (DĐVN V)',
+    },
     indications: [
       `Điều trị và kiểm soát các bệnh lý lâm sàng theo phác đồ chỉ định bác sĩ CPOE đối với ${name}.`,
       'Hỗ trợ cải thiện triệu chứng và ngăn ngừa diễn tiến nặng của bệnh nền.',

@@ -105,6 +105,13 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
               )}
             </div>
 
+            {card.data.activeIngredients && (
+              <div className="bg-slate-50 p-2 rounded border border-slate-200 text-slate-800 leading-snug">
+                <strong className="text-slate-900 block font-semibold mb-0.5">🧪 Thành phần dược chất (API):</strong>
+                <span className="font-mono text-[11px] text-teal-900">{card.data.activeIngredients}</span>
+              </div>
+            )}
+
             {card.data.indications && card.data.indications.length > 0 && (
               <div className="bg-blue-50/80 p-2 rounded border border-blue-200 text-slate-800 leading-snug">
                 <strong className="text-blue-900 block font-semibold mb-0.5">🎯 Chỉ định ("Dùng để làm gì?"):</strong>

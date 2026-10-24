@@ -9,6 +9,20 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const GENERAL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Paracetamol (Acetaminophen) 1g truyền tĩnh mạch
   'med-gen-01': {
+    composition: {
+      activeIngredients: [{ innName: 'Paracetamol', chemicalSalt: 'Paracetamol (Acetaminophen)', strength: '1000 mg / 100 ml (10 mg/ml)' }],
+      excipients: [
+        { name: 'Mannitol', role: 'Chất điều chỉnh áp lực thẩm thấu' },
+        { name: 'Acid citric monohydrat / Dinatri phosphat', role: 'Hệ đệm ổn định pH (pH 5.5 - 6.5)' },
+        { name: 'Cystein hydroclorid monohydrat', role: 'Chất chống oxy hóa' },
+        { name: 'Nước cất pha tiêm', role: 'Dung môi vừa đủ 100 ml' },
+      ],
+      dosageForm: 'Dung dịch tiêm truyền tĩnh mạch',
+      appearance: 'Dung dịch trong suốt, không màu hoặc ánh vàng rất nhạt',
+      phAndOsmolarity: 'pH: 5.5 - 6.5 | Áp lực thẩm thấu ~290 mOsm/kg',
+      packagingSpec: 'Chai thủy tinh hoặc chai nhựa Polypropylen vô khuẩn 100ml',
+      pharmacopeiaStandard: 'Dược điển Việt Nam V (DĐVN V) / EP',
+    },
     indications: [
       'Hạ sốt nhanh trong các trường hợp sốt cao (> 38.5°C) hoặc người bệnh không uống được.',
       'Giảm đau mức độ nhẹ đến vừa: Đau đầu, đau cơ xương khớp, đau sau phẫu thuật (bước 1 bậc thang WHO).',
@@ -65,6 +79,20 @@ export const GENERAL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
 
   // Lipid 20% (Lipid Emulsion 20% 100ml / 250ml)
   'med-gen-02': {
+    composition: {
+      activeIngredients: [{ innName: 'Nhũ dịch Lipid 20%', chemicalSalt: 'Dầu đậu nành tinh khiết phân đoạn', strength: '20 g lipid / 100 ml (20%)' }],
+      excipients: [
+        { name: 'Phospholipid từ lòng đỏ trứng tinh chế', role: 'Chất nhũ hóa tự nhiên 1.2%' },
+        { name: 'Glycerol', role: 'Chất làm đẳng trương 2.5%' },
+        { name: 'Natri oleat / Natri hydroxyd', role: 'Chất điều chỉnh pH (pH 6.5 - 8.5)' },
+        { name: 'Nước cất pha tiêm', role: 'Dung môi vừa đủ 100 ml' },
+      ],
+      dosageForm: 'Nhũ dịch dầu trong nước (O/W) tiêm truyền tĩnh mạch',
+      appearance: 'Nhũ dịch trắng đục đồng nhất như sữa, không tách lớp mỡ',
+      phAndOsmolarity: 'pH: 6.5 - 8.5 | Áp lực thẩm thấu ~350 mOsm/kg',
+      packagingSpec: 'Chai thủy tinh trung tính 100ml / 250ml',
+      pharmacopeiaStandard: 'Dược điển Mỹ (USP) / EP',
+    },
     indications: [
       'Giải độc khẩn cấp ngộ độc toàn thân thuốc gây tê cục bộ (LAST - Local Anesthetic Systemic Toxicity) do Bupivacain, Lidocain, Ropivacain.',
       'Giải độc quá liều một số thuốc tan trong lipid khác (thuốc chẹn beta, thuốc chống trầm cảm 3 vòng) khi hồi sinh tim phổi thất bại.',
