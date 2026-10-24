@@ -1,0 +1,130 @@
+import json
+import uuid
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import get_db
+from app.models.cpoe import CpoePrescription
+from app.schemas.cpoe import CpoeOrderCreate, CpoeOrderResponse, CpoeItemSchema
+from app.services.audit_service import record_audit_event
+
+router = APIRouter(prefix="/cpoe", tags=["Chỉ Định & Kê Đơn CPOE (TT 26/2025/TT-BYT)"])
+
+@router.get("", response_model=list[CpoeOrderResponse])
+async def get_cpoe_orders(
+    prescription_type: str | None = Query(None, description="outpatient hoặc inpatient_daily"),
+    search: str | None = Query(None, description="Tìm tên bệnh nhân hoặc mã đơn"),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(CpoePrescription).order_by(CpoePrescription.created_at.desc())
+    res = await db.execute(stmt)
+    records = res.scalars().all()
+
+    orders: list[CpoeOrderResponse] = []
+    for r in records:
+        if prescription_type and r.prescription_type != prescription_type:
+            continue
+        if search:
+            q = search.lower()
+            if q not in r.patient_name.lower() and q not in r.id.lower() and q not in r.diagnosis_icd10.lower():
+                continue
+
+        try:
+            items_raw = json.loads(r.items_json)
+            items = [CpoeItemSchema(**it) for it in items_raw]
+        except Exception:
+            items = []
+
+        orders.append(
+            CpoeOrderResponse(
+                id=r.id,
+                prescriptionType=r.prescription_type,
+                patientId=r.patient_id,
+                patientName=r.patient_name,
+                patientCccd=r.patient_cccd,
+                diagnosisIcd10=r.diagnosis_icd10,
+                diagnosisText=r.diagnosis_text,
+                isChronicDisease=r.is_chronic_disease,
+                daysPrescribed=r.days_prescribed,
+                doctorName=r.doctor_name,
+                doctorCertificate=r.doctor_certificate,
+                prescribedAt=r.prescribed_at,
+                digitalSignature=r.digital_signature,
+                status=r.status,
+                items=items,
+                createdAt=r.created_at
+            )
+        )
+    return orders
+
+@router.post("", response_model=CpoeOrderResponse, status_code=status.HTTP_201_CREATED)
+async def create_cpoe_order(
+    payload: CpoeOrderCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    order_id = payload.id or f"RX-2026-{uuid.uuid4().hex[:6].upper()}"
+    signature = payload.digitalSignature or f"SHA256:{uuid.uuid4().hex[:12]} (Đã ký số TT 26)"
+
+    items_dict = [it.model_dump() for it in payload.items]
+    items_json = json.dumps(items_dict, ensure_ascii=False)
+
+    prescription = CpoePrescription(
+        id=order_id,
+        prescription_type=payload.prescriptionType,
+        patient_id=payload.patientId,
+        patient_name=payload.patientName,
+        patient_cccd=payload.patientCccd,
+        diagnosis_icd10=payload.diagnosisIcd10,
+        diagnosis_text=payload.diagnosisText,
+        is_chronic_disease=payload.isChronicDisease,
+        days_prescribed=payload.daysPrescribed,
+        doctor_name=payload.doctorName,
+        doctor_certificate=payload.doctorCertificate,
+        prescribed_at=payload.prescribedAt or now_str,
+        digital_signature=signature,
+        status="signed",
+        items_json=items_json
+    )
+    db.add(prescription)
+    await db.commit()
+    await db.refresh(prescription)
+
+    # Ghi nhận vào sổ kiểm toán lâm sàng bất biến
+    med_summary = ", ".join([f"{it.medicationName} ({it.quantity} {it.unit})" for it in payload.items])
+    await record_audit_event(
+        db=db,
+        action_type="CPOE_PRESCRIPTION_SIGNED",
+        action_title=f"Ký y lệnh đơn thuốc điện tử {order_id} ({payload.prescriptionType})",
+        target_item=f"{payload.patientName} ({payload.diagnosisIcd10}) - {med_summary}",
+        legal_basis="Thông tư 26/2025/TT-BYT & Nghị định 130/2018/NĐ-CP",
+        signer_name=payload.doctorName,
+        signer_certificate=payload.doctorCertificate,
+        auth_method="DIGITAL_CERT_BYT",
+        payload_data={
+            "order_id": order_id,
+            "patient_cccd": payload.patientCccd,
+            "icd10": payload.diagnosisIcd10,
+            "items_count": len(payload.items)
+        }
+    )
+
+    return CpoeOrderResponse(
+        id=prescription.id,
+        prescriptionType=prescription.prescription_type,
+        patientId=prescription.patient_id,
+        patientName=prescription.patient_name,
+        patientCccd=prescription.patient_cccd,
+        diagnosisIcd10=prescription.diagnosis_icd10,
+        diagnosisText=prescription.diagnosis_text,
+        isChronicDisease=prescription.is_chronic_disease,
+        daysPrescribed=prescription.days_prescribed,
+        doctorName=prescription.doctor_name,
+        doctorCertificate=prescription.doctor_certificate,
+        prescribedAt=prescription.prescribed_at,
+        digitalSignature=prescription.digital_signature,
+        status=prescription.status,
+        items=payload.items,
+        createdAt=prescription.created_at
+    )

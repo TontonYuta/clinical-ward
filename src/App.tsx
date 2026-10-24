@@ -43,6 +43,7 @@ import { UserGuideModal } from './components/Modals/UserGuideModal';
 import { PrintableFormModal, PrintableFormType } from './components/Modals/PrintableFormModal';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
+import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
 import { clinicalAudio } from './utils/audio';
 
 export default function App() {
@@ -77,6 +78,28 @@ export default function App() {
     return () => {
       clinicalAudio.stopAlarm();
     };
+  }, []);
+
+  // Synchronize live state from SQLite WAL backend
+  useEffect(() => {
+    let isMounted = true;
+    Promise.allSettled([
+      debtApi.fetchDebts(),
+      equipmentApi.fetchEquipmentTickets(),
+      inventoryApi.fetchInventoryBatches(),
+    ]).then(([resDebts, resTickets, resBatches]) => {
+      if (!isMounted) return;
+      if (resDebts.status === 'fulfilled' && resDebts.value.length > 0) {
+        setDebts(resDebts.value);
+      }
+      if (resTickets.status === 'fulfilled' && resTickets.value.length > 0) {
+        setTickets(resTickets.value);
+      }
+      if (resBatches.status === 'fulfilled' && resBatches.value.length > 0) {
+        setBatches(resBatches.value);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
   }, []);
 
   // Handler: Switch user role (RBAC)
@@ -382,6 +405,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         };
 
         setDebts(prev => [newDebtRecord, ...prev]);
+
+        debtApi.borrowItem({
+          itemName: newRecordData.itemName,
+          itemType: newRecordData.itemType,
+          quantity: newRecordData.quantity,
+          patientName: newRecordData.patientName,
+          patientRoom: newRecordData.patientRoom,
+          borrowerName: `${signer.name} (${signer.roleName})`,
+          clinicalReason: newRecordData.note,
+        }).catch((err) => console.warn('Could not persist debt to backend:', err));
 
         appendAuditRecord(
           'BORROW_EMERGENCY',
@@ -819,6 +852,7 @@ Quy trình ứng phó SOP-GSP-09:
               : d
           )
         );
+        debtApi.returnAmpoule(id).catch((err) => console.warn('Could not persist ampoule return:', err));
         appendAuditRecord(
           'RETURN_AMPOULE',
           'Thu hồi vỏ ống thuốc gây nghiện',

@@ -4,10 +4,11 @@
  * Phân Hệ Bác Sĩ CPOE: Đơn Thuốc Điện Tử & Chỉ Định Y Lệnh (<=200 LOC)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Stethoscope, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { PrescriptionOrder } from '../../../types/cpoe';
 import { INITIAL_PRESCRIPTIONS } from '../../../data/mockCpoeData';
+import { cpoeApi } from '../../../services/api/cpoeApi';
 import { CpoeOrderList } from './CPOE/CpoeOrderList';
 import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
 
@@ -21,8 +22,19 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
   const [orders, setOrders] = useState<PrescriptionOrder[]>(INITIAL_PRESCRIPTIONS);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  useEffect(() => {
+    let isMounted = true;
+    cpoeApi.fetchCpoeOrders()
+      .then((live) => {
+        if (isMounted && live && live.length > 0) setOrders(live);
+      })
+      .catch((err) => console.warn('CPOE API offline:', err));
+    return () => { isMounted = false; };
+  }, []);
+
   const handleSaveOrder = (newOrder: PrescriptionOrder) => {
     setOrders((prev) => [newOrder, ...prev]);
+    cpoeApi.createCpoeOrder(newOrder).catch((err) => console.warn('Could not persist CPOE order:', err));
   };
 
   const outpatientCount = orders.filter((o) => o.prescriptionType === 'outpatient').length;

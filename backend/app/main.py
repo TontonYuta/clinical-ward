@@ -13,7 +13,8 @@ from app.routers import (
     coldchain,
     assets,
     audit,
-    copilot
+    copilot,
+    cpoe
 )
 
 @asynccontextmanager
@@ -56,6 +57,7 @@ app.include_router(coldchain.router, prefix=settings.API_V1_STR)
 app.include_router(assets.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
 app.include_router(copilot.router, prefix=settings.API_V1_STR)
+app.include_router(cpoe.router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Health Check"])
 async def root():
