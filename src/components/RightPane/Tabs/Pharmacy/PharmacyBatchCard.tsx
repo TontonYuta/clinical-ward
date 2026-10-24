@@ -23,7 +23,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
   const stockPercent = Math.min(100, Math.max(8, Math.round((batch.currentStock / batch.maxThreshold) * 100)));
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-3 hover:border-slate-300 transition">
+    <div className="bg-white rounded-lg border border-slate-200 p-3.5 space-y-3 hover:border-slate-300 transition shadow-2xs">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/60">
@@ -62,7 +62,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
         </div>
       </div>
 
-      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/70">
+      <div className="bg-slate-50 rounded-md p-3 border border-slate-200/70">
         <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
           <span className="text-slate-600 font-medium">Tồn kho hiện tại:</span>
           <div className="flex items-baseline gap-1">
@@ -92,7 +92,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
         {isUnderMin && (
           <button
             onClick={onOpenRestock}
-            className="flex-1 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
+            className="flex-1 py-1.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
           >
             <PackagePlus className="w-4 h-4 text-amber-700" />
             <span>Lập dự trù bù</span>
@@ -100,7 +100,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
         )}
         <button
           onClick={() => onQuickDispatch(batch)}
-          className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98 ${
+          className={`flex-1 py-1.5 rounded-md text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98 ${
             batch.isNearExpiry
               ? 'bg-rose-600 hover:bg-rose-700 text-white'
               : 'bg-slate-900 hover:bg-slate-800 text-white'

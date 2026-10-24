@@ -79,7 +79,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer relative ${
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition cursor-pointer relative ${
               isActive ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -102,7 +102,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {onToggleCopilot && (
         <button
           onClick={onToggleCopilot}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer relative ${
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition cursor-pointer relative ${
             isCopilotOpen ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
           }`}
         >

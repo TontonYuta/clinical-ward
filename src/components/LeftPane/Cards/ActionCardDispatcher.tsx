@@ -52,7 +52,7 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
   const isExecuted = card.status === 'executed';
 
   return (
-    <div className="mt-2.5 rounded-xl border border-slate-200/90 bg-slate-50/90 overflow-hidden shadow-xs">
+    <div className="mt-2.5 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden shadow-2xs">
       <div className="px-3.5 py-2.5 bg-slate-100/90 border-b border-slate-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {card.cardType === 'shift_handover_report' && <ClipboardList className="w-4 h-4 text-blue-700" />}

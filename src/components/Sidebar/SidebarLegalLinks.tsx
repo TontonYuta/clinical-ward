@@ -38,7 +38,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
       <div className="space-y-1">
         <button
           onClick={() => handleClick(onOpenAuditTrail)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
           title="Nhật Ký Kiểm Toán Lâm Sàng (NĐ 130)"
@@ -49,7 +49,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
 
         <button
           onClick={() => handleClick(onOpenLegalDocs)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
           title="Căn Cứ Pháp Lý & Quy Định Bộ Y Tế (Docs)"
@@ -60,7 +60,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
 
         <button
           onClick={() => handleClick(onOpenUserGuide)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
           title="Tài Liệu Hướng Dẫn Sử Dụng Chi Tiết (HDSD)"
@@ -71,7 +71,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
 
         <button
           onClick={() => handleClick(() => onOpenPrintableForms?.())}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
             isCollapsed ? 'justify-center px-0' : ''
           }`}
           title="Xuất &amp; In Biểu Mẫu Hành Chính Y Tế (TT 20, TT 22, NĐ 151, NĐ 98)"

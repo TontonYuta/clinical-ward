@@ -26,7 +26,7 @@ export const EquipmentTicketCard: React.FC<EquipmentTicketCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-xl border p-3 hover:border-slate-300 transition shadow-2xs space-y-2.5 ${
+      className={`bg-white rounded-lg border p-3 hover:border-slate-300 transition shadow-2xs space-y-2.5 ${
         isUrgent && !isResolved ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200/80'
       }`}
     >

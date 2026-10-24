@@ -39,7 +39,7 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
   onOpenBorrowModal,
 }) => {
   return (
-    <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-lg border border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
       {/* Search & Status Filters */}
       <div className="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
         <div className="relative w-full sm:w-64 shrink-0">

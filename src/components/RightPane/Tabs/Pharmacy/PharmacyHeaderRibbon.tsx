@@ -43,11 +43,11 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
   onOpenRestock,
 }) => {
   return (
-    <div className="bg-white p-3 rounded-xl border border-slate-200 shrink-0 space-y-2.5">
+    <div className="bg-white p-3 rounded-lg border border-slate-200 shrink-0 space-y-2.5 shadow-2xs">
       {/* Hàng 1: Phân tách Kho Nội Trú / Kho Ngoại Trú / Toàn bộ & Bóc tách Thuốc vs Vật tư */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
         {/* Phân hệ Kho Dược */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md">
           <button
             onClick={() => setWarehouse('all')}
             className={`px-3 py-1.5 rounded-md text-xs font-bold transition cursor-pointer ${
@@ -59,7 +59,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           <button
             onClick={() => setWarehouse('inpatient')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition cursor-pointer ${
-              warehouse === 'inpatient' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              warehouse === 'inpatient' ? 'bg-teal-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
             title="Kho Dược Nội Trú & Tủ Trực Cấp Cứu (VBHN 07 & TT 18/2026)"
           >
@@ -69,7 +69,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           <button
             onClick={() => setWarehouse('outpatient')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition cursor-pointer ${
-              warehouse === 'outpatient' ? 'bg-indigo-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              warehouse === 'outpatient' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
             title="Kho Dược Ngoại Trú BHYT & Kê Đơn Điện Tử (TT 26/2025/TT-BYT)"
           >

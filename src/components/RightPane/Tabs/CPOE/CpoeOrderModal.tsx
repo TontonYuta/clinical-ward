@@ -102,13 +102,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col">
-        <div className="h-14 px-5 bg-teal-900 text-white flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col">
+        <div className="h-14 px-5 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Stethoscope className="w-5 h-5 text-teal-300" />
+            <Stethoscope className="w-5 h-5 text-teal-400" />
             <h3 className="font-bold text-sm sm:text-base">Kê Đơn Thuốc Điện Tử (TT 26/2025/TT-BYT)</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 cursor-pointer">
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/10 text-slate-300 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>

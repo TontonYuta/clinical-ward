@@ -155,11 +155,11 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[92vh]">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-200 max-w-xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[92vh]">
         {/* Header */}
         <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-600/30 border border-teal-400/40 flex items-center justify-center text-teal-300">
+            <div className="w-8 h-8 rounded-md bg-teal-600/30 border border-teal-400/40 flex items-center justify-center text-teal-300">
               <Lock className="w-4 h-4" />
             </div>
             <div>

@@ -122,16 +122,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
 
               <div
-                className={`max-w-[90%] rounded-xl p-3.5 text-sm leading-relaxed shadow-2xs ${
+                className={`max-w-[90%] rounded-lg p-3 text-sm leading-relaxed shadow-2xs ${
                   isSystem
                     ? 'bg-slate-900 text-slate-100 border border-teal-500/30'
                     : isAgent
-                    ? 'bg-white border border-slate-200 text-slate-850'
+                    ? 'bg-white border border-slate-200 text-slate-800'
                     : 'bg-slate-900 text-white'
                 }`}
               >
                 {msg.attachments && msg.attachments.length > 0 && (
-                  <div className="mb-2.5 p-2 rounded-lg bg-black/10 text-xs flex items-center gap-2 font-medium">
+                  <div className="mb-2 p-2 rounded-md bg-black/10 text-xs flex items-center gap-2 font-medium">
                     <Paperclip className="w-4 h-4 shrink-0 text-teal-400" />
                     <span className="truncate">{msg.attachments[0].title}</span>
                   </div>

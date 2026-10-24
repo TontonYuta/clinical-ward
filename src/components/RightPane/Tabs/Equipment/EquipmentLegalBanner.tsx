@@ -9,15 +9,15 @@ import { Wrench, ShieldAlert } from 'lucide-react';
 
 export const EquipmentLegalBanner: React.FC = () => {
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 flex items-start justify-between gap-3 shrink-0">
+    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-800 flex items-start justify-between gap-3 shrink-0 shadow-2xs">
       <div className="flex items-start gap-2.5">
-        <Wrench className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
+        <Wrench className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" />
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-950">
+            <span className="font-bold text-slate-900">
               Phân hệ Kỹ thuật Y sinh (BME) &amp; Quản lý Thiết bị Y tế
             </span>
-            <span className="bg-teal-100 text-teal-800 text-[10px] font-bold px-1.5 py-0.2 rounded border border-teal-300">
+            <span className="bg-slate-200/90 text-slate-800 text-[10px] font-bold px-1.5 py-0.2 rounded border border-slate-300">
               NĐ 04/2025/NĐ-CP &amp; NĐ 98/2021
             </span>
           </div>
@@ -26,7 +26,7 @@ export const EquipmentLegalBanner: React.FC = () => {
           </p>
         </div>
       </div>
-      <div className="hidden sm:flex items-center gap-1.5 text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shrink-0 text-[11px] font-bold">
+      <div className="hidden sm:flex items-center gap-1.5 text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-md shrink-0 text-[11px] font-semibold">
         <ShieldAlert className="w-3.5 h-3.5" />
         <span>Kiểm định Loại C/D bắt buộc</span>
       </div>

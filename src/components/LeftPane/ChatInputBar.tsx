@@ -112,7 +112,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleInputKeyDown}
             placeholder="Yêu cầu hoặc gõ tắt (THA, NMCT, PUV)..."
-            className="w-full pl-3.5 pr-18 sm:pr-22 h-10.5 sm:h-11 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
+            className="w-full pl-3.5 pr-18 sm:pr-22 h-10.5 sm:h-11 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
             disabled={isProcessing}
           />
           <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
@@ -120,7 +120,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
               type="button"
               onClick={() => setIsVoiceOpen(true)}
               title="Giọng nói lâm sàng"
-              className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              className="p-1 sm:p-1.5 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
             >
               <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
@@ -128,7 +128,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
               type="button"
               onClick={() => setIsImageOpen(true)}
               title="Đính kèm ảnh hiện trường sự cố"
-              className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              className="p-1 sm:p-1.5 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
             >
               <ImageIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
@@ -138,7 +138,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         <button
           type="submit"
           disabled={!inputText.trim() || isProcessing}
-          className="h-10.5 w-10.5 sm:h-11 sm:w-11 rounded-xl bg-teal-800 text-white hover:bg-teal-900 disabled:opacity-40 transition shrink-0 flex items-center justify-center shadow-2xs cursor-pointer active:scale-98"
+          className="h-10.5 w-10.5 sm:h-11 sm:w-11 rounded-lg bg-teal-800 text-white hover:bg-teal-900 disabled:opacity-40 transition shrink-0 flex items-center justify-center shadow-2xs cursor-pointer active:scale-98"
           title="Gửi lệnh"
         >
           <Send className="w-4 h-4 sm:w-4.5 sm:h-4.5" />

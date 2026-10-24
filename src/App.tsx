@@ -1484,7 +1484,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
       {isCopilotOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-6 z-50 sm:w-[420px] sm:max-w-[calc(100vw-32px)] sm:h-[620px] sm:max-h-[calc(100vh-100px)] h-full w-full flex flex-col bg-white sm:rounded-2xl rounded-none shadow-2xl border sm:border-slate-200/90 border-transparent overflow-hidden ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 print:hidden">
+        <div className="fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-6 z-50 sm:w-[420px] sm:max-w-[calc(100vw-32px)] sm:h-[620px] sm:max-h-[calc(100vh-100px)] h-full w-full flex flex-col bg-white sm:rounded-lg rounded-none shadow-xl border sm:border-slate-300 border-transparent overflow-hidden ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 print:hidden">
           <ChatWindow
             messages={chatMessages}
             suggestionChips={ROLE_SUGGESTION_CHIPS[currentUserRole] || QUICK_SUGGESTION_CHIPS}

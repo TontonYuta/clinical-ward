@@ -60,11 +60,11 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
-      <div className="bg-white sm:rounded-2xl rounded-none shadow-2xl border sm:border-slate-200 border-none w-full h-full sm:h-[90vh] sm:max-h-[90vh] sm:max-w-5xl flex flex-col overflow-hidden">
+      <div className="bg-white sm:rounded-lg rounded-none shadow-xl border sm:border-slate-200 border-none w-full h-full sm:h-[90vh] sm:max-h-[90vh] sm:max-w-5xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="h-14 sm:h-16 px-4 sm:px-6 bg-slate-900 text-white flex items-center justify-between shrink-0 shadow-xs">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30 shrink-0">
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div className="min-w-0">

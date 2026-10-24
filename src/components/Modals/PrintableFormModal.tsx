@@ -215,7 +215,7 @@ export const PrintableFormModal: React.FC<PrintableFormModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full max-w-6xl h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 print:h-auto print:max-w-none print:w-full print:border-none print:shadow-none print:overflow-visible print:rounded-none"
+        className="bg-white w-full max-w-6xl h-[95vh] rounded-lg shadow-xl flex flex-col overflow-hidden border border-slate-200 print:h-auto print:max-w-none print:w-full print:border-none print:shadow-none print:overflow-visible print:rounded-none"
       >
         
         {/* Top Control Bar */}

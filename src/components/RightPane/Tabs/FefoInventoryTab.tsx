@@ -113,7 +113,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       {/* Mobile View */}
       <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
         {filteredBatches.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
+          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-sm shadow-2xs">
             Không tìm thấy mặt hàng nào phù hợp với bộ lọc hiện tại.
           </div>
         ) : (
@@ -129,7 +129,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col shadow-xs">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
         <div className="overflow-auto flex-1 pb-4">
           <table className="w-full text-left text-sm border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">

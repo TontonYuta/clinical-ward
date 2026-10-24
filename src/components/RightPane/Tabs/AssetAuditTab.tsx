@@ -1,24 +1,17 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * Phân hệ Kiểm Kê Tài Sản Máy Móc Thiết Bị NĐ 151/2017 & NĐ 114/2024 (<=200 LOC)
  */
 
 import React, { useState } from 'react';
-import {
-  QrCode,
-  Search,
-  AlertTriangle,
-  FileCheck2,
-  Trash2,
-  ArrowRightLeft,
-  Building2,
-  CheckCircle2,
-  Lock,
-  Printer
-} from 'lucide-react';
 import { AssetAuditRecord, UserRole } from '../../../types/clinical';
 import { clinicalAudio } from '../../../utils/audio';
 import { PrintableFormType } from '../../Modals/PrintableFormModal';
+import { AssetAuditHeaderRibbon } from './AssetAudit/AssetAuditHeaderRibbon';
+import { AssetAuditLegalBanner } from './AssetAudit/AssetAuditLegalBanner';
+import { AssetAuditCard } from './AssetAudit/AssetAuditCard';
+import { AssetAuditRow } from './AssetAudit/AssetAuditRow';
 
 interface AssetAuditTabProps {
   assets: AssetAuditRecord[];
@@ -37,26 +30,27 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
   onSimulateQrScan,
   onOpenPrintForm,
   isAudioMuted,
-  currentUserRole = 'biomedical_engineer'
+  currentUserRole = 'biomedical_engineer',
 }) => {
   const [filterMode, setFilterMode] = useState<'all' | 'misallocated' | 'liquidation'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const misallocatedAssets = assets.filter(a => a.isMisallocated);
-  const liquidationAssets = assets.filter(a => a.pendingLiquidation);
-  const matchedAssets = assets.filter(a => !a.isMisallocated && a.condition === 'operational');
+  const misallocatedAssets = assets.filter((a) => a.isMisallocated);
+  const liquidationAssets = assets.filter((a) => a.pendingLiquidation);
 
-  const filteredAssets = assets.filter(item => {
+  const filteredAssets = assets.filter((item) => {
     let matchesMode = true;
     if (filterMode === 'misallocated') matchesMode = item.isMisallocated;
     if (filterMode === 'liquidation') matchesMode = item.pendingLiquidation;
 
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      item.deviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.serialNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.registeredDepartment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.actualDepartment.toLowerCase().includes(searchQuery.toLowerCase());
+      !searchQuery.trim() ||
+      item.deviceName.toLowerCase().includes(q) ||
+      item.code.toLowerCase().includes(q) ||
+      item.serialNumber.toLowerCase().includes(q) ||
+      item.registeredDepartment.toLowerCase().includes(q) ||
+      item.actualDepartment.toLowerCase().includes(q);
     return matchesMode && matchesSearch;
   });
 
@@ -77,201 +71,47 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
 
   return (
     <div className="h-full flex flex-col overflow-hidden space-y-2.5 w-full">
-      {/* 1. Unified Minimalist Command Ribbon */}
-      <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Left: Search Input & Status Filter Pills */}
-        <div className="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
-          <div className="relative w-full sm:w-64 shrink-0">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm mã tài sản, tên máy, khoa..."
-              className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400 transition"
-            />
-          </div>
+      {/* 1. Command Ribbon */}
+      <AssetAuditHeaderRibbon
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        filterMode={filterMode}
+        setFilterMode={setFilterMode}
+        totalCount={assets.length}
+        misallocatedCount={misallocatedAssets.length}
+        liquidationCount={liquidationAssets.length}
+        onOpenPrintForm={onOpenPrintForm}
+        onScanClick={handleScanClick}
+      />
 
-          <div className="flex items-center gap-1 text-sm bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
-            <button
-              onClick={() => setFilterMode('all')}
-              className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
-                filterMode === 'all' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
-              }`}
-            >
-              Tất cả ({assets.length})
-            </button>
-            <button
-              onClick={() => setFilterMode('misallocated')}
-              className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
-                filterMode === 'misallocated' ? 'bg-white text-amber-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
-              }`}
-            >
-              Lệch khoa ({misallocatedAssets.length})
-            </button>
-            <button
-              onClick={() => setFilterMode('liquidation')}
-              className={`px-3 py-1.5 rounded-md text-sm transition cursor-pointer shrink-0 ${
-                filterMode === 'liquidation' ? 'bg-white text-rose-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
-              }`}
-            >
-              Kiến nghị thanh lý ({liquidationAssets.length})
-            </button>
-          </div>
-        </div>
+      {/* 2. Legal Framework Banner */}
+      <AssetAuditLegalBanner />
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 shrink-0 justify-end">
-          <button
-            onClick={() => onOpenPrintForm?.('TSC_ANNUAL_AUDIT')}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-medium transition cursor-pointer"
-            title="In Biên bản kiểm kê định kỳ Mẫu 05-TSC"
-          >
-            <Printer className="w-4 h-4 text-slate-600" />
-            <span className="hidden sm:inline">Mẫu 05</span>
-          </button>
-
-          <button
-            onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER')}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-medium transition cursor-pointer"
-            title="In Biên bản bàn giao, điều chuyển tài sản Mẫu 01/TSC"
-          >
-            <Printer className="w-4 h-4 text-slate-600" />
-            <span className="hidden sm:inline">Mẫu 01</span>
-          </button>
-
-          <button
-            onClick={handleScanClick}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition shrink-0 cursor-pointer active:scale-98"
-            title="Mô phỏng máy đọc mã vạch QR kiểm đếm máy thở tại buồng bệnh"
-          >
-            <QrCode className="w-4 h-4 text-teal-400" />
-            <span>Quét QR đối soát</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2A. Mobile Card-Based List (md:hidden) - Modern, touch-friendly, no horizontal cut-off */}
+      {/* 3A. Mobile Card-Based List */}
       <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
         {filteredAssets.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
+          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-sm shadow-2xs">
             Không tìm thấy tài sản thiết bị nào phù hợp với bộ lọc.
           </div>
         ) : (
-          filteredAssets.map((asset) => {
-            return (
-              <div
-                key={asset.id}
-                className="bg-white rounded-xl border border-slate-200/90 p-3.5 shadow-xs space-y-3 hover:border-slate-300 transition"
-              >
-                {/* Card Top: Code + Risk Class */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/70">
-                      {asset.code}
-                    </span>
-                    <span className="text-xs text-slate-500 font-mono">
-                      SN: {asset.serialNumber}
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border ${
-                        asset.riskClass === 'D'
-                          ? 'bg-rose-50 text-rose-700 border-rose-200'
-                          : asset.riskClass === 'C'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : 'bg-teal-50 text-teal-700 border-teal-200'
-                      }`}
-                    >
-                      Loại {asset.riskClass}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Device Name & Model */}
-                <div>
-                  <h3 className="font-bold text-base text-slate-900 leading-snug">
-                    {asset.deviceName}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                    Model: <span className="font-medium text-slate-700">{asset.model}</span>
-                  </p>
-                </div>
-
-                {/* Audit Location Status */}
-                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/60 space-y-2">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="text-slate-500 font-medium">Khoa sổ sách:</span>
-                    <span className="font-semibold text-slate-800">{asset.registeredDepartment}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="text-slate-500 font-medium">Vị trí thực tế:</span>
-                    {asset.isMisallocated ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-100/80 px-2.5 py-1 rounded-md border border-amber-300">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        Lệch: {asset.actualDepartment}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        Trùng khớp ({asset.actualDepartment})
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200/60 text-slate-500">
-                    <span>Hao mòn: <strong className="text-slate-800 font-mono text-xs sm:text-sm">{asset.depreciationRatePercent}%</strong> ({asset.operatingYears} năm)</span>
-                    {asset.pendingLiquidation ? (
-                      <span className="text-rose-600 font-bold">Chờ thanh lý</span>
-                    ) : (
-                      <span className="text-emerald-700 font-medium">Hoạt động tốt</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Mobile Actions */}
-                <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                  <button
-                    onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
-                    className="flex-1 h-9 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4 text-teal-700" />
-                    <span>In Mẫu 01</span>
-                  </button>
-                  {asset.isMisallocated ? (
-                    <button
-                      onClick={() => handleTransfer(asset.id, asset.actualDepartment)}
-                      className="flex-2 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
-                    >
-                      <ArrowRightLeft className="w-4 h-4" />
-                      <span>Xác nhận điều chuyển</span>
-                    </button>
-                  ) : !asset.pendingLiquidation && asset.operatingYears >= 8 ? (
-                    <button
-                      onClick={() => handleLiquidation(asset.id)}
-                      className="flex-2 h-9 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
-                    >
-                      <Trash2 className="w-4 h-4 text-rose-600" />
-                      <span>Đề xuất thanh lý</span>
-                    </button>
-                  ) : (
-                    <div className="flex-2 h-9 flex items-center justify-center text-xs sm:text-sm font-medium text-emerald-800 bg-emerald-50 rounded-lg border border-emerald-200">
-                      Đã đối soát QR
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })
+          filteredAssets.map((asset) => (
+            <AssetAuditCard
+              key={asset.id}
+              asset={asset}
+              onOpenPrintForm={onOpenPrintForm}
+              onTransfer={handleTransfer}
+              onLiquidation={handleLiquidation}
+            />
+          ))
         )}
       </div>
 
-      {/* 2B. Desktop Table (hidden md:flex) - Sticky Thead, Isolated Scroll Body */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-300 overflow-hidden flex-col shadow-xs">
+      {/* 3B. Desktop Table */}
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
         <div className="flex-1 min-h-0 overflow-auto pb-24">
           <table className="w-full text-left text-sm min-w-[720px] border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700">
-              <tr className="font-bold text-xs uppercase tracking-wider">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
+              <tr className="font-semibold text-xs uppercase tracking-wider">
                 <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mã tài sản</th>
                 <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị &amp; Cấp rủi ro</th>
                 <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
@@ -280,99 +120,16 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
               </tr>
             </thead>
             <tbody>
-              {filteredAssets.map((asset) => {
-                return (
-                  <tr key={asset.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-teal-50/40 transition-colors border-b border-slate-200/80">
-                    <td className="py-3 px-4 font-mono text-slate-800 whitespace-nowrap border-r border-slate-200/70">
-                      <span className="font-bold text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-300/70 block w-fit">
-                        {asset.code}
-                      </span>
-                      <span className="text-xs text-slate-600 font-medium block mt-1">SN: {asset.serialNumber}</span>
-                    </td>
-                    <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
-                      <span className="font-bold text-[15px] text-slate-950 block leading-snug">{asset.deviceName}</span>
-                      <span className="text-xs text-slate-600 font-medium block mt-0.5">
-                        Model: <span className="text-slate-800 font-semibold">{asset.model}</span> · <span className="font-bold text-slate-800">Loại {asset.riskClass}</span>
-                      </span>
-                    </td>
-                    <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-slate-700 flex items-center gap-1.5 font-medium">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                          Sổ sách: <strong className="text-slate-900">{asset.registeredDepartment}</strong>
-                        </span>
-                        {asset.isMisallocated ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 w-fit">
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                            Lệch: {asset.actualDepartment}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-800 font-semibold">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Khớp thực tế: {asset.actualDepartment}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-sm text-slate-950 font-extrabold">{asset.depreciationRatePercent}%</span>
-                          <span className="text-xs text-slate-600 font-medium">({asset.operatingYears} năm)</span>
-                        </div>
-                        {asset.pendingLiquidation ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-700 border border-rose-300 w-fit">
-                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                            Chờ thanh lý
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-600 font-medium">Đang hoạt động tốt</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-2 justify-end">
-                        <button
-                          onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
-                          className="w-8.5 h-8.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600 hover:text-teal-800 transition cursor-pointer flex items-center justify-center"
-                          title="In Biên bản bàn giao tài sản cho thiết bị này (Mẫu 01/TSC-BBGN)"
-                        >
-                          <Printer className="w-4 h-4" />
-                        </button>
-                        {asset.isMisallocated ? (
-                          <button
-                            onClick={() => handleTransfer(asset.id, asset.actualDepartment)}
-                            className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 whitespace-nowrap"
-                            title="Xác nhận cập nhật vị trí mới trên sổ sách kế toán theo NĐ 151"
-                          >
-                            <ArrowRightLeft className="w-3.5 h-3.5" />
-                            <span>Điều chuyển</span>
-                          </button>
-                        ) : !asset.pendingLiquidation && asset.operatingYears >= 8 && (
-                          <button
-                            onClick={() => handleLiquidation(asset.id)}
-                            className={`inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 whitespace-nowrap ${
-                              currentUserRole === 'director'
-                                ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
-                                : 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-800 border border-slate-300 hover:border-rose-300'
-                            }`}
-                            title={currentUserRole === 'director'
-                              ? "Lập tờ trình hội đồng thanh lý tài sản nhà nước (Thẩm quyền Giám Đốc NĐ 151/2017)"
-                              : "Thẩm quyền ký duyệt thanh lý thuộc Ban Giám Đốc theo NĐ 151/2017. Bấm để mở hộp thoại xác thực/chuyển vai trò ký."}
-                          >
-                            {currentUserRole === 'director' ? (
-                              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                            ) : (
-                              <Lock className="w-3.5 h-3.5 text-slate-500" />
-                            )}
-                            <span>{currentUserRole === 'director' ? 'Thanh lý' : 'Đề xuất thanh lý'}</span>
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filteredAssets.map((asset) => (
+                <AssetAuditRow
+                  key={asset.id}
+                  asset={asset}
+                  currentUserRole={currentUserRole}
+                  onOpenPrintForm={onOpenPrintForm}
+                  onTransfer={handleTransfer}
+                  onLiquidation={handleLiquidation}
+                />
+              ))}
             </tbody>
           </table>
         </div>
@@ -380,4 +137,3 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
     </div>
   );
 };
-

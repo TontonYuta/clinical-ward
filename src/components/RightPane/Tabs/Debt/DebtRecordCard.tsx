@@ -26,7 +26,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
   const isNarcotic = item.itemType === 'Thuốc gây nghiện';
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-3 hover:border-slate-300 transition">
+    <div className="bg-white rounded-lg border border-slate-200 p-3.5 space-y-3 hover:border-slate-300 transition shadow-2xs">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/60">
@@ -70,7 +70,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
           </div>
         </div>
         <div className="text-right shrink-0">
-          <span className="font-mono text-lg font-black text-teal-900 bg-teal-50 border border-teal-200/90 px-3 py-1 rounded-xl inline-block shadow-2xs">
+          <span className="font-mono text-lg font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md inline-block">
             {item.quantity}
           </span>
         </div>
@@ -111,16 +111,16 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
               item
             )
           }
-          className="flex-1 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+          className="flex-1 py-1.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
         >
-          <Printer className="w-4 h-4 text-teal-700" />
+          <Printer className="w-4 h-4 text-slate-600" />
           <span>In phiếu</span>
         </button>
         {isDebt && (
           isNarcotic && !item.ampouleReturned ? (
             <button
               onClick={() => onAmpouleReturn(item.id)}
-              className="flex-2 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
+              className="flex-2 py-1.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
             >
               <ShieldAlert className="w-4 h-4" />
               <span>Thu hồi vỏ nộp khay</span>
@@ -128,7 +128,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
           ) : (
             <button
               onClick={() => onSettle(item.id)}
-              className="flex-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
+              className="flex-2 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer active:scale-98"
             >
               <Check className="w-4 h-4" />
               <span>Duyệt hoàn bù</span>

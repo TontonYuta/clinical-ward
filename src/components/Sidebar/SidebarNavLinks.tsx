@@ -134,7 +134,7 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
               <button
                 key={tab}
                 onClick={() => handleSelectTab(tab)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] transition cursor-pointer ${
                   isActive
                     ? 'bg-teal-50 text-teal-950 font-bold border border-teal-200/80 shadow-2xs'
                     : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 font-medium'

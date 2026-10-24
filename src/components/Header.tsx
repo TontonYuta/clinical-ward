@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="p-2 rounded-xl text-slate-600 hover:text-slate-950 hover:bg-slate-100 transition cursor-pointer shrink-0"
+          className="p-2 rounded-md text-slate-600 hover:text-slate-950 hover:bg-slate-100 transition cursor-pointer shrink-0"
           title={isSidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
         >
           <Menu className="w-5 h-5 text-slate-700 md:hidden" />
@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         ) : (
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-800 text-sm font-medium border border-slate-200">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-50 text-slate-800 text-sm font-medium border border-slate-200">
             <Shield className="w-4 h-4 text-teal-700 shrink-0" />
             <span className="font-semibold">{currentProfile.roleName}</span>
           </div>
@@ -149,7 +149,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Cold Chain Alarm Badge - Solid Clear Warning Without Annoying Ping */}
         {coldChainAlarm && (
-          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-rose-600 text-white text-xs font-bold">
+          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-rose-600 text-white text-xs font-bold">
             <AlertTriangle className="w-3.5 h-3.5 text-white shrink-0" />
             <span>11.0°C Quá Nhiệt</span>
           </div>
@@ -160,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleCopilot}
             aria-label="Trợ Lý AI Lâm Sàng"
-            className={`h-9 px-2.5 sm:px-3.5 rounded-lg border text-sm font-medium flex items-center gap-1.5 transition cursor-pointer ${
+            className={`h-9 px-2.5 sm:px-3.5 rounded-md border text-sm font-medium flex items-center gap-1.5 transition cursor-pointer ${
               isCopilotOpen
                 ? 'bg-teal-800 text-white border-teal-800 font-semibold'
                 : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -176,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onToggleAudio}
           title={isAudioMuted ? 'Bật âm thanh cảnh báo' : 'Tắt âm thanh cảnh báo'}
-          className="w-8.5 h-8.5 flex items-center justify-center rounded-xl hover:bg-slate-100 border border-slate-200 text-slate-600 transition shrink-0 cursor-pointer shadow-2xs"
+          className="w-8.5 h-8.5 flex items-center justify-center rounded-md hover:bg-slate-100 border border-slate-200 text-slate-600 transition shrink-0 cursor-pointer shadow-2xs"
         >
           {isAudioMuted ? (
             <VolumeX className="w-4 h-4 text-rose-500" />

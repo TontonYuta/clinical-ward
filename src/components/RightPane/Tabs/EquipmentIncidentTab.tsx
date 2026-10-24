@@ -111,7 +111,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
       </div>
 
       {/* Desktop High-Density Table */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col shadow-xs">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
         <div className="flex-1 min-h-0 overflow-auto pb-4">
           <table className="w-full text-left text-sm border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
