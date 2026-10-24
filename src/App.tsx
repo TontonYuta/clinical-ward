@@ -84,9 +84,7 @@ export default function App() {
     setCurrentUserRole(newRole);
     const profile = USER_PROFILES[newRole];
     if (profile) {
-      if (!profile.allowedTabs.includes(currentTab)) {
-        setCurrentTab(profile.defaultTab);
-      }
+      setCurrentTab(profile.defaultTab);
     }
     if (!isAudioMuted) clinicalAudio.playSuccessChime();
   };

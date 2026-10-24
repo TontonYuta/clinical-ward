@@ -124,19 +124,19 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-300 overflow-hidden flex-col shadow-xs">
-        <div className="overflow-auto flex-1 w-full pb-24">
-          <table className="w-full text-left text-sm table-fixed border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700">
-              <tr className="font-bold text-xs uppercase tracking-wider">
-                <th className="py-3 px-3.5 w-28 whitespace-nowrap border-r border-slate-200">Mã phiếu</th>
-                <th className="py-3 px-3.5 w-[26%] border-r border-slate-200">Mặt hàng y tế</th>
-                <th className="py-3 px-2 text-center w-20 whitespace-nowrap border-r border-slate-200">Số lượng</th>
-                <th className="py-3 px-3.5 w-[26%] border-r border-slate-200">Bệnh nhân / Vị trí</th>
-                <th className="py-3 px-2 text-center w-24 whitespace-nowrap border-r border-slate-200">Thời gian</th>
-                <th className="py-3 px-2 text-center w-32 whitespace-nowrap border-r border-slate-200">Vỏ ống (TT 18)</th>
-                <th className="py-3 px-2 text-center w-28 whitespace-nowrap border-r border-slate-200">Trạng thái</th>
-                <th className="py-3 px-3 text-right w-28 whitespace-nowrap">Thao tác</th>
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col shadow-xs">
+        <div className="overflow-auto flex-1 w-full pb-4">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
+              <tr className="font-semibold text-xs uppercase tracking-wider">
+                <th className="py-3 px-3 whitespace-nowrap">Mã phiếu</th>
+                <th className="py-3 px-3">Mặt hàng y tế</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Số lượng</th>
+                <th className="py-3 px-3">Bệnh nhân / Vị trí</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Thời gian</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Vỏ ống (TT 18)</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>

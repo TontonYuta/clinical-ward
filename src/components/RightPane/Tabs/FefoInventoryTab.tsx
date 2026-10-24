@@ -129,18 +129,18 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-300 overflow-hidden flex-col shadow-xs">
-        <div className="overflow-auto flex-1 pb-24">
-          <table className="w-full text-left text-sm min-w-[880px] border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700">
-              <tr className="font-bold text-xs uppercase tracking-wider">
-                <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mặt hàng y tế</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Số lô SX</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Hạn dùng (EXP)</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap border-r border-slate-200">Tồn kho / Mức Min</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap border-r border-slate-200">Tình trạng</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Vị trí kho GSP</th>
-                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col shadow-xs">
+        <div className="overflow-auto flex-1 pb-4">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
+              <tr className="font-semibold text-xs uppercase tracking-wider">
+                <th className="py-3 px-3">Mặt hàng y tế</th>
+                <th className="py-3 px-3 whitespace-nowrap">Số lô SX</th>
+                <th className="py-3 px-3 whitespace-nowrap">Hạn dùng (EXP)</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Tồn kho / Min</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Tình trạng</th>
+                <th className="py-3 px-3 whitespace-nowrap">Vị trí kho GSP</th>
+                <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>

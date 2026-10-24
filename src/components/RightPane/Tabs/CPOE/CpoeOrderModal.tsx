@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, Stethoscope, AlertTriangle } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType } from '../../../../types/cpoe';
+import { useModalDismiss } from '../../../../hooks/useModalDismiss';
 
 interface CpoeOrderModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   onSaveOrder,
   doctorName = 'BS. Trần Văn Hùng'
 }) => {
+  useModalDismiss(isOpen, onClose);
   const [rxType, setRxType] = useState<PrescriptionType>('outpatient');
   const [patientName, setPatientName] = useState('');
   const [patientCccd, setPatientCccd] = useState('');
@@ -73,7 +75,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
+    >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col">
         <div className="h-14 px-5 bg-teal-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">

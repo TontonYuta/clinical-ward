@@ -40,32 +40,32 @@ interface HeaderProps {
 const TAB_METADATA: Record<DashboardTab, { title: string; lawTag: string; icon: React.ComponentType<{ className?: string }> }> = {
   cpoe: {
     title: 'Chỉ Định & Kê Đơn CPOE',
-    lawTag: 'TT 26 & Luật KCB',
+    lawTag: 'TT 26/2025 & Luật KCB',
     icon: Stethoscope
   },
   debt: {
     title: 'Sổ Nợ Tủ Trực',
-    lawTag: 'TT 22 & TT 20',
+    lawTag: 'TT 18/2026 & VBHN 07',
     icon: FileText
   },
   equipment: {
     title: 'Thiết Bị & Sự Cố',
-    lawTag: 'NĐ 98 & IEC 60601',
+    lawTag: 'NĐ 04/2025 & NĐ 98',
     icon: Wrench
   },
   fefo: {
-    title: 'Kho Dược FEFO',
-    lawTag: 'GSP TT 36',
+    title: 'Kho Dược Bệnh Viện',
+    lawTag: 'TT 26 & VBHN 07',
     icon: Boxes
   },
   coldchain: {
     title: 'Chuỗi Lạnh Vắc Xin',
-    lawTag: 'WHO PQS',
+    lawTag: 'GSP & WHO PQS',
     icon: ThermometerSnowflake
   },
   asset_audit: {
     title: 'Kiểm Kê Tài Sản',
-    lawTag: 'NĐ 151',
+    lawTag: 'NĐ 151 & NĐ 114/2024',
     icon: Building2
   }
 };

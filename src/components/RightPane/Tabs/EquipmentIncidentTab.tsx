@@ -111,18 +111,18 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
       </div>
 
       {/* Desktop High-Density Table */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-300 overflow-hidden flex-col shadow-xs">
-        <div className="flex-1 min-h-0 overflow-auto pb-24">
-          <table className="w-full text-left text-sm min-w-[960px] border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700">
-              <tr className="font-bold text-xs uppercase tracking-wider">
-                <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mã &amp; Cấp độ</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị &amp; Model</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Sự cố ghi nhận (NĐ 04/2025)</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Vị trí khoa phòng</th>
-                <th className="py-3 px-3 whitespace-nowrap border-r border-slate-200">Hạn kiểm định</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap border-r border-slate-200">Trạng thái</th>
-                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col shadow-xs">
+        <div className="flex-1 min-h-0 overflow-auto pb-4">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
+              <tr className="font-semibold text-xs uppercase tracking-wider">
+                <th className="py-3 px-3 whitespace-nowrap">Mã &amp; Cấp độ</th>
+                <th className="py-3 px-3">Thiết bị &amp; Model</th>
+                <th className="py-3 px-3">Sự cố ghi nhận (NĐ 04/2025)</th>
+                <th className="py-3 px-3 whitespace-nowrap">Vị trí</th>
+                <th className="py-3 px-3 whitespace-nowrap">Hạn kiểm định</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>
