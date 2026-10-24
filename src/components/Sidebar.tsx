@@ -42,6 +42,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   debtCount,
   urgentTicketsCount,
   nearExpiryAndLowStockCount,
+  coldChainTemp = 4.5,
+  isColdAlarm = false,
+  misallocatedAssetsCount = 0,
   onOpenLegalDocs,
   onOpenAuditTrail,
   onOpenUserGuide,
@@ -71,6 +74,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           debtCount={debtCount}
           urgentTicketsCount={urgentTicketsCount}
           nearExpiryAndLowStockCount={nearExpiryAndLowStockCount}
+          coldChainTemp={coldChainTemp}
+          isColdAlarm={isColdAlarm}
+          misallocatedAssetsCount={misallocatedAssetsCount}
         />
 
         <SidebarLegalLinks

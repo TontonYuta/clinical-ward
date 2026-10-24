@@ -110,7 +110,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         ) : (
           <>
             {currentTab === 'cpoe' && (
-              <CpoePrescriptionTab doctorName={USER_PROFILES[currentUserRole]?.name} />
+              <CpoePrescriptionTab
+                doctorName={USER_PROFILES[currentUserRole]?.name}
+                currentUserRole={currentUserRole}
+              />
             )}
 
             {currentTab === 'debt' && (

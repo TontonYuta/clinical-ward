@@ -41,6 +41,7 @@ import { ClinicalAuthModal } from './components/Modals/ClinicalAuthModal';
 import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { UserGuideModal } from './components/Modals/UserGuideModal';
 import { PrintableFormModal, PrintableFormType } from './components/Modals/PrintableFormModal';
+import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
@@ -1466,169 +1467,20 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         </main>
       </div>
 
-      {/* 5B. Modern Mobile Bottom Navigation Bar (md:hidden) - Role-Aware & 100% RBAC Compatible */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-2 py-1.5 flex items-center justify-around select-none print:hidden">
-        {/* Slot 1: Role Primary Tab 1 */}
-        {currentUserRole === 'pharmacist' ? (
-          <button
-            onClick={() => setCurrentTab('fefo')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'fefo' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <div className="relative">
-              <Boxes className={`w-5 h-5 ${currentTab === 'fefo' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
-              {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white">
-                  {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
-                </span>
-              )}
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">Kho FEFO</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => setCurrentTab(currentUserRole === 'biomedical_engineer' ? 'equipment' : 'debt')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
-              (currentUserRole === 'biomedical_engineer' ? currentTab === 'equipment' : currentTab === 'debt')
-                ? 'text-teal-800 font-bold'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <div className="relative">
-              {currentUserRole === 'biomedical_engineer' ? (
-                <>
-                  <Wrench className={`w-5 h-5 ${currentTab === 'equipment' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
-                  {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length > 0 && (
-                    <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
-                      {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  <FileText className={`w-5 h-5 ${currentTab === 'debt' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
-                  {debts.filter(d => d.status === 'debt').length > 0 && (
-                    <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
-                      {debts.filter(d => d.status === 'debt').length}
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">
-              {currentUserRole === 'biomedical_engineer' ? 'Sự cố' : 'Tủ trực'}
-            </span>
-          </button>
-        )}
-
-        {/* Slot 2: Role Primary Tab 2 */}
-        {currentUserRole === 'biomedical_engineer' ? (
-          <button
-            onClick={() => handleOpenPrintForm('EQUIPMENT_HANDOVER_INSPECT')}
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
-          >
-            <div className="relative">
-              <Printer className="w-5 h-5 text-slate-600" />
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">In NĐ 98</span>
-          </button>
-        ) : currentUserRole === 'pharmacist' ? (
-          <button
-            onClick={() => setCurrentTab('debt')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'debt' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <div className="relative">
-              <FileText className={`w-5 h-5 ${currentTab === 'debt' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
-              {debts.filter(d => d.status === 'debt').length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
-                  {debts.filter(d => d.status === 'debt').length}
-                </span>
-              )}
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">Tủ trực</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => setCurrentTab('equipment')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'equipment' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <div className="relative">
-              <Wrench className={`w-5 h-5 ${currentTab === 'equipment' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
-              {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
-                  {tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
-                </span>
-              )}
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">Sự cố</span>
-          </button>
-        )}
-
-        {/* Slot 3: Role Secondary Tab or Quick Document */}
-        {currentUserRole === 'director' ? (
-          <button
-            onClick={() => setCurrentTab('fefo')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer relative ${
-              currentTab === 'fefo' ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <div className="relative">
-              <Boxes className={`w-5 h-5 ${currentTab === 'fefo' ? 'text-teal-700 stroke-[2.5]' : ''}`} />
-              {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-amber-500 text-white text-xs font-bold px-1.5 rounded-full ring-1 ring-white">
-                  {batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
-                </span>
-              )}
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">Kho FEFO</span>
-          </button>
-        ) : currentUserRole === 'biomedical_engineer' ? (
-          <button
-            onClick={() => setIsAuditTrailOpen(true)}
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
-          >
-            <div className="relative">
-              <Building2 className="w-5 h-5 text-slate-600" />
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">Kiểm toán</span>
-          </button>
-        ) : (
-          <button
-            onClick={() =>
-              handleOpenPrintForm(
-                currentUserRole === 'pharmacist'
-                  ? 'TT22_RESTOCK_PROPOSAL'
-                  : 'TT20_AMPOULE_DESTRUCTION'
-              )
-            }
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
-          >
-            <div className="relative">
-              <Printer className="w-5 h-5 text-slate-600" />
-            </div>
-            <span className="text-xs mt-0.5 tracking-tight font-medium">In Biểu Mẫu</span>
-          </button>
-        )}
-
-        {/* Slot 4: Full Menu / Drawer Trigger */}
-        <button
-          onClick={() => setIsMobileSidebarOpen(true)}
-          className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer relative"
-          title="Mở menu & tiện ích"
-        >
-          <div className="w-5 h-5 flex flex-col justify-center items-center gap-0.5">
-            <span className="w-4 h-0.5 bg-slate-600 rounded-full" />
-            <span className="w-4 h-0.5 bg-slate-600 rounded-full" />
-            <span className="w-4 h-0.5 bg-slate-600 rounded-full" />
-          </div>
-          <span className="text-xs mt-0.5 tracking-tight font-medium">Menu</span>
-        </button>
-      </nav>
+      {/* 5B. Modern Mobile Bottom Navigation Bar (md:hidden) - Role-Aware & 100% RBAC Dynamic */}
+      <MobileBottomNav
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
+        currentUserRole={currentUserRole}
+        debtCount={debts.filter(d => d.status === 'debt').length}
+        urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
+        lowStockCount={batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
+        coldChainTemp={coldChainState.currentTemp}
+        isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
+        misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
+        onToggleCopilot={() => setIsCopilotOpen(prev => !prev)}
+        isCopilotOpen={isCopilotOpen}
+      />
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
       {isCopilotOpen && (

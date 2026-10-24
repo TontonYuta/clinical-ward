@@ -26,8 +26,8 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     pinCode: '1111',
     rfidCardId: 'RFID-NURSE-8821',
     allowedActions: ['BORROW_EMERGENCY', 'RETURN_AMPOULE', 'SETTLE_DEBT', 'CREATE_INCIDENT'],
-    allowedTabs: ['debt', 'equipment'],
-    responsibilities: 'Ghi nợ thuốc cấp cứu ca đêm (TT 22), báo hỏng máy/phụ kiện (NĐ 98), nộp vỏ ống Morphin (TT 20)',
+    allowedTabs: ['debt', 'cpoe', 'fefo', 'equipment'],
+    responsibilities: 'Thực hiện y lệnh điều trị, mượn thuốc cấp cứu ca đêm (TT 22), báo hỏng máy/phụ kiện (NĐ 98), hoàn nộp vỏ ống Morphin (TT 20)',
     defaultTab: 'debt',
     badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-300'
   },
@@ -39,12 +39,9 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     practiceCertificate: 'BME-204/VTYT',
     pinCode: '3333',
     rfidCardId: 'RFID-BME-6672',
-    allowedActions: ['HANDOVER_EQUIPMENT', 'TRANSFER_ASSET', 'RESTORE_POWER', 'CREATE_INCIDENT'],
-    // [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:
-    // Tinh giản tập trung 100% vào phân hệ Sự cố & Thiết bị y tế cấp cứu (NĐ 98).
-    // Bỏ comment 'asset_audit' nếu muốn mở lại Kiểm kê tài sản công 31/12 (NĐ 151).
-    allowedTabs: ['equipment' /*, 'asset_audit' */],
-    responsibilities: 'Tiếp nhận sửa máy, quản lý sổ lý lịch máy, theo dõi hạn dán tem an toàn đo lường (NĐ 98)',
+    allowedActions: ['HANDOVER_EQUIPMENT', 'TRANSFER_ASSET', 'RESTORE_POWER', 'CREATE_INCIDENT', 'LIQUIDATE_ASSET'],
+    allowedTabs: ['equipment', 'asset_audit'],
+    responsibilities: 'Tiếp nhận sửa máy, quản lý lý lịch máy, thử an toàn điện IEC 60601-1 (NĐ 98), kiểm kê tài sản 31/12 (NĐ 151)',
     defaultTab: 'equipment',
     badgeColor: 'bg-blue-50 text-blue-800 border-blue-300'
   },
@@ -56,12 +53,19 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     practiceCertificate: '018234/BYT-CCHN',
     pinCode: '2222',
     rfidCardId: 'RFID-PHARM-4491',
-    allowedActions: ['BORROW_EMERGENCY', 'SETTLE_DEBT', 'DESTROY_AMPOULES', 'DISPATCH_FEFO', 'RESTOCK_MEDICATION', 'RESTORE_POWER', 'RELEASE_VACCINE_QUARANTINE'],
-    // [DEMO FOCUS - BẢO VỆ ĐỒ ÁN 2]:
-    // Tinh giản tập trung vào Kho Dược FEFO & Sổ nợ thuốc gây nghiện tủ trực (TT 22 & TT 20).
-    // Bỏ comment 'coldchain' nếu muốn mở lại Giám sát nhiệt độ chuỗi lạnh vắc xin (TT 36 GSP).
-    allowedTabs: ['fefo', 'debt' /*, 'coldchain' */],
-    responsibilities: 'Duyệt bù phiếu nợ tủ trực (TT 22), điều phối xuất thuốc theo hạn dùng FEFO, đối soát cơ số thuốc cấp cứu',
+    allowedActions: [
+      'APPROVE_PRESCRIPTION',
+      'DISPENSE_OUTPATIENT',
+      'BORROW_EMERGENCY',
+      'SETTLE_DEBT',
+      'DESTROY_AMPOULES',
+      'DISPATCH_FEFO',
+      'RESTOCK_MEDICATION',
+      'RESTORE_POWER',
+      'RELEASE_VACCINE_QUARANTINE'
+    ],
+    allowedTabs: ['fefo', 'debt', 'coldchain', 'cpoe'],
+    responsibilities: 'Duyệt đơn CPOE, cấp bù tủ trực (TT 22), điều phối xuất thuốc FEFO, giám sát chuỗi lạnh 2-8°C (TT 36 GSP), hủy vỏ Morphin (TT 20)',
     defaultTab: 'fefo',
     badgeColor: 'bg-purple-50 text-purple-800 border-purple-300'
   },
@@ -74,8 +78,8 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     pinCode: '4444',
     rfidCardId: 'RFID-DOC-1109',
     allowedActions: ['PRESCRIBE_MEDICATION', 'BORROW_EMERGENCY', 'SETTLE_DEBT', 'DESTROY_AMPOULES', 'HANDOVER_EQUIPMENT', 'CREATE_INCIDENT'],
-    allowedTabs: ['cpoe', 'debt', 'equipment'],
-    responsibilities: 'Kê đơn điện tử (TT 26/2025), ra y lệnh nội trú ngày, tra cứu thiết bị và thuốc tủ trực',
+    allowedTabs: ['cpoe', 'debt', 'fefo', 'equipment', 'coldchain'],
+    responsibilities: 'Kê đơn điện tử CPOE (TT 26/2025), ra y lệnh nội trú ngày, tra cứu thuốc tủ trực và thiết bị buồng bệnh',
     defaultTab: 'cpoe',
     badgeColor: 'bg-teal-50 text-teal-800 border-teal-300'
   },
@@ -89,6 +93,7 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     rfidCardId: 'RFID-EXEC-0001',
     allowedActions: [
       'PRESCRIBE_MEDICATION',
+      'APPROVE_PRESCRIPTION',
       'BORROW_EMERGENCY',
       'CREATE_INCIDENT',
       'SETTLE_DEBT',
@@ -103,8 +108,8 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
       'RELEASE_VACCINE_QUARANTINE',
       'SWITCH_ROLE'
     ],
-    allowedTabs: ['cpoe', 'debt', 'equipment', 'fefo'],
-    responsibilities: 'Phê duyệt mua sắm bổ sung, duyệt cơ số thuốc tủ trực cấp cứu và điều phối thiết bị liên khoa',
+    allowedTabs: ['cpoe', 'debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'],
+    responsibilities: 'Toàn quyền lãnh đạo cao nhất: Phê duyệt dự trù thuốc Mẫu 01, quyết định thanh lý tài sản (NĐ 151), giải phóng vắc xin, kiểm toán SHA-256',
     defaultTab: 'cpoe',
     badgeColor: 'bg-amber-50 text-amber-800 border-amber-300'
   }

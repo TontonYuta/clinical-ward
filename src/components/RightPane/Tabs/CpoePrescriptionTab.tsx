@@ -7,6 +7,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Stethoscope, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { PrescriptionOrder } from '../../../types/cpoe';
+import { UserRole } from '../../../types/clinical';
+import { USER_PROFILES } from '../../../data/initialData';
 import { INITIAL_PRESCRIPTIONS } from '../../../data/mockCpoeData';
 import { cpoeApi } from '../../../services/api/cpoeApi';
 import { CpoeOrderList } from './CPOE/CpoeOrderList';
@@ -14,13 +16,18 @@ import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
 
 interface CpoePrescriptionTabProps {
   doctorName?: string;
+  currentUserRole?: UserRole;
 }
 
 export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
-  doctorName = 'BS. Trần Văn Hùng'
+  doctorName = 'BS. Trần Văn Hùng',
+  currentUserRole = 'doctor'
 }) => {
   const [orders, setOrders] = useState<PrescriptionOrder[]>(INITIAL_PRESCRIPTIONS);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
+  const roleName = USER_PROFILES[currentUserRole]?.roleName || 'Điều Dưỡng';
 
   useEffect(() => {
     let isMounted = true;
@@ -59,15 +66,22 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
           </p>
         </div>
 
-        {/* New Order Button */}
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-400 text-teal-950 font-bold hover:bg-teal-300 transition shrink-0 cursor-pointer shadow-xs active:scale-95"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Kê Đơn / Y Lệnh Mới</span>
-        </button>
+        {/* New Order Button or Read-Only Role Badge */}
+        {canPrescribe ? (
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-400 text-teal-950 font-bold hover:bg-teal-300 transition shrink-0 cursor-pointer shadow-xs active:scale-95"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Kê Đơn / Y Lệnh Mới</span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/90 text-slate-200 text-xs font-semibold border border-teal-500/30 shrink-0">
+            <ShieldAlert className="w-4 h-4 text-teal-400 shrink-0" />
+            <span>Xem y lệnh thực hiện ({roleName})</span>
+          </div>
+        )}
       </div>
 
       {/* Metric Cards Summary */}
@@ -107,12 +121,14 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       <CpoeOrderList orders={orders} />
 
       {/* Prescription Creation Modal */}
-      <CpoeOrderModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSaveOrder={handleSaveOrder}
-        doctorName={doctorName}
-      />
+      {canPrescribe && (
+        <CpoeOrderModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSaveOrder={handleSaveOrder}
+          doctorName={doctorName}
+        />
+      )}
     </div>
   );
 };

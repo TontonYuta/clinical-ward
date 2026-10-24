@@ -130,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
                 value={currentUserRole}
                 onChange={(e) => onSelectUserRole(e.target.value as UserRole)}
                 className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-sm font-medium rounded-lg pl-2.5 sm:pl-9 pr-3.5 py-1.5 focus:outline-hidden focus:border-teal-700 cursor-pointer transition truncate max-w-[140px] sm:max-w-none"
-                title="Đổi vai trò lâm sàng (RBAC)"
+                title={`${currentProfile.name} (${currentProfile.roleName}) - ${currentProfile.responsibilities}`}
               >
                 <option value="nurse">ĐD. Lê Thị Thu (Điều Dưỡng)</option>
                 <option value="biomedical_engineer">KS. Đặng Văn Nam (Kỹ Sư BME)</option>
