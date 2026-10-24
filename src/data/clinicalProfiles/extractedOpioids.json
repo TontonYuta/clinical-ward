@@ -1,0 +1,710 @@
+{
+  "morphine": {
+    "officialSource": {
+      "documentName": "Dược thư QG 2022 (tr. 942-947) & Tờ HDSD thuốc SĐK VD-24757-16",
+      "registrationNumber": "VD-24757-16",
+      "manufacturer": "Vinphaco",
+      "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+      "pharmacopeiaStandard": "DĐVN V",
+      "issueDate": "2022",
+      "legalBasis": "Thông tư 18/2026/TT-BYT & Quyết định 2147/QĐ-BYT"
+    },
+    "composition": {
+      "activeIngredients": [
+        {
+          "innName": "MORPHINE",
+          "chemicalSalt": "Morphin hydroclorid trihydrat",
+          "strength": "10mg/1ml",
+          "mEqOrUnit": "10mg/1ml"
+        }
+      ],
+      "excipients": [
+        {
+          "name": "Natri metabisulfit",
+          "role": "Chất chống oxy hóa",
+          "safetyNotice": "Cảnh báo co thắt phế quản ở người hen suyễn"
+        },
+        {
+          "name": "Natri clorid",
+          "role": "Chất đẳng trương hóa"
+        },
+        {
+          "name": "Acid hydrocloric / Natri hydroxyd",
+          "role": "Chất điều chỉnh pH (2.5 - 4.5)"
+        },
+        {
+          "name": "Nước cất pha tiêm",
+          "role": "Dung môi vừa đủ"
+        }
+      ],
+      "dosageForm": "Dung dịch tiêm vô khuẩn",
+      "appearance": "Dung dịch trong suốt không màu",
+      "phAndOsmolarity": "pH 2.5 - 5.0 • Đẳng trương",
+      "packagingSpec": "Ống thủy tinh trung tính 1ml/2ml, Hộp 10 ống",
+      "pharmacopeiaStandard": "DĐVN V"
+    },
+    "indications": [
+      "1 INDICATIONS AND USAGE Morphine sulfate tablets are indicated for the management of: adult and pediatric patients weighing at least 50 kg and above with acute pain severe enough t",
+      "Giảm đau mức độ trung bình đến nặng sau phẫu thuật, chấn thương hoặc ung thư"
+    ],
+    "pharmacologyMechanism": "Chủ vận chọn lọc thụ thể mu-opioid tại hệ thần kinh trung ương, ức chế dẫn truyền xung động đau qua tủy sống.",
+    "allergyProfile": {
+      "allergyClass": "Opioids (Nhóm giảm đau gây nghiện)",
+      "activeAllergens": [
+        "morphine",
+        "Morphin hydroclorid trihydrat"
+      ],
+      "excipientAllergens": [
+        "Natri metabisulfit",
+        "Lactose monohydrat"
+      ],
+      "crossReactivities": [
+        "Các dẫn xuất Opioid khác (Morphin, Fentanyl, Oxycodone, Codein)"
+      ],
+      "contraindicatedAllergies": [
+        "Tiền sử sốc phản vệ hoặc mẫn cảm nặng với Opioid hoặc tá dược Natri metabisulfit"
+      ],
+      "commonAllergySigns": [
+        "Phù mạch Quincke",
+        "Mề đay cấp",
+        "Co thắt phế quản",
+        "Tụt huyết áp"
+      ],
+      "emergencyManagement": "Ngừng ngay thuốc. Tiêm bắp Adrenalin 0.5mg theo Thông tư 51/2017/TT-BYT nếu phản vệ. Thông khí oxy."
+    },
+    "targetPopulation": "Người lớn và trẻ em theo chỉ định bác sĩ điều trị. Chỉ dùng khi có y lệnh và đơn thuốc KSĐB.",
+    "contraindications": [
+      "4 CONTRAINDICATIONS Morphine sulfate tablets are contraindicated in patients with: Significant respiratory depression [see Warnings and Precautions ( ",
+      "Suy hô hấp nặng, tắc nghẽn đường thở, chấn thương sọ não, tắc ruột cơ học"
+    ],
+    "patientVerificationChecklist": [
+      "Đối soát vòng tay người bệnh",
+      "Kiểm tra tiền sử hen suyễn / dị ứng Sulfite",
+      "Ký sổ giao nhận thuốc KSĐB"
+    ],
+    "tallManLASA": "MORPHINE (Morphin hydroclorid 10mg/ml)",
+    "highAlertRiskNote": "ISMP High-Alert: Nguy cơ ức chế hô hấp dẫn đến ngừng thở nếu dùng sai liều. Yêu cầu khóa kép tủ trực.",
+    "standardDosing": "2 DOSAGE AND ADMINISTRATION Morphine sulfate tablets should be prescribed only by healthcare professionals who are knowl",
+    "maxDailyDose": "100mg/24h (hoặc theo cá thể hóa đau ung thư)",
+    "renalAdjustment": "Giảm 50% liều nếu eGFR < 30 mL/min, kéo dài khoảng cách liều để tránh tích lũy chất chuyển hóa.",
+    "hepaticAdjustment": "Thận trọng tối đa trên bệnh nhân suy tế bào gan Child-Pugh B, C. Giảm liều và theo dõi sát ý thức.",
+    "administrationRouteDetails": "Tiêm bắp (IM), tiêm tĩnh mạch chậm (IV > 5 phút) hoặc truyền tĩnh mạch kiểm soát bằng bơm tiêm điện (PCA).",
+    "compatibleDiluents": [
+      "NaCl 0.9%",
+      "Glucose 5%",
+      "Ringer Lactat"
+    ],
+    "routeWarning": "CẤM tiêm nhanh tĩnh mạch (nguy cơ hạ huyết áp đột ngột và co cứng thành ngực).",
+    "timingAndFrequency": "Mỗi 4 đến 6 giờ khi đau, hoặc truyền liên tục có theo dõi SpO2.",
+    "mealRelation": "Có thể dùng không phụ thuộc bữa ăn.",
+    "clinicalMonitoring": "Theo dõi tần số thở, SpO2, nhịp tim, huyết áp và thang điểm an thần Ramsey mỗi 15-30 phút.",
+    "adverseReactions": [
+      "Ức chế hô hấp",
+      "Táo bón",
+      "Buồn nôn",
+      "Chóng mặt",
+      "Co đồng tử",
+      "Nghiện thuốc"
+    ],
+    "antidote": "Naloxone hydroclorid (0.4mg - 2mg IV, nhắc lại mỗi 2-3 phút nếu chưa hồi phục hô hấp)",
+    "blackBoxWarning": "WARNING: SERIOUS AND LIFE-THREATENING RISKS FROM USE OF MORPHINE SULFATE TABLETS Addiction, Abuse, and Misuse Because the use of morphine sulfate tablets exposes patients and other users to the risks of opioid addiction,",
+    "ddiWarnings": [
+      "Phối hợp với Diazepam/Midazolam: Nguy cơ suy hô hấp, hôn mê và tử vong",
+      "Tương tác IMAO: Nguy cơ hội chứng Serotonin"
+    ],
+    "pregnancyLactation": "Phân loại thai kỳ FDA C. Thận trọng, thuốc qua được sữa mẹ và nhau thai (hội chứng cai thuốc sơ sinh NOWS).",
+    "storageAndHandling": "Bảo quản nhiệt độ 15-30°C, tránh ánh sáng. Bảo quản tủ có khóa kép, kiểm kê thu hồi 100% vỏ ống theo TT 18/2026/TT-BYT.",
+    "atcCode": "N02AA01",
+    "bhytCoverage": "100% (KSĐB Bảng A)"
+  },
+  "fentanyl": {
+    "officialSource": {
+      "documentName": "Dược thư QG 2022 (tr. 598-603) & Tờ HDSD thuốc SĐK VN-18235-14",
+      "registrationNumber": "VN-18235-14",
+      "manufacturer": "Rotexmedica (Đức)",
+      "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+      "pharmacopeiaStandard": "EP / USP",
+      "issueDate": "2022",
+      "legalBasis": "Thông tư 18/2026/TT-BYT & Quyết định 2147/QĐ-BYT"
+    },
+    "composition": {
+      "activeIngredients": [
+        {
+          "innName": "FENTANYL",
+          "chemicalSalt": "Fentanyl citrat",
+          "strength": "0.1mg/2ml (50mcg/ml)",
+          "mEqOrUnit": "0.1mg/2ml (50mcg/ml)"
+        }
+      ],
+      "excipients": [
+        {
+          "name": "Natri metabisulfit",
+          "role": "Chất chống oxy hóa",
+          "safetyNotice": "Cảnh báo co thắt phế quản ở người hen suyễn"
+        },
+        {
+          "name": "Natri clorid",
+          "role": "Chất đẳng trương hóa"
+        },
+        {
+          "name": "Acid hydrocloric / Natri hydroxyd",
+          "role": "Chất điều chỉnh pH (2.5 - 4.5)"
+        },
+        {
+          "name": "Nước cất pha tiêm",
+          "role": "Dung môi vừa đủ"
+        }
+      ],
+      "dosageForm": "Dung dịch tiêm vô khuẩn",
+      "appearance": "Dung dịch trong suốt không màu",
+      "phAndOsmolarity": "pH 2.5 - 5.0 • Đẳng trương",
+      "packagingSpec": "Ống thủy tinh trung tính 1ml/2ml, Hộp 10 ống",
+      "pharmacopeiaStandard": "EP / USP"
+    },
+    "indications": [
+      "1 INDICATIONS AND USAGE Fentanyl Citrate Injection is indicated for: • analgesic action of short duration during the anesthetic periods, premedication, induction and maintenance, a",
+      "Giảm đau mức độ trung bình đến nặng sau phẫu thuật, chấn thương hoặc ung thư"
+    ],
+    "pharmacologyMechanism": "Chủ vận chọn lọc thụ thể mu-opioid tại hệ thần kinh trung ương, ức chế dẫn truyền xung động đau qua tủy sống.",
+    "allergyProfile": {
+      "allergyClass": "Opioids (Nhóm giảm đau gây nghiện)",
+      "activeAllergens": [
+        "fentanyl",
+        "Fentanyl citrat"
+      ],
+      "excipientAllergens": [
+        "Natri metabisulfit",
+        "Lactose monohydrat"
+      ],
+      "crossReactivities": [
+        "Các dẫn xuất Opioid khác (Morphin, Fentanyl, Oxycodone, Codein)"
+      ],
+      "contraindicatedAllergies": [
+        "Tiền sử sốc phản vệ hoặc mẫn cảm nặng với Opioid hoặc tá dược Natri metabisulfit"
+      ],
+      "commonAllergySigns": [
+        "Phù mạch Quincke",
+        "Mề đay cấp",
+        "Co thắt phế quản",
+        "Tụt huyết áp"
+      ],
+      "emergencyManagement": "Ngừng ngay thuốc. Tiêm bắp Adrenalin 0.5mg theo Thông tư 51/2017/TT-BYT nếu phản vệ. Thông khí oxy."
+    },
+    "targetPopulation": "Người lớn và trẻ em theo chỉ định bác sĩ điều trị. Chỉ dùng khi có y lệnh và đơn thuốc KSĐB.",
+    "contraindications": [
+      "4 CONTRAINDICATIONS Fentanyl Citrate Injection is contraindicated in patients with: • Hypersensitivity to fentanyl (e.g., anaphylaxis) [See Adverse Re",
+      "Suy hô hấp nặng, tắc nghẽn đường thở, chấn thương sọ não, tắc ruột cơ học"
+    ],
+    "patientVerificationChecklist": [
+      "Đối soát vòng tay người bệnh",
+      "Kiểm tra tiền sử hen suyễn / dị ứng Sulfite",
+      "Ký sổ giao nhận thuốc KSĐB"
+    ],
+    "tallManLASA": "FENTANYL (Fentanyl citrat 0.1mg/2ml)",
+    "highAlertRiskNote": "ISMP High-Alert: Nguy cơ ức chế hô hấp dẫn đến ngừng thở nếu dùng sai liều. Yêu cầu khóa kép tủ trực.",
+    "standardDosing": "2 DOSAGE AND ADMINISTRATION • Fentanyl Citrate Injection should be administered only by persons specifically trained in ",
+    "maxDailyDose": "Theo giới hạn trần phác đồ CPOE",
+    "renalAdjustment": "Giảm 50% liều nếu eGFR < 30 mL/min, kéo dài khoảng cách liều để tránh tích lũy chất chuyển hóa.",
+    "hepaticAdjustment": "Thận trọng tối đa trên bệnh nhân suy tế bào gan Child-Pugh B, C. Giảm liều và theo dõi sát ý thức.",
+    "administrationRouteDetails": "Tiêm bắp (IM), tiêm tĩnh mạch chậm (IV > 5 phút) hoặc truyền tĩnh mạch kiểm soát bằng bơm tiêm điện (PCA).",
+    "compatibleDiluents": [
+      "NaCl 0.9%",
+      "Glucose 5%",
+      "Ringer Lactat"
+    ],
+    "routeWarning": "CẤM tiêm nhanh tĩnh mạch (nguy cơ hạ huyết áp đột ngột và co cứng thành ngực).",
+    "timingAndFrequency": "Mỗi 4 đến 6 giờ khi đau, hoặc truyền liên tục có theo dõi SpO2.",
+    "mealRelation": "Có thể dùng không phụ thuộc bữa ăn.",
+    "clinicalMonitoring": "Theo dõi tần số thở, SpO2, nhịp tim, huyết áp và thang điểm an thần Ramsey mỗi 15-30 phút.",
+    "adverseReactions": [
+      "Ức chế hô hấp",
+      "Táo bón",
+      "Buồn nôn",
+      "Chóng mặt",
+      "Co đồng tử",
+      "Nghiện thuốc"
+    ],
+    "antidote": "Naloxone hydroclorid (0.4mg - 2mg IV, nhắc lại mỗi 2-3 phút nếu chưa hồi phục hô hấp)",
+    "blackBoxWarning": "WARNING: SERIOUS AND LIFE-THREATENING RISKS FROM USE OF FENTANYL CITRATE INJECTION Addiction, Abuse, and Misuse Because the use of Fentanyl Citrate Injection exposes patients and other users to the risks of opioid addict",
+    "ddiWarnings": [
+      "Phối hợp với Diazepam/Midazolam: Nguy cơ suy hô hấp, hôn mê và tử vong",
+      "Tương tác IMAO: Nguy cơ hội chứng Serotonin"
+    ],
+    "pregnancyLactation": "Phân loại thai kỳ FDA C. Thận trọng, thuốc qua được sữa mẹ và nhau thai (hội chứng cai thuốc sơ sinh NOWS).",
+    "storageAndHandling": "Bảo quản nhiệt độ 15-30°C, tránh ánh sáng. Bảo quản tủ có khóa kép, kiểm kê thu hồi 100% vỏ ống theo TT 18/2026/TT-BYT.",
+    "atcCode": "N01AH01",
+    "bhytCoverage": "100% (KSĐB Bảng A)"
+  },
+  "oxycodone": {
+    "officialSource": {
+      "documentName": "Dược thư QG 2022 (tr. 1084-1088) & Tờ HDSD thuốc SĐK VN-21984-19",
+      "registrationNumber": "VN-21984-19",
+      "manufacturer": "Mundipharma (Síp)",
+      "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+      "pharmacopeiaStandard": "USP / EP",
+      "issueDate": "2022",
+      "legalBasis": "Thông tư 18/2026/TT-BYT & Quyết định 2147/QĐ-BYT"
+    },
+    "composition": {
+      "activeIngredients": [
+        {
+          "innName": "OXYCODONE",
+          "chemicalSalt": "Oxycodone hydroclorid",
+          "strength": "10mg/viên",
+          "mEqOrUnit": "10mg/viên"
+        }
+      ],
+      "excipients": [
+        {
+          "name": "Natri metabisulfit",
+          "role": "Chất chống oxy hóa",
+          "safetyNotice": "Cảnh báo co thắt phế quản ở người hen suyễn"
+        },
+        {
+          "name": "Natri clorid",
+          "role": "Chất đẳng trương hóa"
+        },
+        {
+          "name": "Acid hydrocloric / Natri hydroxyd",
+          "role": "Chất điều chỉnh pH (2.5 - 4.5)"
+        },
+        {
+          "name": "Nước cất pha tiêm",
+          "role": "Dung môi vừa đủ"
+        }
+      ],
+      "dosageForm": "Viên nén giải phóng có kiểm soát",
+      "appearance": "Viên nén bao phim đạt tiêu chuẩn Dược điển",
+      "phAndOsmolarity": "pH 2.5 - 5.0 • Đẳng trương",
+      "packagingSpec": "Vỉ 10 viên, Hộp 3 vỉ",
+      "pharmacopeiaStandard": "USP / EP"
+    },
+    "indications": [
+      "1 INDICATIONS AND USAGE Oxycodone hydrochloride tablets are indicated for the management of pain severe enough to require an opioid analgesic and for which alternative treatments a",
+      "Giảm đau mức độ trung bình đến nặng sau phẫu thuật, chấn thương hoặc ung thư"
+    ],
+    "pharmacologyMechanism": "Chủ vận chọn lọc thụ thể mu-opioid tại hệ thần kinh trung ương, ức chế dẫn truyền xung động đau qua tủy sống.",
+    "allergyProfile": {
+      "allergyClass": "Opioids (Nhóm giảm đau gây nghiện)",
+      "activeAllergens": [
+        "oxycodone",
+        "Oxycodone hydroclorid"
+      ],
+      "excipientAllergens": [
+        "Natri metabisulfit",
+        "Lactose monohydrat"
+      ],
+      "crossReactivities": [
+        "Các dẫn xuất Opioid khác (Morphin, Fentanyl, Oxycodone, Codein)"
+      ],
+      "contraindicatedAllergies": [
+        "Tiền sử sốc phản vệ hoặc mẫn cảm nặng với Opioid hoặc tá dược Natri metabisulfit"
+      ],
+      "commonAllergySigns": [
+        "Phù mạch Quincke",
+        "Mề đay cấp",
+        "Co thắt phế quản",
+        "Tụt huyết áp"
+      ],
+      "emergencyManagement": "Ngừng ngay thuốc. Tiêm bắp Adrenalin 0.5mg theo Thông tư 51/2017/TT-BYT nếu phản vệ. Thông khí oxy."
+    },
+    "targetPopulation": "Người lớn và trẻ em theo chỉ định bác sĩ điều trị. Chỉ dùng khi có y lệnh và đơn thuốc KSĐB.",
+    "contraindications": [
+      "4 CONTRAINDICATIONS Oxycodone hydrochloride is contraindicated in patients with: Significant respiratory depression [see Warnings and Precautions (5.2",
+      "Suy hô hấp nặng, tắc nghẽn đường thở, chấn thương sọ não, tắc ruột cơ học"
+    ],
+    "patientVerificationChecklist": [
+      "Đối soát vòng tay người bệnh",
+      "Kiểm tra tiền sử hen suyễn / dị ứng Sulfite",
+      "Ký sổ giao nhận thuốc KSĐB"
+    ],
+    "tallManLASA": "OXYCODONE (Oxycodone hydroclorid 10mg)",
+    "highAlertRiskNote": "ISMP High-Alert: Nguy cơ ức chế hô hấp dẫn đến ngừng thở nếu dùng sai liều. Yêu cầu khóa kép tủ trực.",
+    "standardDosing": "2 DOSAGE AND ADMINISTRATION Oxycodone hydrochloride tablets should be prescribed only by healthcare professionals who ar",
+    "maxDailyDose": "Theo giới hạn trần phác đồ CPOE",
+    "renalAdjustment": "Giảm 50% liều nếu eGFR < 30 mL/min, kéo dài khoảng cách liều để tránh tích lũy chất chuyển hóa.",
+    "hepaticAdjustment": "Thận trọng tối đa trên bệnh nhân suy tế bào gan Child-Pugh B, C. Giảm liều và theo dõi sát ý thức.",
+    "administrationRouteDetails": "Tiêm bắp (IM), tiêm tĩnh mạch chậm (IV > 5 phút) hoặc truyền tĩnh mạch kiểm soát bằng bơm tiêm điện (PCA).",
+    "compatibleDiluents": [
+      "NaCl 0.9%",
+      "Glucose 5%",
+      "Ringer Lactat"
+    ],
+    "routeWarning": "CẤM tiêm nhanh tĩnh mạch (nguy cơ hạ huyết áp đột ngột và co cứng thành ngực).",
+    "timingAndFrequency": "Mỗi 4 đến 6 giờ khi đau, hoặc truyền liên tục có theo dõi SpO2.",
+    "mealRelation": "Có thể dùng không phụ thuộc bữa ăn.",
+    "clinicalMonitoring": "Theo dõi tần số thở, SpO2, nhịp tim, huyết áp và thang điểm an thần Ramsey mỗi 15-30 phút.",
+    "adverseReactions": [
+      "Ức chế hô hấp",
+      "Táo bón",
+      "Buồn nôn",
+      "Chóng mặt",
+      "Co đồng tử",
+      "Nghiện thuốc"
+    ],
+    "antidote": "Naloxone hydroclorid (0.4mg - 2mg IV, nhắc lại mỗi 2-3 phút nếu chưa hồi phục hô hấp)",
+    "blackBoxWarning": "WARNING: SERIOUS AND LIFE-THREATENING RISKS FROM USE OF OXYCODONE HYDROCHLORIDE TABLETS Addiction, Abuse, and Misuse Because the use of oxycodone hydrochloride tablets exposes patients and other users to the risks of opi",
+    "ddiWarnings": [
+      "Phối hợp với Diazepam/Midazolam: Nguy cơ suy hô hấp, hôn mê và tử vong",
+      "Tương tác IMAO: Nguy cơ hội chứng Serotonin"
+    ],
+    "pregnancyLactation": "Phân loại thai kỳ FDA C. Thận trọng, thuốc qua được sữa mẹ và nhau thai (hội chứng cai thuốc sơ sinh NOWS).",
+    "storageAndHandling": "Bảo quản nhiệt độ 15-30°C, tránh ánh sáng. Bảo quản tủ có khóa kép, kiểm kê thu hồi 100% vỏ ống theo TT 18/2026/TT-BYT.",
+    "atcCode": "N02AA05",
+    "bhytCoverage": "100% (KSĐB Bảng A)"
+  },
+  "meperidine": {
+    "officialSource": {
+      "documentName": "Dược thư QG 2022 (tr. 1115-1119) & Tờ HDSD thuốc SĐK VN-19284-15",
+      "registrationNumber": "VN-19284-15",
+      "manufacturer": "Hameln Pharma (Đức)",
+      "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+      "pharmacopeiaStandard": "BP / EP",
+      "issueDate": "2022",
+      "legalBasis": "Thông tư 18/2026/TT-BYT & Quyết định 2147/QĐ-BYT"
+    },
+    "composition": {
+      "activeIngredients": [
+        {
+          "innName": "MEPERIDINE",
+          "chemicalSalt": "Pethidine hydroclorid",
+          "strength": "100mg/2ml (50mg/ml)",
+          "mEqOrUnit": "100mg/2ml (50mg/ml)"
+        }
+      ],
+      "excipients": [
+        {
+          "name": "Natri metabisulfit",
+          "role": "Chất chống oxy hóa",
+          "safetyNotice": "Cảnh báo co thắt phế quản ở người hen suyễn"
+        },
+        {
+          "name": "Natri clorid",
+          "role": "Chất đẳng trương hóa"
+        },
+        {
+          "name": "Acid hydrocloric / Natri hydroxyd",
+          "role": "Chất điều chỉnh pH (2.5 - 4.5)"
+        },
+        {
+          "name": "Nước cất pha tiêm",
+          "role": "Dung môi vừa đủ"
+        }
+      ],
+      "dosageForm": "Dung dịch tiêm vô khuẩn",
+      "appearance": "Dung dịch trong suốt không màu",
+      "phAndOsmolarity": "pH 2.5 - 5.0 • Đẳng trương",
+      "packagingSpec": "Ống thủy tinh trung tính 1ml/2ml, Hộp 10 ống",
+      "pharmacopeiaStandard": "BP / EP"
+    },
+    "indications": [
+      "1 INDICATIONS AND USAGE Meperidine Hydrochloride Tablets and Oral Solution are indicated for the management of acute pain severe enough to require an opioid analgesic and for which",
+      "Giảm đau mức độ trung bình đến nặng sau phẫu thuật, chấn thương hoặc ung thư"
+    ],
+    "pharmacologyMechanism": "Chủ vận chọn lọc thụ thể mu-opioid tại hệ thần kinh trung ương, ức chế dẫn truyền xung động đau qua tủy sống.",
+    "allergyProfile": {
+      "allergyClass": "Opioids (Nhóm giảm đau gây nghiện)",
+      "activeAllergens": [
+        "meperidine",
+        "Pethidine hydroclorid"
+      ],
+      "excipientAllergens": [
+        "Natri metabisulfit",
+        "Lactose monohydrat"
+      ],
+      "crossReactivities": [
+        "Các dẫn xuất Opioid khác (Morphin, Fentanyl, Oxycodone, Codein)"
+      ],
+      "contraindicatedAllergies": [
+        "Tiền sử sốc phản vệ hoặc mẫn cảm nặng với Opioid hoặc tá dược Natri metabisulfit"
+      ],
+      "commonAllergySigns": [
+        "Phù mạch Quincke",
+        "Mề đay cấp",
+        "Co thắt phế quản",
+        "Tụt huyết áp"
+      ],
+      "emergencyManagement": "Ngừng ngay thuốc. Tiêm bắp Adrenalin 0.5mg theo Thông tư 51/2017/TT-BYT nếu phản vệ. Thông khí oxy."
+    },
+    "targetPopulation": "Người lớn và trẻ em theo chỉ định bác sĩ điều trị. Chỉ dùng khi có y lệnh và đơn thuốc KSĐB.",
+    "contraindications": [
+      "4 CONTRAINDICATIONS Meperidine Hydrochloride Tablets and Oral Solution are contraindicated in patients with: • Significant respiratory depression [see",
+      "Suy hô hấp nặng, tắc nghẽn đường thở, chấn thương sọ não, tắc ruột cơ học"
+    ],
+    "patientVerificationChecklist": [
+      "Đối soát vòng tay người bệnh",
+      "Kiểm tra tiền sử hen suyễn / dị ứng Sulfite",
+      "Ký sổ giao nhận thuốc KSĐB"
+    ],
+    "tallManLASA": "MEPERIDINE (Pethidine hydroclorid 100mg/2ml)",
+    "highAlertRiskNote": "ISMP High-Alert: Nguy cơ ức chế hô hấp dẫn đến ngừng thở nếu dùng sai liều. Yêu cầu khóa kép tủ trực.",
+    "standardDosing": "2 DOSAGE AND ADMINISTRATION • Meperidine Hydrochloride Tablets and Oral Solution should be prescribed only by healthcare",
+    "maxDailyDose": "Theo giới hạn trần phác đồ CPOE",
+    "renalAdjustment": "Giảm 50% liều nếu eGFR < 30 mL/min, kéo dài khoảng cách liều để tránh tích lũy chất chuyển hóa.",
+    "hepaticAdjustment": "Thận trọng tối đa trên bệnh nhân suy tế bào gan Child-Pugh B, C. Giảm liều và theo dõi sát ý thức.",
+    "administrationRouteDetails": "Tiêm bắp (IM), tiêm tĩnh mạch chậm (IV > 5 phút) hoặc truyền tĩnh mạch kiểm soát bằng bơm tiêm điện (PCA).",
+    "compatibleDiluents": [
+      "NaCl 0.9%",
+      "Glucose 5%",
+      "Ringer Lactat"
+    ],
+    "routeWarning": "CẤM tiêm nhanh tĩnh mạch (nguy cơ hạ huyết áp đột ngột và co cứng thành ngực).",
+    "timingAndFrequency": "Mỗi 4 đến 6 giờ khi đau, hoặc truyền liên tục có theo dõi SpO2.",
+    "mealRelation": "Có thể dùng không phụ thuộc bữa ăn.",
+    "clinicalMonitoring": "Theo dõi tần số thở, SpO2, nhịp tim, huyết áp và thang điểm an thần Ramsey mỗi 15-30 phút.",
+    "adverseReactions": [
+      "Ức chế hô hấp",
+      "Táo bón",
+      "Buồn nôn",
+      "Chóng mặt",
+      "Co đồng tử",
+      "Nghiện thuốc"
+    ],
+    "antidote": "Naloxone hydroclorid (0.4mg - 2mg IV, nhắc lại mỗi 2-3 phút nếu chưa hồi phục hô hấp)",
+    "blackBoxWarning": "WARNING: SERIOUS AND LIFE-THREATENING RISKS FROM USE OF MEPERIDINE HYDROCHLORIDE TABLETS AND ORAL SOLUTION Risk of Medication Errors Ensure accuracy when prescribing, dispensing, and administering Meperidine Hydrochlorid",
+    "ddiWarnings": [
+      "Phối hợp với Diazepam/Midazolam: Nguy cơ suy hô hấp, hôn mê và tử vong",
+      "Tương tác IMAO: Nguy cơ hội chứng Serotonin"
+    ],
+    "pregnancyLactation": "Phân loại thai kỳ FDA C. Thận trọng, thuốc qua được sữa mẹ và nhau thai (hội chứng cai thuốc sơ sinh NOWS).",
+    "storageAndHandling": "Bảo quản nhiệt độ 15-30°C, tránh ánh sáng. Bảo quản tủ có khóa kép, kiểm kê thu hồi 100% vỏ ống theo TT 18/2026/TT-BYT.",
+    "atcCode": "N02AB02",
+    "bhytCoverage": "100% (KSĐB Bảng A)"
+  },
+  "tramadol": {
+    "officialSource": {
+      "documentName": "Dược thư QG 2022 (tr. 1421-1425) & Tờ HDSD thuốc SĐK VD-28491-17",
+      "registrationNumber": "VD-28491-17",
+      "manufacturer": "Dược phẩm TW2",
+      "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+      "pharmacopeiaStandard": "DĐVN V / EP",
+      "issueDate": "2022",
+      "legalBasis": "Thông tư 18/2026/TT-BYT & Quyết định 2147/QĐ-BYT"
+    },
+    "composition": {
+      "activeIngredients": [
+        {
+          "innName": "TRAMADOL",
+          "chemicalSalt": "Tramadol hydroclorid",
+          "strength": "100mg/2ml",
+          "mEqOrUnit": "100mg/2ml"
+        }
+      ],
+      "excipients": [
+        {
+          "name": "Natri metabisulfit",
+          "role": "Chất chống oxy hóa",
+          "safetyNotice": "Cảnh báo co thắt phế quản ở người hen suyễn"
+        },
+        {
+          "name": "Natri clorid",
+          "role": "Chất đẳng trương hóa"
+        },
+        {
+          "name": "Acid hydrocloric / Natri hydroxyd",
+          "role": "Chất điều chỉnh pH (2.5 - 4.5)"
+        },
+        {
+          "name": "Nước cất pha tiêm",
+          "role": "Dung môi vừa đủ"
+        }
+      ],
+      "dosageForm": "Dung dịch tiêm vô khuẩn",
+      "appearance": "Dung dịch trong suốt không màu",
+      "phAndOsmolarity": "pH 2.5 - 5.0 • Đẳng trương",
+      "packagingSpec": "Ống thủy tinh trung tính 1ml/2ml, Hộp 10 ống",
+      "pharmacopeiaStandard": "DĐVN V / EP"
+    },
+    "indications": [
+      "1 INDICATIONS AND USAGE Tramadol hydrochloride extended-release tablets are indicated for the management of severe and persistent pain that requires an opioid analgesic and that ca",
+      "Giảm đau mức độ trung bình đến nặng sau phẫu thuật, chấn thương hoặc ung thư"
+    ],
+    "pharmacologyMechanism": "Chủ vận chọn lọc thụ thể mu-opioid tại hệ thần kinh trung ương, ức chế dẫn truyền xung động đau qua tủy sống.",
+    "allergyProfile": {
+      "allergyClass": "Opioids (Nhóm giảm đau gây nghiện)",
+      "activeAllergens": [
+        "tramadol",
+        "Tramadol hydroclorid"
+      ],
+      "excipientAllergens": [
+        "Natri metabisulfit",
+        "Lactose monohydrat"
+      ],
+      "crossReactivities": [
+        "Các dẫn xuất Opioid khác (Morphin, Fentanyl, Oxycodone, Codein)"
+      ],
+      "contraindicatedAllergies": [
+        "Tiền sử sốc phản vệ hoặc mẫn cảm nặng với Opioid hoặc tá dược Natri metabisulfit"
+      ],
+      "commonAllergySigns": [
+        "Phù mạch Quincke",
+        "Mề đay cấp",
+        "Co thắt phế quản",
+        "Tụt huyết áp"
+      ],
+      "emergencyManagement": "Ngừng ngay thuốc. Tiêm bắp Adrenalin 0.5mg theo Thông tư 51/2017/TT-BYT nếu phản vệ. Thông khí oxy."
+    },
+    "targetPopulation": "Người lớn và trẻ em theo chỉ định bác sĩ điều trị. Chỉ dùng khi có y lệnh và đơn thuốc KSĐB.",
+    "contraindications": [
+      "4 CONTRAINDICATIONS Tramadol hydrochloride extended-release tablets are contraindicated for: all children younger than 12 years of age [see Warnings a",
+      "Suy hô hấp nặng, tắc nghẽn đường thở, chấn thương sọ não, tắc ruột cơ học"
+    ],
+    "patientVerificationChecklist": [
+      "Đối soát vòng tay người bệnh",
+      "Kiểm tra tiền sử hen suyễn / dị ứng Sulfite",
+      "Ký sổ giao nhận thuốc KSĐB"
+    ],
+    "tallManLASA": "TRAMADOL (Tramadol hydroclorid 100mg/2ml)",
+    "highAlertRiskNote": "ISMP High-Alert: Nguy cơ ức chế hô hấp dẫn đến ngừng thở nếu dùng sai liều. Yêu cầu khóa kép tủ trực.",
+    "standardDosing": "2 DOSAGE AND ADMINISTRATION Tramadol hydrochloride extended-release tablets should be prescribed only by healthcare prof",
+    "maxDailyDose": "Theo giới hạn trần phác đồ CPOE",
+    "renalAdjustment": "Giảm 50% liều nếu eGFR < 30 mL/min, kéo dài khoảng cách liều để tránh tích lũy chất chuyển hóa.",
+    "hepaticAdjustment": "Thận trọng tối đa trên bệnh nhân suy tế bào gan Child-Pugh B, C. Giảm liều và theo dõi sát ý thức.",
+    "administrationRouteDetails": "Tiêm bắp (IM), tiêm tĩnh mạch chậm (IV > 5 phút) hoặc truyền tĩnh mạch kiểm soát bằng bơm tiêm điện (PCA).",
+    "compatibleDiluents": [
+      "NaCl 0.9%",
+      "Glucose 5%",
+      "Ringer Lactat"
+    ],
+    "routeWarning": "CẤM tiêm nhanh tĩnh mạch (nguy cơ hạ huyết áp đột ngột và co cứng thành ngực).",
+    "timingAndFrequency": "Mỗi 4 đến 6 giờ khi đau, hoặc truyền liên tục có theo dõi SpO2.",
+    "mealRelation": "Có thể dùng không phụ thuộc bữa ăn.",
+    "clinicalMonitoring": "Theo dõi tần số thở, SpO2, nhịp tim, huyết áp và thang điểm an thần Ramsey mỗi 15-30 phút.",
+    "adverseReactions": [
+      "Ức chế hô hấp",
+      "Táo bón",
+      "Buồn nôn",
+      "Chóng mặt",
+      "Co đồng tử",
+      "Nghiện thuốc"
+    ],
+    "antidote": "Naloxone hydroclorid (0.4mg - 2mg IV, nhắc lại mỗi 2-3 phút nếu chưa hồi phục hô hấp)",
+    "blackBoxWarning": "WARNING: SERIOUS AND LIFE-THREATENING RISKS FROM USE OF TRAMADOL HYDROCHLORIDE EXTENDED-RELEASE TABLETS Addiction, Abuse, and Misuse Because the use of tramadol hydrochloride extended-release tablets exposes patients and",
+    "ddiWarnings": [
+      "Phối hợp với Diazepam/Midazolam: Nguy cơ suy hô hấp, hôn mê và tử vong",
+      "Tương tác IMAO: Nguy cơ hội chứng Serotonin"
+    ],
+    "pregnancyLactation": "Phân loại thai kỳ FDA C. Thận trọng, thuốc qua được sữa mẹ và nhau thai (hội chứng cai thuốc sơ sinh NOWS).",
+    "storageAndHandling": "Bảo quản nhiệt độ 15-30°C, tránh ánh sáng. Bảo quản tủ có khóa kép, kiểm kê thu hồi 100% vỏ ống theo TT 18/2026/TT-BYT.",
+    "atcCode": "N02AX02",
+    "bhytCoverage": "100% (KSĐB Bảng B)"
+  },
+  "codeine": {
+    "officialSource": {
+      "documentName": "Dược thư QG 2022 (tr. 358-362) & Tờ HDSD thuốc SĐK VD-22019-15",
+      "registrationNumber": "VD-22019-15",
+      "manufacturer": "Mekophar",
+      "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+      "pharmacopeiaStandard": "DĐVN V / BP",
+      "issueDate": "2022",
+      "legalBasis": "Thông tư 18/2026/TT-BYT & Quyết định 2147/QĐ-BYT"
+    },
+    "composition": {
+      "activeIngredients": [
+        {
+          "innName": "CODEINE",
+          "chemicalSalt": "Codein phosphat hemihydrat",
+          "strength": "30mg/viên",
+          "mEqOrUnit": "30mg/viên"
+        }
+      ],
+      "excipients": [
+        {
+          "name": "Natri metabisulfit",
+          "role": "Chất chống oxy hóa",
+          "safetyNotice": "Cảnh báo co thắt phế quản ở người hen suyễn"
+        },
+        {
+          "name": "Natri clorid",
+          "role": "Chất đẳng trương hóa"
+        },
+        {
+          "name": "Acid hydrocloric / Natri hydroxyd",
+          "role": "Chất điều chỉnh pH (2.5 - 4.5)"
+        },
+        {
+          "name": "Nước cất pha tiêm",
+          "role": "Dung môi vừa đủ"
+        }
+      ],
+      "dosageForm": "Viên nén giải phóng có kiểm soát",
+      "appearance": "Viên nén bao phim đạt tiêu chuẩn Dược điển",
+      "phAndOsmolarity": "pH 2.5 - 5.0 • Đẳng trương",
+      "packagingSpec": "Vỉ 10 viên, Hộp 3 vỉ",
+      "pharmacopeiaStandard": "DĐVN V / BP"
+    },
+    "indications": [
+      "1 INDICATIONS AND USAGE Codeine Sulfate Tablets are indicated for the management of mild to moderate pain, where treatment with an opioid is appropriate and for which alternative t",
+      "Giảm đau mức độ trung bình đến nặng sau phẫu thuật, chấn thương hoặc ung thư"
+    ],
+    "pharmacologyMechanism": "Chủ vận chọn lọc thụ thể mu-opioid tại hệ thần kinh trung ương, ức chế dẫn truyền xung động đau qua tủy sống.",
+    "allergyProfile": {
+      "allergyClass": "Opioids (Nhóm giảm đau gây nghiện)",
+      "activeAllergens": [
+        "codeine",
+        "Codein phosphat hemihydrat"
+      ],
+      "excipientAllergens": [
+        "Natri metabisulfit",
+        "Lactose monohydrat"
+      ],
+      "crossReactivities": [
+        "Các dẫn xuất Opioid khác (Morphin, Fentanyl, Oxycodone, Codein)"
+      ],
+      "contraindicatedAllergies": [
+        "Tiền sử sốc phản vệ hoặc mẫn cảm nặng với Opioid hoặc tá dược Natri metabisulfit"
+      ],
+      "commonAllergySigns": [
+        "Phù mạch Quincke",
+        "Mề đay cấp",
+        "Co thắt phế quản",
+        "Tụt huyết áp"
+      ],
+      "emergencyManagement": "Ngừng ngay thuốc. Tiêm bắp Adrenalin 0.5mg theo Thông tư 51/2017/TT-BYT nếu phản vệ. Thông khí oxy."
+    },
+    "targetPopulation": "Người lớn và trẻ em theo chỉ định bác sĩ điều trị. Chỉ dùng khi có y lệnh và đơn thuốc KSĐB.",
+    "contraindications": [
+      "4 CONTRAINDICATIONS Codeine Sulfate Tablets are contraindicated for: • All children younger than 12 years of age [see Warnings and Precautions ( 5.6 )",
+      "Suy hô hấp nặng, tắc nghẽn đường thở, chấn thương sọ não, tắc ruột cơ học"
+    ],
+    "patientVerificationChecklist": [
+      "Đối soát vòng tay người bệnh",
+      "Kiểm tra tiền sử hen suyễn / dị ứng Sulfite",
+      "Ký sổ giao nhận thuốc KSĐB"
+    ],
+    "tallManLASA": "CODEINE (Codein phosphat 30mg)",
+    "highAlertRiskNote": "ISMP High-Alert: Nguy cơ ức chế hô hấp dẫn đến ngừng thở nếu dùng sai liều. Yêu cầu khóa kép tủ trực.",
+    "standardDosing": "2 DOSAGE AND ADMINISTRATION • Codeine Sulfate Tablets should be prescribed only by healthcare professionals who are know",
+    "maxDailyDose": "Theo giới hạn trần phác đồ CPOE",
+    "renalAdjustment": "Giảm 50% liều nếu eGFR < 30 mL/min, kéo dài khoảng cách liều để tránh tích lũy chất chuyển hóa.",
+    "hepaticAdjustment": "Thận trọng tối đa trên bệnh nhân suy tế bào gan Child-Pugh B, C. Giảm liều và theo dõi sát ý thức.",
+    "administrationRouteDetails": "Tiêm bắp (IM), tiêm tĩnh mạch chậm (IV > 5 phút) hoặc truyền tĩnh mạch kiểm soát bằng bơm tiêm điện (PCA).",
+    "compatibleDiluents": [
+      "NaCl 0.9%",
+      "Glucose 5%",
+      "Ringer Lactat"
+    ],
+    "routeWarning": "CẤM tiêm nhanh tĩnh mạch (nguy cơ hạ huyết áp đột ngột và co cứng thành ngực).",
+    "timingAndFrequency": "Mỗi 4 đến 6 giờ khi đau, hoặc truyền liên tục có theo dõi SpO2.",
+    "mealRelation": "Có thể dùng không phụ thuộc bữa ăn.",
+    "clinicalMonitoring": "Theo dõi tần số thở, SpO2, nhịp tim, huyết áp và thang điểm an thần Ramsey mỗi 15-30 phút.",
+    "adverseReactions": [
+      "Ức chế hô hấp",
+      "Táo bón",
+      "Buồn nôn",
+      "Chóng mặt",
+      "Co đồng tử",
+      "Nghiện thuốc"
+    ],
+    "antidote": "Naloxone hydroclorid (0.4mg - 2mg IV, nhắc lại mỗi 2-3 phút nếu chưa hồi phục hô hấp)",
+    "blackBoxWarning": "WARNING: SERIOUS AND LIFE-THREATENING RISKS FROM USE OF CODEINE SULFATE TABLETS Addiction, Abuse, and Misuse Because the use of Codeine Sulfate Tablets exposes patients and other users to the risks of opioid addiction, a",
+    "ddiWarnings": [
+      "Phối hợp với Diazepam/Midazolam: Nguy cơ suy hô hấp, hôn mê và tử vong",
+      "Tương tác IMAO: Nguy cơ hội chứng Serotonin"
+    ],
+    "pregnancyLactation": "Phân loại thai kỳ FDA C. Thận trọng, thuốc qua được sữa mẹ và nhau thai (hội chứng cai thuốc sơ sinh NOWS).",
+    "storageAndHandling": "Bảo quản nhiệt độ 15-30°C, tránh ánh sáng. Bảo quản tủ có khóa kép, kiểm kê thu hồi 100% vỏ ống theo TT 18/2026/TT-BYT.",
+    "atcCode": "R05DA04",
+    "bhytCoverage": "100% (KSĐB Bảng A)"
+  }
+}
