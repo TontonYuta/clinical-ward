@@ -32,9 +32,9 @@ interface MobileBottomNavProps {
 
 const TAB_CONFIG: Record<DashboardTab, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
   cpoe: { label: 'Kê đơn', icon: Stethoscope },
-  debt: { label: 'Tủ trực', icon: FileText },
-  fefo: { label: 'Kho FEFO', icon: Boxes },
-  equipment: { label: 'Sự cố', icon: Wrench },
+  debt: { label: 'Sổ nợ', icon: FileText },
+  fefo: { label: 'Kho dược', icon: Boxes },
+  equipment: { label: 'Thiết bị', icon: Wrench },
   coldchain: { label: 'Chuỗi lạnh', icon: Thermometer },
   asset_audit: { label: 'Kiểm kê', icon: Building2 }
 };

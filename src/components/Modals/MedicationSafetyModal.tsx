@@ -72,11 +72,8 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
               <Stethoscope className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                Dược thư Lâm sàng &amp; Quy chuẩn 5 Đúng
-                <span className="text-[10px] bg-teal-800 text-teal-200 px-1.5 py-0.2 rounded border border-teal-700">QĐ 2147/BYT</span>
-              </h2>
-              <span className="text-[11px] text-teal-300 font-mono">Bản tin An toàn Dược &amp; Cảnh báo Nguy cơ Cao</span>
+              <h2 className="text-sm sm:text-base font-bold">Thông tin an toàn thuốc</h2>
+              <span className="text-xs text-teal-200">Dược thư lâm sàng &amp; 5 Đúng</span>
             </div>
           </div>
           <button onClick={onClose} className="p-1 rounded-md text-teal-300 hover:text-white hover:bg-teal-800 transition cursor-pointer">
@@ -122,17 +119,17 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
               )}
               {currentMed.isControlled && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
-                  KSĐB (TT 18/2026)
+                  KSĐB
                 </span>
               )}
               {currentMed.isHighAlert && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
-                  High-Alert ISMP
+                  Nguy cơ cao
                 </span>
               )}
               {currentMed.isCrashCart && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
-                  Tủ cấp cứu
+                  Cấp cứu
                 </span>
               )}
             </div>

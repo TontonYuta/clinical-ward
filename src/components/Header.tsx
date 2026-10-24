@@ -37,41 +37,35 @@ interface HeaderProps {
   onToggleCopilot?: () => void;
 }
 
-const TAB_METADATA: Record<DashboardTab, { title: string; shortTitle: string; lawTag: string; icon: React.ComponentType<{ className?: string }> }> = {
+const TAB_METADATA: Record<DashboardTab, { title: string; shortTitle: string; icon: React.ComponentType<{ className?: string }> }> = {
   cpoe: {
-    title: 'Kê đơn thuốc điện tử',
-    shortTitle: 'Kê đơn CPOE',
-    lawTag: 'TT 26/2025/TT-BYT & Luật KCB 2023',
+    title: 'Kê đơn thuốc điện tử (CPOE)',
+    shortTitle: 'Kê đơn',
     icon: Stethoscope
   },
   debt: {
-    title: 'Sổ theo dõi nợ thuốc tủ trực',
-    shortTitle: 'Sổ nợ tủ trực',
-    lawTag: 'TT 18/2026/TT-BYT & VBHN 07',
+    title: 'Sổ theo dõi nợ vỏ thuốc',
+    shortTitle: 'Sổ nợ',
     icon: FileText
   },
   equipment: {
-    title: 'Sự cố trang thiết bị y tế',
-    shortTitle: 'Sự cố thiết bị',
-    lawTag: 'NĐ 04/2025/NĐ-CP & NĐ 98/2021',
+    title: 'Sự cố thiết bị y tế',
+    shortTitle: 'Thiết bị',
     icon: Wrench
   },
   fefo: {
-    title: 'Quản lý kho dược & Hạn dùng FEFO',
-    shortTitle: 'Kho Dược FEFO',
-    lawTag: 'TT 36/2018/TT-BYT GSP & TT 26',
+    title: 'Kho dược & Hạn dùng (FEFO)',
+    shortTitle: 'Kho dược',
     icon: Boxes
   },
   coldchain: {
-    title: 'Giám sát chuỗi lạnh bảo quản vắc xin',
-    shortTitle: 'Chuỗi lạnh GSP',
-    lawTag: 'Chuẩn GSP & WHO PQS',
+    title: 'Giám sát chuỗi lạnh',
+    shortTitle: 'Chuỗi lạnh',
     icon: ThermometerSnowflake
   },
   asset_audit: {
-    title: 'Kiểm kê tài sản thiết bị y tế',
-    shortTitle: 'Kiểm kê tài sản',
-    lawTag: 'NĐ 151/2017/NĐ-CP & NĐ 114/2024',
+    title: 'Kiểm kê tài sản',
+    shortTitle: 'Kiểm kê',
     icon: Building2
   }
 };
@@ -114,15 +108,10 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <TabIcon className="w-5 h-5 text-teal-800 shrink-0" />
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 truncate tracking-tight">
-              <span className="sm:hidden">{tabInfo.shortTitle}</span>
-              <span className="hidden sm:inline">{tabInfo.title}</span>
-            </h1>
-            <span className="hidden sm:inline-flex text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 shrink-0">
-              {tabInfo.lawTag}
-            </span>
-          </div>
+          <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 truncate tracking-tight">
+            <span className="sm:hidden">{tabInfo.shortTitle}</span>
+            <span className="hidden sm:inline">{tabInfo.title}</span>
+          </h1>
         </div>
       </div>
 

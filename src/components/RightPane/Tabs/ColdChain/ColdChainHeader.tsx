@@ -42,13 +42,13 @@ export const ColdChainHeader: React.FC<ColdChainHeaderProps> = ({
             }`}
           />
           {isAlarm
-            ? 'Mất điện lưới (11.0°C)'
+            ? 'Mất điện (11.0°C)'
             : isQuarantined
-            ? 'Đang biệt trữ cách ly'
-            : 'Chuỗi lạnh GSP: 2.0°C – 8.0°C (ổn định)'}
+            ? 'Đang biệt trữ'
+            : 'Chuỗi lạnh: 2°C – 8°C (ổn định)'}
         </span>
         <span className="text-xs sm:text-sm text-slate-500 hidden sm:inline font-medium">
-          Tủ Dometic HC-302 · Cảm biến VAX-LOG-04
+          Tủ Dometic HC-302 · VAX-LOG-04
         </span>
       </div>
 
@@ -57,20 +57,20 @@ export const ColdChainHeader: React.FC<ColdChainHeaderProps> = ({
           <button
             onClick={onRestore}
             className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition cursor-pointer active:scale-98 shadow-xs"
-            title="Khôi phục nguồn điện máy phát dự phòng, đưa nhiệt độ về dải an toàn 4.5°C"
+            title="Khôi phục nguồn điện máy phát"
           >
             <Check className="w-4 h-4 text-emerald-400" />
-            <span>Khôi phục điện (4.5°C)</span>
+            <span>Khôi phục điện</span>
           </button>
         ) : isQuarantined ? (
           onReleaseQuarantine && (
             <button
               onClick={onReleaseQuarantine}
               className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs sm:text-sm transition cursor-pointer active:scale-98 shadow-xs"
-              title="Hội đồng Dược: Ký lệnh giải phóng lô vắc xin sau sự cố nhiệt độ"
+              title="Ký lệnh giải phóng lô vắc xin sau sự cố nhiệt độ"
             >
               <FileCheck2 className="w-4 h-4 text-white" />
-              <span>Giải phóng lô biệt trữ</span>
+              <span>Giải phóng biệt trữ</span>
             </button>
           )
         ) : (

@@ -111,7 +111,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder="Yêu cầu hoặc gõ tắt (THA, NMCT, PUV)..."
+            placeholder="Nhập yêu cầu hoặc gõ tắt..."
             className="w-full pl-3.5 pr-18 sm:pr-22 h-10.5 sm:h-11 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
             disabled={isProcessing}
           />

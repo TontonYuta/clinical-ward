@@ -64,7 +64,7 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
                 : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Lệch khoa phòng ({misallocatedCount})
+            Lệch vị trí ({misallocatedCount})
           </button>
           <button
             onClick={() => setFilterMode('liquidation')}
@@ -74,7 +74,7 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
                 : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Đề xuất thanh lý ({liquidationCount})
+            Thanh lý ({liquidationCount})
           </button>
         </div>
       </div>
@@ -84,10 +84,10 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
         <button
           onClick={onScanClick}
           className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shrink-0 cursor-pointer active:scale-98 shadow-xs"
-          title="Mô phỏng máy đọc mã vạch QR kiểm đếm máy thở tại buồng bệnh"
+          title="Mô phỏng máy đọc mã vạch QR kiểm đếm thiết bị"
         >
           <QrCode className="w-3.5 h-3.5 text-teal-400" />
-          <span>Quét mã QR đối soát</span>
+          <span>Quét QR</span>
         </button>
       </div>
     </div>

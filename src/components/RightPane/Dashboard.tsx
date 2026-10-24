@@ -96,17 +96,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-4">
               <Lock className="w-7 h-7" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1.5">
-              Phân Hệ Nằm Ngoài Thẩm Quyền Truy Cập (RBAC Isolation)
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">
+              Không có quyền truy cập
             </h3>
-            <p className="text-sm text-slate-600 max-w-md mb-5 leading-relaxed">
-              Tài khoản hiện tại (<strong className="text-slate-900 font-semibold">{currentProfile.name}</strong> - {currentProfile.roleName}) không có quyền thao tác trên phân hệ này theo quy chế quản trị bệnh viện.
+            <p className="text-xs sm:text-sm text-slate-500 max-w-sm mb-4">
+              Tài khoản <strong className="text-slate-800">{currentProfile.name}</strong> không được phân quyền vào mục này.
             </p>
             <button
               onClick={() => onTabChange(currentProfile.defaultTab || allowedTabs[0] || 'debt')}
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition cursor-pointer active:scale-98"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer active:scale-98"
             >
-              Quay về phân hệ được phân quyền ({currentProfile.defaultTab || allowedTabs[0]})
+              Quay lại ({currentProfile.defaultTab || allowedTabs[0]})
             </button>
           </div>
         ) : (

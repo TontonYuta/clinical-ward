@@ -69,7 +69,7 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
               selectedUrgency === 'in_progress' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Đang sửa chữa ({inProgressCount})
+            Đang sửa ({inProgressCount})
           </button>
           <button
             onClick={() => setSelectedUrgency('resolved')}
@@ -77,7 +77,7 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
               selectedUrgency === 'resolved' ? 'bg-white text-emerald-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Đã nghiệm thu ({resolvedCount})
+            Đã sửa ({resolvedCount})
           </button>
         </div>
       </div>
@@ -87,10 +87,10 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
         <button
           onClick={onOpenIncidentModal}
           className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-rose-700 hover:bg-rose-800 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 shadow-xs"
-          title="Lập phiếu báo hỏng sự cố thiết bị y tế"
+          title="Lập phiếu báo hỏng sự cố thiết bị"
         >
           <PlusCircle className="w-3.5 h-3.5" />
-          <span>Báo hỏng thiết bị</span>
+          <span>Báo hỏng</span>
         </button>
       </div>
     </div>

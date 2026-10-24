@@ -75,7 +75,7 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
               filterStatus === 'narcotics' ? 'bg-white text-rose-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Thuốc gây nghiện ({narcoticsCount})
+            Gây nghiện ({narcoticsCount})
             {pendingAmpoulesCount > 0 && (
               <span className="ml-1 text-xs font-bold text-rose-600">· {pendingAmpoulesCount} nợ vỏ</span>
             )}
@@ -86,7 +86,7 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
               filterStatus === 'settled' ? 'bg-white text-slate-800 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            Đã hoàn bù ({settledCount})
+            Đã bù ({settledCount})
           </button>
         </div>
       </div>
@@ -97,20 +97,20 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
           <button
             onClick={onOpenDestruction}
             className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs sm:text-sm font-semibold transition cursor-pointer"
-            title="Hội đồng tiêu hủy vỏ ống thuốc gây nghiện TT 18/2026/TT-BYT"
+            title="Tiêu hủy vỏ ống thuốc gây nghiện"
           >
             <Flame className="w-3.5 h-3.5 text-rose-600" />
-            <span>Tiêu hủy vỏ ({returnedAmpoulesCount})</span>
+            <span>Hủy vỏ ({returnedAmpoulesCount})</span>
           </button>
         )}
 
         <button
           onClick={onOpenBorrowModal}
           className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 shadow-xs"
-          title="Lập phiếu mượn khẩn thuốc / vật tư (VBHN 07)"
+          title="Lập phiếu mượn khẩn thuốc / vật tư"
         >
           <PlusCircle className="w-3.5 h-3.5" />
-          <span>Mượn thuốc khẩn</span>
+          <span>Mượn thuốc</span>
         </button>
       </div>
     </div>

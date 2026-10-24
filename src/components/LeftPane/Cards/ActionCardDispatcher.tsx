@@ -107,14 +107,14 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
 
             {card.data.activeIngredients && (
               <div className="bg-slate-50 p-2 rounded border border-slate-200 text-slate-800 leading-snug">
-                <strong className="text-slate-900 block font-semibold mb-0.5">🧪 Thành phần dược chất (API):</strong>
+                <strong className="text-slate-900 block font-semibold mb-0.5">🧪 Thành phần:</strong>
                 <span className="font-mono text-[11px] text-teal-900">{card.data.activeIngredients}</span>
               </div>
             )}
 
             {card.data.indications && card.data.indications.length > 0 && (
               <div className="bg-blue-50/80 p-2 rounded border border-blue-200 text-slate-800 leading-snug">
-                <strong className="text-blue-900 block font-semibold mb-0.5">🎯 Chỉ định ("Dùng để làm gì?"):</strong>
+                <strong className="text-blue-900 block font-semibold mb-0.5">🎯 Chỉ định:</strong>
                 <ul className="list-disc list-inside space-y-0.5">
                   {card.data.indications.slice(0, 2).map((ind: string, i: number) => (
                     <li key={i}>{ind}</li>
@@ -125,7 +125,7 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
 
             {card.data.allergyWarning && (
               <div className="bg-rose-50 p-2 rounded border border-rose-200 text-rose-900 leading-snug">
-                <strong className="block font-semibold mb-0.5">⚠️ Cảnh báo Dị ứng:</strong>
+                <strong className="block font-semibold mb-0.5">⚠️ Dị ứng:</strong>
                 <div>{card.data.allergyWarning}</div>
                 {card.data.crossReactivities && card.data.crossReactivities.length > 0 && (
                   <div className="text-[11px] text-rose-700 mt-1">
@@ -136,12 +136,12 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
             )}
 
             <div className="text-slate-600">
-              <strong>Liều thông thường:</strong> {card.data.standardDosing}
+              <strong>Liều dùng:</strong> {card.data.standardDosing}
             </div>
 
             {card.data.antidote && (
               <div className="text-emerald-800 font-semibold bg-emerald-50 p-1.5 rounded border border-emerald-200">
-                🛡️ <strong>Thuốc giải độc:</strong> {card.data.antidote}
+                🛡️ <strong>Giải độc:</strong> {card.data.antidote}
               </div>
             )}
           </div>

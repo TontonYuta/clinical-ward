@@ -92,7 +92,7 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
             <span>
               Nguồn:{' '}
               <strong className="text-slate-900">
-                {isAlarm ? 'Mất điện lưới (UPS dự phòng)' : 'Điện lưới 220V'}
+                {isAlarm ? 'Mất điện (UPS dự phòng)' : 'Điện lưới'}
               </strong>
             </span>
           </div>
@@ -105,7 +105,7 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
 
           <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3.5">
             <span>
-              Cơ số vắc xin:{' '}
+              Vắc xin:{' '}
               <strong className="text-slate-900 font-mono">
                 {coldChainState.totalVaccineDoses.toLocaleString()} liều
               </strong>
@@ -116,7 +116,7 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
         {/* SOP-GSP-09 badge */}
         <div className="text-xs text-slate-500 font-medium hidden xl:flex items-center gap-1.5 border-l border-slate-200 pl-3.5">
           <ShieldAlert className="w-4 h-4 text-slate-400" />
-          <span>SOP-09: Quá 15 phút mất điện ➔ Chuyển hòm đá tích lạnh</span>
+          <span>SOP-09: Chuyển hòm đá tích lạnh khi mất điện</span>
         </div>
       </div>
     </div>

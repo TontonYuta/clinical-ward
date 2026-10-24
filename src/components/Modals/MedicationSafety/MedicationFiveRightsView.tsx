@@ -20,7 +20,7 @@ export const MedicationFiveRightsView: React.FC<Props> = ({ profile }) => {
         <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-200 pb-1.5">
           <div className="w-5 h-5 rounded bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-[11px]">1</div>
           <UserCheck className="w-4 h-4 text-blue-700" />
-          <span>ĐÚNG NGƯỜI BỆNH (Phù hợp với ai &amp; Chống chỉ định)</span>
+          <span>1. Đúng người bệnh</span>
         </div>
         <div className="space-y-1.5 text-slate-700">
           <div><strong className="text-slate-900">• Đối tượng phù hợp:</strong> {profile.targetPopulation}</div>
@@ -44,7 +44,7 @@ export const MedicationFiveRightsView: React.FC<Props> = ({ profile }) => {
         <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-200 pb-1.5">
           <div className="w-5 h-5 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[11px]">2</div>
           <Pill className="w-4 h-4 text-emerald-700" />
-          <span>ĐÚNG THUỐC (Nhận diện &amp; Chuẩn LASA Tall Man)</span>
+          <span>2. Đúng thuốc</span>
         </div>
         <div className="space-y-1 text-slate-700">
           <div>
@@ -67,7 +67,7 @@ export const MedicationFiveRightsView: React.FC<Props> = ({ profile }) => {
         <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-200 pb-1.5">
           <div className="w-5 h-5 rounded bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[11px]">3</div>
           <Scale className="w-4 h-4 text-amber-700" />
-          <span>ĐÚNG LIỀU (Liều chuẩn, Liều tối đa &amp; Chỉnh thận/gan)</span>
+          <span>3. Đúng liều</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
           <div className="bg-white p-2 rounded border border-slate-200">
@@ -91,7 +91,7 @@ export const MedicationFiveRightsView: React.FC<Props> = ({ profile }) => {
         <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-200 pb-1.5">
           <div className="w-5 h-5 rounded bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-[11px]">4</div>
           <Navigation className="w-4 h-4 text-purple-700" />
-          <span>ĐÚNG ĐƯỜNG DÙNG (Kỹ thuật tiêm/truyền &amp; Pha loãng)</span>
+          <span>4. Đúng đường dùng</span>
         </div>
         <div className="space-y-1.5 text-slate-700">
           <div><strong className="text-slate-900">• Hướng dẫn đường dùng:</strong> {profile.administrationRouteDetails}</div>
@@ -115,7 +115,7 @@ export const MedicationFiveRightsView: React.FC<Props> = ({ profile }) => {
         <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-200 pb-1.5">
           <div className="w-5 h-5 rounded bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-[11px]">5</div>
           <Clock className="w-4 h-4 text-teal-700" />
-          <span>ĐÚNG THỜI GIAN &amp; TẦN SUẤT (Khoảng cách liều &amp; Bữa ăn)</span>
+          <span>5. Đúng thời gian</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
           <div className="bg-white p-2 rounded border border-slate-200">

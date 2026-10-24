@@ -18,7 +18,7 @@ async function run() {
 
   // 1. Chuyển sang Kho Dược FEFO
   console.log('1. Mở Kho Dược FEFO...');
-  const fefoBtn = page.locator('button:has-text("Quản lý kho dược FEFO"):visible').first();
+  const fefoBtn = page.locator('button:has-text("Kho dược FEFO"):visible').first();
   await fefoBtn.click();
   await page.waitForTimeout(800);
 
@@ -67,7 +67,7 @@ async function run() {
   await copilotBtn.click();
   await page.waitForTimeout(600);
 
-  const inputArea = page.locator('input[placeholder*="Yêu cầu"]:visible').first();
+  const inputArea = page.locator('input[placeholder*="yêu cầu" i]:visible, input[placeholder*="gõ tắt" i]:visible').first();
   await inputArea.fill('Morphin dùng để làm gì và ai dị ứng không được dùng');
   await page.keyboard.press('Enter');
   await page.waitForTimeout(1500);

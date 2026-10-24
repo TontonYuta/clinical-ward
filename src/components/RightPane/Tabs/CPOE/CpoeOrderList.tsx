@@ -48,7 +48,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
-            Đơn ngoại trú (TT 26)
+            Ngoại trú
           </button>
           <button
             type="button"
@@ -59,11 +59,8 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
-            Đơn nội trú (hằng ngày)
+            Nội trú
           </button>
-        </div>
-        <div className="text-xs text-slate-500 font-medium hidden sm:block shrink-0">
-          Thông tư 26/2025/TT-BYT
         </div>
       </div>
 
@@ -85,12 +82,12 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
         <table className="w-full text-left text-xs sm:text-sm border-collapse">
           <thead>
             <tr className="bg-slate-100/90 text-slate-700 border-b border-slate-200 font-semibold text-xs">
-              <th className="py-2.5 px-3 border-r border-slate-200">Mã đơn / Thời gian</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Người bệnh &amp; CCCD</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Chẩn đoán (ICD-10)</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Loại đơn &amp; Thời hạn</th>
-              <th className="py-2.5 px-3 border-r border-slate-200">Thuốc chỉ định</th>
-              <th className="py-2.5 px-3">Chữ ký số &amp; Trạng thái</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Mã đơn</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Người bệnh</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Chẩn đoán</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Loại đơn</th>
+              <th className="py-2.5 px-3 border-r border-slate-200">Thuốc</th>
+              <th className="py-2.5 px-3">Trạng thái</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">

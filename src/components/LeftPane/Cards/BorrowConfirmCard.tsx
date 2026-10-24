@@ -51,7 +51,7 @@ export const BorrowConfirmCard: React.FC<BorrowConfirmCardProps> = ({ data }) =>
       {data.is_narcotic && (
         <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-1.5">
           <Lock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-          <span>Khoá nợ TT 20/2017: Bắt buộc thu hồi vỏ ống sau khi tiêm</span>
+          <span>Bắt buộc thu hồi vỏ ống sau tiêm</span>
         </div>
       )}
     </div>

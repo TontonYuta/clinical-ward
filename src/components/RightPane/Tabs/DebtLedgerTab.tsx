@@ -11,7 +11,6 @@ import { AmpouleDestructionModal } from '../../Modals/AmpouleDestructionModal';
 import { ManualBorrowModal } from '../../Modals/ManualBorrowModal';
 import { PrintableFormType } from '../../Modals/PrintableFormModal';
 import { DebtHeaderRibbon } from './Debt/DebtHeaderRibbon';
-import { DebtLegalBanner } from './Debt/DebtLegalBanner';
 import { DebtRecordCard } from './Debt/DebtRecordCard';
 import { DebtRecordRow } from './Debt/DebtRecordRow';
 
@@ -102,8 +101,6 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
         onOpenBorrowModal={() => setIsBorrowModalOpen(true)}
       />
 
-      <DebtLegalBanner />
-
       {/* Mobile Card List */}
       <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
         {filteredDebts.length === 0 ? (
@@ -130,11 +127,11 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr className="font-semibold text-xs tracking-wider">
                 <th className="py-3 px-3 whitespace-nowrap">Mã phiếu</th>
-                <th className="py-3 px-3">Mặt hàng y tế</th>
+                <th className="py-3 px-3">Thuốc / Vật tư</th>
                 <th className="py-3 px-3 text-center whitespace-nowrap">Số lượng</th>
-                <th className="py-3 px-3">Người bệnh / Vị trí</th>
+                <th className="py-3 px-3">Người bệnh</th>
                 <th className="py-3 px-3 text-center whitespace-nowrap">Thời gian</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Vỏ ống (TT 18)</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap">Vỏ ống</th>
                 <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
                 <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
               </tr>

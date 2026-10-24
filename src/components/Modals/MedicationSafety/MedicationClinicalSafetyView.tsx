@@ -20,7 +20,7 @@ export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
         <div className="p-3 bg-rose-50 border-2 border-rose-300 rounded-lg text-rose-950 space-y-1">
           <div className="flex items-center gap-1.5 font-bold text-rose-900 text-xs">
             <AlertOctagon className="w-4 h-4 text-rose-700 shrink-0" />
-            <span>CẢNH BÁO NGUY CƠ CAO (BLACK BOX WARNING)</span>
+            <span>Cảnh báo nguy cơ cao (Black Box)</span>
           </div>
           <p className="text-[11.5px] leading-relaxed font-medium">{profile.blackBoxWarning}</p>
         </div>
@@ -31,7 +31,7 @@ export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-950 space-y-1">
           <div className="flex items-center gap-1.5 font-bold text-emerald-900 text-xs">
             <LifeBuoy className="w-4 h-4 text-emerald-700 shrink-0" />
-            <span>THUỐC GIẢI ĐỘC ĐẶC HIỆU (ANTIDOTE)</span>
+            <span>Thuốc giải độc (Antidote)</span>
           </div>
           <p className="font-semibold text-emerald-800 bg-white p-2 rounded border border-emerald-200">
             {profile.antidote}
@@ -43,7 +43,7 @@ export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
       <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
         <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
           <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Tác Dụng Phụ Thường Gặp &amp; Dấu Hiệu Quá Liều</span>
+          <span>Tác dụng phụ &amp; Quá liều</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {profile.adverseReactions.map((adr, i) => (

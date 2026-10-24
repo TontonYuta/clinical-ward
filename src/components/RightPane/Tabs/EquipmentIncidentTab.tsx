@@ -10,7 +10,6 @@ import { EquipmentHandoverModal } from '../../Modals/EquipmentHandoverModal';
 import { ManualIncidentModal } from '../../Modals/ManualIncidentModal';
 import { PrintableFormType } from '../../Modals/PrintableFormModal';
 import { EquipmentHeaderRibbon } from './Equipment/EquipmentHeaderRibbon';
-import { EquipmentLegalBanner } from './Equipment/EquipmentLegalBanner';
 import { EquipmentTicketCard } from './Equipment/EquipmentTicketCard';
 import { EquipmentTicketRow } from './Equipment/EquipmentTicketRow';
 
@@ -89,8 +88,6 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
         onOpenIncidentModal={() => setIsIncidentModalOpen(true)}
       />
 
-      <EquipmentLegalBanner />
-
       {/* Mobile Card List */}
       <div className="md:hidden flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-2.5 pb-8">
         {filteredTickets.length === 0 ? (
@@ -116,11 +113,11 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
           <table className="w-full text-left text-sm border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr className="font-semibold text-xs tracking-wider">
-                <th className="py-3 px-3 whitespace-nowrap">Mã &amp; cấp rủi ro</th>
-                <th className="py-3 px-3">Thiết bị &amp; Model</th>
-                <th className="py-3 px-3">Sự cố ghi nhận (NĐ 04/2025)</th>
+                <th className="py-3 px-3 whitespace-nowrap">Mã sự cố</th>
+                <th className="py-3 px-3">Thiết bị</th>
+                <th className="py-3 px-3">Mô tả sự cố</th>
                 <th className="py-3 px-3 whitespace-nowrap">Vị trí</th>
-                <th className="py-3 px-3 whitespace-nowrap">Hạn kiểm định</th>
+                <th className="py-3 px-3 whitespace-nowrap">Kiểm định</th>
                 <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
                 <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
               </tr>

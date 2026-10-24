@@ -50,48 +50,41 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
   const inpatientCount = orders.filter((o) => o.prescriptionType === 'inpatient_daily').length;
 
   return (
-    <div className="p-4 sm:p-6 space-y-4">
-      {/* Top Banner: Legal Framework & Regulatory Compliance */}
-      <div className="bg-slate-900 text-white rounded-lg p-3.5 sm:p-4 border border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-teal-800 text-teal-100 uppercase tracking-wide border border-teal-700/60">
-              TT 26/2025/TT-BYT
-            </span>
-            <span className="text-xs text-slate-300">Luật Khám bệnh, chữa bệnh 2023</span>
-          </div>
-          <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
+    <div className="p-3 sm:p-4 space-y-3">
+      {/* Top Action Bar: Clean & Minimal */}
+      <div className="bg-white border border-slate-200 rounded-lg p-3 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
             Kê đơn thuốc điện tử (CPOE)
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-            Quy tắc 1 đơn thuốc duy nhất khi khám nhiều chuyên khoa • Tích hợp CDSS cảnh báo tương tác thuốc • Áp dụng kê đơn mạn tính tối đa 90 ngày.
+          <p className="text-xs text-slate-500">
+            Đơn thuốc liên thông quốc gia • Cảnh báo an toàn tương tác thuốc
           </p>
         </div>
 
-        {/* New Order Button or Read-Only Role Badge */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => onOpenSafetyGuide?.('Morphin')}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-teal-300 font-semibold text-xs transition cursor-pointer border border-slate-700 shadow-xs"
-            title="Tra cứu Cẩm nang Dược thư & Quy chuẩn 5 Đúng trong Dùng thuốc"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition cursor-pointer border border-slate-200 shadow-2xs"
+            title="Tra cứu Dược thư & Quy chuẩn 5 Đúng"
           >
-            <Stethoscope className="w-3.5 h-3.5 text-teal-400" />
-            <span>Tra cứu 5 Đúng</span>
+            <Stethoscope className="w-3.5 h-3.5 text-teal-700" />
+            <span>Dược thư &amp; 5 Đúng</span>
           </button>
           {canPrescribe ? (
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs transition cursor-pointer shadow-xs active:scale-98"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-semibold text-xs transition cursor-pointer shadow-2xs active:scale-98"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Kê đơn thuốc mới</span>
+              <Plus className="w-4 h-4" />
+              <span>Kê đơn mới</span>
             </button>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
-              <ShieldAlert className="w-4 h-4 text-teal-400 shrink-0" />
-              <span>Đơn thuốc ({roleName})</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
+              <ShieldAlert className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span>Xem ({roleName})</span>
             </div>
           )}
         </div>

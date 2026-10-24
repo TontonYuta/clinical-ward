@@ -9,7 +9,6 @@ import { AssetAuditRecord, UserRole } from '../../../types/clinical';
 import { clinicalAudio } from '../../../utils/audio';
 import { PrintableFormType } from '../../Modals/PrintableFormModal';
 import { AssetAuditHeaderRibbon } from './AssetAudit/AssetAuditHeaderRibbon';
-import { AssetAuditLegalBanner } from './AssetAudit/AssetAuditLegalBanner';
 import { AssetAuditCard } from './AssetAudit/AssetAuditCard';
 import { AssetAuditRow } from './AssetAudit/AssetAuditRow';
 
@@ -84,10 +83,7 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
         onScanClick={handleScanClick}
       />
 
-      {/* 2. Legal Framework Banner */}
-      <AssetAuditLegalBanner />
-
-      {/* 3A. Mobile Card-Based List */}
+      {/* 2. Mobile Card-Based List */}
       <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
         {filteredAssets.length === 0 ? (
           <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-sm shadow-2xs">
@@ -113,9 +109,9 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr className="font-semibold text-xs tracking-wider">
                 <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mã tài sản</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị &amp; cấp rủi ro</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Đối soát vị trí (sổ sách ➔ thực tế)</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Hao mòn &amp; hiện trạng</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Vị trí</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Tình trạng</th>
                 <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
