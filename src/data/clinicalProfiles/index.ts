@@ -1,16 +1,20 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Tra cứu Dược thư Lâm sàng & Quy chuẩn 5 Đúng (QĐ 2147/QĐ-BYT & TT 31/2021) (<=200 LOC)
+ * Tra cứu Dược thư Lâm sàng, Dị ứng & 5 Đúng (QĐ 2147/QĐ-BYT & TT 31/2021) (<=200 LOC)
  */
 
 import { FiveRightsSafetyInfo, MasterMedication } from '../../types/medication';
 import { CONTROLLED_CLINICAL_PROFILES } from './controlledProfiles';
 import { EMERGENCY_CLINICAL_PROFILES } from './emergencyProfiles';
+import { ANTIBIOTIC_CLINICAL_PROFILES } from './antibioticProfiles';
+import { GENERAL_CLINICAL_PROFILES } from './generalProfiles';
 
 export const ALL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   ...CONTROLLED_CLINICAL_PROFILES,
   ...EMERGENCY_CLINICAL_PROFILES,
+  ...ANTIBIOTIC_CLINICAL_PROFILES,
+  ...GENERAL_CLINICAL_PROFILES,
 };
 
 function normalize(str: string): string {
@@ -18,7 +22,7 @@ function normalize(str: string): string {
 }
 
 /**
- * Tra cứu hồ sơ lâm sàng 5 Đúng theo ID hoặc tên thuốc/hoạt chất
+ * Tra cứu hồ sơ lâm sàng 5 Đúng và Dị ứng theo ID hoặc tên thuốc/hoạt chất
  */
 export function getMedicationClinicalProfile(
   identifierOrName: string,
@@ -31,7 +35,7 @@ export function getMedicationClinicalProfile(
 
   const query = normalize(identifierOrName);
 
-  // 2. Khớp từ khóa lâm sàng phổ biến
+  // 2. Khớp từ khóa hoạt chất / thương mại phổ biến
   if (query.includes('morphin')) return ALL_CLINICAL_PROFILES['med-ctrl-01'];
   if (query.includes('fentan')) return ALL_CLINICAL_PROFILES['med-ctrl-02'];
   if (query.includes('diaze')) return ALL_CLINICAL_PROFILES['med-em-07'];
@@ -39,14 +43,41 @@ export function getMedicationClinicalProfile(
   if (query.includes('adre') || query.includes('epi')) return ALL_CLINICAL_PROFILES['med-em-01'];
   if (query.includes('kali') || query.includes('kcl')) return ALL_CLINICAL_PROFILES['med-em-09'];
   if (query.includes('ceftria')) return ALL_CLINICAL_PROFILES['med-ab-01'];
+  if (query.includes('vanco')) return ALL_CLINICAL_PROFILES['med-ab-02'];
+  if (query.includes('paracet') || query.includes('acetamin') || query.includes('efferal') || query.includes('panadol')) {
+    return ALL_CLINICAL_PROFILES['med-gen-01'];
+  }
+  if (query.includes('lipid') || query.includes('intralipid') || query.includes('lipovenoes')) {
+    return ALL_CLINICAL_PROFILES['med-gen-02'];
+  }
 
-  // 3. Fallback: Sinh hồ sơ chuẩn 5 Đúng tổng quát theo chuẩn Bộ Y Tế
+  // 3. Fallback: Sinh hồ sơ chuẩn 5 Đúng & Cảnh báo Dị ứng theo chuẩn Bộ Y Tế
   const name = medData?.brandName || identifierOrName;
   const active = medData?.activeIngredient || 'Dược chất chính';
   const route = medData?.route || 'Đường dùng theo chỉ định bác sĩ';
   const isHighAlert = medData?.isHighAlert || false;
 
   return {
+    indications: [
+      `Điều trị và kiểm soát các bệnh lý lâm sàng theo phác đồ chỉ định bác sĩ CPOE đối với ${name}.`,
+      'Hỗ trợ cải thiện triệu chứng và ngăn ngừa diễn tiến nặng của bệnh nền.',
+    ],
+    pharmacologyMechanism: `Tác dụng dược lý thông qua cơ chế gắn kết thụ thể mục tiêu của hoạt chất ${active}, chuyển hóa chủ yếu qua gan và thải trừ qua thận.`,
+    activeIngredients: [active],
+    allergyProfile: {
+      allergyClass: 'Dược chất trị liệu theo chỉ định lâm sàng',
+      activeAllergens: [active],
+      excipientAllergens: ['Tá dược tiêu chuẩn theo dược điển Việt Nam'],
+      crossReactivities: ['Các thuốc cùng nhóm dược lý tương tự'],
+      contraindicatedAllergies: [
+        `Tiền sử sốc phản vệ hoặc quá mẫn nghiêm trọng với ${active} hoặc các thành phần tá dược`,
+      ],
+      commonAllergySigns: [
+        'Mẩn ngứa, phát ban da, mày đay cấp tính',
+        'Phù mạch, khó thở, tụt huyết áp nếu xảy ra phản vệ',
+      ],
+      emergencyManagement: 'Ngừng ngay thuốc nghi ngờ. Đo dấu hiệu sinh tồn, tiêm bắp Adrenalin nếu có dấu hiệu phản vệ theo TT 51/2017/TT-BYT.',
+    },
     targetPopulation: `Người bệnh được chỉ định điều trị bằng ${name} theo chẩn đoán xác định của bác sĩ. Cần đánh giá kỹ tiền sử dị ứng, chức năng gan thận trước khi dùng.`,
     contraindications: [
       `Mẫn cảm hoặc tiền sử dị ứng với ${active} hoặc tá dược của thuốc`,

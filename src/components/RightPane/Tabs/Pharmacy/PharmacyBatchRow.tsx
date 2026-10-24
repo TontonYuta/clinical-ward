@@ -27,17 +27,22 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
     <tr className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-slate-800">
       <td className="py-3 px-3">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-bold text-slate-900 block text-sm leading-snug">
+          <button
+            type="button"
+            onClick={() => onOpenSafetyGuide?.(batch.itemName)}
+            className="font-bold text-slate-900 text-sm leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left"
+            title="Bấm để xem thông tin thuốc, chỉ định và cảnh báo dị ứng"
+          >
             {batch.itemName}
-          </span>
+          </button>
           {onOpenSafetyGuide && (
             <button
               type="button"
               onClick={() => onOpenSafetyGuide(batch.itemName)}
-              className="text-[10.5px] font-bold px-1.5 py-0.2 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer"
-              title="Xem Dược thư & Quy chuẩn 5 Đúng"
+              className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 cursor-pointer"
+              title="Xem Chỉ định, Cảnh báo Dị ứng & Quy chuẩn 5 Đúng"
             >
-              5 Đúng
+              Dị ứng &amp; 5 Đúng
             </button>
           )}
           {batch.isControlledSubstance && (

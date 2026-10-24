@@ -95,13 +95,45 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
         {card.cardType === 'ocr_invoice_confirm' && <OcrInvoiceCard data={card.data} />}
         {card.cardType === 'biomedical_diagnostics' && <BiomedicalDiagnosticsCard data={card.data} />}
         {card.cardType === 'medication_safety' && (
-          <div className="space-y-1.5 bg-white p-3 rounded-lg border border-slate-200">
-            <div className="font-bold text-slate-900 text-sm">{card.data.tallMan || card.data.medName}</div>
-            <div className="text-slate-600 text-xs">
+          <div className="space-y-2 bg-white p-3 rounded-lg border border-slate-200 text-xs">
+            <div className="font-bold text-slate-900 text-sm flex items-center justify-between">
+              <span>{card.data.tallMan || card.data.medName}</span>
+              {card.data.allergyClass && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
+                  {card.data.allergyClass}
+                </span>
+              )}
+            </div>
+
+            {card.data.indications && card.data.indications.length > 0 && (
+              <div className="bg-blue-50/80 p-2 rounded border border-blue-200 text-slate-800 leading-snug">
+                <strong className="text-blue-900 block font-semibold mb-0.5">🎯 Chỉ định ("Dùng để làm gì?"):</strong>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {card.data.indications.slice(0, 2).map((ind: string, i: number) => (
+                    <li key={i}>{ind}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {card.data.allergyWarning && (
+              <div className="bg-rose-50 p-2 rounded border border-rose-200 text-rose-900 leading-snug">
+                <strong className="block font-semibold mb-0.5">⚠️ Cảnh báo Dị ứng:</strong>
+                <div>{card.data.allergyWarning}</div>
+                {card.data.crossReactivities && card.data.crossReactivities.length > 0 && (
+                  <div className="text-[11px] text-rose-700 mt-1">
+                    Dị ứng chéo: {card.data.crossReactivities.slice(0, 3).join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="text-slate-600">
               <strong>Liều thông thường:</strong> {card.data.standardDosing}
             </div>
+
             {card.data.antidote && (
-              <div className="text-emerald-800 text-xs font-semibold bg-emerald-50 p-1.5 rounded border border-emerald-200">
+              <div className="text-emerald-800 font-semibold bg-emerald-50 p-1.5 rounded border border-emerald-200">
                 🛡️ <strong>Thuốc giải độc:</strong> {card.data.antidote}
               </div>
             )}

@@ -1,0 +1,127 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ * Hồ Sơ Dược Thư Lâm Sàng & Dị Ứng: Kháng Sinh & Cảnh Báo Phản Vệ (<=200 LOC)
+ */
+
+import { FiveRightsSafetyInfo } from '../../types/medication';
+
+export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
+  // Ceftriaxone 1g
+  'med-ab-01': {
+    indications: [
+      'Nhiễm khuẩn nặng đường hô hấp dưới: Viêm phổi thùy, viêm phổi bệnh viện vi khuẩn nhạy cảm.',
+      'Viêm màng não mủ do vi khuẩn (Pneumococcus, Meningococcus, H. influenzae).',
+      'Nhiễm khuẩn huyết và nhiễm khuẩn ổ bụng (phối hợp Metronidazol).',
+      'Nhiễm trùng thận - tiết niệu có biến chứng, lậu cầu lan tỏa.',
+    ],
+    pharmacologyMechanism: 'Kháng sinh Cephalosporin thế hệ 3 diệt khuẩn bằng cách ức chế tổng hợp thành tế bào vi khuẩn qua gắn kết với các protein gắn penicillin (PBP). Bền vững với nhiều men beta-lactamase.',
+    activeIngredients: ['Ceftriaxone natri 1g (tương đương 1000mg ceftriaxone base)'],
+    allergyProfile: {
+      allergyClass: 'Beta-lactam / Cephalosporin thế hệ 3',
+      activeAllergens: ['Ceftriaxone sodium'],
+      excipientAllergens: ['Không chứa tá dược bảo quản (dạng bột đông khô vô khuẩn)'],
+      crossReactivities: [
+        'Penicillin (nguy cơ dị ứng chéo 5 - 10% do cùng cấu trúc vòng beta-lactam)',
+        'Cefotaxime',
+        'Ceftazidime',
+        'Amoxicillin, Ampicillin',
+      ],
+      contraindicatedAllergies: [
+        'Tiền sử sốc phản vệ, phù mạch Quincke hoặc phản ứng tức thì nặng với Cephalosporin hoặc Penicillin',
+        'Tiền sử hội chứng dị ứng da nặng (Stevens-Johnson, TEN/Lyell, DRESS) do Beta-lactam',
+      ],
+      commonAllergySigns: [
+        'Phát ban dạng dát sẩn, ngứa, mề đay cấp tính trong vòng 30 phút - 2 giờ sau tiêm',
+        'Khó thở, thở rít thanh quản do phù nề thanh môn',
+        'Tụt huyết áp, choáng váng, sốc phản vệ đe dọa tử vong',
+        'Sốt do thuốc và tăng bạch cầu ái toan (Eosinophilia)',
+      ],
+      emergencyManagement: 'Ngừng ngay lập tức đường truyền Ceftriaxone. Tiêm bắp Adrenalin 1mg/1ml (0.5 ống) ngay khi có triệu chứng phản vệ độ II theo TT 51/2017/TT-BYT.',
+    },
+    targetPopulation: 'Bệnh nhân nhiễm khuẩn nặng vi khuẩn gram âm và gram dương nhạy cảm.',
+    contraindications: [
+      'Dị ứng Cephalosporin hoặc tiền sử phản vệ nặng với Penicillin/Beta-lactam',
+      'Trẻ sơ sinh < 28 ngày tuổi có tăng bilirubin tự do (nguy cơ bệnh não bilirubin)',
+      'PHỐI HỢP CÙNG ĐƯỜNG TRUYỀN VỚI CÁC DUNG DỊCH CHỨA CANXI (Ringer Lactat)',
+    ],
+    patientVerificationChecklist: [
+      'Khai thác kỹ tiền sử dị ứng Penicillin và Cephalosporin',
+      'Lấy mẫu nuôi cấy vi sinh (cấy máu/đờm) TRƯỚC liều kháng sinh đầu tiên',
+      'Kiểm tra đường truyền không dùng chung dịch có Canxi',
+    ],
+    tallManLASA: 'CefTRIAXone (Tránh nhầm với CefTAZidime, CefOTAXime)',
+    highAlertRiskNote: 'Kháng sinh nguy cơ dị ứng cao và tương kỵ kết tủa muối Canxi-Ceftriaxone gây suy phổi/thận',
+    standardDosing: 'Người lớn: 1 - 2g IV hoặc IM một lần duy nhất trong ngày (q24h). Viêm màng não/Nhiễm khuẩn huyết: 2g mỗi 12h (q12h).',
+    maxDailyDose: 'Không quá 4g/24 giờ.',
+    renalAdjustment: 'Không cần chỉnh liều nếu suy thận đơn thuần. Nếu suy cả gan và thận: tối đa 2g/ngày.',
+    hepaticAdjustment: 'Không cần chỉnh liều nếu chức năng thận bình thường.',
+    administrationRouteDetails: 'Tiêm IV chậm trong 3-5 phút hoặc truyền IV ngắt quãng trong 30 phút (pha 50-100ml NaCl 0.9%).',
+    compatibleDiluents: ['NaCl 0.9%', 'Glucose 5%', 'Nước cất pha tiêm'],
+    infusionRateLimit: 'Truyền trong tối thiểu 30 phút. Tiêm IV chậm tối thiểu 3-5 phút.',
+    routeWarning: 'CẤM PHA HOẶC TRUYỀN CHUNG VỚI DỊCH CHỨA CANXI (TỦA MUỐI TỬ VONG).',
+    timingAndFrequency: 'Mỗi 24 giờ một lần (hoặc mỗi 12 giờ trong viêm màng não). Dùng đúng giờ cố định.',
+    mealRelation: 'Không liên quan bữa ăn.',
+    stabilityAfterPrep: 'Sau khi hoàn nguyên, dùng trong 6 giờ ở nhiệt độ phòng và 24 giờ ở 2-8°C.',
+    clinicalMonitoring: 'Theo dõi dấu hiệu phản vệ trong 30 phút sau tiêm. Đánh giá sốt, bạch cầu, CRP sau 48-72 giờ.',
+    adverseReactions: ['Dị ứng/phát ban', 'Tiêu chảy do C.difficile', 'Tăng men gan nhẹ', 'Bùn mật giả sỏi'],
+    antidote: 'Không có antidote đặc hiệu. Cấp cứu phản vệ bằng Adrenalin theo TT 51/2017.',
+    blackBoxWarning: 'TƯƠNG KỴ CANXI: Chống chỉ định dùng cùng lúc dịch truyền Canxi ở trẻ sơ sinh.',
+    ddiWarnings: ['Các dung dịch tiêm truyền chứa Canxi (Ringer Lactat, Calci gluconat)', 'Thuốc chống đông Warfarin'],
+    pregnancyLactation: 'FDA: Nhóm B (an toàn tương đối). Bài tiết nồng độ thấp qua sữa mẹ.',
+    storageAndHandling: 'Bảo quản bột vô khuẩn ở nhiệt độ < 25°C, tránh ánh sáng.',
+  },
+
+  // Vancomycin 1g
+  'med-ab-02': {
+    indications: [
+      'Nhiễm khuẩn nặng do tụ cầu vàng kháng methicillin (MRSA): Viêm phổi, nhiễm khuẩn huyết, viêm nội tâm mạc.',
+      'Viêm đại tràng giả mạc do Clostridioides difficile tái phát hoặc nặng (dùng đường UỐNG).',
+      'Nhiễm khuẩn xương khớp và nhiễm khuẩn catheter mạch máu.',
+    ],
+    pharmacologyMechanism: 'Kháng sinh glycopeptide diệt khuẩn bằng cách gắn vào D-alanyl-D-alanine, ngăn chặn trùng hợp peptidoglycan tạo vách vi khuẩn.',
+    activeIngredients: ['Vancomycin hydroclorid 1g (1.000.000 UI)'],
+    allergyProfile: {
+      allergyClass: 'Glycopeptide tricyclic',
+      activeAllergens: ['Vancomycin hydrochloride'],
+      excipientAllergens: ['Acid hydrocloric / Natri hydroxyd chỉnh pH'],
+      crossReactivities: ['Teicoplanin', 'Dalbavancin'],
+      contraindicatedAllergies: [
+        'Tiền sử quá mẫn nặng với Vancomycin',
+      ],
+      commonAllergySigns: [
+        'Hội chứng "Người đỏ" (Red Man Syndrome): Đỏ bừng mặt cổ ngực, ngứa dữ dội, tụt huyết áp do giải phóng histamin khi truyền quá nhanh',
+        'Mày đay thực sự, phù thanh quản, sốc phản vệ qua trung gian IgE (cần phân biệt với Red Man Syndrome)',
+        'Độc tính thận (tăng creatinin) và độc tính ốc tai thính giác',
+      ],
+      emergencyManagement: 'Nếu có Red Man: Tạm dừng truyền, tiêm Kháng Histamin H1 (Diphenhydramine), hạ tốc độ truyền xuống 1 nửa. Nếu sốc phản vệ: Xử trí Adrenalin theo TT 51.',
+    },
+    targetPopulation: 'Bệnh nhân nhiễm khuẩn nặng vi khuẩn Gram dương đa kháng (MRSA, MRSE).',
+    contraindications: ['Tiền sử dị ứng nặng với Vancomycin; thận trọng ở người suy thính giác và suy thận.'],
+    patientVerificationChecklist: [
+      'Định lượng nồng độ đáy Vancomycin (Trough Level) trước liều thứ 4 (mục tiêu 15-20 mcg/ml)',
+      'Kiểm tra chức năng thận eGFR trước khi bắt đầu',
+      'Đảm bảo tốc độ truyền tối thiểu 60-120 phút',
+    ],
+    tallManLASA: 'VANCOmycin (Tránh nhầm với Vecuronium, Vancomycin viên uống)',
+    highAlertRiskNote: 'Nguy cơ độc thận cấp tính và hội chứng Red Man nếu truyền tĩnh mạch nhanh',
+    standardDosing: 'Người lớn: 15 - 20 mg/kg mỗi 8-12 giờ. Duy trì nồng độ đáy trough level 15-20 mcg/ml.',
+    maxDailyDose: 'Chuẩn độ theo nồng độ đáy (TDM) và chức năng lọc cầu thận.',
+    renalAdjustment: 'Bắt buộc hiệu chỉnh liều theo CrCl: CrCl 20-50 ml/ph: dùng mỗi 24h; CrCl < 20 ml/ph: mỗi 48h hoặc theo TDM.',
+    hepaticAdjustment: 'Không cần chỉnh liều.',
+    administrationRouteDetails: 'CHỈ TRUYỀN TĨNH MẠCH CHẬM. Pha 1g trong tối thiểu 200ml NaCl 0.9% hoặc G5%. CẤM tiêm bắp.',
+    compatibleDiluents: ['NaCl 0.9%', 'Glucose 5%'],
+    infusionRateLimit: 'Tốc độ tối đa không quá 10 mg/phút (ít nhất 100-120 phút cho lọ 1g).',
+    routeWarning: 'TUYỆT ĐỐI CẤM TIÊM TĨNH MẠCH NHANH HOẶC TIÊM BẮP (Gây hoại tử mô và trụy tim mạch).',
+    timingAndFrequency: 'Mỗi 8 - 12 - 24 giờ tùy mức lọc cầu thận. Đúng giờ nghiêm ngặt.',
+    mealRelation: 'Không liên quan bữa ăn.',
+    stabilityAfterPrep: 'Hoàn nguyên bảo quản tối đa 14 ngày ở 2-8°C hoặc 24 giờ ở nhiệt độ phòng.',
+    clinicalMonitoring: 'Định lượng nồng độ đáy TDM, creatinin huyết thanh và kiểm tra thính lực.',
+    adverseReactions: ['Hội chứng Red Man', 'Suy thận cấp hoại tử ống thận', 'Mất thính lực không hồi phục', 'Viêm tĩnh mạch'],
+    antidote: 'Không có antidote. Điều trị nâng đỡ, bù dịch và thẩm tách máu lọc độc chất nếu ngộ độc thận.',
+    blackBoxWarning: 'CẢNH BÁO TDM: Bắt buộc theo dõi nồng độ đáy trong máu để phòng ngừa suy thận cấp.',
+    ddiWarnings: ['Phối hợp Aminoglycosid (Amikacin, Gentamicin) hoặc Piperacillin/Tazobactam làm tăng độc thận gấp 3 lần'],
+    pregnancyLactation: 'FDA: Nhóm C. Dùng khi nhiễm khuẩn đe dọa tính mạng.',
+    storageAndHandling: 'Bảo quản bột đông khô ở 20-25°C.',
+  },
+};

@@ -77,12 +77,17 @@ const testSuite: TestCase[] = [
   { query: 'tôi muốn xem tủ trực', expectedCard: 'shift_handover_report', category: 'Navigation' },
   { query: 'xin chào trợ lý lâm sàng', expectedCard: 'NO_CARD', category: 'General Guidance' },
 
-  // 10. Tra cứu Quy chuẩn 5 Đúng & Dược Thư Lâm Sàng (QĐ 2147/BYT)
-  { query: 'cho tôi xem quy tắc 5 đúng morphin', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
-  { query: 'thông tin thuốc adrenalin cấp cứu', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
-  { query: 'thuốc giải độc fentanyl là gì', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
-  { query: 'phù hợp với ai dùng ceftriaxone', expectedCard: 'medication_safety', category: 'Medication 5 Rights' },
-  { query: 'liều tối đa diazepam trong 24h', expectedCard: 'medication_safety', category: 'Medication 5 Rights' }
+  // 10. Tra cứu Quy chuẩn 5 Đúng, Chỉ Định ("Dùng để làm gì") & Dị Ứng (QĐ 2147/BYT & TT 51)
+  { query: 'cho tôi xem quy tắc 5 đúng morphin', expectedCard: 'medication_safety', category: 'Medication Safety' },
+  { query: 'thông tin thuốc adrenalin cấp cứu', expectedCard: 'medication_safety', category: 'Medication Safety' },
+  { query: 'thuốc giải độc fentanyl là gì', expectedCard: 'medication_safety', category: 'Medication Safety' },
+  { query: 'phù hợp với ai dùng ceftriaxone', expectedCard: 'medication_safety', category: 'Medication Safety' },
+  { query: 'liều tối đa diazepam trong 24h', expectedCard: 'medication_safety', category: 'Medication Safety' },
+  { query: 'Morphin dùng để làm gì', expectedCard: 'medication_safety', category: 'Medication Indication' },
+  { query: 'ai dị ứng với ceftriaxone', expectedCard: 'medication_safety', category: 'Medication Allergy' },
+  { query: 'thành phần của thuốc diazepam', expectedCard: 'medication_safety', category: 'Medication Ingredients' },
+  { query: 'tác dụng của adrenalin cấp cứu', expectedCard: 'medication_safety', category: 'Medication Indication' },
+  { query: 'chỉ định của vancomycin', expectedCard: 'medication_safety', category: 'Medication Indication' }
 ];
 
 const mockState = {

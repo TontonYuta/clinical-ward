@@ -49,15 +49,22 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
 
       <div>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <h3 className="font-bold text-base text-slate-900 leading-snug">{batch.itemName}</h3>
+          <button
+            type="button"
+            onClick={() => onOpenSafetyGuide?.(batch.itemName)}
+            className="font-bold text-base text-slate-900 leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left"
+            title="Bấm để xem thông tin thuốc, chỉ định và cảnh báo dị ứng"
+          >
+            {batch.itemName}
+          </button>
           {onOpenSafetyGuide && (
             <button
               type="button"
               onClick={() => onOpenSafetyGuide(batch.itemName)}
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer"
-              title="Xem Dược thư & Quy chuẩn 5 Đúng"
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 cursor-pointer"
+              title="Xem Chỉ định, Cảnh báo Dị ứng & Quy chuẩn 5 Đúng"
             >
-              5 Đúng
+              Dị ứng &amp; 5 Đúng
             </button>
           )}
           {batch.isControlledSubstance && (

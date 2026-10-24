@@ -13,7 +13,23 @@ export type MedicationGroup =
   | 'Dịch truyền'
   | 'Vật tư tiêu hao';
 
+export interface MedicationAllergyProfile {
+  allergyClass: string; // Nhóm dị ứng lâm sàng (VD: Opioid, Beta-lactam Cephalosporin, Benzodiazepin...)
+  activeAllergens: string[]; // Các hoạt chất có nguy cơ gây dị ứng
+  excipientAllergens: string[]; // Tá dược có thể gây phản ứng quá mẫn (Natri metabisulfit, lactose, benzyl alcohol...)
+  crossReactivities: string[]; // Nguy cơ dị ứng chéo (VD: Penicillin, các opioid khác...)
+  contraindicatedAllergies: string[]; // Chống chỉ định tiền sử dị ứng (Sốc phản vệ, hội chứng Stevens-Johnson...)
+  commonAllergySigns: string[]; // Triệu chứng lâm sàng khi dị ứng (Mề đay, phù Quinke, co thắt phế quản, sốc...)
+  emergencyManagement: string; // Xử trí khẩn cấp (Ngừng thuốc ngay, Adrenalin theo Thông tư 51/2017)
+}
+
 export interface FiveRightsSafetyInfo {
+  // Chỉ định điều trị lâm sàng & Cơ chế ("Dùng để làm gì")
+  indications?: string[]; // Mục đích & chỉ định điều trị chi tiết
+  pharmacologyMechanism?: string; // Cơ chế tác dụng dược lý tóm tắt
+  activeIngredients?: string[]; // Hoạt chất chính
+  // Hồ sơ dị ứng & cảnh báo quá mẫn
+  allergyProfile?: MedicationAllergyProfile;
   // 1. Đúng người bệnh
   targetPopulation: string; // Phù hợp với ai / Chỉ định đối tượng
   contraindications: string[]; // Chống chỉ định tuyệt đối & thận trọng

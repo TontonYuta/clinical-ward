@@ -10,6 +10,7 @@ import { ALL_MASTER_MEDICATIONS } from '../../data/medicationMasterData';
 import { getMedicationClinicalProfile } from '../../data/clinicalProfiles';
 import { MedicationFiveRightsView } from './MedicationSafety/MedicationFiveRightsView';
 import { MedicationClinicalSafetyView } from './MedicationSafety/MedicationClinicalSafetyView';
+import { MedicationAllergyView } from './MedicationSafety/MedicationAllergyView';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 interface MedicationSafetyModalProps {
@@ -17,16 +18,17 @@ interface MedicationSafetyModalProps {
   onClose: () => void;
   initialMedicationId?: string;
   initialMedicationName?: string;
+  defaultTab?: 'allergy' | 'five_rights' | 'clinical_safety';
 }
 
 const COMMON_DRUG_SHORTCUTS = [
-  { label: 'Morphin 10mg', id: 'med-ctrl-01' },
-  { label: 'Fentanyl 0.1mg', id: 'med-ctrl-02' },
-  { label: 'Adrenalin 1mg', id: 'med-em-01' },
-  { label: 'Noradrenalin 4mg', id: 'med-em-02' },
-  { label: 'Diazepam 10mg', id: 'med-em-07' },
-  { label: 'Kali Clorid 10%', id: 'med-em-09' },
-  { label: 'Ceftriaxone 1g', id: 'med-ab-01' },
+  { label: 'Morphin', id: 'med-ctrl-01' },
+  { label: 'Fentanyl', id: 'med-ctrl-02' },
+  { label: 'Adrenalin', id: 'med-em-01' },
+  { label: 'Noradrenalin', id: 'med-em-02' },
+  { label: 'Diazepam', id: 'med-em-07' },
+  { label: 'Kali Clorid', id: 'med-em-09' },
+  { label: 'Ceftriaxone', id: 'med-ab-01' },
 ];
 
 export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
@@ -34,22 +36,23 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
   onClose,
   initialMedicationId,
   initialMedicationName,
+  defaultTab = 'allergy',
 }) => {
   useModalDismiss(isOpen, onClose);
   const [selectedMedId, setSelectedMedId] = useState<string>('med-ctrl-01');
-  const [activeTab, setActiveTab] = useState<'five_rights' | 'clinical_safety'>('five_rights');
+  const [activeTab, setActiveTab] = useState<'allergy' | 'five_rights' | 'clinical_safety'>('allergy');
 
   useEffect(() => {
-    if (initialMedicationId) {
-      setSelectedMedId(initialMedicationId);
-    } else if (initialMedicationName) {
+    if (defaultTab) setActiveTab(defaultTab);
+    if (initialMedicationId) setSelectedMedId(initialMedicationId);
+    else if (initialMedicationName) {
+      const q = initialMedicationName.toLowerCase();
       const found = ALL_MASTER_MEDICATIONS.find((m) =>
-        m.brandName.toLowerCase().includes(initialMedicationName.toLowerCase()) ||
-        m.activeIngredient.toLowerCase().includes(initialMedicationName.toLowerCase())
+        m.brandName.toLowerCase().includes(q) || m.activeIngredient.toLowerCase().includes(q)
       );
       if (found) setSelectedMedId(found.id);
     }
-  }, [initialMedicationId, initialMedicationName, isOpen]);
+  }, [defaultTab, initialMedicationId, initialMedicationName, isOpen]);
 
   if (!isOpen) return null;
 
@@ -131,39 +134,48 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
           </div>
 
           {/* Segmented Tab Controls */}
-          <div className="flex items-center gap-2 mt-2.5 border-t border-slate-200/80 pt-2">
+          <div className="flex items-center gap-1.5 mt-2.5 border-t border-slate-200/80 pt-2 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setActiveTab('allergy')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${
+                activeTab === 'allergy'
+                  ? 'bg-rose-700 text-white shadow-2xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>Chỉ định &amp; Dị ứng</span>
+            </button>
             <button
               onClick={() => setActiveTab('five_rights')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${
                 activeTab === 'five_rights'
                   ? 'bg-teal-800 text-white shadow-2xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>1. Quy chuẩn 5 Đúng trong Dùng thuốc</span>
+              <span>Quy chuẩn 5 Đúng</span>
             </button>
             <button
               onClick={() => setActiveTab('clinical_safety')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${
                 activeTab === 'clinical_safety'
                   ? 'bg-teal-800 text-white shadow-2xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
               }`}
             >
               <LifeBuoy className="w-3.5 h-3.5" />
-              <span>2. Giám sát Lâm sàng, ADR &amp; Antidote</span>
+              <span>Dược lý &amp; Giải độc</span>
             </button>
           </div>
         </div>
 
         {/* Scrollable Body */}
         <div className="p-4 overflow-y-auto flex-1">
-          {activeTab === 'five_rights' ? (
-            <MedicationFiveRightsView profile={profile} />
-          ) : (
-            <MedicationClinicalSafetyView profile={profile} />
-          )}
+          {activeTab === 'allergy' && <MedicationAllergyView profile={profile} medName={currentMed.brandName} />}
+          {activeTab === 'five_rights' && <MedicationFiveRightsView profile={profile} />}
+          {activeTab === 'clinical_safety' && <MedicationClinicalSafetyView profile={profile} />}
         </div>
 
         {/* Pinned Footer */}

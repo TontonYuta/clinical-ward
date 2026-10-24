@@ -29,6 +29,8 @@ export const MED_CATALOG: MedCatalogItem[] = [
   { name: 'Atropin sulfat 0.25mg/ml', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['atropin', 'nhịp chậm'] },
   { name: 'Cordarone 150mg/3ml', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['cordarone', 'amiodarone', 'chống loạn nhịp'] },
   { name: 'Kháng sinh Ceftriaxone 1g', type: 'Thuốc cấp cứu', unit: 'lọ', isNarcotic: false, aliases: ['ceftriaxone', 'kháng sinh'] },
+  { name: 'Kháng sinh Vancomycin 1g', type: 'Thuốc cấp cứu', unit: 'lọ', isNarcotic: false, aliases: ['vancomycin', 'vanco'] },
+  { name: 'Paracetamol 1000mg/100ml truyền', type: 'Thuốc cấp cứu', unit: 'chai', isNarcotic: false, aliases: ['paracetamol', 'panadol', 'efferalgan', 'acetaminophen'] },
   { name: 'Kháng sinh Meropenem 1g (Meronem)', type: 'Thuốc cấp cứu', unit: 'lọ', isNarcotic: false, aliases: ['meropenem', 'meronem'] },
   { name: 'Nhũ dịch Lipid 20% Lipofundin 100ml', type: 'Thuốc cấp cứu', unit: 'chai', isNarcotic: false, aliases: ['lipid', 'lipofundin'] },
   { name: 'Kali Clorid 10% (KCl 10ml)', type: 'Thuốc cấp cứu', unit: 'ống', isNarcotic: false, aliases: ['kali', 'kcl', 'kali clorid'] },
