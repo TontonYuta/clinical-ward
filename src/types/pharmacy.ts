@@ -40,6 +40,7 @@ export interface InventoryBatch {
     | 'Vật tư tiêu hao'
     | 'Thuốc cấp cứu'
     | 'Vắc xin & Chuỗi lạnh';
+  commodityType?: 'medication' | 'medical_supply'; // Bóc tách Thuốc vs Vật tư y tế
   warehouseType?: WarehouseType;
   batchNumber: string; // Số lô
   expiryDate: string; // YYYY-MM-DD
@@ -54,4 +55,5 @@ export interface InventoryBatch {
   minThreshold: number; // Định mức an toàn tối thiểu (VBHN 07/VBHN-BYT)
   maxThreshold: number;
   isLowStock: boolean;
+  isControlledSubstance?: boolean; // Thuốc kiểm soát đặc biệt (TT 18/2026/TT-BYT)
 }
