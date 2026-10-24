@@ -28,6 +28,7 @@ interface MobileBottomNavProps {
   misallocatedAssetsCount: number;
   onToggleCopilot?: () => void;
   isCopilotOpen?: boolean;
+  systemDomain?: 'pharmacy' | 'equipment';
 }
 
 const TAB_CONFIG: Record<DashboardTab, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -50,19 +51,20 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   isColdAlarm,
   misallocatedAssetsCount,
   onToggleCopilot,
-  isCopilotOpen
+  isCopilotOpen,
+  systemDomain = 'pharmacy',
 }) => {
   const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = profile.allowedTabs || ['debt'];
   
-  // Smart dynamic tabs for mobile: include currentTab if active
+  // Smart dynamic tabs for mobile: domain-filtered
   const displayTabs = React.useMemo(() => {
-    if (allowedTabs.length <= 4) return allowedTabs;
-    if (!allowedTabs.slice(0, 4).includes(currentTab) && allowedTabs.includes(currentTab)) {
-      return [...allowedTabs.slice(0, 3), currentTab];
-    }
-    return allowedTabs.slice(0, 4);
-  }, [allowedTabs, currentTab]);
+    const domainTabs: DashboardTab[] = systemDomain === 'pharmacy'
+      ? ['fefo', 'debt', 'cpoe', 'coldchain']
+      : ['equipment', 'asset_audit'];
+    const filtered = domainTabs.filter(t => allowedTabs.includes(t));
+    return filtered.length > 0 ? filtered : allowedTabs.slice(0, 4);
+  }, [systemDomain, allowedTabs]);
 
   const getBadge = (tab: DashboardTab) => {
     if (tab === 'debt' && debtCount > 0) return { count: debtCount, color: 'bg-amber-500' };

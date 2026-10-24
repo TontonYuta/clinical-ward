@@ -19,6 +19,8 @@ interface SidebarNavLinksProps {
   coldChainTemp?: number;
   isColdAlarm?: boolean;
   misallocatedAssetsCount?: number;
+  systemDomain?: 'pharmacy' | 'equipment';
+  onSelectDomain?: (domain: 'pharmacy' | 'equipment') => void;
 }
 
 interface NavDef {
@@ -41,6 +43,8 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   coldChainTemp = 4.5,
   isColdAlarm = false,
   misallocatedAssetsCount = 0,
+  systemDomain = 'pharmacy',
+  onSelectDomain,
 }) => {
   const handleSelectTab = (tab: DashboardTab) => {
     onTabChange(tab);
@@ -48,12 +52,7 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   };
 
   const pharmacyDefs: NavDef[] = [
-    {
-      tab: 'cpoe',
-      label: 'Kê đơn CPOE',
-      icon: Stethoscope,
-      title: 'Kê đơn thuốc điện tử'
-    },
+    { tab: 'cpoe', label: 'Kê đơn CPOE', icon: Stethoscope, title: 'Kê đơn thuốc điện tử' },
     {
       tab: 'debt',
       label: 'Sổ nợ vỏ',
@@ -157,9 +156,42 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   };
 
   return (
-    <>
-      {renderNavList('Dược lâm sàng', pharmacyDefs)}
-      {renderNavList('Thiết bị y tế', equipmentDefs)}
-    </>
+    <div className="space-y-3">
+      {!isCollapsed && onSelectDomain && (
+        <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              onSelectDomain('pharmacy');
+              if (['equipment', 'asset_audit'].includes(currentTab)) handleSelectTab('fefo');
+            }}
+            className={`flex-1 py-1 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              systemDomain === 'pharmacy' ? 'bg-white text-teal-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Boxes className="w-3.5 h-3.5 text-teal-700" />
+            <span>Thuốc</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onSelectDomain('equipment');
+              if (!['equipment', 'asset_audit'].includes(currentTab)) handleSelectTab('equipment');
+            }}
+            className={`flex-1 py-1 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              systemDomain === 'equipment' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Wrench className="w-3.5 h-3.5 text-slate-700" />
+            <span>TBYT</span>
+          </button>
+        </div>
+      )}
+      {systemDomain === 'pharmacy' ? (
+        renderNavList('Nghiệp vụ Thuốc', pharmacyDefs)
+      ) : (
+        renderNavList('Trang thiết bị y tế', equipmentDefs)
+      )}
+    </div>
   );
 };

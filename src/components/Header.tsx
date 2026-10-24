@@ -35,39 +35,17 @@ interface HeaderProps {
   coldChainAlarm: boolean;
   isCopilotOpen?: boolean;
   onToggleCopilot?: () => void;
+  systemDomain?: 'pharmacy' | 'equipment';
+  onSelectDomain?: (domain: 'pharmacy' | 'equipment') => void;
 }
 
 const TAB_METADATA: Record<DashboardTab, { title: string; shortTitle: string; icon: React.ComponentType<{ className?: string }> }> = {
-  cpoe: {
-    title: 'Kê đơn thuốc điện tử (CPOE)',
-    shortTitle: 'Kê đơn',
-    icon: Stethoscope
-  },
-  debt: {
-    title: 'Sổ theo dõi nợ vỏ thuốc',
-    shortTitle: 'Sổ nợ',
-    icon: FileText
-  },
-  equipment: {
-    title: 'Sự cố thiết bị y tế',
-    shortTitle: 'Thiết bị',
-    icon: Wrench
-  },
-  fefo: {
-    title: 'Kho dược & Hạn dùng (FEFO)',
-    shortTitle: 'Kho dược',
-    icon: Boxes
-  },
-  coldchain: {
-    title: 'Giám sát chuỗi lạnh',
-    shortTitle: 'Chuỗi lạnh',
-    icon: ThermometerSnowflake
-  },
-  asset_audit: {
-    title: 'Kiểm kê tài sản',
-    shortTitle: 'Kiểm kê',
-    icon: Building2
-  }
+  cpoe: { title: 'Kê đơn thuốc điện tử (CPOE)', shortTitle: 'Kê đơn', icon: Stethoscope },
+  debt: { title: 'Sổ theo dõi nợ vỏ thuốc', shortTitle: 'Sổ nợ', icon: FileText },
+  equipment: { title: 'Sự cố thiết bị y tế', shortTitle: 'Thiết bị', icon: Wrench },
+  fefo: { title: 'Kho dược & Hạn dùng (FEFO)', shortTitle: 'Kho dược', icon: Boxes },
+  coldchain: { title: 'Giám sát chuỗi lạnh', shortTitle: 'Chuỗi lạnh', icon: ThermometerSnowflake },
+  asset_audit: { title: 'Kiểm kê tài sản', shortTitle: 'Kiểm kê', icon: Building2 }
 };
 
 export const Header: React.FC<HeaderProps> = ({
@@ -81,6 +59,8 @@ export const Header: React.FC<HeaderProps> = ({
   coldChainAlarm,
   isCopilotOpen,
   onToggleCopilot,
+  systemDomain = 'pharmacy',
+  onSelectDomain,
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
@@ -117,6 +97,36 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 2. Right: Role Switcher, System Status & Audio Toggle */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Domain Switcher: Thuốc vs TBYT */}
+        {onSelectDomain && (
+          <div className="hidden lg:flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-semibold">
+            <button
+              onClick={() => onSelectDomain('pharmacy')}
+              className={`px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1 ${
+                systemDomain === 'pharmacy'
+                  ? 'bg-white text-teal-900 shadow-2xs font-bold border border-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Phân hệ Quản trị Thuốc & Dược lâm sàng"
+            >
+              <Boxes className="w-3.5 h-3.5 text-teal-700" />
+              <span>Thuốc</span>
+            </button>
+            <button
+              onClick={() => onSelectDomain('equipment')}
+              className={`px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1 ${
+                systemDomain === 'equipment'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold border border-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Phân hệ Trang Thiết Bị Y Tế & Tài sản"
+            >
+              <Wrench className="w-3.5 h-3.5 text-slate-700" />
+              <span>TBYT</span>
+            </button>
+          </div>
+        )}
+
         {/* Interactive Role Switcher for both Desktop & Mobile */}
         {onSelectUserRole ? (
           <div className="flex items-center">

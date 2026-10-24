@@ -31,6 +31,8 @@ export interface SidebarProps {
   onOpenUserGuide: () => void;
   onOpenPrintableForms?: () => void;
   onOpenMedicationSafety?: () => void;
+  systemDomain?: 'pharmacy' | 'equipment';
+  onSelectDomain?: (domain: 'pharmacy' | 'equipment') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -51,6 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUserGuide,
   onOpenPrintableForms,
   onOpenMedicationSafety,
+  systemDomain,
+  onSelectDomain,
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
@@ -79,6 +83,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           coldChainTemp={coldChainTemp}
           isColdAlarm={isColdAlarm}
           misallocatedAssetsCount={misallocatedAssetsCount}
+          systemDomain={systemDomain}
+          onSelectDomain={onSelectDomain}
         />
 
         <SidebarLegalLinks

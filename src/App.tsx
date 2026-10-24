@@ -59,6 +59,16 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT_MESSAGES);
   const [currentTab, setCurrentTab] = useState<DashboardTab>('debt');
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('nurse');
+  const [systemDomain, setSystemDomain] = useState<'pharmacy' | 'equipment'>('pharmacy');
+
+  const handleSelectDomain = (domain: 'pharmacy' | 'equipment') => {
+    setSystemDomain(domain);
+    if (domain === 'pharmacy' && (currentTab === 'equipment' || currentTab === 'asset_audit')) {
+      setCurrentTab('fefo');
+    } else if (domain === 'equipment' && currentTab !== 'equipment' && currentTab !== 'asset_audit') {
+      setCurrentTab('equipment');
+    }
+  };
   const [authRequest, setAuthRequest] = useState<ClinicalAuthRequest | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -1412,6 +1422,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             handleOpenMedicationSafety();
             setIsMobileSidebarOpen(false);
           }}
+          systemDomain={systemDomain}
+          onSelectDomain={handleSelectDomain}
         />
       </div>
 
@@ -1435,6 +1447,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onOpenUserGuide={() => setIsUserGuideOpen(true)}
           onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
           onOpenMedicationSafety={() => handleOpenMedicationSafety()}
+          systemDomain={systemDomain}
+          onSelectDomain={handleSelectDomain}
         />
       </div>
 
@@ -1460,6 +1474,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           coldChainAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
           isCopilotOpen={isCopilotOpen}
           onToggleCopilot={() => setIsCopilotOpen(prev => !prev)}
+          systemDomain={systemDomain}
+          onSelectDomain={handleSelectDomain}
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
@@ -1510,6 +1526,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
         onToggleCopilot={() => setIsCopilotOpen(prev => !prev)}
         isCopilotOpen={isCopilotOpen}
+        systemDomain={systemDomain}
       />
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
