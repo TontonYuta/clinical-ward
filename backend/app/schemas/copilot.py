@@ -1,0 +1,23 @@
+from pydantic import BaseModel
+
+class CopilotQuery(BaseModel):
+    query: str
+    user_role: str = "nurse"
+    user_name: str = "ĐD. Lê Thị Thu"
+
+class CopilotActionCard(BaseModel):
+    card_type: str
+    title: str
+    summary: str
+    data: dict
+    primary_action_label: str | None = None
+    primary_action_type: str | None = None
+    target_tab: str | None = None
+
+class CopilotResponse(BaseModel):
+    intent: str
+    reply_text: str
+    card: CopilotActionCard | None = None
+    suggested_action: dict | None = None
+    legal_basis: str | None = None
+    suggested_chips: list[str] = []
