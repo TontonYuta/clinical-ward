@@ -72,6 +72,30 @@ export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
         </div>
       )}
 
+      {/* Giám sát TDM & Lọc máu ngoài thận (nếu có) */}
+      {(profile.tdmMonitoring || profile.dialysisClearance) && (
+        <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-lg space-y-1.5">
+          <div className="flex items-center gap-1.5 font-bold text-blue-900 text-xs">
+            <ShieldAlert className="w-4 h-4 text-blue-700 shrink-0" />
+            <span>Giám Sát Nồng Độ Thuốc (TDM) &amp; Lọc Máu Thận Nhân Tạo</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11.5px]">
+            {profile.tdmMonitoring && (
+              <div className="bg-white p-2 rounded border border-blue-200">
+                <strong className="text-blue-950 block">Mục tiêu nồng độ đáy (Trough):</strong>
+                <span className="text-slate-800">{profile.tdmMonitoring}</span>
+              </div>
+            )}
+            {profile.dialysisClearance && (
+              <div className="bg-white p-2 rounded border border-blue-200">
+                <strong className="text-blue-950 block">Thải trừ qua lọc máu (HD/CRRT):</strong>
+                <span className="text-slate-800">{profile.dialysisClearance}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Thai kỳ & Quản lý bảo quản */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">

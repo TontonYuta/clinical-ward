@@ -70,6 +70,9 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
     ddiWarnings: ['Các dung dịch tiêm truyền chứa Canxi (Ringer Lactat, Calci gluconat)', 'Thuốc chống đông Warfarin'],
     pregnancyLactation: 'FDA: Nhóm B (an toàn tương đối). Bài tiết nồng độ thấp qua sữa mẹ.',
     storageAndHandling: 'Bảo quản bột vô khuẩn ở nhiệt độ < 25°C, tránh ánh sáng.',
+    atcCode: 'J01DD04',
+    bhytCoverage: 'Thanh toán 100% BHYT theo Thông tư 20/2022/TT-BYT',
+    dialysisClearance: 'Không lọc qua thận nhân tạo thường (HD); không cần bổ sung liều sau lọc.',
   },
 
   // Vancomycin 1g
@@ -123,5 +126,9 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
     ddiWarnings: ['Phối hợp Aminoglycosid (Amikacin, Gentamicin) hoặc Piperacillin/Tazobactam làm tăng độc thận gấp 3 lần'],
     pregnancyLactation: 'FDA: Nhóm C. Dùng khi nhiễm khuẩn đe dọa tính mạng.',
     storageAndHandling: 'Bảo quản bột đông khô ở 20-25°C.',
+    atcCode: 'J01XA01',
+    bhytCoverage: 'Thanh toán 100% BHYT (Cần hội chẩn Dược lâm sàng/AMS)',
+    tdmMonitoring: 'Định lượng nồng độ đáy trước liều thứ 4: Mục tiêu 15 - 20 mcg/mL cho nhiễm khuẩn nặng (MRSA, viêm màng trong tim, viêm phổi).',
+    dialysisClearance: 'Lọc máu HD thông thường không loại được vancomycin. Dùng màng High-Flux hoặc CRRT thải trừ 30-50%, cần bù liều bổ sung sau lọc.',
   },
 };

@@ -59,6 +59,11 @@ export interface FiveRightsSafetyInfo {
   ddiWarnings: string[]; // Tương tác thuốc nghiêm trọng
   pregnancyLactation: string; // Phân loại thai kỳ FDA & cho con bú
   storageAndHandling: string; // Điều kiện bảo quản & quản lý vỏ ống
+  // Mở rộng Dược Bệnh Viện: ATC, BHYT, TDM & Lọc Máu
+  atcCode?: string; // Mã phân loại giải phẫu - điều trị - hóa học ATC (WHO)
+  bhytCoverage?: string; // Tỷ lệ thanh toán BHYT theo TT 20/2022/TT-BYT
+  tdmMonitoring?: string; // Giám sát nồng độ đáy/đỉnh TDM (Therapeutic Drug Monitoring)
+  dialysisClearance?: string; // Khả năng đào thải qua thận nhân tạo (HD / CRRT)
 }
 
 export interface MasterMedication {

@@ -115,9 +115,14 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
+              {(profile.atcCode || currentMed.atcCode) && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-200 text-slate-800 border border-slate-300">
+                  ATC: {profile.atcCode || currentMed.atcCode}
+                </span>
+              )}
               {currentMed.isControlled && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
-                  Thuốc gây nghiện (TT 18/2026)
+                  KSĐB (TT 18/2026)
                 </span>
               )}
               {currentMed.isHighAlert && (
@@ -127,7 +132,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
               )}
               {currentMed.isCrashCart && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
-                  Tủ trực cấp cứu
+                  Tủ cấp cứu
                 </span>
               )}
             </div>
@@ -137,33 +142,21 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
           <div className="flex items-center gap-1.5 mt-2.5 border-t border-slate-200/80 pt-2 overflow-x-auto scrollbar-none">
             <button
               onClick={() => setActiveTab('allergy')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${
-                activeTab === 'allergy'
-                  ? 'bg-rose-700 text-white shadow-2xs'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'allergy' ? 'bg-rose-700 text-white shadow-2xs' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
             >
               <AlertCircle className="w-3.5 h-3.5" />
               <span>Chỉ định &amp; Dị ứng</span>
             </button>
             <button
               onClick={() => setActiveTab('five_rights')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${
-                activeTab === 'five_rights'
-                  ? 'bg-teal-800 text-white shadow-2xs'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'five_rights' ? 'bg-teal-800 text-white shadow-2xs' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Quy chuẩn 5 Đúng</span>
             </button>
             <button
               onClick={() => setActiveTab('clinical_safety')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${
-                activeTab === 'clinical_safety'
-                  ? 'bg-teal-800 text-white shadow-2xs'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'clinical_safety' ? 'bg-teal-800 text-white shadow-2xs' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
             >
               <LifeBuoy className="w-3.5 h-3.5" />
               <span>Dược lý &amp; Giải độc</span>
