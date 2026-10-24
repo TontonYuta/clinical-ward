@@ -7,7 +7,13 @@
 
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
-import { isVerificationLinksVisible } from '../../config/clinicalVerification';
+import {
+  isVerificationLinksVisible,
+  getDavRegistryUrl,
+  getNidqcPharmacopeiaUrl,
+  getDailyMedFdaUrl,
+  getRegulatoryLawUrl,
+} from '../../config/clinicalVerification';
 
 export type VerificationSourceType = 'dav' | 'nidqc' | 'fda' | 'law' | 'pdf' | 'generic';
 
@@ -110,23 +116,23 @@ export const VerificationPanelSection: React.FC<{
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <VerificationBadgeLink
-          href="https://dichvucong.dav.gov.vn/congbothuoc/index"
+          href={getDavRegistryUrl(sdk, innName)}
           label={sdk ? `DAV SĐK: ${sdk}` : 'Cổng Dược DAV'}
           sourceType="dav"
         />
         <VerificationBadgeLink
-          href={`https://nidqc.org.vn/?s=${encodeURIComponent(cleanInn)}`}
+          href={getNidqcPharmacopeiaUrl(cleanInn)}
           label={`Dược Thư QG: ${cleanInn}`}
           sourceType="nidqc"
         />
         <VerificationBadgeLink
-          href={`https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=${encodeURIComponent(cleanInn)}`}
+          href={getDailyMedFdaUrl(cleanInn)}
           label="US FDA SPL (DailyMed)"
           sourceType="fda"
         />
         {legalBasis && (
           <VerificationBadgeLink
-            href={legalBasis.includes('20') ? 'https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-20-2017-TT-BYT-huong-dan-Luat-duoc-ve-thuoc-va-nguyen-lieu-lam-thuoc-phai-kiem-soat-dac-biet-349884.aspx' : 'https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-51-2017-TT-BYT-huong-dan-phong-chan-doan-va-xu-tri-phan-ve-372138.aspx'}
+            href={getRegulatoryLawUrl(legalBasis)}
             label={legalBasis.slice(0, 26)}
             sourceType="law"
           />

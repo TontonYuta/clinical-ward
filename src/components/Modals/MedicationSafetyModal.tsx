@@ -59,6 +59,9 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Hồ sơ Dược Lâm Sàng & Quy Chuẩn 5 Đúng"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
     >

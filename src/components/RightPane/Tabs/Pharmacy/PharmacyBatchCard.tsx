@@ -8,6 +8,7 @@ import React from 'react';
 import { ArrowUpRight, AlertOctagon, PackagePlus, ShieldAlert, ExternalLink } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
 import { useVerificationLinksVisible } from '../../../Common/VerificationBadgeLink';
+import { getNidqcPharmacopeiaUrl } from '../../../../config/clinicalVerification';
 
 interface PharmacyBatchCardProps {
   batch: InventoryBatch;
@@ -71,7 +72,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
           )}
           {verifyMode && batch.commodityType !== 'medical_supply' && (
             <a
-              href={`https://nidqc.org.vn/?s=${encodeURIComponent(batch.itemName.split(' ')[0])}`}
+              href={getNidqcPharmacopeiaUrl(batch.itemName)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}

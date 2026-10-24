@@ -48,16 +48,16 @@ async function main() {
   await page.waitForSelector('text=Cổng Dữ Liệu Dược Quốc Gia');
 
   // Verify SĐK links
-  const davLink = page.locator('table a[href*="dichvucong.dav.gov.vn"]').first();
+  const davLink = page.locator('table a[title*="Cục Quản lý Dược"]').first();
   const davHref = await davLink.getAttribute('href');
   console.log(`- DAV SĐK verification link href: ${davHref}`);
 
   // Verify NIDQC & FDA links in table
-  const nidqcLink = page.locator('table a[href*="nidqc.org.vn"]').first();
+  const nidqcLink = page.locator('table a[title*="Dược Thư QG"]').first();
   const nidqcHref = await nidqcLink.getAttribute('href');
   console.log(`- NIDQC Dược thư verification link href: ${nidqcHref}`);
 
-  const fdaLink = page.locator('table a[href*="dailymed.nlm.nih.gov"]').first();
+  const fdaLink = page.locator('table a[title*="US FDA"]').first();
   const fdaHref = await fdaLink.getAttribute('href');
   console.log(`- FDA DailyMed verification link href: ${fdaHref}`);
 
@@ -76,8 +76,8 @@ async function main() {
   console.log(`- Toggle button text after click: ${toggleBtnText}`);
 
   // Verify links are hidden
-  const davLinksCount = await page.locator('table a[href*="dichvucong.dav.gov.vn"]').count();
-  const nidqcLinksCount = await page.locator('table a[href*="nidqc.org.vn"]').count();
+  const davLinksCount = await page.locator('table a[title*="Cục Quản lý Dược"]').count();
+  const nidqcLinksCount = await page.locator('table a[title*="Dược Thư QG"]').count();
   console.log(`- DAV links count (should be 0): ${davLinksCount}`);
   console.log(`- NIDQC links count (should be 0): ${nidqcLinksCount}`);
 

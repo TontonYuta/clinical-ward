@@ -8,6 +8,7 @@
 import React from 'react';
 import { FiveRightsSafetyInfo } from '../../../types/medication';
 import { VerificationBadgeLink } from '../../Common/VerificationBadgeLink';
+import { getDailyMedFdaUrl } from '../../../config/clinicalVerification';
 
 interface Props {
   profile: FiveRightsSafetyInfo;
@@ -27,7 +28,7 @@ export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
             </span>
             {inn && (
               <VerificationBadgeLink
-                href={`https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=${encodeURIComponent(inn)}`}
+                href={getDailyMedFdaUrl(inn)}
                 label="FDA Boxed Warning"
                 sourceType="fda"
               />

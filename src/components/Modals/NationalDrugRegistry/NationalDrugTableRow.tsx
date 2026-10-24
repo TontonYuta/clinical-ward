@@ -8,6 +8,11 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { MasterMedication } from '../../../types/medication';
+import {
+  getDavRegistryUrl,
+  getNidqcPharmacopeiaUrl,
+  getDailyMedFdaUrl,
+} from '../../../config/clinicalVerification';
 
 interface NationalDrugTableRowProps {
   drug: MasterMedication;
@@ -29,7 +34,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
       <td className="py-3 px-4 whitespace-nowrap align-top">
         {verifyMode ? (
           <a
-            href="https://dichvucong.dav.gov.vn/congbothuoc/index"
+            href={getDavRegistryUrl(d.nationalCode, d.brandName)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono font-semibold text-teal-800 bg-teal-50/90 hover:bg-teal-100 px-2.5 py-1 rounded-md border border-teal-200/80 text-xs inline-flex items-center gap-1 transition"
@@ -62,7 +67,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           {verifyMode && (
             <>
               <a
-                href={`https://nidqc.org.vn/?s=${encodeURIComponent(cleanInn)}`}
+                href={getNidqcPharmacopeiaUrl(cleanInn)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-2xs font-medium text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 inline-flex items-center gap-0.5 transition"
@@ -72,7 +77,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
                 <ExternalLink className="w-2 h-2 opacity-60" />
               </a>
               <a
-                href={`https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=${encodeURIComponent(cleanInn)}`}
+                href={getDailyMedFdaUrl(cleanInn)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-2xs font-medium text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 inline-flex items-center gap-0.5 transition"

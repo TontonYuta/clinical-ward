@@ -67,7 +67,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
+    <div role="dialog" aria-modal="true" aria-label="Cổng Dữ Liệu Dược Quốc Gia" className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-[96vw] max-w-6xl lg:max-w-7xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header (Clean, spacious, 0 icon clutter) */}
         <div className="px-6 py-4 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
