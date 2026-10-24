@@ -271,24 +271,24 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
         </div>
 
         {/* 4B. Desktop Full Audit Log Table (hidden md:block) */}
-        <div className="hidden md:block flex-1 min-h-0 overflow-auto bg-white">
-          <table className="w-full text-left text-xs min-w-[850px]">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold shadow-2xs">
+        <div className="hidden md:block flex-1 min-h-0 overflow-auto bg-white border border-slate-300 rounded-xl m-3 shadow-xs">
+          <table className="w-full text-left text-xs min-w-[850px] border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-2.5 px-4 whitespace-nowrap bg-slate-50">Thời gian &amp; Số hồ sơ</th>
-                <th className="py-2.5 px-3 whitespace-nowrap bg-slate-50">Nghiệp vụ &amp; Căn cứ pháp lý</th>
-                <th className="py-2.5 px-3 whitespace-nowrap bg-slate-50">Đối tượng tác động</th>
-                <th className="py-2.5 px-3 whitespace-nowrap bg-slate-50">Người ký xác thực (CCHN)</th>
-                <th className="py-2.5 px-3 whitespace-nowrap bg-slate-50">Người làm chứng</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap bg-slate-50">Phương thức</th>
-                <th className="py-2.5 px-4 text-right whitespace-nowrap bg-slate-50">Tình trạng xác nhận</th>
+                <th className="py-2.5 px-4 whitespace-nowrap border-r border-slate-200">Thời gian &amp; Số hồ sơ</th>
+                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Nghiệp vụ &amp; Căn cứ pháp lý</th>
+                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Đối tượng tác động</th>
+                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Người ký xác thực (CCHN)</th>
+                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Người làm chứng</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap border-r border-slate-200">Phương thức</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tình trạng xác nhận</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredRecords.map((record) => (
-                <tr key={record.id} className="hover:bg-slate-50/80 transition">
+                <tr key={record.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-teal-50/40 transition-colors border-b border-slate-200/80">
                   {/* Timestamp & Code */}
-                  <td className="py-3 px-4 whitespace-nowrap">
+                  <td className="py-3 px-4 whitespace-nowrap border-r border-slate-200/70">
                     <span className="font-mono font-bold text-slate-900 block text-xs sm:text-sm">{record.id}</span>
                     <span className="text-xs font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -297,7 +297,7 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   </td>
 
                   {/* Action & Legal */}
-                  <td className="py-3 px-3.5 whitespace-nowrap">
+                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                     <span className="font-bold text-slate-900 block text-xs sm:text-sm">{record.actionTitle}</span>
                     <span className="inline-block mt-0.5 text-xs font-mono text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
                       {record.legalBasis}
@@ -305,13 +305,13 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   </td>
 
                   {/* Target Item */}
-                  <td className="py-3 px-3.5 whitespace-nowrap">
+                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                     <span className="font-semibold text-slate-800 block text-xs sm:text-sm">{record.targetItem}</span>
                     <span className="text-xs font-mono text-slate-400 mt-0.5 block">Hành động: {record.actionType}</span>
                   </td>
 
                   {/* Signer */}
-                  <td className="py-3 px-3.5 whitespace-nowrap">
+                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
                         {record.signerName.charAt(0)}
@@ -326,7 +326,7 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   </td>
 
                   {/* Witness */}
-                  <td className="py-3 px-3.5 whitespace-nowrap">
+                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                     {record.witnessName ? (
                       <div className="flex items-center gap-2 text-purple-900 bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-200">
                         <Users className="w-4 h-4 text-purple-700 shrink-0" />
@@ -343,7 +343,7 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   </td>
 
                   {/* Auth Method */}
-                  <td className="py-3 px-3.5 text-center whitespace-nowrap">
+                  <td className="py-3 px-3.5 text-center whitespace-nowrap border-r border-slate-200/70">
                     {record.authMethod === 'RFID_NFC' ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-300">
                         <CreditCard className="w-3.5 h-3.5 text-teal-600" />

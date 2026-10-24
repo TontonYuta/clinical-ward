@@ -241,41 +241,41 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       </div>
 
       {/* 4B. Desktop Table (hidden md:flex) - Pinned Sticky Header, Isolated Scroll Body */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-300 overflow-hidden flex-col shadow-xs">
         <div className="overflow-auto flex-1 pb-24">
-          <table className="w-full text-left text-sm min-w-[880px]">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-700 font-bold text-xs uppercase tracking-wider">
-                <th className="py-3.5 px-4 whitespace-nowrap">Mặt hàng y tế</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Số lô SX</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Hạn dùng (EXP)</th>
-                <th className="py-3.5 px-3 text-center whitespace-nowrap">Tồn kho / Mức Min</th>
-                <th className="py-3.5 px-3 text-center whitespace-nowrap">Tình trạng</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Vị trí kệ GSP</th>
-                <th className="py-3.5 px-4 text-right whitespace-nowrap">Thao tác</th>
+          <table className="w-full text-left text-sm min-w-[880px] border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700">
+              <tr className="font-bold text-xs uppercase tracking-wider">
+                <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mặt hàng y tế</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Số lô SX</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Hạn dùng (EXP)</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap border-r border-slate-200">Tồn kho / Mức Min</th>
+                <th className="py-3 px-3 text-center whitespace-nowrap border-r border-slate-200">Tình trạng</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Vị trí kệ GSP</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredBatches.map((batch) => {
                 const isUnderMin = batch.currentStock <= batch.minThreshold;
                 return (
-                  <tr key={batch.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4">
+                  <tr key={batch.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-teal-50/40 transition-colors border-b border-slate-200/80">
+                    <td className="py-3 px-4 border-r border-slate-200/70">
                       <span className="font-bold text-slate-950 block text-[15px] leading-snug">{batch.itemName}</span>
                       <span className="text-xs text-slate-600 font-medium block mt-0.5">{batch.category}</span>
                     </td>
-                    <td className="py-3.5 px-3.5 font-mono text-slate-800 font-bold text-xs whitespace-nowrap">
-                      <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200/70 inline-block">
+                    <td className="py-3 px-3.5 font-mono text-slate-800 font-bold text-xs whitespace-nowrap border-r border-slate-200/70">
+                      <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-300/70 inline-block">
                         {batch.batchNumber}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3.5 font-mono whitespace-nowrap">
+                    <td className="py-3 px-3.5 font-mono whitespace-nowrap border-r border-slate-200/70">
                       <span className="text-slate-950 font-bold block text-sm">{batch.expiryDate}</span>
                       <span className={`text-xs font-bold block mt-0.5 ${batch.daysLeft <= 60 ? 'text-rose-600' : 'text-slate-600'}`}>
                         Còn {batch.daysLeft} ngày
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-center font-mono whitespace-nowrap">
+                    <td className="py-3 px-3 text-center font-mono whitespace-nowrap border-r border-slate-200/70">
                       <div className="flex items-baseline justify-center gap-1">
                         <span className={`text-base font-extrabold ${isUnderMin ? 'text-rose-600' : 'text-slate-950'}`}>
                           {batch.currentStock}
@@ -283,7 +283,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
                         <span className="text-slate-600 text-xs font-semibold">/ Min: {batch.minThreshold}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                    <td className="py-3 px-3 text-center whitespace-nowrap border-r border-slate-200/70">
                       <div className="flex flex-col gap-1 items-center">
                         {batch.isNearExpiry && (
                           <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300">
@@ -304,15 +304,15 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-3.5 text-slate-800 text-xs font-semibold max-w-[180px] truncate" title={batch.warehouseLocation}>
+                    <td className="py-3 px-3.5 text-slate-800 text-xs font-semibold max-w-[180px] truncate border-r border-slate-200/70" title={batch.warehouseLocation}>
                       📍 {batch.warehouseLocation}
                     </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-2">
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-2 justify-end">
                         {isUnderMin && (
                           <button
                             onClick={() => setIsRestockModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
+                            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition cursor-pointer active:scale-98 whitespace-nowrap"
                             title="Lập phiếu dự trù nhập bổ sung cơ số thuốc theo Thông tư 22/2011"
                           >
                             <PackagePlus className="w-3.5 h-3.5 text-amber-700" />
@@ -321,7 +321,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
                         )}
                         <button
                           onClick={() => handleQuickDispatch(batch)}
-                          className={`inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer active:scale-98 ${
+                          className={`inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-98 ${
                             batch.isNearExpiry
                               ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
                               : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400'

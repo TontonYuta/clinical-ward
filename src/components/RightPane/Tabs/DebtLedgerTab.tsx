@@ -304,42 +304,42 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       </div>
 
       {/* 4B. Desktop Table (hidden md:flex) - Pinned Sticky Header, Isolated Scroll Body */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-300 overflow-hidden flex-col shadow-xs">
         <div className="overflow-auto flex-1 w-full pb-24">
-          <table className="w-full text-left text-sm table-fixed">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-700 font-bold text-xs uppercase tracking-wider">
-                <th className="py-3.5 px-4 w-28 whitespace-nowrap">Mã phiếu</th>
-                <th className="py-3.5 px-3.5 w-[26%]">Mặt hàng y tế</th>
-                <th className="py-3.5 px-2 text-center w-16 whitespace-nowrap">Số lượng</th>
-                <th className="py-3.5 px-3.5 w-[26%]">Bệnh nhân / Vị trí</th>
-                <th className="py-3.5 px-2 text-center w-24 whitespace-nowrap">Thời gian</th>
-                <th className="py-3.5 px-2 text-center w-32 whitespace-nowrap">Vỏ ống (TT 20)</th>
-                <th className="py-3.5 px-2 text-center w-28 whitespace-nowrap">Trạng thái</th>
-                <th className="py-3.5 px-4 text-right w-28 whitespace-nowrap">Thao tác</th>
+          <table className="w-full text-left text-sm table-fixed border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700">
+              <tr className="font-bold text-xs uppercase tracking-wider">
+                <th className="py-3 px-3.5 w-28 whitespace-nowrap border-r border-slate-200">Mã phiếu</th>
+                <th className="py-3 px-3.5 w-[26%] border-r border-slate-200">Mặt hàng y tế</th>
+                <th className="py-3 px-2 text-center w-20 whitespace-nowrap border-r border-slate-200">Số lượng</th>
+                <th className="py-3 px-3.5 w-[26%] border-r border-slate-200">Bệnh nhân / Vị trí</th>
+                <th className="py-3 px-2 text-center w-24 whitespace-nowrap border-r border-slate-200">Thời gian</th>
+                <th className="py-3 px-2 text-center w-32 whitespace-nowrap border-r border-slate-200">Vỏ ống (TT 20)</th>
+                <th className="py-3 px-2 text-center w-28 whitespace-nowrap border-r border-slate-200">Trạng thái</th>
+                <th className="py-3 px-3 text-right w-28 whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredDebts.map((item) => {
                 const isDebt = item.status === 'debt';
                 const isNarcotic = item.itemType === 'Thuốc gây nghiện';
                 return (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-mono text-slate-800 font-bold text-xs whitespace-nowrap">
-                      <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200/70 inline-block">
+                  <tr key={item.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-teal-50/40 transition-colors border-b border-slate-200/80">
+                    <td className="py-3 px-3.5 font-mono text-slate-800 font-bold text-xs whitespace-nowrap border-r border-slate-200/70">
+                      <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-300/70 inline-block">
                         {item.code}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3.5 pr-2">
+                    <td className="py-3 px-3.5 pr-2 border-r border-slate-200/70">
                       <span className="font-bold text-slate-950 block text-[15px] leading-snug truncate" title={item.itemName}>
                         {item.itemName}
                       </span>
                       <span className="text-xs text-slate-600 font-medium block truncate mt-0.5">{item.itemType}</span>
                     </td>
-                    <td className="py-3.5 px-2 text-center font-mono font-extrabold text-slate-950 text-base whitespace-nowrap">
+                    <td className="py-3 px-2 text-center font-mono font-extrabold text-slate-950 text-base whitespace-nowrap border-r border-slate-200/70">
                       {item.quantity}
                     </td>
-                    <td className="py-3.5 px-3.5 pr-2">
+                    <td className="py-3 px-3.5 pr-2 border-r border-slate-200/70">
                       <span className="text-slate-950 font-bold block text-[15px] leading-snug truncate" title={item.patientName}>
                         {item.patientName}
                       </span>
@@ -347,10 +347,10 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                         📍 {item.patientRoom}
                       </span>
                     </td>
-                    <td className="py-3.5 px-2 text-center text-slate-700 text-xs font-mono font-semibold whitespace-nowrap">
+                    <td className="py-3 px-2 text-center text-slate-700 text-xs font-mono font-semibold whitespace-nowrap border-r border-slate-200/70">
                       {item.borrowTime}
                     </td>
-                    <td className="py-3.5 px-2 text-center whitespace-nowrap">
+                    <td className="py-3 px-2 text-center whitespace-nowrap border-r border-slate-200/70">
                       {isNarcotic ? (
                         item.ampouleDestroyed ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
@@ -371,7 +371,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                         <span className="text-slate-300 text-xs">—</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-2 text-center whitespace-nowrap">
+                    <td className="py-3 px-2 text-center whitespace-nowrap border-r border-slate-200/70">
                       <span
                         className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
                           isDebt ? 'bg-amber-50 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'
@@ -380,7 +380,7 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
                         {isDebt ? 'Đang nợ' : 'Đã hoàn bù'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-2 justify-end">
                         <button
                           onClick={() => onOpenPrintForm?.(isNarcotic ? 'TT20_AMPOULE_DESTRUCTION' : 'EMERGENCY_BORROW_TICKET', item)}

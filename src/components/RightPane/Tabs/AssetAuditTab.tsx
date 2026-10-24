@@ -267,35 +267,35 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
       </div>
 
       {/* 2B. Desktop Table (hidden md:flex) - Sticky Thead, Isolated Scroll Body */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-300 overflow-hidden flex-col shadow-xs">
         <div className="flex-1 min-h-0 overflow-auto pb-24">
-          <table className="w-full text-left text-sm min-w-[720px]">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-700 font-bold text-xs uppercase tracking-wider">
-                <th className="py-3.5 px-4 whitespace-nowrap">Mã tài sản</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Thiết bị &amp; Cấp rủi ro</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Hao mòn &amp; Hiện trạng</th>
-                <th className="py-3.5 px-4 text-right whitespace-nowrap">Thao tác</th>
+          <table className="w-full text-left text-sm min-w-[720px] border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700">
+              <tr className="font-bold text-xs uppercase tracking-wider">
+                <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mã tài sản</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị &amp; Cấp rủi ro</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Đối soát vị trí (Sổ sách ➔ Thực tế)</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Hao mòn &amp; Hiện trạng</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredAssets.map((asset) => {
                 return (
-                  <tr key={asset.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-mono text-slate-800 whitespace-nowrap">
-                      <span className="font-bold text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200/70 block w-fit">
+                  <tr key={asset.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-teal-50/40 transition-colors border-b border-slate-200/80">
+                    <td className="py-3 px-4 font-mono text-slate-800 whitespace-nowrap border-r border-slate-200/70">
+                      <span className="font-bold text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-300/70 block w-fit">
                         {asset.code}
                       </span>
                       <span className="text-xs text-slate-600 font-medium block mt-1">SN: {asset.serialNumber}</span>
                     </td>
-                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                    <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                       <span className="font-bold text-[15px] text-slate-950 block leading-snug">{asset.deviceName}</span>
                       <span className="text-xs text-slate-600 font-medium block mt-0.5">
                         Model: <span className="text-slate-800 font-semibold">{asset.model}</span> · <span className="font-bold text-slate-800">Loại {asset.riskClass}</span>
                       </span>
                     </td>
-                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                    <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-slate-700 flex items-center gap-1.5 font-medium">
                           <Building2 className="w-3.5 h-3.5 text-slate-400" />
@@ -314,7 +314,7 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                    <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono text-sm text-slate-950 font-extrabold">{asset.depreciationRatePercent}%</span>
@@ -330,11 +330,11 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-2 justify-end">
                         <button
                           onClick={() => onOpenPrintForm?.('TSC_HANDOVER_TRANSFER', asset)}
-                          className="w-8.5 h-8.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-600 hover:text-teal-800 transition cursor-pointer flex items-center justify-center shadow-2xs"
+                          className="w-8.5 h-8.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600 hover:text-teal-800 transition cursor-pointer flex items-center justify-center"
                           title="In Biên bản bàn giao tài sản cho thiết bị này (Mẫu 01/TSC-BBGN)"
                         >
                           <Printer className="w-4 h-4" />
@@ -342,7 +342,7 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                         {asset.isMisallocated ? (
                           <button
                             onClick={() => handleTransfer(asset.id, asset.actualDepartment)}
-                            className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap"
+                            className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 whitespace-nowrap"
                             title="Xác nhận cập nhật vị trí mới trên sổ sách kế toán theo NĐ 151"
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -351,7 +351,7 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
                         ) : !asset.pendingLiquidation && asset.operatingYears >= 8 && (
                           <button
                             onClick={() => handleLiquidation(asset.id)}
-                            className={`inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer active:scale-98 whitespace-nowrap ${
+                            className={`inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 whitespace-nowrap ${
                               currentUserRole === 'director'
                                 ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
                                 : 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-800 border border-slate-300 hover:border-rose-300'
