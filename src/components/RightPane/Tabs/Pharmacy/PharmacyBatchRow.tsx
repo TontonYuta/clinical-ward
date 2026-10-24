@@ -41,7 +41,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
             <button
               type="button"
               onClick={() => onOpenSafetyGuide(batch.itemName)}
-              className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer"
+              className="text-xs font-medium px-2 py-0.5 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 cursor-pointer transition"
               title="Tra cứu thông tin thuốc, chỉ định & cảnh báo dị ứng"
             >
               Thông tin thuốc
@@ -53,19 +53,18 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-3xs font-semibold px-1.5 py-0.2 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
+              className="inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 transition"
               title="Kiểm chứng chuyên luận Dược Thư QG Việt Nam (NIDQC)"
             >
               <span>Kiểm chứng</span>
-              <ExternalLink className="w-2 h-2 opacity-60" />
+              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
             </a>
           )}
           {batch.isControlledSubstance && (
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-200"
+              className="text-xs font-semibold px-2 py-0.5 rounded-md bg-rose-50 text-rose-800 border border-rose-200"
               title="Thuốc kiểm soát đặc biệt theo Thông tư 18/2026/TT-BYT"
             >
-              <ShieldAlert className="w-3 h-3 text-rose-600" />
               KSĐB
             </span>
           )}

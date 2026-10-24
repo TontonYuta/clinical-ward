@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, PackagePlus, Building2, Store } from 'lucide-react';
+import { Search, PackagePlus } from 'lucide-react';
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
 export type CommodityFilter = 'all' | 'medication' | 'medical_supply';
@@ -71,8 +71,8 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md text-xs font-bold">
             <button onClick={() => setWarehouse('all')} className={`px-3 py-1.5 rounded-md cursor-pointer ${warehouse === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}>Tất cả kho</button>
-            <button onClick={() => setWarehouse('inpatient')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md cursor-pointer ${warehouse === 'inpatient' ? 'bg-teal-800 text-white shadow-xs' : 'text-slate-600'}`}><Building2 className="w-3.5 h-3.5" /> Kho nội trú</button>
-            <button onClick={() => setWarehouse('outpatient')} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md cursor-pointer ${warehouse === 'outpatient' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600'}`}><Store className="w-3.5 h-3.5" /> Kho ngoại trú</button>
+            <button onClick={() => setWarehouse('inpatient')} className={`px-3 py-1.5 rounded-md cursor-pointer ${warehouse === 'inpatient' ? 'bg-teal-800 text-white shadow-xs' : 'text-slate-600'}`}>Kho nội trú</button>
+            <button onClick={() => setWarehouse('outpatient')} className={`px-3 py-1.5 rounded-md cursor-pointer ${warehouse === 'outpatient' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600'}`}>Kho ngoại trú</button>
           </div>
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md text-xs font-medium">
             <button onClick={() => setCommodity('all')} className={`px-2.5 py-1 rounded cursor-pointer ${commodity === 'all' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600'}`}>Tất cả</button>
@@ -96,12 +96,11 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
             {onOpenNationalRegistry && (
               <button
                 onClick={onOpenNationalRegistry}
-                className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-teal-800 font-medium text-xs transition cursor-pointer shadow-2xs shrink-0"
+                className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 hover:text-teal-900 font-semibold text-xs transition cursor-pointer shadow-2xs shrink-0"
                 title="Tra cứu Cổng Dữ Liệu Dược Quốc Gia (Cục Quản lý Dược - Bộ Y Tế)"
               >
-                <Building2 className="w-3.5 h-3.5 text-teal-600" />
                 <span>Dược Quốc Gia</span>
-                <span className="px-1.5 py-0.2 rounded-full text-3xs font-mono font-bold bg-teal-50 text-teal-700 border border-teal-200/60">55k SĐK</span>
+                <span className="px-1.5 py-0.5 rounded text-2xs font-mono font-bold bg-teal-50 text-teal-800 border border-teal-200">55k SĐK</span>
               </button>
             )}
             {lowStockCount > 0 && (

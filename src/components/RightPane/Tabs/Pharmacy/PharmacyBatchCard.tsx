@@ -63,7 +63,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
             <button
               type="button"
               onClick={() => onOpenSafetyGuide(batch.itemName)}
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer"
+              className="text-xs font-medium px-2 py-0.5 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 cursor-pointer transition"
               title="Tra cứu thông tin thuốc, chỉ định & cảnh báo dị ứng"
             >
               Thông tin thuốc
@@ -75,16 +75,16 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-3xs font-semibold px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
+              className="inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition"
               title="Kiểm chứng chuyên luận Dược Thư QG Việt Nam (NIDQC)"
             >
               <span>Kiểm chứng</span>
-              <ExternalLink className="w-2 h-2 opacity-60" />
+              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
             </a>
           )}
           {batch.isControlledSubstance && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-0.5">
-              <ShieldAlert className="w-2.5 h-2.5" /> KSĐB
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-rose-50 text-rose-800 border border-rose-200">
+              KSĐB
             </span>
           )}
         </div>

@@ -1,11 +1,11 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Bảng Chi tiết Giám sát Lâm sàng, Giải độc Antidote & Pháp lý Quản lý Dược (<=200 LOC)
+ * Bảng Chi tiết Giám sát Lâm sàng, Giải độc Antidote & Dược Bệnh Viện (<=200 LOC)
+ * Giao diện tối ưu không gian rộng, typography rõ nét, loại bỏ icon thừa
  */
 
 import React from 'react';
-import { ShieldAlert, LifeBuoy, AlertOctagon, GitCompare, Baby, Lock } from 'lucide-react';
 import { FiveRightsSafetyInfo } from '../../../types/medication';
 import { VerificationBadgeLink } from '../../Common/VerificationBadgeLink';
 
@@ -14,114 +14,116 @@ interface Props {
 }
 
 export const MedicationClinicalSafetyView: React.FC<Props> = ({ profile }) => {
+  const inn = profile.composition?.activeIngredients?.[0]?.innName;
+
   return (
-    <div className="space-y-3 text-xs">
-      {/* Cảnh báo hộp đen (nếu có) */}
+    <div className="space-y-4 text-sm text-slate-800">
+      {/* CẢNH BÁO NGUY CƠ CAO (BLACK BOX WARNING) */}
       {profile.blackBoxWarning && (
-        <div className="p-3 bg-rose-50 border-2 border-rose-300 rounded-lg text-rose-950 space-y-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 font-bold text-rose-900 text-xs">
-              <AlertOctagon className="w-4 h-4 text-rose-700 shrink-0" />
-              <span>Cảnh báo nguy cơ cao (Black Box)</span>
-            </div>
-            {profile.composition?.activeIngredients?.[0]?.innName && (
+        <div className="p-4 bg-white border-2 border-rose-200 rounded-xl space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between pb-2 border-b border-rose-100">
+            <span className="font-bold text-rose-950 text-sm">
+              Cảnh báo nguy cơ cao (Black Box Warning)
+            </span>
+            {inn && (
               <VerificationBadgeLink
-                href={`https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=${encodeURIComponent(profile.composition.activeIngredients[0].innName)}`}
+                href={`https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=${encodeURIComponent(inn)}`}
                 label="FDA Boxed Warning"
                 sourceType="fda"
               />
             )}
           </div>
-          <p className="text-[11.5px] leading-relaxed font-medium">{profile.blackBoxWarning}</p>
-        </div>
-      )}
-
-      {/* Thuốc giải độc đặc hiệu (Antidote) */}
-      {profile.antidote && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-950 space-y-1">
-          <div className="flex items-center gap-1.5 font-bold text-emerald-900 text-xs">
-            <LifeBuoy className="w-4 h-4 text-emerald-700 shrink-0" />
-            <span>Thuốc giải độc (Antidote)</span>
-          </div>
-          <p className="font-semibold text-emerald-800 bg-white p-2 rounded border border-emerald-200">
-            {profile.antidote}
+          <p className="text-xs sm:text-sm leading-relaxed text-rose-900 font-medium">
+            {profile.blackBoxWarning}
           </p>
         </div>
       )}
 
-      {/* Tác dụng phụ thường gặp & Ngộ độc */}
-      <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
-        <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-          <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Tác dụng phụ &amp; Quá liều</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {profile.adverseReactions.map((adr, i) => (
-            <span key={i} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-800 text-[11px] font-medium">
-              • {adr}
+      {/* 2-COLUMN GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* CỘT 1: GIẢI ĐỘC, TÁC DỤNG PHỤ & THEO DÕI */}
+        <div className="space-y-4">
+          {/* Thuốc giải độc đặc hiệu (Antidote) */}
+          {profile.antidote && (
+            <div className="p-4 bg-white border border-slate-200/90 rounded-xl space-y-2 shadow-2xs">
+              <span className="font-bold text-slate-900 text-sm block pb-2 border-b border-slate-100">
+                Thuốc giải độc đặc hiệu (Antidote)
+              </span>
+              <p className="font-bold text-emerald-900 bg-emerald-50/80 p-3 rounded-lg border border-emerald-200 text-sm">
+                {profile.antidote}
+              </p>
+            </div>
+          )}
+
+          {/* Tác dụng phụ thường gặp & Quá liều */}
+          <div className="p-4 bg-white border border-slate-200/90 rounded-xl space-y-3 shadow-2xs">
+            <span className="font-bold text-slate-900 text-sm block pb-2 border-b border-slate-100">
+              Tác dụng phụ thường gặp &amp; Dấu hiệu quá liều
             </span>
-          ))}
-        </div>
-        <div className="text-slate-600 text-[11px] pt-1 border-t border-slate-200">
-          <strong className="text-slate-800">Theo dõi lâm sàng:</strong> {profile.clinicalMonitoring}
-        </div>
-      </div>
-
-      {/* Tương tác thuốc nghiêm trọng */}
-      {profile.ddiWarnings && profile.ddiWarnings.length > 0 && (
-        <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg space-y-1.5">
-          <div className="flex items-center gap-1.5 font-bold text-amber-900 text-xs">
-            <GitCompare className="w-4 h-4 text-amber-700 shrink-0" />
-            <span>Tương Tác Thuốc Cần Tránh (DDI Warning)</span>
+            <div className="flex flex-wrap gap-1.5">
+              {profile.adverseReactions.map((adr, i) => (
+                <span key={i} className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium">
+                  • {adr}
+                </span>
+              ))}
+            </div>
+            <div className="text-xs sm:text-sm text-slate-600 pt-2 border-t border-slate-100">
+              <strong className="text-slate-900">Theo dõi lâm sàng: </strong>
+              {profile.clinicalMonitoring}
+            </div>
           </div>
-          <ul className="list-disc list-inside space-y-1 text-amber-900 text-[11.5px]">
-            {profile.ddiWarnings.map((ddi, i) => (
-              <li key={i}>{ddi}</li>
-            ))}
-          </ul>
         </div>
-      )}
 
-      {/* Giám sát TDM & Lọc máu ngoài thận (nếu có) */}
-      {(profile.tdmMonitoring || profile.dialysisClearance) && (
-        <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-lg space-y-1.5">
-          <div className="flex items-center gap-1.5 font-bold text-blue-900 text-xs">
-            <ShieldAlert className="w-4 h-4 text-blue-700 shrink-0" />
-            <span>Giám Sát Nồng Độ Thuốc (TDM) &amp; Lọc Máu Thận Nhân Tạo</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11.5px]">
-            {profile.tdmMonitoring && (
-              <div className="bg-white p-2 rounded border border-blue-200">
-                <strong className="text-blue-950 block">Mục tiêu nồng độ đáy (Trough):</strong>
-                <span className="text-slate-800">{profile.tdmMonitoring}</span>
+        {/* CỘT 2: TƯƠNG TÁC THUỐC (DDI) & TDM & THAI KỲ */}
+        <div className="space-y-4">
+          {/* Tương tác thuốc nghiêm trọng */}
+          {profile.ddiWarnings && profile.ddiWarnings.length > 0 && (
+            <div className="p-4 bg-white border border-slate-200/90 rounded-xl space-y-2.5 shadow-2xs">
+              <span className="font-bold text-amber-950 text-sm block pb-2 border-b border-amber-100">
+                Tương tác thuốc nghiêm trọng cần tránh (DDI)
+              </span>
+              <ul className="list-disc list-inside space-y-1.5 text-amber-900 text-xs sm:text-sm leading-relaxed">
+                {profile.ddiWarnings.map((ddi, i) => (
+                  <li key={i}>{ddi}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Giám sát TDM & Lọc máu ngoài thận */}
+          {(profile.tdmMonitoring || profile.dialysisClearance) && (
+            <div className="p-4 bg-white border border-slate-200/90 rounded-xl space-y-2 shadow-2xs">
+              <span className="font-bold text-slate-900 text-sm block pb-2 border-b border-slate-100">
+                Giám sát nồng độ thuốc (TDM) &amp; Thải trừ lọc máu
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {profile.tdmMonitoring && (
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <strong className="text-slate-900 block mb-0.5">Nồng độ đáy (Trough):</strong>
+                    <span className="text-slate-700">{profile.tdmMonitoring}</span>
+                  </div>
+                )}
+                {profile.dialysisClearance && (
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <strong className="text-slate-900 block mb-0.5">Lọc máu (HD/CRRT):</strong>
+                    <span className="text-slate-700">{profile.dialysisClearance}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {profile.dialysisClearance && (
-              <div className="bg-white p-2 rounded border border-blue-200">
-                <strong className="text-blue-950 block">Thải trừ qua lọc máu (HD/CRRT):</strong>
-                <span className="text-slate-800">{profile.dialysisClearance}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* Thai kỳ & Quản lý bảo quản */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-          <div className="flex items-center gap-1 font-bold text-slate-800 text-xs">
-            <Baby className="w-3.5 h-3.5 text-purple-600" />
-            <span>Phụ Nữ Mang Thai &amp; Cho Con Bú</span>
+          {/* Thai kỳ & Bảo quản */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3 bg-white border border-slate-200/90 rounded-xl space-y-1 shadow-2xs">
+              <span className="font-bold text-slate-900 text-xs block">Phụ nữ mang thai &amp; Cho con bú:</span>
+              <p className="text-slate-600 text-xs leading-relaxed">{profile.pregnancyLactation}</p>
+            </div>
+            <div className="p-3 bg-white border border-slate-200/90 rounded-xl space-y-1 shadow-2xs">
+              <span className="font-bold text-slate-900 text-xs block">Bảo quản &amp; Quản lý vỏ ống:</span>
+              <p className="text-slate-600 text-xs leading-relaxed">{profile.storageAndHandling}</p>
+            </div>
           </div>
-          <p className="text-slate-600 text-[11px]">{profile.pregnancyLactation}</p>
-        </div>
-
-        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-          <div className="flex items-center gap-1 font-bold text-slate-800 text-xs">
-            <Lock className="w-3.5 h-3.5 text-teal-600" />
-            <span>Bảo Quản &amp; Quản Lý Vỏ Ống (TT 18/2026)</span>
-          </div>
-          <p className="text-slate-600 text-[11px]">{profile.storageAndHandling}</p>
         </div>
       </div>
     </div>

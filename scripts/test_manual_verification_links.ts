@@ -98,7 +98,7 @@ async function main() {
   await page.waitForTimeout(1000);
 
   // Verify VerificationPanelSection is present
-  const panelSection = page.locator('text=Liên kết kiểm chứng y tế thủ công');
+  const panelSection = page.locator('text=Đối soát nguồn y tế chính thống');
   const hasPanelSection = (await panelSection.count()) > 0;
   console.log(`- VerificationPanelSection rendered: ${hasPanelSection}`);
 
@@ -106,9 +106,19 @@ async function main() {
   await page.screenshot({ path: shot3 });
   console.log(`📸 Screenshot saved: ${shot3}`);
 
-  // 6. Test Tab "Dược lý & Giải độc"
-  console.log('7. Switching to tab "Dược lý & Giải độc"...');
-  const clinicalTabBtn = page.locator('button:has-text("Dược lý & Giải độc")').first();
+  // 6. Test Tab "Quy chuẩn 5 Đúng"
+  console.log('7. Switching to tab "Quy chuẩn 5 Đúng"...');
+  const fiveRightsTabBtn = page.locator('button:has-text("Quy chuẩn 5 Đúng")').first();
+  await fiveRightsTabBtn.click();
+  await page.waitForTimeout(500);
+
+  const shot35 = path.join(ARTIFACTS_DIR, '35_medication_safety_five_rights_grid.png');
+  await page.screenshot({ path: shot35 });
+  console.log(`📸 Screenshot saved: ${shot35}`);
+
+  // 7. Test Tab "Dược lý, Giải độc"
+  console.log('8. Switching to tab "Dược lý, Giải độc"...');
+  const clinicalTabBtn = page.locator('button:has-text("Dược lý, Giải độc")').first();
   await clinicalTabBtn.click();
   await page.waitForTimeout(500);
 
