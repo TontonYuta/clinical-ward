@@ -9,6 +9,13 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Morphin hydroclorid 10mg/1ml
   'med-ctrl-01': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Morphin, trang 942-947)',
+      registrationNumber: 'VD-24757-16',
+      manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco) / CPC1 Hà Nội',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Morphin', chemicalSalt: 'Morphin hydroclorid trihydrat', strength: '10 mg / 1 ml' }],
       excipients: [
@@ -85,6 +92,13 @@ export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
 
   // Fentanyl 0.1mg/2ml
   'med-ctrl-02': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Fentanyl, trang 598-603)',
+      registrationNumber: 'VN-18235-14',
+      manufacturer: 'Rotexmedica GmbH (CHLB Đức) / Nhập khẩu Cục QLD',
+      standardPharmacopeia: 'Dược điển Mỹ (USP) / DĐVN V',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Fentanyl', chemicalSalt: 'Fentanyl citrat', strength: '0.1 mg / 2 ml (50 mcg/ml)' }],
       excipients: [

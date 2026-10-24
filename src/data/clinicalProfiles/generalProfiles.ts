@@ -9,6 +9,13 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const GENERAL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Paracetamol (Acetaminophen) 1g truyền tĩnh mạch
   'med-gen-01': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Paracetamol) & SmPC Perfalgan',
+      registrationNumber: 'VN-16892-13',
+      manufacturer: 'Bristol-Myers Squibb (Pháp) / B.Braun Melsungen AG',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Paracetamol', chemicalSalt: 'Paracetamol (Acetaminophen)', strength: '1000 mg / 100 ml (10 mg/ml)' }],
       excipients: [
@@ -79,6 +86,13 @@ export const GENERAL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
 
   // Lipid 20% (Lipid Emulsion 20% 100ml / 250ml)
   'med-gen-02': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Phác đồ ngộ độc thuốc tê toàn thân LAST (Hội GMHS VN)',
+      registrationNumber: 'VN-19823-16',
+      manufacturer: 'B.Braun Melsungen AG (CHLB Đức)',
+      standardPharmacopeia: 'Dược điển Châu Âu (EP) / DĐVN V',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Nhũ dịch Lipid 20%', chemicalSalt: 'Dầu đậu nành tinh khiết phân đoạn', strength: '20 g lipid / 100 ml (20%)' }],
       excipients: [

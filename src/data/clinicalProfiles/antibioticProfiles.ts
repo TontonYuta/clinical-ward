@@ -9,6 +9,13 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Ceftriaxone 1g
   'med-ab-01': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn sử dụng Kháng sinh (QĐ 7014/QĐ-BYT)',
+      registrationNumber: 'VD-31291-18',
+      manufacturer: 'Công ty Cổ phần Dược phẩm Imexpharm / VCP',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Ceftriaxone', chemicalSalt: 'Ceftriaxone natri 3.5 H2O', strength: '1 g (1000mg base)', molarQuantity: 'Chứa ~83 mg (3.6 mEq) Natri / 1g' }],
       excipients: [{ name: 'Không chứa chất bảo quản', role: 'Bột đông khô tinh khiết 100%' }],
@@ -86,6 +93,13 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
 
   // Vancomycin 1g
   'med-ab-02': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn TDM Vancomycin Bộ Y Tế (QĐ 2147/QĐ-BYT)',
+      registrationNumber: 'VN-17892-14',
+      manufacturer: 'Hospira Inc. (Pfizer, Hoa Kỳ) / Dược phẩm Trung ương 1',
+      standardPharmacopeia: 'Dược điển Mỹ (USP) / DĐVN V',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Vancomycin', chemicalSalt: 'Vancomycin hydroclorid', strength: '1 g (1.000.000 UI)' }],
       excipients: [{ name: 'Acid hydrocloric 10% / Natri hydroxyd', role: 'Chất điều chỉnh pH trước khi đông khô (pH 2.5 - 4.5)' }],

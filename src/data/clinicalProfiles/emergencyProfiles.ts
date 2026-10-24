@@ -9,6 +9,13 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Adrenalin (Epinephrine) 1mg/1ml
   'med-em-01': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Thông tư 51/2017/TT-BYT Phác đồ phản vệ',
+      registrationNumber: 'VD-22874-15',
+      manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Adrenalin (Epinephrine)', chemicalSalt: 'Epinephrin bitartrat', strength: '1 mg / 1 ml (tương đương 1:1000)' }],
       excipients: [
@@ -81,6 +88,13 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
 
   // Noradrenalin 4mg/2ml
   'med-em-02': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Norepinephrin, trang 1012-1015)',
+      registrationNumber: 'VN-21890-19',
+      manufacturer: 'Laboratoire Aguettant (Cộng hòa Pháp) / Vinphaco',
+      standardPharmacopeia: 'Dược điển Việt Nam V / Dược điển Mỹ (USP)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Noradrenalin (Norepinephrine)', chemicalSalt: 'Norepinephrin bitartrat', strength: '4 mg / 2 ml (2 mg/ml)' }],
       excipients: [

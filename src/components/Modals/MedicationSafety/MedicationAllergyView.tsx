@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { ShieldAlert, AlertTriangle, Activity, Stethoscope, Sparkles, FlaskConical, Package } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Activity, Stethoscope, Sparkles, FlaskConical, Package, BookOpen, ShieldCheck } from 'lucide-react';
 import { FiveRightsSafetyInfo } from '../../../types/medication';
 
 interface MedicationAllergyViewProps {
@@ -16,11 +16,39 @@ interface MedicationAllergyViewProps {
 export const MedicationAllergyView: React.FC<MedicationAllergyViewProps> = ({ profile, medName }) => {
   const comp = profile.composition;
   const allergy = profile.allergyProfile;
+  const source = profile.officialSource;
   const indications = profile.indications || ['Điều trị các bệnh lý theo chỉ định chuyên khoa.', profile.targetPopulation];
 
   return (
-    <div className="space-y-3.5 text-xs">
-      {/* 1. KHỐI THÀNH PHẦN THUỐC & DẠNG BÀO CHẾ (DĐVN V & DƯỢC THƯ) */}
+    <div className="space-y-3 text-xs">
+      {/* NGUỒN TRÍCH XUẤT Y TẾ CHÍNH THỨC */}
+      {source && (
+        <div className="p-2.5 bg-teal-50/70 border border-teal-200/90 rounded-lg text-[11px] space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-teal-950 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-teal-700" />
+              Nguồn trích xuất y tế chính thức:
+            </span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-200">
+              {source.approvalAuthority || 'Bộ Y Tế'}
+            </span>
+          </div>
+          <div className="font-semibold text-slate-800">{source.documentName}</div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-slate-600 text-[10.5px] pt-0.5 border-t border-teal-100">
+            {source.registrationNumber && (
+              <span>SĐK: <strong className="text-slate-900 font-mono">{source.registrationNumber}</strong></span>
+            )}
+            {source.manufacturer && (
+              <span>NSX/Hiệu thuốc: <strong className="text-slate-800">{source.manufacturer}</strong></span>
+            )}
+            {source.standardPharmacopeia && (
+              <span>Chuẩn: <strong className="text-slate-800">{source.standardPharmacopeia}</strong></span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 1. KHỐI THÀNH PHẦN THUỐC & DẠNG BÀO CHẾ */}
       <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
         <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-200">
           <div className="flex items-center gap-2">

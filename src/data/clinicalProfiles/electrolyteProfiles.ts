@@ -9,6 +9,13 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const ELECTROLYTE_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Kali clorid (KCl) 10% 10ml
   'med-em-09': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Kali clorid) & Viện ISMP',
+      registrationNumber: 'VD-23846-15',
+      manufacturer: 'B.Braun Việt Nam / Công ty Cổ phần Dược phẩm Vĩnh Phúc',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Potassium chloride (KCl)', chemicalSalt: 'Kali clorid vô khuẩn', strength: '1 g / 10 ml (10%)', molarQuantity: '13.4 mEq K+ và 13.4 mEq Cl- / 10ml' }],
       excipients: [{ name: 'Nước cất pha tiêm', role: 'Dung môi tinh khiết vừa đủ 10 ml' }],

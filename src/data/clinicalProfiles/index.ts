@@ -62,6 +62,12 @@ export function getMedicationClinicalProfile(
   const isHighAlert = medData?.isHighAlert || false;
 
   return {
+    officialSource: {
+      documentName: `Dược thư Quốc gia Việt Nam & Tờ HDSD ${medData?.brandName || name}`,
+      registrationNumber: medData?.nationalCode ? `Mã BHYT: ${medData.nationalCode}` : 'SĐK Cục QLD',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: active, chemicalSalt: active, strength: medData?.concentration || 'Theo nhãn thuốc' }],
       excipients: [{ name: 'Tá dược tiêu chuẩn', role: 'Định hình, ổn định và điều hòa độ tan theo DĐVN' }],

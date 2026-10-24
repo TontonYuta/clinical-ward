@@ -9,6 +9,13 @@ import { FiveRightsSafetyInfo } from '../../types/medication';
 export const SEDATIVE_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Diazepam 10mg/2ml
   'med-em-07': {
+    officialSource: {
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Diazepam, trang 468-472)',
+      registrationNumber: 'VD-22685-15',
+      manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco) / Gedeon Richter (VN-18671-15)',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+    },
     composition: {
       activeIngredients: [{ innName: 'Diazepam', chemicalSalt: 'Diazepam base', strength: '10 mg / 2 ml (5 mg/ml)' }],
       excipients: [

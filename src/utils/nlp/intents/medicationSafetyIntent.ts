@@ -78,6 +78,8 @@ export function handleMedicationSafetyIntent(
    • **Xử trí khi nghi ngờ phản vệ**: ${allergy.emergencyManagement}`
     : `⚠️ **CẢNH BÁO DỊ ỨNG**: Chống chỉ định người có tiền sử mẫn cảm với hoạt chất hoặc tá dược. Xử trí Adrenalin nếu phản vệ theo TT 51/2017/TT-BYT.`;
 
+  const src = profile.officialSource;
+
   const replyText = `### Dược Thư Lâm Sàng & Cảnh Báo An Toàn: **${profile.tallManLASA || matched.name}**
 *(Theo QĐ 2147/QĐ-BYT, Dược điển Việt Nam V & Thông tư 51/2017/TT-BYT)*
 
@@ -95,6 +97,7 @@ ${allergyWarningText}
    • **Đúng Thời gian**: ${profile.timingAndFrequency}
 ${profile.antidote ? `\n🧪 **Thuốc giải độc đặc hiệu (Antidote)**: **${profile.antidote}**` : ''}
 ${profile.blackBoxWarning ? `\n⛔ **${profile.blackBoxWarning}**` : ''}
+${src ? `\n📚 **Nguồn trích xuất chính thức**: ${src.documentName} (SĐK: ${src.registrationNumber || 'Cục QLD'}, ${src.approvalAuthority || 'Bộ Y Tế'})` : ''}
 
 👉 Bấm nút bên dưới để mở toàn bộ Hồ sơ Dược thư lâm sàng & bảng checklist đối soát điều dưỡng.`;
 
@@ -112,6 +115,7 @@ ${profile.blackBoxWarning ? `\n⛔ **${profile.blackBoxWarning}**` : ''}
       crossReactivities: allergy?.crossReactivities,
       antidote: profile.antidote,
       standardDosing: profile.standardDosing,
+      officialSource: src ? `${src.documentName} (SĐK: ${src.registrationNumber})` : undefined,
     },
     primaryActionLabel: 'Mở Dược Thư & Thành Phần Chi Tiết',
     primaryActionType: 'OPEN_MEDICATION_SAFETY',
@@ -124,9 +128,9 @@ ${profile.blackBoxWarning ? `\n⛔ **${profile.blackBoxWarning}**` : ''}
     text: replyText,
     timestamp: nowStr,
     legalReference: {
-      lawCode: 'DĐVN V & QĐ 2147/QĐ-BYT & TT 51/2017',
-      title: 'Dược điển Việt Nam V & Dược lâm sàng',
-      clause: 'Thành phần công thức, an toàn dùng thuốc & phản vệ',
+      lawCode: src?.registrationNumber ? `SĐK: ${src.registrationNumber}` : 'DĐVN V & QĐ 2147/QĐ-BYT & TT 51/2017',
+      title: src?.documentName || 'Dược điển Việt Nam V & Dược lâm sàng',
+      clause: src?.approvalAuthority || 'Thành phần công thức, an toàn dùng thuốc & phản vệ',
     },
     card,
   };

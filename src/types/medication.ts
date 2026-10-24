@@ -13,6 +13,14 @@ export type MedicationGroup =
   | 'Dịch truyền'
   | 'Vật tư tiêu hao';
 
+export interface OfficialMedicalSource {
+  documentName: string; // Tên văn bản y tế chính thống (Dược thư Quốc gia, SmPC)
+  registrationNumber?: string; // Số đăng ký lưu hành (SĐK) Cục Quản lý Dược cấp
+  manufacturer?: string; // Cơ sở sản xuất / Hiệu thuốc
+  standardPharmacopeia?: string; // Tiêu chuẩn Dược điển (DĐVN V, USP, EP)
+  approvalAuthority?: string; // Cơ quan phê duyệt (Cục Quản lý Dược - Bộ Y Tế)
+}
+
 export interface MedicationComposition {
   activeIngredients: {
     innName: string; // Tên gốc quốc tế INN
@@ -43,6 +51,8 @@ export interface MedicationAllergyProfile {
 }
 
 export interface FiveRightsSafetyInfo {
+  // Nguồn trích xuất y tế chính xác (Dược thư Quốc gia & Cục Quản lý Dược)
+  officialSource?: OfficialMedicalSource;
   // Thành phần công thức thuốc đầy đủ (Dược điển & Dược thư)
   composition?: MedicationComposition;
   // Chỉ định điều trị lâm sàng & Cơ chế ("Dùng để làm gì")
