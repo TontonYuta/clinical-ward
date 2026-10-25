@@ -162,20 +162,17 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* AI Copilot Toggle - Single Canonical Access Point */}
+        {/* AI Copilot Toggle - Single Canonical Access Point with Cmd+K */}
         {onToggleCopilot && (
           <button
             onClick={onToggleCopilot}
-            aria-label="Trợ lý AI lâm sàng"
-            className={`h-8.5 px-2.5 sm:px-3 rounded-md border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              isCopilotOpen
-                ? 'bg-teal-800 text-white border-teal-800 font-semibold'
-                : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-            }`}
-            title="Bật/tắt trợ lý AI lâm sàng"
+            aria-label="Trợ lý AI lâm sàng (Cmd+K / Ctrl+K)"
+            className={`h-8.5 px-2.5 sm:px-3 rounded-md border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition cursor-pointer shrink-0 ${isCopilotOpen ? 'bg-teal-800 text-white border-teal-800 font-semibold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'}`}
+            title="Bật/tắt trợ lý AI lâm sàng (Phím tắt ⌘K hoặc Ctrl+K)"
           >
             <Bot className={`w-4 h-4 shrink-0 ${isCopilotOpen ? 'text-white' : 'text-teal-700'}`} />
             <span className="hidden md:inline">Trợ lý AI</span>
+            <kbd className={`hidden lg:inline-flex items-center px-1 py-0.2 text-2xs font-mono rounded border ${isCopilotOpen ? 'bg-teal-900 border-teal-700 text-teal-200' : 'bg-slate-100 border-slate-200 text-slate-500'}`}>⌘K</kbd>
           </button>
         )}
 

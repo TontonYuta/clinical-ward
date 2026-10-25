@@ -1,3 +1,4 @@
+import time
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +21,19 @@ Nguyên tắc phản hồi:
 - Ngắn gọn, chuyên nghiệp, chuẩn xác từng thuật ngữ y khoa và căn cứ pháp lý.
 - Định dạng Markdown rõ ràng, dùng bullet points, in đậm tên thuốc, liều dùng."""
 
+_RESPONSE_CACHE: dict[str, tuple[str, float]] = {}
+CACHE_TTL_SEC = 3600.0  # 1 hour
+MAX_CACHE_ITEMS = 200
+
 async def query_gemini_models(prompt: str, api_key: str) -> str | None:
+    cache_key = prompt.strip().lower()
+    cached = _RESPONSE_CACHE.get(cache_key)
+    if cached:
+        text, timestamp = cached
+        if time.time() - timestamp < CACHE_TTL_SEC:
+            return text
+        _RESPONSE_CACHE.pop(cache_key, None)
+
     models = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -38,7 +51,12 @@ async def query_gemini_models(prompt: str, api_key: str) -> str | None:
                     if candidates:
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts and "text" in parts[0]:
-                            return parts[0]["text"].strip()
+                            result_text = parts[0]["text"].strip()
+                            if len(_RESPONSE_CACHE) >= MAX_CACHE_ITEMS:
+                                oldest = min(_RESPONSE_CACHE.keys(), key=lambda k: _RESPONSE_CACHE[k][1])
+                                _RESPONSE_CACHE.pop(oldest, None)
+                            _RESPONSE_CACHE[cache_key] = (result_text, time.time())
+                            return result_text
             except Exception:
                 continue
     return None

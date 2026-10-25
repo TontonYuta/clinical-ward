@@ -7,6 +7,16 @@
 import { MasterMedication } from '../../../types/medication';
 
 let cachedRegistry: any[] | null = null;
+let cachedGroupStats: Record<string, number> | null = null;
+
+function computeGroupStats(list: any[]): Record<string, number> {
+  const stats: Record<string, number> = {};
+  for (const it of list) {
+    const g = it.group || 'Thuốc điều trị chuyên khoa';
+    stats[g] = (stats[g] || 0) + 1;
+  }
+  return stats;
+}
 
 export async function loadOfflineRegistry(): Promise<any[]> {
   if (cachedRegistry && cachedRegistry.length > 0) return cachedRegistry;
@@ -19,6 +29,7 @@ export async function loadOfflineRegistry(): Promise<any[]> {
         const data = JSON.parse(text);
         if (Array.isArray(data) && data.length > 0) {
           cachedRegistry = data;
+          cachedGroupStats = computeGroupStats(data);
           return data;
         }
       }
@@ -27,6 +38,7 @@ export async function loadOfflineRegistry(): Promise<any[]> {
   const res = await fetch('/data/vietnam_drug_registry/dav_essential_formulary.json');
   const local = await res.json();
   cachedRegistry = Array.isArray(local) ? local : [];
+  cachedGroupStats = computeGroupStats(cachedRegistry);
   return cachedRegistry;
 }
 
@@ -38,11 +50,7 @@ export async function queryOfflineRegistry(
 ): Promise<{ items: MasterMedication[]; total: number; totalPages: number; groupStats: Record<string, number> }> {
   const fullList = await loadOfflineRegistry();
   const q = search.toLowerCase().trim();
-  const groupStats: Record<string, number> = {};
-  for (const it of fullList) {
-    const g = it.group || 'Thuốc điều trị chuyên khoa';
-    groupStats[g] = (groupStats[g] || 0) + 1;
-  }
+  const groupStats = cachedGroupStats || computeGroupStats(fullList);
   const filtered = fullList.filter((d: any) =>
     (group === 'all' || d.group === group) &&
     (!q || (d.brandName && d.brandName.toLowerCase().includes(q)) || (d.nationalCode && d.nationalCode.toLowerCase().includes(q)) || (d.activeIngredient && d.activeIngredient.toLowerCase().includes(q)))

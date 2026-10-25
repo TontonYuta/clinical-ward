@@ -21,6 +21,16 @@ GROUP_ALIAS_MAP = {
     "specialty": "Thuốc điều trị chuyên khoa",
 }
 
+_GROUP_STATS_CACHE: dict[str, int] | None = None
+
+async def _get_cached_group_stats(db: AsyncSession) -> dict[str, int]:
+    global _GROUP_STATS_CACHE
+    if _GROUP_STATS_CACHE is None:
+        stat_stmt = select(DavNationalDrug.group, func.count(DavNationalDrug.id)).group_by(DavNationalDrug.group)
+        stat_res = await db.execute(stat_stmt)
+        _GROUP_STATS_CACHE = dict(stat_res.all())
+    return _GROUP_STATS_CACHE
+
 @router.get("", response_model=RegistryPaginatedResponse)
 async def get_national_drugs_paginated(
     search: str | None = Query(None, description="Tìm tên thuốc, hoạt chất, SĐK"),
@@ -65,10 +75,8 @@ async def get_national_drugs_paginated(
         data_res = await db.execute(data_stmt)
         items = data_res.scalars().all()
 
-        # 3. Overall group statistics (Fast cached group counts)
-        stat_stmt = select(DavNationalDrug.group, func.count(DavNationalDrug.id)).group_by(DavNationalDrug.group)
-        stat_res = await db.execute(stat_stmt)
-        group_stats = dict(stat_res.all())
+        # 3. Overall group statistics (Fast in-memory cached group counts)
+        group_stats = await _get_cached_group_stats(db)
 
         total_pages = max(1, (total_count + page_size - 1) // page_size)
 
@@ -87,9 +95,7 @@ async def get_national_drugs_paginated(
 
 @router.get("/stats", response_model=RegistryStatsResponse)
 async def get_registry_stats(db: AsyncSession = Depends(get_db)):
-    stat_stmt = select(DavNationalDrug.group, func.count(DavNationalDrug.id)).group_by(DavNationalDrug.group)
-    stat_res = await db.execute(stat_stmt)
-    stats = dict(stat_res.all())
+    stats = await _get_cached_group_stats(db)
     total = sum(stats.values())
     return RegistryStatsResponse(
         total_drugs=total,

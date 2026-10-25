@@ -29,6 +29,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [onlyInWarehouse, setOnlyInWarehouse] = useState(false);
@@ -37,6 +38,11 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   const [totalPages, setTotalPages] = useState(1);
   const [groupStats, setGroupStats] = useState<Record<string, number>>({});
   const [verifyMode, setVerifyMode] = useState(isVerificationLinksVisible());
+
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 250);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const toggleVerify = () => { const next = !verifyMode; setVerificationLinksVisibility(next); setVerifyMode(next); };
 
@@ -129,7 +135,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Tìm trên 55.000 thuốc: Tên thuốc, hoạt chất (Morphin, Venetoclax, Cefaclor...), SĐK (VD-24757-16)..." className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-700 text-slate-900 placeholder:text-slate-400 shadow-2xs transition" />
+              <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Tìm trên 55.000 thuốc: Tên thuốc, hoạt chất (Morphin, Venetoclax, Cefaclor...), SĐK (VD-24757-16)..." className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-700 text-slate-900 placeholder:text-slate-400 shadow-2xs transition" />
             </div>
             <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-xl text-xs shrink-0 font-medium">
               <button type="button" onClick={() => { setOnlyInWarehouse(false); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${!onlyInWarehouse ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>Tất cả 55k</button>

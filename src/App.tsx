@@ -106,6 +106,18 @@ export default function App() {
     };
   }, []);
 
+  // Global ergonomics: Cmd+K / Ctrl+K toggles Clinical AI Copilot
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCopilotOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   // Synchronize live state from SQLite WAL backend
   useEffect(() => {
     let isMounted = true;
