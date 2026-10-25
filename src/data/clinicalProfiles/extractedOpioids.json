@@ -1,9 +1,9 @@
 {
   "morphine": {
     "officialSource": {
-      "documentName": "Dược thư QG 2022 (tr. 942-947) & Tờ HDSD thuốc SĐK VD-24757-16",
-      "registrationNumber": "VD-24757-16",
-      "manufacturer": "Vinphaco",
+      "documentName": "Dược thư QG 2022 (tr. 942-947) & Tờ HDSD thuốc Osaphine SĐK VD-28087-17",
+      "registrationNumber": "VD-28087-17",
+      "manufacturer": "Công ty Cổ phần Dược phẩm trung ương I - Pharbaco",
       "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
       "pharmacopeiaStandard": "DĐVN V",
       "issueDate": "2022",
@@ -119,9 +119,9 @@
   },
   "fentanyl": {
     "officialSource": {
-      "documentName": "Dược thư QG 2022 (tr. 598-603) & Tờ HDSD thuốc SĐK VN-18235-14",
-      "registrationNumber": "VN-18235-14",
-      "manufacturer": "Rotexmedica (Đức)",
+      "documentName": "Dược thư QG 2022 (tr. 598-603) & Tờ HDSD thuốc SĐK VN-18441-14",
+      "registrationNumber": "VN-18441-14",
+      "manufacturer": "Panpharma GmbH (Đức)",
       "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
       "pharmacopeiaStandard": "EP / USP",
       "issueDate": "2022",

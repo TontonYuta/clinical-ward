@@ -62,16 +62,45 @@ export async function lookupDavDrug(query: string, maxCount = 5) {
 
             items.forEach((item: any, idx: number) => {
               const statusStr = item.isHetHan ? '🔴 ĐÃ HẾT HẠN / THU HỒI' : '🟢 ĐANG HIỆU LỰC LƯU HÀNH';
+              const cb = item.thongTinThuocCoBan || {};
+              const dk = item.thongTinDangKyThuoc || {};
+              const sx = item.congTySanXuat || {};
+              const ctyDk = item.congTyDangKy || {};
+
+              const hoatChat = cb.hoatChatChinh || item.hoatChatDangKy || item.hoatChatHamLuong || item.tenHoatChatChinh || 'Theo hồ sơ công bố';
+              const hamLuong = cb.hamLuong || item.hamLuong || '';
+              const hcHlStr = hamLuong && !hoatChat.includes(hamLuong) ? `${hoatChat} (${hamLuong})` : hoatChat;
+
+              const dangBaoChe = cb.dangBaoChe || item.dangBaoChe || 'N/A';
+              const quyCach = cb.dongGoi || item.dongGoi || 'N/A';
+              const tieuChuan = cb.tieuChuan || item.tieuChuan || 'Tiêu chuẩn NSX';
+              const tuoiTho = cb.tuoiTho || item.tuoiTho || 'N/A';
+
+              const tenNsx = sx.tenCongTySanXuat || item.tenCongTySanXuat || 'N/A';
+              const nuocNsx = sx.nuocSanXuat || item.nuocSanXuat || 'Việt Nam';
+              const diaChiNsx = sx.diaChiSanXuat || item.diaChiSanXuat || '';
+              const tenCtyDk = ctyDk.tenCongTyDangKy || item.tenCongTyDangKy || 'N/A';
+              const soQd = dk.soQuyetDinh || item.soQuyetDinh || 'N/A';
+              const dotCap = dk.dotCap || item.dotCap || '';
+
+              const ngayCap = dk.ngayCapSoDangKy ? new Date(dk.ngayCapSoDangKy).toLocaleDateString('vi-VN') : 'N/A';
+              const ngayHetHan = dk.ngayHetHanSoDangKy ? new Date(dk.ngayHetHanSoDangKy).toLocaleDateString('vi-VN') : 'Vô thời hạn / Đang gia hạn';
+
               console.log(`┌─ [${idx + 1}] ${item.tenThuoc || 'Chưa đặt tên'} [${statusStr}]`);
-              console.log(`│  • Mã định danh (SĐK mới): ${item.soDangKy || 'N/A'}`);
-              console.log(`│  • Số đăng ký cũ (VD/VN):  ${item.soDangKyCu || item.soDangKy || 'N/A'}`);
-              console.log(`│  • Hoạt chất & Hàm lượng:  ${item.hoatChatHamLuong || item.tenHoatChatChinh || 'Theo hồ sơ công bố'}`);
-              console.log(`│  • Dạng bào chế & Đóng gói: ${item.dangBaoChe || 'N/A'} | ${item.dongGoi || 'N/A'}`);
-              console.log(`│  • Tiêu chuẩn & Tuổi thọ:  ${item.tieuChuan || 'Tiêu chuẩn NSX'} | ${item.tuoiTho || 'N/A'} tháng`);
-              console.log(`│  • Cơ sở sản xuất:         ${item.tenCongTySanXuat || 'N/A'} (${item.nuocSanXuat || 'Việt Nam'})`);
-              console.log(`│  • Cơ sở đăng ký:          ${item.tenCongTyDangKy || 'N/A'}`);
-              console.log(`│  • Quyết định cấp phép:    ${item.soQuyetDinh || item.thongTinDangKyThuoc?.soQuyetDinh || 'N/A'}`);
-              console.log(`│  • Ngày cấp & Ngày hết hạn: ${item.thongTinDangKyThuoc?.ngayCapSoDangKy ? new Date(item.thongTinDangKyThuoc.ngayCapSoDangKy).toLocaleDateString('vi-VN') : 'N/A'} -> ${item.thongTinDangKyThuoc?.ngayHetHanSoDangKy ? new Date(item.thongTinDangKyThuoc.ngayHetHanSoDangKy).toLocaleDateString('vi-VN') : 'N/A'}`);
+              console.log(`│  • Mã định danh (SĐK mới 12 số): ${item.soDangKy || 'N/A'}`);
+              console.log(`│  • Số đăng ký cũ (VD/VN/QLSP):   ${item.soDangKyCu || item.soDangKy || 'N/A'}`);
+              console.log(`│  • Hoạt chất & Hàm lượng:        ${hcHlStr}`);
+              console.log(`│  • Dạng bào chế:                 ${dangBaoChe}`);
+              console.log(`│  • Quy cách đóng gói:            ${quyCach}`);
+              console.log(`│  • Tiêu chuẩn & Tuổi thọ:        ${tieuChuan} | Hạn dùng: ${tuoiTho}`);
+              console.log(`│  • Cơ sở sản xuất:               ${tenNsx} (${nuocNsx})`);
+              if (diaChiNsx) console.log(`│    └ Địa chỉ nhà máy:            ${diaChiNsx}`);
+              console.log(`│  • Cơ sở đăng ký:                ${tenCtyDk}`);
+              console.log(`│  • Quyết định cấp phép:          ${soQd}${dotCap ? ` (Đợt cấp: ${dotCap})` : ''}`);
+              console.log(`│  • Thời hạn lưu hành:            ${ngayCap} -> ${ngayHetHan}`);
+              if (item.urlGiayTiepNhanGiaHan) {
+                console.log(`│  • Hồ sơ tiếp nhận gia hạn:      https://dichvucong.dav.gov.vn/${item.urlGiayTiepNhanGiaHan.replace(/\\/g, '/')}`);
+              }
               console.log(`└─────────────────────────────────────────────────────────────\n`);
             });
 

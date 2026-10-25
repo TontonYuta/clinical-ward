@@ -7,14 +7,14 @@
 import { FiveRightsSafetyInfo } from '../../types/medication';
 
 export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
-  // Morphin hydroclorid 10mg/1ml
+  // Morphin sulfat 10mg/1ml (Osaphine)
   'med-ctrl-01': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Morphin, trang 942-947)',
-      registrationNumber: 'VD-24757-16',
-      manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco) / CPC1 Hà Nội',
-      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
-      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Morphin, trang 942-947) & SĐK Cục QLD',
+      registrationNumber: 'VD-28087-17',
+      manufacturer: 'Công ty Cổ phần Dược phẩm trung ương I - Pharbaco',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / Tiêu chuẩn NSX',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 181/QĐ-QLD)',
     },
     composition: {
       activeIngredients: [{ innName: 'Morphin', chemicalSalt: 'Morphin hydroclorid trihydrat', strength: '10 mg / 1 ml' }],
@@ -90,14 +90,14 @@ export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
     dialysisClearance: 'Chất chuyển hóa có hoạt tính M6G đào thải kém qua lọc máu; thận trọng tích lũy độc tính.',
   },
 
-  // Fentanyl 0.1mg/2ml
+  // Fentanyl 0.1mg/2ml (Panpharma)
   'med-ctrl-02': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Fentanyl, trang 598-603)',
-      registrationNumber: 'VN-18235-14',
-      manufacturer: 'Rotexmedica GmbH (CHLB Đức) / Nhập khẩu Cục QLD',
-      standardPharmacopeia: 'Dược điển Mỹ (USP) / DĐVN V',
-      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Fentanyl, trang 598-603) & SĐK Cục QLD',
+      registrationNumber: 'VN-18441-14',
+      manufacturer: 'Panpharma GmbH (CHLB Đức)',
+      standardPharmacopeia: 'Dược điển Anh (BP) / DĐVN V',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 573/QĐ-QLD)',
     },
     composition: {
       activeIngredients: [{ innName: 'Fentanyl', chemicalSalt: 'Fentanyl citrat', strength: '0.1 mg / 2 ml (50 mcg/ml)' }],

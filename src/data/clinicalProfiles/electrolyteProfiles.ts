@@ -11,10 +11,10 @@ export const ELECTROLYTE_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo>
   'med-em-09': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Kali clorid) & Viện ISMP',
-      registrationNumber: 'VD-23846-15',
-      manufacturer: 'B.Braun Việt Nam / Công ty Cổ phần Dược phẩm Vĩnh Phúc',
+      registrationNumber: 'VD-25324-16',
+      manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
-      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 776/QĐ-QLD)',
     },
     composition: {
       activeIngredients: [{ innName: 'Potassium chloride (KCl)', chemicalSalt: 'Kali clorid vô khuẩn', strength: '1 g / 10 ml (10%)', molarQuantity: '13.4 mEq K+ và 13.4 mEq Cl- / 10ml' }],

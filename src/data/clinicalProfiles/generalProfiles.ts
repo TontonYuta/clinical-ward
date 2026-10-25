@@ -7,13 +7,13 @@
 import { FiveRightsSafetyInfo } from '../../types/medication';
 
 export const GENERAL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
-  // Paracetamol (Acetaminophen) 1g truyền tĩnh mạch
+  // Paracetamol (Acetaminophen) 1g truyền tĩnh mạch (Perfalgan)
   'med-gen-01': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Paracetamol) & SmPC Perfalgan',
-      registrationNumber: 'VN-16892-13',
-      manufacturer: 'Bristol-Myers Squibb (Pháp) / B.Braun Melsungen AG',
-      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      registrationNumber: 'VN-19071-15',
+      manufacturer: 'Bristol-Myers Squibb S.r.l (Italy)',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / USP',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
     },
     composition: {

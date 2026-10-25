@@ -11,7 +11,7 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
   'med-em-01': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam 2022 & Thông tư 51/2017/TT-BYT Phác đồ phản vệ',
-      registrationNumber: 'VD-22874-15',
+      registrationNumber: 'VD-27151-17',
       manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
@@ -86,12 +86,12 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
     bhytCoverage: 'Thanh toán 100% BHYT cấp cứu sốc',
   },
 
-  // Noradrenalin 4mg/2ml
+  // Noradrenalin 4mg/4ml
   'med-em-02': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Norepinephrin, trang 1012-1015)',
-      registrationNumber: 'VN-21890-19',
-      manufacturer: 'Laboratoire Aguettant (Cộng hòa Pháp) / Vinphaco',
+      registrationNumber: 'VD-24342-16',
+      manufacturer: 'Công ty Cổ phần Dược Vật tư Y tế Hải Dương / Vinphaco',
       standardPharmacopeia: 'Dược điển Việt Nam V / Dược điển Mỹ (USP)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
     },

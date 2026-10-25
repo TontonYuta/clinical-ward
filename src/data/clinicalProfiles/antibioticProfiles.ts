@@ -7,14 +7,14 @@
 import { FiveRightsSafetyInfo } from '../../types/medication';
 
 export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
-  // Ceftriaxone 1g
+  // Ceftriaxone 1g (Rocephin)
   'med-ab-01': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn sử dụng Kháng sinh (QĐ 5631/QĐ-BYT)',
-      registrationNumber: 'VD-31291-18',
-      manufacturer: 'Công ty Cổ phần Dược phẩm Imexpharm / VCP',
-      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
-      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      registrationNumber: 'VN-17036-13',
+      manufacturer: 'F. Hoffmann-La Roche Ltd. (Thụy Sĩ)',
+      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / NSX',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 265/QĐ-QLD)',
     },
     composition: {
       activeIngredients: [{ innName: 'Ceftriaxone', chemicalSalt: 'Ceftriaxone natri 3.5 H2O', strength: '1 g (1000mg base)', molarQuantity: 'Chứa ~83 mg (3.6 mEq) Natri / 1g' }],
@@ -91,14 +91,14 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
     dialysisClearance: 'Không lọc qua thận nhân tạo thường (HD); không cần bổ sung liều sau lọc.',
   },
 
-  // Vancomycin 1g
+  // Vancomycin 500mg/1g
   'med-ab-02': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn TDM Vancomycin Bộ Y Tế (QĐ 2147/QĐ-BYT)',
-      registrationNumber: 'VN-17892-14',
-      manufacturer: 'Hospira Inc. (Pfizer, Hoa Kỳ) / Dược phẩm Trung ương 1',
+      registrationNumber: 'VD-35444-21',
+      manufacturer: 'Chi nhánh Công ty CPDP Imexpharm-Nhà máy công nghệ cao Bình Dương',
       standardPharmacopeia: 'Dược điển Mỹ (USP) / DĐVN V',
-      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 641/QĐ-BYT)',
     },
     composition: {
       activeIngredients: [{ innName: 'Vancomycin', chemicalSalt: 'Vancomycin hydroclorid', strength: '1 g (1.000.000 UI)' }],
