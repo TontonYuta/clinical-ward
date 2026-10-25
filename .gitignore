@@ -18,6 +18,8 @@ env/
 ENV/
 .pytest_cache/
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 
 # Logs & Environment variables

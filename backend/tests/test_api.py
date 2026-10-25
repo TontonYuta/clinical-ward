@@ -310,3 +310,43 @@ async def test_copilot_clinical_intents():
         data3 = res3.json()
         assert data3["intent"] in ["CLINICAL_AI_CONSULTATION", "GENERAL_CLINICAL_ASSISTANCE"]
         assert len(data3["reply_text"]) > 10
+
+@pytest.mark.asyncio
+async def test_national_drug_registry():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # 1. Test paginated listing across 55k drugs
+        res = await client.get("/api/v1/registry?page=1&page_size=50")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["total"] >= 50000
+        assert len(data["items"]) == 50
+        assert data["page"] == 1
+        assert "Kháng sinh" in data["group_stats"]
+
+        # 2. Test group filter (Kháng sinh)
+        res_anti = await client.get("/api/v1/registry?group=antibiotic&page_size=10")
+        assert res_anti.status_code == 200
+        anti_data = res_anti.json()
+        assert anti_data["total"] >= 8000
+        for item in anti_data["items"]:
+            assert item["group"] == "Kháng sinh"
+
+        # 3. Test search by SĐK
+        res_sdk = await client.get("/api/v1/registry?search=VD-24757-16")
+        assert res_sdk.status_code == 200
+        sdk_data = res_sdk.json()
+        assert sdk_data["total"] >= 1
+        assert sdk_data["items"][0]["national_code"] == "VD-24757-16"
+
+        # 4. Test stats endpoint
+        res_stats = await client.get("/api/v1/registry/stats")
+        assert res_stats.status_code == 200
+        stats_data = res_stats.json()
+        assert stats_data["total_drugs"] >= 50000
+        assert "Thuốc gây nghiện" in stats_data["category_stats"]
+
+        # 5. Test single drug detail endpoint
+        res_detail = await client.get("/api/v1/registry/VD-24757-16")
+        assert res_detail.status_code == 200
+        drug = res_detail.json()
+        assert drug["brand_name"] == "Ceflodin 500"

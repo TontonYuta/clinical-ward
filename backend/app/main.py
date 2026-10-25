@@ -6,6 +6,7 @@ from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.models.user import User
 from app.seed import seed
+from app.seed_registry import seed_dav_registry_if_needed
 from app.routers import (
     debts,
     equipment,
@@ -14,7 +15,8 @@ from app.routers import (
     assets,
     audit,
     copilot,
-    cpoe
+    cpoe,
+    registry
 )
 
 @asynccontextmanager
@@ -30,6 +32,9 @@ async def lifespan(app: FastAPI):
         if not user:
             print("Database is empty. Automatically running seed...")
             await seed()
+
+    # Seed 55k DAV drugs if table is empty
+    seed_dav_registry_if_needed()
 
     yield
 
@@ -58,6 +63,7 @@ app.include_router(assets.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
 app.include_router(copilot.router, prefix=settings.API_V1_STR)
 app.include_router(cpoe.router, prefix=settings.API_V1_STR)
+app.include_router(registry.router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Health Check"])
 async def root():

@@ -1,16 +1,17 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Bảng Tra Cứu Dữ Liệu Dược Quốc Gia & Đối Soát Thủ Công (Cục Quản lý Dược) (<=200 LOC)
- * Đồng bộ thời gian thực tồn kho & số lô FEFO với Kho Dược Bệnh Viện
+ * Bảng Tra Cứu Dữ Liệu Dược Quốc Gia (55.000 SĐK Cục QLD & Kho BV) (<=200 LOC)
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Search, ChevronLeft, ChevronRight, Boxes, RotateCw, Check } from 'lucide-react';
 import { MasterMedication } from '../../types/medication';
 import { InventoryBatch } from '../../types/pharmacy';
 import { isVerificationLinksVisible, setVerificationLinksVisibility } from '../../config/clinicalVerification';
+import { getNationalDrugRegistryApi } from '../../services/api';
 import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
+import { NationalDrugTabs } from './NationalDrugRegistry/NationalDrugTabs';
 
 interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; inventoryBatches?: InventoryBatch[]; }
 
@@ -21,7 +22,6 @@ const GROUP_STYLES: Record<string, string> = {
   'Dịch truyền': 'bg-cyan-50 text-cyan-800 border-cyan-200/60', 'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60',
   'Vật tư tiêu hao': 'bg-emerald-50 text-emerald-800 border-emerald-200/60', 'Vắc xin & Chuỗi lạnh': 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
 };
-const CATEGORIES = ['all', 'Kháng sinh', 'Thuốc gây nghiện', 'Thuốc cấp cứu', 'Dịch truyền', 'Vật tư tiêu hao', 'Vắc xin & Chuỗi lạnh'];
 
 export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication, inventoryBatches }) => {
   const [drugs, setDrugs] = useState<MasterMedication[]>([]);
@@ -32,31 +32,44 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [onlyInWarehouse, setOnlyInWarehouse] = useState(false);
   const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(54885);
+  const [totalPages, setTotalPages] = useState(1);
+  const [groupStats, setGroupStats] = useState<Record<string, number>>({});
   const [verifyMode, setVerifyMode] = useState(isVerificationLinksVisible());
 
   const toggleVerify = () => { const next = !verifyMode; setVerificationLinksVisibility(next); setVerifyMode(next); };
 
-  const handleAutoUpdate = async () => {
-    setIsSyncing(true); setSyncNotice(null);
+  const loadData = useCallback(async (isManualSync = false) => {
+    if (isManualSync) { setIsSyncing(true); setSyncNotice(null); } else setLoading(true);
     try {
-      const res = await fetch(`/data/vietnam_drug_registry/dav_essential_formulary.json?t=${Date.now()}`);
-      const freshData = await res.json();
-      if (Array.isArray(freshData)) {
-        setDrugs(freshData); setPage(1);
-        setSyncNotice(`Đã cập nhật ${freshData.length} thuốc!`);
-        setTimeout(() => setSyncNotice(null), 3500);
+      const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, page, pageSize: PAGE_SIZE });
+      if (data && Array.isArray(data.items)) {
+        const mapped: MasterMedication[] = data.items.map((i: any) => ({
+          id: i.id, nationalCode: i.national_code, brandName: i.brand_name,
+          activeIngredient: i.active_ingredient, concentration: i.concentration, dosageForm: i.dosage_form,
+          route: i.route, standardUnit: i.standard_unit, group: i.group, isControlled: i.is_controlled,
+          isHighAlert: i.is_high_alert, isCrashCart: i.is_crash_cart, defaultDoseQty: 1, wardStockCount: 0,
+          hospitalStockCount: 0, searchAliases: [i.brand_name.toLowerCase()], note: i.note
+        }));
+        setDrugs(mapped); setTotalCount(data.total || mapped.length); setTotalPages(data.total_pages || 1);
+        if (data.group_stats) setGroupStats(data.group_stats);
+        if (isManualSync) { setSyncNotice(`Đã đồng bộ ${data.total.toLocaleString()} thuốc!`); setTimeout(() => setSyncNotice(null), 3500); }
       }
     } catch {
-      setSyncNotice('Dùng CSDL lưu trữ'); setTimeout(() => setSyncNotice(null), 3000);
-    } finally { setIsSyncing(false); }
-  };
+      try {
+        const res = await fetch(`/data/vietnam_drug_registry/dav_essential_formulary.json?t=${Date.now()}`);
+        const local = await res.json();
+        if (Array.isArray(local)) {
+          const q = search.toLowerCase().trim();
+          const filtered = local.filter((d) => (selectedGroup === 'all' || d.group === selectedGroup) && (!q || d.brandName.toLowerCase().includes(q) || d.nationalCode.toLowerCase().includes(q)));
+          setDrugs(filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+          setTotalCount(filtered.length); setTotalPages(Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
+        }
+      } catch { setSyncNotice('Dùng CSDL lưu trữ'); }
+    } finally { setLoading(false); setIsSyncing(false); }
+  }, [search, selectedGroup, page]);
 
-  useEffect(() => {
-    if (!isOpen || drugs.length > 0) return;
-    setLoading(true);
-    fetch('/data/vietnam_drug_registry/dav_essential_formulary.json')
-      .then((res) => res.json()).then((data) => { setDrugs(Array.isArray(data) ? data : []); setLoading(false); }).catch(() => setLoading(false));
-  }, [isOpen, drugs.length]);
+  useEffect(() => { if (isOpen) loadData(); }, [isOpen, loadData]);
 
   const syncedDrugs = useMemo(() => {
     if (!inventoryBatches || inventoryBatches.length === 0) return drugs;
@@ -75,19 +88,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   }, [drugs, inventoryBatches]);
 
   const inWarehouseCount = useMemo(() => syncedDrugs.filter((d) => (d.hospitalStockCount ?? 0) > 0).length, [syncedDrugs]);
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return syncedDrugs.filter((d) => {
-      if (onlyInWarehouse && (d.hospitalStockCount ?? 0) <= 0) return false;
-      if (selectedGroup !== 'all' && d.group !== selectedGroup) return false;
-      if (!q) return true;
-      return d.brandName.toLowerCase().includes(q) || d.activeIngredient.toLowerCase().includes(q) || d.nationalCode.toLowerCase().includes(q) || (d.note && d.note.toLowerCase().includes(q));
-    });
-  }, [syncedDrugs, search, selectedGroup, onlyInWarehouse]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentSlice = useMemo(() => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtered, page]);
+  const displayedDrugs = useMemo(() => onlyInWarehouse ? syncedDrugs.filter((d) => (d.hospitalStockCount ?? 0) > 0) : syncedDrugs, [syncedDrugs, onlyInWarehouse]);
 
   if (!isOpen) return null;
 
@@ -101,11 +102,11 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
               <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">DAV 55.000 SĐK</span>
               {inWarehouseCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-900 border border-teal-300 flex items-center gap-1">
-                  <Boxes className="w-3 h-3 text-teal-700" />Đồng bộ Kho BV ({inWarehouseCount} mục)
+                  <Boxes className="w-3 h-3 text-teal-700" />Kho BV ({inWarehouseCount})
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">Cơ sở dữ liệu số đăng ký lưu hành, tiêu chuẩn DĐVN V &amp; đồng bộ thời gian thực Kho Dược</p>
+            <p className="text-xs text-slate-500 mt-0.5">Phân trang máy chủ 55k SĐK Cục Quản lý Dược, tiêu chuẩn DĐVN V &amp; đồng bộ tồn kho FEFO</p>
           </div>
           <div className="flex items-center gap-2">
             {syncNotice && (
@@ -113,14 +114,8 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
                 <Check className="w-3 h-3 text-emerald-600" />{syncNotice}
               </span>
             )}
-            <button
-              onClick={handleAutoUpdate}
-              disabled={isSyncing}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 transition cursor-pointer shadow-2xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-              title="Tự động cập nhật danh mục thuốc mới nhất từ Cục Quản lý Dược"
-            >
-              <RotateCw className={`w-3.5 h-3.5 text-teal-700 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? 'Đang cập nhật...' : 'Tự động cập nhật'}</span>
+            <button onClick={() => loadData(true)} disabled={isSyncing} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 transition cursor-pointer shadow-2xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50" title="Tải lại danh mục từ máy chủ">
+              <RotateCw className={`w-3.5 h-3.5 text-teal-700 ${isSyncing ? 'animate-spin' : ''}`} /><span>{isSyncing ? 'Đang nạp...' : 'Tự động cập nhật'}</span>
             </button>
             <button onClick={toggleVerify} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
               Kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}
@@ -133,33 +128,26 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Tìm theo tên thuốc, hoạt chất (Morphin, Ceftriaxone...), số đăng ký (SĐK)..." className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-700 text-slate-900 placeholder:text-slate-400 shadow-2xs transition" />
+              <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Tìm trên 55.000 thuốc: Tên thuốc, hoạt chất (Morphin, Venetoclax, Cefaclor...), SĐK (VD-24757-16)..." className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-700 text-slate-900 placeholder:text-slate-400 shadow-2xs transition" />
             </div>
             <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-xl text-xs shrink-0 font-medium">
-              <button type="button" onClick={() => { setOnlyInWarehouse(false); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${!onlyInWarehouse ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>Tất cả Dược QG</button>
+              <button type="button" onClick={() => { setOnlyInWarehouse(false); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${!onlyInWarehouse ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>Tất cả 55k</button>
               <button type="button" onClick={() => { setOnlyInWarehouse(true); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${onlyInWarehouse ? 'bg-teal-700 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
-                <span>Kho Dược BV</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-2xs ${onlyInWarehouse ? 'bg-teal-800 text-teal-100' : 'bg-slate-300 text-slate-700 font-bold'}`}>{inWarehouseCount}</span>
+                <span>Kho Dược BV</span><span className={`px-1.5 py-0.2 rounded-full text-2xs ${onlyInWarehouse ? 'bg-teal-800 text-teal-100' : 'bg-slate-300 text-slate-700 font-bold'}`}>{inWarehouseCount}</span>
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto text-xs scrollbar-none pb-0.5">
-            {CATEGORIES.map((grp) => (
-              <button key={grp} onClick={() => { setSelectedGroup(grp); setPage(1); }} className={`px-3 py-1 rounded-lg shrink-0 font-medium cursor-pointer transition-all ${selectedGroup === grp ? 'bg-slate-900 text-white shadow-2xs font-semibold' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>
-                {grp === 'all' ? 'Tất cả nhóm' : grp}
-              </button>
-            ))}
-          </div>
+          <NationalDrugTabs selectedGroup={selectedGroup} onSelectGroup={(g) => { setSelectedGroup(g); setPage(1); }} groupStats={groupStats} totalCount={totalCount} />
         </div>
 
         <div className="flex-1 overflow-auto bg-slate-50/40 p-4 sm:p-6">
           {loading ? (
             <div className="py-20 text-center text-slate-500 text-sm flex flex-col items-center gap-3">
               <div className="w-7 h-7 border-2 border-teal-700 border-t-transparent rounded-full animate-spin" />
-              <span>Đang kết nối Cổng Dược Quốc Gia...</span>
+              <span>Đang truy vấn CSDL 55.000 thuốc Cục Quản lý Dược...</span>
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="py-20 text-center text-slate-400 text-sm">Không tìm thấy thuốc phù hợp với từ khóa "{search}".</div>
+          ) : displayedDrugs.length === 0 ? (
+            <div className="py-20 text-center text-slate-400 text-sm">Không tìm thấy thuốc nào phù hợp với bộ lọc hiện tại.</div>
           ) : (
             <div className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs">
               <table className="w-full text-left text-sm border-collapse">
@@ -173,7 +161,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {currentSlice.map((d) => (
+                  {displayedDrugs.map((d) => (
                     <NationalDrugTableRow key={d.id} drug={d} verifyMode={verifyMode} badgeStyle={GROUP_STYLES[d.group] || 'bg-slate-100 text-slate-700 border-slate-200/60'} onOpenSafetyGuide={(name) => { onClose(); onSelectMedication?.(name); }} />
                   ))}
                 </tbody>
@@ -183,7 +171,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
         </div>
 
         <div className="px-6 py-2.5 bg-white border-t border-slate-200/80 flex items-center justify-between text-xs shrink-0">
-          <div className="text-slate-500">Hiển thị <span className="font-bold text-slate-900">{filtered.length}</span> thuốc phù hợp (Đồng bộ: {inWarehouseCount} mặt hàng trong Kho BV)</div>
+          <div className="text-slate-500">Hiển thị <span className="font-bold text-slate-900">{totalCount.toLocaleString('vi-VN')}</span> thuốc Cục QLD (Trang {page}/{totalPages} | Đồng bộ: {inWarehouseCount} mục kho BV)</div>
           <div className="flex items-center gap-2">
             <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="p-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer hover:bg-slate-50 transition"><ChevronLeft className="w-4 h-4" /></button>
             <span className="font-medium text-slate-700">Trang <span className="font-bold text-slate-900">{page}</span> / {totalPages}</span>

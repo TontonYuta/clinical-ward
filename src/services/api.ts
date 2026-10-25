@@ -276,3 +276,21 @@ export async function chatCopilotApi(query: string, userRole: string, userName: 
   if (!res.ok) throw new Error('Lỗi gửi tin nhắn đến Trợ lý AI');
   return res.json();
 }
+
+// 8. National Drug Registry (55.000 SĐK)
+export async function getNationalDrugRegistryApi(params?: {
+  search?: string;
+  group?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const query = new URLSearchParams();
+  if (params?.search) query.set('search', params.search);
+  if (params?.group && params.group !== 'all') query.set('group', params.group);
+  if (params?.page) query.set('page', params.page.toString());
+  if (params?.pageSize) query.set('page_size', (params.pageSize || 50).toString());
+
+  const res = await fetch(`${API_BASE_URL}/registry?${query.toString()}`);
+  if (!res.ok) throw new Error('Không thể nạp danh mục dược quốc gia từ máy chủ');
+  return res.json();
+}

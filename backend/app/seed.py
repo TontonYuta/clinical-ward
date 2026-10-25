@@ -9,6 +9,7 @@ from app.models.inventory import InventoryBatch
 from app.models.coldchain import ColdChainCurrentState, ColdChainTelemetry
 from app.models.asset import AssetRecord
 from app.models.audit import AuditRecord
+from app.seed_registry import seed_dav_registry_if_needed
 
 USERS_DATA = [
     {
@@ -203,8 +204,15 @@ AUDIT_DATA = [
 
 async def seed():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(User.__table__.delete())
+        await conn.execute(DebtRecord.__table__.delete())
+        await conn.execute(EquipmentTicket.__table__.delete())
+        await conn.execute(InventoryBatch.__table__.delete())
+        await conn.execute(ColdChainCurrentState.__table__.delete())
+        await conn.execute(ColdChainTelemetry.__table__.delete())
+        await conn.execute(AssetRecord.__table__.delete())
+        await conn.execute(AuditRecord.__table__.delete())
 
     async with AsyncSessionLocal() as session:
         # 1. Users
@@ -249,6 +257,7 @@ async def seed():
             session.add(AuditRecord(**aud))
 
         await session.commit()
+        seed_dav_registry_if_needed()
         print("Successfully seeded all hospital clinical datasets into database!")
 
 if __name__ == "__main__":
