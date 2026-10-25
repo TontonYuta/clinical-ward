@@ -1,11 +1,12 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * API Service for Hospital Pharmacy & FEFO Batches (TT 36/2018/TT-BYT)
+ * API Service for Hospital Pharmacy & FEFO Batches (TT 36/2018/TT-BYT) (<=200 LOC)
  */
 
 import { apiRequest } from './client';
 import { InventoryBatch } from '../../types/clinical';
+import { INITIAL_INVENTORY_BATCHES } from '../../data/pharmacy/allBatches';
 
 interface BackendBatch {
   id: string;
@@ -22,20 +23,30 @@ interface BackendBatch {
   is_near_expiry: boolean;
   is_low_stock: boolean;
   is_quarantined?: boolean;
+  national_code?: string;
+  registration_number?: string;
+  active_ingredient?: string;
 }
 
 function mapBackendToBatch(b: BackendBatch): InventoryBatch {
+  const master = INITIAL_INVENTORY_BATCHES.find(
+    (m) =>
+      m.batchNumber === b.batch_number ||
+      m.id === b.id ||
+      m.itemName.toLowerCase().includes(b.item_name.toLowerCase().slice(0, 15))
+  );
+
   return {
     id: b.id,
-    itemCode: b.batch_number,
+    itemCode: master?.itemCode || b.batch_number,
     itemName: b.item_name,
+    nationalCode: b.national_code || master?.nationalCode,
+    registrationNumber: b.registration_number || master?.registrationNumber,
+    activeIngredient: b.active_ingredient || master?.activeIngredient,
+    isControlledSubstance: master?.isControlledSubstance ?? b.category.includes('nghiện'),
     category: b.category as InventoryBatch['category'],
-    commodityType: b.category.includes('Vật tư') ? 'medical_supply' : 'medication',
-    warehouseType: b.warehouse_location.includes('Kho Lạnh')
-      ? 'ward_emergency'
-      : b.warehouse_location.includes('Vật tư')
-      ? 'inpatient_central'
-      : 'inpatient_central',
+    commodityType: master?.commodityType || (b.category.includes('Vật tư') ? 'medical_supply' : 'medication'),
+    warehouseType: master?.warehouseType || (b.warehouse_location.includes('Kho Lạnh') ? 'ward_emergency' : 'inpatient_central'),
     batchNumber: b.batch_number,
     expiryDate: b.expiry_date,
     daysLeft: b.days_left,
@@ -46,7 +57,7 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
     isLowStock: b.is_low_stock,
     unit: b.unit,
     warehouseLocation: b.warehouse_location,
-    storageCondition: 'Tiêu chuẩn bảo quản GSP',
+    storageCondition: master?.storageCondition || 'Tiêu chuẩn bảo quản GSP',
     priorityOrder: b.is_near_expiry ? 1 : 2,
   };
 }
@@ -54,7 +65,10 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
 export const inventoryApi = {
   async fetchInventoryBatches(): Promise<InventoryBatch[]> {
     const raw = await apiRequest<BackendBatch[]>('/inventory/batches');
-    return raw.map(mapBackendToBatch);
+    const mapped = raw.map(mapBackendToBatch);
+    const mappedBatchNums = new Set(mapped.map((b) => b.batchNumber));
+    const extra = INITIAL_INVENTORY_BATCHES.filter((b) => !mappedBatchNums.has(b.batchNumber));
+    return [...mapped, ...extra];
   },
 
   async dispatchBatch(batchId: string, quantity: number, targetWard: string): Promise<InventoryBatch> {

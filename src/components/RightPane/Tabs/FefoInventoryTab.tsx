@@ -66,13 +66,16 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       if (status === 'near_expiry' && !batch.isNearExpiry) return false;
       if (status === 'low_stock' && !(batch.isLowStock || batch.currentStock <= batch.minThreshold)) return false;
 
-      // 4. Tìm kiếm từ khóa
+      // 4. Tìm kiếm từ khóa (Tên, SĐK, Hoạt chất, Số lô, Vị trí)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
           batch.itemName.toLowerCase().includes(q) ||
           batch.batchNumber.toLowerCase().includes(q) ||
-          batch.warehouseLocation.toLowerCase().includes(q);
+          batch.warehouseLocation.toLowerCase().includes(q) ||
+          (batch.registrationNumber && batch.registrationNumber.toLowerCase().includes(q)) ||
+          (batch.nationalCode && batch.nationalCode.toLowerCase().includes(q)) ||
+          (batch.activeIngredient && batch.activeIngredient.toLowerCase().includes(q));
         if (!matches) return false;
       }
 
@@ -174,6 +177,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         isOpen={isRegistryModalOpen}
         onClose={() => setIsRegistryModalOpen(false)}
         onSelectMedication={onOpenSafetyGuide}
+        inventoryBatches={batches}
       />
     </div>
   );

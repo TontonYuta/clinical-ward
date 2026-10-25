@@ -117,6 +117,7 @@ export interface MasterMedication {
   isAnaphylaxisKit?: boolean; // Thuộc hộp thuốc chống sốc phản vệ (TT 51/2017)
   wardStockCount: number; // Tồn khả dụng tại tủ trực khoa lâm sàng
   hospitalStockCount: number; // Tồn khả dụng tại Kho Dược bệnh viện
+  batchCount?: number; // Số lượng lô FEFO đang lưu kho bệnh viện
   searchAliases: string[]; // Bí danh viết tắt (VD: adre, nor, mor, epi, kcl)
   note?: string;
   clinicalProfile?: FiveRightsSafetyInfo;

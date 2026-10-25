@@ -53,9 +53,20 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
       </td>
       <td className="py-3 px-4 align-top">
         <div className="font-bold text-slate-900 text-sm">{d.brandName}</div>
-        <span className={`inline-block px-2 py-0.5 rounded text-2xs font-medium border mt-1 ${badgeStyle}`}>
-          {d.group}
-        </span>
+        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+          <span className={`inline-block px-2 py-0.5 rounded text-2xs font-medium border ${badgeStyle}`}>
+            {d.group}
+          </span>
+          {d.hospitalStockCount > 0 && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300"
+              title="Đã đồng bộ tồn kho thực tế từ Kho Dược Bệnh Viện (FEFO)"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              Kho BV: {d.hospitalStockCount} {d.standardUnit} {d.batchCount ? `(${d.batchCount} lô)` : ''}
+            </span>
+          )}
+        </div>
       </td>
       <td className="py-3 px-4 align-top">
         <div className="text-slate-800 font-medium text-xs sm:text-sm">{d.activeIngredient}</div>

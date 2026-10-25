@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Dữ liệu Cơ Số Tủ Trực Cấp Cứu Khoa Lâm Sàng (VBHN 07/VBHN-BYT & TT 18/2026/TT-BYT)
+ * Dữ liệu Cơ Số Tủ Trực Cấp Cứu Khoa Lâm Sàng (VBHN 07/VBHN-BYT & TT 18/2026/TT-BYT) (<=200 LOC)
  */
 
 import { InventoryBatch } from '../../types/pharmacy';
@@ -11,6 +11,9 @@ export const WARD_EMERGENCY_BATCHES: InventoryBatch[] = [
     id: 'batch-5',
     itemCode: 'DP-FT-01',
     itemName: 'Fentanyl 0.1mg/2ml (Ống tiêm)',
+    nationalCode: 'VN-16892-13',
+    registrationNumber: 'VN-16892-13',
+    activeIngredient: 'Fentanyl citrat 0.1mg/2ml',
     category: 'Thuốc gây nghiện',
     commodityType: 'medication',
     warehouseType: 'ward_emergency',
@@ -32,6 +35,9 @@ export const WARD_EMERGENCY_BATCHES: InventoryBatch[] = [
     id: 'batch-12',
     itemCode: 'DP-AD-01',
     itemName: 'Thuốc cấp cứu Adrenalin 1mg/1ml (Epinephrin)',
+    nationalCode: 'VD-24220-16',
+    registrationNumber: 'VD-24220-16',
+    activeIngredient: 'Epinephrin 1mg/1ml',
     category: 'Thuốc cấp cứu',
     commodityType: 'medication',
     warehouseType: 'ward_emergency',
@@ -52,6 +58,9 @@ export const WARD_EMERGENCY_BATCHES: InventoryBatch[] = [
     id: 'batch-13',
     itemCode: 'DP-NA-01',
     itemName: 'Thuốc vận mạch Noradrenalin 4mg/4ml',
+    nationalCode: 'VD-21390-14',
+    registrationNumber: 'VD-21390-14',
+    activeIngredient: 'Norepinephrin bitartrat 4mg/4ml',
     category: 'Thuốc cấp cứu',
     commodityType: 'medication',
     warehouseType: 'ward_emergency',
@@ -72,6 +81,9 @@ export const WARD_EMERGENCY_BATCHES: InventoryBatch[] = [
     id: 'batch-14',
     itemCode: 'DP-MD-01',
     itemName: 'Thuốc an thần Midazolam 5mg/ml (Ống tiêm)',
+    nationalCode: 'VD-26884-17',
+    registrationNumber: 'VD-26884-17',
+    activeIngredient: 'Midazolam 5mg/ml',
     category: 'Thuốc gây nghiện',
     commodityType: 'medication',
     warehouseType: 'ward_emergency',
@@ -93,6 +105,9 @@ export const WARD_EMERGENCY_BATCHES: InventoryBatch[] = [
     id: 'batch-15',
     itemCode: 'DP-CD-01',
     itemName: 'Cordarone 150mg/3ml (Amiodarone chống loạn nhịp)',
+    nationalCode: 'VN-17551-13',
+    registrationNumber: 'VN-17551-13',
+    activeIngredient: 'Amiodaron hydroclorid 150mg/3ml',
     category: 'Thuốc cấp cứu',
     commodityType: 'medication',
     warehouseType: 'ward_emergency',

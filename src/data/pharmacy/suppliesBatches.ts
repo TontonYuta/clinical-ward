@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Dữ liệu Kho Vật Tư Y Tế & Tiêu Hao Phẫu Thuật (Nghị định 04/2025/NĐ-CP & NĐ 98/2021)
+ * Dữ liệu Kho Vật Tư Y Tế & Tiêu Hao Phẫu Thuật (Nghị định 04/2025/NĐ-CP & NĐ 98/2021) (<=200 LOC)
  */
 
 import { InventoryBatch } from '../../types/pharmacy';
@@ -11,6 +11,9 @@ export const SUPPLIES_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-1',
     itemCode: 'VT-CG-01',
     itemName: 'Chỉ phẫu thuật Catgut 3/0 (Hộp 24 tép)',
+    nationalCode: '2100342ĐKLH/BYT-TB-CT',
+    registrationNumber: '2100342ĐKLH/BYT-TB-CT',
+    activeIngredient: 'Chỉ Catgut chromic số 3/0 tan tự nhiên',
     category: 'Chỉ phẫu thuật & Khâu',
     commodityType: 'medical_supply',
     warehouseType: 'inpatient_central',
@@ -31,6 +34,9 @@ export const SUPPLIES_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-2',
     itemCode: 'VT-CG-02',
     itemName: 'Chỉ phẫu thuật Catgut 3/0 (Hộp 24 tép)',
+    nationalCode: '2100342ĐKLH/BYT-TB-CT',
+    registrationNumber: '2100342ĐKLH/BYT-TB-CT',
+    activeIngredient: 'Chỉ Catgut chromic số 3/0 tan tự nhiên',
     category: 'Chỉ phẫu thuật & Khâu',
     commodityType: 'medical_supply',
     warehouseType: 'inpatient_central',
@@ -51,6 +57,9 @@ export const SUPPLIES_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-8',
     itemCode: 'VT-BT-01',
     itemName: 'Bơm tiêm 5ml Vinahankook tiệt trùng',
+    nationalCode: '2000124ĐKLH/BYT-TB-CT',
+    registrationNumber: '2000124ĐKLH/BYT-TB-CT',
+    activeIngredient: 'Bơm tiêm dùng 1 lần 5ml nhựa PP',
     category: 'Vật tư tiêu hao',
     commodityType: 'medical_supply',
     warehouseType: 'inpatient_central',
@@ -71,6 +80,9 @@ export const SUPPLIES_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-9',
     itemCode: 'VT-DT-01',
     itemName: 'Dây truyền dịch có bầu đếm giọt',
+    nationalCode: '2000155ĐKLH/BYT-TB-CT',
+    registrationNumber: '2000155ĐKLH/BYT-TB-CT',
+    activeIngredient: 'Bộ dây truyền dịch tĩnh mạch hạt đếm giọt',
     category: 'Vật tư tiêu hao',
     commodityType: 'medical_supply',
     warehouseType: 'inpatient_central',
@@ -91,6 +103,9 @@ export const SUPPLIES_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-19',
     itemCode: 'VT-CVC-01',
     itemName: 'Catheter tĩnh mạch trung tâm 3 nòng CVC 7Fr 20cm',
+    nationalCode: '2200512ĐKLH/BYT-TB-CT',
+    registrationNumber: '2200512ĐKLH/BYT-TB-CT',
+    activeIngredient: 'Catheter tĩnh mạch trung tâm Polyurethane 3 nòng',
     category: 'Vật tư tiêu hao',
     commodityType: 'medical_supply',
     warehouseType: 'inpatient_central',
@@ -111,6 +126,9 @@ export const SUPPLIES_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-20',
     itemCode: 'VT-KL-01',
     itemName: 'Kim luồn tĩnh mạch ngoại vi có van an toàn 20G',
+    nationalCode: '2100891ĐKLH/BYT-TB-CT',
+    registrationNumber: '2100891ĐKLH/BYT-TB-CT',
+    activeIngredient: 'Kim luồn tĩnh mạch FEP/Polyurethane 20G',
     category: 'Vật tư tiêu hao',
     commodityType: 'medical_supply',
     warehouseType: 'inpatient_central',

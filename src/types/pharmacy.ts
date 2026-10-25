@@ -56,4 +56,7 @@ export interface InventoryBatch {
   maxThreshold: number;
   isLowStock: boolean;
   isControlledSubstance?: boolean; // Thuốc kiểm soát đặc biệt (TT 18/2026/TT-BYT)
+  nationalCode?: string; // Mã định danh Quốc gia / SĐK Dược Cục QLD (VD: VD-31291-18)
+  registrationNumber?: string; // Số đăng ký lưu hành
+  activeIngredient?: string; // Hoạt chất chính
 }

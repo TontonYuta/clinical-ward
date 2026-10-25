@@ -1,5 +1,1086 @@
 [
   {
+    "id": "dav-hosp-mor",
+    "nationalCode": "VD-24757-16",
+    "brandName": "Morphin sulfat 10mg/1ml (Ống tiêm)",
+    "activeIngredient": "Morphin sulfat",
+    "concentration": "10mg/1ml",
+    "dosageForm": "Dung dịch tiêm",
+    "route": "Tiêm dưới da / Tiêm bắp / Tiêm tĩnh mạch chậm",
+    "standardUnit": "Ống",
+    "defaultDoseQty": 1,
+    "group": "Thuốc gây nghiện",
+    "atcCode": "N02AA01",
+    "isControlled": true,
+    "isHighAlert": true,
+    "isCrashCart": true,
+    "wardStockCount": 4,
+    "hospitalStockCount": 398,
+    "batchCount": 2,
+    "searchAliases": [
+      "mor",
+      "morphin",
+      "morphine",
+      "vd-24757-16",
+      "thuoc gay nghien"
+    ],
+    "note": "SĐK: VD-24757-16 | NSX: Dược phẩm TW2 (Pharbaco) | Kho BV: 398 Ống (2 lô FEFO: LOT-MP24-X4, LOT-MP25-Z1)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 451/QĐ-QLD",
+        "registrationNumber": "VD-24757-16",
+        "manufacturer": "Công ty Cổ phần Dược phẩm Trung ương 2 (Pharbaco)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Bệnh nhân đau dữ dội cấp/mạn tính không đáp ứng với thuốc giảm đau non-opioid, đau sau mổ lớn, đau do ung thư giai đoạn cuối.",
+      "contraindications": [
+        "Suy hô hấp cấp nặng",
+        "Hen phế quản nặng",
+        "Tăng áp lực nội sọ",
+        "Liệt ruột do tắc cơ học",
+        "Đang dùng thuốc ức chế MAO"
+      ],
+      "patientVerificationChecklist": [
+        "Xác thực định danh người bệnh (vòng tay BHYT)",
+        "Kiểm tra y lệnh thuốc gây nghiện có ký tên Bác sĩ",
+        "Ký sổ giao nhận thuốc kiểm soát đặc biệt TT 18/2026/TT-BYT"
+      ],
+      "standardDosing": "Khởi đầu 5 - 10 mg tiêm dưới da hoặc tiêm bắp mỗi 4 giờ khi cần; tiêm TM chậm 2 - 5 mg pha loãng với NaCl 0.9%",
+      "maxDailyDose": "Liều tối đa phụ thuộc dung nạp lâm sàng, theo dõi nhịp thở SpO2 liên tục",
+      "administrationRouteDetails": "Tiêm bắp, tiêm dưới da, tiêm TM chậm trên 4-5 phút. Pha loãng với NaCl 0.9% hoặc Glucose 5%",
+      "storageAndHandling": "Bảo quản < 25°C, tránh ánh sáng GSP. Khóa tủ sắt 2 lớp theo TT 18/2026/TT-BYT. Thu hồi và lập biên bản tiêu hủy vỏ ống theo TT 20/2022"
+    }
+  },
+  {
+    "id": "dav-hosp-cf",
+    "nationalCode": "VD-31291-18",
+    "brandName": "Kháng sinh Ceftriaxone 1g (Rocephin)",
+    "activeIngredient": "Ceftriaxone natri",
+    "concentration": "1g",
+    "dosageForm": "Lọ bột pha tiêm",
+    "route": "Tiêm bắp / Tiêm tĩnh mạch / Truyền tĩnh mạch",
+    "standardUnit": "Lọ",
+    "defaultDoseQty": 1,
+    "group": "Kháng sinh",
+    "atcCode": "J01DD04",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 465,
+    "batchCount": 2,
+    "searchAliases": [
+      "cf",
+      "rocephin",
+      "ceftriaxone",
+      "vd-31291-18",
+      "khang sinh cephalosporin the he 3"
+    ],
+    "note": "SĐK: VD-31291-18 | NSX: Dược phẩm VCP / Roche | Kho BV: 465 Lọ (2 lô FEFO: LOT-CF24-03, LOT-CF25-08)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 682/QĐ-QLD",
+        "registrationNumber": "VD-31291-18",
+        "manufacturer": "Công ty Cổ phần Dược phẩm VCP / F. Hoffmann-La Roche Ltd",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Nhiễm khuẩn nặng đường hô hấp dưới, viêm màng não mủ, nhiễm khuẩn huyết, nhiễm khuẩn ổ bụng, dự phòng phẫu thuật.",
+      "contraindications": [
+        "Tiền sử sốc phản vệ với Cephalosporin",
+        "Trẻ sơ sinh < 28 ngày tuổi có tăng bilirubin máu",
+        "CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI phối hợp với dung dịch tiêm truyền chứa Canxi (Ringer Lactat) do nguy cơ kết tủa muối Calci-Ceftriaxone gây tử vong"
+      ],
+      "patientVerificationChecklist": [
+        "Kiểm tra tiền sử dị ứng Penicillin & Cephalosporin",
+        "Xác nhận KHÔNG dùng chung đường truyền với dung dịch chứa Canxi",
+        "Đối soát tem nhãn 5 đúng"
+      ],
+      "standardDosing": "Người lớn: 1g - 2g tiêm/truyền TM một lần mỗi ngày (q24h). Nhiễm khuẩn nặng: 4g/ngày chia 2 lần",
+      "maxDailyDose": "4g/24h",
+      "administrationRouteDetails": "Tiêm TM chậm trong 2 - 4 phút; Truyền TM trong ít nhất 30 phút. Pha hoàn nguyên với nước cất pha tiêm hoặc NaCl 0.9%",
+      "storageAndHandling": "Bảo quản nơi khô mát < 30°C GSP. Dung dịch sau pha ổn định 6 giờ ở nhiệt độ phòng và 24 giờ ở 2-8°C"
+    }
+  },
+  {
+    "id": "dav-hosp-me",
+    "nationalCode": "VN-18239-14",
+    "brandName": "Kháng sinh Meropenem 1g (Meronem)",
+    "activeIngredient": "Meropenem trihydrat",
+    "concentration": "1g",
+    "dosageForm": "Lọ bột đông khô pha tiêm",
+    "route": "Tiêm tĩnh mạch / Truyền tĩnh mạch",
+    "standardUnit": "Lọ",
+    "defaultDoseQty": 1,
+    "group": "Kháng sinh",
+    "atcCode": "J01DH02",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 360,
+    "batchCount": 2,
+    "searchAliases": [
+      "me",
+      "meronem",
+      "meropenem",
+      "vn-18239-14",
+      "khang sinh carbapenem du tru"
+    ],
+    "note": "SĐK: VN-18239-14 | NSX: AstraZeneca / Sumitomo Dainippon Pharma | Kho BV: 360 Lọ (2 lô FEFO: LOT-ME24-K2, LOT-ME26-M1)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 523/QĐ-QLD",
+        "registrationNumber": "VN-18239-14",
+        "manufacturer": "AstraZeneca UK Limited / Sumitomo Dainippon Pharma",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
+      },
+      "targetPopulation": "Nhiễm khuẩn bệnh viện đa kháng thuốc ICU, viêm phổi thở máy, nhiễm khuẩn huyết, nhiễm khuẩn ổ bụng biến chứng, sốt giảm bạch cầu trung tính.",
+      "contraindications": [
+        "Quá mẫn nặng (sốc phản vệ) với bất kỳ kháng sinh beta-lactam hoặc carbapenem nào"
+      ],
+      "patientVerificationChecklist": [
+        "Hội chẩn Ban quản lý Kháng sinh Bệnh viện (AMS)",
+        "Kiểm tra tiền sử co giật và dị ứng beta-lactam",
+        "Chỉnh liều theo ClCr"
+      ],
+      "standardDosing": "Người lớn: 1g tiêm/truyền tĩnh mạch mỗi 8 giờ (q8h). Viêm màng não mủ: 2g q8h",
+      "maxDailyDose": "6g/24h",
+      "administrationRouteDetails": "Tiêm tĩnh mạch chậm trong 5 phút hoặc truyền tĩnh mạch kéo dài trong 3 giờ để tối ưu hóa thời gian T > MIC",
+      "storageAndHandling": "Bảo quản nhiệt độ phòng < 25°C GSP. Dùng ngay sau khi hoàn nguyên"
+    }
+  },
+  {
+    "id": "dav-hosp-vr",
+    "nationalCode": "QLSP-1147-19",
+    "brandName": "Vắc xin phòng dại Verorab 0.5ml kèm dung môi",
+    "activeIngredient": "Rabies vaccine >= 2.5 IU",
+    "concentration": "0.5ml (>= 2.5 IU)",
+    "dosageForm": "Bột đông khô kèm dung môi hoàn nguyên",
+    "route": "Tiêm bắp",
+    "standardUnit": "Liều",
+    "defaultDoseQty": 1,
+    "group": "Vắc xin & Chuỗi lạnh",
+    "atcCode": "J07BG01",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 250,
+    "batchCount": 1,
+    "searchAliases": [
+      "vr",
+      "verorab",
+      "vac xin dai",
+      "rabies",
+      "qlsp-1147-19",
+      "chuoi lanh"
+    ],
+    "note": "SĐK: QLSP-1147-19 | NSX: Sanofi Pasteur (Pháp) | Kho BV: 250 Liều (1 lô GSP Cold-chain: LOT-VR25-L9)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Quy trình tiêm chủng Quốc gia & QĐ Cấp SĐK QLSP-1147-19",
+        "registrationNumber": "QLSP-1147-19",
+        "manufacturer": "Sanofi Pasteur (Pháp)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
+      },
+      "targetPopulation": "Dự phòng sau phơi nhiễm khi bị động vật nghi dại cắn, cào (phác đồ Essen hoặc Zagreb). Tiêm phòng trước phơi nhiễm cho đối tượng nguy cơ cao.",
+      "contraindications": [
+        "Không có chống chỉ định tuyệt đối trong điều trị sau phơi nhiễm vì bệnh dại gây tử vong 100%"
+      ],
+      "patientVerificationChecklist": [
+        "Đánh giá vết cắn theo phân độ WHO (Độ I, II, III)",
+        "Kiểm tra chỉ định phối hợp huyết thanh kháng dại SAR nếu vết cắn độ III",
+        "Kiểm tra nhật ký nhiệt độ tủ lạnh GSP 2.0°C - 8.0°C"
+      ],
+      "standardDosing": "Phác đồ tiêm bắp Essen: 5 mũi vào ngày 0, 3, 7, 14, 28 (0.5ml/mũi). Phác đồ Zagreb: 2 mũi ngày 0, 1 mũi ngày 7, 1 mũi ngày 21",
+      "maxDailyDose": "1 liều (0.5ml) mỗi lần tiêm theo lịch",
+      "administrationRouteDetails": "Tiêm bắp sâu vùng cơ Delta cánh tay ở người lớn; vùng mặt trước ngoài đùi ở trẻ nhỏ. TUYỆT ĐỐI KHÔNG tiêm vào vùng mông",
+      "storageAndHandling": "Dây chuyền lạnh GSP nghiêm ngặt 2.0°C - 8.0°C. Tuyệt đối không để đông băng. Sử dụng ngay sau khi hoàn nguyên với dung môi kèm theo"
+    }
+  },
+  {
+    "id": "dav-hosp-st",
+    "nationalCode": "QLSP-1092-18",
+    "brandName": "Huyết thanh kháng uốn ván SAT 1500 UI (Ống tiêm)",
+    "activeIngredient": "Tetanus antitoxin 1500 UI",
+    "concentration": "1500 UI/ml",
+    "dosageForm": "Dung dịch tiêm",
+    "route": "Tiêm bắp",
+    "standardUnit": "Liều",
+    "defaultDoseQty": 1,
+    "group": "Vắc xin & Chuỗi lạnh",
+    "atcCode": "J06AA02",
+    "isControlled": false,
+    "isHighAlert": true,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 85,
+    "batchCount": 1,
+    "searchAliases": [
+      "sat",
+      "uon van",
+      "tetanus",
+      "sat 1500",
+      "qlsp-1092-18",
+      "huyet thanh"
+    ],
+    "note": "SĐK: QLSP-1092-18 | NSX: IVAC | Kho BV: 85 Liều (1 lô GSP Cold-chain: LOT-ST24-W2)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ QLSP-1092-18",
+        "registrationNumber": "QLSP-1092-18",
+        "manufacturer": "Viện Vắc xin và Sinh phẩm Y tế (IVAC - Nha Trang)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Dự phòng bệnh uốn ván khẩn cấp cho người bị vết thương sâu, bẩn dính đất cát; điều trị người bệnh đã có triệu chứng uốn ván.",
+      "contraindications": [
+        "Tiền sử dị ứng nghiêm trọng với huyết thanh nguồn gốc ngựa (trừ trường hợp điều trị cấp cứu uốn ván phải thử test Besredka và có sẵn Adrenalin)"
+      ],
+      "patientVerificationChecklist": [
+        "Bắt buộc thử phản ứng dị ứng theo phương pháp Besredka trước khi tiêm",
+        "Chuẩn bị sẵn Hộp chống sốc phản vệ Adrenalin theo Thông tư 51/2017/TT-BYT",
+        "Đối soát nhiệt độ bảo quản 2.0°C - 8.0°C"
+      ],
+      "standardDosing": "Dự phòng: 1500 UI tiêm bắp một liều duy nhất. Vết thương dập nát nặng có thể tăng gấp đôi (3000 UI)",
+      "maxDailyDose": "Điều trị uốn ván: 10.000 - 20.000 UI tiêm bắp theo chỉ định chuyên khoa",
+      "administrationRouteDetails": "Tiêm bắp sâu. Nếu cần tiêm cùng vắc xin uốn ván (VAT), phải tiêm bằng 2 bơm kim tiêm riêng biệt ở 2 vị trí cơ thể khác nhau",
+      "storageAndHandling": "Bảo quản trong dây chuyền lạnh 2.0°C - 8.0°C GSP. Không để đông đá. Tránh ánh sáng"
+    }
+  },
+  {
+    "id": "dav-hosp-eb",
+    "nationalCode": "QLSP-1035-18",
+    "brandName": "Vắc xin Viêm gan B Engerix-B 20mcg/1ml",
+    "activeIngredient": "Hepatitis B vaccine (recombinant) 20mcg",
+    "concentration": "20mcg/1ml",
+    "dosageForm": "Hỗn dịch tiêm",
+    "route": "Tiêm bắp",
+    "standardUnit": "Liều",
+    "defaultDoseQty": 1,
+    "group": "Vắc xin & Chuỗi lạnh",
+    "atcCode": "J07BC01",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 380,
+    "batchCount": 1,
+    "searchAliases": [
+      "eb",
+      "engerix",
+      "viem gan b",
+      "hep b",
+      "qlsp-1035-18"
+    ],
+    "note": "SĐK: QLSP-1035-18 | NSX: GSK Biologicals (Bỉ) | Kho BV: 380 Liều (1 lô GSP Cold-chain: LOT-EB25-Q1)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ QLSP-1035-18",
+        "registrationNumber": "QLSP-1035-18",
+        "manufacturer": "GlaxoSmithKline Biologicals (Bỉ)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
+      },
+      "targetPopulation": "Tạo miễn dịch chủ động phòng ngừa nhiễm virus viêm gan B (HBV) cho người lớn và thanh thiếu niên từ 16 tuổi trở lên, đặc biệt nhân viên y tế và bệnh nhân lọc máu.",
+      "contraindications": [
+        "Quá mẫn với bất kỳ thành phần nào của vắc xin hoặc nấm men men bánh mì (Saccharomyces cerevisiae)"
+      ],
+      "patientVerificationChecklist": [
+        "Kiểm tra tiền sử tiêm phòng và kháng thể HBsAb / xét nghiệm HBsAg",
+        "Lắc kỹ lọ thuốc trước khi tiêm để tạo hỗn dịch đồng nhất",
+        "Kiểm tra chỉ thị đông băng Freeze-tag"
+      ],
+      "standardDosing": "Lịch cơ bản 3 mũi: Tháng 0, 1, 6 (mỗi liều 1ml chứa 20mcg HBsAg). Lịch cấp tốc: Tháng 0, 1, 2 và nhắc lại mũi 4 ở tháng 12",
+      "maxDailyDose": "1 liều 20mcg/ngày theo lịch",
+      "administrationRouteDetails": "Tiêm bắp cơ Delta. Tuyệt đối không tiêm vào mông hoặc tiêm tĩnh mạch",
+      "storageAndHandling": "Bảo quản nhiệt độ 2.0°C - 8.0°C GSP. Không để đông băng (nếu đông băng vắc xin bị biến tính hoàn toàn và phải hủy bỏ)"
+    }
+  },
+  {
+    "id": "dav-hosp-ft",
+    "nationalCode": "VN-16892-13",
+    "brandName": "Fentanyl 0.1mg/2ml (50mcg/ml)",
+    "activeIngredient": "Fentanyl citrat",
+    "concentration": "0.1mg/2ml",
+    "dosageForm": "Dung dịch tiêm",
+    "route": "Tiêm tĩnh mạch",
+    "standardUnit": "Ống",
+    "defaultDoseQty": 1,
+    "group": "Thuốc gây nghiện",
+    "atcCode": "N01AH01",
+    "isControlled": true,
+    "isHighAlert": true,
+    "isCrashCart": true,
+    "wardStockCount": 180,
+    "hospitalStockCount": 180,
+    "batchCount": 1,
+    "searchAliases": [
+      "ft",
+      "fen",
+      "fentanyl",
+      "vn-16892-13",
+      "thuoc gay nghien phong mo"
+    ],
+    "note": "SĐK: VN-16892-13 | NSX: Hameln Pharmaceuticals GmbH | Kho BV: 180 Ống (1 lô Tủ trực Gây Mê: LOT-FT25-A2)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 412/QĐ-QLD",
+        "registrationNumber": "VN-16892-13",
+        "manufacturer": "Hameln Pharmaceuticals GmbH (Đức)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
+      },
+      "targetPopulation": "Giảm đau trong khởi mê và duy trì mê, giảm đau sau phẫu thuật lớn có thở máy tại khoa Hồi sức tích cực ICU.",
+      "contraindications": [
+        "Ức chế hô hấp nặng, hen phế quản cấp, tăng áp lực nội sọ chưa kiểm soát"
+      ],
+      "patientVerificationChecklist": [
+        "Phải có sẵn thiết bị hỗ trợ hô hấp (bóng bóp Ambu, máy thở, ống nội khí quản) và thuốc kháng độc Naloxon",
+        "Kiểm tra khóa kép tủ thuốc kiểm soát đặc biệt",
+        "Biên bản thu hồi vỏ ống rỗng TT 20/2022"
+      ],
+      "standardDosing": "Khởi mê: 2 - 50 mcg/kg TM tùy loại phẫu thuật. Giảm đau sau mổ ICU: 0.7 - 10 mcg/kg/giờ truyền liên tục",
+      "maxDailyDose": "Theo phác đồ Gây mê hồi sức",
+      "administrationRouteDetails": "Tiêm TM chậm trong ít nhất 1-2 phút (tiêm quá nhanh có thể gây cứng cơ thành ngực - Wooden Chest Syndrome cản trở hô hấp)",
+      "storageAndHandling": "Bảo quản < 25°C, tránh ánh sáng GSP. Quản lý thuốc gây nghiện theo Thông tư 18/2026/TT-BYT"
+    }
+  },
+  {
+    "id": "dav-hosp-ad",
+    "nationalCode": "VD-24220-16",
+    "brandName": "Thuốc cấp cứu Adrenalin 1mg/1ml (Epinephrin)",
+    "activeIngredient": "Epinephrin tartrat",
+    "concentration": "1mg/1ml",
+    "dosageForm": "Dung dịch tiêm",
+    "route": "Tiêm bắp / Tiêm tĩnh mạch / Truyền tĩnh mạch",
+    "standardUnit": "Ống",
+    "defaultDoseQty": 1,
+    "group": "Thuốc cấp cứu",
+    "atcCode": "C01CA24",
+    "isControlled": false,
+    "isHighAlert": true,
+    "isCrashCart": true,
+    "wardStockCount": 150,
+    "hospitalStockCount": 150,
+    "batchCount": 1,
+    "searchAliases": [
+      "ad",
+      "adrenalin",
+      "adrenaline",
+      "epinephrine",
+      "vd-24220-16",
+      "cap cuu phan ve"
+    ],
+    "note": "SĐK: VD-24220-16 | NSX: Vinphaco | Kho BV: 150 Ống (1 lô Hộp chống sốc TT 51: LOT-AD25-V1)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Thông tư 51/2017/TT-BYT về Hướng dẫn xử trí phản vệ & QĐ 312/QĐ-QLD",
+        "registrationNumber": "VD-24220-16",
+        "manufacturer": "Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Cấp cứu sốc phản vệ từ độ II trở lên (Thông tư 51/2017/TT-BYT), hồi sinh tim phổi ngưng tuần hoàn hô hấp, co thắt phế quản đe dọa tính mạng.",
+      "contraindications": [
+        "Không có chống chỉ định tuyệt đối trong cấp cứu sốc phản vệ đe dọa tử vong"
+      ],
+      "patientVerificationChecklist": [
+        "Xác định ngay triệu chứng phản vệ (khó thở, tụt HA, mày đay)",
+        "TIÊM BẮP NGAY LẬP TỨC 1/2 ống (0.5mg) mặt trước ngoài đùi",
+        "KHÔNG trì hoãn tiêm Adrenalin để tìm tĩnh mạch"
+      ],
+      "standardDosing": "Sốc phản vệ: Người lớn 0.5 - 1 ống (0.5 - 1mg) tiêm bắp; trẻ em 0.01 mg/kg. Lặp lại mỗi 3 - 5 phút nếu chưa đáp ứng. Ngừng tim: 1mg tiêm TM mỗi 3-5 phút",
+      "maxDailyDose": "Không giới hạn trong cấp cứu ngừng tuần hoàn",
+      "administrationRouteDetails": "Phản vệ: BẮT BUỘC TIÊM BẮP MẶT TRƯỚC NGOÀI ĐÙI. Chỉ tiêm TM/truyền TM khi có monitor theo dõi nhịp tim liên tục bởi bác sĩ cấp cứu",
+      "storageAndHandling": "Bảo quản tránh ánh sáng, nhiệt độ phòng < 25°C GSP. Không dùng nếu dung dịch chuyển màu hồng hoặc có tủa"
+    }
+  },
+  {
+    "id": "dav-hosp-na",
+    "nationalCode": "VD-21390-14",
+    "brandName": "Thuốc vận mạch Noradrenalin 4mg/4ml",
+    "activeIngredient": "Norepinephrin bitartrat",
+    "concentration": "4mg/4ml",
+    "dosageForm": "Dung dịch tiêm truyền",
+    "route": "Truyền tĩnh mạch qua CVC",
+    "standardUnit": "Ống",
+    "defaultDoseQty": 1,
+    "group": "Thuốc cấp cứu",
+    "atcCode": "C01CA03",
+    "isControlled": false,
+    "isHighAlert": true,
+    "isCrashCart": true,
+    "wardStockCount": 35,
+    "hospitalStockCount": 35,
+    "batchCount": 1,
+    "searchAliases": [
+      "na",
+      "noradrenalin",
+      "norepinephrine",
+      "levophed",
+      "vd-21390-14",
+      "van mach"
+    ],
+    "note": "SĐK: VD-21390-14 | NSX: Vinphaco | Kho BV: 35 Ống (1 lô Tủ trực ICU: LOT-NA24-R3)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & Phác đồ Cấp cứu Sốc nhiễm khuẩn Bộ Y Tế",
+        "registrationNumber": "VD-21390-14",
+        "manufacturer": "Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Sốc nhiễm khuẩn (Septic shock) dai dẳng sau khi đã bù đủ thể tích dịch tuần hoàn, sốc tim, sốc giãn mạch với huyết áp trung bình MAP < 65 mmHg.",
+      "contraindications": [
+        "Tụt huyết áp do giảm thể tích máu chưa được bù đủ dịch (trừ cấp cứu khẩn duy trì tưới máu mạch vành)"
+      ],
+      "patientVerificationChecklist": [
+        "Bắt buộc truyền qua Catheter tĩnh mạch trung tâm (CVC)",
+        "Theo dõi huyết áp động mạch xâm lấn liên tục",
+        "Chuẩn bị Phentolamin xử trí nếu thoát mạch"
+      ],
+      "standardDosing": "Khởi đầu: 0.05 - 0.1 mcg/kg/phút qua bơm tiêm điện; chỉnh liều mỗi 2-5 phút để duy trì MAP >= 65 mmHg",
+      "maxDailyDose": "Chỉnh theo huyết áp mục tiêu MAP, liều cao có thể lên tới 1 - 2 mcg/kg/phút",
+      "administrationRouteDetails": "BẮT BUỘC TRUYỀN TĨNH MẠCH QUA ĐƯỜNG TRUYỀN TRUNG TÂM CVC. Tuyệt đối không tiêm trực tiếp TM hoặc truyền ngoại vi vì nguy cơ hoại tử mô",
+      "storageAndHandling": "Bảo quản < 25°C, tránh ánh sáng GSP. Dung dịch pha loãng trong Glucose 5% hoặc NaCl 0.9% ổn định 24 giờ"
+    }
+  },
+  {
+    "id": "dav-hosp-md",
+    "nationalCode": "VD-26884-17",
+    "brandName": "Thuốc an thần Midazolam 5mg/ml (Ống tiêm)",
+    "activeIngredient": "Midazolam hydroclorid",
+    "concentration": "5mg/ml",
+    "dosageForm": "Dung dịch tiêm",
+    "route": "Tiêm tĩnh mạch / Tiêm bắp",
+    "standardUnit": "Ống",
+    "defaultDoseQty": 1,
+    "group": "Thuốc gây nghiện",
+    "atcCode": "N05CD08",
+    "isControlled": true,
+    "isHighAlert": true,
+    "isCrashCart": true,
+    "wardStockCount": 95,
+    "hospitalStockCount": 95,
+    "batchCount": 1,
+    "searchAliases": [
+      "md",
+      "midazolam",
+      "dormicum",
+      "vd-26884-17",
+      "an than gay me"
+    ],
+    "note": "SĐK: VD-26884-17 | NSX: Dược phẩm Danapha | Kho BV: 95 Ống (1 lô Tủ trực Gây Mê: LOT-MD25-S2)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 631/QĐ-QLD",
+        "registrationNumber": "VD-26884-17",
+        "manufacturer": "Công ty Cổ phần Dược Danapha",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Tiền mê trước phẫu thuật, an thần trong các thủ thuật chẩn đoán can thiệp (nội soi), an thần cho bệnh nhân thở máy tại ICU, cắt cơn co giật liên tục.",
+      "contraindications": [
+        "Suy hô hấp nặng cấp tính, hội chứng ngưng thở khi ngủ, nhược cơ nặng, glaucom góc đóng"
+      ],
+      "patientVerificationChecklist": [
+        "Theo dõi liên tục độ bão hòa oxy SpO2 và mạch",
+        "Phải có sẵn phương tiện hỗ trợ hô hấp và thuốc đối kháng Flumazenil",
+        "Ký sổ quản lý thuốc hướng thần TT 18/2026/TT-BYT"
+      ],
+      "standardDosing": "An thần thủ thuật: Khởi đầu 1 - 2.5 mg tiêm TM chậm trong 2 phút; An thần ICU: Liều nạp 0.03 - 0.3 mg/kg, sau đó duy trì 0.03 - 0.2 mg/kg/giờ",
+      "maxDailyDose": "Theo dõi chỉ số an thần RASS (-2 đến -3)",
+      "administrationRouteDetails": "Tiêm TM chậm hoặc truyền TM liên tục bằng bơm tiêm điện. Tiêm bắp sâu vùng cơ lớn khi cần tiền mê",
+      "storageAndHandling": "Bảo quản nhiệt độ phòng < 30°C GSP, tránh ánh sáng. Quản lý theo Thông tư 18/2026/TT-BYT"
+    }
+  },
+  {
+    "id": "dav-hosp-cd",
+    "nationalCode": "VN-17551-13",
+    "brandName": "Cordarone 150mg/3ml (Amiodarone chống loạn nhịp)",
+    "activeIngredient": "Amiodaron hydroclorid",
+    "concentration": "150mg/3ml",
+    "dosageForm": "Dung dịch tiêm truyền",
+    "route": "Truyền tĩnh mạch",
+    "standardUnit": "Ống",
+    "defaultDoseQty": 1,
+    "group": "Thuốc cấp cứu",
+    "atcCode": "C01BD01",
+    "isControlled": false,
+    "isHighAlert": true,
+    "isCrashCart": true,
+    "wardStockCount": 70,
+    "hospitalStockCount": 70,
+    "batchCount": 1,
+    "searchAliases": [
+      "cd",
+      "cordarone",
+      "amiodarone",
+      "vn-17551-13",
+      "chong loan nhip"
+    ],
+    "note": "SĐK: VN-17551-13 | NSX: Sanofi Winthrop Industrie | Kho BV: 70 Ống (1 lô Tủ trực Tim Mạch: LOT-CD25-P4)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & Phác đồ Cấp cứu Loạn nhịp tim Tim Mạch",
+        "registrationNumber": "VN-17551-13",
+        "manufacturer": "Sanofi Winthrop Industrie (Pháp)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
+      },
+      "targetPopulation": "Cấp cứu nhịp nhanh thất, rung thất không đáp ứng với khử rung tim (ACLS), rung nhĩ có suy tim hoặc rối loạn huyết động.",
+      "contraindications": [
+        "Nhịp chậm xoang nặng, block xoang nhĩ, block nhĩ thất độ II-III chưa đặt máy tạo nhịp, sốc tim, hội chứng QT kéo dài"
+      ],
+      "patientVerificationChecklist": [
+        "Bắt buộc pha trong dung dịch GLUCOSE 5% (KHÔNG pha với NaCl 0.9% vì gây tủa)",
+        "Theo dõi monitor điện tim liên tục đo khoảng QTc",
+        "Dùng đường truyền trung tâm CVC nếu truyền kéo dài > 1 giờ"
+      ],
+      "standardDosing": "Ngừng tim ACLS (VF/pVT): 300mg tiêm TM nhanh sau 3 lần sốc điện, có thể nhắc lại 150mg. Loạn nhịp ổn định: Nạp 150mg trong 10 phút, sau đó duy trì 1mg/phút trong 6 giờ, rồi 0.5mg/phút trong 18 giờ tiếp theo",
+      "maxDailyDose": "2.2g trong 24 giờ đầu",
+      "administrationRouteDetails": "BẮT BUỘC PHA TRONG GLUCOSE 5%. Dùng đường truyền CVC để tránh viêm tĩnh mạch huyết khối nông ngoại vi",
+      "storageAndHandling": "Bảo quản nhiệt độ phòng < 30°C, tránh ánh sáng GSP"
+    }
+  },
+  {
+    "id": "dav-hosp-mf",
+    "nationalCode": "VD-28456-17",
+    "brandName": "Metformin HCl 850mg (Hộp 100 viên nén)",
+    "activeIngredient": "Metformin hydroclorid",
+    "concentration": "850mg",
+    "dosageForm": "Viên nén bao phim",
+    "route": "Uống",
+    "standardUnit": "Hộp",
+    "defaultDoseQty": 1,
+    "group": "Thuốc điều trị chuyên khoa",
+    "atcCode": "A10BA02",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 240,
+    "batchCount": 1,
+    "searchAliases": [
+      "mf",
+      "metformin",
+      "glucophage",
+      "vd-28456-17",
+      "tieu duong man tinh"
+    ],
+    "note": "SĐK: VD-28456-17 | NSX: Dược Hậu Giang (DHG Pharma) | Kho BV: 240 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-MF25-C1)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & Hướng dẫn Chẩn đoán Đái tháo đường typ 2 Bộ Y Tế",
+        "registrationNumber": "VD-28456-17",
+        "manufacturer": "Công ty Cổ phần Dược Hậu Giang (DHG Pharma)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Thuốc lựa chọn hàng đầu điều trị đái tháo đường typ 2 (T2DM) ở người lớn, đặc biệt bệnh nhân thừa cân, béo phì khi chế độ ăn và luyện tập không kiểm soát đủ.",
+      "contraindications": [
+        "Suy thận nặng với eGFR < 30 ml/phút/1.73m2",
+        "Toan chuyển hóa cấp hoặc mạn tính (nhiễm toan lactic)",
+        "Suy tim mất bù, suy hô hấp, sốc"
+      ],
+      "patientVerificationChecklist": [
+        "Xét nghiệm eGFR trước khi kê đơn và định kỳ hàng năm",
+        "Tạm ngừng thuốc trước khi chụp CT-scanner có tiêm thuốc cản quang chứa iod ít nhất 48 giờ",
+        "Đối soát đơn mạn tính 90 ngày theo TT 26/2025/TT-BYT"
+      ],
+      "standardDosing": "Khởi đầu: 500mg hoặc 850mg uống 1 lần/ngày cùng bữa ăn. Tăng dần liều sau mỗi 10-15 ngày đến liều tối ưu 1700 - 2550 mg/ngày",
+      "maxDailyDose": "2550 mg/ngày chia làm 2-3 lần",
+      "administrationRouteDetails": "Uống nguyên viên trong hoặc ngay sau bữa ăn để giảm thiểu tác dụng phụ trên đường tiêu hóa",
+      "storageAndHandling": "Bảo quản nơi khô ráo, nhiệt độ < 30°C GSP, tránh ẩm"
+    }
+  },
+  {
+    "id": "dav-hosp-am",
+    "nationalCode": "VD-27654-17",
+    "brandName": "Amlodipin 5mg (Hộp 30 viên)",
+    "activeIngredient": "Amlodipin besylat",
+    "concentration": "5mg",
+    "dosageForm": "Viên nén",
+    "route": "Uống",
+    "standardUnit": "Hộp",
+    "defaultDoseQty": 1,
+    "group": "Thuốc cấp cứu",
+    "atcCode": "C08CA01",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 45,
+    "batchCount": 1,
+    "searchAliases": [
+      "am",
+      "amlodipin",
+      "norvasc",
+      "vd-27654-17",
+      "tang huyet ap man tinh"
+    ],
+    "note": "SĐK: VD-27654-17 | NSX: Dược phẩm Domesco | Kho BV: 45 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-AM25-E4)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & Khuyến cáo Điều trị Tăng huyết áp VNHA/VSH",
+        "registrationNumber": "VD-27654-17",
+        "manufacturer": "Công ty Cổ phần Xuất nhập khẩu Y tế Domesco",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Điều trị tăng huyết áp nguyên phát, đau thắt ngực ổn định mạn tính, đau thắt ngực do co thắt mạch vành (Prinzmetal).",
+      "contraindications": [
+        "Hạ huyết áp nặng, sốc tim, hẹp động mạch chủ nặng có ý nghĩa huyết động"
+      ],
+      "patientVerificationChecklist": [
+        "Đo huyết áp và kiểm tra phù chân ngoại vi",
+        "Đối soát đơn thuốc mạn tính BHYT TT 26/2025"
+      ],
+      "standardDosing": "Khởi đầu: 5mg uống 1 lần/ngày. Có thể tăng lên 10mg/ngày sau 2-4 tuần nếu chưa đạt huyết áp mục tiêu",
+      "maxDailyDose": "10mg/ngày",
+      "administrationRouteDetails": "Uống với nước, vào bất kỳ thời điểm nào trong ngày (cùng hoặc không cùng thức ăn)",
+      "storageAndHandling": "Bảo quản nơi khô mát < 25°C GSP, tránh ánh sáng trực tiếp"
+    }
+  },
+  {
+    "id": "dav-hosp-ls",
+    "nationalCode": "VD-29871-18",
+    "brandName": "Losartan Kali 50mg (Hộp 30 viên)",
+    "activeIngredient": "Losartan kali",
+    "concentration": "50mg",
+    "dosageForm": "Viên nén bao phim",
+    "route": "Uống",
+    "standardUnit": "Hộp",
+    "defaultDoseQty": 1,
+    "group": "Thuốc cấp cứu",
+    "atcCode": "C09CA01",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 310,
+    "batchCount": 1,
+    "searchAliases": [
+      "ls",
+      "losartan",
+      "cozaar",
+      "vd-29871-18",
+      "huyet ap bao ve than"
+    ],
+    "note": "SĐK: VD-29871-18 | NSX: Dược phẩm Pymepharco | Kho BV: 310 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-LS26-G2)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & Hướng dẫn Tăng huyết áp Bộ Y Tế",
+        "registrationNumber": "VD-29871-18",
+        "manufacturer": "Công ty Cổ phần Pymepharco",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Điều trị tăng huyết áp, bảo vệ chức năng thận ở bệnh nhân đái tháo đường typ 2 có protein niệu, giảm nguy cơ đột quỵ ở bệnh nhân phì đại thất trái.",
+      "contraindications": [
+        "Phụ nữ mang thai (3 tháng giữa và 3 tháng cuối do nguy cơ gây độc tính thai nhi, dị tật sọ mặt và tử vong thai)",
+        "Hẹp động mạch thận hai bên"
+      ],
+      "patientVerificationChecklist": [
+        "Xác nhận loại trừ thai kỳ ở phụ nữ độ tuổi sinh sản",
+        "Kiểm tra nồng độ Kali máu và Creatinin máu trước và trong khi dùng"
+      ],
+      "standardDosing": "Khởi đầu: 50mg uống 1 lần/ngày. Liều tối đa 100mg/ngày uống 1 lần hoặc chia 2 lần",
+      "maxDailyDose": "100mg/ngày",
+      "administrationRouteDetails": "Uống nguyên viên cùng hoặc không cùng thức ăn",
+      "storageAndHandling": "Bảo quản nơi khô ráo, nhiệt độ < 30°C GSP"
+    }
+  },
+  {
+    "id": "dav-hosp-sb",
+    "nationalCode": "VN-18452-14",
+    "brandName": "Salbutamol 100mcg (Ventolin Inhaler 200 liều)",
+    "activeIngredient": "Salbutamol sulfat",
+    "concentration": "100mcg/liều",
+    "dosageForm": "Bình xịt định liều 200 liều",
+    "route": "Hít qua miệng",
+    "standardUnit": "Lọ",
+    "defaultDoseQty": 1,
+    "group": "Thuốc cấp cứu",
+    "atcCode": "R03AC02",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 95,
+    "batchCount": 1,
+    "searchAliases": [
+      "sb",
+      "salbutamol",
+      "ventolin",
+      "inhaler",
+      "vn-18452-14",
+      "hen phe quan"
+    ],
+    "note": "SĐK: VN-18452-14 | NSX: Glaxo Wellcome S.A | Kho BV: 95 Lọ (1 lô Kho Ngoại Trú BHYT: LOT-SB25-H9)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & Phác đồ Hen phế quản Bộ Y Tế (GINA 2026)",
+        "registrationNumber": "VN-18452-14",
+        "manufacturer": "Glaxo Wellcome S.A (Tây Ban Nha)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
+      },
+      "targetPopulation": "Cắt cơn co thắt phế quản cấp trong hen phế quản, bệnh phổi tắc nghẽn mạn tính (COPD), phòng ngừa co thắt phế quản do gắng sức.",
+      "contraindications": [
+        "Quá mẫn với Salbutamol hoặc bất kỳ tá dược nào"
+      ],
+      "patientVerificationChecklist": [
+        "Hướng dẫn kỹ thuật xịt hít đúng: Lắc đều, thở ra hết, ngậm kín môi, hít vào chậm sâu đồng thời ấn xịt, nín thở 10 giây",
+        "Sử dụng buồng đệm (Spacer) cho trẻ em và người già"
+      ],
+      "standardDosing": "Cắt cơn cấp: 1 - 2 nhát xịt (100 - 200 mcg). Tối đa 8 nhát xịt/ngày trong các đợt kịch phát",
+      "maxDailyDose": "800 mcg (8 nhát xịt)/24h",
+      "administrationRouteDetails": "Hít qua đường miệng bằng bình xịt định liều MDI",
+      "storageAndHandling": "Bảo quản nhiệt độ phòng < 30°C. Tránh ánh sáng mặt trời trực tiếp và không làm thủng bình xịt kể cả khi đã hết"
+    }
+  },
+  {
+    "id": "dav-hosp-ac",
+    "nationalCode": "VN-19342-15",
+    "brandName": "Amoxicillin + Clavulanic 1g (Augmentin 1g)",
+    "activeIngredient": "Amoxicillin + Acid clavulanic",
+    "concentration": "1g (875mg/125mg)",
+    "dosageForm": "Viên nén bao phim",
+    "route": "Uống",
+    "standardUnit": "Hộp",
+    "defaultDoseQty": 1,
+    "group": "Kháng sinh",
+    "atcCode": "J01CR02",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 35,
+    "batchCount": 1,
+    "searchAliases": [
+      "ac",
+      "amox",
+      "augmentin",
+      "amoxicillin clavulanic",
+      "vn-19342-15"
+    ],
+    "note": "SĐK: VN-19342-15 | NSX: Glaxo Operations UK Limited | Kho BV: 35 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-AC24-P2)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & Hướng dẫn sử dụng Kháng sinh Bộ Y Tế",
+        "registrationNumber": "VN-19342-15",
+        "manufacturer": "Glaxo Operations UK Limited (Vương quốc Anh)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Anh (BP)"
+      },
+      "targetPopulation": "Nhiễm khuẩn đường hô hấp trên và dưới (viêm tai giữa, viêm xoang, viêm phổi cộng đồng), nhiễm khuẩn đường tiết niệu, da và mô mềm.",
+      "contraindications": [
+        "Tiền sử quá mẫn tức thì (sốc phản vệ) với penicillin và beta-lactam",
+        "Tiền sử vàng da ứ mật hoặc suy gan liên quan đến amoxicillin/clavulanat"
+      ],
+      "patientVerificationChecklist": [
+        "Khai thác kỹ tiền sử dị ứng Penicillin",
+        "Kiểm tra chức năng gan thận"
+      ],
+      "standardDosing": "Người lớn và trẻ em >= 40kg: 1 viên (875/125mg) x 2 lần/ngày (cách nhau 12 giờ)",
+      "maxDailyDose": "2 viên (1750/250mg)/ngày",
+      "administrationRouteDetails": "Uống vào đầu bữa ăn để tối ưu hóa hấp thu và giảm thiểu khó chịu đường tiêu hóa",
+      "storageAndHandling": "Bảo quản trong bao bì gốc kín, nhiệt độ < 25°C, chống ẩm tuyệt đối"
+    }
+  },
+  {
+    "id": "dav-hosp-pc",
+    "nationalCode": "VD-25432-16",
+    "brandName": "Paracetamol 500mg (Hộp 100 viên)",
+    "activeIngredient": "Paracetamol",
+    "concentration": "500mg",
+    "dosageForm": "Viên nén",
+    "route": "Uống",
+    "standardUnit": "Hộp",
+    "defaultDoseQty": 1,
+    "group": "Thuốc cấp cứu",
+    "atcCode": "N02BE01",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 520,
+    "batchCount": 1,
+    "searchAliases": [
+      "pc",
+      "paracetamol",
+      "panadol",
+      "hapacol",
+      "vd-25432-16",
+      "ha sot giam dau"
+    ],
+    "note": "SĐK: VD-25432-16 | NSX: Dược Hậu Giang (DHG Pharma) | Kho BV: 520 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-PC26-R8)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 521/QĐ-QLD",
+        "registrationNumber": "VD-25432-16",
+        "manufacturer": "Công ty Cổ phần Dược Hậu Giang (DHG Pharma)",
+        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Việt Nam V"
+      },
+      "targetPopulation": "Hạ sốt và giảm đau từ nhẹ đến vừa (đau đầu, đau cơ khớp, đau răng, đau họng, sốt xuất huyết, sốt sau tiêm chủng).",
+      "contraindications": [
+        "Suy gan nặng, quá mẫn với paracetamol, thiếu hụt men G6PD"
+      ],
+      "patientVerificationChecklist": [
+        "Kiểm tra khoảng cách giữa các lần uống (tối thiểu 4 - 6 giờ)",
+        "Kiểm tra các thuốc phối hợp khác có chứa paracetamol để tránh quá liều độc gan"
+      ],
+      "standardDosing": "Người lớn: 500mg - 1000mg mỗi 4-6 giờ khi cần sốt/đau. Trẻ em: 10 - 15 mg/kg mỗi 4-6 giờ",
+      "maxDailyDose": "Người lớn: 4000mg/24h. Bệnh nhân nghiện rượu hoặc suy gan nhẹ: không quá 2000mg/24h",
+      "administrationRouteDetails": "Uống với nước lọc",
+      "storageAndHandling": "Bảo quản nơi khô ráo, nhiệt độ thường < 30°C GSP, tránh ánh sáng"
+    }
+  },
+  {
+    "id": "dav-hosp-cg",
+    "nationalCode": "2100342ĐKLH/BYT-TB-CT",
+    "brandName": "Chỉ phẫu thuật Catgut 3/0 (Hộp 24 tép)",
+    "activeIngredient": "Chỉ Catgut chromic số 3/0 tan tự nhiên",
+    "concentration": "Số 3/0 (Dài 75cm kim tròn 1/2)",
+    "dosageForm": "Hộp 24 tép chỉ tiệt trùng",
+    "route": "Khâu vết mổ ngoại khoa",
+    "standardUnit": "Hộp",
+    "defaultDoseQty": 1,
+    "group": "Chỉ phẫu thuật & Khâu",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 150,
+    "batchCount": 2,
+    "searchAliases": [
+      "cg",
+      "catgut",
+      "chi catgut",
+      "chi khau phau thuat",
+      "2100342dklh/byt-tb-ct"
+    ],
+    "note": "Số ĐKLH: 2100342ĐKLH/BYT-TB-CT | NSX: CPT Sutures | Kho BV: 150 Hộp (2 lô FEFO: LOT-CG24-09A, LOT-CG25-11B)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Số ĐKLH Trang thiết bị Y tế 2100342ĐKLH/BYT-TB-CT (Nghị định 98/2021/NĐ-CP)",
+        "registrationNumber": "2100342ĐKLH/BYT-TB-CT",
+        "manufacturer": "Công ty Cổ phần Thiết bị Y tế CPT (CPT Sutures)",
+        "approvalAuthority": "Vụ Trang thiết bị và Công trình Y tế - Bộ Y Tế",
+        "standardPharmacopeia": "Dược điển Mỹ USP"
+      },
+      "targetPopulation": "Khâu đóng mô mềm nói chung và/hoặc buộc chỉ trong phẫu thuật nhãn khoa, sản phụ khoa, tiêu hóa, tiết niệu.",
+      "contraindications": [
+        "Không dùng trong phẫu thuật mô tim mạch và thần kinh, không dùng cho bệnh nhân dị ứng với collagen"
+      ],
+      "patientVerificationChecklist": [
+        "Kiểm tra tính nguyên vẹn của bao bì vô trùng",
+        "Xác nhận kích cỡ chỉ 3/0 phù hợp phẫu thuật",
+        "Đối soát hạn dùng và số lô"
+      ],
+      "standardDosing": "Sử dụng theo y lệnh phẫu thuật viên",
+      "maxDailyDose": "Không áp dụng",
+      "administrationRouteDetails": "Khâu mô vô trùng trong phòng mổ",
+      "storageAndHandling": "Bảo quản nhiệt độ phòng sạch < 25°C, độ ẩm < 60%, tránh nhiệt độ cao làm khô giòn sợi collagen"
+    }
+  },
+  {
+    "id": "dav-hosp-bt",
+    "nationalCode": "2000124ĐKLH/BYT-TB-CT",
+    "brandName": "Bơm tiêm 5ml Vinahankook tiệt trùng",
+    "activeIngredient": "Bơm tiêm dùng 1 lần 5ml nhựa PP",
+    "concentration": "5ml kèm kim 23G",
+    "dosageForm": "Vật tư tiệt trùng vô khuẩn từng cái",
+    "route": "Tiêm thuốc / Lấy máu tĩnh mạch",
+    "standardUnit": "Cái",
+    "defaultDoseQty": 1,
+    "group": "Vật tư tiêu hao",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 1500,
+    "batchCount": 1,
+    "searchAliases": [
+      "bt",
+      "bom tiem",
+      "vinahankook",
+      "bom tiem 5ml",
+      "2000124dklh/byt-tb-ct"
+    ],
+    "note": "Số ĐKLH: 2000124ĐKLH/BYT-TB-CT | NSX: Vinahankook | Kho BV: 1500 Cái (1 lô: LOT-VH25-B9)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Số ĐKLH 2000124ĐKLH/BYT-TB-CT & Tiêu chuẩn TCVN 5903:1995",
+        "registrationNumber": "2000124ĐKLH/BYT-TB-CT",
+        "manufacturer": "Công ty Cổ phần Thiết bị Y tế Vinahankook",
+        "approvalAuthority": "Bộ Y Tế",
+        "standardPharmacopeia": "TCVN / ISO 7886-1"
+      },
+      "targetPopulation": "Sử dụng tiêm thuốc bắp, dưới da, tĩnh mạch hoặc hút dịch, lấy máu xét nghiệm cho mọi đối tượng người bệnh.",
+      "contraindications": [
+        "Bao bì rách, hở, ẩm mốc hoặc hết hạn sử dụng"
+      ],
+      "patientVerificationChecklist": [
+        "Kiểm tra độ kín túi đựng",
+        "Kim tiêm không bị cong vẹo, pít-tông trượt êm ái"
+      ],
+      "standardDosing": "1 chiếc cho mỗi lần tiêm (nguyên tắc 1 bơm kim tiêm - 1 người bệnh)",
+      "maxDailyDose": "Dùng một lần rồi hủy vào thùng rác vật sắc nhọn",
+      "administrationRouteDetails": "Tiêm truyền điều dưỡng lâm sàng",
+      "storageAndHandling": "Bảo quản nơi khô ráo, nhiệt độ thường, tránh ánh nắng trực tiếp"
+    }
+  },
+  {
+    "id": "dav-hosp-dt",
+    "nationalCode": "2000155ĐKLH/BYT-TB-CT",
+    "brandName": "Dây truyền dịch có bầu đếm giọt",
+    "activeIngredient": "Bộ dây truyền dịch tĩnh mạch hạt đếm giọt",
+    "concentration": "20 giọt/ml, dài 150cm",
+    "dosageForm": "Bộ dây truyền vô trùng",
+    "route": "Truyền dịch tĩnh mạch",
+    "standardUnit": "Bộ",
+    "defaultDoseQty": 1,
+    "group": "Vật tư tiêu hao",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 450,
+    "batchCount": 1,
+    "searchAliases": [
+      "dt",
+      "day truyen",
+      "day truyen dich",
+      "2000155dklh/byt-tb-ct"
+    ],
+    "note": "Số ĐKLH: 2000155ĐKLH/BYT-TB-CT | NSX: Vinahankook | Kho BV: 450 Bộ (1 lô: LOT-DT24-H1)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Số ĐKLH 2000155ĐKLH/BYT-TB-CT & ISO 8536-4",
+        "registrationNumber": "2000155ĐKLH/BYT-TB-CT",
+        "manufacturer": "Công ty Cổ phần Thiết bị Y tế Vinahankook",
+        "approvalAuthority": "Bộ Y Tế",
+        "standardPharmacopeia": "ISO 8536-4"
+      },
+      "targetPopulation": "Truyền dịch dinh dưỡng, điện giải, thuốc qua đường tĩnh mạch cho bệnh nhân nội và ngoại trú.",
+      "contraindications": [
+        "Không dùng để truyền máu hoặc chế phẩm máu (phải dùng dây truyền máu có bầu lọc chuyên dụng)"
+      ],
+      "patientVerificationChecklist": [
+        "Đuổi hết bọt khí trước khi kết nối vào người bệnh",
+        "Kiểm tra tốc độ đếm giọt theo y lệnh"
+      ],
+      "standardDosing": "Thay dây truyền mỗi 72 - 96 giờ theo hướng dẫn kiểm soát nhiễm khuẩn Bộ Y Tế",
+      "maxDailyDose": "Không áp dụng",
+      "administrationRouteDetails": "Truyền tĩnh mạch ngoại vi hoặc trung tâm",
+      "storageAndHandling": "Nơi khô mát, vô trùng tuyệt đối"
+    }
+  },
+  {
+    "id": "dav-hosp-cvc",
+    "nationalCode": "2200512ĐKLH/BYT-TB-CT",
+    "brandName": "Catheter tĩnh mạch trung tâm 3 nòng CVC 7Fr 20cm",
+    "activeIngredient": "Catheter tĩnh mạch trung tâm Polyurethane 3 nòng",
+    "concentration": "7Fr x 20cm (16G/18G/18G)",
+    "dosageForm": "Bộ can thiệp mạch tiệt trùng EO",
+    "route": "Đặt tĩnh mạch dưới đòn / tĩnh mạch cảnh trong",
+    "standardUnit": "Bộ",
+    "defaultDoseQty": 1,
+    "group": "Vật tư tiêu hao",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 60,
+    "batchCount": 1,
+    "searchAliases": [
+      "cvc",
+      "catheter",
+      "tinh mach trung tam",
+      "cvc 3 nong",
+      "2200512dklh/byt-tb-ct"
+    ],
+    "note": "Số ĐKLH: 2200512ĐKLH/BYT-TB-CT | NSX: B. Braun Melsungen AG | Kho BV: 60 Bộ (1 lô: LOT-CVC25-E8)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Số ĐKLH 2200512ĐKLH/BYT-TB-CT (Nghị định 04/2025/NĐ-CP)",
+        "registrationNumber": "2200512ĐKLH/BYT-TB-CT",
+        "manufacturer": "B. Braun Melsungen AG (Đức)",
+        "approvalAuthority": "Cục Cơ sở hạ tầng và Thiết bị Y tế - Bộ Y Tế",
+        "standardPharmacopeia": "ISO 10555-1 / CE Mark"
+      },
+      "targetPopulation": "Theo dõi áp lực tĩnh mạch trung tâm CVP, truyền dịch hồi sức khối lượng lớn, truyền thuốc vận mạch noradrenalin liều cao, nuôi dưỡng tĩnh mạch TPN.",
+      "contraindications": [
+        "Nhiễm trùng tại vị trí đặt, huyết khối tĩnh mạch lớn, rối loạn đông máu nặng"
+      ],
+      "patientVerificationChecklist": [
+        "Đặt dưới hướng dẫn siêu âm mạch máu",
+        "Chụp X-quang phổi kiểm tra vị trí đầu catheter trước khi sử dụng",
+        "Tuân thủ gói phòng ngừa nhiễm khuẩn huyết liên quan đến đường truyền trung tâm (CLABSI bundle)"
+      ],
+      "standardDosing": "Đặt bởi Bác sĩ Hồi sức cấp cứu / Phẫu thuật viên",
+      "maxDailyDose": "Không áp dụng",
+      "administrationRouteDetails": "Tĩnh mạch cảnh trong hoặc tĩnh mạch dưới đòn",
+      "storageAndHandling": "Bảo quản vô trùng tuyệt đối, nhiệt độ < 25°C GSP"
+    }
+  },
+  {
+    "id": "dav-hosp-kl",
+    "nationalCode": "2100891ĐKLH/BYT-TB-CT",
+    "brandName": "Kim luồn tĩnh mạch ngoại vi có van an toàn 20G",
+    "activeIngredient": "Kim luồn tĩnh mạch FEP/Polyurethane 20G",
+    "concentration": "20G (Hồng) - Lưu lượng 60ml/phút",
+    "dosageForm": "Kim luồn vô trùng dùng 1 lần",
+    "route": "Thiết lập đường truyền ngoại vi",
+    "standardUnit": "Cái",
+    "defaultDoseQty": 1,
+    "group": "Vật tư tiêu hao",
+    "isControlled": false,
+    "isHighAlert": false,
+    "isCrashCart": false,
+    "wardStockCount": 0,
+    "hospitalStockCount": 850,
+    "batchCount": 1,
+    "searchAliases": [
+      "kl",
+      "kim luon",
+      "kim luon 20g",
+      "bbraun introcan",
+      "2100891dklh/byt-tb-ct"
+    ],
+    "note": "Số ĐKLH: 2100891ĐKLH/BYT-TB-CT | NSX: B. Braun Medical | Kho BV: 850 Cái (1 lô: LOT-KL25-T7)",
+    "clinicalProfile": {
+      "officialSource": {
+        "documentName": "Số ĐKLH 2100891ĐKLH/BYT-TB-CT & ISO 10555-5",
+        "registrationNumber": "2100891ĐKLH/BYT-TB-CT",
+        "manufacturer": "B. Braun Medical Industries",
+        "approvalAuthority": "Bộ Y Tế",
+        "standardPharmacopeia": "ISO 10555-5"
+      },
+      "targetPopulation": "Thiết lập đường truyền tĩnh mạch ngoại vi để tiêm ngắt quãng hoặc truyền liên tục dịch, máu và thuốc cho bệnh nhân.",
+      "contraindications": [
+        "Viêm da, bỏng, phù bạch huyết hoặc có cầu nối rò động tĩnh mạch AVF tại chi dự kiến đặt"
+      ],
+      "patientVerificationChecklist": [
+        "Kiểm tra cơ chế an toàn tự động che mũi kim chống kim đâm tai nạn nhân viên y tế",
+        "Cố định bằng băng gạc vô trùng trong suốt",
+        "Thay kim sau mỗi 72 - 96 giờ hoặc ngay khi có dấu hiệu viêm tắc tĩnh mạch"
+      ],
+      "standardDosing": "Sử dụng 1 chiếc cho mỗi lần thiết lập đường truyền",
+      "maxDailyDose": "Không áp dụng",
+      "administrationRouteDetails": "Tĩnh mạch cẳng tay, mu bàn tay",
+      "storageAndHandling": "Nơi khô ráo, bao bì vô trùng nguyên vẹn"
+    }
+  },
+  {
     "id": "dav-840114189626",
     "nationalCode": "840114189626",
     "brandName": "Qacolmyl",

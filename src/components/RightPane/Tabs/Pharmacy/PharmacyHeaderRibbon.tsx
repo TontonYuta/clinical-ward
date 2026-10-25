@@ -42,7 +42,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm tên thuốc, số lô..."
+              placeholder="Tìm tên thuốc, SĐK, số lô..."
               className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:border-teal-700 text-slate-900 placeholder-slate-400"
             />
           </div>
@@ -84,7 +84,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="relative w-64 shrink-0">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm tên thuốc, số lô, vị trí..." className="w-full pl-9 pr-3.5 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md focus:border-teal-700 text-slate-900 placeholder-slate-400" />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm tên thuốc, SĐK, số lô, vị trí..." className="w-full pl-9 pr-3.5 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md focus:border-teal-700 text-slate-900 placeholder-slate-400" />
             </div>
             <div className="flex items-center gap-1 text-xs bg-slate-100 p-1 rounded-md">
               <button onClick={() => setStatus('all')} className={`px-2.5 py-1 rounded-md cursor-pointer ${status === 'all' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600'}`}>Tất cả ({totalCount})</button>

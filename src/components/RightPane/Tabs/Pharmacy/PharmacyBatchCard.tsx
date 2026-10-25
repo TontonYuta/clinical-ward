@@ -73,7 +73,12 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          {(batch.registrationNumber || batch.nationalCode) && (
+            <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+              SĐK: {batch.registrationNumber || batch.nationalCode}
+            </span>
+          )}
           <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
             {batch.category}
           </span>

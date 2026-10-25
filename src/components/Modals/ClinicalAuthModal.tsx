@@ -154,7 +154,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div role="dialog" aria-modal="true" aria-label="Xác thực chữ ký số lâm sàng" className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-lg shadow-xl border border-slate-200 max-w-xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[92vh]">
         {/* Header */}
         <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">

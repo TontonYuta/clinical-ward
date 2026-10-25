@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Dữ liệu Kho Dược Ngoại Trú BHYT (Thông tư 26/2025/TT-BYT & Danh mục 252 bệnh mạn tính)
+ * Dữ liệu Kho Dược Ngoại Trú BHYT (Thông tư 26/2025/TT-BYT & Danh mục 252 bệnh mạn tính) (<=200 LOC)
  */
 
 import { InventoryBatch } from '../../types/pharmacy';
@@ -11,7 +11,10 @@ export const OUTPATIENT_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-op-1',
     itemCode: 'DP-NT-MF',
     itemName: 'Metformin HCl 850mg (Hộp 100 viên nén)',
-    category: 'Kháng sinh', // Grouping category
+    nationalCode: 'VD-28456-17',
+    registrationNumber: 'VD-28456-17',
+    activeIngredient: 'Metformin hydroclorid 850mg',
+    category: 'Kháng sinh',
     commodityType: 'medication',
     warehouseType: 'outpatient_pharmacy',
     batchNumber: 'LOT-MF25-C1',
@@ -31,6 +34,9 @@ export const OUTPATIENT_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-op-2',
     itemCode: 'DP-NT-AM',
     itemName: 'Amlodipin 5mg (Hộp 30 viên)',
+    nationalCode: 'VD-27654-17',
+    registrationNumber: 'VD-27654-17',
+    activeIngredient: 'Amlodipin besylat 5mg',
     category: 'Thuốc cấp cứu',
     commodityType: 'medication',
     warehouseType: 'outpatient_pharmacy',
@@ -51,6 +57,9 @@ export const OUTPATIENT_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-op-3',
     itemCode: 'DP-NT-LS',
     itemName: 'Losartan Kali 50mg (Hộp 30 viên)',
+    nationalCode: 'VD-29871-18',
+    registrationNumber: 'VD-29871-18',
+    activeIngredient: 'Losartan kali 50mg',
     category: 'Thuốc cấp cứu',
     commodityType: 'medication',
     warehouseType: 'outpatient_pharmacy',
@@ -71,6 +80,9 @@ export const OUTPATIENT_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-op-4',
     itemCode: 'DP-NT-SB',
     itemName: 'Salbutamol 100mcg (Bình xịt định liều 200 liều)',
+    nationalCode: 'VN-18452-14',
+    registrationNumber: 'VN-18452-14',
+    activeIngredient: 'Salbutamol sulfat 100mcg/liều',
     category: 'Thuốc cấp cứu',
     commodityType: 'medication',
     warehouseType: 'outpatient_pharmacy',
@@ -91,6 +103,9 @@ export const OUTPATIENT_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-op-5',
     itemCode: 'DP-NT-AC',
     itemName: 'Amoxicillin + Clavulanic 1g (Hộp 14 viên)',
+    nationalCode: 'VN-19342-15',
+    registrationNumber: 'VN-19342-15',
+    activeIngredient: 'Amoxicillin 875mg + Acid clavulanic 125mg',
     category: 'Kháng sinh',
     commodityType: 'medication',
     warehouseType: 'outpatient_pharmacy',
@@ -111,6 +126,9 @@ export const OUTPATIENT_INVENTORY_BATCHES: InventoryBatch[] = [
     id: 'batch-op-6',
     itemCode: 'DP-NT-PC',
     itemName: 'Paracetamol 500mg (Hộp 100 viên)',
+    nationalCode: 'VD-25432-16',
+    registrationNumber: 'VD-25432-16',
+    activeIngredient: 'Paracetamol 500mg',
     category: 'Thuốc cấp cứu',
     commodityType: 'medication',
     warehouseType: 'outpatient_pharmacy',

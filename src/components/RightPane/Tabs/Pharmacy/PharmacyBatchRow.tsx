@@ -54,7 +54,15 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          {(batch.registrationNumber || batch.nationalCode) && (
+            <>
+              <span className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200" title="Số đăng ký lưu hành Quốc Gia (Cục Quản lý Dược / BYT)">
+                SĐK: {batch.registrationNumber || batch.nationalCode}
+              </span>
+              <span className="text-slate-300">•</span>
+            </>
+          )}
           <span className="text-xs text-slate-500 font-medium">{batch.category}</span>
           <span className="text-slate-300">•</span>
           <span className="text-xs text-slate-500 font-medium">
