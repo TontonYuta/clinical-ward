@@ -98,8 +98,8 @@ export async function lookupDavDrug(query: string, maxCount = 5) {
               console.log(`│  • Cơ sở đăng ký:                ${tenCtyDk}`);
               console.log(`│  • Quyết định cấp phép:          ${soQd}${dotCap ? ` (Đợt cấp: ${dotCap})` : ''}`);
               console.log(`│  • Thời hạn lưu hành:            ${ngayCap} -> ${ngayHetHan}`);
-              if (item.urlGiayTiepNhanGiaHan) {
-                console.log(`│  • Hồ sơ tiếp nhận gia hạn:      https://dichvucong.dav.gov.vn/${item.urlGiayTiepNhanGiaHan.replace(/\\/g, '/')}`);
+              if (item.maSoHoSoGiaHan) {
+                console.log(`│  • Mã hồ sơ gia hạn (Bộ Y Tế):  ${item.maSoHoSoGiaHan} (Lưu trữ nội bộ Cục QLD, không có link tải công khai)`);
               }
               console.log(`└─────────────────────────────────────────────────────────────\n`);
             });
