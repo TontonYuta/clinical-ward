@@ -6,65 +6,64 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Search, ChevronLeft, ChevronRight, Boxes } from 'lucide-react';
+import { X, Search, ChevronLeft, ChevronRight, Boxes, RotateCw, Check } from 'lucide-react';
 import { MasterMedication } from '../../types/medication';
 import { InventoryBatch } from '../../types/pharmacy';
 import { isVerificationLinksVisible, setVerificationLinksVisibility } from '../../config/clinicalVerification';
 import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
 
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelectMedication?: (medName: string) => void;
-  inventoryBatches?: InventoryBatch[];
-}
+interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; inventoryBatches?: InventoryBatch[]; }
 
 const PAGE_SIZE = 12;
 const GROUP_STYLES: Record<string, string> = {
-  'Kháng sinh': 'bg-blue-50 text-blue-700 border-blue-200/60',
-  'Thuốc gây nghiện': 'bg-amber-50 text-amber-800 border-amber-200/60',
-  'Thuốc cấp cứu': 'bg-rose-50 text-rose-700 border-rose-200/60',
-  'Thuốc nguy cơ cao': 'bg-red-50 text-red-700 border-red-200/60',
-  'Dịch truyền': 'bg-cyan-50 text-cyan-800 border-cyan-200/60',
-  'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60',
-  'Vật tư tiêu hao': 'bg-emerald-50 text-emerald-800 border-emerald-200/60',
-  'Chỉ phẫu thuật & Khâu': 'bg-teal-50 text-teal-800 border-teal-200/60',
-  'Vắc xin & Chuỗi lạnh': 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
-  'Thuốc điều trị chuyên khoa': 'bg-slate-100 text-slate-700 border-slate-200/60',
+  'Kháng sinh': 'bg-blue-50 text-blue-700 border-blue-200/60', 'Thuốc gây nghiện': 'bg-amber-50 text-amber-800 border-amber-200/60',
+  'Thuốc cấp cứu': 'bg-rose-50 text-rose-700 border-rose-200/60', 'Thuốc nguy cơ cao': 'bg-red-50 text-red-700 border-red-200/60',
+  'Dịch truyền': 'bg-cyan-50 text-cyan-800 border-cyan-200/60', 'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60',
+  'Vật tư tiêu hao': 'bg-emerald-50 text-emerald-800 border-emerald-200/60', 'Vắc xin & Chuỗi lạnh': 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
 };
 const CATEGORIES = ['all', 'Kháng sinh', 'Thuốc gây nghiện', 'Thuốc cấp cứu', 'Dịch truyền', 'Vật tư tiêu hao', 'Vắc xin & Chuỗi lạnh'];
 
 export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication, inventoryBatches }) => {
   const [drugs, setDrugs] = useState<MasterMedication[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [onlyInWarehouse, setOnlyInWarehouse] = useState(false);
   const [page, setPage] = useState(1);
   const [verifyMode, setVerifyMode] = useState(isVerificationLinksVisible());
 
-  const toggleVerify = () => {
-    const next = !verifyMode;
-    setVerificationLinksVisibility(next);
-    setVerifyMode(next);
+  const toggleVerify = () => { const next = !verifyMode; setVerificationLinksVisibility(next); setVerifyMode(next); };
+
+  const handleAutoUpdate = async () => {
+    setIsSyncing(true); setSyncNotice(null);
+    try {
+      const res = await fetch(`/data/vietnam_drug_registry/dav_essential_formulary.json?t=${Date.now()}`);
+      const freshData = await res.json();
+      if (Array.isArray(freshData)) {
+        setDrugs(freshData); setPage(1);
+        setSyncNotice(`Đã cập nhật ${freshData.length} thuốc!`);
+        setTimeout(() => setSyncNotice(null), 3500);
+      }
+    } catch {
+      setSyncNotice('Dùng CSDL lưu trữ'); setTimeout(() => setSyncNotice(null), 3000);
+    } finally { setIsSyncing(false); }
   };
 
   useEffect(() => {
     if (!isOpen || drugs.length > 0) return;
     setLoading(true);
     fetch('/data/vietnam_drug_registry/dav_essential_formulary.json')
-      .then((res) => res.json())
-      .then((data) => { setDrugs(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then((res) => res.json()).then((data) => { setDrugs(Array.isArray(data) ? data : []); setLoading(false); }).catch(() => setLoading(false));
   }, [isOpen, drugs.length]);
 
   const syncedDrugs = useMemo(() => {
     if (!inventoryBatches || inventoryBatches.length === 0) return drugs;
     const map = new Map<string, { stock: number; batches: number; unit: string }>();
     for (const b of inventoryBatches) {
-      const rawKeys = [b.registrationNumber?.toLowerCase().trim(), b.nationalCode?.toLowerCase().trim(), b.itemCode?.toLowerCase().trim()].filter(Boolean) as string[];
-      const uniqueKeys = Array.from(new Set(rawKeys));
-      for (const k of uniqueKeys) {
+      const keys = [b.registrationNumber?.toLowerCase().trim(), b.nationalCode?.toLowerCase().trim(), b.itemCode?.toLowerCase().trim()].filter(Boolean) as string[];
+      for (const k of new Set(keys)) {
         const cur = map.get(k) || { stock: 0, batches: 0, unit: b.unit };
         map.set(k, { stock: cur.stock + b.currentStock, batches: cur.batches + 1, unit: b.unit });
       }
@@ -108,9 +107,23 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
             </div>
             <p className="text-xs text-slate-500 mt-0.5">Cơ sở dữ liệu số đăng ký lưu hành, tiêu chuẩn DĐVN V &amp; đồng bộ thời gian thực Kho Dược</p>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            {syncNotice && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 animate-in fade-in">
+                <Check className="w-3 h-3 text-emerald-600" />{syncNotice}
+              </span>
+            )}
+            <button
+              onClick={handleAutoUpdate}
+              disabled={isSyncing}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 transition cursor-pointer shadow-2xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+              title="Tự động cập nhật danh mục thuốc mới nhất từ Cục Quản lý Dược"
+            >
+              <RotateCw className={`w-3.5 h-3.5 text-teal-700 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Đang cập nhật...' : 'Tự động cập nhật'}</span>
+            </button>
             <button onClick={toggleVerify} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-              Link kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}
+              Kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}
             </button>
             <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
           </div>

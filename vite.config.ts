@@ -13,6 +13,12 @@ export default defineConfig(() => {
     },
     server: {
       proxy: {
+        '/api-dav': {
+          target: 'https://dichvucong.dav.gov.vn',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api-dav/, ''),
+        },
         '/api': {
           target: 'https://clinical-ward.vercel.app',
           changeOrigin: true,
@@ -23,6 +29,16 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+    preview: {
+      proxy: {
+        '/api-dav': {
+          target: 'https://dichvucong.dav.gov.vn',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api-dav/, ''),
+        },
+      },
     },
   };
 });
