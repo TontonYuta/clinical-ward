@@ -7,15 +7,15 @@ class DrugItemResponse(BaseModel):
     national_code: str
     brand_name: str
     active_ingredient: str
-    concentration: str
-    dosage_form: str
-    route: str
-    standard_unit: str
-    group: str
-    is_controlled: bool
-    is_high_alert: bool
-    is_crash_cart: bool
-    note: str
+    concentration: str | None = ""
+    dosage_form: str | None = ""
+    route: str | None = ""
+    standard_unit: str | None = "Viên"
+    group: str | None = "Thuốc điều trị chuyên khoa"
+    is_controlled: bool | None = False
+    is_high_alert: bool | None = False
+    is_crash_cart: bool | None = False
+    note: str | None = ""
 
 class RegistryPaginatedResponse(BaseModel):
     total: int

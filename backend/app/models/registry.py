@@ -19,4 +19,4 @@ class DavNationalDrug(Base):
     is_high_alert: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_crash_cart: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     note: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now(), nullable=True)

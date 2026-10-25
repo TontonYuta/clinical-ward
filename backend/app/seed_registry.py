@@ -54,8 +54,13 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
         brand_name VARCHAR(255) NOT NULL, active_ingredient VARCHAR(255) NOT NULL,
         concentration VARCHAR(255), dosage_form VARCHAR(255), route VARCHAR(100),
         standard_unit VARCHAR(50) DEFAULT 'Viên', "group" VARCHAR(100) DEFAULT 'Thuốc điều trị chuyên khoa',
-        is_controlled INTEGER DEFAULT 0, is_high_alert INTEGER DEFAULT 0, is_crash_cart INTEGER DEFAULT 0, note TEXT
+        is_controlled INTEGER DEFAULT 0, is_high_alert INTEGER DEFAULT 0, is_crash_cart INTEGER DEFAULT 0,
+        note TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
+    try:
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+    except Exception:
+        pass
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_national_code ON dav_national_drugs (national_code)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_brand_name ON dav_national_drugs (brand_name)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_active_ingredient ON dav_national_drugs (active_ingredient)")

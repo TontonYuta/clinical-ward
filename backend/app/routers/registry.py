@@ -48,47 +48,42 @@ async def get_national_drugs_paginated(
             )
         )
 
-    # 1. Total matching count
-    count_stmt = select(func.count(DavNationalDrug.id))
-    if filters:
-        count_stmt = count_stmt.where(*filters)
-    total_res = await db.execute(count_stmt)
-    total_count = total_res.scalar() or 0
+    try:
+        # 1. Total matching count
+        count_stmt = select(func.count(DavNationalDrug.id))
+        if filters:
+            count_stmt = count_stmt.where(*filters)
+        total_res = await db.execute(count_stmt)
+        total_count = total_res.scalar() or 0
 
-    # Self-healing on-demand seed if table is unseeded
-    if total_count == 0 and not search and (not group or group == "all"):
-        try:
-            from app.seed_registry import seed_dav_registry_if_needed
-            seed_dav_registry_if_needed()
-            total_res = await db.execute(count_stmt)
-            total_count = total_res.scalar() or 0
-        except Exception as e:
-            print(f"Self-healing registry seed error: {e}")
+        # 2. Paginated data items
+        data_stmt = select(DavNationalDrug)
+        if filters:
+            data_stmt = data_stmt.where(*filters)
+        offset = (page - 1) * page_size
+        data_stmt = data_stmt.order_by(DavNationalDrug.brand_name.asc()).offset(offset).limit(page_size)
+        data_res = await db.execute(data_stmt)
+        items = data_res.scalars().all()
 
-    # 2. Paginated data items
-    data_stmt = select(DavNationalDrug)
-    if filters:
-        data_stmt = data_stmt.where(*filters)
-    offset = (page - 1) * page_size
-    data_stmt = data_stmt.order_by(DavNationalDrug.brand_name.asc()).offset(offset).limit(page_size)
-    data_res = await db.execute(data_stmt)
-    items = data_res.scalars().all()
+        # 3. Overall group statistics (Fast cached group counts)
+        stat_stmt = select(DavNationalDrug.group, func.count(DavNationalDrug.id)).group_by(DavNationalDrug.group)
+        stat_res = await db.execute(stat_stmt)
+        group_stats = dict(stat_res.all())
 
-    # 3. Overall group statistics (Fast cached group counts)
-    stat_stmt = select(DavNationalDrug.group, func.count(DavNationalDrug.id)).group_by(DavNationalDrug.group)
-    stat_res = await db.execute(stat_stmt)
-    group_stats = dict(stat_res.all())
+        total_pages = max(1, (total_count + page_size - 1) // page_size)
 
-    total_pages = max(1, (total_count + page_size - 1) // page_size)
-
-    return RegistryPaginatedResponse(
-        total=total_count,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
-        group_stats=group_stats,
-        items=items
-    )
+        return RegistryPaginatedResponse(
+            total=total_count,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            group_stats=group_stats,
+            items=items
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Registry query error: {str(e)}")
 
 @router.get("/stats", response_model=RegistryStatsResponse)
 async def get_registry_stats(db: AsyncSession = Depends(get_db)):
