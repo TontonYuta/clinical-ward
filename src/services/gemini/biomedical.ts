@@ -4,7 +4,11 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { getGeminiApiKey, CLINICAL_SYSTEM_INSTRUCTION } from './config';
+import {
+  getGeminiApiKey,
+  CLINICAL_SYSTEM_INSTRUCTION,
+  callGeminiWithFallback
+} from './config';
 
 export async function diagnoseBiomedicalDeviceWithGemini(
   modelName: string,
@@ -29,19 +33,13 @@ Hãy đưa ra:
 2. Checklist 3 bước kiểm tra an toàn theo tiêu chuẩn IEC 60601-1
 3. Quy định cảnh báo cách ly LOTO (Lockout/Tagout) theo Nghị định 98/2021/NĐ-CP`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    return await callGeminiWithFallback(ai, {
       contents: prompt,
       config: {
         systemInstruction: CLINICAL_SYSTEM_INSTRUCTION,
         temperature: 0.2
       }
     });
-
-    if (response && response.text) {
-      return response.text.trim();
-    }
-    return null;
   } catch (error) {
     console.warn('Gemini Biomedical Diagnostic failed:', error);
     return null;

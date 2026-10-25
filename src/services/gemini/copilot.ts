@@ -4,7 +4,11 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { getGeminiApiKey, CLINICAL_SYSTEM_INSTRUCTION } from './config';
+import {
+  getGeminiApiKey,
+  CLINICAL_SYSTEM_INSTRUCTION,
+  callGeminiWithFallback
+} from './config';
 
 export interface ClinicalContextOptions {
   activeDebtsCount?: number;
@@ -31,19 +35,13 @@ export async function askGeminiClinicalCopilot(
       contextStr = `\n[Bối cảnh khoa phòng hiện tại: Vai trò: ${clinicalContext.role || 'Điều dưỡng'}, Nợ ca đêm: ${clinicalContext.activeDebtsCount || 0} ca, Nợ vỏ Morphin: ${clinicalContext.pendingAmpoulesCount || 0} vỏ, Sự cố TBYT khẩn: ${clinicalContext.urgentTicketsCount || 0}, Thuốc cạn kho: ${clinicalContext.lowStockBatchesCount || 0}, Nhiệt độ tủ lạnh: ${clinicalContext.coldChainTemp ?? 4.5}°C]`;
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    return await callGeminiWithFallback(ai, {
       contents: `${query}${contextStr}`,
       config: {
         systemInstruction: CLINICAL_SYSTEM_INSTRUCTION,
         temperature: 0.2,
       }
     });
-
-    if (response && response.text) {
-      return response.text.trim();
-    }
-    return null;
   } catch (error) {
     console.warn('Gemini API call failed, falling back to local clinical rules:', error);
     return null;

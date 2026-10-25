@@ -11,6 +11,7 @@ import { renderFormattedText } from './ChatMarkdown';
 import { ActionCardDispatcher } from './Cards/ActionCardDispatcher';
 import { ShiftBriefingEmptyState } from './ShiftBriefingEmptyState';
 import { ChatInputBar } from './ChatInputBar';
+import { isCloudAIAvailable } from '../../services/geminiService';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -74,7 +75,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="text-sm font-bold text-slate-900">Trợ Lý Agent Lâm Sàng</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500" title="Agent Live REST API" />
+            <span className={`w-2 h-2 rounded-full ${isCloudAIAvailable() ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`} title={isCloudAIAvailable() ? 'Google Gemini 3.5 AI Active' : 'Agent Live REST API'} />
           </div>
         </div>
         <div className="flex items-center gap-1">

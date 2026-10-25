@@ -23,11 +23,7 @@ ENV/
 # Logs & Environment variables
 *.log
 .DS_Store
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*
 !.env.example
 .vercel
 .vercel_python_packages/
@@ -35,7 +31,6 @@ api/pyproject.toml
 api/uv.lock
 api/.python-version
 .python-version
-.env*
 docs/videos/raw/
 
 # LaTeX auxiliary files

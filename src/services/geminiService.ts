@@ -5,6 +5,9 @@
 
 export {
   CLINICAL_SYSTEM_INSTRUCTION,
+  PRIMARY_GEMINI_MODEL,
+  FALLBACK_GEMINI_MODEL,
+  callGeminiWithFallback,
   getGeminiApiKey,
   saveGeminiApiKey,
   isCloudAIAvailable

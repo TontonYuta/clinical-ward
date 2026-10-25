@@ -4,7 +4,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { getGeminiApiKey } from './config';
+import { getGeminiApiKey, PRIMARY_GEMINI_MODEL } from './config';
 
 export interface ParsedInvoiceItem {
   name: string;
@@ -63,7 +63,7 @@ Hãy phân tích ảnh hóa đơn/phiếu giao hàng dược phẩm này và tr�
 Chỉ trả về JSON thuần túy, không kèm markdown hay văn bản giải thích.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: PRIMARY_GEMINI_MODEL,
       contents: [
         {
           role: 'user',

@@ -19,12 +19,43 @@ Nguyên tắc phản hồi:
 - Luôn ưu tiên an toàn tính mạng người bệnh và tuân thủ pháp luật y tế.
 `;
 
+export const PRIMARY_GEMINI_MODEL = 'gemini-3.5-flash';
+export const FALLBACK_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+
+export async function callGeminiWithFallback(
+  ai: any,
+  params: { contents: any; config?: any }
+): Promise<string | null> {
+  try {
+    const res = await ai.models.generateContent({
+      model: PRIMARY_GEMINI_MODEL,
+      ...params,
+    });
+    if (res?.text) return res.text.trim();
+  } catch (err: any) {
+    console.warn(`Primary model ${PRIMARY_GEMINI_MODEL} failed, attempting fallback to ${FALLBACK_GEMINI_MODEL}:`, err?.message || err);
+    try {
+      const fallbackRes = await ai.models.generateContent({
+        model: FALLBACK_GEMINI_MODEL,
+        ...params,
+      });
+      if (fallbackRes?.text) return fallbackRes.text.trim();
+    } catch (fallbackErr) {
+      console.warn(`Fallback model ${FALLBACK_GEMINI_MODEL} also failed:`, fallbackErr);
+    }
+  }
+  return null;
+}
+
 export function getGeminiApiKey(): string | null {
   try {
     return (
       (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-      (window as any)?.GEMINI_API_KEY ||
-      localStorage.getItem('clinical_gemini_api_key') ||
+      (import.meta as any).env?.GEMINI_API_KEY ||
+      (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) ||
+      (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
+      (typeof window !== 'undefined' && (window as any)?.GEMINI_API_KEY) ||
+      (typeof window !== 'undefined' && localStorage.getItem('clinical_gemini_api_key')) ||
       null
     );
   } catch {
