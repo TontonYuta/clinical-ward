@@ -1,7 +1,7 @@
 [
   {
     "id": "dav-hosp-mor",
-    "nationalCode": "VD-24757-16",
+    "nationalCode": "VD-28087-17",
     "brandName": "Morphin sulfat 10mg/1ml (Ống tiêm)",
     "activeIngredient": "Morphin sulfat",
     "concentration": "10mg/1ml",
@@ -21,15 +21,16 @@
       "mor",
       "morphin",
       "morphine",
-      "vd-24757-16",
-      "thuoc gay nghien"
+      "vd-28087-17",
+      "thuoc gay nghien",
+      "osaphine"
     ],
-    "note": "SĐK: VD-24757-16 | NSX: Dược phẩm TW2 (Pharbaco) | Kho BV: 398 Ống (2 lô FEFO: LOT-MP24-X4, LOT-MP25-Z1)",
+    "note": "SĐK: VD-28087-17 | NSX: Dược phẩm TW1 (Pharbaco) | Kho BV: 398 Ống (2 lô FEFO: LOT-MP24-X4, LOT-MP25-Z1)",
     "clinicalProfile": {
       "officialSource": {
-        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 451/QĐ-QLD",
-        "registrationNumber": "VD-24757-16",
-        "manufacturer": "Công ty Cổ phần Dược phẩm Trung ương 2 (Pharbaco)",
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 638/QĐ-QLD",
+        "registrationNumber": "VD-28087-17",
+        "manufacturer": "Công ty Cổ phần Dược phẩm Trung ương 1 (Pharbaco)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
         "standardPharmacopeia": "Dược điển Việt Nam V"
       },
@@ -54,7 +55,7 @@
   },
   {
     "id": "dav-hosp-cf",
-    "nationalCode": "VD-31291-18",
+    "nationalCode": "VN-17036-13",
     "brandName": "Kháng sinh Ceftriaxone 1g (Rocephin)",
     "activeIngredient": "Ceftriaxone natri",
     "concentration": "1g",
@@ -74,17 +75,17 @@
       "cf",
       "rocephin",
       "ceftriaxone",
-      "vd-31291-18",
+      "vn-17036-13",
       "khang sinh cephalosporin the he 3"
     ],
-    "note": "SĐK: VD-31291-18 | NSX: Dược phẩm VCP / Roche | Kho BV: 465 Lọ (2 lô FEFO: LOT-CF24-03, LOT-CF25-08)",
+    "note": "SĐK: VN-17036-13 | NSX: F. Hoffmann-La Roche Ltd | Kho BV: 465 Lọ (2 lô FEFO: LOT-CF24-03, LOT-CF25-08)",
     "clinicalProfile": {
       "officialSource": {
-        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 682/QĐ-QLD",
-        "registrationNumber": "VD-31291-18",
-        "manufacturer": "Công ty Cổ phần Dược phẩm VCP / F. Hoffmann-La Roche Ltd",
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD",
+        "registrationNumber": "VN-17036-13",
+        "manufacturer": "F. Hoffmann-La Roche Ltd (Thụy Sĩ)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
-        "standardPharmacopeia": "Dược điển Việt Nam V"
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
       },
       "targetPopulation": "Nhiễm khuẩn nặng đường hô hấp dưới, viêm màng não mủ, nhiễm khuẩn huyết, nhiễm khuẩn ổ bụng, dự phòng phẫu thuật.",
       "contraindications": [
@@ -105,7 +106,7 @@
   },
   {
     "id": "dav-hosp-me",
-    "nationalCode": "VN-18239-14",
+    "nationalCode": "VN-17831-14",
     "brandName": "Kháng sinh Meropenem 1g (Meronem)",
     "activeIngredient": "Meropenem trihydrat",
     "concentration": "1g",
@@ -125,15 +126,15 @@
       "me",
       "meronem",
       "meropenem",
-      "vn-18239-14",
+      "vn-17831-14",
       "khang sinh carbapenem du tru"
     ],
-    "note": "SĐK: VN-18239-14 | NSX: AstraZeneca / Sumitomo Dainippon Pharma | Kho BV: 360 Lọ (2 lô FEFO: LOT-ME24-K2, LOT-ME26-M1)",
+    "note": "SĐK: VN-17831-14 | NSX: AstraZeneca UK Limited | Kho BV: 360 Lọ (2 lô FEFO: LOT-ME24-K2, LOT-ME26-M1)",
     "clinicalProfile": {
       "officialSource": {
-        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 523/QĐ-QLD",
-        "registrationNumber": "VN-18239-14",
-        "manufacturer": "AstraZeneca UK Limited / Sumitomo Dainippon Pharma",
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD",
+        "registrationNumber": "VN-17831-14",
+        "manufacturer": "AstraZeneca UK Limited (Vương quốc Anh)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
         "standardPharmacopeia": "Dược điển Châu Âu (EP)"
       },
@@ -303,7 +304,7 @@
   },
   {
     "id": "dav-hosp-ft",
-    "nationalCode": "VN-16892-13",
+    "nationalCode": "VN-18441-14",
     "brandName": "Fentanyl 0.1mg/2ml (50mcg/ml)",
     "activeIngredient": "Fentanyl citrat",
     "concentration": "0.1mg/2ml",
@@ -323,15 +324,15 @@
       "ft",
       "fen",
       "fentanyl",
-      "vn-16892-13",
+      "vn-18441-14",
       "thuoc gay nghien phong mo"
     ],
-    "note": "SĐK: VN-16892-13 | NSX: Hameln Pharmaceuticals GmbH | Kho BV: 180 Ống (1 lô Tủ trực Gây Mê: LOT-FT25-A2)",
+    "note": "SĐK: VN-18441-14 | NSX: Rotexmedica GmbH (Đức) | Kho BV: 180 Ống (1 lô Tủ trực Gây Mê: LOT-FT25-A2)",
     "clinicalProfile": {
       "officialSource": {
-        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 412/QĐ-QLD",
-        "registrationNumber": "VN-16892-13",
-        "manufacturer": "Hameln Pharmaceuticals GmbH (Đức)",
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD",
+        "registrationNumber": "VN-18441-14",
+        "manufacturer": "Rotexmedica GmbH (Đức)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
         "standardPharmacopeia": "Dược điển Châu Âu (EP)"
       },
@@ -352,7 +353,7 @@
   },
   {
     "id": "dav-hosp-ad",
-    "nationalCode": "VD-24220-16",
+    "nationalCode": "VD-27151-17",
     "brandName": "Thuốc cấp cứu Adrenalin 1mg/1ml (Epinephrin)",
     "activeIngredient": "Epinephrin tartrat",
     "concentration": "1mg/1ml",
@@ -373,14 +374,14 @@
       "adrenalin",
       "adrenaline",
       "epinephrine",
-      "vd-24220-16",
+      "vd-27151-17",
       "cap cuu phan ve"
     ],
-    "note": "SĐK: VD-24220-16 | NSX: Vinphaco | Kho BV: 150 Ống (1 lô Hộp chống sốc TT 51: LOT-AD25-V1)",
+    "note": "SĐK: VD-27151-17 | NSX: Vinphaco | Kho BV: 150 Ống (1 lô Hộp chống sốc TT 51: LOT-AD25-V1)",
     "clinicalProfile": {
       "officialSource": {
-        "documentName": "Thông tư 51/2017/TT-BYT về Hướng dẫn xử trí phản vệ & QĐ 312/QĐ-QLD",
-        "registrationNumber": "VD-24220-16",
+        "documentName": "Thông tư 51/2017/TT-BYT về Hướng dẫn xử trí phản vệ & QĐ 229/QĐ-QLD",
+        "registrationNumber": "VD-27151-17",
         "manufacturer": "Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
         "standardPharmacopeia": "Dược điển Việt Nam V"
@@ -402,7 +403,7 @@
   },
   {
     "id": "dav-hosp-na",
-    "nationalCode": "VD-21390-14",
+    "nationalCode": "VD-24342-16",
     "brandName": "Thuốc vận mạch Noradrenalin 4mg/4ml",
     "activeIngredient": "Norepinephrin bitartrat",
     "concentration": "4mg/4ml",
@@ -423,14 +424,14 @@
       "noradrenalin",
       "norepinephrine",
       "levophed",
-      "vd-21390-14",
+      "vd-24342-16",
       "van mach"
     ],
-    "note": "SĐK: VD-21390-14 | NSX: Vinphaco | Kho BV: 35 Ống (1 lô Tủ trực ICU: LOT-NA24-R3)",
+    "note": "SĐK: VD-24342-16 | NSX: Vinphaco | Kho BV: 35 Ống (1 lô Tủ trực ICU: LOT-NA24-R3)",
     "clinicalProfile": {
       "officialSource": {
         "documentName": "Dược thư Quốc gia Việt Nam & Phác đồ Cấp cứu Sốc nhiễm khuẩn Bộ Y Tế",
-        "registrationNumber": "VD-21390-14",
+        "registrationNumber": "VD-24342-16",
         "manufacturer": "Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
         "standardPharmacopeia": "Dược điển Việt Nam V"
@@ -452,7 +453,7 @@
   },
   {
     "id": "dav-hosp-md",
-    "nationalCode": "VD-26884-17",
+    "nationalCode": "VN-16993-13",
     "brandName": "Thuốc an thần Midazolam 5mg/ml (Ống tiêm)",
     "activeIngredient": "Midazolam hydroclorid",
     "concentration": "5mg/ml",
@@ -472,17 +473,17 @@
       "md",
       "midazolam",
       "dormicum",
-      "vd-26884-17",
+      "vn-16993-13",
       "an than gay me"
     ],
-    "note": "SĐK: VD-26884-17 | NSX: Dược phẩm Danapha | Kho BV: 95 Ống (1 lô Tủ trực Gây Mê: LOT-MD25-S2)",
+    "note": "SĐK: VN-16993-13 | NSX: Hameln Pharmaceuticals GmbH (Đức) | Kho BV: 95 Ống (1 lô Tủ trực Gây Mê: LOT-MD25-S2)",
     "clinicalProfile": {
       "officialSource": {
-        "documentName": "Dược thư Quốc gia Việt Nam & QĐ 631/QĐ-QLD",
-        "registrationNumber": "VD-26884-17",
-        "manufacturer": "Công ty Cổ phần Dược Danapha",
+        "documentName": "Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD",
+        "registrationNumber": "VN-16993-13",
+        "manufacturer": "Hameln Pharmaceuticals GmbH (Đức)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
-        "standardPharmacopeia": "Dược điển Việt Nam V"
+        "standardPharmacopeia": "Dược điển Châu Âu (EP)"
       },
       "targetPopulation": "Tiền mê trước phẫu thuật, an thần trong các thủ thuật chẩn đoán can thiệp (nội soi), an thần cho bệnh nhân thở máy tại ICU, cắt cơn co giật liên tục.",
       "contraindications": [
@@ -501,7 +502,7 @@
   },
   {
     "id": "dav-hosp-cd",
-    "nationalCode": "VN-17551-13",
+    "nationalCode": "VN-20734-17",
     "brandName": "Cordarone 150mg/3ml (Amiodarone chống loạn nhịp)",
     "activeIngredient": "Amiodaron hydroclorid",
     "concentration": "150mg/3ml",
@@ -521,14 +522,14 @@
       "cd",
       "cordarone",
       "amiodarone",
-      "vn-17551-13",
+      "vn-20734-17",
       "chong loan nhip"
     ],
-    "note": "SĐK: VN-17551-13 | NSX: Sanofi Winthrop Industrie | Kho BV: 70 Ống (1 lô Tủ trực Tim Mạch: LOT-CD25-P4)",
+    "note": "SĐK: VN-20734-17 | NSX: Sanofi Winthrop Industrie (Pháp) | Kho BV: 70 Ống (1 lô Tủ trực Tim Mạch: LOT-CD25-P4)",
     "clinicalProfile": {
       "officialSource": {
         "documentName": "Dược thư Quốc gia Việt Nam & Phác đồ Cấp cứu Loạn nhịp tim Tim Mạch",
-        "registrationNumber": "VN-17551-13",
+        "registrationNumber": "VN-20734-17",
         "manufacturer": "Sanofi Winthrop Industrie (Pháp)",
         "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
         "standardPharmacopeia": "Dược điển Châu Âu (EP)"
@@ -9403,63 +9404,6 @@
     }
   },
   {
-    "id": "dav-VN-20734-17",
-    "nationalCode": "VN-20734-17",
-    "brandName": "Cordarone 150 mg/ 3ml",
-    "activeIngredient": "Amiodarone hydrochloride 150mg/3ml",
-    "concentration": "Amiodarone hydrochloride 150mg/3ml",
-    "dosageForm": "Dung dịch tiêm",
-    "route": "Tiêm bắp / Tiêm tĩnh mạch",
-    "standardUnit": "Ống",
-    "defaultDoseQty": 1,
-    "group": "Thuốc cấp cứu",
-    "isControlled": false,
-    "isHighAlert": true,
-    "isCrashCart": true,
-    "wardStockCount": 10,
-    "hospitalStockCount": 200,
-    "searchAliases": [
-      "cordarone 150 mg/ 3ml",
-      "amiodarone"
-    ],
-    "note": "SĐK: VN-20734-17 | NSX: Sanofi Winthrop Industrie",
-    "clinicalProfile": {
-      "officialSource": {
-        "documentName": "QĐ Cấp SĐK 853/QĐ-QLD",
-        "registrationNumber": "VN-20734-17",
-        "manufacturer": "Sanofi Winthrop Industrie",
-        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
-        "standardPharmacopeia": "NSX"
-      },
-      "targetPopulation": "Theo chỉ định của Bác sĩ điều trị.",
-      "contraindications": [
-        "Quá mẫn với hoạt chất hoặc bất kỳ tá dược nào của thuốc"
-      ],
-      "patientVerificationChecklist": [
-        "Đối soát vòng tay người bệnh",
-        "Kiểm tra 5 đúng"
-      ],
-      "standardDosing": "Khởi đầu theo hàm lượng Amiodarone hydrochloride 150mg/3ml hoặc theo phác đồ điều trị của Bộ Y tế",
-      "maxDailyDose": "Không tự ý tăng liều, tuân thủ hướng dẫn của Dược sĩ lâm sàng và Bác sĩ",
-      "administrationRouteDetails": "Dung dịch tiêm (Hộp 6 ống x 3 ml)",
-      "compatibleDiluents": [
-        "NaCl 0.9%",
-        "Glucose 5%"
-      ],
-      "timingAndFrequency": "Theo y lệnh bác sĩ",
-      "mealRelation": "Theo hướng dẫn sử dụng đính kèm",
-      "clinicalMonitoring": "Theo dõi sinh hiệu, tri giác và phản ứng quá mẫn",
-      "adverseReactions": [
-        "Dị ứng, mẩn ngứa, phát ban, buồn nôn"
-      ],
-      "ddiWarnings": [
-        "Kiểm tra tương tác trước khi phối hợp với thuốc khác"
-      ],
-      "pregnancyLactation": "Tham khảo ý kiến bác sĩ chuyên khoa",
-      "storageAndHandling": "Bảo quản dưới 30°C, tránh ánh sáng. Hạn dùng: 24 tháng."
-    }
-  },
-  {
     "id": "dav-899110355725",
     "nationalCode": "899110355725",
     "brandName": "Butavell",
@@ -15898,63 +15842,6 @@
       ],
       "pregnancyLactation": "Tham khảo ý kiến bác sĩ chuyên khoa",
       "storageAndHandling": "Bảo quản dưới 30°C, tránh ánh sáng. Hạn dùng: 36 tháng."
-    }
-  },
-  {
-    "id": "dav-VD-24342-16",
-    "nationalCode": "VD-24342-16",
-    "brandName": "Noradrenalin",
-    "activeIngredient": "Noradrenalin (dưới dạng Noradrenalin tartrat)",
-    "concentration": "4 mg/4ml",
-    "dosageForm": "Dung dịch tiêm",
-    "route": "Tiêm bắp / Tiêm tĩnh mạch",
-    "standardUnit": "Ống",
-    "defaultDoseQty": 1,
-    "group": "Thuốc cấp cứu",
-    "isControlled": false,
-    "isHighAlert": true,
-    "isCrashCart": true,
-    "wardStockCount": 10,
-    "hospitalStockCount": 200,
-    "searchAliases": [
-      "noradrenalin",
-      "noradrenalin"
-    ],
-    "note": "SĐK: VD-24342-16 | NSX: Công ty cổ phần dược phẩm Vĩnh Phúc",
-    "clinicalProfile": {
-      "officialSource": {
-        "documentName": "QĐ Cấp SĐK 447/QĐ-QLD",
-        "registrationNumber": "VD-24342-16",
-        "manufacturer": "Công ty cổ phần dược phẩm Vĩnh Phúc",
-        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
-        "standardPharmacopeia": "BP2020"
-      },
-      "targetPopulation": "Theo chỉ định của Bác sĩ điều trị.",
-      "contraindications": [
-        "Quá mẫn với hoạt chất hoặc bất kỳ tá dược nào của thuốc"
-      ],
-      "patientVerificationChecklist": [
-        "Đối soát vòng tay người bệnh",
-        "Kiểm tra 5 đúng"
-      ],
-      "standardDosing": "Khởi đầu theo hàm lượng 4 mg/4ml hoặc theo phác đồ điều trị của Bộ Y tế",
-      "maxDailyDose": "Không tự ý tăng liều, tuân thủ hướng dẫn của Dược sĩ lâm sàng và Bác sĩ",
-      "administrationRouteDetails": "Dung dịch tiêm (Hộp 1 vỉ x 10 ống x 4 ml; Hộp 2 vỉ x 5 ống x 4 ml; Hộp 10 vỉ x 5 ống x 4 ml)",
-      "compatibleDiluents": [
-        "NaCl 0.9%",
-        "Glucose 5%"
-      ],
-      "timingAndFrequency": "Theo y lệnh bác sĩ",
-      "mealRelation": "Theo hướng dẫn sử dụng đính kèm",
-      "clinicalMonitoring": "Theo dõi sinh hiệu, tri giác và phản ứng quá mẫn",
-      "adverseReactions": [
-        "Dị ứng, mẩn ngứa, phát ban, buồn nôn"
-      ],
-      "ddiWarnings": [
-        "Kiểm tra tương tác trước khi phối hợp với thuốc khác"
-      ],
-      "pregnancyLactation": "Tham khảo ý kiến bác sĩ chuyên khoa",
-      "storageAndHandling": "Bảo quản dưới 30°C, tránh ánh sáng. Hạn dùng: 36."
     }
   },
   {
@@ -28822,63 +28709,6 @@
       "standardDosing": "Khởi đầu theo hàm lượng Theo tiêu chuẩn hoặc theo phác đồ điều trị của Bộ Y tế",
       "maxDailyDose": "Không tự ý tăng liều, tuân thủ hướng dẫn của Dược sĩ lâm sàng và Bác sĩ",
       "administrationRouteDetails": "Dung dịch tiêm bắp hoặc tiêm truyền tĩnh mạch (Hộp 10 ống x 10 ml)",
-      "compatibleDiluents": [
-        "NaCl 0.9%",
-        "Glucose 5%"
-      ],
-      "timingAndFrequency": "Theo y lệnh bác sĩ",
-      "mealRelation": "Theo hướng dẫn sử dụng đính kèm",
-      "clinicalMonitoring": "Theo dõi sinh hiệu, tri giác và phản ứng quá mẫn",
-      "adverseReactions": [
-        "Dị ứng, mẩn ngứa, phát ban, buồn nôn"
-      ],
-      "ddiWarnings": [
-        "Kiểm tra tương tác trước khi phối hợp với thuốc khác"
-      ],
-      "pregnancyLactation": "Tham khảo ý kiến bác sĩ chuyên khoa",
-      "storageAndHandling": "Bảo quản dưới 30°C, tránh ánh sáng. Hạn dùng: 36 tháng."
-    }
-  },
-  {
-    "id": "dav-VN-18441-14",
-    "nationalCode": "VN-18441-14",
-    "brandName": "Fentanyl 0,1 mg-Panpharma",
-    "activeIngredient": "Fentanyl (dưới dạng fentanyl citrat) 0,1 mg/2 ml",
-    "concentration": "Fentanyl (dưới dạng fentanyl citrat) 0,1 mg/2 ml",
-    "dosageForm": "Dung dịch tiêm bắp hoặc tiêm truyền tĩnh mạch",
-    "route": "Tiêm bắp / Tiêm tĩnh mạch",
-    "standardUnit": "Ống",
-    "defaultDoseQty": 1,
-    "group": "Thuốc gây nghiện",
-    "isControlled": true,
-    "isHighAlert": true,
-    "isCrashCart": true,
-    "wardStockCount": 10,
-    "hospitalStockCount": 200,
-    "searchAliases": [
-      "fentanyl 0,1 mg-panpharma",
-      "fentanyl"
-    ],
-    "note": "SĐK: VN-18441-14 | NSX: Panpharma GmbH",
-    "clinicalProfile": {
-      "officialSource": {
-        "documentName": "QĐ Cấp SĐK 573/QĐ-QLD",
-        "registrationNumber": "VN-18441-14",
-        "manufacturer": "Panpharma GmbH",
-        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
-        "standardPharmacopeia": "BP hiện hành"
-      },
-      "targetPopulation": "Theo chỉ định của Bác sĩ điều trị.",
-      "contraindications": [
-        "Quá mẫn với hoạt chất hoặc bất kỳ tá dược nào của thuốc"
-      ],
-      "patientVerificationChecklist": [
-        "Đối soát vòng tay người bệnh",
-        "Kiểm tra 5 đúng"
-      ],
-      "standardDosing": "Khởi đầu theo hàm lượng Fentanyl (dưới dạng fentanyl citrat) 0,1 mg/2 ml hoặc theo phác đồ điều trị của Bộ Y tế",
-      "maxDailyDose": "Không tự ý tăng liều, tuân thủ hướng dẫn của Dược sĩ lâm sàng và Bác sĩ",
-      "administrationRouteDetails": "Dung dịch tiêm bắp hoặc tiêm truyền tĩnh mạch (Hộp 10 ống x 2 ml)",
       "compatibleDiluents": [
         "NaCl 0.9%",
         "Glucose 5%"
@@ -82930,63 +82760,6 @@
       ],
       "pregnancyLactation": "Tham khảo ý kiến bác sĩ chuyên khoa",
       "storageAndHandling": "Bảo quản dưới 30°C, tránh ánh sáng. Hạn dùng: 24 tháng."
-    }
-  },
-  {
-    "id": "dav-VN-16993-13",
-    "nationalCode": "VN-16993-13",
-    "brandName": "Midazolam-hameln 5 mg/ml",
-    "activeIngredient": "Midazolam (dưới dạng Midazolam hydrochloride) 5mg/ml",
-    "concentration": "Midazolam (dưới dạng Midazolam hydrochloride) 5mg/ml",
-    "dosageForm": "Dung dịch tiêm",
-    "route": "Tiêm bắp / Tiêm tĩnh mạch",
-    "standardUnit": "Ống",
-    "defaultDoseQty": 1,
-    "group": "Thuốc hướng thần",
-    "isControlled": true,
-    "isHighAlert": false,
-    "isCrashCart": false,
-    "wardStockCount": 10,
-    "hospitalStockCount": 200,
-    "searchAliases": [
-      "midazolam-hameln 5 mg/ml",
-      "midazolam"
-    ],
-    "note": "SĐK: VN-16993-13 | NSX: Siegfried Hameln GmbH",
-    "clinicalProfile": {
-      "officialSource": {
-        "documentName": "QĐ Cấp SĐK 573/QĐ-QLD",
-        "registrationNumber": "VN-16993-13",
-        "manufacturer": "Siegfried Hameln GmbH",
-        "approvalAuthority": "Cục Quản lý Dược - Bộ Y Tế",
-        "standardPharmacopeia": "NSX"
-      },
-      "targetPopulation": "Theo chỉ định của Bác sĩ điều trị.",
-      "contraindications": [
-        "Quá mẫn với hoạt chất hoặc bất kỳ tá dược nào của thuốc"
-      ],
-      "patientVerificationChecklist": [
-        "Đối soát vòng tay người bệnh",
-        "Kiểm tra 5 đúng"
-      ],
-      "standardDosing": "Khởi đầu theo hàm lượng Midazolam (dưới dạng Midazolam hydrochloride) 5mg/ml hoặc theo phác đồ điều trị của Bộ Y tế",
-      "maxDailyDose": "Không tự ý tăng liều, tuân thủ hướng dẫn của Dược sĩ lâm sàng và Bác sĩ",
-      "administrationRouteDetails": "Dung dịch tiêm (Hộp 10 ống 1ml)",
-      "compatibleDiluents": [
-        "NaCl 0.9%",
-        "Glucose 5%"
-      ],
-      "timingAndFrequency": "Theo y lệnh bác sĩ",
-      "mealRelation": "Theo hướng dẫn sử dụng đính kèm",
-      "clinicalMonitoring": "Theo dõi sinh hiệu, tri giác và phản ứng quá mẫn",
-      "adverseReactions": [
-        "Dị ứng, mẩn ngứa, phát ban, buồn nôn"
-      ],
-      "ddiWarnings": [
-        "Kiểm tra tương tác trước khi phối hợp với thuốc khác"
-      ],
-      "pregnancyLactation": "Tham khảo ý kiến bác sĩ chuyên khoa",
-      "storageAndHandling": "Bảo quản dưới 30°C, tránh ánh sáng. Hạn dùng: 36 tháng."
     }
   },
   {

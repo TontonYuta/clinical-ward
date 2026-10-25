@@ -9,7 +9,7 @@ const path = require('path');
 const HOSPITAL_SYNCED_ITEMS = [
   {
     id: 'dav-hosp-mor',
-    nationalCode: 'VD-24757-16',
+    nationalCode: 'VD-28087-17',
     brandName: 'Morphin sulfat 10mg/1ml (Ống tiêm)',
     activeIngredient: 'Morphin sulfat',
     concentration: '10mg/1ml',
@@ -25,13 +25,13 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 4,
     hospitalStockCount: 398,
     batchCount: 2,
-    searchAliases: ['mor', 'morphin', 'morphine', 'vd-24757-16', 'thuoc gay nghien'],
-    note: 'SĐK: VD-24757-16 | NSX: Dược phẩm TW2 (Pharbaco) | Kho BV: 398 Ống (2 lô FEFO: LOT-MP24-X4, LOT-MP25-Z1)',
+    searchAliases: ['mor', 'morphin', 'morphine', 'vd-28087-17', 'thuoc gay nghien', 'osaphine'],
+    note: 'SĐK: VD-28087-17 | NSX: Dược phẩm TW1 (Pharbaco) | Kho BV: 398 Ống (2 lô FEFO: LOT-MP24-X4, LOT-MP25-Z1)',
     clinicalProfile: {
       officialSource: {
-        documentName: 'Dược thư Quốc gia Việt Nam & QĐ 451/QĐ-QLD',
-        registrationNumber: 'VD-24757-16',
-        manufacturer: 'Công ty Cổ phần Dược phẩm Trung ương 2 (Pharbaco)',
+        documentName: 'Dược thư Quốc gia Việt Nam & QĐ 638/QĐ-QLD',
+        registrationNumber: 'VD-28087-17',
+        manufacturer: 'Công ty Cổ phần Dược phẩm Trung ương 1 (Pharbaco)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Việt Nam V'
       },
@@ -46,7 +46,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-cf',
-    nationalCode: 'VD-31291-18',
+    nationalCode: 'VN-17036-13',
     brandName: 'Kháng sinh Ceftriaxone 1g (Rocephin)',
     activeIngredient: 'Ceftriaxone natri',
     concentration: '1g',
@@ -62,15 +62,15 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 465,
     batchCount: 2,
-    searchAliases: ['cf', 'rocephin', 'ceftriaxone', 'vd-31291-18', 'khang sinh cephalosporin the he 3'],
-    note: 'SĐK: VD-31291-18 | NSX: Dược phẩm VCP / Roche | Kho BV: 465 Lọ (2 lô FEFO: LOT-CF24-03, LOT-CF25-08)',
+    searchAliases: ['cf', 'rocephin', 'ceftriaxone', 'vn-17036-13', 'khang sinh cephalosporin the he 3'],
+    note: 'SĐK: VN-17036-13 | NSX: F. Hoffmann-La Roche Ltd | Kho BV: 465 Lọ (2 lô FEFO: LOT-CF24-03, LOT-CF25-08)',
     clinicalProfile: {
       officialSource: {
-        documentName: 'Dược thư Quốc gia Việt Nam & QĐ 682/QĐ-QLD',
-        registrationNumber: 'VD-31291-18',
-        manufacturer: 'Công ty Cổ phần Dược phẩm VCP / F. Hoffmann-La Roche Ltd',
+        documentName: 'Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD',
+        registrationNumber: 'VN-17036-13',
+        manufacturer: 'F. Hoffmann-La Roche Ltd (Thụy Sĩ)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
-        standardPharmacopeia: 'Dược điển Việt Nam V'
+        standardPharmacopeia: 'Dược điển Châu Âu (EP)'
       },
       targetPopulation: 'Nhiễm khuẩn nặng đường hô hấp dưới, viêm màng não mủ, nhiễm khuẩn huyết, nhiễm khuẩn ổ bụng, dự phòng phẫu thuật.',
       contraindications: ['Tiền sử sốc phản vệ với Cephalosporin', 'Trẻ sơ sinh < 28 ngày tuổi có tăng bilirubin máu', 'CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI phối hợp với dung dịch tiêm truyền chứa Canxi (Ringer Lactat) do nguy cơ kết tủa muối Calci-Ceftriaxone gây tử vong'],
@@ -83,7 +83,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-me',
-    nationalCode: 'VN-18239-14',
+    nationalCode: 'VN-17831-14',
     brandName: 'Kháng sinh Meropenem 1g (Meronem)',
     activeIngredient: 'Meropenem trihydrat',
     concentration: '1g',
@@ -99,13 +99,13 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 360,
     batchCount: 2,
-    searchAliases: ['me', 'meronem', 'meropenem', 'vn-18239-14', 'khang sinh carbapenem du tru'],
-    note: 'SĐK: VN-18239-14 | NSX: AstraZeneca / Sumitomo Dainippon Pharma | Kho BV: 360 Lọ (2 lô FEFO: LOT-ME24-K2, LOT-ME26-M1)',
+    searchAliases: ['me', 'meronem', 'meropenem', 'vn-17831-14', 'khang sinh carbapenem du tru'],
+    note: 'SĐK: VN-17831-14 | NSX: AstraZeneca UK Limited | Kho BV: 360 Lọ (2 lô FEFO: LOT-ME24-K2, LOT-ME26-M1)',
     clinicalProfile: {
       officialSource: {
-        documentName: 'Dược thư Quốc gia Việt Nam & QĐ 523/QĐ-QLD',
-        registrationNumber: 'VN-18239-14',
-        manufacturer: 'AstraZeneca UK Limited / Sumitomo Dainippon Pharma',
+        documentName: 'Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD',
+        registrationNumber: 'VN-17831-14',
+        manufacturer: 'AstraZeneca UK Limited (Vương quốc Anh)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Châu Âu (EP)'
       },
@@ -231,7 +231,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-ft',
-    nationalCode: 'VN-16892-13',
+    nationalCode: 'VN-18441-14',
     brandName: 'Fentanyl 0.1mg/2ml (50mcg/ml)',
     activeIngredient: 'Fentanyl citrat',
     concentration: '0.1mg/2ml',
@@ -247,13 +247,13 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 180,
     hospitalStockCount: 180,
     batchCount: 1,
-    searchAliases: ['ft', 'fen', 'fentanyl', 'vn-16892-13', 'thuoc gay nghien phong mo'],
-    note: 'SĐK: VN-16892-13 | NSX: Hameln Pharmaceuticals GmbH | Kho BV: 180 Ống (1 lô Tủ trực Gây Mê: LOT-FT25-A2)',
+    searchAliases: ['ft', 'fen', 'fentanyl', 'vn-18441-14', 'thuoc gay nghien phong mo'],
+    note: 'SĐK: VN-18441-14 | NSX: Rotexmedica GmbH (Đức) | Kho BV: 180 Ống (1 lô Tủ trực Gây Mê: LOT-FT25-A2)',
     clinicalProfile: {
       officialSource: {
-        documentName: 'Dược thư Quốc gia Việt Nam & QĐ 412/QĐ-QLD',
-        registrationNumber: 'VN-16892-13',
-        manufacturer: 'Hameln Pharmaceuticals GmbH (Đức)',
+        documentName: 'Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD',
+        registrationNumber: 'VN-18441-14',
+        manufacturer: 'Rotexmedica GmbH (Đức)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Châu Âu (EP)'
       },
@@ -268,7 +268,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-ad',
-    nationalCode: 'VD-24220-16',
+    nationalCode: 'VD-27151-17',
     brandName: 'Thuốc cấp cứu Adrenalin 1mg/1ml (Epinephrin)',
     activeIngredient: 'Epinephrin tartrat',
     concentration: '1mg/1ml',
@@ -284,12 +284,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 150,
     hospitalStockCount: 150,
     batchCount: 1,
-    searchAliases: ['ad', 'adrenalin', 'adrenaline', 'epinephrine', 'vd-24220-16', 'cap cuu phan ve'],
-    note: 'SĐK: VD-24220-16 | NSX: Vinphaco | Kho BV: 150 Ống (1 lô Hộp chống sốc TT 51: LOT-AD25-V1)',
+    searchAliases: ['ad', 'adrenalin', 'adrenaline', 'epinephrine', 'vd-27151-17', 'cap cuu phan ve'],
+    note: 'SĐK: VD-27151-17 | NSX: Vinphaco | Kho BV: 150 Ống (1 lô Hộp chống sốc TT 51: LOT-AD25-V1)',
     clinicalProfile: {
       officialSource: {
-        documentName: 'Thông tư 51/2017/TT-BYT về Hướng dẫn xử trí phản vệ & QĐ 312/QĐ-QLD',
-        registrationNumber: 'VD-24220-16',
+        documentName: 'Thông tư 51/2017/TT-BYT về Hướng dẫn xử trí phản vệ & QĐ 229/QĐ-QLD',
+        registrationNumber: 'VD-27151-17',
         manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Việt Nam V'
@@ -305,7 +305,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-na',
-    nationalCode: 'VD-21390-14',
+    nationalCode: 'VD-24342-16',
     brandName: 'Thuốc vận mạch Noradrenalin 4mg/4ml',
     activeIngredient: 'Norepinephrin bitartrat',
     concentration: '4mg/4ml',
@@ -321,12 +321,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 35,
     hospitalStockCount: 35,
     batchCount: 1,
-    searchAliases: ['na', 'noradrenalin', 'norepinephrine', 'levophed', 'vd-21390-14', 'van mach'],
-    note: 'SĐK: VD-21390-14 | NSX: Vinphaco | Kho BV: 35 Ống (1 lô Tủ trực ICU: LOT-NA24-R3)',
+    searchAliases: ['na', 'noradrenalin', 'norepinephrine', 'levophed', 'vd-24342-16', 'van mach'],
+    note: 'SĐK: VD-24342-16 | NSX: Vinphaco | Kho BV: 35 Ống (1 lô Tủ trực ICU: LOT-NA24-R3)',
     clinicalProfile: {
       officialSource: {
         documentName: 'Dược thư Quốc gia Việt Nam & Phác đồ Cấp cứu Sốc nhiễm khuẩn Bộ Y Tế',
-        registrationNumber: 'VD-21390-14',
+        registrationNumber: 'VD-24342-16',
         manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Việt Nam V'
@@ -342,7 +342,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-md',
-    nationalCode: 'VD-26884-17',
+    nationalCode: 'VN-16993-13',
     brandName: 'Thuốc an thần Midazolam 5mg/ml (Ống tiêm)',
     activeIngredient: 'Midazolam hydroclorid',
     concentration: '5mg/ml',
@@ -358,15 +358,15 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 95,
     hospitalStockCount: 95,
     batchCount: 1,
-    searchAliases: ['md', 'midazolam', 'dormicum', 'vd-26884-17', 'an than gay me'],
-    note: 'SĐK: VD-26884-17 | NSX: Dược phẩm Danapha | Kho BV: 95 Ống (1 lô Tủ trực Gây Mê: LOT-MD25-S2)',
+    searchAliases: ['md', 'midazolam', 'dormicum', 'vn-16993-13', 'an than gay me'],
+    note: 'SĐK: VN-16993-13 | NSX: Hameln Pharmaceuticals GmbH (Đức) | Kho BV: 95 Ống (1 lô Tủ trực Gây Mê: LOT-MD25-S2)',
     clinicalProfile: {
       officialSource: {
-        documentName: 'Dược thư Quốc gia Việt Nam & QĐ 631/QĐ-QLD',
-        registrationNumber: 'VD-26884-17',
-        manufacturer: 'Công ty Cổ phần Dược Danapha',
+        documentName: 'Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD',
+        registrationNumber: 'VN-16993-13',
+        manufacturer: 'Hameln Pharmaceuticals GmbH (Đức)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
-        standardPharmacopeia: 'Dược điển Việt Nam V'
+        standardPharmacopeia: 'Dược điển Châu Âu (EP)'
       },
       targetPopulation: 'Tiền mê trước phẫu thuật, an thần trong các thủ thuật chẩn đoán can thiệp (nội soi), an thần cho bệnh nhân thở máy tại ICU, cắt cơn co giật liên tục.',
       contraindications: ['Suy hô hấp nặng cấp tính, hội chứng ngưng thở khi ngủ, nhược cơ nặng, glaucom góc đóng'],
@@ -379,7 +379,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-cd',
-    nationalCode: 'VN-17551-13',
+    nationalCode: 'VN-20734-17',
     brandName: 'Cordarone 150mg/3ml (Amiodarone chống loạn nhịp)',
     activeIngredient: 'Amiodaron hydroclorid',
     concentration: '150mg/3ml',
@@ -395,12 +395,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 70,
     hospitalStockCount: 70,
     batchCount: 1,
-    searchAliases: ['cd', 'cordarone', 'amiodarone', 'vn-17551-13', 'chong loan nhip'],
-    note: 'SĐK: VN-17551-13 | NSX: Sanofi Winthrop Industrie | Kho BV: 70 Ống (1 lô Tủ trực Tim Mạch: LOT-CD25-P4)',
+    searchAliases: ['cd', 'cordarone', 'amiodarone', 'vn-20734-17', 'chong loan nhip'],
+    note: 'SĐK: VN-20734-17 | NSX: Sanofi Winthrop Industrie (Pháp) | Kho BV: 70 Ống (1 lô Tủ trực Tim Mạch: LOT-CD25-P4)',
     clinicalProfile: {
       officialSource: {
         documentName: 'Dược thư Quốc gia Việt Nam & Phác đồ Cấp cứu Loạn nhịp tim Tim Mạch',
-        registrationNumber: 'VN-17551-13',
+        registrationNumber: 'VN-20734-17',
         manufacturer: 'Sanofi Winthrop Industrie (Pháp)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Châu Âu (EP)'

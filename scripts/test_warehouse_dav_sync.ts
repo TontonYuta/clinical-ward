@@ -46,11 +46,11 @@ async function runWarehouseDavSyncTest() {
 
     // Test tìm kiếm theo SĐK trong Kho Dược
     const fefoSearch = page.locator('input[placeholder*="Tìm tên thuốc"]:visible').first();
-    await fefoSearch.fill('VD-31291-18');
+    await fefoSearch.fill('VN-17036-13');
     await page.waitForTimeout(500);
     const ceftriaxoneBatch = page.locator('tr:has-text("Ceftriaxone"):visible').first();
-    if (!(await ceftriaxoneBatch.isVisible())) throw new Error('Tìm kiếm theo SĐK VD-31291-18 không hiển thị Ceftriaxone!');
-    console.log('✅ 4. Tìm kiếm theo SĐK VD-31291-18 trong Kho Dược thành công');
+    if (!(await ceftriaxoneBatch.isVisible())) throw new Error('Tìm kiếm theo SĐK VN-17036-13 không hiển thị Ceftriaxone!');
+    console.log('✅ 4. Tìm kiếm theo SĐK VN-17036-13 trong Kho Dược thành công');
 
     const searchSdkScreenshot = path.join(ARTIFACTS_DIR, '02_kho_duoc_search_by_sdk.png');
     await page.screenshot({ path: searchSdkScreenshot });
@@ -85,18 +85,18 @@ async function runWarehouseDavSyncTest() {
     const morphinRow = page.locator('[role="dialog"] tr:has-text("Morphin sulfat")').first();
     const morphinStockText = await morphinRow.innerText();
     console.log('Morphin Row Text in Modal:', morphinStockText.replace(/\n/g, ' '));
-    if (!morphinStockText.includes('VD-24757-16') || !morphinStockText.includes('398 Ống') || !morphinStockText.includes('2 lô')) {
+    if (!morphinStockText.includes('VD-28087-17') || !morphinStockText.includes('398 Ống') || !morphinStockText.includes('2 lô')) {
       throw new Error(`Morphin tồn kho hoặc SĐK không khớp! Nhận được: ${morphinStockText}`);
     }
-    console.log('✅ 8. Morphin khớp 100%: SĐK VD-24757-16, Tồn 398 Ống (2 lô)');
+    console.log('✅ 8. Morphin khớp 100%: SĐK VD-28087-17, Tồn 398 Ống (2 lô)');
 
     const ceftriaxoneRow = page.locator('[role="dialog"] tr:has-text("Ceftriaxone")').first();
     const ceftriaxoneStockText = await ceftriaxoneRow.innerText();
     console.log('Ceftriaxone Row Text in Modal:', ceftriaxoneStockText.replace(/\n/g, ' '));
-    if (!ceftriaxoneStockText.includes('VD-31291-18') || !ceftriaxoneStockText.includes('465 Lọ') || !ceftriaxoneStockText.includes('2 lô')) {
+    if (!ceftriaxoneStockText.includes('VN-17036-13') || !ceftriaxoneStockText.includes('465 Lọ') || !ceftriaxoneStockText.includes('2 lô')) {
       throw new Error(`Ceftriaxone tồn kho hoặc SĐK không khớp! Nhận được: ${ceftriaxoneStockText}`);
     }
-    console.log('✅ 9. Ceftriaxone khớp 100%: SĐK VD-31291-18, Tồn 465 Lọ (2 lô)');
+    console.log('✅ 9. Ceftriaxone khớp 100%: SĐK VN-17036-13, Tồn 465 Lọ (2 lô)');
 
     // 3. Test xuất kho FEFO và kiểm tra tính Đồng bộ Thời gian thực (Dynamic Sync)
     const closeBtn = page.locator('[role="dialog"] button:has(svg.lucide-x)').first();
