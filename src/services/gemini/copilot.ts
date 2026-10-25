@@ -1,6 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * Tra cứu Trợ lý Lâm sàng Gemini AI (<=60 LOC)
  */
 
 import { GoogleGenAI } from '@google/genai';
@@ -40,6 +41,7 @@ export async function askGeminiClinicalCopilot(
       config: {
         systemInstruction: CLINICAL_SYSTEM_INSTRUCTION,
         temperature: 0.2,
+        maxOutputTokens: 800
       }
     });
   } catch (error) {

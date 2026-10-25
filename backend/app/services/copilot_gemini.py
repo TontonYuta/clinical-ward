@@ -21,13 +21,13 @@ Nguyên tắc phản hồi:
 - Luôn ưu tiên an toàn tính mạng người bệnh."""
 
 async def query_gemini_models(prompt: str, api_key: str) -> str | None:
-    models = ["gemini-3.5-flash", "gemini-3.5-flash-lite"]
+    models = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1024}
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 800}
     }
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=8.0) as client:
         for model in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             try:

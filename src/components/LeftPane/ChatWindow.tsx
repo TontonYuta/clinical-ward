@@ -1,16 +1,18 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * Khung Cửa Sổ Chatbot Lâm Sàng Tích Hợp AI & Action Cards (<=200 LOC)
  */
 
-import React, { useRef, useEffect } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Paperclip } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2 } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
 import { ActionCardDispatcher } from './Cards/ActionCardDispatcher';
 import { ShiftBriefingEmptyState } from './ShiftBriefingEmptyState';
 import { ChatInputBar } from './ChatInputBar';
+import { ChatSettingsModal } from './ChatSettingsModal';
 import { isCloudAIAvailable } from '../../services/geminiService';
 
 interface ChatWindowProps {
@@ -33,22 +35,13 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
-  messages,
-  suggestionChips,
-  onSendMessage,
-  isProcessing,
-  isAudioMuted,
-  onSelectTab,
-  currentUserRole = 'nurse',
-  onClose,
-  pendingDebtsCount = 0,
-  urgentTicketsCount = 0,
-  lowStockCount = 0,
-  onExecuteCardAction,
-  onClearMessages,
-  onOpenLegalDocs,
+  messages, suggestionChips, onSendMessage, isProcessing, isAudioMuted, onSelectTab,
+  currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
+  lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs,
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,8 +49,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleChipClick = (chipOrText: string | QuickSuggestionChip) => {
     if (!isAudioMuted) clinicalAudio.playTelegramChime();
-    const prompt = typeof chipOrText === 'string' ? chipOrText : chipOrText.fullPrompt;
-    onSendMessage(prompt);
+    onSendMessage(typeof chipOrText === 'string' ? chipOrText : chipOrText.fullPrompt);
   };
 
   const handleSend = (text: string, attachment?: any) => {
@@ -75,25 +67,32 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="text-sm font-bold text-slate-900">Trợ Lý Agent Lâm Sàng</span>
-            <span className={`w-2 h-2 rounded-full ${isCloudAIAvailable() ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`} title={isCloudAIAvailable() ? 'Google Gemini 3.5 AI Active' : 'Agent Live REST API'} />
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-slate-100 hover:bg-teal-50 hover:text-teal-800 transition cursor-pointer"
+              title="Nhấn để cấu hình AI và API Key"
+            >
+              <span className={`w-2 h-2 rounded-full ${cloudActive ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`} />
+              <span className="hidden sm:inline text-slate-600">{cloudActive ? 'Gemini Flash-Lite' : 'Nội bộ'}</span>
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95"
+            title="Cấu hình AI & Tối ưu chi phí"
+          >
+            <Settings2 className="w-4 h-4" />
+          </button>
           {onClearMessages && (
-            <button
-              onClick={onClearMessages}
-              className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95"
-              title="Làm mới phiên hội thoại"
-            >
+            <button onClick={onClearMessages} className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95" title="Làm mới phiên hội thoại">
               <RotateCcw className="w-4 h-4" />
             </button>
           )}
           {onClose && (
-            <button
-              onClick={onClose}
-              className="p-2 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95"
-              title="Thu nhỏ Trợ lý AI"
-            >
+            <button onClick={onClose} className="p-2 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95" title="Thu nhỏ Trợ lý AI">
               <X className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
           )}
@@ -105,57 +104,40 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         {messages.map((msg) => {
           const isAgent = msg.sender === 'agent';
           const isSystem = msg.sender === 'system';
-          const isUser = msg.sender === 'user';
-          const isDarkBubble = isUser || isSystem;
+          const isDarkBubble = msg.sender === 'user' || isSystem;
 
           return (
-            <div key={msg.id} className={`flex items-start gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}>
-              <div
-                className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 text-white text-xs shadow-2xs ${
-                  isSystem
-                    ? 'bg-teal-900 text-teal-300 border border-teal-500/40'
-                    : isAgent
-                    ? 'bg-teal-800'
-                    : 'bg-slate-800'
-                }`}
-              >
-                {isSystem ? <ShieldCheck className="w-4 h-4 text-emerald-300" /> : isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+            <div key={msg.id} className={`flex gap-2.5 max-w-[96%] sm:max-w-[88%] ${isDarkBubble ? 'ml-auto flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800' : isSystem ? 'bg-slate-700' : 'bg-slate-900'}`}>
+                {isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
 
-              <div
-                className={`max-w-[90%] rounded-lg p-3 text-sm leading-relaxed shadow-2xs ${
-                  isSystem
-                    ? 'bg-slate-900 text-slate-100 border border-teal-500/30'
-                    : isAgent
-                    ? 'bg-white border border-slate-200 text-slate-800'
-                    : 'bg-slate-900 text-white'
-                }`}
-              >
-                {msg.attachments && msg.attachments.length > 0 && (
-                  <div className="mb-2 p-2 rounded-md bg-black/10 text-xs flex items-center gap-2 font-medium">
-                    <Paperclip className="w-4 h-4 shrink-0 text-teal-400" />
-                    <span className="truncate">{msg.attachments[0].title}</span>
+              <div className="space-y-2 min-w-0 flex-1">
+                <div className={`p-3 rounded-2xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs'}`}>
+                  {renderFormattedText(msg.text, isDarkBubble)}
+                </div>
+
+                {msg.legalReference && (
+                  <div className="px-2.5 py-1.5 rounded-lg bg-teal-50/80 border border-teal-200/80 text-2xs text-teal-900 flex items-center justify-between gap-2 shadow-2xs">
+                    <span className="font-semibold flex items-center gap-1.5 truncate">
+                      <ShieldCheck className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                      <span>{msg.legalReference.lawCode}: {msg.legalReference.title}</span>
+                    </span>
+                    {onOpenLegalDocs && (
+                      <button onClick={onOpenLegalDocs} className="text-teal-700 font-bold hover:underline shrink-0 cursor-pointer">Chi tiết</button>
+                    )}
                   </div>
                 )}
 
-                <div className="space-y-1">{renderFormattedText(msg.text, isDarkBubble)}</div>
-
-                <ActionCardDispatcher
-                  msg={msg}
-                  onExecuteCardAction={onExecuteCardAction}
-                  onSelectTab={onSelectTab}
-                  onOpenLegalDocs={onOpenLegalDocs}
-                />
+                {msg.card && onExecuteCardAction && (
+                  <ActionCardDispatcher card={msg.card} messageId={msg.id} onExecuteAction={onExecuteCardAction} onSelectTab={onSelectTab} />
+                )}
 
                 {msg.suggestedChips && msg.suggestedChips.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5">
-                    {msg.suggestedChips.map((chipText, cIdx) => (
-                      <button
-                        key={cIdx}
-                        onClick={() => handleChipClick(chipText)}
-                        className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-200 transition cursor-pointer"
-                      >
-                        {chipText}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {msg.suggestedChips.map((chip, idx) => (
+                      <button key={idx} onClick={() => handleChipClick(chip)} className="text-2xs font-semibold px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 transition-all cursor-pointer shadow-2xs active:scale-95 text-left">
+                        {chip}
                       </button>
                     ))}
                   </div>
@@ -166,13 +148,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         })}
 
         {messages.length <= 1 && (
-          <ShiftBriefingEmptyState
-            currentUserRole={currentUserRole}
-            pendingDebtsCount={pendingDebtsCount}
-            urgentTicketsCount={urgentTicketsCount}
-            lowStockCount={lowStockCount}
-            onChipClick={handleChipClick}
-          />
+          <ShiftBriefingEmptyState currentUserRole={currentUserRole} pendingDebtsCount={pendingDebtsCount} urgentTicketsCount={urgentTicketsCount} lowStockCount={lowStockCount} onChipClick={handleChipClick} />
         )}
 
         {isProcessing && (
@@ -181,18 +157,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <span>Trợ lý đang phân tích ngữ cảnh lâm sàng...</span>
           </div>
         )}
-
         <div ref={chatBottomRef} />
       </div>
 
       {/* 3. Input Area */}
-      <ChatInputBar
-        onSendMessage={handleSend}
-        suggestionChips={suggestionChips}
-        isProcessing={isProcessing}
-        isAudioMuted={isAudioMuted}
-        onChipClick={handleChipClick}
-      />
+      <ChatInputBar onSendMessage={handleSend} suggestionChips={suggestionChips} isProcessing={isProcessing} isAudioMuted={isAudioMuted} onChipClick={handleChipClick} />
+
+      {/* 4. Settings Modal */}
+      <ChatSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onKeyUpdated={() => setCloudActive(isCloudAIAvailable())} />
     </div>
   );
 };
