@@ -10,7 +10,7 @@ import {
   AgentActionCard
 } from '../../types/clinical';
 import { chatCopilotApi } from '../../services/api';
-import { askGeminiClinicalCopilot } from '../../services/geminiService';
+import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/geminiService';
 import { anyKeyword, AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
 
@@ -115,10 +115,39 @@ export async function processClinicalAgentQueryAsync(
     // Backend offline / fetch failed -> Fallback to intelligent local NLP Parser
   }
 
-  return processClinicalUserQuery(rawInput, {
+  const localResult = processClinicalUserQuery(rawInput, {
     debts: currentState.debts,
     tickets: currentState.tickets,
     batches: currentState.batches,
     coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
   });
+
+  // Nếu local NLP không sinh Action Card (truy vấn tự do), ưu tiên AI trả lời sâu
+  if (!localResult.card && !localResult.actionPayload && isCloudAIAvailable()) {
+    try {
+      const cloudAnswer = await askGeminiClinicalCopilot(rawInput, {
+        activeDebtsCount: currentState.debts.filter(d => d.status === 'debt').length,
+        pendingAmpoulesCount: currentState.debts.filter(d => d.itemType === 'Thuốc gây nghiện' && !d.ampouleReturned).length,
+        urgentTicketsCount: currentState.tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length,
+        lowStockBatchesCount: currentState.batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length,
+        coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5,
+        role
+      });
+      if (cloudAnswer) {
+        return {
+          replyMessage: {
+            id: `msg-agent-gemini-${Date.now()}`,
+            sender: 'agent',
+            text: cloudAnswer,
+            timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            suggestedChips: ['Đối soát ca trực 07:00 AM', 'Lập phiếu dự trù Mẫu 01', 'Kiểm tra tồn kho FEFO']
+          }
+        };
+      }
+    } catch {
+      // Fallback về localResult nếu lỗi mạng
+    }
+  }
+
+  return localResult;
 }

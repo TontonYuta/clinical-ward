@@ -47,7 +47,7 @@ async def handle_borrow_intent(query: str, lower_query: str, user_name: str) -> 
     )
     narcotic_warn = "\n> [!WARNING]\n> **Thuốc gây nghiện (TT 20/2017):** Bắt buộc thu hồi vỏ ống đã tiêm." if is_narcotic else ""
     return CopilotResponse(
-        intent="BORROW_MEDICATION_ORDER",
+        intent="BORROW_EMERGENCY_ITEM",
         reply_text=f"### 💊 Y LỆNH XUẤT MƯỢN THUỐC CẤP CỨU\n\n• **Dược phẩm:** **{matched_med['name']}**\n• **Số lượng:** `{qty} {matched_med['unit']}`\n• **Bệnh nhân:** `{patient}` ({room})\n{narcotic_warn}",
         card=card,
         legal_basis="Điều 10 Thông tư 22/2011/TT-BYT & Điều 15 Thông tư 20/2017/TT-BYT",

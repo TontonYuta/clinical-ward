@@ -300,3 +300,13 @@ async def test_copilot_clinical_intents():
         data2 = res2.json()
         assert data2["intent"] == "REPORT_EQUIPMENT_INCIDENT"
         assert "Nghị định 98" in data2["legal_basis"]
+
+        # Test clinical consultation inquiry
+        res3 = await client.post(
+            "/api/v1/copilot/chat",
+            json={"query": "Thời gian bán thải của Morphin sulfat trong huyết tương là bao lâu?"}
+        )
+        assert res3.status_code == 200
+        data3 = res3.json()
+        assert data3["intent"] in ["CLINICAL_AI_CONSULTATION", "GENERAL_CLINICAL_ASSISTANCE"]
+        assert len(data3["reply_text"]) > 10

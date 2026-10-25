@@ -25,18 +25,13 @@ async def get_debts(
     result = await db.execute(stmt)
     records = result.scalars().all()
 
-    filtered = []
-    for r in records:
-        if status and r.status != status:
-            continue
-        if item_type and r.item_type != item_type:
-            continue
-        if search:
-            q = search.lower()
-            if q not in r.item_name.lower() and q not in r.patient_name.lower() and q not in r.code.lower():
-                continue
-        filtered.append(r)
-    return filtered
+    q = search.lower() if search else None
+    return [
+        r for r in records
+        if (not status or r.status == status)
+        and (not item_type or r.item_type == item_type)
+        and (not q or q in r.item_name.lower() or q in r.patient_name.lower() or q in r.code.lower())
+    ]
 
 @router.post("/borrow", response_model=DebtResponse, status_code=status.HTTP_201_CREATED)
 async def borrow_emergency_item(

@@ -16,6 +16,7 @@ from app.services.copilot_intents_actions import (
     handle_fefo_intent,
     handle_restock_intent
 )
+from app.services.copilot_gemini import ask_backend_gemini_copilot
 
 router = APIRouter(prefix="/copilot", tags=["Trợ Lý Agent Lâm Sàng Thông Minh"])
 
@@ -77,12 +78,26 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     if is_ocr:
         return await handle_ocr_intent()
 
-    matched_med = find_matched_med(lower_query)
-    is_dispense_intent = matched_med is not None or any(w in lower_query for w in [
-        "mượn", "lấy", "rút", "xuất", "cần", "xin", "tiêm", "kê", "cấp phát", "thuốc"
+    is_med_info = any(w in lower_query for w in [
+        "thời gian bán thải", "chỉ định", "chống chỉ định", "tác dụng phụ",
+        "tương tác", "dùng để làm gì", "liều tối đa", "là gì", "dị ứng",
+        "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào"
     ])
-    if is_dispense_intent:
+    matched_med = find_matched_med(lower_query)
+    has_dispense_verb = any(w in lower_query for w in [
+        "mượn", "lấy", "rút", "xuất", "cần", "xin", "tiêm", "kê", "cấp phát", "cho"
+    ])
+    if matched_med is not None and not is_med_info and (has_dispense_verb or any(c.isdigit() for c in query)):
         return await handle_borrow_intent(query, lower_query, user_name)
+
+    gemini_reply = await ask_backend_gemini_copilot(query, user_role, user_name, db)
+    if gemini_reply:
+        return CopilotResponse(
+            intent="CLINICAL_AI_CONSULTATION",
+            reply_text=gemini_reply,
+            legal_basis="Dược Thư Quốc Gia Việt Nam & Hướng dẫn Bộ Y Tế",
+            suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu phác đồ Thông tư 51", "Kiểm tra hạn dùng FEFO"]
+        )
 
     return CopilotResponse(
         intent="GENERAL_CLINICAL_ASSISTANCE",
