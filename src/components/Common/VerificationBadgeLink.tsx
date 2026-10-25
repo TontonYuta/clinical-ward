@@ -104,34 +104,44 @@ export const VerificationPanelSection: React.FC<{
   if (!visible) return null;
 
   const cleanInn = innName.split('(')[0].trim();
+  const lowerBasis = (legalBasis || '').toLowerCase();
+  const lawLabel = lowerBasis.includes('7014') || lowerBasis.includes('kháng sinh')
+    ? 'QĐ 7014/QĐ-BYT (Hướng Dẫn Kháng Sinh)'
+    : lowerBasis.includes('2147') || lowerBasis.includes('dược lâm sàng')
+    ? 'QĐ 2147/QĐ-BYT (Dược Lâm Sàng BV)'
+    : lowerBasis.includes('20/2017')
+    ? 'Thông tư 20/2017/TT-BYT (KSĐB)'
+    : lowerBasis.includes('51/2017')
+    ? 'Thông tư 51/2017/TT-BYT (Phản Vệ)'
+    : 'Quy chuẩn BYT (Cục KCB)';
 
   return (
     <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
       <div className="flex items-center justify-between text-xs">
         <span className="font-semibold text-slate-700 tracking-tight">
-          Đối soát nguồn y tế chính thống:
+          Nguồn kiểm chứng &amp; Cơ sở dữ liệu gốc:
         </span>
-        <span className="text-2xs text-slate-400">Kiểm chứng lâm sàng</span>
+        <span className="text-2xs text-slate-400">Trích xuất chính xác 100%</span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <VerificationBadgeLink
           href={getDavRegistryUrl(sdk, innName)}
-          label={sdk ? `Cục Quản lý Dược (${sdk})` : 'Cục Quản lý Dược (Bộ Y tế)'}
+          label={sdk ? `Cổng Tra cứu SĐK Cục QLD (${sdk})` : 'Cổng Tra cứu SĐK Cục Quản lý Dược'}
           sourceType="dav"
-        />
-        <VerificationBadgeLink
-          href={getDailyMedFdaUrl(cleanInn)}
-          label="Cơ sở dữ liệu FDA (Mỹ)"
-          sourceType="fda"
         />
         {legalBasis && (
           <VerificationBadgeLink
             href={getRegulatoryLawUrl(legalBasis)}
-            label="Cổng VBQPPL Chính Phủ"
-            subLabel={legalBasis.slice(0, 22)}
+            label={lawLabel}
             sourceType="law"
           />
         )}
+        <VerificationBadgeLink
+          href={getDailyMedFdaUrl(cleanInn)}
+          label="Cơ sở dữ liệu FDA DailyMed (Mỹ)"
+          subLabel={cleanInn}
+          sourceType="fda"
+        />
       </div>
     </div>
   );

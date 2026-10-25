@@ -206,7 +206,8 @@ async function main() {
 
   // 4. Test Network Accessibility (Status 200) for all official authoritative endpoints
   const officialEndpoints = [
-    'https://dav.gov.vn/dang-ki-thuoc---cong-bo-nguyen-lieu-c311.html',
+    'https://dichvucong.dav.gov.vn/TraCuuSoDangKy',
+    'https://kcb.vn/van-ban/quyet-dinh-so-7014-qd-byt-ve-viec-ban-hanh-tai-lieu-chuyen-mon-huong-dan-su-dung-khang-sinh.html',
     'https://vanban.chinhphu.vn/?pageid=27160&docid=189732',
     'https://vanban.chinhphu.vn/?pageid=27160&docid=192461',
     'https://kcb.vn',

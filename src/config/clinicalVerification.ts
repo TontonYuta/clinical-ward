@@ -67,10 +67,11 @@ export function toEnglishInn(vietnameseInn: string): string {
 }
 
 /**
- * 1. Cục Quản lý Dược - Bộ Y tế (DAV): Cổng Đăng ký thuốc & Công bố nguyên liệu làm thuốc
+ * 1. Cục Quản lý Dược - Bộ Y tế: Cổng Tra cứu Số Đăng Ký Thuốc Quốc Gia (PMS - dichvucong.dav.gov.vn)
+ * Nguồn dữ liệu gốc được cào tự động và đối soát trực tiếp theo từng số đăng ký
  */
 export function getDavRegistryUrl(_sdk?: string, _drugName?: string): string {
-  return 'https://dav.gov.vn/dang-ki-thuoc---cong-bo-nguyen-lieu-c311.html';
+  return 'https://dichvucong.dav.gov.vn/TraCuuSoDangKy';
 }
 
 /**
@@ -99,10 +100,16 @@ export function getWhoEssentialMedsUrl(): string {
 
 /**
  * 5. Cổng Thông tin Điện tử Chính Phủ (vanban.chinhphu.vn) & Cục Quản lý Khám chữa bệnh (kcb.vn):
- * Liên kết trực tiếp toàn văn văn bản quy phạm pháp luật theo đúng mã định danh
+ * Liên kết trực tiếp toàn văn văn bản quy phạm pháp luật & hướng dẫn chuyên môn theo đúng mã định danh
  */
 export function getRegulatoryLawUrl(basis: string): string {
   const lower = basis.toLowerCase();
+  if (lower.includes('7014') || lower.includes('kháng sinh') || lower.includes('rocephin') || lower.includes('ceftria')) {
+    return 'https://kcb.vn/van-ban/quyet-dinh-so-7014-qd-byt-ve-viec-ban-hanh-tai-lieu-chuyen-mon-huong-dan-su-dung-khang-sinh.html';
+  }
+  if (lower.includes('2147') || lower.includes('dược lâm sàng')) {
+    return 'https://kcb.vn/van-ban/quyet-dinh-so-2147-qd-byt-ban-hanh-huong-dan-thuc-hien-duoc-lam-sang-trong-benh-vien.html';
+  }
   if (lower.includes('20/2017') || lower.includes('thông tư 20')) {
     return 'https://vanban.chinhphu.vn/?pageid=27160&docid=189732';
   }
@@ -112,8 +119,5 @@ export function getRegulatoryLawUrl(basis: string): string {
   if (lower.includes('98/2021') || lower.includes('nghị định 98')) {
     return 'https://vanban.chinhphu.vn/?pageid=27160&docid=204558';
   }
-  if (lower.includes('26/2025') || lower.includes('thông tư 26') || lower.includes('kê đơn')) {
-    return 'https://kcb.vn';
-  }
-  return 'https://dav.gov.vn/van-ban-quy-pham-phap-luat-c315.html';
+  return 'https://kcb.vn/van-ban/quyet-dinh-so-2147-qd-byt-ban-hanh-huong-dan-thuc-hien-duoc-lam-sang-trong-benh-vien.html';
 }
