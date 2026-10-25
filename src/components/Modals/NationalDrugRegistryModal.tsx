@@ -153,10 +153,10 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
                 <thead>
                   <tr className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 text-xs uppercase tracking-wider">
                     <th className="py-3 px-4 whitespace-nowrap">Số Đăng Ký (SĐK)</th>
-                    <th className="py-3 px-4">Tên Thuốc &amp; Kho BV</th>
-                    <th className="py-3 px-4">Hoạt Chất Chính &amp; Hàm Lượng</th>
-                    <th className="py-3 px-4 hidden md:table-cell">Dạng Bào Chế &amp; Đường Dùng</th>
-                    <th className="py-3 px-4 text-right">An Toàn Y Tế</th>
+                    <th className="py-3 px-4">Tên Thuốc &amp; Tồn Kho BV</th>
+                    <th className="py-3 px-4">Hoạt Chất &amp; Hàm Lượng</th>
+                    <th className="py-3 px-4 hidden md:table-cell">Dạng Bào Chế &amp; Cơ Sở SX</th>
+                    <th className="py-3 px-4 text-right">Thẩm Định</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
