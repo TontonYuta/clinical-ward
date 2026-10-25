@@ -1,8 +1,9 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Playwright E2E Verification: 100% Authoritative Medical Source Links
- * Verifies ZERO Google Search links, direct official government & FDA endpoints
+ * Playwright E2E Verification: 100% Authoritative Medical Source Links & User-Driven Input
+ * Verifies ZERO Google Search links, ZERO dead NIDQC links, Chuẩn BYT opens in-app monograph,
+ * and user-driven search without mock presets.
  */
 
 import { chromium } from 'playwright';
@@ -31,25 +32,100 @@ async function main() {
   await page.goto('http://localhost:4173', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1000);
 
-  // 1. Check FEFO Tab
+  // 1. Check FEFO Tab & Chuẩn BYT Button
   console.log('2. Checking Kho Dược FEFO Tab...');
   const fefoBtn = page.locator('button:has-text("Kho dược FEFO"):visible').first();
   await fefoBtn.click();
   await page.waitForTimeout(1000);
 
-  const fefoLinks = await page.locator('table a:has-text("Chuẩn BYT"):visible').evaluateAll((els) =>
-    els.map((el) => el.getAttribute('href') || '')
-  );
-  console.log(`- Found ${fefoLinks.length} NIDQC verification links in FEFO rows.`);
-  for (const href of fefoLinks) {
-    if (!href.startsWith('https://nidqc.gov.vn')) {
-      throw new Error(`Expected NIDQC link to start with https://nidqc.gov.vn, got ${href}`);
-    }
+  // Assert ZERO dead links to nidqc.gov.vn
+  const nidqcExternalLinks = await page.locator('table a[href*="nidqc.gov.vn"]:visible').count();
+  if (nidqcExternalLinks > 0) {
+    throw new Error(`Found ${nidqcExternalLinks} dead links to nidqc.gov.vn! Must be 0.`);
   }
-  console.log('✅ All FEFO rows link directly to official NIDQC portal (https://nidqc.gov.vn).');
+  console.log('✅ ZERO dead links to nidqc.gov.vn in FEFO table.');
 
-  // 2. Open National Drug Registry Modal
-  console.log('3. Opening Cổng Dữ Liệu Dược Quốc Gia Modal...');
+  // Check that "Chuẩn BYT" is an actionable button that opens the in-app monograph
+  const bytButton = page.locator('table button:has-text("Chuẩn BYT"):visible').first();
+  const bytBtnCount = await bytButton.count();
+  console.log(`- Found ${bytBtnCount} "Chuẩn BYT" in-app action buttons in FEFO rows.`);
+  if (bytBtnCount === 0) {
+    throw new Error('Expected at least 1 "Chuẩn BYT" button in FEFO inventory rows!');
+  }
+
+  // Click "Chuẩn BYT" on first medication row (e.g. Morphin)
+  console.log('3. Clicking "Chuẩn BYT" button on FEFO row...');
+  await bytButton.click();
+  await page.waitForTimeout(1000);
+
+  // Verify MedicationSafetyModal opened with that drug
+  const modalHeader = page.locator('h2:has-text("Thông Tin Thuốc & Hướng Dẫn Sử Dụng An Toàn")');
+  if ((await modalHeader.count()) === 0) {
+    throw new Error('Medication Safety Modal failed to open upon clicking "Chuẩn BYT"!');
+  }
+  console.log('✅ "Chuẩn BYT" successfully opened in-app Medication Safety Monograph modal directly.');
+
+  // Verify no sample shortcut chips ("Tra nhanh:")
+  const quickChipsCount = await page.locator('text="Tra nhanh:"').count();
+  if (quickChipsCount > 0) {
+    throw new Error('Found sample shortcut chips "Tra nhanh:", which should be removed!');
+  }
+  console.log('✅ No hardcoded sample shortcut chips found in modal.');
+
+  // Close modal
+  await page.locator('div[role="dialog"] button:has-text("Đóng")').click();
+  await page.waitForTimeout(500);
+
+  // 2. Check CPOE Tab: Open "Thông tin thuốc" with user-driven search
+  console.log('4. Checking CPOE Tab & User-Driven Search...');
+  const cpoeTabBtn = page.locator('button:has-text("Kê đơn CPOE"):visible').first();
+  await cpoeTabBtn.click();
+  await page.waitForTimeout(1000);
+
+  const cpoeSafetyBtn = page.locator('button:has-text("Thông tin thuốc"):visible').first();
+  await cpoeSafetyBtn.click();
+  await page.waitForTimeout(800);
+
+  // Verify empty prompt state appears when opened without initial drug
+  const emptyStatePrompt = await page.locator('text="Tra cứu thông tin thuốc & chuẩn Bộ Y Tế"').count();
+  console.log(`- Empty search prompt present: ${emptyStatePrompt > 0}`);
+  if (emptyStatePrompt === 0) {
+    throw new Error('Expected clean user-driven search prompt when opened without initial medication!');
+  }
+
+  // Test typing in search bar
+  console.log('5. Typing "Adrenalin" in search bar...');
+  const searchInput = page.locator('div[role="dialog"] input[placeholder*="Nhập tên thuốc"]').first();
+  await searchInput.fill('Adrenalin');
+  await page.waitForTimeout(500);
+
+  // Verify search dropdown shows Adrenalin
+  const searchResult = page.locator('div[role="dialog"] button:has-text("Adrenalin Vinphaco 1mg/1ml")').first();
+  if ((await searchResult.count()) === 0) {
+    throw new Error('Search result for "Adrenalin" not found!');
+  }
+  await searchResult.click();
+  await page.waitForTimeout(500);
+
+  // Verify Adrenalin monograph is displayed
+  const adreLoaded = await page.locator('h3:has-text("Adrenalin Vinphaco")').count();
+  if (adreLoaded === 0) {
+    throw new Error('Failed to load Adrenalin monograph after selection!');
+  }
+  console.log('✅ User-driven search and selection loaded Adrenalin monograph successfully.');
+
+  // Close modal
+  await page.locator('div[role="dialog"] button:has-text("Đóng")').click();
+  await page.waitForTimeout(500);
+
+  // Switch back to FEFO Tab to access National Drug Registry
+  console.log('6. Switching back to FEFO tab for National Drug Registry...');
+  const fefoTabBtnAgain = page.locator('button:has-text("Kho dược FEFO"):visible').first();
+  await fefoTabBtnAgain.click();
+  await page.waitForTimeout(800);
+
+  // 3. Open National Drug Registry Modal & Verify Authoritative Links
+  console.log('7. Opening Cổng Dữ Liệu Dược Quốc Gia Modal...');
   const natRegBtn = page.locator('button:has-text("Dược Quốc Gia"):visible').first();
   await natRegBtn.click();
   await page.waitForSelector('table tbody tr', { timeout: 10000 });
@@ -85,8 +161,8 @@ async function main() {
   }
   console.log('✅ All US FDA DailyMed queries use properly mapped English INN (zero typos/artifacts).');
 
-  // 3. Test Toggle: Turn OFF links
-  console.log('4. Testing Toggle button (Turn OFF verification links)...');
+  // Test Toggle: Turn OFF links
+  console.log('7. Testing Toggle button (Turn OFF verification links)...');
   const toggleBtn = page.locator('button:has-text("Link kiểm chứng:")').first();
   await toggleBtn.click();
   await page.waitForTimeout(500);
@@ -99,13 +175,13 @@ async function main() {
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, '02_verification_links_toggled_off.png') });
 
   // Turn back ON
-  console.log('5. Toggling verification links back ON...');
+  console.log('8. Toggling verification links back ON...');
   await toggleBtn.click();
   await page.waitForTimeout(500);
 
-  // 4. Test In-App Dược Thư Monograph Button
-  console.log('6. Clicking "Chuẩn BYT" button in table...');
-  const firstMonographBtn = page.locator('button:has-text("Chuẩn BYT"):visible').first();
+  // Test In-App Dược Thư Monograph Button
+  console.log('9. Clicking "Chuẩn BYT" button in registry table...');
+  const firstMonographBtn = page.locator('div[role="dialog"][aria-label="Cổng Dữ Liệu Dược Quốc Gia"] table button:has-text("Chuẩn BYT")').first();
   await firstMonographBtn.click();
   await page.waitForTimeout(1000);
 
@@ -118,31 +194,19 @@ async function main() {
     throw new Error('Failed to render in-app official monograph with official medical citations!');
   }
 
-  // Collect links in Medication Safety Modal
-  const modalLinks = await page.locator('div[role="dialog"] a[target="_blank"]').evaluateAll((els) =>
-    els.map((el) => ({
-      href: el.getAttribute('href') || '',
-      text: el.textContent?.trim() || '',
-      title: el.getAttribute('title') || '',
-    }))
-  );
-  console.log(`- Extracted ${modalLinks.length} authoritative links from Medication Safety Modal:`);
-  modalLinks.forEach((l) => console.log(`  • [${l.text}] -> ${l.href}`));
-
   // Switch to Tab Dược lý, Giải độc
-  console.log('7. Switching to tab "Dược lý, Giải độc"...');
+  console.log('10. Switching to tab "Dược lý, Giải độc"...');
   const clinicalTabBtn = page.locator('button:has-text("Dược lý, Giải độc")').first();
   await clinicalTabBtn.click();
   await page.waitForTimeout(500);
 
-  const boxedWarningLink = await page.locator('a:has-text("Cảnh báo hộp đen FDA (Mỹ)")').getAttribute('href');
-  console.log(`- FDA Boxed Warning link: ${boxedWarningLink}`);
+  const boxedWarningCount = await page.locator('a:has-text("Cảnh báo hộp đen FDA (Mỹ)")').count();
+  console.log(`- FDA Boxed Warning element present: ${boxedWarningCount > 0}`);
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, '04_clinical_safety_boxed_warning.png') });
 
-  // 5. Test Network Accessibility (Status 200) for all official authoritative endpoints
+  // 4. Test Network Accessibility (Status 200) for all official authoritative endpoints
   const officialEndpoints = [
     'https://dav.gov.vn/dang-ki-thuoc---cong-bo-nguyen-lieu-c311.html',
-    'https://nidqc.gov.vn',
     'https://vanban.chinhphu.vn/?pageid=27160&docid=189732',
     'https://vanban.chinhphu.vn/?pageid=27160&docid=192461',
     'https://kcb.vn',

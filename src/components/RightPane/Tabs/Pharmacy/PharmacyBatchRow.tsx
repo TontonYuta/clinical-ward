@@ -5,10 +5,8 @@
  */
 
 import React from 'react';
-import { ArrowUpRight, AlertOctagon, PackagePlus, ShieldAlert, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, AlertOctagon, PackagePlus } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
-import { useVerificationLinksVisible } from '../../../Common/VerificationBadgeLink';
-import { getNidqcPharmacopeiaUrl } from '../../../../config/clinicalVerification';
 
 interface PharmacyBatchRowProps {
   batch: InventoryBatch;
@@ -24,7 +22,6 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
   onOpenSafetyGuide,
 }) => {
   const isUnderMin = batch.currentStock <= batch.minThreshold;
-  const verifyMode = useVerificationLinksVisible();
 
   return (
     <tr className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-slate-800">
@@ -34,32 +31,19 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
             type="button"
             onClick={() => onOpenSafetyGuide?.(batch.itemName)}
             className="font-bold text-slate-900 text-sm leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left"
-            title="Bấm để xem thông tin thuốc, chỉ định và cảnh báo dị ứng"
+            title="Bấm để xem thông tin thuốc, chỉ định và hướng dẫn an toàn"
           >
             {batch.itemName}
           </button>
-          {onOpenSafetyGuide && (
+          {onOpenSafetyGuide && batch.commodityType !== 'medical_supply' && (
             <button
               type="button"
               onClick={() => onOpenSafetyGuide(batch.itemName)}
-              className="text-xs font-medium px-2 py-0.5 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 cursor-pointer transition"
-              title="Tra cứu thông tin thuốc, chỉ định & cảnh báo dị ứng"
+              className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 cursor-pointer transition"
+              title="Tra cứu thông tin thuốc & tiêu chuẩn lâm sàng Bộ Y Tế (Dược điển V)"
             >
-              Thông tin thuốc
+              Chuẩn BYT
             </button>
-          )}
-          {verifyMode && batch.commodityType !== 'medical_supply' && (
-            <a
-              href={getNidqcPharmacopeiaUrl(batch.itemName)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 transition"
-              title="Đối soát tiêu chuẩn chất lượng Viện Kiểm nghiệm Thuốc - Bộ Y Tế"
-            >
-              <span>Chuẩn BYT</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-            </a>
           )}
           {batch.isControlledSubstance && (
             <span

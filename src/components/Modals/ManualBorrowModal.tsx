@@ -21,25 +21,18 @@ interface ManualBorrowModalProps {
   onOpenSafetyGuide?: (medName: string) => void;
 }
 
-const QUICK_EMERGENCY_CHIPS = [
-  { label: 'Adrenalin 1mg', id: 'med-em-01' }, { label: 'Morphin 10mg', id: 'med-ctrl-01' },
-  { label: 'Fentanyl 0.1mg', id: 'med-ctrl-02' }, { label: 'Noradrenalin 1mg', id: 'med-em-02' },
-  { label: 'Diazepam 10mg', id: 'med-em-07' },
-];
-
 export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
   isOpen, onClose, onConfirmBorrow, isAudioMuted, onOpenSafetyGuide,
 }) => {
   useModalDismiss(isOpen, onClose);
-  const def = ALL_MASTER_MEDICATIONS[0];
-  const [itemName, setItemName] = useState(def.brandName);
+  const [itemName, setItemName] = useState('');
   const [itemType, setItemType] = useState<DebtRecord['itemType']>('Thuốc cấp cứu');
-  const [quantity, setQuantity] = useState(`${def.defaultDoseQty} ${def.standardUnit}`);
-  const [patientCode, setPatientCode] = useState('BN-2026-9042');
-  const [patientName, setPatientName] = useState('Nguyễn Văn An');
-  const [patientRoom, setPatientRoom] = useState('ICU - Buồng 03 (Giường 01)');
-  const [doctorName, setDoctorName] = useState('BS.CKII Nguyễn Minh Tuấn');
-  const [clinicalReason, setClinicalReason] = useState('Sốc phản vệ độ III / Hội chứng vành cấp');
+  const [quantity, setQuantity] = useState('');
+  const [patientCode, setPatientCode] = useState('');
+  const [patientName, setPatientName] = useState('');
+  const [patientRoom, setPatientRoom] = useState('');
+  const [doctorName, setDoctorName] = useState('');
+  const [clinicalReason, setClinicalReason] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -112,29 +105,17 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               )}
             </div>
             <MedicationSearchAutocomplete selectedMedicationName={itemName} onSelect={handleSelectMed} defaultOnlyCrashCart={true} />
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">
-              <span className="text-[10px] text-slate-400 shrink-0">Chọn nhanh:</span>
-              {QUICK_EMERGENCY_CHIPS.map((chip) => (
-                <button
-                  type="button" key={chip.id}
-                  onClick={() => { const f = ALL_MASTER_MEDICATIONS.find((m) => m.id === chip.id); if (f) handleSelectMed(f); }}
-                  className="px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-200 transition shrink-0 cursor-pointer"
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2.5">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div className="sm:col-span-2">
                 <label className="font-semibold text-slate-800 block mb-1">Tên thuốc đã chọn *:</label>
-                <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} required className="w-full px-3 py-1.5 border rounded-lg font-bold text-slate-900 bg-slate-50" />
+                <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} required placeholder="Nhập hoặc tìm chọn thuốc..." className="w-full px-3 py-1.5 border rounded-lg font-bold text-slate-900 bg-slate-50" />
               </div>
               <div>
                 <label className="font-semibold text-slate-800 block mb-1">Số lượng *:</label>
-                <input type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)} required className="w-full px-3 py-1.5 border rounded-lg font-mono font-bold text-teal-900" />
+                <input type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)} required placeholder="Ví dụ: 1 ống" className="w-full px-3 py-1.5 border rounded-lg font-mono font-bold text-teal-900" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -149,7 +130,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-slate-800 block mb-1">Bác sĩ chỉ định:</label>
-                <input type="text" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg font-medium" />
+                <input type="text" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="Nhập tên bác sĩ..." className="w-full px-3 py-1.5 border rounded-lg font-medium" />
               </div>
             </div>
           </div>
@@ -159,16 +140,16 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
                 <label className="text-slate-700 block mb-1">Mã BN:</label>
-                <input type="text" value={patientCode} onChange={(e) => setPatientCode(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-lg font-mono" />
+                <input type="text" value={patientCode} onChange={(e) => setPatientCode(e.target.value)} placeholder="BN-..." className="w-full px-2.5 py-1.5 border rounded-lg font-mono" />
               </div>
               <div className="sm:col-span-2">
                 <label className="text-slate-700 block mb-1">Họ tên người bệnh *:</label>
-                <input type="text" value={patientName} onChange={(e) => setPatientName(e.target.value)} required className="w-full px-3 py-1.5 border rounded-lg font-semibold" />
+                <input type="text" value={patientName} onChange={(e) => setPatientName(e.target.value)} required placeholder="Nhập họ tên người bệnh..." className="w-full px-3 py-1.5 border rounded-lg font-semibold" />
               </div>
             </div>
             <div>
               <label className="text-slate-700 block mb-1">Buồng / Giường cấp cứu *:</label>
-              <input type="text" value={patientRoom} onChange={(e) => setPatientRoom(e.target.value)} required className="w-full px-3 py-1.5 border rounded-lg" />
+              <input type="text" value={patientRoom} onChange={(e) => setPatientRoom(e.target.value)} required placeholder="Ví dụ: ICU - Giường 01" className="w-full px-3 py-1.5 border rounded-lg" />
             </div>
           </div>
 

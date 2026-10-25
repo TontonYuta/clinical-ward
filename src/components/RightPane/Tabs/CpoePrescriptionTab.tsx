@@ -65,7 +65,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => onOpenSafetyGuide?.('Morphin')}
+            onClick={() => onOpenSafetyGuide?.()}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition cursor-pointer border border-slate-200 shadow-2xs"
             title="Tra cứu Dược thư & Thông tin thuốc"
           >

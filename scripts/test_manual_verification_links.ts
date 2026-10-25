@@ -29,14 +29,10 @@ async function main() {
   await fefoBtn.click();
   await page.waitForTimeout(1000);
 
-  // Check if inventory rows have "Chuẩn BYT" badge
-  const verifyBadgeInRow = page.locator('a:has-text("Chuẩn BYT"):visible').first();
-  const hasRowBadge = (await verifyBadgeInRow.count()) > 0;
-  console.log(`- FEFO row verification badge present: ${hasRowBadge}`);
-  if (hasRowBadge) {
-    const rowHref = await verifyBadgeInRow.getAttribute('href');
-    console.log(`- FEFO row verification badge link: ${rowHref}`);
-  }
+  // Check if inventory rows have "Chuẩn BYT" button
+  const verifyBtnInRow = page.locator('button:has-text("Chuẩn BYT"):visible').first();
+  const hasRowBtn = (await verifyBtnInRow.count()) > 0;
+  console.log(`- FEFO row "Chuẩn BYT" button present: ${hasRowBtn}`);
 
   // 2. Open National Drug Registry Modal
   console.log('3. Opening Cổng Dữ Liệu Dược Quốc Gia...');
@@ -52,10 +48,10 @@ async function main() {
   const davHref = await davLink.getAttribute('href');
   console.log(`- DAV SĐK verification link href: ${davHref}`);
 
-  // Verify NIDQC & FDA links in table
-  const nidqcLink = page.locator('table a[title*="Viện Kiểm nghiệm"]').first();
-  const nidqcHref = await nidqcLink.getAttribute('href');
-  console.log(`- NIDQC verification link href: ${nidqcHref}`);
+  // Verify ZERO dead NIDQC links exist
+  const nidqcExternalLinks = await page.locator('table a[href*="nidqc.gov.vn"]').count();
+  console.log(`- NIDQC dead links count (should be 0): ${nidqcExternalLinks}`);
+  if (nidqcExternalLinks > 0) throw new Error('Found unwanted links to nidqc.gov.vn');
 
   const fdaLink = page.locator('table a[title*="FDA"]').first();
   const fdaHref = await fdaLink.getAttribute('href');
@@ -77,9 +73,7 @@ async function main() {
 
   // Verify links are hidden
   const davLinksCount = await page.locator('table a[title*="Cục Quản lý Dược"]').count();
-  const nidqcLinksCount = await page.locator('table a[title*="Viện Kiểm nghiệm"]').count();
   console.log(`- DAV links count (should be 0): ${davLinksCount}`);
-  console.log(`- NIDQC links count (should be 0): ${nidqcLinksCount}`);
 
   // Save screenshot of Verification Links OFF
   const shot2 = path.join(ARTIFACTS_DIR, '32_verification_links_disabled_hidden.png');

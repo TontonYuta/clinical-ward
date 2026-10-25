@@ -10,7 +10,6 @@ import { ExternalLink } from 'lucide-react';
 import {
   isVerificationLinksVisible,
   getDavRegistryUrl,
-  getNidqcPharmacopeiaUrl,
   getDailyMedFdaUrl,
   getRegulatoryLawUrl,
 } from '../../config/clinicalVerification';
@@ -119,11 +118,6 @@ export const VerificationPanelSection: React.FC<{
           href={getDavRegistryUrl(sdk, innName)}
           label={sdk ? `Cục Quản lý Dược (${sdk})` : 'Cục Quản lý Dược (Bộ Y tế)'}
           sourceType="dav"
-        />
-        <VerificationBadgeLink
-          href={getNidqcPharmacopeiaUrl(cleanInn)}
-          label="Viện Kiểm Nghiệm Thuốc (BYT)"
-          sourceType="nidqc"
         />
         <VerificationBadgeLink
           href={getDailyMedFdaUrl(cleanInn)}

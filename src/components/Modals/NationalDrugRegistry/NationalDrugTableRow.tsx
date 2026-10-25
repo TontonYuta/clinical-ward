@@ -10,7 +10,6 @@ import { ExternalLink } from 'lucide-react';
 import { MasterMedication } from '../../../types/medication';
 import {
   getDavRegistryUrl,
-  getNidqcPharmacopeiaUrl,
   getDailyMedFdaUrl,
 } from '../../../config/clinicalVerification';
 
@@ -68,22 +67,12 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
             <>
               <button
                 type="button"
-                onClick={() => onOpenSafetyGuide(d.brandName)}
+                onClick={() => onOpenSafetyGuide(d.activeIngredient || d.brandName)}
                 className="text-2xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 inline-flex items-center gap-1 transition cursor-pointer"
                 title="Xem hướng dẫn sử dụng chuẩn từ Bộ Y Tế & Dược điển Việt Nam"
               >
                 <span>Chuẩn BYT</span>
               </button>
-              <a
-                href={getNidqcPharmacopeiaUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-2xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-0.5 transition"
-                title="Cổng Viện Kiểm nghiệm Thuốc Trung ương (NIDQC - Bộ Y tế)"
-              >
-                <span>Kiểm nghiệm BYT</span>
-                <ExternalLink className="w-2 h-2 opacity-60" />
-              </a>
               <a
                 href={getDailyMedFdaUrl(cleanInn)}
                 target="_blank"
@@ -106,7 +95,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
       </td>
       <td className="py-3 px-4 text-right whitespace-nowrap align-top">
         <button
-          onClick={() => onOpenSafetyGuide(d.brandName)}
+          onClick={() => onOpenSafetyGuide(d.activeIngredient || d.brandName)}
           className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition cursor-pointer shadow-2xs"
         >
           Hướng dẫn dùng thuốc

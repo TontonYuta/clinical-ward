@@ -30,15 +30,15 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const [rxType, setRxType] = useState<PrescriptionType>('outpatient');
   const [patientName, setPatientName] = useState('');
   const [patientCccd, setPatientCccd] = useState('');
-  const [diagnosisIcd10, setDiagnosisIcd10] = useState('I10');
-  const [diagnosisText, setDiagnosisText] = useState('Tăng huyết áp vô căn');
+  const [diagnosisIcd10, setDiagnosisIcd10] = useState('');
+  const [diagnosisText, setDiagnosisText] = useState('');
   const [isChronic, setIsChronic] = useState(false);
   const [daysPrescribed, setDaysPrescribed] = useState(30);
-  const [medName, setMedName] = useState('Adrenalin Vinphaco 1mg/1ml');
-  const [activeIngredient, setActiveIngredient] = useState('Epinephrin');
+  const [medName, setMedName] = useState('');
+  const [activeIngredient, setActiveIngredient] = useState('');
   const [unit, setUnit] = useState('Ống');
   const [route, setRoute] = useState('Tiêm tĩnh mạch');
-  const [quantity, setQuantity] = useState(2);
+  const [quantity, setQuantity] = useState(1);
 
   if (!isOpen) return null;
 
@@ -131,11 +131,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
           <div className="grid grid-cols-3 gap-2.5">
             <div>
               <label className="block font-semibold text-slate-700 mb-0.5">Mã ICD-10 *</label>
-              <input type="text" value={diagnosisIcd10} onChange={(e) => setDiagnosisIcd10(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md font-mono uppercase" />
+              <input type="text" placeholder="VD: I10" value={diagnosisIcd10} onChange={(e) => setDiagnosisIcd10(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md font-mono uppercase" />
             </div>
             <div className="col-span-2">
               <label className="block font-semibold text-slate-700 mb-0.5">Chẩn đoán xác định *</label>
-              <input type="text" value={diagnosisText} onChange={(e) => setDiagnosisText(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md" />
+              <input type="text" placeholder="Nhập chẩn đoán lâm sàng..." value={diagnosisText} onChange={(e) => setDiagnosisText(e.target.value)} className="w-full px-2.5 py-1.5 border rounded-md" />
             </div>
           </div>
 
