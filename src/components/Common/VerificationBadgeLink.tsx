@@ -105,15 +105,15 @@ export const VerificationPanelSection: React.FC<{
 
   const cleanInn = innName.split('(')[0].trim();
   const lowerBasis = (legalBasis || '').toLowerCase();
-  const lawLabel = lowerBasis.includes('7014') || lowerBasis.includes('kháng sinh')
-    ? 'QĐ 7014/QĐ-BYT (Hướng Dẫn Kháng Sinh)'
-    : lowerBasis.includes('2147') || lowerBasis.includes('dược lâm sàng')
-    ? 'QĐ 2147/QĐ-BYT (Dược Lâm Sàng BV)'
+  const lawLabel = lowerBasis.includes('5631') || lowerBasis.includes('7014') || lowerBasis.includes('kháng sinh') || lowerBasis.includes('ceftria')
+    ? 'Chương Trình QL Kháng Sinh (Cục KCB)'
+    : lowerBasis.includes('131') || lowerBasis.includes('2147') || lowerBasis.includes('dược lâm sàng')
+    ? 'NĐ 131/2020/NĐ-CP (Dược Lâm Sàng BV)'
     : lowerBasis.includes('20/2017')
     ? 'Thông tư 20/2017/TT-BYT (KSĐB)'
     : lowerBasis.includes('51/2017')
-    ? 'Thông tư 51/2017/TT-BYT (Phản Vệ)'
-    : 'Quy chuẩn BYT (Cục KCB)';
+    ? 'Hệ Thống VB Cục Quản Lý KCB'
+    : 'Quy chuẩn Bộ Y Tế';
 
   return (
     <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
@@ -126,7 +126,7 @@ export const VerificationPanelSection: React.FC<{
       <div className="flex flex-wrap items-center gap-2">
         <VerificationBadgeLink
           href={getDavRegistryUrl(sdk, innName)}
-          label={sdk ? `Cổng Tra cứu SĐK Cục QLD (${sdk})` : 'Cổng Tra cứu SĐK Cục Quản lý Dược'}
+          label={sdk ? `Cổng Công Bố SĐK Dược (${sdk})` : 'Cổng Công Bố SĐK Cục Quản Lý Dược'}
           sourceType="dav"
         />
         {legalBasis && (
@@ -138,7 +138,7 @@ export const VerificationPanelSection: React.FC<{
         )}
         <VerificationBadgeLink
           href={getDailyMedFdaUrl(cleanInn)}
-          label="Cơ sở dữ liệu FDA DailyMed (Mỹ)"
+          label="Nhãn Gốc US FDA DailyMed"
           subLabel={cleanInn}
           sourceType="fda"
         />

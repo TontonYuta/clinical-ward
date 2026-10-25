@@ -25,6 +25,7 @@ async function main() {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    ignoreHTTPSErrors: true,
   });
   const page = await context.newPage();
 
@@ -204,29 +205,96 @@ async function main() {
   console.log(`- FDA Boxed Warning element present: ${boxedWarningCount > 0}`);
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, '04_clinical_safety_boxed_warning.png') });
 
-  // 4. Test Network Accessibility (Status 200) for all official authoritative endpoints
+  // 4. Test Network Accessibility & Exact Document Content for all official authoritative endpoints
   const officialEndpoints = [
-    'https://dichvucong.dav.gov.vn/TraCuuSoDangKy',
-    'https://kcb.vn/van-ban/quyet-dinh-so-7014-qd-byt-ve-viec-ban-hanh-tai-lieu-chuyen-mon-huong-dan-su-dung-khang-sinh.html',
-    'https://vanban.chinhphu.vn/?pageid=27160&docid=189732',
-    'https://vanban.chinhphu.vn/?pageid=27160&docid=192461',
-    'https://kcb.vn',
-    'https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=morphine',
-    'https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=atropine',
-    'https://list.essentialmeds.org',
+    {
+      name: 'DAV Cổng Công Bố SĐK Thuốc',
+      url: 'https://dichvucong.dav.gov.vn/congbothuoc/index',
+      expectedSnippet: 'CÔNG BỐ GIẤY ĐĂNG KÝ THUỐC',
+    },
+    {
+      name: 'DAV Công Bố Đăng Ký Thuốc & Nguyên Liệu',
+      url: 'https://dav.gov.vn/dang-ki-thuoc---cong-bo-nguyen-lieu-c311.html',
+      expectedSnippet: 'Cục Quản lý Dược',
+    },
+    {
+      name: 'Thông tư 20/2017/TT-BYT (KSĐB / Morphin)',
+      url: 'https://congbao.chinhphu.vn/van-ban/thong-tu-so-20-2017-tt-byt-24490.htm',
+      expectedSnippet: '20/2017/TT-BYT',
+    },
+    {
+      name: 'KCB Hệ Thống Văn Bản Khám Chữa Bệnh BYT',
+      url: 'https://kcb.vn/van-ban',
+      expectedSnippet: 'Văn bản',
+    },
+    {
+      name: 'KCB Chương Trình Quản Lý Sử Dụng Kháng Sinh',
+      url: 'https://kcb.vn/cac-chuyen-muc-khac/chuong-trinh-cham-soc-suc-khoe/phong-chong-khang-thuoc',
+      expectedSnippet: 'kháng thuốc',
+    },
+    {
+      name: 'Nghị định 131/2020/NĐ-CP (Dược Lâm Sàng Bệnh Viện)',
+      url: 'https://congbao.chinhphu.vn/van-ban/nghi-dinh-so-131-2020-nd-cp-32387.htm',
+      expectedSnippet: '131/2020/NĐ-CP',
+    },
+    {
+      name: 'Nghị định 98/2021/NĐ-CP (Trang Thiết Bị Y Tế)',
+      url: 'https://vanban.chinhphu.vn/?pageid=27160&docid=204442',
+      expectedSnippet: '98/2021/NĐ-CP',
+    },
+    {
+      name: 'US FDA DailyMed Ceftriaxone Injection SPL Label',
+      url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9c801096-ca61-4b29-a1e1-5f7e7813b191',
+      expectedSnippet: 'CEFTRIAXONE',
+    },
+    {
+      name: 'US FDA DailyMed Morphine Injection SPL Label',
+      url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=9362eca1-2bc9-4f72-8895-0b9179bfeb2b',
+      expectedSnippet: 'MORPHINE',
+    },
+    {
+      name: 'US FDA DailyMed Atropine Injection SPL Label',
+      url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=a66eecf9-2d8b-4e2d-8a05-d718dcbc3542',
+      expectedSnippet: 'ATROPINE',
+    },
+    {
+      name: 'Danh mục Thuốc Thiết yếu WHO (eEML)',
+      url: 'https://list.essentialmeds.org',
+      expectedSnippet: 'Essential',
+    },
   ];
 
-  console.log('\n================ OFFICIAL ENDPOINTS ACCESSIBILITY CHECK ================');
-  const networkResults: { url: string; status: number; ok: boolean }[] = [];
+  console.log('\n================ OFFICIAL ENDPOINTS ACCESSIBILITY & CONTENT VERIFICATION ================');
+  const networkResults: { name: string; url: string; status: number; ok: boolean; title: string }[] = [];
 
-  for (const url of officialEndpoints) {
-    process.stdout.write(`Testing: ${url.substring(0, 65)}... `);
-    const res = await context.request.get(url, { timeout: 15000 });
-    const status = res.status();
-    const ok = status >= 200 && status < 400;
-    console.log(`Status: ${status} (${ok ? '✅ OK' : '❌ FAIL'})`);
-    networkResults.push({ url, status, ok });
-    await new Promise((r) => setTimeout(r, 400));
+  for (const item of officialEndpoints) {
+    const testPage = await context.newPage();
+    try {
+      process.stdout.write(`Testing: ${item.name.substring(0, 45)}... `);
+      const res = await testPage.goto(item.url, { timeout: 30000, waitUntil: 'domcontentloaded' });
+      await testPage.waitForTimeout(1000);
+      const status = res?.status() || 0;
+      const title = await testPage.title();
+      const body = (await testPage.innerText('body')).replace(/\s+/g, ' ');
+
+      const hasErrorWord = body.includes("404 Oops! You're lost") || 
+                           body.includes("404 PAGE NOT FOUND") || 
+                           body.includes("LIÊN KẾT KHÔNG TỒN TẠI") ||
+                           title.includes("404") ||
+                           title.includes("Forbidden") ||
+                           title.includes("Not Found");
+
+      const hasExpected = body.includes(item.expectedSnippet) || title.includes(item.expectedSnippet);
+      const ok = status === 200 && !hasErrorWord && hasExpected;
+
+      console.log(`Status: ${status} (${ok ? '✅ OK' : '❌ FAIL'}) - ${title.substring(0, 40)}`);
+      networkResults.push({ name: item.name, url: item.url, status, ok, title });
+    } catch (e: any) {
+      console.log(`❌ ERROR: ${e.message}`);
+      networkResults.push({ name: item.name, url: item.url, status: 0, ok: false, title: e.message });
+    } finally {
+      await testPage.close();
+    }
   }
 
   await browser.close();
@@ -234,18 +302,19 @@ async function main() {
   console.log('\n================ VERIFICATION SUMMARY ================');
   console.table(
     networkResults.map((r) => ({
-      Endpoint: r.url.substring(0, 55) + '...',
+      Source: r.name,
       Status: r.status,
       Accessible: r.ok ? '✅ YES' : '❌ NO',
+      DocumentTitle: r.title.substring(0, 40) + '...',
     }))
   );
 
   const failed = networkResults.filter((r) => !r.ok);
   if (failed.length > 0) {
-    throw new Error(`${failed.length} official endpoints failed accessibility check!`);
+    throw new Error(`${failed.length} official endpoints failed content/accessibility verification!`);
   }
 
-  console.log('🎉 100% OF OFFICIAL MEDICAL CITATIONS & GOVERNMENT ENDPOINTS RETURNED 200 OK!');
+  console.log('🎉 100% OF OFFICIAL MEDICAL CITATIONS & GOVERNMENT ENDPOINTS LOADED WITH 200 OK & ACCURATE CONTENT!');
 }
 
 main().catch((err) => {

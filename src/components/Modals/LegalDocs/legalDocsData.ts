@@ -79,7 +79,7 @@ export const UPDATED_LEGAL_DOCS: LegalDocMeta[] = [
     category: 'Dược Lâm Sàng Nội Trú',
     title: 'Quy định sử dụng thuốc trong cơ sở y tế có giường bệnh & Tủ trực',
     authority: 'Bộ Y Tế (Tích hợp TT 23/2011 & TT 50/2017)',
-    link: 'https://vbpl.vn',
+    link: 'https://canhgiacduoc.org.vn',
     icon: Pill,
     keyArticles: [
       {
@@ -101,7 +101,7 @@ export const UPDATED_LEGAL_DOCS: LegalDocMeta[] = [
     category: 'Trang Thiết Bị & Kỹ Thuật',
     title: 'Quản lý thiết bị y tế loại A, B, C, D & kiểm định an toàn định kỳ',
     authority: 'Chính Phủ (Sửa đổi bởi NĐ 07/2023, NĐ 96/2023, NĐ 04/2025)',
-    link: 'https://vanban.chinhphu.vn',
+    link: 'https://vanban.chinhphu.vn/?pageid=27160&docid=204442',
     icon: Wrench,
     keyArticles: [
       {
@@ -123,7 +123,7 @@ export const UPDATED_LEGAL_DOCS: LegalDocMeta[] = [
     category: 'Cấp Cứu Tối Khẩn',
     title: 'Hướng dẫn phòng, chẩn đoán và xử trí phản vệ cấp cứu',
     authority: 'Bộ Y Tế (Hiện hành toàn diện)',
-    link: 'https://congbao.chinhphu.vn',
+    link: 'https://canhgiacduoc.org.vn/Thongtinthuoc/TinYDuoc/917/B%E1%BB%99-Y-t%E1%BA%BF-ban-h%C3%A0nh-Th%C3%B4ng-t%C6%B0-s%E1%BB%91-51-h%C6%B0%E1%BB%9Bng-d%E1%BA%ABn-ph%C3%B2ng-ch%E1%BA%A9n-%C4%91o%C3%A1n-v%C3%A0-x%E1%BB%AD-tr%C3%AD-ph%E1%BA%A3n-v%E1%BB%87-.htm',
     icon: AlertCircle,
     keyArticles: [
       {

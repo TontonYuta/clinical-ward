@@ -10,7 +10,7 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Ceftriaxone 1g
   'med-ab-01': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn sử dụng Kháng sinh (QĐ 7014/QĐ-BYT)',
+      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn sử dụng Kháng sinh (QĐ 5631/QĐ-BYT)',
       registrationNumber: 'VD-31291-18',
       manufacturer: 'Công ty Cổ phần Dược phẩm Imexpharm / VCP',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
