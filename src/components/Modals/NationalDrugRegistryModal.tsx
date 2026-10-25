@@ -12,6 +12,7 @@ import { isVerificationLinksVisible, setVerificationLinksVisibility } from '../.
 import { getNationalDrugRegistryApi } from '../../services/api';
 import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
 import { NationalDrugTabs } from './NationalDrugRegistry/NationalDrugTabs';
+import { queryOfflineRegistry } from './NationalDrugRegistry/offlineRegistry';
 
 interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; inventoryBatches?: InventoryBatch[]; }
 
@@ -41,9 +42,10 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
 
   const loadData = useCallback(async (isManualSync = false) => {
     if (isManualSync) { setIsSyncing(true); setSyncNotice(null); } else setLoading(true);
+    let loaded = false;
     try {
       const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, page, pageSize: PAGE_SIZE });
-      if (data && Array.isArray(data.items)) {
+      if (data && Array.isArray(data.items) && (data.items.length > 0 || search.trim() !== '' || selectedGroup !== 'all')) {
         const mapped: MasterMedication[] = data.items.map((i: any) => ({
           id: i.id, nationalCode: i.national_code, brandName: i.brand_name,
           activeIngredient: i.active_ingredient, concentration: i.concentration, dosageForm: i.dosage_form,
@@ -54,19 +56,18 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
         setDrugs(mapped); setTotalCount(data.total || mapped.length); setTotalPages(data.total_pages || 1);
         if (data.group_stats) setGroupStats(data.group_stats);
         if (isManualSync) { setSyncNotice(`Đã đồng bộ ${data.total.toLocaleString()} thuốc!`); setTimeout(() => setSyncNotice(null), 3500); }
+        loaded = true;
       }
-    } catch {
+    } catch {}
+
+    if (!loaded) {
       try {
-        const res = await fetch(`/data/vietnam_drug_registry/dav_essential_formulary.json?t=${Date.now()}`);
-        const local = await res.json();
-        if (Array.isArray(local)) {
-          const q = search.toLowerCase().trim();
-          const filtered = local.filter((d) => (selectedGroup === 'all' || d.group === selectedGroup) && (!q || d.brandName.toLowerCase().includes(q) || d.nationalCode.toLowerCase().includes(q)));
-          setDrugs(filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-          setTotalCount(filtered.length); setTotalPages(Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
-        }
-      } catch { setSyncNotice('Dùng CSDL lưu trữ'); }
-    } finally { setLoading(false); setIsSyncing(false); }
+        const off = await queryOfflineRegistry(search, selectedGroup, page, PAGE_SIZE);
+        setDrugs(off.items); setTotalCount(off.total); setTotalPages(off.totalPages); setGroupStats(off.groupStats);
+        if (isManualSync) { setSyncNotice(`Đã nạp ${off.total.toLocaleString()} thuốc!`); setTimeout(() => setSyncNotice(null), 3500); }
+      } catch { setSyncNotice('Lỗi nạp CSDL thuốc'); }
+    }
+    setLoading(false); setIsSyncing(false);
   }, [search, selectedGroup, page]);
 
   useEffect(() => { if (isOpen) loadData(); }, [isOpen, loadData]);

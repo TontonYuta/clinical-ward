@@ -19,6 +19,13 @@ if not os.path.exists(db_dest) and os.path.exists(db_source):
 db_path = db_dest
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_path}"
 
+# Synchronously ensure DAV national drugs registry (55k) is seeded in /tmp
+try:
+    from app.seed_registry import seed_dav_registry_if_needed
+    seed_dav_registry_if_needed(db_dest)
+except Exception as e:
+    print(f"Vercel startup registry seed warning: {e}")
+
 import app.config
 import app.database
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession

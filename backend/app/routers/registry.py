@@ -55,6 +55,16 @@ async def get_national_drugs_paginated(
     total_res = await db.execute(count_stmt)
     total_count = total_res.scalar() or 0
 
+    # Self-healing on-demand seed if table is unseeded
+    if total_count == 0 and not search and (not group or group == "all"):
+        try:
+            from app.seed_registry import seed_dav_registry_if_needed
+            seed_dav_registry_if_needed()
+            total_res = await db.execute(count_stmt)
+            total_count = total_res.scalar() or 0
+        except Exception as e:
+            print(f"Self-healing registry seed error: {e}")
+
     # 2. Paginated data items
     data_stmt = select(DavNationalDrug)
     if filters:
