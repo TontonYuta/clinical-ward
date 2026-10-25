@@ -21,6 +21,7 @@ import {
 import { matchBorrowIntent, handleBorrowIntent } from './intents/borrowIntent';
 import { matchMedicationSafetyIntent, handleMedicationSafetyIntent } from './intents/medicationSafetyIntent';
 import { matchBusinessIntent, handleBusinessOverviewIntent } from './intents/businessIntent';
+import { matchDrugLookupGuideIntent, handleDrugLookupGuideIntent } from './intents/drugLookupGuideIntent';
 
 export function processClinicalUserQuery(
   rawInput: string,
@@ -33,6 +34,11 @@ export function processClinicalUserQuery(
   // 0. Hospital Business Operations & 10 Core Workflows
   if (matchBusinessIntent(lower)) {
     return handleBusinessOverviewIntent(nowStr);
+  }
+
+  // 0b. National Drug Registry Lookup Guide (Khi người dùng muốn tra cứu nhưng chưa nhập tên thuốc)
+  if (matchDrugLookupGuideIntent(lower)) {
+    return handleDrugLookupGuideIntent(nowStr);
   }
 
   // 1. Legal Protocols & Guides

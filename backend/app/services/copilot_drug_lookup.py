@@ -10,12 +10,26 @@ from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.copilot_catalog import find_matched_med
 
-STOP_WORDS = {
-    "thông tin", "thuốc", "về", "là gì", "dùng để làm gì", "chỉ định", "thành phần",
-    "sđk", "số đăng ký", "cho biết", "hỏi", "tác dụng", "công dụng", "dùng thế nào",
-    "liều lượng", "liều dùng", "uống", "tiêm", "có tác dụng gì", "của", "cho", "xem",
-    "liều", "thế nào", "như thế nào", "nhóm", "loại", "là", "thuốc gì", "có", "tác dụng gì", "cách dùng"
-}
+STOP_PHRASES = [
+    "tôi muốn tra cứu thông tin về thuốc", "tôi muốn tra cứu thông tin thuốc", "tôi muốn tra cứu về thuốc",
+    "tôi muốn tra cứu thuốc", "tôi muốn tìm thông tin về thuốc", "tôi muốn tìm thông tin thuốc",
+    "tôi muốn tìm thuốc", "tôi muốn hỏi thông tin về thuốc", "tôi muốn hỏi thông tin thuốc",
+    "tôi muốn hỏi về thuốc", "tôi muốn hỏi thuốc", "tôi muốn tra cứu", "tôi muốn tìm",
+    "tôi muốn hỏi", "tôi muốn biết", "tôi muốn xem", "tôi muốn",
+    "làm ơn cho tôi biết thông tin về thuốc", "làm ơn cho tôi biết", "cho tôi biết thông tin về thuốc",
+    "cho tôi biết", "cho tôi hỏi thông tin về thuốc", "cho tôi hỏi thông tin thuốc",
+    "cho tôi hỏi về thuốc", "cho tôi hỏi thuốc", "cho tôi hỏi", "tìm giúp tôi thuốc",
+    "tìm giúp tôi", "kiểm tra giúp tôi thuốc", "kiểm tra giúp tôi", "xem giúp tôi thuốc", "xem giúp tôi",
+    "tra cứu giúp tôi thông tin về thuốc", "tra cứu giúp tôi thông tin thuốc", "tra cứu giúp tôi thuốc",
+    "tra cứu giúp tôi", "tra cứu thông tin về thuốc", "tra cứu thông tin thuốc", "tra cứu về thuốc",
+    "tra cứu thuốc", "thông tin về thuốc", "thông tin thuốc", "hỏi thông tin về thuốc",
+    "hỏi thông tin thuốc", "hỏi về thuốc", "hỏi thuốc", "trong kho còn thuốc", "trong kho có thuốc",
+    "bệnh viện có thuốc", "danh mục thuốc", "danh sách thuốc", "các loại thuốc",
+    "có những loại thuốc nào", "có những thuốc gì", "dùng để làm gì", "có tác dụng gì",
+    "dùng thế nào", "dùng như thế nào", "liều lượng", "liều dùng", "số đăng ký", "thuốc gì",
+    "là thuốc gì", "là gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần",
+    "thuốc", "không", "sđk", "hỏi", "xem"
+]
 
 def extract_drug_keywords(query: str) -> str:
     cleaned = query.strip()
@@ -26,24 +40,53 @@ def extract_drug_keywords(query: str) -> str:
     q_lower = cleaned.lower()
     matched = find_matched_med(q_lower)
     if matched:
-        return matched["keywords"][0]
+        # Check if the query is only conversational without asking for another drug
+        has_other_med = any(w in q_lower for w in ["rocephin", "cefaclor", "augmentin", "panadol", "paracetamol"])
+        if not has_other_med or matched["keywords"][0] in q_lower:
+            return matched["keywords"][0]
 
-    for w in sorted(STOP_WORDS, key=len, reverse=True):
-        q_lower = q_lower.replace(w, " ")
+    for phrase in sorted(STOP_PHRASES, key=len, reverse=True):
+        q_lower = q_lower.replace(phrase, " ")
     words = [w.strip() for w in q_lower.split() if len(w.strip()) >= 2]
     return " ".join(words).strip()
 
 async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResponse:
     kw = extract_drug_keywords(query)
     if not kw or len(kw) < 2:
+        guide_text = (
+            "### 🏥 CỔNG TRA CỨU DƯỢC QUỐC GIA & DƯỢC THƯ LÂM SÀNG (54.885 THUỐC)\n\n"
+            "Hệ thống tích hợp dữ liệu chính thống **Cục Quản lý Dược Việt Nam (DAV)**, "
+            "**Dược thư Quốc gia DĐVN V** và **Kho dược bệnh viện**:\n\n"
+            "1. **Tra cứu theo Tên Biệt Dược hoặc Hoạt Chất (INN):**\n"
+            "   • *Ví dụ:* `\"Thông tin thuốc Rocephin\"`, `\"Augmentin 1g\"`, `\"Paracetamol\"`...\n"
+            "2. **Tra cứu theo Số Đăng Ký Lưu Hành (SĐK) Cục QLD:**\n"
+            "   • *Ví dụ:* `\"SĐK VD-24757-16 là thuốc gì\"`, `\"Tra cứu SĐK VN-17037-13\"`...\n"
+            "3. **Tra cứu Chỉ Định, Tác Dụng & Liều Dùng Chuẩn DĐVN V:**\n"
+            "   • *Ví dụ:* `\"Paracetamol liều dùng thế nào\"`, `\"Morphin dùng để làm gì\"`...\n"
+            "4. **Đối Soát Tồn Kho & Hạn Dùng FEFO Bệnh Viện:**\n"
+            "   • Tự động đối soát cơ số tủ trực cấp cứu, số lô và ngày hết hạn.\n\n"
+            "👉 *Bạn có thể bấm vào các gợi ý nhanh bên dưới hoặc nhập trực tiếp tên thuốc / số đăng ký cần tra cứu!*"
+        )
+        card = CopilotActionCard(
+            card_type="shift_handover_report",
+            title="Cổng Tra Cứu Dược Quốc Gia 54.885 Thuốc",
+            summary="Cơ sở dữ liệu Cục Quản lý Dược & Dược Thư Quốc Gia Việt Nam",
+            data={"total_drugs": 54885, "status": "ready"},
+            primary_action_label="Mở Cổng 55k Dược Quốc Gia",
+            primary_action_type="OPEN_REGISTRY_MODAL"
+        )
         return CopilotResponse(
-            intent="MEDICATION_LOOKUP_AMBIGUOUS",
-            reply_text=(
-                "⚠️ **Cần nhập rõ Tên Thuốc hoặc Số Đăng Ký (SĐK)**:\n"
-                "Ví dụ: *'Thông tin thuốc Cefaclor'*, *'SĐK VD-24757-16'*, *'Rocephin'*, *'Morphin'*, *'Adrenalin'*.\n"
-                "Hệ thống sẽ tra cứu trực tiếp trong CSDL **54.885 thuốc Cục Quản lý Dược**."
-            ),
-            suggested_chips=["Tra cứu SĐK VD-24757-16", "Thông tin thuốc Rocephin", "Quy tắc 5 đúng Morphin"]
+            intent="MEDICATION_LOOKUP_GUIDE",
+            reply_text=guide_text,
+            card=card,
+            legal_basis="Cục Quản lý Dược Việt Nam & Dược Thư Quốc Gia",
+            suggested_chips=[
+                "Tra cứu thuốc Rocephin",
+                "Tra cứu SĐK VD-24757-16",
+                "Thông tin thuốc Augmentin",
+                "Paracetamol liều dùng thế nào",
+                "Quy tắc 5 đúng Morphin"
+            ]
         )
 
     # 1. Tra cứu CSDL 54.885 thuốc Cục QLD
