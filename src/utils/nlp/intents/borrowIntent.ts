@@ -9,6 +9,15 @@ import { MED_CATALOG, findMatchedMed } from '../entityCatalog';
 import { evaluateLocalCDSS } from '../cdssEngine';
 
 export function matchBorrowIntent(lower: string): boolean {
+  // Loại trừ ngay nếu là câu hỏi lâm sàng, chỉ định, tác dụng, liều dùng hoặc tra cứu
+  const isQuestionOrInquiry = anyKeyword(lower, [
+    'thế nào', 'như thế nào', 'làm gì', 'để làm gì', 'là gì', 'là thuốc gì',
+    'tác dụng', 'công dụng', 'chỉ định', 'chống chỉ định', 'tương tác',
+    'thành phần', 'dị ứng', 'thời gian bán thải', 'dược động học', 'cơ chế',
+    'thông tin', 'hướng dẫn', 'hỏi', 'bao nhiêu', 'uống lúc nào', 'khi nào', 'giải độc'
+  ]);
+  if (isQuestionOrInquiry) return false;
+
   const matchedMed = findMatchedMed(lower);
   const hasDispenseAction = anyKeyword(lower, [
     'mượn', 'lấy', 'rút', 'xuất', 'cần', 'xin', 'cho', 'tiêm', 'truyền', 'kê', 'cấp phát', 'dùng', 'lập phiếu nợ', 'kê nợ'

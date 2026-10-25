@@ -13,8 +13,9 @@ export function matchMedicationSafetyIntent(lower: string): boolean {
   // 1. Nhóm từ khóa hỏi về Chỉ định ("Dùng để làm gì", tác dụng, công dụng)
   const hasIndicationQuery = anyKeyword(lower, [
     'dùng để làm gì', 'dung de lam gi', 'dùng làm gì', 'dung lam gi',
-    'chỉ định', 'chi dinh', 'tác dụng của', 'tac dung cua', 'công dụng', 'cong dung',
-    'chữa bệnh gì', 'chua benh gi', 'dùng trong trường hợp nào', 'khi nào dùng'
+    'chỉ định', 'chi dinh', 'tác dụng', 'tac dung', 'công dụng', 'cong dung',
+    'chữa bệnh gì', 'chua benh gi', 'dùng trong trường hợp nào', 'khi nào dùng',
+    'uống lúc nào', 'tiêm lúc nào'
   ]);
 
   // 2. Nhóm từ khóa hỏi về Thành phần & Dị ứng
@@ -24,11 +25,12 @@ export function matchMedicationSafetyIntent(lower: string): boolean {
     'ai dị ứng', 'ai di ung', 'dị ứng chéo', 'di ung cheo', 'phản vệ', 'quá mẫn'
   ]);
 
-  // 3. Nhóm từ khóa Dược thư & 5 Đúng chuẩn
+  // 3. Nhóm từ khóa Dược thư & 5 Đúng chuẩn & Liều dùng
   const hasSafetyKeyword = anyKeyword(lower, [
     '5 đúng', 'năm đúng', 'quy chuẩn 5 đúng', 'tiêu chuẩn 5 đúng',
     'thông tin thuốc', 'dược thư', 'phù hợp với ai', 'chống chỉ định',
-    'liều tối đa', 'thuốc giải độc', 'antidote', 'tác dụng phụ', 'hướng dẫn dùng liều'
+    'liều dùng', 'liều lượng', 'liều tối đa', 'dùng liều', 'thuốc giải độc', 'antidote',
+    'tác dụng phụ', 'hướng dẫn dùng liều', 'dùng thế nào', 'dùng như thế nào', 'uống thế nào'
   ]);
 
   // Loại trừ hành động cấp phát / mượn thuốc trực tiếp

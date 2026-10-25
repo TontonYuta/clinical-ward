@@ -32,8 +32,9 @@ export async function askGeminiClinicalCopilot(
   try {
     const ai = new GoogleGenAI({ apiKey });
     let contextStr = '';
-    if (clinicalContext) {
-      contextStr = `\n[Bối cảnh khoa phòng hiện tại: Vai trò: ${clinicalContext.role || 'Điều dưỡng'}, Nợ ca đêm: ${clinicalContext.activeDebtsCount || 0} ca, Nợ vỏ Morphin: ${clinicalContext.pendingAmpoulesCount || 0} vỏ, Sự cố TBYT khẩn: ${clinicalContext.urgentTicketsCount || 0}, Thuốc cạn kho: ${clinicalContext.lowStockBatchesCount || 0}, Nhiệt độ tủ lạnh: ${clinicalContext.coldChainTemp ?? 4.5}°C]`;
+    const isShiftQuery = /ca trực|giao ban|đối soát|tồn đọng|khoa phòng|bàn giao|tổng quan/i.test(query);
+    if (clinicalContext && isShiftQuery) {
+      contextStr = `\n[Bối cảnh ca trực hiện tại: Vai trò: ${clinicalContext.role || 'Điều dưỡng'}, Nợ ca đêm: ${clinicalContext.activeDebtsCount || 0} ca, Nợ vỏ Morphin: ${clinicalContext.pendingAmpoulesCount || 0} vỏ, Sự cố TBYT khẩn: ${clinicalContext.urgentTicketsCount || 0}, Thuốc cạn kho: ${clinicalContext.lowStockBatchesCount || 0}, Nhiệt độ tủ lạnh: ${clinicalContext.coldChainTemp ?? 4.5}°C]`;
     }
 
     return await callGeminiWithFallback(ai, {

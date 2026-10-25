@@ -13,7 +13,8 @@ from app.services.copilot_catalog import find_matched_med
 STOP_WORDS = {
     "thông tin", "thuốc", "về", "là gì", "dùng để làm gì", "chỉ định", "thành phần",
     "sđk", "số đăng ký", "cho biết", "hỏi", "tác dụng", "công dụng", "dùng thế nào",
-    "liều lượng", "liều dùng", "uống", "tiêm", "có tác dụng gì", "của", "cho", "xem"
+    "liều lượng", "liều dùng", "uống", "tiêm", "có tác dụng gì", "của", "cho", "xem",
+    "liều", "thế nào", "như thế nào", "nhóm", "loại", "là", "thuốc gì", "có", "tác dụng gì", "cách dùng"
 }
 
 def extract_drug_keywords(query: str) -> str:
@@ -58,6 +59,16 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
     drugs = res.scalars().all()
 
     if not drugs:
+        from app.services.copilot_gemini import ask_backend_gemini_copilot
+        gemini_reply = await ask_backend_gemini_copilot(query, "nurse", "Điều Dưỡng", db)
+        if gemini_reply:
+            return CopilotResponse(
+                intent="CLINICAL_AI_CONSULTATION",
+                reply_text=gemini_reply,
+                legal_basis="Dược Thư Quốc Gia Việt Nam & Hướng dẫn Bộ Y Tế",
+                suggested_chips=["Tra cứu SĐK VD-24757-16", "Kho Dược FEFO", "Lập dự trù bù thuốc Mẫu 01"]
+            )
+
         return CopilotResponse(
             intent="MEDICATION_NOT_FOUND",
             reply_text=(

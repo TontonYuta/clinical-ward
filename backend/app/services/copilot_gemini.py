@@ -13,12 +13,12 @@ Chuyên môn của bạn:
 3. Thông tư 51/2017/TT-BYT: Xử trí sốc phản vệ, Adrenalin 1mg/1ml tiêm bắp ngay lập tức độ II trở lên.
 4. Nghị định 98/2021/NĐ-CP & TT 05/2022: Quản lý thiết bị y tế loại D can thiệp sự sống, kiểm định IEC 60601-1.
 5. Thông tư 36/2018/TT-BYT (GSP): Quản lý kho FEFO, chuỗi lạnh vắc xin 2.0°C - 8.0°C, nhiệt động học Arrhenius MKT.
-6. Nghị định 151/2017/NĐ-CP & NĐ 114/2024: Kiểm kê tài sản công 31/12.
+6. Dược Thư Quốc Gia Việt Nam & Dược điển Việt Nam V: Chỉ định, liều lượng, cách dùng, tương tác và chống chỉ định thuốc.
 
 Nguyên tắc phản hồi:
+- Trả lời đúng trọng tâm câu hỏi của nhân viên y tế. Nếu hỏi về thuốc, hãy tập trung giải đáp chi tiết: nhóm thuốc, chỉ định, liều dùng chuẩn, cách dùng và lưu ý lâm sàng; tuyệt đối không tự chèn thêm các cảnh báo khoa phòng không liên quan trừ khi người dùng hỏi về ca trực/giao ban.
 - Ngắn gọn, chuyên nghiệp, chuẩn xác từng thuật ngữ y khoa và căn cứ pháp lý.
-- Định dạng Markdown rõ ràng, dùng bullet points, in đậm tên thuốc, liều dùng và văn bản quy phạm.
-- Luôn ưu tiên an toàn tính mạng người bệnh."""
+- Định dạng Markdown rõ ràng, dùng bullet points, in đậm tên thuốc, liều dùng."""
 
 async def query_gemini_models(prompt: str, api_key: str) -> str | None:
     models = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite"]
@@ -67,14 +67,17 @@ async def ask_backend_gemini_copilot(
         cc = cc_res.scalars().first()
         temp = cc.current_temp if cc else 4.5
 
-        context = (
-            f"\n\n[Bối cảnh khoa phòng hiện tại: "
-            f"Người dùng: {user_name} ({user_role}), "
-            f"Nợ ca đêm: {active_debts} phiếu, "
-            f"Vỏ Morphin chưa nộp: {pending_ampoules} vỏ, "
-            f"Sự cố TBYT khẩn: {urgent_tickets}, "
-            f"Nhiệt độ tủ vắc xin: {temp}°C]"
-        )
+        is_shift_query = any(w in query.lower() for w in ["ca trực", "giao ban", "đối soát", "tồn đọng", "khoa phòng", "bàn giao", "tổng quan ca"])
+        context = ""
+        if is_shift_query:
+            context = (
+                f"\n\n[Bối cảnh ca trực hiện tại: "
+                f"Người dùng: {user_name} ({user_role}), "
+                f"Nợ ca đêm: {active_debts} phiếu, "
+                f"Vỏ Morphin chưa nộp: {pending_ampoules} vỏ, "
+                f"Sự cố TBYT khẩn: {urgent_tickets}, "
+                f"Nhiệt độ tủ vắc xin: {temp}°C]"
+            )
 
         return await query_gemini_models(f"{query}{context}", api_key)
     except Exception:

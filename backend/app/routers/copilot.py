@@ -72,14 +72,15 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     # 10. Mượn thuốc khẩn cấp ca đêm & Y lệnh CPOE
     matched_med = find_matched_med(lower_query)
     has_dispense_verb = any(w in lower_query for w in ["mượn", "lấy", "rút", "xuất", "cần", "xin", "tiêm", "kê", "cấp phát", "cho"])
-    is_med_info = any(w in lower_query for w in ["thời gian bán thải", "chỉ định", "chống chỉ định", "tác dụng phụ", "tương tác", "dùng để làm gì", "liều tối đa", "là gì", "dị ứng", "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào"])
+    is_med_info = any(w in lower_query for w in ["thời gian bán thải", "chỉ định", "chống chỉ định", "tác dụng phụ", "tác dụng", "công dụng", "tương tác", "dùng để làm gì", "liều tối đa", "liều dùng", "là gì", "dị ứng", "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào", "thế nào", "như thế nào", "bao nhiêu", "hỏi về", "thông tin"])
     if matched_med is not None and not is_med_info and (has_dispense_verb or any(c.isdigit() for c in query)):
         return await handle_borrow_intent(query, lower_query, user_name)
 
     # 11. Tra cứu Dược Quốc Gia 54.885 SĐK chính xác 100/100
     has_sdk = bool(re.search(r"((?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+)", lower_query))
-    has_drug_ask = any(w in lower_query for w in ["thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư"])
-    if has_sdk or has_drug_ask:
+    is_deep_pharmacology = any(w in lower_query for w in ["thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"])
+    has_drug_ask = any(w in lower_query for w in ["thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "thuốc", "về thuốc", "hỏi về thuốc", "biệt dược", "hoạt chất"]) or (matched_med is not None and is_med_info and not is_deep_pharmacology)
+    if (has_sdk or has_drug_ask) and not is_deep_pharmacology:
         return await lookup_drug_authoritative(query, db)
 
     # 12. Tư vấn lâm sàng sâu bằng Gemini AI Copilot
