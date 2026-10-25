@@ -416,7 +416,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-mf',
-    nationalCode: 'VD-28456-17',
+    nationalCode: 'VD-27564-17',
     brandName: 'Metformin HCl 850mg (Hộp 100 viên nén)',
     activeIngredient: 'Metformin hydroclorid',
     concentration: '850mg',
@@ -432,12 +432,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 240,
     batchCount: 1,
-    searchAliases: ['mf', 'metformin', 'glucophage', 'vd-28456-17', 'tieu duong man tinh'],
-    note: 'SĐK: VD-28456-17 | NSX: Dược Hậu Giang (DHG Pharma) | Kho BV: 240 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-MF25-C1)',
+    searchAliases: ['mf', 'metformin', 'glumeform', 'glucophage', 'vd-27564-17', 'tieu duong man tinh'],
+    note: 'SĐK: VD-27564-17 (Mã ĐD: 893110309424) | NSX: Dược Hậu Giang (DHG Pharma) | Kho BV: 240 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-MF25-C1)',
     clinicalProfile: {
       officialSource: {
         documentName: 'Dược thư Quốc gia Việt Nam & Hướng dẫn Chẩn đoán Đái tháo đường typ 2 Bộ Y Tế',
-        registrationNumber: 'VD-28456-17',
+        registrationNumber: 'VD-27564-17',
         manufacturer: 'Công ty Cổ phần Dược Hậu Giang (DHG Pharma)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Việt Nam V'
@@ -453,7 +453,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-am',
-    nationalCode: 'VD-27654-17',
+    nationalCode: 'VD-27371-17',
     brandName: 'Amlodipin 5mg (Hộp 30 viên)',
     activeIngredient: 'Amlodipin besylat',
     concentration: '5mg',
@@ -469,12 +469,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 45,
     batchCount: 1,
-    searchAliases: ['am', 'amlodipin', 'norvasc', 'vd-27654-17', 'tang huyet ap man tinh'],
-    note: 'SĐK: VD-27654-17 | NSX: Dược phẩm Domesco | Kho BV: 45 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-AM25-E4)',
+    searchAliases: ['am', 'amlodipin', 'norvasc', 'vd-27371-17', 'tang huyet ap man tinh'],
+    note: 'SĐK: VD-27371-17 | NSX: Dược phẩm Domesco | Kho BV: 45 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-AM25-E4)',
     clinicalProfile: {
       officialSource: {
         documentName: 'Dược thư Quốc gia Việt Nam & Khuyến cáo Điều trị Tăng huyết áp VNHA/VSH',
-        registrationNumber: 'VD-27654-17',
+        registrationNumber: 'VD-27371-17',
         manufacturer: 'Công ty Cổ phần Xuất nhập khẩu Y tế Domesco',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Việt Nam V'
@@ -490,7 +490,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-ls',
-    nationalCode: 'VD-29871-18',
+    nationalCode: 'VD-26431-17',
     brandName: 'Losartan Kali 50mg (Hộp 30 viên)',
     activeIngredient: 'Losartan kali',
     concentration: '50mg',
@@ -506,12 +506,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 310,
     batchCount: 1,
-    searchAliases: ['ls', 'losartan', 'cozaar', 'vd-29871-18', 'huyet ap bao ve than'],
-    note: 'SĐK: VD-29871-18 | NSX: Dược phẩm Pymepharco | Kho BV: 310 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-LS26-G2)',
+    searchAliases: ['ls', 'losartan', 'pyzacar', 'cozaar', 'vd-26431-17', 'huyet ap bao ve than'],
+    note: 'SĐK: VD-26431-17 | NSX: Dược phẩm Pymepharco | Kho BV: 310 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-LS26-G2)',
     clinicalProfile: {
       officialSource: {
         documentName: 'Dược thư Quốc gia Việt Nam & Hướng dẫn Tăng huyết áp Bộ Y Tế',
-        registrationNumber: 'VD-29871-18',
+        registrationNumber: 'VD-26431-17',
         manufacturer: 'Công ty Cổ phần Pymepharco',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Việt Nam V'
@@ -527,7 +527,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-sb',
-    nationalCode: 'VN-18452-14',
+    nationalCode: 'VN-18791-15',
     brandName: 'Salbutamol 100mcg (Ventolin Inhaler 200 liều)',
     activeIngredient: 'Salbutamol sulfat',
     concentration: '100mcg/liều',
@@ -543,12 +543,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 95,
     batchCount: 1,
-    searchAliases: ['sb', 'salbutamol', 'ventolin', 'inhaler', 'vn-18452-14', 'hen phe quan'],
-    note: 'SĐK: VN-18452-14 | NSX: Glaxo Wellcome S.A | Kho BV: 95 Lọ (1 lô Kho Ngoại Trú BHYT: LOT-SB25-H9)',
+    searchAliases: ['sb', 'salbutamol', 'ventolin', 'inhaler', 'vn-18791-15', 'hen phe quan'],
+    note: 'SĐK: VN-18791-15 | NSX: Glaxo Wellcome S.A (Tây Ban Nha) | Kho BV: 95 Lọ (1 lô Kho Ngoại Trú BHYT: LOT-SB25-H9)',
     clinicalProfile: {
       officialSource: {
         documentName: 'Dược thư Quốc gia Việt Nam & Phác đồ Hen phế quản Bộ Y Tế (GINA 2026)',
-        registrationNumber: 'VN-18452-14',
+        registrationNumber: 'VN-18791-15',
         manufacturer: 'Glaxo Wellcome S.A (Tây Ban Nha)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Châu Âu (EP)'
@@ -564,7 +564,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-ac',
-    nationalCode: 'VN-19342-15',
+    nationalCode: 'VN-20517-17',
     brandName: 'Amoxicillin + Clavulanic 1g (Augmentin 1g)',
     activeIngredient: 'Amoxicillin + Acid clavulanic',
     concentration: '1g (875mg/125mg)',
@@ -580,13 +580,13 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 35,
     batchCount: 1,
-    searchAliases: ['ac', 'amox', 'augmentin', 'amoxicillin clavulanic', 'vn-19342-15'],
-    note: 'SĐK: VN-19342-15 | NSX: Glaxo Operations UK Limited | Kho BV: 35 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-AC24-P2)',
+    searchAliases: ['ac', 'amox', 'augmentin', 'amoxicillin clavulanic', 'vn-20517-17'],
+    note: 'SĐK: VN-20517-17 | NSX: GlaxoSmithKline (GSK) | Kho BV: 35 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-AC24-P2)',
     clinicalProfile: {
       officialSource: {
         documentName: 'Dược thư Quốc gia Việt Nam & Hướng dẫn sử dụng Kháng sinh Bộ Y Tế',
-        registrationNumber: 'VN-19342-15',
-        manufacturer: 'Glaxo Operations UK Limited (Vương quốc Anh)',
+        registrationNumber: 'VN-20517-17',
+        manufacturer: 'GlaxoSmithKline (GSK) - Vương quốc Anh',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Anh (BP)'
       },
@@ -601,7 +601,7 @@ const HOSPITAL_SYNCED_ITEMS = [
   },
   {
     id: 'dav-hosp-pc',
-    nationalCode: 'VD-25432-16',
+    nationalCode: 'VD-20571-14',
     brandName: 'Paracetamol 500mg (Hộp 100 viên)',
     activeIngredient: 'Paracetamol',
     concentration: '500mg',
@@ -617,12 +617,12 @@ const HOSPITAL_SYNCED_ITEMS = [
     wardStockCount: 0,
     hospitalStockCount: 520,
     batchCount: 1,
-    searchAliases: ['pc', 'paracetamol', 'panadol', 'hapacol', 'vd-25432-16', 'ha sot giam dau'],
-    note: 'SĐK: VD-25432-16 | NSX: Dược Hậu Giang (DHG Pharma) | Kho BV: 520 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-PC26-R8)',
+    searchAliases: ['pc', 'paracetamol', 'panadol', 'hapacol', 'vd-20571-14', 'ha sot giam dau'],
+    note: 'SĐK: VD-20571-14 | NSX: Dược Hậu Giang (DHG Pharma) | Kho BV: 520 Hộp (1 lô Kho Ngoại Trú BHYT: LOT-PC26-R8)',
     clinicalProfile: {
       officialSource: {
-        documentName: 'Dược thư Quốc gia Việt Nam & QĐ 521/QĐ-QLD',
-        registrationNumber: 'VD-25432-16',
+        documentName: 'Dược thư Quốc gia Việt Nam & QĐ Cấp phép QLD',
+        registrationNumber: 'VD-20571-14',
         manufacturer: 'Công ty Cổ phần Dược Hậu Giang (DHG Pharma)',
         approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
         standardPharmacopeia: 'Dược điển Việt Nam V'
