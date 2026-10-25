@@ -32,6 +32,10 @@ export default defineConfig(() => {
     },
     preview: {
       proxy: {
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
         '/api-dav': {
           target: 'https://dichvucong.dav.gov.vn',
           changeOrigin: true,

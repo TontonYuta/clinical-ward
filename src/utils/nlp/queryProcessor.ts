@@ -20,6 +20,7 @@ import {
 } from './intents/utilityIntent';
 import { matchBorrowIntent, handleBorrowIntent } from './intents/borrowIntent';
 import { matchMedicationSafetyIntent, handleMedicationSafetyIntent } from './intents/medicationSafetyIntent';
+import { matchBusinessIntent, handleBusinessOverviewIntent } from './intents/businessIntent';
 
 export function processClinicalUserQuery(
   rawInput: string,
@@ -28,6 +29,11 @@ export function processClinicalUserQuery(
   const text = rawInput.trim();
   const lower = text.toLowerCase();
   const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+  // 0. Hospital Business Operations & 10 Core Workflows
+  if (matchBusinessIntent(lower)) {
+    return handleBusinessOverviewIntent(nowStr);
+  }
 
   // 1. Legal Protocols & Guides
   if (matchLegalIntent(lower)) {

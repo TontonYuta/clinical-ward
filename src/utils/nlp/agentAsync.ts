@@ -27,38 +27,11 @@ export async function processClinicalAgentQueryAsync(
   });
 
   // Nếu câu lệnh tạo thẻ tương tác (Action Card) hoặc hành động dữ liệu -> Phản hồi ngay (0ms, 0 tokens)
-  if (localResult.card || localResult.actionPayload) {
+  if (localResult.replyMessage?.card || localResult.actionPayload) {
     return localResult;
   }
 
-  // 2. Với các câu hỏi lâm sàng tự do, dược lý, tra cứu: Sử dụng Gemini Flash-Lite tối ưu chi phí
-  if (isCloudAIAvailable()) {
-    try {
-      const geminiAnswer = await askGeminiClinicalCopilot(rawInput, {
-        activeDebtsCount: currentState.debts.filter(d => d.status === 'debt').length,
-        pendingAmpoulesCount: currentState.debts.filter(d => d.itemType === 'Thuốc gây nghiện' && !d.ampouleReturned).length,
-        urgentTicketsCount: currentState.tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length,
-        lowStockBatchesCount: currentState.batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length,
-        coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5,
-        role
-      });
-
-      if (geminiAnswer) {
-        const replyMessage: ChatMessage = {
-          id: `msg-agent-gemini-${Date.now()}`,
-          sender: 'agent',
-          text: geminiAnswer,
-          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          suggestedChips: ['Đối soát ca trực 07:00 AM', 'Lập phiếu dự trù Mẫu 01', 'Kiểm tra tồn kho FEFO']
-        };
-        return { replyMessage };
-      }
-    } catch (e) {
-      console.warn('Gemini query bypassed:', e);
-    }
-  }
-
-  // 3. Nếu chưa kích hoạt Cloud AI, thử gọi qua FastAPI Copilot Backend
+  // 2. Thử gọi qua FastAPI Copilot Backend (nắm giữ 54.885 CSDL Cục QLD & tồn kho thực tế)
   try {
     const backendData = await chatCopilotApi(rawInput, role, name);
     if (backendData && backendData.reply_text && backendData.intent !== 'GENERAL_CLINICAL_ASSISTANCE') {
@@ -99,9 +72,36 @@ export async function processClinicalAgentQueryAsync(
         suggestedChips: backendData.suggested_chips || []
       };
 
-      return { replyMessage, actionPayload };
+      return { replyMessage, actionPayload, card };
     }
   } catch {}
+
+  // 3. Với các câu hỏi lâm sàng tự do, dược lý khi backend offline: Sử dụng Gemini Flash-Lite tối ưu chi phí
+  if (isCloudAIAvailable()) {
+    try {
+      const geminiAnswer = await askGeminiClinicalCopilot(rawInput, {
+        activeDebtsCount: currentState.debts.filter(d => d.status === 'debt').length,
+        pendingAmpoulesCount: currentState.debts.filter(d => d.itemType === 'Thuốc gây nghiện' && !d.ampouleReturned).length,
+        urgentTicketsCount: currentState.tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length,
+        lowStockBatchesCount: currentState.batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length,
+        coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5,
+        role
+      });
+
+      if (geminiAnswer) {
+        const replyMessage: ChatMessage = {
+          id: `msg-agent-gemini-${Date.now()}`,
+          sender: 'agent',
+          text: geminiAnswer,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          suggestedChips: ['Đối soát ca trực 07:00 AM', 'Lập phiếu dự trù Mẫu 01', 'Kiểm tra tồn kho FEFO']
+        };
+        return { replyMessage };
+      }
+    } catch (e) {
+      console.warn('Gemini query bypassed:', e);
+    }
+  }
 
   // 4. Fallback cuối cùng: Trả về hướng dẫn lâm sàng
   return localResult;

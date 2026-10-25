@@ -36,7 +36,7 @@ export function matchMedicationSafetyIntent(lower: string): boolean {
     'cho 1 lọ', 'cho 1 ống', 'lấy gấp 1', 'tiêm gấp', 'mượn khẩn', 'xuất khẩn', 'tiêm tĩnh mạch 1'
   ]);
 
-  return (hasIndicationQuery || hasAllergyOrComponentQuery || hasSafetyKeyword) && !hasExplicitDispenseAction;
+  return (hasIndicationQuery || hasAllergyOrComponentQuery || hasSafetyKeyword) && !hasExplicitDispenseAction && Boolean(findMatchedMed(lower));
 }
 
 export function handleMedicationSafetyIntent(
@@ -44,7 +44,17 @@ export function handleMedicationSafetyIntent(
   lower: string,
   nowStr: string
 ): ProcessedQueryResult {
-  const matched = findMatchedMed(lower) || MED_CATALOG[0];
+  const matched = findMatchedMed(lower);
+  if (!matched) {
+    return {
+      replyMessage: {
+        id: `msg-agent-${Date.now()}`,
+        sender: 'agent',
+        text: 'Vui lòng cung cấp chính xác tên thuốc hoặc số đăng ký để tra cứu cơ sở dữ liệu quốc gia 54.885 thuốc.',
+        timestamp: nowStr
+      }
+    };
+  }
   const profile = getMedicationClinicalProfile(matched.name);
   const comp = profile.composition;
   const allergy = profile.allergyProfile;

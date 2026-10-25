@@ -36,20 +36,28 @@ import {
 } from './DiagnosticsReportCards';
 
 interface ActionCardDispatcherProps {
-  msg: ChatMessage;
+  msg?: ChatMessage;
+  card?: AgentActionCard;
+  messageId?: string;
   onExecuteCardAction?: (messageId: string, actionType: string, cardData: any) => void;
+  onExecuteAction?: (messageId: string, actionType: string, cardData: any) => void;
   onSelectTab?: (tab: DashboardTab) => void;
   onOpenLegalDocs?: () => void;
 }
 
 export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
   msg,
+  card: cardProp,
+  messageId: messageIdProp,
   onExecuteCardAction,
+  onExecuteAction,
   onSelectTab,
   onOpenLegalDocs
 }) => {
-  const card = msg.card;
+  const card = cardProp || msg?.card;
   if (!card) return null;
+  const messageId = messageIdProp || msg?.id || '';
+  const executeFn = onExecuteAction || onExecuteCardAction;
   const isExecuted = card.status === 'executed';
 
   return (
@@ -158,8 +166,8 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
         {card.primaryActionLabel && !isExecuted && (
           <button
             onClick={() => {
-              if (card.primaryActionType && onExecuteCardAction) {
-                onExecuteCardAction(msg.id, card.primaryActionType, card.data);
+              if (card.primaryActionType && executeFn) {
+                executeFn(messageId, card.primaryActionType, card.data);
               } else if (card.targetTab && onSelectTab) {
                 onSelectTab(card.targetTab);
               }

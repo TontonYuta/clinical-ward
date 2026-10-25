@@ -1234,6 +1234,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       setIsAuditTrailOpen(true);
     } else if (actionType === 'OPEN_LEGAL_MODAL') {
       setIsLegalDocsOpen(true);
+    } else if (actionType === 'OPEN_REGISTRY_MODAL') {
+      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('registry')) {
+        setCurrentTab('registry');
+      }
+      markExecuted();
+    } else if (actionType === 'OPEN_FEFO_MODAL') {
+      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('fefo')) {
+        setCurrentTab('fefo');
+      }
+      markExecuted();
     } else if (actionType === 'OPEN_PRINTABLE_FORM') {
       const formType = cardData?.formType || cardData?.form_type || 'EMERGENCY_BORROW_TICKET';
       setPrintableInitialType(formType as any);
