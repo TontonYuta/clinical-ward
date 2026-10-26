@@ -64,7 +64,22 @@ export async function queryOfflineRegistry(
     packagingSpec: d.packagingSpec, standardPharmacopeia: d.standardPharmacopeia, shelfLife: d.shelfLife,
     manufacturer: d.manufacturer, country: d.country, applicantName: d.applicantName, approvalDecision: d.approvalDecision,
     hdsdPath: d.hdsdPath, labelPath: d.labelPath,
-    clinicalProfile: d.clinicalProfile
+    clinicalProfile: d.clinicalProfile,
+    atcCode: d.atcCode || d.atc_code,
+    drugClass: d.drugClass || d.drug_class,
+    indications: d.indications,
+    contraindications: d.contraindications,
+    precautions: d.precautions,
+    pregnancyWarning: d.pregnancyWarning || d.pregnancy_warning,
+    adultDosage: d.adultDosage || d.adult_dosage,
+    pediatricDosage: d.pediatricDosage || d.pediatric_dosage,
+    renalAdjustment: d.renalAdjustment || d.renal_adjustment,
+    hepaticAdjustment: d.hepaticAdjustment || d.hepatic_adjustment,
+    adverseEffects: d.adverseEffects || d.adverse_effects,
+    drugInteractions: d.drugInteractions || d.drug_interactions,
+    overdoseTreatment: d.overdoseTreatment || d.overdose_treatment,
+    antidote: d.antidote,
+    clinicalSource: d.clinicalSource || d.clinical_source,
   }));
   return { items, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)), groupStats };
 }

@@ -11,18 +11,13 @@ import { InventoryBatch } from '../../types/pharmacy';
 import { isVerificationLinksVisible, setVerificationLinksVisibility } from '../../config/clinicalVerification';
 import { getNationalDrugRegistryApi } from '../../services/api';
 import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
-import { NationalDrugTabs } from './NationalDrugRegistry/NationalDrugTabs';
+import { NationalDrugTabs, GROUP_STYLES } from './NationalDrugRegistry/NationalDrugTabs';
 import { queryOfflineRegistry } from './NationalDrugRegistry/offlineRegistry';
 import { DavDrugDetailModal } from './DavDrugDetailModal';
 
 interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; inventoryBatches?: InventoryBatch[]; }
 
 const PAGE_SIZE = 12;
-const GROUP_STYLES: Record<string, string> = {
-  'Kháng sinh': 'bg-blue-50 text-blue-700 border-blue-200/60', 'Thuốc gây nghiện': 'bg-amber-50 text-amber-800 border-amber-200/60', 'Thuốc cấp cứu': 'bg-rose-50 text-rose-700 border-rose-200/60', 'Thuốc nguy cơ cao': 'bg-red-50 text-red-700 border-red-200/60',
-  'Dịch truyền': 'bg-cyan-50 text-cyan-800 border-cyan-200/60', 'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60', 'Vật tư tiêu hao': 'bg-emerald-50 text-emerald-800 border-emerald-200/60', 'Vắc xin & Chuỗi lạnh': 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
-};
-
 export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication, inventoryBatches }) => {
   const [drugs, setDrugs] = useState<MasterMedication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,7 +51,13 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           hospitalStockCount: 0, searchAliases: [i.brand_name.toLowerCase()], note: i.note,
           packagingSpec: i.packaging_spec, standardPharmacopeia: i.standard_pharmacopeia, shelfLife: i.shelf_life,
           manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name, approvalDecision: i.approval_decision,
-          hdsdPath: i.hdsd_path || i.hdsdPath, labelPath: i.label_path || i.labelPath
+          hdsdPath: i.hdsd_path || i.hdsdPath, labelPath: i.label_path || i.labelPath,
+          atcCode: i.atc_code || i.atcCode, drugClass: i.drug_class || i.drugClass, indications: i.indications,
+          contraindications: i.contraindications, precautions: i.precautions, pregnancyWarning: i.pregnancy_warning || i.pregnancyWarning,
+          adultDosage: i.adult_dosage || i.adultDosage, pediatricDosage: i.pediatric_dosage || i.pediatricDosage,
+          renalAdjustment: i.renal_adjustment || i.renalAdjustment, hepaticAdjustment: i.hepatic_adjustment || i.hepaticAdjustment,
+          adverseEffects: i.adverse_effects || i.adverseEffects, drugInteractions: i.drug_interactions || i.drugInteractions,
+          overdoseTreatment: i.overdose_treatment || i.overdoseTreatment, antidote: i.antidote, clinicalSource: i.clinical_source || i.clinicalSource,
         }));
         setDrugs(mapped); setTotalCount(data.total || mapped.length); setTotalPages(data.total_pages || 1);
         if (data.group_stats) setGroupStats(data.group_stats);

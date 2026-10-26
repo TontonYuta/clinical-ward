@@ -13,6 +13,17 @@ interface NationalDrugTabsProps {
   totalCount?: number;
 }
 
+export const GROUP_STYLES: Record<string, string> = {
+  'Kháng sinh': 'bg-blue-50 text-blue-700 border-blue-200/60',
+  'Thuốc gây nghiện': 'bg-amber-50 text-amber-800 border-amber-200/60',
+  'Thuốc cấp cứu': 'bg-rose-50 text-rose-700 border-rose-200/60',
+  'Thuốc nguy cơ cao': 'bg-red-50 text-red-700 border-red-200/60',
+  'Dịch truyền': 'bg-cyan-50 text-cyan-800 border-cyan-200/60',
+  'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60',
+  'Vật tư tiêu hao': 'bg-emerald-50 text-emerald-800 border-emerald-200/60',
+  'Vắc xin & Chuỗi lạnh': 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
+};
+
 export const REGISTRY_TABS: { id: string; label: string }[] = [
   { id: 'all', label: 'Tất cả 55k SĐK' },
   { id: 'Thuốc gây nghiện', label: 'Gây nghiện' },

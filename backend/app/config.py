@@ -13,11 +13,14 @@ for cand in [".env.local", "../.env.local", "../../.env.local"]:
                     os.environ.setdefault(k.strip(), v.strip().strip("'\""))
         break
 
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_DEFAULT_DB_PATH = os.path.join(_BACKEND_DIR, "clinical_hospital.db")
+
 class Settings(BaseModel):
     APP_NAME: str = "Hệ Thống Quản Lý Kho Dược, Vật Tư & Thiết Bị Y Tế Lâm Sàng"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "bme_pharmacy_audit_secret_key_2026")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./clinical_hospital.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}")
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY") or os.getenv("VITE_GEMINI_API_KEY")
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",

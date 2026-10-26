@@ -4,10 +4,11 @@
  * Modal Giấy Công Bố Thuốc Hành Chính - Đồng bộ CSDL Cục Quản Lý Dược (<=200 LOC)
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, ShieldCheck, Package, CheckCircle2, ArrowUpRight } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
+import { getDrugDetailApi } from '../../services/api';
 import { DavAdministrativeBlocks } from './DavDrugDetail/DavAdministrativeBlocks';
 import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
 import { DavClinicalKnowledgeBlock } from './DavDrugDetail/DavClinicalKnowledgeBlock';
@@ -31,41 +32,47 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   const strength = batch?.concentration || drug?.concentration;
   const davPortalUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}`;
 
+  const [liveDrug, setLiveDrug] = useState<any>(null);
+
+  useEffect(() => {
+    if (!isOpen || !sdk || sdk === 'Chưa cập nhật') return;
+    let active = true;
+    getDrugDetailApi(sdk).then((res) => { if (active && res) setLiveDrug(res); }).catch(() => {});
+    return () => { active = false; };
+  }, [isOpen, sdk]);
+
   const adminData = {
-    dosageForm: batch?.dosageForm || drug?.dosageForm,
-    packagingSpec: batch?.packagingSpec || drug?.packagingSpec,
-    standardPharmacopeia: batch?.standardPharmacopeia || drug?.standardPharmacopeia,
-    shelfLife: batch?.shelfLife || drug?.shelfLife,
-    route: batch?.route || drug?.route,
-    category: batch?.category || drug?.group,
-    isControlledSubstance: batch?.isControlledSubstance || drug?.isControlled,
-    manufacturer: batch?.manufacturer || drug?.manufacturer,
-    manufacturerAddress: batch?.manufacturerAddress || drug?.manufacturerAddress,
-    country: batch?.country || drug?.country,
-    applicantName: batch?.applicantName || drug?.applicantName,
-    applicantAddress: batch?.applicantAddress || drug?.applicantAddress,
-    applicantCountry: batch?.applicantCountry || drug?.applicantCountry,
-    approvalDecision: batch?.approvalDecision || drug?.approvalDecision,
+    dosageForm: liveDrug?.dosage_form || batch?.dosageForm || drug?.dosageForm,
+    packagingSpec: liveDrug?.packaging_spec || batch?.packagingSpec || drug?.packagingSpec,
+    standardPharmacopeia: liveDrug?.standard_pharmacopeia || batch?.standardPharmacopeia || drug?.standardPharmacopeia,
+    shelfLife: liveDrug?.shelf_life || batch?.shelfLife || drug?.shelfLife,
+    route: liveDrug?.route || batch?.route || drug?.route,
+    category: liveDrug?.group || batch?.category || drug?.group,
+    isControlledSubstance: liveDrug?.is_controlled ?? batch?.isControlledSubstance ?? drug?.isControlled,
+    manufacturer: liveDrug?.manufacturer || batch?.manufacturer || drug?.manufacturer,
+    country: liveDrug?.country || batch?.country || drug?.country,
+    applicantName: liveDrug?.applicant_name || batch?.applicantName || drug?.applicantName,
+    approvalDecision: liveDrug?.approval_decision || batch?.approvalDecision || drug?.approvalDecision,
     decisionDate: batch?.decisionDate || drug?.decisionDate,
     registryExpiryDate: batch?.registryExpiryDate || drug?.registryExpiryDate,
   };
 
   const clinicalData = {
-    atcCode: batch?.atcCode || drug?.atcCode,
-    drugClass: batch?.drugClass || drug?.drugClass,
-    indications: batch?.indications || drug?.indications,
-    contraindications: batch?.contraindications || drug?.contraindications,
-    precautions: batch?.precautions || drug?.precautions,
-    pregnancyWarning: batch?.pregnancyWarning || drug?.pregnancyWarning,
-    adultDosage: batch?.adultDosage || drug?.adultDosage,
-    pediatricDosage: batch?.pediatricDosage || drug?.pediatricDosage,
-    renalAdjustment: batch?.renalAdjustment || drug?.renalAdjustment,
-    hepaticAdjustment: batch?.hepaticAdjustment || drug?.hepaticAdjustment,
-    adverseEffects: batch?.adverseEffects || drug?.adverseEffects,
-    drugInteractions: batch?.drugInteractions || drug?.drugInteractions,
-    overdoseTreatment: batch?.overdoseTreatment || drug?.overdoseTreatment,
-    antidote: batch?.antidote || drug?.antidote,
-    clinicalSource: batch?.clinicalSource || drug?.clinicalSource,
+    atcCode: liveDrug?.atc_code || batch?.atcCode || drug?.atcCode,
+    drugClass: liveDrug?.drug_class || batch?.drugClass || drug?.drugClass,
+    indications: liveDrug?.indications || batch?.indications || drug?.indications,
+    contraindications: liveDrug?.contraindications || batch?.contraindications || drug?.contraindications,
+    precautions: liveDrug?.precautions || batch?.precautions || drug?.precautions,
+    pregnancyWarning: liveDrug?.pregnancy_warning || batch?.pregnancyWarning || drug?.pregnancyWarning,
+    adultDosage: liveDrug?.adult_dosage || batch?.adultDosage || drug?.adultDosage,
+    pediatricDosage: liveDrug?.pediatric_dosage || batch?.pediatricDosage || drug?.pediatricDosage,
+    renalAdjustment: liveDrug?.renal_adjustment || batch?.renalAdjustment || drug?.renalAdjustment,
+    hepaticAdjustment: liveDrug?.hepatic_adjustment || batch?.hepaticAdjustment || drug?.hepaticAdjustment,
+    adverseEffects: liveDrug?.adverse_effects || batch?.adverseEffects || drug?.adverseEffects,
+    drugInteractions: liveDrug?.drug_interactions || batch?.drugInteractions || drug?.drugInteractions,
+    overdoseTreatment: liveDrug?.overdose_treatment || batch?.overdoseTreatment || drug?.overdoseTreatment,
+    antidote: liveDrug?.antidote || batch?.antidote || drug?.antidote,
+    clinicalSource: liveDrug?.clinical_source || batch?.clinicalSource || drug?.clinicalSource,
   };
 
   return (

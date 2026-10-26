@@ -42,7 +42,7 @@ export default defineConfig(() => {
           rewrite: (path) => path.replace(/^\/api-dav/, ''),
         },
         '/api': {
-          target: 'https://clinical-ward.vercel.app',
+          target: process.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000',
           changeOrigin: true,
         },
       },
