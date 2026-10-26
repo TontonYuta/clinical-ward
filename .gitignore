@@ -51,5 +51,10 @@ data/vietnam_drug_registry/dav_master_registry.json
 # Archive folder for filtered junk, mock & unverified files
 TEMP/
 
+# Heavy PDF documents (Keep strictly in local workspace only)
+*.pdf
+**/*.pdf
+
+
 
 

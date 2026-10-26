@@ -17,15 +17,25 @@ async def test_clinical_drug_enrichment_and_empty_handling():
             herbal_stmt = select(DavNationalDrug).where(DavNationalDrug.active_ingredient.like('%Cao đặc Nấm linh chi%')).limit(1)
             herbal_drug = (await session.execute(herbal_stmt)).scalar_one_or_none()
 
-        # Test enriched drug endpoint
+        # Test enriched drug endpoint (ensuring 100% complete clinical data)
         res_para = await client.get(f"/api/v1/registry/{para_drug.national_code}")
         assert res_para.status_code == 200
         data_para = res_para.json()
         assert data_para["atc_code"] is not None
         assert "N02BE01" in data_para["atc_code"]
+        assert data_para["indications"] is not None
+        assert len(data_para["indications"]) > 50
         assert data_para["contraindications"] is not None
         assert "quá mẫn" in data_para["contraindications"].lower()
         assert data_para["adult_dosage"] is not None
+        assert data_para["pediatric_dosage"] is not None
+        assert "mg/kg" in data_para["pediatric_dosage"]
+        assert data_para["renal_adjustment"] is not None
+        assert data_para["hepatic_adjustment"] is not None
+        assert data_para["pregnancy_warning"] is not None
+        assert data_para["precautions"] is not None
+        assert data_para["adverse_effects"] is not None
+        assert data_para["drug_interactions"] is not None
         assert data_para["clinical_source"] == "Dược thư Quốc gia Việt Nam"
 
         # Test unmatched herbal drug endpoint (must safely be None / empty)
