@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -120,23 +121,26 @@ async def get_drug_by_national_code(national_code: str, db: AsyncSession = Depen
         from app.services.dav_document_service import resolve_and_cache_drug_documents
         await resolve_and_cache_drug_documents(db, drug)
 
-    if drug.clinical_monograph_id and (not drug.indications or not drug.adverse_effects):
+    if not drug.indications or not drug.adverse_effects:
         from app.models.registry import ClinicalDrugMonograph
-        mono_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == drug.clinical_monograph_id))
-        mono = mono_res.scalar_one_or_none()
+        mono = None
+        if drug.clinical_monograph_id:
+            m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == drug.clinical_monograph_id))
+            mono = m_res.scalar_one_or_none()
+        if not mono and drug.active_ingredient:
+            inn_token = re.split(r"[\s\d%,+;]+", drug.active_ingredient.strip())[0]
+            if len(inn_token) >= 3:
+                m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.inn.ilike(f"%{inn_token}%")).limit(1))
+                mono = m_res.scalar_one_or_none()
         if mono:
-            if not drug.contraindications: drug.contraindications = mono.contraindications
-            if not drug.adult_dosage: drug.adult_dosage = mono.adult_dosage
-            if not drug.indications: drug.indications = mono.indications
-            if not drug.adverse_effects: drug.adverse_effects = mono.adverse_effects
-            if not drug.precautions: drug.precautions = mono.precautions
-            if not drug.pregnancy_warning: drug.pregnancy_warning = mono.pregnancy_warning
-            if not drug.pediatric_dosage: drug.pediatric_dosage = mono.pediatric_dosage
-            if not drug.renal_adjustment: drug.renal_adjustment = mono.renal_adjustment
-            if not drug.hepatic_adjustment: drug.hepatic_adjustment = mono.hepatic_adjustment
-            if not drug.drug_interactions: drug.drug_interactions = mono.drug_interactions
-            if not drug.overdose_treatment: drug.overdose_treatment = mono.overdose_treatment
-            if not drug.antidote: drug.antidote = mono.antidote
+            fields = ("contraindications", "adult_dosage", "indications", "adverse_effects", "precautions", "pregnancy_warning", "pediatric_dosage", "renal_adjustment", "hepatic_adjustment", "drug_interactions", "overdose_treatment", "antidote")
+            for fld in fields:
+                if not getattr(drug, fld, None):
+                    setattr(drug, fld, getattr(mono, fld, None))
+            if not drug.clinical_monograph_id: drug.clinical_monograph_id = mono.id
+            if not drug.atc_code and mono.atc_code: drug.atc_code = mono.atc_code
+            if not drug.drug_class and mono.drug_class: drug.drug_class = mono.drug_class
+            if not drug.clinical_source: drug.clinical_source = "Dược thư Quốc gia Việt Nam 2022"
 
     return drug
 
