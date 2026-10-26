@@ -12,6 +12,7 @@ import { getDrugDetailApi } from '../../services/api';
 import { DavAdministrativeBlocks } from './DavDrugDetail/DavAdministrativeBlocks';
 import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
 import { DavClinicalKnowledgeBlock } from './DavDrugDetail/DavClinicalKnowledgeBlock';
+import { formatContraindicationsList } from '../../utils/clinicalFormatter';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
@@ -106,22 +107,37 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
           {/* Cột Trái (5/12): Cảnh Báo An Toàn, Hành Chính, Mẫu Nhãn, Lô Kho */}
           <div className="lg:col-span-5 space-y-3.5">
             {clinicalData.contraindications && (
-              <div className="bg-rose-50 border-l-4 border-rose-600 border-y border-r border-rose-200 rounded p-3.5 space-y-1 shadow-2xs">
-                <div className="flex items-center gap-1.5 text-rose-900 font-bold text-xs uppercase tracking-wide">
-                  <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Chống chỉ định tuyệt đối</span>
+              <div className="bg-rose-50 border-l-4 border-rose-600 border-y border-r border-rose-200 rounded-lg p-3.5 space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between text-rose-900 font-bold text-xs uppercase tracking-wide">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Chống chỉ định tuyệt đối</span>
+                  </div>
+                  <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Cấm kỵ</span>
                 </div>
-                <p className="text-sm text-rose-950 font-medium leading-relaxed whitespace-pre-line pl-5">{clinicalData.contraindications}</p>
+                <div className="space-y-1 pl-4">
+                  {formatContraindicationsList(clinicalData.contraindications).map((c, i) => (
+                    <div key={i} className="text-xs sm:text-sm text-rose-950 font-semibold flex items-start gap-1.5 leading-snug">
+                      <span className="text-rose-600 font-bold">•</span>
+                      <span>{c}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {clinicalData.antidote && (
-              <div className="bg-blue-50 border-l-4 border-blue-600 border-y border-r border-blue-200 rounded p-3.5 flex items-start gap-2 shadow-2xs">
-                <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-xs font-bold uppercase text-blue-900">Thuốc giải độc đặc hiệu (Antidote):</span>
-                  <p className="text-sm text-blue-950 font-bold mt-0.5">{clinicalData.antidote}</p>
+              <div className="bg-blue-50 border-l-4 border-blue-600 border-y border-r border-blue-200 rounded-lg p-3.5 space-y-1.5 shadow-2xs">
+                <div className="flex items-center justify-between text-blue-950 font-bold text-xs uppercase tracking-wide">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>Thuốc giải độc đặc hiệu (Antidote)</span>
+                  </div>
+                  <span className="text-2xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">Cấp cứu</span>
                 </div>
+                <p className="text-xs sm:text-sm text-blue-950 font-bold leading-relaxed pl-4">
+                  {clinicalData.antidote}
+                </p>
               </div>
             )}
 

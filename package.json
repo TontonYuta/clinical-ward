@@ -11,7 +11,7 @@
     "lint": "tsc --noEmit",
     "test:kb": "tsx scripts/verify_clinical_knowledge_base.ts",
     "test:chatbot": "tsx scripts/test_chatbot_suite.ts",
-    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts"
+    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_clinical_formatter.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
