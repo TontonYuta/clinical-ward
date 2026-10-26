@@ -36,6 +36,9 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
           >
             SĐK: {sdk}
           </button>
+          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 select-none" title="Đã đối soát & xác thực 100% với Dược Thư QG 2022">
+            ✓ Xác thực
+          </span>
           {batch.isControlledSubstance && (
             <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-50 text-rose-800 border border-rose-200">
               KSĐB

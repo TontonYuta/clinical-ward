@@ -177,9 +177,9 @@ async def get_clinical_monograph(inn_or_id: str, db: AsyncSession = Depends(get_
             func.lower(ClinicalDrugMonograph.inn) == inn_or_id.lower(),
             func.lower(ClinicalDrugMonograph.atc_code) == inn_or_id.lower()
         )
-    )
+    ).order_by(ClinicalDrugMonograph.id.desc()).limit(1)
     res = await db.execute(stmt)
-    mono = res.scalar_one_or_none()
+    mono = res.scalars().first()
     if not mono:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy chuyên luận Dược Thư cho '{inn_or_id}'")
     return mono

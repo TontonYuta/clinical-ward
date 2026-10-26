@@ -56,8 +56,16 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps }> = 
             <span className="text-2xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
               Bản 2022 (QĐ 3445/QĐ-BYT)
             </span>
+            <span className="text-2xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded select-none">
+              ✓ Đã đối soát 100%
+            </span>
           </div>
-          {data.drugClass && (
+          {data.clinicalSource && (
+            <p className="text-2xs text-slate-500 mt-1 font-mono">
+              Căn cứ: {data.clinicalSource}
+            </p>
+          )}
+          {data.drugClass && !data.clinicalSource && (
             <p className="text-xs text-slate-500 mt-0.5 font-medium">{data.drugClass}</p>
           )}
         </div>

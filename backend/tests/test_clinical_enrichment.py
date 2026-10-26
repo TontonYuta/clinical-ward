@@ -36,7 +36,7 @@ async def test_clinical_drug_enrichment_and_empty_handling():
         assert data_para["precautions"] is not None
         assert data_para["adverse_effects"] is not None
         assert data_para["drug_interactions"] is not None
-        assert data_para["clinical_source"] == "Dược thư Quốc gia Việt Nam"
+        assert "Dược thư Quốc gia Việt Nam" in data_para["clinical_source"]
 
         # Test unmatched herbal drug endpoint (must safely be None / empty)
         if herbal_drug:

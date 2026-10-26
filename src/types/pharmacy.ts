@@ -95,4 +95,5 @@ export interface InventoryBatch {
   overdoseTreatment?: string;
   antidote?: string;
   clinicalSource?: string;
+  isVerified?: boolean; // Đã đối soát & xác thực 100% Dược Thư QG 2022 / Cục QLD
 }

@@ -26,6 +26,12 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
   onOpenDavDetail,
 }) => {
   const hasVerifiedMonograph = !!d.clinicalProfile?.indications && d.clinicalProfile.indications.length > 0;
+  const isVerified = Boolean(
+    d.isVerified ||
+    (d.clinicalSource && d.clinicalSource.includes('Dược thư')) ||
+    (d.clinicalSource && d.clinicalSource.includes('SmPC')) ||
+    hasVerifiedMonograph
+  );
   const standard = d.standardPharmacopeia || d.clinicalProfile?.officialSource?.standardPharmacopeia || 'NSX';
   const shelfLife = d.shelfLife || '36 tháng';
   const packaging = d.packagingSpec || 'Theo tiêu chuẩn cơ sở';
@@ -60,6 +66,14 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           <span className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-medium border ${badgeStyle}`}>
             {d.group}
           </span>
+          {isVerified && (
+            <span
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 select-none"
+              title="Đã đối soát & xác thực 100% với Dược Thư QG 2022 / Cục QLD"
+            >
+              ✓ Xác thực
+            </span>
+          )}
           {d.hospitalStockCount > 0 ? (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300"

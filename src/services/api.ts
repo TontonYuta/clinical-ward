@@ -303,8 +303,18 @@ export async function getDrugDocumentsApi(nationalCode: string) {
 }
 
 export async function getDrugDetailApi(nationalCode: string) {
-  const res = await fetch(`${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}`);
-  if (!res.ok) throw new Error('Không thể tra cứu thông tin chi tiết thuốc từ máy chủ');
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}`);
+    if (res.ok) return await res.json();
+  } catch {}
+  try {
+    const res = await fetch('/data/vietnam_drug_registry/dav_essential_formulary.json');
+    if (res.ok) {
+      const list = await res.json();
+      const match = list.find((d: any) => d.nationalCode === nationalCode || d.id === nationalCode);
+      if (match) return match;
+    }
+  } catch {}
+  throw new Error('Không thể tra cứu thông tin chi tiết thuốc từ máy chủ hoặc dữ liệu ngoại tuyến');
 }
 

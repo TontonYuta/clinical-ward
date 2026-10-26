@@ -151,4 +151,5 @@ export interface MasterMedication {
   overdoseTreatment?: string;
   antidote?: string;
   clinicalSource?: string;
+  isVerified?: boolean;
 }

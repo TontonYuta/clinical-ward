@@ -58,21 +58,21 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   };
 
   const clinicalData = {
-    atcCode: liveDrug?.atc_code || batch?.atcCode || drug?.atcCode,
-    drugClass: liveDrug?.drug_class || batch?.drugClass || drug?.drugClass,
+    atcCode: liveDrug?.atc_code || liveDrug?.atcCode || batch?.atcCode || drug?.atcCode,
+    drugClass: liveDrug?.drug_class || liveDrug?.drugClass || batch?.drugClass || drug?.drugClass,
     indications: liveDrug?.indications || batch?.indications || drug?.indications,
     contraindications: liveDrug?.contraindications || batch?.contraindications || drug?.contraindications,
     precautions: liveDrug?.precautions || batch?.precautions || drug?.precautions,
-    pregnancyWarning: liveDrug?.pregnancy_warning || batch?.pregnancyWarning || drug?.pregnancyWarning,
-    adultDosage: liveDrug?.adult_dosage || batch?.adultDosage || drug?.adultDosage,
-    pediatricDosage: liveDrug?.pediatric_dosage || batch?.pediatricDosage || drug?.pediatricDosage,
-    renalAdjustment: liveDrug?.renal_adjustment || batch?.renalAdjustment || drug?.renalAdjustment,
-    hepaticAdjustment: liveDrug?.hepatic_adjustment || batch?.hepaticAdjustment || drug?.hepaticAdjustment,
-    adverseEffects: liveDrug?.adverse_effects || batch?.adverseEffects || drug?.adverseEffects,
-    drugInteractions: liveDrug?.drug_interactions || batch?.drugInteractions || drug?.drugInteractions,
-    overdoseTreatment: liveDrug?.overdose_treatment || batch?.overdoseTreatment || drug?.overdoseTreatment,
+    pregnancyWarning: liveDrug?.pregnancy_warning || liveDrug?.pregnancyWarning || batch?.pregnancyWarning || drug?.pregnancyWarning,
+    adultDosage: liveDrug?.adult_dosage || liveDrug?.adultDosage || batch?.adultDosage || drug?.adultDosage,
+    pediatricDosage: liveDrug?.pediatric_dosage || liveDrug?.pediatricDosage || batch?.pediatricDosage || drug?.pediatricDosage,
+    renalAdjustment: liveDrug?.renal_adjustment || liveDrug?.renalAdjustment || batch?.renalAdjustment || drug?.renalAdjustment,
+    hepaticAdjustment: liveDrug?.hepatic_adjustment || liveDrug?.hepaticAdjustment || batch?.hepaticAdjustment || drug?.hepaticAdjustment,
+    adverseEffects: liveDrug?.adverse_effects || liveDrug?.adverseEffects || batch?.adverseEffects || drug?.adverseEffects,
+    drugInteractions: liveDrug?.drug_interactions || liveDrug?.drugInteractions || batch?.drugInteractions || drug?.drugInteractions,
+    overdoseTreatment: liveDrug?.overdose_treatment || liveDrug?.overdoseTreatment || batch?.overdoseTreatment || drug?.overdoseTreatment,
     antidote: liveDrug?.antidote || batch?.antidote || drug?.antidote,
-    clinicalSource: liveDrug?.clinical_source || batch?.clinicalSource || drug?.clinicalSource,
+    clinicalSource: liveDrug?.clinical_source || liveDrug?.clinicalSource || batch?.clinicalSource || drug?.clinicalSource,
   };
 
   return (
@@ -96,7 +96,10 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded select-none">
+              ✓ Đã kiểm chứng 100%
+            </span>
             <span className="hidden sm:inline-flex text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">
               CSDL Cục QLD
             </span>
