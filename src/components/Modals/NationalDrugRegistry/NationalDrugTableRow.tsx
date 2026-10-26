@@ -64,7 +64,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           {d.hospitalStockCount > 0 ? (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300"
-              title="Đã đối soát tồn kho thực tế từ Kho Dược Bệnh Viện (FEFO)"
+              title="Đã đối soát tồn kho thực tế từ Kho Dược Bệnh Viện"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
               Kho BV: {d.hospitalStockCount} {d.standardUnit}

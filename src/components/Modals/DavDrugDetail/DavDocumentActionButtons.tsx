@@ -2,11 +2,10 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Nút Xem Tài Liệu PDF (HDSD & Mẫu Nhãn) Cục Quản Lý Dược (<=200 LOC)
- * Tích hợp luồng trực tiếp từ dichvucong.dav.gov.vn/File/GoToViewTaiLieu
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Tag, ExternalLink, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { FileText, Tag, ExternalLink, AlertCircle, Loader2 } from 'lucide-react';
 import { getDavPdfUrl } from '../../../config/clinicalVerification';
 
 interface DavDocumentActionButtonsProps {
@@ -17,10 +16,7 @@ interface DavDocumentActionButtonsProps {
 }
 
 export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> = ({
-  hdsdPath,
-  labelPath,
-  nationalCode,
-  brandName,
+  hdsdPath, labelPath, nationalCode, brandName,
 }) => {
   const [resolvedHdsd, setResolvedHdsd] = useState<string | undefined>(hdsdPath);
   const [resolvedLabel, setResolvedLabel] = useState<string | undefined>(labelPath);
@@ -68,40 +64,40 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
   const isLegacyPaper = nationalCode ? !/^\d{12}$/.test(nationalCode) : false;
 
   return (
-    <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/70 space-y-2">
+    <div className="border border-slate-200 rounded-lg p-3.5 bg-slate-50/70 space-y-2.5 shadow-2xs">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-2xs uppercase font-bold text-slate-700">
-          <FileText className="w-3.5 h-3.5 text-teal-700" />
-          <span>Tài Liệu Số Hóa Cục Quản Lý Dược (Bộ Y Tế)</span>
+        <div className="flex items-center gap-1.5 text-xs uppercase font-bold text-slate-700">
+          <FileText className="w-4 h-4 text-teal-700" />
+          <span>Hồ Sơ Điện Tử Cục Quản Lý Dược</span>
         </div>
-        <span className="text-[10px] text-teal-800 font-medium bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-          Chữ ký số & Pháp lý SmPC
+        <span className="text-xs text-teal-900 font-semibold bg-teal-100/70 px-2 py-0.5 rounded border border-teal-200">
+          Pháp lý SmPC
         </span>
       </div>
 
       {isResolving ? (
-        <div className="flex items-center gap-2 p-2.5 bg-teal-50/80 border border-teal-200 rounded-lg text-2xs text-teal-900">
-          <Loader2 className="w-3.5 h-3.5 text-teal-700 animate-spin shrink-0" />
+        <div className="flex items-center gap-2 p-3 bg-teal-50 border border-teal-200 rounded text-xs text-teal-900">
+          <Loader2 className="w-4 h-4 text-teal-700 animate-spin shrink-0" />
           <span>Đang đối soát hồ sơ điện tử TT89 từ Cổng Cục Quản Lý Dược...</span>
         </div>
       ) : hasAnyDoc ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
           {hdsdUrl ? (
             <a
               href={hdsdUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-semibold text-xs transition shadow-xs group"
-              title="Mở toàn văn Tờ Hướng Dẫn Sử Dụng (SmPC) PDF chính thức có chữ ký số của Cục QLD"
+              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs sm:text-sm transition shadow-xs group cursor-pointer"
+              title="Mở toàn văn Tờ Hướng Dẫn Sử Dụng (SmPC) PDF chính thức của Cục QLD"
             >
               <div className="flex items-center gap-2 truncate">
                 <FileText className="w-4 h-4 text-teal-200 shrink-0" />
                 <span className="truncate">Xem Tờ HDSD (PDF Gốc)</span>
               </div>
-              <ExternalLink className="w-3.5 h-3.5 text-teal-300 group-hover:text-white shrink-0" />
+              <ExternalLink className="w-4 h-4 text-teal-300 group-hover:text-white shrink-0" />
             </a>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 text-slate-400 text-xs border border-slate-200">
+            <div className="inline-flex items-center gap-2 px-3 py-2.5 rounded bg-slate-100 text-slate-400 text-xs border border-slate-200">
               <FileText className="w-4 h-4 shrink-0 text-slate-300" />
               <span>Chưa có file scan HDSD</span>
             </div>
@@ -112,26 +108,26 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
               href={labelUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white hover:bg-slate-50 text-slate-800 hover:text-teal-900 border border-slate-300 font-semibold text-xs transition shadow-2xs group"
+              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-white hover:bg-slate-50 text-slate-900 hover:text-teal-900 border border-slate-300 font-bold text-xs sm:text-sm transition shadow-2xs group cursor-pointer"
               title="Mở bản vẽ kỹ thuật Mẫu Nhãn Bao Bì lưu hành được Bộ Y Tế phê duyệt"
             >
               <div className="flex items-center gap-2 truncate">
                 <Tag className="w-4 h-4 text-teal-700 shrink-0" />
                 <span className="truncate">Xem Mẫu Nhãn (PDF)</span>
               </div>
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-800 shrink-0" />
+              <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-teal-800 shrink-0" />
             </a>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 text-slate-400 text-xs border border-slate-200">
+            <div className="inline-flex items-center gap-2 px-3 py-2.5 rounded bg-slate-100 text-slate-400 text-xs border border-slate-200">
               <Tag className="w-4 h-4 shrink-0 text-slate-300" />
               <span>Chưa có file scan Mẫu nhãn</span>
             </div>
           )}
         </div>
       ) : (
-        <div className="flex items-center justify-between gap-2 p-2 bg-amber-50/70 border border-amber-200/80 rounded-lg text-2xs text-amber-900">
-          <div className="flex items-center gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+        <div className="flex items-center justify-between gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
               {isLegacyPaper
                 ? 'Hồ sơ giấy cấp phép trước TT89/2020 - Chưa có tệp scan PDF trên Cổng DVC.'
@@ -145,7 +141,7 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
             className="font-bold text-amber-950 underline hover:text-amber-800 shrink-0 inline-flex items-center gap-1"
           >
             <span>Tra cứu SĐK</span>
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
       )}

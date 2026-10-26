@@ -101,19 +101,19 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
 
   return (
     <div role="dialog" aria-modal="true" aria-label="Cổng Dữ Liệu Dược Quốc Gia" className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-[96vw] max-w-6xl lg:max-w-7xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-lg shadow-2xl border border-slate-300 w-[96vw] max-w-6xl lg:max-w-7xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
         <div className="px-6 py-3.5 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-slate-900 text-base sm:text-lg">Cổng Dữ Liệu Dược Quốc Gia</h3>
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">DAV 55.000 SĐK</span>
+              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">DAV 55.000 SĐK</span>
               {inWarehouseCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-900 border border-teal-300 flex items-center gap-1">
-                  <Boxes className="w-3 h-3 text-teal-700" />Kho BV ({inWarehouseCount})
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-teal-50 text-teal-900 border border-teal-300 flex items-center gap-1">
+                  <Boxes className="w-3.5 h-3.5 text-teal-700" />Kho BV ({inWarehouseCount})
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">Phân trang máy chủ 55k SĐK Cục Quản lý Dược, tiêu chuẩn DĐVN V &amp; đồng bộ tồn kho FEFO</p>
+            <p className="text-xs text-slate-500 mt-0.5">Hệ thống Dữ liệu Dược Quốc Gia &amp; Đối soát Danh mục Thuốc Bệnh Viện</p>
           </div>
           <div className="flex items-center gap-2">
             {syncNotice && (
