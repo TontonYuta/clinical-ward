@@ -134,4 +134,6 @@ export interface MasterMedication {
   approvalDecision?: string;
   decisionDate?: string;
   registryExpiryDate?: string;
+  hdsdPath?: string; // Đường dẫn file HDSD PDF (dichvucong.dav.gov.vn)
+  labelPath?: string; // Đường dẫn file Mẫu nhãn PDF
 }

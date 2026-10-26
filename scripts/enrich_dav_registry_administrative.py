@@ -16,6 +16,49 @@ GZ_FILE = os.path.join(BASE_DIR, "data/vietnam_drug_registry/dav_master_registry
 ESSENTIAL_FILE = os.path.join(BASE_DIR, "data/vietnam_drug_registry/dav_essential_formulary.json")
 DB_FILE = os.path.join(BASE_DIR, "backend/clinical_hospital.db")
 
+KNOWN_DOCS = {
+    "539110203326": {
+        "hdsd": r"TT89\Tinh-unknown\vpdd60242\HOSO_20200203_105936\tepdinhkem\PI-Venclexta_nen_30409_20250411_114346.pdf",
+        "label": r"TT89\Tinh-unknown\vpdd60242\HOSO_20200203_105936\tepdinhkem\Proposed-AW_Venclexta-10_30409_20250331_083558.pdf"
+    },
+    "539110203226": {
+        "hdsd": r"TT89\Tinh-unknown\vpdd60242\HOSO_20200203_105936\tepdinhkem\PI-Venclexta_nen_30409_20250411_114346.pdf",
+        "label": r"TT89\Tinh-unknown\vpdd60242\HOSO_20200203_105936\tepdinhkem\Proposed-AW_Venclexta-10_30409_20250331_083558.pdf"
+    },
+    "539110203126": {
+        "hdsd": r"TT89\Tinh-unknown\vpdd60242\HOSO_20200203_105936\tepdinhkem\PI-Venclexta_nen_30409_20250411_114346.pdf",
+        "label": r"TT89\Tinh-unknown\vpdd60242\HOSO_20200203_105936\tepdinhkem\Proposed-AW_Venclexta-10_30409_20250331_083558.pdf"
+    },
+    "893100110026": {
+        "hdsd": r"TT89\soc-trang\2200204614\HOSO_20220818_074011\tepdinhkem\BS1---To-huong-dan-su-dung-thuoc_30238_20241225_133756.pdf",
+        "label": r"TT89\soc-trang\2200204614\HOSO_20220818_074011\tepdinhkem\3.-NHAN-THUOC-1-4_30238_20220908_100113.pdf"
+    },
+    "840110304425": {
+        "hdsd": r"TT89\thanh-pho-ho-chi-minh\0312087239\HOSO_20200227_200921\tepdinhkem\HDSD_1_30531_20200227_201604.pdf",
+        "label": r"TT89\thanh-pho-ho-chi-minh\0312087239\HOSO_20200227_200921\tepdinhkem\3.-Nhan-du-kien-luu-hanh_30531_20240822_151847.pdf"
+    },
+    "890112769224": {
+        "hdsd": r"TT89\thanh-pho-ho-chi-minh\0313974956\HOSO_20220321_103600\tepdinhkem\hdsd-vn_30344_20230802_135326.pdf",
+        "label": r"TT89\thanh-pho-ho-chi-minh\0313974956\HOSO_20220321_103600\tepdinhkem\7.-Mau-nhan-Diazepam_30344_20220323_100117.pdf"
+    },
+    "893110151100": {
+        "hdsd": r"TT89\hai-duong\0800011018\HOSO_20210616_153222\tepdinhkem\Hadunalin-1ml-hdsd_30315_20210616_155951.pdf",
+        "label": r"TT89\hai-duong\0800011018\HOSO_20210616_153222\tepdinhkem\Hadunalin-1ml-nhan_30315_20210616_155937.pdf"
+    },
+    "893115105926": {
+        "hdsd": r"TT89\thanh-pho-ha-noi\0100109032\HOSO_20240619_143330\tepdinhkem\hdsd_30279_20251103_145819.pdf",
+        "label": r"TT89\thanh-pho-ha-noi\0100109032\HOSO_20240619_143330\tepdinhkem\nhan-ok_30279_20251103_145756.pdf"
+    },
+    "300110965424": {
+        "hdsd": r"TT89\Tinh-unknown\WLMP0900064\HOSO_20200804_135305\tepdinhkem\I.7.-Updated-PI_30244_20230316_161911.pdf",
+        "label": r"TT89\Tinh-unknown\WLMP0900064\HOSO_20200804_135305\tepdinhkem\I.7.-Updated-AW_30244_20230313_113310.pdf"
+    },
+    "955100201626": {
+        "hdsd": r"TT89\Tinh-unknown\0304644454\HOSO_20230710_125545\tepdinhkem\To-HDSD_30893_20241022_150756.pdf",
+        "label": r"TT89\Tinh-unknown\0304644454\HOSO_20230710_125545\tepdinhkem\Mau-Nhan_30893_20241022_150756.pdf"
+    }
+}
+
 print("1. Loading dav_master_registry.json...")
 with open(MASTER_FILE, "r", encoding="utf-8") as f:
     items = json.load(f)
@@ -87,6 +130,17 @@ for it in items:
     # 7. Applicant company
     it["applicantName"] = it["manufacturer"].split("(")[0].strip()
 
+    # 8. Digital PDF Documents (HDSD & Mẫu nhãn)
+    nat_code = it.get("nationalCode")
+    if nat_code in KNOWN_DOCS:
+        it["hdsdPath"] = KNOWN_DOCS[nat_code]["hdsd"]
+        it["labelPath"] = KNOWN_DOCS[nat_code]["label"]
+    elif it.get("hdsdPath"):
+        pass
+    else:
+        it["hdsdPath"] = None
+        it["labelPath"] = None
+
 print("2. Saving enriched master JSON & GZ...")
 with open(MASTER_FILE, "w", encoding="utf-8") as f:
     json.dump(items, f, ensure_ascii=False)
@@ -125,6 +179,8 @@ CREATE TABLE dav_national_drugs (
     country VARCHAR(100),
     applicant_name TEXT,
     approval_decision VARCHAR(255),
+    hdsd_path TEXT,
+    label_path TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 """)
@@ -153,7 +209,9 @@ rows = [(
     d.get("manufacturer", ""),
     d.get("country", "Việt Nam"),
     d.get("applicantName", ""),
-    d.get("approvalDecision", "")
+    d.get("approvalDecision", ""),
+    d.get("hdsdPath"),
+    d.get("labelPath")
 ) for d in items]
 
 cur.execute("PRAGMA synchronous = OFF")
@@ -161,8 +219,8 @@ cur.execute("PRAGMA journal_mode = WAL")
 cur.execute("BEGIN TRANSACTION")
 cur.executemany("""
 INSERT INTO dav_national_drugs 
-(id, national_code, brand_name, active_ingredient, concentration, dosage_form, route, standard_unit, "group", is_controlled, is_high_alert, is_crash_cart, note, packaging_spec, standard_pharmacopeia, shelf_life, manufacturer, country, applicant_name, approval_decision)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+(id, national_code, brand_name, active_ingredient, concentration, dosage_form, route, standard_unit, "group", is_controlled, is_high_alert, is_crash_cart, note, packaging_spec, standard_pharmacopeia, shelf_life, manufacturer, country, applicant_name, approval_decision, hdsd_path, label_path)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """, rows)
 conn.commit()
 conn.close()

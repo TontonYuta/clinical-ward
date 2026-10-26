@@ -77,4 +77,6 @@ export interface InventoryBatch {
   decisionDate?: string; // Ngày ban hành quyết định
   registryExpiryDate?: string; // Ngày hết hạn SĐK
   route?: string; // Đường dùng
+  hdsdPath?: string; // Đường dẫn tài liệu HDSD (dichvucong.dav.gov.vn)
+  labelPath?: string; // Đường dẫn mẫu nhãn lưu hành
 }

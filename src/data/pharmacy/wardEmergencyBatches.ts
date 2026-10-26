@@ -13,6 +13,8 @@ export const WARD_EMERGENCY_BATCHES: InventoryBatch[] = [
     concentration: '1mg/ml', dosageForm: 'Dung dịch thuốc tiêm', manufacturer: 'Cty CP Dược vật tư y tế Hải Dương',
     country: 'Việt Nam', packagingSpec: 'Hộp 10 ống x 1ml', standardPharmacopeia: 'DĐVN V', route: 'Tiêm bắp / Tiêm tĩnh mạch',
     shelfLife: '24 tháng', applicantName: 'Cty CP Dược vật tư y tế Hải Dương', approvalDecision: 'QĐ 798/QĐ-QLD',
+    hdsdPath: 'TT89\\hai-duong\\0800011018\\HOSO_20210616_153222\\tepdinhkem\\Hadunalin-1ml-hdsd_30315_20210616_155951.pdf',
+    labelPath: 'TT89\\hai-duong\\0800011018\\HOSO_20210616_153222\\tepdinhkem\\Hadunalin-1ml-nhan_30315_20210616_155937.pdf',
     category: 'Thuốc cấp cứu', commodityType: 'medication', warehouseType: 'ward_emergency',
     batchNumber: 'LOT-AD24-E1', expiryDate: '2026-12-05', daysLeft: 40, isNearExpiry: true,
     currentStock: 30, minThreshold: 80, maxThreshold: 300, isLowStock: true, unit: 'Ống',

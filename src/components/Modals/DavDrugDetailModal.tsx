@@ -9,6 +9,7 @@ import { X, ExternalLink, ShieldCheck, Package, CheckCircle2, ArrowUpRight } fro
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
 import { DavAdministrativeBlocks } from './DavDrugDetail/DavAdministrativeBlocks';
+import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
@@ -91,6 +92,14 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
 
           {/* 5 Khối Thông tin Hành chính công bố */}
           <DavAdministrativeBlocks data={adminData} />
+
+          {/* Khối Tài Liệu HDSD & Mẫu Nhãn PDF Cục QLD */}
+          <DavDocumentActionButtons
+            hdsdPath={batch?.hdsdPath || drug?.hdsdPath}
+            labelPath={batch?.labelPath || drug?.labelPath}
+            nationalCode={sdk}
+            brandName={itemName}
+          />
 
           {/* Trạng thái kho bệnh viện thực tế (nếu có lô) */}
           {batch && (

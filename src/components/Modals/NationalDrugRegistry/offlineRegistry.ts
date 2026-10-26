@@ -63,6 +63,7 @@ export async function queryOfflineRegistry(
     defaultDoseQty: 1, wardStockCount: 0, hospitalStockCount: 0, searchAliases: [d.brandName?.toLowerCase() || ''], note: d.note,
     packagingSpec: d.packagingSpec, standardPharmacopeia: d.standardPharmacopeia, shelfLife: d.shelfLife,
     manufacturer: d.manufacturer, country: d.country, applicantName: d.applicantName, approvalDecision: d.approvalDecision,
+    hdsdPath: d.hdsdPath, labelPath: d.labelPath,
     clinicalProfile: d.clinicalProfile
   }));
   return { items, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)), groupStats };

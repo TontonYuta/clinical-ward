@@ -26,4 +26,6 @@ class DavNationalDrug(Base):
     country: Mapped[str | None] = mapped_column(String, nullable=True, default="Việt Nam")
     applicant_name: Mapped[str | None] = mapped_column(Text, nullable=True, default="")
     approval_decision: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    hdsd_path: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    label_path: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now(), nullable=True)

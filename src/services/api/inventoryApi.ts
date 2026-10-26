@@ -69,6 +69,8 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
     applicantCountry: b.applicant_country || master?.applicantCountry,
     approvalDecision: b.approval_decision || master?.approvalDecision,
     route: b.route || master?.route,
+    hdsdPath: master?.hdsdPath,
+    labelPath: master?.labelPath,
     isControlledSubstance: master?.isControlledSubstance ?? b.category.includes('nghiện'),
     category: b.category as InventoryBatch['category'],
     commodityType: master?.commodityType || (b.category.includes('Vật tư') ? 'medical_supply' : 'medication'),

@@ -68,6 +68,8 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
         cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN country VARCHAR(100)")
         cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN applicant_name TEXT")
         cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN approval_decision VARCHAR(255)")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN hdsd_path TEXT")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN label_path TEXT")
         cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
     except Exception:
         pass

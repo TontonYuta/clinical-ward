@@ -23,6 +23,8 @@ class DrugItemResponse(BaseModel):
     country: str | None = "Việt Nam"
     applicant_name: str | None = ""
     approval_decision: str | None = ""
+    hdsd_path: str | None = None
+    label_path: str | None = None
 
 class RegistryPaginatedResponse(BaseModel):
     total: int

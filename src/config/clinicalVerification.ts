@@ -141,3 +141,12 @@ export function getRegulatoryLawUrl(basis: string): string {
   }
   return 'https://kcb.vn/van-ban';
 }
+
+/**
+ * 6. Cổng Xem Tài Liệu PDF Trực Tuyến Cục Quản Lý Dược (DAV GoToViewTaiLieu):
+ * Truy xuất streaming trực tiếp tệp HDSD & Mẫu nhãn được Bộ Y Tế phê duyệt
+ */
+export function getDavPdfUrl(path?: string): string | null {
+  if (!path) return null;
+  return `https://dichvucong.dav.gov.vn/File/GoToViewTaiLieu?url=${encodeURIComponent(path)}#zoom=70`;
+}

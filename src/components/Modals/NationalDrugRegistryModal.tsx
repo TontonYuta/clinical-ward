@@ -55,7 +55,8 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           isHighAlert: i.is_high_alert, isCrashCart: i.is_crash_cart, defaultDoseQty: 1, wardStockCount: 0,
           hospitalStockCount: 0, searchAliases: [i.brand_name.toLowerCase()], note: i.note,
           packagingSpec: i.packaging_spec, standardPharmacopeia: i.standard_pharmacopeia, shelfLife: i.shelf_life,
-          manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name, approvalDecision: i.approval_decision
+          manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name, approvalDecision: i.approval_decision,
+          hdsdPath: i.hdsd_path || i.hdsdPath, labelPath: i.label_path || i.labelPath
         }));
         setDrugs(mapped); setTotalCount(data.total || mapped.length); setTotalPages(data.total_pages || 1);
         if (data.group_stats) setGroupStats(data.group_stats);
