@@ -295,3 +295,9 @@ export async function getNationalDrugRegistryApi(params?: {
   if (!res.ok) throw new Error('Không thể nạp danh mục dược quốc gia từ máy chủ');
   return res.json();
 }
+
+export async function getDrugDocumentsApi(nationalCode: string) {
+  const res = await fetch(`${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}/documents`);
+  if (!res.ok) throw new Error('Không thể tra cứu tài liệu số hóa của thuốc từ máy chủ');
+  return res.json();
+}

@@ -5,8 +5,8 @@
  * Tích hợp luồng trực tiếp từ dichvucong.dav.gov.vn/File/GoToViewTaiLieu
  */
 
-import React from 'react';
-import { FileText, Tag, ExternalLink, ShieldCheck, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileText, Tag, ExternalLink, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { getDavPdfUrl } from '../../../config/clinicalVerification';
 
 interface DavDocumentActionButtonsProps {
@@ -22,11 +22,50 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
   nationalCode,
   brandName,
 }) => {
-  const hdsdUrl = getDavPdfUrl(hdsdPath);
-  const labelUrl = getDavPdfUrl(labelPath);
+  const [resolvedHdsd, setResolvedHdsd] = useState<string | undefined>(hdsdPath);
+  const [resolvedLabel, setResolvedLabel] = useState<string | undefined>(labelPath);
+  const [isResolving, setIsResolving] = useState<boolean>(false);
+  const [attempted, setAttempted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setResolvedHdsd(hdsdPath);
+    setResolvedLabel(labelPath);
+    setAttempted(false);
+  }, [hdsdPath, labelPath, nationalCode]);
+
+  useEffect(() => {
+    if (resolvedHdsd || resolvedLabel || attempted || !nationalCode) return;
+    let active = true;
+    setIsResolving(true);
+
+    fetch(`/api/v1/registry/${encodeURIComponent(nationalCode)}/documents`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active) return;
+        if (data?.hdsd_path || data?.label_path) {
+          setResolvedHdsd(data.hdsd_path || undefined);
+          setResolvedLabel(data.label_path || undefined);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) {
+          setIsResolving(false);
+          setAttempted(true);
+        }
+      });
+
+    return () => { active = false; };
+  }, [resolvedHdsd, resolvedLabel, attempted, nationalCode]);
+
+  const activeHdsd = resolvedHdsd || hdsdPath;
+  const activeLabel = resolvedLabel || labelPath;
+  const hdsdUrl = getDavPdfUrl(activeHdsd);
+  const labelUrl = getDavPdfUrl(activeLabel);
   const davSearchUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(nationalCode || brandName || '')}`;
 
   const hasAnyDoc = Boolean(hdsdUrl || labelUrl);
+  const isLegacyPaper = nationalCode ? !/^\d{12}$/.test(nationalCode) : false;
 
   return (
     <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/70 space-y-2">
@@ -40,7 +79,12 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
         </span>
       </div>
 
-      {hasAnyDoc ? (
+      {isResolving ? (
+        <div className="flex items-center gap-2 p-2.5 bg-teal-50/80 border border-teal-200 rounded-lg text-2xs text-teal-900">
+          <Loader2 className="w-3.5 h-3.5 text-teal-700 animate-spin shrink-0" />
+          <span>Đang đối soát hồ sơ điện tử TT89 từ Cổng Cục Quản Lý Dược...</span>
+        </div>
+      ) : hasAnyDoc ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
           {hdsdUrl ? (
             <a
@@ -88,7 +132,11 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
         <div className="flex items-center justify-between gap-2 p-2 bg-amber-50/70 border border-amber-200/80 rounded-lg text-2xs text-amber-900">
           <div className="flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-            <span>Hồ sơ giấy truyền thống chưa số hóa PDF trực tuyến tại Cổng Dịch vụ công.</span>
+            <span>
+              {isLegacyPaper
+                ? 'Hồ sơ giấy cấp phép trước TT89/2020 - Chưa có tệp scan PDF trên Cổng DVC.'
+                : 'Hồ sơ điện tử chưa đính kèm tệp PDF công khai trên Cổng DVC.'}
+            </span>
           </div>
           <a
             href={davSearchUrl}

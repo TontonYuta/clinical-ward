@@ -115,4 +115,33 @@ async def get_drug_by_national_code(national_code: str, db: AsyncSession = Depen
     drug = res.scalar_one_or_none()
     if not drug:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy thuốc có SĐK {national_code}")
+    
+    if not drug.hdsd_path and not drug.label_path:
+        from app.services.dav_document_service import resolve_and_cache_drug_documents
+        await resolve_and_cache_drug_documents(db, drug)
+
     return drug
+
+@router.get("/{national_code}/documents")
+async def get_drug_documents(national_code: str, db: AsyncSession = Depends(get_db)):
+    stmt = select(DavNationalDrug).where(
+        or_(
+            DavNationalDrug.national_code == national_code,
+            DavNationalDrug.id == national_code
+        )
+    )
+    res = await db.execute(stmt)
+    drug = res.scalar_one_or_none()
+    if not drug:
+        from app.services.dav_document_service import fetch_dav_documents_from_portal
+        hdsd, label = await fetch_dav_documents_from_portal(national_code)
+        return {"national_code": national_code, "hdsd_path": hdsd, "label_path": label}
+
+    from app.services.dav_document_service import resolve_and_cache_drug_documents
+    hdsd, label = await resolve_and_cache_drug_documents(db, drug)
+    return {
+        "national_code": drug.national_code,
+        "brand_name": drug.brand_name,
+        "hdsd_path": hdsd,
+        "label_path": label
+    }

@@ -350,3 +350,10 @@ async def test_national_drug_registry():
         assert res_detail.status_code == 200
         drug = res_detail.json()
         assert drug["brand_name"] == "Ceflodin 500"
+
+        # 6. Test drug documents endpoint
+        res_docs = await client.get("/api/v1/registry/539110203326/documents")
+        assert res_docs.status_code == 200
+        doc_data = res_docs.json()
+        assert "hdsd_path" in doc_data
+        assert "label_path" in doc_data

@@ -120,6 +120,17 @@ export function classifyMedicationGroup(
   return { group: 'Thuốc điều trị chuyên khoa', isControlled: false, isHighAlert: false, isCrashCart: false };
 }
 
+function parseDuongDanTep(rawJson?: string): string | undefined {
+  if (!rawJson) return undefined;
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.duongDanTep) {
+      return parsed[0].duongDanTep;
+    }
+  } catch {}
+  return undefined;
+}
+
 export function transformDavToMasterMedication(item: DavRawDrugItem): MasterMedication {
   const cleanName = (item.tenThuoc || 'Chưa đặt tên').replace(/\n/g, ' ').trim();
   const rawInn = item.thongTinThuocCoBan?.hoatChatChinh || cleanName;
@@ -136,6 +147,9 @@ export function transformDavToMasterMedication(item: DavRawDrugItem): MasterMedi
   else if (lowerPack.includes('lọ')) unit = 'Lọ';
   else if (lowerPack.includes('chai')) unit = 'Chai';
   else if (lowerPack.includes('gói')) unit = 'Gói';
+
+  const hdsdPath = parseDuongDanTep(item.thongTinTaiLieu?.urlHuongDanSuDung);
+  const labelPath = parseDuongDanTep(item.thongTinTaiLieu?.urlNhan);
 
   return {
     id: `dav-${item.soDangKy || item.id}`,
@@ -155,6 +169,8 @@ export function transformDavToMasterMedication(item: DavRawDrugItem): MasterMedi
     hospitalStockCount: 0,
     searchAliases: [cleanName.toLowerCase(), rawInn.toLowerCase().split(' ')[0]],
     note: `SĐK: ${item.soDangKy} | NSX: ${item.congTySanXuat?.tenCongTySanXuat || 'Cục QLD cấp'} | Tiêu chuẩn: ${item.thongTinThuocCoBan?.tieuChuan || 'NSX'} | Hạn dùng: ${item.thongTinThuocCoBan?.tuoiTho || 'N/A'}`,
+    hdsdPath,
+    labelPath,
     clinicalProfile: undefined,
   };
 }

@@ -60,19 +60,23 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
         applicant_name TEXT, approval_decision VARCHAR(255),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
-    try:
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN packaging_spec VARCHAR(255)")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN standard_pharmacopeia VARCHAR(100)")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN shelf_life VARCHAR(100)")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN manufacturer TEXT")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN country VARCHAR(100)")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN applicant_name TEXT")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN approval_decision VARCHAR(255)")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN hdsd_path TEXT")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN label_path TEXT")
-        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
-    except Exception:
-        pass
+    cols_to_add = [
+        ("packaging_spec", "VARCHAR(255)"),
+        ("standard_pharmacopeia", "VARCHAR(100)"),
+        ("shelf_life", "VARCHAR(100)"),
+        ("manufacturer", "TEXT"),
+        ("country", "VARCHAR(100)"),
+        ("applicant_name", "TEXT"),
+        ("approval_decision", "VARCHAR(255)"),
+        ("hdsd_path", "TEXT"),
+        ("label_path", "TEXT"),
+        ("created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    ]
+    for col_name, col_type in cols_to_add:
+        try:
+            cursor.execute(f"ALTER TABLE dav_national_drugs ADD COLUMN {col_name} {col_type}")
+        except Exception:
+            pass
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_national_code ON dav_national_drugs (national_code)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_brand_name ON dav_national_drugs (brand_name)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_active_ingredient ON dav_national_drugs (active_ingredient)")
