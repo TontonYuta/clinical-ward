@@ -16,6 +16,13 @@ class DrugItemResponse(BaseModel):
     is_high_alert: bool | None = False
     is_crash_cart: bool | None = False
     note: str | None = ""
+    packaging_spec: str | None = ""
+    standard_pharmacopeia: str | None = "NSX"
+    shelf_life: str | None = "36 tháng"
+    manufacturer: str | None = ""
+    country: str | None = "Việt Nam"
+    applicant_name: str | None = ""
+    approval_decision: str | None = ""
 
 class RegistryPaginatedResponse(BaseModel):
     total: int

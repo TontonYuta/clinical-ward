@@ -121,4 +121,17 @@ export interface MasterMedication {
   searchAliases: string[]; // Bí danh viết tắt (VD: adre, nor, mor, epi, kcl)
   note?: string;
   clinicalProfile?: FiveRightsSafetyInfo;
+  // CSDL Công Bố Thuốc Cục Quản Lý Dược (dichvucong.dav.gov.vn)
+  packagingSpec?: string;
+  standardPharmacopeia?: string;
+  shelfLife?: string;
+  manufacturer?: string;
+  manufacturerAddress?: string;
+  country?: string;
+  applicantName?: string;
+  applicantAddress?: string;
+  applicantCountry?: string;
+  approvalDecision?: string;
+  decisionDate?: string;
+  registryExpiryDate?: string;
 }

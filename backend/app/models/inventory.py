@@ -18,6 +18,10 @@ class InventoryBatch(Base):
     country: Mapped[str | None] = mapped_column(String, nullable=True, default="Việt Nam")
     packaging_spec: Mapped[str | None] = mapped_column(String, nullable=True, default="")
     standard_pharmacopeia: Mapped[str | None] = mapped_column(String, nullable=True, default="DĐVN V")
+    shelf_life: Mapped[str | None] = mapped_column(String, nullable=True, default="36 tháng")
+    manufacturer_address: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    applicant_name: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    approval_decision: Mapped[str | None] = mapped_column(String, nullable=True, default="")
     route: Mapped[str | None] = mapped_column(String, nullable=True, default="")
     category: Mapped[str] = mapped_column(String, nullable=False)
     expiry_date: Mapped[str] = mapped_column(String, nullable=False, index=True) # YYYY-MM-DD

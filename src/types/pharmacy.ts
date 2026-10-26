@@ -68,6 +68,13 @@ export interface InventoryBatch {
   country?: string; // Nước sản xuất
   packagingSpec?: string; // Quy cách đóng gói được cấp phép
   standardPharmacopeia?: string; // Tiêu chuẩn (DĐVN V / NSX / USP)
+  shelfLife?: string; // Tuổi thọ / Hạn dùng lưu hành (24 tháng, 36 tháng)
+  manufacturerAddress?: string; // Địa chỉ nhà máy sản xuất
+  applicantName?: string; // Tên doanh nghiệp đứng tên đăng ký
+  applicantAddress?: string; // Địa chỉ doanh nghiệp đăng ký
+  applicantCountry?: string; // Nước đăng ký
   approvalDecision?: string; // Quyết định cấp phép lưu hành
+  decisionDate?: string; // Ngày ban hành quyết định
+  registryExpiryDate?: string; // Ngày hết hạn SĐK
   route?: string; // Đường dùng
 }

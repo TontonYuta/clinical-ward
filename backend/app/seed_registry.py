@@ -55,9 +55,19 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
         concentration VARCHAR(255), dosage_form VARCHAR(255), route VARCHAR(100),
         standard_unit VARCHAR(50) DEFAULT 'Viên', "group" VARCHAR(100) DEFAULT 'Thuốc điều trị chuyên khoa',
         is_controlled INTEGER DEFAULT 0, is_high_alert INTEGER DEFAULT 0, is_crash_cart INTEGER DEFAULT 0,
-        note TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        note TEXT, packaging_spec VARCHAR(255), standard_pharmacopeia VARCHAR(100),
+        shelf_life VARCHAR(100), manufacturer TEXT, country VARCHAR(100),
+        applicant_name TEXT, approval_decision VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
     try:
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN packaging_spec VARCHAR(255)")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN standard_pharmacopeia VARCHAR(100)")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN shelf_life VARCHAR(100)")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN manufacturer TEXT")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN country VARCHAR(100)")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN applicant_name TEXT")
+        cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN approval_decision VARCHAR(255)")
         cursor.execute("ALTER TABLE dav_national_drugs ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
     except Exception:
         pass
@@ -91,7 +101,11 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
         d.get("concentration", ""), d.get("dosageForm", ""), d.get("route", ""),
         d.get("standardUnit", "Viên"), d.get("group", "Thuốc điều trị chuyên khoa"),
         1 if d.get("isControlled") else 0, 1 if d.get("isHighAlert") else 0,
-        1 if d.get("isCrashCart") else 0, d.get("note", "")
+        1 if d.get("isCrashCart") else 0, d.get("note", ""),
+        d.get("packagingSpec", ""), d.get("standardPharmacopeia", "NSX"),
+        d.get("shelfLife", "36 tháng"), d.get("manufacturer", ""),
+        d.get("country", "Việt Nam"), d.get("applicantName", ""),
+        d.get("approvalDecision", "")
     ) for d in items]
 
     cursor.execute("PRAGMA synchronous = OFF")
@@ -99,8 +113,8 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     cursor.execute("BEGIN TRANSACTION")
     cursor.executemany("""
     INSERT OR REPLACE INTO dav_national_drugs 
-    (id, national_code, brand_name, active_ingredient, concentration, dosage_form, route, standard_unit, "group", is_controlled, is_high_alert, is_crash_cart, note)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, national_code, brand_name, active_ingredient, concentration, dosage_form, route, standard_unit, "group", is_controlled, is_high_alert, is_crash_cart, note, packaging_spec, standard_pharmacopeia, shelf_life, manufacturer, country, applicant_name, approval_decision)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     conn.commit()
     conn.close()

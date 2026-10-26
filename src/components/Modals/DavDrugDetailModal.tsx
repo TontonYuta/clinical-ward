@@ -5,23 +5,48 @@
  */
 
 import React from 'react';
-import { X, ExternalLink, ShieldCheck, Building2, Package, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { X, ExternalLink, ShieldCheck, Package, CheckCircle2, ArrowUpRight } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
+import { MasterMedication } from '../../types/medication';
+import { DavAdministrativeBlocks } from './DavDrugDetail/DavAdministrativeBlocks';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  batch: InventoryBatch | null;
+  batch?: InventoryBatch | null;
+  drug?: MasterMedication | null;
   onQuickDispatch?: (batch: InventoryBatch) => void;
 }
 
 export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
-  isOpen, onClose, batch, onQuickDispatch,
+  isOpen, onClose, batch, drug, onQuickDispatch,
 }) => {
-  if (!isOpen || !batch) return null;
+  if (!isOpen || (!batch && !drug)) return null;
 
-  const sdk = batch.registrationNumber || batch.nationalCode || 'Chưa cập nhật';
+  const itemName = batch?.itemName || drug?.brandName || 'Chưa đặt tên';
+  const sdk = batch?.registrationNumber || batch?.nationalCode || drug?.nationalCode || 'Chưa cập nhật';
+  const activeInn = batch?.activeIngredient || drug?.activeIngredient || 'Theo hồ sơ Cục QLD';
+  const strength = batch?.concentration || drug?.concentration;
   const davPortalUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}`;
+
+  const adminData = {
+    dosageForm: batch?.dosageForm || drug?.dosageForm,
+    packagingSpec: batch?.packagingSpec || drug?.packagingSpec,
+    standardPharmacopeia: batch?.standardPharmacopeia || drug?.standardPharmacopeia,
+    shelfLife: batch?.shelfLife || drug?.shelfLife,
+    route: batch?.route || drug?.route,
+    category: batch?.category || drug?.group,
+    isControlledSubstance: batch?.isControlledSubstance || drug?.isControlled,
+    manufacturer: batch?.manufacturer || drug?.manufacturer,
+    manufacturerAddress: batch?.manufacturerAddress || drug?.manufacturerAddress,
+    country: batch?.country || drug?.country,
+    applicantName: batch?.applicantName || drug?.applicantName,
+    applicantAddress: batch?.applicantAddress || drug?.applicantAddress,
+    applicantCountry: batch?.applicantCountry || drug?.applicantCountry,
+    approvalDecision: batch?.approvalDecision || drug?.approvalDecision,
+    decisionDate: batch?.decisionDate || drug?.decisionDate,
+    registryExpiryDate: batch?.registryExpiryDate || drug?.registryExpiryDate,
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
@@ -51,10 +76,10 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
                 <span className="font-mono text-2xs font-bold text-teal-900 bg-teal-100/70 border border-teal-200 px-2 py-0.5 rounded">
                   SĐK: {sdk}
                 </span>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">{batch.itemName}</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">{itemName}</h3>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  <span className="font-semibold text-slate-700">Hoạt chất:</span> {batch.activeIngredient || 'Theo hồ sơ Cục QLD'}
-                  {batch.concentration && <span className="font-semibold ml-1">({batch.concentration})</span>}
+                  <span className="font-semibold text-slate-700">Hoạt chất:</span> {activeInn}
+                  {strength && <span className="font-semibold ml-1">({strength})</span>}
                 </p>
               </div>
               <div className="flex items-center gap-1.5 text-2xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">
@@ -64,72 +89,41 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Bảng thuộc tính công bố chuẩn DAV */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 border border-slate-200 rounded-lg p-3 bg-white">
-            <div className="space-y-0.5 border-b sm:border-b-0 sm:border-r border-slate-100 pb-2 sm:pb-0 sm:pr-3">
-              <span className="text-2xs uppercase font-bold text-slate-500">Dạng bào chế</span>
-              <p className="font-medium text-slate-900">{batch.dosageForm || 'Viên nén / Dung dịch'}</p>
-            </div>
-            <div className="space-y-0.5 border-b sm:border-b-0 pb-2 sm:pb-0 sm:pl-1">
-              <span className="text-2xs uppercase font-bold text-slate-500">Quy cách đóng gói</span>
-              <p className="font-medium text-slate-900">{batch.packagingSpec || 'Theo tiêu chuẩn nhà sản xuất'}</p>
-            </div>
-            <div className="space-y-0.5 border-b sm:border-b-0 sm:border-r border-slate-100 pb-2 sm:pb-0 sm:pr-3 pt-1">
-              <span className="text-2xs uppercase font-bold text-slate-500">Đường dùng & Tiêu chuẩn</span>
-              <p className="font-medium text-slate-900">
-                {batch.route || 'Đường dùng quy định'} • {batch.standardPharmacopeia || 'DĐVN V'}
-              </p>
-            </div>
-            <div className="space-y-0.5 pb-1 sm:pl-1 pt-1">
-              <span className="text-2xs uppercase font-bold text-slate-500">Phân loại quản lý</span>
-              <p className="font-medium text-slate-900">
-                {batch.category} {batch.isControlledSubstance && '• Kiểm soát đặc biệt'}
-              </p>
-            </div>
-          </div>
+          {/* 5 Khối Thông tin Hành chính công bố */}
+          <DavAdministrativeBlocks data={adminData} />
 
-          {/* Cơ sở sản xuất */}
-          <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-            <Building2 className="w-5 h-5 text-slate-500 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-2xs uppercase font-bold text-slate-500">Cơ sở sản xuất & Xuất xứ</p>
-              <p className="font-semibold text-slate-900 truncate">
-                {batch.manufacturer || 'Công ty Dược phẩm'}
-                {batch.country && <span className="text-slate-600 font-normal"> ({batch.country})</span>}
-              </p>
-            </div>
-          </div>
-
-          {/* Trạng thái kho bệnh viện thực tế */}
-          <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-                <Package className="w-4 h-4 text-teal-700" />
-                <span>Trạng thái Lô tại Bệnh Viện (Quản trị FEFO)</span>
-              </div>
-              <span className="font-mono text-2xs font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200">
-                Lô: {batch.batchNumber}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="bg-slate-50 p-2 rounded">
-                <span className="text-2xs text-slate-500 block">Hạn dùng</span>
-                <span className="font-mono font-bold text-slate-900">{batch.expiryDate}</span>
-                <span className={`text-2xs block ${batch.daysLeft <= 60 ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
-                  (Còn {batch.daysLeft} ngày)
+          {/* Trạng thái kho bệnh viện thực tế (nếu có lô) */}
+          {batch && (
+            <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                  <Package className="w-4 h-4 text-teal-700" />
+                  <span>Trạng thái Lô tại Bệnh Viện (Quản trị FEFO)</span>
+                </div>
+                <span className="font-mono text-2xs font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                  Lô: {batch.batchNumber}
                 </span>
               </div>
-              <div className="bg-slate-50 p-2 rounded">
-                <span className="text-2xs text-slate-500 block">Tồn thực tế</span>
-                <span className="font-mono font-bold text-slate-900">{batch.currentStock} {batch.unit}</span>
-                <span className="text-2xs text-slate-500 block">Min: {batch.minThreshold}</span>
-              </div>
-              <div className="bg-slate-50 p-2 rounded col-span-2">
-                <span className="text-2xs text-slate-500 block">Vị trí lưu trữ</span>
-                <span className="font-medium text-slate-800 line-clamp-2">{batch.warehouseLocation}</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="bg-slate-50 p-2 rounded">
+                  <span className="text-2xs text-slate-500 block">Hạn dùng</span>
+                  <span className="font-mono font-bold text-slate-900">{batch.expiryDate}</span>
+                  <span className={`text-2xs block ${batch.daysLeft <= 60 ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
+                    (Còn {batch.daysLeft} ngày)
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <span className="text-2xs text-slate-500 block">Tồn thực tế</span>
+                  <span className="font-mono font-bold text-slate-900">{batch.currentStock} {batch.unit}</span>
+                  <span className="text-2xs text-slate-500 block">Min: {batch.minThreshold}</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded col-span-2">
+                  <span className="text-2xs text-slate-500 block">Vị trí lưu trữ</span>
+                  <span className="font-medium text-slate-800 line-clamp-2">{batch.warehouseLocation}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer thao tác */}
@@ -150,7 +144,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             >
               Đóng
             </button>
-            {onQuickDispatch && (
+            {onQuickDispatch && batch && (
               <button
                 onClick={() => { onQuickDispatch(batch); onClose(); }}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-bold cursor-pointer shadow-xs"

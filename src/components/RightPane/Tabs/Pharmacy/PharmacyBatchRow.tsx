@@ -68,8 +68,8 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
       {/* 4. Dạng Bào Chế & Quy Cách Đóng Gói */}
       <td className="py-2.5 px-3 text-slate-700 whitespace-nowrap">
         <p className="font-medium text-slate-800 text-[11px]">{batch.dosageForm || '—'}</p>
-        <p className="text-[10px] text-slate-500 truncate max-w-[150px]" title={batch.packagingSpec}>
-          {batch.packagingSpec || '—'}
+        <p className="text-[10px] text-slate-500 truncate max-w-[160px]" title={`${batch.packagingSpec || '—'}${batch.shelfLife ? ` • Hạn: ${batch.shelfLife}` : ''}`}>
+          {batch.packagingSpec || '—'}{batch.shelfLife ? ` • ${batch.shelfLife}` : ''}
         </p>
       </td>
 

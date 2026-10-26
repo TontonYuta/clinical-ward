@@ -71,9 +71,9 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
       {/* Hàng 3: Bào chế, Quy cách, Cơ sở SX */}
       <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 bg-slate-50/70 p-2 rounded border border-slate-100">
         <div>
-          <span className="text-slate-400 block text-2xs">Dạng & Quy cách:</span>
+          <span className="text-slate-400 block text-2xs">Dạng, Quy cách & Hạn lưu hành:</span>
           <span className="font-medium text-slate-800 truncate block">
-            {batch.dosageForm || '—'} • {batch.packagingSpec || '—'}
+            {batch.dosageForm || '—'} • {batch.packagingSpec || '—'}{batch.shelfLife ? ` (${batch.shelfLife})` : ''}
           </span>
         </div>
         <div>

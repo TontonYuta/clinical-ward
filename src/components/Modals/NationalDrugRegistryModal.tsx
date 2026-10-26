@@ -13,15 +13,14 @@ import { getNationalDrugRegistryApi } from '../../services/api';
 import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
 import { NationalDrugTabs } from './NationalDrugRegistry/NationalDrugTabs';
 import { queryOfflineRegistry } from './NationalDrugRegistry/offlineRegistry';
+import { DavDrugDetailModal } from './DavDrugDetailModal';
 
 interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; inventoryBatches?: InventoryBatch[]; }
 
 const PAGE_SIZE = 12;
 const GROUP_STYLES: Record<string, string> = {
-  'Kháng sinh': 'bg-blue-50 text-blue-700 border-blue-200/60', 'Thuốc gây nghiện': 'bg-amber-50 text-amber-800 border-amber-200/60',
-  'Thuốc cấp cứu': 'bg-rose-50 text-rose-700 border-rose-200/60', 'Thuốc nguy cơ cao': 'bg-red-50 text-red-700 border-red-200/60',
-  'Dịch truyền': 'bg-cyan-50 text-cyan-800 border-cyan-200/60', 'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60',
-  'Vật tư tiêu hao': 'bg-emerald-50 text-emerald-800 border-emerald-200/60', 'Vắc xin & Chuỗi lạnh': 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
+  'Kháng sinh': 'bg-blue-50 text-blue-700 border-blue-200/60', 'Thuốc gây nghiện': 'bg-amber-50 text-amber-800 border-amber-200/60', 'Thuốc cấp cứu': 'bg-rose-50 text-rose-700 border-rose-200/60', 'Thuốc nguy cơ cao': 'bg-red-50 text-red-700 border-red-200/60',
+  'Dịch truyền': 'bg-cyan-50 text-cyan-800 border-cyan-200/60', 'Thuốc hướng thần': 'bg-purple-50 text-purple-700 border-purple-200/60', 'Vật tư tiêu hao': 'bg-emerald-50 text-emerald-800 border-emerald-200/60', 'Vắc xin & Chuỗi lạnh': 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
 };
 
 export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication, inventoryBatches }) => {
@@ -38,12 +37,9 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   const [totalPages, setTotalPages] = useState(1);
   const [groupStats, setGroupStats] = useState<Record<string, number>>({});
   const [verifyMode, setVerifyMode] = useState(isVerificationLinksVisible());
+  const [selectedDrugForDav, setSelectedDrugForDav] = useState<MasterMedication | null>(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 250);
-    return () => clearTimeout(t);
-  }, [searchInput]);
-
+  useEffect(() => { const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 250); return () => clearTimeout(t); }, [searchInput]);
   const toggleVerify = () => { const next = !verifyMode; setVerificationLinksVisibility(next); setVerifyMode(next); };
 
   const loadData = useCallback(async (isManualSync = false) => {
@@ -57,7 +53,9 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           activeIngredient: i.active_ingredient, concentration: i.concentration, dosageForm: i.dosage_form,
           route: i.route, standardUnit: i.standard_unit, group: i.group, isControlled: i.is_controlled,
           isHighAlert: i.is_high_alert, isCrashCart: i.is_crash_cart, defaultDoseQty: 1, wardStockCount: 0,
-          hospitalStockCount: 0, searchAliases: [i.brand_name.toLowerCase()], note: i.note
+          hospitalStockCount: 0, searchAliases: [i.brand_name.toLowerCase()], note: i.note,
+          packagingSpec: i.packaging_spec, standardPharmacopeia: i.standard_pharmacopeia, shelfLife: i.shelf_life,
+          manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name, approvalDecision: i.approval_decision
         }));
         setDrugs(mapped); setTotalCount(data.total || mapped.length); setTotalPages(data.total_pages || 1);
         if (data.group_stats) setGroupStats(data.group_stats);
@@ -169,7 +167,12 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {displayedDrugs.map((d) => (
-                    <NationalDrugTableRow key={d.id} drug={d} verifyMode={verifyMode} badgeStyle={GROUP_STYLES[d.group] || 'bg-slate-100 text-slate-700 border-slate-200/60'} onOpenSafetyGuide={(name) => { onClose(); onSelectMedication?.(name); }} />
+                    <NationalDrugTableRow
+                      key={d.id} drug={d} verifyMode={verifyMode}
+                      badgeStyle={GROUP_STYLES[d.group] || 'bg-slate-100 text-slate-700 border-slate-200/60'}
+                      onOpenSafetyGuide={(name) => { onClose(); onSelectMedication?.(name); }}
+                      onOpenDavDetail={(drug) => setSelectedDrugForDav(drug)}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -186,6 +189,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           </div>
         </div>
       </div>
+      <DavDrugDetailModal isOpen={!!selectedDrugForDav} onClose={() => setSelectedDrugForDav(null)} drug={selectedDrugForDav} />
     </div>
   );
 };

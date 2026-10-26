@@ -60,7 +60,10 @@ export async function queryOfflineRegistry(
     activeIngredient: d.activeIngredient, concentration: d.concentration, dosageForm: d.dosageForm,
     route: d.route, standardUnit: d.standardUnit || 'Viên', group: d.group || 'Thuốc điều trị chuyên khoa',
     isControlled: !!d.isControlled, isHighAlert: !!d.isHighAlert, isCrashCart: !!d.isCrashCart,
-    defaultDoseQty: 1, wardStockCount: 0, hospitalStockCount: 0, searchAliases: [d.brandName?.toLowerCase() || ''], note: d.note
+    defaultDoseQty: 1, wardStockCount: 0, hospitalStockCount: 0, searchAliases: [d.brandName?.toLowerCase() || ''], note: d.note,
+    packagingSpec: d.packagingSpec, standardPharmacopeia: d.standardPharmacopeia, shelfLife: d.shelfLife,
+    manufacturer: d.manufacturer, country: d.country, applicantName: d.applicantName, approvalDecision: d.approvalDecision,
+    clinicalProfile: d.clinicalProfile
   }));
   return { items, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)), groupStats };
 }

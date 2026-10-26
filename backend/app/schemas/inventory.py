@@ -23,6 +23,10 @@ class BatchResponse(BaseModel):
     country: str | None = None
     packaging_spec: str | None = None
     standard_pharmacopeia: str | None = None
+    shelf_life: str | None = None
+    manufacturer_address: str | None = None
+    applicant_name: str | None = None
+    approval_decision: str | None = None
     route: str | None = None
     category: str
     expiry_date: str

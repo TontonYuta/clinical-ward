@@ -32,6 +32,12 @@ interface BackendBatch {
   country?: string;
   packaging_spec?: string;
   standard_pharmacopeia?: string;
+  shelf_life?: string;
+  manufacturer_address?: string;
+  applicant_name?: string;
+  applicant_address?: string;
+  applicant_country?: string;
+  approval_decision?: string;
   route?: string;
 }
 
@@ -56,6 +62,12 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
     country: b.country || master?.country,
     packagingSpec: b.packaging_spec || master?.packagingSpec,
     standardPharmacopeia: b.standard_pharmacopeia || master?.standardPharmacopeia,
+    shelfLife: b.shelf_life || master?.shelfLife,
+    manufacturerAddress: b.manufacturer_address || master?.manufacturerAddress,
+    applicantName: b.applicant_name || master?.applicantName,
+    applicantAddress: b.applicant_address || master?.applicantAddress,
+    applicantCountry: b.applicant_country || master?.applicantCountry,
+    approvalDecision: b.approval_decision || master?.approvalDecision,
     route: b.route || master?.route,
     isControlledSubstance: master?.isControlledSubstance ?? b.category.includes('nghiện'),
     category: b.category as InventoryBatch['category'],
