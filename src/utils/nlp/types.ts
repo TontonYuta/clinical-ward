@@ -13,10 +13,12 @@ import {
   AssetAuditRecord,
   UserProfile
 } from '../../types/clinical';
+import { AgentActionCard } from '../../types/chat';
 
 export interface ProcessedQueryResult {
   replyMessage: ChatMessage;
   actionPayload?: ActionPayload;
+  card?: AgentActionCard;
 }
 
 export interface ClinicalQueryState {

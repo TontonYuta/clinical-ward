@@ -9,8 +9,9 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "test:kb": "tsx scripts/verify_clinical_knowledge_base.ts",
     "test:chatbot": "tsx scripts/test_chatbot_suite.ts",
-    "test": "tsx scripts/test_chatbot_suite.ts"
+    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

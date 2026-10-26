@@ -17,7 +17,7 @@ import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
 interface CpoePrescriptionTabProps {
   doctorName?: string;
   currentUserRole?: UserRole;
-  onOpenSafetyGuide?: (medName: string) => void;
+  onOpenSafetyGuide?: (medName?: string) => void;
 }
 
 export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({

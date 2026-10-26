@@ -1247,9 +1247,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     } else if (actionType === 'OPEN_LEGAL_MODAL') {
       setIsLegalDocsOpen(true);
     } else if (actionType === 'OPEN_REGISTRY_MODAL') {
-      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('registry')) {
-        setCurrentTab('registry');
-      }
+      setIsMedicationSafetyOpen(true);
       markExecuted();
     } else if (actionType === 'OPEN_FEFO_MODAL') {
       if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('fefo')) {

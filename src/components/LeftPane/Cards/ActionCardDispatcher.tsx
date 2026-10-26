@@ -21,6 +21,7 @@ import {
   Stethoscope
 } from 'lucide-react';
 import { ChatMessage, DashboardTab } from '../../../types/clinical';
+import { AgentActionCard } from '../../../types/chat';
 import { formatInlineMarkdown } from '../ChatMarkdown';
 import { CdssAlertBanner } from './CdssAlertBanner';
 import { BorrowConfirmCard } from './BorrowConfirmCard';

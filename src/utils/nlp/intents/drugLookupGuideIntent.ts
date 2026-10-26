@@ -50,7 +50,6 @@ Hệ thống tích hợp toàn diện cơ sở dữ liệu **Cục Quản lý D�
     data: { totalDrugs: 54885, status: 'ready' },
     primaryActionLabel: 'Mở Cổng 55k Dược Quốc Gia',
     primaryActionType: 'OPEN_REGISTRY_MODAL',
-    targetTab: 'registry',
     status: 'pending'
   };
 
