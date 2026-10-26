@@ -66,11 +66,10 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
   return (
     <div className="border border-slate-200 rounded-lg p-3.5 bg-slate-50/70 space-y-2.5 shadow-2xs">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs uppercase font-bold text-slate-700">
-          <FileText className="w-4 h-4 text-blue-600" />
-          <span>Hồ Sơ Điện Tử Cục Quản Lý Dược</span>
-        </div>
-        <span className="text-xs text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+        <span className="text-2xs uppercase font-bold text-slate-500">
+          Hồ Sơ Điện Tử Cục Quản Lý Dược
+        </span>
+        <span className="text-2xs text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
           Pháp lý SmPC
         </span>
       </div>

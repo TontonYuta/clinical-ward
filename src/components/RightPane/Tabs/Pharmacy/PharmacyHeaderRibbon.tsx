@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, PackagePlus, Database, Layers } from 'lucide-react';
+import { Search, Database } from 'lucide-react';
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
 export type CommodityFilter = 'all' | 'medication' | 'medical_supply';
@@ -60,7 +60,6 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
               onClick={onOpenRestock}
               className="inline-flex items-center gap-1.5 h-7.5 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs cursor-pointer shadow-2xs"
             >
-              <PackagePlus className="w-3.5 h-3.5" />
               <span>Dự trù thiếu ({lowStockCount})</span>
             </button>
           )}

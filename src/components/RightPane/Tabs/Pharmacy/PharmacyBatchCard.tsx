@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { ArrowUpRight, AlertOctagon, PackagePlus, FileText } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
 
 interface PharmacyBatchCardProps {
@@ -96,17 +96,16 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onSelectBatch?.(batch)}
-            className="inline-flex items-center gap-1 h-7 px-2 rounded border border-slate-200 bg-white text-slate-700 font-semibold text-xs cursor-pointer hover:bg-slate-50"
+            className="inline-flex items-center h-7 px-2 rounded border border-slate-200 bg-white text-slate-700 font-semibold text-xs cursor-pointer hover:bg-slate-50"
           >
-            <FileText className="w-3.5 h-3.5 text-teal-700" />
-            <span>Công bố</span>
+            <span>Chi tiết</span>
           </button>
           {isUnderMin && (
             <button
               onClick={onOpenRestock}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold cursor-pointer"
+              className="inline-flex items-center h-7 px-2 rounded bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold cursor-pointer"
             >
-              <PackagePlus className="w-3.5 h-3.5 text-amber-700" />
+              <span>Dự trù</span>
             </button>
           )}
           <button

@@ -2,10 +2,11 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Bàn Làm Việc Chi Tiết Thuốc & Dược Thư Quốc Gia - Chuẩn Workstation Bệnh Viện (<=200 LOC)
+ * Giao diện tươi sáng, phân cấp thị giác rõ ràng, triệt tiêu viền màu và icon rác
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, Package, CheckCircle2, ArrowUpRight, ShieldAlert, Sparkles } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
 import { getDrugDetailApi } from '../../services/api';
@@ -23,7 +24,7 @@ interface DavDrugDetailModalProps {
 }
 
 export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
-  isOpen, onClose, batch, drug, onQuickDispatch,
+  isOpen, onClose, batch, drug,
 }) => {
   if (!isOpen || (!batch && !drug)) return null;
 
@@ -75,29 +76,33 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="bg-white rounded-lg shadow-2xl border border-slate-300 w-full max-w-6xl xl:max-w-7xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-xs">
+      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-6xl xl:max-w-7xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
         
-        {/* Top Header Workstation */}
-        <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between shrink-0 border-b border-slate-800">
+        {/* Top Header Workstation (Trắng sáng tươi mới, phân cấp rõ) */}
+        <div className="bg-white text-slate-900 px-6 py-4 flex items-center justify-between shrink-0 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold text-blue-300 bg-blue-950 border border-blue-800 px-2.5 py-1 rounded">SĐK: {sdk}</span>
+            <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded">
+              SĐK: {sdk}
+            </span>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                {itemName} {strength && <span className="text-xs font-medium text-blue-300">({strength})</span>}
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                {itemName} {strength && <span className="text-xs font-medium text-slate-500">({strength})</span>}
               </h2>
-              <p className="text-xs text-slate-300">
-                <span className="text-slate-400">Hoạt chất:</span> <strong className="text-white">{activeInn}</strong>
+              <p className="text-xs text-slate-500 mt-0.5">
+                <span>Hoạt chất:</span> <strong className="text-slate-800">{activeInn}</strong>
                 {clinicalData.drugClass && <span className="ml-2 text-slate-400">• {clinicalData.drugClass}</span>}
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-blue-300 bg-blue-950/70 border border-blue-800 px-2.5 py-1 rounded">
-              <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" /> CSDL Cục QLD
+            <span className="hidden sm:inline-flex text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">
+              CSDL Cục QLD
             </span>
-            <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded hover:bg-slate-800 transition cursor-pointer"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -107,37 +112,32 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
           {/* Cột Trái (5/12): Cảnh Báo An Toàn, Hành Chính, Mẫu Nhãn, Lô Kho */}
           <div className="lg:col-span-5 space-y-3.5">
             {clinicalData.contraindications && (
-              <div className="bg-rose-50 border-l-4 border-rose-600 border-y border-r border-rose-200 rounded-lg p-3.5 space-y-2 shadow-2xs">
-                <div className="flex items-center justify-between text-rose-900 font-bold text-xs uppercase tracking-wide">
-                  <div className="flex items-center gap-1.5">
-                    <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Chống chỉ định tuyệt đối</span>
-                  </div>
-                  <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Cấm kỵ</span>
+              <div className="bg-red-50/50 border border-red-200 rounded-lg p-3.5 space-y-2">
+                <div className="flex items-center justify-between text-red-800 font-bold text-xs uppercase tracking-wide">
+                  <span>Chống chỉ định tuyệt đối</span>
+                  <span className="text-2xs bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">Cấm kỵ</span>
                 </div>
-                <div className="space-y-1 pl-4">
+                <ul className="space-y-1.5">
                   {formatContraindicationsList(clinicalData.contraindications).map((c, i) => (
-                    <div key={i} className="text-xs sm:text-sm text-rose-950 font-semibold flex items-start gap-1.5 leading-snug">
-                      <span className="text-rose-600 font-bold">•</span>
+                    <li key={i} className="text-xs sm:text-sm text-slate-800 flex items-start gap-2 leading-relaxed">
+                      <span className="text-red-600 font-bold select-none">•</span>
                       <span>{c}</span>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
 
             {clinicalData.antidote && (
-              <div className="bg-blue-50 border-l-4 border-blue-600 border-y border-r border-blue-200 rounded-lg p-3.5 space-y-1.5 shadow-2xs">
-                <div className="flex items-center justify-between text-blue-950 font-bold text-xs uppercase tracking-wide">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>Thuốc giải độc đặc hiệu (Antidote)</span>
-                  </div>
+              <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3.5 space-y-1.5">
+                <div className="flex items-center justify-between text-blue-900 font-bold text-xs uppercase tracking-wide">
+                  <span>Thuốc giải độc đặc hiệu (Antidote)</span>
                   <span className="text-2xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">Cấp cứu</span>
                 </div>
-                <p className="text-xs sm:text-sm text-blue-950 font-bold leading-relaxed pl-4">
-                  {clinicalData.antidote}
-                </p>
+                <div className="text-xs sm:text-sm text-slate-800 flex items-start gap-2 leading-relaxed">
+                  <span className="text-blue-600 font-bold select-none">•</span>
+                  <p className="font-medium text-slate-900">{clinicalData.antidote}</p>
+                </div>
               </div>
             )}
 
@@ -145,20 +145,18 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             <DavDocumentActionButtons hdsdPath={batch?.hdsdPath || drug?.hdsdPath} labelPath={batch?.labelPath || drug?.labelPath} nationalCode={sdk} brandName={itemName} />
 
             {batch && (
-              <div className="border border-slate-200 rounded-lg p-3.5 bg-white space-y-2 shadow-2xs">
+              <div className="border border-slate-200 rounded-lg p-3.5 bg-white space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs uppercase tracking-wide">
-                    <Package className="w-4 h-4 text-blue-600" /><span>Lô Thuốc Tại Kho Bệnh Viện</span>
-                  </div>
+                  <span className="font-bold text-slate-800 text-xs uppercase tracking-wide">Lô Thuốc Tại Kho Bệnh Viện</span>
                   <span className="font-mono text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-200">Lô: {batch.batchNumber}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-50 p-2.5 rounded">
+                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
                     <span className="text-slate-500 block mb-0.5">Hạn dùng</span>
                     <span className="font-mono font-bold text-sm text-slate-900">{batch.expiryDate}</span>
-                    <span className={`text-xs block mt-0.5 ${batch.daysLeft <= 60 ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>(Còn {batch.daysLeft} ngày)</span>
+                    <span className={`text-xs block mt-0.5 ${batch.daysLeft <= 60 ? 'text-red-600 font-bold' : 'text-slate-500'}`}>(Còn {batch.daysLeft} ngày)</span>
                   </div>
-                  <div className="bg-slate-50 p-2.5 rounded">
+                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
                     <span className="text-slate-500 block mb-0.5">Tồn thực tế</span>
                     <span className="font-mono font-bold text-sm text-slate-900">{batch.currentStock} {batch.unit}</span>
                     <span className="text-slate-500 block text-xs mt-0.5">Ngưỡng min: {batch.minThreshold}</span>
@@ -175,20 +173,15 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <a href={davPortalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline">
-            <span>Đối soát trực tiếp Cổng Cục Quản Lý Dược</span><ExternalLink className="w-3.5 h-3.5" />
+            <span>Đối soát trực tiếp Cổng Cục Quản Lý Dược</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
-          <div className="flex items-center gap-2">
-            <button onClick={onClose} className="px-4 py-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold cursor-pointer">Đóng</button>
-            {onQuickDispatch && batch && (
-              <button onClick={() => { onQuickDispatch(batch); onClose(); }} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer shadow-xs">
-                <span>Xuất kho</span><ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <button onClick={onClose} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer">
+            Đóng
+          </button>
         </div>
-
       </div>
     </div>
   );

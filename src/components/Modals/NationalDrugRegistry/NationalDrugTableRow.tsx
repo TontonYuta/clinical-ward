@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { ExternalLink, FileText } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { MasterMedication } from '../../../types/medication';
 import { getDavRegistryUrl } from '../../../config/clinicalVerification';
 
@@ -37,11 +37,10 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
         <button
           type="button"
           onClick={() => onOpenDavDetail ? onOpenDavDetail(d) : null}
-          className="font-mono font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200/80 text-xs inline-flex items-center gap-1 transition cursor-pointer"
+          className="font-mono font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 px-2.5 py-0.5 rounded border border-blue-200 text-xs inline-flex items-center transition cursor-pointer"
           title="Bấm để xem Giấy công bố thuốc Cục Quản lý Dược"
         >
           <span>{d.nationalCode}</span>
-          <FileText className="w-3 h-3 text-blue-600 opacity-80" />
         </button>
         <div className="text-2xs text-slate-500 mt-1 font-mono">
           {standard} • Hạn: {shelfLife}
@@ -114,10 +113,9 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           <button
             type="button"
             onClick={() => onOpenDavDetail?.(d)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer shadow-2xs"
+            className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer shadow-2xs"
             title="Xem Giấy công bố thuốc Cục Quản Lý Dược đầy đủ"
           >
-            <FileText className="w-3 h-3 text-blue-600" />
             <span>Chi tiết</span>
           </button>
           {hasVerifiedMonograph && (

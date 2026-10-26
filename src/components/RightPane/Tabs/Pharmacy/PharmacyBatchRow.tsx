@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { ArrowUpRight, AlertOctagon, PackagePlus, FileText } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
 
 interface PharmacyBatchRowProps {
@@ -114,19 +114,18 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
         <div className="inline-flex items-center gap-1 justify-end">
           <button
             onClick={() => onSelectBatch?.(batch)}
-            className="inline-flex items-center gap-1 h-7 px-2 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition"
+            className="inline-flex items-center h-7 px-2.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition"
             title="Xem chi tiết công bố Cục Quản Lý Dược"
           >
-            <FileText className="w-3.5 h-3.5 text-teal-700" />
-            <span className="hidden lg:inline">Chi tiết</span>
+            <span>Chi tiết</span>
           </button>
           {isUnderMin && (
             <button
               onClick={onOpenRestock}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold cursor-pointer"
+              className="inline-flex items-center h-7 px-2 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold cursor-pointer"
               title="Lập dự trù bù thuốc (Mẫu 01/TT22)"
             >
-              <PackagePlus className="w-3.5 h-3.5 text-amber-700" />
+              <span>Dự trù</span>
             </button>
           )}
           <button
