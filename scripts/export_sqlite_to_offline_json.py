@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Đồng bộ toàn bộ CSDL dav_national_drugs (đã enrich 16 trường lâm sàng Dược Thư 2022)
-từ SQLite sang public/data/vietnam_drug_registry/dav_master_registry.json.gz
-và dav_essential_formulary.json (cùng bản sao ở dist/).
+từ SQLite sang public/ và data/vietnam_drug_registry/dav_master_registry.json.gz (tinh gọn 21MB)
+và dav_essential_formulary.json.
 """
 
 import gzip
@@ -13,6 +13,7 @@ import sqlite3
 
 DB_PATH = "/home/tontonyuta/Downloads/DoAn2/backend/clinical_hospital.db"
 PUBLIC_DIR = "/home/tontonyuta/Downloads/DoAn2/public/data/vietnam_drug_registry"
+DATA_DIR = "/home/tontonyuta/Downloads/DoAn2/data/vietnam_drug_registry"
 DIST_DIR = "/home/tontonyuta/Downloads/DoAn2/dist/data/vietnam_drug_registry"
 
 def export_db():
@@ -36,6 +37,8 @@ def export_db():
         brand_name = d.get("brand_name") or ""
         aliases = [brand_name.lower()] if brand_name else []
 
+        # Tinh gọn: Lưu giữ các trường an toàn lâm sàng trọng yếu cho cảnh báo & đối soát
+        # Chi tiết toàn văn (chỉ định dài, tương tác sâu) được lấy qua bảng clinical_drug_monographs theo ID
         item = {
             "id": d.get("id"),
             "nationalCode": d.get("national_code"),
@@ -63,20 +66,14 @@ def export_db():
             "approvalDecision": d.get("approval_decision") or "",
             "hdsdPath": d.get("hdsd_path"),
             "labelPath": d.get("label_path"),
-            # 16 trường dữ liệu lâm sàng Dược Thư Quốc Gia 2022
+            # Trường dữ liệu lâm sàng Dược Thư Quốc Gia 2022
             "atcCode": d.get("atc_code"),
             "drugClass": d.get("drug_class"),
-            "indications": d.get("indications"),
             "contraindications": d.get("contraindications"),
-            "precautions": d.get("precautions"),
-            "pregnancyWarning": d.get("pregnancy_warning"),
             "adultDosage": d.get("adult_dosage"),
             "pediatricDosage": d.get("pediatric_dosage"),
             "renalAdjustment": d.get("renal_adjustment"),
-            "hepaticAdjustment": d.get("hepatic_adjustment"),
-            "adverseEffects": d.get("adverse_effects"),
-            "drugInteractions": d.get("drug_interactions"),
-            "overdoseTreatment": d.get("overdose_treatment"),
+            "pregnancyWarning": d.get("pregnancy_warning"),
             "antidote": d.get("antidote"),
             "clinicalSource": d.get("clinical_source"),
             "clinicalMonographId": d.get("clinical_monograph_id"),
@@ -87,33 +84,35 @@ def export_db():
 
     print(f"✅ Đã tải {len(items)} bản ghi ({enriched_count} bản ghi có thông tin lâm sàng DTQG).")
 
-    # 1. Ghi dav_master_registry.json.gz (toàn bộ 54.885 thuốc)
-    master_gz_path = os.path.join(PUBLIC_DIR, "dav_master_registry.json.gz")
-    print(f"💾 Đang nén và ghi {master_gz_path}...")
-    with gzip.open(master_gz_path, "wt", encoding="utf-8") as f:
-        json.dump(items, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"   Kích thước file gz: {os.path.getsize(master_gz_path) / 1024 / 1024:.2f} MB")
+    # 1. Ghi dav_master_registry.json.gz (khoảng 21MB)
+    for target_dir in (PUBLIC_DIR, DATA_DIR):
+        os.makedirs(target_dir, exist_ok=True)
+        master_gz_path = os.path.join(target_dir, "dav_master_registry.json.gz")
+        print(f"💾 Đang nén và ghi {master_gz_path}...")
+        with gzip.open(master_gz_path, "wt", encoding="utf-8") as f:
+            json.dump(items, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"   Kích thước file gz: {os.path.getsize(master_gz_path) / 1024 / 1024:.2f} MB")
 
-    # 2. Ghi dav_essential_formulary.json (1500 thuốc phổ biến/thiết yếu ưu tiên các thuốc có dữ liệu lâm sàng)
-    # Lấy top 1500 thuốc có lâm sàng trước, bổ sung thuốc khác
+    # 2. Ghi dav_essential_formulary.json (1500 thuốc phổ biến/thiết yếu có đầy đủ mọi trường)
     enriched_items = [it for it in items if it.get("contraindications")]
     non_enriched = [it for it in items if not it.get("contraindications")]
     essential_items = enriched_items[:1200] + non_enriched[:300]
 
-    essential_json_path = os.path.join(PUBLIC_DIR, "dav_essential_formulary.json")
-    print(f"💾 Đang ghi {essential_json_path} ({len(essential_items)} thuốc)...")
-    with open(essential_json_path, "w", encoding="utf-8") as f:
-        json.dump(essential_items, f, ensure_ascii=False, indent=2)
-    print(f"   Kích thước file essential: {os.path.getsize(essential_json_path) / 1024 / 1024:.2f} MB")
+    for target_dir in (PUBLIC_DIR, DATA_DIR):
+        essential_json_path = os.path.join(target_dir, "dav_essential_formulary.json")
+        print(f"💾 Đang ghi {essential_json_path} ({len(essential_items)} thuốc)...")
+        with open(essential_json_path, "w", encoding="utf-8") as f:
+            json.dump(essential_items, f, ensure_ascii=False, indent=2)
+        print(f"   Kích thước file essential: {os.path.getsize(essential_json_path) / 1024 / 1024:.2f} MB")
 
     # 3. Đồng bộ sang thư mục dist nếu tồn tại
     if os.path.exists(DIST_DIR):
         print(f"🔄 Sao chép bản cập nhật sang {DIST_DIR}...")
-        shutil.copy2(master_gz_path, os.path.join(DIST_DIR, "dav_master_registry.json.gz"))
-        shutil.copy2(essential_json_path, os.path.join(DIST_DIR, "dav_essential_formulary.json"))
+        shutil.copy2(os.path.join(PUBLIC_DIR, "dav_master_registry.json.gz"), os.path.join(DIST_DIR, "dav_master_registry.json.gz"))
+        shutil.copy2(os.path.join(PUBLIC_DIR, "dav_essential_formulary.json"), os.path.join(DIST_DIR, "dav_essential_formulary.json"))
         print("   Đã đồng bộ sang dist/ thành công.")
 
-    print("🎉 Hoàn tất đồng bộ dữ liệu ngoại tuyến!")
+    print("🎉 Hoàn tất đồng bộ dữ liệu ngoại tuyến tối ưu dung lượng!")
 
 if __name__ == "__main__":
     export_db()

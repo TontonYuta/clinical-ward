@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/*.py": {
+      "excludeFiles": "{docs/**,public/**,TEMP/**,backend/data/knowledge_base/*.pdf,**/*.mp4,**/*.png,**/*.jpg}"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
