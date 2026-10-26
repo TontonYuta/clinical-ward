@@ -60,7 +60,13 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
     isControlledSubstance: master?.isControlledSubstance ?? b.category.includes('nghiện'),
     category: b.category as InventoryBatch['category'],
     commodityType: master?.commodityType || (b.category.includes('Vật tư') ? 'medical_supply' : 'medication'),
-    warehouseType: master?.warehouseType || (b.warehouse_location.includes('Kho Lạnh') ? 'ward_emergency' : 'inpatient_central'),
+    warehouseType:
+      master?.warehouseType ||
+      (b.warehouse_location.includes('Ngoại Trú')
+        ? 'outpatient_pharmacy'
+        : b.warehouse_location.includes('Cấp Cứu') || b.warehouse_location.includes('Kho Lạnh') || b.warehouse_location.includes('Tủ')
+        ? 'ward_emergency'
+        : 'inpatient_central'),
     batchNumber: b.batch_number,
     expiryDate: b.expiry_date,
     daysLeft: b.days_left,
@@ -80,8 +86,8 @@ export const inventoryApi = {
   async fetchInventoryBatches(): Promise<InventoryBatch[]> {
     const raw = await apiRequest<BackendBatch[]>('/inventory/batches');
     const mapped = raw.map(mapBackendToBatch);
-    const mappedBatchNums = new Set(mapped.map((b) => b.batchNumber));
-    const extra = INITIAL_INVENTORY_BATCHES.filter((b) => !mappedBatchNums.has(b.batchNumber));
+    const mappedIds = new Set(mapped.map((b) => b.id));
+    const extra = INITIAL_INVENTORY_BATCHES.filter((b) => !mappedIds.has(b.id));
     return [...mapped, ...extra];
   },
 

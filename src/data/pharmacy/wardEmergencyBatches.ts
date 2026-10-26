@@ -57,7 +57,7 @@ export const WARD_EMERGENCY_BATCHES: InventoryBatch[] = [
     concentration: '9mg/ml (0.9%)', dosageForm: 'Dung dịch tiêm truyền', manufacturer: 'Cty CPDP An Thiên',
     country: 'Việt Nam', packagingSpec: 'Chai 500ml', standardPharmacopeia: 'DĐVN V', route: 'Truyền tĩnh mạch',
     category: 'Dịch truyền & Cấp cứu', commodityType: 'medication', warehouseType: 'ward_emergency',
-    batchNumber: 'LOT-NC25-N1', expiryDate: '2027-06-25', daysLeft: 242, isNearExpiry: false,
+    batchNumber: 'LOT-NC25-T1', expiryDate: '2027-06-25', daysLeft: 242, isNearExpiry: false,
     currentStock: 600, minThreshold: 200, maxThreshold: 1500, isLowStock: false, unit: 'Chai',
     warehouseLocation: 'Kho Dịch Truyền Thể Tích Lớn (Khu C1)',
     storageCondition: 'Bảo quản < 30°C, tránh ánh sáng GSP', priorityOrder: 12,

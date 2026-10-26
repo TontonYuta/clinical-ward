@@ -16,6 +16,7 @@ export const INITIAL_INVENTORY_BATCHES: InventoryBatch[] = [
   ...INPATIENT_CENTRAL_BATCHES,
   ...WARD_EMERGENCY_BATCHES,
   ...OUTPATIENT_INVENTORY_BATCHES,
+  ...SUPPLIES_INVENTORY_BATCHES,
 ].sort((a, b) => a.priorityOrder - b.priorityOrder);
 
 export {
