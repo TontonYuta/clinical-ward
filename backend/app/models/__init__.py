@@ -6,7 +6,7 @@ from app.models.coldchain import ColdChainTelemetry, ColdChainCurrentState
 from app.models.asset import AssetRecord
 from app.models.audit import AuditRecord
 from app.models.cpoe import CpoePrescription
-from app.models.registry import DavNationalDrug
+from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
 
 __all__ = [
     "User",
@@ -19,4 +19,5 @@ __all__ = [
     "AuditRecord",
     "CpoePrescription",
     "DavNationalDrug",
+    "ClinicalDrugMonograph",
 ]

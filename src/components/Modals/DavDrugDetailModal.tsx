@@ -10,6 +10,7 @@ import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
 import { DavAdministrativeBlocks } from './DavDrugDetail/DavAdministrativeBlocks';
 import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
+import { DavClinicalKnowledgeBlock } from './DavDrugDetail/DavClinicalKnowledgeBlock';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
@@ -47,6 +48,24 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     approvalDecision: batch?.approvalDecision || drug?.approvalDecision,
     decisionDate: batch?.decisionDate || drug?.decisionDate,
     registryExpiryDate: batch?.registryExpiryDate || drug?.registryExpiryDate,
+  };
+
+  const clinicalData = {
+    atcCode: batch?.atcCode || drug?.atcCode,
+    drugClass: batch?.drugClass || drug?.drugClass,
+    indications: batch?.indications || drug?.indications,
+    contraindications: batch?.contraindications || drug?.contraindications,
+    precautions: batch?.precautions || drug?.precautions,
+    pregnancyWarning: batch?.pregnancyWarning || drug?.pregnancyWarning,
+    adultDosage: batch?.adultDosage || drug?.adultDosage,
+    pediatricDosage: batch?.pediatricDosage || drug?.pediatricDosage,
+    renalAdjustment: batch?.renalAdjustment || drug?.renalAdjustment,
+    hepaticAdjustment: batch?.hepaticAdjustment || drug?.hepaticAdjustment,
+    adverseEffects: batch?.adverseEffects || drug?.adverseEffects,
+    drugInteractions: batch?.drugInteractions || drug?.drugInteractions,
+    overdoseTreatment: batch?.overdoseTreatment || drug?.overdoseTreatment,
+    antidote: batch?.antidote || drug?.antidote,
+    clinicalSource: batch?.clinicalSource || drug?.clinicalSource,
   };
 
   return (
@@ -89,6 +108,9 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Khối Thông Tin Lâm Sàng Dược Thư Quốc Gia */}
+          <DavClinicalKnowledgeBlock data={clinicalData} />
 
           {/* 5 Khối Thông tin Hành chính công bố */}
           <DavAdministrativeBlocks data={adminData} />

@@ -301,3 +301,10 @@ export async function getDrugDocumentsApi(nationalCode: string) {
   if (!res.ok) throw new Error('Không thể tra cứu tài liệu số hóa của thuốc từ máy chủ');
   return res.json();
 }
+
+export async function getDrugDetailApi(nationalCode: string) {
+  const res = await fetch(`${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}`);
+  if (!res.ok) throw new Error('Không thể tra cứu thông tin chi tiết thuốc từ máy chủ');
+  return res.json();
+}
+

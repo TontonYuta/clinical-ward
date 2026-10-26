@@ -136,4 +136,19 @@ export interface MasterMedication {
   registryExpiryDate?: string;
   hdsdPath?: string; // Đường dẫn file HDSD PDF (dichvucong.dav.gov.vn)
   labelPath?: string; // Đường dẫn file Mẫu nhãn PDF
+  // Dữ liệu lâm sàng chuẩn Dược Thư Quốc Gia Việt Nam
+  drugClass?: string;
+  indications?: string;
+  contraindications?: string;
+  precautions?: string;
+  pregnancyWarning?: string;
+  adultDosage?: string;
+  pediatricDosage?: string;
+  renalAdjustment?: string;
+  hepaticAdjustment?: string;
+  adverseEffects?: string;
+  drugInteractions?: string;
+  overdoseTreatment?: string;
+  antidote?: string;
+  clinicalSource?: string;
 }

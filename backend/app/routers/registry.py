@@ -145,3 +145,20 @@ async def get_drug_documents(national_code: str, db: AsyncSession = Depends(get_
         "hdsd_path": hdsd,
         "label_path": label
     }
+
+@router.get("/monograph/{inn_or_id}")
+async def get_clinical_monograph(inn_or_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.registry import ClinicalDrugMonograph
+    stmt = select(ClinicalDrugMonograph).where(
+        or_(
+            ClinicalDrugMonograph.id == inn_or_id,
+            func.lower(ClinicalDrugMonograph.inn) == inn_or_id.lower(),
+            func.lower(ClinicalDrugMonograph.atc_code) == inn_or_id.lower()
+        )
+    )
+    res = await db.execute(stmt)
+    mono = res.scalar_one_or_none()
+    if not mono:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy chuyên luận Dược Thư cho '{inn_or_id}'")
+    return mono
+

@@ -26,6 +26,24 @@ class DrugItemResponse(BaseModel):
     hdsd_path: str | None = None
     label_path: str | None = None
 
+    # Thông tin lâm sàng Dược Thư Quốc Gia
+    atc_code: str | None = None
+    drug_class: str | None = None
+    indications: str | None = None
+    contraindications: str | None = None
+    precautions: str | None = None
+    pregnancy_warning: str | None = None
+    adult_dosage: str | None = None
+    pediatric_dosage: str | None = None
+    renal_adjustment: str | None = None
+    hepatic_adjustment: str | None = None
+    adverse_effects: str | None = None
+    drug_interactions: str | None = None
+    overdose_treatment: str | None = None
+    antidote: str | None = None
+    clinical_source: str | None = None
+    clinical_monograph_id: str | None = None
+
 class RegistryPaginatedResponse(BaseModel):
     total: int
     page: int
