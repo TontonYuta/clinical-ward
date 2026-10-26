@@ -9,8 +9,8 @@ import { MasterMedication } from '../../types/medication';
 export const SEDATIVE_RESP_MEDICATIONS: MasterMedication[] = [
   {
     id: 'med-em-07',
-    nationalCode: '40.007',
-    brandName: 'Diazepam 10mg/2ml',
+    nationalCode: '890112769224',
+    brandName: 'Diazepam Injection BP 10mg/2ml',
     tallManName: 'DiazePAM',
     activeIngredient: 'Diazepam',
     concentration: '10mg/2ml',
@@ -25,8 +25,8 @@ export const SEDATIVE_RESP_MEDICATIONS: MasterMedication[] = [
     isCrashCart: true,
     wardStockCount: 6,
     hospitalStockCount: 280,
-    searchAliases: ['dia', 'diazepam', 'seduxen', 'co giat', 'an than'],
-    note: 'Cắt cơn co giật, tiền mê, an thần cấp cứu (TT 18/2026)',
+    searchAliases: ['dia', 'diazepam', 'seduxen', 'co giat', 'an than', '890112769224'],
+    note: 'Cắt cơn co giật, tiền mê, an thần cấp cứu (TT 20/2017)',
   },
   {
     id: 'med-em-08',

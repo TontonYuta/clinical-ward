@@ -9,8 +9,8 @@ import { MasterMedication } from '../../types/medication';
 export const CONTROLLED_HIGH_ALERT_MASTER_MEDICATIONS: MasterMedication[] = [
   {
     id: 'med-ctrl-01',
-    nationalCode: '40.011',
-    brandName: 'Morphin hydroclorid 10mg/1ml',
+    nationalCode: '893111093823',
+    brandName: 'Morphin (Morphin hydroclorid 10mg/ml)',
     tallManName: 'Morphin hydroclorid',
     activeIngredient: 'Morphin',
     concentration: '10mg/1ml',
@@ -25,13 +25,13 @@ export const CONTROLLED_HIGH_ALERT_MASTER_MEDICATIONS: MasterMedication[] = [
     isCrashCart: true,
     wardStockCount: 4,
     hospitalStockCount: 150,
-    searchAliases: ['mor', 'morphin', 'morphine', 'giam dau manh', 'thu hoi vo'],
-    note: 'Bắt buộc thu hồi vỏ ống rỗng, ký sổ theo dõi TT 18/2026/TT-BYT',
+    searchAliases: ['mor', 'morphin', 'morphine', 'giam dau manh', 'thu hoi vo', '893111093823'],
+    note: 'Bắt buộc thu hồi vỏ ống rỗng, ký sổ theo dõi TT 20/2017/TT-BYT',
   },
   {
     id: 'med-ctrl-02',
-    nationalCode: '40.012',
-    brandName: 'Fentanyl 0.1mg/2ml (50mcg/ml)',
+    nationalCode: 'VN-22499-20',
+    brandName: 'Fentanyl 50 micrograms/ml',
     tallManName: 'FentanYL',
     activeIngredient: 'Fentanyl',
     concentration: '0.1mg/2ml',

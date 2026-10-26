@@ -10,8 +10,8 @@ export const ELECTROLYTE_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo>
   // Kali clorid (KCl) 10% 10ml
   'med-em-09': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Kali clorid) & Viện ISMP',
-      registrationNumber: 'VD-25324-16',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
+      registrationNumber: '893110375223',
       manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 776/QĐ-QLD)',

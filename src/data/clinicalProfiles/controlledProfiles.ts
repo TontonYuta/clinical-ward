@@ -10,8 +10,8 @@ export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Morphin sulfat 10mg/1ml (Osaphine)
   'med-ctrl-01': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Morphin, trang 942-947) & SĐK Cục QLD',
-      registrationNumber: 'VD-28087-17',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
+      registrationNumber: '893111093823',
       manufacturer: 'Công ty Cổ phần Dược phẩm trung ương I - Pharbaco',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / Tiêu chuẩn NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 181/QĐ-QLD)',
@@ -93,8 +93,8 @@ export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Fentanyl 0.1mg/2ml (Panpharma)
   'med-ctrl-02': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Fentanyl, trang 598-603) & SĐK Cục QLD',
-      registrationNumber: 'VN-18441-14',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
+      registrationNumber: 'VN-22499-20',
       manufacturer: 'Panpharma GmbH (CHLB Đức)',
       standardPharmacopeia: 'Dược điển Anh (BP) / DĐVN V',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 573/QĐ-QLD)',

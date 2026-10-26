@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Dữ Liệu Mẫu Đơn Thuốc Điện Tử Bác Sĩ Chuẩn TT 26/2025/TT-BYT
+ * Dữ Liệu Đơn Thuốc Điện Tử Bác Sĩ Chuẩn TT 26/2025/TT-BYT từ CSDL 54.885 Thuốc Cục QLD (<=200 LOC)
  */
 
 import { PrescriptionOrder } from '../types/cpoe';
@@ -28,8 +28,8 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
     items: [
       {
         id: 'rxi-1',
-        medicationName: 'Amlodipin 5mg',
-        activeIngredient: 'Amlodipine besylate',
+        medicationName: 'Safeesem 5 (Amlodipin 5mg)',
+        activeIngredient: 'S-amlodipine (dưới dạng S-amlodipine besylate) - SĐK: 890110197826',
         dosage: '5mg',
         frequency: '1 viên/ngày (uống buổi sáng)',
         route: 'Uống',
@@ -39,14 +39,14 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
       },
       {
         id: 'rxi-2',
-        medicationName: 'Losartan 50mg',
-        activeIngredient: 'Losartan potassium',
-        dosage: '50mg',
+        medicationName: 'Atorvastatin Sandoz 20mg',
+        activeIngredient: 'Atorvastatin (dưới dạng Atorvastatin calci trihydrat) - SĐK: 590110192126',
+        dosage: '20mg',
         frequency: '1 viên/ngày (uống buổi tối)',
         route: 'Uống',
         quantity: 60,
         unit: 'Viên',
-        instructions: 'Uống đúng giờ cố định mỗi ngày'
+        instructions: 'Uống trước khi đi ngủ, kiểm soát mỡ máu mạn tính'
       }
     ]
   },
@@ -71,9 +71,9 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
     items: [
       {
         id: 'rxi-3',
-        medicationName: 'Metformin 850mg (Glucophage)',
-        activeIngredient: 'Metformin hydrochloride',
-        dosage: '850mg',
+        medicationName: 'Panfor PR-750 (Metformin 750mg)',
+        activeIngredient: 'Metformin Hydrochloride - SĐK: 890110197726',
+        dosage: '750mg',
         frequency: '2 viên/ngày (sáng 1, tối 1)',
         route: 'Uống',
         quantity: 180,
@@ -104,8 +104,8 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
     items: [
       {
         id: 'rxi-4',
-        medicationName: 'Ceftriaxone 1g (Lọ bột pha tiêm)',
-        activeIngredient: 'Ceftriaxone sodium',
+        medicationName: 'Ceftriaxona Normon 1g',
+        activeIngredient: 'Ceftriaxon (dưới dạng ceftriaxon natri) - SĐK: 840110304425',
         dosage: '1g',
         frequency: '2 lần/ngày (cách 12h: 08:00 - 20:00)',
         route: 'Tiêm tĩnh mạch',

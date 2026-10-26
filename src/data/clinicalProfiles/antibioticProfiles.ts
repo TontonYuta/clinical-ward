@@ -10,8 +10,8 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Ceftriaxone 1g (Rocephin)
   'med-ab-01': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn sử dụng Kháng sinh (QĐ 5631/QĐ-BYT)',
-      registrationNumber: 'VN-17036-13',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & QĐ 5631/QĐ-BYT',
+      registrationNumber: '840110304425',
       manufacturer: 'F. Hoffmann-La Roche Ltd. (Thụy Sĩ)',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 265/QĐ-QLD)',
@@ -94,8 +94,8 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Vancomycin 500mg/1g
   'med-ab-02': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Hướng dẫn TDM Vancomycin Bộ Y Tế (QĐ 2147/QĐ-BYT)',
-      registrationNumber: 'VD-35444-21',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & QĐ 2147/QĐ-BYT',
+      registrationNumber: '893115106026',
       manufacturer: 'Chi nhánh Công ty CPDP Imexpharm-Nhà máy công nghệ cao Bình Dương',
       standardPharmacopeia: 'Dược điển Mỹ (USP) / DĐVN V',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 641/QĐ-BYT)',

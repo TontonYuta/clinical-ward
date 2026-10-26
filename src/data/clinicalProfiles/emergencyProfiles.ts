@@ -10,8 +10,8 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
   // Adrenalin (Epinephrine) 1mg/1ml
   'med-em-01': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Thông tư 51/2017/TT-BYT Phác đồ phản vệ',
-      registrationNumber: 'VD-27151-17',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & TT 51/2017/TT-BYT',
+      registrationNumber: '893110151100',
       manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
@@ -89,8 +89,8 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
   // Noradrenalin 4mg/4ml
   'med-em-02': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Norepinephrin, trang 1012-1015)',
-      registrationNumber: 'VD-24342-16',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
+      registrationNumber: '893110107400',
       manufacturer: 'Công ty Cổ phần Dược Vật tư Y tế Hải Dương / Vinphaco',
       standardPharmacopeia: 'Dược điển Việt Nam V / Dược điển Mỹ (USP)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',

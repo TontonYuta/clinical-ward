@@ -9,8 +9,8 @@ import { MasterMedication } from '../../types/medication';
 export const ANTIBIOTICS_INFUSIONS_MASTER_MEDICATIONS: MasterMedication[] = [
   {
     id: 'med-ab-01',
-    nationalCode: '40.019',
-    brandName: 'Rocephin (Ceftriaxone) 1g',
+    nationalCode: '840110304425',
+    brandName: 'Ceftriaxona Normon 1g (Rocephin)',
     tallManName: 'cefTRIAXone 1g',
     activeIngredient: 'Ceftriaxone',
     concentration: '1g',
@@ -25,7 +25,7 @@ export const ANTIBIOTICS_INFUSIONS_MASTER_MEDICATIONS: MasterMedication[] = [
     isCrashCart: true,
     wardStockCount: 10,
     hospitalStockCount: 850,
-    searchAliases: ['ceftri', 'rocephin', 'khang sinh', 'nhiem khuan huyet'],
+    searchAliases: ['ceftri', 'rocephin', 'ceftriaxona', 'khang sinh', 'nhiem khuan huyet', '840110304425'],
     note: 'Cảnh báo CDSS: TUYỆT ĐỐI KHÔNG pha chung với dung dịch chứa Calci',
   },
   {

@@ -10,8 +10,8 @@ export const SEDATIVE_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = 
   // Diazepam 10mg/2ml
   'med-em-07': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 (Chuyên luận Diazepam, trang 468-472)',
-      registrationNumber: 'VD-25308-16',
+      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
+      registrationNumber: '890112769224',
       manufacturer: 'Chi nhánh Công ty Cổ phần Dược phẩm Trung ương Vidipha Bình Dương',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 550/QĐ-QLD)',
