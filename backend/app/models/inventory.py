@@ -12,6 +12,13 @@ class InventoryBatch(Base):
     national_code: Mapped[str | None] = mapped_column(String, nullable=True, default="", index=True)
     registration_number: Mapped[str | None] = mapped_column(String, nullable=True, default="")
     active_ingredient: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    concentration: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    dosage_form: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    manufacturer: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    country: Mapped[str | None] = mapped_column(String, nullable=True, default="Việt Nam")
+    packaging_spec: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    standard_pharmacopeia: Mapped[str | None] = mapped_column(String, nullable=True, default="DĐVN V")
+    route: Mapped[str | None] = mapped_column(String, nullable=True, default="")
     category: Mapped[str] = mapped_column(String, nullable=False)
     expiry_date: Mapped[str] = mapped_column(String, nullable=False, index=True) # YYYY-MM-DD
     days_left: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Phân hệ Dược Bệnh Viện: Quản lý Kho Dược Nội Trú, Ngoại Trú & Vật tư y tế (FEFO)
+ * Phân hệ Quản Lý Kho Dược Bệnh Viện & Công Bố Dược Phẩm (FEFO) (<=200 LOC)
  */
 
 import React, { useState, useMemo } from 'react';
@@ -9,6 +9,7 @@ import { InventoryBatch } from '../../../types/clinical';
 import { clinicalAudio } from '../../../utils/audio';
 import { RestockProposalModal } from '../../Modals/RestockProposalModal';
 import { NationalDrugRegistryModal } from '../../Modals/NationalDrugRegistryModal';
+import { DavDrugDetailModal } from '../../Modals/DavDrugDetailModal';
 import { PrintableFormType } from '../../Modals/PrintableFormModal';
 import {
   PharmacyHeaderRibbon,
@@ -29,12 +30,7 @@ interface FefoInventoryTabProps {
 }
 
 export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
-  batches,
-  onDispatchBatch,
-  onRestockBatches,
-  onOpenPrintForm,
-  isAudioMuted,
-  onOpenSafetyGuide,
+  batches, onDispatchBatch, onRestockBatches, onOpenPrintForm, isAudioMuted, onOpenSafetyGuide,
 }) => {
   const [warehouse, setWarehouse] = useState<WarehouseFilter>('all');
   const [commodity, setCommodity] = useState<CommodityFilter>('all');
@@ -42,6 +38,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [isRegistryModalOpen, setIsRegistryModalOpen] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<InventoryBatch | null>(null);
 
   const filteredBatches = useMemo(() => {
     return batches.filter((batch) => {
@@ -54,11 +51,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       }
 
       // 2. Bóc tách Thuốc vs Vật tư y tế
-      const isSupply =
-        batch.commodityType === 'medical_supply' ||
-        batch.category === 'Vật tư tiêu hao' ||
-        batch.category === 'Chỉ phẫu thuật & Khâu';
-
+      const isSupply = batch.commodityType === 'medical_supply' || batch.category === 'Vật tư tiêu hao' || batch.category === 'Chỉ phẫu thuật & Khâu';
       if (commodity === 'medication' && isSupply) return false;
       if (commodity === 'medical_supply' && !isSupply) return false;
 
@@ -66,7 +59,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       if (status === 'near_expiry' && !batch.isNearExpiry) return false;
       if (status === 'low_stock' && !(batch.isLowStock || batch.currentStock <= batch.minThreshold)) return false;
 
-      // 4. Tìm kiếm từ khóa (Tên, SĐK, Hoạt chất, Số lô, Vị trí)
+      // 4. Tìm kiếm từ khóa hành chính
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
@@ -75,7 +68,9 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
           batch.warehouseLocation.toLowerCase().includes(q) ||
           (batch.registrationNumber && batch.registrationNumber.toLowerCase().includes(q)) ||
           (batch.nationalCode && batch.nationalCode.toLowerCase().includes(q)) ||
-          (batch.activeIngredient && batch.activeIngredient.toLowerCase().includes(q));
+          (batch.activeIngredient && batch.activeIngredient.toLowerCase().includes(q)) ||
+          (batch.manufacturer && batch.manufacturer.toLowerCase().includes(q)) ||
+          (batch.dosageForm && batch.dosageForm.toLowerCase().includes(q));
         if (!matches) return false;
       }
 
@@ -99,71 +94,74 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden space-y-2.5 w-full">
       <PharmacyHeaderRibbon
-        warehouse={warehouse}
-        setWarehouse={setWarehouse}
-        commodity={commodity}
-        setCommodity={setCommodity}
-        status={status}
-        setStatus={setStatus}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        totalCount={batches.length}
-        nearExpiryCount={nearExpiryBatches.length}
-        lowStockCount={lowStockBatches.length}
-        onOpenPrintForm={onOpenPrintForm}
-        onOpenRestock={() => setIsRestockModalOpen(true)}
+        warehouse={warehouse} setWarehouse={setWarehouse}
+        commodity={commodity} setCommodity={setCommodity}
+        status={status} setStatus={setStatus}
+        searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+        totalCount={batches.length} nearExpiryCount={nearExpiryBatches.length} lowStockCount={lowStockBatches.length}
+        onOpenPrintForm={onOpenPrintForm} onOpenRestock={() => setIsRestockModalOpen(true)}
         onOpenNationalRegistry={() => setIsRegistryModalOpen(true)}
       />
 
-      {/* Mobile View */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
+      {/* Mobile View: Danh sách phẳng hành chính */}
+      <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pr-0.5 pb-8">
         {filteredBatches.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-sm shadow-2xs">
-            Không tìm thấy mặt hàng nào phù hợp với bộ lọc hiện tại.
+          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-xs">
+            Không tìm thấy thuốc hoặc vật tư y tế phù hợp với bộ lọc hiện tại.
           </div>
         ) : (
-          filteredBatches.map((batch) => (
+          filteredBatches.map((batch, idx) => (
             <PharmacyBatchCard
-              key={batch.id}
-              batch={batch}
+              key={batch.id} index={idx} batch={batch}
               onQuickDispatch={handleQuickDispatch}
               onOpenRestock={() => setIsRestockModalOpen(true)}
               onOpenSafetyGuide={onOpenSafetyGuide}
+              onSelectBatch={(b) => setSelectedBatch(b)}
             />
           ))
         )}
       </div>
 
-      {/* Desktop View */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
-        <div className="overflow-auto flex-1 pb-4">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
-              <tr className="font-semibold text-xs uppercase tracking-wider">
-                <th className="py-3 px-3">Thuốc / Vật tư</th>
-                <th className="py-3 px-3 whitespace-nowrap">Số lô</th>
-                <th className="py-3 px-3 whitespace-nowrap">Hạn dùng</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Tồn kho</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-3 px-3 whitespace-nowrap">Vị trí</th>
-                <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
+      {/* Desktop View: Bảng công bố dược phẩm hành chính (Chuẩn DAV dichvucong.dav.gov.vn) */}
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-2xs">
+        <div className="overflow-auto flex-1">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-200 text-slate-700">
+              <tr className="font-bold text-[11px] uppercase tracking-wider">
+                <th className="py-2.5 px-3 text-center w-12">STT</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Số Đăng Ký (SĐK)</th>
+                <th className="py-2.5 px-3 min-w-[200px]">Tên Thuốc & Hoạt Chất</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Dạng Bào Chế & Quy Cách</th>
+                <th className="py-2.5 px-3 min-w-[140px]">Cơ Sở Sản Xuất</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Số Lô & HSD (FEFO)</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tồn Kho BV</th>
+                <th className="py-2.5 px-3 text-right whitespace-nowrap">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
-              {filteredBatches.map((batch) => (
-                <PharmacyBatchRow
-                  key={batch.id}
-                  batch={batch}
-                  onQuickDispatch={handleQuickDispatch}
-                  onOpenRestock={() => setIsRestockModalOpen(true)}
-                  onOpenSafetyGuide={onOpenSafetyGuide}
-                />
-              ))}
+              {filteredBatches.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
+                    Không tìm thấy thuốc khớp với tiêu chí tra cứu.
+                  </td>
+                </tr>
+              ) : (
+                filteredBatches.map((batch, idx) => (
+                  <PharmacyBatchRow
+                    key={batch.id} index={idx} batch={batch}
+                    onQuickDispatch={handleQuickDispatch}
+                    onOpenRestock={() => setIsRestockModalOpen(true)}
+                    onOpenSafetyGuide={onOpenSafetyGuide}
+                    onSelectBatch={(b) => setSelectedBatch(b)}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* Modal Phiếu dự trù bổ sung */}
       <RestockProposalModal
         isOpen={isRestockModalOpen}
         onClose={() => setIsRestockModalOpen(false)}
@@ -173,11 +171,20 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         isAudioMuted={isAudioMuted}
       />
 
+      {/* Modal Cổng Dữ Liệu Dược Quốc Gia 55k SĐK */}
       <NationalDrugRegistryModal
         isOpen={isRegistryModalOpen}
         onClose={() => setIsRegistryModalOpen(false)}
         onSelectMedication={onOpenSafetyGuide}
         inventoryBatches={batches}
+      />
+
+      {/* Modal Giấy Công Bố Thuốc Lưu Hành Hành Chính (Cục QLD) */}
+      <DavDrugDetailModal
+        isOpen={selectedBatch !== null}
+        onClose={() => setSelectedBatch(null)}
+        batch={selectedBatch}
+        onQuickDispatch={handleQuickDispatch}
       />
     </div>
   );

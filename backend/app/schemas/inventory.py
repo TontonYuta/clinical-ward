@@ -17,6 +17,13 @@ class BatchResponse(BaseModel):
     national_code: str | None = None
     registration_number: str | None = None
     active_ingredient: str | None = None
+    concentration: str | None = None
+    dosage_form: str | None = None
+    manufacturer: str | None = None
+    country: str | None = None
+    packaging_spec: str | None = None
+    standard_pharmacopeia: str | None = None
+    route: str | None = None
     category: str
     expiry_date: str
     days_left: int

@@ -26,6 +26,13 @@ interface BackendBatch {
   national_code?: string;
   registration_number?: string;
   active_ingredient?: string;
+  concentration?: string;
+  dosage_form?: string;
+  manufacturer?: string;
+  country?: string;
+  packaging_spec?: string;
+  standard_pharmacopeia?: string;
+  route?: string;
 }
 
 function mapBackendToBatch(b: BackendBatch): InventoryBatch {
@@ -43,6 +50,13 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
     nationalCode: b.national_code || master?.nationalCode,
     registrationNumber: b.registration_number || master?.registrationNumber,
     activeIngredient: b.active_ingredient || master?.activeIngredient,
+    concentration: b.concentration || master?.concentration,
+    dosageForm: b.dosage_form || master?.dosageForm,
+    manufacturer: b.manufacturer || master?.manufacturer,
+    country: b.country || master?.country,
+    packagingSpec: b.packaging_spec || master?.packagingSpec,
+    standardPharmacopeia: b.standard_pharmacopeia || master?.standardPharmacopeia,
+    route: b.route || master?.route,
     isControlledSubstance: master?.isControlledSubstance ?? b.category.includes('nghiện'),
     category: b.category as InventoryBatch['category'],
     commodityType: master?.commodityType || (b.category.includes('Vật tư') ? 'medical_supply' : 'medication'),

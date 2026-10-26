@@ -62,4 +62,12 @@ export interface InventoryBatch {
   nationalCode?: string; // Mã định danh Quốc gia / SĐK Dược Cục QLD (VD: VD-31291-18)
   registrationNumber?: string; // Số đăng ký lưu hành
   activeIngredient?: string; // Hoạt chất chính
+  concentration?: string; // Nồng độ / Hàm lượng (dichvucong.dav.gov.vn)
+  dosageForm?: string; // Dạng bào chế
+  manufacturer?: string; // Cơ sở sản xuất
+  country?: string; // Nước sản xuất
+  packagingSpec?: string; // Quy cách đóng gói được cấp phép
+  standardPharmacopeia?: string; // Tiêu chuẩn (DĐVN V / NSX / USP)
+  approvalDecision?: string; // Quyết định cấp phép lưu hành
+  route?: string; // Đường dùng
 }
