@@ -48,4 +48,8 @@ playwright_mobile/
 data/vietnam_drug_registry/dav_master_registry.json
 !data/vietnam_drug_registry/dav_master_registry.json.gz
 
+# Archive folder for filtered junk, mock & unverified files
+TEMP/
+
+
 
