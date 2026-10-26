@@ -9,6 +9,9 @@ class InventoryBatch(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     item_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     batch_number: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    national_code: Mapped[str | None] = mapped_column(String, nullable=True, default="", index=True)
+    registration_number: Mapped[str | None] = mapped_column(String, nullable=True, default="")
+    active_ingredient: Mapped[str | None] = mapped_column(String, nullable=True, default="")
     category: Mapped[str] = mapped_column(String, nullable=False)
     expiry_date: Mapped[str] = mapped_column(String, nullable=False, index=True) # YYYY-MM-DD
     days_left: Mapped[int] = mapped_column(Integer, nullable=False)

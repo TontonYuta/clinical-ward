@@ -14,6 +14,9 @@ class BatchResponse(BaseModel):
     id: str
     item_name: str
     batch_number: str
+    national_code: str | None = None
+    registration_number: str | None = None
+    active_ingredient: str | None = None
     category: str
     expiry_date: str
     days_left: int

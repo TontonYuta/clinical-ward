@@ -39,7 +39,10 @@ export interface InventoryBatch {
     | 'Chỉ phẫu thuật & Khâu'
     | 'Vật tư tiêu hao'
     | 'Thuốc cấp cứu'
-    | 'Vắc xin & Chuỗi lạnh';
+    | 'Vắc xin & Chuỗi lạnh'
+    | 'Thuốc điều trị chuyên khoa'
+    | 'Thuốc nguy cơ cao'
+    | 'Thuốc hướng thần';
   commodityType?: 'medication' | 'medical_supply'; // Bóc tách Thuốc vs Vật tư y tế
   warehouseType?: WarehouseType;
   batchNumber: string; // Số lô
