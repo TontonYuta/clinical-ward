@@ -98,16 +98,16 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps }> = ({ data })
             </div>
             <div>
               <span className="text-slate-500 text-2xs font-bold uppercase tracking-wider block">Khoảng cách liều</span>
-              <p className="font-bold text-slate-900 mt-0.5 truncate">{dosageMetrics.interval || '4 - 6 giờ/lần'}</p>
+              <p className="font-bold text-slate-900 mt-0.5 truncate">{dosageMetrics.interval || 'Theo phác đồ điều trị'}</p>
             </div>
             <div>
-              <span className="text-slate-500 text-2xs font-bold uppercase tracking-wider block">Trần liều 24h</span>
-              <p className="font-bold text-red-600 mt-0.5 truncate">{dosageMetrics.maxDailyDose || 'Tối đa 4 g/ngày'}</p>
+              <span className="text-slate-500 text-2xs font-bold uppercase tracking-wider block">Trần liều / Tối đa</span>
+              <p className="font-bold text-red-600 mt-0.5 truncate">{dosageMetrics.maxDailyDose || 'Theo dõi đáp ứng'}</p>
             </div>
             <div>
               <span className="text-slate-500 text-2xs font-bold uppercase tracking-wider block">Lưu ý an toàn</span>
-              <p className="text-slate-700 text-2xs font-medium mt-0.5 truncate" title={dosageMetrics.specialWarning || 'Theo dõi chức năng gan'}>
-                {dosageMetrics.specialWarning || 'Theo dõi chức năng gan'}
+              <p className="text-slate-700 text-2xs font-medium mt-0.5 truncate" title={dosageMetrics.specialWarning || 'Theo dõi sát dấu hiệu sinh tồn'}>
+                {dosageMetrics.specialWarning || 'Theo dõi sát dấu hiệu sinh tồn'}
               </p>
             </div>
           </div>

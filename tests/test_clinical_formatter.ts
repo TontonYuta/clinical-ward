@@ -19,6 +19,18 @@ if (!metrics.maxDailyDose?.includes("4 g/ngày")) {
   throw new Error("Failed to extract max daily dose 4 g/ngày!");
 }
 
+// Test emergency dosage metrics (Adrenalin / Sốc phản vệ)
+const sampleAdrenalinDosage = `Cấp cứu sốc phản vệ: Tiêm bắp 0,5 mg, cách nhau từ 3 đến 5 phút nhắc lại một lần. CẤM TUYỆT ĐỐI tiêm tĩnh mạch trực tiếp dung dịch chưa pha loãng.`;
+const adreMetrics = extractQuickDosageMetrics(sampleAdrenalinDosage);
+console.log("Emergency Adrenalin Interval:", adreMetrics.interval);
+console.log("Emergency Adrenalin Warning:", adreMetrics.specialWarning);
+if (!adreMetrics.interval?.includes("3 đến 5 phút")) {
+  throw new Error("Failed to extract emergency minute interval!");
+}
+if (!adreMetrics.specialWarning?.toLowerCase().includes("cấm")) {
+  throw new Error("Failed to extract emergency warning!");
+}
+
 console.log("\n=== TEST CLINICAL BULLETS PARSER ===");
 const bullets = parseClinicalBullets(sampleAdultDosage);
 console.log("Total parsed bullets:", bullets.length);

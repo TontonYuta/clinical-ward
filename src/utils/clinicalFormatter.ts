@@ -23,45 +23,46 @@ export interface QuickDosageMetrics {
  * Trích xuất chỉ số liều lượng cốt lõi để hiển thị trên Ribbon tóm tắt nhanh
  */
 export function extractQuickDosageMetrics(text?: string): QuickDosageMetrics {
-  if (!text) return { routes: [] };
+  if (!text) return { routes: ['Đường dùng theo chỉ định'] };
 
   const routes: string[] = [];
   const t = text.toLowerCase();
   if (t.includes('uống') || t.includes('viên') || t.includes('nang')) routes.push('Đường uống');
   if (t.includes('truyền tĩnh mạch') || t.includes('tiêm tĩnh mạch') || t.includes('tiêm truyền')) routes.push('Truyền tĩnh mạch');
   if (t.includes('tiêm bắp')) routes.push('Tiêm bắp');
+  if (t.includes('tiêm dưới da')) routes.push('Tiêm dưới da');
   if (t.includes('trực tràng') || t.includes('thuốc đạn')) routes.push('Đặt trực tràng');
+  if (t.includes('khí dung') || t.includes('phun sương') || t.includes('dạng hít')) routes.push('Khí dung/Hít');
 
   // Trích xuất liều tối đa / trần liều
   let maxDailyDose: string | undefined;
-  const maxMatch = text.match(/(?:tối đa|trần liều|liều tối đa)[^\.\n;]*?(?:là\s*)?(\d+(?:[,\.]\d+)?\s*(?:g|mg|mcg|ml|lít|l)\/(?:ngày|24\s*giờ|24h))/i);
+  const maxMatch = text.match(/(?:tối đa|trần liều|liều tối đa)[^\.\n;]*?(?:là\s*)?(\d+(?:[,\.]\d+)?\s*(?:g|mg|mcg|microgam|ml|lít|l)\/(?:ngày|24\s*giờ|24h))/i);
   if (maxMatch) {
     maxDailyDose = maxMatch[1].trim();
   }
 
-  // Trích xuất khoảng cách liều
+  // Trích xuất khoảng cách liều (cả phút cấp cứu và giờ định kỳ)
   let interval: string | undefined;
-  const intMatch = text.match(/(\d+\s*-\s*\d+\s*giờ\s*(?:một lần|\/lần))/i) || text.match(/(cách\s*\d+\s*-\s*\d+\s*giờ)/i);
-  if (intMatch) {
-    interval = intMatch[1].trim();
+  const minMatch = text.match(/(?:cách|nhắc lại|mỗi)\s*(?:nhau\s*)?(?:từ\s*)?(\d+\s*(?:đến|-)\s*\d+\s*phút)/i) ||
+                    text.match(/(\d+\s*(?:đến|-)\s*\d+\s*phút\s*(?:một lần|\/lần))/i);
+  const hourMatch = text.match(/(\d+\s*-\s*\d+\s*giờ\s*(?:một lần|\/lần))/i) || text.match(/(cách\s*\d+\s*-\s*\d+\s*giờ)/i);
+  if (minMatch) {
+    interval = minMatch[1].trim() + (minMatch[1].includes('phút') && !minMatch[1].includes('/lần') ? '/lần' : '');
+  } else if (hourMatch) {
+    interval = hourMatch[1].trim();
   }
 
-  // Trích xuất liều chuẩn 1 lần
-  let standardDose: string | undefined;
-  const stdMatch = text.match(/(?:liều(?:\s*uống)?(?:\s*thường dùng)?\s*(?:là)?\s*)(\d+(?:[,\.]\d+)?\s*(?:-\s*\d+(?:[,\.]\d+)?)?\s*(?:g|mg|mcg|ml)\/(?:lần)?)/i);
-  if (stdMatch) {
-    standardDose = stdMatch[1].trim();
-  }
-
-  // Cảnh báo liều trên bệnh nhân đặc biệt
+  // Cảnh báo liều trên bệnh nhân đặc biệt hoặc kỹ thuật dùng thuốc tối quan trọng
   let specialWarning: string | undefined;
-  if (t.includes('nghiện rượu') || t.includes('suy dinh dưỡng') || t.includes('mất nước')) {
+  if (t.includes('cấm tuyệt đối tiêm') || t.includes('cấm tiêm')) {
+    const warnMatch = text.match(/cấm\s*(?:tuyệt đối)?\s*tiêm[^\.\n;]+/i);
+    if (warnMatch) specialWarning = warnMatch[0].trim();
+  } else if (t.includes('nghiện rượu') || t.includes('suy dinh dưỡng') || t.includes('mất nước')) {
     specialWarning = 'Tối đa 3 g/ngày ở bệnh nhân nghiện rượu, suy dinh dưỡng mạn hoặc mất nước.';
   }
 
   return {
     routes: routes.length > 0 ? routes : ['Đường dùng theo chỉ định'],
-    standardDose,
     interval,
     maxDailyDose,
     specialWarning
