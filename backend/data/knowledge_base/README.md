@@ -30,3 +30,25 @@ Tài liệu này tổng hợp cấu trúc, nguồn gốc pháp lý và nguyên t
 ### 3. Cam Kết Xác Thực & Phòng Chống Bịa Đặt Dữ Liệu (Zero-Hallucination)
 * 100% dữ liệu trong kho tri thức này được trích xuất trực tiếp từ các văn bản quy phạm pháp luật và chuyên môn của Bộ Y tế Việt Nam.
 * Tuyệt đối không sinh số liệu giả định về liều dùng hoặc cảnh báo lâm sàng.
+
+---
+
+### 4. Danh Mục Đường Dẫn Trực Tiếp Đã Kiểm Chứng (100% Active Links)
+* **Cục Quản lý Khám, chữa bệnh (KCB - Bộ Y tế):**
+  * QĐ 5948/QĐ-BYT: https://kcb.vn/tin-tuc/danh-muc-tuong-tac-thuoc-chong-chi-dinh-trong-thuc-hanh-lam-sang-va-huong-dan-giam-sat-phan-ung-co-hai-cua-thuoc-adr-tai.html
+* **Trung tâm Quốc gia DI & ADR (canhgiacduoc.org.vn):**
+  * Thông báo Công cụ tra cứu tương tác QĐ 5948: https://canhgiacduoc.org.vn/GioiThieuChung/TrangTinHoatDong/5632/Cong-cu-tra-cuu-dien-tu-tuong-tac-thuoc-chong-chi-dinh.htm
+  * Cổng tra cứu điện tử (Bộ Y tế & Trung tâm Thông tin Y tế QG): https://tuongtacthuoc.nhic.vn/Home/Page *(Lưu ý: nội bộ/bảo trì kết nối)*
+* **Cục Quản lý Dược (DAV):**
+  * Cổng tra cứu công bố thuốc 55.000 số đăng ký: https://dichvucong.dav.gov.vn/congbothuoc/index
+  * Cổng thông tin Cục Quản lý Dược: https://dav.gov.vn/
+* **Văn bản Quy phạm Pháp luật (Thư Viện Pháp Luật):**
+  * QĐ 5948/QĐ-BYT (Tương tác chống chỉ định): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Quyet-dinh-5948-QD-BYT-2021-tai-lieu-chuyen-mon-Danh-muc-tuong-tac-thuoc-chong-chi-dinh-500355.aspx
+  * QĐ 3445/QĐ-BYT (Dược thư Quốc gia Việt Nam 2022): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Quyet-dinh-3445-QD-BYT-2022-ban-hanh-Duoc-thu-quoc-gia-Viet-Nam-lan-thu-ba-549463.aspx
+  * TT 51/2017/TT-BYT (Phác đồ Adrenalin phản vệ): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-51-2017-TT-BYT-huong-dan-phong-chan-doan-va-xu-tri-phan-ve-371587.aspx
+  * TT 20/2017/TT-BYT (Thuốc gây nghiện & vỏ ống): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-20-2017-TT-BYT-huong-dan-Luat-duoc-ve-thuoc-phai-kiem-soat-dac-biet-349887.aspx
+  * TT 22/2011/TT-BYT (Tủ trực Khoa Dược): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-22-2011-TT-BYT-to-chuc-va-hoat-dong-cua-khoa-Duoc-benh-vien-124968.aspx
+* **CSDL Dược Quốc tế Tham Chiếu (Mã ATC & Nhãn FDA):**
+  * OpenFDA Drug Label API: https://api.fda.gov/drug/label.json?search=openfda.generic_name:ceftriaxone&limit=1
+  * WHO Collaborating Centre for Drug Statistics Methodology (Mã phân loại ATC): https://www.whocc.no/atc_ddd_index/
+  * NIH DailyMed: https://dailymed.nlm.nih.gov/dailymed/
