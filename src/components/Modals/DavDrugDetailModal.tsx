@@ -80,10 +80,10 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
         {/* Top Header Workstation */}
         <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between shrink-0 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold text-teal-300 bg-teal-950 border border-teal-800 px-2.5 py-1 rounded">SĐK: {sdk}</span>
+            <span className="font-mono text-xs font-bold text-blue-300 bg-blue-950 border border-blue-800 px-2.5 py-1 rounded">SĐK: {sdk}</span>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                {itemName} {strength && <span className="text-xs font-medium text-teal-300">({strength})</span>}
+                {itemName} {strength && <span className="text-xs font-medium text-blue-300">({strength})</span>}
               </h2>
               <p className="text-xs text-slate-300">
                 <span className="text-slate-400">Hoạt chất:</span> <strong className="text-white">{activeInn}</strong>
@@ -93,8 +93,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-800 px-2.5 py-1 rounded">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> CSDL Cục QLD
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-blue-300 bg-blue-950/70 border border-blue-800 px-2.5 py-1 rounded">
+              <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" /> CSDL Cục QLD
             </span>
             <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded hover:bg-slate-800 transition cursor-pointer"><X className="w-5 h-5" /></button>
           </div>
@@ -116,11 +116,11 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             )}
 
             {clinicalData.antidote && (
-              <div className="bg-emerald-50 border-l-4 border-emerald-600 border-y border-r border-emerald-200 rounded p-3.5 flex items-start gap-2 shadow-2xs">
-                <Sparkles className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+              <div className="bg-blue-50 border-l-4 border-blue-600 border-y border-r border-blue-200 rounded p-3.5 flex items-start gap-2 shadow-2xs">
+                <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-bold uppercase text-emerald-900">Thuốc giải độc đặc hiệu (Antidote):</span>
-                  <p className="text-sm text-emerald-950 font-bold mt-0.5">{clinicalData.antidote}</p>
+                  <span className="text-xs font-bold uppercase text-blue-900">Thuốc giải độc đặc hiệu (Antidote):</span>
+                  <p className="text-sm text-blue-950 font-bold mt-0.5">{clinicalData.antidote}</p>
                 </div>
               </div>
             )}
@@ -132,7 +132,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               <div className="border border-slate-200 rounded-lg p-3.5 bg-white space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs uppercase tracking-wide">
-                    <Package className="w-4 h-4 text-teal-700" /><span>Lô Thuốc Tại Kho Bệnh Viện</span>
+                    <Package className="w-4 h-4 text-blue-600" /><span>Lô Thuốc Tại Kho Bệnh Viện</span>
                   </div>
                   <span className="font-mono text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-200">Lô: {batch.batchNumber}</span>
                 </div>
@@ -160,13 +160,13 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
 
         {/* Footer */}
         <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
-          <a href={davPortalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-800 hover:text-teal-950 hover:underline">
+          <a href={davPortalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline">
             <span>Đối soát trực tiếp Cổng Cục Quản Lý Dược</span><ExternalLink className="w-3.5 h-3.5" />
           </a>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-4 py-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold cursor-pointer">Đóng</button>
             {onQuickDispatch && batch && (
-              <button onClick={() => { onQuickDispatch(batch); onClose(); }} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded bg-teal-800 hover:bg-teal-900 text-white text-xs font-bold cursor-pointer shadow-xs">
+              <button onClick={() => { onQuickDispatch(batch); onClose(); }} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer shadow-xs">
                 <span>Xuất kho</span><ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             )}

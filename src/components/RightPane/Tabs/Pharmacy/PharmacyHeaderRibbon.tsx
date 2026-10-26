@@ -38,7 +38,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
       {/* Tiêu đề hành chính & Nút liên kết Quốc Gia */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-4 bg-teal-800 rounded-xs" />
+          <div className="w-2 h-4 bg-blue-600 rounded-xs" />
           <h2 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wide">
             Quản Trị Kho Dược Bệnh Viện • Đồng Bộ CSDL Cục Quản Lý Dược (BYT)
           </h2>
@@ -47,12 +47,12 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           {onOpenNationalRegistry && (
             <button
               onClick={onOpenNationalRegistry}
-              className="inline-flex items-center gap-1.5 h-7.5 px-3 rounded-md bg-teal-50 hover:bg-teal-100/80 border border-teal-200 text-teal-900 font-semibold text-xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-7.5 px-3 rounded-md bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-900 font-semibold text-xs transition cursor-pointer"
               title="Tra cứu CSDL 54.885 Số Đăng Ký Cục Quản lý Dược"
             >
-              <Database className="w-3.5 h-3.5 text-teal-700" />
+              <Database className="w-3.5 h-3.5 text-blue-600" />
               <span>Cổng Dược Quốc Gia</span>
-              <span className="font-mono text-2xs font-bold px-1 py-0.2 bg-teal-800 text-white rounded">55k SĐK</span>
+              <span className="font-mono text-2xs font-bold px-1.5 py-0.2 bg-blue-600 text-white rounded">55k SĐK</span>
             </button>
           )}
           {lowStockCount > 0 && (

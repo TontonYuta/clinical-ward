@@ -37,11 +37,11 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
         <button
           type="button"
           onClick={() => onOpenDavDetail ? onOpenDavDetail(d) : null}
-          className="font-mono font-bold text-teal-900 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200/80 text-xs inline-flex items-center gap-1 transition cursor-pointer"
+          className="font-mono font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200/80 text-xs inline-flex items-center gap-1 transition cursor-pointer"
           title="Bấm để xem Giấy công bố thuốc Cục Quản lý Dược"
         >
           <span>{d.nationalCode}</span>
-          <FileText className="w-3 h-3 text-teal-700 opacity-80" />
+          <FileText className="w-3 h-3 text-blue-600 opacity-80" />
         </button>
         <div className="text-2xs text-slate-500 mt-1 font-mono">
           {standard} • Hạn: {shelfLife}
@@ -53,7 +53,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
         <button
           type="button"
           onClick={() => onOpenDavDetail ? onOpenDavDetail(d) : onOpenSafetyGuide(d.activeIngredient || d.brandName)}
-          className="font-bold text-slate-900 text-xs sm:text-sm hover:text-teal-800 hover:underline cursor-pointer text-left leading-tight"
+          className="font-bold text-slate-900 text-xs sm:text-sm hover:text-blue-600 hover:underline cursor-pointer text-left leading-tight"
         >
           {d.brandName}
         </button>
@@ -79,7 +79,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
       <td className="py-2.5 px-3 align-top min-w-[160px]">
         <div className="text-slate-800 font-medium text-xs leading-snug">{d.activeIngredient}</div>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          <span className="text-2xs font-bold text-teal-900 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200/60 font-mono">
+          <span className="text-2xs font-bold text-blue-900 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60 font-mono">
             {d.concentration || 'Theo tiêu chuẩn'}
           </span>
           {verifyMode && (
@@ -87,7 +87,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
               href={getDavRegistryUrl(d.nationalCode, d.brandName)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-2xs text-teal-800 hover:underline inline-flex items-center gap-0.5"
+              className="text-2xs text-blue-600 hover:underline inline-flex items-center gap-0.5"
               title="Cổng Dịch vụ công Cục QLD"
             >
               <span>DAV Portal</span>
@@ -114,10 +114,10 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           <button
             type="button"
             onClick={() => onOpenDavDetail?.(d)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 transition cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer shadow-2xs"
             title="Xem Giấy công bố thuốc Cục Quản Lý Dược đầy đủ"
           >
-            <FileText className="w-3 h-3 text-teal-700" />
+            <FileText className="w-3 h-3 text-blue-600" />
             <span>Chi tiết</span>
           </button>
           {hasVerifiedMonograph && (

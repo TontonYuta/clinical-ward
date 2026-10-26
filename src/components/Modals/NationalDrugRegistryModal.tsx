@@ -108,8 +108,8 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
               <h3 className="font-bold text-slate-900 text-base sm:text-lg">Cổng Dữ Liệu Dược Quốc Gia</h3>
               <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">DAV 55.000 SĐK</span>
               {inWarehouseCount > 0 && (
-                <span className="px-2 py-0.5 rounded text-xs font-bold bg-teal-50 text-teal-900 border border-teal-300 flex items-center gap-1">
-                  <Boxes className="w-3.5 h-3.5 text-teal-700" />Kho BV ({inWarehouseCount})
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center gap-1">
+                  <Boxes className="w-3.5 h-3.5 text-blue-600" />Kho BV ({inWarehouseCount})
                 </span>
               )}
             </div>
@@ -122,7 +122,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
               </span>
             )}
             <button onClick={() => loadData(true)} disabled={isSyncing} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 transition cursor-pointer shadow-2xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50" title="Tải lại danh mục từ máy chủ">
-              <RotateCw className={`w-3.5 h-3.5 text-teal-700 ${isSyncing ? 'animate-spin' : ''}`} /><span>{isSyncing ? 'Đang nạp...' : 'Tự động cập nhật'}</span>
+              <RotateCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncing ? 'animate-spin' : ''}`} /><span>{isSyncing ? 'Đang nạp...' : 'Tự động cập nhật'}</span>
             </button>
             <button onClick={toggleVerify} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
               Kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}
@@ -135,12 +135,12 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Tìm trên 55.000 thuốc: Tên thuốc, hoạt chất (Morphin, Venetoclax, Cefaclor...), SĐK (VD-24757-16)..." className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-700 text-slate-900 placeholder:text-slate-400 shadow-2xs transition" />
+              <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Tìm trên 55.000 thuốc: Tên thuốc, hoạt chất (Morphin, Venetoclax, Cefaclor...), SĐK (VD-24757-16)..." className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-900 placeholder:text-slate-400 shadow-2xs transition" />
             </div>
             <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-xl text-xs shrink-0 font-medium">
               <button type="button" onClick={() => { setOnlyInWarehouse(false); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${!onlyInWarehouse ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>Tất cả 55k</button>
-              <button type="button" onClick={() => { setOnlyInWarehouse(true); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${onlyInWarehouse ? 'bg-teal-700 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
-                <span>Kho Dược BV</span><span className={`px-1.5 py-0.2 rounded-full text-2xs ${onlyInWarehouse ? 'bg-teal-800 text-teal-100' : 'bg-slate-300 text-slate-700 font-bold'}`}>{inWarehouseCount}</span>
+              <button type="button" onClick={() => { setOnlyInWarehouse(true); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${onlyInWarehouse ? 'bg-blue-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
+                <span>Kho Dược BV</span><span className={`px-1.5 py-0.2 rounded-full text-2xs ${onlyInWarehouse ? 'bg-blue-700 text-blue-100' : 'bg-slate-300 text-slate-700 font-bold'}`}>{inWarehouseCount}</span>
               </button>
             </div>
           </div>
@@ -150,7 +150,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
         <div className="flex-1 overflow-auto bg-slate-50/40 p-4 sm:p-6">
           {loading ? (
             <div className="py-20 text-center text-slate-500 text-sm flex flex-col items-center gap-3">
-              <div className="w-7 h-7 border-2 border-teal-700 border-t-transparent rounded-full animate-spin" />
+              <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               <span>Đang truy vấn CSDL 55.000 thuốc Cục Quản lý Dược...</span>
             </div>
           ) : displayedDrugs.length === 0 ? (

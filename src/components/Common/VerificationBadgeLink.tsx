@@ -31,7 +31,7 @@ const SOURCE_CONFIG: Record<VerificationSourceType, { style: string; defaultTitl
     defaultTitle: 'Cục Quản lý Dược (Bộ Y Tế) - Công bố Đăng ký lưu hành thuốc & SĐK',
   },
   nidqc: {
-    style: 'bg-teal-50/80 text-teal-800 border-teal-200/80 hover:bg-teal-100',
+    style: 'bg-blue-50/80 text-blue-800 border-blue-200/80 hover:bg-blue-100',
     defaultTitle: 'Cổng Viện Kiểm nghiệm Thuốc TW (NIDQC - Bộ Y Tế) - Cơ quan biên soạn Dược thư QG',
   },
   fda: {

@@ -54,7 +54,7 @@ export const NationalDrugTabs: React.FC<NationalDrugTabsProps> = ({
             onClick={() => onSelectGroup(tab.id)}
             className={`px-3 py-1.5 rounded-lg shrink-0 font-medium cursor-pointer transition-all flex items-center gap-1.5 ${
               isSelected
-                ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                ? 'bg-blue-600 text-white shadow-xs font-semibold'
                 : 'bg-white text-slate-600 border border-slate-200/90 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
@@ -62,7 +62,7 @@ export const NationalDrugTabs: React.FC<NationalDrugTabsProps> = ({
             {count !== undefined && count > 0 && (
               <span
                 className={`px-1.5 py-0.2 rounded-full text-2xs font-mono font-bold ${
-                  isSelected ? 'bg-slate-800 text-teal-300' : 'bg-slate-100 text-slate-600'
+                  isSelected ? 'bg-blue-700 text-blue-100' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {count > 999 ? `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}k` : count}

@@ -35,7 +35,7 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-1.5 text-xs uppercase font-bold text-slate-500 mb-0.5">
-              <Layers className="w-3.5 h-3.5 text-teal-700" />
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
               <span>Dạng bào chế & Đường dùng</span>
             </div>
             <p className="font-semibold text-slate-900 text-sm">{data.dosageForm || 'Viên nén / Dung dịch tiêm'}</p>
@@ -44,11 +44,11 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
 
           <div>
             <div className="flex items-center gap-1.5 text-xs uppercase font-bold text-slate-500 mb-0.5">
-              <Clock className="w-3.5 h-3.5 text-teal-700" />
+              <Clock className="w-3.5 h-3.5 text-blue-600" />
               <span>Tiêu chuẩn & Hạn dùng</span>
             </div>
             <p className="font-mono font-bold text-slate-900 text-sm">{standard}</p>
-            <p className="text-xs text-teal-900 font-medium mt-0.5">Hạn lưu hành: <strong className="text-slate-900">{shelfLife}</strong></p>
+            <p className="text-xs text-blue-900 font-medium mt-0.5">Hạn lưu hành: <strong className="text-slate-900">{shelfLife}</strong></p>
           </div>
         </div>
 
@@ -75,7 +75,7 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
       {/* 2. Khối Cơ Sở Sản Xuất */}
       <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
         <div className="flex items-center gap-1.5 text-xs uppercase font-bold text-slate-600">
-          <Building2 className="w-4 h-4 text-teal-700 shrink-0" />
+          <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
           <span>Cơ sở sản xuất & Xuất xứ</span>
         </div>
         <p className="font-bold text-slate-900 text-sm leading-snug" title={mfrName}>

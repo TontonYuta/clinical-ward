@@ -45,7 +45,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           }`}
           title="Nhật ký kiểm toán lâm sàng và vết băm bảo mật"
         >
-          <ClipboardList className="w-5 h-5 text-teal-700 shrink-0" />
+          <ClipboardList className="w-5 h-5 text-blue-600 shrink-0" />
           {!isCollapsed && <span className="flex-1 text-left truncate">Nhật ký kiểm toán</span>}
         </button>
 
@@ -56,7 +56,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           }`}
           title="Căn cứ pháp lý y tế & quy chế chuyên môn Bộ Y Tế"
         >
-          <Scale className="w-5 h-5 text-teal-700 shrink-0" />
+          <Scale className="w-5 h-5 text-blue-600 shrink-0" />
           {!isCollapsed && <span className="flex-1 text-left truncate">Căn cứ pháp lý</span>}
         </button>
 
@@ -67,7 +67,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           }`}
           title="Hướng dẫn sử dụng và quy trình vận hành ca trực"
         >
-          <BookOpen className="w-5 h-5 text-teal-700 shrink-0" />
+          <BookOpen className="w-5 h-5 text-blue-600 shrink-0" />
           {!isCollapsed && <span className="flex-1 text-left truncate">Hướng dẫn sử dụng</span>}
         </button>
 
@@ -78,7 +78,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           }`}
           title="Xuất và in biểu mẫu hành chính y tế"
         >
-          <Printer className="w-5 h-5 text-teal-700 shrink-0" />
+          <Printer className="w-5 h-5 text-blue-600 shrink-0" />
           {!isCollapsed && <span className="flex-1 text-left truncate">Biểu mẫu in ấn</span>}
         </button>
 
@@ -89,7 +89,7 @@ export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
           }`}
           title="Tra cứu Dược thư Lâm sàng & Thông tin thuốc"
         >
-          <Stethoscope className="w-5 h-5 text-teal-700 shrink-0" />
+          <Stethoscope className="w-5 h-5 text-blue-600 shrink-0" />
           {!isCollapsed && <span className="flex-1 text-left truncate">Thông tin thuốc</span>}
         </button>
       </div>

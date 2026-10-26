@@ -19,8 +19,8 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
     <div className="h-14 px-4 flex items-center justify-between border-b border-slate-200/80 shrink-0">
       {!isCollapsed ? (
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-teal-800 flex items-center justify-center text-white shadow-2xs shrink-0">
-            <Cross className="w-5 h-5 text-emerald-300" />
+          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+            <Cross className="w-5 h-5 text-white" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-[15px] font-bold text-slate-900 tracking-tight whitespace-nowrap leading-tight">
@@ -33,8 +33,8 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
         </div>
       ) : (
         <div className="w-full flex justify-center">
-          <div className="w-9 h-9 rounded-lg bg-teal-800 flex items-center justify-center text-white shadow-2xs">
-            <Cross className="w-5 h-5 text-emerald-300" />
+          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-2xs">
+            <Cross className="w-5 h-5 text-white" />
           </div>
         </div>
       )}

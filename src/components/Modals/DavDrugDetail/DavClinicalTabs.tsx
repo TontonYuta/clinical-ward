@@ -16,7 +16,7 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps }> = ({ data })
 
   const toggle = (sec: string) => setFullView((p) => ({ ...p, [sec]: !p[sec] }));
 
-  const renderBlock = (id: string, title: string, text?: string, badge?: string, badgeCls = 'bg-slate-100 text-slate-700') => {
+  const renderBlock = (id: string, title: string, text?: string, badge?: string, badgeCls = 'bg-blue-50 text-blue-700 border border-blue-200') => {
     if (!text) return null;
     const isFull = fullView[id];
     const isLong = text.length > 300;
@@ -32,7 +32,7 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps }> = ({ data })
           {!isFull && isLong && <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />}
         </div>
         {isLong && (
-          <button type="button" onClick={() => toggle(id)} className="text-xs font-bold text-teal-800 hover:text-teal-950 flex items-center gap-1 pt-1 cursor-pointer">
+          <button type="button" onClick={() => toggle(id)} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 pt-1 cursor-pointer">
             {isFull ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             <span>{isFull ? 'Thu gọn bớt' : 'Xem toàn văn đầy đủ'}</span>
           </button>
@@ -45,8 +45,8 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps }> = ({ data })
     <button
       type="button"
       onClick={() => setActiveTab(tab)}
-      className={`flex items-center gap-2 px-3.5 py-2 rounded text-xs sm:text-sm transition cursor-pointer ${
-        activeTab === tab ? 'bg-teal-800 text-white shadow-xs font-bold' : 'text-slate-700 hover:bg-slate-100 font-semibold'
+      className={`flex items-center gap-2 px-4 py-2 rounded text-xs sm:text-sm transition cursor-pointer ${
+        activeTab === tab ? 'bg-blue-600 text-white shadow-xs font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
       }`}
     >
       <Icon className="w-4 h-4 shrink-0" />
@@ -67,28 +67,28 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps }> = ({ data })
       <div className="space-y-3">
         {activeTab === 'dosage' && (
           <div className="space-y-3 animate-in fade-in duration-100">
-            {renderBlock('adult', 'Liều người lớn & Trần liều 24h', data.adultDosage, 'Người lớn', 'bg-blue-50 text-blue-900 border border-blue-200')}
-            {renderBlock('pediatric', 'Liều trẻ em (mg/kg theo tuổi & cân nặng)', data.pediatricDosage, 'Nhi khoa (mg/kg)', 'bg-amber-50 text-amber-900 border border-amber-200')}
+            {renderBlock('adult', 'Liều người lớn & Trần liều 24h', data.adultDosage, 'Người lớn')}
+            {renderBlock('pediatric', 'Liều trẻ em (mg/kg theo tuổi & cân nặng)', data.pediatricDosage, 'Nhi khoa (mg/kg)')}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {renderBlock('renal', 'Chỉnh liều suy thận (ClCr / eGFR)', data.renalAdjustment, 'Suy thận', 'bg-indigo-50 text-indigo-900 border border-indigo-200')}
-              {renderBlock('hepatic', 'Chỉnh liều suy gan', data.hepaticAdjustment, 'Suy gan', 'bg-rose-50 text-rose-900 border border-rose-200')}
+              {renderBlock('renal', 'Chỉnh liều suy thận (ClCr / eGFR)', data.renalAdjustment, 'Suy thận')}
+              {renderBlock('hepatic', 'Chỉnh liều suy gan', data.hepaticAdjustment, 'Suy gan')}
             </div>
           </div>
         )}
 
         {activeTab === 'indications' && (
           <div className="space-y-3 animate-in fade-in duration-100">
-            {renderBlock('indications', 'Chỉ định điều trị chính thức', data.indications, 'Chỉ định', 'bg-teal-50 text-teal-900 border border-teal-200')}
-            {renderBlock('precautions', 'Thận trọng & Cảnh báo đặc biệt khi sử dụng', data.precautions, 'Cảnh báo lâm sàng', 'bg-amber-50 text-amber-950 border border-amber-200')}
-            {renderBlock('pregnancy', 'Thời kỳ mang thai & Cho con bú', data.pregnancyWarning, 'Thai kỳ & Nuôi con bú', 'bg-purple-50 text-purple-900 border border-purple-200')}
+            {renderBlock('indications', 'Chỉ định điều trị chính thức', data.indications, 'Chỉ định')}
+            {renderBlock('precautions', 'Thận trọng & Cảnh báo đặc biệt khi sử dụng', data.precautions, 'Cảnh báo lâm sàng')}
+            {renderBlock('pregnancy', 'Thời kỳ mang thai & Cho con bú', data.pregnancyWarning, 'Thai kỳ & Nuôi con')}
           </div>
         )}
 
         {activeTab === 'safety' && (
           <div className="space-y-3 animate-in fade-in duration-100">
-            {renderBlock('adverse', 'Tác dụng không mong muốn (ADR & Tỷ lệ gặp)', data.adverseEffects, 'ADR Dược Thư', 'bg-rose-50 text-rose-950 border border-rose-200')}
-            {renderBlock('interactions', 'Tương tác thuốc đáng chú ý & Phối hợp cần tránh', data.drugInteractions, 'Tương tác thuốc', 'bg-orange-50 text-orange-950 border border-orange-200')}
-            {renderBlock('overdose', 'Xử trí quá liều & Triệu chứng ngộ độc cấp', data.overdoseTreatment, 'Quá liều cấp', 'bg-slate-100 text-slate-900 border border-slate-300')}
+            {renderBlock('adverse', 'Tác dụng không mong muốn (ADR & Tỷ lệ gặp)', data.adverseEffects, 'ADR Dược Thư', 'bg-rose-50 text-rose-800 border border-rose-200')}
+            {renderBlock('interactions', 'Tương tác thuốc đáng chú ý & Phối hợp cần tránh', data.drugInteractions, 'Tương tác thuốc')}
+            {renderBlock('overdose', 'Xử trí quá liều & Triệu chứng ngộ độc cấp', data.overdoseTreatment, 'Quá liều cấp', 'bg-slate-100 text-slate-800 border border-slate-300')}
           </div>
         )}
       </div>

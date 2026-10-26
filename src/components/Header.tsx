@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <TabIcon className="w-5 h-5 text-teal-800 shrink-0" />
+          <TabIcon className="w-5 h-5 text-blue-600 shrink-0" />
           <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 truncate tracking-tight">
             <span className="sm:hidden">{tabInfo.shortTitle}</span>
             <span className="hidden sm:inline">{tabInfo.title}</span>
@@ -104,12 +104,12 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onSelectDomain('pharmacy')}
               className={`px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1 ${
                 systemDomain === 'pharmacy'
-                  ? 'bg-white text-teal-900 shadow-2xs font-bold border border-slate-200/60'
+                  ? 'bg-white text-blue-900 shadow-2xs font-bold border border-slate-200/60'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Phân hệ Quản trị Thuốc & Dược lâm sàng"
             >
-              <Boxes className="w-3.5 h-3.5 text-teal-700" />
+              <Boxes className="w-3.5 h-3.5 text-blue-600" />
               <span>Thuốc</span>
             </button>
             <button
@@ -167,12 +167,12 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleCopilot}
             aria-label="Trợ lý AI lâm sàng (Cmd+K / Ctrl+K)"
-            className={`h-8.5 px-2.5 sm:px-3 rounded-md border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition cursor-pointer shrink-0 ${isCopilotOpen ? 'bg-teal-800 text-white border-teal-800 font-semibold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'}`}
+            className={`h-8.5 px-2.5 sm:px-3 rounded-md border text-xs sm:text-sm font-medium flex items-center gap-1.5 transition cursor-pointer shrink-0 ${isCopilotOpen ? 'bg-blue-600 text-white border-blue-600 font-semibold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'}`}
             title="Bật/tắt trợ lý AI lâm sàng (Phím tắt ⌘K hoặc Ctrl+K)"
           >
-            <Bot className={`w-4 h-4 shrink-0 ${isCopilotOpen ? 'text-white' : 'text-teal-700'}`} />
+            <Bot className={`w-4 h-4 shrink-0 ${isCopilotOpen ? 'text-white' : 'text-blue-600'}`} />
             <span className="hidden md:inline">Trợ lý AI</span>
-            <kbd className={`hidden lg:inline-flex items-center px-1 py-0.2 text-2xs font-mono rounded border ${isCopilotOpen ? 'bg-teal-900 border-teal-700 text-teal-200' : 'bg-slate-100 border-slate-200 text-slate-500'}`}>⌘K</kbd>
+            <kbd className={`hidden lg:inline-flex items-center px-1 py-0.2 text-2xs font-mono rounded border ${isCopilotOpen ? 'bg-blue-700 border-blue-500 text-blue-100' : 'bg-slate-100 border-slate-200 text-slate-500'}`}>⌘K</kbd>
           </button>
         )}
 

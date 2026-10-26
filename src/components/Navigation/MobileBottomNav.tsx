@@ -89,11 +89,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             key={tab}
             onClick={() => onTabChange(tab)}
             className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition cursor-pointer relative ${
-              isActive ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
+              isActive ? 'text-blue-900 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
-              <Icon className={`w-5 h-5 ${isActive ? 'text-teal-700 stroke-[2.5]' : 'text-slate-500'}`} />
+              <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600 stroke-[2.5]' : 'text-slate-500'}`} />
               {badge && (
                 <span
                   className={`absolute -top-1.5 -right-2 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white ${badge.color}`}
@@ -112,11 +112,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         <button
           onClick={onToggleCopilot}
           className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition cursor-pointer relative ${
-            isCopilotOpen ? 'text-teal-800 font-bold' : 'text-slate-500 hover:text-slate-800'
+            isCopilotOpen ? 'text-blue-900 font-bold' : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <div className="relative">
-            <Bot className={`w-5 h-5 ${isCopilotOpen ? 'text-teal-700 stroke-[2.5]' : 'text-slate-600'}`} />
+            <Bot className={`w-5 h-5 ${isCopilotOpen ? 'text-blue-600 stroke-[2.5]' : 'text-slate-600'}`} />
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 ring-1 ring-white" />
           </div>
           <span className="text-[11px] mt-0.5 tracking-tight font-medium">Trợ lý AI</span>

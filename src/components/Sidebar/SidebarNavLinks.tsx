@@ -135,12 +135,12 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
                 onClick={() => handleSelectTab(tab)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] transition cursor-pointer ${
                   isActive
-                    ? 'bg-teal-50 text-teal-950 font-bold border border-teal-200/80 shadow-2xs'
+                    ? 'bg-blue-50 text-blue-950 font-bold border border-blue-200/80 shadow-2xs'
                     : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title={tooltip}
               >
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-teal-700' : 'text-slate-400'}`} />
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
                 {!isCollapsed && (
                   <>
                     <span className="flex-1 text-left truncate">{label}</span>
@@ -166,10 +166,10 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
               if (['equipment', 'asset_audit'].includes(currentTab)) handleSelectTab('fefo');
             }}
             className={`flex-1 py-1 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
-              systemDomain === 'pharmacy' ? 'bg-white text-teal-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+              systemDomain === 'pharmacy' ? 'bg-white text-blue-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Boxes className="w-3.5 h-3.5 text-teal-700" />
+            <Boxes className="w-3.5 h-3.5 text-blue-600" />
             <span>Thuốc</span>
           </button>
           <button

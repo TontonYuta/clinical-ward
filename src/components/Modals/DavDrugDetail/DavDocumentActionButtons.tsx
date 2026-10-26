@@ -67,17 +67,17 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
     <div className="border border-slate-200 rounded-lg p-3.5 bg-slate-50/70 space-y-2.5 shadow-2xs">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs uppercase font-bold text-slate-700">
-          <FileText className="w-4 h-4 text-teal-700" />
+          <FileText className="w-4 h-4 text-blue-600" />
           <span>Hồ Sơ Điện Tử Cục Quản Lý Dược</span>
         </div>
-        <span className="text-xs text-teal-900 font-semibold bg-teal-100/70 px-2 py-0.5 rounded border border-teal-200">
+        <span className="text-xs text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
           Pháp lý SmPC
         </span>
       </div>
 
       {isResolving ? (
-        <div className="flex items-center gap-2 p-3 bg-teal-50 border border-teal-200 rounded text-xs text-teal-900">
-          <Loader2 className="w-4 h-4 text-teal-700 animate-spin shrink-0" />
+        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-900">
+          <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
           <span>Đang đối soát hồ sơ điện tử TT89 từ Cổng Cục Quản Lý Dược...</span>
         </div>
       ) : hasAnyDoc ? (
@@ -87,14 +87,14 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
               href={hdsdUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs sm:text-sm transition shadow-xs group cursor-pointer"
+              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm transition shadow-xs group cursor-pointer"
               title="Mở toàn văn Tờ Hướng Dẫn Sử Dụng (SmPC) PDF chính thức của Cục QLD"
             >
               <div className="flex items-center gap-2 truncate">
-                <FileText className="w-4 h-4 text-teal-200 shrink-0" />
+                <FileText className="w-4 h-4 text-blue-100 shrink-0" />
                 <span className="truncate">Xem Tờ HDSD (PDF Gốc)</span>
               </div>
-              <ExternalLink className="w-4 h-4 text-teal-300 group-hover:text-white shrink-0" />
+              <ExternalLink className="w-4 h-4 text-blue-200 group-hover:text-white shrink-0" />
             </a>
           ) : (
             <div className="inline-flex items-center gap-2 px-3 py-2.5 rounded bg-slate-100 text-slate-400 text-xs border border-slate-200">
@@ -108,14 +108,14 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
               href={labelUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-white hover:bg-slate-50 text-slate-900 hover:text-teal-900 border border-slate-300 font-bold text-xs sm:text-sm transition shadow-2xs group cursor-pointer"
+              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-white hover:bg-slate-50 text-slate-900 hover:text-blue-700 border border-slate-300 font-semibold text-xs sm:text-sm transition shadow-2xs group cursor-pointer"
               title="Mở bản vẽ kỹ thuật Mẫu Nhãn Bao Bì lưu hành được Bộ Y Tế phê duyệt"
             >
               <div className="flex items-center gap-2 truncate">
-                <Tag className="w-4 h-4 text-teal-700 shrink-0" />
+                <Tag className="w-4 h-4 text-blue-600 shrink-0" />
                 <span className="truncate">Xem Mẫu Nhãn (PDF)</span>
               </div>
-              <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-teal-800 shrink-0" />
+              <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
             </a>
           ) : (
             <div className="inline-flex items-center gap-2 px-3 py-2.5 rounded bg-slate-100 text-slate-400 text-xs border border-slate-200">
