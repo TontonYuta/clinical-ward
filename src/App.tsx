@@ -1248,8 +1248,9 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       setIsAuditTrailOpen(true);
     } else if (actionType === 'OPEN_LEGAL_MODAL') {
       setIsLegalDocsOpen(true);
-    } else if (actionType === 'OPEN_REGISTRY_MODAL') {
-      setIsMedicationSafetyOpen(true);
+    } else if (actionType === 'OPEN_REGISTRY_MODAL' || actionType === 'OPEN_MED_SAFETY') {
+      const med = cardData?.item_name || cardData?.medicationName || cardData?.drug_name || 'Augmentin 1g';
+      handleOpenMedicationSafety(med);
       markExecuted();
     } else if (actionType === 'OPEN_FEFO_MODAL') {
       if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('fefo')) {

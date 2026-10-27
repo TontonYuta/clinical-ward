@@ -69,7 +69,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
     <div
       role="dialog" aria-modal="true" aria-label="Thông Tin Thuốc & Hướng Dẫn Sử Dụng An Toàn"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+      className="fixed inset-0 z-60 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
     >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-[95vw] max-w-5xl lg:max-w-6xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Pinned Header */}
