@@ -49,6 +49,8 @@ from app.seed_debts_data import DEBTS_DATA
 from app.seed_equipment_data import EQUIPMENT_DATA
 from app.seed_inventory_data import INVENTORY_DATA
 from app.seed_patients_data import PATIENTS_DATA, INITIAL_ADVICES_DATA
+from app.seed_cpoe_data import CPOE_DATA
+from app.models.cpoe import CpoePrescription
 
 ASSETS_DATA = [
     {"id": "ast-1", "code": "TS-2026-001", "device_name": "Máy thở Puritan Bennett 840 (PB840)", "model": "PB840 Ventilator - Medtronic", "serial_number": "PB840-VN-2021-998", "risk_class": "D", "registered_department": "Khoa Cấp Cứu A9", "actual_department": "Phòng Mổ 2 (Khu Phẫu Thuật)", "is_misallocated": True, "depreciation_rate_percent": 40, "operating_years": 4, "pending_liquidation": False, "last_scanned_at": "08:30 AM - Kiểm kê buồng mổ"},
@@ -90,6 +92,7 @@ async def seed():
         await conn.execute(AuditRecord.__table__.delete())
         await conn.execute(PatientProfile.__table__.delete())
         await conn.execute(PrescriptionAdviceRecord.__table__.delete())
+        await conn.execute(CpoePrescription.__table__.delete())
 
     async with AsyncSessionLocal() as session:
         # 1. Users
@@ -140,6 +143,11 @@ async def seed():
         # 9. Initial Prescription Advice
         for a in INITIAL_ADVICES_DATA:
             session.add(PrescriptionAdviceRecord(**a))
+
+        # 10. CPOE Prescriptions
+        for c in CPOE_DATA:
+            c_dict = {k: v for k, v in c.items() if k != "created_at"}
+            session.add(CpoePrescription(**c_dict))
 
         await session.commit()
         seed_dav_registry_if_needed()

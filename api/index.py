@@ -44,9 +44,10 @@ try:
         try:
             conn = sqlite3.connect(db_dest)
             cur = conn.cursor()
-            cnt = cur.execute("SELECT count(*) FROM dav_national_drugs").fetchone()[0]
+            cnt_dav = cur.execute("SELECT count(*) FROM dav_national_drugs").fetchone()[0]
+            cnt_cpoe = cur.execute("SELECT count(*) FROM cpoe_prescriptions").fetchone()[0]
             conn.close()
-            if cnt > 10000:
+            if cnt_dav > 10000 and cnt_cpoe > 0:
                 needs_seed = False
         except Exception:
             needs_seed = True
