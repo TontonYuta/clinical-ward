@@ -74,6 +74,7 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
+  const [isCopilotExpanded, setIsCopilotExpanded] = useState<boolean>(false);
   const [isLegalDocsOpen, setIsLegalDocsOpen] = useState<boolean>(false);
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
   const [isUserGuideOpen, setIsUserGuideOpen] = useState<boolean>(false);
@@ -1606,10 +1607,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
       {isCopilotOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-6 z-50 sm:w-[420px] sm:max-w-[calc(100vw-32px)] sm:h-[620px] sm:max-h-[calc(100vh-100px)] h-full w-full flex flex-col bg-white sm:rounded-lg rounded-none shadow-xl border sm:border-slate-300 border-transparent overflow-hidden ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 print:hidden">
+        <div
+          className={`fixed z-50 flex flex-col bg-white shadow-2xl transition-all duration-200 overflow-hidden print:hidden ${
+            isCopilotExpanded
+              ? 'inset-0 sm:inset-3 md:inset-5 h-full sm:h-[calc(100vh-24px)] md:h-[calc(100vh-40px)] w-full sm:w-[calc(100vw-24px)] md:w-[calc(100vw-40px)] max-w-6xl mx-auto my-auto rounded-none sm:rounded-2xl border sm:border-slate-300 ring-2 ring-teal-700/25'
+              : 'inset-0 sm:inset-auto sm:bottom-5 sm:right-6 sm:w-[440px] sm:max-w-[calc(100vw-32px)] sm:h-[640px] sm:max-h-[calc(100vh-80px)] h-full w-full rounded-none sm:rounded-xl border sm:border-slate-300 ring-1 ring-black/5'
+          }`}
+        >
           <ChatWindow
             messages={chatMessages}
-            suggestionChips={ROLE_SUGGESTION_CHIPS[currentUserRole] || QUICK_SUGGESTION_CHIPS}
+            suggestionChips={[]}
             onSendMessage={handleSendMessage}
             isProcessing={isProcessing}
             isAudioMuted={isAudioMuted}
@@ -1621,6 +1628,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             }}
             currentUserRole={currentUserRole}
             onClose={() => setIsCopilotOpen(false)}
+            isFullScreen={isCopilotExpanded}
+            onToggleFullScreen={() => setIsCopilotExpanded(prev => !prev)}
             pendingDebtsCount={debts.filter(d => d.status === 'debt').length}
             pendingAmpoulesCount={debts.filter(d => d.itemType === 'Thuốc gây nghiện' && !d.ampouleReturned).length}
             urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}

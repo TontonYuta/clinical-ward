@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2 } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2 } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -32,12 +32,15 @@ interface ChatWindowProps {
   onClearMessages?: () => void;
   onOpenAuditTrail?: () => void;
   onOpenLegalDocs?: () => void;
+  isFullScreen?: boolean;
+  onToggleFullScreen?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   messages, suggestionChips, onSendMessage, isProcessing, isAudioMuted, onSelectTab,
   currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
   lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs,
+  isFullScreen = false, onToggleFullScreen,
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -86,6 +89,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           >
             <Settings2 className="w-4 h-4" />
           </button>
+          {onToggleFullScreen && (
+            <button
+              type="button"
+              onClick={onToggleFullScreen}
+              className="p-2 sm:p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95"
+              title={isFullScreen ? 'Thu nhỏ cửa sổ' : 'Mở rộng toàn màn hình'}
+              aria-label={isFullScreen ? 'Thu nhỏ' : 'Toàn màn hình'}
+            >
+              {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          )}
           {onClearMessages && (
             <button onClick={onClearMessages} className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95" title="Làm mới phiên hội thoại">
               <RotateCcw className="w-4 h-4" />
@@ -100,8 +114,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* 2. Messages Stream */}
-      <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5">
-        {messages.map((msg) => {
+      <div className="flex-1 overflow-y-auto p-3.5 sm:p-4">
+        <div className={`space-y-3.5 ${isFullScreen ? 'max-w-4xl mx-auto w-full' : 'w-full'}`}>
+          {messages.map((msg) => {
           const isAgent = msg.sender === 'agent';
           const isSystem = msg.sender === 'system';
           const isDarkBubble = msg.sender === 'user' || isSystem;
@@ -158,10 +173,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         )}
         <div ref={chatBottomRef} />
+        </div>
       </div>
 
       {/* 3. Input Area */}
-      <ChatInputBar onSendMessage={handleSend} suggestionChips={suggestionChips} isProcessing={isProcessing} isAudioMuted={isAudioMuted} onChipClick={handleChipClick} />
+      <div className="bg-white border-t border-slate-200 shrink-0">
+        <div className={isFullScreen ? 'max-w-4xl mx-auto w-full' : 'w-full'}>
+          <ChatInputBar onSendMessage={handleSend} suggestionChips={suggestionChips} isProcessing={isProcessing} isAudioMuted={isAudioMuted} onChipClick={handleChipClick} />
+        </div>
+      </div>
 
       {/* 4. Settings Modal */}
       <ChatSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onKeyUpdated={() => setCloudActive(isCloudAIAvailable())} />
