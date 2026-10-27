@@ -94,7 +94,7 @@ async function testPharmacyLookups() {
 
   await tableAnToanBtn.click();
   await page.waitForTimeout(800);
-  const safetyModalTitle = page.locator('text=Thông Tin Thuốc & Hướng Dẫn Sử Dụng An Toàn').first();
+  const safetyModalTitle = page.locator('text=Tra Cứu Dược Thư Quốc Gia Việt Nam').or(page.locator('text=Hướng Dẫn Kê Đơn An Toàn 5 Đúng')).first();
   const isSafetyModalOpen = await safetyModalTitle.isVisible();
   console.log('✅ 8. Mở hướng dẫn sử dụng an toàn (5 Đúng & Dị ứng) thành công:', isSafetyModalOpen);
   if (!isSafetyModalOpen) throw new Error('Failed to open Safety guide modal from table row');

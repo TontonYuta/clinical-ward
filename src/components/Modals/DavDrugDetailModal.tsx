@@ -135,8 +135,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Thân 2 Cột Workstation */}
-        <div className="p-4 sm:p-5 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-5 text-sm text-slate-800">
+        {/* Thân 2 Cột Workstation - Hỗ trợ scroll ngang và dọc với thanh scroll siêu nhỏ */}
+        <div className="p-4 sm:p-5 overflow-x-auto overflow-y-auto thin-scrollbar grid grid-cols-1 lg:grid-cols-12 gap-5 text-base text-slate-800">
           {/* Cột Trái (5/12): Cảnh Báo An Toàn, Hành Chính, Mẫu Nhãn, Lô Kho */}
           <div className="lg:col-span-5 space-y-3">
             {clinicalData.contraindications && (

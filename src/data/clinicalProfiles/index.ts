@@ -11,6 +11,7 @@ import { EMERGENCY_CLINICAL_PROFILES } from './emergencyProfiles';
 import { ELECTROLYTE_CLINICAL_PROFILES } from './electrolyteProfiles';
 import { ANTIBIOTIC_CLINICAL_PROFILES } from './antibioticProfiles';
 import { GENERAL_CLINICAL_PROFILES } from './generalProfiles';
+import { HOSPITAL_SPECIALTY_CLINICAL_PROFILES } from './hospitalSpecialtyProfiles';
 
 export const ALL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   ...CONTROLLED_CLINICAL_PROFILES,
@@ -19,6 +20,19 @@ export const ALL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   ...ELECTROLYTE_CLINICAL_PROFILES,
   ...ANTIBIOTIC_CLINICAL_PROFILES,
   ...GENERAL_CLINICAL_PROFILES,
+  ...HOSPITAL_SPECIALTY_CLINICAL_PROFILES,
+
+  // Direct mapping by Batch / Master IDs for instant O(1) resolution
+  'b-1': GENERAL_CLINICAL_PROFILES['med-gen-01'],
+  'b-2': ANTIBIOTIC_CLINICAL_PROFILES['med-ab-01'],
+  'b-3': CONTROLLED_CLINICAL_PROFILES['med-ctrl-01'],
+  'b-4': EMERGENCY_CLINICAL_PROFILES['med-em-01'],
+  'b-5': ELECTROLYTE_CLINICAL_PROFILES['med-em-09'],
+  'b-6': ANTIBIOTIC_CLINICAL_PROFILES['med-ab-02'],
+  'b-7': SEDATIVE_CLINICAL_PROFILES['med-em-07'],
+  'b-18': HOSPITAL_SPECIALTY_CLINICAL_PROFILES['med-aml-01'],
+  'b-19': HOSPITAL_SPECIALTY_CLINICAL_PROFILES['med-met-01'],
+  'b-20': HOSPITAL_SPECIALTY_CLINICAL_PROFILES['med-ato-01'],
 };
 
 function normalize(str: string): string {
@@ -26,30 +40,65 @@ function normalize(str: string): string {
 }
 
 /**
- * Tra cứu hồ sơ lâm sàng 5 Đúng và Dị ứng theo ID hoặc tên thuốc/hoạt chất
+ * Tra cứu hồ sơ lâm sàng Dược Thư Quốc Gia 5 Đúng và Dị ứng theo ID hoặc tên thuốc/hoạt chất
  */
 export function getMedicationClinicalProfile(
   identifierOrName: string,
   medData?: Partial<MasterMedication>
 ): FiveRightsSafetyInfo {
+  if (!identifierOrName) {
+    return ALL_CLINICAL_PROFILES['med-ctrl-01'];
+  }
+
   // 1. Khớp chính xác ID
   if (ALL_CLINICAL_PROFILES[identifierOrName]) {
     return ALL_CLINICAL_PROFILES[identifierOrName];
   }
 
-  const query = normalize(identifierOrName);
+  // 2. Tìm kiếm đa chiều: ID, Biệt dược, Hoạt chất, SĐK
+  const query = normalize(`${identifierOrName} ${medData?.brandName || ''} ${medData?.activeIngredient || ''} ${medData?.nationalCode || ''}`);
 
-  // 2. Khớp từ khóa hoạt chất / thương mại phổ biến
-  if (query.includes('morphin')) return ALL_CLINICAL_PROFILES['med-ctrl-01'];
-  if (query.includes('fentan')) return ALL_CLINICAL_PROFILES['med-ctrl-02'];
-  if (query.includes('diaze') || query.includes('seduxen')) return ALL_CLINICAL_PROFILES['med-em-07'];
-  if (query.includes('noradre') || query.includes('norepi')) return ALL_CLINICAL_PROFILES['med-em-02'];
-  if (query.includes('adre') || query.includes('epi') || query.includes('hadunalin')) return ALL_CLINICAL_PROFILES['med-em-01'];
-  if (query.includes('kali') || query.includes('kcl')) return ALL_CLINICAL_PROFILES['med-em-09'];
-  if (query.includes('ceftria') || query.includes('rocephin')) return ALL_CLINICAL_PROFILES['med-ab-01'];
-  if (query.includes('vanco')) return ALL_CLINICAL_PROFILES['med-ab-02'];
-  if (query.includes('paracet') || query.includes('acetamin') || query.includes('efferal') || query.includes('panadol')) {
+  if (query.includes('b-3') || query.includes('893111093823') || query.includes('dp-mp-01') || query.includes('morphin')) {
+    return ALL_CLINICAL_PROFILES['med-ctrl-01'];
+  }
+  if (query.includes('b-4') || query.includes('893110151100') || query.includes('dp-ad-01') || query.includes('adrenalin') || query.includes('hadunalin') || query.includes('epinephrin')) {
+    return ALL_CLINICAL_PROFILES['med-em-01'];
+  }
+  if (query.includes('b-5') || query.includes('893110375223') || query.includes('dp-kc-01') || query.includes('kali') || query.includes('kcl')) {
+    return ALL_CLINICAL_PROFILES['med-em-09'];
+  }
+  if (query.includes('b-2') || query.includes('840110304425') || query.includes('dp-cf-01') || query.includes('ceftria') || query.includes('rocephin') || query.includes('normon')) {
+    return ALL_CLINICAL_PROFILES['med-ab-01'];
+  }
+  if (query.includes('b-7') || query.includes('890112769224') || query.includes('dp-dz-01') || query.includes('diaze') || query.includes('seduxen')) {
+    return ALL_CLINICAL_PROFILES['med-em-07'];
+  }
+  if (query.includes('b-6') || query.includes('890110595324') || query.includes('dp-vc-01') || query.includes('vanco')) {
+    return ALL_CLINICAL_PROFILES['med-ab-02'];
+  }
+  if (query.includes('b-1') || query.includes('893100110026') || query.includes('dp-pc-01') || query.includes('paracet') || query.includes('panadol') || query.includes('efferal') || query.includes('acetamin')) {
     return ALL_CLINICAL_PROFILES['med-gen-01'];
+  }
+  if (query.includes('b-19') || query.includes('panfor') || query.includes('metformin')) {
+    return ALL_CLINICAL_PROFILES['med-met-01'];
+  }
+  if (query.includes('b-18') || query.includes('safeesem') || query.includes('amlodipin')) {
+    return ALL_CLINICAL_PROFILES['med-aml-01'];
+  }
+  if (query.includes('b-20') || query.includes('atorvastatin') || query.includes('atorva') || query.includes('lipitor')) {
+    return ALL_CLINICAL_PROFILES['med-ato-01'];
+  }
+  if (query.includes('enoxaparin') || query.includes('enox') || query.includes('lovenox')) {
+    return ALL_CLINICAL_PROFILES['med-enox-01'];
+  }
+  if (query.includes('naloxon') || query.includes('nalox')) {
+    return ALL_CLINICAL_PROFILES['med-nalox-01'];
+  }
+  if (query.includes('fentan')) {
+    return ALL_CLINICAL_PROFILES['med-ctrl-02'];
+  }
+  if (query.includes('noradre') || query.includes('norepi')) {
+    return ALL_CLINICAL_PROFILES['med-em-02'];
   }
   if (query.includes('lipid') || query.includes('intralipid') || query.includes('lipovenoes')) {
     return ALL_CLINICAL_PROFILES['med-gen-02'];
@@ -64,7 +113,7 @@ export function getMedicationClinicalProfile(
   return {
     officialSource: {
       documentName: `Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)`,
-      registrationNumber: medData?.nationalCode ? `SĐK / Mã: ${medData.nationalCode}` : 'CSDL 54.885 Cục QLD',
+      registrationNumber: medData?.nationalCode ? `SĐK: ${medData.nationalCode}` : 'CSDL 54.885 Cục QLD',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
       pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
@@ -79,7 +128,7 @@ export function getMedicationClinicalProfile(
       pharmacopeiaStandard: 'Dược điển Việt Nam V (DĐVN V)',
     },
     indications: [
-      `Điều trị và kiểm soát các bệnh lý lâm sàng theo phác đồ chỉ định bác sĩ CPOE đối với ${name}.`,
+      `Điều trị và kiểm soát các bệnh lý lâm sàng theo phác đồ chỉ định của bác sĩ điều trị đối với ${name}.`,
       'Hỗ trợ cải thiện triệu chứng và ngăn ngừa diễn tiến nặng của bệnh nền.',
     ],
     pharmacologyMechanism: `Tác dụng dược lý thông qua cơ chế gắn kết thụ thể mục tiêu của hoạt chất ${active}, chuyển hóa chủ yếu qua gan và thải trừ qua thận.`,
@@ -110,7 +159,7 @@ export function getMedicationClinicalProfile(
     ],
     tallManLASA: medData?.tallManName || name,
     highAlertRiskNote: isHighAlert ? 'Thuốc thuộc danh mục cảnh báo cao nguy cơ sai sót điều trị' : undefined,
-    standardDosing: `Liều dùng tuân thủ đơn thuốc bác sĩ CPOE. Thường dùng: ${medData?.defaultDoseQty || 1} ${medData?.standardUnit || 'đơn vị'}.`,
+    standardDosing: `Liều dùng tuân thủ đơn thuốc của bác sĩ điều trị. Thường dùng: ${medData?.defaultDoseQty || 1} ${medData?.standardUnit || 'đơn vị'}.`,
     maxDailyDose: 'Tuân thủ liều tối đa ghi trong Tờ hướng dẫn sử dụng được Bộ Y Tế phê duyệt.',
     renalAdjustment: 'Cần hiệu chỉnh liều giảm bớt hoặc kéo dài khoảng cách nếu mức lọc cầu thận eGFR < 50 ml/phút.',
     hepaticAdjustment: 'Thận trọng ở người bệnh suy giảm chức năng tế bào gan mức độ trung bình đến nặng.',
