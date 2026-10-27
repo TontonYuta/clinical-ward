@@ -1,6 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * Bộ Định Dạng Markdown Lâm Sàng Tinh Chỉnh Cho Chatbot (<=180 LOC)
  */
 
 import React from 'react';
@@ -30,7 +31,7 @@ export const formatInlineMarkdown = (text: string, isDark: boolean = false): Rea
       return (
         <code
           key={i}
-          className={`px-1.5 py-0.5 rounded font-mono text-xs font-semibold border ${
+          className={`px-1.5 py-0.5 rounded font-mono text-2xs font-semibold border ${
             isDark ? 'bg-slate-800 text-teal-300 border-slate-700' : 'bg-slate-100 text-teal-800 border-slate-200'
           }`}
         >
@@ -70,16 +71,13 @@ export const renderFormattedText = (text: string, isDark: boolean = false): Reac
   let i = 0;
 
   while (i < rawLines.length) {
-    const line = rawLines[i];
-    if (line.trim().startsWith('> [!')) {
-      const isWarning = line.includes('[!WARNING]') || line.includes('[!CAUTION]');
-      const isImportant = line.includes('[!IMPORTANT]');
-      const alertTitle = isWarning
-        ? 'CẢNH BÁO PHÁP LÝ (TT 20/2017 & TT 22/2011)'
-        : isImportant
-        ? 'QUY ĐỊNH BẮT BUỘC'
-        : 'KHUYẾN CÁO THỰC HÀNH';
+    const rawLine = rawLines[i];
+    const line = rawLine.trim();
 
+    // 1. Khung cảnh báo (> [!WARNING], > [!IMPORTANT])
+    if (line.startsWith('> [!')) {
+      const isWarning = line.includes('[!WARNING]') || line.includes('[!CAUTION]');
+      const alertTitle = isWarning ? 'CẢNH BÁO NGUY HIỂM' : 'LƯU Ý CHUYÊN MÔN';
       const bodyLines: string[] = [];
       let j = i + 1;
       while (j < rawLines.length && rawLines[j].trim().startsWith('>')) {
@@ -87,34 +85,30 @@ export const renderFormattedText = (text: string, isDark: boolean = false): Reac
         j++;
       }
       i = j;
-
       elements.push(
         <div
           key={`alert-${i}`}
-          className={`my-2 p-3 rounded-lg border text-xs space-y-1.5 ${
-            isWarning ? 'bg-amber-50/90 border-amber-300/80 text-amber-950' : 'bg-teal-50/90 border-teal-300/80 text-teal-950'
+          className={`my-2 p-3 rounded-xl border text-xs space-y-1 ${
+            isWarning ? 'bg-rose-50/80 border-rose-300 text-rose-950' : 'bg-teal-50/80 border-teal-300 text-teal-950'
           }`}
         >
-          <div className={`flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider ${isWarning ? 'text-amber-800' : 'text-teal-800'}`}>
-            {isWarning ? <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" /> : <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />}
+          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-xs">
+            {isWarning ? <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" /> : <ShieldCheck className="w-4 h-4 text-teal-700 shrink-0" />}
             <span>{alertTitle}</span>
           </div>
-          {bodyLines.length > 0 && (
-            <div className={`leading-relaxed text-xs space-y-1 ${isWarning ? 'text-amber-900' : 'text-teal-900'}`}>
-              {bodyLines.map((bLine, bIdx) => (
-                <div key={bIdx}>{formatInlineMarkdown(bLine, false)}</div>
-              ))}
-            </div>
-          )}
+          {bodyLines.map((bLine, bIdx) => (
+            <div key={bIdx} className="leading-relaxed">{formatInlineMarkdown(bLine, false)}</div>
+          ))}
         </div>
       );
       continue;
     }
 
-    if (line.trim().startsWith('>')) {
-      const quoteContent = line.trim().replace(/^>\s*/, '');
+    // 2. Trích dẫn Blockquote (> ...)
+    if (line.startsWith('>')) {
+      const quoteContent = line.replace(/^>\s*/, '');
       elements.push(
-        <div key={`quote-${i}`} className="my-2 pl-3 py-1.5 border-l-2 border-teal-600 bg-teal-50/40 rounded-r text-xs text-slate-700 italic leading-relaxed">
+        <div key={`quote-${i}`} className="my-1.5 pl-3 py-1 border-l-2 border-teal-600 bg-slate-50/80 rounded-r text-xs text-slate-700 italic leading-relaxed">
           {formatInlineMarkdown(quoteContent, isDark)}
         </div>
       );
@@ -122,15 +116,72 @@ export const renderFormattedText = (text: string, isDark: boolean = false): Reac
       continue;
     }
 
-    if (line.trim() === '') {
-      elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
+    // 3. Đường phân cách (---, ***, ___)
+    if (/^(\-{3,}|\*{3,}|_{3,})$/.test(line)) {
+      elements.push(<hr key={`hr-${i}`} className="my-2 border-slate-200/80" />);
       i++;
       continue;
     }
 
-    const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-') || /^\d+\.\s/.test(line.trim());
+    // 4. Tiêu đề Markdown (#, ##, ###, ####)
+    const h1Match = line.match(/^#\s+(.+)$/);
+    if (h1Match) {
+      elements.push(<h2 key={`h1-${i}`} className="font-bold text-base text-slate-900 mt-3 mb-1.5 border-b border-slate-200/60 pb-1">{formatInlineMarkdown(h1Match[1], isDark)}</h2>);
+      i++; continue;
+    }
+    const h2Match = line.match(/^##\s+(.+)$/);
+    if (h2Match) {
+      elements.push(<h3 key={`h2-${i}`} className="font-bold text-sm text-slate-900 mt-2.5 mb-1">{formatInlineMarkdown(h2Match[1], isDark)}</h3>);
+      i++; continue;
+    }
+    const h3Match = line.match(/^###\s+(.+)$/);
+    if (h3Match) {
+      elements.push(<h4 key={`h3-${i}`} className="font-bold text-xs sm:text-sm text-teal-800 mt-2 mb-1 flex items-center gap-1.5">{formatInlineMarkdown(h3Match[1], isDark)}</h4>);
+      i++; continue;
+    }
+    const h4Match = line.match(/^####\s+(.+)$/);
+    if (h4Match) {
+      elements.push(<h5 key={`h4-${i}`} className="font-semibold text-xs text-slate-800 mt-1.5 mb-0.5">{formatInlineMarkdown(h4Match[1], isDark)}</h5>);
+      i++; continue;
+    }
+
+    // 5. Dòng trống
+    if (line === '') {
+      elements.push(<div key={`spacer-${i}`} className="h-1" />);
+      i++;
+      continue;
+    }
+
+    // 6. Danh sách có số (1. , 2. )
+    const numMatch = line.match(/^(\d+)[\.\)]\s+(.+)$/);
+    if (numMatch) {
+      elements.push(
+        <div key={`num-${i}`} className="flex items-start gap-1.5 my-0.5 pl-1 leading-relaxed text-xs sm:text-sm">
+          <span className="font-bold text-teal-700 text-xs shrink-0 mt-0.5 min-w-[14px]">{numMatch[1]}.</span>
+          <div className="flex-1">{formatInlineMarkdown(numMatch[2], isDark)}</div>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // 7. Danh sách gạch đầu dòng (* , - , + , • )
+    const bulletMatch = line.match(/^[\*\-\+•]\s+(.+)$/);
+    if (bulletMatch) {
+      const isNested = rawLine.startsWith('   ') || rawLine.startsWith('\t');
+      elements.push(
+        <div key={`bullet-${i}`} className={`flex items-start gap-2 my-0.5 leading-relaxed text-xs sm:text-sm ${isNested ? 'pl-4' : 'pl-1'}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 mt-1.5 shrink-0" />
+          <div className="flex-1">{formatInlineMarkdown(bulletMatch[1], isDark)}</div>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // 8. Dòng văn bản bình thường
     elements.push(
-      <div key={`line-${i}`} className={isBullet ? 'pl-2 my-0.5 leading-relaxed' : 'my-0.5 leading-relaxed'}>
+      <div key={`p-${i}`} className="my-0.5 leading-relaxed text-xs sm:text-sm">
         {formatInlineMarkdown(line, isDark)}
       </div>
     );

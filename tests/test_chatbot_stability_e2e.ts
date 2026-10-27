@@ -22,7 +22,7 @@ async function main() {
     console.log('✅ Đã mở ngăn kéo Trợ Lý Agent Lâm Sàng.');
 
     // 2. Tìm Khung Nhập Liệu
-    const chatInput = page.locator('input[placeholder*="Nhập yêu cầu"]').first();
+    const chatInput = page.locator('input[placeholder*="Nhập"]').first();
     await chatInput.waitFor({ state: 'visible', timeout: 10000 });
     console.log('✅ Khung nhập liệu Chatbot sẵn sàng.');
 

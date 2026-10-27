@@ -20,7 +20,7 @@ async function main() {
     await copilotToggle.click();
     await page.waitForTimeout(600);
 
-    const chatInput = page.locator('input[placeholder*="Nhập yêu cầu"]').first();
+    const chatInput = page.locator('input[placeholder*="Nhập"]').first();
     await chatInput.waitFor({ state: 'visible', timeout: 10000 });
 
     // 2. Kịch bản 1: Lập lịch dặn dò uống thuốc & Lưu trữ CSDL EHR
@@ -64,7 +64,7 @@ async function main() {
     await copilotToggle2.click();
     await page.waitForTimeout(600);
 
-    const chatInput2 = page.locator('input[placeholder*="Nhập yêu cầu"]').first();
+    const chatInput2 = page.locator('input[placeholder*="Nhập"]').first();
     await chatInput2.waitFor({ state: 'visible', timeout: 10000 });
 
     // 4. Kịch bản 3: Gemini CDSS - Cảnh báo dị ứng Penicillin khi dùng Augmentin

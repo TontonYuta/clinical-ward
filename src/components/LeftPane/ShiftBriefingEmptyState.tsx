@@ -68,20 +68,17 @@ export const ShiftBriefingEmptyState: React.FC<ShiftBriefingEmptyStateProps> = (
         <div className="p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/80 space-y-1">
           <div className="flex items-center gap-1.5 text-amber-800">
             <BookOpen className="w-3.5 h-3.5 shrink-0" />
-            <span className="text-2xs font-bold">Tra Cứu Dược Thư & Pháp Lý</span>
+            <span className="text-2xs font-bold">Tra Cứu Dược Thư & Biệt Dược</span>
           </div>
           <p className="text-2xs text-slate-600 leading-relaxed">
-            Tra cứu 54.885 thuốc Cục QLD, Thông tư 20 (thuốc gây nghiện), TT 22 (tủ trực), TT 51 (phản vệ).
+            Tra cứu cơ sở dữ liệu 54.885 thuốc Cục Quản Lý Dược, biệt dược gốc, nồng độ và dạng dùng.
           </p>
         </div>
       </div>
 
       <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
-        <span className="flex items-center gap-1">
-          <Terminal className="w-3 h-3 text-slate-400" />
-          <span>Gõ lệnh trực tiếp hoặc dùng dấu <code className="px-1 py-0.2 rounded bg-slate-100 font-mono text-teal-800 font-bold">/</code> để gọi macro</span>
-        </span>
-        <span className="font-medium text-teal-700">Không có dữ liệu mẫu</span>
+        <span>Sẵn sàng tiếp nhận câu hỏi dược lý và chăm sóc bệnh nhân</span>
+        <span className="font-medium text-teal-700">Trực ca lâm sàng</span>
       </div>
     </div>
   );

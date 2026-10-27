@@ -1130,13 +1130,8 @@ export const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-welcome',
     sender: 'agent',
-    text: 'Trợ lý Agent Lâm Sàng & Quản Lý Dược Bệnh Viện sẵn sàng hỗ trợ kíp trực. Nhập yêu cầu lâm sàng, tra cứu chuyên luận thuốc, dặn dò bệnh nhân hoặc quy chế y tế vào khung bên dưới.',
+    text: 'Trợ lý Agent Lâm Sàng & Quản Lý Dược Bệnh Viện sẵn sàng hỗ trợ kíp trực. Nhập yêu cầu lâm sàng, tra cứu chuyên luận thuốc, dặn dò bệnh nhân hoặc câu hỏi y tế vào khung bên dưới.',
     timestamp: '08:00',
-    legalReference: {
-      lawCode: 'NĐ 98 · TT 22 · TT 20 · TT 52 · TT 36 GSP',
-      title: 'Quy chuẩn lâm sàng & Quản lý Dược viện',
-      clause: 'Vận hành kíp trực'
-    },
     suggestedChips: []
   }
 ];

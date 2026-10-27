@@ -132,30 +132,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   {renderFormattedText(msg.text, isDarkBubble)}
                 </div>
 
-                {msg.legalReference && (
-                  <div className="px-2.5 py-1.5 rounded-lg bg-teal-50/80 border border-teal-200/80 text-2xs text-teal-900 flex items-center justify-between gap-2 shadow-2xs">
-                    <span className="font-semibold flex items-center gap-1.5 truncate">
-                      <ShieldCheck className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-                      <span>{msg.legalReference.lawCode}: {msg.legalReference.title}</span>
-                    </span>
-                    {onOpenLegalDocs && (
-                      <button onClick={onOpenLegalDocs} className="text-teal-700 font-bold hover:underline shrink-0 cursor-pointer">Chi tiết</button>
-                    )}
-                  </div>
-                )}
-
                 {msg.card && onExecuteCardAction && (
                   <ActionCardDispatcher card={msg.card} messageId={msg.id} onExecuteAction={onExecuteCardAction} onSelectTab={onSelectTab} />
-                )}
-
-                {msg.suggestedChips && msg.suggestedChips.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {msg.suggestedChips.map((chip, idx) => (
-                      <button key={idx} onClick={() => handleChipClick(chip)} className="text-2xs font-semibold px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 transition-all cursor-pointer shadow-2xs active:scale-95 text-left">
-                        {chip}
-                      </button>
-                    ))}
-                  </div>
                 )}
               </div>
             </div>

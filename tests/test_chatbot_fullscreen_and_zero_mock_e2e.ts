@@ -54,7 +54,7 @@ async function main() {
 
     // 4. Nhập lệnh lâm sàng trong chế độ Toàn Màn Hình để kiểm tra trải nghiệm rộng rãi
     console.log('\n--- BƯỚC 3: Thao tác lệnh lâm sàng trên giao diện Toàn Màn Hình ---');
-    const chatInput = page.locator('input[placeholder*="Nhập yêu cầu"]').first();
+    const chatInput = page.locator('input[placeholder*="Nhập câu hỏi hoặc"]').first();
     await chatInput.fill('Kiểm tra an toàn đơn thuốc cho bệnh nhân Võ Minh Trí dùng Augmentin');
     await chatInput.press('Enter');
     await page.waitForTimeout(4500);
