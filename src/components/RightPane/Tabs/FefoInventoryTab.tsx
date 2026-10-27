@@ -124,6 +124,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         totalCount={batches.length} nearExpiryCount={nearExpiryBatches.length} lowStockCount={lowStockBatches.length}
         onOpenPrintForm={onOpenPrintForm} onOpenRestock={() => setIsRestockModalOpen(true)}
         onOpenNationalRegistry={() => setIsRegistryModalOpen(true)}
+        onOpenSafetyGuide={onOpenSafetyGuide}
       />
 
       {/* Mobile View: Danh sách phẳng hành chính */}
@@ -189,10 +190,14 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         isOpen={isRegistryModalOpen} onClose={() => setIsRegistryModalOpen(false)}
         onSelectMedication={onOpenSafetyGuide} inventoryBatches={batches}
       />
-      <DavDrugDetailModal
-        isOpen={selectedBatch !== null} onClose={() => setSelectedBatch(null)}
-        batch={selectedBatch} onQuickDispatch={handleQuickDispatch}
-      />
+      {selectedBatch && (
+        <DavDrugDetailModal
+          isOpen={selectedBatch !== null}
+          onClose={() => setSelectedBatch(null)}
+          batch={selectedBatch}
+          onQuickDispatch={handleQuickDispatch}
+        />
+      )}
     </div>
   );
 };

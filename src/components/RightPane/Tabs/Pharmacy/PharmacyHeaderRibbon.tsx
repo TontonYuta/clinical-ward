@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, Building2, Store } from 'lucide-react';
+import { Search, Building2, Store, Database, BookOpen } from 'lucide-react';
 import { PHARMACOLOGICAL_GROUPS, PharmacologicalGroupKey } from '../../../../utils/clinical/pharmacologicalClassification';
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
@@ -28,21 +28,23 @@ interface PharmacyHeaderRibbonProps {
   setSearchQuery: (q: string) => void;
   totalCount: number;
   nearExpiryCount: number;
-  lowStockCount: number;
+  lowStockCount?: number;
   onOpenPrintForm?: (type: 'TT22_RESTOCK_PROPOSAL') => void;
-  onOpenRestock: () => void;
+  onOpenRestock?: () => void;
   onOpenNationalRegistry?: () => void;
+  onOpenSafetyGuide?: (medName: string) => void;
 }
 
 export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
-  warehouse, setWarehouse, commodity, setCommodity, status, setStatus,
+  warehouse, setWarehouse, status, setStatus,
   pharmacologicalGroup, setPharmacologicalGroup, davFilter, setDavFilter,
-  searchQuery, setSearchQuery, totalCount, nearExpiryCount, lowStockCount, onOpenRestock,
+  searchQuery, setSearchQuery, totalCount, nearExpiryCount,
+  onOpenNationalRegistry, onOpenSafetyGuide,
 }) => {
   return (
     <div className="bg-white p-3 rounded-lg border border-slate-200 shrink-0 space-y-2.5 shadow-2xs">
-      {/* Tiêu đề & Nút thao tác kho */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+      {/* Tiêu đề & Nút Kho Dược Quốc Gia */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
         <div className="flex items-center gap-2">
           <div className="w-2 h-4 bg-blue-600 rounded-xs" />
           <div>
@@ -54,14 +56,31 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Cụm nút tra cứu chuyên môn: Kho Dược Quốc Gia & Dược Thư */}
         <div className="flex items-center gap-2 shrink-0">
-          {lowStockCount > 0 && (
+          <button
+            type="button"
+            onClick={onOpenNationalRegistry}
+            data-testid="btn-open-national-registry"
+            className="inline-flex items-center gap-2 h-8 px-3.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs cursor-pointer shadow-xs transition active:scale-98"
+            title="Tra cứu CSDL 54.885 số đăng ký lưu hành thuốc toàn quốc từ Cục Quản Lý Dược"
+          >
+            <Database className="w-4 h-4 text-blue-200" />
+            <span>Kho Dược Quốc Gia</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-[10px] font-mono text-white">54.885 SĐK</span>
+          </button>
+
+          {onOpenSafetyGuide && (
             <button
               type="button"
-              onClick={onOpenRestock}
-              className="inline-flex items-center gap-1.5 h-7.5 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs cursor-pointer shadow-2xs transition active:scale-98"
+              onClick={() => onOpenSafetyGuide('')}
+              data-testid="btn-open-safety-guide"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 font-bold text-xs cursor-pointer shadow-xs transition active:scale-98"
+              title="Tra cứu chuyên luận Dược Thư Quốc Gia 2015/2022 & Hướng dẫn sử dụng an toàn"
             >
-              <span>Lập dự trù bổ sung ({lowStockCount})</span>
+              <BookOpen className="w-4 h-4 text-teal-700" />
+              <span>Tra cứu Dược Thư</span>
             </button>
           )}
         </div>
@@ -106,13 +125,6 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
             <span>Kho thuốc Ngoại trú</span>
           </button>
         </div>
-
-        {/* Loại mặt hàng: Thuốc vs Vật tư y tế */}
-        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-md border border-slate-200/60 font-medium text-xs">
-          <button type="button" onClick={() => setCommodity('all')} className={`px-2.5 py-1 rounded cursor-pointer ${commodity === 'all' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600'}`}>Tất cả loại</button>
-          <button type="button" onClick={() => setCommodity('medication')} className={`px-2.5 py-1 rounded cursor-pointer ${commodity === 'medication' ? 'bg-white text-blue-800 font-bold shadow-2xs' : 'text-slate-600'}`}>Thuốc</button>
-          <button type="button" onClick={() => setCommodity('medical_supply')} className={`px-2.5 py-1 rounded cursor-pointer ${commodity === 'medical_supply' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600'}`}>Vật tư y tế</button>
-        </div>
       </div>
 
       {/* Thanh tìm kiếm và bộ lọc chuyên môn */}
@@ -131,11 +143,10 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
 
         {/* Cụm bộ lọc: Tồn kho/Hạn dùng, Dược lý, Quy chế */}
         <div className="flex items-center gap-1.5 flex-wrap text-xs">
-          {/* Tình trạng hạn dùng & tồn kho */}
+          {/* Tình trạng hạn dùng */}
           <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-md border border-slate-200/60 font-medium">
             <button type="button" onClick={() => setStatus('all')} className={`px-2 py-1 rounded cursor-pointer ${status === 'all' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600'}`}>Tất cả hạn</button>
             <button type="button" onClick={() => setStatus('near_expiry')} className={`px-2 py-1 rounded cursor-pointer ${status === 'near_expiry' ? 'bg-rose-700 text-white font-bold shadow-2xs' : 'text-slate-600'}`}>Cận hạn ({nearExpiryCount})</button>
-            <button type="button" onClick={() => setStatus('low_stock')} className={`px-2 py-1 rounded cursor-pointer ${status === 'low_stock' ? 'bg-amber-700 text-white font-bold shadow-2xs' : 'text-slate-600'}`}>Dưới định mức ({lowStockCount})</button>
           </div>
 
           {/* Phân loại Tác dụng Trị liệu / Dược lý */}

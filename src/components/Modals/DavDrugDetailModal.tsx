@@ -15,6 +15,7 @@ import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButto
 import { DavClinicalKnowledgeBlock } from './DavDrugDetail/DavClinicalKnowledgeBlock';
 import { formatContraindicationsList } from '../../utils/clinicalFormatter';
 import { getMedicationClinicalProfile } from '../../data/clinicalProfiles';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
@@ -27,16 +28,15 @@ interface DavDrugDetailModalProps {
 export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   isOpen, onClose, batch, drug,
 }) => {
-  if (!isOpen || (!batch && !drug)) return null;
+  useModalDismiss(isOpen, onClose);
+  const [liveDrug, setLiveDrug] = useState<any>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const itemName = batch?.itemName || drug?.brandName || 'Chưa đặt tên';
   const sdk = batch?.registrationNumber || batch?.nationalCode || drug?.nationalCode || 'Chưa cập nhật';
   const activeInn = batch?.activeIngredient || drug?.activeIngredient || 'Theo hồ sơ Cục QLD';
   const strength = batch?.concentration || drug?.concentration;
   const davPortalUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}`;
-
-  const [liveDrug, setLiveDrug] = useState<any>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const loadDetails = (isManual = false) => {
     if (!isOpen || !sdk || sdk === 'Chưa cập nhật') { setLoadingDetail(false); return; }
@@ -47,7 +47,14 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
       .catch(() => { setLoadingDetail(false); });
   };
 
-  useEffect(() => { setLiveDrug(null); loadDetails(false); }, [isOpen, sdk]);
+  useEffect(() => {
+    if (isOpen && sdk && sdk !== 'Chưa cập nhật') {
+      setLiveDrug(null);
+      loadDetails(false);
+    }
+  }, [isOpen, sdk]);
+
+  if (!isOpen || (!batch && !drug)) return null;
 
   const c = (k: string) => liveDrug?.[k] || (batch as any)?.[k] || (drug as any)?.[k];
   const profile = getMedicationClinicalProfile(itemName || activeInn);
@@ -124,7 +131,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               <span className="inline-flex items-center text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none">Chưa có chuyên luận đối chiếu</span>
             )}
             <span className="hidden sm:inline-flex text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">CSDL Cục QLD</span>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} data-testid="btn-close-dav-detail" className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
           </div>
         </div>
 

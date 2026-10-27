@@ -15,11 +15,13 @@ import { NationalDrugTabs, GROUP_STYLES } from './NationalDrugRegistry/NationalD
 import { queryOfflineRegistry } from './NationalDrugRegistry/offlineRegistry';
 import { DavDrugDetailModal } from './DavDrugDetailModal';
 import { PHARMACOLOGICAL_GROUPS, resolvePharmacologicalGroup } from '../../utils/clinical/pharmacologicalClassification';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; inventoryBatches?: InventoryBatch[]; }
 
 const PAGE_SIZE = 12;
 export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication, inventoryBatches }) => {
+  useModalDismiss(isOpen, onClose);
   const [drugs, setDrugs] = useState<MasterMedication[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -117,7 +119,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
               <RotateCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncing ? 'animate-spin' : ''}`} /><span>{isSyncing ? 'Đang nạp...' : 'Tự động cập nhật'}</span>
             </button>
             <button onClick={toggleVerify} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>Kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}</button>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} data-testid="btn-close-national-registry" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
           </div>
         </div>
 

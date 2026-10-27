@@ -78,7 +78,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
             <h2 className="text-base sm:text-lg font-bold tracking-tight">Thông Tin Thuốc &amp; Hướng Dẫn Sử Dụng An Toàn</h2>
             <p className="text-xs text-slate-300 font-normal mt-0.5">Tiêu chuẩn Dược điển &amp; Cục Quản lý Dược - Bộ Y Tế</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">
+          <button onClick={onClose} data-testid="btn-close-safety-modal" className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { ArrowUpRight, FileText } from 'lucide-react';
+import { ArrowUpRight, FileText, BookOpen } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
 import { resolvePharmacologicalGroup } from '../../../../utils/clinical/pharmacologicalClassification';
 
@@ -13,13 +13,13 @@ interface PharmacyBatchCardProps {
   index: number;
   batch: InventoryBatch;
   onQuickDispatch: (batch: InventoryBatch) => void;
-  onOpenRestock: () => void;
+  onOpenRestock?: () => void;
   onOpenSafetyGuide?: (medName: string) => void;
   onSelectBatch?: (batch: InventoryBatch) => void;
 }
 
 export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
-  index, batch, onQuickDispatch, onOpenRestock, onOpenSafetyGuide, onSelectBatch,
+  index, batch, onQuickDispatch, onOpenSafetyGuide, onSelectBatch,
 }) => {
   const isUnderMin = batch.currentStock <= batch.minThreshold;
   const sdk = batch.registrationNumber || batch.nationalCode || '—';
@@ -39,6 +39,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
             type="button"
             onClick={() => onSelectBatch?.(batch)}
             className="font-mono text-2xs font-bold text-teal-800 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded cursor-pointer"
+            title="Xem Giấy công bố Cục QLD"
           >
             SĐK: {sdk}
           </button>
@@ -66,8 +67,8 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
       <div>
         <button
           type="button"
-          onClick={() => onSelectBatch ? onSelectBatch(batch) : onOpenSafetyGuide?.(batch.itemName)}
-          className="font-bold text-sm text-slate-900 leading-snug hover:text-teal-800 hover:underline cursor-pointer text-left block"
+          onClick={() => onSelectBatch?.(batch)}
+          className="font-bold text-sm text-slate-900 leading-snug hover:text-blue-700 hover:underline cursor-pointer text-left block"
         >
           {batch.itemName}
         </button>
@@ -104,28 +105,33 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
 
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={() => onSelectBatch?.(batch)}
             data-testid={`btn-doi-chung-card-${batch.id}`}
             className="inline-flex items-center gap-1 h-7 px-2 rounded border border-blue-200 bg-blue-50 text-blue-900 font-bold text-xs cursor-pointer hover:bg-blue-100"
             title="Xem hồ sơ đối chứng thông tin gốc (Dược Thư 2015 & Cục QLD)"
           >
             <FileText className="w-3.5 h-3.5 text-blue-700" />
-            <span>Đối chứng gốc</span>
+            <span>Hồ sơ &amp; Dược thư</span>
           </button>
-          {isUnderMin && (
+          {onOpenSafetyGuide && (
             <button
-              onClick={onOpenRestock}
-              className="inline-flex items-center h-7 px-2 rounded bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold cursor-pointer"
+              type="button"
+              onClick={() => onOpenSafetyGuide(batch.itemName)}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded border border-teal-200 bg-teal-50 text-teal-800 font-semibold text-xs cursor-pointer hover:bg-teal-100"
+              title="Xem hướng dẫn sử dụng 5 Đúng & An toàn"
             >
-              <span>Dự trù</span>
+              <BookOpen className="w-3.5 h-3.5 text-teal-700" />
+              <span>An toàn</span>
             </button>
           )}
           <button
+            type="button"
             onClick={() => onQuickDispatch(batch)}
             className={`inline-flex items-center gap-1 h-7 px-2.5 rounded text-xs font-semibold cursor-pointer ${
               batch.isNearExpiry
                 ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                : 'bg-teal-800 text-white'
+                : 'bg-slate-800 text-white'
             }`}
           >
             <span>Xuất</span>
