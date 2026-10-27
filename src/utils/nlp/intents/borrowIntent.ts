@@ -9,7 +9,7 @@ import { MED_CATALOG, findMatchedMed } from '../entityCatalog';
 import { evaluateLocalCDSS } from '../cdssEngine';
 
 export function matchBorrowIntent(lower: string): boolean {
-  // Loại trừ ngay nếu là câu hỏi lâm sàng, chỉ định, tác dụng, liều dùng hoặc tra cứu
+  // 1. Loại trừ nếu là câu hỏi lâm sàng, chỉ định, tác dụng, liều dùng hoặc tra cứu
   const isQuestionOrInquiry = anyKeyword(lower, [
     'thế nào', 'như thế nào', 'làm gì', 'để làm gì', 'là gì', 'là thuốc gì',
     'tác dụng', 'công dụng', 'chỉ định', 'chống chỉ định', 'tương tác',
@@ -18,20 +18,42 @@ export function matchBorrowIntent(lower: string): boolean {
   ]);
   if (isQuestionOrInquiry) return false;
 
-  const matchedMed = findMatchedMed(lower);
-  const hasDispenseAction = anyKeyword(lower, [
-    'mượn', 'lấy', 'rút', 'xuất', 'cần', 'xin', 'cho', 'tiêm', 'truyền', 'kê', 'cấp phát', 'dùng', 'lập phiếu nợ', 'kê nợ'
+  // 2. Loại trừ dặn dò, gửi mail, nhắc uống thuốc
+  const isAdviceOrReminder = anyKeyword(lower, [
+    'dặn dò', 'dặn', 'nhắc', 'lịch uống', 'thông báo', 'gửi mail', 'email', 'gmail', 'uống thuốc'
   ]);
-  const hasUrgencyOrMed = anyKeyword(lower, [
-    'gấp', 'khẩn', 'ngay', 'cấp cứu', 'stat', 'liều', 'lọ', 'ống', 'buồng', 'bệnh nhân', 'bn'
-  ]) || matchedMed !== undefined;
+  if (isAdviceOrReminder) return false;
 
-  return (hasDispenseAction && hasUrgencyOrMed) || (matchedMed !== undefined && anyKeyword(lower, ['tiêm', 'uống', 'cho', 'rút', 'lấy', 'xuất', 'cần']));
+  // 3. Bắt buộc phải có thuốc hoặc vật tư cụ thể
+  const matchedMed = findMatchedMed(lower);
+  if (!matchedMed) return false;
+
+  // 4. Có hành động xuất / rút / mượn / tiêm / dùng
+  const hasDispenseAction = anyKeyword(lower, [
+    'mượn', 'lấy', 'rút', 'xuất', 'cần', 'xin', 'tiêm', 'truyền', 'cấp phát', 'kê', 'dùng', 'lập phiếu nợ', 'kê nợ'
+  ]) || (lower.includes('cho') && (anyKeyword(lower, ['lọ', 'ống', 'chai', 'viên', 'liều']) || /\d+/.test(lower)));
+
+  const hasUrgencyOrMed = anyKeyword(lower, [
+    'gấp', 'khẩn', 'ngay', 'cấp cứu', 'stat', 'liều', 'lọ', 'ống', 'buồng', 'bệnh nhân', 'bn', 'phòng mổ', 'giường'
+  ]) || /\d+/.test(lower);
+
+  return hasDispenseAction && hasUrgencyOrMed;
 }
 
 export function handleBorrowIntent(text: string, lower: string, nowStr: string): ProcessedQueryResult {
   const matchedMed = findMatchedMed(lower);
-  const medToUse = matchedMed || MED_CATALOG[0];
+  if (!matchedMed) {
+    return {
+      replyMessage: {
+        id: `msg-agent-${Date.now()}`,
+        sender: 'agent',
+        text: 'Vui lòng cung cấp rõ tên thuốc hoặc vật tư y tế cần xuất/mượn (ví dụ: Morphin, Adrenalin, Ceftriaxone, Bơm tiêm...) kèm số lượng.',
+        timestamp: nowStr,
+        suggestedChips: ['Cho 1 lọ morphin', 'Lấy 1 ống adrenalin', 'Xuất 1 chai lipid 20%']
+      }
+    };
+  }
+  const medToUse = matchedMed;
 
   let quantityNum = 2;
   const unitMatch = lower.match(/(\d+)\s*(lọ|ống|bộ|cái|hộp|liều|chai|viên)/);

@@ -11,13 +11,19 @@ import { PatientPrescriptionAdvice, ScheduledMedication, MedicationTimeSlot } fr
 import { buildDefaultTimeSlots, getStoredGasWebhookUrl } from '../../../services/prescriptionAdviceService';
 
 export function matchPrescriptionAdviceIntent(lower: string): boolean {
-  return anyKeyword(lower, [
-    'dặn dò', 'dặn dò bệnh nhân', 'dặn bệnh nhân', 'dặn dò uống thuốc', 'dặn uống thuốc',
-    'nhắc uống thuốc', 'nhắc nhở uống thuốc', 'nhắc thuốc', 'lịch uống thuốc',
-    'nhắc bệnh nhân uống thuốc', 'gửi mail nhắc thuốc', 'thông báo qua mail',
-    'gửi mail cho bệnh nhân', 'gửi email cho bệnh nhân', 'lên lịch nhắc',
-    'uống thuốc hàng ngày', 'dặn dò đơn thuốc', 'lịch nhắc thuốc'
+  const trimmed = lower.trim();
+  if (['gửi mail', 'gửi gmail', 'gửi email', 'gmail', 'email', 'xem email', 'in phiếu dặn dò'].includes(trimmed)) {
+    return true;
+  }
+  const hasDirect = anyKeyword(lower, [
+    'dặn dò', 'dặn bệnh nhân', 'dặn uống', 'nhắc uống', 'nhắc thuốc',
+    'lịch uống', 'lên lịch nhắc', 'lên lịch uống', 'uống thuốc hàng ngày', 'thông báo uống',
+    'gửi mail cho bệnh nhân', 'gửi email cho bệnh nhân', 'gửi gmail', 'thông báo qua mail',
+    'dặn dò đơn thuốc', 'lịch nhắc thuốc', 'nhắc nhở uống thuốc'
   ]);
+  if (hasDirect) return true;
+  return anyKeyword(lower, ['thông báo', 'nhắc', 'dặn', 'gửi', 'báo']) &&
+         anyKeyword(lower, ['uống thuốc', 'lịch thuốc', 'cữ thuốc', 'giờ uống']);
 }
 
 export function handlePrescriptionAdviceIntent(
@@ -25,15 +31,24 @@ export function handlePrescriptionAdviceIntent(
   lower: string,
   nowStr: string
 ): ProcessedQueryResult {
-  // 1. Trích xuất Email bệnh nhân (nếu có)
-  const emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  const patientEmail = emailMatch ? emailMatch[1] : 'an.nv@gmail.com';
-
-  // 2. Trích xuất Tên bệnh nhân
+  // 1. Trích xuất Tên bệnh nhân
   let patientName = 'Nguyễn Văn An';
   const nameMatch = text.match(/(?:bệnh nhân|cho|dặn dò|nhắc)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})/u);
   if (nameMatch) {
     patientName = nameMatch[1].trim();
+  } else if (lower.includes('trí') || lower.includes('8820')) {
+    patientName = 'Võ Minh Trí (BN-8820)';
+  } else if (lower.includes('mai')) {
+    patientName = 'Trần Thị Mai';
+  }
+
+  // 2. Trích xuất Email bệnh nhân (nếu có)
+  const emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  let patientEmail = emailMatch ? emailMatch[1] : '';
+  if (!patientEmail) {
+    if (patientName.includes('Trí')) patientEmail = 'tri.vm@hospital.vn';
+    else if (patientName.includes('Mai')) patientEmail = 'mai.tt@hospital.vn';
+    else patientEmail = 'an.nv@gmail.com';
   }
 
   // 3. Trích xuất các mốc giờ uống thuốc (nếu người dùng chỉ định)

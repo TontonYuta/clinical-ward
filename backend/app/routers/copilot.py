@@ -20,6 +20,11 @@ from app.services.copilot_intents_actions import (
 from app.services.copilot_drug_lookup import lookup_drug_authoritative
 from app.services.copilot_business_overview import handle_business_overview_intent, CLINICAL_BUSINESS_DIRECTORY
 from app.services.copilot_gemini import ask_backend_gemini_copilot
+from app.services.copilot_intents_prescription import (
+    handle_prescription_advice_intent,
+    handle_cpoe_intent,
+    handle_debt_settle_intent
+)
 
 router = APIRouter(prefix="/copilot", tags=["Trợ Lý Agent Lâm Sàng Thông Minh"])
 
@@ -29,6 +34,23 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     lower_query = query.lower()
     user_role = payload.user_role
     user_name = payload.user_name
+
+    # 0a. Dặn dò bác sĩ & Lịch uống thuốc qua Google Apps Script / Email
+    is_advice = any(w in lower_query for w in ["dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc", "thông báo uống", "gửi mail", "gửi email", "gửi gmail", "uống thuốc hàng ngày"]) or (
+        any(w in lower_query for w in ["thông báo", "gửi", "nhắc", "dặn"]) and any(w in lower_query for w in ["uống thuốc", "uống", "đơn thuốc", "lịch thuốc"])
+    ) or lower_query.strip() in ["gửi gmail", "gửi mail", "gmail", "email", "xem email", "in phiếu dặn dò"]
+    if is_advice:
+        return await handle_prescription_advice_intent(query, lower_query, user_name)
+
+    # 0b. Kê đơn thuốc điện tử CPOE
+    is_cpoe = any(w in lower_query for w in ["kê đơn", "tạo đơn thuốc", "lập đơn thuốc", "kê toa", "kê đơn cpoe", "cpoe đơn thuốc", "đơn thuốc điện tử"]) and not is_advice
+    if is_cpoe:
+        return await handle_cpoe_intent(query, lower_query, user_name)
+
+    # 0c. Hoàn trả vỏ thuốc độc gây nghiện & Xóa nợ
+    is_debt_settle = any(w in lower_query for w in ["trả vỏ", "hoàn trả vỏ", "thu hồi vỏ", "thanh toán nợ", "thanh toán sổ nợ", "trả nợ thuốc", "xóa nợ thuốc", "đối soát vỏ morphin", "xác nhận trả vỏ"]) and not any(w in lower_query for w in ["quy định", "thông tư", "nghị định"])
+    if is_debt_settle:
+        return await handle_debt_settle_intent(query, lower_query, db)
 
     # 1. Tra cứu Bản đồ 10 Đại Nghiệp vụ Bệnh viện
     if any(w in lower_query for w in ["nghiệp vụ", "các nghiệp vụ", "quy trình lâm sàng", "tính năng", "bạn làm được gì", "hướng dẫn hệ thống", "chức năng", "menu"]):
@@ -69,11 +91,13 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     if any(w in lower_query for w in ["hóa đơn", "ocr", "quét hóa đơn", "bóc tách", "phiếu nhập", "cpc1", "vat"]):
         return await handle_ocr_intent()
 
-    # 10. Mượn thuốc khẩn cấp ca đêm & Y lệnh CPOE
+    # 10. Mượn thuốc khẩn cấp ca đêm & Y lệnh thuốc
     matched_med = find_matched_med(lower_query)
-    has_dispense_verb = any(w in lower_query for w in ["mượn", "lấy", "rút", "xuất", "cần", "xin", "tiêm", "kê", "cấp phát", "cho"])
+    has_dispense_verb = any(w in lower_query for w in ["mượn", "lấy", "rút", "xuất", "cần", "xin", "tiêm", "truyền", "cấp phát"]) or (
+        "cho" in lower_query and any(w in lower_query for w in ["lọ", "ống", "chai", "viên", "liều", "morphin", "adre"])
+    )
     is_med_info = any(w in lower_query for w in ["thời gian bán thải", "chỉ định", "chống chỉ định", "tác dụng phụ", "tác dụng", "công dụng", "tương tác", "dùng để làm gì", "liều tối đa", "liều dùng", "là gì", "dị ứng", "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào", "thế nào", "như thế nào", "bao nhiêu", "hỏi về", "thông tin"])
-    if matched_med is not None and not is_med_info and (has_dispense_verb or any(c.isdigit() for c in query)):
+    if matched_med is not None and not is_med_info and not is_advice and (has_dispense_verb or any(c.isdigit() for c in query)):
         return await handle_borrow_intent(query, lower_query, user_name)
 
     # 11. Tra cứu Dược Quốc Gia 54.885 SĐK chính xác 100/100

@@ -119,28 +119,29 @@ export function processClinicalUserQuery(
     id: `msg-agent-${Date.now()}`,
     sender: 'agent',
     text: `Tôi là **Trợ lý Agent Lâm Sàng Thông Minh**, đồng hành hỗ trợ kíp trực bệnh viện theo đúng quy chế Bộ Y tế.\n\n` +
-          `Tôi có thể hỗ trợ bạn thực thi tự động:\n` +
-          `1. **Đối soát giao ban ca trực 07:00 AM:** Ví dụ: *'Đối soát ca trực đêm qua và kiểm tra nợ vỏ Morphin'*\n` +
-          `2. **Quét kho cạn & lập dự trù Mẫu 01:** Ví dụ: *'Kiểm tra mặt hàng chạm ngưỡng Min và lập dự trù bù thuốc'*\n` +
-          `3. **Mượn khẩn thuốc ca đêm & CDSS:** Ví dụ: *'Có 1 bệnh nhân cần dùng gấp 4 lọ morphin'*\n` +
-          `4. **Báo hỏng máy thở & TBYT:** Ví dụ: *'Máy thở PB840 phòng mổ 2 bị xì khí nứt bẫy nước'*\n` +
-          `5. **Kiểm tra thuốc cận hạn FEFO:** Ví dụ: *'Cho tôi xem danh sách thuốc cận hạn dưới 60 ngày'*\n` +
-          `6. **Thị giác AI bóc tách hóa đơn:** Ví dụ: *'Quét hóa đơn dược phẩm và nhập kho tự động'*\n` +
-          `7. **Tra cứu phác đồ cấp cứu & luật:** Ví dụ: *'Phác đồ cấp cứu phản vệ Adrenalin theo Thông tư 51'*\n\n` +
-          `Hãy chọn gợi ý nhanh bên dưới hoặc bấm nút Micro để ra lệnh bằng giọng nói tiếng Việt!`,
+          `Tôi có thể hỗ trợ bạn thực thi tự động các nghiệp vụ chính:\n` +
+          `1. **Dặn dò bác sĩ & Lịch uống thuốc:** Ví dụ: *'Gửi thông báo cho bệnh nhân Võ Minh Trí uống thuốc'*\n` +
+          `2. **Kê đơn thuốc điện tử CPOE:** Ví dụ: *'Kê đơn cho bệnh nhân Trần Thị Mai dùng Augmentin 1g'*\n` +
+          `3. **Thu hồi vỏ nợ thuốc gây nghiện:** Ví dụ: *'Hoàn trả vỏ morphin cho ca trực'*\n` +
+          `4. **Đối soát giao ban ca trực 07:00 AM:** Ví dụ: *'Đối soát ca trực đêm qua và kiểm tra nợ vỏ Morphin'*\n` +
+          `5. **Báo hỏng máy thở & TBYT:** Ví dụ: *'Máy thở PB840 phòng mổ 2 bị xì khí nứt bẫy nước'*\n` +
+          `6. **Kiểm tra thuốc cận hạn FEFO:** Ví dụ: *'Cho tôi xem danh sách thuốc cận hạn dưới 60 ngày'*\n` +
+          `7. **Quét kho cạn & lập dự trù Mẫu 01:** Ví dụ: *'Kiểm tra mặt hàng chạm ngưỡng Min và lập dự trù bù thuốc'*\n` +
+          `8. **Tra cứu Cổng Dược Quốc Gia & Dược Thư:** Ví dụ: *'Thông tin thuốc Hadunalin'*\n\n` +
+          `Hãy chọn gợi ý nhanh bên dưới hoặc bấm nút Micro để ra lệnh bằng giọng nói!`,
     timestamp: nowStr,
     legalReference: {
-      lawCode: 'Thông tư 22/2011, TT 20/2017, TT 51/2017 & NĐ 98/2021',
-      title: 'Hệ thống quản lý lâm sàng',
+      lawCode: 'NĐ 98 · TT 22 · TT 20 · TT 52 · TT 36 GSP',
+      title: 'Hệ thống quản lý lâm sàng & Dược viện',
       clause: 'Căn cứ áp dụng'
     },
     suggestedChips: [
-      'Đối soát giao ban ca trực',
-      'Lập phiếu dự trù bù thuốc Mẫu 01',
-      'Có 1 người bệnh cần dùng gấp 4 lọ morphin',
+      'Gửi thông báo cho bệnh nhân Võ Minh Trí uống thuốc',
+      'Đối soát ca trực 07:00 AM',
+      'Kê đơn cho bệnh nhân Trần Thị Mai dùng Augmentin 1g',
+      'Hoàn trả vỏ morphin cho ca trực',
       'Báo hỏng máy thở PB840 phòng mổ 2',
-      'Quét hóa đơn nhập kho dược phẩm',
-      'Phác đồ Adrenalin phản vệ TT 51'
+      'Thuốc nào cận hạn dưới 60 ngày'
     ]
   };
 
