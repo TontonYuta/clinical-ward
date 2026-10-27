@@ -14,6 +14,7 @@ import { DavAdministrativeBlocks } from './DavDrugDetail/DavAdministrativeBlocks
 import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
 import { DavClinicalKnowledgeBlock } from './DavDrugDetail/DavClinicalKnowledgeBlock';
 import { formatContraindicationsList } from '../../utils/clinicalFormatter';
+import { getMedicationClinicalProfile } from '../../data/clinicalProfiles';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
@@ -49,6 +50,14 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   useEffect(() => { setLiveDrug(null); loadDetails(false); }, [isOpen, sdk]);
 
   const c = (k: string) => liveDrug?.[k] || (batch as any)?.[k] || (drug as any)?.[k];
+  const profile = getMedicationClinicalProfile(itemName || activeInn);
+  let resolvedSource = c('clinical_source') || c('clinicalSource');
+  if (!resolvedSource || !resolvedSource.includes('Trang')) {
+    if (profile?.officialSource?.pdfPage) {
+      resolvedSource = `${profile.officialSource.documentName}, Trang ${profile.officialSource.pdfPage} • Tệp: ${profile.officialSource.pdfDocument || 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf'}`;
+    }
+  }
+
   const adminData = {
     dosageForm: c('dosage_form') || c('dosageForm'), packagingSpec: c('packaging_spec') || c('packagingSpec'),
     standardPharmacopeia: c('standard_pharmacopeia') || c('standardPharmacopeia'), shelfLife: c('shelf_life') || c('shelfLife'),
@@ -60,14 +69,20 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   };
 
   const clinicalData = {
-    atcCode: c('atc_code') || c('atcCode'), drugClass: c('drug_class') || c('drugClass'),
-    indications: c('indications'), contraindications: c('contraindications'), precautions: c('precautions'),
-    pregnancyWarning: c('pregnancy_warning') || c('pregnancyWarning'),
-    adultDosage: c('adult_dosage') || c('adultDosage'), pediatricDosage: c('pediatric_dosage') || c('pediatricDosage'),
-    renalAdjustment: c('renal_adjustment') || c('renalAdjustment'), hepaticAdjustment: c('hepatic_adjustment') || c('hepaticAdjustment'),
+    atcCode: c('atc_code') || c('atcCode') || profile?.officialSource?.atcCode,
+    drugClass: c('drug_class') || c('drugClass') || profile?.allergyProfile?.allergyClass,
+    indications: c('indications') || profile?.indications?.join('\n'),
+    contraindications: c('contraindications') || profile?.usageGuidance?.blackBoxWarning,
+    precautions: c('precautions') || profile?.usageGuidance?.monitoringParameters?.join('\n'),
+    pregnancyWarning: c('pregnancy_warning') || c('pregnancyWarning') || profile?.usageGuidance?.pregnancyLactation,
+    adultDosage: c('adult_dosage') || c('adultDosage') || (profile?.usageGuidance?.standardDosage ? `${profile.usageGuidance.standardDosage}. ${profile.usageGuidance.dilutionStandard || ''}` : undefined),
+    pediatricDosage: c('pediatric_dosage') || c('pediatricDosage'),
+    renalAdjustment: c('renal_adjustment') || c('renalAdjustment') || profile?.usageGuidance?.doseAdjustmentRenal,
+    hepaticAdjustment: c('hepatic_adjustment') || c('hepaticAdjustment') || profile?.usageGuidance?.doseAdjustmentHepatic,
     adverseEffects: c('adverse_effects') || c('adverseEffects'), drugInteractions: c('drug_interactions') || c('drugInteractions'),
     overdoseTreatment: c('overdose_treatment') || c('overdoseTreatment'),
-    antidote: c('antidote'), clinicalSource: c('clinical_source') || c('clinicalSource'),
+    antidote: c('antidote') || profile?.emergencyAntidote?.antidoteName,
+    clinicalSource: resolvedSource,
   };
 
   return (
@@ -102,41 +117,30 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               <span className="hidden sm:inline">Cập nhật lại</span>
             </button>
             {loadingDetail ? (
-              <span className="inline-flex items-center text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none animate-pulse">
-                Đang nạp hồ sơ...
-              </span>
+              <span className="inline-flex items-center text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none animate-pulse">Đang nạp hồ sơ...</span>
             ) : clinicalData.clinicalSource ? (
-              <span className="inline-flex items-center text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded select-none">
-                DTQG 2015 &amp; SmPC
-              </span>
+              <span className="inline-flex items-center text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded select-none">DTQG 2015 &amp; SmPC</span>
             ) : (
-              <span className="inline-flex items-center text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none">
-                Chưa có chuyên luận đối chiếu
-              </span>
+              <span className="inline-flex items-center text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none">Chưa có chuyên luận đối chiếu</span>
             )}
-            <span className="hidden sm:inline-flex text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">
-              CSDL Cục QLD
-            </span>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
-              <X className="w-5 h-5" />
-            </button>
+            <span className="hidden sm:inline-flex text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">CSDL Cục QLD</span>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
           </div>
         </div>
 
         {/* Thân 2 Cột Workstation */}
         <div className="p-4 sm:p-5 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-5 text-sm text-slate-800">
-          
           {/* Cột Trái (5/12): Cảnh Báo An Toàn, Hành Chính, Mẫu Nhãn, Lô Kho */}
-          <div className="lg:col-span-5 space-y-3.5">
+          <div className="lg:col-span-5 space-y-3">
             {clinicalData.contraindications && (
-              <div className="bg-red-50/50 border border-red-200 rounded-lg p-3.5 space-y-2">
+              <div className="bg-red-50/50 border border-red-200 rounded-lg p-3 space-y-1.5">
                 <div className="flex items-center justify-between text-red-800 font-bold text-xs uppercase tracking-wide">
                   <span>Chống chỉ định tuyệt đối</span>
                   <span className="text-2xs bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">Cấm kỵ</span>
                 </div>
-                <ul className="space-y-1.5">
+                <ul className="space-y-1">
                   {formatContraindicationsList(clinicalData.contraindications).map((c, i) => (
-                    <li key={i} className="text-xs sm:text-sm text-slate-800 flex items-start gap-2 leading-relaxed">
+                    <li key={i} className="text-xs sm:text-sm text-slate-800 flex items-start gap-1.5 leading-relaxed">
                       <span className="text-red-600 font-bold select-none">•</span><span>{c}</span>
                     </li>
                   ))}
@@ -145,14 +149,12 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             )}
 
             {clinicalData.antidote && (
-              <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3.5 space-y-1.5">
+              <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3 space-y-1">
                 <div className="flex items-center justify-between text-blue-900 font-bold text-xs uppercase tracking-wide">
                   <span>Thuốc giải độc đặc hiệu (Antidote)</span>
                   <span className="text-2xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">Cấp cứu</span>
                 </div>
-                <div className="text-xs sm:text-sm text-slate-800 flex items-start gap-2 leading-relaxed">
-                  <span className="text-blue-600 font-bold select-none">•</span><p className="font-medium text-slate-900">{clinicalData.antidote}</p>
-                </div>
+                <p className="text-xs sm:text-sm text-slate-800 font-medium">• {clinicalData.antidote}</p>
               </div>
             )}
 
@@ -160,19 +162,19 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             <DavDocumentActionButtons hdsdPath={batch?.hdsdPath || drug?.hdsdPath} labelPath={batch?.labelPath || drug?.labelPath} nationalCode={sdk} brandName={itemName} />
 
             {batch && (
-              <div className="border border-slate-200 rounded-lg p-3.5 bg-white space-y-2">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-1.5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="font-bold text-slate-800 text-xs uppercase tracking-wide">Lô Thuốc Tại Kho Bệnh Viện</span>
                   <span className="font-mono text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-200">Lô: {batch.batchNumber}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
-                    <span className="text-slate-500 block mb-0.5">Hạn dùng: <strong className="font-mono text-slate-900">{batch.expiryDate}</strong></span>
+                  <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                    <span className="text-slate-500 block">Hạn dùng: <strong className="font-mono text-slate-900">{batch.expiryDate}</strong></span>
                     <span className={`text-xs block ${batch.daysLeft <= 60 ? 'text-red-600 font-bold' : 'text-slate-500'}`}>(Còn {batch.daysLeft} ngày)</span>
                   </div>
-                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
-                    <span className="text-slate-500 block mb-0.5">Tồn thực tế: <strong className="font-mono text-slate-900">{batch.currentStock} {batch.unit}</strong></span>
-                    <span className="text-slate-500 block text-xs">Ngưỡng min: {batch.minThreshold}</span>
+                  <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                    <span className="text-slate-500 block">Tồn: <strong className="font-mono text-slate-900">{batch.currentStock} {batch.unit}</strong></span>
+                    <span className="text-slate-500 block text-xs">Min: {batch.minThreshold}</span>
                   </div>
                 </div>
               </div>

@@ -125,7 +125,12 @@ async def get_drug_by_national_code(national_code: str, refresh: bool = Query(Fa
         try: await asyncio.wait_for(resolve_and_cache_drug_documents(db, drug), timeout=0.8)
         except Exception: pass
 
-    if refresh or not drug.indications or not drug.adverse_effects:
+    need_enrich = (
+        refresh or not drug.indications or not drug.adverse_effects
+        or not drug.clinical_source or "Trang" not in drug.clinical_source
+        or "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" not in drug.clinical_source
+    )
+    if need_enrich:
         from app.models.registry import ClinicalDrugMonograph
         mono = None
         if drug.clinical_monograph_id:
@@ -143,7 +148,7 @@ async def get_drug_by_national_code(national_code: str, refresh: bool = Query(Fa
             if not drug.clinical_monograph_id: drug.clinical_monograph_id = mono.id
             if not drug.atc_code and mono.atc_code: drug.atc_code = mono.atc_code
             if not drug.drug_class and mono.drug_class: drug.drug_class = mono.drug_class
-            if refresh or not drug.clinical_source or "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" not in drug.clinical_source:
+            if refresh or not drug.clinical_source or "Trang" not in drug.clinical_source or "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" not in drug.clinical_source:
                 drug.clinical_source = mono.source or "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
 
     return drug

@@ -150,7 +150,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           </button>
           {d.clinicalSource?.match(/Trang\s*(\d+)/i)?.[1] && (
             <a
-              href={`/api/v1/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=${d.clinicalSource.match(/Trang\s*(\d+)/i)![1]}`}
+              href={`/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=${d.clinicalSource.match(/Trang\s*(\d+)/i)![1]}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-2xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition cursor-pointer"

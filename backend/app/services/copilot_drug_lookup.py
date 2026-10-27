@@ -113,22 +113,22 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
 
     matched = drugs[0]
 
-    # 2. Tra cứu tồn kho viện thực tế
+    # 2. Tra cứu tồn kho viện thực tế & Đối chứng lâm sàng DTQG 2015
     first_active = matched.active_ingredient.split(";")[0].split("+")[0].strip().lower()
+    if not matched.clinical_source or "Trang" not in matched.clinical_source:
+        from app.models.registry import ClinicalDrugMonograph
+        m_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{first_active}%")).limit(1))
+        mono = m_res.scalar_one_or_none()
+        if mono and mono.source: matched.clinical_source = mono.source
     inv_stmt = select(InventoryBatch).where(
-        or_(
-            func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"),
-            func.lower(InventoryBatch.item_name).like(f"%{first_active}%")
-        )
+        or_(func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"), func.lower(InventoryBatch.item_name).like(f"%{first_active}%"))
     )
     inv_res = await db.execute(inv_stmt)
     batches = inv_res.scalars().all()
     in_stock = sum(b.current_stock for b in batches)
 
     # 3. Định dạng văn bản trả lời chuẩn xác 100/100
-    citation_block = ""
-    pdf_url = None
-    pdf_page = None
+    citation_block, pdf_url, pdf_page = "", None, None
     if matched.clinical_source:
         page_match = re.search(r"Trang\s*([\d\s–-]+)", matched.clinical_source, re.IGNORECASE)
         pdf_page = page_match.group(1).strip() if page_match else None
@@ -141,27 +141,17 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
         )
 
     details = (
-        f"### 💊 HỒ SƠ DƯỢC THẨM ĐỊNH CHÍNH XÁC (CỤC QUẢN LÝ DƯỢC - BỘ Y TẾ)\n"
-        f"{citation_block}\n"
-        f"• **Tên biệt dược (Brand Name):** **{matched.brand_name}**\n"
-        f"• **Số Đăng Ký (SĐK Lưu Hành):** `{matched.national_code}` *(Giấy phép Cục QLD)*\n"
-        f"• **Hoạt chất chính (API):** **{matched.active_ingredient}**\n"
-        f"• **Hàm lượng / Nồng độ:** {matched.concentration or 'Theo hồ sơ công bố'}\n"
-        f"• **Dạng bào chế:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'}\n"
-        f"• **Đường dùng:** {matched.route or 'Theo chỉ định đơn vị điều trị'}\n"
-        f"• **Đơn vị chuẩn:** {matched.standard_unit}\n"
-        f"• **Phân loại quản lý:** **{matched.group}** "
-        f"({'Thuốc kiểm soát đặc biệt TT 20' if matched.is_controlled else 'Thuốc thường'})\n"
+        f"### 💊 HỒ SƠ DƯỢC THẨM ĐỊNH CHÍNH XÁC (CỤC QUẢN LÝ DƯỢC - BỘ Y TẾ)\n{citation_block}\n"
+        f"• **Tên biệt dược:** **{matched.brand_name}** | **SĐK:** `{matched.national_code}`\n"
+        f"• **Hoạt chất:** **{matched.active_ingredient}** | **Hàm lượng:** {matched.concentration or 'Theo HS công bố'}\n"
+        f"• **Dạng bào chế:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **Đường dùng:** {matched.route or 'Theo chỉ định'}\n"
+        f"• **Đơn vị:** {matched.standard_unit} | **Phân loại:** **{matched.group}** ({'Kiểm soát ĐB TT 20' if matched.is_controlled else 'Thuốc thường'})\n"
     )
 
-    if matched.indications:
-        details += f"\n🎯 **Chỉ định điều trị:** {matched.indications}\n"
-    if matched.contraindications:
-        details += f"⚠️ **Chống chỉ định:** {matched.contraindications}\n"
-    if matched.adult_dosage:
-        details += f"🛡️ **Liều lượng dùng:** {matched.adult_dosage}\n"
-    if matched.antidote:
-        details += f"🧪 **Thuốc giải độc (Antidote):** {matched.antidote}\n"
+    if matched.indications: details += f"\n🎯 **Chỉ định điều trị:** {matched.indications}\n"
+    if matched.contraindications: details += f"⚠️ **Chống chỉ định:** {matched.contraindications}\n"
+    if matched.adult_dosage: details += f"🛡️ **Liều lượng dùng:** {matched.adult_dosage}\n"
+    if matched.antidote: details += f"🧪 **Thuốc giải độc (Antidote):** {matched.antidote}\n"
 
     stock_msg = f"\n📦 **Tồn kho Bệnh viện:** **{in_stock} {matched.standard_unit}**" if in_stock > 0 else "\n📦 **Tồn kho Bệnh viện:** Hiện không có sẵn trong cơ số tủ trực."
     details += stock_msg
@@ -174,24 +164,18 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
         title=f"Dược Quốc Gia: {matched.brand_name}",
         summary=f"SĐK: {matched.national_code} | Hoạt chất: {matched.active_ingredient}",
         data={
-            "national_code": matched.national_code,
-            "brand_name": matched.brand_name,
-            "active_ingredient": matched.active_ingredient,
-            "group": matched.group,
-            "in_stock": in_stock,
+            "national_code": matched.national_code, "brand_name": matched.brand_name,
+            "active_ingredient": matched.active_ingredient, "group": matched.group, "in_stock": in_stock,
             "officialSource": matched.clinical_source or "CSDL Cục Quản lý Dược",
             "pdfDocument": "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if matched.clinical_source else None,
-            "pdfPage": pdf_page,
-            "citationUrl": pdf_url
+            "pdfPage": pdf_page, "citationUrl": pdf_url
         },
         primary_action_label=f"Mở PDF Dược Thư (Trang {pdf_page.split('-')[0].strip()})" if pdf_page else "Xem Chi Tiết Thuốc",
         primary_action_type="OPEN_MEDICATION_SAFETY"
     )
 
     return CopilotResponse(
-        intent="MEDICATION_SAFETY_PROFILE",
-        reply_text=details,
-        card=card,
+        intent="MEDICATION_SAFETY_PROFILE", reply_text=details, card=card,
         legal_basis="Cục Quản lý Dược (DAV) & Dược Thư Quốc Gia Việt Nam",
         suggested_chips=["Kiểm tra hạn dùng FEFO", "Lập dự trù bù thuốc Mẫu 01", "Xem quy tắc 5 đúng"]
     )

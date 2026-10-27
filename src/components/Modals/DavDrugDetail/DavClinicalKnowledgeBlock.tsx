@@ -33,7 +33,7 @@ function parseSource(src?: string) {
   const pageNum = pageMatch ? parseInt(pageMatch[1].trim().split(/[-–\s]+/)[0], 10) : null;
   const pdfMatch = src.match(/([A-Za-z0-9_.-]+\.pdf)/i);
   const pdfFile = pdfMatch ? pdfMatch[1] : (src.includes('Dược thư') ? 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf' : null);
-  const pdfUrl = pdfFile ? `/api/v1/pdf/${pdfFile}${pageNum ? `#page=${pageNum}` : ''}` : null;
+  const pdfUrl = pdfFile ? `/pdf/${pdfFile}${pageNum ? `#page=${pageNum}` : ''}` : null;
   const legalBasis = src.split('•')[0].replace(/,\s*Trang\s*[\d\s–-]+/i, '').trim();
   return { legalBasis, pdfFile, pageStr, pageNum, pdfUrl };
 }

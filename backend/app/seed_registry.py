@@ -139,7 +139,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 m.get("drug_interactions"),
                 m.get("overdose_treatment"),
                 m.get("antidote"),
-                m.get("source", "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)")
+                m.get("source") or (f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {m.get('start_page')}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if m.get("start_page") else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf")
             ))
         cursor.execute("BEGIN TRANSACTION")
         cursor.executemany("""
