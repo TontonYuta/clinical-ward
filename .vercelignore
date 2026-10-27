@@ -3,6 +3,7 @@
 /dist
 /build
 /tests
+/scripts
 /playwright_audit
 /playwright_mobile
 /TEMP
@@ -13,7 +14,13 @@
 *.sqlite3
 **/*.sqlite3
 *.log
-/backend/clinical_hospital.db
+*.mp4
+*.mov
+*.zip
+*.tar.gz
+**/__pycache__
+*.pyc
+/backend/clinical_hospital.db*
+/backend/data/knowledge_base/*.pdf
 /data
 /data/**
-/backend/data/knowledge_base/*.pdf
