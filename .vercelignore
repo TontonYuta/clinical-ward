@@ -6,10 +6,15 @@ tests
 playwright_audit
 playwright_mobile
 TEMP
+TEMP/**
 docs
 .pytest_cache
 *.db
+**/*.db
 *.sqlite3
+**/*.sqlite3
 *.log
 backend/clinical_hospital.db
+data
+data/**
 backend/data/knowledge_base/*.pdf
