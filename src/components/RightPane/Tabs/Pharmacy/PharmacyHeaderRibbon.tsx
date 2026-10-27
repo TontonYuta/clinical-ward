@@ -87,12 +87,12 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
       </div>
 
       {/* Phân hệ kho Nội trú vs Ngoại trú trực quan */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+      <div className="flex items-center justify-between gap-2 overflow-x-auto thin-scrollbar pb-1">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200/80 shrink-0">
           <button
             type="button"
             onClick={() => setWarehouse('all')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
               warehouse === 'all'
                 ? 'bg-white text-slate-900 font-bold shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -103,7 +103,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           <button
             type="button"
             onClick={() => setWarehouse('inpatient')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
               warehouse === 'inpatient'
                 ? 'bg-blue-700 text-white font-bold shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -115,7 +115,7 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           <button
             type="button"
             onClick={() => setWarehouse('outpatient')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
               warehouse === 'outpatient'
                 ? 'bg-emerald-700 text-white font-bold shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'

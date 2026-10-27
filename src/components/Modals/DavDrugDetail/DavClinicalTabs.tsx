@@ -67,7 +67,7 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps }> = ({ data })
       <button
         type="button"
         onClick={() => setActiveTab(tab)}
-        className={`px-5 py-3 text-sm sm:text-base font-bold transition cursor-pointer border-b-2 -mb-px shrink-0 ${
+        className={`px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-base font-bold transition cursor-pointer border-b-2 -mb-px shrink-0 whitespace-nowrap ${
           isActive
             ? 'text-blue-700 border-blue-700 bg-blue-50/50'
             : 'text-slate-500 hover:text-slate-900 border-transparent hover:bg-slate-50'
@@ -79,10 +79,10 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps }> = ({ data })
   };
 
   return (
-    <div className="space-y-4 pt-1 overflow-x-auto thin-scrollbar min-w-[700px]">
+    <div className="space-y-4 pt-1 overflow-x-auto thin-scrollbar w-full sm:min-w-[700px]">
       {/* Navigation Underline Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200">
-        {navTab('dosage', '1. Liều Dùng & Hiệu Chỉnh Liều')}
+      <div className="flex items-center gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto thin-scrollbar pb-0.5">
+        {navTab('dosage', '1. Liều Dùng & Hiệu Chỉnh')}
         {navTab('indications', '2. Chỉ Định & Thận Trọng')}
         {navTab('safety', '3. Tác Dụng Phụ (ADR) & Tương Tác')}
       </div>

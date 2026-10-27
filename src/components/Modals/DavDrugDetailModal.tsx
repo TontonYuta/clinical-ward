@@ -99,9 +99,9 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       data-testid="dav-drug-detail-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-xs"
     >
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-6xl xl:max-w-7xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
+      <div className="bg-white rounded-none sm:rounded-xl shadow-xl border-0 sm:border border-slate-200 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-auto sm:max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
         
         {/* Top Header Workstation (Trắng sáng tươi mới, phân cấp rõ) */}
         <div className="bg-white text-slate-900 px-6 py-4 flex items-center justify-between shrink-0 border-b border-slate-200">

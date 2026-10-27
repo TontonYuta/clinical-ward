@@ -26,7 +26,7 @@ async function testDuocThuLookup() {
   await page.waitForTimeout(1000);
 
   // 3. Kiểm tra logic: Khi mở không bị màn hình trống, hiển thị ngay chuyên luận Dược Thư
-  const modalHeader = page.locator('text=Tra Cứu Dược Thư Quốc Gia Việt Nam').first();
+  const modalHeader = page.locator('text=Tra Cứu Dược Thư Quốc Gia').first();
   const isModalOpen = await modalHeader.isVisible();
   console.log('✅ 2. Bàn tra cứu Dược Thư Quốc Gia mở thành công:', isModalOpen);
   if (!isModalOpen) throw new Error('Dược Thư modal failed to open');

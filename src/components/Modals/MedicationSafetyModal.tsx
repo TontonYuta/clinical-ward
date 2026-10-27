@@ -111,45 +111,45 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
   return (
     <div
       role="dialog" aria-modal="true" aria-label="Tra Cứu Dược Thư Quốc Gia"
-      className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-5"
+      className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-5"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-300 w-[98vw] max-w-7xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+      <div className="bg-white rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:w-[98vw] max-w-7xl h-[100dvh] sm:h-auto sm:max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
         
         {/* Top Header: Thanh tiêu đề tra cứu chuẩn Dược Thư */}
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-3">
-              <span>Tra Cứu Dược Thư Quốc Gia Việt Nam</span>
-              <span className="text-xs sm:text-sm font-bold bg-blue-600 text-white px-3 py-1 rounded-full uppercase tracking-wider">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
+          <div className="pr-2 min-w-0">
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight flex items-center gap-2 sm:gap-3 flex-wrap">
+              <span>Tra Cứu Dược Thư Quốc Gia</span>
+              <span className="text-2xs sm:text-xs font-bold bg-blue-600 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-wider">
                 QĐ 2033/QĐ-BYT
               </span>
             </h2>
-            <p className="text-sm text-slate-300 font-normal mt-1">
-              Bộ Y Tế • Chuyên Luận Dược Thư 2015/2022, Hướng Dẫn Kê Đơn An Toàn 5 Đúng &amp; Tương Tác Thuốc Chống Chỉ Định (QĐ 5948)
+            <p className="text-xs sm:text-sm text-slate-300 font-normal mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-none">
+              Bộ Y Tế • Chuyên Luận Dược Thư 2015/2022, Hướng Dẫn Kê Đơn An Toàn 5 Đúng &amp; Tương Tác Thuốc (QĐ 5948)
             </p>
           </div>
           <button
             onClick={onClose}
             data-testid="btn-close-safety-modal"
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
             title="Đóng (ESC)"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Search Ribbon & Quick Filter Pills */}
-        <div className="px-6 py-3 bg-slate-100/90 border-b border-slate-200 shrink-0 space-y-2.5">
+        <div className="px-3 py-2 sm:px-6 sm:py-3 bg-slate-100/90 border-b border-slate-200 shrink-0 space-y-2">
           {/* Ô tìm kiếm thông minh */}
           <div className="relative">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder="Nhập tên thuốc, hoạt chất, số đăng ký hoặc mã ATC (vd: Morphin, Adrenalin, Ceftriaxon, Metformin, Panfor, Kali, Diazepam...)"
-              className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-base font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-2xs"
+              placeholder="Nhập tên thuốc, hoạt chất, số đăng ký hoặc mã ATC..."
+              className="w-full pl-9 sm:pl-11 pr-9 sm:pr-10 py-2 sm:py-2.5 bg-white border border-slate-300 rounded-xl text-sm sm:text-base font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-2xs"
             />
             {searchQuery && (
               <button
@@ -215,11 +215,11 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
         </div>
 
         {/* Scrollable Workstation Body: Font chữ tăng gấp đôi, cuộn ngang & dọc mượt mà với thanh scroll nhỏ */}
-        <div className="overflow-x-auto overflow-y-auto thin-scrollbar p-6 flex-1 bg-slate-50/40">
-          <div className="min-w-[950px] xl:min-w-[1100px] space-y-6">
+        <div className="overflow-x-auto overflow-y-auto thin-scrollbar p-3.5 sm:p-6 flex-1 bg-slate-50/40">
+          <div className="w-full sm:min-w-[950px] xl:min-w-[1100px] space-y-4 sm:space-y-6">
             
             {/* 1. Header Tên Thuốc & Định Danh Dược */}
-            <div className="bg-white border border-slate-300 rounded-2xl p-6 shadow-2xs space-y-3">
+            <div className="bg-white border border-slate-300 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-2xs space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3 flex-wrap">
