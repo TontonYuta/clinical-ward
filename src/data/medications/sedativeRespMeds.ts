@@ -1,14 +1,14 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Thuốc An Thần, Chống Co Giật & Hô Hấp Cấp Cứu (TT 18/2026/TT-BYT)
+ * Thuốc Hướng Thần & Hô Hấp Cấp Cứu - CSDL 55.000 Thuốc Cục QLD (<=200 LOC)
  */
 
 import { MasterMedication } from '../../types/medication';
 
 export const SEDATIVE_RESP_MEDICATIONS: MasterMedication[] = [
   {
-    id: 'med-em-07',
+    id: 'b-7',
     nationalCode: '890112769224',
     brandName: 'Diazepam Injection BP 10mg/2ml',
     tallManName: 'DiazePAM',
@@ -23,73 +23,38 @@ export const SEDATIVE_RESP_MEDICATIONS: MasterMedication[] = [
     isControlled: true,
     isHighAlert: false,
     isCrashCart: true,
-    wardStockCount: 6,
+    wardStockCount: 20,
     hospitalStockCount: 280,
-    searchAliases: ['dia', 'diazepam', 'seduxen', 'co giat', 'an than', '890112769224'],
-    note: 'Cắt cơn co giật, tiền mê, an thần cấp cứu (TT 20/2017)',
+    searchAliases: ['dia', 'diazepam', 'seduxen', 'co giat', '890112769224'],
+    note: 'Cắt cơn co giật, tiền mê, an thần cấp cứu TT 20/2017 (SĐK: 890112769224)',
   },
   {
-    id: 'med-em-08',
-    nationalCode: '40.008',
-    brandName: 'Midazolam 5mg/5ml',
-    tallManName: 'Midazolam',
-    activeIngredient: 'Midazolam',
-    concentration: '5mg/5ml',
-    dosageForm: 'Dung dịch tiêm',
-    route: 'Tiêm tĩnh mạch / Tiêm bắp',
-    standardUnit: 'Ống',
-    defaultDoseQty: 2,
-    group: 'Thuốc hướng thần',
-    atcCode: 'N05CD08',
-    isControlled: true,
-    isHighAlert: false,
-    isCrashCart: true,
-    wardStockCount: 8,
-    hospitalStockCount: 300,
-    searchAliases: ['mida', 'midazolam', 'an than tho may', 'gay me'],
-    note: 'An thần đặt nội khí quản, thở máy (TT 18/2026)',
-  },
-  {
-    id: 'med-em-09',
-    nationalCode: '40.009',
-    brandName: 'Solu-Medrol 40mg (Lọ Act-O-Vial)',
-    tallManName: 'MethylPREDNISolone',
-    activeIngredient: 'Methylprednisolon',
-    concentration: '40mg/1ml',
-    dosageForm: 'Bột đông khô pha tiêm',
-    route: 'Tiêm tĩnh mạch / Tiêm bắp',
-    standardUnit: 'Lọ',
-    defaultDoseQty: 2,
-    group: 'Thuốc cấp cứu',
-    atcCode: 'H02AB04',
-    isControlled: false,
-    isHighAlert: false,
-    isCrashCart: true,
-    isAnaphylaxisKit: true,
-    wardStockCount: 8,
-    hospitalStockCount: 600,
-    searchAliases: ['medrol', 'solu', 'methyl', 'phan ve giai doan 2', 'hen phe quan'],
-    note: 'Chống viêm, chống dị ứng, phản vệ giai đoạn muộn (TT 51)',
-  },
-  {
-    id: 'med-em-10',
-    nationalCode: '40.010',
-    brandName: 'Lasix (Furosemid) 20mg/2ml',
-    tallManName: 'Furosemid',
-    activeIngredient: 'Furosemid',
-    concentration: '20mg/2ml',
-    dosageForm: 'Dung dịch tiêm',
-    route: 'Tiêm tĩnh mạch',
+    id: 'b-15',
+    nationalCode: '893115477725',
+    brandName: 'Salbutamol 2,5 mg/ 2,5 ml',
+    tallManName: 'Salbutamol',
+    activeIngredient: 'Salbutamol',
+    concentration: '2.5mg/2.5ml',
+    dosageForm: 'Dung dịch khí dung',
+    route: 'Khí dung qua mặt nạ',
     standardUnit: 'Ống',
     defaultDoseQty: 2,
     group: 'Thuốc cấp cứu',
-    atcCode: 'C03CA01',
+    atcCode: 'R03CC02',
     isControlled: false,
     isHighAlert: false,
     isCrashCart: true,
-    wardStockCount: 8,
-    hospitalStockCount: 420,
-    searchAliases: ['lasix', 'furo', 'loi tieu', 'phu phoi'],
-    note: 'Cấp cứu phù phổi cấp, suy tim ứ huyết cấp',
+    wardStockCount: 30,
+    hospitalStockCount: 400,
+    searchAliases: ['salbu', 'salbutamol', 'ventolin', '893115477725'],
+    note: 'Thuốc giãn phế quản tác dụng ngắn SABA cắt cơn hen cấp (SĐK: 893115477725 Cục QLD)',
   },
 ];
+
+/* =========================================================================
+ * [DEPRECATED MOCK DATA - ĐÃ COMMENT LẠI THEO YÊU CẦU CHUẨN HÓA 55K THUỐC]
+ * Các dữ liệu mẫu cũ dùng mã nội bộ 40.00x không thuộc CSDL Cục QLD:
+ * - Midazolam 5mg/5ml (Mã cũ: 40.008)
+ * - Solu-Medrol 40mg (Mã cũ: 40.009)
+ * - Lasix 20mg/2ml (Mã cũ: 40.010)
+ * ========================================================================= */

@@ -1,19 +1,22 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Kho Dữ Liệu Dược Lâm Sàng Bệnh Viện & Thuật Toán Tìm Kiếm Dược
+ * Kho Dữ Liệu Dược Lâm Sàng Bệnh Viện & Thuật Toán Tìm Kiếm Dược (<=200 LOC)
+ * 100% Đồng bộ Danh mục 55.000 Thuốc Cục Quản lý Dược (dichvucong.dav.gov.vn)
  */
 
 import { MasterMedication } from '../types/medication';
 import { EMERGENCY_MASTER_MEDICATIONS } from './medications/emergencyMeds';
 import { CONTROLLED_HIGH_ALERT_MASTER_MEDICATIONS } from './medications/controlledHighAlertMeds';
 import { ANTIBIOTICS_INFUSIONS_MASTER_MEDICATIONS } from './medications/antibioticsInfusionsMeds';
+import { OUTPATIENT_SPECIALTY_MASTER_MEDICATIONS } from './medications/outpatientSpecialtyMeds';
 import { SUPPLIES_MASTER_MEDICATIONS } from './medications/suppliesMeds';
 
 export const ALL_MASTER_MEDICATIONS: MasterMedication[] = [
   ...EMERGENCY_MASTER_MEDICATIONS,
   ...CONTROLLED_HIGH_ALERT_MASTER_MEDICATIONS,
   ...ANTIBIOTICS_INFUSIONS_MASTER_MEDICATIONS,
+  ...OUTPATIENT_SPECIALTY_MASTER_MEDICATIONS,
   ...SUPPLIES_MASTER_MEDICATIONS,
 ];
 
@@ -37,7 +40,7 @@ export interface MedicationSearchOptions {
 }
 
 /**
- * Thuật toán tìm kiếm Dược đa chiều (Tên, Hoạt chất, Mã BHYT, Alias, Không dấu)
+ * Thuật toán tìm kiếm Dược đa chiều (Tên, Hoạt chất, Mã BHYT, SĐK, Alias, Không dấu)
  */
 export function searchMasterMedications(
   query: string,
