@@ -5,12 +5,13 @@
  */
 
 import React, { useState } from 'react';
-import { X, Mail, Clock, Send, Printer, Settings, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Mail, Clock, Send, Printer, Settings, CheckCircle2, AlertCircle, Loader2, Eye } from 'lucide-react';
 import { PrescriptionOrder } from '../../types/cpoe';
 import { PatientPrescriptionAdvice, ScheduledMedication } from '../../types/medicationSchedule';
 import {
   sendMedicationAdviceEmail,
   generateMedicationHtmlEmail,
+  printMedicationAdvice,
   getStoredGasWebhookUrl,
   setStoredGasWebhookUrl,
   buildDefaultTimeSlots
@@ -31,11 +32,10 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
   if (!isOpen || !order) return null;
 
   const [patientEmail, setPatientEmail] = useState('benhnhan@example.com');
-  const [generalAdvice, setGeneralAdvice] = useState(
-    'Uống thuốc đúng giờ theo cữ. Uống đủ 2 lít nước/ngày. Tránh rượu bia, thức ăn chua cay. Tái khám sau khi hết đơn thuốc.'
-  );
+  const [generalAdvice, setGeneralAdvice] = useState('');
   const [gasUrl, setGasUrl] = useState(getStoredGasWebhookUrl());
   const [showConfig, setShowConfig] = useState(false);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [msg, setMsg] = useState('');
 
@@ -65,16 +65,6 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
     } catch (err: any) {
       setStatus('error');
       setMsg(err.message || 'Lỗi kết nối');
-    }
-  };
-
-  const handlePrint = () => {
-    const html = generateMedicationHtmlEmail(advicePayload);
-    const w = window.open('', '_blank');
-    if (w) {
-      w.document.write(`<html><head><title>Phiếu dặn dò - ${order.patientName}</title></head><body>${html}</body></html>`);
-      w.document.close();
-      w.print();
     }
   };
 
@@ -154,9 +144,20 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
               rows={2}
               value={generalAdvice}
               onChange={(e) => setGeneralAdvice(e.target.value)}
+              placeholder="Nhập lời dặn dò của bác sĩ (uống nhiều nước, kiêng khem, tái khám...)"
               className="w-full p-2.5 rounded-lg border border-slate-300 text-xs text-slate-900 leading-relaxed focus:ring-1 focus:ring-teal-700 focus:outline-hidden"
             />
           </div>
+
+          {showEmailPreview && (
+            <div className="border border-slate-300 rounded-lg p-3 bg-slate-50 space-y-2">
+              <span className="font-bold text-slate-800 block text-xs">Bản xem trước Email gửi bệnh nhân:</span>
+              <div
+                className="bg-white p-3 rounded border border-slate-200 text-xs overflow-x-auto max-h-56"
+                dangerouslySetInnerHTML={{ __html: generateMedicationHtmlEmail(advicePayload) }}
+              />
+            </div>
+          )}
 
           {msg && (
             <div className={`p-2.5 rounded-lg border flex items-center gap-2 text-xs ${
@@ -173,15 +174,21 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
 
         {/* Footer actions */}
         <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
-          <button type="button" onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer">
-            <Printer className="w-3.5 h-3.5" />
-            <span>In phiếu dặn dò</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button type="button" onClick={() => printMedicationAdvice(advicePayload)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer">
+              <Printer className="w-3.5 h-3.5" />
+              <span>In phiếu dặn dò</span>
+            </button>
+            <button type="button" onClick={() => setShowEmailPreview(!showEmailPreview)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer">
+              <Eye className="w-3.5 h-3.5 text-slate-500" />
+              <span>{showEmailPreview ? 'Ẩn Email' : 'Xem Email'}</span>
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer">
               Đóng
             </button>
-            <button type="button" onClick={handleSend} disabled={status === 'loading' || !patientEmail} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-bold cursor-pointer disabled:opacity-60">
+            <button type="button" onClick={handleSend} disabled={status === 'loading' || !patientEmail} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-bold cursor-pointer disabled:opacity-60">
               {status === 'loading' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               <span>Gửi Email Bệnh Nhân</span>
             </button>

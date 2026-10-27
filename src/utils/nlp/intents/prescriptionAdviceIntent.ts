@@ -117,6 +117,12 @@ export function handlePrescriptionAdviceIntent(
     );
   }
 
+  let explicitAdvice = '';
+  const adviceMatch = text.match(/(?:dặn dò|lời dặn|lưu ý|dặn)\s*:\s*([^.\n]+)/i);
+  if (adviceMatch) {
+    explicitAdvice = adviceMatch[1].trim();
+  }
+
   const advice: PatientPrescriptionAdvice = {
     id: `ADV-${Date.now().toString().slice(-6)}`,
     prescriptionId: 'RX-2026-OUTPATIENT',
@@ -129,7 +135,7 @@ export function handlePrescriptionAdviceIntent(
     createdAt: new Date().toISOString(),
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-    generalDoctorAdvice: 'Uống thuốc đúng giờ theo các cữ đã lập. Uống nhiều nước ấm (>= 2 lít/ngày). Kiêng đồ lạnh, rượu bia và đồ cay nóng. Tái khám sau 7 ngày hoặc khi có biểu hiện bất thường.',
+    generalDoctorAdvice: explicitAdvice,
     medications: matchedMeds,
     notificationStatus: 'idle',
     gasWebhookUrl: getStoredGasWebhookUrl()

@@ -89,6 +89,30 @@ async function main() {
         await adviceBtn.click();
         await page.waitForTimeout(1000);
 
+        // Kiểm tra ô dặn dò của bác sĩ mặc định để trống
+        const adviceTextarea = page.locator('.fixed.inset-0 textarea').first();
+        if (await adviceTextarea.count() > 0) {
+          const val = await adviceTextarea.inputValue();
+          console.log('📝 Giá trị ô dặn dò của bác sĩ:', JSON.stringify(val));
+        }
+
+        // Bấm nút In phiếu dặn dò để kiểm tra phương thức in iframe không bị chặn popup
+        const printBtn = page.locator('.fixed.inset-0 button:has-text("In phiếu dặn dò"):visible').first();
+        if (await printBtn.count() > 0) {
+          await printBtn.click();
+          await page.waitForTimeout(500);
+          const hasIframe = await page.locator('#clinical-advice-print-frame').count() > 0;
+          console.log('🖨️ Đã bấm In phiếu dặn dò (Iframe Print Frame):', hasIframe);
+        }
+
+        // Bấm nút Xem Email để kiểm tra bản xem trước HTML
+        const modalViewEmailBtn = page.locator('.fixed.inset-0 button:has-text("Xem Email"):visible').first();
+        if (await modalViewEmailBtn.count() > 0) {
+          console.log('👁️ Bấm nút Xem Email trong modal CPOE...');
+          await modalViewEmailBtn.click();
+          await page.waitForTimeout(600);
+        }
+
         // Chụp ảnh Modal Dặn Dò & Lên Lịch Nhắc Thuốc
         await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified_cpoe_prescription_advice_modal.png') });
         console.log('📸 Đã chụp: verified_cpoe_prescription_advice_modal.png');

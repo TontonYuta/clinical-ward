@@ -98,60 +98,61 @@ function buildReminderEmailHtml(advice, patientName, doctorName, diagnosis, hosp
     for (var s = 0; s < slots.length; s++) {
       var slot = slots[s];
       var slotLabel = (slot.label || "").toLowerCase();
-      var desc = "<strong>" + (slot.dosageText || "1 viên") + "</strong> (" + (slot.time || "") + ")<br/><span style='color:#0f766e;font-size:11px;'>" + (slot.mealRelation || "") + "</span>";
+      var desc = "<strong style='font-size:13px;font-family:monospace;color:#0f172a;'>" + (slot.dosageText || "1 viên") + "</strong>" +
+        (slot.mealRelation ? "<br/><span style='color:#64748b;font-size:10px;'>" + slot.mealRelation + "</span>" : "");
       if (slotLabel.indexOf("sáng") !== -1 || slot.id === "morning") morningStr = desc;
       else if (slotLabel.indexOf("trưa") !== -1 || slot.id === "noon") noonStr = desc;
       else if (slotLabel.indexOf("chiều") !== -1 || slot.id === "afternoon") afternoonStr = desc;
       else if (slotLabel.indexOf("tối") !== -1 || slot.id === "evening") eveningStr = desc;
     }
 
-    rowsHtml += "<tr style='border-bottom:1px solid #e2e8f0;'>" +
-      "<td style='padding:10px 12px;vertical-align:top;'>" +
-        "<strong style='color:#0f172a;font-size:14px;'>" + med.medicationName + "</strong>" +
-        (med.activeIngredient ? "<br/><span style='color:#64748b;font-size:11px;'>Hoạt chất: " + med.activeIngredient + "</span>" : "") +
-        (med.specialInstructions ? "<br/><span style='color:#b91c1c;font-size:11px;font-style:italic;'>Lưu ý: " + med.specialInstructions + "</span>" : "") +
+    rowsHtml += "<tr style='border-bottom:1px solid #cbd5e1;'>" +
+      "<td style='padding:8px 10px;vertical-align:middle;border-right:1px solid #cbd5e1;'>" +
+        "<strong style='color:#0f172a;font-size:13px;'>" + med.medicationName + "</strong>" +
+        "<span style='color:#64748b;font-size:11px;display:block;'>" + (med.dosage || "") + (med.durationDays ? " • " + med.durationDays + " ngày" : "") + "</span>" +
       "</td>" +
-      "<td style='padding:10px 8px;text-align:center;background-color:#f0fdfa;vertical-align:top;'>" + morningStr + "</td>" +
-      "<td style='padding:10px 8px;text-align:center;background-color:#fefce8;vertical-align:top;'>" + noonStr + "</td>" +
-      "<td style='padding:10px 8px;text-align:center;background-color:#fff7ed;vertical-align:top;'>" + afternoonStr + "</td>" +
-      "<td style='padding:10px 8px;text-align:center;background-color:#f8fafc;vertical-align:top;'>" + eveningStr + "</td>" +
+      "<td style='padding:8px 6px;text-align:center;border-right:1px solid #cbd5e1;vertical-align:middle;'>" + morningStr + "</td>" +
+      "<td style='padding:8px 6px;text-align:center;border-right:1px solid #cbd5e1;vertical-align:middle;'>" + noonStr + "</td>" +
+      "<td style='padding:8px 6px;text-align:center;border-right:1px solid #cbd5e1;vertical-align:middle;'>" + afternoonStr + "</td>" +
+      "<td style='padding:8px 6px;text-align:center;vertical-align:middle;'>" + eveningStr + "</td>" +
     "</tr>";
   }
 
-  return "<div style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden;color:#1e293b;line-height:1.5;'>" +
-    "<div style='background-color:#0f766e;color:#ffffff;padding:20px;text-align:center;'>" +
-      "<h1 style='margin:0;font-size:20px;letter-spacing:0.5px;'>HƯỚNG DẪN DẶN DÒ UỐNG THUỐC HÀNG NGÀY</h1>" +
-      "<p style='margin:6px 0 0;font-size:13px;opacity:0.95;'>" + hospitalName + " • Bác sĩ kê đơn: " + doctorName + "</p>" +
+  var adviceBlock = "";
+  if (generalAdvice && generalAdvice.trim() !== "") {
+    adviceBlock = "<div style='border:1px solid #cbd5e1;padding:10px 14px;border-radius:4px;margin-bottom:16px;background:#f8fafc;'>" +
+      "<h4 style='margin:0 0 4px;color:#0f172a;font-size:12px;font-weight:bold;'>LỜI DẶN CỦA BÁC SĨ:</h4>" +
+      "<p style='margin:0;font-size:12px;color:#334155;white-space:pre-line;line-height:1.4;'>" + generalAdvice + "</p>" +
+    "</div>";
+  }
+
+  return "<div style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #000000;color:#0f172a;line-height:1.4;'>" +
+    "<div style='border-bottom:2px solid #000000;padding:16px;text-align:center;background:#ffffff;'>" +
+      "<h2 style='margin:0;font-size:17px;font-weight:bold;letter-spacing:0.5px;color:#000000;'>HƯỚNG DẪN DẶN DÒ UỐNG THUỐC HÀNG NGÀY</h2>" +
+      "<p style='margin:4px 0 0;font-size:12px;color:#475569;'>" + hospitalName + " • BS kê đơn: <strong>" + doctorName + "</strong></p>" +
     "</div>" +
-    "<div style='padding:20px;'>" +
-      "<div style='background-color:#f8fafc;border-left:4px solid #0f766e;padding:12px 16px;margin-bottom:20px;border-radius:0 8px 8px 0;'>" +
-        "<p style='margin:0 0 6px;'><strong>Họ và tên bệnh nhân:</strong> <span style='color:#0f766e;font-size:15px;font-weight:bold;'>" + patientName + "</span></p>" +
-        "<p style='margin:0 0 6px;'><strong>Chẩn đoán điều trị:</strong> " + diagnosis + "</p>" +
-        "<p style='margin:0;'><strong>Thời gian áp dụng đơn thuốc:</strong> " + (advice.startDate || "Hôm nay") + " đến " + (advice.endDate || "Khi hết thuốc") + "</p>" +
+    "<div style='padding:16px;'>" +
+      "<div style='border:1px solid #cbd5e1;padding:10px 14px;margin-bottom:14px;background:#f8fafc;border-radius:4px;font-size:12px;'>" +
+        "<div style='margin-bottom:4px;'><strong>Bệnh nhân:</strong> <span style='font-size:13px;font-weight:bold;color:#000000;'>" + patientName + "</span> &nbsp;|&nbsp; <strong>Chẩn đoán:</strong> " + diagnosis + "</div>" +
+        "<div><strong>Thời gian điều trị:</strong> " + (advice.startDate || "Hôm nay") + " đến " + (advice.endDate || "Khi hết thuốc") + "</div>" +
       "</div>" +
-      "<h3 style='margin:0 0 10px;color:#0f766e;font-size:15px;text-transform:uppercase;'>📅 Lịch phân chia cữ uống thuốc trong ngày:</h3>" +
-      "<table style='width:100%;border-collapse:collapse;font-size:13px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;margin-bottom:20px;'>" +
+      "<table style='width:100%;border-collapse:collapse;font-size:12px;border:1px solid #000000;margin-bottom:14px;'>" +
         "<thead>" +
-          "<tr style='background-color:#0f766e;color:#ffffff;text-align:center;'>" +
-            "<th style='padding:10px 12px;text-align:left;'>Tên thuốc & Hàm lượng</th>" +
-            "<th style='padding:10px 8px;width:20%;'>🌅 Sáng<br/><span style='font-size:11px;font-weight:normal;'>07:00</span></th>" +
-            "<th style='padding:10px 8px;width:20%;'>☀️ Trưa<br/><span style='font-size:11px;font-weight:normal;'>11:30</span></th>" +
-            "<th style='padding:10px 8px;width:20%;'>🌤️ Chiều<br/><span style='font-size:11px;font-weight:normal;'>18:00</span></th>" +
-            "<th style='padding:10px 8px;width:20%;'>🌙 Tối<br/><span style='font-size:11px;font-weight:normal;'>21:00</span></th>" +
+          "<tr style='background-color:#f1f5f9;border-bottom:1px solid #000000;color:#0f172a;text-align:center;font-weight:bold;'>" +
+            "<th style='padding:8px 10px;text-align:left;border-right:1px solid #cbd5e1;'>Tên thuốc & Hàm lượng</th>" +
+            "<th style='padding:8px 6px;width:18%;border-right:1px solid #cbd5e1;'>Sáng (07:00)</th>" +
+            "<th style='padding:8px 6px;width:18%;border-right:1px solid #cbd5e1;'>Trưa (11:30)</th>" +
+            "<th style='padding:8px 6px;width:18%;border-right:1px solid #cbd5e1;'>Chiều (18:00)</th>" +
+            "<th style='padding:8px 6px;width:18%;'>Tối (20:00)</th>" +
           "</tr>" +
         "</thead>" +
         "<tbody>" + rowsHtml + "</tbody>" +
       "</table>" +
-      "<div style='background-color:#eff6ff;border:1px solid #bfdbfe;padding:14px 16px;border-radius:8px;margin-bottom:20px;'>" +
-        "<h4 style='margin:0 0 6px;color:#1e40af;font-size:14px;'>💡 Lời dặn dò của bác sĩ:</h4>" +
-        "<p style='margin:0;font-size:13px;color:#1e3a8a;white-space:pre-line;'>" + generalAdvice + "</p>" +
-      "</div>" +
-      "<div style='background-color:#fef2f2;border:1px solid #fecaca;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:12px;color:#991b1b;'>" +
-        "<strong>⚠️ Lưu ý khẩn cấp:</strong> Nếu gặp bất kỳ phản ứng dị ứng nào như nổi mẩn ngứa, khó thở, tức ngực, hoặc chóng mặt dữ dội, hãy ngưng thuốc ngay lập tức và liên hệ cơ sở y tế gần nhất hoặc gọi cấp cứu 115." +
-      "</div>" +
+      adviceBlock +
     "</div>" +
-    "<div style='background-color:#f1f5f9;padding:14px 20px;text-align:center;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;'>" +
-      "Email này được tạo tự động từ Hệ thống Quản Lý Dược Lâm Sàng & Đơn Thuốc Điện Tử CPOE.<br/>Chúc Quý bệnh nhân mau chóng bình phục sức khỏe!" +
+    "<div style='background-color:#f8fafc;padding:10px 16px;text-align:center;font-size:11px;color:#64748b;border-top:1px solid #cbd5e1;'>" +
+      "Hệ thống Quản Lý Đơn Thuốc Điện Tử CPOE & Dược Lâm Sàng • Chúc Quý bệnh nhân mau chóng bình phục!" +
     "</div>" +
   "</div>";
+}
 }

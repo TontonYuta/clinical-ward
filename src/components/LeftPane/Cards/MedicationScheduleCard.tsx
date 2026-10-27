@@ -7,7 +7,11 @@
 import React, { useState } from 'react';
 import { Mail, Clock, CheckCircle2, AlertCircle, Eye, Printer, Loader2 } from 'lucide-react';
 import { PatientPrescriptionAdvice } from '../../../types/medicationSchedule';
-import { sendMedicationAdviceEmail, generateMedicationHtmlEmail } from '../../../services/prescriptionAdviceService';
+import {
+  sendMedicationAdviceEmail,
+  generateMedicationHtmlEmail,
+  printMedicationAdvice
+} from '../../../services/prescriptionAdviceService';
 
 interface MedicationScheduleCardProps {
   data: PatientPrescriptionAdvice;
@@ -47,13 +51,7 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
   };
 
   const handlePrint = () => {
-    const html = generateMedicationHtmlEmail(advice);
-    const w = window.open('', '_blank');
-    if (w) {
-      w.document.write(`<html><head><title>Lịch Uống Thuốc - ${advice.patientName}</title></head><body>${html}</body></html>`);
-      w.document.close();
-      w.print();
-    }
+    printMedicationAdvice(advice);
   };
 
   return (
@@ -63,7 +61,7 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
         <div>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-bold text-slate-900 text-sm">{advice.patientName}</span>
-            <span className="px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200 text-[10px] font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-medium">
               {advice.diagnosis || 'Điều trị ngoại trú'}
             </span>
           </div>
@@ -76,47 +74,48 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
         <button
           type="button"
           onClick={handlePrint}
-          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 cursor-pointer border border-slate-200 shrink-0"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-700 cursor-pointer border border-slate-300 text-2xs font-semibold shrink-0 shadow-2xs"
           title="In phiếu dặn dò uống thuốc"
         >
-          <Printer className="w-3.5 h-3.5" />
+          <Printer className="w-3.5 h-3.5 text-slate-600" />
+          <span>In phiếu</span>
         </button>
       </div>
 
       {/* 2. Bảng Thời Gian Biểu Uống Thuốc Hàng Ngày */}
-      <div className="overflow-x-auto border border-slate-200 rounded-lg">
-        <table className="w-full text-left text-[11px]">
-          <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+      <div className="overflow-x-auto border border-slate-300 rounded">
+        <table className="w-full text-left text-[11px] border-collapse">
+          <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
             <tr>
-              <th className="py-1.5 px-2.5">Thuốc</th>
-              <th className="py-1.5 px-1.5 text-center bg-teal-50/60 text-teal-900">🌅 Sáng</th>
-              <th className="py-1.5 px-1.5 text-center bg-amber-50/60 text-amber-900">☀️ Trưa</th>
-              <th className="py-1.5 px-1.5 text-center bg-orange-50/60 text-orange-900">🌤️ Chiều</th>
-              <th className="py-1.5 px-1.5 text-center bg-indigo-50/60 text-indigo-900">🌙 Tối</th>
+              <th className="py-2 px-2.5 border-r border-slate-200">Tên thuốc & hàm lượng</th>
+              <th className="py-2 px-1 text-center border-r border-slate-200 w-16">Sáng<br/><span className="text-[10px] text-slate-500 font-normal">07:00</span></th>
+              <th className="py-2 px-1 text-center border-r border-slate-200 w-16">Trưa<br/><span className="text-[10px] text-slate-500 font-normal">11:30</span></th>
+              <th className="py-2 px-1 text-center border-r border-slate-200 w-16">Chiều<br/><span className="text-[10px] text-slate-500 font-normal">18:00</span></th>
+              <th className="py-2 px-1 text-center w-16">Tối<br/><span className="text-[10px] text-slate-500 font-normal">20:00</span></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-200 text-slate-900">
             {advice.medications.map((m, idx) => {
-              const renderSlot = (key: string, color: string) => {
+              const renderSlot = (key: string) => {
                 const s = m.timeSlots.find(slot => slot.id === key || slot.label.toLowerCase().includes(key));
                 if (!s) return <span className="text-slate-300">—</span>;
                 return (
-                  <span className={`font-bold ${color} block text-2xs`}>
-                    {s.dosageText}
-                    <span className="text-slate-400 font-normal block text-[9px]">{s.time}</span>
+                  <span className="block text-2xs">
+                    <strong className="text-slate-900 font-bold font-mono">{s.dosageText}</strong>
+                    <span className="text-slate-500 block text-[9px] leading-tight">{s.mealRelation || s.time}</span>
                   </span>
                 );
               };
               return (
-                <tr key={idx} className="hover:bg-slate-50/70">
-                  <td className="py-2 px-2.5 max-w-[130px]">
+                <tr key={idx} className="hover:bg-slate-50">
+                  <td className="py-2 px-2.5 border-r border-slate-200 max-w-[140px]">
                     <span className="font-bold text-slate-900 block truncate" title={m.medicationName}>{m.medicationName}</span>
-                    <span className="text-[10px] text-slate-500 block truncate">{m.dosage} • {m.durationDays} ngày</span>
+                    <span className="text-[10px] text-slate-500 block">{m.dosage} • {m.durationDays} ngày</span>
                   </td>
-                  <td className="py-2 px-1 text-center font-mono">{renderSlot('morning', 'text-teal-800')}</td>
-                  <td className="py-2 px-1 text-center font-mono">{renderSlot('noon', 'text-amber-800')}</td>
-                  <td className="py-2 px-1 text-center font-mono">{renderSlot('afternoon', 'text-orange-800')}</td>
-                  <td className="py-2 px-1 text-center font-mono">{renderSlot('evening', 'text-indigo-800')}</td>
+                  <td className="py-2 px-1 text-center border-r border-slate-200">{renderSlot('morning')}</td>
+                  <td className="py-2 px-1 text-center border-r border-slate-200">{renderSlot('noon')}</td>
+                  <td className="py-2 px-1 text-center border-r border-slate-200">{renderSlot('afternoon')}</td>
+                  <td className="py-2 px-1 text-center">{renderSlot('evening')}</td>
                 </tr>
               );
             })}
@@ -124,20 +123,22 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
         </table>
       </div>
 
-      {/* 3. Lời Dặn Của Bác Sĩ */}
-      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-        <span className="font-semibold text-slate-800 block mb-0.5">💡 Lời dặn của bác sĩ:</span>
-        <p className="text-[11px] text-slate-600 leading-relaxed whitespace-pre-line">
-          {advice.generalDoctorAdvice}
-        </p>
-      </div>
+      {/* 3. Lời Dặn Của Bác Sĩ (chỉ hiện khi có nội dung) */}
+      {advice.generalDoctorAdvice && advice.generalDoctorAdvice.trim() ? (
+        <div className="bg-slate-50 p-2.5 rounded border border-slate-200">
+          <span className="font-bold text-slate-800 block mb-0.5">Lời dặn của bác sĩ:</span>
+          <p className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-line">
+            {advice.generalDoctorAdvice}
+          </p>
+        </div>
+      ) : null}
 
       {/* 4. Trạng Thái & Thao Tác Gửi Google Apps Script Webhook */}
       {feedback && (
         <div className={`p-2 rounded-md border flex items-center gap-1.5 text-[11px] ${
           sendStatus === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
           sendStatus === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' :
-          'bg-blue-50 border-blue-200 text-blue-800'
+          'bg-slate-50 border-slate-200 text-slate-800'
         }`}>
           {sendStatus === 'loading' && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
           {sendStatus === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
@@ -151,10 +152,10 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
           type="button"
           onClick={handleSendEmail}
           disabled={sendStatus === 'loading'}
-          className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-xs font-bold transition cursor-pointer shadow-2xs active:scale-98 ${
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded text-xs font-bold transition cursor-pointer shadow-2xs ${
             sendStatus === 'success'
-              ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
-              : 'bg-teal-800 hover:bg-teal-900 text-white'
+              ? 'bg-slate-800 hover:bg-slate-900 text-white'
+              : 'bg-slate-900 hover:bg-black text-white'
           } disabled:opacity-60 disabled:cursor-not-allowed`}
         >
           {sendStatus === 'loading' ? (
@@ -164,7 +165,7 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
             </>
           ) : (
             <>
-              <Mail className="w-3.5 h-3.5 text-teal-200" />
+              <Mail className="w-3.5 h-3.5 text-slate-300" />
               <span>{sendStatus === 'success' ? 'Gửi lại Email nhắc thuốc' : 'Gửi Email qua Google Script'}</span>
             </>
           )}
@@ -173,9 +174,9 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
         <button
           type="button"
           onClick={() => setShowPreview(!showPreview)}
-          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer shrink-0"
+          className="inline-flex items-center gap-1 h-8 px-3 rounded border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold cursor-pointer shrink-0 shadow-2xs"
         >
-          <Eye className="w-3.5 h-3.5 text-slate-500" />
+          <Eye className="w-3.5 h-3.5 text-slate-600" />
           <span>{showPreview ? 'Ẩn xem trước' : 'Xem Email'}</span>
         </button>
       </div>
