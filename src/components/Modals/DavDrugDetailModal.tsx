@@ -75,25 +75,32 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     applicantName: c('applicant_name') || c('applicantName'), approvalDecision: c('approval_decision') || c('approvalDecision'),
   };
 
+  const isVerified = profile.isVerifiedMonograph !== false && Boolean(profile.officialSource?.pdfPage);
   const clinicalData = {
-    atcCode: c('atc_code') || c('atcCode') || profile?.officialSource?.atcCode,
-    drugClass: c('drug_class') || c('drugClass') || profile?.allergyProfile?.allergyClass,
-    indications: c('indications') || profile?.indications?.join('\n'),
-    contraindications: c('contraindications') || profile?.usageGuidance?.blackBoxWarning,
-    precautions: c('precautions') || profile?.usageGuidance?.monitoringParameters?.join('\n'),
-    pregnancyWarning: c('pregnancy_warning') || c('pregnancyWarning') || profile?.usageGuidance?.pregnancyLactation,
-    adultDosage: c('adult_dosage') || c('adultDosage') || (profile?.usageGuidance?.standardDosage ? `${profile.usageGuidance.standardDosage}. ${profile.usageGuidance.dilutionStandard || ''}` : undefined),
+    atcCode: c('atc_code') || c('atcCode') || (isVerified ? profile?.atcCode : undefined),
+    drugClass: c('drug_class') || c('drugClass') || (isVerified ? profile?.allergyProfile?.allergyClass : undefined),
+    indications: c('indications') || (isVerified ? profile?.indications?.join('\n') : undefined),
+    contraindications: c('contraindications') || (isVerified ? profile?.contraindications?.join('\n') : undefined),
+    precautions: c('precautions') || (isVerified ? profile?.patientVerificationChecklist?.join('\n') : undefined),
+    pregnancyWarning: c('pregnancy_warning') || c('pregnancyWarning') || (isVerified ? profile?.pregnancyLactation : undefined),
+    adultDosage: c('adult_dosage') || c('adultDosage') || (isVerified ? profile?.standardDosing : undefined),
     pediatricDosage: c('pediatric_dosage') || c('pediatricDosage'),
-    renalAdjustment: c('renal_adjustment') || c('renalAdjustment') || profile?.usageGuidance?.doseAdjustmentRenal,
-    hepaticAdjustment: c('hepatic_adjustment') || c('hepaticAdjustment') || profile?.usageGuidance?.doseAdjustmentHepatic,
-    adverseEffects: c('adverse_effects') || c('adverseEffects'), drugInteractions: c('drug_interactions') || c('drugInteractions'),
+    renalAdjustment: c('renal_adjustment') || c('renalAdjustment') || (isVerified ? profile?.renalAdjustment : undefined),
+    hepaticAdjustment: c('hepatic_adjustment') || c('hepaticAdjustment') || (isVerified ? profile?.hepaticAdjustment : undefined),
+    adverseEffects: c('adverse_effects') || c('adverseEffects') || (isVerified ? profile?.adverseReactions?.join('\n') : undefined),
+    drugInteractions: c('drug_interactions') || c('drugInteractions') || (isVerified ? profile?.ddiWarnings?.join('\n') : undefined),
     overdoseTreatment: c('overdose_treatment') || c('overdoseTreatment'),
-    antidote: c('antidote') || profile?.emergencyAntidote?.antidoteName,
-    clinicalSource: resolvedSource,
+    antidote: c('antidote') || (isVerified ? profile?.antidote : undefined),
+    clinicalSource: isVerified ? resolvedSource : (c('clinical_source') || c('clinicalSource') || `Hồ sơ cấp phép Cục Quản lý Dược (SĐK: ${sdk})`),
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-xs">
+    <div
+      role="dialog"
+      aria-modal="true"
+      data-testid="dav-drug-detail-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-xs"
+    >
       <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-6xl xl:max-w-7xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
         
         {/* Top Header Workstation (Trắng sáng tươi mới, phân cấp rõ) */}

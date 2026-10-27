@@ -47,131 +47,126 @@ export function getMedicationClinicalProfile(
   medData?: Partial<MasterMedication>
 ): FiveRightsSafetyInfo {
   if (!identifierOrName) {
-    return ALL_CLINICAL_PROFILES['med-ctrl-01'];
+    return { ...ALL_CLINICAL_PROFILES['med-ctrl-01'], isVerifiedMonograph: true };
   }
 
   // 1. Khớp chính xác ID
   if (ALL_CLINICAL_PROFILES[identifierOrName]) {
-    return ALL_CLINICAL_PROFILES[identifierOrName];
+    return { ...ALL_CLINICAL_PROFILES[identifierOrName], isVerifiedMonograph: true };
   }
 
   // 2. Tìm kiếm đa chiều: ID, Biệt dược, Hoạt chất, SĐK
   const query = normalize(`${identifierOrName} ${medData?.brandName || ''} ${medData?.activeIngredient || ''} ${medData?.nationalCode || ''}`);
 
   if (query.includes('b-3') || query.includes('893111093823') || query.includes('dp-mp-01') || query.includes('morphin')) {
-    return ALL_CLINICAL_PROFILES['med-ctrl-01'];
+    return { ...ALL_CLINICAL_PROFILES['med-ctrl-01'], isVerifiedMonograph: true };
   }
   if (query.includes('b-4') || query.includes('893110151100') || query.includes('dp-ad-01') || query.includes('adrenalin') || query.includes('hadunalin') || query.includes('epinephrin')) {
-    return ALL_CLINICAL_PROFILES['med-em-01'];
+    return { ...ALL_CLINICAL_PROFILES['med-em-01'], isVerifiedMonograph: true };
   }
   if (query.includes('b-5') || query.includes('893110375223') || query.includes('dp-kc-01') || query.includes('kali') || query.includes('kcl')) {
-    return ALL_CLINICAL_PROFILES['med-em-09'];
+    return { ...ALL_CLINICAL_PROFILES['med-em-09'], isVerifiedMonograph: true };
   }
   if (query.includes('b-2') || query.includes('840110304425') || query.includes('dp-cf-01') || query.includes('ceftria') || query.includes('rocephin') || query.includes('normon')) {
-    return ALL_CLINICAL_PROFILES['med-ab-01'];
+    return { ...ALL_CLINICAL_PROFILES['med-ab-01'], isVerifiedMonograph: true };
   }
   if (query.includes('b-7') || query.includes('890112769224') || query.includes('dp-dz-01') || query.includes('diaze') || query.includes('seduxen')) {
-    return ALL_CLINICAL_PROFILES['med-em-07'];
+    return { ...ALL_CLINICAL_PROFILES['med-em-07'], isVerifiedMonograph: true };
   }
   if (query.includes('b-6') || query.includes('890110595324') || query.includes('dp-vc-01') || query.includes('vanco')) {
-    return ALL_CLINICAL_PROFILES['med-ab-02'];
+    return { ...ALL_CLINICAL_PROFILES['med-ab-02'], isVerifiedMonograph: true };
   }
   if (query.includes('b-1') || query.includes('893100110026') || query.includes('dp-pc-01') || query.includes('paracet') || query.includes('panadol') || query.includes('efferal') || query.includes('acetamin')) {
-    return ALL_CLINICAL_PROFILES['med-gen-01'];
+    return { ...ALL_CLINICAL_PROFILES['med-gen-01'], isVerifiedMonograph: true };
   }
-  if (query.includes('b-19') || query.includes('panfor') || query.includes('metformin')) {
-    return ALL_CLINICAL_PROFILES['med-met-01'];
+  if (query.includes('b-19') || query.includes('890110197726') || query.includes('panfor') || query.includes('metformin')) {
+    return { ...ALL_CLINICAL_PROFILES['med-met-01'], isVerifiedMonograph: true };
   }
-  if (query.includes('b-18') || query.includes('safeesem') || query.includes('amlodipin')) {
-    return ALL_CLINICAL_PROFILES['med-aml-01'];
+  if (query.includes('b-18') || query.includes('890110197826') || query.includes('safeesem') || query.includes('amlodipin')) {
+    return { ...ALL_CLINICAL_PROFILES['med-aml-01'], isVerifiedMonograph: true };
   }
-  if (query.includes('b-20') || query.includes('atorvastatin') || query.includes('atorva') || query.includes('lipitor')) {
-    return ALL_CLINICAL_PROFILES['med-ato-01'];
+  if (query.includes('b-20') || query.includes('590110192126') || query.includes('atorvastatin') || query.includes('atorva') || query.includes('lipitor')) {
+    return { ...ALL_CLINICAL_PROFILES['med-ato-01'], isVerifiedMonograph: true };
   }
   if (query.includes('enoxaparin') || query.includes('enox') || query.includes('lovenox')) {
-    return ALL_CLINICAL_PROFILES['med-enox-01'];
+    return { ...ALL_CLINICAL_PROFILES['med-enox-01'], isVerifiedMonograph: true };
   }
   if (query.includes('naloxon') || query.includes('nalox')) {
-    return ALL_CLINICAL_PROFILES['med-nalox-01'];
+    return { ...ALL_CLINICAL_PROFILES['med-nalox-01'], isVerifiedMonograph: true };
   }
   if (query.includes('fentan')) {
-    return ALL_CLINICAL_PROFILES['med-ctrl-02'];
+    return { ...ALL_CLINICAL_PROFILES['med-ctrl-02'], isVerifiedMonograph: true };
   }
   if (query.includes('noradre') || query.includes('norepi')) {
-    return ALL_CLINICAL_PROFILES['med-em-02'];
+    return { ...ALL_CLINICAL_PROFILES['med-em-02'], isVerifiedMonograph: true };
   }
   if (query.includes('lipid') || query.includes('intralipid') || query.includes('lipovenoes')) {
-    return ALL_CLINICAL_PROFILES['med-gen-02'];
+    return { ...ALL_CLINICAL_PROFILES['med-gen-02'], isVerifiedMonograph: true };
   }
 
-  // 3. Fallback: Sinh hồ sơ chuẩn 5 Đúng & Cảnh báo Dị ứng theo chuẩn Bộ Y Tế
+  // 3. Không có chuyên luận trong Dược Thư 2015: Trả về trạng thái trung thực, minh bạch nguồn gốc
   const name = medData?.brandName || identifierOrName;
-  const active = medData?.activeIngredient || 'Dược chất chính';
-  const route = medData?.route || 'Đường dùng theo chỉ định bác sĩ';
-  const isHighAlert = medData?.isHighAlert || false;
+  const active = medData?.activeIngredient || 'Theo hồ sơ công bố';
+  const sdk = medData?.nationalCode;
 
   return {
+    isVerifiedMonograph: false,
     officialSource: {
-      documentName: `Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)`,
-      registrationNumber: medData?.nationalCode ? `SĐK: ${medData.nationalCode}` : 'CSDL 54.885 Cục QLD',
-      standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
+      documentName: 'Chưa có chuyên luận trong Dược thư Quốc gia 2015 (QĐ 2033/QĐ-BYT)',
+      registrationNumber: sdk ? `SĐK: ${sdk}` : undefined,
+      standardPharmacopeia: medData?.standardPharmacopeia || 'Theo hồ sơ công bố NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
-      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
-      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfDocument: undefined,
+      pdfPage: undefined,
+      citationUrl: sdk ? `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}` : undefined,
     },
     composition: {
       activeIngredients: [{ innName: active, chemicalSalt: active, strength: medData?.concentration || 'Theo nhãn thuốc' }],
-      excipients: [{ name: 'Tá dược tiêu chuẩn', role: 'Định hình, ổn định và điều hòa độ tan theo DĐVN' }],
-      dosageForm: medData?.dosageForm || 'Dung dịch tiêm / Bột pha tiêm',
-      appearance: 'Đạt tiêu chuẩn cảm quan quy định trong Dược điển',
-      packagingSpec: `Quy cách: ${medData?.standardUnit || 'Đơn vị tiêu chuẩn'}`,
-      pharmacopeiaStandard: 'Dược điển Việt Nam V (DĐVN V)',
+      excipients: [],
+      dosageForm: medData?.dosageForm || 'Theo hồ sơ công bố',
+      appearance: 'Theo tiêu chuẩn cơ sở của nhà sản xuất',
+      packagingSpec: medData?.standardUnit || 'Đơn vị tiêu chuẩn',
+      pharmacopeiaStandard: medData?.standardPharmacopeia || 'Tiêu chuẩn NSX',
     },
-    indications: [
-      `Điều trị và kiểm soát các bệnh lý lâm sàng theo phác đồ chỉ định của bác sĩ điều trị đối với ${name}.`,
-      'Hỗ trợ cải thiện triệu chứng và ngăn ngừa diễn tiến nặng của bệnh nền.',
-    ],
-    pharmacologyMechanism: `Tác dụng dược lý thông qua cơ chế gắn kết thụ thể mục tiêu của hoạt chất ${active}, chuyển hóa chủ yếu qua gan và thải trừ qua thận.`,
+    indications: [],
+    pharmacologyMechanism: undefined,
     activeIngredients: [active],
     allergyProfile: {
-      allergyClass: 'Dược chất trị liệu theo chỉ định lâm sàng',
+      allergyClass: 'Theo dõi tiền sử dị ứng người bệnh trước khi dùng',
       activeAllergens: [active],
-      excipientAllergens: ['Tá dược tiêu chuẩn theo dược điển Việt Nam'],
-      crossReactivities: ['Các thuốc cùng nhóm dược lý tương tự'],
+      excipientAllergens: [],
+      crossReactivities: [],
       contraindicatedAllergies: [
-        `Tiền sử sốc phản vệ hoặc quá mẫn nghiêm trọng với ${active} hoặc các thành phần tá dược`,
+        `Tiền sử quá mẫn hoặc dị ứng với ${active} hoặc bất kỳ tá dược nào của thuốc.`,
       ],
       commonAllergySigns: [
         'Mẩn ngứa, phát ban da, mày đay cấp tính',
-        'Phù mạch, khó thở, tụt huyết áp nếu xảy ra phản vệ',
+        'Phù mạch, khó thở nếu xảy ra phản vệ (xử trí cấp cứu theo TT 51/2017/TT-BYT)',
       ],
-      emergencyManagement: 'Ngừng ngay thuốc nghi ngờ. Đo dấu hiệu sinh tồn, tiêm bắp Adrenalin nếu có dấu hiệu phản vệ theo TT 51/2017/TT-BYT.',
+      emergencyManagement: 'Ngừng ngay thuốc khi nghi ngờ dị ứng. Xử trí phản vệ theo Thông tư 51/2017/TT-BYT.',
     },
-    targetPopulation: `Người bệnh được chỉ định điều trị bằng ${name} theo chẩn đoán xác định của bác sĩ. Cần đánh giá kỹ tiền sử dị ứng, chức năng gan thận trước khi dùng.`,
-    contraindications: [
-      `Mẫn cảm hoặc tiền sử dị ứng với ${active} hoặc tá dược của thuốc`,
-      'Phụ nữ có thai hoặc cho con bú nếu chưa có đánh giá phân tích lợi ích/nguy cơ của bác sĩ điều trị',
-    ],
+    targetPopulation: `Người bệnh được bác sĩ chỉ định điều trị bằng ${name}. Tuân thủ đơn thuốc và hướng dẫn của bác sĩ điều trị.`,
+    contraindications: [],
     patientVerificationChecklist: [
       'Đối soát họ tên, tuổi, số giường bệnh và mã người bệnh trên vòng đeo tay/bệnh án',
       'Hỏi người bệnh hoặc thân nhân về tiền sử dị ứng thuốc trước đó',
-      'Giải thích mục đích dùng thuốc và các tác dụng không mong muốn có thể gặp',
+      'Kiểm tra tính nguyên vẹn của bao bì, hạn dùng và độ trong của thuốc trước khi cấp phát',
     ],
     tallManLASA: medData?.tallManName || name,
-    highAlertRiskNote: isHighAlert ? 'Thuốc thuộc danh mục cảnh báo cao nguy cơ sai sót điều trị' : undefined,
-    standardDosing: `Liều dùng tuân thủ đơn thuốc của bác sĩ điều trị. Thường dùng: ${medData?.defaultDoseQty || 1} ${medData?.standardUnit || 'đơn vị'}.`,
-    maxDailyDose: 'Tuân thủ liều tối đa ghi trong Tờ hướng dẫn sử dụng được Bộ Y Tế phê duyệt.',
-    renalAdjustment: 'Cần hiệu chỉnh liều giảm bớt hoặc kéo dài khoảng cách nếu mức lọc cầu thận eGFR < 50 ml/phút.',
-    hepaticAdjustment: 'Thận trọng ở người bệnh suy giảm chức năng tế bào gan mức độ trung bình đến nặng.',
-    administrationRouteDetails: `Đúng đường dùng: ${route}. Tuân thủ kỹ thuật vô khuẩn và kiểm tra độ trong của dung dịch trước khi sử dụng.`,
-    compatibleDiluents: ['NaCl 0.9%', 'Glucose 5%', 'Nước cất pha tiêm'],
-    timingAndFrequency: 'Đúng giờ theo lịch phát thuốc của khoa phòng (ví dụ 08:00 - 16:00 hoặc chia đều theo khoảng cách T1/2).',
-    mealRelation: 'Uống sau ăn 30 phút hoặc theo chỉ dẫn cụ thể của bác sĩ/dược sĩ lâm sàng.',
-    clinicalMonitoring: 'Theo dõi dấu hiệu sinh tồn, tình trạng cải thiện triệu chứng và phát hiện sớm phản ứng có hại của thuốc (ADR).',
-    adverseReactions: ['Dị ứng/phát ban da', 'Rối loạn tiêu hóa nhẹ', 'Chóng mặt buồn nôn'],
-    antidote: 'Ngừng thuốc ngay lập tức và điều trị triệu chứng hỗ trợ theo phác đồ cấp cứu.',
-    ddiWarnings: ['Kiểm tra tương tác trước khi phối hợp với các thuốc chuyển hóa qua enzym gan Cytochrome P450'],
-    pregnancyLactation: 'Cân nhắc thận trọng giữa lợi ích điều trị cho mẹ và nguy cơ cho thai nhi.',
-    storageAndHandling: 'Bảo quản nhiệt độ phòng dưới 30°C, nơi khô ráo, tránh ánh sáng trực tiếp.',
+    highAlertRiskNote: medData?.isHighAlert ? 'Thuốc thuộc danh mục cảnh báo cao nguy cơ sai sót điều trị' : undefined,
+    standardDosing: `Tuân thủ theo đơn thuốc của bác sĩ điều trị và Tờ hướng dẫn sử dụng (HDSD) được Bộ Y Tế phê duyệt.`,
+    maxDailyDose: 'Theo liều tối đa ghi trên nhãn và Tờ hướng dẫn sử dụng.',
+    renalAdjustment: undefined,
+    hepaticAdjustment: undefined,
+    administrationRouteDetails: `Đúng đường dùng theo y lệnh: ${medData?.route || 'Theo chỉ định bác sĩ'}.`,
+    compatibleDiluents: [],
+    timingAndFrequency: 'Đúng giờ theo lịch phát thuốc của khoa phòng hoặc đơn ngoại trú.',
+    mealRelation: 'Theo hướng dẫn ghi trên nhãn thuốc hoặc chỉ dẫn của dược sĩ/bác sĩ.',
+    clinicalMonitoring: 'Theo dõi đáp ứng lâm sàng và các tác dụng không mong muốn (ADR) có thể xảy ra.',
+    adverseReactions: [],
+    antidote: undefined,
+    ddiWarnings: [],
+    pregnancyLactation: 'Tham khảo kỹ phần Phụ nữ có thai và cho con bú trong Tờ Hướng Dẫn Sử Dụng được Bộ Y Tế phê duyệt.',
+    storageAndHandling: 'Bảo quản nơi khô ráo, tránh ánh sáng trực tiếp, nhiệt độ theo nhãn thuốc quy định.',
   };
 }

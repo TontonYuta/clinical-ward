@@ -53,16 +53,18 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps; isLo
     data.contraindications ||
     data.adultDosage ||
     data.indications ||
-    data.atcCode ||
-    data.pediatricDosage ||
     data.drugInteractions
   );
 
   if (!hasClinicalData) {
     return (
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-base sm:text-lg text-slate-600 flex items-center justify-between">
-        <span>Thuốc chưa có chuyên luận riêng trong Dược Thư Quốc Gia (Đông dược hoặc thuốc mới).</span>
-        <span className="text-sm text-slate-500 italic">Theo hồ sơ cấp phép Cục QLD</span>
+      <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-5 text-base sm:text-lg text-slate-800 space-y-2">
+        <div className="flex items-center gap-2 text-amber-900 font-bold">
+          <span>⚠️ Thuốc chưa có chuyên luận riêng trong Dược Thư Quốc Gia 2015 (QĐ 2033/QĐ-BYT).</span>
+        </div>
+        <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
+          Dược Thư chỉ gồm ~700 hoạt chất gốc (Generic). Căn cứ theo quy định của Bộ Y Tế, nhân viên y tế tra cứu và tuân thủ trực tiếp theo <strong>Tờ Hướng Dẫn Sử Dụng (HDSD)</strong> và <strong>Nhãn thuốc chính thức</strong> do Cục Quản lý Dược phê duyệt cấp phép lưu hành.
+        </p>
       </div>
     );
   }

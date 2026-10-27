@@ -28,10 +28,10 @@ export interface DavAdministrativeData {
 
 export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> = ({ data }) => {
   const mfrName = data.manufacturer || 'Theo hồ sơ cấp phép Cục Quản lý Dược';
-  const originCountry = data.country || 'Việt Nam';
-  const standard = data.standardPharmacopeia || 'DĐVN V / NSX';
-  const shelfLife = data.shelfLife || '36 tháng';
-  const packaging = data.packagingSpec || 'Theo tiêu chuẩn cơ sở của nhà sản xuất';
+  const originCountry = data.country || 'Theo hồ sơ công bố Cục QLD';
+  const standard = data.standardPharmacopeia || 'Theo hồ sơ công bố / NSX';
+  const shelfLife = data.shelfLife || 'Theo nhãn và hồ sơ công bố';
+  const packaging = data.packagingSpec || 'Theo hồ sơ công bố Cục QLD';
   const pharmGroup = resolvePharmacologicalGroup(
     data.atcCode,
     `${data.itemName || ''} ${data.activeIngredient || ''}`,
@@ -45,7 +45,7 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-slate-100">
           <div>
             <span className="text-2xs uppercase font-bold text-slate-500 block mb-0.5">Dạng bào chế & Đường dùng</span>
-            <p className="font-semibold text-slate-900 text-sm">{data.dosageForm || 'Viên nén / Dung dịch tiêm'}</p>
+            <p className="font-semibold text-slate-900 text-sm">{data.dosageForm || 'Theo hồ sơ công bố'}</p>
             <p className="text-xs text-slate-500 mt-0.5">{data.route || 'Theo hồ sơ công bố'}</p>
           </div>
 

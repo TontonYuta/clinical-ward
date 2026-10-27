@@ -34,8 +34,8 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
     hasVerifiedMonograph
   );
   const standard = d.standardPharmacopeia || d.clinicalProfile?.officialSource?.standardPharmacopeia || 'NSX';
-  const shelfLife = d.shelfLife || '36 tháng';
-  const packaging = d.packagingSpec || 'Theo tiêu chuẩn cơ sở';
+  const shelfLife = d.shelfLife || 'Theo nhãn';
+  const packaging = d.packagingSpec || 'Theo hồ sơ công bố';
   const pharmGroup = resolvePharmacologicalGroup(
     d.atcCode,
     `${d.brandName} ${d.activeIngredient}`,

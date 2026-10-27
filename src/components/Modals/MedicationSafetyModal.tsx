@@ -103,6 +103,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
     };
 
   const profile = getMedicationClinicalProfile(selectedMedId, currentMed);
+  const isVerifiedMonograph = profile.isVerifiedMonograph !== false && Boolean(profile.officialSource?.pdfPage);
   const src = profile.officialSource;
   const pageNum = src?.pdfPage?.toString().split(/[-–\s]+/)[0].trim();
   const pdfUrl = src?.citationUrl || (pageNum ? `/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=${pageNum}` : '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf');
@@ -257,37 +258,130 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
                 </div>
               </div>
 
-              {/* Nguồn trích xuất Dược Thư Quốc Gia 2015/2022 */}
-              <div className="mt-3 p-4 bg-blue-50/70 border border-blue-200 rounded-xl flex items-center justify-between flex-wrap gap-3">
-                <div className="space-y-1">
-                  <div className="text-xs uppercase font-bold tracking-wider text-blue-800">
-                    Căn cứ chuyên luận y khoa chuẩn Bộ Y Tế
-                  </div>
-                  <div className="text-base sm:text-lg font-bold text-blue-950">
-                    {src?.documentName || 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)'}
-                  </div>
-                  {src?.pdfPage && (
-                    <div className="text-sm sm:text-base text-blue-900 font-semibold">
-                      Chuyên luận tra cứu: <span className="font-mono font-black text-blue-950 bg-white px-2.5 py-0.5 rounded border border-blue-300">Trang {src.pdfPage}</span>
-                      {src.manufacturer && <span className="ml-3 font-normal text-slate-600">• Cơ sở: {src.manufacturer}</span>}
+              {/* Căn cứ pháp lý & Tri thức: Phân biệt minh bạch giữa Dược Thư 2015 và CSDL Cục QLD */}
+              {isVerifiedMonograph ? (
+                <div className="mt-3 p-4 bg-blue-50/70 border border-blue-200 rounded-xl flex items-center justify-between flex-wrap gap-3">
+                  <div className="space-y-1">
+                    <div className="text-xs uppercase font-bold tracking-wider text-blue-800">
+                      Căn cứ chuyên luận y khoa chuẩn Bộ Y Tế
                     </div>
-                  )}
-                </div>
+                    <div className="text-base sm:text-lg font-bold text-blue-950">
+                      {src?.documentName || 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)'}
+                    </div>
+                    {src?.pdfPage && (
+                      <div className="text-sm sm:text-base text-blue-900 font-semibold">
+                        Chuyên luận tra cứu: <span className="font-mono font-black text-blue-950 bg-white px-2.5 py-0.5 rounded border border-blue-300">Trang {src.pdfPage}</span>
+                        {src.manufacturer && <span className="ml-3 font-normal text-slate-600">• Cơ sở: {src.manufacturer}</span>}
+                      </div>
+                    )}
+                  </div>
 
-                <a
-                  href={pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm sm:text-base shadow-xs transition active:scale-98 cursor-pointer"
-                  title="Mở tài liệu PDF Dược Thư gốc tại trang chuyên luận"
-                >
-                  <FileText className="w-5 h-5 text-blue-200" />
-                  <span>Mở PDF Dược Thư {pageNum ? `(Trang ${pageNum})` : ''}</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm sm:text-base shadow-xs transition active:scale-98 cursor-pointer"
+                    title="Mở tài liệu PDF Dược Thư gốc tại trang chuyên luận"
+                  >
+                    <FileText className="w-5 h-5 text-blue-200" />
+                    <span>Mở PDF Dược Thư {pageNum ? `(Trang ${pageNum})` : ''}</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              ) : (
+                <div className="mt-3 p-4 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between flex-wrap gap-3">
+                  <div className="space-y-1">
+                    <div className="text-xs uppercase font-bold tracking-wider text-amber-800">
+                      Căn cứ Cục Quản lý Dược (Bộ Y Tế)
+                    </div>
+                    <div className="text-base sm:text-lg font-bold text-amber-950">
+                      Chưa có chuyên luận riêng trong Dược thư Quốc gia 2015 (QĐ 2033/QĐ-BYT)
+                    </div>
+                    <div className="text-sm sm:text-base text-amber-900 font-medium">
+                      Dược Thư chỉ gồm ~700 hoạt chất gốc (Generic). Tra cứu trực tiếp theo Tờ Hướng Dẫn Sử Dụng (HDSD) và Nhãn gốc được Cục QLD phê duyệt.
+                    </div>
+                  </div>
+
+                  <a
+                    href={currentMed.nationalCode ? `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(currentMed.nationalCode)}` : 'https://dichvucong.dav.gov.vn/congbothuoc/index'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-sm sm:text-base shadow-xs transition active:scale-98 cursor-pointer"
+                    title="Tra cứu hồ sơ công bố và Tờ HDSD gốc tại Cục Quản lý Dược"
+                  >
+                    <ExternalLink className="w-5 h-5 text-slate-300" />
+                    <span>Tra cứu Cổng Dịch vụ công Cục QLD {currentMed.nationalCode ? `(SĐK: ${currentMed.nationalCode})` : ''}</span>
+                  </a>
+                </div>
+              )}
             </div>
 
+            {/* NẾU KHÔNG CÓ CHUYÊN LUẬN DƯỢC THƯ: HIỂN THỊ HƯỚNG DẪN THỰC HÀNH Y LỆNH & LOẠI BỎ DỮ LIỆU BỊA ĐẶT */}
+            {!isVerifiedMonograph ? (
+              <div className="space-y-5">
+                <div className="bg-amber-50/80 border-2 border-amber-300 rounded-2xl p-6 shadow-2xs space-y-3">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-7 h-7 text-amber-700 shrink-0" />
+                    <div>
+                      <h4 className="text-xl sm:text-2xl font-black text-amber-950">
+                        Nguyên Tắc Sử Dụng An Toàn Theo Hồ Sơ Cục Quản Lý Dược
+                      </h4>
+                      <p className="text-base text-amber-800 font-medium">
+                        Quy chế Dược bệnh viện &amp; Thông tư số 22/2011/TT-BYT
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-amber-200 text-base sm:text-lg text-slate-800 space-y-3 leading-relaxed">
+                    <p>
+                      • <strong>Chỉ định &amp; Liều dùng:</strong> Thực hiện theo đơn thuốc và y lệnh của Bác sĩ điều trị. Tham khảo chỉ định, liều dùng và chống chỉ định chi tiết trên <strong>Tờ Hướng Dẫn Sử Dụng (HDSD)</strong> đi kèm hộp thuốc do Cục Quản lý Dược phê duyệt.
+                    </p>
+                    <p>
+                      • <strong>Đánh giá tiền sử:</strong> Bắt buộc khai thác tiền sử dị ứng thuốc và bệnh nền (suy gan, suy thận, thai kỳ) trước khi thực hiện y lệnh.
+                    </p>
+                    <p>
+                      • <strong>Đối chứng pháp lý:</strong> Nhân viên y tế có thể mở xem trực tiếp Giấy phép công bố lưu hành thuốc tại Cổng Dịch vụ công Cục Quản lý Dược.
+                    </p>
+                  </div>
+                </div>
+
+                {/* QUY CHUẨN AN TOÀN 5 ĐÚNG (QĐ 2147/BYT) */}
+                <div className="bg-white border border-slate-300 rounded-2xl p-6 shadow-2xs space-y-3">
+                  <div className="border-b border-slate-200 pb-3">
+                    <h4 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                      Quy Chuẩn An Toàn 5 Đúng Trong Sử Dụng Thuốc (QĐ 2147/QĐ-BYT)
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-base sm:text-lg">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="font-bold text-slate-900 block mb-1">1. Đúng Người Bệnh:</span>
+                      <span className="text-slate-700 text-sm sm:text-base">Đối soát họ tên, mã người bệnh và vòng đeo tay.</span>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="font-bold text-slate-900 block mb-1">2. Đúng Thuốc (Tall Man):</span>
+                      <span className="font-mono text-teal-900 font-bold text-sm sm:text-base">{profile.tallManLASA || currentMed.brandName}</span>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="font-bold text-slate-900 block mb-1">3. Đúng Liều Lượng:</span>
+                      <span className="text-slate-700 text-sm sm:text-base">{profile.standardDosing || 'Theo y lệnh bác sĩ'}</span>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="font-bold text-slate-900 block mb-1">4. Đúng Đường Dùng:</span>
+                      <span className="text-slate-700 text-sm sm:text-base">{currentMed.route || 'Đường dùng theo chỉ định'}</span>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="font-bold text-slate-900 block mb-1">5. Đúng Thời Điểm:</span>
+                      <span className="text-slate-700 text-sm sm:text-base">{profile.timingAndFrequency || 'Theo lịch cấp phát'}</span>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="font-bold text-slate-900 block mb-1">Dung Môi Tương Thích:</span>
+                      <span className="text-slate-700 text-sm sm:text-base">Theo Tờ HDSD nhà sản xuất</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
             {/* 2. CẢNH BÁO CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI (CẤM KỴ TỬ VONG) */}
             {(profile.contraindications?.length > 0 || profile.blackBoxWarning) && (
               <div className="bg-red-50/80 border-2 border-red-300 rounded-2xl p-6 shadow-2xs space-y-3">
@@ -470,6 +564,8 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
                 </div>
               </div>
             </div>
+              </>
+            )}
 
           </div>
         </div>
