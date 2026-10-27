@@ -1,24 +1,34 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Điều Phối 8 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & Hồ Sơ Bệnh Nhân (<=200 LOC)
+ * Điều Phối 12 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & CSDL Bệnh Viện Thực Tế (<=280 LOC)
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { AgentActionCard, ChatMessage } from '../../types/clinical';
+import { AgentActionCard } from '../../types/clinical';
 import { getGeminiApiKey, callGeminiWithFallback, CLINICAL_SYSTEM_INSTRUCTION } from './config';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../patientService';
+import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';
 import { ProcessedQueryResult } from '../../utils/nlp/types';
 
 export function isClinicalScenarioQuery(lower: string): boolean {
+  const isCeftriaxoneCalcium = /ceftriaxon/i.test(lower) && /calci|calcium|ringer|lactat|tương kỵ|kết tủa|pha chung|truyền cùng/i.test(lower);
+  const isRedMan = /red man|đỏ bừng|vancomycin/i.test(lower) && /truyền|tác dụng phụ|xử trí|tốc độ|nguyễn quốc bảo|rx-2026-011|adr/i.test(lower);
+  const isStatinFood = /atorvastatin|statin|rx-2026-012|safeesem/i.test(lower) && /bưởi|nước bưởi|bưởi chùm|grapefruit|uống cùng|thức ăn|xuất viện|dặn dò/i.test(lower);
+  const isHighAlertKcl = /kali|kcl/i.test(lower) && /tiêm|tiêm trực tiếp|pha truyền|high-alert|cảnh báo đỏ|nguy cơ cao|nồng độ|ecg/i.test(lower);
+  const isAnaphylaxis = /phác đồ|sốc phản vệ|phản vệ|adrenalin|hadunalin|51\/2017|tt 51|tiêm bắp/i.test(lower);
+  const isOpioidCalc = /quy đổi|mme|tương đương|chuyển sang fentanyl|uống sang tiêm|liều morphin|trả vỏ|thu hồi vỏ/i.test(lower);
   const isAllergyAudit = /dị ứng|chống chỉ định|thẩm định|an toàn đơn|5 đúng|dùng được không|dị ứng penicillin/i.test(lower);
   const isRenal = /suy thận|chức năng thận|cockcroft|creatinine|egfr|crcl|chỉnh liều/i.test(lower);
-  const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|red man|sốc thuốc/i.test(lower);
-  const isOpioidCalc = /quy đổi|mme|tương đương|chuyển sang fentanyl|uống sang tiêm|liều morphin/i.test(lower);
-  const isDdi = /tương tác|omeprazol|clopidogrel|theophyllin|5948|uống chung/i.test(lower);
-  const isFoodDrug = /thức ăn|nước bưởi|bưởi chùm|uống rượu|bia rượu|uống cùng/i.test(lower);
+  const isColdChain = /chuỗi lạnh|vaxigrip|tủ lạnh|vượt ngưỡng|8 độ|9 độ|quarantine|cách ly vắc xin/i.test(lower);
+  const isPrescription = (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) && (INITIAL_PATIENTS.some(p => lower.includes(p.fullName.toLowerCase())) || /rx-2026-/i.test(lower));
+  const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower);
 
-  return isAllergyAudit || isRenal || isAdr || isOpioidCalc || isDdi || isFoodDrug;
+  return (
+    isCeftriaxoneCalcium || isRedMan || isStatinFood || isHighAlertKcl ||
+    isAnaphylaxis || isOpioidCalc || isAllergyAudit || isRenal ||
+    isColdChain || isPrescription || isAdr
+  );
 }
 
 export async function processGeminiClinicalScenario(
@@ -58,11 +68,225 @@ export async function processGeminiClinicalScenario(
     }
   }
 
-  // 1. Kịch bản Dị ứng & An toàn 5 Đúng (QĐ 2147/BYT & QĐ 5948/BYT)
+  // 1. Kịch bản Tương kỵ Ceftriaxon - Ringer Lactat / Dung dịch Calci
+  if (/ceftriaxon/i.test(lower) && /calci|calcium|ringer|lactat|tương kỵ|kết tủa|pha chung|truyền cùng/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'fefo_inventory',
+      title: 'Kiểm Tra Tương Kỵ: Ceftriaxon & Ringer Lactat',
+      summary: 'Chống chỉ định phối hợp dung dịch chứa Calci (Dược Thư 2015 Trang 371)',
+      data: { drug: 'Ceftriaxon 1g', incompatible: 'Ringer Lactat / Calci' },
+      primaryActionLabel: 'Xem Lô Thuốc Ceftriaxon',
+      primaryActionType: 'NAVIGATE_TAB',
+      targetTab: 'fefo',
+      status: 'pending'
+    };
+    const replyText = aiAnswer || (
+      `### ⛔ CẢNH BÁO TƯƠNG KỴ NGUY HIỂM TÍNH MẠNG (QĐ 5948/QĐ-BYT)\n\n` +
+      `• **Hoạt chất:** Ceftriaxon (Lô Ceftriaxona Normon 1g - \`LOT-CF24-03B\`) và Dung dịch Calci / Ringer Lactat (\`RX-2026-009\`).\n` +
+      `• **Khuyến cáo Dược thư Quốc gia 2015 (Trang 371):** **CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI** phối hợp Ceftriaxon với các dung dịch chứa Calci (Ringer Lactat, Calci clorid, Calci gluconat) qua cùng hoặc khác đường truyền.\n` +
+      `• **Hậu quả lâm sàng:** Nguy cơ hình thành tủa muối Ceftriaxon-Calci không tan gây tắc mạch phổi và suy thận cấp, đã có báo cáo ca tử vong ở cả trẻ sơ sinh và người lớn.\n` +
+      `• **Hướng xử trí:** Thay thế dịch truyền hồi sức bằng Natri clorid 0.9% hoặc truyền Ceftriaxon cách xa các dung dịch chứa Calci ít nhất 48 giờ.`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Dược Thư 2015 Trang 371 & QĐ 5948/BYT', title: 'Tương tác thuốc chống chỉ định', clause: 'Mục Ceftriaxon' },
+        card,
+        suggestedChips: ['Xem bảng kho Dược Nội Trú', 'Đối soát ca trực 07:00 AM', 'Tra cứu SĐK 840110304425']
+      },
+      card
+    };
+  }
+
+  // 2. Kịch bản Hội chứng Red Man khi truyền Vancomycin
+  if (/red man|đỏ bừng|vancomycin/i.test(lower) && /truyền|tác dụng phụ|xử trí|tốc độ|nguyễn quốc bảo|rx-2026-011|adr/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'cpoe_prescription',
+      title: 'Đơn Thuốc Vancomycin 1g: Nguyễn Quốc Bảo',
+      summary: 'Phòng ngừa hội chứng Red Man - Yêu cầu tốc độ truyền >=60 phút',
+      data: { patient: 'Nguyễn Quốc Bảo', medication: 'Vancomycin 1g', prescriptionId: 'RX-2026-011' },
+      primaryActionLabel: 'Mở Đơn Thuốc RX-2026-011',
+      primaryActionType: 'NAVIGATE_TAB',
+      targetTab: 'cpoe',
+      status: 'pending'
+    };
+    const replyText = aiAnswer || (
+      `### ⚠️ XỬ TRÍ HỘI CHỨNG RED MAN DO VANCOMYCIN (DƯỢC THƯ TRANG 1455)\n\n` +
+      `• **Đơn thuốc liên quan:** \`RX-2026-011\` - Bệnh nhân **Nguyễn Quốc Bảo** (Nhiễm tụ cầu vàng MRSA).\n` +
+      `• **Cơ chế phản ứng:** Truyền Vancomycin với tốc độ quá nhanh kích thích giải phóng Histamin trực tiếp từ dưỡng bào (Mast cell), gây đỏ bừng mặt, cổ, ngực trên, ngứa dữ dội và tụt huyết áp.\n` +
+      `• **Phác đồ xử trí chuẩn:**\n` +
+      `  1. Ngừng truyền Vancomycin ngay lập tức, kiểm tra dấu hiệu sinh tồn (Mạch, Huyết áp, SpO2).\n` +
+      `  2. Tiêm kháng Histamin H1 (Diphenhydramin 25-50mg tiêm bắp/tĩnh mạch chậm).\n` +
+      `  3. Khi triệu chứng thuyên giảm, tiếp tục truyền với **tốc độ giảm 50%** (thời gian truyền tối thiểu **60 - 100 phút**, nồng độ pha loãng không quá 5mg/mL trong NaCl 0.9%).`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Dược Thư Quốc Gia 2015 Trang 1455', title: 'Hướng dẫn sử dụng kháng sinh Vancomycin', clause: 'Mục ADR & Tốc độ truyền' },
+        card,
+        suggestedChips: ['Xem đơn thuốc RX-2026-011', 'Tra cứu chuyên luận Vancomycin', 'Đối soát ca trực 07:00 AM']
+      },
+      card
+    };
+  }
+
+  // 3. Kịch bản Thẩm định Đơn Ngoại trú & Tương tác Bưởi chùm - Statin
+  if (/atorvastatin|statin|rx-2026-012|safeesem/i.test(lower) && /bưởi|nước bưởi|bưởi chùm|grapefruit|uống cùng|thức ăn|xuất viện|dặn dò/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'prescription_advice',
+      title: 'Phiếu Dặn Dò Xuất Viện: Võ Minh Trí',
+      summary: 'Đơn thuốc RX-2026-012 • Cảnh báo tương tác nước ép bưởi chùm CYP3A4',
+      data: { patient: 'Võ Minh Trí', prescriptionId: 'RX-2026-012' },
+      primaryActionLabel: 'Lập Lịch Dặn Dò BN',
+      primaryActionType: 'OPEN_PRESCRIPTION_ADVICE',
+      targetTab: 'cpoe',
+      status: 'pending'
+    };
+    const replyText = aiAnswer || (
+      `### ⚠️ THẨM ĐỊNH ĐƠN NGOẠI TRÚ & TƯƠNG TÁC THỨC ĂN (RX-2026-012)\n\n` +
+      `• **Bệnh nhân:** **Võ Minh Trí** (\`BN-8820\`) - Chẩn đoán: Tăng huyết áp & Rối loạn lipid máu mạn tính.\n` +
+      `• **Danh mục thuốc kê:** Safeesem 5 (S-amlodipine 5mg) & Atorvastatin Sandoz 20mg.\n` +
+      `• **Cảnh báo tương tác thực phẩm nghiêm trọng:**\n` +
+      `  - **TUYỆT ĐỐI KHÔNG uống Atorvastatin cùng nước ép bưởi chùm (Grapefruit):** Furanocoumarin trong bưởi chùm ức chế không hồi phục enzym CYP3A4 tại ruột, làm tăng nồng độ Statin trong máu lên **gấp 2.5 - 3 lần**, dẫn tới nguy cơ **tiêu cơ vân cấp (Rhabdomyolysis)** và suy thận cấp!\n` +
+      `• **Hướng dẫn thời điểm dùng thuốc tối ưu:**\n` +
+      `  - \`Safeesem 5\`: Uống 1 viên vào **buổi sáng** sau ăn để kiểm soát huyết áp ban ngày.\n` +
+      `  - \`Atorvastatin 20mg\`: Uống 1 viên vào **buổi tối trước khi đi ngủ** (thời điểm gan tổng hợp cholesterol cao nhất).`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Dược Thư 2015 Trang 175 & QĐ 5948/BYT', title: 'Tương tác thuốc & Dược động học', clause: 'Chuyển hóa CYP3A4' },
+        card,
+        suggestedChips: ['Lập lịch dặn dò cữ thuốc', 'Gửi email dặn dò bệnh nhân', 'Xem đơn RX-2026-012']
+      },
+      card
+    };
+  }
+
+  // 4. Kịch bản Cảnh báo Thuốc Nguy Cơ Cao: Kali Clorid 10% High-Alert
+  if (/kali|kcl/i.test(lower) && /tiêm|tiêm trực tiếp|pha truyền|high-alert|cảnh báo đỏ|nguy cơ cao|nồng độ|ecg/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'fefo_inventory',
+      title: 'Thuốc High-Alert: Kali Clorid 10%',
+      summary: 'Cấm tiêm tĩnh mạch trực tiếp • Bắt buộc pha loãng theo Dược Thư 2015',
+      data: { item: 'Kali clorid 10%', batch: 'LOT-KC24-08', stock: 60 },
+      primaryActionLabel: 'Xem Tủ Thuốc High-Alert',
+      primaryActionType: 'NAVIGATE_TAB',
+      targetTab: 'fefo',
+      status: 'pending'
+    };
+    const replyText = aiAnswer || (
+      `### 🚨 CẢNH BÁO THUỐC NGUY CƠ CAO (HIGH-ALERT): KALI CLORID 10%\n\n` +
+      `• **Dữ liệu kho thuốc:** Lô \`b-5\` - \`LOT-KC24-08\`, nồng độ 1g/10ml, hiện tồn **60 ống** tại Tủ thuốc Nguy cơ cao (Dán nhãn đỏ High-Alert).\n` +
+      `• **CẢNH BÁO TỐI KHẨN CẤP:** **CẤM TUYỆT ĐỐI TIÊM TĨNH MẠCH TRỰC TIẾP!** Tiêm bolus trực tiếp sẽ gây tăng kali máu cấp dẫn tới ngừng tim tức thì.\n` +
+      `• **Quy chuẩn pha truyền theo Dược Thư 2015 (Trang 788):**\n` +
+      `  - Bắt buộc pha loãng trong Natri clorid 0.9% hoặc Glucose 5%.\n` +
+      `  - Nồng độ truyền ngoại vi không vượt quá **40 mEq/L** (khoảng 3g/L).\n` +
+      `  - Tốc độ truyền tối đa **10 - 20 mEq/giờ**, bắt buộc dùng máy truyền dịch hoặc bơm tiêm điện và theo dõi điện tâm đồ liên tục (Monitor ECG).`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Dược Thư Quốc Gia 2015 Trang 788', title: 'Thuốc nguy cơ cao High-Alert', clause: 'Mục Cảnh báo nồng độ Kali' },
+        card,
+        suggestedChips: ['Xem đơn bù điện giải RX-2026-001', 'Kiểm tra tồn kho High-Alert', 'Đối soát ca trực 07:00 AM']
+      },
+      card
+    };
+  }
+
+  // 5. Kịch bản Quy chế Quản lý Thuốc Gây Nghiện & Quy đổi Opioid MME
+  if (/quy đổi|mme|tương đương|chuyển sang fentanyl|uống sang tiêm|liều morphin|trả vỏ|thu hồi vỏ/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'debt_settle',
+      title: 'Đối Soát Vỏ Thuốc Gây Nghiện Morphin / Fentanyl',
+      summary: 'Quy chuẩn quản lý thuốc kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT)',
+      data: { morphinStock: 35, fentanylStock: 160 },
+      primaryActionLabel: 'Xác Nhận Thu Hồi Vỏ Ống',
+      primaryActionType: 'OPEN_DEBT_SETTLE',
+      targetTab: 'debts',
+      status: 'pending'
+    };
+    const replyText = aiAnswer || (
+      `### 📋 QUY CHẾ QUẢN LÝ THUỐC GÂY NGHIỆN & QUY ĐỔI OPIOID (TT 20/2017/TT-BYT)\n\n` +
+      `• **Thuốc trong CSDL kho viện:**\n` +
+      `  - \`Morphin hydroclorid 10mg/1ml\` (\`LOT-MP24-X4\`): Tồn **35 ống** (Tủ sắt 2 khóa).\n` +
+      `  - \`Fentanyl 50 mcg/ml (0.1mg/2ml)\` (\`LOT-FT25-A2\`): Tồn **160 ống** (Tủ sắt 2 khóa).\n` +
+      `• **Hệ số quy đổi tương đương giảm đau (Equianalgesic):**\n` +
+      `  - **10 mg Morphin tiêm tĩnh mạch** $\\approx$ **100 mcg (0.1 mg) Fentanyl tiêm tĩnh mạch**.\n` +
+      `• **Quy định pháp lý bắt buộc (Thông tư 20/2017/TT-BYT):**\n` +
+      `  - Mượn rút thuốc gây nghiện cấp cứu ca đêm bắt buộc có **2 nhân viên y tế chứng kiến và ký biên bản**.\n` +
+      `  - Giữ lại toàn bộ vỏ ống thuốc đã sử dụng trong khay khóa đối soát ca trực 07:00 AM.\n` +
+      `  - Hội đồng tiêu hủy vỏ ống thuốc gây nghiện họp định kỳ và lập biên bản tiêu hủy.`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Thông tư 20/2017/TT-BYT', title: 'Quy chế quản lý thuốc kiểm soát đặc biệt', clause: 'Điều 15: Thu hồi và tiêu hủy vỏ ống thuốc' },
+        card,
+        suggestedChips: ['Đối soát ca trực 07:00 AM', 'Xem đơn thuốc RX-2026-001', 'Kiểm tra sổ nợ tủ trực']
+      },
+      card
+    };
+  }
+
+  // 6. Kịch bản Phác đồ Adrenalin Cấp Cứu Sốc Phản Vệ theo TT 51/2017/TT-BYT
+  if (/phác đồ|sốc phản vệ|phản vệ|adrenalin|hadunalin|51\/2017|tt 51|tiêm bắp/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'medication_safety',
+      title: 'Hộp Thuốc Cấp Cứu Phản Vệ: Hadunalin 1mg/ml',
+      summary: 'Tiêm bắp mặt trước ngoài đùi 1/2 ống ngay lập tức (TT 51/2017/TT-BYT)',
+      data: { drug: 'Hadunalin (Adrenalin 1mg/ml)', stock: 30, location: 'Tủ cấp cứu A9' },
+      primaryActionLabel: 'Xem Phác Đồ TT 51/2017',
+      primaryActionType: 'OPEN_MED_SAFETY',
+      targetTab: 'debts',
+      status: 'pending'
+    };
+    const replyText = aiAnswer || (
+      `### ⚡ PHÁC ĐỒ CẤP CỨU SỐC PHẢN VỆ BẰNG ADRENALIN (THÔNG TƯ 51/2017/TT-BYT)\n\n` +
+      `• **Cơ số cấp cứu tại viện:** Hadunalin 1mg/1ml (\`LOT-AD24-E1\`) - Hiện tồn **30 ống** tại Tủ cấp cứu Hồi sức A9.\n` +
+      `• **Hành động cấp cứu tức thì (Áp dụng từ Phản vệ Độ II trở lên):**\n` +
+      `  1. **Ngừng ngay tiếp xúc** với dị nguyên / thuốc đang truyền.\n` +
+      `  2. **Tiêm bắp Adrenalin ngay lập tức vào mặt trước ngoài đùi:**\n` +
+      `     - Người lớn: **1/2 ống (0.5 mg)**.\n` +
+      `     - Trẻ em >30kg: 1/2 ống (0.5 mg); Trẻ 10-30kg: 1/3 - 1/4 ống (0.2 - 0.3 mg).\n` +
+      `  3. **Theo dõi huyết áp:** Nhắc lại liều tiêm bắp sau mỗi **3 - 5 phút** nếu huyết áp chưa nâng lên hoặc còn khó thở.\n` +
+      `  4. Đặt bệnh nhân nằm đầu thấp, thở oxy gọng kính 6 - 8 lít/phút, lập 2 đường truyền tĩnh mạch lớn với Natri clorid 0.9%.`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Thông tư 51/2017/TT-BYT', title: 'Hướng dẫn phòng, chẩn đoán và xử trí phản vệ', clause: 'Phụ lục IV: Hướng dẫn tiêm Adrenalin' },
+        card,
+        suggestedChips: ['Xem tủ cấp cứu Hồi sức A9', 'Đối soát ca trực 07:00 AM', 'Tra cứu đơn RX-2026-004']
+      },
+      card
+    };
+  }
+
+  // 7. Kịch bản Thẩm định Dị ứng & 5 Đúng (QĐ 2147/BYT)
   if (/dị ứng|an toàn đơn|chống chỉ định|5 đúng/i.test(lower)) {
     const card: AgentActionCard = {
       cardType: 'medication_safety',
-      title: `Thẩm Định An Toàn Đơn Thuốc: ${patient ? patient.fullName : 'Bệnh Nhân'}`,
+      title: `Thẩm Định An Toàn Đơn Thuốc: ${patient ? patient.fullName : 'Võ Minh Trí'}`,
       summary: 'Thẩm định dị ứng, chống chỉ định và quy tắc 5 Đúng (QĐ 2147/BYT)',
       data: { patient: patient?.fullName || 'Võ Minh Trí', allergies: patient?.allergies || 'Penicillin, Aspirin' },
       primaryActionLabel: 'Mở Bảng Đối Soát 5 Đúng',
@@ -73,7 +297,7 @@ export async function processGeminiClinicalScenario(
     const replyText = aiAnswer || (
       `### ⚠️ CẢNH BÁO AN TOÀN ĐƠN THUỐC (QĐ 2147/QĐ-BYT)\n\n` +
       `• **Bệnh nhân:** **${patient ? patient.fullName : 'Võ Minh Trí (BN-8820)'}**\n` +
-      `• **Tiền sử dị ứng ghi nhận:** **${patient ? patient.allergies : 'Penicillin, Aspirin (phù mạch, co thắt)'}**\n` +
+      `• **Tiền sử dị ứng ghi nhận:** **${patient ? patient.allergies : 'Penicillin, Aspirin (phù mạch, co thắt phế quản)'}**\n` +
       `• **Cảnh báo CDSS chuyên môn:** Đơn thuốc chứa nhóm Beta-Lactam/Penicillin (như Augmentin, Amoxicillin) bị **CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI** do nguy cơ sốc phản vệ đe dọa tính mạng! Đề xuất đổi sang nhóm Macrolide (Clarithromycin 500mg) hoặc Quinolone theo QĐ 3445/QĐ-BYT.`
     );
     return {
@@ -82,11 +306,7 @@ export async function processGeminiClinicalScenario(
         sender: 'agent',
         text: replyText,
         timestamp: nowStr,
-        legalReference: {
-          lawCode: 'QĐ 2147/QĐ-BYT & QĐ 5948/QĐ-BYT',
-          title: 'Quy chế Dược lâm sàng & Tương tác chống chỉ định',
-          clause: 'Điều 14: Thẩm định an toàn đơn thuốc'
-        },
+        legalReference: { lawCode: 'QĐ 2147/QĐ-BYT & QĐ 5948/QĐ-BYT', title: 'Quy chế Dược lâm sàng & Tương tác chống chỉ định', clause: 'Điều 14: Thẩm định an toàn đơn thuốc' },
         card,
         suggestedChips: ['Dặn dò bệnh nhân uống thuốc', 'Đổi sang Clarithromycin 500mg', 'Đối soát ca trực 07:00 AM']
       },
@@ -94,13 +314,13 @@ export async function processGeminiClinicalScenario(
     };
   }
 
-  // 2. Kịch bản Hiệu chỉnh liều suy thận Cockcroft-Gault
+  // 8. Kịch bản Hiệu chỉnh liều suy thận Cockcroft-Gault
   if (/suy thận|chức năng thận|cockcroft|creatinine|egfr|crcl|chỉnh liều/i.test(lower)) {
     const card: AgentActionCard = {
       cardType: 'medication_safety',
       title: 'Hiệu Chỉnh Liều Theo Chức Năng Thận (Cockcroft-Gault)',
-      summary: 'Độ thanh thải CrCl ~42.6 mL/phút • Căn cứ Dược Thư 2015',
-      data: { egfr: patient?.egfr || 42.6, patient: patient?.fullName || 'Đặng Thị Lan' },
+      summary: 'Độ thanh thải CrCl ~52.0 mL/phút • Căn cứ Dược Thư 2015',
+      data: { egfr: patient?.egfr || 52.0, patient: patient?.fullName || 'Đặng Thị Lan' },
       primaryActionLabel: 'Xem Chuyên Luận Dược Thư',
       primaryActionType: 'OPEN_MONOGRAPH_MODAL',
       targetTab: 'fefo',
@@ -109,8 +329,10 @@ export async function processGeminiClinicalScenario(
     const replyText = aiAnswer || (
       `### 📊 KẾT QUẢ TÍNH TOÁN HIỆU CHỈNH LIỀU SUY THẬN\n\n` +
       `• **Bệnh nhân:** **${patient ? patient.fullName : 'Đặng Thị Lan (62 tuổi, Nữ, 58kg)'}**\n` +
-      `• **Độ thanh thải Creatinine (CrCl):** **~42.6 mL/phút** (Suy thận mức độ trung bình)\n` +
-      `• **Khuyến cáo Dược Thư Quốc Gia 2015:** Với các thuốc thải trừ chủ yếu qua thận (Ciprofloxacin, Vancomycin), cần giảm liều 50% hoặc kéo dài khoảng cách liều lên 18-24 giờ một lần để tránh tích lũy gây độc thần kinh và thính giác.`
+      `• **Chức năng thận trong CSDL:** eGFR = **${patient ? patient.egfr : 52.0} mL/phút**, Creatinine = **${patient ? patient.creatinine : 110.0} umol/L** (Suy thận mức độ trung bình 3a).\n` +
+      `• **Khuyến cáo Dược Thư Quốc Gia 2015:**\n` +
+      `  - **Metformin (Panfor PR-750):** Được phép duy trì liều 750mg/ngày, theo dõi eGFR mỗi 3 - 6 tháng; chống chỉ định nếu eGFR < 30 mL/phút do nguy cơ nhiễm toan lactic.\n` +
+      `  - **Ciprofloxacin / Vancomycin:** Cần giảm 50% liều dùng hoặc giãn cách 18 - 24 giờ một lần để tránh tích lũy gây độc thần kinh và thính giác.`
     );
     return {
       replyMessage: {
@@ -118,11 +340,7 @@ export async function processGeminiClinicalScenario(
         sender: 'agent',
         text: replyText,
         timestamp: nowStr,
-        legalReference: {
-          lawCode: 'Dược Thư Quốc Gia 2015 & Hướng dẫn KDIGO',
-          title: 'Hiệu chỉnh liều bệnh thận mạn',
-          clause: 'Dược động học & Thanh thải thận'
-        },
+        legalReference: { lawCode: 'Dược Thư Quốc Gia 2015 & Hướng dẫn KDIGO', title: 'Hiệu chỉnh liều bệnh thận mạn', clause: 'Dược động học & Thanh thải thận' },
         card,
         suggestedChips: ['Lập lịch dặn dò cữ thuốc', 'Xem chuyên luận Ciprofloxacin', 'Đối soát ca trực 07:00 AM']
       },
@@ -130,20 +348,100 @@ export async function processGeminiClinicalScenario(
     };
   }
 
-  // 3. Các kịch bản ADR / DDI / Opioid / Thức ăn
-  if (aiAnswer) {
+  // 9. Kịch bản Tra cứu Đơn thuốc Cụ Thể
+  if (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) {
+    const matchedRx = INITIAL_PRESCRIPTIONS.find(rx =>
+      (patient && rx.patientId === patient.id) ||
+      lower.includes(rx.id.toLowerCase()) ||
+      lower.includes(rx.patientName.toLowerCase())
+    );
+    if (matchedRx) {
+      const medLines = matchedRx.items.map(it => `  - **${it.medicationName}**: ${it.quantity} ${it.unit} (${it.dosage}, ${it.route} - ${it.instructions})`).join('\n');
+      const card: AgentActionCard = {
+        cardType: 'cpoe_prescription',
+        title: `Đơn Thuốc: ${matchedRx.id}`,
+        summary: `${matchedRx.patientName} • ${matchedRx.diagnosisText}`,
+        data: { prescriptionId: matchedRx.id, patient: matchedRx.patientName },
+        primaryActionLabel: 'Xem Chi Tiết Đơn Thuốc',
+        primaryActionType: 'NAVIGATE_TAB',
+        targetTab: 'cpoe',
+        status: 'pending'
+      };
+      const replyText = (
+        `### 📋 ĐƠN THUỐC: ${matchedRx.id} - BỆNH NHÂN ${matchedRx.patientName.toUpperCase()}\n\n` +
+        `• **Loại đơn:** ${matchedRx.prescriptionType === 'outpatient' ? 'Đơn ngoại trú xuất viện' : 'Y lệnh điều trị nội trú'}\n` +
+        `• **Chẩn đoán ICD-10:** \`${matchedRx.diagnosisIcd10}\` - ${matchedRx.diagnosisText}\n` +
+        `• **Bác sĩ điều trị:** ${matchedRx.doctorName} (CCHN: ${matchedRx.doctorCertificate})\n` +
+        `• **Thời gian ký số:** ${matchedRx.prescribedAt}\n` +
+        `• **Danh mục thuốc chỉ định:**\n${medLines}`
+      );
+      return {
+        replyMessage: {
+          id: `msg-agent-scenario-${Date.now()}`,
+          sender: 'agent',
+          text: replyText,
+          timestamp: nowStr,
+          legalReference: { lawCode: 'Thông tư 52/2017/TT-BYT & TT 18/2018/TT-BYT', title: 'Quy chế kê đơn thuốc', clause: 'Đơn thuốc điện tử hợp lệ' },
+          card,
+          suggestedChips: ['Lập lịch dặn dò cữ thuốc', 'Xem bảng đối soát 5 đúng', 'Đối soát ca trực 07:00 AM']
+        },
+        card
+      };
+    }
+  }
+
+  // 10. Kịch bản Xử trí Sự Cố Chuỗi Lạnh Vắc xin GSP
+  if (/chuỗi lạnh|vaxigrip|tủ lạnh|vượt ngưỡng|8 độ|9 độ|quarantine|cách ly vắc xin/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'coldchain_monitor',
+      title: 'Giám Sát Chuỗi Lạnh: Tủ Lạnh Vaxigrip T1',
+      summary: 'Dải an toàn 2.0°C - 8.0°C • Phác đồ cách ly bảo toàn vắc xin',
+      data: { targetTab: 'coldchain', batch: 'LOT-VX25-S1' },
+      primaryActionLabel: 'Mở Giám Sát Chuỗi Lạnh',
+      primaryActionType: 'NAVIGATE_TAB',
+      targetTab: 'coldchain',
+      status: 'pending'
+    };
+    const replyText = (
+      `### ❄️ XỬ TRÍ SỰ CỐ NHIỆT ĐỘ CHUỖI LẠNH VẮC XIN (TT 36/2018/TT-BYT GSP)\n\n` +
+      `• **Sản phẩm bảo quản:** Vắc xin cúm Vaxigrip (\`LOT-VX25-S1\`) - Tồn **200 liều** tại Tủ lạnh Dược GSP T1.\n` +
+      `• **Quy chuẩn dải nhiệt:** Tiêu chuẩn bảo quản bắt buộc từ **+2.0°C đến +8.0°C**.\n` +
+      `• **Phác đồ ứng phó sự cố (Nhiệt độ vượt ngưỡng / Mất điện):**\n` +
+      `  1. Kích hoạt bình tích lạnh dự phòng trong buồng tủ, tuyệt đối **không mở cửa tủ lạnh**.\n` +
+      `  2. Chuyển nguồn cấp sang máy phát điện ưu tiên của bệnh viện trong vòng 5 phút.\n` +
+      `  3. **Tạm thời cách ly lô vắc xin (Quarantine):** Dán tem cảnh báo, ngừng cấp phát cho các khoa phòng.\n` +
+      `  4. Xuất dữ liệu Data Logger và tính toán nhiệt độ động học trung bình (MKT) để Hội đồng Dược thẩm định chất lượng.`
+    );
     return {
       replyMessage: {
         id: `msg-agent-scenario-${Date.now()}`,
         sender: 'agent',
-        text: aiAnswer,
+        text: replyText,
         timestamp: nowStr,
-        legalReference: {
-          lawCode: 'Dược Thư 2015, TT 51/2017 & QĐ 5948/BYT',
-          title: 'Hướng dẫn Dược lâm sàng & An toàn điều trị',
-          clause: 'Căn cứ áp dụng'
-        },
-        suggestedChips: ['Dặn dò bệnh nhân uống thuốc', 'Đối soát ca trực 07:00 AM', 'Tra cứu SĐK thuốc']
+        legalReference: { lawCode: 'Thông tư 36/2018/TT-BYT', title: 'Thực hành tốt bảo quản thuốc GSP', clause: 'Mục Bảo quản vắc xin dây chuyền lạnh' },
+        card,
+        suggestedChips: ['Xem biểu đồ chuỗi lạnh', 'Đối soát ca trực 07:00 AM', 'Kiểm tra kho lạnh GSP']
+      },
+      card
+    };
+  }
+
+  // 11. Kịch bản Báo cáo Cảnh giác dược ADR chung
+  if (/adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower)) {
+    const replyText = (
+      `### 🚨 XỬ TRÍ PHẢN ỨNG CÓ HẠI CỦA THUỐC (ADR) & DỰ THẢO BÁO CÁO\n\n` +
+      `• **Phân loại lâm sàng:** Biến cố bất lợi sau dùng thuốc (Nghi ngờ phản vệ theo Thông tư 51/2017/TT-BYT).\n` +
+      `• **Xử trí cấp cứu tức thì:** Ngừng ngay thuốc đang dùng, tiêm bắp Adrenalin 0.5mg (1/2 ống) nếu có tụt huyết áp/khó thở.\n` +
+      `• **Báo cáo Cảnh giác Dược:** Đã lập dự thảo Phiếu báo cáo ADR để gửi Trung tâm DI & ADR Quốc gia.`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Thông tư 51/2017/TT-BYT & QĐ 1088/QĐ-BYT', title: 'Quy trình báo cáo Cảnh giác Dược ADR', clause: 'Mục Báo cáo biến cố có hại' },
+        suggestedChips: ['Phác đồ Adrenalin phản vệ TT 51', 'Lập phiếu báo hỏng', 'Đối soát ca trực 07:00 AM']
       }
     };
   }
