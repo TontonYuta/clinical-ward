@@ -1,6 +1,6 @@
 """
 Bộ điều phối Kịch bản Lâm sàng Chuyên sâu (Scenario Registry & Dispatcher)
-Tập hợp các Scenario Handlers độc lập và quản lý bộ nhớ ngữ cảnh nhiều lượt (AMIE Multi-turn Context).
+Tập hợp các Scenario Handlers độc lập và quản lý bộ nhớ ngữ cảnh nhiều lượt (AMIE Multi-turn Context & Entity State Tracking).
 """
 
 from typing import List, Optional
@@ -8,10 +8,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.patient import PatientProfile
 from app.models.cpoe import CpoePrescription
+from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse
 from app.services.session_context import get_or_create_session
 from app.services.scenarios.context import ClinicalContext
 from app.services.scenarios.base import BaseScenario
+
+# Danh sách Kịch bản Lâm sàng
+from app.services.scenarios.case_medication_deictic_followup import MedicationDeicticFollowupScenario
 from app.services.scenarios.case_ceftriaxone_calcium import CeftriaxoneCalciumScenario
 from app.services.scenarios.case_red_man import RedManScenario
 from app.services.scenarios.case_statin_food import StatinFoodScenario
@@ -21,12 +25,18 @@ from app.services.scenarios.case_anaphylaxis import AnaphylaxisScenario
 from app.services.scenarios.case_allergy_cdss import AllergyCdssScenario
 from app.services.scenarios.case_renal_dosing import RenalDosingScenario
 from app.services.scenarios.case_inventory_check import InventoryCheckScenario
+from app.services.scenarios.case_amiodarone_qt import AmiodaroneQtScenario
+from app.services.scenarios.case_noradrenalin_shock import NoradrenalinShockScenario
+from app.services.scenarios.case_diazepam_seizure import DiazepamSeizureScenario
+from app.services.scenarios.case_salbutamol_asthma import SalbutamolAsthmaScenario
+from app.services.scenarios.case_esomeprazole_ulcer import EsomeprazoleUlcerScenario
+from app.services.scenarios.case_patient_inquiry import PatientInquiryScenario
 from app.services.scenarios.case_prescription_inquiry import PrescriptionInquiryScenario
 from app.services.scenarios.case_coldchain_quarantine import ColdChainQuarantineScenario
 from app.services.scenarios.case_adr import AdrReportingScenario
 
-# Danh sách toàn bộ 12 kịch bản lâm sàng được tách file độc lập
 SCENARIOS: List[BaseScenario] = [
+    MedicationDeicticFollowupScenario(), # Bắt các câu hỏi anaphora "thuốc này", "nó"
     CeftriaxoneCalciumScenario(),
     RedManScenario(),
     StatinFoodScenario(),
@@ -35,6 +45,12 @@ SCENARIOS: List[BaseScenario] = [
     AnaphylaxisScenario(),
     AllergyCdssScenario(),
     RenalDosingScenario(),
+    AmiodaroneQtScenario(),
+    NoradrenalinShockScenario(),
+    DiazepamSeizureScenario(),
+    SalbutamolAsthmaScenario(),
+    EsomeprazoleUlcerScenario(),
+    PatientInquiryScenario(),
     InventoryCheckScenario(),
     PrescriptionInquiryScenario(),
     ColdChainQuarantineScenario(),
@@ -52,12 +68,15 @@ async def dispatch_clinical_scenario(
     # 1. Nạp session và kiểm tra ngữ cảnh đa lượt (AMIE Multi-turn context)
     session = get_or_create_session(session_id, user_name, user_role)
     
-    # 2. Tra cứu danh sách bệnh nhân và đơn thuốc
+    # 2. Tra cứu danh sách bệnh nhân, đơn thuốc và kho dược
     res = await db.execute(select(PatientProfile))
     all_patients = res.scalars().all()
     
     rx_res = await db.execute(select(CpoePrescription))
     all_rxs = rx_res.scalars().all()
+
+    batch_res = await db.execute(select(InventoryBatch))
+    all_batches = batch_res.scalars().all()
     
     # 3. Định danh bệnh nhân trong câu truy vấn (Tránh nhầm 'trí' trong 'xử trí')
     detected_patient = None
@@ -73,12 +92,10 @@ async def dispatch_clinical_scenario(
             detected_patient = p
             break
 
-    # Nếu người dùng đổi bệnh nhân hoặc chỉ định bệnh nhân mới -> Cập nhật session
     is_follow_up = False
     if detected_patient:
         session.set_active_patient(detected_patient.id, detected_patient.full_name)
     else:
-        # Kiểm tra danh sách bệnh nhân có trong đơn thuốc CPOE
         for rx in all_rxs:
             last_word = rx.patient_name.split()[-1].lower()
             if (
@@ -91,7 +108,6 @@ async def dispatch_clinical_scenario(
                 break
 
     if not detected_patient and session.active_patient_id:
-        # Tự động kế thừa bệnh nhân từ câu hỏi trước trong cùng phiên
         for p in all_patients:
             if p.id == session.active_patient_id:
                 detected_patient = p
@@ -100,19 +116,49 @@ async def dispatch_clinical_scenario(
         if not detected_patient:
             is_follow_up = True
 
-    # 4. Khởi tạo ClinicalContext hoàn chỉnh
+    # 4. Ghi nhận thuốc trong câu truy vấn vào Active Medication Slot
+    detected_batch = None
+    for b in all_batches:
+        drug_name_lower = b.item_name.lower()
+        active_ing_lower = (b.active_ingredient or "").lower()
+        # Tìm kiếm theo tên biệt dược hoặc hoạt chất (ít nhất 4 ký tự)
+        if (len(drug_name_lower) >= 4 and drug_name_lower in lower_query) or (
+            len(active_ing_lower) >= 4 and active_ing_lower in lower_query
+        ):
+            detected_batch = b
+            break
+
+    if detected_batch:
+        session.set_active_medication(
+            name=detected_batch.item_name,
+            ingredient=detected_batch.active_ingredient or detected_batch.item_name,
+            batch=detected_batch.batch_number,
+            stock=f"{detected_batch.current_stock} {detected_batch.unit}",
+            location=detected_batch.warehouse_location,
+            sdk=detected_batch.registration_number or detected_batch.national_code
+        )
+
+    # Nhận diện câu hỏi chỉ định tiếp diễn về thuốc ("thuốc này", "nó", "thuốc vừa nói")
+    is_med_follow_up = any(w in lower_query for w in [
+        "thuốc này", "thuốc đó", "nó", "thuốc vừa nói", "thuốc vừa gợi ý",
+        "viên này", "lọ này", "ống này", "thuốc trên", "thuốc đang hỏi"
+    ])
+
+    # 5. Khởi tạo ClinicalContext hoàn chỉnh
     ctx = ClinicalContext(
         query=query,
         lower_query=lower_query,
         user_name=user_name,
         user_role=user_role,
-        session_id=session.session_id,
+        session=session,
         patient=detected_patient,
         all_patients=all_patients,
-        is_follow_up=is_follow_up
+        all_batches=all_batches,
+        is_follow_up=is_follow_up,
+        is_med_follow_up=is_med_follow_up
     )
 
-    # 5. Duyệt qua từng Kịch bản đăng ký để tìm handler phù hợp
+    # 6. Duyệt qua từng Kịch bản đăng ký để tìm handler phù hợp
     for scenario in SCENARIOS:
         if scenario.can_handle(query, lower_query, ctx):
             resp = await scenario.handle(query, lower_query, ctx, db)
@@ -120,6 +166,9 @@ async def dispatch_clinical_scenario(
                 resp.session_id = session.session_id
                 resp.active_patient_id = session.active_patient_id
                 resp.active_patient_name = session.active_patient_name
+                resp.active_medication_name = session.active_medication_name
+                resp.active_medication_stock = session.active_medication_stock
+                resp.active_medication_location = session.active_medication_location
                 session.last_intent = resp.intent
                 return resp
 

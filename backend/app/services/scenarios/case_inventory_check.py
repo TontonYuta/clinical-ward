@@ -37,6 +37,16 @@ class InventoryCheckScenario(BaseScenario):
         if not matched_batch:
             return None
 
+        if ctx.session:
+            ctx.session.set_active_medication(
+                name=matched_batch.item_name,
+                ingredient=matched_batch.active_ingredient or matched_batch.item_name,
+                batch=matched_batch.batch_number,
+                stock=f"{matched_batch.current_stock} {matched_batch.unit}",
+                location=matched_batch.warehouse_location,
+                sdk=matched_batch.registration_number or matched_batch.national_code
+            )
+
         reply = (
             f"### 📦 BÁO CÁO TỒN KHO THỰC TẾ: {matched_batch.item_name}\n\n"
             f"• **Số lượng tồn hiện tại:** **{matched_batch.current_stock} {matched_batch.unit}**\n"

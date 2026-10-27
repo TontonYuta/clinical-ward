@@ -22,6 +22,15 @@ class AnaphylaxisScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        if ctx.session:
+            ctx.session.set_active_medication(
+                name="Hadunalin 1 mg/ml",
+                ingredient="Adrenalin",
+                batch="LOT-AD24-E1",
+                stock="30 Ống",
+                location="Tủ cấp cứu Hồi sức A9 (Ngăn A - TT 51/2017)"
+            )
+
         reply = (
             f"### ⚡ PHÁC ĐỒ CẤP CỨU SỐC PHẢN VỆ BẰNG ADRENALIN (THÔNG TƯ 51/2017/TT-BYT)\n\n"
             f"• **Cơ số cấp cứu tại viện:** Hadunalin 1mg/1ml (`LOT-AD24-E1`) - Hiện tồn **30 ống** tại Tủ cấp cứu Hồi sức A9.\n"

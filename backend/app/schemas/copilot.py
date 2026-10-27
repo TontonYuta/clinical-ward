@@ -25,3 +25,6 @@ class CopilotResponse(BaseModel):
     session_id: str | None = None
     active_patient_id: str | None = None
     active_patient_name: str | None = None
+    active_medication_name: str | None = None
+    active_medication_stock: str | None = None
+    active_medication_location: str | None = None

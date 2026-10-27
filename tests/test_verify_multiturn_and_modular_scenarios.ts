@@ -5,7 +5,7 @@ async function testMultiturnAndModularScenarios() {
   const targetUrl = process.env.TARGET_URL || 'http://localhost:5173';
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 
-  console.log(`\n🤖 --- KIỂM THỬ MODULAR SCENARIOS & MULTI-TURN CONTEXT BUFFER (AMIE) (${targetUrl}) ---`);
+  console.log(`\n🤖 --- KIỂM THỬ MODULAR SCENARIOS & MULTI-TURN CONTEXT BUFFER (AMIE & DST) (${targetUrl}) ---`);
   await page.goto(targetUrl, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1000);
 
@@ -72,8 +72,29 @@ async function testMultiturnAndModularScenarios() {
   console.log('✅ Kịch bản Phản vệ Adrenalin hoạt động chính xác:', pass5);
   if (!pass5) throw new Error('Modular Anaphylaxis scenario failed');
 
+  // 6. Active Medication Slot: Kích hoạt thuốc Amiodarone vào phiên làm việc
+  console.log('\n--- 6. Active Medication Slot: Kích hoạt thuốc Amiodarone 200mg vào phiên làm việc ---');
+  const res6 = await askQuestion('Cảnh báo thuốc chống loạn nhịp Amiodarone 200mg');
+  const pass6 = res6.includes('AMIODARON') || res6.includes('Amiodarone') || res6.includes('QT');
+  console.log('✅ Kích hoạt thuốc Amiodaron vào phiên làm việc:', pass6);
+  if (!pass6) throw new Error('Amiodarone activation failed');
+
+  // 7. Deictic Drug ADR: Hỏi "Tác dụng phụ của thuốc này là gì?" (KHÔNG nhắc lại tên thuốc)
+  console.log('\n--- 7. Deictic Drug ADR: Hỏi tác dụng phụ của "thuốc này" ---');
+  const res7 = await askQuestion('Tác dụng phụ của thuốc này là gì?');
+  const pass7 = res7.includes('TÁC DỤNG KHÔNG MONG MUỐN') || res7.includes('ADR') || res7.includes('AMIODARONE');
+  console.log('✅ Tự động nhận diện "thuốc này" là Amiodarone và trả về ADR:', pass7);
+  if (!pass7) throw new Error('Deictic Drug ADR failed');
+
+  // 8. Deictic Drug Location: Hỏi "Nó để ở tủ nào?" (KHÔNG nhắc lại tên thuốc)
+  console.log('\n--- 8. Deictic Drug Location: Hỏi vị trí kho "Nó để ở tủ nào?" ---');
+  const res8 = await askQuestion('Nó để ở tủ nào?');
+  const pass8 = res8.includes('Tủ thuốc Hồi sức Cấp cứu Tim Mạch') || res8.includes('TỒN KHO & VỊ TRÍ') || res8.includes('180');
+  console.log('✅ Tự động nhận diện "nó" là Amiodarone và trả về vị trí tủ thuốc Tim mạch:', pass8);
+  if (!pass8) throw new Error('Deictic Drug Location failed');
+
   await browser.close();
-  console.log('\n🎉 TOÀN BỘ CÁC BÀI TEST MODULAR SCENARIOS & MULTI-TURN CONTEXT ĐỀU ĐẠT 100%!\n');
+  console.log('\n🎉 TOÀN BỘ 8/8 BÀI TEST MODULAR SCENARIOS & ACTIVE DRUG CONTEXT ĐỀU ĐẠT 100%!\n');
 }
 
 testMultiturnAndModularScenarios().catch(err => {

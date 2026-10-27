@@ -114,7 +114,7 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     is_deep_pharmacology = any(w in lower_query for w in ["thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"])
     has_drug_ask = any(w in lower_query for w in ["thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "thuốc", "về thuốc", "hỏi về thuốc", "biệt dược", "hoạt chất"]) or (matched_med is not None and is_med_info and not is_deep_pharmacology)
     if (has_sdk or has_drug_ask) and not is_deep_pharmacology:
-        return await lookup_drug_authoritative(query, db)
+        return await lookup_drug_authoritative(query, db, session_id=session_id)
 
     # 12. Tư vấn lâm sàng sâu bằng Gemini AI Copilot
     gemini_reply = await ask_backend_gemini_copilot(query, user_role, user_name, db)

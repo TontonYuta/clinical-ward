@@ -23,11 +23,20 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isColdChain = /chuỗi lạnh|vaxigrip|tủ lạnh|vượt ngưỡng|8 độ|9 độ|quarantine|cách ly vắc xin/i.test(lower);
   const isPrescription = (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) && (INITIAL_PATIENTS.some(p => lower.includes(p.fullName.toLowerCase())) || /rx-2026-/i.test(lower));
   const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower);
+  const isAmiodarone = /amiodaron|amiodarone/i.test(lower);
+  const isNoradrenalin = /noradrenalin|norepinephrine/i.test(lower);
+  const isDiazepam = /diazepam|seduxen/i.test(lower);
+  const isSalbutamol = /salbutamol|ventolin/i.test(lower);
+  const isEsomeprazole = /prasocare|esomeprazol/i.test(lower);
+  const isPatientProfile = /kiểm tra bệnh nhân|thông tin bệnh nhân|hồ sơ bệnh nhân/i.test(lower);
+  const isDeictic = /thuốc này|thuốc đó|nó|thuốc vừa nói|thuốc vừa gợi ý|viên này|lọ này|ống này|thuốc trên|thuốc đang hỏi/i.test(lower);
 
   return (
     isCeftriaxoneCalcium || isRedMan || isStatinFood || isHighAlertKcl ||
     isAnaphylaxis || isOpioidCalc || isAllergyAudit || isRenal ||
-    isColdChain || isPrescription || isAdr
+    isColdChain || isPrescription || isAdr ||
+    isAmiodarone || isNoradrenalin || isDiazepam || isSalbutamol || isEsomeprazole ||
+    isPatientProfile || isDeictic
   );
 }
 

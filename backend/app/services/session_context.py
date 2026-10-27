@@ -1,6 +1,6 @@
 """
-Quản lý bộ nhớ ngữ cảnh nhiều lượt (Multi-turn Context Buffer) theo chuẩn Google AMIE.
-Giữ phiên làm việc của bác sĩ/điều dưỡng với active_patient_id, active_prescription_id và lịch sử câu hỏi.
+Quản lý bộ nhớ ngữ cảnh nhiều lượt (Multi-turn Context Buffer & Entity State Tracking) theo chuẩn Google AMIE & SGD.
+Giữ phiên làm việc của nhân viên y tế: active_patient, active_medication, active_prescription và lịch sử câu hỏi.
 """
 
 import time
@@ -11,9 +11,22 @@ class SessionState:
         self.session_id = session_id
         self.user_name = user_name
         self.user_role = user_role
+        
+        # Ngữ cảnh bệnh nhân
         self.active_patient_id: Optional[str] = None
         self.active_patient_name: Optional[str] = None
+        
+        # Ngữ cảnh đơn thuốc
         self.active_prescription_id: Optional[str] = None
+        
+        # Ngữ cảnh thuốc / dược phẩm đang tương tác (Active Medication Slot)
+        self.active_medication_name: Optional[str] = None
+        self.active_medication_ingredient: Optional[str] = None
+        self.active_medication_batch: Optional[str] = None
+        self.active_medication_stock: Optional[str] = None
+        self.active_medication_location: Optional[str] = None
+        self.active_medication_sdk: Optional[str] = None
+        
         self.last_query: Optional[str] = None
         self.last_intent: Optional[str] = None
         self.last_updated: float = time.time()
@@ -33,12 +46,42 @@ class SessionState:
         self.active_patient_name = None
         self.touch()
 
+    def set_active_medication(
+        self,
+        name: str,
+        ingredient: Optional[str] = None,
+        batch: Optional[str] = None,
+        stock: Optional[str] = None,
+        location: Optional[str] = None,
+        sdk: Optional[str] = None
+    ):
+        self.active_medication_name = name
+        self.active_medication_ingredient = ingredient or name
+        self.active_medication_batch = batch
+        self.active_medication_stock = stock
+        self.active_medication_location = location
+        self.active_medication_sdk = sdk
+        self.touch()
+
+    def clear_active_medication(self):
+        self.active_medication_name = None
+        self.active_medication_ingredient = None
+        self.active_medication_batch = None
+        self.active_medication_stock = None
+        self.active_medication_location = None
+        self.active_medication_sdk = None
+        self.touch()
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "session_id": self.session_id,
             "active_patient_id": self.active_patient_id,
             "active_patient_name": self.active_patient_name,
             "active_prescription_id": self.active_prescription_id,
+            "active_medication_name": self.active_medication_name,
+            "active_medication_ingredient": self.active_medication_ingredient,
+            "active_medication_stock": self.active_medication_stock,
+            "active_medication_location": self.active_medication_location,
             "turn_count": self.turn_count
         }
 

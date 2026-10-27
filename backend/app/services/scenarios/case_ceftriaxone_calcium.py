@@ -24,6 +24,15 @@ class CeftriaxoneCalciumScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        if ctx.session:
+            ctx.session.set_active_medication(
+                name="Ceftriaxona Normon 1g",
+                ingredient="Ceftriaxon",
+                batch="LOT-CF24-03B",
+                stock="45 Lọ",
+                location="Kho Dược Nội Trú (Kệ B1 - Tầng 2)"
+            )
+
         reply = (
             f"### ⛔ CẢNH BÁO TƯƠNG KỴ NGUY HIỂM TÍNH MẠNG (QĐ 5948/QĐ-BYT)\n\n"
             f"• **Hoạt chất:** Ceftriaxon (Lô Ceftriaxona Normon 1g - `LOT-CF24-03B`) và Dung dịch Calci / Ringer Lactat (`RX-2026-009`).\n"

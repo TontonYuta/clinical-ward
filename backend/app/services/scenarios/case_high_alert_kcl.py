@@ -24,6 +24,15 @@ class HighAlertKclScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        if ctx.session:
+            ctx.session.set_active_medication(
+                name="Kali clorid 10%",
+                ingredient="Kali clorid",
+                batch="LOT-KC24-08",
+                stock="60 Ống",
+                location="Tủ thuốc Nguy cơ cao High-Alert"
+            )
+
         reply = (
             f"### 🚨 CẢNH BÁO THUỐC NGUY CƠ CAO (HIGH-ALERT): KALI CLORID 10%\n\n"
             f"• **Dữ liệu kho thuốc:** Lô `b-5` - `LOT-KC24-08`, nồng độ 1g/10ml, hiện tồn **60 ống** tại Tủ thuốc Nguy cơ cao (Dán nhãn đỏ High-Alert).\n"

@@ -39,7 +39,7 @@ def extract_drug_keywords(query: str) -> str:
     words = [w.strip() for w in q_lower.split() if len(w.strip()) >= 2]
     return " ".join(words).strip()
 
-async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResponse:
+async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: str | None = None) -> CopilotResponse:
     kw = extract_drug_keywords(query)
     if not kw or len(kw) < 2:
         guide_text = (
@@ -174,8 +174,25 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
         primary_action_type="OPEN_MEDICATION_SAFETY"
     )
 
+    from app.services.session_context import get_or_create_session
+    session = get_or_create_session(session_id)
+    batch_loc = batches[0].warehouse_location if batches else "Kho Dược Quốc Gia"
+    batch_no = batches[0].batch_number if batches else matched.national_code
+    session.set_active_medication(
+        name=matched.brand_name,
+        ingredient=matched.active_ingredient,
+        batch=batch_no,
+        stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho",
+        location=batch_loc,
+        sdk=matched.national_code
+    )
+
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE", reply_text=details, card=card,
         legal_basis="Cục Quản lý Dược (DAV) & Dược Thư Quốc Gia Việt Nam",
-        suggested_chips=["Kiểm tra hạn dùng FEFO", "Lập dự trù bù thuốc Mẫu 01", "Xem quy tắc 5 đúng"]
+        suggested_chips=["Kiểm tra hạn dùng FEFO", "Lập dự trù bù thuốc Mẫu 01", "Xem quy tắc 5 đúng"],
+        session_id=session.session_id,
+        active_medication_name=session.active_medication_name,
+        active_medication_stock=session.active_medication_stock,
+        active_medication_location=session.active_medication_location
     )

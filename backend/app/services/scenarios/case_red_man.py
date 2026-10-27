@@ -24,6 +24,15 @@ class RedManScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        if ctx.session:
+            ctx.session.set_active_medication(
+                name="VANCOMYCIN 1g",
+                ingredient="Vancomycin",
+                batch="LOT-VC25-V1",
+                stock="180 Lọ",
+                location="Kho Dược Nội Trú (Kệ B2 - Tầng 2)"
+            )
+
         reply = (
             f"### ⚠️ XỬ TRÍ HỘI CHỨNG RED MAN DO VANCOMYCIN (DƯỢC THƯ TRANG 1455)\n\n"
             f"• **Đơn thuốc liên quan:** `RX-2026-011` - Bệnh nhân **Nguyễn Quốc Bảo** (Nhiễm tụ cầu vàng MRSA).\n"
