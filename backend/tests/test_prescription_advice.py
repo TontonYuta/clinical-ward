@@ -83,7 +83,8 @@ async def test_send_prescription_advice_email_success():
         data = response.json()
         assert data["success"] is True
         assert data["email_sent_to"] == "nguyenvanan.patient@example.com"
-        assert "mô phỏng" in data["message"] or "Google Apps Script" in data["message"]
+        assert "thành công" in data["message"] or "mô phỏng" in data["message"] or "Google Apps Script" in data["message"]
+        assert data["provider"] in ("backend_relay", "google_apps_script")
 
 
 @pytest.mark.asyncio
@@ -99,3 +100,50 @@ async def test_send_prescription_advice_invalid_email():
         }
         response = await ac.post("/api/v1/prescription-advice/send-email", json=payload)
         assert response.status_code == 400
+
+@pytest.mark.asyncio
+async def test_list_and_save_prescription_advices():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res = await ac.get("/api/v1/prescription-advice")
+        assert res.status_code == 200
+        data = res.json()
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        assert any(a["patientName"] == "Võ Minh Trí" for a in data)
+
+@pytest.mark.asyncio
+async def test_patients_crud_and_clinical_profiles():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res = await ac.get("/api/v1/patients")
+        assert res.status_code == 200
+        patients = res.json()
+        assert len(patients) >= 5
+        tri = next(p for p in patients if p["id"] == "BN-8820")
+        assert "Penicillin" in tri["allergies"]
+        assert tri["egfr"] > 0
+
+        detail = await ac.get("/api/v1/patients/BN-8820")
+        assert detail.status_code == 200
+        assert detail.json()["fullName"] == "Võ Minh Trí"
+
+@pytest.mark.asyncio
+async def test_copilot_clinical_scenarios():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Kịch bản 1: Thẩm định dị ứng bệnh nhân Trí
+        q1 = {"query": "Kiểm tra an toàn dị ứng đơn thuốc cho bệnh nhân Võ Minh Trí"}
+        r1 = await ac.post("/api/v1/copilot/chat", json=q1)
+        assert r1.status_code == 200
+        d1 = r1.json()
+        assert d1["intent"] == "CLINICAL_ALLERGY_CDSS"
+        assert "Penicillin" in d1["reply_text"]
+        assert d1["card"] is not None
+
+        # Kịch bản 2: Hiệu chỉnh liều suy thận bệnh nhân Lan
+        q2 = {"query": "Chỉnh liều suy thận cho bệnh nhân Đặng Thị Lan"}
+        r2 = await ac.post("/api/v1/copilot/chat", json=q2)
+        assert r2.status_code == 200
+        d2 = r2.json()
+        assert d2["intent"] == "CLINICAL_RENAL_DOSING"

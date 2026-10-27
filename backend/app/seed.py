@@ -9,6 +9,7 @@ from app.models.inventory import InventoryBatch
 from app.models.coldchain import ColdChainCurrentState, ColdChainTelemetry
 from app.models.asset import AssetRecord
 from app.models.audit import AuditRecord
+from app.models.patient import PatientProfile, PrescriptionAdviceRecord
 from app.seed_registry import seed_dav_registry_if_needed
 
 USERS_DATA = [
@@ -47,6 +48,7 @@ USERS_DATA = [
 from app.seed_debts_data import DEBTS_DATA
 from app.seed_equipment_data import EQUIPMENT_DATA
 from app.seed_inventory_data import INVENTORY_DATA
+from app.seed_patients_data import PATIENTS_DATA, INITIAL_ADVICES_DATA
 
 ASSETS_DATA = [
     {"id": "ast-1", "code": "TS-2026-001", "device_name": "Máy thở Puritan Bennett 840 (PB840)", "model": "PB840 Ventilator - Medtronic", "serial_number": "PB840-VN-2021-998", "risk_class": "D", "registered_department": "Khoa Cấp Cứu A9", "actual_department": "Phòng Mổ 2 (Khu Phẫu Thuật)", "is_misallocated": True, "depreciation_rate_percent": 40, "operating_years": 4, "pending_liquidation": False, "last_scanned_at": "08:30 AM - Kiểm kê buồng mổ"},
@@ -86,6 +88,8 @@ async def seed():
         await conn.execute(ColdChainTelemetry.__table__.delete())
         await conn.execute(AssetRecord.__table__.delete())
         await conn.execute(AuditRecord.__table__.delete())
+        await conn.execute(PatientProfile.__table__.delete())
+        await conn.execute(PrescriptionAdviceRecord.__table__.delete())
 
     async with AsyncSessionLocal() as session:
         # 1. Users
@@ -128,6 +132,14 @@ async def seed():
         # 7. Audit records
         for aud in AUDIT_DATA:
             session.add(AuditRecord(**aud))
+
+        # 8. Patients
+        for p in PATIENTS_DATA:
+            session.add(PatientProfile(**p))
+
+        # 9. Initial Prescription Advice
+        for a in INITIAL_ADVICES_DATA:
+            session.add(PrescriptionAdviceRecord(**a))
 
         await session.commit()
         seed_dav_registry_if_needed()

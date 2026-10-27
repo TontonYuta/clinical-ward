@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Dịch Vụ Dặn Dò Bác Sĩ & Gửi Email Nhắc Uống Thuốc qua Google Apps Script (<=200 LOC)
+ * Dịch Vụ Dặn Dò Bác Sĩ & Lưu Trữ Đơn Thuốc Bệnh Nhân (<=180 LOC)
  */
 
 import {
@@ -10,8 +10,12 @@ import {
   MedicationTimeSlot
 } from '../types/medicationSchedule';
 import { API_BASE_URL } from './api';
+import { generateMedicationHtmlEmail } from './prescriptionHtmlGenerator';
+
+export { generateMedicationHtmlEmail };
 
 const STORAGE_KEY_GAS_URL = 'clinical_gas_reminder_webhook_url';
+const STORAGE_KEY_SAVED_ADVICES = 'clinical_saved_advices_v1';
 
 export function getStoredGasWebhookUrl(): string {
   try {
@@ -36,7 +40,7 @@ export function buildDefaultTimeSlots(frequency: string = ''): MedicationTimeSlo
       { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
     ];
   }
-  if (norm.includes('1 lần') || norm.includes('sáng') && !norm.includes('tối')) {
+  if (norm.includes('1 lần') || (norm.includes('sáng') && !norm.includes('tối'))) {
     return [
       { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
     ];
@@ -46,11 +50,54 @@ export function buildDefaultTimeSlots(frequency: string = ''): MedicationTimeSlo
       { id: 'evening', label: 'Tối', time: '21:00', dosageText: '1 viên', mealRelation: 'Trước khi ngủ 30 phút' },
     ];
   }
-  // Mặc định ngày 2 lần: Sáng & Tối
   return [
     { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
     { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
   ];
+}
+
+export function saveAdviceLocally(advice: PatientPrescriptionAdvice): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SAVED_ADVICES);
+    const list: PatientPrescriptionAdvice[] = raw ? JSON.parse(raw) : [];
+    const idx = list.findIndex(a => a.id === advice.id);
+    if (idx >= 0) list[idx] = advice;
+    else list.unshift(advice);
+    localStorage.setItem(STORAGE_KEY_SAVED_ADVICES, JSON.stringify(list));
+  } catch {}
+}
+
+export async function savePrescriptionAdviceToDb(advice: PatientPrescriptionAdvice): Promise<boolean> {
+  saveAdviceLocally(advice);
+  try {
+    const res = await fetch(`${API_BASE_URL}/prescription-advice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(advice)
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchSavedPrescriptionAdvices(): Promise<PatientPrescriptionAdvice[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/prescription-advice`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        localStorage.setItem(STORAGE_KEY_SAVED_ADVICES, JSON.stringify(data));
+        return data;
+      }
+    }
+  } catch {}
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SAVED_ADVICES);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
 }
 
 export async function sendMedicationAdviceEmail(
@@ -62,6 +109,9 @@ export async function sendMedicationAdviceEmail(
     gasWebhookUrl: webhookUrl || undefined
   };
 
+  // Lưu lịch dặn dò vào CSDL vĩnh viễn
+  savePrescriptionAdviceToDb(advice);
+
   try {
     const res = await fetch(`${API_BASE_URL}/prescription-advice/send-email`, {
       method: 'POST',
@@ -69,25 +119,28 @@ export async function sendMedicationAdviceEmail(
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      saveAdviceLocally({ ...advice, notificationStatus: 'success', emailSentAt: data.timestamp });
+      return data;
     }
   } catch (err) {
     console.warn('Backend relay unavailable, trying direct GAS webhook or fallback:', err);
   }
 
-  // Nếu người dùng có Webhook URL của Google Apps Script trực tiếp:
   if (webhookUrl && webhookUrl.startsWith('http')) {
     try {
       await fetch(webhookUrl, {
         method: 'POST',
-        mode: 'no-cors', // Google Apps Script Web App chuyển hướng 302
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ advice: payload })
       });
+      const sentTime = new Date().toISOString();
+      saveAdviceLocally({ ...advice, notificationStatus: 'success', emailSentAt: sentTime });
       return {
         success: true,
         message: `Đã gửi thông báo nhắc uống thuốc thành công qua Google Apps Script tới: ${advice.patientEmail}`,
-        timestamp: new Date().toISOString(),
+        timestamp: sentTime,
         emailSentTo: advice.patientEmail,
         provider: 'google_apps_script'
       };
@@ -96,11 +149,12 @@ export async function sendMedicationAdviceEmail(
     }
   }
 
-  // Chế độ mô phỏng y tế ngoại tuyến (Offline preview mode)
+  const simTime = new Date().toISOString();
+  saveAdviceLocally({ ...advice, notificationStatus: 'success', emailSentAt: simTime });
   return {
     success: true,
     message: `Đã kích hoạt lịch dặn dò và gửi email mô phỏng thành công tới: ${advice.patientEmail}`,
-    timestamp: new Date().toISOString(),
+    timestamp: simTime,
     emailSentTo: advice.patientEmail,
     provider: 'local_preview'
   };
@@ -130,57 +184,4 @@ export function printMedicationAdvice(advice: PatientPrescriptionAdvice): void {
       frame.contentWindow?.print();
     }, 200);
   }
-}
-
-export function generateMedicationHtmlEmail(advice: PatientPrescriptionAdvice, forPrint = false): string {
-  const rows = advice.medications.map((m, idx) => {
-    const slot = (k: string) => {
-      const s = m.timeSlots.find(sl => sl.id === k || sl.label.toLowerCase().includes(k));
-      return s ? `<strong>${s.dosageText}</strong><br/><span style="font-size:11px;color:#475569;">${s.mealRelation || ''}</span>` : '—';
-    };
-    return `
-      <tr style="border-bottom:1px solid #e2e8f0;background-color:${idx % 2 === 1 ? '#f8fafc' : '#ffffff'};">
-        <td style="padding:8px 10px;font-weight:600;color:#0f172a;">${m.medicationName}</td>
-        <td style="padding:8px 6px;text-align:center;">${slot('morning')}</td>
-        <td style="padding:8px 6px;text-align:center;">${slot('noon')}</td>
-        <td style="padding:8px 6px;text-align:center;">${slot('afternoon')}</td>
-        <td style="padding:8px 6px;text-align:center;">${slot('evening')}</td>
-      </tr>
-    `;
-  }).join('');
-
-  return `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;max-width:680px;margin:0 auto;background:#fff;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;color:#0f172a;line-height:1.4;">
-      <div style="border-bottom:2px solid #0f172a;padding:14px 18px;text-align:center;background:#f8fafc;">
-        <h2 style="margin:0;font-size:16px;letter-spacing:0.3px;color:#0f172a;">PHIẾU DẶN DÒ UỐNG THUỐC HÀNG NGÀY</h2>
-        <p style="margin:3px 0 0;font-size:12px;color:#475569;">${advice.doctorHospital || 'Bệnh Viện Lâm Sàng'} • Bác sĩ: ${advice.doctorName}</p>
-      </div>
-      <div style="padding:16px 18px;">
-        <div style="margin-bottom:12px;font-size:12px;border-bottom:1px dashed #cbd5e1;padding-bottom:10px;">
-          <div><strong>Người bệnh:</strong> ${advice.patientName} ${advice.patientEmail ? `(${advice.patientEmail})` : ''} • <strong>Chẩn đoán:</strong> ${advice.diagnosis || 'Điều trị ngoại trú'}</div>
-          <div style="color:#475569;margin-top:2px;">Thời gian uống: ${advice.startDate} đến ${advice.endDate}</div>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #cbd5e1;margin-bottom:14px;">
-          <thead>
-            <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;color:#0f172a;font-weight:700;">
-              <th style="padding:8px 10px;text-align:left;width:32%;">Thuốc & Hàm lượng</th>
-              <th style="padding:8px 6px;width:17%;text-align:center;">Sáng (07:00)</th>
-              <th style="padding:8px 6px;width:17%;text-align:center;">Trưa (11:30)</th>
-              <th style="padding:8px 6px;width:17%;text-align:center;">Chiều (18:00)</th>
-              <th style="padding:8px 6px;width:17%;text-align:center;">Tối (20:00)</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        ${advice.generalDoctorAdvice ? `
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;">
-          <strong style="color:#0f172a;">Lời dặn của bác sĩ:</strong>
-          <div style="color:#334155;margin-top:2px;white-space:pre-line;">${advice.generalDoctorAdvice}</div>
-        </div>` : ''}
-        <div style="font-size:11px;color:#64748b;text-align:center;border-top:1px solid #f1f5f9;padding-top:10px;">
-          ${forPrint ? 'Quý người bệnh vui lòng mang theo phiếu này khi tái khám.' : 'Thông báo tự động từ Hệ thống Đơn thuốc Điện tử & Quản lý Dược Lâm sàng.'}
-        </div>
-      </div>
-    </div>
-  `;
 }

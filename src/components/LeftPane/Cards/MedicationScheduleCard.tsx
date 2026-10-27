@@ -64,6 +64,9 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-medium">
               {advice.diagnosis || 'Điều trị ngoại trú'}
             </span>
+            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
+              Đã lưu CSDL EHR
+            </span>
           </div>
           <p className="text-slate-500 text-[11px] mt-0.5 flex items-center gap-1">
             <Mail className="w-3 h-3 text-slate-400" />

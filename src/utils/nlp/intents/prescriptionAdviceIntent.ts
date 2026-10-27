@@ -8,18 +8,16 @@ import { AgentActionCard, ChatMessage } from '../../../types/clinical';
 import { anyKeyword, ProcessedQueryResult } from '../types';
 import { findMatchedMed } from '../entityCatalog';
 import { PatientPrescriptionAdvice, ScheduledMedication, MedicationTimeSlot } from '../../../types/medicationSchedule';
-import { buildDefaultTimeSlots, getStoredGasWebhookUrl } from '../../../services/prescriptionAdviceService';
+import { buildDefaultTimeSlots, getStoredGasWebhookUrl, saveAdviceLocally, savePrescriptionAdviceToDb } from '../../../services/prescriptionAdviceService';
+import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../services/patientService';
 
 export function matchPrescriptionAdviceIntent(lower: string): boolean {
   const trimmed = lower.trim();
-  if (['gửi mail', 'gửi gmail', 'gửi email', 'gmail', 'email', 'xem email', 'in phiếu dặn dò'].includes(trimmed)) {
-    return true;
-  }
+  if (['gửi mail', 'gửi gmail', 'gửi email', 'gmail', 'email', 'xem email', 'in phiếu dặn dò'].includes(trimmed)) return true;
   const hasDirect = anyKeyword(lower, [
-    'dặn dò', 'dặn bệnh nhân', 'dặn uống', 'nhắc uống', 'nhắc thuốc',
-    'lịch uống', 'lên lịch nhắc', 'lên lịch uống', 'uống thuốc hàng ngày', 'thông báo uống',
-    'gửi mail cho bệnh nhân', 'gửi email cho bệnh nhân', 'gửi gmail', 'thông báo qua mail',
-    'dặn dò đơn thuốc', 'lịch nhắc thuốc', 'nhắc nhở uống thuốc'
+    'dặn dò', 'dặn bệnh nhân', 'dặn uống', 'nhắc uống', 'nhắc thuốc', 'lịch uống', 'lên lịch nhắc',
+    'uống thuốc hàng ngày', 'thông báo uống', 'gửi mail cho bệnh nhân', 'gửi email cho bệnh nhân',
+    'gửi gmail', 'thông báo qua mail', 'dặn dò đơn thuốc', 'lịch nhắc thuốc', 'nhắc nhở uống thuốc'
   ]);
   if (hasDirect) return true;
   return anyKeyword(lower, ['thông báo', 'nhắc', 'dặn', 'gửi', 'báo']) &&
@@ -31,25 +29,17 @@ export function handlePrescriptionAdviceIntent(
   lower: string,
   nowStr: string
 ): ProcessedQueryResult {
-  // 1. Trích xuất Tên bệnh nhân
-  let patientName = 'Nguyễn Văn An';
+  // 1. Tra cứu Bệnh nhân từ CSDL Hồ sơ Bệnh án
+  const matchedPatient = findPatientByNameOrQuery(lower, INITIAL_PATIENTS);
+  let patientName = matchedPatient ? `${matchedPatient.fullName} (${matchedPatient.id})` : 'Nguyễn Văn An (BN-7701)';
   const nameMatch = text.match(/(?:bệnh nhân|cho|dặn dò|nhắc)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})/u);
   if (nameMatch) {
     patientName = nameMatch[1].trim();
-  } else if (lower.includes('trí') || lower.includes('8820')) {
-    patientName = 'Võ Minh Trí (BN-8820)';
-  } else if (lower.includes('mai')) {
-    patientName = 'Trần Thị Mai';
   }
 
-  // 2. Trích xuất Email bệnh nhân (nếu có)
+  // 2. Trích xuất Email bệnh nhân
   const emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  let patientEmail = emailMatch ? emailMatch[1] : '';
-  if (!patientEmail) {
-    if (patientName.includes('Trí')) patientEmail = 'tri.vm@hospital.vn';
-    else if (patientName.includes('Mai')) patientEmail = 'mai.tt@hospital.vn';
-    else patientEmail = 'an.nv@gmail.com';
-  }
+  const patientEmail = emailMatch ? emailMatch[1] : (matchedPatient?.email || 'tri.vm@hospital.vn');
 
   // 3. Trích xuất các mốc giờ uống thuốc (nếu người dùng chỉ định)
   const timeMatches = text.match(/(\d{1,2})\s*(?:h|giờ|g)/gi);
@@ -58,20 +48,8 @@ export function handlePrescriptionAdviceIntent(
     const t1 = parseInt(timeMatches[0], 10);
     const t2 = parseInt(timeMatches[1], 10);
     customSlots = [
-      {
-        id: 'morning',
-        label: 'Sáng',
-        time: `${t1.toString().padStart(2, '0')}:00`,
-        dosageText: '1 viên',
-        mealRelation: 'Sau khi ăn 15-30 phút'
-      },
-      {
-        id: 'evening',
-        label: 'Tối',
-        time: `${t2.toString().padStart(2, '0')}:00`,
-        dosageText: '1 viên',
-        mealRelation: 'Sau khi ăn 15-30 phút'
-      }
+      { id: 'morning', label: 'Sáng', time: `${t1.toString().padStart(2, '0')}:00`, dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
+      { id: 'evening', label: 'Tối', time: `${t2.toString().padStart(2, '0')}:00`, dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' }
     ];
   }
 
@@ -143,10 +121,10 @@ export function handlePrescriptionAdviceIntent(
     prescriptionId: 'RX-2026-OUTPATIENT',
     patientName,
     patientEmail,
-    diagnosis: 'Nhiễm khuẩn hô hấp trên & Điều trị ngoại trú',
+    diagnosis: matchedPatient?.chronicConditions ? `${matchedPatient.chronicConditions} (eGFR: ${matchedPatient.egfr})` : 'Điều trị ngoại trú & Dặn dò dùng thuốc',
     doctorName: 'BS.CKII Trần Văn Hùng',
     doctorHospital: 'Bệnh Viện Đa Khoa Lâm Sàng',
-    department: 'Khoa Khám Bệnh',
+    department: matchedPatient?.room || 'Khoa Khám Bệnh',
     createdAt: new Date().toISOString(),
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
@@ -155,6 +133,9 @@ export function handlePrescriptionAdviceIntent(
     notificationStatus: 'idle',
     gasWebhookUrl: getStoredGasWebhookUrl()
   };
+
+  saveAdviceLocally(advice);
+  savePrescriptionAdviceToDb(advice);
 
   const hoursNote = customSlots ? `lúc **${customSlots[0].time}** và **${customSlots[1].time}**` : 'hàng ngày theo cữ Sáng - Tối';
   const replyText = `### 📋 ĐÃ THIẾT LẬP LỊCH DẶN DÒ UỐNG THUỐC CHO BỆNH NHÂN\n\n` +

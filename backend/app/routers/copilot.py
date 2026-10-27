@@ -25,6 +25,7 @@ from app.services.copilot_intents_prescription import (
     handle_cpoe_intent,
     handle_debt_settle_intent
 )
+from app.services.copilot_gemini_scenarios import detect_and_handle_gemini_clinical_scenario
 
 router = APIRouter(prefix="/copilot", tags=["Trợ Lý Agent Lâm Sàng Thông Minh"])
 
@@ -51,6 +52,11 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     is_debt_settle = any(w in lower_query for w in ["trả vỏ", "hoàn trả vỏ", "thu hồi vỏ", "thanh toán nợ", "thanh toán sổ nợ", "trả nợ thuốc", "xóa nợ thuốc", "đối soát vỏ morphin", "xác nhận trả vỏ"]) and not any(w in lower_query for w in ["quy định", "thông tư", "nghị định"])
     if is_debt_settle:
         return await handle_debt_settle_intent(query, lower_query, db)
+
+    # 0d. 8 Kịch Bản Lâm Sàng Chuyên Sâu Gemini AI & Hồ Sơ Bệnh Nhân
+    scenario_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db)
+    if scenario_res:
+        return scenario_res
 
     # 1. Tra cứu Bản đồ 10 Đại Nghiệp vụ Bệnh viện
     if any(w in lower_query for w in ["nghiệp vụ", "các nghiệp vụ", "quy trình lâm sàng", "tính năng", "bạn làm được gì", "hướng dẫn hệ thống", "chức năng", "menu"]):

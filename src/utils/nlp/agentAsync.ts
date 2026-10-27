@@ -7,6 +7,7 @@
 import { ActionPayload, ChatMessage, UserProfile, AgentActionCard } from '../../types/clinical';
 import { chatCopilotApi } from '../../services/api';
 import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/geminiService';
+import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../services/gemini/clinicalScenarios';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
 
@@ -26,8 +27,10 @@ export async function processClinicalAgentQueryAsync(
     coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
   });
 
-  // Nếu câu lệnh tạo thẻ tương tác (Action Card) hoặc hành động dữ liệu -> Phản hồi ngay (0ms, 0 tokens)
-  if (localResult.replyMessage?.card || localResult.actionPayload) {
+  const lower = rawInput.toLowerCase();
+  // Nếu câu lệnh tạo thẻ tương tác (Action Card) -> Phản hồi ngay (0ms, 0 tokens)
+  // Ngoại trừ kịch bản lâm sàng chuyên sâu (Allergy, Renal, ADR...) cần AI phân tích
+  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower)) {
     return localResult;
   }
 
@@ -49,9 +52,9 @@ export async function processClinicalAgentQueryAsync(
           targetTab: backendData.card.target_tab as any,
           status: 'pending'
         };
-        if (card.targetTab) {
+        if (card.targetTab && (card.cardType === 'borrow_confirm' || card.cardType === 'incident_confirm')) {
           actionPayload = {
-            type: card.cardType === 'borrow_confirm' ? 'DEBT_ADDED' : card.cardType === 'incident_confirm' ? 'TICKET_CREATED' : 'FEFO_DISPATCHED',
+            type: card.cardType === 'borrow_confirm' ? 'DEBT_ADDED' : 'TICKET_CREATED',
             targetTab: card.targetTab
           };
         }
@@ -76,7 +79,16 @@ export async function processClinicalAgentQueryAsync(
     }
   } catch {}
 
-  // 3. Với các câu hỏi lâm sàng tự do, dược lý khi backend offline: Sử dụng Gemini Flash-Lite tối ưu chi phí
+  // 3. Xử lý 8 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & Hồ Sơ Bệnh Nhân (Allergy, Renal, ADR...)
+  const scenarioResult = await processGeminiClinicalScenario(
+    rawInput,
+    new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  );
+  if (scenarioResult) {
+    return scenarioResult;
+  }
+
+  // 4. Với các câu hỏi lâm sàng tự do, dược lý: Sử dụng Gemini Flash-Lite tối ưu chi phí
   if (isCloudAIAvailable()) {
     try {
       const geminiAnswer = await askGeminiClinicalCopilot(rawInput, {
