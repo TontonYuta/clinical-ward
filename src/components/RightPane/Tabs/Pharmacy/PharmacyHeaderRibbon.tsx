@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Search, Database } from 'lucide-react';
+import { PHARMACOLOGICAL_GROUPS, PharmacologicalGroupKey } from '../../../../utils/clinical/pharmacologicalClassification';
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
 export type CommodityFilter = 'all' | 'medication' | 'medical_supply';
@@ -18,6 +19,8 @@ interface PharmacyHeaderRibbonProps {
   setCommodity: (c: CommodityFilter) => void;
   status: StatusFilter;
   setStatus: (s: StatusFilter) => void;
+  pharmacologicalGroup: PharmacologicalGroupKey;
+  setPharmacologicalGroup: (g: PharmacologicalGroupKey) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   totalCount: number;
@@ -30,6 +33,7 @@ interface PharmacyHeaderRibbonProps {
 
 export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
   warehouse, setWarehouse, commodity, setCommodity, status, setStatus,
+  pharmacologicalGroup, setPharmacologicalGroup,
   searchQuery, setSearchQuery, totalCount, nearExpiryCount, lowStockCount, onOpenRestock,
   onOpenNationalRegistry,
 }) => {
@@ -101,6 +105,24 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
             <button onClick={() => setStatus('all')} className={`px-2 py-1 rounded cursor-pointer ${status === 'all' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600'}`}>Tất cả ({totalCount})</button>
             <button onClick={() => setStatus('near_expiry')} className={`px-2 py-1 rounded cursor-pointer ${status === 'near_expiry' ? 'bg-rose-700 text-white font-bold shadow-2xs' : 'text-slate-600'}`}>Cận hạn ({nearExpiryCount})</button>
             <button onClick={() => setStatus('low_stock')} className={`px-2 py-1 rounded cursor-pointer ${status === 'low_stock' ? 'bg-amber-700 text-white font-bold shadow-2xs' : 'text-slate-600'}`}>Dưới min ({lowStockCount})</button>
+          </div>
+
+          {/* Phân loại Tác dụng Trị liệu / Dược lý */}
+          <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md border border-slate-200/60 font-medium">
+            <span className="text-slate-500 font-semibold text-[11px] whitespace-nowrap">Dược lý:</span>
+            <select
+              value={pharmacologicalGroup}
+              onChange={(e) => setPharmacologicalGroup(e.target.value as PharmacologicalGroupKey)}
+              data-testid="pharmacological-class-select"
+              className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[170px] truncate"
+            >
+              <option value="all">Tất cả nhóm dược lý</option>
+              {PHARMACOLOGICAL_GROUPS.map((g) => (
+                <option key={g.key} value={g.key}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

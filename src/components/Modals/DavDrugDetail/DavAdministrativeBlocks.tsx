@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { resolvePharmacologicalGroup } from '../../../utils/clinical/pharmacologicalClassification';
 
 export interface DavAdministrativeData {
   dosageForm?: string;
@@ -14,6 +15,10 @@ export interface DavAdministrativeData {
   shelfLife?: string;
   route?: string;
   category?: string;
+  pharmacologicalClass?: string;
+  atcCode?: string;
+  itemName?: string;
+  activeIngredient?: string;
   isControlledSubstance?: boolean;
   manufacturer?: string;
   country?: string;
@@ -27,6 +32,11 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
   const standard = data.standardPharmacopeia || 'DĐVN V / NSX';
   const shelfLife = data.shelfLife || '36 tháng';
   const packaging = data.packagingSpec || 'Theo tiêu chuẩn cơ sở của nhà sản xuất';
+  const pharmGroup = resolvePharmacologicalGroup(
+    data.atcCode,
+    `${data.itemName || ''} ${data.activeIngredient || ''}`,
+    data.pharmacologicalClass || data.category
+  );
 
   return (
     <div className="space-y-3 text-xs sm:text-sm text-slate-800">
@@ -53,12 +63,19 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
           </div>
 
           <div>
-            <span className="text-2xs uppercase font-bold text-slate-500 block mb-0.5">Phân loại quản lý</span>
+            <span className="text-2xs uppercase font-bold text-slate-500 block mb-0.5">Nhóm Dược Lý & Quản Lý</span>
             <div className="font-semibold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 flex-wrap">
-              <span>{data.category || 'Thuốc điều trị chuyên khoa'}</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-bold border ${pharmGroup.badgeClass}`}>
+                {pharmGroup.label}
+              </span>
+              {data.atcCode && (
+                <span className="text-2xs font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                  ATC: {data.atcCode}
+                </span>
+              )}
               {data.isControlledSubstance && (
                 <span className="px-1.5 py-0.2 rounded text-2xs font-bold bg-red-50 text-red-700 border border-red-200">
-                  Kiểm soát đặc biệt
+                  KSĐB
                 </span>
               )}
             </div>

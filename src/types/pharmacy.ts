@@ -28,21 +28,29 @@ export interface DebtRecord {
   ampouleDestroyed?: boolean;
 }
 
+export type PharmacologicalClass =
+  | 'Hạ sốt - Giảm đau'
+  | 'Trợ tim & Vận mạch cấp cứu'
+  | 'Thuốc lợi tiểu'
+  | 'Thuốc hạ huyết áp'
+  | 'Chống loạn nhịp tim'
+  | 'Kháng sinh'
+  | 'Giảm đau Opioid'
+  | 'An thần & Chống co giật'
+  | 'Giãn phế quản & Hô hấp'
+  | 'Giảm tiết acid dạ dày'
+  | 'Hạ đường huyết'
+  | 'Hạ lipid máu'
+  | 'Dịch truyền & Bồi phụ điện giải'
+  | 'Vắc xin & Miễn dịch'
+  | 'Vật tư y tế & Tiêu hao';
+
 export interface InventoryBatch {
   id: string;
   itemCode: string;
   itemName: string;
-  category:
-    | 'Thuốc gây nghiện'
-    | 'Kháng sinh'
-    | 'Dịch truyền & Cấp cứu'
-    | 'Chỉ phẫu thuật & Khâu'
-    | 'Vật tư tiêu hao'
-    | 'Thuốc cấp cứu'
-    | 'Vắc xin & Chuỗi lạnh'
-    | 'Thuốc điều trị chuyên khoa'
-    | 'Thuốc nguy cơ cao'
-    | 'Thuốc hướng thần';
+  category: PharmacologicalClass | string;
+  pharmacologicalClass?: PharmacologicalClass | string;
   commodityType?: 'medication' | 'medical_supply'; // Bóc tách Thuốc vs Vật tư y tế
   warehouseType?: WarehouseType;
   batchNumber: string; // Số lô

@@ -19,6 +19,7 @@ import {
 } from './Pharmacy/PharmacyHeaderRibbon';
 import { PharmacyBatchRow } from './Pharmacy/PharmacyBatchRow';
 import { PharmacyBatchCard } from './Pharmacy/PharmacyBatchCard';
+import { resolvePharmacologicalGroup, PharmacologicalGroupKey } from '../../../utils/clinical/pharmacologicalClassification';
 
 interface FefoInventoryTabProps {
   batches: InventoryBatch[];
@@ -35,6 +36,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   const [warehouse, setWarehouse] = useState<WarehouseFilter>('all');
   const [commodity, setCommodity] = useState<CommodityFilter>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
+  const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [isRegistryModalOpen, setIsRegistryModalOpen] = useState(false);
@@ -59,7 +61,17 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       if (status === 'near_expiry' && !batch.isNearExpiry) return false;
       if (status === 'low_stock' && !(batch.isLowStock || batch.currentStock <= batch.minThreshold)) return false;
 
-      // 4. Tìm kiếm từ khóa hành chính
+      // 4. Phân nhóm tác dụng dược lý lâm sàng (ATC WHO & DTQG)
+      if (pharmGroup !== 'all') {
+        const grp = resolvePharmacologicalGroup(
+          batch.atcCode,
+          `${batch.itemName} ${batch.activeIngredient}`,
+          batch.pharmacologicalClass || batch.category
+        );
+        if (grp.key !== pharmGroup) return false;
+      }
+
+      // 5. Tìm kiếm từ khóa hành chính
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
@@ -76,7 +88,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
 
       return true;
     });
-  }, [batches, warehouse, commodity, status, searchQuery]);
+  }, [batches, warehouse, commodity, status, pharmGroup, searchQuery]);
 
   const nearExpiryBatches = useMemo(() => batches.filter((b) => b.isNearExpiry), [batches]);
   const lowStockBatches = useMemo(
@@ -97,6 +109,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         warehouse={warehouse} setWarehouse={setWarehouse}
         commodity={commodity} setCommodity={setCommodity}
         status={status} setStatus={setStatus}
+        pharmacologicalGroup={pharmGroup} setPharmacologicalGroup={setPharmGroup}
         searchQuery={searchQuery} setSearchQuery={setSearchQuery}
         totalCount={batches.length} nearExpiryCount={nearExpiryBatches.length} lowStockCount={lowStockBatches.length}
         onOpenPrintForm={onOpenPrintForm} onOpenRestock={() => setIsRestockModalOpen(true)}
@@ -161,30 +174,18 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         </div>
       </div>
 
-      {/* Modal Phiếu dự trù bổ sung */}
       <RestockProposalModal
-        isOpen={isRestockModalOpen}
-        onClose={() => setIsRestockModalOpen(false)}
-        lowStockBatches={lowStockBatches}
-        onConfirmRestock={(ids) => onRestockBatches?.(ids)}
-        onOpenPrintForm={onOpenPrintForm}
-        isAudioMuted={isAudioMuted}
+        isOpen={isRestockModalOpen} onClose={() => setIsRestockModalOpen(false)}
+        lowStockBatches={lowStockBatches} onConfirmRestock={(ids) => onRestockBatches?.(ids)}
+        onOpenPrintForm={onOpenPrintForm} isAudioMuted={isAudioMuted}
       />
-
-      {/* Modal Cổng Dữ Liệu Dược Quốc Gia 55k SĐK */}
       <NationalDrugRegistryModal
-        isOpen={isRegistryModalOpen}
-        onClose={() => setIsRegistryModalOpen(false)}
-        onSelectMedication={onOpenSafetyGuide}
-        inventoryBatches={batches}
+        isOpen={isRegistryModalOpen} onClose={() => setIsRegistryModalOpen(false)}
+        onSelectMedication={onOpenSafetyGuide} inventoryBatches={batches}
       />
-
-      {/* Modal Giấy Công Bố Thuốc Lưu Hành Hành Chính (Cục QLD) */}
       <DavDrugDetailModal
-        isOpen={selectedBatch !== null}
-        onClose={() => setSelectedBatch(null)}
-        batch={selectedBatch}
-        onQuickDispatch={handleQuickDispatch}
+        isOpen={selectedBatch !== null} onClose={() => setSelectedBatch(null)}
+        batch={selectedBatch} onQuickDispatch={handleQuickDispatch}
       />
     </div>
   );

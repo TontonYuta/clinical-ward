@@ -7,6 +7,7 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
+import { resolvePharmacologicalGroup } from '../../../../utils/clinical/pharmacologicalClassification';
 
 interface PharmacyBatchRowProps {
   index: number;
@@ -22,6 +23,11 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
 }) => {
   const isUnderMin = batch.currentStock <= batch.minThreshold;
   const sdk = batch.registrationNumber || batch.nationalCode || '—';
+  const pharmGroup = resolvePharmacologicalGroup(
+    batch.atcCode,
+    `${batch.itemName} ${batch.activeIngredient}`,
+    batch.pharmacologicalClass || batch.category
+  );
 
   return (
     <tr className="hover:bg-teal-50/40 transition-colors border-b border-slate-200/80 text-slate-800 text-xs">
@@ -55,6 +61,9 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           </button>
           <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 select-none" title="Đã đối soát & xác thực 100% với Dược Thư Quốc Gia 2022 & Cục QLD">
             ✓ Đã xác thực
+          </span>
+          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border select-none ${pharmGroup.badgeClass}`} title={`Nhóm tác dụng trị liệu: ${pharmGroup.label}`}>
+            {pharmGroup.shortLabel}
           </span>
           {batch.isControlledSubstance && (
             <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-50 text-rose-800 border border-rose-200" title="Thuốc kiểm soát đặc biệt">

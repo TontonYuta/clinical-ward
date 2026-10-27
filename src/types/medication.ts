@@ -138,6 +138,7 @@ export interface MasterMedication {
   labelPath?: string; // Đường dẫn file Mẫu nhãn PDF
   // Dữ liệu lâm sàng chuẩn Dược Thư Quốc Gia Việt Nam
   drugClass?: string;
+  pharmacologicalClass?: string; // Nhóm Dược Lý / Tác dụng Điều trị chuẩn ATC & Dược Thư
   indications?: string;
   contraindications?: string;
   precautions?: string;
