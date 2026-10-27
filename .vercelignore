@@ -1,0 +1,15 @@
+.git
+node_modules
+dist
+build
+tests
+playwright_audit
+playwright_mobile
+TEMP
+docs
+.pytest_cache
+*.db
+*.sqlite3
+*.log
+backend/clinical_hospital.db
+backend/data/knowledge_base/*.pdf
