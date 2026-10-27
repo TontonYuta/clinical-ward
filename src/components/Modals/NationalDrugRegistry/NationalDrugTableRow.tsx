@@ -68,10 +68,10 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           </span>
           {isVerified && (
             <span
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 select-none"
-              title="Đã đối soát & xác thực 100% với Dược Thư QG 2022 / Cục QLD"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-800 border border-blue-200 select-none"
+              title="Có chuyên luận đối chiếu: Dược Thư Quốc Gia Việt Nam 2015 (QĐ 2033/QĐ-BYT)"
             >
-              ✓ Xác thực
+              DTQG 2015
             </span>
           )}
           {d.hospitalStockCount > 0 ? (

@@ -52,13 +52,11 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     category: liveDrug?.group || batch?.category || drug?.group,
     pharmacologicalClass: batch?.pharmacologicalClass,
     atcCode: liveDrug?.atc_code || liveDrug?.atcCode || batch?.atcCode || drug?.atcCode,
-    itemName: itemName,
-    activeIngredient: activeInn,
+    itemName, activeIngredient: activeInn,
     isControlledSubstance: liveDrug?.is_controlled ?? batch?.isControlledSubstance ?? drug?.isControlled,
     manufacturer: liveDrug?.manufacturer || batch?.manufacturer || drug?.manufacturer,
     country: liveDrug?.country || batch?.country || drug?.country,
-    applicantName: liveDrug?.applicant_name || batch?.applicantName || drug?.applicantName,
-    approvalDecision: liveDrug?.approval_decision || batch?.approvalDecision || drug?.approvalDecision,
+    applicantName: liveDrug?.applicant_name || batch?.applicantName || drug?.applicantName, approvalDecision: liveDrug?.approval_decision || batch?.approvalDecision || drug?.approvalDecision,
   };
 
   const clinicalData = {
@@ -101,9 +99,15 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="inline-flex items-center text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded select-none">
-              ✓ Đã kiểm chứng 100%
-            </span>
+            {clinicalData.clinicalSource ? (
+              <span className="inline-flex items-center text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded select-none">
+                DTQG 2015 & SmPC
+              </span>
+            ) : (
+              <span className="inline-flex items-center text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none">
+                Chưa có chuyên luận đối chiếu
+              </span>
+            )}
             <span className="hidden sm:inline-flex text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">
               CSDL Cục QLD
             </span>

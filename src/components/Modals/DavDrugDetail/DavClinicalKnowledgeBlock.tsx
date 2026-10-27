@@ -46,7 +46,7 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps }> = 
 
   return (
     <div className="border border-slate-200 bg-white rounded-lg p-4 space-y-3.5">
-      {/* Header Chuyên Luận Dược Thư Quốc Gia 2022 (Sạch sẽ, không icon trang trí) */}
+      {/* Header Chuyên Luận Dược Thư Quốc Gia (Sạch sẽ, không icon trang trí) */}
       <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -54,15 +54,19 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps }> = 
               Dược Thư Quốc Gia Việt Nam
             </h3>
             <span className="text-2xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-              Bản 2022 (QĐ 3445/QĐ-BYT)
-            </span>
-            <span className="text-2xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded select-none">
-              ✓ Đã đối soát 100%
+              Lần xuất bản II - 2015 (QĐ 2033/QĐ-BYT)
             </span>
           </div>
-          {data.clinicalSource && (
-            <p className="text-2xs text-slate-500 mt-1 font-mono">
-              Căn cứ: {data.clinicalSource}
+          {data.clinicalSource ? (
+            <div className="mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-700 space-y-0.5">
+              <span className="font-semibold text-slate-900 block text-2xs uppercase tracking-wider">Tài liệu đối chiếu gốc:</span>
+              <p className="font-mono text-2xs text-slate-600 leading-relaxed">
+                {data.clinicalSource}
+              </p>
+            </div>
+          ) : (
+            <p className="text-2xs text-amber-700 mt-1 italic">
+              Chưa có tài liệu chuyên luận đối chiếu trong kho tài liệu nội bộ
             </p>
           )}
           {data.drugClass && !data.clinicalSource && (

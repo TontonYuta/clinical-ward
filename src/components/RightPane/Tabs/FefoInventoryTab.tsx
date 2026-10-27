@@ -16,6 +16,7 @@ import {
   WarehouseFilter,
   CommodityFilter,
   StatusFilter,
+  DavRegulatoryFilter,
 } from './Pharmacy/PharmacyHeaderRibbon';
 import { PharmacyBatchRow } from './Pharmacy/PharmacyBatchRow';
 import { PharmacyBatchCard } from './Pharmacy/PharmacyBatchCard';
@@ -37,6 +38,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   const [commodity, setCommodity] = useState<CommodityFilter>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>('all');
+  const [davFilter, setDavFilter] = useState<DavRegulatoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [isRegistryModalOpen, setIsRegistryModalOpen] = useState(false);
@@ -71,7 +73,14 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         if (grp.key !== pharmGroup) return false;
       }
 
-      // 5. Tìm kiếm từ khóa hành chính
+      // 5. Phân loại theo Quy chế Cổng Dược Quốc Gia (DAV BYT)
+      if (davFilter === 'controlled' && !batch.isControlledSubstance) return false;
+      if (davFilter === 'emergency' && batch.warehouseType !== 'ward_emergency' && !batch.category.includes('cấp cứu')) return false;
+      if (davFilter === 'cold_chain' && !batch.category.includes('Chuỗi lạnh') && !batch.storageCondition?.includes('2°C')) return false;
+      if (davFilter === 'high_alert' && !batch.category.includes('nguy cơ cao')) return false;
+      if (davFilter === 'iv_fluid' && !batch.category.includes('Dịch truyền')) return false;
+
+      // 6. Tìm kiếm từ khóa hành chính
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
@@ -88,7 +97,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
 
       return true;
     });
-  }, [batches, warehouse, commodity, status, pharmGroup, searchQuery]);
+  }, [batches, warehouse, commodity, status, pharmGroup, davFilter, searchQuery]);
 
   const nearExpiryBatches = useMemo(() => batches.filter((b) => b.isNearExpiry), [batches]);
   const lowStockBatches = useMemo(
@@ -110,6 +119,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         commodity={commodity} setCommodity={setCommodity}
         status={status} setStatus={setStatus}
         pharmacologicalGroup={pharmGroup} setPharmacologicalGroup={setPharmGroup}
+        davFilter={davFilter} setDavFilter={setDavFilter}
         searchQuery={searchQuery} setSearchQuery={setSearchQuery}
         totalCount={batches.length} nearExpiryCount={nearExpiryBatches.length} lowStockCount={lowStockBatches.length}
         onOpenPrintForm={onOpenPrintForm} onOpenRestock={() => setIsRestockModalOpen(true)}
@@ -126,10 +136,8 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
           filteredBatches.map((batch, idx) => (
             <PharmacyBatchCard
               key={batch.id} index={idx} batch={batch}
-              onQuickDispatch={handleQuickDispatch}
-              onOpenRestock={() => setIsRestockModalOpen(true)}
-              onOpenSafetyGuide={onOpenSafetyGuide}
-              onSelectBatch={(b) => setSelectedBatch(b)}
+              onQuickDispatch={handleQuickDispatch} onOpenRestock={() => setIsRestockModalOpen(true)}
+              onOpenSafetyGuide={onOpenSafetyGuide} onSelectBatch={(b) => setSelectedBatch(b)}
             />
           ))
         )}
@@ -162,10 +170,8 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
                 filteredBatches.map((batch, idx) => (
                   <PharmacyBatchRow
                     key={batch.id} index={idx} batch={batch}
-                    onQuickDispatch={handleQuickDispatch}
-                    onOpenRestock={() => setIsRestockModalOpen(true)}
-                    onOpenSafetyGuide={onOpenSafetyGuide}
-                    onSelectBatch={(b) => setSelectedBatch(b)}
+                    onQuickDispatch={handleQuickDispatch} onOpenRestock={() => setIsRestockModalOpen(true)}
+                    onOpenSafetyGuide={onOpenSafetyGuide} onSelectBatch={(b) => setSelectedBatch(b)}
                   />
                 ))
               )}

@@ -51,6 +51,7 @@ def build_vaxigrip_record(spec: dict) -> dict:
     return {
         "batch_id": spec["id"], "national_code": spec["sdk"], "brand_name": spec["brand_name"],
         "inn": spec["inn"], "atc_code": spec["atc"], "dtqg_pages": "SmPC Cục Quản lý Dược",
+        "pdf_file": "Tờ HDSD Vaxigrip Tetra (QĐ 352/QĐ-QLD)",
         "clinical_source": "SmPC Cục Quản lý Dược (QĐ 352/QĐ-QLD) & Chuỗi lạnh GSP (TT 36/2018/TT-BYT)",
         "regulatory_note": spec["reg_note"],
         "indications": "Dự phòng cúm mùa chủ động cho người lớn và trẻ em từ 6 tháng tuổi trở lên, đặc biệt các nhóm nguy cơ cao biến chứng cúm (người cao tuổi >= 65 tuổi, bệnh mạn tính hô hấp, tim mạch, thận, đái tháo đường, suy giảm miễn dịch, phụ nữ có thai).",
@@ -105,18 +106,20 @@ def run():
             if ped_match:
                 ped_dose = clean_ocr(raw_text[ped_match.start():ped_match.start() + 1500])
 
-            c_source = f"Dược thư Quốc gia Việt Nam 2022 (QĐ 3445/QĐ-BYT, Trang {spec['p_start']} - {spec['p_end']})"
+            c_source = f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {spec['p_start']} - {spec['p_end']}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
             rec = {
                 "batch_id": b_id, "national_code": sdk, "brand_name": brand, "inn": inn, "atc_code": atc,
-                "dtqg_pages": f"Trang {spec['p_start']} - {spec['p_end']}", "clinical_source": c_source,
+                "dtqg_pages": f"Trang {spec['p_start']} - {spec['p_end']}",
+                "pdf_file": "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf",
+                "clinical_source": c_source,
                 "regulatory_note": spec["reg_note"],
-                "indications": ind[:1200] if ind else "Theo chuyên luận Dược Thư 2022",
-                "contraindications": contra[:1200] if contra else "Theo chuyên luận Dược Thư 2022",
-                "precautions": prec[:1200] if prec else "Theo chuyên luận Dược Thư 2022",
-                "adverse_effects": adv[:1200] if adv else "Theo chuyên luận Dược Thư 2022",
-                "adult_dosage": dose[:2500] if dose else "Theo chuyên luận Dược Thư 2022",
+                "indications": ind[:1200] if ind else "Theo chuyên luận Dược Thư 2015",
+                "contraindications": contra[:1200] if contra else "Theo chuyên luận Dược Thư 2015",
+                "precautions": prec[:1200] if prec else "Theo chuyên luận Dược Thư 2015",
+                "adverse_effects": adv[:1200] if adv else "Theo chuyên luận Dược Thư 2015",
+                "adult_dosage": dose[:2500] if dose else "Theo chuyên luận Dược Thư 2015",
                 "pediatric_dosage": ped_dose[:1200] if ped_dose else "Theo phác đồ chuyên khoa Nhi",
-                "drug_interactions": inter[:1200] if inter else "Theo chuyên luận Dược Thư 2022 & QĐ 5948",
+                "drug_interactions": inter[:1200] if inter else "Theo chuyên luận Dược Thư 2015 & QĐ 5948",
                 "overdose_treatment": over[:1200] if over else "Điều trị nâng đỡ và giải độc đặc hiệu",
                 "antidote": antidote, "is_verified": True
             }
@@ -124,7 +127,7 @@ def run():
             rec = build_vaxigrip_record(spec)
 
         verified_records.append(rec)
-        mono_id = f"DTQG-2022-{inn.replace(' ', '')}"
+        mono_id = f"DTQG-2015-{inn.replace(' ', '')}"
         cur.execute("""
             INSERT INTO clinical_drug_monographs (
                 id, inn, title, atc_code, drug_class, indications, contraindications,

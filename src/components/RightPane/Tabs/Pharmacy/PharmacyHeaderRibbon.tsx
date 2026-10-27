@@ -11,6 +11,7 @@ import { PHARMACOLOGICAL_GROUPS, PharmacologicalGroupKey } from '../../../../uti
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
 export type CommodityFilter = 'all' | 'medication' | 'medical_supply';
 export type StatusFilter = 'all' | 'near_expiry' | 'low_stock';
+export type DavRegulatoryFilter = 'all' | 'controlled' | 'emergency' | 'cold_chain' | 'high_alert' | 'iv_fluid';
 
 interface PharmacyHeaderRibbonProps {
   warehouse: WarehouseFilter;
@@ -21,6 +22,8 @@ interface PharmacyHeaderRibbonProps {
   setStatus: (s: StatusFilter) => void;
   pharmacologicalGroup: PharmacologicalGroupKey;
   setPharmacologicalGroup: (g: PharmacologicalGroupKey) => void;
+  davFilter: DavRegulatoryFilter;
+  setDavFilter: (f: DavRegulatoryFilter) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   totalCount: number;
@@ -33,7 +36,7 @@ interface PharmacyHeaderRibbonProps {
 
 export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
   warehouse, setWarehouse, commodity, setCommodity, status, setStatus,
-  pharmacologicalGroup, setPharmacologicalGroup,
+  pharmacologicalGroup, setPharmacologicalGroup, davFilter, setDavFilter,
   searchQuery, setSearchQuery, totalCount, nearExpiryCount, lowStockCount, onOpenRestock,
   onOpenNationalRegistry,
 }) => {
@@ -114,14 +117,30 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
               value={pharmacologicalGroup}
               onChange={(e) => setPharmacologicalGroup(e.target.value as PharmacologicalGroupKey)}
               data-testid="pharmacological-class-select"
-              className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[170px] truncate"
+              className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[155px] truncate"
             >
               <option value="all">Tất cả nhóm dược lý</option>
               {PHARMACOLOGICAL_GROUPS.map((g) => (
-                <option key={g.key} value={g.key}>
-                  {g.label}
-                </option>
+                <option key={g.key} value={g.key}>{g.label}</option>
               ))}
+            </select>
+          </div>
+
+          {/* Phân loại Quản lý Cổng Dược Quốc Gia (DAV BYT) */}
+          <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md border border-slate-200/60 font-medium">
+            <span className="text-slate-500 font-semibold text-[11px] whitespace-nowrap">Cổng QLD:</span>
+            <select
+              value={davFilter}
+              onChange={(e) => setDavFilter(e.target.value as DavRegulatoryFilter)}
+              data-testid="dav-regulatory-select"
+              className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[155px] truncate"
+            >
+              <option value="all">Tất cả quy chế QLD</option>
+              <option value="controlled">Kiểm soát đặc biệt (KSĐB)</option>
+              <option value="emergency">Cấp cứu tủ trực A9 (TT 51)</option>
+              <option value="cold_chain">Chuỗi lạnh 2-8°C / Vắc xin</option>
+              <option value="high_alert">Thuốc nguy cơ cao (High-Alert)</option>
+              <option value="iv_fluid">Dịch truyền thể tích lớn</option>
             </select>
           </div>
         </div>

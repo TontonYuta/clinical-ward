@@ -59,9 +59,6 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           >
             {batch.itemName}
           </button>
-          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 select-none" title="Đã đối soát & xác thực 100% với Dược Thư Quốc Gia 2022 & Cục QLD">
-            ✓ Đã xác thực
-          </span>
           <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border select-none ${pharmGroup.badgeClass}`} title={`Nhóm tác dụng trị liệu: ${pharmGroup.label}`}>
             {pharmGroup.shortLabel}
           </span>
