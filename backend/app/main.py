@@ -16,7 +16,8 @@ from app.routers import (
     audit,
     copilot,
     cpoe,
-    registry
+    registry,
+    prescription_advice
 )
 
 @asynccontextmanager
@@ -64,6 +65,7 @@ app.include_router(audit.router, prefix=settings.API_V1_STR)
 app.include_router(copilot.router, prefix=settings.API_V1_STR)
 app.include_router(cpoe.router, prefix=settings.API_V1_STR)
 app.include_router(registry.router, prefix=settings.API_V1_STR)
+app.include_router(prescription_advice.router, prefix=settings.API_V1_STR)
 
 import os
 from fastapi.staticfiles import StaticFiles

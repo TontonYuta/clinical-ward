@@ -5,7 +5,7 @@
 
 const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 const defaultBaseUrl = (typeof window === 'undefined') ? 'http://localhost:8000/api/v1' : (isLocalhost ? 'http://localhost:8000/api/v1' : '/api/v1');
-const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || defaultBaseUrl;
+export const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || defaultBaseUrl;
 const ROOT_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '') || (isLocalhost ? 'http://localhost:8000' : '');
 
 export async function checkBackendHealth(): Promise<{ status: string; system: string; legal_compliance: string[] } | null> {

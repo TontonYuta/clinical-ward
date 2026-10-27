@@ -87,7 +87,13 @@ const testSuite: TestCase[] = [
   { query: 'ai dị ứng với ceftriaxone', expectedCard: 'medication_safety', category: 'Medication Allergy' },
   { query: 'thành phần của thuốc diazepam', expectedCard: 'medication_safety', category: 'Medication Ingredients' },
   { query: 'tác dụng của adrenalin cấp cứu', expectedCard: 'medication_safety', category: 'Medication Indication' },
-  { query: 'chỉ định của vancomycin', expectedCard: 'medication_safety', category: 'Medication Indication' }
+  { query: 'chỉ định của vancomycin', expectedCard: 'medication_safety', category: 'Medication Indication' },
+
+  // 11. Dặn dò của bác sĩ kê đơn & Thông báo nhắc uống thuốc qua mail Google Script
+  { query: 'Dặn dò bệnh nhân Nguyễn Văn An uống thuốc Paracetamol và Augmentin hàng ngày lúc 7h và 19h gửi mail an.nv@gmail.com', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
+  { query: 'Lên lịch nhắc uống thuốc cho bệnh nhân Trần Thị Mai uống Cipro sáng 8h tối 20h gửi mai@hospital.vn', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
+  { query: 'Dặn dò đơn thuốc cho bệnh nhân', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
+  { query: 'Nhắc bệnh nhân uống thuốc qua mail', expectedCard: 'medication_schedule', category: 'Prescription Advice' }
 ];
 
 const mockState = {

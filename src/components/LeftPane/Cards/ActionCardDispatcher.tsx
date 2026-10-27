@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   Sparkles,
   ChevronRight,
-  Stethoscope
+  Stethoscope,
+  Clock
 } from 'lucide-react';
 import { ChatMessage, DashboardTab } from '../../../types/clinical';
 import { AgentActionCard } from '../../../types/chat';
@@ -29,6 +30,8 @@ import { IncidentConfirmCard } from './IncidentConfirmCard';
 import { ShiftHandoverCard } from './ShiftHandoverCard';
 import { FefoReportCard, LowStockReportCard } from './InventoryReportCards';
 import { LegalGuideCard } from './LegalGuideCard';
+import { MedicationSafetyDetailsCard } from './MedicationSafetyDetailsCard';
+import { MedicationScheduleCard } from './MedicationScheduleCard';
 import {
   ColdChainStatusCard,
   AuditIntegrityCard,
@@ -76,6 +79,7 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
           {card.cardType === 'ocr_invoice_confirm' && <FileSpreadsheet className="w-4 h-4 text-indigo-700" />}
           {card.cardType === 'biomedical_diagnostics' && <Wrench className="w-4 h-4 text-orange-600" />}
           {card.cardType === 'medication_safety' && <Stethoscope className="w-4 h-4 text-teal-700" />}
+          {card.cardType === 'medication_schedule' && <Clock className="w-4 h-4 text-teal-700" />}
           <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">
             {formatInlineMarkdown(card.title)}
           </span>
@@ -103,64 +107,8 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
         {card.cardType === 'legal_guide' && <LegalGuideCard data={card.data} onOpenLegalDocs={onOpenLegalDocs} />}
         {card.cardType === 'ocr_invoice_confirm' && <OcrInvoiceCard data={card.data} />}
         {card.cardType === 'biomedical_diagnostics' && <BiomedicalDiagnosticsCard data={card.data} />}
-        {card.cardType === 'medication_safety' && (
-          <div className="space-y-2 bg-white p-3 rounded-lg border border-slate-200 text-xs">
-            <div className="font-bold text-slate-900 text-sm flex items-center justify-between">
-              <span>{card.data.tallMan || card.data.medName}</span>
-              {card.data.allergyClass && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
-                  {card.data.allergyClass}
-                </span>
-              )}
-            </div>
-
-            {card.data.officialSource && (
-              <div className="text-[11px] text-teal-900 bg-teal-50 px-2 py-1 rounded border border-teal-200 font-medium">
-                📚 {card.data.officialSource}
-              </div>
-            )}
-
-            {card.data.activeIngredients && (
-              <div className="bg-slate-50 p-2 rounded border border-slate-200 text-slate-800 leading-snug">
-                <strong className="text-slate-900 block font-semibold mb-0.5">🧪 Thành phần:</strong>
-                <span className="font-mono text-[11px] text-teal-900">{card.data.activeIngredients}</span>
-              </div>
-            )}
-
-            {card.data.indications && card.data.indications.length > 0 && (
-              <div className="bg-blue-50/80 p-2 rounded border border-blue-200 text-slate-800 leading-snug">
-                <strong className="text-blue-900 block font-semibold mb-0.5">🎯 Chỉ định:</strong>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {card.data.indications.slice(0, 2).map((ind: string, i: number) => (
-                    <li key={i}>{ind}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {card.data.allergyWarning && (
-              <div className="bg-rose-50 p-2 rounded border border-rose-200 text-rose-900 leading-snug">
-                <strong className="block font-semibold mb-0.5">⚠️ Dị ứng:</strong>
-                <div>{card.data.allergyWarning}</div>
-                {card.data.crossReactivities && card.data.crossReactivities.length > 0 && (
-                  <div className="text-[11px] text-rose-700 mt-1">
-                    Dị ứng chéo: {card.data.crossReactivities.slice(0, 3).join(', ')}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="text-slate-600">
-              <strong>Liều dùng:</strong> {card.data.standardDosing}
-            </div>
-
-            {card.data.antidote && (
-              <div className="text-emerald-800 font-semibold bg-emerald-50 p-1.5 rounded border border-emerald-200">
-                🛡️ <strong>Giải độc:</strong> {card.data.antidote}
-              </div>
-            )}
-          </div>
-        )}
+        {card.cardType === 'medication_safety' && <MedicationSafetyDetailsCard data={card.data} />}
+        {card.cardType === 'medication_schedule' && <MedicationScheduleCard data={card.data} onSelectTab={onSelectTab} />}
       </div>
 
       <div className="px-3.5 py-2.5 bg-white border-t border-slate-200/90 flex items-center justify-between gap-2.5">

@@ -22,6 +22,7 @@ import { matchBorrowIntent, handleBorrowIntent } from './intents/borrowIntent';
 import { matchMedicationSafetyIntent, handleMedicationSafetyIntent } from './intents/medicationSafetyIntent';
 import { matchBusinessIntent, handleBusinessOverviewIntent } from './intents/businessIntent';
 import { matchDrugLookupGuideIntent, handleDrugLookupGuideIntent } from './intents/drugLookupGuideIntent';
+import { matchPrescriptionAdviceIntent, handlePrescriptionAdviceIntent } from './intents/prescriptionAdviceIntent';
 
 export function processClinicalUserQuery(
   rawInput: string,
@@ -39,6 +40,11 @@ export function processClinicalUserQuery(
   // 0b. National Drug Registry Lookup Guide (Khi người dùng muốn tra cứu nhưng chưa nhập tên thuốc)
   if (matchDrugLookupGuideIntent(lower)) {
     return handleDrugLookupGuideIntent(nowStr);
+  }
+
+  // 0c. Doctor Prescription Advice & Daily Medication Schedule (GAS Webhook / Email Reminder)
+  if (matchPrescriptionAdviceIntent(lower)) {
+    return handlePrescriptionAdviceIntent(text, lower, nowStr);
   }
 
   // 1. Legal Protocols & Guides

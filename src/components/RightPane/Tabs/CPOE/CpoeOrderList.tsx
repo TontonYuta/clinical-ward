@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Clock } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 import { CpoeOrderCard } from './CpoeOrderCard';
 
@@ -13,9 +13,10 @@ interface CpoeOrderListProps {
   orders: PrescriptionOrder[];
   onSelectOrder?: (order: PrescriptionOrder) => void;
   onOpenSafetyGuide?: (medName: string) => void;
+  onOpenAdvice?: (order: PrescriptionOrder) => void;
 }
 
-export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOrder, onOpenSafetyGuide }) => {
+export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOrder, onOpenSafetyGuide, onOpenAdvice }) => {
   const [filterType, setFilterType] = useState<'all' | 'outpatient' | 'inpatient_daily'>('all');
 
   const filteredOrders = orders.filter((o) => {
@@ -72,7 +73,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <CpoeOrderCard key={order.id} order={order} onSelectOrder={onSelectOrder} onOpenSafetyGuide={onOpenSafetyGuide} />
+            <CpoeOrderCard key={order.id} order={order} onSelectOrder={onSelectOrder} onOpenSafetyGuide={onOpenSafetyGuide} onOpenAdvice={onOpenAdvice} />
           ))
         )}
       </div>
@@ -160,8 +161,19 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                   <td className="py-2.5 px-3">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>{order.doctorName} (Đã ký số)</span>
+                      <span>{order.doctorName}</span>
                     </div>
+                    {onOpenAdvice && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onOpenAdvice(order); }}
+                        className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-2xs font-bold cursor-pointer transition shadow-2xs"
+                        title="Dặn dò uống thuốc hàng ngày & gửi mail qua Google Script"
+                      >
+                        <Clock className="w-3 h-3 text-teal-700" />
+                        <span>Dặn dò & Nhắc thuốc</span>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

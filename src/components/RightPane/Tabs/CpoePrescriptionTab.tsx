@@ -13,6 +13,7 @@ import { INITIAL_PRESCRIPTIONS } from '../../../data/mockCpoeData';
 import { cpoeApi } from '../../../services/api/cpoeApi';
 import { CpoeOrderList } from './CPOE/CpoeOrderList';
 import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
+import { PrescriptionAdviceModal } from '../../Modals/PrescriptionAdviceModal';
 
 interface CpoePrescriptionTabProps {
   doctorName?: string;
@@ -27,6 +28,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
 }) => {
   const [orders, setOrders] = useState<PrescriptionOrder[]>(INITIAL_PRESCRIPTIONS);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [adviceOrder, setAdviceOrder] = useState<PrescriptionOrder | null>(null);
 
   const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
   const roleName = USER_PROFILES[currentUserRole]?.roleName || 'Điều Dưỡng';
@@ -124,7 +126,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       </div>
 
       {/* Orders List Table */}
-      <CpoeOrderList orders={orders} onOpenSafetyGuide={onOpenSafetyGuide} />
+      <CpoeOrderList orders={orders} onOpenSafetyGuide={onOpenSafetyGuide} onOpenAdvice={(ord) => setAdviceOrder(ord)} />
 
       {/* Prescription Creation Modal */}
       {canPrescribe && (
@@ -136,6 +138,13 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
           onOpenSafetyGuide={onOpenSafetyGuide}
         />
       )}
+
+      {/* Prescription Advice & Daily Medication Schedule Modal */}
+      <PrescriptionAdviceModal
+        isOpen={!!adviceOrder}
+        onClose={() => setAdviceOrder(null)}
+        order={adviceOrder}
+      />
     </div>
   );
 };

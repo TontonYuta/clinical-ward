@@ -25,7 +25,9 @@ export interface ActionPayload {
     | 'AMPOULE_RETURNED'
     | 'RESTOCK_CHECK'
     | 'RESTOCK_APPROVED'
-    | 'PRESCRIPTION_CREATED';
+    | 'PRESCRIPTION_CREATED'
+    | 'MEDICATION_SCHEDULE_CREATED'
+    | 'MEDICATION_REMINDER_SENT';
   data?: any;
   targetTab?: DashboardTab;
 }
@@ -51,7 +53,8 @@ export interface AgentActionCard {
     | 'shift_handover_report'
     | 'ocr_invoice_confirm'
     | 'biomedical_diagnostics'
-    | 'medication_safety';
+    | 'medication_safety'
+    | 'medication_schedule';
   title: string;
   summary: string;
   data: any;

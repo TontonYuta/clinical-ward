@@ -12,9 +12,10 @@ interface CpoeOrderCardProps {
   order: PrescriptionOrder;
   onSelectOrder?: (order: PrescriptionOrder) => void;
   onOpenSafetyGuide?: (medName: string) => void;
+  onOpenAdvice?: (order: PrescriptionOrder) => void;
 }
 
-export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrder, onOpenSafetyGuide }) => {
+export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrder, onOpenSafetyGuide, onOpenAdvice }) => {
   return (
     <div
       onClick={() => onSelectOrder?.(order)}
@@ -88,9 +89,21 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrd
       <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 text-slate-500">
         <div className="flex items-center gap-1 text-emerald-700 font-medium text-[11px]">
           <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-          <span>{order.doctorName} (Đã ký số)</span>
+          <span>{order.doctorName}</span>
         </div>
-        <span className="text-teal-700 font-semibold text-[11px]">Chi tiết →</span>
+        <div className="flex items-center gap-1.5">
+          {onOpenAdvice && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onOpenAdvice(order); }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-2xs font-bold cursor-pointer"
+            >
+              <Clock className="w-3 h-3 text-teal-700" />
+              <span>Dặn dò nhắc thuốc</span>
+            </button>
+          )}
+          <span className="text-teal-700 font-semibold text-[11px]">Chi tiết →</span>
+        </div>
       </div>
     </div>
   );
