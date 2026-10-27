@@ -10,11 +10,14 @@ export const ELECTROLYTE_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo>
   // Kali clorid (KCl) 10% 10ml
   'med-em-09': {
     officialSource: {
-      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
-      registrationNumber: '893110375223',
+      documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
+      registrationNumber: 'VD-21503-14 (Vinphaco)',
       manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 776/QĐ-QLD)',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfPage: '788 - 791',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=788',
     },
     composition: {
       activeIngredients: [{ innName: 'Potassium chloride (KCl)', chemicalSalt: 'Kali clorid vô khuẩn', strength: '1 g / 10 ml (10%)', molarQuantity: '13.4 mEq K+ và 13.4 mEq Cl- / 10ml' }],

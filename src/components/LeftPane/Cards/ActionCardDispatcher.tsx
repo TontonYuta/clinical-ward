@@ -32,6 +32,8 @@ import { FefoReportCard, LowStockReportCard } from './InventoryReportCards';
 import { LegalGuideCard } from './LegalGuideCard';
 import { MedicationSafetyDetailsCard } from './MedicationSafetyDetailsCard';
 import { MedicationScheduleCard } from './MedicationScheduleCard';
+import { CpoeOrderCard } from './CpoeOrderCard';
+import { DebtSettleCard } from './DebtSettleCard';
 import {
   ColdChainStatusCard,
   AuditIntegrityCard,
@@ -109,6 +111,8 @@ export const ActionCardDispatcher: React.FC<ActionCardDispatcherProps> = ({
         {card.cardType === 'biomedical_diagnostics' && <BiomedicalDiagnosticsCard data={card.data} />}
         {card.cardType === 'medication_safety' && <MedicationSafetyDetailsCard data={card.data} />}
         {card.cardType === 'medication_schedule' && <MedicationScheduleCard data={card.data} onSelectTab={onSelectTab} />}
+        {card.cardType === 'cpoe_prescription' && <CpoeOrderCard order={card.data} />}
+        {card.cardType === 'debt_settle' && <DebtSettleCard data={card.data} />}
       </div>
 
       <div className="px-3.5 py-2.5 bg-white border-t border-slate-200/90 flex items-center justify-between gap-2.5">

@@ -10,11 +10,14 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
   // Adrenalin (Epinephrine) 1mg/1ml
   'med-em-01': {
     officialSource: {
-      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & TT 51/2017/TT-BYT',
-      registrationNumber: '893110151100',
-      manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco)',
+      documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
+      registrationNumber: 'VD-24757-16 (Hadunalin 1mg/ml)',
+      manufacturer: 'Công ty Cổ phần Dược phẩm Vĩnh Phúc (Vinphaco) / Hadupharma',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfPage: '594 - 597',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=594',
     },
     composition: {
       activeIngredients: [{ innName: 'Adrenalin (Epinephrine)', chemicalSalt: 'Epinephrin bitartrat', strength: '1 mg / 1 ml (tương đương 1:1000)' }],
@@ -89,11 +92,14 @@ export const EMERGENCY_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> =
   // Noradrenalin 4mg/4ml
   'med-em-02': {
     officialSource: {
-      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
-      registrationNumber: '893110107400',
+      documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
+      registrationNumber: 'VD-27663-17',
       manufacturer: 'Công ty Cổ phần Dược Vật tư Y tế Hải Dương / Vinphaco',
       standardPharmacopeia: 'Dược điển Việt Nam V / Dược điển Mỹ (USP)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfPage: '1065 - 1068',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1065',
     },
     composition: {
       activeIngredients: [{ innName: 'Noradrenalin (Norepinephrine)', chemicalSalt: 'Norepinephrin bitartrat', strength: '4 mg / 2 ml (2 mg/ml)' }],

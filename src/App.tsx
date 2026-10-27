@@ -46,6 +46,7 @@ import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
+import { cpoeApi } from './services/api/cpoeApi';
 import { clinicalAudio } from './utils/audio';
 
 export default function App() {
@@ -1294,6 +1295,60 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       };
       setChatMessages(prev => [...prev, confirmMsg]);
+    } else if (actionType === 'EXECUTE_CREATE_CPOE_ORDER') {
+      const order = cardData;
+      if (order && order.id) {
+        cpoeApi.createCpoeOrder(order).catch(console.warn);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('cpoe_order_created', { detail: order }));
+        }
+        markExecuted();
+        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+          setCurrentTab('cpoe');
+        }
+        if (!isAudioMuted) clinicalAudio.playSuccessChime();
+        const confirmMsg: ChatMessage = {
+          id: `msg-cpoe-confirm-${Date.now()}`,
+          sender: 'system',
+          text: `✅ **Đã ký duyệt & tạo đơn thuốc CPOE thành công (${order.id})**:\n• **Bệnh nhân**: ${order.patientName}\n• **Chẩn đoán**: ${order.diagnosisIcd10} - ${order.diagnosisText}\n• **Số khoản thuốc**: ${order.items?.length || 0} mục • Thời gian: ${order.daysPrescribed} ngày\n• **Quy chế**: Điều 4 Thông tư 52/2017/TT-BYT.`,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        };
+        setChatMessages(prev => [...prev, confirmMsg]);
+      }
+    } else if (actionType === 'EXECUTE_RETURN_AMPOULE') {
+      const debtId = cardData?.debtId;
+      if (debtId) {
+        handleToggleAmpouleReturn(debtId);
+        markExecuted();
+        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('debt')) {
+          setCurrentTab('debt');
+        }
+        if (!isAudioMuted) clinicalAudio.playSuccessChime();
+        const confirmMsg: ChatMessage = {
+          id: `msg-ampoule-return-${Date.now()}`,
+          sender: 'system',
+          text: `✅ **Đã xác nhận thu hồi vỏ ống thuốc thành công (${cardData.code})**:\n• **Mặt hàng**: ${cardData.itemName}\n• **Bệnh nhân**: ${cardData.patientName}\n• **Quy chế**: Điều 15 Thông tư 20/2017/TT-BYT (Lưu trữ và niêm phong vỏ thuốc độc gây nghiện).`,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        };
+        setChatMessages(prev => [...prev, confirmMsg]);
+      }
+    } else if (actionType === 'EXECUTE_SETTLE_DEBT') {
+      const debtId = cardData?.debtId;
+      if (debtId) {
+        handleSettleDebt(debtId);
+        markExecuted();
+        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('debt')) {
+          setCurrentTab('debt');
+        }
+        if (!isAudioMuted) clinicalAudio.playSuccessChime();
+        const confirmMsg: ChatMessage = {
+          id: `msg-debt-settled-${Date.now()}`,
+          sender: 'system',
+          text: `✅ **Đã đối soát và thanh toán hoàn tất phiếu nợ (${cardData.code})**: Toàn bộ cơ số đã hoàn trả tủ trực cấp cứu.`,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        };
+        setChatMessages(prev => [...prev, confirmMsg]);
+      }
     }
   };
 

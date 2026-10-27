@@ -42,11 +42,11 @@ export function getMedicationClinicalProfile(
   // 2. Khớp từ khóa hoạt chất / thương mại phổ biến
   if (query.includes('morphin')) return ALL_CLINICAL_PROFILES['med-ctrl-01'];
   if (query.includes('fentan')) return ALL_CLINICAL_PROFILES['med-ctrl-02'];
-  if (query.includes('diaze')) return ALL_CLINICAL_PROFILES['med-em-07'];
+  if (query.includes('diaze') || query.includes('seduxen')) return ALL_CLINICAL_PROFILES['med-em-07'];
   if (query.includes('noradre') || query.includes('norepi')) return ALL_CLINICAL_PROFILES['med-em-02'];
-  if (query.includes('adre') || query.includes('epi')) return ALL_CLINICAL_PROFILES['med-em-01'];
+  if (query.includes('adre') || query.includes('epi') || query.includes('hadunalin')) return ALL_CLINICAL_PROFILES['med-em-01'];
   if (query.includes('kali') || query.includes('kcl')) return ALL_CLINICAL_PROFILES['med-em-09'];
-  if (query.includes('ceftria')) return ALL_CLINICAL_PROFILES['med-ab-01'];
+  if (query.includes('ceftria') || query.includes('rocephin')) return ALL_CLINICAL_PROFILES['med-ab-01'];
   if (query.includes('vanco')) return ALL_CLINICAL_PROFILES['med-ab-02'];
   if (query.includes('paracet') || query.includes('acetamin') || query.includes('efferal') || query.includes('panadol')) {
     return ALL_CLINICAL_PROFILES['med-gen-01'];
@@ -63,10 +63,12 @@ export function getMedicationClinicalProfile(
 
   return {
     officialSource: {
-      documentName: `Dược thư Quốc gia Việt Nam & Tờ HDSD ${medData?.brandName || name}`,
-      registrationNumber: medData?.nationalCode ? `Mã BHYT: ${medData.nationalCode}` : 'SĐK Cục QLD',
+      documentName: `Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)`,
+      registrationNumber: medData?.nationalCode ? `SĐK / Mã: ${medData.nationalCode}` : 'CSDL 54.885 Cục QLD',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V)',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
     },
     composition: {
       activeIngredients: [{ innName: active, chemicalSalt: active, strength: medData?.concentration || 'Theo nhãn thuốc' }],

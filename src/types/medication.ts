@@ -20,6 +20,9 @@ export interface OfficialMedicalSource {
   manufacturer?: string; // Cơ sở sản xuất / Hiệu thuốc
   standardPharmacopeia?: string; // Tiêu chuẩn Dược điển (DĐVN V, USP, EP)
   approvalAuthority?: string; // Cơ quan phê duyệt (Cục Quản lý Dược - Bộ Y Tế)
+  pdfDocument?: string; // Tên tệp PDF đối chứng chính thức
+  pdfPage?: string | number; // Trang số trong tài liệu PDF
+  citationUrl?: string; // Đường dẫn trực tiếp đến tài liệu PDF
 }
 
 export interface MedicationComposition {

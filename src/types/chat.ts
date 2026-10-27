@@ -54,7 +54,9 @@ export interface AgentActionCard {
     | 'ocr_invoice_confirm'
     | 'biomedical_diagnostics'
     | 'medication_safety'
-    | 'medication_schedule';
+    | 'medication_schedule'
+    | 'cpoe_prescription'
+    | 'debt_settle';
   title: string;
   summary: string;
   data: any;

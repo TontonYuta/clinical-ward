@@ -11,24 +11,13 @@ from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.copilot_catalog import find_matched_med
 
 STOP_PHRASES = [
-    "tôi muốn tra cứu thông tin về thuốc", "tôi muốn tra cứu thông tin thuốc", "tôi muốn tra cứu về thuốc",
-    "tôi muốn tra cứu thuốc", "tôi muốn tìm thông tin về thuốc", "tôi muốn tìm thông tin thuốc",
-    "tôi muốn tìm thuốc", "tôi muốn hỏi thông tin về thuốc", "tôi muốn hỏi thông tin thuốc",
-    "tôi muốn hỏi về thuốc", "tôi muốn hỏi thuốc", "tôi muốn tra cứu", "tôi muốn tìm",
-    "tôi muốn hỏi", "tôi muốn biết", "tôi muốn xem", "tôi muốn",
-    "làm ơn cho tôi biết thông tin về thuốc", "làm ơn cho tôi biết", "cho tôi biết thông tin về thuốc",
-    "cho tôi biết", "cho tôi hỏi thông tin về thuốc", "cho tôi hỏi thông tin thuốc",
-    "cho tôi hỏi về thuốc", "cho tôi hỏi thuốc", "cho tôi hỏi", "tìm giúp tôi thuốc",
-    "tìm giúp tôi", "kiểm tra giúp tôi thuốc", "kiểm tra giúp tôi", "xem giúp tôi thuốc", "xem giúp tôi",
-    "tra cứu giúp tôi thông tin về thuốc", "tra cứu giúp tôi thông tin thuốc", "tra cứu giúp tôi thuốc",
-    "tra cứu giúp tôi", "tra cứu thông tin về thuốc", "tra cứu thông tin thuốc", "tra cứu về thuốc",
-    "tra cứu thuốc", "thông tin về thuốc", "thông tin thuốc", "hỏi thông tin về thuốc",
-    "hỏi thông tin thuốc", "hỏi về thuốc", "hỏi thuốc", "trong kho còn thuốc", "trong kho có thuốc",
-    "bệnh viện có thuốc", "danh mục thuốc", "danh sách thuốc", "các loại thuốc",
-    "có những loại thuốc nào", "có những thuốc gì", "dùng để làm gì", "có tác dụng gì",
-    "dùng thế nào", "dùng như thế nào", "liều lượng", "liều dùng", "số đăng ký", "thuốc gì",
-    "là thuốc gì", "là gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần",
-    "thuốc", "không", "sđk", "hỏi", "xem"
+    "tôi muốn tra cứu thông tin về thuốc", "tôi muốn tra cứu thông tin thuốc", "tôi muốn tra cứu về thuốc", "tôi muốn tra cứu thuốc",
+    "tôi muốn tìm thông tin về thuốc", "tôi muốn tìm thuốc", "tôi muốn hỏi thông tin về thuốc", "tôi muốn hỏi về thuốc",
+    "làm ơn cho tôi biết thông tin về thuốc", "cho tôi biết thông tin về thuốc", "cho tôi hỏi thông tin về thuốc", "cho tôi hỏi về thuốc",
+    "tìm giúp tôi thuốc", "kiểm tra giúp tôi thuốc", "tra cứu giúp tôi thuốc", "tra cứu thông tin về thuốc", "tra cứu thông tin thuốc",
+    "thông tin về thuốc", "thông tin thuốc", "hỏi thông tin về thuốc", "hỏi về thuốc", "trong kho còn thuốc", "bệnh viện có thuốc",
+    "danh mục thuốc", "danh sách thuốc", "có những loại thuốc nào", "dùng để làm gì", "có tác dụng gì", "dùng thế nào",
+    "liều lượng", "liều dùng", "số đăng ký", "thuốc gì", "là thuốc gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần", "thuốc", "sđk"
 ]
 
 def extract_drug_keywords(query: str) -> str:
@@ -137,8 +126,23 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
     in_stock = sum(b.current_stock for b in batches)
 
     # 3. Định dạng văn bản trả lời chuẩn xác 100/100
+    citation_block = ""
+    pdf_url = None
+    pdf_page = None
+    if matched.clinical_source:
+        page_match = re.search(r"Trang\s*([\d\s–-]+)", matched.clinical_source, re.IGNORECASE)
+        pdf_page = page_match.group(1).strip() if page_match else None
+        page_first_num = pdf_page.split('-')[0].split('–')[0].strip() if pdf_page else None
+        pdf_url = f"/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page={page_first_num}" if page_first_num else "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
+        citation_block = (
+            f"\n📚 **Tài liệu đối chứng chính thức:** {matched.clinical_source}\n"
+            f"📄 **Tệp PDF Dược Thư:** `Duoc_Thu_Quoc_Gia_Viet_Nam.pdf` {f'(Trang {pdf_page})' if pdf_page else ''}\n"
+            f"🔗 **Mở tài liệu gốc:** [📖 Mở tệp PDF Dược Thư 2015 {f'(Trang {pdf_page})' if pdf_page else ''}]({pdf_url})\n"
+        )
+
     details = (
-        f"### 💊 HỒ SƠ DƯỢC THẨM ĐỊNH CHÍNH XÁC 100% (CỤC QUẢN LÝ DƯỢC - BỘ Y TẾ)\n\n"
+        f"### 💊 HỒ SƠ DƯỢC THẨM ĐỊNH CHÍNH XÁC (CỤC QUẢN LÝ DƯỢC - BỘ Y TẾ)\n"
+        f"{citation_block}\n"
         f"• **Tên biệt dược (Brand Name):** **{matched.brand_name}**\n"
         f"• **Số Đăng Ký (SĐK Lưu Hành):** `{matched.national_code}` *(Giấy phép Cục QLD)*\n"
         f"• **Hoạt chất chính (API):** **{matched.active_ingredient}**\n"
@@ -150,15 +154,20 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
         f"({'Thuốc kiểm soát đặc biệt TT 20' if matched.is_controlled else 'Thuốc thường'})\n"
     )
 
-    if in_stock > 0:
-        batch_details = ", ".join([f"Lô {b.batch_number} (Hạn {b.expiry_date}, tồn {b.current_stock} {b.unit})" for b in batches[:2]])
-        details += f"\n📦 **Tồn kho thực tế Bệnh viện:** **{in_stock} {matched.standard_unit}** ({batch_details})\n"
-    else:
-        details += f"\n📦 **Tồn kho Bệnh viện:** Hiện không có sẵn trong cơ số tủ trực (Cần đề xuất bù hoặc dự trù Mẫu 01).\n"
+    if matched.indications:
+        details += f"\n🎯 **Chỉ định điều trị:** {matched.indications}\n"
+    if matched.contraindications:
+        details += f"⚠️ **Chống chỉ định:** {matched.contraindications}\n"
+    if matched.adult_dosage:
+        details += f"🛡️ **Liều lượng dùng:** {matched.adult_dosage}\n"
+    if matched.antidote:
+        details += f"🧪 **Thuốc giải độc (Antidote):** {matched.antidote}\n"
 
+    stock_msg = f"\n📦 **Tồn kho Bệnh viện:** **{in_stock} {matched.standard_unit}**" if in_stock > 0 else "\n📦 **Tồn kho Bệnh viện:** Hiện không có sẵn trong cơ số tủ trực."
+    details += stock_msg
     if len(drugs) > 1:
         others = ", ".join([f"{d.brand_name} (`{d.national_code}`)" for d in drugs[1:4]])
-        details += f"\n🔍 **Các quy cách / số đăng ký liên quan khác:** {others}"
+        details += f"\n🔍 **Các quy cách / SĐK khác:** {others}"
 
     card = CopilotActionCard(
         card_type="medication_safety",
@@ -169,10 +178,14 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession) -> CopilotResp
             "brand_name": matched.brand_name,
             "active_ingredient": matched.active_ingredient,
             "group": matched.group,
-            "in_stock": in_stock
+            "in_stock": in_stock,
+            "officialSource": matched.clinical_source or "CSDL Cục Quản lý Dược",
+            "pdfDocument": "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if matched.clinical_source else None,
+            "pdfPage": pdf_page,
+            "citationUrl": pdf_url
         },
-        primary_action_label="Xem Cổng 55k Dược Quốc Gia",
-        primary_action_type="OPEN_REGISTRY_MODAL"
+        primary_action_label=f"Mở PDF Dược Thư (Trang {pdf_page.split('-')[0].strip()})" if pdf_page else "Xem Chi Tiết Thuốc",
+        primary_action_type="OPEN_MEDICATION_SAFETY"
     )
 
     return CopilotResponse(

@@ -33,12 +33,25 @@ export function matchMedicationSafetyIntent(lower: string): boolean {
     'tác dụng phụ', 'hướng dẫn dùng liều', 'dùng thế nào', 'dùng như thế nào', 'uống thế nào'
   ]);
 
-  // Loại trừ hành động cấp phát / mượn thuốc trực tiếp
-  const hasExplicitDispenseAction = anyKeyword(lower, [
-    'cho 1 lọ', 'cho 1 ống', 'lấy gấp 1', 'tiêm gấp', 'mượn khẩn', 'xuất khẩn', 'tiêm tĩnh mạch 1'
+  // 4. Nhóm từ khóa tra cứu thông tin chung
+  const hasInfoKeyword = anyKeyword(lower, [
+    'thông tin', 'thong tin', 'thuốc', 'thuoc', 'hỏi về', 'hoi ve', 'tra cứu', 'tra cuu',
+    'là thuốc gì', 'la thuoc gi', 'là gì', 'la gi', 'tài liệu', 'đối chứng', 'pdf', 'nguồn'
   ]);
 
-  return (hasIndicationQuery || hasAllergyOrComponentQuery || hasSafetyKeyword) && !hasExplicitDispenseAction && Boolean(findMatchedMed(lower));
+  // Loại trừ hành động cấp phát / mượn thuốc hoặc kê đơn trực tiếp
+  const hasExplicitAction = anyKeyword(lower, [
+    'cho 1', 'cho 2', 'cho 3', 'cho 4', 'lấy 1', 'lấy 2', 'xuất 1', 'xuất 2', 'xuất chai',
+    'lấy gấp', 'tiêm gấp', 'mượn khẩn', 'xuất khẩn', 'tiêm tĩnh mạch 1', 'tiêm 1', 'tiêm 2',
+    'kê 1', 'kê 2', 'cần 1', 'cần 2', 'kê đơn', 'dặn dò', 'nhắc thuốc', 'trả vỏ', 'thanh toán nợ'
+  ]);
+
+  const matched = findMatchedMed(lower);
+  const isShortMedQuery = Boolean(matched) && lower.trim().split(/\s+/).length <= 4;
+
+  return (hasIndicationQuery || hasAllergyOrComponentQuery || hasSafetyKeyword || hasInfoKeyword || isShortMedQuery) &&
+    !hasExplicitAction &&
+    Boolean(matched);
 }
 
 export function handleMedicationSafetyIntent(
@@ -91,10 +104,16 @@ export function handleMedicationSafetyIntent(
     : `⚠️ **CẢNH BÁO DỊ ỨNG**: Chống chỉ định người có tiền sử mẫn cảm với hoạt chất hoặc tá dược. Xử trí Adrenalin nếu phản vệ theo TT 51/2017/TT-BYT.`;
 
   const src = profile.officialSource;
+  const pdfCitationLine = src?.pdfDocument
+    ? `\n📚 **Tài liệu đối chứng chính thức:** ${src.documentName}\n` +
+      `📄 **Tệp PDF & Trang:** \`${src.pdfDocument}\`${src.pdfPage ? ` (Trang ${src.pdfPage})` : ''}\n` +
+      `🔗 **Mở tài liệu gốc:** [📖 Mở tệp PDF Dược Thư 2015 ${src.pdfPage ? `(Trang ${src.pdfPage})` : ''}](${src.citationUrl || `/pdf/${src.pdfDocument}`})\n`
+    : (src ? `\n📚 **Nguồn trích xuất chính thức:** ${src.documentName} (SĐK: ${src.registrationNumber || 'Cục QLD'}, ${src.approvalAuthority || 'Bộ Y Tế'})\n` : '');
 
   const replyText = `### Dược Thư & Thông Tin Thuốc: **${profile.tallManLASA || matched.name}**
-*(Theo QĐ 2147/QĐ-BYT, Dược điển Việt Nam V & Thông tư 51/2017/TT-BYT)*
+*(Theo QĐ 2033/QĐ-BYT, QĐ 2147/QĐ-BYT & Dược điển Việt Nam V)*
 
+${pdfCitationLine}
 ${compBlock}
 
 🎯 **Chỉ định điều trị ("Dùng để làm gì?")**:
@@ -109,14 +128,13 @@ ${allergyWarningText}
    • **Thời gian & Tần suất**: ${profile.timingAndFrequency}
 ${profile.antidote ? `\n🧪 **Thuốc giải độc đặc hiệu (Antidote)**: **${profile.antidote}**` : ''}
 ${profile.blackBoxWarning ? `\n⛔ **${profile.blackBoxWarning}**` : ''}
-${src ? `\n📚 **Nguồn trích xuất chính thức**: ${src.documentName} (SĐK: ${src.registrationNumber || 'Cục QLD'}, ${src.approvalAuthority || 'Bộ Y Tế'})` : ''}
 
-👉 Bấm nút bên dưới để mở toàn bộ Hồ sơ Thông tin thuốc & Chuyên luận dược lâm sàng.`;
+👉 Bấm nút bên dưới để mở toàn bộ Hồ sơ Dược Thư & Chuyên luận đối chứng gốc.`;
 
   const card: AgentActionCard = {
     cardType: 'medication_safety',
     title: `Thông Tin Thuốc: ${matched.name}`,
-    summary: 'Chỉ định điều trị, thành phần công thức, liều dùng & cảnh báo dị ứng',
+    summary: 'Chỉ định điều trị, thành phần công thức, liều dùng & căn cứ đối chứng Dược Thư 2015',
     data: {
       medName: matched.name,
       tallMan: profile.tallManLASA,
@@ -127,9 +145,12 @@ ${src ? `\n📚 **Nguồn trích xuất chính thức**: ${src.documentName} (S�
       crossReactivities: allergy?.crossReactivities,
       antidote: profile.antidote,
       standardDosing: profile.standardDosing,
-      officialSource: src ? `${src.documentName} (SĐK: ${src.registrationNumber})` : undefined,
+      officialSource: src ? `${src.documentName}${src.pdfPage ? ` • Trang ${src.pdfPage}` : ''}` : undefined,
+      pdfDocument: src?.pdfDocument,
+      pdfPage: src?.pdfPage,
+      citationUrl: src?.citationUrl,
     },
-    primaryActionLabel: 'Xem Thông Tin Thuốc Chi Tiết',
+    primaryActionLabel: src?.pdfPage ? `Mở PDF Dược Thư (Trang ${src.pdfPage.toString().split('-')[0].trim()})` : 'Xem Thông Tin Thuốc Chi Tiết',
     primaryActionType: 'OPEN_MEDICATION_SAFETY',
     status: 'pending',
   };

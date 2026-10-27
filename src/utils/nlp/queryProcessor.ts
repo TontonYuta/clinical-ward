@@ -23,6 +23,8 @@ import { matchMedicationSafetyIntent, handleMedicationSafetyIntent } from './int
 import { matchBusinessIntent, handleBusinessOverviewIntent } from './intents/businessIntent';
 import { matchDrugLookupGuideIntent, handleDrugLookupGuideIntent } from './intents/drugLookupGuideIntent';
 import { matchPrescriptionAdviceIntent, handlePrescriptionAdviceIntent } from './intents/prescriptionAdviceIntent';
+import { matchCpoeIntent, handleCpoeIntent } from './intents/cpoeIntent';
+import { matchDebtSettleIntent, handleDebtSettleIntent } from './intents/debtSettleIntent';
 
 export function processClinicalUserQuery(
   rawInput: string,
@@ -45,6 +47,16 @@ export function processClinicalUserQuery(
   // 0c. Doctor Prescription Advice & Daily Medication Schedule (GAS Webhook / Email Reminder)
   if (matchPrescriptionAdviceIntent(lower)) {
     return handlePrescriptionAdviceIntent(text, lower, nowStr);
+  }
+
+  // 0d. Electronic Prescription CPOE (Kê đơn thuốc điện tử & duyệt đơn)
+  if (matchCpoeIntent(lower)) {
+    return handleCpoeIntent(text, lower, nowStr);
+  }
+
+  // 0e. Settle Debt & Return Narcotic Ampoules (Hoàn trả vỏ thuốc độc gây nghiện & xóa nợ)
+  if (matchDebtSettleIntent(lower)) {
+    return handleDebtSettleIntent(text, lower, nowStr, currentState.debts);
   }
 
   // 1. Legal Protocols & Guides

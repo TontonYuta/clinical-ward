@@ -10,11 +10,14 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Ceftriaxone 1g (Rocephin)
   'med-ab-01': {
     officialSource: {
-      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & QĐ 5631/QĐ-BYT',
-      registrationNumber: '840110304425',
+      documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
+      registrationNumber: 'VN-17037-13 (Rocephin)',
       manufacturer: 'F. Hoffmann-La Roche Ltd. (Thụy Sĩ)',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 265/QĐ-QLD)',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfPage: '371 - 375',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=371',
     },
     composition: {
       activeIngredients: [{ innName: 'Ceftriaxone', chemicalSalt: 'Ceftriaxone natri 3.5 H2O', strength: '1 g (1000mg base)', molarQuantity: 'Chứa ~83 mg (3.6 mEq) Natri / 1g' }],
@@ -94,11 +97,14 @@ export const ANTIBIOTIC_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Vancomycin 500mg/1g
   'med-ab-02': {
     officialSource: {
-      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & QĐ 2147/QĐ-BYT',
-      registrationNumber: '893115106026',
+      documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
+      registrationNumber: 'VD-25501-16 (Imexpharm)',
       manufacturer: 'Chi nhánh Công ty CPDP Imexpharm-Nhà máy công nghệ cao Bình Dương',
       standardPharmacopeia: 'Dược điển Mỹ (USP) / DĐVN V',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 641/QĐ-BYT)',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfPage: '1455 - 1458',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1455',
     },
     composition: {
       activeIngredients: [{ innName: 'Vancomycin', chemicalSalt: 'Vancomycin hydroclorid', strength: '1 g (1.000.000 UI)' }],

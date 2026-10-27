@@ -10,11 +10,14 @@ export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Morphin sulfat 10mg/1ml (Osaphine)
   'med-ctrl-01': {
     officialSource: {
-      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
-      registrationNumber: '893111093823',
+      documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
+      registrationNumber: 'VD-18342-13 (Pharbaco)',
       manufacturer: 'Công ty Cổ phần Dược phẩm trung ương I - Pharbaco',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / Tiêu chuẩn NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 181/QĐ-QLD)',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfPage: '1005 - 1010',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1005',
     },
     composition: {
       activeIngredients: [{ innName: 'Morphin', chemicalSalt: 'Morphin hydroclorid trihydrat', strength: '10 mg / 1 ml' }],
@@ -93,11 +96,14 @@ export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   // Fentanyl 0.1mg/2ml (Panpharma)
   'med-ctrl-02': {
     officialSource: {
-      documentName: 'CSDL 54.885 Thuốc Cục Quản lý Dược & Dược thư Quốc gia VN 2022',
-      registrationNumber: 'VN-22499-20',
+      documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
+      registrationNumber: 'VN-22499-20 (Panpharma)',
       manufacturer: 'Panpharma GmbH (CHLB Đức)',
       standardPharmacopeia: 'Dược điển Anh (BP) / DĐVN V',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 573/QĐ-QLD)',
+      pdfDocument: 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      pdfPage: '655 - 658',
+      citationUrl: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=655',
     },
     composition: {
       activeIngredients: [{ innName: 'Fentanyl', chemicalSalt: 'Fentanyl citrat', strength: '0.1 mg / 2 ml (50 mcg/ml)' }],

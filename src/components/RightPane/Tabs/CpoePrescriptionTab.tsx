@@ -40,7 +40,15 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
         if (isMounted && live && live.length > 0) setOrders(live);
       })
       .catch((err) => console.warn('CPOE API offline:', err));
-    return () => { isMounted = false; };
+
+    const handleCpoeCreated = (e: any) => {
+      if (e.detail) setOrders((prev) => [e.detail, ...prev]);
+    };
+    window.addEventListener('cpoe_order_created', handleCpoeCreated);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('cpoe_order_created', handleCpoeCreated);
+    };
   }, []);
 
   const handleSaveOrder = (newOrder: PrescriptionOrder) => {
