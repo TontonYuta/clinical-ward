@@ -139,7 +139,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 m.get("drug_interactions"),
                 m.get("overdose_treatment"),
                 m.get("antidote"),
-                m.get("source", "Dược thư Quốc gia Việt Nam 2022")
+                m.get("source", "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)")
             ))
         cursor.execute("BEGIN TRANSACTION")
         cursor.executemany("""
@@ -148,7 +148,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rows)
         conn.commit()
-        print(f"✅ Đã nạp {len(rows)} chuyên luận Dược Thư 2022 vào clinical_drug_monographs!")
+        print(f"✅ Đã nạp {len(rows)} chuyên luận Dược Thư 2015 vào clinical_drug_monographs!")
         return len(rows)
     except Exception as e:
         print(f"Lỗi khi nạp chuyên luận Dược Thư: {e}")

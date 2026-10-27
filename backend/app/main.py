@@ -65,6 +65,12 @@ app.include_router(copilot.router, prefix=settings.API_V1_STR)
 app.include_router(cpoe.router, prefix=settings.API_V1_STR)
 app.include_router(registry.router, prefix=settings.API_V1_STR)
 
+import os
+from fastapi.staticfiles import StaticFiles
+_kb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "knowledge_base"))
+if os.path.exists(_kb_dir):
+    app.mount("/api/v1/pdf", StaticFiles(directory=_kb_dir), name="knowledge_base_pdf")
+
 @app.get("/", tags=["Health Check"])
 async def root():
     return {

@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, FileText } from 'lucide-react';
 import { MasterMedication } from '../../../types/medication';
 import { getDavRegistryUrl } from '../../../config/clinicalVerification';
+import { resolvePharmacologicalGroup } from '../../../utils/clinical/pharmacologicalClassification';
 
 interface NationalDrugTableRowProps {
   drug: MasterMedication;
@@ -35,6 +36,11 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
   const standard = d.standardPharmacopeia || d.clinicalProfile?.officialSource?.standardPharmacopeia || 'NSX';
   const shelfLife = d.shelfLife || '36 tháng';
   const packaging = d.packagingSpec || 'Theo tiêu chuẩn cơ sở';
+  const pharmGroup = resolvePharmacologicalGroup(
+    d.atcCode,
+    `${d.brandName} ${d.activeIngredient}`,
+    d.group
+  );
 
   return (
     <tr className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
@@ -63,15 +69,23 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
           {d.brandName}
         </button>
         <div className="flex items-center gap-1 flex-wrap mt-1">
+          {pharmGroup.key !== 'all' && (
+            <span
+              className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-bold border ${pharmGroup.badgeClass}`}
+              title={`Nhóm tác dụng dược lý lâm sàng: ${pharmGroup.label}`}
+            >
+              {pharmGroup.shortLabel}
+            </span>
+          )}
           <span className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-medium border ${badgeStyle}`}>
             {d.group}
           </span>
           {isVerified && (
             <span
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-800 border border-blue-200 select-none"
-              title="Có chuyên luận đối chiếu: Dược Thư Quốc Gia Việt Nam 2015 (QĐ 2033/QĐ-BYT)"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-50 text-blue-900 border border-blue-200 select-none font-mono"
+              title={d.clinicalSource || "Có chuyên luận đối chiếu: Dược Thư Quốc Gia Việt Nam 2015 (QĐ 2033/QĐ-BYT)"}
             >
-              DTQG 2015
+              DTQG 2015{d.clinicalSource?.match(/Trang\s*(\d+)/i)?.[1] ? ` • Tr.${d.clinicalSource.match(/Trang\s*(\d+)/i)![1]}` : ''}
             </span>
           )}
           {d.hospitalStockCount > 0 ? (
@@ -121,25 +135,30 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
         </p>
       </td>
 
-      {/* 5. Thao Tác Chi Tiết */}
+      {/* 5. Thao Tác Chi Tiết & Đối Chứng */}
       <td className="py-2.5 px-3 text-right whitespace-nowrap align-top">
-        <div className="inline-flex items-center gap-1">
+        <div className="inline-flex items-center gap-1.5 justify-end">
           <button
             type="button"
             onClick={() => onOpenDavDetail?.(d)}
-            className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer shadow-2xs"
-            title="Xem Giấy công bố thuốc Cục Quản Lý Dược đầy đủ"
+            data-testid={`btn-doi-chung-${d.nationalCode}`}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer shadow-2xs"
+            title="Mở hồ sơ đối chứng thông tin gốc (Dược Thư 2015 & Giấy Công Bố Cục QLD)"
           >
-            <span>Chi tiết</span>
+            <FileText className="w-3.5 h-3.5 text-blue-700" />
+            <span>Đối chứng gốc</span>
           </button>
-          {hasVerifiedMonograph && (
-            <button
-              onClick={() => onOpenSafetyGuide(d.activeIngredient || d.brandName)}
-              className="inline-flex items-center px-2 py-1 rounded-lg text-2xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition cursor-pointer"
-              title="Xem chuyên luận lâm sàng"
+          {d.clinicalSource?.match(/Trang\s*(\d+)/i)?.[1] && (
+            <a
+              href={`/api/v1/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=${d.clinicalSource.match(/Trang\s*(\d+)/i)![1]}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-2xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition cursor-pointer"
+              title={`Mở trực tiếp tệp PDF Dược Thư tại Trang ${d.clinicalSource.match(/Trang\s*(\d+)/i)![1]}`}
             >
-              Chuyên luận
-            </button>
+              <span>PDF Tr.{d.clinicalSource.match(/Trang\s*(\d+)/i)![1]}</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
           )}
         </div>
       </td>

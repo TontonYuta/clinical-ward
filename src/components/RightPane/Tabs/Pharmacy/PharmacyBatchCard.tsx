@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, FileText } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
 import { resolvePharmacologicalGroup } from '../../../../utils/clinical/pharmacologicalClassification';
 
@@ -105,9 +105,12 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onSelectBatch?.(batch)}
-            className="inline-flex items-center h-7 px-2 rounded border border-slate-200 bg-white text-slate-700 font-semibold text-xs cursor-pointer hover:bg-slate-50"
+            data-testid={`btn-doi-chung-card-${batch.id}`}
+            className="inline-flex items-center gap-1 h-7 px-2 rounded border border-blue-200 bg-blue-50 text-blue-900 font-bold text-xs cursor-pointer hover:bg-blue-100"
+            title="Xem hồ sơ đối chứng thông tin gốc (Dược Thư 2015 & Cục QLD)"
           >
-            <span>Chi tiết</span>
+            <FileText className="w-3.5 h-3.5 text-blue-700" />
+            <span>Đối chứng gốc</span>
           </button>
           {isUnderMin && (
             <button

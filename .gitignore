@@ -54,6 +54,7 @@ TEMP/
 # Heavy PDF documents (Keep strictly in local workspace only)
 *.pdf
 **/*.pdf
+!public/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf
 
 
 

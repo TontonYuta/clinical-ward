@@ -14,6 +14,7 @@ import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRo
 import { NationalDrugTabs, GROUP_STYLES } from './NationalDrugRegistry/NationalDrugTabs';
 import { queryOfflineRegistry } from './NationalDrugRegistry/offlineRegistry';
 import { DavDrugDetailModal } from './DavDrugDetailModal';
+import { PHARMACOLOGICAL_GROUPS, resolvePharmacologicalGroup } from '../../utils/clinical/pharmacologicalClassification';
 
 interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; inventoryBatches?: InventoryBatch[]; }
 
@@ -26,6 +27,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [pharmGroup, setPharmGroup] = useState<string>('all');
   const [onlyInWarehouse, setOnlyInWarehouse] = useState(false);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(54885);
@@ -41,23 +43,20 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
     if (isManualSync) { setIsSyncing(true); setSyncNotice(null); } else setLoading(true);
     let loaded = false;
     try {
-      const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, page, pageSize: PAGE_SIZE });
-      if (data && Array.isArray(data.items) && (data.items.length > 0 || search.trim() !== '' || selectedGroup !== 'all')) {
+      const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, pharmGroup, page, pageSize: PAGE_SIZE });
+      if (data && Array.isArray(data.items) && (data.items.length > 0 || search.trim() !== '' || selectedGroup !== 'all' || pharmGroup !== 'all')) {
         const mapped: MasterMedication[] = data.items.map((i: any) => ({
-          id: i.id, nationalCode: i.national_code, brandName: i.brand_name,
-          activeIngredient: i.active_ingredient, concentration: i.concentration, dosageForm: i.dosage_form,
-          route: i.route, standardUnit: i.standard_unit, group: i.group, isControlled: i.is_controlled,
-          isHighAlert: i.is_high_alert, isCrashCart: i.is_crash_cart, defaultDoseQty: 1, wardStockCount: 0,
-          hospitalStockCount: 0, searchAliases: [i.brand_name.toLowerCase()], note: i.note,
-          packagingSpec: i.packaging_spec, standardPharmacopeia: i.standard_pharmacopeia, shelfLife: i.shelf_life,
-          manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name, approvalDecision: i.approval_decision,
-          hdsdPath: i.hdsd_path || i.hdsdPath, labelPath: i.label_path || i.labelPath,
-          atcCode: i.atc_code || i.atcCode, drugClass: i.drug_class || i.drugClass, indications: i.indications,
-          contraindications: i.contraindications, precautions: i.precautions, pregnancyWarning: i.pregnancy_warning || i.pregnancyWarning,
-          adultDosage: i.adult_dosage || i.adultDosage, pediatricDosage: i.pediatric_dosage || i.pediatricDosage,
-          renalAdjustment: i.renal_adjustment || i.renalAdjustment, hepaticAdjustment: i.hepatic_adjustment || i.hepaticAdjustment,
-          adverseEffects: i.adverse_effects || i.adverseEffects, drugInteractions: i.drug_interactions || i.drugInteractions,
-          overdoseTreatment: i.overdose_treatment || i.overdoseTreatment, antidote: i.antidote, clinicalSource: i.clinical_source || i.clinicalSource,
+          ...i, id: i.id, nationalCode: i.national_code || i.nationalCode, brandName: i.brand_name || i.brandName,
+          activeIngredient: i.active_ingredient || i.activeIngredient, dosageForm: i.dosage_form || i.dosageForm,
+          standardUnit: i.standard_unit || i.standardUnit || 'Viên', group: i.group || 'Thuốc điều trị chuyên khoa',
+          isControlled: !!(i.is_controlled ?? i.isControlled), isHighAlert: !!(i.is_high_alert ?? i.isHighAlert),
+          isCrashCart: !!(i.is_crash_cart ?? i.isCrashCart), defaultDoseQty: 1, wardStockCount: 0, hospitalStockCount: 0,
+          searchAliases: [(i.brand_name || i.brandName || '').toLowerCase()], packagingSpec: i.packaging_spec || i.packagingSpec,
+          standardPharmacopeia: i.standard_pharmacopeia || i.standardPharmacopeia, shelfLife: i.shelf_life || i.shelfLife,
+          manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name || i.applicantName,
+          approvalDecision: i.approval_decision || i.approvalDecision, hdsdPath: i.hdsd_path || i.hdsdPath,
+          labelPath: i.label_path || i.labelPath, atcCode: i.atc_code || i.atcCode, drugClass: i.drug_class || i.drugClass,
+          clinicalSource: i.clinical_source || i.clinicalSource,
         }));
         setDrugs(mapped); setTotalCount(data.total || mapped.length); setTotalPages(data.total_pages || 1);
         if (data.group_stats) setGroupStats(data.group_stats);
@@ -74,16 +73,15 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
       } catch { setSyncNotice('Lỗi nạp CSDL thuốc'); }
     }
     setLoading(false); setIsSyncing(false);
-  }, [search, selectedGroup, page]);
+  }, [search, selectedGroup, pharmGroup, page]);
 
   useEffect(() => { if (isOpen) loadData(); }, [isOpen, loadData]);
 
   const syncedDrugs = useMemo(() => {
-    if (!inventoryBatches || inventoryBatches.length === 0) return drugs;
+    if (!inventoryBatches?.length) return drugs;
     const map = new Map<string, { stock: number; batches: number; unit: string }>();
     for (const b of inventoryBatches) {
-      const keys = [b.registrationNumber?.toLowerCase().trim(), b.nationalCode?.toLowerCase().trim(), b.itemCode?.toLowerCase().trim()].filter(Boolean) as string[];
-      for (const k of new Set(keys)) {
+      for (const k of new Set([b.registrationNumber?.toLowerCase().trim(), b.nationalCode?.toLowerCase().trim(), b.itemCode?.toLowerCase().trim()].filter(Boolean) as string[])) {
         const cur = map.get(k) || { stock: 0, batches: 0, unit: b.unit };
         map.set(k, { stock: cur.stock + b.currentStock, batches: cur.batches + 1, unit: b.unit });
       }
@@ -95,7 +93,9 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   }, [drugs, inventoryBatches]);
 
   const inWarehouseCount = useMemo(() => syncedDrugs.filter((d) => (d.hospitalStockCount ?? 0) > 0).length, [syncedDrugs]);
-  const displayedDrugs = useMemo(() => onlyInWarehouse ? syncedDrugs.filter((d) => (d.hospitalStockCount ?? 0) > 0) : syncedDrugs, [syncedDrugs, onlyInWarehouse]);
+  const displayedDrugs = useMemo(() => {
+    return onlyInWarehouse ? syncedDrugs.filter((d) => (d.hospitalStockCount ?? 0) > 0) : syncedDrugs;
+  }, [syncedDrugs, onlyInWarehouse]);
 
   if (!isOpen) return null;
 
@@ -107,26 +107,16 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-slate-900 text-base sm:text-lg">Cổng Dữ Liệu Dược Quốc Gia</h3>
               <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">DAV 55.000 SĐK</span>
-              {inWarehouseCount > 0 && (
-                <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center gap-1">
-                  <Boxes className="w-3.5 h-3.5 text-blue-600" />Kho BV ({inWarehouseCount})
-                </span>
-              )}
+              {inWarehouseCount > 0 && <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center gap-1"><Boxes className="w-3.5 h-3.5 text-blue-600" />Kho BV ({inWarehouseCount})</span>}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">Hệ thống Dữ liệu Dược Quốc Gia &amp; Đối soát Danh mục Thuốc Bệnh Viện</p>
           </div>
           <div className="flex items-center gap-2">
-            {syncNotice && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 animate-in fade-in">
-                <Check className="w-3 h-3 text-emerald-600" />{syncNotice}
-              </span>
-            )}
+            {syncNotice && <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 animate-in fade-in"><Check className="w-3 h-3 text-emerald-600" />{syncNotice}</span>}
             <button onClick={() => loadData(true)} disabled={isSyncing} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 transition cursor-pointer shadow-2xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50" title="Tải lại danh mục từ máy chủ">
               <RotateCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncing ? 'animate-spin' : ''}`} /><span>{isSyncing ? 'Đang nạp...' : 'Tự động cập nhật'}</span>
             </button>
-            <button onClick={toggleVerify} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-              Kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}
-            </button>
+            <button onClick={toggleVerify} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${verifyMode ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>Kiểm chứng: {verifyMode ? 'BẬT' : 'TẮT'}</button>
             <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
           </div>
         </div>
@@ -137,6 +127,10 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Tìm trên 55.000 thuốc: Tên thuốc, hoạt chất (Morphin, Venetoclax, Cefaclor...), SĐK (VD-24757-16)..." className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-900 placeholder:text-slate-400 shadow-2xs transition" />
             </div>
+            <select value={pharmGroup} onChange={(e) => { setPharmGroup(e.target.value); setPage(1); }} data-testid="registry-pharm-select" className="bg-white border border-slate-200/90 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer shadow-2xs max-w-[170px] truncate shrink-0" title="Lọc theo Tác dụng Dược lý Lâm sàng">
+              <option value="all">Tất cả nhóm dược lý</option>
+              {PHARMACOLOGICAL_GROUPS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
+            </select>
             <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-xl text-xs shrink-0 font-medium">
               <button type="button" onClick={() => { setOnlyInWarehouse(false); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${!onlyInWarehouse ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>Tất cả 55k</button>
               <button type="button" onClick={() => { setOnlyInWarehouse(true); setPage(1); }} className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${onlyInWarehouse ? 'bg-blue-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}>
@@ -169,12 +163,10 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {displayedDrugs.map((d) => (
-                    <NationalDrugTableRow
-                      key={d.id} drug={d} verifyMode={verifyMode}
+                    <NationalDrugTableRow key={d.id} drug={d} verifyMode={verifyMode}
                       badgeStyle={GROUP_STYLES[d.group] || 'bg-slate-100 text-slate-700 border-slate-200/60'}
                       onOpenSafetyGuide={(name) => { onClose(); onSelectMedication?.(name); }}
-                      onOpenDavDetail={(drug) => setSelectedDrugForDav(drug)}
-                    />
+                      onOpenDavDetail={(drug) => setSelectedDrugForDav(drug)} />
                   ))}
                 </tbody>
               </table>

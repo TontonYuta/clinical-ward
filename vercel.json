@@ -6,6 +6,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/v1/pdf/(.*)",
+      "destination": "/pdf/$1"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
     },

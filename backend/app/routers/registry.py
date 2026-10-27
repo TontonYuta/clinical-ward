@@ -13,13 +13,25 @@ from app.schemas.registry import (
 router = APIRouter(prefix="/registry", tags=["Cơ Sở Dữ Liệu Dược Quốc Gia (DAV 55.000 SĐK)"])
 
 GROUP_ALIAS_MAP = {
-    "opioid": "Thuốc gây nghiện",
-    "sedative": "Thuốc hướng thần",
-    "emergency": "Thuốc cấp cứu",
-    "antibiotic": "Kháng sinh",
-    "infusion": "Dịch truyền",
-    "high_alert": "Thuốc nguy cơ cao",
-    "specialty": "Thuốc điều trị chuyên khoa",
+    "opioid": "Thuốc gây nghiện", "sedative": "Thuốc hướng thần", "emergency": "Thuốc cấp cứu",
+    "antibiotic": "Kháng sinh", "infusion": "Dịch truyền", "high_alert": "Thuốc nguy cơ cao", "specialty": "Thuốc điều trị chuyên khoa"
+}
+
+PHARM_MAPPING: dict[str, tuple[list[str], list[str]]] = {
+    "fever_pain": (["N02B"], ["paracetamol", "acetaminophen"]),
+    "cardiotonic_vasopressor": (["C01C", "A03BA"], ["adrenalin", "noradrenalin", "epinephrin", "dopamin", "dobutamin", "atropin"]),
+    "diuretic": (["C03"], ["furosemid", "spironolacton", "indapamid"]),
+    "antihypertensive": (["C08", "C09", "C07"], ["amlodipin", "enalapril", "losartan", "perindopril"]),
+    "antiarrhythmic": (["C01B"], ["amiodaron", "lidocain"]),
+    "antibiotic": (["J01"], ["ceftriaxon", "meropenem", "vancomycin", "ciprofloxacin", "cefaclor", "amoxicillin"]),
+    "opioid": (["N02A", "N01A"], ["morphin", "fentanyl", "tramadol"]),
+    "sedative": (["N05B"], ["diazepam", "midazolam"]),
+    "bronchodilator": (["R03"], ["salbutamol", "ipratropium"]),
+    "antiulcer_ppi": (["A02B"], ["omeprazol", "esomeprazol", "pantoprazol"]),
+    "antidiabetic": (["A10"], ["insulin", "metformin"]),
+    "lipid_lowering": (["C10"], ["atorvastatin", "rosuvastatin"]),
+    "iv_fluids_electrolytes": (["B05B"], ["natri clorid", "glucose", "ringer", "kali clorid"]),
+    "vaccine": (["J07"], ["vaccine", "vắc xin", "vaxigrip"]),
 }
 
 _GROUP_STATS_CACHE: dict[str, int] | None = None
@@ -36,28 +48,24 @@ async def _get_cached_group_stats(db: AsyncSession) -> dict[str, int]:
 async def get_national_drugs_paginated(
     search: str | None = Query(None, description="Tìm tên thuốc, hoạt chất, SĐK"),
     group: str | None = Query(None, description="Lọc theo nhóm lâm sàng"),
+    pharm_group: str | None = Query(None, description="Lọc theo tác dụng dược lý"),
     page: int = Query(1, ge=1, description="Số trang (bắt đầu từ 1)"),
     page_size: int = Query(50, ge=1, le=200, description="Số lượng thuốc mỗi trang"),
     db: AsyncSession = Depends(get_db)
 ):
     target_group = GROUP_ALIAS_MAP.get(group.lower()) if group and group.lower() in GROUP_ALIAS_MAP else group
-    if target_group and target_group.lower() == "all":
-        target_group = None
+    if target_group and target_group.lower() == "all": target_group = None
 
-    # Base filter criteria
     filters = []
-    if target_group:
-        filters.append(DavNationalDrug.group == target_group)
+    if target_group: filters.append(DavNationalDrug.group == target_group)
+    if pharm_group and pharm_group != "all" and pharm_group in PHARM_MAPPING:
+        atcs, kws = PHARM_MAPPING[pharm_group]
+        p_conds = [DavNationalDrug.atc_code.like(f"{p}%") for p in atcs] + [func.lower(DavNationalDrug.active_ingredient).like(f"%{kw}%") for kw in kws]
+        if pharm_group == "antibiotic": p_conds.append(DavNationalDrug.group == "Kháng sinh")
+        filters.append(or_(*p_conds))
     if search and search.strip():
         q = f"%{search.strip().lower()}%"
-        filters.append(
-            or_(
-                func.lower(DavNationalDrug.brand_name).like(q),
-                func.lower(DavNationalDrug.active_ingredient).like(q),
-                func.lower(DavNationalDrug.national_code).like(q),
-                func.lower(DavNationalDrug.note).like(q)
-            )
-        )
+        filters.append(or_(func.lower(DavNationalDrug.brand_name).like(q), func.lower(DavNationalDrug.active_ingredient).like(q), func.lower(DavNationalDrug.national_code).like(q), func.lower(DavNationalDrug.note).like(q)))
 
     try:
         # 1. Total matching count
@@ -105,42 +113,38 @@ async def get_registry_stats(db: AsyncSession = Depends(get_db)):
     )
 
 @router.get("/{national_code}", response_model=DrugItemResponse)
-async def get_drug_by_national_code(national_code: str, db: AsyncSession = Depends(get_db)):
-    stmt = select(DavNationalDrug).where(
-        or_(
-            DavNationalDrug.national_code == national_code,
-            DavNationalDrug.id == national_code
-        )
-    )
+async def get_drug_by_national_code(national_code: str, refresh: bool = Query(False), db: AsyncSession = Depends(get_db)):
+    stmt = select(DavNationalDrug).where(or_(DavNationalDrug.national_code == national_code, DavNationalDrug.id == national_code))
     res = await db.execute(stmt)
     drug = res.scalar_one_or_none()
-    if not drug:
-        raise HTTPException(status_code=404, detail=f"Không tìm thấy thuốc có SĐK {national_code}")
+    if not drug: raise HTTPException(status_code=404, detail=f"Không tìm thấy thuốc có SĐK {national_code}")
     
-    if not drug.hdsd_path and not drug.label_path:
+    if refresh or (not drug.hdsd_path and not drug.label_path):
+        import asyncio
         from app.services.dav_document_service import resolve_and_cache_drug_documents
-        await resolve_and_cache_drug_documents(db, drug)
+        try: await asyncio.wait_for(resolve_and_cache_drug_documents(db, drug), timeout=0.8)
+        except Exception: pass
 
-    if not drug.indications or not drug.adverse_effects:
+    if refresh or not drug.indications or not drug.adverse_effects:
         from app.models.registry import ClinicalDrugMonograph
         mono = None
         if drug.clinical_monograph_id:
             m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == drug.clinical_monograph_id))
             mono = m_res.scalar_one_or_none()
         if not mono and drug.active_ingredient:
-            inn_token = re.split(r"[\s\d%,+;]+", drug.active_ingredient.strip())[0]
-            if len(inn_token) >= 3:
-                m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.inn.ilike(f"%{inn_token}%")).limit(1))
+            for w in [x for x in re.findall(r'[a-zA-ZÀ-ỹ]{4,}', drug.active_ingredient) if x.lower() not in {"dưới", "dạng", "chứa", "dung", "dịch", "thuốc", "viên", "tiêm"}]:
+                m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.inn.ilike(f"%{w}%")).limit(1))
                 mono = m_res.scalar_one_or_none()
+                if mono: break
         if mono:
             fields = ("contraindications", "adult_dosage", "indications", "adverse_effects", "precautions", "pregnancy_warning", "pediatric_dosage", "renal_adjustment", "hepatic_adjustment", "drug_interactions", "overdose_treatment", "antidote")
             for fld in fields:
-                if not getattr(drug, fld, None):
-                    setattr(drug, fld, getattr(mono, fld, None))
+                if refresh or not getattr(drug, fld, None): setattr(drug, fld, getattr(mono, fld, None))
             if not drug.clinical_monograph_id: drug.clinical_monograph_id = mono.id
             if not drug.atc_code and mono.atc_code: drug.atc_code = mono.atc_code
             if not drug.drug_class and mono.drug_class: drug.drug_class = mono.drug_class
-            if not drug.clinical_source: drug.clinical_source = "Dược thư Quốc gia Việt Nam 2022"
+            if refresh or not drug.clinical_source or "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" not in drug.clinical_source:
+                drug.clinical_source = mono.source or "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
 
     return drug
 

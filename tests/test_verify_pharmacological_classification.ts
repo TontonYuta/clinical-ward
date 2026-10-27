@@ -56,21 +56,66 @@ async function main() {
       await page.waitForTimeout(400);
     }
 
-    // 3. Mở Giấy Công Bố Thuốc Hadunalin và kiểm tra trích dẫn Dược Thư 2015
-    console.log('🔍 Mở modal Giấy Công Bố Thuốc Hadunalin...');
-    const haduBtn = page.locator('button:has-text("Hadunalin"):visible').first();
-    if (await haduBtn.count() > 0) {
-      await haduBtn.click();
+    // 3. Mở Giấy Công Bố Thuốc Hadunalin và kiểm tra trích dẫn Dược Thư 2015 & nút Đối chứng gốc
+    console.log('🔍 Kiểm tra nút Đối chứng gốc & Modal trích dẫn Dược Thư 2015...');
+    const doiChungBtn = page.locator('button:has-text("Đối chứng gốc"):visible').first();
+    if (await doiChungBtn.count() > 0) {
+      await doiChungBtn.click();
       await page.waitForTimeout(1200);
 
-      // Chụp hiển thị nguồn tài liệu đối chiếu DTQG 2015
-      await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified_hadunalin_modal_dtqg2015.png') });
-      console.log('📸 Đã chụp: verified_hadunalin_modal_dtqg2015.png');
+      // Chụp hiển thị nguồn tài liệu đối chiếu DTQG 2015 kèm Tên tệp PDF và Số trang
+      await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified_hadunalin_pdf_page_citation.png') });
+      console.log('📸 Đã chụp: verified_hadunalin_pdf_page_citation.png');
+
+      // Kiểm tra nút "Cập nhật lại" (Reload)
+      const reloadBtn = page.locator('button[data-testid="drug-detail-reload-btn"]:visible').first();
+      if (await reloadBtn.count() > 0) {
+        console.log('🔄 Bấm nút Cập nhật lại (Reload)...');
+        await reloadBtn.click();
+        await page.waitForTimeout(1000);
+        await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified_reload_proof_workstation.png') });
+        console.log('📸 Đã chụp: verified_reload_proof_workstation.png');
+      }
 
       // Đóng modal
       const closeBtn = page.locator('.fixed.inset-0:visible button:has(svg.lucide-x), .fixed.inset-0:visible button:has-text("Đóng")').first();
       if (await closeBtn.count() > 0) await closeBtn.click();
       await page.waitForTimeout(500);
+    }
+
+    // 4. Mở Cổng Dữ Liệu Dược Quốc Gia 55k SĐK & Kiểm tra phân loại dược lý
+    console.log('🔍 Mở Cổng Dữ Liệu Dược Quốc Gia 55k SĐK...');
+    const regBtn = page.locator('button:has-text("Cổng Dược Quốc Gia"):visible').first();
+    if (await regBtn.count() > 0) {
+      await regBtn.click();
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified_national_registry_portal.png') });
+      console.log('📸 Đã chụp: verified_national_registry_portal.png');
+
+      const pharmSelect = page.locator('select[data-testid="registry-pharm-select"]:visible').first();
+      if (await pharmSelect.count() > 0) {
+        console.log('🔍 Lọc theo Nhóm Dược lý: Kháng sinh trong Cổng 55k SĐK...');
+        await pharmSelect.selectOption('antibiotic');
+        await page.waitForTimeout(600);
+        await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified_national_registry_antibiotics.png') });
+        console.log('📸 Đã chụp: verified_national_registry_antibiotics.png');
+      }
+
+      const firstDrugBtn = page.locator('div[role="dialog"] tbody tr button:has-text("VD-"), div[role="dialog"] tbody tr button:has-text("893")').first();
+      if (await firstDrugBtn.count() > 0) {
+        console.log('🔍 Bấm xem chi tiết thuốc trong danh mục 55k...');
+        await firstDrugBtn.click();
+        await page.waitForTimeout(1200);
+        await page.screenshot({ path: path.join(ARTIFACT_DIR, 'verified_dav_drug_detail_workstation.png') });
+        console.log('📸 Đã chụp: verified_dav_drug_detail_workstation.png');
+
+        const closeDetailBtn = page.locator('.fixed.inset-0:visible button:has(svg.lucide-x), .fixed.inset-0:visible button:has-text("Đóng")').last();
+        if (await closeDetailBtn.count() > 0) await closeDetailBtn.click();
+        await page.waitForTimeout(400);
+      }
+
+      const closeRegBtn = page.locator('.fixed.inset-0:visible button:has(svg.lucide-x)').first();
+      if (await closeRegBtn.count() > 0) await closeRegBtn.click();
     }
 
     console.log('🎉 TOÀN BỘ KIỂM THỬ PLAYWRIGHT ĐÃ HOÀN TẤT THÀNH CÔNG RỰC RỠ!');

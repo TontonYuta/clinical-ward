@@ -282,12 +282,14 @@ export async function chatCopilotApi(query: string, userRole: string, userName: 
 export async function getNationalDrugRegistryApi(params?: {
   search?: string;
   group?: string;
+  pharmGroup?: string;
   page?: number;
   pageSize?: number;
 }) {
   const query = new URLSearchParams();
   if (params?.search) query.set('search', params.search);
   if (params?.group && params.group !== 'all') query.set('group', params.group);
+  if (params?.pharmGroup && params.pharmGroup !== 'all') query.set('pharm_group', params.pharmGroup);
   if (params?.page) query.set('page', params.page.toString());
   if (params?.pageSize) query.set('page_size', (params.pageSize || 50).toString());
 
@@ -302,19 +304,25 @@ export async function getDrugDocumentsApi(nationalCode: string) {
   return res.json();
 }
 
-export async function getDrugDetailApi(nationalCode: string) {
+export async function getDrugDetailApi(nationalCode: string, refresh = false) {
+  const norm = nationalCode.trim().toLowerCase();
+  const url = `${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}${refresh ? '?refresh=true' : ''}`;
   try {
-    const res = await fetch(`${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}`);
+    const res = await fetch(url, refresh ? { cache: 'no-store' } : undefined);
     if (res.ok) return await res.json();
   } catch {}
   try {
     const res = await fetch('/data/vietnam_drug_registry/dav_essential_formulary.json');
     if (res.ok) {
       const list = await res.json();
-      const match = list.find((d: any) => d.nationalCode === nationalCode || d.id === nationalCode);
+      const match = list.find((d: any) => 
+        (d.nationalCode && d.nationalCode.trim().toLowerCase() === norm) || 
+        (d.id && d.id.trim().toLowerCase() === norm) ||
+        (d.registrationNumber && d.registrationNumber.trim().toLowerCase() === norm)
+      );
       if (match) return match;
     }
   } catch {}
-  throw new Error('Không thể tra cứu thông tin chi tiết thuốc từ máy chủ hoặc dữ liệu ngoại tuyến');
+  return null;
 }
 
