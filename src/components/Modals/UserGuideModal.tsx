@@ -45,7 +45,7 @@ const GUIDE_SECTIONS: GuideSectionMeta[] = [
   { id: 'roles', title: '2. Phân quyền 5 vị trí (RBAC)', shortTitle: '2. Phân quyền', icon: ShieldCheck },
   { id: 'tab1', title: '3. Sổ nợ tủ trực lâm sàng', shortTitle: '3. Tủ trực TT22', icon: FileText },
   { id: 'tab2', title: '4. Sự cố & Bàn giao TBYT', shortTitle: '4. Thiết bị NĐ98', icon: Wrench },
-  { id: 'tab3', title: '5. Kho Dược FEFO & Định mức', shortTitle: '5. Kho FEFO', icon: Boxes },
+  { id: 'tab3', title: '5. Kho Dược Bệnh Viện', shortTitle: '5. Kho Dược', icon: Boxes },
   { id: 'tab4', title: '6. Dây chuyền lạnh Vaccine', shortTitle: '6. Chuỗi lạnh', icon: ThermometerSnowflake },
   { id: 'tab5', title: '7. Kiểm kê & Thanh lý TS', shortTitle: '7. Tài sản', icon: Building2 },
   { id: 'auth', title: '8. Ký số & Sổ kiểm toán', shortTitle: '8. Ký số & Audit', icon: ShieldCheck },

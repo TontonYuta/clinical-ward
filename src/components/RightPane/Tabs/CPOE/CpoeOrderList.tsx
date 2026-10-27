@@ -34,33 +34,33 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
             onClick={() => setFilterType('all')}
             className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               filterType === 'all'
-                ? 'bg-teal-700 text-white shadow-2xs'
+                ? 'bg-blue-700 text-white shadow-2xs font-bold'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
-            Tất cả ({orders.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('outpatient')}
-            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
-              filterType === 'outpatient'
-                ? 'bg-teal-700 text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-200/70'
-            }`}
-          >
-            Ngoại trú
+            Tất cả đơn ({orders.length})
           </button>
           <button
             type="button"
             onClick={() => setFilterType('inpatient_daily')}
             className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               filterType === 'inpatient_daily'
-                ? 'bg-teal-700 text-white shadow-2xs'
+                ? 'bg-blue-700 text-white shadow-2xs font-bold'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
-            Nội trú
+            🏥 Đơn thuốc Nội trú (Y lệnh ngày)
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('outpatient')}
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
+              filterType === 'outpatient'
+                ? 'bg-emerald-700 text-white shadow-2xs font-bold'
+                : 'text-slate-600 hover:bg-slate-200/70'
+            }`}
+          >
+            🏪 Đơn thuốc Ngoại trú (Xuất viện)
           </button>
         </div>
       </div>

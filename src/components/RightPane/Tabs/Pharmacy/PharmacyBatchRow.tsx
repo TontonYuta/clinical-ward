@@ -146,7 +146,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
                 ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200'
                 : 'bg-teal-800 hover:bg-teal-900 text-white'
             }`}
-            title="Xuất kho bệnh viện theo chuẩn FEFO"
+            title="Xuất kho cấp phát theo phiếu dự trù/y lệnh"
           >
             <span>Xuất</span>
             <ArrowUpRight className="w-3.5 h-3.5" />

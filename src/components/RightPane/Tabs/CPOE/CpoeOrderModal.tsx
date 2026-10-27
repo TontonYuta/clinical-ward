@@ -94,7 +94,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
         <div className="h-14 px-5 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-teal-400" />
-            <h3 className="font-bold text-sm sm:text-base">Kê đơn thuốc điện tử (TT 26/2025/TT-BYT)</h3>
+            <h3 className="font-bold text-sm sm:text-base">Kê đơn thuốc điều trị</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/10 text-slate-300 cursor-pointer">
             <X className="w-5 h-5" />
@@ -104,16 +104,16 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 space-y-3.5 text-xs sm:text-sm">
           <div className="flex gap-2">
             <button
-              type="button" onClick={() => { setRxType('outpatient'); setDaysPrescribed(30); }}
-              className={`flex-1 py-1.5 rounded-md font-semibold border cursor-pointer ${rxType === 'outpatient' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+              type="button" onClick={() => { setRxType('inpatient_daily'); setDaysPrescribed(1); setIsChronic(false); }}
+              className={`flex-1 py-1.5 rounded-md font-semibold border cursor-pointer transition ${rxType === 'inpatient_daily' ? 'bg-blue-50 text-blue-900 border-blue-500 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
             >
-              Đơn ngoại trú (BHYT)
+              🏥 Đơn thuốc Nội trú (Y lệnh ngày)
             </button>
             <button
-              type="button" onClick={() => { setRxType('inpatient_daily'); setDaysPrescribed(1); setIsChronic(false); }}
-              className={`flex-1 py-1.5 rounded-md font-semibold border cursor-pointer ${rxType === 'inpatient_daily' ? 'bg-teal-50 text-teal-900 border-teal-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+              type="button" onClick={() => { setRxType('outpatient'); setDaysPrescribed(30); }}
+              className={`flex-1 py-1.5 rounded-md font-semibold border cursor-pointer transition ${rxType === 'outpatient' ? 'bg-emerald-50 text-emerald-900 border-emerald-500 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
             >
-              Đơn nội trú (hằng ngày)
+              🏪 Đơn thuốc Ngoại trú (Xuất viện)
             </button>
           </div>
 

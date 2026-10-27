@@ -65,10 +65,10 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       <div className="bg-white border border-slate-200 rounded-lg p-3 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
-            Kê đơn thuốc điện tử (CPOE)
+            Kê đơn thuốc
           </h2>
           <p className="text-xs text-slate-500">
-            Đơn thuốc liên thông quốc gia • Cảnh báo an toàn tương tác thuốc
+            Đơn thuốc nội trú theo ngày &amp; đơn thuốc ngoại trú (Thông tư 52/2017 &amp; TT 26/2025/TT-BYT)
           </p>
         </div>
 

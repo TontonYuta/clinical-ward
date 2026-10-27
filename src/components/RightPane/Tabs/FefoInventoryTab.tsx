@@ -154,7 +154,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
                 <th className="py-2.5 px-3 min-w-[200px]">Tên Thuốc & Hoạt Chất</th>
                 <th className="py-2.5 px-3 whitespace-nowrap">Dạng Bào Chế & Quy Cách</th>
                 <th className="py-2.5 px-3 min-w-[140px]">Cơ Sở Sản Xuất</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Số Lô & HSD (FEFO)</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Số Lô &amp; Hạn dùng</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap">Tồn Kho BV</th>
                 <th className="py-2.5 px-3 text-right whitespace-nowrap">Thao Tác</th>
               </tr>

@@ -52,7 +52,7 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   };
 
   const pharmacyDefs: NavDef[] = [
-    { tab: 'cpoe', label: 'Kê đơn CPOE', icon: Stethoscope, title: 'Kê đơn thuốc điện tử' },
+    { tab: 'cpoe', label: 'Kê đơn thuốc', icon: Stethoscope, title: 'Kê đơn thuốc nội trú & ngoại trú' },
     {
       tab: 'debt',
       label: 'Sổ nợ vỏ',
@@ -66,9 +66,9 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
     },
     {
       tab: 'fefo',
-      label: 'Kho dược FEFO',
+      label: 'Kho dược',
       icon: Boxes,
-      title: 'Quản lý hạn dùng FEFO & tồn kho',
+      title: 'Quản lý kho dược nội trú & ngoại trú',
       badge: nearExpiryAndLowStockCount > 0 ? (
         <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200/80 tabular-nums">
           {nearExpiryAndLowStockCount}

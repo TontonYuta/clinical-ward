@@ -20,7 +20,7 @@ export const UPDATED_LEGAL_DOCS: LegalDocMeta[] = [
     id: 'tt26_2025',
     code: 'Thông tư 26/2025/TT-BYT',
     shortCode: 'TT 26 (Kê đơn điện tử)',
-    category: 'Chỉ Định & Kê Đơn CPOE',
+    category: 'Kê Đơn Thuốc',
     title: 'Quy định về đơn thuốc, kê đơn thuốc và đơn thuốc điện tử',
     authority: 'Bộ Y Tế (Hiệu lực: 01/07/2025)',
     replacesOrAmends: 'Thay thế hoàn toàn Thông tư 52/2017, TT 18/2018 và TT 04/2022',

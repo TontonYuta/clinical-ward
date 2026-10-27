@@ -325,8 +325,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         // 3. Immutable audit trail entry
         appendAuditRecord(
           'SETTLE_DEBT',
-          'Hoàn bù cơ số tủ trực cấp cứu & Xuất kho FEFO',
-          `${item.code}: ${item.itemName} (${item.quantity}) -> Kho Dược xuất bù Lô ${deductedBatchNumber || 'FEFO'}`,
+          'Hoàn bù cơ số tủ trực cấp cứu & Xuất kho cấp phát',
+          `${item.code}: ${item.itemName} (${item.quantity}) -> Kho Dược xuất bù Lô ${deductedBatchNumber || 'cận hạn'}`,
           'Thông tư 22/2011/TT-BYT & TT 36/2018 GSP',
           signer,
           witness,
@@ -339,12 +339,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           sender: 'agent',
           text: `Hoàn bù cơ số tủ trực & Trừ kho Dược thành công:
 • Phiếu: **${item.code}** (${item.itemName} - SL: ${item.quantity})
-• Kho Dược (Tab 3): Đã xuất bù ${parsedQty} đơn vị từ **Lô ${deductedBatchNumber || 'cận hạn nhất (FEFO)'}**.
-• Căn cứ: Điều 10 Thông tư 22/2011/TT-BYT & Khoản 2 Điều 12 TT 36/2018 GSP.`,
+• Kho Dược: Đã xuất bù ${parsedQty} đơn vị từ **Lô ${deductedBatchNumber || 'cận hạn nhất'}**.
+• Căn cứ: Điều 10 Thông tư 22/2011/TT-BYT & TT 36/2018 GSP.`,
           timestamp: nowTime,
           legalReference: {
             lawCode: 'TT 22/2011 & TT 36/2018 GSP',
-            title: 'Hoàn bù cơ số & Xuất kho FEFO',
+            title: 'Hoàn bù cơ số & Xuất kho cấp phát',
             clause: 'Điều 10'
           }
         };
@@ -512,8 +512,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
     setAuthRequest({
       actionType: 'DISPATCH_FEFO',
-      title: 'Ký lệnh Xuất kho Dược phẩm theo Nguyên tắc FEFO',
-      description: `Xác nhận lệnh xuất ${quantity} ${batch.unit} từ ${batch.warehouseLocation} ưu tiên lô cận hạn nhất (${batch.expiryDate}).`,
+      title: 'Ký lệnh xuất kho dược phẩm cấp phát',
+      description: `Xác nhận lệnh xuất ${quantity} ${batch.unit} từ ${batch.warehouseLocation} (${batch.expiryDate}).`,
       targetItem: `${batch.itemName} (Lô: ${batch.batchNumber}, EXP: ${batch.expiryDate})`,
       legalBasis: 'Khoản 2 Điều 12 Thông tư 36/2018/TT-BYT (GSP)',
       requiredRoles: ['pharmacist', 'director'],
@@ -532,7 +532,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         );
         appendAuditRecord(
           'DISPATCH_FEFO',
-          'Xuất kho dược phẩm theo nguyên tắc FEFO',
+          'Xuất kho dược phẩm cấp phát',
           `${batch.itemName} (Lô ${batch.batchNumber}) - SL: ${quantity} ${batch.unit}`,
           'Khoản 2 Điều 12 Thông tư 36/2018/TT-BYT (GSP)',
           signer,
@@ -1312,7 +1312,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         const confirmMsg: ChatMessage = {
           id: `msg-cpoe-confirm-${Date.now()}`,
           sender: 'system',
-          text: `✅ **Đã ký duyệt & tạo đơn thuốc CPOE thành công (${order.id})**:\n• **Bệnh nhân**: ${order.patientName}\n• **Chẩn đoán**: ${order.diagnosisIcd10} - ${order.diagnosisText}\n• **Số khoản thuốc**: ${order.items?.length || 0} mục • Thời gian: ${order.daysPrescribed} ngày\n• **Quy chế**: Điều 4 Thông tư 52/2017/TT-BYT.`,
+          text: `✅ **Đã ký duyệt & tạo đơn thuốc thành công (${order.id})**:\n• **Bệnh nhân**: ${order.patientName}\n• **Chẩn đoán**: ${order.diagnosisIcd10} - ${order.diagnosisText}\n• **Số khoản thuốc**: ${order.items?.length || 0} mục • Thời gian: ${order.daysPrescribed} ngày\n• **Quy chế**: Điều 4 Thông tư 52/2017/TT-BYT.`,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         };
         setChatMessages(prev => [...prev, confirmMsg]);

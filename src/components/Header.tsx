@@ -40,10 +40,10 @@ interface HeaderProps {
 }
 
 const TAB_METADATA: Record<DashboardTab, { title: string; shortTitle: string; icon: React.ComponentType<{ className?: string }> }> = {
-  cpoe: { title: 'Kê đơn thuốc điện tử (CPOE)', shortTitle: 'Kê đơn', icon: Stethoscope },
+  cpoe: { title: 'Kê đơn thuốc', shortTitle: 'Kê đơn', icon: Stethoscope },
   debt: { title: 'Sổ theo dõi nợ vỏ thuốc', shortTitle: 'Sổ nợ', icon: FileText },
   equipment: { title: 'Sự cố thiết bị y tế', shortTitle: 'Thiết bị', icon: Wrench },
-  fefo: { title: 'Kho dược & Hạn dùng', shortTitle: 'Kho dược', icon: Boxes },
+  fefo: { title: 'Kho dược bệnh viện', shortTitle: 'Kho dược', icon: Boxes },
   coldchain: { title: 'Giám sát chuỗi lạnh', shortTitle: 'Chuỗi lạnh', icon: ThermometerSnowflake },
   asset_audit: { title: 'Kiểm kê tài sản', shortTitle: 'Kiểm kê', icon: Building2 }
 };

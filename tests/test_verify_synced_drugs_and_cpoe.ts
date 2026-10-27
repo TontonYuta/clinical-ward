@@ -37,8 +37,8 @@ async function verify() {
     await page.waitForTimeout(500);
   }
 
-  console.log('Clicking visible CPOE tab...');
-  const cpoeTabBtn = page.locator('button:has-text("Kê đơn CPOE"):visible').first();
+  console.log('Clicking visible Prescription tab...');
+  const cpoeTabBtn = page.locator('button:has-text("Kê đơn"):visible').first();
   await cpoeTabBtn.click();
   await page.waitForTimeout(1000);
 
