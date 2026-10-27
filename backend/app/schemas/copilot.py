@@ -4,6 +4,7 @@ class CopilotQuery(BaseModel):
     query: str
     user_role: str = "nurse"
     user_name: str = "ĐD. Lê Thị Thu"
+    session_id: str | None = None
 
 class CopilotActionCard(BaseModel):
     card_type: str
@@ -21,3 +22,6 @@ class CopilotResponse(BaseModel):
     suggested_action: dict | None = None
     legal_basis: str | None = None
     suggested_chips: list[str] = []
+    session_id: str | None = None
+    active_patient_id: str | None = None
+    active_patient_name: str | None = None

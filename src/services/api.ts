@@ -267,12 +267,12 @@ export async function verifyAuditIntegrityApi(): Promise<{
   return res.json();
 }
 
-// 7. Copilot AI Assistant
-export async function chatCopilotApi(query: string, userRole: string, userName: string) {
+// 7. Copilot AI Assistant (Hỗ trợ AMIE Multi-turn Context Session)
+export async function chatCopilotApi(query: string, userRole: string, userName: string, sessionId?: string) {
   const res = await fetch(`${API_BASE_URL}/copilot/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, user_role: userRole, user_name: userName })
+    body: JSON.stringify({ query, user_role: userRole, user_name: userName, session_id: sessionId })
   });
   if (!res.ok) throw new Error('Lỗi gửi tin nhắn đến Trợ lý AI');
   return res.json();

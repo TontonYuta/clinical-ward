@@ -11,6 +11,8 @@ import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../se
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
 
+let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
 export async function processClinicalAgentQueryAsync(
   rawInput: string,
   currentState: AsyncClinicalState,
@@ -36,7 +38,7 @@ export async function processClinicalAgentQueryAsync(
 
   // 2. Thử gọi qua FastAPI Copilot Backend (nắm giữ 54.885 CSDL Cục QLD & tồn kho thực tế)
   try {
-    const backendData = await chatCopilotApi(rawInput, role, name);
+    const backendData = await chatCopilotApi(rawInput, role, name, _clientSessionId);
     if (backendData && backendData.reply_text && backendData.intent !== 'GENERAL_CLINICAL_ASSISTANCE') {
       let card: AgentActionCard | undefined = undefined;
       let actionPayload: ActionPayload | undefined = undefined;

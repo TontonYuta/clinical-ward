@@ -35,6 +35,7 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     lower_query = query.lower()
     user_role = payload.user_role
     user_name = payload.user_name
+    session_id = payload.session_id or f"session_{user_name.replace(' ', '_')}"
 
     # 0a. Dặn dò bác sĩ & Lịch uống thuốc qua Google Apps Script / Email
     is_advice = any(w in lower_query for w in ["dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc", "thông báo uống", "gửi mail", "gửi email", "gửi gmail", "uống thuốc hàng ngày"]) or (
@@ -53,8 +54,10 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     if is_debt_settle:
         return await handle_debt_settle_intent(query, lower_query, db)
 
-    # 0d. 8 Kịch Bản Lâm Sàng Chuyên Sâu Gemini AI & Hồ Sơ Bệnh Nhân
-    scenario_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db)
+    # 0d. 12 Kịch Bản Lâm Sàng Chuyên Sâu Tách File & AMIE Multi-turn Context
+    scenario_res = await detect_and_handle_gemini_clinical_scenario(
+        query, lower_query, user_name, db, user_role=user_role, session_id=session_id
+    )
     if scenario_res:
         return scenario_res
 
