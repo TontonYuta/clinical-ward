@@ -89,11 +89,23 @@ const PROMPT_INJECTION_PATTERNS: Array<{ pattern: RegExp; desc: string }> = [
 
   // Format Hijacking / Arbitrary HTML & Website Generation (OWASP LLM01:2025, LLM02:2025 & NeMo Domain Rails)
   {
-    pattern: /(?:trả lời|viết|tạo|xuất|render|làm|sinh|chuyển)\s+(?:thành|ra|dưới dạng)?\s*(?:1\s+)?(?:file|tệp|trang|bản|mã|code)?\s*(?:html|website|web page|web|trang web|script|giao diện web|mã nguồn html)/i,
+    pattern: /(?:trả lời|viết|tạo|xuất|render|làm|sinh|chuyển|cần|cho tôi|xin|muốn|yêu cầu|đổi|gửi)\s+(?:thành|ra|dưới dạng|bằng|dạng|theo)?\s*(?:1\s+)?(?:đoạn\s+|file\s+|tệp\s+|trang\s+|bản\s+|mẫu\s+)?(?:mã|code|file|tệp)?\s*(?:html|website|web page|web|trang web|script|giao diện web|mã nguồn html|css|javascript|python|bash)/i,
     desc: "Format Hijacking: Yêu cầu sinh mã HTML / tạo website trái với phạm vi lâm sàng"
   },
   {
-    pattern: /(?:tạo|viết|code|lập trình)\s+(?:cho tôi\s+)?(?:1\s+)?(?:file|trang|bản)?\s*(?:website|trang web|web app|html|javascript|css)/i,
+    pattern: /\b(?:mã|code|file|tệp|định dạng|dạng|ngôn ngữ|bằng|sang|thành)\s+html\b/i,
+    desc: "Format Hijacking: Yêu cầu mã nguồn HTML trong ứng dụng y tế"
+  },
+  {
+    pattern: /(?:dưới dạng|theo định dạng|bằng định dạng|dạng)\s+(?:mã\s+)?(?:html|web|website|script|code)/i,
+    desc: "Format Hijacking: Yêu cầu định dạng HTML / Code"
+  },
+  {
+    pattern: /\b(?:code\s+web|lập trình\s+web|thiết kế\s+web(?:site)?|làm\s+web(?:site)?)\b/i,
+    desc: "Format Hijacking: Yêu cầu phát triển web"
+  },
+  {
+    pattern: /(?:tạo|viết|code|lập trình)\s+(?:cho tôi\s+)?(?:1\s+)?(?:file|trang|bản)?\s*(?:website|trang web|web app|html|javascript|css|web)/i,
     desc: "Format Hijacking: Yêu cầu lập trình website / tạo mã giao diện web"
   },
   {
@@ -222,7 +234,7 @@ export function validateClientOutputGuardrail(text: string, userQuery?: string):
   }
 
   // 4. Output Guardrail: Vô hiệu hóa cấu trúc mã HTML / Website hoàn chỉnh (OWASP LLM02:2025)
-  if (/(?:<!DOCTYPE\s+html|<html[\s>]|<head[\s>]|<body[\s>]|```html\s*<!DOCTYPE)/i.test(scrubbed)) {
+  if (/(?:<!DOCTYPE\s+html|<html[\s>]|<head[\s>]|<body[\s>]|```html\s*(?:<!DOCTYPE|<html|<head|<body|<div|<title|<script|<style)|<script[\s>]|javascript:)/i.test(scrubbed)) {
     scrubbed = (
       `🛡️ **RÀO CHẮN ĐẦU RA (Output Rail Blocked - OWASP LLM02:2025)**\n\n` +
       `• **Phát hiện:** Phản hồi chứa cấu trúc mã HTML / Website không hợp lệ.\n` +

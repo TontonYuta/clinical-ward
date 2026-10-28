@@ -27,6 +27,8 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isFever = /sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì/i.test(lower);
   const isPrescription = (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) && (INITIAL_PATIENTS.some(p => lower.includes(p.fullName.toLowerCase())) || /rx-2026-/i.test(lower));
   const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower);
+  const isHeadache = /đau đầu|nhức đầu|đau nửa đầu|thuốc đau đầu|thuốc trị đau đầu|thuốc giảm đau/i.test(lower);
+  const isOncology = /ung thư|u bướu|carcinoma|khối u ác tính|trị ung thư|chữa ung thư|thuốc ung thư|thuốc trị ung thư|hóa trị ung thư/i.test(lower);
   const isAmiodarone = /amiodaron|amiodarone/i.test(lower);
   const isNoradrenalin = /noradrenalin|norepinephrine/i.test(lower);
   const isDiazepam = /diazepam|seduxen/i.test(lower);
@@ -38,7 +40,7 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   return (
     isCeftriaxoneCalcium || isRedMan || isStatinFood || isHighAlertKcl ||
     isAnaphylaxis || isOpioidCalc || isAllergyAudit || isRenal ||
-    isColdChain || isPrescription || isAdr ||
+    isColdChain || isPrescription || isAdr || isHeadache || isOncology ||
     isAmiodarone || isNoradrenalin || isDiazepam || isSalbutamol || isEsomeprazole ||
     isPatientProfile || isDeictic || isFever
   );
@@ -502,6 +504,79 @@ export async function processGeminiClinicalScenario(
         legalReference: { lawCode: 'Thông tư 51/2017/TT-BYT & QĐ 1088/QĐ-BYT', title: 'Quy trình báo cáo Cảnh giác Dược ADR', clause: 'Mục Báo cáo biến cố có hại' },
         suggestedChips: ['Phác đồ Adrenalin phản vệ TT 51', 'Lập phiếu báo hỏng', 'Đối soát ca trực 07:00 AM']
       }
+    };
+  }
+
+  // 12. Kịch bản Chuyên Khoa Ung Bướu & Bệnh Nan Y (Giới hạn thẩm quyền AI & Safe Deferral)
+  if (/ung thư|u bướu|carcinoma|khối u ác tính|trị ung thư|chữa ung thư|thuốc ung thư|thuốc trị ung thư|hóa trị ung thư/i.test(lower)) {
+    const replyText = (
+      `### 🎗️ TƯ VẤN CHUYÊN KHOA UNG BƯỚU (Quy Chuẩn Điều Trị Đa Mô Thức)\n\n` +
+      `• **Bản chất bệnh học:** "Ung thư" là tập hợp hơn 200 bệnh lý ác tính phức tạp với cơ chế sinh học phân tử khác biệt. **Hoàn toàn không tồn tại một loại thuốc đơn lẻ hay phổ thông dùng chung cho mọi ca bệnh ung thư.**\n\n` +
+      `• **Các nhóm thuốc & phương pháp điều trị y học hiện đại:**\n` +
+      `  1. *Hóa trị liệu độc tế bào (Cytotoxic Chemotherapy):* Tác động lên chu kỳ phân bào (Cisplatin, Doxorubicin, Paclitaxel, 5-FU...).\n` +
+      `  2. *Liệu pháp nhắm trúng đích (Targeted Therapy):* Kháng thể đơn dòng (Trastuzumab, Rituximab), thuốc ức chế Tyrosine Kinase (Erlotinib, Osimertinib...).\n` +
+      `  3. *Liệu pháp miễn dịch (Immunotherapy):* Thuốc ức chế điểm kiểm soát miễn dịch Anti-PD1/PD-L1 (Pembrolizumab, Nivolumab...).\n` +
+      `  4. *Liệu pháp nội tiết & Chăm sóc giảm nhẹ:* Quản lý đau mạn tính bậc 3 theo WHO (kết hợp Morphin sulfat theo Thông tư 20/2017/TT-BYT).\n\n` +
+      `🛡️ **RÀO CHẮN AN TOÀN LÂM SÀNG & GIỚI HẠN THẨM QUYỀN AI (Safe Deferral):**\n` +
+      `• Mọi phác đồ ung thư bắt buộc phải do **Hội đồng Ung bướu đa chuyên khoa (Tumor Board)** và **Bác sĩ chuyên khoa Ung bướu** chỉ định dựa trên: giải phẫu bệnh, giai đoạn TNM, xét nghiệm đột biến gen, diện tích da (BSA) và chức năng gan thận.\n` +
+      `• **Trợ lý AI tuyệt đối không đưa ra chỉ định thuốc cụ thể cho bệnh lý này.**\n` +
+      `• **Khuyến cáo người bệnh:** Cần thăm khám trực tiếp tại Bệnh viện Ung bướu hoặc Trung tâm Ung bướu các bệnh viện tuyến tỉnh/trung ương; tuyệt đối không tự mua thuốc hoặc sử dụng các bài thuốc truyền miệng không rõ nguồn gốc.`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Bộ Y Tế & NCCN Guidelines', title: 'Hướng dẫn chẩn đoán điều trị ung thư', clause: 'Nguyên tắc điều trị đa mô thức' },
+        suggestedChips: ['Chăm sóc giảm nhẹ ung thư', 'Quy chế thuốc gây nghiện TT 20', 'Tra cứu Dược Thư 2015']
+      }
+    };
+  }
+
+  // 13. Kịch bản Xử Trí Đau Đầu & Thuốc Giảm Đau Chuẩn Dược Thư 2015 & CSDL Kho Viện
+  if (/đau đầu|nhức đầu|đau nửa đầu|thuốc đau đầu|thuốc trị đau đầu|thuốc giảm đau/i.test(lower)) {
+    const card: AgentActionCard = {
+      cardType: 'medication_safety',
+      title: 'Thuốc Giảm Đau: PARACETAMOL 500mg',
+      summary: 'Lô: LOT-PC24-11A • Tồn: 80 Viên (Kho Dược Nội Trú - Kệ A1 Tầng 1) • SĐK: 893100110026',
+      data: {
+        brand_name: 'PARACETAMOL 500mg',
+        active_ingredient: 'Paracetamol 500mg',
+        current_stock: '80 Viên',
+        warehouse_location: 'Kho Dược Nội Trú (Kệ A1 - Tầng 1)',
+        batch_number: 'LOT-PC24-11A',
+        targetTab: 'fefo'
+      },
+      primaryActionLabel: 'Xem Tồn Kho Paracetamol',
+      primaryActionType: 'NAVIGATE_TAB',
+      targetTab: 'fefo',
+      status: 'pending'
+    };
+    const replyText = (
+      `### 💊 HƯỚNG DẪN XỬ TRÍ ĐAU ĐẦU & THUỐC GIẢM ĐAU (Dược Thư Quốc Gia 2015)\n\n` +
+      `• **Phân tích lâm sàng:** Đau đầu (Cephalea) là triệu chứng thường gặp do nhiều nguyên nhân: căng thẳng thần kinh (Tension headache), vận mạch, viêm xoang hoặc đau nửa đầu Migraine.\n\n` +
+      `• **Thuốc giảm đau bậc 1 ưu tiên (Có sẵn trong CSDL Tồn kho Bệnh viện):**\n` +
+      `  • **Biệt dược tồn kho:** **PARACETAMOL 500mg** (Lô: \`LOT-PC24-11A\` | Tồn kho: **80 Viên** tại Kho Dược Nội Trú - Kệ A1 Tầng 1).\n` +
+      `  • **Liều dùng chuẩn người lớn:** Uống **500mg - 1000mg/lần**, cách mỗi 4 - 6 giờ nếu còn đau. **Tuyệt đối không uống quá 4.000mg (4g)/24 giờ** để tránh hoại tử tế bào gan cấp tính.\n` +
+      `  • **Chống chỉ định & Thận trọng:** Người suy gan nặng, thiếu men G6PD, người nghiện rượu; không uống rượu bia trong thời gian dùng thuốc.\n\n` +
+      `• **Lựa chọn thay thế (Đau đầu do viêm hoặc căng cơ):**\n` +
+      `  • **NSAIDs (Ibuprofen):** 200mg - 400mg sau ăn no (chống chỉ định người có tiền sử loét dạ dày tá tràng, suy thận, hen phế quản).\n` +
+      `  • **Đau nửa đầu Migraine chuyên biệt:** Cần khám bác sĩ để cân nhắc nhóm Triptan (Sumatriptan) hoặc Ergotamin.\n\n` +
+      `🚨 **DẤU HIỆU NGUY HIỂM CẦN ĐI BỆNH VIỆN NGAY (Cảnh báo đỏ Red Flags):**\n` +
+      `• Đau đầu đột ngột dữ dội kiểu "sét đánh", đau đầu dữ dội kèm sốt cao cứng gáy, nôn vọt, nhìn mờ, co giật hoặc yếu liệt nửa người.`
+    );
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Dược Thư Quốc Gia Việt Nam 2015 Trang 1095', title: 'Chuyên luận Paracetamol', clause: 'Chỉ định giảm đau, hạ sốt' },
+        card,
+        suggestedChips: ['Paracetamol liều tối đa bao nhiêu', 'Kiểm tra hạn dùng FEFO', 'Thông tin thuốc Prasocare']
+      },
+      card
     };
   }
 

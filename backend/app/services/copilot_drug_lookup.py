@@ -17,7 +17,9 @@ STOP_PHRASES = [
     "tìm giúp tôi thuốc", "kiểm tra giúp tôi thuốc", "tra cứu giúp tôi thuốc", "tra cứu thông tin về thuốc", "tra cứu thông tin thuốc",
     "thông tin về thuốc", "thông tin thuốc", "hỏi thông tin về thuốc", "hỏi về thuốc", "trong kho còn thuốc", "bệnh viện có thuốc",
     "danh mục thuốc", "danh sách thuốc", "có những loại thuốc nào", "dùng để làm gì", "có tác dụng gì", "dùng thế nào",
-    "liều lượng", "liều dùng", "số đăng ký", "thuốc gì", "là thuốc gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần", "thuốc", "sđk"
+    "liều lượng", "liều dùng", "số đăng ký", "thuốc gì", "là thuốc gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần",
+    "cho tôi", "cho em", "cho anh", "cho mình", "tôi cần", "em cần", "mình cần", "hãy cho", "lấy cho", "cần", "muốn", "lấy", "tìm",
+    "thuốc", "về", "sđk", "mã", "html", "code", "website", "trị", "chữa", "uống"
 ]
 
 def extract_drug_keywords(query: str) -> str:
@@ -36,7 +38,7 @@ def extract_drug_keywords(query: str) -> str:
 
     for phrase in sorted(STOP_PHRASES, key=len, reverse=True):
         q_lower = q_lower.replace(phrase, " ")
-    words = [w.strip() for w in q_lower.split() if len(w.strip()) >= 2]
+    words = [w.strip(" .,?!:;\"'") for w in q_lower.split() if len(w.strip(" .,?!:;\"'")) >= 2]
     return " ".join(words).strip()
 
 async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: str | None = None) -> CopilotResponse:
@@ -69,18 +71,10 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
             "   • Tự động đối soát cơ số tủ trực cấp cứu, số lô và ngày hết hạn.\n\n"
             "👉 *Bạn có thể bấm vào các gợi ý nhanh bên dưới hoặc nhập trực tiếp tên thuốc / số đăng ký cần tra cứu!*"
         )
-        card = CopilotActionCard(
-            card_type="shift_handover_report",
-            title="Cổng Tra Cứu Dược Quốc Gia 54.885 Thuốc",
-            summary="Cơ sở dữ liệu Cục Quản lý Dược & Dược Thư Quốc Gia Việt Nam",
-            data={"total_drugs": 54885, "status": "ready"},
-            primary_action_label="Mở Cổng 55k Dược Quốc Gia",
-            primary_action_type="OPEN_REGISTRY_MODAL"
-        )
         return CopilotResponse(
             intent="MEDICATION_LOOKUP_GUIDE",
             reply_text=guide_text,
-            card=card,
+            card=None,
             legal_basis="Cục Quản lý Dược Việt Nam & Dược Thư Quốc Gia",
             suggested_chips=[
                 "Tra cứu thuốc Rocephin",
@@ -170,27 +164,20 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
 
         # 3. Nếu hoàn toàn không có tương đồng (< 0.55): Kích hoạt Safe Abstention (R-Tuning & MedAbstain)
         # Tuyệt đối từ chối suy đoán liều lượng cho các thực thể ngoài CSDL / không có thực
+        clean_target = kw.strip().title() if len(kw) < 25 else kw.strip()
         reply_abstain = (
             f"### 🛡️ TỪ CHỐI ĐƯA CHỈ ĐỊNH (Thực Thể Dược Phẩm Chưa Định Danh)\n\n"
-            f"• **Kết quả đối soát:** Hệ thống đã tra soát qua **54.885 số đăng ký Cục Quản lý Dược (DAV)** và toàn bộ **Dược Thư Quốc Gia 2015**, **không ghi nhận** bất kỳ hoạt chất hoặc biệt dược nào có tên `{kw}`.\n"
+            f"• **Kết quả đối soát:** Hệ thống đã tra soát qua **54.885 số đăng ký Cục Quản lý Dược (DAV)** và toàn bộ **Dược Thư Quốc Gia 2015**, **không ghi nhận** bất kỳ hoạt chất hoặc biệt dược nào có tên `{clean_target}`.\n"
             f"• **Rào chắn an toàn lâm sàng (Safe Abstention - TT 22/2011/TT-BYT & TT 20/2017/TT-BYT):** Trợ lý AI **tuyệt đối không suy đoán hoặc cung cấp liều dùng, chỉ định** cho các tên thuốc chưa được định danh trong CSDL chính thống nhằm ngăn ngừa biến cố gây hại tính mạng người bệnh.\n"
             f"• **Khuyến nghị xử trí:**\n"
             f"  1. Kiểm tra lại vỏ bao bì hộp thuốc, đơn thuốc CPOE hoặc hồ sơ bệnh án để đối chiếu chính xác tên thương mại / hoạt chất quốc tế (INN).\n"
             f"  2. Tra cứu trực tiếp trên [Cổng dịch vụ công Cục Quản lý Dược](https://dichvucong.dav.gov.vn).\n"
             f"  3. Liên hệ Dược sĩ lâm sàng / Khoa Dược bệnh viện để được thẩm định chuyên môn."
         )
-        card_abstain = CopilotActionCard(
-            card_type="shift_handover_report",
-            title="Cổng Tra Cứu Dược Quốc Gia 54.885 SĐK",
-            summary="Mở cổng đối soát danh mục thuốc Cục Quản lý Dược",
-            data={"kw": kw, "status": "unindexed"},
-            primary_action_label="Mở Cổng Dược Quốc Gia",
-            primary_action_type="OPEN_REGISTRY_MODAL"
-        )
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",
             reply_text=reply_abstain,
-            card=card_abstain,
+            card=None,
             legal_basis="Thông tư 22/2011/TT-BYT & Dược Thư Quốc Gia Việt Nam",
             suggested_chips=["Tra cứu SĐK VD-24757-16", "Kho Dược Quốc Gia 55k", "Đối soát ca trực 07:00 AM"]
         )
