@@ -4,7 +4,7 @@
  * Phân hệ Quản Lý Kho Dược Bệnh Viện & Công Bố Dược Phẩm (FEFO) (<=200 LOC)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { InventoryBatch } from '../../../types/clinical';
 import { clinicalAudio } from '../../../utils/audio';
 import { RestockProposalModal } from '../../Modals/RestockProposalModal';
@@ -34,15 +34,26 @@ interface FefoInventoryTabProps {
 export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   batches, onDispatchBatch, onRestockBatches, onOpenPrintForm, isAudioMuted, onOpenSafetyGuide,
 }) => {
-  const [warehouse, setWarehouse] = useState<WarehouseFilter>('all');
-  const [commodity, setCommodity] = useState<CommodityFilter>('all');
-  const [status, setStatus] = useState<StatusFilter>('all');
-  const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>('all');
-  const [davFilter, setDavFilter] = useState<DavRegulatoryFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [warehouse, setWarehouse] = useState<WarehouseFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_warehouse') as WarehouseFilter) || 'all' : 'all'));
+  const [commodity, setCommodity] = useState<CommodityFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_commodity') as CommodityFilter) || 'all' : 'all'));
+  const [status, setStatus] = useState<StatusFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_status') as StatusFilter) || 'all' : 'all'));
+  const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_pharm_group') as PharmacologicalGroupKey) || 'all' : 'all'));
+  const [davFilter, setDavFilter] = useState<DavRegulatoryFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_dav_filter') as DavRegulatoryFilter) || 'all' : 'all'));
+  const [searchQuery, setSearchQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('fefo_search') || '' : ''));
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [isRegistryModalOpen, setIsRegistryModalOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<InventoryBatch | null>(null);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('fefo_warehouse', warehouse);
+      sessionStorage.setItem('fefo_commodity', commodity);
+      sessionStorage.setItem('fefo_status', status);
+      sessionStorage.setItem('fefo_pharm_group', pharmGroup);
+      sessionStorage.setItem('fefo_dav_filter', davFilter);
+      sessionStorage.setItem('fefo_search', searchQuery);
+    } catch {}
+  }, [warehouse, commodity, status, pharmGroup, davFilter, searchQuery]);
 
   const filteredBatches = useMemo(() => {
     return batches.filter((batch) => {
@@ -146,24 +157,24 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
 
       {/* Desktop View: Bảng công bố dược phẩm hành chính (Chuẩn DAV dichvucong.dav.gov.vn) */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-2xs">
-        <div className="overflow-auto flex-1">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-200 text-slate-700">
-              <tr className="font-bold text-[11px] uppercase tracking-wider">
-                <th className="py-2.5 px-3 text-center w-12">STT</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Số Đăng Ký (SĐK)</th>
-                <th className="py-2.5 px-3 min-w-[200px]">Tên Thuốc & Hoạt Chất</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Dạng Bào Chế & Quy Cách</th>
-                <th className="py-2.5 px-3 min-w-[140px]">Cơ Sở Sản Xuất</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Số Lô &amp; Hạn dùng</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tồn Kho BV</th>
-                <th className="py-2.5 px-3 text-right whitespace-nowrap">Thao Tác</th>
+        <div className="overflow-x-auto overflow-y-auto flex-1 w-full">
+          <table className="w-full min-w-[1250px] text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-800 shadow-2xs">
+              <tr className="font-extrabold text-xs sm:text-sm uppercase tracking-wider">
+                <th className="py-3 px-3.5 text-center w-14">STT</th>
+                <th className="py-3 px-3.5 whitespace-nowrap">Số Đăng Ký (SĐK)</th>
+                <th className="py-3 px-3.5 min-w-[240px]">Tên Thuốc & Hoạt Chất</th>
+                <th className="py-3 px-3.5 whitespace-nowrap min-w-[180px]">Dạng Bào Chế & Quy Cách</th>
+                <th className="py-3 px-3.5 min-w-[160px]">Cơ Sở Sản Xuất</th>
+                <th className="py-3 px-3.5 whitespace-nowrap">Số Lô &amp; Hạn dùng</th>
+                <th className="py-3 px-3.5 text-center whitespace-nowrap min-w-[130px]">Tồn Kho BV</th>
+                <th className="py-3 px-3.5 text-right whitespace-nowrap min-w-[230px]">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredBatches.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-500 font-medium text-sm">
                     Không tìm thấy thuốc khớp với tiêu chí tra cứu.
                   </td>
                 </tr>

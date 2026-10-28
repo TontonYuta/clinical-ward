@@ -26,16 +26,28 @@ from app.services.copilot_intents_prescription import (
     handle_debt_settle_intent
 )
 from app.services.copilot_gemini_scenarios import detect_and_handle_gemini_clinical_scenario
+from app.security.guardrails import validate_input_guardrail, validate_output_guardrail
 
 router = APIRouter(prefix="/copilot", tags=["Trợ Lý Agent Lâm Sàng Thông Minh"])
 
 @router.post("/chat", response_model=CopilotResponse)
 async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(get_db)):
-    query = payload.query.strip()
-    lower_query = query.lower()
     user_role = payload.user_role
     user_name = payload.user_name
     session_id = payload.session_id or f"session_{user_name.replace(' ', '_')}"
+
+    # === LỚP BẢO MẬT INPUT GUARDRAIL: CHỐNG PROMPT INJECTION & SQL INJECTION ===
+    guard_res = validate_input_guardrail(payload.query, user_role=user_role)
+    if not guard_res.is_safe:
+        return CopilotResponse(
+            intent="SECURITY_GUARDRAIL_BLOCKED",
+            reply_text=guard_res.safe_response,
+            legal_basis="OWASP LLM01:2025, TT 20/2017 & An toàn An ninh Y tế",
+            suggested_chips=["Tra cứu Dược Thư 2015", "Quy chế thuốc gây nghiện TT 20", "Hướng dẫn sử dụng hệ thống"]
+        )
+
+    query = guard_res.sanitized_query
+    lower_query = query.lower()
 
     # 0a. Dặn dò bác sĩ & Lịch uống thuốc qua Google Apps Script / Email
     is_advice = any(w in lower_query for w in ["dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc", "thông báo uống", "gửi mail", "gửi email", "gửi gmail", "uống thuốc hàng ngày"]) or (
@@ -59,6 +71,7 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
         query, lower_query, user_name, db, user_role=user_role, session_id=session_id
     )
     if scenario_res:
+        scenario_res.reply_text = validate_output_guardrail(scenario_res.reply_text, query)
         return scenario_res
 
     # 1. Tra cứu Bản đồ 10 Đại Nghiệp vụ Bệnh viện
@@ -112,7 +125,11 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     # 11. Tra cứu Dược Quốc Gia 54.885 SĐK chính xác 100/100
     has_sdk = bool(re.search(r"((?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+)", lower_query))
     is_deep_pharmacology = any(w in lower_query for w in ["thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"])
-    has_drug_ask = any(w in lower_query for w in ["thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "thuốc", "về thuốc", "hỏi về thuốc", "biệt dược", "hoạt chất"]) or (matched_med is not None and is_med_info and not is_deep_pharmacology)
+    has_drug_ask = any(w in lower_query for w in [
+        "thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "thuốc", "về thuốc",
+        "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "uống thế nào", "dùng thế nào",
+        "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không"
+    ]) or (matched_med is not None and is_med_info and not is_deep_pharmacology)
     if (has_sdk or has_drug_ask) and not is_deep_pharmacology:
         return await lookup_drug_authoritative(query, db, session_id=session_id)
 

@@ -37,31 +37,31 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3.5">
-        <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
-          <span className="text-[11px] text-slate-500 font-semibold block">1. Chỉ thị nhiệt độ lọ vắc xin (VVM)</span>
+        <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200">
+          <span className="text-xs text-slate-500 font-semibold block">1. Chỉ thị nhiệt độ lọ vắc xin (VVM)</span>
           <div className="flex items-center gap-2 mt-1.5">
             <span className="w-3.5 h-3.5 rounded-xs bg-emerald-500 inline-block border border-emerald-600" />
-            <span className="font-bold text-slate-900 text-sm">Cấp độ 1 (Đạt chuẩn)</span>
+            <span className="font-bold text-slate-900 text-sm sm:text-base">Cấp độ 1 (Đạt chuẩn)</span>
           </div>
-          <span className="text-xs text-emerald-700 block mt-1">Hình vuông trong sáng màu hơn vòng ngoài (An toàn)</span>
+          <span className="text-xs text-emerald-700 font-medium block mt-1">Hình vuông trong sáng màu hơn vòng ngoài (An toàn)</span>
         </div>
 
-        <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
-          <span className="text-[11px] text-slate-500 font-semibold block">2. Nhiệt độ động học trung bình (MKT)</span>
+        <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200">
+          <span className="text-xs text-slate-500 font-semibold block">2. Nhiệt độ động học trung bình (MKT)</span>
           <div className="flex items-center gap-2 mt-1.5">
             <FlaskConical className="w-4 h-4 text-slate-600" />
-            <span className="font-bold text-slate-900 font-mono text-sm">5.6°C (Đạt chuẩn)</span>
+            <span className="font-bold text-slate-900 font-mono text-sm sm:text-base">5.6°C (Đạt chuẩn)</span>
           </div>
-          <span className="text-xs text-teal-700 block mt-1">Nằm trong giới hạn bảo toàn kháng nguyên &lt; 8.0°C</span>
+          <span className="text-xs text-teal-700 font-medium block mt-1">Nằm trong giới hạn bảo toàn kháng nguyên &lt; 8.0°C</span>
         </div>
 
-        <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
-          <span className="text-[11px] text-slate-500 font-semibold block">3. Thời gian phơi nhiễm sự cố</span>
+        <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200">
+          <span className="text-xs text-slate-500 font-semibold block">3. Thời gian phơi nhiễm sự cố</span>
           <div className="flex items-center gap-2 mt-1.5">
             <Clock className="w-4 h-4 text-slate-600" />
-            <span className="font-bold text-slate-900 font-mono text-sm">12 phút</span>
+            <span className="font-bold text-slate-900 font-mono text-sm sm:text-base">12 phút</span>
           </div>
-          <span className="text-xs text-slate-600 block mt-1">Nằm trong ngưỡng cho phép (&lt; 30 phút theo WHO PQS)</span>
+          <span className="text-xs text-slate-600 font-medium block mt-1">Nằm trong ngưỡng cho phép (&lt; 30 phút theo WHO PQS)</span>
         </div>
       </div>
 

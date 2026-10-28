@@ -38,31 +38,31 @@ export const ColdChainInventoryList: React.FC<ColdChainInventoryListProps> = ({
   totalDoses,
 }) => {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-3.5 shadow-2xs">
-      <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100">
-        <span className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-          <Package className="w-4 h-4 text-slate-600" />
+    <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-2xs">
+      <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 flex-wrap gap-2">
+        <span className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+          <Package className="w-4.5 h-4.5 text-slate-600" />
           Danh mục sinh phẩm &amp; vắc xin đang bảo quản (Tổng: {totalDoses.toLocaleString()} liều)
         </span>
-        <span className="text-xs text-slate-600 font-semibold">Kho lạnh dược lâm sàng GSP</span>
+        <span className="text-xs sm:text-sm text-slate-600 font-bold bg-slate-100 px-2.5 py-0.5 rounded border border-slate-200">Kho lạnh dược lâm sàng GSP</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs sm:text-sm">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm">
         {INVENTORY_ITEMS.map((item) => (
-          <div key={item.batch} className="p-3 rounded-md bg-slate-50 border border-slate-200">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-900 text-xs sm:text-sm">{item.name}</span>
+          <div key={item.batch} className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-1.5">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="font-bold text-slate-900 text-sm sm:text-base leading-snug">{item.name}</span>
               {isQuarantined && (
-                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
                   Biệt trữ
                 </span>
               )}
             </div>
-            <div className="text-xs text-slate-500 mt-1">
-              Số lượng: <strong className="text-slate-800 font-semibold">{item.quantity}</strong> · Lô: {item.batch}
+            <div className="text-xs sm:text-sm text-slate-600">
+              Số lượng: <strong className="text-slate-900 font-bold">{item.quantity}</strong> · Lô: <strong className="font-mono text-slate-800">{item.batch}</strong>
             </div>
             <div
-              className={`text-xs font-medium mt-1.5 ${
+              className={`text-xs sm:text-sm font-semibold pt-1 ${
                 isQuarantined ? 'text-amber-800 font-bold' : 'text-emerald-700'
               }`}
             >

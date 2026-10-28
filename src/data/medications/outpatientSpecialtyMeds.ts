@@ -50,7 +50,7 @@ export const OUTPATIENT_SPECIALTY_MASTER_MEDICATIONS: MasterMedication[] = [
     note: 'Vắc xin phòng cúm mùa bảo quản chuỗi lạnh 2-8°C (SĐK: 300310033526)',
   },
   {
-    id: 'b-10',
+    id: 'med-tt-01',
     nationalCode: '893110034524',
     brandName: 'Vắc xin Uốn ván hấp phụ (TT)',
     tallManName: 'Vắc xin Uốn ván (TT)',
@@ -71,7 +71,7 @@ export const OUTPATIENT_SPECIALTY_MASTER_MEDICATIONS: MasterMedication[] = [
     note: 'Vắc xin tạo miễn dịch chủ động phòng uốn ván (SĐK: 893110034524)',
   },
   {
-    id: 'b-16-spec',
+    id: 'b-16',
     nationalCode: '890110200326',
     brandName: 'Prasocare',
     tallManName: 'Esomeprazol (Prasocare)',
@@ -88,7 +88,7 @@ export const OUTPATIENT_SPECIALTY_MASTER_MEDICATIONS: MasterMedication[] = [
     isCrashCart: false,
     wardStockCount: 50,
     hospitalStockCount: 800,
-    searchAliases: ['praso', 'prasocare', 'esomeprazol', 'da day', '890110200326'],
+    searchAliases: ['b-16', 'praso', 'prasocare', 'esomeprazol', 'da day', '890110200326'],
     note: 'Thuốc ức chế bơm proton PPI điều trị loét dạ dày (SĐK: 890110200326)',
   },
   {

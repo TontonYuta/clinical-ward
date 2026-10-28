@@ -5,7 +5,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { AgentActionCard } from '../../types/clinical';
+import { AgentActionCard, ColdChainMonitorState } from '../../types/clinical';
 import { getGeminiApiKey, callGeminiWithFallback, CLINICAL_SYSTEM_INSTRUCTION } from './config';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../patientService';
 import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';
@@ -20,7 +20,10 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isOpioidCalc = /quy đổi|mme|tương đương|chuyển sang fentanyl|uống sang tiêm|liều morphin|trả vỏ|thu hồi vỏ/i.test(lower);
   const isAllergyAudit = /dị ứng|chống chỉ định|thẩm định|an toàn đơn|5 đúng|dùng được không|dị ứng penicillin/i.test(lower);
   const isRenal = /suy thận|chức năng thận|cockcroft|creatinine|egfr|crcl|chỉnh liều/i.test(lower);
-  const isColdChain = (/chuỗi lạnh|vaxigrip|tủ lạnh|kho lạnh/i.test(lower) || /cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể/i.test(lower);
+  const isColdChainEmergency = (/mất điện|sự cố|quá nhiệt|vượt ngưỡng|cách ly|quarantine|hỏng tủ|cháy|báo động|phác đồ ứng phó|hỏng lốc|nhiệt độ tăng|không lạnh/i.test(lower)) && (/chuỗi lạnh|vaxigrip|tủ lạnh|kho lạnh|vắc xin|buồng lạnh/i.test(lower));
+  const isColdChainTelemetry = (/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh|vắc xin|buồng lạnh/i.test(lower) || /datalogger|data logger/i.test(lower)) && (/nhiệt độ|độ ẩm|mấy độ|bao nhiêu|hiện tại|tình trạng|kiểm tra|giám sát|ổn định/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể|người|em bé|bệnh nhân/i.test(lower);
+  const isColdChainGeneral = (/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh|cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể|người|em bé|bệnh nhân/i.test(lower);
+  const isColdChain = isColdChainEmergency || isColdChainTelemetry || isColdChainGeneral;
   const isFever = /sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì/i.test(lower);
   const isPrescription = (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) && (INITIAL_PATIENTS.some(p => lower.includes(p.fullName.toLowerCase())) || /rx-2026-/i.test(lower));
   const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower);
@@ -43,7 +46,8 @@ export function isClinicalScenarioQuery(lower: string): boolean {
 
 export async function processGeminiClinicalScenario(
   rawInput: string,
-  nowStr: string
+  nowStr: string,
+  coldChainState?: ColdChainMonitorState
 ): Promise<ProcessedQueryResult | null> {
   const lower = rawInput.toLowerCase();
   if (!isClinicalScenarioQuery(lower)) return null;
@@ -400,40 +404,85 @@ export async function processGeminiClinicalScenario(
     }
   }
 
-  // 10. Kịch bản Xử trí Sự Cố Chuỗi Lạnh Vắc xin GSP
-  if ((/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh/i.test(lower) || /cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể/i.test(lower)) {
-    const card: AgentActionCard = {
-      cardType: 'coldchain_monitor',
-      title: 'Giám Sát Chuỗi Lạnh: Tủ Lạnh Vaxigrip T1',
-      summary: 'Dải an toàn 2.0°C - 8.0°C • Phác đồ cách ly bảo toàn vắc xin',
-      data: { targetTab: 'coldchain', batch: 'LOT-VX25-S1' },
-      primaryActionLabel: 'Mở Giám Sát Chuỗi Lạnh',
-      primaryActionType: 'NAVIGATE_TAB',
-      targetTab: 'coldchain',
-      status: 'pending'
-    };
-    const replyText = (
-      `### ❄️ XỬ TRÍ SỰ CỐ NHIỆT ĐỘ CHUỖI LẠNH VẮC XIN (TT 36/2018/TT-BYT GSP)\n\n` +
-      `• **Sản phẩm bảo quản:** Vắc xin cúm Vaxigrip (\`LOT-VX25-S1\`) - Tồn **200 liều** tại Tủ lạnh Dược GSP T1.\n` +
-      `• **Quy chuẩn dải nhiệt:** Tiêu chuẩn bảo quản bắt buộc từ **+2.0°C đến +8.0°C**.\n` +
-      `• **Phác đồ ứng phó sự cố (Nhiệt độ vượt ngưỡng / Mất điện):**\n` +
-      `  1. Kích hoạt bình tích lạnh dự phòng trong buồng tủ, tuyệt đối **không mở cửa tủ lạnh**.\n` +
-      `  2. Chuyển nguồn cấp sang máy phát điện ưu tiên của bệnh viện trong vòng 5 phút.\n` +
-      `  3. **Tạm thời cách ly lô vắc xin (Quarantine):** Dán tem cảnh báo, ngừng cấp phát cho các khoa phòng.\n` +
-      `  4. Xuất dữ liệu Data Logger và tính toán nhiệt độ động học trung bình (MKT) để Hội đồng Dược thẩm định chất lượng.`
-    );
-    return {
-      replyMessage: {
-        id: `msg-agent-scenario-${Date.now()}`,
-        sender: 'agent',
-        text: replyText,
-        timestamp: nowStr,
-        legalReference: { lawCode: 'Thông tư 36/2018/TT-BYT', title: 'Thực hành tốt bảo quản thuốc GSP', clause: 'Mục Bảo quản vắc xin dây chuyền lạnh' },
-        card,
-        suggestedChips: ['Xem biểu đồ chuỗi lạnh', 'Đối soát ca trực 07:00 AM', 'Kiểm tra kho lạnh GSP']
-      },
-      card
-    };
+  // 10. Kịch bản Chuỗi Lạnh Vắc xin GSP (Thông tư 36/2018/TT-BYT GSP)
+  const isColdChainEmergencyQuery = /mất điện|sự cố|quá nhiệt|vượt ngưỡng|cách ly|quarantine|hỏng tủ|cháy|báo động|phác đồ ứng phó|hỏng lốc|nhiệt độ tăng|không lạnh/i.test(lower);
+  const isAbnormalTemp = coldChainState ? (coldChainState.alarmActive || coldChainState.currentTemp > 8.0 || coldChainState.currentTemp < 2.0) : false;
+
+  if ((/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh|vắc xin|buồng lạnh/i.test(lower) || /cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể|người|em bé|bệnh nhân/i.test(lower)) {
+    if (isColdChainEmergencyQuery || isAbnormalTemp) {
+      // 10B. Kịch bản Xử trí Sự Cố Chuỗi Lạnh Vắc xin GSP (Khi có sự cố thực tế hoặc người dùng hỏi phác đồ ứng phó)
+      const card: AgentActionCard = {
+        cardType: 'coldchain_monitor',
+        title: 'Cảnh Báo / Xử Trí Sự Cố Chuỗi Lạnh: Tủ Lạnh Vaxigrip T1',
+        summary: 'Dải an toàn 2.0°C - 8.0°C • Phác đồ cách ly bảo toàn vắc xin',
+        data: { targetTab: 'coldchain', batch: 'LOT-VX25-S1' },
+        primaryActionLabel: 'Mở Giám Sát Chuỗi Lạnh',
+        primaryActionType: 'NAVIGATE_TAB',
+        targetTab: 'coldchain',
+        status: 'pending'
+      };
+      const replyText = (
+        `### ❄️ XỬ TRÍ SỰ CỐ NHIỆT ĐỘ CHUỖI LẠNH VẮC XIN (TT 36/2018/TT-BYT GSP)\n\n` +
+        `• **Sản phẩm bảo quản:** Vắc xin cúm Vaxigrip (\`LOT-VX25-S1\`) - Tồn **200 liều** tại Tủ lạnh Dược GSP T1.\n` +
+        `• **Quy chuẩn dải nhiệt:** Tiêu chuẩn bảo quản bắt buộc từ **+2.0°C đến +8.0°C**.\n` +
+        `• **Phác đồ ứng phó sự cố (Nhiệt độ vượt ngưỡng / Mất điện):**\n` +
+        `  1. Kích hoạt bình tích lạnh dự phòng trong buồng tủ, tuyệt đối **không mở cửa tủ lạnh**.\n` +
+        `  2. Chuyển nguồn cấp sang máy phát điện ưu tiên của bệnh viện trong vòng 5 phút.\n` +
+        `  3. **Tạm thời cách ly lô vắc xin (Quarantine):** Dán tem cảnh báo, ngừng cấp phát cho các khoa phòng.\n` +
+        `  4. Xuất dữ liệu Data Logger và tính toán nhiệt độ động học trung bình (MKT) để Hội đồng Dược thẩm định chất lượng.`
+      );
+      return {
+        replyMessage: {
+          id: `msg-agent-scenario-${Date.now()}`,
+          sender: 'agent',
+          text: replyText,
+          timestamp: nowStr,
+          legalReference: { lawCode: 'Thông tư 36/2018/TT-BYT', title: 'Thực hành tốt bảo quản thuốc GSP', clause: 'Mục Bảo quản vắc xin dây chuyền lạnh' },
+          card,
+          suggestedChips: ['Xem biểu đồ chuỗi lạnh', 'Đối soát ca trực 07:00 AM', 'Kiểm tra kho lạnh GSP']
+        },
+        card
+      };
+    } else {
+      // 10A. Giám sát Chuỗi Lạnh & Datalogger Thời Gian Thực (Trạng thái Bình thường / Telemetry Query)
+      const currentTemp = coldChainState?.currentTemp ?? 4.5;
+      const currentHumidity = coldChainState?.currentHumidity ?? 58;
+      const totalDoses = coldChainState?.totalVaccineDoses ?? 200;
+      const isNormal = currentTemp >= 2.0 && currentTemp <= 8.0;
+
+      const card: AgentActionCard = {
+        cardType: 'coldchain_status',
+        title: 'Giám Sát Chuỗi Lạnh: Tủ Lạnh Vaxigrip T1',
+        summary: `Nhiệt độ ${currentTemp.toFixed(1)}°C (${isNormal ? 'Đạt chuẩn 2.0°C - 8.0°C' : 'Cảnh báo lệch ngưỡng'}) • Vận hành ổn định`,
+        data: { targetTab: 'coldchain', batch: 'LOT-VX25-S1', currentTemp, humidity: currentHumidity, status: isNormal ? 'normal' : 'alarm' },
+        primaryActionLabel: 'Mở Giám Sát Chuỗi Lạnh',
+        primaryActionType: 'NAVIGATE_TAB',
+        targetTab: 'coldchain',
+        status: 'pending'
+      };
+      const replyText = (
+        `### 🌡️ GIÁM SÁT CHUỖI LẠNH VẮC XIN (TT 36/2018/TT-BYT GSP)\n\n` +
+        `• **Nhiệt độ hiện tại:** **${currentTemp.toFixed(1)}°C** (${isNormal ? '🟢 Đạt chuẩn GSP: dải an toàn bắt buộc **+2.0°C đến +8.0°C**' : '🔴 Cảnh báo lệch ngưỡng'})\n` +
+        `• **Độ ẩm buồng tủ:** **${currentHumidity}% RH** (🟢 Đạt chuẩn GSP < 70%).\n` +
+        `• **Nguồn cấp:** Điện lưới 220V ổn định, hệ thống pin tích điện dự phòng 48 giờ sẵn sàng.\n` +
+        `• **Trạng thái cảnh báo:** **Bình thường (An toàn)**. Không ghi nhận biến cố nhiệt hay mất nguồn.\n` +
+        `• **Sản phẩm bảo quản:** Vắc xin cúm Vaxigrip (\`LOT-VX25-S1\`) - Tồn **${totalDoses} liều** tại Tủ lạnh Dược GSP T1.\n` +
+        `• **Chỉ số MKT (Mean Kinetic Temperature):** **4.8°C** (Tính toán theo phương trình Arrhenius WHO PQS).\n\n` +
+        `👉 **Kết luận:** Toàn bộ vắc xin đang được lưu trữ an toàn trong giới hạn nhiệt độ quy chuẩn. Hệ thống vận hành ổn định, **chưa cần kích hoạt phác đồ ứng phó sự cố hay biệt trữ cách ly**.`
+      );
+      return {
+        replyMessage: {
+          id: `msg-agent-scenario-${Date.now()}`,
+          sender: 'agent',
+          text: replyText,
+          timestamp: nowStr,
+          legalReference: { lawCode: 'Thông tư 36/2018/TT-BYT', title: 'Thực hành tốt bảo quản thuốc GSP', clause: 'Điều 16 - Giám sát liên tục nhiệt độ bảo quản sinh phẩm' },
+          card,
+          suggestedChips: ['Xem biểu đồ chuỗi lạnh', 'Đối soát ca trực 07:00 AM', 'Kiểm tra kho lạnh GSP']
+        },
+        card
+      };
+    }
   }
 
   // 11. Kịch bản Báo cáo Cảnh giác dược ADR chung

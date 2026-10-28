@@ -10,6 +10,7 @@ import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/gem
 import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../services/gemini/clinicalScenarios';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
+import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -21,15 +22,32 @@ export async function processClinicalAgentQueryAsync(
   const role = currentUserProfile?.role || 'nurse';
   const name = currentUserProfile?.name || 'Điều Dưỡng Trực Ca';
 
+  // 0. Client Guardrail: Quét và chặn tức thì SQL Injection / Prompt Injection
+  const guardCheck = validateClientInputGuardrail(rawInput);
+  if (!guardCheck.isSafe) {
+    const blockedMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      sender: 'agent',
+      text: guardCheck.safeResponse || '🛡️ Yêu cầu bị chặn do vi phạm chính sách bảo mật hệ thống.',
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      cdssAlert: guardCheck.violationType === 'sql_injection' || guardCheck.violationType === 'clinical_bypass' ? 'critical' : 'warning',
+      cdssAlertReason: guardCheck.threatDescription,
+      suggestions: ['Tra cứu Dược Thư 2015', 'Thông tư 20/2017/TT-BYT', 'Hướng dẫn an toàn hệ thống']
+    };
+    return { replyMessage: blockedMsg };
+  }
+
+  const cleanInput = guardCheck.sanitizedQuery;
+
   // 1. Phân tích kịch bản nghiệp vụ có Action Card (Mượn thuốc, Báo hỏng, Giao ban, Kho FEFO...)
-  const localResult = processClinicalUserQuery(rawInput, {
+  const localResult = processClinicalUserQuery(cleanInput, {
     debts: currentState.debts,
     tickets: currentState.tickets,
     batches: currentState.batches,
     coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
   });
 
-  const lower = rawInput.toLowerCase();
+  const lower = cleanInput.toLowerCase();
   // Nếu câu lệnh tạo thẻ tương tác (Action Card) -> Phản hồi ngay (0ms, 0 tokens)
   // Ngoại trừ kịch bản lâm sàng chuyên sâu (Allergy, Renal, ADR...) cần AI phân tích
   if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower)) {
@@ -38,7 +56,7 @@ export async function processClinicalAgentQueryAsync(
 
   // 2. Thử gọi qua FastAPI Copilot Backend (nắm giữ 54.885 CSDL Cục QLD & tồn kho thực tế)
   try {
-    const backendData = await chatCopilotApi(rawInput, role, name, _clientSessionId);
+    const backendData = await chatCopilotApi(cleanInput, role, name, _clientSessionId);
     if (backendData && backendData.reply_text && backendData.intent !== 'GENERAL_CLINICAL_ASSISTANCE') {
       let card: AgentActionCard | undefined = undefined;
       let actionPayload: ActionPayload | undefined = undefined;
@@ -65,7 +83,7 @@ export async function processClinicalAgentQueryAsync(
       const replyMessage: ChatMessage = {
         id: `msg-agent-${Date.now()}`,
         sender: 'agent',
-        text: backendData.reply_text,
+        text: validateClientOutputGuardrail(backendData.reply_text, cleanInput),
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         legalReference: backendData.legal_basis ? {
           lawCode: backendData.legal_basis.split('-')[0].trim(),
@@ -84,9 +102,13 @@ export async function processClinicalAgentQueryAsync(
   // 3. Xử lý 8 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & Hồ Sơ Bệnh Nhân (Allergy, Renal, ADR...)
   const scenarioResult = await processGeminiClinicalScenario(
     rawInput,
-    new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    currentState.coldChainState
   );
   if (scenarioResult) {
+    if (scenarioResult.replyMessage) {
+      scenarioResult.replyMessage.text = validateClientOutputGuardrail(scenarioResult.replyMessage.text, cleanInput);
+    }
     return scenarioResult;
   }
 
@@ -106,7 +128,7 @@ export async function processClinicalAgentQueryAsync(
         const replyMessage: ChatMessage = {
           id: `msg-agent-gemini-${Date.now()}`,
           sender: 'agent',
-          text: geminiAnswer,
+          text: validateClientOutputGuardrail(geminiAnswer, cleanInput),
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           suggestedChips: ['Đối soát ca trực 07:00 AM', 'Lập phiếu dự trù Mẫu 01', 'Kiểm tra tồn kho FEFO']
         };
@@ -117,6 +139,9 @@ export async function processClinicalAgentQueryAsync(
     }
   }
 
-  // 4. Fallback cuối cùng: Trả về hướng dẫn lâm sàng
+  // 5. Fallback cuối cùng: Trả về hướng dẫn lâm sàng
+  if (localResult.replyMessage) {
+    localResult.replyMessage.text = validateClientOutputGuardrail(localResult.replyMessage.text, cleanInput);
+  }
   return localResult;
 }

@@ -33,6 +33,7 @@ from app.services.scenarios.case_esomeprazole_ulcer import EsomeprazoleUlcerScen
 from app.services.scenarios.case_fever_triage import FeverTriageScenario
 from app.services.scenarios.case_patient_inquiry import PatientInquiryScenario
 from app.services.scenarios.case_prescription_inquiry import PrescriptionInquiryScenario
+from app.services.scenarios.case_coldchain_telemetry import ColdChainTelemetryScenario
 from app.services.scenarios.case_coldchain_quarantine import ColdChainQuarantineScenario
 from app.services.scenarios.case_adr import AdrReportingScenario
 
@@ -55,6 +56,7 @@ SCENARIOS: List[BaseScenario] = [
     PatientInquiryScenario(),
     InventoryCheckScenario(),
     PrescriptionInquiryScenario(),
+    ColdChainTelemetryScenario(),
     ColdChainQuarantineScenario(),
     AdrReportingScenario(),
 ]

@@ -48,22 +48,50 @@ import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
 import { cpoeApi } from './services/api/cpoeApi';
 import { clinicalAudio } from './utils/audio';
+import {
+  getInitialTab,
+  syncTabToUrl,
+  getInitialUserRole,
+  saveUserRole,
+  getInitialDomain,
+  saveDomain,
+  getInitialSidebarCollapsed,
+  saveSidebarCollapsed,
+  getInitialCopilotOpen,
+  saveCopilotOpen,
+  getInitialCopilotExpanded,
+  saveCopilotExpanded,
+  getInitialAudioMuted,
+  saveAudioMuted,
+  getInitialChatMessages,
+  saveChatMessages,
+  getCachedDebts,
+  saveCachedDebts,
+  getCachedTickets,
+  saveCachedTickets,
+  getCachedBatches,
+  saveCachedBatches,
+  getCachedAuditRecords,
+  saveCachedAuditRecords,
+  clearAllStoredState
+} from './utils/storage/appStatePersistence';
 
 export default function App() {
-  // State
-  const [debts, setDebts] = useState<DebtRecord[]>(INITIAL_DEBT_RECORDS);
-  const [tickets, setTickets] = useState<EquipmentTicket[]>(INITIAL_EQUIPMENT_TICKETS);
-  const [batches, setBatches] = useState<InventoryBatch[]>(INITIAL_INVENTORY_BATCHES);
+  // State khôi phục bền vững từ URL Hash & LocalStorage Cache (SWR chống giật layout khi reload)
+  const [debts, setDebts] = useState<DebtRecord[]>(getCachedDebts);
+  const [tickets, setTickets] = useState<EquipmentTicket[]>(getCachedTickets);
+  const [batches, setBatches] = useState<InventoryBatch[]>(getCachedBatches);
   const [coldChainState, setColdChainState] = useState<ColdChainMonitorState>(INITIAL_COLD_CHAIN_STATE);
   const [assets, setAssets] = useState<AssetAuditRecord[]>(INITIAL_ASSET_AUDIT_RECORDS);
-  const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>(INITIAL_AUDIT_TRAIL_RECORDS);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT_MESSAGES);
-  const [currentTab, setCurrentTab] = useState<DashboardTab>('debt');
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('nurse');
-  const [systemDomain, setSystemDomain] = useState<'pharmacy' | 'equipment'>('pharmacy');
+  const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>(getCachedAuditRecords);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(getInitialChatMessages);
+  const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>(getInitialUserRole);
+  const [systemDomain, setSystemDomain] = useState<'pharmacy' | 'equipment'>(() => getInitialDomain(getInitialTab()));
 
   const handleSelectDomain = (domain: 'pharmacy' | 'equipment') => {
     setSystemDomain(domain);
+    saveDomain(domain);
     if (domain === 'pharmacy' && (currentTab === 'equipment' || currentTab === 'asset_audit')) {
       setCurrentTab('fefo');
     } else if (domain === 'equipment' && currentTab !== 'equipment' && currentTab !== 'asset_audit') {
@@ -71,10 +99,10 @@ export default function App() {
     }
   };
   const [authRequest, setAuthRequest] = useState<ClinicalAuthRequest | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(getInitialSidebarCollapsed);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
-  const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
-  const [isCopilotExpanded, setIsCopilotExpanded] = useState<boolean>(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(getInitialCopilotOpen);
+  const [isCopilotExpanded, setIsCopilotExpanded] = useState<boolean>(getInitialCopilotExpanded);
   const [isLegalDocsOpen, setIsLegalDocsOpen] = useState<boolean>(false);
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
   const [isUserGuideOpen, setIsUserGuideOpen] = useState<boolean>(false);
@@ -84,7 +112,7 @@ export default function App() {
   const [selectedTicketForPrint, setSelectedTicketForPrint] = useState<EquipmentTicket | null>(null);
   const [selectedAssetForPrint, setSelectedAssetForPrint] = useState<AssetAuditRecord | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
+  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(getInitialAudioMuted);
   const [showTelegramToast, setShowTelegramToast] = useState<boolean>(false);
   const [isMedicationSafetyOpen, setIsMedicationSafetyOpen] = useState<boolean>(false);
   const [safetyModalMedName, setSafetyModalMedName] = useState<string | undefined>(undefined);
@@ -120,7 +148,42 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Synchronize live state from SQLite WAL backend
+  // 1. Tự động đồng bộ Tab sang URL Hash (#cpoe, #fefo...) và LocalStorage
+  useEffect(() => {
+    syncTabToUrl(currentTab);
+    if (currentTab === 'equipment' || currentTab === 'asset_audit') {
+      if (systemDomain !== 'equipment') {
+        setSystemDomain('equipment');
+        saveDomain('equipment');
+      }
+    } else {
+      if (systemDomain !== 'pharmacy') {
+        setSystemDomain('pharmacy');
+        saveDomain('pharmacy');
+      }
+    }
+  }, [currentTab, systemDomain]);
+
+  // 2. Lắng nghe sự kiện hashchange (Hỗ trợ nút Back / Forward trình duyệt)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase() as DashboardTab;
+      if (['cpoe', 'debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'].includes(hash)) {
+        setCurrentTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // 3. Tự động lưu bền vững các tùy chọn giao diện khi thay đổi
+  useEffect(() => { saveChatMessages(chatMessages); }, [chatMessages]);
+  useEffect(() => { saveSidebarCollapsed(isSidebarCollapsed); }, [isSidebarCollapsed]);
+  useEffect(() => { saveCopilotOpen(isCopilotOpen); }, [isCopilotOpen]);
+  useEffect(() => { saveCopilotExpanded(isCopilotExpanded); }, [isCopilotExpanded]);
+  useEffect(() => { saveAudioMuted(isAudioMuted); }, [isAudioMuted]);
+
+  // 4. Đồng bộ dữ liệu ngầm với SQLite WAL backend (Stale-While-Revalidate chống giật layout)
   useEffect(() => {
     let isMounted = true;
     Promise.allSettled([
@@ -131,12 +194,15 @@ export default function App() {
       if (!isMounted) return;
       if (resDebts.status === 'fulfilled' && resDebts.value.length > 0) {
         setDebts(resDebts.value);
+        saveCachedDebts(resDebts.value);
       }
       if (resTickets.status === 'fulfilled' && resTickets.value.length > 0) {
         setTickets(resTickets.value);
+        saveCachedTickets(resTickets.value);
       }
       if (resBatches.status === 'fulfilled' && resBatches.value.length > 0) {
         setBatches(resBatches.value);
+        saveCachedBatches(resBatches.value);
       }
     }).catch(() => {});
     return () => { isMounted = false; };
@@ -145,8 +211,9 @@ export default function App() {
   // Handler: Switch user role (RBAC)
   const handleSelectUserRole = (newRole: UserRole) => {
     setCurrentUserRole(newRole);
+    saveUserRole(newRole);
     const profile = USER_PROFILES[newRole];
-    if (profile) {
+    if (profile && !profile.allowedTabs.includes(currentTab)) {
       setCurrentTab(profile.defaultTab);
     }
     if (!isAudioMuted) clinicalAudio.playSuccessChime();
@@ -233,6 +300,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   // Handler: Reset mock data
   const handleResetData = () => {
     clinicalAudio.stopAlarm();
+    clearAllStoredState();
     setDebts(INITIAL_DEBT_RECORDS);
     setTickets(INITIAL_EQUIPMENT_TICKETS);
     setBatches(INITIAL_INVENTORY_BATCHES);

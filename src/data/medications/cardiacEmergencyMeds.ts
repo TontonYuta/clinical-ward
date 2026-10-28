@@ -51,7 +51,7 @@ export const CARDIAC_EMERGENCY_MEDICATIONS: MasterMedication[] = [
     note: 'Co mạch nâng huyết áp trong sốc nhiễm khuẩn (CSDL 55k Cục QLD)',
   },
   {
-    id: 'b-9',
+    id: 'med-atro-em',
     nationalCode: '893110360624',
     brandName: 'Atropin sulfat 0,25 mg/ml',
     tallManName: 'Atropin sulfat',
@@ -72,7 +72,7 @@ export const CARDIAC_EMERGENCY_MEDICATIONS: MasterMedication[] = [
     note: 'Cấp cứu nhịp tim chậm xoang, ngộ độc phospho hữu cơ (SĐK: 893110360624)',
   },
   {
-    id: 'b-17-cardiac',
+    id: 'b-17',
     nationalCode: '890110188526',
     brandName: 'Amiodarone Hydrochloride Tablets 200mg',
     tallManName: 'Amiodaron',
@@ -89,7 +89,7 @@ export const CARDIAC_EMERGENCY_MEDICATIONS: MasterMedication[] = [
     isCrashCart: true,
     wardStockCount: 30,
     hospitalStockCount: 180,
-    searchAliases: ['amio', 'amiodaron', 'loan nhip', '890110188526'],
+    searchAliases: ['b-17', 'amio', 'amiodaron', 'loan nhip', '890110188526'],
     note: 'Thuốc chống loạn nhịp nhóm III (SĐK: 890110188526 Cục QLD)',
   },
 ];

@@ -17,11 +17,21 @@ class ColdChainQuarantineScenario(BaseScenario):
         if any(w in lower_query for w in ["sốt", "thân nhiệt", "hạ sốt", "người", "em bé", "bệnh nhân", "cơ thể", "uống thuốc"]):
             return False
 
-        # Chỉ kích hoạt khi có thực thể chuỗi lạnh / vắc xin rõ ràng
-        return any(w in lower_query for w in [
-            "chuỗi lạnh", "vaxigrip", "tủ lạnh", "kho lạnh", "mất điện tủ",
-            "datalogger", "data logger", "mkt", "cách ly vắc xin", "quarantine"
+        has_coldchain_context = any(w in lower_query for w in [
+            "chuỗi lạnh", "vaxigrip", "tủ lạnh", "kho lạnh", "buồng lạnh", "vắc xin"
         ])
+
+        has_incident_intent = any(w in lower_query for w in [
+            "mất điện", "sự cố", "quá nhiệt", "vượt ngưỡng", "cách ly", "quarantine",
+            "hỏng tủ", "cháy", "báo động", "phác đồ ứng phó", "hỏng lốc", "nhiệt độ tăng",
+            "không lạnh", "chết máy", "cháy lốc"
+        ])
+
+        explicit_emergency_phrases = any(w in lower_query for w in [
+            "mất điện tủ", "cách ly vắc xin", "quarantine vắc xin", "phác đồ chuỗi lạnh", "sự cố nhiệt độ"
+        ])
+
+        return (has_coldchain_context and has_incident_intent) or explicit_emergency_phrases
 
     async def handle(
         self,

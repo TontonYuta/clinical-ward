@@ -4,7 +4,7 @@
  * Phân hệ Quản lý Sự cố & Kiểm định Thiết bị Y tế (NĐ 04/2025/NĐ-CP & NĐ 98/2021)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { EquipmentTicket, IncidentStatus, UserRole } from '../../../types/clinical';
 import { EquipmentHandoverModal } from '../../Modals/EquipmentHandoverModal';
 import { ManualIncidentModal } from '../../Modals/ManualIncidentModal';
@@ -30,11 +30,18 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
   isAudioMuted,
   currentUserRole = 'biomedical_engineer',
 }) => {
-  const [selectedUrgency, setSelectedUrgency] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedUrgency, setSelectedUrgency] = useState<string>(() => (typeof window !== 'undefined' ? sessionStorage.getItem('eq_urgency') || 'all' : 'all'));
+  const [searchQuery, setSearchQuery] = useState<string>(() => (typeof window !== 'undefined' ? sessionStorage.getItem('eq_search') || '' : ''));
   const [selectedTicketForHandover, setSelectedTicketForHandover] = useState<EquipmentTicket | null>(null);
   const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('eq_urgency', selectedUrgency);
+      sessionStorage.setItem('eq_search', searchQuery);
+    } catch {}
+  }, [selectedUrgency, searchQuery]);
 
   const urgentCount = useMemo(
     () => tickets.filter((t) => t.urgency === 'urgent' && t.status !== 'resolved').length,
@@ -109,17 +116,17 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
 
       {/* Desktop High-Density Table */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
-        <div className="flex-1 min-h-0 overflow-auto pb-4">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
-              <tr className="font-semibold text-xs tracking-wider">
-                <th className="py-3 px-3 whitespace-nowrap">Mã sự cố</th>
-                <th className="py-3 px-3">Thiết bị</th>
-                <th className="py-3 px-3">Mô tả sự cố</th>
-                <th className="py-3 px-3 whitespace-nowrap">Vị trí</th>
-                <th className="py-3 px-3 whitespace-nowrap">Kiểm định</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto pb-4">
+          <table className="w-full min-w-[1100px] text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100/95 border-b border-slate-200 text-slate-700">
+              <tr className="font-bold text-xs sm:text-sm uppercase tracking-wider">
+                <th className="py-3.5 px-3.5 whitespace-nowrap">Mã sự cố</th>
+                <th className="py-3.5 px-3.5">Thiết bị</th>
+                <th className="py-3.5 px-3.5">Mô tả sự cố</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap">Vị trí</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap">Kiểm định</th>
+                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>

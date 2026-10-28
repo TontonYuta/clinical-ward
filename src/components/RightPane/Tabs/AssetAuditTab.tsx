@@ -104,15 +104,15 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
 
       {/* 3B. Desktop Table */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
-        <div className="flex-1 min-h-0 overflow-auto pb-24">
-          <table className="w-full text-left text-sm min-w-[720px] border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
-              <tr className="font-semibold text-xs tracking-wider">
-                <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Mã tài sản</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Vị trí</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Tình trạng</th>
-                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto pb-4">
+          <table className="w-full text-left text-sm min-w-[1100px] border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100/95 border-b border-slate-200 text-slate-700">
+              <tr className="font-bold text-xs sm:text-sm uppercase tracking-wider">
+                <th className="py-3.5 px-4 whitespace-nowrap border-r border-slate-200">Mã tài sản</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap border-r border-slate-200">Thiết bị</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap border-r border-slate-200">Vị trí</th>
+                <th className="py-3.5 px-3.5 whitespace-nowrap border-r border-slate-200">Tình trạng</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>

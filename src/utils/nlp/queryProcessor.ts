@@ -25,14 +25,32 @@ import { matchDrugLookupGuideIntent, handleDrugLookupGuideIntent } from './inten
 import { matchPrescriptionAdviceIntent, handlePrescriptionAdviceIntent } from './intents/prescriptionAdviceIntent';
 import { matchCpoeIntent, handleCpoeIntent } from './intents/cpoeIntent';
 import { matchDebtSettleIntent, handleDebtSettleIntent } from './intents/debtSettleIntent';
+import { validateClientInputGuardrail } from '../security/clinicalGuardrails';
 
 export function processClinicalUserQuery(
   rawInput: string,
   currentState: ClinicalQueryState
 ): ProcessedQueryResult {
-  const text = rawInput.trim();
-  const lower = text.toLowerCase();
   const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+  // 0a. Lớp Guardrail bảo vệ: Chặn tức thì Prompt Injection & SQL Injection
+  const guardCheck = validateClientInputGuardrail(rawInput);
+  if (!guardCheck.isSafe) {
+    return {
+      replyMessage: {
+        id: `msg-${Date.now()}`,
+        sender: 'agent',
+        text: guardCheck.safeResponse || '🛡️ Yêu cầu bị chặn do vi phạm an toàn.',
+        timestamp: nowStr,
+        cdssAlert: guardCheck.violationType === 'sql_injection' || guardCheck.violationType === 'clinical_bypass' ? 'critical' : 'warning',
+        cdssAlertReason: guardCheck.threatDescription,
+        suggestions: ['Tra cứu Dược Thư 2015', 'Thông tư 20/2017/TT-BYT', 'Hướng dẫn an toàn hệ thống']
+      }
+    };
+  }
+
+  const text = guardCheck.sanitizedQuery;
+  const lower = text.toLowerCase();
 
   // 0. Hospital Business Operations & 10 Core Workflows
   if (matchBusinessIntent(lower)) {

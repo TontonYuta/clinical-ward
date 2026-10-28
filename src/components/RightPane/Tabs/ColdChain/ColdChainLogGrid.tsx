@@ -14,29 +14,31 @@ interface ColdChainLogGridProps {
 
 export const ColdChainLogGrid: React.FC<ColdChainLogGridProps> = ({ logs }) => {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-3.5 shadow-2xs">
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-slate-500" />
+    <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-2xs">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <span className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+          <Clock className="w-4.5 h-4.5 text-slate-600" />
           Nhật ký nhiệt độ tự động 24 giờ qua (Đo đạc mỗi 15 phút)
         </span>
-        <span className="text-xs text-slate-500 font-mono">Datalogger ID: VAX-LOG-04</span>
+        <span className="text-xs sm:text-sm text-slate-600 font-mono font-bold bg-slate-100 px-2.5 py-0.5 rounded border border-slate-200">
+          Datalogger ID: VAX-LOG-04
+        </span>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-xs sm:text-sm">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 text-center">
         {logs.map((log, index) => {
           const isWarn = log.temperature > 8.0;
           return (
             <div
               key={index}
-              className={`py-2 px-1.5 rounded-md border transition ${
+              className={`py-2.5 px-2 rounded-md border transition ${
                 isWarn
                   ? 'bg-rose-50 border-rose-300 text-rose-800 font-bold'
                   : 'bg-slate-50 border-slate-200 text-slate-700'
               }`}
             >
-              <span className="text-[11px] text-slate-500 block mb-0.5">{log.timestamp}</span>
-              <span className="font-mono font-bold text-xs sm:text-sm block">
+              <span className="text-xs font-semibold text-slate-500 block mb-1">{log.timestamp}</span>
+              <span className="font-mono font-black text-sm sm:text-base block">
                 {log.temperature.toFixed(1)}°C
               </span>
             </div>

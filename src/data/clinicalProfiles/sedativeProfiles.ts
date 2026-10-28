@@ -11,7 +11,7 @@ export const SEDATIVE_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = 
   'med-em-07': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
-      registrationNumber: 'VD-22784-15 (Vidipha)',
+      registrationNumber: '890112769224 (Swiss Parenterals Ltd.)',
       manufacturer: 'Chi nhánh Công ty Cổ phần Dược phẩm Trung ương Vidipha Bình Dương',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 550/QĐ-QLD)',

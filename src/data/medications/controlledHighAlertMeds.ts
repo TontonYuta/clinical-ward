@@ -29,7 +29,7 @@ export const CONTROLLED_HIGH_ALERT_MASTER_MEDICATIONS: MasterMedication[] = [
     note: 'Bắt buộc thu hồi vỏ ống rỗng, ký sổ theo dõi TT 20/2017/TT-BYT (SĐK: 893111093823)',
   },
   {
-    id: 'b-16-ctrl',
+    id: 'b-9',
     nationalCode: 'VN-22499-20',
     brandName: 'Fentanyl 50 micrograms/ml',
     tallManName: 'FentanYL',
@@ -46,7 +46,7 @@ export const CONTROLLED_HIGH_ALERT_MASTER_MEDICATIONS: MasterMedication[] = [
     isCrashCart: true,
     wardStockCount: 15,
     hospitalStockCount: 120,
-    searchAliases: ['fen', 'fenta', 'fentanyl', 'VN-22499-20'],
+    searchAliases: ['b-9', 'fen', 'fenta', 'fentanyl', 'VN-22499-20'],
     note: 'Giảm đau mạnh trong phẫu thuật/hồi sức, bắt buộc thu hồi vỏ ống (SĐK: VN-22499-20)',
   },
   {

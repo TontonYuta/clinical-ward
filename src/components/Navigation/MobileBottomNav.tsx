@@ -102,7 +102,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 </span>
               )}
             </div>
-            <span className="text-[11px] mt-0.5 tracking-tight font-medium">{config.label}</span>
+            <span className="text-xs mt-0.5 tracking-tight font-bold">{config.label}</span>
           </button>
         );
       })}
@@ -119,7 +119,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <Bot className={`w-5 h-5 ${isCopilotOpen ? 'text-blue-600 stroke-[2.5]' : 'text-slate-600'}`} />
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 ring-1 ring-white" />
           </div>
-          <span className="text-[11px] mt-0.5 tracking-tight font-medium">Trợ lý AI</span>
+          <span className="text-xs mt-0.5 tracking-tight font-bold">Trợ lý AI</span>
         </button>
       )}
     </nav>

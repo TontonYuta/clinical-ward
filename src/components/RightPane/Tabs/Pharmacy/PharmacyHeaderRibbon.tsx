@@ -92,9 +92,9 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           <button
             type="button"
             onClick={() => setWarehouse('all')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
               warehouse === 'all'
-                ? 'bg-white text-slate-900 font-bold shadow-2xs'
+                ? 'bg-white text-slate-900 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -103,25 +103,25 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           <button
             type="button"
             onClick={() => setWarehouse('inpatient')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
               warehouse === 'inpatient'
-                ? 'bg-blue-700 text-white font-bold shadow-2xs'
+                ? 'bg-blue-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Building2 className="w-3.5 h-3.5" />
+            <Building2 className="w-4 h-4" />
             <span>Kho thuốc Nội trú &amp; Tủ trực</span>
           </button>
           <button
             type="button"
             onClick={() => setWarehouse('outpatient')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
               warehouse === 'outpatient'
-                ? 'bg-emerald-700 text-white font-bold shadow-2xs'
+                ? 'bg-emerald-700 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Store className="w-3.5 h-3.5" />
+            <Store className="w-4 h-4" />
             <span>Kho thuốc Ngoại trú</span>
           </button>
         </div>
@@ -130,33 +130,33 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
       {/* Thanh tìm kiếm và bộ lọc chuyên môn */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-1">
         {/* Ô tìm kiếm thông tin thuốc */}
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative flex-1 min-w-[260px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên thuốc, hoạt chất, số đăng ký (SĐK), số lô, nhà sản xuất..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:border-blue-600 text-slate-900 placeholder-slate-400"
+            className="w-full pl-9.5 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-md focus:border-blue-600 text-slate-900 placeholder-slate-400 font-medium"
           />
         </div>
 
         {/* Cụm bộ lọc: Tồn kho/Hạn dùng, Dược lý, Quy chế */}
-        <div className="flex items-center gap-1.5 flex-wrap text-xs">
+        <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
           {/* Tình trạng hạn dùng */}
-          <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-md border border-slate-200/60 font-medium">
-            <button type="button" onClick={() => setStatus('all')} className={`px-2 py-1 rounded cursor-pointer ${status === 'all' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600'}`}>Tất cả hạn</button>
-            <button type="button" onClick={() => setStatus('near_expiry')} className={`px-2 py-1 rounded cursor-pointer ${status === 'near_expiry' ? 'bg-rose-700 text-white font-bold shadow-2xs' : 'text-slate-600'}`}>Cận hạn ({nearExpiryCount})</button>
+          <div className="flex items-center gap-0.5 bg-slate-100 p-1 rounded-md border border-slate-200/80 font-bold">
+            <button type="button" onClick={() => setStatus('all')} className={`px-2.5 py-1 rounded cursor-pointer ${status === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`}>Tất cả hạn</button>
+            <button type="button" onClick={() => setStatus('near_expiry')} className={`px-2.5 py-1 rounded cursor-pointer ${status === 'near_expiry' ? 'bg-rose-700 text-white shadow-2xs' : 'text-slate-600'}`}>Cận hạn ({nearExpiryCount})</button>
           </div>
 
           {/* Phân loại Tác dụng Trị liệu / Dược lý */}
-          <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md border border-slate-200/60 font-medium">
-            <span className="text-slate-500 font-semibold text-[11px] whitespace-nowrap">Dược lý:</span>
+          <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/80 font-medium">
+            <span className="text-slate-600 font-bold text-xs sm:text-sm whitespace-nowrap">Dược lý:</span>
             <select
               value={pharmacologicalGroup}
               onChange={(e) => setPharmacologicalGroup(e.target.value as PharmacologicalGroupKey)}
               data-testid="pharmacological-class-select"
-              className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[155px] truncate"
+              className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[170px] truncate"
             >
               <option value="all">Tất cả nhóm</option>
               {PHARMACOLOGICAL_GROUPS.map((g) => (
@@ -166,13 +166,13 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
           </div>
 
           {/* Phân loại Quy chế quản lý */}
-          <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md border border-slate-200/60 font-medium">
-            <span className="text-slate-500 font-semibold text-[11px] whitespace-nowrap">Quy chế:</span>
+          <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/80 font-medium">
+            <span className="text-slate-600 font-bold text-xs sm:text-sm whitespace-nowrap">Quy chế:</span>
             <select
               value={davFilter}
               onChange={(e) => setDavFilter(e.target.value as DavRegulatoryFilter)}
               data-testid="dav-regulatory-select"
-              className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[155px] truncate"
+              className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[170px] truncate"
             >
               <option value="all">Tất cả quy chế</option>
               <option value="controlled">Thuốc kiểm soát đặc biệt (vỏ ống)</option>

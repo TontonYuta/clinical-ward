@@ -11,7 +11,7 @@ export const CONTROLLED_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> 
   'med-ctrl-01': {
     officialSource: {
       documentName: 'Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)',
-      registrationNumber: 'VD-18342-13 (Pharbaco)',
+      registrationNumber: '893111093823 (Chi nhánh Cty CPDP TW Vidipha Bình Dương)',
       manufacturer: 'Công ty Cổ phần Dược phẩm trung ương I - Pharbaco',
       standardPharmacopeia: 'Dược điển Việt Nam V (DĐVN V) / Tiêu chuẩn NSX',
       approvalAuthority: 'Cục Quản lý Dược - Bộ Y Tế (QĐ 181/QĐ-QLD)',

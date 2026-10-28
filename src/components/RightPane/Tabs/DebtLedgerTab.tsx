@@ -4,7 +4,7 @@
  * Phân hệ Sổ Nợ Vỏ Morphin & Cơ Số Tủ Trực Cấp Cứu (TT 18/2026/TT-BYT & VBHN 07)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DebtRecord, UserRole } from '../../../types/clinical';
 import { clinicalAudio } from '../../../utils/audio';
 import { AmpouleDestructionModal } from '../../Modals/AmpouleDestructionModal';
@@ -37,10 +37,17 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
   isAudioMuted,
   currentUserRole = 'nurse',
 }) => {
-  const [filterStatus, setFilterStatus] = useState<'all' | 'debt' | 'settled' | 'narcotics'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'debt' | 'settled' | 'narcotics'>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('debt_filter') as any) || 'all' : 'all'));
+  const [searchQuery, setSearchQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('debt_search') || '' : ''));
   const [isDestructionModalOpen, setIsDestructionModalOpen] = useState(false);
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('debt_filter', filterStatus);
+      sessionStorage.setItem('debt_search', searchQuery);
+    } catch {}
+  }, [filterStatus, searchQuery]);
 
   const activeDebts = useMemo(() => debts.filter((d) => d.status === 'debt'), [debts]);
   const settledDebts = useMemo(() => debts.filter((d) => d.status === 'settled'), [debts]);
@@ -122,18 +129,18 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
 
       {/* Desktop Table */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
-        <div className="overflow-auto flex-1 w-full pb-4">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
-              <tr className="font-semibold text-xs tracking-wider">
-                <th className="py-3 px-3 whitespace-nowrap">Mã phiếu</th>
-                <th className="py-3 px-3">Thuốc / Vật tư</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Số lượng</th>
-                <th className="py-3 px-3">Người bệnh</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Thời gian</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Vỏ ống</th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
+        <div className="overflow-x-auto overflow-y-auto flex-1 w-full pb-4">
+          <table className="w-full min-w-[1100px] text-left text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100/95 border-b border-slate-200 text-slate-700">
+              <tr className="font-bold text-xs sm:text-sm uppercase tracking-wider">
+                <th className="py-3.5 px-3.5 whitespace-nowrap">Mã phiếu</th>
+                <th className="py-3.5 px-3.5">Thuốc / Vật tư</th>
+                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Số lượng</th>
+                <th className="py-3.5 px-3.5">Người bệnh</th>
+                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Thời gian</th>
+                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Vỏ ống</th>
+                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>

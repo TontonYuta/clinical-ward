@@ -114,24 +114,85 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
     drugs = res.scalars().all()
 
     if not drugs:
-        from app.services.copilot_gemini import ask_backend_gemini_copilot
-        gemini_reply = await ask_backend_gemini_copilot(query, "nurse", "Điều Dưỡng", db)
-        if gemini_reply:
+        import difflib
+
+        # 1. Thử so khớp mờ (Fuzzy / Levenshtein Ratio) với 20 thuốc cơ số trực bệnh viện
+        batch_res = await db.execute(select(InventoryBatch))
+        all_batches = batch_res.scalars().all()
+
+        best_batch = None
+        best_ratio = 0.0
+
+        kw_clean = kw.lower().strip()
+        for b in all_batches:
+            name_ratio = difflib.SequenceMatcher(None, kw_clean, b.item_name.lower()).ratio()
+            ing_ratio = difflib.SequenceMatcher(None, kw_clean, (b.active_ingredient or "").lower()).ratio()
+            max_r = max(name_ratio, ing_ratio)
+            # Thêm trọng số nếu từ khóa nằm trong tên biệt dược hoặc hoạt chất
+            if kw_clean in b.item_name.lower() or kw_clean in (b.active_ingredient or "").lower():
+                max_r = max(max_r, 0.75)
+            if max_r > best_ratio:
+                best_ratio = max_r
+                best_batch = b
+
+        # 2. Nếu có độ tương đồng >= 0.55: Kích hoạt Nhánh 2: Gợi ý đối soát chính tả (Ask - Did You Mean?)
+        if best_batch and best_ratio >= 0.55:
+            sdk_code = best_batch.registration_number or best_batch.national_code or "Đang cập nhật"
+            active_name = best_batch.active_ingredient or best_batch.item_name
+            reply = (
+                f"### 🔍 KHÔNG TÌM THẤY TÊN CHÍNH XÁC - GỢI Ý ĐỐI SOÁT CHÍNH TẢ\n\n"
+                f"• Hệ thống không tìm thấy mặt hàng mang tên `{kw}` trong CSDL 54.885 số đăng ký Cục Quản lý Dược.\n"
+                f"👉 **Có phải bạn đang tìm mặt hàng sau trong tủ trực bệnh viện:**\n"
+                f"• **{best_batch.item_name}** (Hoạt chất: **{active_name}** | SĐK: `{sdk_code}` | Tồn kho: **{best_batch.current_stock} {best_batch.unit}** tại {best_batch.warehouse_location})\n\n"
+                f"*(Bấm vào nút hành động bên dưới để đối soát chi tiết thông tin thuốc & tồn kho)*"
+            )
+            card = CopilotActionCard(
+                card_type="medication_safety",
+                title=f"Gợi ý: {best_batch.item_name}",
+                summary=f"SĐK: {sdk_code} • Tồn: {best_batch.current_stock} {best_batch.unit} ({best_batch.warehouse_location})",
+                data={
+                    "national_code": sdk_code,
+                    "brand_name": best_batch.item_name,
+                    "active_ingredient": active_name,
+                    "targetTab": "fefo"
+                },
+                primary_action_label=f"Xem {best_batch.item_name}",
+                primary_action_type="NAVIGATE_TAB",
+                target_tab="fefo"
+            )
             return CopilotResponse(
-                intent="CLINICAL_AI_CONSULTATION",
-                reply_text=gemini_reply,
-                legal_basis="Dược Thư Quốc Gia Việt Nam & Hướng dẫn Bộ Y Tế",
-                suggested_chips=["Tra cứu SĐK VD-24757-16", "Kho Dược FEFO", "Lập dự trù bù thuốc Mẫu 01"]
+                intent="CLINICAL_TYPO_SUGGESTION",
+                reply_text=reply,
+                card=card,
+                legal_basis="Thông tư 22/2011/TT-BYT & CSDL Cục Quản lý Dược",
+                suggested_chips=[f"Thông tin {best_batch.item_name}", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"]
             )
 
+        # 3. Nếu hoàn toàn không có tương đồng (< 0.55): Kích hoạt Safe Abstention (R-Tuning & MedAbstain)
+        # Tuyệt đối từ chối suy đoán liều lượng cho các thực thể ngoài CSDL / không có thực
+        reply_abstain = (
+            f"### 🛡️ TỪ CHỐI ĐƯA CHỈ ĐỊNH (Thực Thể Dược Phẩm Chưa Định Danh)\n\n"
+            f"• **Kết quả đối soát:** Hệ thống đã tra soát qua **54.885 số đăng ký Cục Quản lý Dược (DAV)** và toàn bộ **Dược Thư Quốc Gia 2015**, **không ghi nhận** bất kỳ hoạt chất hoặc biệt dược nào có tên `{kw}`.\n"
+            f"• **Rào chắn an toàn lâm sàng (Safe Abstention - TT 22/2011/TT-BYT & TT 20/2017/TT-BYT):** Trợ lý AI **tuyệt đối không suy đoán hoặc cung cấp liều dùng, chỉ định** cho các tên thuốc chưa được định danh trong CSDL chính thống nhằm ngăn ngừa biến cố gây hại tính mạng người bệnh.\n"
+            f"• **Khuyến nghị xử trí:**\n"
+            f"  1. Kiểm tra lại vỏ bao bì hộp thuốc, đơn thuốc CPOE hoặc hồ sơ bệnh án để đối chiếu chính xác tên thương mại / hoạt chất quốc tế (INN).\n"
+            f"  2. Tra cứu trực tiếp trên [Cổng dịch vụ công Cục Quản lý Dược](https://dichvucong.dav.gov.vn).\n"
+            f"  3. Liên hệ Dược sĩ lâm sàng / Khoa Dược bệnh viện để được thẩm định chuyên môn."
+        )
+        card_abstain = CopilotActionCard(
+            card_type="shift_handover_report",
+            title="Cổng Tra Cứu Dược Quốc Gia 54.885 SĐK",
+            summary="Mở cổng đối soát danh mục thuốc Cục Quản lý Dược",
+            data={"kw": kw, "status": "unindexed"},
+            primary_action_label="Mở Cổng Dược Quốc Gia",
+            primary_action_type="OPEN_REGISTRY_MODAL"
+        )
         return CopilotResponse(
-            intent="MEDICATION_NOT_FOUND",
-            reply_text=(
-                f"❌ **Không tìm thấy thuốc khớp với từ khóa '{kw}' trong CSDL 54.885 thuốc Cục Quản lý Dược**.\n\n"
-                f"• **Nguyên tắc an toàn y tế:** Hệ thống tuyệt đối không suy đoán hoặc bịa đặt thông tin khi chưa xác thực.\n"
-                f"• **Khuyến nghị:** Vui lòng kiểm tra lại chính xác **Số Đăng Ký (VD-.../VN-...)** hoặc tên hoạt chất quốc tế (INN)."
-            ),
-            suggested_chips=["Tra cứu SĐK VD-24757-16", "Tra cứu Morphin 10mg", "Kho Dược Quốc Gia 55k"]
+            intent="CLINICAL_SAFE_ABSTENTION",
+            reply_text=reply_abstain,
+            card=card_abstain,
+            legal_basis="Thông tư 22/2011/TT-BYT & Dược Thư Quốc Gia Việt Nam",
+            suggested_chips=["Tra cứu SĐK VD-24757-16", "Kho Dược Quốc Gia 55k", "Đối soát ca trực 07:00 AM"]
         )
 
     matched = drugs[0]
@@ -163,8 +224,13 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
             f"🔗 **Mở tài liệu gốc:** [📖 Mở tệp PDF Dược Thư 2015 {f'(Trang {pdf_page})' if pdf_page else ''}]({pdf_url})\n"
         )
 
-    details = (
+    header_title = (
         f"### 💊 HỒ SƠ DƯỢC THẨM ĐỊNH CHÍNH XÁC (CỤC QUẢN LÝ DƯỢC - BỘ Y TẾ)\n{citation_block}\n"
+        if in_stock > 0 else
+        f"### 📋 HỒ SƠ DƯỢC QUỐC GIA - CHƯA NHẬP KHO NỘI VIỆN (0 ĐƠN VỊ)\n{citation_block}\n"
+    )
+    details = (
+        f"{header_title}"
         f"• **Tên biệt dược:** **{matched.brand_name}** | **SĐK:** `{matched.national_code}`\n"
         f"• **Hoạt chất:** **{matched.active_ingredient}** | **Hàm lượng:** {matched.concentration or 'Theo HS công bố'}\n"
         f"• **Dạng bào chế:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **Đường dùng:** {matched.route or 'Theo chỉ định'}\n"
@@ -176,8 +242,13 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
     if matched.adult_dosage: details += f"🛡️ **Liều lượng dùng:** {matched.adult_dosage}\n"
     if matched.antidote: details += f"🧪 **Thuốc giải độc (Antidote):** {matched.antidote}\n"
 
-    stock_msg = f"\n📦 **Tồn kho Bệnh viện:** **{in_stock} {matched.standard_unit}**" if in_stock > 0 else "\n📦 **Tồn kho Bệnh viện:** Hiện không có sẵn trong cơ số tủ trực."
-    details += stock_msg
+    if in_stock > 0:
+        details += f"\n📦 **Tồn kho Bệnh viện:** **{in_stock} {matched.standard_unit}** (Sẵn sàng cấp phát tại tủ trực khoa phòng)."
+    else:
+        details += (
+            f"\n📦 **Tồn kho Bệnh viện:** 🔴 **0 {matched.standard_unit}** (Hiện không có sẵn trong cơ số tủ trực 20 mặt hàng).\n"
+            f"👉 **Đề xuất xử trí:** Cân nhắc thuốc tương đương có sẵn trong kho hoặc lập **Phiếu dự trù Mẫu 01 (TT 22/2011/TT-BYT)** để Khoa Dược bổ sung."
+        )
     if len(drugs) > 1:
         others = ", ".join([f"{d.brand_name} (`{d.national_code}`)" for d in drugs[1:4]])
         details += f"\n🔍 **Các quy cách / SĐK khác:** {others}"
@@ -210,10 +281,12 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
         sdk=matched.national_code
     )
 
+    chips = ["Kiểm tra hạn dùng FEFO", "Lập dự trù bù thuốc Mẫu 01", "Xem quy tắc 5 đúng"] if in_stock > 0 else ["Lập phiếu dự trù Mẫu 01", "Kiểm tra danh mục kho 20 thuốc", "Đối soát ca trực 07:00 AM"]
+
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE", reply_text=details, card=card,
         legal_basis="Cục Quản lý Dược (DAV) & Dược Thư Quốc Gia Việt Nam",
-        suggested_chips=["Kiểm tra hạn dùng FEFO", "Lập dự trù bù thuốc Mẫu 01", "Xem quy tắc 5 đúng"],
+        suggested_chips=chips,
         session_id=session.session_id,
         active_medication_name=session.active_medication_name,
         active_medication_stock=session.active_medication_stock,

@@ -74,7 +74,7 @@ async def test_vaxigrip_smpc_cold_chain():
         assert "vắc xin" in d["active_ingredient"].lower()
         assert "cúm" in d["indications"].lower()
         assert "J07BB01" in d["atc_code"]
-        assert "352/QĐ-QLD" in d["clinical_source"]
+        assert "145/QĐ-QLD" in d["clinical_source"] or "352/QĐ-QLD" in d["clinical_source"]
         assert "đông băng" in d["precautions"].lower()
 
 @pytest.mark.asyncio

@@ -30,19 +30,19 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
   );
 
   return (
-    <tr className="hover:bg-teal-50/40 transition-colors border-b border-slate-200/80 text-slate-800 text-xs">
+    <tr className="hover:bg-teal-50/50 transition-colors border-b border-slate-200/90 text-slate-800 text-sm">
       {/* 1. STT */}
-      <td className="py-2.5 px-3 text-center font-mono text-slate-500 font-medium whitespace-nowrap w-12">
+      <td className="py-3.5 px-3.5 text-center font-mono text-slate-600 font-bold whitespace-nowrap w-12 text-sm">
         {index + 1}
       </td>
 
       {/* 2. Số Đăng Ký (SĐK) - Bấm tra cứu hồ sơ công bố Cục QLD */}
-      <td className="py-2.5 px-3 whitespace-nowrap font-mono">
+      <td className="py-3.5 px-3.5 whitespace-nowrap font-mono">
         <button
           type="button"
           onClick={() => onSelectBatch?.(batch)}
           data-testid={`btn-sdk-${batch.id}`}
-          className="font-bold text-teal-800 hover:text-teal-950 hover:underline cursor-pointer bg-teal-50/80 border border-teal-200 px-2 py-0.5 rounded text-2xs"
+          className="font-bold text-teal-900 hover:text-teal-950 hover:underline cursor-pointer bg-teal-50 border border-teal-300 px-2.5 py-1 rounded text-xs sm:text-sm transition shadow-2xs"
           title="Bấm để xem Giấy công bố thuốc Cục Quản Lý Dược"
         >
           {sdk}
@@ -50,88 +50,88 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
       </td>
 
       {/* 3. Tên Thuốc & Hoạt Chất (Hàm Lượng) - Bấm tra cứu hồ sơ */}
-      <td className="py-2.5 px-3 min-w-[200px]">
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <td className="py-3.5 px-3.5 min-w-[240px]">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => onSelectBatch?.(batch)}
             data-testid={`btn-medname-${batch.id}`}
-            className="font-bold text-slate-900 text-xs leading-tight hover:text-blue-700 hover:underline cursor-pointer text-left"
+            className="font-black text-slate-900 text-sm sm:text-base leading-snug hover:text-blue-700 hover:underline cursor-pointer text-left"
             title="Bấm để xem hồ sơ công bố và chuyên luận Dược Thư"
           >
             {batch.itemName}
           </button>
-          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border select-none ${pharmGroup.badgeClass}`} title={`Nhóm tác dụng trị liệu: ${pharmGroup.label}`}>
+          <span className={`text-xs font-bold px-2 py-0.5 rounded border select-none ${pharmGroup.badgeClass}`} title={`Nhóm tác dụng trị liệu: ${pharmGroup.label}`}>
             {pharmGroup.shortLabel}
           </span>
           {batch.isControlledSubstance && (
-            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-50 text-rose-800 border border-rose-200" title="Thuốc kiểm soát đặc biệt">
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-300" title="Thuốc kiểm soát đặc biệt">
               KSĐB
             </span>
           )}
         </div>
-        <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-1">
-          <span className="text-slate-500 font-medium">Hoạt chất:</span> {batch.activeIngredient || '—'}
-          {batch.concentration && <span className="font-semibold text-slate-700 ml-1">({batch.concentration})</span>}
+        <p className="text-xs sm:text-sm text-slate-700 mt-1 line-clamp-1">
+          <span className="text-slate-500 font-semibold">Hoạt chất:</span> {batch.activeIngredient || '—'}
+          {batch.concentration && <span className="font-bold text-slate-800 ml-1">({batch.concentration})</span>}
         </p>
       </td>
 
       {/* 4. Dạng Bào Chế & Quy Cách Đóng Gói */}
-      <td className="py-2.5 px-3 text-slate-700 whitespace-nowrap">
-        <p className="font-medium text-slate-800 text-[11px]">{batch.dosageForm || '—'}</p>
-        <p className="text-[10px] text-slate-500 truncate max-w-[160px]" title={`${batch.packagingSpec || '—'}${batch.shelfLife ? ` • Hạn: ${batch.shelfLife}` : ''}`}>
+      <td className="py-3.5 px-3.5 text-slate-700 whitespace-nowrap min-w-[180px]">
+        <p className="font-bold text-slate-900 text-xs sm:text-sm">{batch.dosageForm || '—'}</p>
+        <p className="text-xs sm:text-sm text-slate-600 font-medium truncate max-w-[220px] mt-0.5" title={`${batch.packagingSpec || '—'}${batch.shelfLife ? ` • Hạn: ${batch.shelfLife}` : ''}`}>
           {batch.packagingSpec || '—'}{batch.shelfLife ? ` • ${batch.shelfLife}` : ''}
         </p>
       </td>
 
       {/* 5. Cơ Sở Sản Xuất & Nước SX */}
-      <td className="py-2.5 px-3 text-slate-700 min-w-[140px] max-w-[180px]">
-        <p className="font-medium text-slate-800 text-[11px] truncate" title={batch.manufacturer}>
+      <td className="py-3.5 px-3.5 text-slate-700 min-w-[160px] max-w-[220px]">
+        <p className="font-bold text-slate-900 text-xs sm:text-sm truncate" title={batch.manufacturer}>
           {batch.manufacturer || '—'}
         </p>
-        <p className="text-[10px] text-slate-500">
-          {batch.country || 'Việt Nam'} • <span className="font-mono">{batch.standardPharmacopeia || 'DĐVN V'}</span>
+        <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
+          {batch.country || 'Việt Nam'} • <span className="font-mono font-bold text-slate-700">{batch.standardPharmacopeia || 'DĐVN V'}</span>
         </p>
       </td>
 
       {/* 6. Số Lô & Hạn Dùng */}
-      <td className="py-2.5 px-3 whitespace-nowrap font-mono">
-        <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded text-[11px] border border-slate-200">
+      <td className="py-3.5 px-3.5 whitespace-nowrap font-mono">
+        <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-xs sm:text-sm border border-slate-300">
           {batch.batchNumber}
         </span>
-        <div className="mt-0.5">
-          <span className="text-slate-700 text-[11px] font-semibold">{batch.expiryDate}</span>
-          <span className={`ml-1 text-[10px] font-bold ${batch.daysLeft <= 60 ? 'text-rose-600' : 'text-slate-500'}`}>
+        <div className="mt-1">
+          <span className="text-slate-800 text-xs sm:text-sm font-bold">{batch.expiryDate}</span>
+          <span className={`ml-1.5 text-xs sm:text-sm font-black ${batch.daysLeft <= 60 ? 'text-rose-600' : 'text-slate-500'}`}>
             ({batch.daysLeft}d)
           </span>
         </div>
       </td>
 
       {/* 7. Tồn Kho Bệnh Viện & Vị Trí */}
-      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+      <td className="py-3.5 px-3.5 text-center whitespace-nowrap min-w-[130px]">
         <div className="font-mono">
-          <span className={`text-xs font-black ${isUnderMin ? 'text-rose-600' : 'text-slate-900'}`}>
+          <span className={`text-sm sm:text-base font-black ${isUnderMin ? 'text-rose-600' : 'text-slate-900'}`}>
             {batch.currentStock} {batch.unit}
           </span>
-          <span className="text-slate-400 text-[10px] block">Cơ số min: {batch.minThreshold}</span>
+          <span className="text-slate-500 text-xs sm:text-sm block font-medium mt-0.5">Cơ số min: {batch.minThreshold}</span>
         </div>
-        <p className="text-[10px] text-slate-500 truncate max-w-[130px] mt-0.5" title={batch.warehouseLocation}>
+        <p className="text-xs sm:text-sm text-slate-600 truncate max-w-[180px] mt-0.5 font-medium" title={batch.warehouseLocation}>
           {batch.warehouseLocation}
         </p>
       </td>
 
       {/* 8. Thao Tác Hành Chính & Tra Cứu */}
-      <td className="py-2.5 px-3 text-right whitespace-nowrap">
-        <div className="inline-flex items-center gap-1.5 justify-end">
+      <td className="py-3.5 px-3.5 text-right whitespace-nowrap min-w-[230px]">
+        <div className="inline-flex items-center gap-2 justify-end">
           {/* Nút 1: Mở hồ sơ công bố Cục QLD & Dược Thư 2015/2022 */}
           <button
             type="button"
             onClick={() => onSelectBatch?.(batch)}
             data-testid={`btn-doi-chung-kho-${batch.id}`}
-            className="inline-flex items-center gap-1 h-7.5 px-2.5 rounded-md border border-blue-200 bg-blue-50/90 hover:bg-blue-100 text-blue-900 text-xs font-bold cursor-pointer transition shadow-2xs"
-            title="Xem hồ sơ công bố Cục Quản Lý Dược & Dược Thư Quốc Gia 2015/2022 (Xem PDF HDSD, Nhãn, Liều, Chống chỉ định)"
+            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs sm:text-sm font-bold cursor-pointer transition shadow-2xs"
+            title="Xem hồ sơ công bố Cục Quản Lý Dược & Dược Thư Quốc Gia 2015/2022"
           >
-            <FileText className="w-3.5 h-3.5 text-blue-700" />
+            <FileText className="w-4 h-4 text-blue-700" />
             <span>Hồ sơ &amp; Dược thư</span>
           </button>
 
@@ -141,10 +141,10 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
               type="button"
               onClick={() => onOpenSafetyGuide(batch.itemName)}
               data-testid={`btn-safety-kho-${batch.id}`}
-              className="inline-flex items-center gap-1 h-7.5 px-2 rounded-md border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-semibold cursor-pointer transition shadow-2xs"
+              className="inline-flex items-center gap-1.5 h-8.5 px-2.5 rounded-lg border border-teal-300 bg-teal-50 hover:bg-teal-100 text-teal-900 text-xs sm:text-sm font-bold cursor-pointer transition shadow-2xs"
               title="Tra cứu An toàn 5 Đúng & Cảnh báo dị ứng lâm sàng"
             >
-              <BookOpen className="w-3.5 h-3.5 text-teal-700" />
+              <BookOpen className="w-4 h-4 text-teal-700" />
               <span>An toàn</span>
             </button>
           )}
@@ -153,15 +153,15 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           <button
             type="button"
             onClick={() => onQuickDispatch(batch)}
-            className={`inline-flex items-center gap-1 h-7.5 px-2.5 rounded-md text-xs font-semibold transition cursor-pointer active:scale-98 ${
+            className={`inline-flex items-center gap-1.5 h-8.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer active:scale-98 ${
               batch.isNearExpiry
-                ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200'
-                : 'bg-slate-800 hover:bg-slate-900 text-white'
+                ? 'bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-white'
             }`}
             title="Xuất kho cấp phát theo phiếu dự trù/y lệnh"
           >
             <span>Xuất</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
+            <ArrowUpRight className="w-4 h-4" />
           </button>
         </div>
       </td>
