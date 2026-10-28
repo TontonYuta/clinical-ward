@@ -20,7 +20,8 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isOpioidCalc = /quy đổi|mme|tương đương|chuyển sang fentanyl|uống sang tiêm|liều morphin|trả vỏ|thu hồi vỏ/i.test(lower);
   const isAllergyAudit = /dị ứng|chống chỉ định|thẩm định|an toàn đơn|5 đúng|dùng được không|dị ứng penicillin/i.test(lower);
   const isRenal = /suy thận|chức năng thận|cockcroft|creatinine|egfr|crcl|chỉnh liều/i.test(lower);
-  const isColdChain = /chuỗi lạnh|vaxigrip|tủ lạnh|vượt ngưỡng|8 độ|9 độ|quarantine|cách ly vắc xin/i.test(lower);
+  const isColdChain = (/chuỗi lạnh|vaxigrip|tủ lạnh|kho lạnh/i.test(lower) || /cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể/i.test(lower);
+  const isFever = /sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì/i.test(lower);
   const isPrescription = (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) && (INITIAL_PATIENTS.some(p => lower.includes(p.fullName.toLowerCase())) || /rx-2026-/i.test(lower));
   const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower);
   const isAmiodarone = /amiodaron|amiodarone/i.test(lower);
@@ -36,7 +37,7 @@ export function isClinicalScenarioQuery(lower: string): boolean {
     isAnaphylaxis || isOpioidCalc || isAllergyAudit || isRenal ||
     isColdChain || isPrescription || isAdr ||
     isAmiodarone || isNoradrenalin || isDiazepam || isSalbutamol || isEsomeprazole ||
-    isPatientProfile || isDeictic
+    isPatientProfile || isDeictic || isFever
   );
 }
 
@@ -400,7 +401,7 @@ export async function processGeminiClinicalScenario(
   }
 
   // 10. Kịch bản Xử trí Sự Cố Chuỗi Lạnh Vắc xin GSP
-  if (/chuỗi lạnh|vaxigrip|tủ lạnh|vượt ngưỡng|8 độ|9 độ|quarantine|cách ly vắc xin/i.test(lower)) {
+  if ((/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh/i.test(lower) || /cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể/i.test(lower)) {
     const card: AgentActionCard = {
       cardType: 'coldchain_monitor',
       title: 'Giám Sát Chuỗi Lạnh: Tủ Lạnh Vaxigrip T1',

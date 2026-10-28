@@ -119,11 +119,31 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     # 12. Tư vấn lâm sàng sâu bằng Gemini AI Copilot
     gemini_reply = await ask_backend_gemini_copilot(query, user_role, user_name, db)
     if gemini_reply:
+        from app.services.session_context import get_or_create_session
+        session = get_or_create_session(session_id, user_name, user_role)
+        lower_reply = gemini_reply.lower()
+        if "paracetamol" in lower_reply:
+            session.set_active_medication("PARACETAMOL 500mg", "Paracetamol", batch="LOT-PC24-11A", stock="80 Viên", location="Kho Dược Nội Trú (Kệ A1 - Tầng 1)", sdk="893100110026")
+        elif "amiodaron" in lower_reply:
+            session.set_active_medication("Amiodarone Hydrochloride Tablets 200mg", "Amiodaron hydroclorid", batch="LOT-AM25-C1", stock="180 Viên", location="Tủ thuốc Hồi sức Cấp cứu Tim Mạch")
+        elif "vancomycin" in lower_reply:
+            session.set_active_medication("VANCOMYCIN 1g", "Vancomycin", batch="LOT-VC25-V1", stock="180 Lọ", location="Kho Dược Nội Trú (Kệ B2 - Tầng 2)")
+        elif "noradrenalin" in lower_reply:
+            session.set_active_medication("Noradrenalin 4mg/4ml", "Noradrenalin tartrat", batch="LOT-NA24-R3", stock="120 Ống", location="Tủ cấp cứu Hồi sức A9 (Ngăn B)")
+        elif "salbutamol" in lower_reply:
+            session.set_active_medication("Salbutamol 2,5 mg/ 2,5 ml", "Salbutamol sulfat", batch="LOT-SB25-K1", stock="300 Ống", location="Tủ thuốc Cấp cứu Hô hấp A9")
+        elif "prasocare" in lower_reply or "esomeprazol" in lower_reply:
+            session.set_active_medication("Prasocare (Esomeprazole 40mg)", "Esomeprazole natri 40mg", batch="LOT-PS25-E4", stock="350 Lọ", location="Kho Dược Nội Trú (Kệ A2 - Tầng 2)")
+
         return CopilotResponse(
             intent="CLINICAL_AI_CONSULTATION",
             reply_text=gemini_reply,
             legal_basis="Dược Thư Quốc Gia Việt Nam & Hướng dẫn Bộ Y Tế",
-            suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu phác đồ Thông tư 51", "Kiểm tra hạn dùng FEFO"]
+            suggested_chips=["Cho tôi thông tin về thuốc đó", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"],
+            session_id=session.session_id,
+            active_medication_name=session.active_medication_name,
+            active_medication_stock=session.active_medication_stock,
+            active_medication_location=session.active_medication_location
         )
 
     # 13. Phản hồi chào mừng và bảng điều hướng lâm sàng

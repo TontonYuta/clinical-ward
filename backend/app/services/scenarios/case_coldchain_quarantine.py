@@ -13,7 +13,15 @@ class ColdChainQuarantineScenario(BaseScenario):
     scenario_name = "Xử trí sự cố chuỗi lạnh vắc xin"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
-        return any(w in lower_query for w in ["chuỗi lạnh", "vaxigrip", "tủ lạnh", "mất điện", "vượt ngưỡng", "8 độ", "9 độ", "quarantine", "cách ly vắc xin"])
+        # Loại trừ tuyệt đối câu hỏi về sốt / thân nhiệt con người
+        if any(w in lower_query for w in ["sốt", "thân nhiệt", "hạ sốt", "người", "em bé", "bệnh nhân", "cơ thể", "uống thuốc"]):
+            return False
+
+        # Chỉ kích hoạt khi có thực thể chuỗi lạnh / vắc xin rõ ràng
+        return any(w in lower_query for w in [
+            "chuỗi lạnh", "vaxigrip", "tủ lạnh", "kho lạnh", "mất điện tủ",
+            "datalogger", "data logger", "mkt", "cách ly vắc xin", "quarantine"
+        ])
 
     async def handle(
         self,

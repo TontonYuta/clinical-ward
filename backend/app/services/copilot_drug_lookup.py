@@ -40,7 +40,20 @@ def extract_drug_keywords(query: str) -> str:
     return " ".join(words).strip()
 
 async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: str | None = None) -> CopilotResponse:
+    from app.services.session_context import get_or_create_session
+    session = get_or_create_session(session_id)
+
     kw = extract_drug_keywords(query)
+
+    # Nếu câu hỏi chứa từ thay thế ("thuốc đó", "thuốc này", "nó") hoặc từ khóa chiết xuất chỉ là đại từ,
+    # nhưng trong phiên làm việc đã có active_medication -> Tự động kế thừa tên thuốc đang theo dõi
+    is_deictic = any(w in query.lower() for w in [
+        "thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"
+    ]) or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
+
+    if (not kw or len(kw) < 2 or is_deictic) and session.active_medication_name:
+        kw = session.active_medication_ingredient or session.active_medication_name
+
     if not kw or len(kw) < 2:
         guide_text = (
             "### 🏥 CỔNG TRA CỨU DƯỢC QUỐC GIA & DƯỢC THƯ LÂM SÀNG (54.885 THUỐC)\n\n"
@@ -78,15 +91,25 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
             ]
         )
 
-    # 1. Tra cứu CSDL 54.885 thuốc Cục QLD
+    # 1. Tra cứu CSDL 54.885 thuốc Cục QLD (Ưu tiên SĐK hoặc tên thuốc đang kích hoạt)
     search_term = f"%{kw.lower()}%"
-    stmt = select(DavNationalDrug).where(
-        or_(
-            func.lower(DavNationalDrug.national_code).like(search_term),
-            func.lower(DavNationalDrug.brand_name).like(search_term),
-            func.lower(DavNationalDrug.active_ingredient).like(search_term)
+    stmt = (
+        select(DavNationalDrug)
+        .where(
+            or_(
+                func.lower(DavNationalDrug.national_code).like(search_term),
+                func.lower(DavNationalDrug.brand_name).like(search_term),
+                func.lower(DavNationalDrug.active_ingredient).like(search_term)
+            )
         )
-    ).limit(5)
+        .order_by(
+            (DavNationalDrug.national_code == (session.active_medication_sdk or "")).desc(),
+            (func.lower(DavNationalDrug.brand_name) == kw.lower()).desc(),
+            func.lower(DavNationalDrug.brand_name).like(f"%{kw.lower()}%").desc(),
+            DavNationalDrug.national_code.asc()
+        )
+        .limit(5)
+    )
     res = await db.execute(stmt)
     drugs = res.scalars().all()
 
