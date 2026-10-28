@@ -80,6 +80,18 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order }) => {
           </div>
         )}
       </div>
+
+      <div className="pt-2 border-t border-slate-200">
+        <button
+          type="button"
+          onClick={() => {
+            window.location.hash = '#cpoe';
+          }}
+          className="w-full py-1.5 px-2.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+        >
+          <span>Xem chi tiết đơn thuốc trên Kê đơn CPOE →</span>
+        </button>
+      </div>
     </div>
   );
 };

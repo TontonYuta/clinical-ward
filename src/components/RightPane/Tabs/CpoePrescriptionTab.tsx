@@ -13,6 +13,7 @@ import { INITIAL_PRESCRIPTIONS } from '../../../data/mockCpoeData';
 import { cpoeApi } from '../../../services/api/cpoeApi';
 import { CpoeOrderList } from './CPOE/CpoeOrderList';
 import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
+import { CpoeOrderDetailModal } from './CPOE/CpoeOrderDetailModal';
 import { PrescriptionAdviceModal } from '../../Modals/PrescriptionAdviceModal';
 
 interface CpoePrescriptionTabProps {
@@ -38,6 +39,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [adviceOrder, setAdviceOrder] = useState<PrescriptionOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<PrescriptionOrder | null>(null);
 
   const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
   const roleName = USER_PROFILES[currentUserRole]?.roleName || 'Điều Dưỡng';
@@ -156,7 +158,12 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       </div>
 
       {/* Orders List Table */}
-      <CpoeOrderList orders={orders} onOpenSafetyGuide={onOpenSafetyGuide} onOpenAdvice={(ord) => setAdviceOrder(ord)} />
+      <CpoeOrderList
+        orders={orders}
+        onSelectOrder={(ord) => setSelectedOrder(ord)}
+        onOpenSafetyGuide={onOpenSafetyGuide}
+        onOpenAdvice={(ord) => setAdviceOrder(ord)}
+      />
 
       {/* Prescription Creation Modal */}
       {canPrescribe && (
@@ -168,6 +175,18 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
           onOpenSafetyGuide={onOpenSafetyGuide}
         />
       )}
+
+      {/* Prescription Details Modal */}
+      <CpoeOrderDetailModal
+        isOpen={!!selectedOrder}
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onOpenSafetyGuide={onOpenSafetyGuide}
+        onOpenAdvice={(ord) => {
+          setSelectedOrder(null);
+          setAdviceOrder(ord);
+        }}
+      />
 
       {/* Prescription Advice & Daily Medication Schedule Modal */}
       <PrescriptionAdviceModal

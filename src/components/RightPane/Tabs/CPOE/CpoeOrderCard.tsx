@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Clock, CheckCircle2 } from 'lucide-react';
+import { Clock, CheckCircle2, Eye } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 
 interface CpoeOrderCardProps {
@@ -102,7 +102,15 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrd
               <span>Dặn dò nhắc thuốc</span>
             </button>
           )}
-          <span className="text-teal-700 font-bold text-xs sm:text-sm">Chi tiết →</span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onSelectOrder?.(order); }}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-teal-800 border border-slate-300 text-xs font-bold cursor-pointer transition shadow-2xs"
+            title="Xem chi tiết đơn thuốc CPOE"
+          >
+            <Eye className="w-3.5 h-3.5 text-teal-700" />
+            <span>Chi tiết</span>
+          </button>
         </div>
       </div>
     </div>

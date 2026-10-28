@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { CheckCircle2, Clock, Search, X } from 'lucide-react';
+import { CheckCircle2, Clock, Search, X, Eye } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 import { CpoeOrderCard } from './CpoeOrderCard';
 
@@ -271,17 +271,28 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({ orders, onSelectOr
                       <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                       <span>{order.doctorName}</span>
                     </div>
-                    {onOpenAdvice && (
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); onOpenAdvice(order); }}
-                        className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold cursor-pointer transition shadow-2xs"
-                        title="Dặn dò uống thuốc hàng ngày & gửi mail qua Google Script"
+                        onClick={(e) => { e.stopPropagation(); onSelectOrder?.(order); }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 hover:border-teal-600 text-xs font-bold cursor-pointer transition shadow-2xs"
+                        title="Xem chi tiết đơn thuốc CPOE"
                       >
-                        <Clock className="w-3.5 h-3.5 text-teal-700" />
-                        <span>Dặn dò & Nhắc thuốc</span>
+                        <Eye className="w-3.5 h-3.5 text-teal-700" />
+                        <span>Xem chi tiết</span>
                       </button>
-                    )}
+                      {onOpenAdvice && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onOpenAdvice(order); }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold cursor-pointer transition shadow-2xs"
+                          title="Dặn dò uống thuốc hàng ngày & gửi mail qua Google Script"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-teal-700" />
+                          <span>Dặn dò</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

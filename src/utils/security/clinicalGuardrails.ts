@@ -7,7 +7,7 @@
 
 export interface ClientGuardrailCheck {
   isSafe: boolean;
-  violationType?: 'sql_injection' | 'prompt_injection' | 'clinical_bypass';
+  violationType?: 'sql_injection' | 'prompt_injection' | 'clinical_bypass' | 'format_hijacking' | 'markup_injection';
   threatDescription?: string;
   sanitizedQuery: string;
   safeResponse?: string;
@@ -85,6 +85,24 @@ const PROMPT_INJECTION_PATTERNS: Array<{ pattern: RegExp; desc: string }> = [
   {
     pattern: /(?:cấp|xuất|lấy)\s+(?:gấp\s+)?(?:\d+\s+)?(?:lọ|ống|viên)?\s*(?:morphin|fentanyl|adrenalin|kali)\s+(?:không cần|bỏ qua)\s+(?:ký|duyệt|đơn|xác thực)/i,
     desc: "Clinical Safety Bypass: Cố tình yêu cầu xuất thuốc gây nghiện không cần đơn"
+  },
+
+  // Format Hijacking / Arbitrary HTML & Website Generation (OWASP LLM01:2025, LLM02:2025 & NeMo Domain Rails)
+  {
+    pattern: /(?:trả lời|viết|tạo|xuất|render|làm|sinh|chuyển)\s+(?:thành|ra|dưới dạng)?\s*(?:1\s+)?(?:file|tệp|trang|bản|mã|code)?\s*(?:html|website|web page|web|trang web|script|giao diện web|mã nguồn html)/i,
+    desc: "Format Hijacking: Yêu cầu sinh mã HTML / tạo website trái với phạm vi lâm sàng"
+  },
+  {
+    pattern: /(?:tạo|viết|code|lập trình)\s+(?:cho tôi\s+)?(?:1\s+)?(?:file|trang|bản)?\s*(?:website|trang web|web app|html|javascript|css)/i,
+    desc: "Format Hijacking: Yêu cầu lập trình website / tạo mã giao diện web"
+  },
+  {
+    pattern: /(?:generate|create|write|output|reply with|render)\s+(?:as\s+|in\s+)?(?:an?\s+)?(?:html(?:\s+(?:file|page|website|document|template))?|website|web page|javascript|script)/i,
+    desc: "Format Hijacking: Yêu cầu LLM sinh mã HTML / website hoặc script tùy ý"
+  },
+  {
+    pattern: /(?:<!doctype\s+html|<html[\s>]|<script[\s>]|javascript:|<style[\s>])/i,
+    desc: "Markup Injection: Chứa thẻ HTML / script nhúng trong truy vấn"
   }
 ];
 
@@ -125,9 +143,20 @@ export function validateClientInputGuardrail(rawQuery: string): ClientGuardrailC
     }
   }
 
-  // 2. Quét Prompt Injection / Jailbreak
+  // 2. Quét Prompt Injection / Jailbreak / Format Hijacking
   for (const { pattern, desc } of PROMPT_INJECTION_PATTERNS) {
     if (pattern.test(sanitizedQuery)) {
+      const isFormatHijack = desc.includes('Format Hijacking') || desc.includes('Markup Injection');
+      if (isFormatHijack) {
+        return {
+          isSafe: false,
+          violationType: 'format_hijacking',
+          threatDescription: desc,
+          sanitizedQuery,
+          safeResponse: `🛡️ **CẢNH BÁO BẢO MẬT & GIỚI HẠN VAI TRÒ (Scope & Format Guardrail Blocked)**\n\n- **Phát hiện**: ${desc}\n- **Hành động**: Rào chắn an toàn từ chối thực thi yêu cầu lập trình web hoặc tạo mã nguồn website/HTML/script (OWASP LLM01:2025 & NeMo Domain Rails).\n- **Nguyên tắc**: Trợ lý Trí tuệ Nhân tạo Lâm Sàng được thiết kế chuyên biệt để hỗ trợ nhân viên y tế tra cứu dược lý (Dược Thư Quốc Gia 2015), quy chế quản lý thuốc (Thông tư 20/2017/TT-BYT, TT 22/2011/TT-BYT), an toàn kê đơn CPOE và phác đồ cấp cứu (TT 51/2017/TT-BYT). Hệ thống **không hỗ trợ lập trình, sinh mã HTML/CSS/JS hoặc tạo trang web**.\n- **Gợi ý**: Vui lòng đặt câu hỏi liên quan đến thuốc, liều dùng hoặc chuyên môn y tế.`
+        };
+      }
+
       return {
         isSafe: false,
         violationType: 'prompt_injection',
@@ -190,6 +219,17 @@ export function validateClientOutputGuardrail(text: string, userQuery?: string):
         );
       }
     }
+  }
+
+  // 4. Output Guardrail: Vô hiệu hóa cấu trúc mã HTML / Website hoàn chỉnh (OWASP LLM02:2025)
+  if (/(?:<!DOCTYPE\s+html|<html[\s>]|<head[\s>]|<body[\s>]|```html\s*<!DOCTYPE)/i.test(scrubbed)) {
+    scrubbed = (
+      `🛡️ **RÀO CHẮN ĐẦU RA (Output Rail Blocked - OWASP LLM02:2025)**\n\n` +
+      `• **Phát hiện:** Phản hồi chứa cấu trúc mã HTML / Website không hợp lệ.\n` +
+      `• **Hành động:** Hệ thống đã tự động ngăn chặn và vô hiệu hóa nội dung theo chính sách an toàn thông tin y tế.\n` +
+      `• **Nguyên tắc:** Trợ lý Agent Lâm Sàng tuân thủ quy chế Dược lâm sàng (Thông tư 20/2017/TT-BYT, TT 22/2011/TT-BYT, Dược Thư Quốc Gia) ` +
+      `và chỉ phản hồi bằng định dạng Markdown lâm sàng, không hỗ trợ hiển thị tệp HTML hoặc tạo website.`
+    );
   }
 
   return scrubbed;

@@ -63,7 +63,25 @@ PROMPT_INJECTION_PATTERNS = [
     # Clinical Safety & CDSS Guardrail Bypass (Phá vỡ an toàn y tế & Thuốc gây nghiện)
     (r"(?i)(?:quên đi|bỏ qua|không cần)\s+(?:cảnh báo|quy định|nguyên tắc)\s+(?:an toàn|y tế|dược lý|cdss|thông tư 20|thông tư 22|thông tư 51)", "Clinical Safety Bypass: Yêu cầu bỏ qua quy tắc an toàn y tế và dược lâm sàng"),
     (r"(?i)(?:bỏ qua|miễn)\s+(?:xác thực|ký duyệt|hai chữ ký|chữ ký bác sĩ|quy trình duyệt cấp phát)", "Clinical Safety Bypass: Yêu cầu vượt mặt cơ chế kiểm soát hai chữ ký đối với thuốc độc"),
-    (r"(?i)(?:cấp|xuất|lấy)\s+(?:gấp\s+)?(?:\d+\s+)?(?:lọ|ống|viên)?\s*(?:morphin|fentanyl|adrenalin|kali)\s+(?:không cần|bỏ qua)\s+(?:ký|duyệt|đơn|xác thực)", "Clinical Safety Bypass: Cố tình yêu cầu xuất thuốc gây nghiện/nguy kịch không cần đơn")
+    (r"(?i)(?:cấp|xuất|lấy)\s+(?:gấp\s+)?(?:\d+\s+)?(?:lọ|ống|viên)?\s*(?:morphin|fentanyl|adrenalin|kali)\s+(?:không cần|bỏ qua)\s+(?:ký|duyệt|đơn|xác thực)", "Clinical Safety Bypass: Cố tình yêu cầu xuất thuốc gây nghiện/nguy kịch không cần đơn"),
+
+    # Format Hijacking / Arbitrary HTML & Website Generation (OWASP LLM01:2025, LLM02:2025 & NeMo Domain Rails)
+    (
+        r"(?i)(?:trả lời|viết|tạo|xuất|render|làm|sinh|chuyển)\s+(?:thành|ra|dưới dạng)?\s*(?:1\s+)?(?:file|tệp|trang|bản|mã|code)?\s*(?:html|website|web page|web|trang web|script|giao diện web|mã nguồn html)",
+        "Format Hijacking: Yêu cầu sinh mã HTML / tạo website trái với phạm vi lâm sàng"
+    ),
+    (
+        r"(?i)(?:tạo|viết|code|lập trình)\s+(?:cho tôi\s+)?(?:1\s+)?(?:file|trang|bản)?\s*(?:website|trang web|web app|html|javascript|css)",
+        "Format Hijacking: Yêu cầu lập trình website / tạo mã giao diện web"
+    ),
+    (
+        r"(?i)(?:generate|create|write|output|reply with|render)\s+(?:as\s+|in\s+)?(?:an?\s+)?(?:html(?:\s+(?:file|page|website|document|template))?|website|web page|javascript|script)",
+        "Format Hijacking: Yêu cầu LLM sinh mã HTML / website hoặc script tùy ý"
+    ),
+    (
+        r"(?i)(?:<!doctype\s+html|<html[\s>]|<script[\s>]|javascript:|<style[\s>])",
+        "Markup Injection: Chứa thẻ HTML / script nhúng trong truy vấn"
+    ),
 ]
 
 def sanitize_input_text(text: str) -> str:
@@ -128,19 +146,31 @@ def validate_input_guardrail(raw_query: str, user_role: str = "nurse") -> Guardr
             safe_response=safe_msg
         )
 
-    # 2. Kiểm tra Prompt Injection / Jailbreak
+    # 2. Kiểm tra Prompt Injection / Jailbreak / Format Hijacking
     has_pi, pi_desc = detect_prompt_injection(clean_query)
     if has_pi:
-        safe_msg = (
-            "🛡️ **CẢNH BÁO BẢO MẬT HỆ THỐNG (Prompt Injection / Jailbreak Refused)**\n\n"
-            f"- **Phát hiện**: {pi_desc}\n"
-            "- **Hành động**: Rào chắn Guardrail từ chối thực thi yêu cầu vi phạm chính sách an toàn.\n"
-            "- **Nguyên tắc**: Trợ lý Agent Lâm Sàng tuân thủ tuyệt đối Dược Thư Quốc Gia 2015, "
-            "quy chế thuốc Kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT) và không cho phép can thiệp vào chỉ dẫn hệ thống."
-        )
+        is_format_hijack = "Format Hijacking" in (pi_desc or "") or "Markup Injection" in (pi_desc or "")
+        if is_format_hijack:
+            safe_msg = (
+                "🛡️ **CẢNH BÁO BẢO MẬT & GIỚI HẠN VAI TRÒ (Scope & Format Guardrail Blocked)**\n\n"
+                f"- **Phát hiện**: {pi_desc}\n"
+                "- **Hành động**: Rào chắn an toàn từ chối thực thi yêu cầu lập trình web hoặc tạo mã nguồn website/HTML/script (OWASP LLM01:2025 & NeMo Domain Rails).\n"
+                "- **Nguyên tắc**: Trợ lý Trí tuệ Nhân tạo Lâm Sàng được thiết kế chuyên biệt để hỗ trợ nhân viên y tế tra cứu dược lý (Dược Thư Quốc Gia 2015), quy chế quản lý thuốc (Thông tư 20/2017/TT-BYT, TT 22/2011/TT-BYT), an toàn kê đơn CPOE và phác đồ cấp cứu (TT 51/2017/TT-BYT). Hệ thống **không hỗ trợ lập trình, sinh mã HTML/CSS/JS hoặc tạo trang web**.\n"
+                "- **Gợi ý**: Vui lòng đặt câu hỏi liên quan đến thuốc, liều dùng hoặc chuyên môn y tế."
+            )
+            v_type = "format_hijacking"
+        else:
+            safe_msg = (
+                "🛡️ **CẢNH BÁO BẢO MẬT HỆ THỐNG (Prompt Injection / Jailbreak Refused)**\n\n"
+                f"- **Phát hiện**: {pi_desc}\n"
+                "- **Hành động**: Rào chắn Guardrail từ chối thực thi yêu cầu vi phạm chính sách an toàn.\n"
+                "- **Nguyên tắc**: Trợ lý Agent Lâm Sàng tuân thủ tuyệt đối Dược Thư Quốc Gia 2015, "
+                "quy chế thuốc Kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT) và không cho phép can thiệp vào chỉ dẫn hệ thống."
+            )
+            v_type = "prompt_injection"
         return GuardrailResult(
             is_safe=False,
-            violation_type="prompt_injection",
+            violation_type=v_type,
             threat_description=pi_desc,
             sanitized_query=clean_query,
             safe_response=safe_msg
@@ -198,5 +228,15 @@ def validate_output_guardrail(raw_response: str, query: str = "") -> str:
                     "👉 **Kết luận:** Toàn bộ vắc xin đang được lưu trữ an toàn trong giới hạn nhiệt độ quy chuẩn. "
                     "Hệ thống vận hành ổn định, **chưa cần kích hoạt phác đồ ứng phó sự cố hay biệt trữ cách ly**."
                 )
+
+    # 5. Output Guardrail: Vô hiệu hóa cấu trúc mã HTML / Website hoàn chỉnh (OWASP LLM02:2025 Insecure Output Handling)
+    if re.search(r"(?i)(?:<!DOCTYPE\s+html|<html[\s>]|<head[\s>]|<body[\s>]|```html\s*<!DOCTYPE)", scrubbed):
+        scrubbed = (
+            "🛡️ **RÀO CHẮN ĐẦU RA (Output Rail Blocked - OWASP LLM02:2025)**\n\n"
+            "• **Phát hiện:** Phản hồi chứa cấu trúc mã HTML / Website không hợp lệ.\n"
+            "• **Hành động:** Hệ thống đã tự động ngăn chặn và vô hiệu hóa nội dung theo chính sách an toàn thông tin y tế.\n"
+            "• **Nguyên tắc:** Trợ lý Agent Lâm Sàng tuân thủ quy chế Dược lâm sàng (Thông tư 20/2017/TT-BYT, TT 22/2011/TT-BYT, Dược Thư Quốc Gia) "
+            "và chỉ phản hồi bằng định dạng Markdown lâm sàng, không hỗ trợ hiển thị tệp HTML hoặc tạo website."
+        )
 
     return scrubbed

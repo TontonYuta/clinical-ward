@@ -136,9 +136,10 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     # 12. Tư vấn lâm sàng sâu bằng Gemini AI Copilot
     gemini_reply = await ask_backend_gemini_copilot(query, user_role, user_name, db)
     if gemini_reply:
+        cleaned_gemini_reply = validate_output_guardrail(gemini_reply, query)
         from app.services.session_context import get_or_create_session
         session = get_or_create_session(session_id, user_name, user_role)
-        lower_reply = gemini_reply.lower()
+        lower_reply = cleaned_gemini_reply.lower()
         if "paracetamol" in lower_reply:
             session.set_active_medication("PARACETAMOL 500mg", "Paracetamol", batch="LOT-PC24-11A", stock="80 Viên", location="Kho Dược Nội Trú (Kệ A1 - Tầng 1)", sdk="893100110026")
         elif "amiodaron" in lower_reply:
@@ -154,7 +155,7 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
 
         return CopilotResponse(
             intent="CLINICAL_AI_CONSULTATION",
-            reply_text=gemini_reply,
+            reply_text=cleaned_gemini_reply,
             legal_basis="Dược Thư Quốc Gia Việt Nam & Hướng dẫn Bộ Y Tế",
             suggested_chips=["Cho tôi thông tin về thuốc đó", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"],
             session_id=session.session_id,
