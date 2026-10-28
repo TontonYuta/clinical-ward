@@ -115,7 +115,18 @@ async def dispatch_clinical_scenario(
                 session.set_active_patient(rx.patient_id or rx.id, rx.patient_name)
                 break
 
-    if not detected_patient and session.active_patient_id:
+    # Chỉ kế thừa bệnh nhân khi truy vấn có đại từ chỉ định hoặc hỏi thuộc tính bệnh nhân (chống context leakage)
+    has_patient_deictic = any(w in lower_query for w in [
+        "ông ấy", "bà ấy", "bệnh nhân này", "bệnh nhân đó", "người này", "bệnh nhân", "người bệnh", "ca này",
+        "tiền sử", "dị ứng của", "chức năng thận", "hồ sơ", "bệnh án", "đơn thuốc của"
+    ])
+    has_general_drug_or_system_query = any(w in lower_query for w in [
+        "thuốc", "các loại thuốc", "nhóm thuốc", "dược phẩm", "hoạt chất", "biệt dược",
+        "hạ sốt", "giảm đau", "kháng sinh", "chuỗi lạnh", "tủ lạnh", "mất điện",
+        "fefo", "hạn dùng", "tồn kho", "báo hỏng", "sự cố máy"
+    ]) and not any(w in lower_query for w in ["ông ấy", "bà ấy", "bệnh nhân này", "bệnh nhân đó", "người này", "bệnh nhân"])
+
+    if not detected_patient and session.active_patient_id and has_patient_deictic and not has_general_drug_or_system_query:
         for p in all_patients:
             if p.id == session.active_patient_id:
                 detected_patient = p

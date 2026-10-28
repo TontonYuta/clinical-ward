@@ -256,6 +256,41 @@ async def test_out_of_database_knowledge_boundary():
         assert "GIỚI HẠN VAI TRÒ" in d_format["reply_text"]
         assert d_format["card"] is None
 
+        # Case 8: Multi-turn Context Isolation: Patient active in session, then user asks general antipyretic query
+        sess_id = "test_fever_context_isolation"
+        # 8a: User inquires about patient Vo Minh Tri
+        res_patient = await client.post("/api/v1/copilot/chat", json={
+            "query": "Thông tin bệnh nhân Võ Minh Trí",
+            "user_name": "Điều Dưỡng Trực Ca",
+            "user_role": "nurse",
+            "session_id": sess_id
+        })
+        assert res_patient.status_code == 200
+        d_p = res_patient.json()
+        assert d_p["intent"] == "CLINICAL_PATIENT_PROFILE_INQUIRY"
+        assert "VÕ MINH TRÍ" in d_p["reply_text"]
+        assert d_p["active_patient_id"] == "BN-8820"
+
+        # 8b: User asks "Cho tôi thông tin về các loại thuốc hạ sốt"
+        res_fever = await client.post("/api/v1/copilot/chat", json={
+            "query": "Cho tôi thông tin về các loại thuốc hạ sốt",
+            "user_name": "Điều Dưỡng Trực Ca",
+            "user_role": "nurse",
+            "session_id": sess_id
+        })
+        assert res_fever.status_code == 200
+        d_fever = res_fever.json()
+        assert d_fever["intent"] == "CLINICAL_FEVER_TRIAGE_PROTOCOL"
+        assert "HƯỚNG DẪN CÁC LOẠI THUỐC HẠ SỐT" in d_fever["reply_text"]
+        assert "PARACETAMOL" in d_fever["reply_text"]
+        assert "IBUPROFEN" in d_fever["reply_text"]
+        assert "80 Viên" in d_fever["reply_text"]
+        # Must NOT leak patient record into drug query
+        assert "Võ Minh Trí" not in d_fever["reply_text"]
+        assert "BN-8820" not in d_fever["reply_text"]
+        assert d_fever["card"] is not None
+        assert d_fever["card"]["card_type"] == "medication_safety"
+
 if __name__ == "__main__":
     test_sql_injection_detection()
     test_prompt_injection_detection()

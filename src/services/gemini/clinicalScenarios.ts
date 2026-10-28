@@ -24,7 +24,8 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isColdChainTelemetry = (/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh|vắc xin|buồng lạnh/i.test(lower) || /datalogger|data logger/i.test(lower)) && (/nhiệt độ|độ ẩm|mấy độ|bao nhiêu|hiện tại|tình trạng|kiểm tra|giám sát|ổn định/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể|người|em bé|bệnh nhân/i.test(lower);
   const isColdChainGeneral = (/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh|cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể|người|em bé|bệnh nhân/i.test(lower);
   const isColdChain = isColdChainEmergency || isColdChainTelemetry || isColdChainGeneral;
-  const isFever = /sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì/i.test(lower);
+  const isFever = (/sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì|các loại|thông tin|hướng dẫn/i.test(lower)) ||
+    /thuốc hạ sốt|các loại thuốc hạ sốt|thuốc hạ nhiệt|thuốc giảm sốt/i.test(lower);
   const isPrescription = (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) && (INITIAL_PATIENTS.some(p => lower.includes(p.fullName.toLowerCase())) || /rx-2026-/i.test(lower));
   const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower);
   const isHeadache = /đau đầu|nhức đầu|đau nửa đầu|thuốc đau đầu|thuốc trị đau đầu|thuốc giảm đau/i.test(lower);
@@ -34,7 +35,8 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isDiazepam = /diazepam|seduxen/i.test(lower);
   const isSalbutamol = /salbutamol|ventolin/i.test(lower);
   const isEsomeprazole = /prasocare|esomeprazol/i.test(lower);
-  const isPatientProfile = /kiểm tra bệnh nhân|thông tin bệnh nhân|hồ sơ bệnh nhân/i.test(lower);
+  const isPatientProfile = (/kiểm tra bệnh nhân|thông tin bệnh nhân|hồ sơ bệnh nhân/i.test(lower) || /hồ sơ|bệnh án/i.test(lower)) &&
+    /bệnh nhân|người bệnh|ông ấy|bà ấy|ca này|võ minh trí|nguyễn văn an|trần thị mai|đặng thị lan/i.test(lower);
   const isDeictic = /thuốc này|thuốc đó|nó|thuốc vừa nói|thuốc vừa gợi ý|viên này|lọ này|ống này|thuốc trên|thuốc đang hỏi/i.test(lower);
 
   return (
@@ -575,6 +577,76 @@ export async function processGeminiClinicalScenario(
         legalReference: { lawCode: 'Dược Thư Quốc Gia Việt Nam 2015 Trang 1095', title: 'Chuyên luận Paracetamol', clause: 'Chỉ định giảm đau, hạ sốt' },
         card,
         suggestedChips: ['Paracetamol liều tối đa bao nhiêu', 'Kiểm tra hạn dùng FEFO', 'Thông tin thuốc Prasocare']
+      },
+      card
+    };
+  }
+
+  // 14. Kịch bản Xử Trí Sốt & Các Loại Thuốc Hạ Sốt Chuẩn Dược Thư 2015 & CSDL Kho Viện
+  if (
+    (/sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì|các loại|thông tin|hướng dẫn/i.test(lower)) ||
+    /thuốc hạ sốt|các loại thuốc hạ sốt|thuốc hạ nhiệt|thuốc giảm sốt/i.test(lower)
+  ) {
+    const tempMatch = lower.match(/(\d+(?:\.\d+)?)\s*(?:độ|°c)/);
+    const tempStr = tempMatch ? `${tempMatch[1]}°C` : '';
+    const titleHeader = !tempStr
+      ? `### 🌡️ HƯỚNG DẪN CÁC LOẠI THUỐC HẠ SỐT & PHÁC ĐỒ XỬ TRÍ AN TOÀN (Dược Thư Quốc Gia 2015)\n\n`
+      : `### 🌡️ HƯỚNG DẪN XỬ TRÍ SỐT CAO (${tempStr.toUpperCase()}) & PHÁC ĐỒ HẠ SỐT AN TOÀN\n\n`;
+
+    const card: AgentActionCard = {
+      cardType: 'medication_safety',
+      title: 'Hạ Sốt An Toàn: PARACETAMOL 500mg',
+      summary: 'Lô: LOT-PC24-11A • Tồn: 80 Viên (Kho Dược Nội Trú - Kệ A1 Tầng 1) • SĐK: 893100110026',
+      data: {
+        medication: 'PARACETAMOL 500mg',
+        activeIngredient: 'Paracetamol',
+        stock: '80 Viên',
+        location: 'Kho Dược Nội Trú (Kệ A1 - Tầng 1)',
+        dosage: '500mg - 1000mg/lần cách 4-6h (Max 4g/24h)',
+        batch: 'LOT-PC24-11A',
+        targetTab: 'fefo'
+      },
+      primaryActionLabel: 'Xem Tồn Kho Paracetamol',
+      primaryActionType: 'NAVIGATE_TAB',
+      targetTab: 'fefo',
+      status: 'pending'
+    };
+
+    const replyText = (
+      titleHeader +
+      `Sốt là phản ứng bảo vệ của hệ miễn dịch khi cơ thể gặp nhiễm trùng hoặc viêm cấp tính. Dưới đây là phân loại các nhóm thuốc hạ sốt chuẩn y khoa và phác đồ sử dụng an toàn:\n\n` +
+      `#### 1. Nhóm thuốc hạ sốt đầu tay: **PARACETAMOL (ACETAMINOPHEN)**\n` +
+      `• **Vị thế lâm sàng:** Thuốc hạ sốt an toàn nhất, ít tác dụng phụ lên đường tiêu hóa và đông máu.\n` +
+      `• **Biệt dược có sẵn trong kho bệnh viện:** **PARACETAMOL 500mg** (Lô: \`LOT-PC24-11A\` | Tồn kho: **80 Viên** tại Kho Dược Nội Trú - Kệ A1 Tầng 1).\n` +
+      `• **Liều lượng chuẩn (Dược Thư Quốc Gia 2015 Trang 1095):**\n` +
+      `  - **Người lớn:** Uống **500mg - 1.000mg/lần** (1 - 2 viên 500mg), cách mỗi **4 - 6 giờ** nếu nhiệt độ $\\ge 38.5^\\circ\\text{C}$.\n` +
+      `  - **Trẻ em:** Liều chuẩn theo cân nặng **10 - 15 mg/kg/lần**, cách mỗi 4 - 6 giờ (tối đa không quá 60 mg/kg/ngày).\n` +
+      `• **CẢNH BÁO NGUY HIỂM VỀ LIỀU TỐI ĐA (Chống suy gan cấp):**\n` +
+      `  - **Tuyệt đối không uống quá 4.000mg (4g)/24 giờ** ở người lớn (tương đương 8 viên 500mg).\n` +
+      `  - Bệnh nhân suy gan hoặc nghiện rượu liều tối đa không quá **2g/24 giờ**.\n\n` +
+      `#### 2. Nhóm thuốc thay thế: **NSAIDs (IBUPROFEN)**\n` +
+      `• **Chỉ định:** Dùng khi sốt cao không đáp ứng Paracetamol hoặc có kèm triệu chứng đau viêm cấp.\n` +
+      `• **Liều dùng người lớn:** **200mg - 400mg/lần**, uống sau khi ăn no, cách mỗi 6 - 8 giờ (tối đa 1.200mg/ngày).\n` +
+      `• **Thận trọng & Chống chỉ định:** Người có tiền sử viêm loét dạ dày tá tràng, suy thận mạn tính, hen suyễn.\n\n` +
+      `🚨 **HAI CẢNH BÁO BẮT BUỘC TRONG HẠ SỐT (An Toàn Dược Lâm Sàng):**\n` +
+      `1. **NGUY CƠ SỐT XUẤT HUYẾT DENGUE:** **Tuyệt đối KHÔNG tự ý dùng Aspirin hoặc Ibuprofen** khi người bệnh sốt chưa rõ nguyên nhân vì gây ức chế ngưng tập tiểu cầu, dẫn đến xuất huyết nội tạng và tiêu hóa dữ dội nguy hiểm tính mạng.\n` +
+      `2. **HỘI CHỨNG REYE Ở TRẺ EM:** **Tuyệt đối KHÔNG dùng Aspirin cho trẻ em và thanh thiếu niên** nghi ngờ nhiễm virus cúm hoặc thủy đậu vì có thể gây thoái hóa mỡ gan và phù não cấp tính (tử vong cao).\n\n` +
+      `#### 3. Các biện pháp hỗ trợ không dùng thuốc\n` +
+      `• **Lau ấm:** Dùng khăn thấm nước ấm ($37^\\circ\\text{C} - 38^\\circ\\text{C}$) lau vùng nách, bẹn, trán. **Tuyệt đối không chườm đá lạnh hoặc cồn**.\n` +
+      `• **Bù nước & Điện giải:** Uống nhiều nước ấm, dung dịch Oresol (pha đúng thể tích) để tránh mất nước.\n\n` +
+      `🚨 **DẤU HIỆU BÁO ĐỘNG ĐỎ CẦN ĐẾN CƠ SỞ Y TẾ NGAY:**\n` +
+      `• Sốt cao kèm: Co giật, lơ mơ, khó thở, nôn ói liên tục, xuất huyết dưới da (chấm bầm tím), hoặc sốt cao liên tục không hạ sau 2 cữ thuốc.`
+    );
+
+    return {
+      replyMessage: {
+        id: `msg-agent-scenario-${Date.now()}`,
+        sender: 'agent',
+        text: replyText,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Dược Thư Quốc Gia Việt Nam 2015 Trang 1095', title: 'Chuyên luận Paracetamol & Thuốc hạ sốt', clause: 'Phác đồ hạ sốt an toàn' },
+        card,
+        suggestedChips: ['Thông tin về thuốc Paracetamol', 'Dấu hiệu cảnh báo sốt xuất huyết', 'Kiểm tra hạn dùng FEFO']
       },
       card
     };

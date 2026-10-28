@@ -18,10 +18,23 @@ class PatientInquiryScenario(BaseScenario):
     scenario_name = "Tra cứu hồ sơ bệnh nhân lâm sàng"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
+        # Nếu câu truy vấn hỏi về thuốc, dược phẩm hoặc các chủ đề lâm sàng chung mà không nhắc tới bệnh nhân -> TUYỆT ĐỐI KHÔNG can thiệp
+        has_drug_or_general_ask = any(w in lower_query for w in [
+            "thuốc", "các loại thuốc", "nhóm thuốc", "dược phẩm", "hoạt chất", "biệt dược",
+            "hạ sốt", "giảm đau", "kháng sinh", "sốc phản vệ", "mất điện", "chuỗi lạnh", "tủ lạnh",
+            "fefo", "hạn dùng", "tồn kho", "báo hỏng", "sự cố máy", "phác đồ"
+        ])
+        has_explicit_patient_mention = any(w in lower_query for w in [
+            "bệnh nhân", "người bệnh", "ông ấy", "bà ấy", "ca này", "hồ sơ bệnh án"
+        ]) or any(p.full_name.lower() in lower_query or p.id.lower() in lower_query for p in ctx.all_patients)
+
+        if has_drug_or_general_ask and not has_explicit_patient_mention:
+            return False
+
         has_patient_ask = any(w in lower_query for w in [
             "kiểm tra bệnh nhân", "thông tin bệnh nhân", "hồ sơ bệnh nhân", "hồ sơ bệnh án",
-            "bệnh án của", "bệnh nhân", "tìm bệnh nhân", "tra cứu bệnh nhân"
-        ]) or (ctx.is_follow_up and any(w in lower_query for w in ["thông tin", "hồ sơ", "bệnh án", "tiền sử", "chức năng thận"]))
+            "bệnh án của", "bệnh nhân", "tìm bệnh nhân", "tra cứu bệnh nhân", "thông tin ca bệnh"
+        ]) or (ctx.is_follow_up and has_explicit_patient_mention and any(w in lower_query for w in ["hồ sơ", "bệnh án", "tiền sử", "chức năng thận", "dị ứng"]))
         has_patient_target = bool(ctx.patient) or any(p.full_name.lower() in lower_query or p.id.lower() in lower_query for p in ctx.all_patients)
         # Không trùng với tra cứu đơn thuốc cụ thể (có chữ "đơn thuốc", "xem đơn")
         is_rx_only = any(w in lower_query for w in ["xem đơn", "đơn thuốc của", "đơn của"])
