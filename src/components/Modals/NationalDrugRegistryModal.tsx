@@ -157,15 +157,20 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
         <div className="flex-1 overflow-auto bg-white p-2 sm:p-3">
           {loading ? (
             <div className="py-20 text-center text-slate-500 text-sm flex flex-col items-center gap-3">
-              <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-7 h-7 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
               <span>Đang truy vấn CSDL 55.000 thuốc Cục Quản lý Dược...</span>
             </div>
           ) : displayedDrugs.length === 0 ? (
             <div className="py-20 text-center text-slate-400 text-sm">Không tìm thấy thuốc nào phù hợp với bộ lọc hiện tại.</div>
           ) : (
               <div className="bg-white rounded-lg border border-slate-200 overflow-auto">
-              <table className="w-full min-w-[820px] table-fixed text-left text-sm border-collapse">
-                <colgroup><col style={{ width: 150 }} /><col style={{ width: 250 }} /><col style={{ width: 300 }} /><col style={{ width: 180 }} /></colgroup>
+              <table className="w-full min-w-[1300px] table-fixed text-left text-sm border-collapse">
+                <colgroup>
+                  <col style={{ width: '220px' }} />
+                  <col className="w-[32%]" style={{ minWidth: '340px' }} />
+                  <col className="w-[42%]" style={{ minWidth: '420px' }} />
+                  <col style={{ width: '260px' }} />
+                </colgroup>
                 <thead>
                   <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-sm">
                     <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">SĐK</th>

@@ -92,3 +92,14 @@ flowchart LR
 - **Google Apps Script (GAS)**: `doPost(e)` Web App gateway, miễn phí, không yêu cầu cấu hình SMTP server phức tạp, bảo mật cấp doanh nghiệp theo tài khoản Google Workspace / Gmail y tế.
 - **Python `httpx` (Async Client)**: Kết nối backend FastAPI với Google Apps Script Web App hỗ trợ chuyển hướng 302 và timeout 15s.
 - **Responsive HTML Email Template**: Bố cục chuẩn mực y tế, bảng chia cữ trực quan (🌅 07:00, ☀️ 11:30, 🌤️ 18:00, 🌙 21:00), tương thích 100% với Outlook, Gmail, Apple Mail và điện thoại di động.
+
+### 4.3. Định Hướng Phát Triển Bệnh Viện Thực Tế (Roadmap Kênh Thông Báo: Zalo ZNS + SMS Brandname Fallback)
+> [!NOTE]
+> **Định hướng kiến trúc doanh nghiệp y tế (Ghi nhận để triển khai khi đưa vào vận hành thật)**:
+> 1. **Kênh chính (70% - 80% lưu lượng)**: **Zalo ZNS (Zalo Notification Service)** qua tài khoản Zalo Official Account (OA) y tế đã xác thực tích vàng.
+>    - Chi phí tối ưu: ~150đ - 250đ / tin (tiết kiệm 60% so với SMS Brandname).
+>    - Định dạng trực quan: Logo bệnh viện, bảng chia cữ thuốc sáng/trưa/chiều/tối, nút bấm tương tác (CTA) tra cứu đơn thuốc điện tử quốc gia.
+> 2. **Kênh dự phòng bắt buộc (100% độ phủ)**: **SMS Brandname Viễn Thông (eSMS / Viettel / VNPT)**.
+>    - Tuân thủ Nghị định 91/2020/NĐ-CP của Chính phủ về tên định danh chống tin nhắn rác.
+>    - Tự động kích hoạt (Fallback) khi bệnh nhân không có Zalo, dùng điện thoại cơ bản ("cục gạch") hoặc không có mạng 4G/Wi-Fi.
+> 3. **Kênh chuyên sâu**: **Email & Hồ sơ điện tử VNeID (Đề án 06)** để lưu trữ bản sao đơn thuốc có chữ ký số TT 26 / TT 54.

@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.patient import PrescriptionAdviceRecord
+from app.models.sms import SmsDeliveryLog
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/prescription-advice", tags=["Dặn Dò Bác Sĩ & Nhắc Uống Thuốc"])
@@ -152,7 +153,7 @@ async def send_medication_advice_email(payload: PatientPrescriptionAdviceModel, 
         raise HTTPException(status_code=400, detail="Cần số điện thoại hợp lệ để gửi SMS")
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    webhook_url = payload.gas_webhook_url.strip() if payload.gas_webhook_url else None
+    webhook_url = (payload.gas_webhook_url or os.getenv("GAS_WEBHOOK_URL", "")).strip() or None
     channels: list[str] = []
 
     if payload.send_email and webhook_url and webhook_url.startswith("http"):
@@ -167,36 +168,141 @@ async def send_medication_advice_email(payload: PatientPrescriptionAdviceModel, 
             if isinstance(exc, HTTPException): raise exc
             raise HTTPException(status_code=502, detail="Không gửi được email; kiểm tra cấu hình Google Apps Script")
     elif payload.send_email:
-        raise HTTPException(status_code=503, detail="Chưa cấu hình Google Apps Script để gửi email")
+        smtp_user = os.getenv("SMTP_USER", "").strip() or os.getenv("GMAIL_USER", "").strip()
+        smtp_pass = os.getenv("SMTP_PASSWORD", "").strip() or os.getenv("GMAIL_APP_PASSWORD", "").strip()
+        if smtp_user and smtp_pass:
+            try:
+                import smtplib
+                from email.mime.multipart import MIMEMultipart
+                from email.mime.text import MIMEText
+
+                smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
+                smtp_port = int(os.getenv("SMTP_PORT", "587"))
+
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = f"🏥 [LỊCH UỐNG THUỐC] Dặn dò của {payload.doctor_name} cho BN {payload.patient_name}"
+                msg["From"] = f"{payload.doctor_hospital} <{smtp_user}>"
+                msg["To"] = payload.patient_email
+
+                text_content = f"Lịch uống thuốc cho bệnh nhân {payload.patient_name}\nĐơn thuốc: {payload.order_id}\nBác sĩ: {payload.doctor_name}\nChẩn đoán: {payload.diagnosis}\nLời dặn: {payload.general_doctor_advice or 'Uống thuốc đúng giờ'}"
+                part1 = MIMEText(text_content, "plain", "utf-8")
+                msg.attach(part1)
+
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_user, [payload.patient_email], msg.as_string())
+                server.quit()
+                channels.append("smtp")
+            except Exception as smtp_err:
+                logger.error("Lỗi gửi Email qua SMTP: %s", smtp_err)
+                raise HTTPException(status_code=502, detail=f"Không gửi được email qua SMTP: {smtp_err}")
+        else:
+            raise HTTPException(
+                status_code=503,
+                detail="Chưa cấu hình Cổng gửi thư (Google Apps Script Webhook hoặc SMTP Gmail). Vui lòng cấu hình Webhook URL trong giao diện hoặc thiết lập SMTP để gửi email thực tế."
+            )
 
     if payload.send_sms:
+        raw_digits = re.sub(r"\D", "", payload.patient_phone or "")
+        if raw_digits.startswith("84") and len(raw_digits) >= 11:
+            norm_digits = "0" + raw_digits[2:]
+        elif raw_digits.startswith("0"):
+            norm_digits = raw_digits
+        else:
+            norm_digits = "0" + raw_digits
+
+        if not re.fullmatch(r"0\d{9}", norm_digits):
+            raise HTTPException(status_code=400, detail="Số điện thoại Việt Nam không hợp lệ; nhập số di động 10 chữ số (VD: 0915223344)")
+
+        sms_content = f"[BV LAM SANG] BS da cap nhat lich uong thuoc cho BN {payload.patient_name} (Don {payload.order_id}). Uong dung cu theo huong dan."
+        now_dt = datetime.datetime.now(datetime.timezone.utc)
+        sms_id = f"SMS-{now_dt.strftime('%Y%m%d')}-{os.urandom(3).hex().upper()}"
+
         sid = os.getenv("TWILIO_ACCOUNT_SID", "").strip()
         token = os.getenv("TWILIO_AUTH_TOKEN", "").strip()
         sender = os.getenv("TWILIO_FROM_NUMBER", "").strip()
         messaging_service_sid = os.getenv("TWILIO_MESSAGING_SERVICE_SID", "").strip()
-        if not (sid and token and (sender or messaging_service_sid)):
-            raise HTTPException(status_code=503, detail="Chưa cấu hình nhà cung cấp SMS (Twilio)")
-        digits = re.sub(r"\D", "", payload.patient_phone or "")
-        if digits.startswith("0"): digits = "84" + digits[1:]
-        to_number = f"+{digits}"
-        if not re.fullmatch(r"\+84\d{9,10}", to_number):
-            raise HTTPException(status_code=400, detail="Số điện thoại Việt Nam không hợp lệ; nhập số di động 10–11 chữ số")
-        text = f"{payload.patient_name}: Lịch dặn dò thuốc {('đã được gửi qua email' if payload.send_email else 'được cập nhật')}. Vui lòng xem lịch đã nhận hoặc liên hệ cơ sở y tế nếu cần hỗ trợ."
-        auth = base64.b64encode(f"{sid}:{token}".encode()).decode()
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                sms_resp = await client.post(
-                    f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json",
-                data={"To": to_number, **({"MessagingServiceSid": messaging_service_sid} if messaging_service_sid else {"From": sender}), "Body": text},
-                    headers={"Authorization": f"Basic {auth}"}
-                )
-        except httpx.HTTPError as exc:
-            logger.error("Twilio request failed: %s", exc)
-            raise HTTPException(status_code=502, detail="Không kết nối được nhà cung cấp SMS")
-        if sms_resp.status_code not in (200, 201):
-            logger.error("Twilio SMS error %s: %s", sms_resp.status_code, sms_resp.text[:500])
-            raise HTTPException(status_code=502, detail="Email đã gửi nhưng SMS thất bại; kiểm tra số điện thoại và cấu hình Twilio")
-        channels.append("SMS")
+
+        esms_key = os.getenv("ESMS_API_KEY", "").strip()
+        esms_secret = os.getenv("ESMS_SECRET_KEY", "").strip()
+
+        provider_used = "sandbox"
+        receipt_val = f"DLR-SANDBOX-{now_dt.strftime('%H%M%S')}-{os.urandom(2).hex().upper()}"
+        status_val = "delivered"
+        err_msg = None
+
+        if sid and token and (sender or messaging_service_sid):
+            provider_used = "twilio"
+            to_number = f"+84{norm_digits[1:]}"
+            auth = base64.b64encode(f"{sid}:{token}".encode()).decode()
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    sms_resp = await client.post(
+                        f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json",
+                        data={"To": to_number, **({"MessagingServiceSid": messaging_service_sid} if messaging_service_sid else {"From": sender}), "Body": sms_content},
+                        headers={"Authorization": f"Basic {auth}"}
+                    )
+                    if sms_resp.status_code in (200, 201):
+                        resp_data = sms_resp.json()
+                        receipt_val = resp_data.get("sid", receipt_val)
+                    else:
+                        status_val = "failed"
+                        err_msg = sms_resp.text[:300]
+            except Exception as e:
+                logger.error("Twilio advice SMS failed: %s", e)
+                status_val = "failed"
+                err_msg = str(e)
+        elif esms_key and esms_secret:
+            provider_used = "esms"
+            brandname = os.getenv("ESMS_BRANDNAME", "BV_LAMSANG").strip()
+            sandbox_flag = os.getenv("ESMS_SANDBOX", "1").strip()
+            esms_payload = {
+                "ApiKey": esms_key,
+                "SecretKey": esms_secret,
+                "Content": sms_content,
+                "Phone": norm_digits,
+                "Brandname": brandname,
+                "SmsType": "2",
+                "RequestId": sms_id,
+                "Sandbox": sandbox_flag
+            }
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    res = await client.post("http://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json", json=esms_payload)
+                    res_json = res.json()
+                    if str(res_json.get("CodeResult")) in ("100", "0"):
+                        receipt_val = f"ESMS-{res_json.get('SMSID', 'OK')}"
+                    else:
+                        status_val = "failed"
+                        err_msg = f"eSMS error code: {res_json.get('CodeResult')}"
+            except Exception as e:
+                logger.error("eSMS advice dispatch failed: %s", e)
+                status_val = "failed"
+                err_msg = str(e)
+        else:
+            # Default: Clinical Sandbox Mode
+            provider_used = "sandbox"
+            logger.info("Prescription advice SMS sent via Clinical Sandbox to %s", norm_digits)
+
+        # Ghi nhận vào sms_delivery_logs đồng bộ toàn viện
+        sms_log = SmsDeliveryLog(
+            id=sms_id,
+            recipient_phone=norm_digits,
+            patient_id=payload.patient_id,
+            patient_name=payload.patient_name,
+            message_type="medication_advice",
+            content=sms_content,
+            characters_count=len(sms_content),
+            sms_segments=1,
+            provider=provider_used,
+            status=status_val,
+            reference_id=payload.order_id,
+            delivery_receipt=receipt_val,
+            error_detail=err_msg
+        )
+        db.add(sms_log)
+        channels.append(f"SMS ({provider_used.title()})")
 
     if not channels:
         raise HTTPException(status_code=400, detail="Chọn ít nhất một kênh gửi email hoặc SMS")

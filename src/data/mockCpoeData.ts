@@ -8,8 +8,19 @@ import { PrescriptionOrder } from '../types/cpoe';
 
 export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   {
+    id: 'RX-2026-604', prescriptionType: 'outpatient', patientId: 'BN-8817', patientName: 'Trần Huy Hoàng',
+    patientCccd: '026205006033', patientPhone: '0963278149', patientEmail: 'huyhoang6altt@gmail.com',
+    patientDob: '1990-06-15', patientGender: 'Nam', department: 'Khoa Khám Bệnh',
+    roomBed: 'Khoa Khám Bệnh - Phòng 204', diagnosisIcd10: 'J11', diagnosisText: 'Cảm cúm',
+    isChronicDisease: false, daysPrescribed: 5, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
+    prescribedAt: '2026-10-30 08:00:00', digitalSignature: 'SHA256:jyebot2z... (Đã ký số TT 26)', status: 'signed',
+    items: [
+      { id: 'rxi-604', medicationName: 'PARACETAMOL 500mg', activeIngredient: 'Paracetamol', dosage: '500mg', frequency: '3 lần/ngày', route: 'Uống', quantity: 15, unit: 'Viên', instructions: 'Uống 1 viên sau ăn khi sốt trên 38.5 độ C hoặc đau nhức cơ thể' }
+    ]
+  },
+  {
     id: 'RX-2026-001', prescriptionType: 'inpatient_daily', patientId: 'BN-8820', patientName: 'Võ Minh Trí',
-    patientCccd: '001201019283', patientDob: '1975-06-12', patientGender: 'Nam', department: 'Khoa Cấp Cứu A9',
+    patientCccd: '001201019283', patientPhone: '0912345678', patientDob: '1975-06-12', patientGender: 'Nam', department: 'Khoa Cấp Cứu A9',
     roomBed: 'Buồng cấp cứu 3 - Giường 02', diagnosisIcd10: 'I21.9', diagnosisText: 'Nhồi máu cơ tim cấp (Bù cơ số PN-2026-089 & 090)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 02:00:00', digitalSignature: 'SHA256:7f83b1a89c02 (Đã ký số TT 26)', status: 'signed',
@@ -20,7 +31,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-002', prescriptionType: 'inpatient_daily', patientId: 'BN-8791', patientName: 'Nguyễn Hải Đăng',
-    patientCccd: '025091004128', patientDob: '1988-04-15', patientGender: 'Nam', department: 'Khoa Gây Mê Hồi Sức',
+    patientCccd: '025091004128', patientPhone: '0903112233', patientDob: '1988-04-15', patientGender: 'Nam', department: 'Khoa Gây Mê Hồi Sức',
     roomBed: 'Phòng mổ 1 - Phẫu thuật thần kinh', diagnosisIcd10: 'S06.9', diagnosisText: 'Chấn thương sọ não (Hoàn trả phiếu PN-2026-085)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 08:10:00', digitalSignature: 'SHA256:9c12a801b734 (Đã duyệt đơn)', status: 'signed',
@@ -30,7 +41,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-003', prescriptionType: 'inpatient_daily', patientId: 'BN-8812', patientName: 'Hoàng Kim Dung',
-    patientCccd: '034199023412', patientDob: '1968-11-20', patientGender: 'Nữ', department: 'Hồi Sức Tích Cực (ICU)',
+    patientCccd: '034199023412', patientPhone: '0918234567', patientDob: '1968-11-20', patientGender: 'Nữ', department: 'Hồi Sức Tích Cực (ICU)',
     roomBed: 'Buồng ICU 1 - Giường 05', diagnosisIcd10: 'A41.9', diagnosisText: 'Nhiễm khuẩn huyết nặng & ĐTĐ typ 2 (Bù nợ PN-2026-088)',
     isChronicDisease: true, daysPrescribed: 7, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 07:30:00', digitalSignature: 'SHA256:5b91a0c4f812 (Đã ký số)', status: 'signed',
@@ -41,7 +52,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-004', prescriptionType: 'inpatient_daily', patientId: 'BN-8825', patientName: 'Đặng Thị Lan',
-    patientCccd: '001185002934', patientDob: '1985-09-03', patientGender: 'Nữ', department: 'Khoa Cấp Cứu A9',
+    patientCccd: '001185002934', patientPhone: '0987654321', patientDob: '1985-09-03', patientGender: 'Nữ', department: 'Khoa Cấp Cứu A9',
     roomBed: 'Buồng Sốc phản vệ', diagnosisIcd10: 'T78.2', diagnosisText: 'Sốc phản vệ độ III (Phác đồ TT 51/2017 & Bù PN-2026-091)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 02:30:00', digitalSignature: 'SHA256:3e82a919cd10 (Ký cấp cứu)', status: 'signed',
@@ -51,7 +62,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-005', prescriptionType: 'inpatient_daily', patientId: 'BN-8819', patientName: 'Trần Văn Toàn',
-    patientCccd: '038080009182', patientDob: '1980-02-18', patientGender: 'Nam', department: 'Hồi Sức Tích Cực (ICU)',
+    patientCccd: '038080009182', patientPhone: '0981122334', patientDob: '1980-02-18', patientGender: 'Nam', department: 'Hồi Sức Tích Cực (ICU)',
     roomBed: 'Buồng ICU 2 - Giường 02', diagnosisIcd10: 'R57.2', diagnosisText: 'Sốc nhiễm trùng kháng dịch (Bù cơ số PN-2026-092)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 03:15:00', digitalSignature: 'SHA256:77a1029c8841 (Đã ký số)', status: 'signed',
@@ -61,7 +72,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-006', prescriptionType: 'inpatient_daily', patientId: 'BN-8830', patientName: 'Lê Hoàng Nam',
-    patientCccd: '001095018294', patientDob: '1995-12-08', patientGender: 'Nam', department: 'Khoa Thần Kinh',
+    patientCccd: '001095018294', patientPhone: '0938445566', patientDob: '1995-12-08', patientGender: 'Nam', department: 'Khoa Thần Kinh',
     roomBed: 'Buồng Cấp cứu Thần kinh - Giường 01', diagnosisIcd10: 'G41.9', diagnosisText: 'Cơn co giật động kinh liên tục (Hoàn tất nợ vỏ PN-2026-083)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 07:30:00', digitalSignature: 'SHA256:44b912c01823 (Đã duyệt đơn)', status: 'signed',
@@ -71,7 +82,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-007', prescriptionType: 'inpatient_daily', patientId: 'BN-8814', patientName: 'Phạm Thị Mai',
-    patientCccd: '031174005829', patientDob: '1974-08-25', patientGender: 'Nữ', department: 'Hồi Sức Ngoại',
+    patientCccd: '031174005829', patientPhone: '0909556677', patientDob: '1974-08-25', patientGender: 'Nữ', department: 'Hồi Sức Ngoại',
     roomBed: 'Hồi sức Ngoại - Giường 04', diagnosisIcd10: 'K65.0', diagnosisText: 'Nhiễm trùng ổ bụng sau phẫu thuật (Bù nợ PN-2026-093)',
     isChronicDisease: false, daysPrescribed: 3, doctorName: 'BS. Lê Minh Đức', doctorCertificate: '008412/BYT-CCHN',
     prescribedAt: '2026-10-24 04:30:00', digitalSignature: 'SHA256:1198c0812ab5 (Đã ký số)', status: 'signed',
@@ -81,7 +92,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-008', prescriptionType: 'inpatient_daily', patientId: 'BN-8833', patientName: 'Vũ Đình Hưng',
-    patientCccd: '036069001842', patientDob: '1969-05-14', patientGender: 'Nam', department: 'Khoa Cấp Cứu A9',
+    patientCccd: '036069001842', patientPhone: '0913778899', patientDob: '1969-05-14', patientGender: 'Nam', department: 'Khoa Cấp Cứu A9',
     roomBed: 'Cấp cứu A9 - Giường 06', diagnosisIcd10: 'J45.9', diagnosisText: 'Cơn hen phế quản ác tính (Đã bù cơ số tủ trực PN-2026-082)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 06:50:00', digitalSignature: 'SHA256:55ab91c8012e (Đã hoàn bù)', status: 'signed',
@@ -91,7 +102,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-009', prescriptionType: 'inpatient_daily', patientId: 'BN-8798', patientName: 'Nguyễn Thị Yến',
-    patientCccd: '079185012948', patientDob: '1982-03-05', patientGender: 'Nữ', department: 'Khoa Phẫu Thuật Sản',
+    patientCccd: '079185012948', patientPhone: '0945990011', patientDob: '1982-03-05', patientGender: 'Nữ', department: 'Khoa Phẫu Thuật Sản',
     roomBed: 'Phòng mổ 3 - Gây mê hồi sức', diagnosisIcd10: 'O72.0', diagnosisText: 'Băng huyết sau sinh mất thể tích (Bù nợ PN-2026-081)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 08:00:00', digitalSignature: 'SHA256:8812c981ab22 (Đã quyết toán)', status: 'signed',
@@ -101,7 +112,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-010', prescriptionType: 'inpatient_daily', patientId: 'BN-8835', patientName: 'Bùi Đức Mạnh',
-    patientCccd: '001092003819', patientDob: '1992-10-10', patientGender: 'Nam', department: 'Khoa Ngoại Chấn Thương',
+    patientCccd: '001092003819', patientPhone: '0912889922', patientDob: '1992-10-10', patientGender: 'Nam', department: 'Khoa Ngoại Chấn Thương',
     roomBed: 'Khoa Ngoại Chấn Thương - Giường 11', diagnosisIcd10: 'S72.0', diagnosisText: 'Gãy hở xương đùi đa chấn thương (Phiếu nợ PN-2026-094)',
     isChronicDisease: false, daysPrescribed: 1, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 04:00:00', digitalSignature: 'SHA256:9901cb188124 (Đã ký y lệnh)', status: 'signed',
@@ -111,7 +122,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-011', prescriptionType: 'inpatient_daily', patientId: 'BN-8810', patientName: 'Nguyễn Quốc Bảo',
-    patientCccd: '019077002819', patientDob: '1977-07-19', patientGender: 'Nam', department: 'Hồi Sức Tích Cực (ICU)',
+    patientCccd: '019077002819', patientPhone: '0983112244', patientDob: '1977-07-19', patientGender: 'Nam', department: 'Hồi Sức Tích Cực (ICU)',
     roomBed: 'Buồng ICU 3 - Giường 09', diagnosisIcd10: 'A41.0', diagnosisText: 'Nhiễm khuẩn huyết do tụ cầu vàng MRSA (Bù nợ PN-2026-095)',
     isChronicDisease: false, daysPrescribed: 5, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 03:00:00', digitalSignature: 'SHA256:6618ab891230 (Đã ký số)', status: 'signed',
@@ -121,7 +132,7 @@ export const INITIAL_PRESCRIPTIONS: PrescriptionOrder[] = [
   },
   {
     id: 'RX-2026-012', prescriptionType: 'outpatient', patientId: 'BN-8820', patientName: 'Võ Minh Trí',
-    patientCccd: '001201019283', patientDob: '1975-06-12', patientGender: 'Nam', department: 'Khoa Khám Bệnh - Phòng khám Tim Mạch',
+    patientCccd: '001201019283', patientPhone: '0912345678', patientDob: '1975-06-12', patientGender: 'Nam', department: 'Khoa Khám Bệnh - Phòng khám Tim Mạch',
     diagnosisIcd10: 'I10', diagnosisText: 'Tăng huyết áp nguyên phát & Rối loạn lipid máu mạn tính',
     isChronicDisease: true, daysPrescribed: 60, doctorName: 'BS. Trần Văn Hùng', doctorCertificate: '009125/BYT-CCHN',
     prescribedAt: '2026-10-24 08:30:15', digitalSignature: 'SHA256:7f83b1a89c02d4e8c1 (Đã ký số điện tử)', status: 'signed',

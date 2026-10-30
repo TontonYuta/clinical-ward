@@ -1,14 +1,15 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Dòng hiển thị sự cố thiết bị y tế trên bảng Desktop (Modern Data Grid)
+ * Dòng hiển thị sự cố thiết bị y tế trên bảng Desktop chuẩn hành chính Kho Dược (<=200 LOC)
  */
 
 import React from 'react';
-import { Check, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { EquipmentTicket, UserRole } from '../../../../types/clinical';
 
 interface EquipmentTicketRowProps {
+  index: number;
   ticket: EquipmentTicket;
   onOpenHandover: (ticket: EquipmentTicket) => void;
   onOpenPrintForm?: (formType: 'EQUIPMENT_HANDOVER_INSPECT', ticket?: EquipmentTicket) => void;
@@ -16,6 +17,7 @@ interface EquipmentTicketRowProps {
 }
 
 export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
+  index,
   ticket,
   onOpenHandover,
   currentUserRole,
@@ -24,87 +26,92 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
   const isResolved = ticket.status === 'resolved';
 
   return (
-    <tr className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-slate-800">
-      <td className="py-3.5 px-3.5 whitespace-nowrap">
-        <span className="font-mono font-bold text-slate-800 text-xs sm:text-sm bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 block w-fit">
-          {ticket.code}
-        </span>
-        <span
-          className={`inline-block mt-1.5 px-2 py-0.5 rounded text-xs font-bold border ${
-            ticket.riskClass === 'D'
-              ? 'bg-rose-50 text-rose-800 border-rose-200'
-              : 'bg-amber-50 text-amber-800 border-amber-200'
-          }`}
-        >
-          Loại {ticket.riskClass}
-        </span>
+    <tr className="hover:bg-slate-50 transition-colors border-b border-slate-200 text-slate-800 text-sm">
+      {/* 1. STT */}
+      <td className="py-3 px-3 text-center font-mono text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
+        {index + 1}
       </td>
 
-      <td className="py-3.5 px-3.5">
-        <span className="font-bold text-slate-900 block text-sm sm:text-base leading-snug">{ticket.deviceName}</span>
-        <span className="text-xs sm:text-sm text-slate-500 font-semibold block mt-1">
-          SN: {ticket.serialNumber} · {ticket.deviceModel}
-        </span>
-      </td>
-
-      <td className="py-3.5 px-3.5">
-        <span className="text-xs sm:text-sm font-semibold text-slate-900 line-clamp-2" title={ticket.accessoryIssue}>
-          {ticket.accessoryIssue}
-        </span>
-        <span className="text-xs sm:text-sm text-slate-600 font-medium block mt-1">KS: <strong className="text-slate-800 font-semibold">{ticket.assignedEngineer}</strong></span>
-      </td>
-
-      <td className="py-3.5 px-3.5 whitespace-nowrap">
-        <span className="font-bold text-slate-800 text-xs sm:text-sm block">{ticket.location}</span>
-      </td>
-
-      <td className="py-3.5 px-3.5 whitespace-nowrap font-mono text-xs sm:text-sm text-slate-700">
-        <span className="font-bold text-slate-900 block">{ticket.nextInspectionDue}</span>
-        <span className="text-xs text-slate-500 font-sans mt-1 block font-medium">NĐ 04/2025/NĐ-CP</span>
-      </td>
-
-      <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
-        <span
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs sm:text-sm font-bold border ${
-            isUrgent && !isResolved
-              ? 'bg-rose-50 text-rose-800 border-rose-200'
-              : isResolved
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-slate-100 text-slate-700 border-slate-200'
-          }`}
-        >
-          {isUrgent && !isResolved ? (
-            <>
-              <span className="w-2 h-2 rounded-full bg-rose-600" />
-              Khẩn cấp
-            </>
-          ) : isResolved ? (
-            <>
-              <Check className="w-4 h-4 text-emerald-600" />
-              Đã bàn giao
-            </>
-          ) : (
-            'Đang xử lý'
-          )}
-        </span>
-      </td>
-
-      <td className="py-3.5 px-3.5 text-right whitespace-nowrap">
-        <div className="flex items-center justify-end gap-1.5">
-          {!isResolved && (
-            <button
-              onClick={() => onOpenHandover(ticket)}
-              className={`h-8.5 px-3.5 rounded-md text-xs sm:text-sm font-bold transition cursor-pointer active:scale-98 flex items-center gap-1.5 ${
-                currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
-                  ? 'bg-teal-800 hover:bg-teal-900 text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Bàn giao</span>
-            </button>
-          )}
+      {/* 2. Mã sự cố & Phân loại rủi ro thiết bị */}
+      <td className="py-3 px-3.5 whitespace-nowrap font-mono border-r border-slate-100">
+        <div className="font-semibold text-slate-800">{ticket.code}</div>
+        <div className="text-xs text-slate-500 font-sans mt-0.5">
+          Rủi ro Loại <span className={`font-bold ${ticket.riskClass === 'D' ? 'text-rose-700' : 'text-slate-800'}`}>{ticket.riskClass}</span>
         </div>
+      </td>
+
+      {/* 3. Tên Thiết Bị & Serial / Model */}
+      <td className="py-3 px-3.5 border-r border-slate-100">
+        <div className="font-semibold text-slate-900 leading-snug">{ticket.deviceName}</div>
+        <div className="text-xs text-slate-500 font-mono mt-0.5">
+          SN: <span className="text-slate-700 font-medium">{ticket.serialNumber}</span> · {ticket.deviceModel}
+        </div>
+      </td>
+
+      {/* 4. Mô tả hư hỏng & Kỹ sư phụ trách */}
+      <td className="py-3 px-3.5 border-r border-slate-100">
+        <div className="text-sm font-medium text-slate-900 leading-snug" title={ticket.accessoryIssue}>
+          {ticket.accessoryIssue}
+        </div>
+        <div className="text-xs text-slate-500 mt-0.5">
+          KS phụ trách: <span className="font-medium text-slate-800">{ticket.assignedEngineer}</span>
+        </div>
+      </td>
+
+      {/* 5. Vị trí đặt máy */}
+      <td className="py-3 px-3.5 border-r border-slate-100">
+        <span className="font-medium text-slate-800 text-sm leading-snug">{ticket.location}</span>
+      </td>
+
+      {/* 6. Hạn kiểm định (NĐ 04/2025/NĐ-CP) */}
+      <td className="py-3 px-3.5 text-center font-mono text-xs sm:text-sm border-r border-slate-100">
+        {ticket.nextInspectionDue.includes('(') ? (
+          <div>
+            <div className="font-semibold text-slate-900">{ticket.nextInspectionDue.split('(')[0].trim()}</div>
+            <div className={`text-xs font-sans mt-0.5 font-medium ${ticket.nextInspectionDue.includes('quá hạn') ? 'text-rose-700 font-semibold' : 'text-slate-500'}`}>
+              ({ticket.nextInspectionDue.split('(')[1]}
+            </div>
+          </div>
+        ) : (
+          <div className="font-semibold text-slate-900">{ticket.nextInspectionDue}</div>
+        )}
+        <div className="text-2xs text-slate-400 font-sans mt-0.5 select-none">NĐ 04/2025</div>
+      </td>
+
+      {/* 7. Trạng thái sự cố */}
+      <td className="py-3 px-3.5 text-center whitespace-nowrap border-r border-slate-100">
+        <span
+          className={`text-xs font-semibold ${
+            isUrgent && !isResolved
+              ? 'text-rose-700'
+              : isResolved
+              ? 'text-slate-500'
+              : 'text-amber-800'
+          }`}
+        >
+          {isUrgent && !isResolved ? 'Khẩn cấp P1' : isResolved ? 'Đã bàn giao' : 'Đang xử lý'}
+        </span>
+      </td>
+
+      {/* 8. Thao tác nghiệm thu */}
+      <td className="py-3 px-3 text-center whitespace-nowrap">
+        {!isResolved ? (
+          <button
+            type="button"
+            onClick={() => onOpenHandover(ticket)}
+            className={`inline-flex items-center gap-1 min-h-8 px-2.5 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-98 shadow-xs ${
+              currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
+                ? 'bg-slate-900 hover:bg-slate-800 text-white'
+                : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+            }`}
+            title="Biên bản nghiệm thu kỹ thuật và bàn giao khoa lâm sàng"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Nghiệm thu</span>
+          </button>
+        ) : (
+          <span className="text-xs text-slate-400 font-medium select-none">Đã hoàn tất</span>
+        )}
       </td>
     </tr>
   );

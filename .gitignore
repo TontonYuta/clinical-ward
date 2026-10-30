@@ -43,6 +43,7 @@ docs/videos/raw/
 # Test & Playwright artifacts
 playwright_audit/
 playwright_mobile/
+.esms_browser_profile/
 
 # Large datasets (>100MB GitHub limit)
 data/vietnam_drug_registry/dav_master_registry.json

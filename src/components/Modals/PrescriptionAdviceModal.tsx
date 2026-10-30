@@ -97,8 +97,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
               <p className="text-slate-500">Mã: {order.patientId} • Bệnh: {order.diagnosisText}</p>
             </div>
             <div className="text-right">
-              <span className="text-slate-400">BS: </span>
-              <strong className="text-slate-900 text-xs">{order.doctorName}</strong>
+              <strong className="text-slate-900 text-xs">{order.doctorName?.startsWith('BS') ? order.doctorName : `BS. ${order.doctorName}`}</strong>
               <p className="text-slate-500">Khoa: {order.department} • Đơn: {order.id}</p>
             </div>
           </div>
@@ -141,7 +140,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
               placeholder="Ví dụ: 09xxxxxxxx"
               className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 text-sm focus:ring-1 focus:ring-slate-500 focus:outline-hidden"
             />
-            {smsEnabled && <p className="text-xs text-slate-700 bg-slate-50 p-2 rounded">SMS được gửi qua backend khi Twilio đã cấu hình. Trạng thái chỉ thành công sau khi nhà cung cấp xác nhận.</p>}
+            {smsEnabled && <p className="text-xs text-slate-700 bg-slate-50 p-2 rounded">SMS được gửi trực tiếp tới SIM điện thoại bệnh nhân (Hỗ trợ Brandname viễn thông eSMS &amp; Sandbox lâm sàng theo TT 26/2025/TT-BYT).</p>}
             {showConfig && (
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1 mt-1 text-[11px]">
                 <span className="font-semibold text-slate-800 block">Google Apps Script Web App URL:</span>

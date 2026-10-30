@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Pill, User, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { openPatientDetailModal } from '../../../services/patientService';
 
 interface DebtSettleCardProps {
   data: any;
@@ -28,7 +29,14 @@ export const DebtSettleCard: React.FC<DebtSettleCardProps> = ({ data }) => {
         </div>
         <div>
           <span className="text-slate-500 block">Bệnh nhân:</span>
-          <strong className="text-slate-900 truncate block">{data.patientName} ({data.patientRoom})</strong>
+          <button
+            type="button"
+            onClick={() => openPatientDetailModal(data.patientName)}
+            className="text-slate-900 truncate block text-left font-bold hover:text-teal-700 hover:underline cursor-pointer"
+            title="Nhấp để xem hồ sơ bệnh nhân"
+          >
+            {data.patientName} ({data.patientRoom})
+          </button>
         </div>
       </div>
 

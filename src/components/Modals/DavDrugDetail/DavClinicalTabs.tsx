@@ -44,7 +44,7 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps; activeTab?: Ta
                 b.isImportant ? 'bg-amber-50/80 p-2.5 rounded-lg border border-amber-200/80 text-amber-950 font-medium' : ''
               }`}
             >
-              <span className={`font-bold text-base select-none leading-normal mt-0 ${b.isImportant ? 'text-amber-600' : 'text-blue-600'}`}>
+              <span className={`font-bold text-base select-none leading-normal mt-0 ${b.isImportant ? 'text-amber-600' : 'text-slate-400'}`}>
                 •
               </span>
               <div className="flex-1">
@@ -68,10 +68,10 @@ export const DavClinicalTabs: React.FC<{ data: ClinicalDataProps; activeTab?: Ta
       <button
         type="button"
         onClick={() => { setLocalTab(tab); onTabChange?.(tab); }}
-        className={`px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-base font-bold transition cursor-pointer border-b-2 -mb-px shrink-0 whitespace-nowrap ${
+        className={`px-3.5 py-2.5 border-b-2 shrink-0 font-medium cursor-pointer transition-colors text-sm whitespace-nowrap ${
           isActive
-            ? 'text-blue-700 border-blue-700 bg-blue-50/50'
-            : 'text-slate-500 hover:text-slate-900 border-transparent hover:bg-slate-50'
+            ? 'border-slate-900 text-slate-950 font-semibold'
+            : 'border-transparent text-slate-600 hover:text-slate-950'
         }`}
       >
         {label}

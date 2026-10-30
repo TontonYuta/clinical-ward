@@ -12,6 +12,7 @@ import {
   generateMedicationHtmlEmail,
   printMedicationAdvice
 } from '../../../services/prescriptionAdviceService';
+import { openPatientDetailModal } from '../../../services/patientService';
 
 interface MedicationScheduleCardProps {
   data: PatientPrescriptionAdvice;
@@ -60,7 +61,14 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
       <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
         <div>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-bold text-slate-900 text-sm">{advice.patientName}</span>
+            <button
+              type="button"
+              onClick={() => openPatientDetailModal(advice.patientName)}
+              className="font-bold text-slate-900 text-sm hover:text-teal-700 hover:underline cursor-pointer text-left"
+              title="Nhấp để xem hồ sơ bệnh nhân"
+            >
+              {advice.patientName}
+            </button>
             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-medium">
               {advice.diagnosis || 'Điều trị ngoại trú'}
             </span>
@@ -71,7 +79,7 @@ export const MedicationScheduleCard: React.FC<MedicationScheduleCardProps> = ({ 
           <p className="text-slate-500 text-[11px] mt-0.5 flex items-center gap-1">
             <Mail className="w-3 h-3 text-slate-400" />
             <span className="font-mono text-slate-700">{advice.patientEmail || 'Chưa cập nhật email'}</span>
-            • BS: <strong className="text-slate-800">{advice.doctorName}</strong>
+            • <strong className="text-slate-800">{advice.doctorName?.startsWith('BS') ? advice.doctorName : `BS. ${advice.doctorName}`}</strong>
           </p>
         </div>
         <button

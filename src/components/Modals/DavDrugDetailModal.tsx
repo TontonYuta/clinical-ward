@@ -1,23 +1,26 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Bàn Làm Việc Chi Tiết Thuốc & Dược Thư Quốc Gia - Chuẩn Workstation Bệnh Viện (<=200 LOC)
- * Giao diện tươi sáng, phân cấp thị giác rõ ràng, triệt tiêu viền màu và icon rác
+ * Bàn Làm Việc Chi Tiết Thuốc & Dược Thư Quốc Gia - Chuẩn Workstation Kho Dược
+ * Bố cục Trái - Phải phẳng, sạch sẽ, triệt tiêu box lồng nhau, triệt tiêu dấu chấm đầu dòng
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, RotateCw } from 'lucide-react';
+import { X, ExternalLink, RotateCw, FileText } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
 import { getDrugDetailApi } from '../../services/api';
-import { DavAdministrativeBlocks } from './DavDrugDetail/DavAdministrativeBlocks';
 import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
-import { DavClinicalKnowledgeBlock } from './DavDrugDetail/DavClinicalKnowledgeBlock';
-import { formatContraindicationsList } from '../../utils/clinicalFormatter';
+import {
+  formatContraindicationsList,
+  parseClinicalBullets,
+  extractQuickDosageMetrics,
+  stripLeadingBullets,
+} from '../../utils/clinicalFormatter';
 import { getMedicationClinicalProfile } from '../../data/clinicalProfiles';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
-type DrugDetailTab = 'overview' | 'safety' | 'dosage' | 'registration' | 'hospital-batch';
+type DrugDetailTab = 'overview' | 'safety' | 'dosage' | 'interactions' | 'registration' | 'hospital-batch';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
@@ -27,13 +30,24 @@ interface DavDrugDetailModalProps {
   onQuickDispatch?: (batch: InventoryBatch) => void;
 }
 
+function parseSource(src?: string) {
+  if (!src) return null;
+  const pageMatch = src.match(/Trang\s*([\d\s–-]+)/i);
+  const pageStr = pageMatch ? pageMatch[0].trim() : null;
+  const pageNum = pageMatch ? parseInt(pageMatch[1].trim().split(/[-–\s]+/)[0], 10) : null;
+  const pdfMatch = src.match(/([A-Za-z0-9_.-]+\.pdf)/i);
+  const pdfFile = pdfMatch ? pdfMatch[1] : (src.includes('Dược thư') ? 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf' : null);
+  const pdfUrl = pdfFile ? `/pdf/${pdfFile}${pageNum ? `#page=${pageNum}` : ''}` : null;
+  const legalBasis = src.split('•')[0].replace(/,\s*Trang\s*[\d\s–-]+/i, '').trim();
+  return { legalBasis, pdfFile, pageStr, pageNum, pdfUrl };
+}
+
 export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   isOpen, onClose, batch, drug,
 }) => {
   useModalDismiss(isOpen, onClose);
   const [liveDrug, setLiveDrug] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [refreshingDetail, setRefreshingDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<DrugDetailTab>('overview');
 
   const itemName = batch?.itemName || drug?.brandName || 'Chưa đặt tên';
@@ -44,11 +58,10 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
 
   const loadDetails = (isManual = false) => {
     if (!isOpen || !sdk || sdk === 'Chưa cập nhật') { setLoadingDetail(false); return; }
-    if (isManual) setRefreshingDetail(true);
     setLoadingDetail(true);
     getDrugDetailApi(sdk, isManual)
-      .then((res) => { if (res) setLiveDrug(res); setLoadingDetail(false); setRefreshingDetail(false); })
-      .catch(() => { setLoadingDetail(false); setRefreshingDetail(false); });
+      .then((res) => { if (res) setLiveDrug(res); setLoadingDetail(false); })
+      .catch(() => { setLoadingDetail(false); });
   };
 
   useEffect(() => {
@@ -72,24 +85,32 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   }
 
   const adminData = {
-    dosageForm: c('dosage_form') || c('dosageForm'), packagingSpec: c('packaging_spec') || c('packagingSpec'),
-    standardPharmacopeia: c('standard_pharmacopeia') || c('standardPharmacopeia'), shelfLife: c('shelf_life') || c('shelfLife'),
-    route: c('route'), category: c('group') || c('category'), pharmacologicalClass: batch?.pharmacologicalClass,
-    atcCode: c('atc_code') || c('atcCode'), itemName, activeIngredient: activeInn,
+    dosageForm: c('dosage_form') || c('dosageForm'),
+    packagingSpec: c('packaging_spec') || c('packagingSpec'),
+    standardPharmacopeia: c('standard_pharmacopeia') || c('standardPharmacopeia'),
+    shelfLife: c('shelf_life') || c('shelfLife'),
+    route: c('route'),
+    category: c('group') || c('category'),
+    pharmacologicalClass: batch?.pharmacologicalClass,
+    atcCode: c('atc_code') || c('atcCode'),
+    itemName,
+    activeIngredient: activeInn,
     isControlledSubstance: liveDrug?.is_controlled ?? batch?.isControlledSubstance ?? drug?.isControlled,
-    manufacturer: c('manufacturer'), country: c('country'),
-    applicantName: c('applicant_name') || c('applicantName'), approvalDecision: c('approval_decision') || c('approvalDecision'),
+    manufacturer: c('manufacturer'),
+    country: c('country'),
+    applicantName: c('applicant_name') || c('applicantName'),
+    approvalDecision: c('approval_decision') || c('approvalDecision'),
   };
 
   const liveSource = liveDrug?.clinical_source || liveDrug?.clinicalSource;
   const hasLinkedMonograph = Boolean(liveDrug?.clinical_monograph_id || liveDrug?.clinicalMonographId);
   const isVerified = Boolean(hasLinkedMonograph || (liveSource?.includes('Duoc_Thu_Quoc_Gia_Viet_Nam.pdf') && /Trang\s+\d+/.test(liveSource)))
     || profile.isVerifiedMonograph === true;
-  // Clinical content is accepted only from a linked/traceable monograph or a
-  // curated verified profile. Batch and registration records are administrative.
+
   const clinical = (key: string, camelKey?: string) => isVerified
     ? (liveDrug?.[key] ?? (camelKey ? liveDrug?.[camelKey] : undefined))
     : undefined;
+
   const clinicalData = {
     atcCode: clinical('atc_code', 'atcCode') || (isVerified ? profile?.atcCode : undefined),
     drugClass: clinical('drug_class', 'drugClass') || (profile.isVerifiedMonograph === true ? profile?.allergyProfile?.allergyClass : undefined),
@@ -108,87 +129,691 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     clinicalSource: isVerified ? resolvedSource : (c('clinical_source') || c('clinicalSource') || `Hồ sơ cấp phép Cục Quản lý Dược (SĐK: ${sdk})`),
   };
 
+  const dosageMetrics = extractQuickDosageMetrics(clinicalData.adultDosage);
+  const srcInfo = parseSource(clinicalData.clinicalSource);
+
+  const tabs: [DrugDetailTab, string][] = [
+    ['overview', 'Tổng quan'],
+    ['safety', 'An toàn & Cảnh báo'],
+    ['dosage', 'Liều dùng & Dược lý'],
+    ['interactions', 'Tác dụng phụ & Tương tác'],
+    ['registration', 'Hồ sơ Cục QLD'],
+    ...(batch ? [['hospital-batch', 'Lô kho bệnh viện'] as [DrugDetailTab, string]] : []),
+  ];
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       data-testid="dav-drug-detail-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs"
     >
-      <div className="bg-white rounded-none sm:rounded-xl shadow-xl border-0 sm:border border-slate-200 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-auto sm:max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
+      <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
         
-        {/* Top Header Workstation (Trắng sáng tươi mới, phân cấp rõ) */}
-        <div className="bg-white text-slate-900 px-6 py-4 flex items-center justify-between shrink-0 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded">
-              SĐK: {sdk}
-            </span>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                {itemName} {strength && <span className="text-xs font-medium text-slate-500">({strength})</span>}
+        {/* Header Chuẩn Workstation */}
+        <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
+                SĐK: {sdk}
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-950 tracking-tight truncate">
+                {itemName} {strength && <span className="text-sm font-normal text-slate-500">({strength})</span>}
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                <span>Hoạt chất:</span> <strong className="text-slate-800">{activeInn}</strong>
-                {clinicalData.drugClass && <span className="ml-2 text-slate-400">{clinicalData.drugClass}</span>}
-              </p>
+            </div>
+            <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+              <span>Hoạt chất: <strong className="text-slate-800 font-semibold">{activeInn}</strong></span>
+              {clinicalData.drugClass && (
+                <>
+                  <span className="text-slate-300">·</span>
+                  <span className="text-slate-600 font-medium">{clinicalData.drugClass}</span>
+                </>
+              )}
+              {adminData.route && (
+                <>
+                  <span className="text-slate-300">·</span>
+                  <span className="text-slate-600">{adminData.route}</span>
+                </>
+              )}
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button onClick={onClose} data-testid="btn-close-dav-detail" className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => loadDetails(true)}
+              data-testid="drug-detail-reload-btn"
+              title="Làm mới thông tin từ Cục Quản Lý Dược"
+              aria-label="Làm mới thông tin"
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <RotateCw className={`w-4 h-4 ${loadingDetail ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={onClose}
+              data-testid="btn-close-dav-detail"
+              aria-label="Đóng"
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        <div className="shrink-0 border-b border-slate-200 bg-white px-3 sm:px-5 overflow-x-auto thin-scrollbar">
-          <div role="tablist" aria-label="Nhóm thông tin thuốc" className="flex min-w-max items-center gap-1">
-            {([['overview', 'Tổng quan'], ['safety', 'An toàn'], ['dosage', 'Liều dùng'], ['registration', 'Thông tin đăng ký'], ...(batch ? [['hospital-batch', 'Lô bệnh viện']] : [])] as [DrugDetailTab, string][]).map(([tab, label]) => (
-              <button key={tab} type="button" role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className={`min-h-11 border-b-2 px-3 sm:px-4 text-sm font-semibold whitespace-nowrap transition ${activeTab === tab ? 'border-blue-700 bg-blue-50/60 text-blue-800' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>{label}</button>
-            ))}
+        {/* Thanh Tab gạch chân chuẩn Kho Dược */}
+        <div role="tablist" aria-label="Nhóm thông tin chi tiết thuốc" className="flex items-center gap-1 overflow-x-auto text-sm scrollbar-none border-b border-slate-200 px-5 bg-white shrink-0">
+          {tabs.map(([tab, label]) => {
+            const isSelected = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3.5 py-2.5 border-b-2 shrink-0 font-medium cursor-pointer transition-colors text-sm whitespace-nowrap ${
+                  isSelected
+                    ? 'border-slate-900 text-slate-950 font-semibold'
+                    : 'border-transparent text-slate-600 hover:text-slate-950'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Nội Dung Theo Từng Tab: Bố Cục Trái - Phải Chuẩn Y Tế (Zero-Box, Phẳng, Không Dấu Chấm) */}
+        
+        {/* TAB 1: TỔNG QUAN */}
+        {activeTab === 'overview' && (
+          <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            {/* Cột Trái: Lâm sàng quan trọng nhất */}
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
+              {(clinicalData.contraindications || clinicalData.antidote || adminData.isControlledSubstance || drug?.isHighAlert || liveDrug?.is_high_alert) && (
+                <div className="space-y-2.5 pb-5 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-rose-700">
+                      Cảnh Báo An Toàn &amp; Chống Chỉ Định Tuyệt Đối
+                    </h3>
+                    {adminData.isControlledSubstance && (
+                      <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+                        KSĐB
+                      </span>
+                    )}
+                  </div>
+                  {clinicalData.contraindications && (
+                    <div className="space-y-1 text-sm text-slate-900 font-medium leading-relaxed">
+                      {formatContraindicationsList(clinicalData.contraindications).map((text, i) => (
+                        <p key={i}>{stripLeadingBullets(text)}</p>
+                      ))}
+                    </div>
+                  )}
+                  {clinicalData.antidote && (
+                    <p className="text-sm text-slate-900 pt-0.5">
+                      <span className="font-semibold text-slate-700">Thuốc giải độc đặc hiệu (Antidote):</span>{' '}
+                      <span className="font-bold text-slate-950">{stripLeadingBullets(clinicalData.antidote)}</span>
+                    </p>
+                  )}
+                  {adminData.isControlledSubstance && (
+                    <p className="text-xs text-rose-800 font-medium">
+                      Quản lý tủ sắt 2 khóa, ký duyệt biên bản cấp phát và thu hồi vỏ ống theo Thông tư 20/2017/TT-BYT.
+                    </p>
+                  )}
+                  {(drug?.isHighAlert || liveDrug?.is_high_alert) && (
+                    <p className="text-xs text-rose-800 font-medium">
+                      Thuốc nguy cơ cao (High-Alert): Kiểm tra độc lập 2 điều dưỡng trước khi đưa vào cơ thể người bệnh.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {clinicalData.indications && (
+                <div className="space-y-2 pb-5 border-b border-slate-100">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Chỉ Định Điều Trị Lâm Sàng
+                  </h3>
+                  <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.indications).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {clinicalData.adultDosage && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      Liều Dùng &amp; Cách Dùng
+                    </h3>
+                    {dosageMetrics.maxDailyDose && (
+                      <span className="text-xs font-semibold text-rose-700">
+                        Trần liều: {dosageMetrics.maxDailyDose}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 flex-wrap text-xs text-slate-600 pb-0.5">
+                    <div>
+                      <span className="text-slate-400">Đường dùng: </span>
+                      <strong className="text-slate-800">{adminData.route || dosageMetrics.routes.join(' · ') || 'Theo chỉ định'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Khoảng cách: </span>
+                      <strong className="text-slate-800">{dosageMetrics.interval || 'Theo phác đồ'}</strong>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.adultDosage).slice(0, 3).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Cột Phải: Kho viện, Bào chế & Tài liệu */}
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
+              {batch && (
+                <div className="space-y-2.5 pb-5 border-b border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Lô Kho Viện</h3>
+                    <span className="font-mono text-xs font-semibold text-slate-800 bg-white border border-slate-300 px-2 py-0.5 rounded">
+                      Số lô: {batch.batchNumber}
+                    </span>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <dt className="text-slate-500">Tồn kho hiện tại</dt>
+                      <dd className="text-sm font-bold text-slate-900 font-mono tabular-nums mt-0.5">{batch.currentStock} {batch.unit}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Hạn dùng FEFO</dt>
+                      <dd className={`text-sm font-bold font-mono mt-0.5 ${batch.daysLeft <= 60 ? 'text-rose-700' : 'text-slate-900'}`}>
+                        {batch.expiryDate} <span className="text-2xs font-normal text-slate-500">({batch.daysLeft}d)</span>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Cơ số Min</dt>
+                      <dd className="text-sm font-semibold text-slate-800 font-mono mt-0.5">{batch.minThreshold} {batch.unit}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Vị trí kệ</dt>
+                      <dd className="text-sm font-semibold text-slate-800 mt-0.5">{batch.warehouseLocation || 'Chưa định vị'}</dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
+
+              <div className="space-y-2.5 pb-5 border-b border-slate-200">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Thông Tin Bào Chế &amp; Xuất Xứ
+                </h3>
+                <dl className="space-y-2 text-xs">
+                  <div>
+                    <dt className="text-slate-500">Dạng bào chế &amp; Quy cách</dt>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                      {adminData.dosageForm || 'Theo hồ sơ'}{adminData.packagingSpec ? ` · ${adminData.packagingSpec}` : ''}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Cơ sở sản xuất &amp; Xuất xứ</dt>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                      {adminData.manufacturer || 'Theo hồ sơ cấp phép'} {adminData.country ? `(${adminData.country})` : ''}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Tài Liệu Gốc Cục QLD &amp; Dược Thư
+                </h3>
+                {srcInfo?.pdfUrl && (
+                  <a
+                    href={srcInfo.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-900 text-xs font-medium transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+                      <span className="truncate">Chuyên luận Dược Thư {srcInfo.pageStr ? `(${srcInfo.pageStr})` : ''}</span>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </a>
+                )}
+                <DavDocumentActionButtons
+                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath}
+                  labelPath={batch?.labelPath || drug?.labelPath}
+                  nationalCode={sdk}
+                  brandName={itemName}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-        <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden thin-scrollbar bg-slate-50/60 p-3 sm:p-5">
-          {activeTab === 'overview' && <div className="mx-auto max-w-5xl space-y-4">
-            <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="mb-4 text-base font-bold text-slate-900">Nhận diện thuốc</h3><dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div><dt className="text-xs font-medium text-slate-500">Dạng bào chế</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{adminData.dosageForm || 'Chưa có thông tin'}</dd></div>
-              <div><dt className="text-xs font-medium text-slate-500">Đường dùng</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{adminData.route || 'Chưa có thông tin'}</dd></div>
-              <div><dt className="text-xs font-medium text-slate-500">Phân loại dược lý</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{clinicalData.drugClass || adminData.category || 'Chưa phân loại'}</dd></div>
-              {adminData.isControlledSubstance && <div><dt className="text-xs font-medium text-slate-500">Quy chế</dt><dd className="mt-1 inline-flex rounded-md bg-rose-50 px-2 py-1 text-sm font-semibold text-rose-800">Thuốc kiểm soát đặc biệt</dd></div>}
-            </dl></section>
-            {(clinicalData.contraindications || clinicalData.antidote || batch?.isControlledSubstance || drug?.isControlled || drug?.isHighAlert || liveDrug?.is_high_alert) && <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5"><h3 className="mb-3 text-base font-bold text-amber-950">Cảnh báo cần chú ý</h3>
-              {clinicalData.contraindications && <div className="mb-3"><p className="mb-1 text-xs font-semibold uppercase tracking-wide text-rose-800">Chống chỉ định</p><ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-800">{formatContraindicationsList(clinicalData.contraindications).map((text, i) => <li key={i}>{text}</li>)}</ul></div>}
-              {clinicalData.antidote && <p className="text-sm text-slate-800"><strong>Thuốc giải độc:</strong> {clinicalData.antidote}</p>}
-              {(batch?.isControlledSubstance || drug?.isControlled) && <p className="text-sm font-semibold text-rose-800">Thuốc kiểm soát đặc biệt; tuân thủ quy trình quản lý tương ứng.</p>}
-              {(drug?.isHighAlert || liveDrug?.is_high_alert) && <p className="text-sm font-semibold text-rose-800">Thuốc nguy cơ cao; cần kiểm tra độc lập theo quy trình bệnh viện.</p>}
-            </section>}
-            {batch && <BatchSummary batch={batch} />}
-          </div>}
-          {activeTab === 'safety' && <div className="mx-auto max-w-5xl"><DavClinicalKnowledgeBlock data={clinicalData} isLoading={loadingDetail} activeTab="safety" showNavigation={false} /></div>}
-          {activeTab === 'dosage' && <div className="mx-auto max-w-5xl"><DavClinicalKnowledgeBlock data={clinicalData} isLoading={loadingDetail} activeTab="dosage" showNavigation={false} /></div>}
-          {activeTab === 'registration' && <div className="mx-auto max-w-5xl space-y-4"><DavAdministrativeBlocks data={adminData} /><DavDocumentActionButtons hdsdPath={batch?.hdsdPath || drug?.hdsdPath} labelPath={batch?.labelPath || drug?.labelPath} nationalCode={sdk} brandName={itemName} /></div>}
-          {activeTab === 'hospital-batch' && batch && <div className="mx-auto max-w-5xl"><BatchSummary batch={batch} showLocation /></div>}
-        </div>
+        )}
+
+        {/* TAB 2: AN TOÀN & CẢNH BÁO */}
+        {activeTab === 'safety' && (
+          <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
+              <div className="space-y-3 pb-5 border-b border-slate-100">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-rose-700">
+                  Chống Chỉ Định Tuyệt Đối &amp; Cấm Kỵ
+                </h3>
+                {clinicalData.contraindications ? (
+                  <div className="space-y-1.5 text-sm text-slate-900 font-medium leading-relaxed">
+                    {formatContraindicationsList(clinicalData.contraindications).map((text, i) => (
+                      <p key={i}>{stripLeadingBullets(text)}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">Chưa ghi nhận chống chỉ định tuyệt đối trong chuyên luận nguồn.</p>
+                )}
+              </div>
+
+              {(adminData.isControlledSubstance || drug?.isHighAlert || liveDrug?.is_high_alert) && (
+                <div className="space-y-2 pb-5 border-b border-slate-100">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Quy Chế Kiểm Soát &amp; An Toàn Dùng Thuốc
+                  </h3>
+                  {adminData.isControlledSubstance && (
+                    <p className="text-sm text-rose-800 font-medium">
+                      Thuốc kiểm soát đặc biệt (KSĐB): Quản lý tủ sắt 2 khóa, ký biên bản giao nhận và thu hồi vỏ ống theo Thông tư 20/2017/TT-BYT.
+                    </p>
+                  )}
+                  {(drug?.isHighAlert || liveDrug?.is_high_alert) && (
+                    <p className="text-sm text-rose-800 font-medium">
+                      Thuốc nguy cơ cao (High-Alert): Yêu cầu kiểm tra độc lập 2 điều dưỡng trước khi đưa vào cơ thể người bệnh.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {clinicalData.antidote && (
+                <div className="space-y-1 pb-5 border-b border-slate-100">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Thuốc Giải Độc Đặc Hiệu (Antidote) &amp; Xử Trí
+                  </h3>
+                  <p className="text-sm font-bold text-slate-950">
+                    {stripLeadingBullets(clinicalData.antidote)}
+                  </p>
+                </div>
+              )}
+
+              {clinicalData.overdoseTreatment && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Triệu Chứng Quá Liều &amp; Xử Trí Cấp Cứu
+                  </h3>
+                  <div className="space-y-1 text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.overdoseTreatment).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
+              {clinicalData.precautions && (
+                <div className="space-y-2 pb-5 border-b border-slate-200">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Thận Trọng Đặc Biệt
+                  </h3>
+                  <div className="space-y-1 text-xs sm:text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.precautions).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {clinicalData.pregnancyWarning && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Thời Kỳ Mang Thai &amp; Cho Con Bú
+                  </h3>
+                  <div className="space-y-1 text-xs sm:text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.pregnancyWarning).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: LIỀU DÙNG & DƯỢC LÝ */}
+        {activeTab === 'dosage' && (
+          <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
+              <div className="space-y-3 pb-5 border-b border-slate-100">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Liều Dùng Người Lớn &amp; Đường Dùng
+                  </h3>
+                  {dosageMetrics.maxDailyDose && (
+                    <span className="text-xs font-semibold text-rose-700">
+                      Trần liều: {dosageMetrics.maxDailyDose}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4 flex-wrap text-xs text-slate-600 pb-1">
+                  <div>
+                    <span className="text-slate-400">Đường dùng: </span>
+                    <strong className="text-slate-800">{adminData.route || dosageMetrics.routes.join(' · ') || 'Theo chỉ định'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Khoảng cách: </span>
+                    <strong className="text-slate-800">{dosageMetrics.interval || 'Theo phác đồ'}</strong>
+                  </div>
+                  {dosageMetrics.specialWarning && (
+                    <div>
+                      <span className="text-slate-400">Lưu ý: </span>
+                      <strong className="text-slate-800">{dosageMetrics.specialWarning}</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 text-sm text-slate-800 leading-relaxed">
+                  {parseClinicalBullets(clinicalData.adultDosage).map((b, idx) => (
+                    <div key={idx} className={b.isImportant ? 'text-amber-950 font-medium' : ''}>
+                      {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                      <span>{stripLeadingBullets(b.content)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {clinicalData.pediatricDosage && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Liều Dùng Nhi Khoa
+                  </h3>
+                  <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.pediatricDosage).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
+              {(clinicalData.renalAdjustment || clinicalData.hepaticAdjustment) && (
+                <div className="space-y-3 pb-5 border-b border-slate-200">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Hiệu Chỉnh Liều Đặc Biệt
+                  </h3>
+                  {clinicalData.renalAdjustment && (
+                    <div className="space-y-1">
+                      <span className="text-xs font-semibold text-slate-600 block">Suy thận (ClCr / eGFR):</span>
+                      <div className="space-y-1 text-xs sm:text-sm text-slate-800 leading-relaxed">
+                        {parseClinicalBullets(clinicalData.renalAdjustment).map((b, idx) => (
+                          <div key={idx}>
+                            {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                            <span>{stripLeadingBullets(b.content)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {clinicalData.hepaticAdjustment && (
+                    <div className="space-y-1 pt-1">
+                      <span className="text-xs font-semibold text-slate-600 block">Suy gan:</span>
+                      <div className="space-y-1 text-xs sm:text-sm text-slate-800 leading-relaxed">
+                        {parseClinicalBullets(clinicalData.hepaticAdjustment).map((b, idx) => (
+                          <div key={idx}>
+                            {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                            <span>{stripLeadingBullets(b.content)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Phân Loại Dược Lý &amp; ATC
+                </h3>
+                <dl className="space-y-2 text-xs">
+                  <div>
+                    <dt className="text-slate-500">Nhóm Dược lý</dt>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">{clinicalData.drugClass || adminData.category || 'Thuốc điều trị'}</dd>
+                  </div>
+                  {adminData.atcCode && (
+                    <div>
+                      <dt className="text-slate-500">Mã ATC</dt>
+                      <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{adminData.atcCode}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: TÁC DỤNG PHỤ & TƯƠNG TÁC */}
+        {activeTab === 'interactions' && (
+          <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
+              <div className="space-y-3 pb-5 border-b border-slate-100">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Tác Dụng Không Mong Muốn (ADR)
+                </h3>
+                {clinicalData.adverseEffects ? (
+                  <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.adverseEffects).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">Chưa ghi nhận ADR phổ biến trong chuyên luận nguồn.</p>
+                )}
+              </div>
+
+              {clinicalData.overdoseTreatment && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Xử Trí Quá Liều
+                  </h3>
+                  <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.overdoseTreatment).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Tương Tác Thuốc Theo Chuyên Luận
+                </h3>
+                {clinicalData.drugInteractions ? (
+                  <div className="space-y-1.5 text-xs sm:text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.drugInteractions).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">Chưa ghi nhận tương tác thuốc nghiêm trọng trong chuyên luận.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: HỒ SƠ CỤC QLD */}
+        {activeTab === 'registration' && (
+          <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Thông Tin Hành Chính &amp; Giấy Phép Lưu Hành
+              </h3>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <dt className="text-slate-500">Số Đăng Ký (SĐK)</dt>
+                  <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{sdk}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Quyết định cấp phép</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.approvalDecision || 'Theo hồ sơ Cục QLD'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Dạng bào chế &amp; Quy cách</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.dosageForm || '—'} {adminData.packagingSpec ? `· ${adminData.packagingSpec}` : ''}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Đường dùng chuẩn</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.route || 'Theo hồ sơ công bố'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Tiêu chuẩn Dược điển</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.standardPharmacopeia || 'Theo NSX / Dược điển'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Hạn lưu hành</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.shelfLife || 'Theo hồ sơ công bố'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Cơ sở sản xuất</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.manufacturer || 'Theo hồ sơ cấp phép'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Quốc gia xuất xứ</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.country || 'Việt Nam'}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Tài Liệu Gốc Cục QLD &amp; Dược Thư
+                </h3>
+                {srcInfo?.pdfUrl && (
+                  <a
+                    href={srcInfo.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-900 text-xs font-medium transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+                      <span className="truncate">Chuyên luận Dược Thư {srcInfo.pageStr ? `(${srcInfo.pageStr})` : ''}</span>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </a>
+                )}
+                <DavDocumentActionButtons
+                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath}
+                  labelPath={batch?.labelPath || drug?.labelPath}
+                  nationalCode={sdk}
+                  brandName={itemName}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: LÔ THUỐC BỆNH VIỆN */}
+        {activeTab === 'hospital-batch' && batch && (
+          <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Thông Tin Lô Thuốc Bệnh Viện</h3>
+                <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
+                  Lô: {batch.batchNumber}
+                </span>
+              </div>
+              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <dt className="text-slate-500">Tồn kho hiện tại</dt>
+                  <dd className="text-base font-bold text-slate-900 font-mono tabular-nums mt-0.5">{batch.currentStock} {batch.unit}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Hạn dùng FEFO</dt>
+                  <dd className={`text-base font-bold font-mono mt-0.5 ${batch.daysLeft <= 60 ? 'text-rose-700' : 'text-slate-900'}`}>
+                    {batch.expiryDate} <span className="text-xs font-normal text-slate-500">({batch.daysLeft}d)</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Ngưỡng cơ số Min</dt>
+                  <dd className="text-base font-semibold text-slate-800 font-mono mt-0.5">{batch.minThreshold} {batch.unit}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Lưu Kho &amp; Quy Chế Cấp Phát</h3>
+              <dl className="space-y-2 text-xs">
+                <div>
+                  <dt className="text-slate-500">Vị trí kệ / ô lưu kho</dt>
+                  <dd className="text-sm font-semibold text-slate-900 mt-0.5">{batch.warehouseLocation || 'Chưa phân ô'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Nguyên tắc xuất kho</dt>
+                  <dd className="text-sm font-medium text-slate-900 mt-0.5">FEFO (First-Expired, First-Out)</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
-        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
-          <a href={davPortalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline">
-            <span>Đối soát trực tiếp Cổng Cục Quản Lý Dược</span><ExternalLink className="w-3.5 h-3.5" />
+        <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+          <a
+            href={davPortalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-950 underline-offset-2 hover:underline"
+          >
+            <span>Đối soát trực tiếp Cổng Cục Quản Lý Dược (SĐK: {sdk})</span>
+            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
           </a>
-          <button onClick={onClose} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer">Đóng</button>
+          <button
+            onClick={onClose}
+            type="button"
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition cursor-pointer"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>
   );
 };
-
-
-const BatchSummary: React.FC<{ batch: InventoryBatch; showLocation?: boolean }> = ({ batch, showLocation }) => (
-  <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h3 className="text-base font-bold text-slate-900">Lô tại bệnh viện</h3><span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-sm font-semibold text-slate-800">{batch.batchNumber}</span></div>
-    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      <div><dt className="text-xs text-slate-500">Tồn kho</dt><dd className="mt-1 text-sm font-bold text-slate-900">{batch.currentStock} {batch.unit}</dd></div>
-      <div><dt className="text-xs text-slate-500">Hạn dùng</dt><dd className={`mt-1 text-sm font-semibold ${batch.daysLeft <= 60 ? 'text-rose-700' : 'text-slate-900'}`}>{batch.expiryDate}<span className="ml-1 text-xs">({batch.daysLeft} ngày)</span></dd></div>
-      <div><dt className="text-xs text-slate-500">Tồn tối thiểu</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{batch.minThreshold} {batch.unit}</dd></div>
-      {showLocation && <div><dt className="text-xs text-slate-500">Vị trí kho</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{batch.warehouseLocation}</dd></div>}
-    </dl>
-  </section>
-);

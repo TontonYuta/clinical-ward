@@ -5,12 +5,11 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2 } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
 import { ActionCardDispatcher } from './Cards/ActionCardDispatcher';
-import { ShiftBriefingEmptyState } from './ShiftBriefingEmptyState';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import { isCloudAIAvailable } from '../../services/geminiService';
@@ -32,6 +31,7 @@ interface ChatWindowProps {
   onClearMessages?: () => void;
   onOpenAuditTrail?: () => void;
   onOpenLegalDocs?: () => void;
+  onOpenUserGuide?: () => void;
   isFullScreen?: boolean;
   onToggleFullScreen?: () => void;
 }
@@ -39,7 +39,7 @@ interface ChatWindowProps {
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   messages, suggestionChips, onSendMessage, isProcessing, isAudioMuted, onSelectTab,
   currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
-  lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs,
+  lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs, onOpenUserGuide,
   isFullScreen = false, onToggleFullScreen,
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -63,29 +63,39 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   return (
     <div className="flex flex-col h-full bg-slate-50/70 relative overflow-hidden">
       {/* 1. Header */}
-      <div className="h-13 sm:h-11 px-3.5 sm:px-4 bg-white border-b border-slate-200/90 flex items-center justify-between shrink-0 shadow-2xs">
-        <div data-testid="chat-window-drag-handle" className="flex h-full min-w-0 items-center gap-2 sm:gap-2.5 cursor-grab touch-none select-none">
-          <div className="w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg bg-teal-800 flex items-center justify-center text-white shadow-2xs">
-            <Bot className="w-4 h-4" />
+      <div className="h-14 sm:h-12 px-3.5 sm:px-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
+        <div data-testid="chat-window-drag-handle" className="flex items-center gap-2.5 min-w-0 cursor-grab select-none">
+          <div className="w-8 h-8 rounded-lg bg-teal-800 flex items-center justify-center text-white shrink-0 shadow-2xs">
+            <Bot className="w-4.5 h-4.5" />
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-sm font-bold text-slate-900">Trợ Lý Agent Lâm Sàng</span>
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-slate-100 hover:bg-teal-50 hover:text-teal-800 transition cursor-pointer"
-              title="Nhấn để cấu hình AI và API Key"
-            >
-              <span className={`w-2 h-2 rounded-full ${cloudActive ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`} />
-              <span className="hidden sm:inline text-slate-600">{cloudActive ? 'Gemini Flash-Lite' : 'Nội bộ'}</span>
-            </button>
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="text-sm font-bold text-slate-950 whitespace-nowrap">
+              Trợ Lý AI Lâm Sàng
+            </h3>
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${cloudActive ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`}
+              title={cloudActive ? 'Mô hình: Gemini Flash-Lite' : 'Mô hình: Nội bộ Offline'}
+            />
           </div>
         </div>
-        <div className="flex items-center gap-1">
+
+        <div className="flex items-center gap-1 shrink-0">
+          {onOpenUserGuide && (
+            <button
+              type="button"
+              data-testid="chat-hdsd-btn"
+              onClick={onOpenUserGuide}
+              className="px-2 py-1 rounded-md text-slate-700 hover:text-teal-800 hover:bg-teal-50 transition cursor-pointer active:scale-95 flex items-center gap-1 border border-slate-200 hover:border-teal-300 text-xs font-semibold shrink-0"
+              title="Hướng dẫn sử dụng & Kịch bản trợ lý lâm sàng"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+              <span>HDSD</span>
+            </button>
+          )}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95"
-            title="Cấu hình AI & Tối ưu chi phí"
+            className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+            title="Cấu hình mô hình AI"
           >
             <Settings2 className="w-4 h-4" />
           </button>
@@ -93,7 +103,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <button
               type="button"
               onClick={onToggleFullScreen}
-              className="p-2 sm:p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95"
+              className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
               title={isFullScreen ? 'Thu nhỏ cửa sổ' : 'Mở rộng toàn màn hình'}
               aria-label={isFullScreen ? 'Thu nhỏ' : 'Toàn màn hình'}
             >
@@ -101,13 +111,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </button>
           )}
           {onClearMessages && (
-            <button onClick={onClearMessages} className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95" title="Làm mới phiên hội thoại">
+            <button
+              onClick={onClearMessages}
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+              title="Làm mới phiên hội thoại"
+            >
               <RotateCcw className="w-4 h-4" />
             </button>
           )}
           {onClose && (
-            <button onClick={onClose} className="p-2 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95" title="Thu nhỏ Trợ lý AI">
-              <X className="w-5 h-5 sm:w-4 sm:h-4" />
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+              title="Đóng Trợ lý AI"
+            >
+              <X className="w-4.5 h-4.5" />
             </button>
           )}
         </div>
@@ -123,12 +141,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
           return (
             <div key={msg.id} className={`flex gap-2.5 max-w-[96%] sm:max-w-[88%] ${isDarkBubble ? 'ml-auto flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800' : isSystem ? 'bg-slate-700' : 'bg-slate-900'}`}>
+              <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 text-white shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800' : isSystem ? 'bg-slate-700' : 'bg-slate-900'}`}>
                 {isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
 
               <div className="space-y-2 min-w-0 flex-1">
-                <div className={`p-3 rounded-2xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs'}`}>
+                <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
                   {renderFormattedText(msg.text, isDarkBubble)}
                 </div>
 
@@ -139,10 +157,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
           );
         })}
-
-        {messages.length <= 1 && (
-          <ShiftBriefingEmptyState currentUserRole={currentUserRole} pendingDebtsCount={pendingDebtsCount} urgentTicketsCount={urgentTicketsCount} lowStockCount={lowStockCount} onChipClick={handleChipClick} />
-        )}
 
         {isProcessing && (
           <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 pl-9 font-medium">

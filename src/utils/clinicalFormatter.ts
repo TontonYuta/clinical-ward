@@ -70,7 +70,15 @@ export function extractQuickDosageMetrics(text?: string): QuickDosageMetrics {
 }
 
 /**
- * Tách một chuỗi văn bản Dược thư thành mảng gạch đầu dòng có phân nhóm rõ ràng
+ * Làm sạch hoàn toàn các dấu chấm đầu dòng, gạch ngang, dấu hoa thị
+ */
+export function stripLeadingBullets(text?: string): string {
+  if (!text) return '';
+  return text.replace(/^[\s•●▪◦‣⁃*.:：-]+/u, '').trim();
+}
+
+/**
+ * Tách một chuỗi văn bản Dược thư thành mảng phân nhóm rõ ràng, triệt tiêu mọi dấu chấm đầu dòng
  */
 export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
   if (!raw) return [];
@@ -91,8 +99,8 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
     // Tách label nếu có dạng "Tên mục: Nội dung"
     const colonIdx = chunk.indexOf(':');
     if (colonIdx > 0 && colonIdx <= 35 && !chunk.slice(0, colonIdx).includes('\n')) {
-      const label = chunk.slice(0, colonIdx).trim();
-      const content = chunk.slice(colonIdx + 1).replace(/^[\s•●▪◦‣⁃*-]+/, '').trim();
+      const label = chunk.slice(0, colonIdx).replace(/^[\s•●▪◦‣⁃*.:：-]+/u, '').trim();
+      const content = chunk.slice(colonIdx + 1).replace(/^[\s•●▪◦‣⁃*.:：-]+/u, '').trim();
       const isImportant = /suy gan|quá liều|tử vong|chống chỉ định|nghiêm trọng|phản vệ|sjs|ten/i.test(chunk);
       items.push({ label, content, isImportant });
     } else {
@@ -100,7 +108,7 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
       if (chunk.length > 200 && chunk.includes('. ')) {
         const sentences = chunk.split(/(?<=\.)\s+(?=[A-ZĐÁÀẢÃẠÂẤẦẨẪẬÊẾỀỂỄỆÔỐỒỔỖỘ])/g);
         for (const sent of sentences) {
-          const s = sent.trim();
+          const s = sent.replace(/^[\s•●▪◦‣⁃*.:：-]+/u, '').trim();
           if (s) {
             items.push({
               content: s,
@@ -109,8 +117,8 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
           }
         }
       } else {
-      items.push({
-          content: chunk.replace(/^[\s•●▪◦‣⁃*-]+/, '').trim(),
+        items.push({
+          content: chunk.replace(/^[\s•●▪◦‣⁃*.:：-]+/u, '').trim(),
           isImportant: /suy gan|quá liều|tử vong|chống chỉ định|nghiêm trọng/i.test(chunk)
         });
       }
@@ -121,7 +129,7 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
 }
 
 /**
- * Định dạng danh sách chống chỉ định thành các thẻ gạch đầu dòng súc tích
+ * Định dạng danh sách chống chỉ định thành các mục súc tích, không dấu chấm
  */
 export function formatContraindicationsList(text?: string): string[] {
   if (!text) return [];
@@ -129,6 +137,6 @@ export function formatContraindicationsList(text?: string): string[] {
   const normalized = text.replace(/\r/g, '').replace(/[\t ]+/g, ' ').replace(/\n+/g, ' ').trim();
   return normalized
     .split(/[\.;]/)
-    .map((s) => s.replace(/^[\s:：,，;；]+/gu, '').replace(/[\s:：,，;；]+$/gu, '').trim())
+    .map((s) => s.replace(/^[\s•●▪◦‣⁃*.:：,，;；-]+/gu, '').replace(/[\s:：,，;；]+$/gu, '').trim())
     .filter((s) => s.length > 3 && !/^(\.|\-|\*)$/.test(s));
 }

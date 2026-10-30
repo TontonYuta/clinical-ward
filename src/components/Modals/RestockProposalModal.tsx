@@ -83,14 +83,14 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
               Danh mục chạm mức Min cần bổ sung ({lowStockBatches.length} mặt hàng):
             </span>
 
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <table className="w-full text-left text-xs">
+            <div className="border border-slate-200 rounded-xl overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[650px]">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-600 border-b font-semibold">
-                    <th className="py-2.5 px-3">Tên thuốc / Quy cách</th>
-                    <th className="py-2.5 px-2 text-center">Tồn kho</th>
-                    <th className="py-2.5 px-2 text-center">Min / Max</th>
-                    <th className="py-2.5 px-3 text-right">SL Đề xuất</th>
+                  <tr className="bg-slate-100 text-slate-700 border-b font-semibold text-sm">
+                    <th className="py-3 px-3.5">Tên thuốc / Quy cách</th>
+                    <th className="py-3 px-3 text-center">Tồn kho</th>
+                    <th className="py-3 px-3 text-center">Min / Max</th>
+                    <th className="py-3 px-3.5 text-right">SL Đề xuất</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -99,17 +99,17 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
                       const neededQty = Math.max(0, batch.maxThreshold - batch.currentStock);
                       return (
                         <tr key={batch.id} className="hover:bg-slate-50">
-                          <td className="py-2 px-3">
-                            <span className="font-bold text-slate-900 block">{batch.itemName}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">Lô: {batch.batchNumber}</span>
+                          <td className="py-2.5 px-3.5">
+                            <span className="font-bold text-slate-900 block leading-snug">{batch.itemName}</span>
+                            <span className="text-xs text-slate-500 font-mono mt-0.5 block">Lô: {batch.batchNumber}</span>
                           </td>
-                          <td className="py-2 px-2 text-center font-mono font-bold text-rose-600">
+                          <td className="py-2.5 px-3 text-center font-mono font-bold text-rose-600">
                             {batch.currentStock} {batch.unit}
                           </td>
-                          <td className="py-2 px-2 text-center font-mono text-slate-500">
+                          <td className="py-2.5 px-3 text-center font-mono text-slate-500">
                             {batch.minThreshold} - {batch.maxThreshold}
                           </td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-teal-800">
+                          <td className="py-2.5 px-3.5 text-right font-mono font-bold text-teal-800">
                             +{neededQty} {batch.unit}
                           </td>
                         </tr>

@@ -13,18 +13,18 @@ interface AdviceMedTableProps {
 
 export const AdviceMedTable: React.FC<AdviceMedTableProps> = ({ meds }) => {
   return (
-    <div className="border border-slate-200 rounded-md overflow-hidden bg-white">
-      <table className="w-full text-left text-xs">
-        <thead className="bg-slate-100 text-slate-800 border-b border-slate-200 font-semibold text-2xs">
+    <div className="border border-slate-200 rounded-md overflow-x-auto bg-white">
+      <table className="w-full text-left text-xs min-w-[700px]">
+        <thead className="bg-slate-100 text-slate-800 border-b border-slate-200 font-semibold text-xs">
           <tr>
-            <th className="py-2 px-3">Tên thuốc & hàm lượng</th>
-            <th className="py-2 px-2 text-center w-24">Sáng (07:00)</th>
-            <th className="py-2 px-2 text-center w-24">Trưa (11:30)</th>
-            <th className="py-2 px-2 text-center w-24">Chiều (18:00)</th>
-            <th className="py-2 px-2 text-center w-24">Tối (20:00)</th>
+            <th className="py-2.5 px-3">Tên thuốc & hàm lượng</th>
+            <th className="py-2.5 px-2 text-center w-32">Sáng (07:00)</th>
+            <th className="py-2.5 px-2 text-center w-32">Trưa (11:30)</th>
+            <th className="py-2.5 px-2 text-center w-32">Chiều (18:00)</th>
+            <th className="py-2.5 px-2 text-center w-32">Tối (20:00)</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 text-2xs">
+        <tbody className="divide-y divide-slate-100 text-xs">
           {meds.map((m, i) => {
             const renderCell = (k: string) => {
               const s = m.timeSlots.find(sl => sl.id === k || sl.label.toLowerCase().includes(k));

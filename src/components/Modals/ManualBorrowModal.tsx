@@ -12,6 +12,7 @@ import { ALL_MASTER_MEDICATIONS } from '../../data/medicationMasterData';
 import { MedicationSearchAutocomplete } from '../Common/MedicationSearchAutocomplete';
 import { clinicalAudio } from '../../utils/audio';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
+import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../services/patientService';
 
 interface ManualBorrowModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
   const [patientCode, setPatientCode] = useState('');
   const [patientName, setPatientName] = useState('');
   const [patientRoom, setPatientRoom] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
   const [doctorName, setDoctorName] = useState('');
   const [clinicalReason, setClinicalReason] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -140,16 +142,53 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
                 <label className="text-slate-700 block mb-1">Mã BN:</label>
-                <input type="text" value={patientCode} onChange={(e) => setPatientCode(e.target.value)} placeholder="BN-..." className="w-full px-2.5 py-1.5 border rounded-lg font-mono" />
+                <input
+                  type="text"
+                  value={patientCode}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPatientCode(val);
+                    const p = findPatientByNameOrQuery(val, INITIAL_PATIENTS);
+                    if (p) {
+                      setPatientName(p.fullName);
+                      setPatientRoom(p.room);
+                      setPatientPhone(p.phone || '');
+                    }
+                  }}
+                  placeholder="BN-..."
+                  className="w-full px-2.5 py-1.5 border rounded-lg font-mono"
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className="text-slate-700 block mb-1">Họ tên người bệnh *:</label>
-                <input type="text" value={patientName} onChange={(e) => setPatientName(e.target.value)} required placeholder="Nhập họ tên người bệnh..." className="w-full px-3 py-1.5 border rounded-lg font-semibold" />
+                <input
+                  type="text"
+                  value={patientName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPatientName(val);
+                    const p = findPatientByNameOrQuery(val, INITIAL_PATIENTS);
+                    if (p) {
+                      setPatientCode(p.id);
+                      setPatientRoom(p.room);
+                      setPatientPhone(p.phone || '');
+                    }
+                  }}
+                  required
+                  placeholder="Nhập họ tên người bệnh..."
+                  className="w-full px-3 py-1.5 border rounded-lg font-semibold"
+                />
               </div>
             </div>
-            <div>
-              <label className="text-slate-700 block mb-1">Buồng / Giường cấp cứu *:</label>
-              <input type="text" value={patientRoom} onChange={(e) => setPatientRoom(e.target.value)} required placeholder="Ví dụ: ICU - Giường 01" className="w-full px-3 py-1.5 border rounded-lg" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-slate-700 block mb-1">Buồng / Giường cấp cứu *:</label>
+                <input type="text" value={patientRoom} onChange={(e) => setPatientRoom(e.target.value)} required placeholder="Ví dụ: ICU - Giường 01" className="w-full px-3 py-1.5 border rounded-lg" />
+              </div>
+              <div>
+                <label className="text-slate-700 block mb-1">SĐT nhận tin BV:</label>
+                <input type="tel" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} placeholder="09xxxxxxxx" className="w-full px-3 py-1.5 border rounded-lg font-mono" />
+              </div>
             </div>
           </div>
 

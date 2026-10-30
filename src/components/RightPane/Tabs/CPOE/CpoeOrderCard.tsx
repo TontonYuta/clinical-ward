@@ -1,118 +1,102 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Thẻ hiển thị đơn thuốc bác sĩ CPOE trên Mobile (<=200 LOC)
+ * Thẻ hiển thị đơn thuốc bác sĩ CPOE trên Mobile chuẩn Kho Dược (<=200 LOC)
  */
 
 import React from 'react';
-import { Clock, CheckCircle2, Eye } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 
 interface CpoeOrderCardProps {
+  index: number;
   order: PrescriptionOrder;
   onSelectOrder?: (order: PrescriptionOrder) => void;
   onOpenSafetyGuide?: (medName: string) => void;
   onOpenAdvice?: (order: PrescriptionOrder) => void;
+  onSelectPatient?: (patientName: string) => void;
 }
 
-export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({ order, onSelectOrder, onOpenSafetyGuide, onOpenAdvice }) => {
+export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
+  index,
+  order,
+  onSelectOrder,
+  onSelectPatient,
+}) => {
+  const isOutpatient = order.prescriptionType === 'outpatient';
+
   return (
-    <div
+    <article
+      data-testid="cpoe-order-card"
       onClick={() => onSelectOrder?.(order)}
-      className="p-3.5 hover:bg-slate-50 transition cursor-pointer space-y-2.5"
+      className="bg-white border-b border-slate-200 px-2 py-3 space-y-2 text-sm cursor-pointer hover:bg-slate-50 transition"
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 font-mono text-xs sm:text-sm">
-          <span className="font-bold text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-            {order.id}
-          </span>
-          <span className="text-slate-500 text-xs flex items-center gap-1 font-medium">
-            <Clock className="w-3.5 h-3.5" />
-            {order.prescribedAt}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`px-2.5 py-0.5 rounded-md text-xs font-bold ${
-              order.prescriptionType === 'outpatient'
-                ? 'bg-blue-100 text-blue-900'
-                : 'bg-emerald-100 text-emerald-900'
-            }`}
-          >
-            {order.prescriptionType === 'outpatient' ? 'Ngoại trú' : 'Nội trú'}
-          </span>
-          {order.isChronicDisease && (
-            <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-900">
-              Mạn {order.daysPrescribed}d
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <div className="font-bold text-base text-slate-900">{order.patientName}</div>
-        <div className="text-xs sm:text-sm text-slate-600 flex items-center gap-1.5 mt-0.5 font-medium">
-          <span>{order.patientId}</span>
-          <span>•</span>
-          <span>CCCD: <span className="font-mono font-bold text-slate-700">{order.patientCccd}</span></span>
-        </div>
-      </div>
-
-      <div className="flex items-start gap-1.5 text-xs sm:text-sm bg-slate-50 p-2.5 rounded-md border border-slate-100">
-        <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-900 font-mono font-bold text-xs shrink-0">
-          {order.diagnosisIcd10}
-        </span>
-        <span className="text-slate-800 font-medium line-clamp-1">{order.diagnosisText}</span>
-      </div>
-
-      <div className="text-xs sm:text-sm space-y-1.5 border-t border-slate-100 pt-2">
-        {order.items.map((it) => (
-          <div key={it.id} className="flex justify-between items-center text-slate-800">
-            <span className="font-medium flex items-center gap-1.5">
-              • <strong className="font-bold text-slate-900">{it.medicationName}</strong>
-              {onOpenSafetyGuide && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onOpenSafetyGuide(it.medicationName); }}
-                  className="text-teal-700 text-xs font-bold bg-teal-50 px-2 py-0.5 rounded border border-teal-200 cursor-pointer"
-                  title="Tra cứu thông tin thuốc & Dược thư"
-                >
-                  Thông tin thuốc
-                </button>
-              )}
-            </span>
-            <span className="font-mono text-slate-900 font-bold">{it.quantity} {it.unit}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between text-xs sm:text-sm pt-2 border-t border-slate-100 text-slate-600">
-        <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs sm:text-sm">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-          <span>{order.doctorName}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {onOpenAdvice && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onOpenAdvice(order); }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold cursor-pointer transition shadow-2xs"
-            >
-              <Clock className="w-3.5 h-3.5 text-teal-700" />
-              <span>Dặn dò nhắc thuốc</span>
-            </button>
-          )}
+      {/* Hàng 1: STT, Mã đơn & Phân loại đơn */}
+      <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-mono text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onSelectOrder?.(order); }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-teal-800 border border-slate-300 text-xs font-bold cursor-pointer transition shadow-2xs"
-            title="Xem chi tiết đơn thuốc CPOE"
+            data-testid="cpoe-order-id-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectOrder?.(order);
+            }}
+            className="font-mono text-sm font-semibold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer"
           >
-            <Eye className="w-3.5 h-3.5 text-teal-700" />
-            <span>Chi tiết</span>
+            {order.id}
           </button>
+          <span className="text-xs text-slate-500 font-mono">
+            {order.prescribedAt}
+          </span>
+          {order.isChronicDisease && (
+            <span className="text-xs font-semibold text-amber-800">
+              Mạn ({order.daysPrescribed}d)
+            </span>
+          )}
+        </div>
+        <span className={`text-xs font-semibold ${isOutpatient ? 'text-slate-700' : 'text-slate-900'}`}>
+          {isOutpatient ? 'Ngoại trú' : 'Nội trú'}
+        </span>
+      </div>
+
+      {/* Hàng 2: Tên người bệnh & Chẩn đoán */}
+      <div>
+        <div className="flex items-baseline justify-between gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectPatient?.(order.patientName);
+            }}
+            className="font-semibold text-slate-900 leading-snug hover:text-teal-700 hover:underline text-left cursor-pointer"
+            title="Nhấp để xem hồ sơ bệnh nhân"
+          >
+            {order.patientName}
+          </button>
+          <div className="text-xs text-slate-500 font-mono shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
+            <span>CCCD: {order.patientCccd}</span>
+            {order.patientPhone && (
+              <>
+                <span>·</span>
+                <span className="text-slate-700 font-medium">SĐT: {order.patientPhone}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="text-xs text-slate-600 mt-1">
+          <span className="font-mono font-semibold text-slate-800">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
         </div>
       </div>
-    </div>
+
+      {/* Hàng 3: Danh mục thuốc & Trạng thái */}
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+        <div className="text-slate-600 font-medium truncate max-w-[70%]">
+          {order.items.length} thuốc · {order.items.map((i) => i.medicationName.split(' ')[0]).join(', ')}
+        </div>
+        <span className="text-xs font-medium text-slate-500 font-mono">
+          {order.status === 'signed' ? 'Đã ký số' : 'Bản thảo'}
+        </span>
+      </div>
+    </article>
   );
 };

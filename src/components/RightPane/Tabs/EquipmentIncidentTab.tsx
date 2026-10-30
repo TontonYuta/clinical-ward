@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Phân hệ Quản lý Sự cố & Kiểm định Thiết bị Y tế (NĐ 04/2025/NĐ-CP & NĐ 98/2021)
+ * Phân hệ Báo Hỏng & Sửa Chữa Thiết Bị Y Tế (NĐ 98/2021 & NĐ 04/2025/NĐ-CP)
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -16,8 +16,8 @@ import { EquipmentTicketRow } from './Equipment/EquipmentTicketRow';
 interface EquipmentIncidentTabProps {
   tickets: EquipmentTicket[];
   onUpdateTicketStatus: (id: string, newStatus: IncidentStatus) => void;
-  onAddNewTicket: (ticket: EquipmentTicket) => void;
   onOpenPrintForm?: (formType: PrintableFormType, ticket?: EquipmentTicket) => void;
+  onAddNewTicket: (ticket: EquipmentTicket) => void;
   isAudioMuted: boolean;
   currentUserRole?: UserRole;
 }
@@ -25,47 +25,43 @@ interface EquipmentIncidentTabProps {
 export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
   tickets,
   onUpdateTicketStatus,
-  onAddNewTicket,
   onOpenPrintForm,
+  onAddNewTicket,
   isAudioMuted,
   currentUserRole = 'biomedical_engineer',
 }) => {
-  const [selectedUrgency, setSelectedUrgency] = useState<string>(() => (typeof window !== 'undefined' ? sessionStorage.getItem('eq_urgency') || 'all' : 'all'));
-  const [searchQuery, setSearchQuery] = useState<string>(() => (typeof window !== 'undefined' ? sessionStorage.getItem('eq_search') || '' : ''));
-  const [selectedTicketForHandover, setSelectedTicketForHandover] = useState<EquipmentTicket | null>(null);
-  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
+  const [selectedUrgency, setSelectedUrgency] = useState<string>(() => (typeof window !== 'undefined' ? sessionStorage.getItem('equip_urgency') || 'all' : 'all'));
+  const [searchQuery, setSearchQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('equip_search') || '' : ''));
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false);
+  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
+  const [selectedTicketForHandover, setSelectedTicketForHandover] = useState<EquipmentTicket | null>(null);
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('eq_urgency', selectedUrgency);
-      sessionStorage.setItem('eq_search', searchQuery);
+      sessionStorage.setItem('equip_urgency', selectedUrgency);
+      sessionStorage.setItem('equip_search', searchQuery);
     } catch {}
   }, [selectedUrgency, searchQuery]);
 
-  const urgentCount = useMemo(
-    () => tickets.filter((t) => t.urgency === 'urgent' && t.status !== 'resolved').length,
-    [tickets]
-  );
+  const urgentCount = useMemo(() => tickets.filter((t) => t.urgency === 'urgent' && t.status !== 'resolved').length, [tickets]);
   const inProgressCount = useMemo(() => tickets.filter((t) => t.status === 'in_progress').length, [tickets]);
   const resolvedCount = useMemo(() => tickets.filter((t) => t.status === 'resolved').length, [tickets]);
 
   const filteredTickets = useMemo(() => {
-    return tickets.filter((t) => {
-      const matchesUrgency =
-        selectedUrgency === 'all' ||
-        (selectedUrgency === 'urgent' && t.urgency === 'urgent') ||
-        (selectedUrgency === 'in_progress' && t.status === 'in_progress') ||
-        (selectedUrgency === 'resolved' && t.status === 'resolved');
+    return tickets.filter((ticket) => {
+      let matchesUrgency = true;
+      if (selectedUrgency === 'urgent') matchesUrgency = ticket.urgency === 'urgent' && ticket.status !== 'resolved';
+      if (selectedUrgency === 'in_progress') matchesUrgency = ticket.status === 'in_progress';
+      if (selectedUrgency === 'resolved') matchesUrgency = ticket.status === 'resolved';
 
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         !searchQuery.trim() ||
-        t.deviceName.toLowerCase().includes(q) ||
-        t.accessoryIssue.toLowerCase().includes(q) ||
-        t.location.toLowerCase().includes(q) ||
-        t.assignedEngineer.toLowerCase().includes(q) ||
-        t.code.toLowerCase().includes(q);
+        ticket.deviceName.toLowerCase().includes(q) ||
+        ticket.code.toLowerCase().includes(q) ||
+        ticket.serialNumber.toLowerCase().includes(q) ||
+        ticket.location.toLowerCase().includes(q) ||
+        ticket.accessoryIssue.toLowerCase().includes(q);
 
       return matchesUrgency && matchesSearch;
     });
@@ -81,14 +77,7 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden gap-2 w-full">
-      <header className="flex items-center justify-end gap-6 px-1">
-        <div className="hidden sm:flex items-center gap-6 pb-1 text-sm">
-          <div><span className="block text-xs text-slate-500">Đang xử lý</span><strong className="mt-0.5 block text-lg font-semibold tabular-nums text-slate-950">{inProgressCount}</strong></div>
-          <div className="h-9 w-px bg-slate-200" />
-          <div><span className="block text-xs text-slate-500">Cần ưu tiên</span><strong className="mt-0.5 block text-lg font-semibold tabular-nums text-slate-950">{urgentCount}</strong></div>
-        </div>
-      </header>
+    <div className="flex flex-col h-full overflow-hidden gap-1.5 w-full">
       <EquipmentHeaderRibbon
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -102,16 +91,17 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
         onOpenIncidentModal={() => setIsIncidentModalOpen(true)}
       />
 
-      {/* Mobile Card List */}
-      <div className="md:hidden flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-2.5 pb-8">
+      {/* Mobile View: Danh sách phẳng hành chính */}
+      <div className="md:hidden flex-1 min-h-0 overflow-y-auto px-1 pb-8">
         {filteredTickets.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
-            Không tìm thấy sự cố thiết bị nào phù hợp.
+          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-xs">
+            Không tìm thấy sự cố thiết bị nào phù hợp với bộ lọc hiện tại.
           </div>
         ) : (
-          filteredTickets.map((ticket) => (
+          filteredTickets.map((ticket, idx) => (
             <EquipmentTicketCard
               key={ticket.id}
+              index={idx}
               ticket={ticket}
               onOpenHandover={handleOpenHandover}
               onOpenPrintForm={onOpenPrintForm}
@@ -121,31 +111,51 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
         )}
       </div>
 
-      {/* Desktop High-Density Table */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col">
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto pb-4">
-          <table className="w-full min-w-[1100px] text-left text-sm border-collapse">
+      {/* Desktop View: Bảng sự cố thiết bị hành chính */}
+      <div className="hidden md:flex flex-1 min-h-0 bg-white border-y border-slate-200 overflow-hidden flex-col">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto w-full">
+          <table className="w-full min-w-[1680px] table-fixed text-left text-sm border-collapse">
+            <colgroup>
+              <col style={{ width: '70px' }} />
+              <col style={{ width: '190px' }} />
+              <col className="w-[28%]" style={{ minWidth: '320px' }} />
+              <col className="w-[24%]" style={{ minWidth: '280px' }} />
+              <col style={{ width: '240px' }} />
+              <col style={{ width: '260px' }} />
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '200px' }} />
+            </colgroup>
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
-              <tr className="font-semibold text-xs tracking-wide">
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Mã sự cố</th>
-                <th className="py-3.5 px-3.5">Thiết bị</th>
-                <th className="py-3.5 px-3.5">Mô tả sự cố</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Vị trí</th>
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Kiểm định</th>
-                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
+              <tr className="font-semibold text-sm tracking-normal">
+                <th className="py-3 px-3 text-center border-r border-slate-200">STT</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Mã sự cố</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Thiết bị y tế</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Hư hỏng &amp; Kỹ sư</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Vị trí máy</th>
+                <th className="py-3 px-3.5 text-center border-r border-slate-200">Hạn kiểm định</th>
+                <th className="py-3 px-3.5 text-center border-r border-slate-200">Trạng thái</th>
+                <th className="py-3 px-3.5 text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTickets.map((ticket) => (
-                <EquipmentTicketRow
-                  key={ticket.id}
-                  ticket={ticket}
-                  onOpenHandover={handleOpenHandover}
-                  onOpenPrintForm={onOpenPrintForm}
-                  currentUserRole={currentUserRole}
-                />
-              ))}
+              {filteredTickets.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-500 font-medium text-sm">
+                    Không tìm thấy sự cố khớp với tiêu chí tra cứu.
+                  </td>
+                </tr>
+              ) : (
+                filteredTickets.map((ticket, idx) => (
+                  <EquipmentTicketRow
+                    key={ticket.id}
+                    index={idx}
+                    ticket={ticket}
+                    onOpenHandover={handleOpenHandover}
+                    onOpenPrintForm={onOpenPrintForm}
+                    currentUserRole={currentUserRole}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>

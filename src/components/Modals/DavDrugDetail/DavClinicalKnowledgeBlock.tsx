@@ -43,8 +43,8 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps; isLo
   if (isLoading) {
     return (
       <div className="border border-slate-200 bg-white rounded-xl p-8 flex flex-col items-center justify-center gap-3 text-slate-500">
-        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <span className="text-base font-bold">Đang tải thông tin thuốc…</span>
+        <div className="w-7 h-7 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm font-medium text-slate-600">Đang tải thông tin chuyên luận Dược Thư…</span>
       </div>
     );
   }
@@ -84,9 +84,9 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps; isLo
           {srcInfo ? (
             <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-sm">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="font-semibold text-slate-900 text-sm sm:text-base">{srcInfo.legalBasis}</span>
+                <span className="font-semibold text-slate-900 text-sm">{srcInfo.legalBasis}</span>
                 {srcInfo.pageStr && (
-                  <span className="font-mono font-semibold text-sm bg-blue-50 text-blue-900 border border-blue-300 px-2.5 py-0.5 rounded-md">
+                  <span className="font-mono text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-0.5 rounded-md">
                     {srcInfo.pageStr}
                   </span>
                 )}
@@ -97,11 +97,11 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps; isLo
                     href={srcInfo.pdfUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm shadow-xs transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs sm:text-sm shadow-xs transition cursor-pointer"
                     title={`Mở trực tiếp tệp ${srcInfo.pdfFile}${srcInfo.pageNum ? ` tại Trang ${srcInfo.pageNum}` : ''}`}
                   >
                     <span>Mở PDF Dược Thư {srcInfo.pageNum ? `(Trang ${srcInfo.pageNum})` : ''}</span>
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
                   </a>
                 )}
               </div>

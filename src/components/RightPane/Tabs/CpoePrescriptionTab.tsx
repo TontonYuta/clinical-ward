@@ -1,20 +1,22 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Phân Hệ Bác Sĩ CPOE: Đơn Thuốc Điện Tử & Kê Đơn Điều Trị (<=200 LOC)
+ * Phân Hệ Bác Sĩ CPOE: Đơn Thuốc Điện Tử & Kê Đơn Điều Trị chuẩn Kho Dược (<=200 LOC)
  */
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Stethoscope, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PrescriptionOrder } from '../../../types/cpoe';
 import { UserRole } from '../../../types/clinical';
 import { USER_PROFILES } from '../../../data/initialData';
 import { INITIAL_PRESCRIPTIONS } from '../../../data/mockCpoeData';
 import { cpoeApi } from '../../../services/api/cpoeApi';
+import { CpoeHeaderRibbon } from './CPOE/CpoeHeaderRibbon';
 import { CpoeOrderList } from './CPOE/CpoeOrderList';
 import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
 import { CpoeOrderDetailModal } from './CPOE/CpoeOrderDetailModal';
 import { PrescriptionAdviceModal } from '../../Modals/PrescriptionAdviceModal';
+import { PatientDetailModal } from '../../Modals/PatientDetailModal';
+import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../services/patientService';
 
 interface CpoePrescriptionTabProps {
   doctorName?: string;
@@ -32,14 +34,39 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       const cached = localStorage.getItem('clinical_cached_cpoe');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((o: any) => o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604');
+        }
       }
     } catch {}
     return INITIAL_PRESCRIPTIONS;
   });
+
+  const [filterType, setFilterType] = useState<'all' | 'outpatient' | 'inpatient_daily'>(() => {
+    if (typeof window !== 'undefined') {
+      return (sessionStorage.getItem('cpoe_filter_type') as any) || 'all';
+    }
+    return 'all';
+  });
+
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('cpoe_search_query') || '';
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('cpoe_filter_type', filterType);
+      sessionStorage.setItem('cpoe_search_query', searchQuery);
+    } catch {}
+  }, [filterType, searchQuery]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [adviceOrder, setAdviceOrder] = useState<PrescriptionOrder | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<PrescriptionOrder | null>(null);
+  const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<string | null>(null);
 
   const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
   const roleName = USER_PROFILES[currentUserRole]?.roleName || 'Điều Dưỡng';
@@ -49,8 +76,26 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
     cpoeApi.fetchCpoeOrders()
       .then((live) => {
         if (isMounted && live && live.length > 0) {
-          setOrders(live);
-          try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(live)); } catch {}
+          setOrders((prev) => {
+            const liveIds = new Set(live.map((o) => o.id));
+            const enrichedLive = live.map((o) => {
+              if (!o.patientPhone) {
+                const p = findPatientByNameOrQuery(o.patientName, INITIAL_PATIENTS);
+                if (p?.phone) {
+                  return { ...o, patientPhone: p.phone, patientEmail: o.patientEmail || p.email };
+                }
+              }
+              return o;
+            });
+            const localOnly = prev.filter(
+              (o) => !liveIds.has(o.id) && (o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604')
+            );
+            const merged = [...localOnly, ...enrichedLive]
+              .filter((o, idx, arr) => arr.findIndex((item) => item.id === o.id) === idx)
+              .filter((o) => o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604');
+            try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(merged)); } catch {}
+            return merged;
+          });
         }
       })
       .catch((err) => console.warn('CPOE API offline:', err));
@@ -58,7 +103,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
     const handleCpoeCreated = (e: any) => {
       if (e.detail) {
         setOrders((prev) => {
-          const next = [e.detail, ...prev];
+          const next = [e.detail, ...prev.filter((o) => o.id !== e.detail.id)];
           try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
           return next;
         });
@@ -72,120 +117,102 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
   }, []);
 
   const handleSaveOrder = (newOrder: PrescriptionOrder) => {
+    // 1. Cập nhật state nội bộ ngay lập tức và đưa lên đầu danh sách
     setOrders((prev) => {
-      const next = [newOrder, ...prev];
+      const next = [newOrder, ...prev.filter((o) => o.id !== newOrder.id)];
       try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
       return next;
     });
-    cpoeApi.createCpoeOrder(newOrder).catch((err) => console.warn('Could not persist CPOE order:', err));
+
+    // 2. Tự động reset bộ lọc sang 'all' và xóa tìm kiếm để bác sĩ nhìn thấy ngay đơn vừa kê tại dòng 1
+    setFilterType('all');
+    setSearchQuery('');
+    try {
+      sessionStorage.setItem('cpoe_filter_type', 'all');
+      sessionStorage.setItem('cpoe_search_query', '');
+    } catch {}
+
+    // 3. Gửi persist tới backend và đồng bộ dữ liệu
+    cpoeApi.createCpoeOrder(newOrder)
+      .then((saved) => {
+        if (saved) {
+          setOrders((prev) => {
+            const next = prev.map((o) => (o.id === newOrder.id || o.id === saved.id ? { ...o, ...saved } : o));
+            try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
+            return next;
+          });
+        }
+      })
+      .catch((err) => console.warn('Could not persist CPOE order:', err));
   };
 
-  const outpatientCount = orders.filter((o) => o.prescriptionType === 'outpatient').length;
-  const inpatientCount = orders.filter((o) => o.prescriptionType === 'inpatient_daily').length;
+  const outpatientCount = useMemo(() => orders.filter((o) => o.prescriptionType === 'outpatient').length, [orders]);
+  const inpatientCount = useMemo(() => orders.filter((o) => o.prescriptionType === 'inpatient_daily').length, [orders]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden space-y-2.5 w-full">
-      {/* Top Action Bar: Clean & Minimal */}
-      <div className="bg-white border border-slate-200 rounded-lg p-3 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <p className="text-xs sm:text-sm text-slate-500 font-medium">Đơn thuốc nội trú theo ngày &amp; đơn thuốc ngoại trú (Thông tư 26/2025/TT-BYT)</p>
+    <div className="flex flex-col h-full overflow-hidden gap-1.5 w-full">
+      <CpoeHeaderRibbon
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        totalCount={orders.length}
+        outpatientCount={outpatientCount}
+        inpatientCount={inpatientCount}
+        canPrescribe={canPrescribe}
+        roleName={roleName}
+        onOpenSafetyGuide={() => onOpenSafetyGuide?.()}
+        onOpenNewPrescription={() => setIsModalOpen(true)}
+      />
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => onOpenSafetyGuide?.()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition cursor-pointer border border-slate-200 shadow-2xs"
-            title="Tra cứu Dược thư & Thông tin thuốc"
-          >
-            <Stethoscope className="w-4 h-4 text-teal-700" />
-            <span>Thông tin thuốc</span>
-          </button>
-          {canPrescribe ? (
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs sm:text-sm transition cursor-pointer shadow-2xs active:scale-98"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Kê đơn mới</span>
-            </button>
-          ) : (
-            <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold border border-slate-200">
-              <ShieldAlert className="w-4 h-4 text-slate-500 shrink-0" />
-              <span>Xem ({roleName})</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Metric Cards Summary - Ergonomic 3-col Grid */}
-      <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5 shrink-0">
-        <div className="bg-white border border-slate-200 rounded-lg p-2.5 sm:p-3.5 flex flex-col sm:flex-row items-center gap-2 sm:gap-3.5 shadow-2xs text-center sm:text-left">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
-            <Stethoscope className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm text-slate-500 font-semibold truncate">Tổng số đơn</div>
-            <div className="text-base sm:text-xl font-black text-slate-900 font-mono">{orders.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-2.5 sm:p-3.5 flex flex-col sm:flex-row items-center gap-2 sm:gap-3.5 shadow-2xs text-center sm:text-left">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
-            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm text-slate-500 font-semibold truncate">Đơn ngoại trú</div>
-            <div className="text-base sm:text-xl font-black text-slate-900 font-mono">{outpatientCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-2.5 sm:p-3.5 flex flex-col sm:flex-row items-center gap-2 sm:gap-3.5 shadow-2xs text-center sm:text-left">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm text-slate-500 font-semibold truncate">Đơn nội trú</div>
-            <div className="text-base sm:text-xl font-black text-slate-900 font-mono">{inpatientCount}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Orders List Table */}
       <CpoeOrderList
         orders={orders}
-        onSelectOrder={(ord) => setSelectedOrder(ord)}
-        onOpenSafetyGuide={onOpenSafetyGuide}
-        onOpenAdvice={(ord) => setAdviceOrder(ord)}
+        searchQuery={searchQuery}
+        filterType={filterType}
+        onSelectOrder={(order) => setSelectedOrder(order)}
+        onOpenSafetyGuide={(medName) => onOpenSafetyGuide?.(medName)}
+        onOpenAdvice={(order) => setAdviceOrder(order)}
+        onSelectPatient={(name) => setSelectedPatientForDetail(name)}
       />
 
-      {/* Prescription Creation Modal */}
-      {canPrescribe && (
-        <CpoeOrderModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSaveOrder={handleSaveOrder}
-          doctorName={doctorName}
-          onOpenSafetyGuide={onOpenSafetyGuide}
-        />
-      )}
+      {/* Modal Kê Đơn Thuốc Mới */}
+      <CpoeOrderModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSaveOrder={handleSaveOrder}
+        doctorName={doctorName}
+        onOpenSafetyGuide={onOpenSafetyGuide}
+      />
 
-      {/* Prescription Details Modal */}
+      {/* Modal Xem Chi Tiết Đơn Thuốc & Ký Số */}
       <CpoeOrderDetailModal
         isOpen={!!selectedOrder}
-        order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
+        order={selectedOrder}
         onOpenSafetyGuide={onOpenSafetyGuide}
-        onOpenAdvice={(ord) => {
+        onOpenAdvice={(order) => {
           setSelectedOrder(null);
-          setAdviceOrder(ord);
+          setAdviceOrder(order);
         }}
+        onSelectPatient={(name) => setSelectedPatientForDetail(name)}
       />
 
-      {/* Prescription Advice & Daily Medication Schedule Modal */}
+      {/* Modal Hướng Dẫn Dặn Dò Bệnh Nhân */}
       <PrescriptionAdviceModal
         isOpen={!!adviceOrder}
         onClose={() => setAdviceOrder(null)}
         order={adviceOrder}
+      />
+
+      {/* Modal Chi Tiết Bệnh Nhân & An Toàn Lâm Sàng Chuẩn Kho Dược */}
+      <PatientDetailModal
+        isOpen={!!selectedPatientForDetail}
+        onClose={() => setSelectedPatientForDetail(null)}
+        patientIdOrName={selectedPatientForDetail || ''}
+        onOpenPrescriptionOrder={() => {
+          setSelectedPatientForDetail(null);
+          setIsModalOpen(true);
+        }}
       />
     </div>
   );

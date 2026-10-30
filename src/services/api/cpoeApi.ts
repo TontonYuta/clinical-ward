@@ -5,7 +5,7 @@
  */
 
 import { apiRequest } from './client';
-import { PrescriptionOrder } from '../../types/clinical';
+import { PrescriptionOrder } from '../../types/cpoe';
 
 export const cpoeApi = {
   async fetchCpoeOrders(): Promise<PrescriptionOrder[]> {
@@ -21,6 +21,8 @@ export const cpoeApi = {
         patientId: order.patientId,
         patientName: order.patientName,
         patientCccd: order.patientCccd,
+        patientPhone: order.patientPhone,
+        patientEmail: order.patientEmail,
         patientDob: order.patientDob || '1980-01-01',
         patientGender: order.patientGender || 'Nam',
         department: order.department,

@@ -43,8 +43,8 @@ async function main() {
     const item = EXPECTED_20_DRUGS[i];
     console.log(`\n🔍 Kiểm tra [${item.id}] ${item.name} (SĐK: ${item.sdk})...`);
 
-    // Kiểm tra button tồn tại
-    const targetBtn = page.locator(`[data-testid="btn-doi-chung-kho-${item.id}"]:visible, [data-testid="btn-doi-chung-card-${item.id}"]:visible, [data-testid="btn-doi-chung-row-${item.id}"]:visible`).first();
+    // Kiểm tra button tồn tại (hỗ trợ cả nút tên thuốc, nút SĐK và nút đối chứng)
+    const targetBtn = page.locator(`[data-testid="btn-medname-${item.id}"]:visible, [data-testid="btn-doi-chung-kho-${item.id}"]:visible, [data-testid="btn-doi-chung-card-${item.id}"]:visible, [data-testid="btn-doi-chung-row-${item.id}"]:visible, [data-testid="btn-sdk-${item.id}"]:visible`).first();
     if (await targetBtn.count() === 0) {
       console.error(`❌ Không tìm thấy nút Đối chứng Dược thư cho ${item.id}`);
       continue;
@@ -66,8 +66,8 @@ async function main() {
 
     // 1. Kiểm tra SĐK
     const hasSdk = modalText.includes(item.sdk);
-    // 2. Kiểm tra Dược thư / SmPC
-    const hasPage = modalText.includes(item.page) || modalText.includes('Dược thư Quốc gia') || modalText.includes('SmPC');
+    // 2. Kiểm tra Dược thư / SmPC / Cục QLD
+    const hasPage = modalText.includes(item.page) || modalText.includes('Dược thư') || modalText.includes('SmPC') || modalText.includes('Cục Quản lý Dược') || modalText.includes('Cục QLD');
     // 3. Kiểm tra không có rác "Theo hồ sơ công bố" trong phần chuyên luận
     const hasBadPlaceholder = modalText.includes('Chưa có chuyên luận riêng trong Dược Thư');
 

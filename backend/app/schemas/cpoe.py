@@ -18,9 +18,11 @@ class CpoeOrderCreate(BaseModel):
     patientId: str
     patientName: str
     patientCccd: str
+    patientPhone: str | None = None
+    patientEmail: str | None = None
     patientDob: str = "1980-01-01"
     patientGender: str = "Nam"
-    department: str
+    department: str = "Khoa Khám Bệnh"
     diagnosisIcd10: str
     diagnosisText: str
     isChronicDisease: bool = False
@@ -48,6 +50,11 @@ class CpoeOrderResponse(BaseModel):
     patientId: str
     patientName: str
     patientCccd: str
+    patientPhone: str | None = None
+    patientEmail: str | None = None
+    patientDob: str | None = None
+    patientGender: str | None = None
+    department: str | None = None
     diagnosisIcd10: str
     diagnosisText: str
     isChronicDisease: bool

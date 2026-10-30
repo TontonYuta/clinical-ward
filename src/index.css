@@ -11,15 +11,23 @@
   background-color: #f8fafc;
 }
 
-/* Readable clinical workstation scale; keep compact labels above common 12px defaults. */
-html { font-size: 18px; }
-body { font-size: 1rem; line-height: 1.55; }
+/* Readable clinical workstation scale; increased by 30% per user request (18px * 1.30 = 23.4px) */
+html { font-size: 23.4px; }
+body { font-size: 1rem; line-height: 1.5; }
 button, input, select, textarea { font: inherit; }
-.text-xs { font-size: 0.8125rem; line-height: 1.3rem; }
-.text-sm { font-size: 0.9375rem; line-height: 1.45rem; }
+.text-xs { font-size: 0.8125rem; line-height: 1.4; }
+.text-sm { font-size: 0.9375rem; line-height: 1.45; }
+
+/* Table cell spacing & alignment optimization for enlarged workstation fonts */
+table th, table td {
+  vertical-align: middle;
+}
+table th {
+  white-space: nowrap;
+}
 
 @media (max-width: 640px) {
-  html { font-size: 18px; }
+  html { font-size: 21px; }
 }
 
 /* Custom scrollbars for high-density clinical lists */
@@ -84,6 +92,7 @@ button, input, select, textarea { font: inherit; }
   html, body {
     background: white !important;
     color: black !important;
+    font-size: 13px !important;
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;

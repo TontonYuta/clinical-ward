@@ -161,17 +161,25 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       {/* Desktop View: Bảng công bố dược phẩm hành chính (Chuẩn DAV dichvucong.dav.gov.vn) */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white border-y border-slate-200 overflow-hidden flex-col">
         <div className="overflow-x-auto overflow-y-auto flex-1 w-full">
-          <table className="w-full min-w-[900px] table-fixed text-left text-sm border-collapse">
-            <colgroup><col className="w-10" /><col className="w-32" /><col className="w-[30%]" /><col className="w-[14%]" /><col className="w-40" /><col className="w-32" /><col className="w-36" /></colgroup>
+          <table className="w-full min-w-[1520px] table-fixed text-left text-sm border-collapse">
+            <colgroup>
+              <col style={{ width: '70px' }} />
+              <col style={{ width: '190px' }} />
+              <col className="w-[30%]" style={{ minWidth: '360px' }} />
+              <col style={{ width: '220px' }} />
+              <col style={{ width: '270px' }} />
+              <col style={{ width: '200px' }} />
+              <col style={{ width: '240px' }} />
+            </colgroup>
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr className="font-semibold text-sm tracking-normal">
-                <th className="py-2 px-2.5 text-center border-r border-slate-200">STT</th>
-                <th className="py-2 px-2.5 border-r border-slate-200">SĐK</th>
-                <th className="py-2 px-2.5 border-r border-slate-200">Tên thuốc &amp; hoạt chất</th>
-                <th className="py-2 px-2.5 border-r border-slate-200">Dạng bào chế</th>
-                <th className="py-2 px-2.5 border-r border-slate-200">Số lô &amp; hạn dùng</th>
-                <th className="py-2 px-2.5 text-center border-r border-slate-200">Tồn kho</th>
-                <th className="py-2 px-2.5 border-r border-slate-200">Vị trí</th>
+                <th className="py-3 px-3 text-center border-r border-slate-200">STT</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">SĐK</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Tên thuốc &amp; hoạt chất</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Dạng bào chế</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Số lô &amp; hạn dùng</th>
+                <th className="py-3 px-3.5 text-center border-r border-slate-200">Tồn kho</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Vị trí</th>
               </tr>
             </thead>
             <tbody>

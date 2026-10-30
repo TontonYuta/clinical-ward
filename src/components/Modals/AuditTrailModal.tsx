@@ -272,16 +272,16 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
 
         {/* 4B. Desktop Full Audit Log Table (hidden md:block) */}
         <div className="hidden md:block flex-1 min-h-0 overflow-auto bg-white border border-slate-300 rounded-xl m-3 shadow-xs">
-          <table className="w-full text-left text-xs min-w-[850px] border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase tracking-wider">
+          <table className="w-full text-left text-sm min-w-[1300px] border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase tracking-wider text-xs">
               <tr>
-                <th className="py-2.5 px-4 whitespace-nowrap border-r border-slate-200">Thời gian &amp; Số hồ sơ</th>
-                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Nghiệp vụ &amp; Căn cứ pháp lý</th>
-                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Đối tượng tác động</th>
-                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Người ký xác thực (CCHN)</th>
-                <th className="py-2.5 px-3 whitespace-nowrap border-r border-slate-200">Người làm chứng</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap border-r border-slate-200">Phương thức</th>
-                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tình trạng xác nhận</th>
+                <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Thời gian &amp; Số hồ sơ</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Nghiệp vụ &amp; Căn cứ pháp lý</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Đối tượng tác động</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Người ký xác thực (CCHN)</th>
+                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Người làm chứng</th>
+                <th className="py-3 px-3.5 text-center whitespace-nowrap border-r border-slate-200">Phương thức</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Tình trạng xác nhận</th>
               </tr>
             </thead>
             <tbody>

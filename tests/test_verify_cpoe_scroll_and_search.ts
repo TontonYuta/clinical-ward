@@ -28,8 +28,14 @@ async function verifyCpoeScrollAndSearch() {
     await page.waitForTimeout(500);
 
     // Đặt quyền doctor
-    await page.locator('header select').first().selectOption('doctor');
-    await page.waitForTimeout(500);
+    await page.evaluate(() => {
+      localStorage.setItem('clinical_user_role', 'doctor');
+    });
+    const roleSelect = page.locator('header select').first();
+    if (await roleSelect.count() > 0) {
+      await roleSelect.selectOption('doctor');
+      await page.waitForTimeout(500);
+    }
 
     // 2. Chuyển sang Tab Kê Đơn Thuốc CPOE (#cpoe)
     console.log('1. Kiểm tra điều hướng vào #cpoe...');

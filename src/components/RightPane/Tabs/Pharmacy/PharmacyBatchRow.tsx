@@ -31,12 +31,12 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
   return (
     <tr className="hover:bg-slate-50 transition-colors border-b border-slate-200 text-slate-800 text-sm">
       {/* 1. STT */}
-      <td className="py-2 px-2.5 text-center font-mono text-slate-600 font-medium whitespace-nowrap w-12 text-sm border-r border-slate-100">
+      <td className="py-3 px-3 text-center font-mono text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
         {index + 1}
       </td>
 
       {/* 2. Số Đăng Ký (SĐK) - Bấm tra cứu hồ sơ công bố Cục QLD */}
-      <td className="py-2 px-2.5 whitespace-nowrap font-mono border-r border-slate-100">
+      <td className="py-3 px-3.5 whitespace-nowrap font-mono border-r border-slate-100">
         <button
           type="button"
           onClick={() => onSelectBatch?.(batch)}
@@ -49,7 +49,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
       </td>
 
       {/* 3. Tên Thuốc & Hoạt Chất (Hàm Lượng) - Bấm tra cứu hồ sơ */}
-      <td className="py-2 px-2.5 min-w-[240px] border-r border-slate-100">
+      <td className="py-3 px-3.5 border-r border-slate-100">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
@@ -76,12 +76,12 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
       </td>
 
       {/* 4. Dạng bào chế */}
-      <td className="py-2 px-2.5 text-slate-700 whitespace-nowrap min-w-[120px] border-r border-slate-100">
-        <p className="font-medium text-slate-800 text-sm">{batch.dosageForm || '—'}</p>
+      <td className="py-3 px-3.5 text-slate-700 border-r border-slate-100">
+        <p className="font-medium text-slate-800 text-sm leading-snug">{batch.dosageForm || '—'}</p>
       </td>
 
-      {/* 6. Số Lô & Hạn Dùng */}
-      <td className="py-2 px-2.5 whitespace-nowrap font-mono border-r border-slate-100">
+      {/* 5. Số Lô & Hạn Dùng */}
+      <td className="py-3 px-3.5 whitespace-nowrap font-mono border-r border-slate-100">
         <span className="font-medium text-slate-700 text-xs sm:text-sm">
           {batch.batchNumber}
         </span>
@@ -93,8 +93,8 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
         </div>
       </td>
 
-      {/* 7. Tồn Kho Bệnh Viện */}
-      <td className="py-2 px-2.5 text-center whitespace-nowrap min-w-[110px] border-r border-slate-100">
+      {/* 6. Tồn Kho Bệnh Viện */}
+      <td className="py-3 px-3.5 text-center whitespace-nowrap border-r border-slate-100">
         <div className="font-mono">
           <span className={`text-base font-semibold ${isUnderMin ? 'text-rose-700' : 'text-slate-900'}`}>
             {batch.currentStock} {batch.unit}
@@ -102,8 +102,10 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           <span className="text-slate-500 text-xs sm:text-sm block font-medium mt-0.5">Cơ số min: {batch.minThreshold}</span>
         </div>
       </td>
-      <td className="py-2 px-2.5 text-slate-700 whitespace-nowrap border-r border-slate-100">
-        {batch.warehouseLocation || '—'}
+
+      {/* 7. Vị trí lưu kho */}
+      <td className="py-3 px-3.5 text-slate-700 border-r border-slate-100">
+        <span className="font-medium text-slate-800 text-sm leading-snug">{batch.warehouseLocation || '—'}</span>
       </td>
     </tr>
   );

@@ -41,6 +41,7 @@ import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { UserGuideModal } from './components/Modals/UserGuideModal';
 import { PrintableFormModal, PrintableFormType } from './components/Modals/PrintableFormModal';
 import { MedicationSafetyModal } from './components/Modals/MedicationSafetyModal';
+import { PatientDetailModal } from './components/Modals/PatientDetailModal';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
@@ -109,6 +110,17 @@ export default function App() {
   const [isMedicationSafetyOpen, setIsMedicationSafetyOpen] = useState<boolean>(false);
   const [safetyModalMedName, setSafetyModalMedName] = useState<string | undefined>(undefined);
   const [safetyModalMedId, setSafetyModalMedId] = useState<string | undefined>(undefined);
+  const [selectedPatientForGlobalModal, setSelectedPatientForGlobalModal] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleOpenPatient = (e: any) => {
+      if (e?.detail?.patientName || e?.detail?.patientId) {
+        setSelectedPatientForGlobalModal(e.detail.patientName || e.detail.patientId);
+      }
+    };
+    window.addEventListener('open_patient_detail', handleOpenPatient);
+    return () => window.removeEventListener('open_patient_detail', handleOpenPatient);
+  }, []);
 
   const handleOpenMedicationSafety = (medNameOrId?: string) => {
     if (medNameOrId?.startsWith('med-')) {
@@ -1728,7 +1740,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           className={`fixed z-50 flex flex-col bg-white shadow-2xl overflow-hidden print:hidden ${
             isCopilotExpanded
               ? 'inset-0 h-dvh w-screen max-w-none rounded-none border-0 shadow-none'
-              : 'sm:w-[440px] sm:max-w-[calc(100vw-32px)] h-[min(640px,calc(100dvh-112px))] sm:h-[min(640px,calc(100dvh-40px))] max-h-[calc(100dvh-40px)] w-[calc(100vw-32px)] rounded-xl border border-slate-300 ring-1 ring-black/5'
+              : 'w-[calc(100vw-32px)] sm:w-[560px] md:w-[620px] lg:w-[660px] max-w-[calc(100vw-32px)] h-[min(680px,calc(100dvh-100px))] sm:h-[min(680px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] rounded-xl border border-slate-300 ring-1 ring-slate-900/10'
           } ${!isCopilotExpanded && !chatPosition ? 'right-4 bottom-20 sm:bottom-5 sm:right-5' : ''} ${isDraggingChat ? 'cursor-grabbing' : ''}`}
           style={!isCopilotExpanded && chatPosition ? { left: chatPosition.x, top: chatPosition.y, right: 'auto', bottom: 'auto' } : undefined}
         >
@@ -1760,6 +1772,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             onClearMessages={() => setChatMessages(INITIAL_CHAT_MESSAGES)}
             onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
             onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
+            onOpenUserGuide={() => setIsUserGuideOpen(true)}
           />
         </div>
       )}
@@ -1802,6 +1815,13 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onClose={() => setIsMedicationSafetyOpen(false)}
           initialMedicationId={safetyModalMedId}
           initialMedicationName={safetyModalMedName}
+        />
+
+        {/* Modal Chi Tiết Hồ Sơ Bệnh Nhân Toàn Cục */}
+        <PatientDetailModal
+          isOpen={!!selectedPatientForGlobalModal}
+          onClose={() => setSelectedPatientForGlobalModal(null)}
+          patientIdOrName={selectedPatientForGlobalModal || ''}
         />
       </div>
 

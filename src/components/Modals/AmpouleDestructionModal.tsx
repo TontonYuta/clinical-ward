@@ -201,26 +201,26 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
 
             {/* Desktop View: Full Table */}
             <div className="hidden sm:block border border-slate-200 rounded-xl overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm min-w-[500px]">
+              <table className="w-full text-left text-sm min-w-[850px]">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold text-xs">
-                    <th className="py-2.5 px-3.5">Mã phiếu</th>
-                    <th className="py-2.5 px-3">Mặt hàng thuốc</th>
-                    <th className="py-2.5 px-3">Người bệnh sử dụng</th>
-                    <th className="py-2.5 px-3">Thời gian tiêm</th>
-                    <th className="py-2.5 px-3.5 text-right">Tình trạng</th>
+                  <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold text-sm">
+                    <th className="py-3 px-3.5">Mã phiếu</th>
+                    <th className="py-3 px-3.5">Mặt hàng thuốc</th>
+                    <th className="py-3 px-3.5">Người bệnh sử dụng</th>
+                    <th className="py-3 px-3.5">Thời gian tiêm</th>
+                    <th className="py-3 px-3.5 text-right">Tình trạng</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {returnedAmpoules.length > 0 ? (
                     returnedAmpoules.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50 transition">
-                        <td className="py-2.5 px-3.5 font-mono font-bold text-slate-800">{item.code}</td>
-                        <td className="py-2.5 px-3 font-semibold text-slate-900">{item.itemName}</td>
-                        <td className="py-2.5 px-3 text-slate-700">{item.patientName} ({item.patientRoom})</td>
-                        <td className="py-2.5 px-3 font-mono text-slate-600">{item.borrowTime}</td>
-                        <td className="py-2.5 px-3.5 text-right">
-                          <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        <td className="py-3 px-3.5 font-mono font-bold text-slate-800">{item.code}</td>
+                        <td className="py-3 px-3.5 font-semibold text-slate-900">{item.itemName}</td>
+                        <td className="py-3 px-3.5 text-slate-700">{item.patientName} ({item.patientRoom})</td>
+                        <td className="py-3 px-3.5 font-mono text-slate-600">{item.borrowTime}</td>
+                        <td className="py-3 px-3.5 text-right">
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                             Đã thu hồi khay khóa
                           </span>
                         </td>
