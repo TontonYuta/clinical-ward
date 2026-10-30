@@ -468,22 +468,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                 
                 {/* 4. Tra cứu thuốc Cổng Dược Quốc Gia */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                      <Pill className="w-3.5 h-3.5 text-slate-700" />
-                      <span>Tìm và chỉ định thuốc (Cổng Dược quốc gia) <span className="text-rose-500">*</span></span>
-                    </label>
-                    {onOpenSafetyGuide && (
-                      <button
-                        type="button"
-                        onClick={() => onOpenSafetyGuide(medName || 'Paracetamol')}
-                        className="text-xs text-slate-700 hover:text-slate-950 font-semibold bg-white hover:bg-slate-100 px-2.5 py-1 rounded-md border border-slate-300 transition cursor-pointer shadow-2xs"
-                        title="Tra cứu thông tin thuốc & Dược thư Quốc gia"
-                      >
-                        Thông tin thuốc
-                      </button>
-                    )}
-                  </div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                    <Pill className="w-3.5 h-3.5 text-slate-700" />
+                    <span>Tìm và chỉ định thuốc (Cổng Dược quốc gia) <span className="text-rose-500">*</span></span>
+                  </label>
                   <MedicationSearchAutocomplete
                     selectedMedicationName={medName}
                     onSelect={handleSelectMed}

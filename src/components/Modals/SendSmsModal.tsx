@@ -851,48 +851,23 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 </div>
               )}
 
-              {/* Hàng 2: Thông tin đơn thuốc liên kết CPOE */}
-              {/* Mobile compact bar */}
-              <div className="lg:hidden p-2 bg-slate-50 rounded-lg border border-slate-200 text-2xs flex items-center justify-between gap-1.5">
+              {/* Hàng 2: Thông tin đơn thuốc liên kết CPOE (Gọn gàng, không lặp lại thông tin) */}
+              <div className="p-2 sm:p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-2xs sm:text-xs flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-slate-700 truncate min-w-0">
-                  <FileCode className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-                  <span className="truncate">Đơn CPOE: <strong className="font-mono text-slate-900">{orderId || 'RX-2026-604'}</strong> · Paracetamol 500mg</span>
+                  <FileCode className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">
+                    Đơn CPOE liên kết: <strong className="font-mono text-slate-900">{orderId || 'RX-2026-604'}</strong>
+                    {effectiveDiagnosis && <span className="text-slate-500 hidden sm:inline"> · {effectiveDiagnosis}</span>}
+                  </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleInsertPrescriptionSnippet}
-                  className="text-2xs font-semibold text-teal-800 bg-white px-2 py-0.5 rounded border border-slate-300 hover:bg-slate-100 shrink-0 cursor-pointer"
+                  className="text-2xs sm:text-[11px] font-semibold text-slate-800 bg-white px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-100 shrink-0 cursor-pointer shadow-2xs transition"
+                  title="Chèn nội dung tóm tắt đơn thuốc vào ô soạn thảo"
                 >
                   + Chèn đơn
                 </button>
-              </div>
-
-              {/* Desktop full view: 100% UNCHANGED */}
-              <div className="hidden lg:block p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                    <FileCode className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Thông tin đơn thuốc điện tử liên kết CPOE:</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleInsertPrescriptionSnippet}
-                    className="text-[11px] font-semibold text-teal-700 hover:text-teal-900 underline cursor-pointer"
-                  >
-                    + Chèn thông tin đơn
-                  </button>
-                </div>
-                <div className="text-slate-600 space-y-0.5 text-[11px]">
-                  <div>
-                    Bệnh nhân: <strong className="text-slate-900">{effectiveName}</strong> <span className="font-mono text-slate-500">({effectiveId})</span> · Mã đơn: <strong className="text-slate-900 font-mono">{orderId || 'RX-2026-604'}</strong>
-                  </div>
-                  <div>
-                    Chẩn đoán: <span className="text-slate-900">{effectiveDiagnosis}</span>
-                  </div>
-                  <div>
-                    Thuốc điều trị: <strong className="text-slate-900 font-medium">PARACETAMOL 500mg</strong> (1 viên x 2 lần/ngày, 5 ngày sau ăn)
-                  </div>
-                </div>
               </div>
 
               {/* Hàng 3: Mẫu nội dung chuẩn Thông tư 26 */}
@@ -1197,24 +1172,24 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <div className="relative">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
-                    placeholder="Tìm theo nội dung, mã DLR..."
-                    className="pl-8 pr-3 py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 w-48 sm:w-64"
+                    placeholder="Tìm nội dung, mã DLR..."
+                    className="w-full pl-8 pr-3 py-1.5 sm:py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveTab('sms')}
-                  className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                  className="px-3 py-1.5 sm:py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition shrink-0 whitespace-nowrap"
                 >
                   <Send className="w-3 h-3 text-slate-300" />
-                  <span>+ Soạn SMS Mới</span>
+                  <span>+ Soạn SMS</span>
                 </button>
               </div>
             </div>
@@ -1327,24 +1302,24 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <div className="relative">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
-                    placeholder="Tìm theo tiêu đề, lời dặn..."
-                    className="pl-8 pr-3 py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 w-48 sm:w-64"
+                    placeholder="Tìm tiêu đề, nội dung..."
+                    className="w-full pl-8 pr-3 py-1.5 sm:py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveTab('email')}
-                  className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                  className="px-3 py-1.5 sm:py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition shrink-0 whitespace-nowrap"
                 >
                   <Send className="w-3 h-3 text-slate-300" />
-                  <span>+ Soạn Email Mới</span>
+                  <span>+ Soạn Email</span>
                 </button>
               </div>
             </div>
@@ -1697,29 +1672,6 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     <span>{activeTab === 'sms' ? 'Gửi Tin Nhắn SMS' : 'Gửi Email Cho Bệnh Nhân'}</span>
                   </>
                 )}
-              </button>
-            )}
-
-            {/* Nút quay lại soạn thảo khi ở các tab Lịch sử */}
-            {activeTab === 'history-sms' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('sms')}
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-pointer shadow-xs transition"
-              >
-                <Send className="w-4 h-4 text-slate-300" />
-                <span>+ Soạn Tin SMS Mới</span>
-              </button>
-            )}
-
-            {activeTab === 'history-email' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('email')}
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-pointer shadow-xs transition"
-              >
-                <Send className="w-4 h-4 text-slate-300" />
-                <span>+ Soạn Email Mới</span>
               </button>
             )}
 

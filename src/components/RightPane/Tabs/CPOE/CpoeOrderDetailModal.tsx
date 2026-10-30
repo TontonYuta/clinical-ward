@@ -144,14 +144,6 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               <span>Gửi thông báo cho BN</span>
             </button>
             <button
-              onClick={handlePrint}
-              title="In đơn thuốc điện tử"
-              aria-label="In đơn thuốc"
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
-            >
-              <Printer className="w-4 h-4" />
-            </button>
-            <button
               onClick={onClose}
               data-testid="btn-close-cpoe-detail"
               aria-label="Đóng chi tiết đơn thuốc"
@@ -230,16 +222,6 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                             <span className="text-2xs font-bold text-rose-800 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
                               Gây nghiện (TT 20)
                             </span>
-                          )}
-                          {onOpenSafetyGuide && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenSafetyGuide(it.medicationName)}
-                              className="text-xs font-medium text-slate-700 hover:text-slate-950 hover:underline cursor-pointer"
-                              title="Tra cứu thông tin thuốc"
-                            >
-                              Tra cứu
-                            </button>
                           )}
                         </div>
                         {it.activeIngredient && (
@@ -426,18 +408,6 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                       <div className="text-xs text-slate-800 font-medium bg-slate-50 p-2.5 rounded border border-slate-200">
                         Chỉ dẫn y lệnh: {it.instructions || 'Dùng theo chỉ dẫn của bác sĩ điều trị.'}
                       </div>
-
-                      {onOpenSafetyGuide && (
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => onOpenSafetyGuide(it.medicationName)}
-                            className="text-xs font-semibold text-slate-800 hover:text-slate-950 hover:underline cursor-pointer"
-                          >
-                            Xem Dược thư &amp; Chống chỉ định của thuốc này &rarr;
-                          </button>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>

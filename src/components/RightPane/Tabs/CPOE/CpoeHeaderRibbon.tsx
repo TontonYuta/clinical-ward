@@ -69,16 +69,6 @@ export const CpoeHeaderRibbon: React.FC<CpoeHeaderRibbonProps> = ({
             <option value="inpatient_daily">Nội trú ({inpatientCount})</option>
             <option value="outpatient">Ngoại trú ({outpatientCount})</option>
           </select>
-          {onOpenSafetyGuide && (
-            <button
-              type="button"
-              onClick={() => onOpenSafetyGuide()}
-              className="inline-flex items-center gap-1 h-8 px-2 rounded-md border border-slate-300 bg-white text-slate-700 text-2xs font-medium shrink-0 cursor-pointer"
-            >
-              <Stethoscope className="w-3 h-3 text-slate-600" />
-              <span>Dược thư</span>
-            </button>
-          )}
           {canPrescribe && (
             <button
               type="button"
@@ -129,19 +119,6 @@ export const CpoeHeaderRibbon: React.FC<CpoeHeaderRibbonProps> = ({
             <option value="inpatient_daily">Đơn nội trú theo ngày ({inpatientCount})</option>
             <option value="outpatient">Đơn ngoại trú xuất viện ({outpatientCount})</option>
           </select>
-
-          {/* Nút hành động: Tra cứu Dược Thư & Hướng dẫn an toàn */}
-          {onOpenSafetyGuide && (
-            <button
-              type="button"
-              onClick={() => onOpenSafetyGuide()}
-              className="inline-flex items-center gap-1.5 min-h-11 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium cursor-pointer transition whitespace-nowrap"
-              title="Tra cứu chuyên luận Dược Thư Quốc Gia 2015/2022 & Cảnh báo an toàn"
-            >
-              <Stethoscope className="w-4 h-4 text-slate-600" />
-              <span>Thông tin thuốc</span>
-            </button>
-          )}
 
           {/* Nút hành động chính: Kê đơn mới */}
           {canPrescribe ? (
