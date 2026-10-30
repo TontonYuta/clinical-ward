@@ -59,8 +59,9 @@ export async function processClinicalAgentQueryAsync(
     return localResult;
   }
   // Nếu câu lệnh tạo thẻ tương tác (Action Card) -> Phản hồi ngay (0ms, 0 tokens)
-  // Ngoại trừ kịch bản lâm sàng chuyên sâu (Allergy, Renal, ADR...) cần AI phân tích
-  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower)) {
+  // Ngoại trừ kịch bản lâm sàng chuyên sâu (Allergy, Renal, ADR...) và dược lý sâu cần RAG phân tích
+  const isDeepPharmacology = /thời gian bán thải|huyết tương|dược động học|cơ chế tác dụng|tương tác|chống chỉ định|liều tối đa/i.test(lower);
+  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {
     return localResult;
   }
 
@@ -102,7 +103,9 @@ export async function processClinicalAgentQueryAsync(
         } : undefined,
         actionPayload,
         card,
-        suggestedChips: backendData.suggested_chips || []
+        suggestedChips: backendData.suggested_chips || [],
+        citations: backendData.citations,
+        ragGrounded: backendData.rag_grounded
       };
 
       return { replyMessage, actionPayload, card };

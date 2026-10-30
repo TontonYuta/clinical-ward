@@ -67,6 +67,14 @@ export interface AgentActionCard {
   cdssAlert?: CdssAlert;
 }
 
+export interface RagCitationItem {
+  source: string;
+  legal_basis: string;
+  section: string;
+  excerpt?: string;
+  relevance_score?: number;
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'agent' | 'system';
@@ -83,6 +91,8 @@ export interface ChatMessage {
   suggestedChips?: string[];
   cdssAlert?: CdssAlert;
   pipelineStage?: 'offline_engine' | 'cloud_gemini_vision' | 'cloud_gemini_reasoning';
+  citations?: RagCitationItem[];
+  ragGrounded?: boolean;
 }
 
 export interface QuickSuggestionChip {

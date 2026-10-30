@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, CheckCircle2 } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -148,6 +148,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <div className="space-y-2 min-w-0 flex-1">
                 <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
                   {renderFormattedText(msg.text, isDarkBubble)}
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-2xs text-slate-600">
+                      <span className="inline-flex items-center gap-1 font-semibold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                        <CheckCircle2 className="w-3 h-3 text-teal-700" />
+                        <span>RAG Xác thực ({msg.citations.length})</span>
+                      </span>
+                      {msg.citations.slice(0, 3).map((c, i) => (
+                        <span key={i} title={`${c.source}: ${c.excerpt || c.section}`} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 cursor-help">
+                          <BookOpen className="w-2.5 h-2.5 text-slate-500" />
+                          <span className="font-medium truncate max-w-[140px]">{c.legal_basis}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {msg.card && onExecuteCardAction && (

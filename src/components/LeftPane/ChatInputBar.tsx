@@ -45,6 +45,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2">
         <div className="relative flex-1">
           <input
+            data-testid="chat-input-field"
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}

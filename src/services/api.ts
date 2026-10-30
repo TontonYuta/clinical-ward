@@ -270,7 +270,7 @@ export async function verifyAuditIntegrityApi(): Promise<{
   return res.json();
 }
 
-// 7. Copilot AI Assistant (Hỗ trợ AMIE Multi-turn Context Session)
+// 7. Copilot AI Assistant (Hỗ trợ AMIE Multi-turn Context Session & Pure RAG)
 export async function chatCopilotApi(query: string, userRole: string, userName: string, sessionId?: string) {
   const res = await fetch(`${API_BASE_URL}/copilot/chat`, {
     method: 'POST',
@@ -278,6 +278,16 @@ export async function chatCopilotApi(query: string, userRole: string, userName: 
     body: JSON.stringify({ query, user_role: userRole, user_name: userName, session_id: sessionId })
   });
   if (!res.ok) throw new Error('Lỗi gửi tin nhắn đến Trợ lý AI');
+  return res.json();
+}
+
+export async function queryPureRagApi(query: string, userRole: string = 'nurse', userName: string = 'ĐD. Lê Thị Thu', patientInfo?: any) {
+  const res = await fetch(`${API_BASE_URL}/copilot/rag`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, user_role: userRole, user_name: userName, patient_info: patientInfo })
+  });
+  if (!res.ok) throw new Error('Lỗi gửi truy vấn RAG y tế');
   return res.json();
 }
 

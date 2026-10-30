@@ -28,3 +28,21 @@ class CopilotResponse(BaseModel):
     active_medication_name: str | None = None
     active_medication_stock: str | None = None
     active_medication_location: str | None = None
+    citations: list[dict] = []
+    rag_grounded: bool = False
+
+class RagQuery(BaseModel):
+    query: str
+    user_role: str = "nurse"
+    user_name: str = "ĐD. Lê Thị Thu"
+    patient_info: dict | None = None
+    top_k: int = 4
+
+class RagResponse(BaseModel):
+    query: str
+    answer: str
+    citations: list[dict] = []
+    kg_entities: list[str] = []
+    confidence_score: float = 0.95
+    legal_basis: str = ""
+    rag_grounded: bool = True
