@@ -28,12 +28,12 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
     <article
       data-testid="cpoe-order-card"
       onClick={() => onSelectOrder?.(order)}
-      className="bg-white border-b border-slate-200 px-2 py-3 space-y-2 text-sm cursor-pointer hover:bg-slate-50 transition"
+      className="bg-white border-b border-slate-200 px-3 py-2.5 space-y-1.5 text-xs sm:text-sm cursor-pointer hover:bg-slate-50 transition"
     >
       {/* Hàng 1: STT, Mã đơn & Phân loại đơn */}
-      <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
+      <div className="flex items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
+          <span className="font-mono text-2xs text-slate-500 font-bold w-5">#{index + 1}</span>
           <button
             type="button"
             data-testid="cpoe-order-id-btn"
@@ -41,60 +41,60 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
               e.stopPropagation();
               onSelectOrder?.(order);
             }}
-            className="font-mono text-sm font-semibold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer"
+            className="font-mono text-xs font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer"
           >
             {order.id}
           </button>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-2xs text-slate-400 font-mono">
             {order.prescribedAt}
           </span>
           {order.isChronicDisease && (
-            <span className="text-xs font-semibold text-amber-800">
+            <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
               Mạn ({order.daysPrescribed}d)
             </span>
           )}
         </div>
-        <span className={`text-xs font-semibold ${isOutpatient ? 'text-slate-700' : 'text-slate-900'}`}>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isOutpatient ? 'bg-slate-100 text-slate-700' : 'bg-teal-50 text-teal-800'}`}>
           {isOutpatient ? 'Ngoại trú' : 'Nội trú'}
         </span>
       </div>
 
       {/* Hàng 2: Tên người bệnh & Chẩn đoán */}
       <div>
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-baseline justify-between gap-1.5">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onSelectPatient?.(order.patientName);
             }}
-            className="font-semibold text-slate-900 leading-snug hover:text-teal-700 hover:underline text-left cursor-pointer"
+            className="font-bold text-slate-900 text-xs sm:text-sm leading-snug hover:text-teal-700 hover:underline text-left cursor-pointer"
             title="Nhấp để xem hồ sơ bệnh nhân"
           >
             {order.patientName}
           </button>
-          <div className="text-xs text-slate-500 font-mono shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
-            <span>CCCD: {order.patientCccd}</span>
+          <div className="text-2xs text-slate-500 font-mono shrink-0 flex items-center gap-1 justify-end">
+            <span>CCCD: {order.patientCccd ? `...${order.patientCccd.slice(-4)}` : 'Chưa có'}</span>
             {order.patientPhone && (
               <>
                 <span>·</span>
-                <span className="text-slate-700 font-medium">SĐT: {order.patientPhone}</span>
+                <span className="text-slate-700 font-medium">{order.patientPhone}</span>
               </>
             )}
           </div>
         </div>
-        <div className="text-xs text-slate-600 mt-1">
-          <span className="font-mono font-semibold text-slate-800">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
+        <div className="text-2xs sm:text-xs text-slate-600 mt-0.5 truncate">
+          <span className="font-mono font-bold text-slate-800">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
         </div>
       </div>
 
       {/* Hàng 3: Danh mục thuốc & Trạng thái */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-        <div className="text-slate-600 font-medium truncate max-w-[70%]">
-          {order.items.length} thuốc · {order.items.map((i) => i.medicationName.split(' ')[0]).join(', ')}
+      <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-2xs sm:text-xs">
+        <div className="text-slate-600 font-medium truncate max-w-[72%]">
+          {order.items.length} khoản: <span className="text-slate-800 font-medium">{order.items.map((i) => i.medicationName.split(' ')[0]).join(', ')}</span>
         </div>
-        <span className="text-xs font-medium text-slate-500 font-mono">
-          {order.status === 'signed' ? 'Đã ký số' : 'Bản thảo'}
+        <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+          {order.status === 'signed' ? '✓ Đã ký số' : 'Bản thảo'}
         </span>
       </div>
     </article>
