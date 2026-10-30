@@ -18,7 +18,10 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
   onReleaseQuarantine,
 }) => {
   return (
-    <div className="bg-white border border-amber-300 rounded-lg p-4 shadow-2xs text-xs sm:text-sm">
+    <div
+      data-testid="coldchain-quarantine-banner"
+      className="bg-white border border-amber-300 rounded-lg p-3 sm:p-4 shadow-2xs text-xs sm:text-sm shrink-0"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-3 border-b border-amber-100">
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-amber-700 shrink-0" />

@@ -57,6 +57,26 @@ export interface ColdChainLog {
   status: 'normal' | 'warning' | 'critical';
 }
 
+export interface VaccineBatchItem {
+  id: string;
+  batchNumber: string;
+  name: string;
+  genericName: string;
+  manufacturer: string;
+  country: string;
+  quantity: number;
+  unit: string;
+  expiryDate: string;
+  storageCondition: string;
+  vvmStage: 1 | 2 | 3 | 4;
+  isFreezeSensitive: boolean;
+  isLightSensitive: boolean;
+  registrationNumber: string;
+  nationalCode: string;
+  status: 'ready' | 'quarantined';
+  notes?: string;
+}
+
 export interface ColdChainMonitorState {
   storageName: string;
   currentTemp: number;
