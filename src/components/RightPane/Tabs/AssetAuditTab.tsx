@@ -84,7 +84,7 @@ export const AssetAuditTab: React.FC<AssetAuditTabProps> = ({
       />
 
       {/* 2. Mobile Card-Based List */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
+      <div className="md:hidden flex-1 overflow-y-auto space-y-2 pr-0.5 pb-8">
         {filteredAssets.length === 0 ? (
           <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-sm shadow-2xs">
             Không tìm thấy tài sản thiết bị nào phù hợp với bộ lọc.

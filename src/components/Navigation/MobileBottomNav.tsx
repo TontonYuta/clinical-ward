@@ -4,15 +4,7 @@
  */
 
 import React from 'react';
-import {
-  FileText,
-  Boxes,
-  Wrench,
-  Stethoscope,
-  Thermometer,
-  Building2,
-  Bot
-} from 'lucide-react';
+import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2 } from 'lucide-react';
 import { DashboardTab, UserRole } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
 
@@ -26,9 +18,6 @@ interface MobileBottomNavProps {
   coldChainTemp: number;
   isColdAlarm: boolean;
   misallocatedAssetsCount: number;
-  onToggleCopilot?: () => void;
-  isCopilotOpen?: boolean;
-  systemDomain?: 'pharmacy' | 'equipment';
 }
 
 const TAB_CONFIG: Record<DashboardTab, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -50,21 +39,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   coldChainTemp,
   isColdAlarm,
   misallocatedAssetsCount,
-  onToggleCopilot,
-  isCopilotOpen,
-  systemDomain = 'pharmacy',
 }) => {
   const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = profile.allowedTabs || ['debt'];
   
-  // Smart dynamic tabs for mobile: domain-filtered
   const displayTabs = React.useMemo(() => {
-    const domainTabs: DashboardTab[] = systemDomain === 'pharmacy'
-      ? ['fefo', 'debt', 'cpoe', 'coldchain']
-      : ['equipment', 'asset_audit'];
-    const filtered = domainTabs.filter(t => allowedTabs.includes(t));
+    const filtered = (Object.keys(TAB_CONFIG) as DashboardTab[]).filter(t => allowedTabs.includes(t));
     return filtered.length > 0 ? filtered : allowedTabs.slice(0, 4);
-  }, [systemDomain, allowedTabs]);
+  }, [allowedTabs]);
 
   const getBadge = (tab: DashboardTab) => {
     if (tab === 'debt' && debtCount > 0) return { count: debtCount, color: 'bg-amber-500' };
@@ -107,21 +89,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         );
       })}
 
-      {/* Floating AI Copilot Trigger Button */}
-      {onToggleCopilot && (
-        <button
-          onClick={onToggleCopilot}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition cursor-pointer relative ${
-            isCopilotOpen ? 'text-blue-900 font-bold' : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <div className="relative">
-            <Bot className={`w-5 h-5 ${isCopilotOpen ? 'text-blue-600 stroke-[2.5]' : 'text-slate-600'}`} />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 ring-1 ring-white" />
-          </div>
-          <span className="text-xs mt-0.5 tracking-tight font-bold">Trợ lý AI</span>
-        </button>
-      )}
     </nav>
   );
 };

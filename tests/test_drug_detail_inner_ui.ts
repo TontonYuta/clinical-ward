@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const tabs = readFileSync(new URL('../src/components/Modals/DavDrugDetail/DavClinicalTabs.tsx', import.meta.url), 'utf8');
+const knowledge = readFileSync(new URL('../src/components/Modals/DavDrugDetail/DavClinicalKnowledgeBlock.tsx', import.meta.url), 'utf8');
+const admin = readFileSync(new URL('../src/components/Modals/DavDrugDetail/DavAdministrativeBlocks.tsx', import.meta.url), 'utf8');
+const docs = readFileSync(new URL('../src/components/Modals/DavDrugDetail/DavDocumentActionButtons.tsx', import.meta.url), 'utf8');
+assert.doesNotMatch(tabs, /text-base sm:text-lg text-slate-800 leading-relaxed sm:leading-loose/);
+assert.doesNotMatch(tabs, /text-lg sm:text-xl tracking-tight/);
+assert.doesNotMatch(knowledge, /text-xl sm:text-2xl/);
+assert.doesNotMatch(knowledge, /min-w-\[300px\]/);
+assert.match(admin, /rounded-xl p-4 bg-white/);
+assert.match(docs, /rounded-xl p-4 bg-white/);

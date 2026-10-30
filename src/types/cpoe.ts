@@ -25,6 +25,8 @@ export interface PrescriptionOrder {
   patientId: string;
   patientName: string;
   patientCccd: string; // Bắt buộc theo TT 26/2025/TT-BYT
+  patientPhone?: string;
+  patientEmail?: string;
   patientDob: string;
   patientGender: 'Nam' | 'Nữ';
   department: string;
@@ -39,4 +41,7 @@ export interface PrescriptionOrder {
   items: PrescriptionItem[];
   digitalSignature?: string;
   status: 'draft' | 'signed' | 'dispensed' | 'cancelled';
+  patientAge?: number;
+  patientWeight?: number;
+  clinicalNotes?: string;
 }

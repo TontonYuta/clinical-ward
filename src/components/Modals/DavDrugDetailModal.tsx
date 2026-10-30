@@ -17,6 +17,8 @@ import { formatContraindicationsList } from '../../utils/clinicalFormatter';
 import { getMedicationClinicalProfile } from '../../data/clinicalProfiles';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
+type DrugDetailTab = 'overview' | 'safety' | 'dosage' | 'registration' | 'hospital-batch';
+
 interface DavDrugDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,6 +33,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   useModalDismiss(isOpen, onClose);
   const [liveDrug, setLiveDrug] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [refreshingDetail, setRefreshingDetail] = useState(false);
+  const [activeTab, setActiveTab] = useState<DrugDetailTab>('overview');
 
   const itemName = batch?.itemName || drug?.brandName || 'Chưa đặt tên';
   const sdk = batch?.registrationNumber || batch?.nationalCode || drug?.nationalCode || 'Chưa cập nhật';
@@ -40,11 +44,11 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
 
   const loadDetails = (isManual = false) => {
     if (!isOpen || !sdk || sdk === 'Chưa cập nhật') { setLoadingDetail(false); return; }
-    if (isManual) setLiveDrug(null);
+    if (isManual) setRefreshingDetail(true);
     setLoadingDetail(true);
     getDrugDetailApi(sdk, isManual)
-      .then((res) => { if (res) setLiveDrug(res); setLoadingDetail(false); })
-      .catch(() => { setLoadingDetail(false); });
+      .then((res) => { if (res) setLiveDrug(res); setLoadingDetail(false); setRefreshingDetail(false); })
+      .catch(() => { setLoadingDetail(false); setRefreshingDetail(false); });
   };
 
   useEffect(() => {
@@ -54,9 +58,11 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     }
   }, [isOpen, sdk]);
 
+  useEffect(() => { if (isOpen) setActiveTab('overview'); }, [isOpen, sdk]);
+
   if (!isOpen || (!batch && !drug)) return null;
 
-  const c = (k: string) => liveDrug?.[k] || (batch as any)?.[k] || (drug as any)?.[k];
+  const c = (k: string) => liveDrug?.[k] ?? (batch as any)?.[k] ?? (drug as any)?.[k];
   const profile = getMedicationClinicalProfile(itemName || activeInn);
   let resolvedSource = c('clinical_source') || c('clinicalSource');
   if (!resolvedSource || !resolvedSource.includes('Trang')) {
@@ -75,22 +81,30 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     applicantName: c('applicant_name') || c('applicantName'), approvalDecision: c('approval_decision') || c('approvalDecision'),
   };
 
-  const isVerified = profile.isVerifiedMonograph !== false && Boolean(profile.officialSource?.pdfPage);
+  const liveSource = liveDrug?.clinical_source || liveDrug?.clinicalSource;
+  const hasLinkedMonograph = Boolean(liveDrug?.clinical_monograph_id || liveDrug?.clinicalMonographId);
+  const isVerified = Boolean(hasLinkedMonograph || (liveSource?.includes('Duoc_Thu_Quoc_Gia_Viet_Nam.pdf') && /Trang\s+\d+/.test(liveSource)))
+    || profile.isVerifiedMonograph === true;
+  // Clinical content is accepted only from a linked/traceable monograph or a
+  // curated verified profile. Batch and registration records are administrative.
+  const clinical = (key: string, camelKey?: string) => isVerified
+    ? (liveDrug?.[key] ?? (camelKey ? liveDrug?.[camelKey] : undefined))
+    : undefined;
   const clinicalData = {
-    atcCode: c('atc_code') || c('atcCode') || (isVerified ? profile?.atcCode : undefined),
-    drugClass: c('drug_class') || c('drugClass') || (isVerified ? profile?.allergyProfile?.allergyClass : undefined),
-    indications: c('indications') || (isVerified ? profile?.indications?.join('\n') : undefined),
-    contraindications: c('contraindications') || (isVerified ? profile?.contraindications?.join('\n') : undefined),
-    precautions: c('precautions') || (isVerified ? profile?.patientVerificationChecklist?.join('\n') : undefined),
-    pregnancyWarning: c('pregnancy_warning') || c('pregnancyWarning') || (isVerified ? profile?.pregnancyLactation : undefined),
-    adultDosage: c('adult_dosage') || c('adultDosage') || (isVerified ? profile?.standardDosing : undefined),
-    pediatricDosage: c('pediatric_dosage') || c('pediatricDosage'),
-    renalAdjustment: c('renal_adjustment') || c('renalAdjustment') || (isVerified ? profile?.renalAdjustment : undefined),
-    hepaticAdjustment: c('hepatic_adjustment') || c('hepaticAdjustment') || (isVerified ? profile?.hepaticAdjustment : undefined),
-    adverseEffects: c('adverse_effects') || c('adverseEffects') || (isVerified ? profile?.adverseReactions?.join('\n') : undefined),
-    drugInteractions: c('drug_interactions') || c('drugInteractions') || (isVerified ? profile?.ddiWarnings?.join('\n') : undefined),
-    overdoseTreatment: c('overdose_treatment') || c('overdoseTreatment'),
-    antidote: c('antidote') || (isVerified ? profile?.antidote : undefined),
+    atcCode: clinical('atc_code', 'atcCode') || (isVerified ? profile?.atcCode : undefined),
+    drugClass: clinical('drug_class', 'drugClass') || (profile.isVerifiedMonograph === true ? profile?.allergyProfile?.allergyClass : undefined),
+    indications: clinical('indications') || (profile.isVerifiedMonograph === true ? profile?.indications?.join('\n') : undefined),
+    contraindications: clinical('contraindications') || (profile.isVerifiedMonograph === true ? profile?.contraindications?.join('\n') : undefined),
+    precautions: clinical('precautions') || (profile.isVerifiedMonograph === true ? profile?.patientVerificationChecklist?.join('\n') : undefined),
+    pregnancyWarning: clinical('pregnancy_warning', 'pregnancyWarning') || (profile.isVerifiedMonograph === true ? profile?.pregnancyLactation : undefined),
+    adultDosage: clinical('adult_dosage', 'adultDosage') || (profile.isVerifiedMonograph === true ? profile?.standardDosing : undefined),
+    pediatricDosage: clinical('pediatric_dosage', 'pediatricDosage'),
+    renalAdjustment: clinical('renal_adjustment', 'renalAdjustment') || (profile.isVerifiedMonograph === true ? profile?.renalAdjustment : undefined),
+    hepaticAdjustment: clinical('hepatic_adjustment', 'hepaticAdjustment') || (profile.isVerifiedMonograph === true ? profile?.hepaticAdjustment : undefined),
+    adverseEffects: clinical('adverse_effects', 'adverseEffects') || (profile.isVerifiedMonograph === true ? profile?.adverseReactions?.join('\n') : undefined),
+    drugInteractions: clinical('drug_interactions', 'drugInteractions') || (profile.isVerifiedMonograph === true ? profile?.ddiWarnings?.join('\n') : undefined),
+    overdoseTreatment: clinical('overdose_treatment', 'overdoseTreatment'),
+    antidote: clinical('antidote') || (profile.isVerifiedMonograph === true ? profile?.antidote : undefined),
     clinicalSource: isVerified ? resolvedSource : (c('clinical_source') || c('clinicalSource') || `Hồ sơ cấp phép Cục Quản lý Dược (SĐK: ${sdk})`),
   };
 
@@ -115,90 +129,43 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 <span>Hoạt chất:</span> <strong className="text-slate-800">{activeInn}</strong>
-                {clinicalData.drugClass && <span className="ml-2 text-slate-400">• {clinicalData.drugClass}</span>}
+                {clinicalData.drugClass && <span className="ml-2 text-slate-400">{clinicalData.drugClass}</span>}
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button" onClick={() => loadDetails(true)} disabled={loadingDetail}
-              data-testid="drug-detail-reload-btn"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 transition cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
-              title="Tải lại và cập nhật đối soát từ CSDL Dược Quốc Gia & Dược Thư"
-            >
-              <RotateCw className={`w-3.5 h-3.5 text-blue-600 ${loadingDetail ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Cập nhật lại</span>
-            </button>
-            {loadingDetail ? (
-              <span className="inline-flex items-center text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none animate-pulse">Đang nạp hồ sơ...</span>
-            ) : clinicalData.clinicalSource ? (
-              <span className="inline-flex items-center text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded select-none">DTQG 2015 &amp; SmPC</span>
-            ) : (
-              <span className="inline-flex items-center text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded select-none">Chưa có chuyên luận đối chiếu</span>
-            )}
-            <span className="hidden sm:inline-flex text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">CSDL Cục QLD</span>
             <button onClick={onClose} data-testid="btn-close-dav-detail" className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"><X className="w-5 h-5" /></button>
           </div>
         </div>
 
-        {/* Thân 2 Cột Workstation - Hỗ trợ scroll ngang và dọc với thanh scroll siêu nhỏ */}
-        <div className="p-4 sm:p-5 overflow-x-auto overflow-y-auto thin-scrollbar grid grid-cols-1 lg:grid-cols-12 gap-5 text-base text-slate-800">
-          {/* Cột Trái (5/12): Cảnh Báo An Toàn, Hành Chính, Mẫu Nhãn, Lô Kho */}
-          <div className="lg:col-span-5 space-y-3">
-            {clinicalData.contraindications && (
-              <div className="bg-red-50/50 border border-red-200 rounded-lg p-3 space-y-1.5">
-                <div className="flex items-center justify-between text-red-800 font-bold text-xs uppercase tracking-wide">
-                  <span>Chống chỉ định tuyệt đối</span>
-                  <span className="text-2xs bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">Cấm kỵ</span>
-                </div>
-                <ul className="space-y-1">
-                  {formatContraindicationsList(clinicalData.contraindications).map((c, i) => (
-                    <li key={i} className="text-xs sm:text-sm text-slate-800 flex items-start gap-1.5 leading-relaxed">
-                      <span className="text-red-600 font-bold select-none">•</span><span>{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {clinicalData.antidote && (
-              <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3 space-y-1">
-                <div className="flex items-center justify-between text-blue-900 font-bold text-xs uppercase tracking-wide">
-                  <span>Thuốc giải độc đặc hiệu (Antidote)</span>
-                  <span className="text-2xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">Cấp cứu</span>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-800 font-medium">• {clinicalData.antidote}</p>
-              </div>
-            )}
-
-            <DavAdministrativeBlocks data={adminData} />
-            <DavDocumentActionButtons hdsdPath={batch?.hdsdPath || drug?.hdsdPath} labelPath={batch?.labelPath || drug?.labelPath} nationalCode={sdk} brandName={itemName} />
-
-            {batch && (
-              <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-1.5">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <span className="font-bold text-slate-800 text-xs uppercase tracking-wide">Lô Thuốc Tại Kho Bệnh Viện</span>
-                  <span className="font-mono text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-200">Lô: {batch.batchNumber}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                    <span className="text-slate-500 block">Hạn dùng: <strong className="font-mono text-slate-900">{batch.expiryDate}</strong></span>
-                    <span className={`text-xs block ${batch.daysLeft <= 60 ? 'text-red-600 font-bold' : 'text-slate-500'}`}>(Còn {batch.daysLeft} ngày)</span>
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                    <span className="text-slate-500 block">Tồn: <strong className="font-mono text-slate-900">{batch.currentStock} {batch.unit}</strong></span>
-                    <span className="text-slate-500 block text-xs">Min: {batch.minThreshold}</span>
-                  </div>
-                </div>
-              </div>
-            )}
+        <div className="shrink-0 border-b border-slate-200 bg-white px-3 sm:px-5 overflow-x-auto thin-scrollbar">
+          <div role="tablist" aria-label="Nhóm thông tin thuốc" className="flex min-w-max items-center gap-1">
+            {([['overview', 'Tổng quan'], ['safety', 'An toàn'], ['dosage', 'Liều dùng'], ['registration', 'Thông tin đăng ký'], ...(batch ? [['hospital-batch', 'Lô bệnh viện']] : [])] as [DrugDetailTab, string][]).map(([tab, label]) => (
+              <button key={tab} type="button" role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className={`min-h-11 border-b-2 px-3 sm:px-4 text-sm font-semibold whitespace-nowrap transition ${activeTab === tab ? 'border-blue-700 bg-blue-50/60 text-blue-800' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>{label}</button>
+            ))}
           </div>
-
-          {/* Cột Phải (7/12): Chuyên Luận Dược Thư Lâm Sàng Rộng Rãi */}
-          <div className="lg:col-span-7">
-            <DavClinicalKnowledgeBlock data={clinicalData} isLoading={loadingDetail} />
-          </div>
+        </div>
+        <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden thin-scrollbar bg-slate-50/60 p-3 sm:p-5">
+          {activeTab === 'overview' && <div className="mx-auto max-w-5xl space-y-4">
+            <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="mb-4 text-base font-bold text-slate-900">Nhận diện thuốc</h3><dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div><dt className="text-xs font-medium text-slate-500">Dạng bào chế</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{adminData.dosageForm || 'Chưa có thông tin'}</dd></div>
+              <div><dt className="text-xs font-medium text-slate-500">Đường dùng</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{adminData.route || 'Chưa có thông tin'}</dd></div>
+              <div><dt className="text-xs font-medium text-slate-500">Phân loại dược lý</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{clinicalData.drugClass || adminData.category || 'Chưa phân loại'}</dd></div>
+              {adminData.isControlledSubstance && <div><dt className="text-xs font-medium text-slate-500">Quy chế</dt><dd className="mt-1 inline-flex rounded-md bg-rose-50 px-2 py-1 text-sm font-semibold text-rose-800">Thuốc kiểm soát đặc biệt</dd></div>}
+            </dl></section>
+            {(clinicalData.contraindications || clinicalData.antidote || batch?.isControlledSubstance || drug?.isControlled || drug?.isHighAlert || liveDrug?.is_high_alert) && <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5"><h3 className="mb-3 text-base font-bold text-amber-950">Cảnh báo cần chú ý</h3>
+              {clinicalData.contraindications && <div className="mb-3"><p className="mb-1 text-xs font-semibold uppercase tracking-wide text-rose-800">Chống chỉ định</p><ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-800">{formatContraindicationsList(clinicalData.contraindications).map((text, i) => <li key={i}>{text}</li>)}</ul></div>}
+              {clinicalData.antidote && <p className="text-sm text-slate-800"><strong>Thuốc giải độc:</strong> {clinicalData.antidote}</p>}
+              {(batch?.isControlledSubstance || drug?.isControlled) && <p className="text-sm font-semibold text-rose-800">Thuốc kiểm soát đặc biệt; tuân thủ quy trình quản lý tương ứng.</p>}
+              {(drug?.isHighAlert || liveDrug?.is_high_alert) && <p className="text-sm font-semibold text-rose-800">Thuốc nguy cơ cao; cần kiểm tra độc lập theo quy trình bệnh viện.</p>}
+            </section>}
+            {batch && <BatchSummary batch={batch} />}
+          </div>}
+          {activeTab === 'safety' && <div className="mx-auto max-w-5xl"><DavClinicalKnowledgeBlock data={clinicalData} isLoading={loadingDetail} activeTab="safety" showNavigation={false} /></div>}
+          {activeTab === 'dosage' && <div className="mx-auto max-w-5xl"><DavClinicalKnowledgeBlock data={clinicalData} isLoading={loadingDetail} activeTab="dosage" showNavigation={false} /></div>}
+          {activeTab === 'registration' && <div className="mx-auto max-w-5xl space-y-4"><DavAdministrativeBlocks data={adminData} /><DavDocumentActionButtons hdsdPath={batch?.hdsdPath || drug?.hdsdPath} labelPath={batch?.labelPath || drug?.labelPath} nationalCode={sdk} brandName={itemName} /></div>}
+          {activeTab === 'hospital-batch' && batch && <div className="mx-auto max-w-5xl"><BatchSummary batch={batch} showLocation /></div>}
         </div>
 
         {/* Footer */}
@@ -212,3 +179,16 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     </div>
   );
 };
+
+
+const BatchSummary: React.FC<{ batch: InventoryBatch; showLocation?: boolean }> = ({ batch, showLocation }) => (
+  <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h3 className="text-base font-bold text-slate-900">Lô tại bệnh viện</h3><span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-sm font-semibold text-slate-800">{batch.batchNumber}</span></div>
+    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div><dt className="text-xs text-slate-500">Tồn kho</dt><dd className="mt-1 text-sm font-bold text-slate-900">{batch.currentStock} {batch.unit}</dd></div>
+      <div><dt className="text-xs text-slate-500">Hạn dùng</dt><dd className={`mt-1 text-sm font-semibold ${batch.daysLeft <= 60 ? 'text-rose-700' : 'text-slate-900'}`}>{batch.expiryDate}<span className="ml-1 text-xs">({batch.daysLeft} ngày)</span></dd></div>
+      <div><dt className="text-xs text-slate-500">Tồn tối thiểu</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{batch.minThreshold} {batch.unit}</dd></div>
+      {showLocation && <div><dt className="text-xs text-slate-500">Vị trí kho</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{batch.warehouseLocation}</dd></div>}
+    </dl>
+  </section>
+);

@@ -39,18 +39,18 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
   );
 
   return (
-    <div className="space-y-3 text-xs sm:text-sm text-slate-800">
+    <div className="space-y-3 text-sm text-slate-800">
       {/* 1. Lưới Tiêu Chuẩn & Quy Cách */}
-      <div className="border border-slate-200 rounded-lg p-3.5 bg-white space-y-3">
+      <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-slate-100">
           <div>
-            <span className="text-2xs uppercase font-bold text-slate-500 block mb-0.5">Dạng bào chế & Đường dùng</span>
+            <span className="text-[11px] uppercase font-semibold text-slate-500 block mb-0.5">Dạng bào chế & Đường dùng</span>
             <p className="font-semibold text-slate-900 text-sm">{data.dosageForm || 'Theo hồ sơ công bố'}</p>
             <p className="text-xs text-slate-500 mt-0.5">{data.route || 'Theo hồ sơ công bố'}</p>
           </div>
 
           <div>
-            <span className="text-2xs uppercase font-bold text-slate-500 block mb-0.5">Tiêu chuẩn & Hạn dùng</span>
+            <span className="text-[11px] uppercase font-semibold text-slate-500 block mb-0.5">Tiêu chuẩn & Hạn dùng</span>
             <p className="font-mono font-bold text-slate-900 text-sm">{standard}</p>
             <p className="text-xs text-slate-600 font-medium mt-0.5">Hạn lưu hành: <strong className="text-slate-900">{shelfLife}</strong></p>
           </div>
@@ -58,12 +58,12 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
           <div>
-            <span className="text-2xs uppercase font-bold text-slate-500 block mb-0.5">Quy cách đóng gói</span>
+            <span className="text-[11px] uppercase font-semibold text-slate-500 block mb-0.5">Quy cách đóng gói</span>
             <p className="font-medium text-slate-900 text-xs sm:text-sm leading-snug">{packaging}</p>
           </div>
 
           <div>
-            <span className="text-2xs uppercase font-bold text-slate-500 block mb-0.5">Nhóm Dược Lý & Quản Lý</span>
+            <span className="text-[11px] uppercase font-semibold text-slate-500 block mb-0.5">Nhóm Dược Lý & Quản Lý</span>
             <div className="font-semibold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 flex-wrap">
               <span className={`px-2 py-0.5 rounded text-xs font-bold border ${pharmGroup.badgeClass}`}>
                 {pharmGroup.label}
@@ -84,9 +84,9 @@ export const DavAdministrativeBlocks: React.FC<{ data: DavAdministrativeData }> 
       </div>
 
       {/* 2. Khối Cơ Sở Sản Xuất */}
-      <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-        <span className="text-2xs uppercase font-bold text-slate-500 block">Cơ sở sản xuất & Xuất xứ</span>
-        <p className="font-bold text-slate-900 text-sm leading-snug" title={mfrName}>
+      <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-1">
+        <span className="text-[11px] uppercase font-semibold text-slate-500 block">Cơ sở sản xuất & Xuất xứ</span>
+        <p className="font-semibold text-slate-900 text-sm leading-snug" title={mfrName}>
           {mfrName}
         </p>
         <p className="text-xs text-slate-500">

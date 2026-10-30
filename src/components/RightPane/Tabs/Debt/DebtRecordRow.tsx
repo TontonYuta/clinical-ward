@@ -25,24 +25,22 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
   const isNarcotic = item.itemType === 'Thuốc gây nghiện';
 
   return (
-    <tr className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-slate-800">
-      <td className="py-3.5 px-3.5 font-mono font-bold text-xs sm:text-sm whitespace-nowrap">
-        <span className="bg-slate-100 text-slate-800 px-2.5 py-1 rounded-md border border-slate-200">
+    <tr className="hover:bg-slate-50 transition-colors border-b border-slate-100 text-slate-800">
+      <td className="py-3.5 px-4 font-mono font-medium text-xs sm:text-sm whitespace-nowrap text-slate-600">
+        <span>
           {item.code}
         </span>
       </td>
 
-      <td className="py-3.5 px-3.5">
-        <span className="font-bold text-slate-900 block text-sm sm:text-base leading-snug">
+      <td className="py-3.5 px-4">
+        <span className="font-medium text-slate-900 block text-sm leading-snug">
           {item.itemName}
         </span>
-        <span className="text-xs sm:text-sm text-slate-500 font-semibold block mt-1">{item.itemType}</span>
+        <span className="text-xs text-slate-500 block mt-1">{item.itemType}</span>
       </td>
 
-      <td className="py-3.5 px-3.5 text-center font-mono font-black text-slate-900 text-base sm:text-lg whitespace-nowrap">
-        <span className="bg-slate-100/80 px-2.5 py-1 rounded-md border border-slate-200 inline-block">
-          {item.quantity}
-        </span>
+      <td className="py-3.5 px-3.5 text-center font-mono font-semibold text-slate-900 text-sm whitespace-nowrap">
+        {item.quantity}
       </td>
 
       <td className="py-3.5 px-3.5">
@@ -61,17 +59,15 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
       <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
         {isNarcotic ? (
           item.ampouleDestroyed ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700">
+            <span className="text-xs sm:text-sm font-medium text-slate-600">
               Đã tiêu hủy
             </span>
           ) : item.ampouleReturned ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs sm:text-sm font-medium text-slate-700">
               Đã nộp khay
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs sm:text-sm font-bold bg-rose-50 text-rose-700 border border-rose-200">
-              <ShieldAlert className="w-4 h-4 text-rose-600" />
+            <span className="text-xs sm:text-sm font-semibold text-rose-700">
               Chưa nộp vỏ
             </span>
           )
@@ -82,8 +78,8 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
 
       <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
         <span
-          className={`inline-block px-3 py-1 rounded-md text-xs sm:text-sm font-bold ${
-            isDebt ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-700'
+          className={`text-xs sm:text-sm font-medium ${
+            isDebt ? 'text-amber-800' : 'text-slate-600'
           }`}
         >
           {isDebt ? 'Đang nợ' : 'Đã hoàn bù'}

@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Modal Xem Chi Tiết Đơn Thuốc Điện Tử CPOE (Thông tư 52/2017 & TT 26/2025/TT-BYT) (<=200 LOC)
+ * Modal Xem Chi Tiết Đơn Thuốc Điện Tử CPOE (Thông tư 26/2025/TT-BYT) (<=200 LOC)
  */
 
 import React, { useEffect } from 'react';
@@ -67,7 +67,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                Căn cứ Thông tư 52/2017/TT-BYT &amp; Thông tư 26/2025/TT-BYT Bộ Y tế
+                Căn cứ Thông tư 26/2025/TT-BYT Bộ Y tế
               </p>
             </div>
           </div>

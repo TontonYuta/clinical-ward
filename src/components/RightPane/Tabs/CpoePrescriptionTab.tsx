@@ -87,14 +87,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
     <div className="flex flex-col h-full overflow-hidden space-y-2.5 w-full">
       {/* Top Action Bar: Clean & Minimal */}
       <div className="bg-white border border-slate-200 rounded-lg p-3 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
-            Kê đơn thuốc
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Đơn thuốc nội trú theo ngày &amp; đơn thuốc ngoại trú (Thông tư 52/2017 &amp; TT 26/2025/TT-BYT)
-          </p>
-        </div>
+        <p className="text-xs sm:text-sm text-slate-500 font-medium">Đơn thuốc nội trú theo ngày &amp; đơn thuốc ngoại trú (Thông tư 26/2025/TT-BYT)</p>
 
         <div className="flex items-center gap-2 shrink-0">
           <button

@@ -4,6 +4,7 @@ from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.seed import seed
 from app.database import engine, Base
+from app.seed_inventory_data import INVENTORY_DATA
 
 @pytest_asyncio.fixture(autouse=True)
 async def prepare_database():
@@ -138,7 +139,7 @@ async def test_inventory_fefo_and_restock():
         res = await client.get("/api/v1/inventory/batches")
         assert res.status_code == 200
         batches = res.json()
-        assert len(batches) == 20
+        assert len(batches) == len(INVENTORY_DATA)
 
         # Check expiry_date is sorted ascending
         dates = [b["expiry_date"] for b in batches]

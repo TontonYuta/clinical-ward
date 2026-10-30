@@ -5,6 +5,7 @@
  */
 
 import { MasterMedication } from '../../../types/medication';
+import { resolvePharmacologicalGroup } from '../../../utils/clinical/pharmacologicalClassification';
 
 let cachedRegistry: any[] | null = null;
 let cachedGroupStats: Record<string, number> | null = null;
@@ -21,11 +22,30 @@ function computeGroupStats(list: any[]): Record<string, number> {
 export async function loadOfflineRegistry(): Promise<any[]> {
   if (cachedRegistry && cachedRegistry.length > 0) return cachedRegistry;
   try {
+    const canonicalResponse = await fetch('/data/canonical-drug-catalog.json.gz', { cache: 'force-cache' });
+    if (canonicalResponse.ok && canonicalResponse.body && typeof DecompressionStream !== 'undefined') {
+      const encoding = canonicalResponse.headers.get('content-encoding')?.toLowerCase() || '';
+      const text = encoding.includes('gzip')
+        ? await canonicalResponse.text()
+        : await new Response(canonicalResponse.body.pipeThrough(new DecompressionStream('gzip'))).text();
+      const catalog = JSON.parse(text);
+      if (Array.isArray(catalog) && catalog.length > 0) {
+        cachedRegistry = catalog;
+        cachedGroupStats = computeGroupStats(catalog);
+        return catalog;
+      }
+    }
+  } catch {}
+  try {
     if (typeof DecompressionStream !== 'undefined') {
       const res = await fetch('/data/vietnam_drug_registry/dav_master_registry.json.gz');
       if (res.ok && res.body) {
-        const stream = res.body.pipeThrough(new DecompressionStream('gzip'));
-        const text = await new Response(stream).text();
+        // Browsers may already decompress .gz responses from servers that set
+        // Content-Encoding: gzip. Avoid trying to decompress those bytes twice.
+        const contentEncoding = res.headers.get('content-encoding')?.toLowerCase() || '';
+        const text = contentEncoding.includes('gzip')
+          ? await res.text()
+          : await new Response(res.body.pipeThrough(new DecompressionStream('gzip'))).text();
         const data = JSON.parse(text);
         if (Array.isArray(data) && data.length > 0) {
           cachedRegistry = data;
@@ -45,27 +65,34 @@ export async function loadOfflineRegistry(): Promise<any[]> {
 export async function queryOfflineRegistry(
   search: string,
   group: string,
+  pharmGroup: string,
   page: number,
   pageSize: number
-): Promise<{ items: MasterMedication[]; total: number; totalPages: number; groupStats: Record<string, number> }> {
+): Promise<{ items: MasterMedication[]; total: number; registryTotal: number; totalPages: number; groupStats: Record<string, number> }> {
   const fullList = await loadOfflineRegistry();
   const q = search.toLowerCase().trim();
   const groupStats = cachedGroupStats || computeGroupStats(fullList);
+  const value = (d: any, camel: string, snake: string) => d[camel] ?? d[snake];
   const filtered = fullList.filter((d: any) =>
     (group === 'all' || d.group === group) &&
-    (!q || (d.brandName && d.brandName.toLowerCase().includes(q)) || (d.nationalCode && d.nationalCode.toLowerCase().includes(q)) || (d.activeIngredient && d.activeIngredient.toLowerCase().includes(q)))
+    (!pharmGroup || pharmGroup === 'all' || resolvePharmacologicalGroup(
+      value(d, 'atcCode', 'atc_code'),
+      `${value(d, 'brandName', 'brand_name') || ''} ${value(d, 'activeIngredient', 'active_ingredient_raw') || ''}`,
+      d.group
+    ).key === pharmGroup) &&
+    (!q || (value(d, 'brandName', 'brand_name') && value(d, 'brandName', 'brand_name').toLowerCase().includes(q)) || (value(d, 'nationalCode', 'national_code') && value(d, 'nationalCode', 'national_code').toLowerCase().includes(q)) || (value(d, 'activeIngredient', 'active_ingredient_raw') && value(d, 'activeIngredient', 'active_ingredient_raw').toLowerCase().includes(q)))
   );
   const items: MasterMedication[] = filtered.slice((page - 1) * pageSize, page * pageSize).map((d: any) => ({
-    id: d.id, nationalCode: d.nationalCode, brandName: d.brandName,
-    activeIngredient: d.activeIngredient, concentration: d.concentration, dosageForm: d.dosageForm,
-    route: d.route, standardUnit: d.standardUnit || 'Viên', group: d.group || 'Thuốc điều trị chuyên khoa',
+    id: d.id, nationalCode: value(d, 'nationalCode', 'national_code'), brandName: value(d, 'brandName', 'brand_name'),
+    activeIngredient: value(d, 'activeIngredient', 'active_ingredient_raw'), concentration: d.concentration || d.strength_raw, dosageForm: d.dosageForm || d.dosage_form,
+    route: d.route, standardUnit: d.standardUnit || d.standard_unit || 'Viên', group: d.group || 'Thuốc điều trị chuyên khoa',
     isControlled: !!d.isControlled, isHighAlert: !!d.isHighAlert, isCrashCart: !!d.isCrashCart,
-    defaultDoseQty: 1, wardStockCount: 0, hospitalStockCount: 0, searchAliases: [d.brandName?.toLowerCase() || ''], note: d.note,
+    defaultDoseQty: 1, wardStockCount: 0, hospitalStockCount: 0, searchAliases: [String(value(d, 'brandName', 'brand_name') || '').toLowerCase()], note: d.note,
     packagingSpec: d.packagingSpec, standardPharmacopeia: d.standardPharmacopeia, shelfLife: d.shelfLife,
     manufacturer: d.manufacturer, country: d.country, applicantName: d.applicantName, approvalDecision: d.approvalDecision,
     hdsdPath: d.hdsdPath, labelPath: d.labelPath,
     clinicalProfile: d.clinicalProfile,
-    atcCode: d.atcCode || d.atc_code,
+    atcCode: value(d, 'atcCode', 'atc_code'),
     drugClass: d.drugClass || d.drug_class,
     indications: d.indications,
     contraindications: d.contraindications,
@@ -81,5 +108,5 @@ export async function queryOfflineRegistry(
     antidote: d.antidote,
     clinicalSource: d.clinicalSource || d.clinical_source,
   }));
-  return { items, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)), groupStats };
+  return { items, total: filtered.length, registryTotal: fullList.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)), groupStats };
 }

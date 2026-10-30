@@ -29,5 +29,7 @@ class Settings(BaseModel):
         "http://127.0.0.1:5173",
         "http://localhost:4173",
     ]
+    DAV_CATALOG_DB_PATH: str = os.getenv("DAV_CATALOG_DB_PATH", "")
+    DAV_CATALOG_RUN_ID: str = os.getenv("DAV_CATALOG_RUN_ID", "dav-canonical-20261030-v12")
 
 settings = Settings()

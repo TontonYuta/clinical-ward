@@ -29,6 +29,7 @@ const KEYS = {
   COPILOT_OPEN: 'clinical_copilot_open',
   COPILOT_EXPANDED: 'clinical_copilot_expanded',
   AUDIO_MUTED: 'clinical_audio_muted',
+  FONT_SCALE: 'clinical_font_scale',
   CHAT_MESSAGES: 'clinical_chat_messages',
   CACHED_DEBTS: 'clinical_cached_debts',
   CACHED_TICKETS: 'clinical_cached_tickets',
@@ -37,7 +38,7 @@ const KEYS = {
 };
 
 const VALID_TABS: DashboardTab[] = ['cpoe', 'debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'];
-const VALID_ROLES: UserRole[] = ['nurse', 'doctor', 'head_nurse', 'pharmacist', 'biomedical_engineer', 'director'];
+const VALID_ROLES: UserRole[] = ['nurse', 'doctor', 'pharmacist', 'biomedical_engineer', 'director'];
 
 /**
  * 1. Khôi phục Tab ban đầu từ URL Hash hoặc LocalStorage
@@ -178,6 +179,18 @@ export function saveAudioMuted(isMuted: boolean): void {
   try {
     localStorage.setItem(KEYS.AUDIO_MUTED, isMuted ? 'true' : 'false');
   } catch {}
+}
+
+export type AppFontScale = 'compact' | 'standard' | 'large';
+const VALID_FONT_SCALES: AppFontScale[] = ['compact', 'standard', 'large'];
+export function getInitialFontScale(): AppFontScale {
+  try {
+    const saved = localStorage.getItem(KEYS.FONT_SCALE) as AppFontScale | null;
+    return saved && VALID_FONT_SCALES.includes(saved) ? saved : 'large';
+  } catch { return 'large'; }
+}
+export function saveFontScale(scale: AppFontScale): void {
+  try { localStorage.setItem(KEYS.FONT_SCALE, scale); } catch {}
 }
 
 /**

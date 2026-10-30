@@ -8,7 +8,6 @@
 /playwright_mobile
 /TEMP
 /docs
-/.pytest_cache
 *.db
 **/*.db
 *.sqlite3
@@ -20,7 +19,5 @@
 *.tar.gz
 **/__pycache__
 *.pyc
-/backend/clinical_hospital.db*
 /backend/data/knowledge_base/*.pdf
-/data
-/data/**
+/artifacts/**

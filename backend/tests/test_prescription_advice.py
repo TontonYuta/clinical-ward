@@ -3,6 +3,7 @@ Test suite cho tính năng Dặn dò bác sĩ & Gửi email nhắc uống thuố
 """
 
 import pytest
+from unittest.mock import patch
 from httpx import ASGITransport, AsyncClient
 from app.main import app
 
@@ -75,10 +76,19 @@ async def test_send_prescription_advice_email_success():
                     ]
                 }
             ],
-            "gasWebhookUrl": ""
+            "gasWebhookUrl": "https://example.test/google-apps-script"
         }
 
-        response = await ac.post("/api/v1/prescription-advice/send-email", json=payload)
+        class MockResponse:
+            status_code = 200
+
+        class MockClient:
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): return False
+            async def post(self, *args, **kwargs): return MockResponse()
+
+        with patch("app.routers.prescription_advice.httpx.AsyncClient", return_value=MockClient()):
+            response = await ac.post("/api/v1/prescription-advice/send-email", json=payload)
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True

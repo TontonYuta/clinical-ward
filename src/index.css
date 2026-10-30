@@ -11,6 +11,17 @@
   background-color: #f8fafc;
 }
 
+/* Readable clinical workstation scale; keep compact labels above common 12px defaults. */
+html { font-size: 18px; }
+body { font-size: 1rem; line-height: 1.55; }
+button, input, select, textarea { font: inherit; }
+.text-xs { font-size: 0.8125rem; line-height: 1.3rem; }
+.text-sm { font-size: 0.9375rem; line-height: 1.45rem; }
+
+@media (max-width: 640px) {
+  html { font-size: 18px; }
+}
+
 /* Custom scrollbars for high-density clinical lists */
 ::-webkit-scrollbar {
   width: 6px;

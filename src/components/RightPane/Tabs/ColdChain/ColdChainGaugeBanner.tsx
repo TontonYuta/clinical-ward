@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Thermometer, Zap, ShieldAlert } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { ColdChainMonitorState } from '../../../../types/clinical';
 
 interface ColdChainGaugeBannerProps {
@@ -19,17 +19,16 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
 }) => {
   return (
     <div
-      className={`bg-white rounded-lg border px-4 py-3.5 shadow-2xs transition shrink-0 ${
-        isAlarm ? 'border-rose-300 bg-rose-50/20 ring-1 ring-rose-200' : 'border-slate-200'
+      className={`bg-white border-b px-4 py-3.5 transition shrink-0 ${
+        isAlarm ? 'border-rose-300' : 'border-slate-200'
       }`}
     >
       <div className="flex flex-wrap items-center justify-between gap-4 text-xs sm:text-sm">
         {/* Temperature Gauge Indicator */}
         <div className="flex items-center gap-4">
           <div className="flex items-baseline gap-1.5">
-            <Thermometer className={`w-6 h-6 ${isAlarm ? 'text-rose-600' : 'text-slate-700'}`} />
             <span
-              className={`text-3xl sm:text-4xl font-black font-mono tabular-nums ${
+              className={`text-4xl sm:text-5xl font-semibold font-mono tabular-nums ${
                 isAlarm ? 'text-rose-600' : 'text-slate-900'
               }`}
             >
@@ -65,19 +64,19 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
 
         {/* Mobile Quick Metrics (sm:hidden) */}
         <div className="grid grid-cols-3 gap-2 w-full pt-2.5 border-t border-slate-100 sm:hidden text-center text-xs">
-          <div className="bg-slate-50 p-2 rounded-md border border-slate-200/60">
+          <div className="px-2 py-1">
             <div className="text-xs text-slate-500 font-semibold">Nguồn</div>
             <div className="font-bold text-slate-900 truncate text-xs mt-0.5">
               {isAlarm ? 'UPS dự phòng' : 'Điện lưới'}
             </div>
           </div>
-          <div className="bg-slate-50 p-2 rounded-md border border-slate-200/60">
+          <div className="px-2 py-1">
             <div className="text-xs text-slate-500 font-semibold">Độ ẩm</div>
             <div className="font-bold text-slate-900 font-mono text-xs mt-0.5">
               {coldChainState.currentHumidity}% RH
             </div>
           </div>
-          <div className="bg-slate-50 p-2 rounded-md border border-slate-200/60">
+          <div className="px-2 py-1">
             <div className="text-xs text-slate-500 font-semibold">Cơ số vắc xin</div>
             <div className="font-bold text-slate-900 font-mono text-xs mt-0.5">
               {coldChainState.totalVaccineDoses.toLocaleString()}
@@ -88,7 +87,6 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
         {/* Desktop Quick Metrics (hidden sm:flex) */}
         <div className="hidden sm:flex flex-wrap items-center gap-4 text-slate-700 text-xs sm:text-sm font-semibold">
           <div className="flex items-center gap-1.5">
-            <Zap className={`w-4.5 h-4.5 ${isAlarm ? 'text-rose-600' : 'text-emerald-600'}`} />
             <span>
               Nguồn:{' '}
               <strong className="text-slate-900 font-bold">
@@ -114,8 +112,7 @@ export const ColdChainGaugeBanner: React.FC<ColdChainGaugeBannerProps> = ({
         </div>
 
         {/* SOP-GSP-09 badge */}
-        <div className="text-xs sm:text-sm text-slate-600 font-semibold hidden xl:flex items-center gap-1.5 border-l border-slate-200 pl-4">
-          <ShieldAlert className="w-4 h-4 text-slate-500 shrink-0" />
+        <div className="text-sm text-slate-600 hidden xl:flex items-center gap-1.5 border-l border-slate-200 pl-4">
           <span>SOP-09: Chuyển hòm đá tích lạnh khi mất điện</span>
         </div>
       </div>

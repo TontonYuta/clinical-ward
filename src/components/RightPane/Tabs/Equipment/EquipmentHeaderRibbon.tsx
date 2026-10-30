@@ -32,24 +32,26 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
   onOpenIncidentModal,
 }) => {
   return (
-    <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-lg border border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+    <div className="bg-white p-2 sm:px-3 sm:py-2 rounded-lg border border-slate-200/80 shrink-0 flex items-center gap-2 shadow-sm overflow-x-auto">
       {/* Search & Filter pills */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
-        <div className="relative w-full sm:w-64 shrink-0">
+      <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap">
+        <div className="relative w-72 min-w-56 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm máy thở, sốc tim, serial..."
-            className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400 transition"
+            aria-label="Tìm sự cố thiết bị y tế"
+            className="w-full min-h-10 pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-700/20 focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400 transition"
           />
         </div>
 
-        <div className="flex items-center gap-1 text-sm bg-slate-100 p-1 rounded-md overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
+        <div role="group" aria-label="Lọc trạng thái sự cố" className="flex items-center gap-1 text-sm bg-slate-100/80 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
           <button
             onClick={() => setSelectedUrgency('all')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={selectedUrgency === 'all'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               selectedUrgency === 'all' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -57,7 +59,8 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('urgent')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={selectedUrgency === 'urgent'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               selectedUrgency === 'urgent' ? 'bg-white text-rose-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -65,7 +68,8 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('in_progress')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={selectedUrgency === 'in_progress'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               selectedUrgency === 'in_progress' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -73,7 +77,8 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setSelectedUrgency('resolved')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={selectedUrgency === 'resolved'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               selectedUrgency === 'resolved' ? 'bg-white text-emerald-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -86,7 +91,7 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
       <div className="flex items-center gap-2 shrink-0 justify-end">
         <button
           onClick={onOpenIncidentModal}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-rose-700 hover:bg-rose-800 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 shadow-xs"
+          className="inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-lg bg-rose-700 hover:bg-rose-800 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-[0.98] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 focus-visible:ring-offset-2"
           title="Lập phiếu báo hỏng sự cố thiết bị"
         >
           <PlusCircle className="w-3.5 h-3.5" />

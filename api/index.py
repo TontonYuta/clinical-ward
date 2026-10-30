@@ -35,7 +35,9 @@ app.database.AsyncSessionLocal = async_sessionmaker(
     autoflush=False
 )
 
-# Synchronously ensure schema and all clinical hospital data + 55k DAV registry are seeded in /tmp
+# Synchronously ensure the operational schema is available in /tmp. The full
+# canonical DAV catalog is served as a versioned static export on Vercel; the
+# serverless function must not bundle or seed the 1.1 GB local migration copy.
 try:
     import asyncio
     import sqlite3

@@ -4,45 +4,58 @@
  */
 
 import React from 'react';
-import { Cross, X } from 'lucide-react';
+import { Cross, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 interface SidebarHeaderProps {
   isCollapsed: boolean;
+  onToggleCollapse: () => void;
   onCloseMobile?: () => void;
 }
 
 export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
   isCollapsed,
+  onToggleCollapse,
   onCloseMobile,
 }) => {
   return (
-    <div className="h-14 px-4 flex items-center justify-between border-b border-slate-200/80 shrink-0">
-      {!isCollapsed ? (
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-2xs shrink-0">
-            <Cross className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[15px] font-bold text-slate-900 tracking-tight whitespace-nowrap leading-tight">
-              Kho Y Tế Lâm Sàng
+    <div className="relative h-14 flex items-center border-b border-slate-200/80 shrink-0">
+      <div className={`flex h-full items-center ${isCollapsed ? 'w-full justify-center' : 'flex-1 min-w-0'}`}>
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className={`relative flex h-14 w-14 shrink-0 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer ${isCollapsed ? 'group/brand hover:bg-slate-100' : ''}`}
+          title={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+          aria-label={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white transition-opacity group-hover/brand:opacity-0 group-focus-visible/brand:opacity-0">
+            <Cross className="h-5 w-5" />
+          </span>
+          {isCollapsed && (
+            <span className="absolute inset-0 flex items-center justify-center text-slate-700 opacity-0 transition-opacity group-hover/brand:opacity-100 group-focus-visible/brand:opacity-100">
+              <PanelLeftOpen className="h-5 w-5" />
             </span>
-            <span className="text-xs text-slate-500 font-medium whitespace-nowrap mt-0.5">
-              Bệnh Viện Đa Khoa
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="w-full flex justify-center">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-2xs">
-            <Cross className="w-5 h-5 text-white" />
-          </div>
-        </div>
-      )}
+          )}
+        </button>
+        {!isCollapsed && (
+          <>
+            <span className="min-w-0 flex-1 truncate pr-2 text-sm font-semibold tracking-tight text-slate-900">Kho Y Tế Lâm Sàng</span>
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="mr-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer"
+              title="Thu gọn menu"
+              aria-label="Thu gọn menu"
+            >
+              <PanelLeftClose className="h-5 w-5" />
+            </button>
+          </>
+        )}
+      </div>
 
       {onCloseMobile && (
         <button
           onClick={onCloseMobile}
-          className="md:hidden p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+          className="md:hidden p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer absolute right-2 top-3"
           title="Đóng menu"
         >
           <X className="w-5 h-5" />

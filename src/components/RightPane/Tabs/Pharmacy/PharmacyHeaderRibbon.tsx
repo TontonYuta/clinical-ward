@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, Building2, Store, Database, BookOpen } from 'lucide-react';
+import { Search, Database } from 'lucide-react';
 import { PHARMACOLOGICAL_GROUPS, PharmacologicalGroupKey } from '../../../../utils/clinical/pharmacologicalClassification';
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
@@ -26,163 +26,53 @@ interface PharmacyHeaderRibbonProps {
   setDavFilter: (f: DavRegulatoryFilter) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
-  totalCount: number;
   nearExpiryCount: number;
-  lowStockCount?: number;
-  onOpenPrintForm?: (type: 'TT22_RESTOCK_PROPOSAL') => void;
-  onOpenRestock?: () => void;
+  locations: string[];
+  location: string;
+  setLocation: (location: string) => void;
   onOpenNationalRegistry?: () => void;
-  onOpenSafetyGuide?: (medName: string) => void;
 }
 
 export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
-  warehouse, setWarehouse, status, setStatus,
+  warehouse, setWarehouse, commodity, setCommodity, status, setStatus,
   pharmacologicalGroup, setPharmacologicalGroup, davFilter, setDavFilter,
-  searchQuery, setSearchQuery, totalCount, nearExpiryCount,
-  onOpenNationalRegistry, onOpenSafetyGuide,
+  searchQuery, setSearchQuery, nearExpiryCount, locations, location, setLocation,
+  onOpenNationalRegistry,
 }) => {
   return (
-    <div className="bg-white p-3 rounded-lg border border-slate-200 shrink-0 space-y-2.5 shadow-2xs">
-      {/* Tiêu đề & Nút Kho Dược Quốc Gia */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-4 bg-blue-600 rounded-xs" />
-          <div>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wide">
-              Kho Dược Bệnh Viện
-            </h2>
-            <p className="text-[11px] text-slate-500 font-normal">
-              Quản lý danh mục thuốc &amp; cấp phát nội trú, ngoại trú (Thông tư 22/2011/TT-BYT)
-            </p>
-          </div>
-        </div>
-
-        {/* Cụm nút tra cứu chuyên môn: Kho Dược Quốc Gia & Dược Thư */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onOpenNationalRegistry}
-            data-testid="btn-open-national-registry"
-            className="inline-flex items-center gap-2 h-8 px-3.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs cursor-pointer shadow-xs transition active:scale-98"
-            title="Tra cứu CSDL 54.885 số đăng ký lưu hành thuốc toàn quốc từ Cục Quản Lý Dược"
-          >
-            <Database className="w-4 h-4 text-blue-200" />
-            <span>Kho Dược Quốc Gia</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-[10px] font-mono text-white">54.885 SĐK</span>
-          </button>
-
-          {onOpenSafetyGuide && (
-            <button
-              type="button"
-              onClick={() => onOpenSafetyGuide('')}
-              data-testid="btn-open-safety-guide"
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 font-bold text-xs cursor-pointer shadow-xs transition active:scale-98"
-              title="Tra cứu chuyên luận Dược Thư Quốc Gia 2015/2022 & Hướng dẫn sử dụng an toàn"
-            >
-              <BookOpen className="w-4 h-4 text-teal-700" />
-              <span>Tra cứu Dược Thư</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Phân hệ kho Nội trú vs Ngoại trú trực quan */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto thin-scrollbar pb-1">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200/80 shrink-0">
-          <button
-            type="button"
-            onClick={() => setWarehouse('all')}
-            className={`px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
-              warehouse === 'all'
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Tất cả danh mục ({totalCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setWarehouse('inpatient')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
-              warehouse === 'inpatient'
-                ? 'bg-blue-700 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            <span>Kho thuốc Nội trú &amp; Tủ trực</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setWarehouse('outpatient')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
-              warehouse === 'outpatient'
-                ? 'bg-emerald-700 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Store className="w-4 h-4" />
-            <span>Kho thuốc Ngoại trú</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Thanh tìm kiếm và bộ lọc chuyên môn */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-1">
+    <div className="shrink-0 overflow-x-auto thin-scrollbar">
+      <div className="flex min-w-max items-center gap-2 rounded-lg bg-white p-1">
         {/* Ô tìm kiếm thông tin thuốc */}
-        <div className="relative flex-1 min-w-[260px]">
+        <select aria-label="Kho" value={warehouse} onChange={(e) => setWarehouse(e.target.value as WarehouseFilter)} className="min-h-11 bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
+          <option value="all">Tất cả kho</option><option value="inpatient">Nội trú &amp; tủ trực</option><option value="outpatient">Ngoại trú</option>
+        </select>
+        <div className="relative w-[min(24rem,32vw)] min-w-64 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo tên thuốc, hoạt chất, số đăng ký (SĐK), số lô, nhà sản xuất..."
-            className="w-full pl-9.5 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-md focus:border-blue-600 text-slate-900 placeholder-slate-400 font-medium"
+            placeholder="Tìm theo tên thuốc, hoạt chất, SĐK hoặc số lô..."
+            aria-label="Tìm thuốc theo tên, hoạt chất, số đăng ký hoặc số lô"
+            className="w-full min-h-11 pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400/30 focus:border-slate-500 focus:bg-white text-slate-900 placeholder-slate-500"
           />
         </div>
-
-        {/* Cụm bộ lọc: Tồn kho/Hạn dùng, Dược lý, Quy chế */}
-        <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
-          {/* Tình trạng hạn dùng */}
-          <div className="flex items-center gap-0.5 bg-slate-100 p-1 rounded-md border border-slate-200/80 font-bold">
-            <button type="button" onClick={() => setStatus('all')} className={`px-2.5 py-1 rounded cursor-pointer ${status === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}`}>Tất cả hạn</button>
-            <button type="button" onClick={() => setStatus('near_expiry')} className={`px-2.5 py-1 rounded cursor-pointer ${status === 'near_expiry' ? 'bg-rose-700 text-white shadow-2xs' : 'text-slate-600'}`}>Cận hạn ({nearExpiryCount})</button>
-          </div>
-
-          {/* Phân loại Tác dụng Trị liệu / Dược lý */}
-          <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/80 font-medium">
-            <span className="text-slate-600 font-bold text-xs sm:text-sm whitespace-nowrap">Dược lý:</span>
-            <select
-              value={pharmacologicalGroup}
-              onChange={(e) => setPharmacologicalGroup(e.target.value as PharmacologicalGroupKey)}
-              data-testid="pharmacological-class-select"
-              className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[170px] truncate"
-            >
-              <option value="all">Tất cả nhóm</option>
-              {PHARMACOLOGICAL_GROUPS.map((g) => (
-                <option key={g.key} value={g.key}>{g.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Phân loại Quy chế quản lý */}
-          <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/80 font-medium">
-            <span className="text-slate-600 font-bold text-xs sm:text-sm whitespace-nowrap">Quy chế:</span>
-            <select
-              value={davFilter}
-              onChange={(e) => setDavFilter(e.target.value as DavRegulatoryFilter)}
-              data-testid="dav-regulatory-select"
-              className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-blue-600 cursor-pointer max-w-[170px] truncate"
-            >
-              <option value="all">Tất cả quy chế</option>
-              <option value="controlled">Thuốc kiểm soát đặc biệt (vỏ ống)</option>
-              <option value="emergency">Thuốc cấp cứu tủ trực</option>
-              <option value="cold_chain">Bảo quản lạnh 2-8°C</option>
-              <option value="high_alert">Thuốc nguy cơ cao (High-Alert)</option>
-              <option value="iv_fluid">Dịch truyền tĩnh mạch</option>
-            </select>
-          </div>
-        </div>
+        <select aria-label="Vị trí kho" value={location} onChange={(e) => setLocation(e.target.value)} className="min-h-11 max-w-[220px] bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
+          <option value="all">Tất cả vị trí</option>{locations.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+        <select aria-label="Danh mục" value={commodity} onChange={(e) => setCommodity(e.target.value as CommodityFilter)} className="min-h-11 bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
+          <option value="all">Thuốc và vật tư</option><option value="medication">Thuốc</option><option value="medical_supply">Vật tư y tế</option>
+        </select>
+        <select aria-label="Trạng thái tồn" value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} className="min-h-11 bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
+          <option value="all">Tất cả tồn</option><option value="near_expiry">Cận hạn ({nearExpiryCount})</option><option value="low_stock">Dưới tồn tối thiểu</option>
+        </select>
+        <select aria-label="Nhóm dược lý" value={pharmacologicalGroup} onChange={(e) => setPharmacologicalGroup(e.target.value as PharmacologicalGroupKey)} data-testid="pharmacological-class-select" className="min-h-11 max-w-[190px] bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
+          <option value="all">Tất cả nhóm</option>{PHARMACOLOGICAL_GROUPS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
+        </select>
+        <select aria-label="Quy chế" value={davFilter} onChange={(e) => setDavFilter(e.target.value as DavRegulatoryFilter)} data-testid="dav-regulatory-select" className="min-h-11 max-w-[190px] bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
+          <option value="all">Tất cả quy chế</option><option value="controlled">Kiểm soát đặc biệt</option><option value="emergency">Cấp cứu tủ trực</option><option value="cold_chain">Bảo quản lạnh</option><option value="high_alert">Nguy cơ cao</option><option value="iv_fluid">Dịch truyền</option>
+        </select>
+        <button type="button" onClick={onOpenNationalRegistry} data-testid="btn-open-national-registry" className="min-h-11 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium cursor-pointer transition whitespace-nowrap" title="Tra cứu Kho Dược Quốc Gia"><Database className="w-4 h-4 inline mr-1.5" />Kho Dược Quốc Gia</button>
       </div>
     </div>
   );

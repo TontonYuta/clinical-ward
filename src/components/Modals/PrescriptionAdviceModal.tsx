@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Mail, Clock, Send, Printer, Settings, CheckCircle2, AlertCircle, Loader2, Eye } from 'lucide-react';
+import { X, Mail, Clock, Send, Printer, Settings, CheckCircle2, AlertCircle, Loader2, Eye, Phone } from 'lucide-react';
 import { PrescriptionOrder } from '../../types/cpoe';
 import { PatientPrescriptionAdvice, ScheduledMedication } from '../../types/medicationSchedule';
 import {
@@ -17,6 +17,7 @@ import {
   buildDefaultTimeSlots
 } from '../../services/prescriptionAdviceService';
 import { AdviceMedTable } from './PrescriptionAdvice/AdviceMedTable';
+import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../services/patientService';
 
 interface PrescriptionAdviceModalProps {
   isOpen: boolean;
@@ -31,13 +32,17 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
 }) => {
   if (!isOpen || !order) return null;
 
-  const [patientEmail, setPatientEmail] = useState('benhnhan@example.com');
+  const matchedPatient = findPatientByNameOrQuery(order.patientName.toLowerCase(), INITIAL_PATIENTS);
+  const [patientEmail, setPatientEmail] = useState(order.patientEmail || matchedPatient?.email || '');
+  const [patientPhone, setPatientPhone] = useState(order.patientPhone || matchedPatient?.phone || '');
   const [generalAdvice, setGeneralAdvice] = useState('');
   const [gasUrl, setGasUrl] = useState(getStoredGasWebhookUrl());
   const [showConfig, setShowConfig] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [msg, setMsg] = useState('');
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [smsEnabled, setSmsEnabled] = useState(false);
 
   const initialMeds: ScheduledMedication[] = (order.items || []).map((it, i) => ({
     id: `sched-${i}`, medicationName: it.medicationName, activeIngredient: it.activeIngredient,
@@ -47,7 +52,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
 
   const advicePayload: PatientPrescriptionAdvice = {
     id: `ADV-${order.id.replace('RX-', '')}`, prescriptionId: order.id,
-    patientName: order.patientName, patientEmail, diagnosis: `${order.diagnosisIcd10} - ${order.diagnosisText}`,
+    patientName: order.patientName, patientEmail, patientPhone: patientPhone || undefined, diagnosis: `${order.diagnosisIcd10} - ${order.diagnosisText}`,
     doctorName: order.doctorName, doctorHospital: 'Bệnh Viện Đa Khoa Lâm Sàng', department: order.department,
     createdAt: new Date().toISOString(), startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + (order.daysPrescribed || 7) * 86400000).toISOString().split('T')[0],
@@ -55,11 +60,12 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
   };
 
   const handleSend = async () => {
+    if (!emailEnabled && !smsEnabled) { setStatus('error'); setMsg('Chọn ít nhất một kênh thông báo.'); return; }
     setStatus('loading');
-    setMsg('Đang gửi dữ liệu đến Google Apps Script Webhook...');
+    setMsg('Đang gửi lịch dặn dò...');
     try {
       if (gasUrl) setStoredGasWebhookUrl(gasUrl);
-      const res = await sendMedicationAdviceEmail(advicePayload);
+      const res = await sendMedicationAdviceEmail({ ...advicePayload, patientPhone: smsEnabled ? patientPhone : undefined }, { sendEmail: emailEnabled, sendSms: smsEnabled });
       setStatus(res.success ? 'success' : 'error');
       setMsg(res.message);
     } catch (err: any) {
@@ -101,7 +107,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
             <div className="flex items-center justify-between">
               <label className="font-semibold text-slate-800 flex items-center gap-1">
                 <Mail className="w-3.5 h-3.5 text-teal-700" />
-                <span>Email bệnh nhân nhận lịch:</span>
+              <span>Email bệnh nhân nhận lịch:</span>
               </label>
               <button
                 type="button"
@@ -114,11 +120,28 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
             </div>
             <input
               type="email"
+              required={emailEnabled}
+              disabled={!emailEnabled}
               value={patientEmail}
               onChange={(e) => setPatientEmail(e.target.value)}
               placeholder="nhap-email-benh-nhan@example.com"
               className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-slate-900 text-xs focus:ring-1 focus:ring-teal-700 focus:outline-hidden"
             />
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-800 py-1">
+              <input type="checkbox" checked={emailEnabled} onChange={e => setEmailEnabled(e.target.checked)} /> Gửi qua email
+            </label>
+            <label className="flex items-center gap-2 font-semibold text-slate-800 pt-2">
+              <input type="checkbox" checked={smsEnabled} onChange={e => setSmsEnabled(e.target.checked)} />
+              <Phone className="w-3.5 h-3.5 text-slate-600" />
+              <span>Gửi SMS song song (tùy chọn):</span>
+            </label>
+            <input
+              type="tel" inputMode="tel" autoComplete="tel"
+              value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)}
+              placeholder="Ví dụ: 09xxxxxxxx"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 text-sm focus:ring-1 focus:ring-slate-500 focus:outline-hidden"
+            />
+            {smsEnabled && <p className="text-xs text-slate-700 bg-slate-50 p-2 rounded">SMS được gửi qua backend khi Twilio đã cấu hình. Trạng thái chỉ thành công sau khi nhà cung cấp xác nhận.</p>}
             {showConfig && (
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1 mt-1 text-[11px]">
                 <span className="font-semibold text-slate-800 block">Google Apps Script Web App URL:</span>
@@ -188,9 +211,9 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
             <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer">
               Đóng
             </button>
-            <button type="button" onClick={handleSend} disabled={status === 'loading' || !patientEmail} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white font-bold cursor-pointer disabled:opacity-60">
+            <button type="button" onClick={handleSend} disabled={status === 'loading' || (!emailEnabled && !smsEnabled) || (emailEnabled && !patientEmail) || (smsEnabled && !patientPhone) || (emailEnabled && !gasUrl)} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm cursor-pointer disabled:opacity-60">
               {status === 'loading' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              <span>Gửi Email Bệnh Nhân</span>
+              <span>{smsEnabled ? 'Gửi thông báo' : 'Gửi Email Bệnh Nhân'}</span>
             </button>
           </div>
         </div>

@@ -62,7 +62,7 @@ export const ColdChainTab: React.FC<ColdChainTabProps> = ({
       <ColdChainGaugeBanner coldChainState={coldChainState} isAlarm={isAlarm} />
 
       {/* 3. Isolated Scrollable Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3 pb-8">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2 pb-8">
         {/* Quarantine Assessment Banner (GSP TT 36/2018 & WHO PQS) */}
         {isQuarantined && (
           <ColdChainQuarantineBanner

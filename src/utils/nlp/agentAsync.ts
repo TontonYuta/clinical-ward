@@ -10,6 +10,7 @@ import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/gem
 import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../services/gemini/clinicalScenarios';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
+import { matchDrugInteractionIntent } from './intents/medicationSafetyIntent';
 import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -30,9 +31,12 @@ export async function processClinicalAgentQueryAsync(
       sender: 'agent',
       text: guardCheck.safeResponse || '🛡️ Yêu cầu bị chặn do vi phạm chính sách bảo mật hệ thống.',
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      cdssAlert: guardCheck.violationType === 'sql_injection' || guardCheck.violationType === 'clinical_bypass' ? 'critical' : 'warning',
-      cdssAlertReason: guardCheck.threatDescription,
-      suggestions: ['Tra cứu Dược Thư 2015', 'Thông tư 20/2017/TT-BYT', 'Hướng dẫn an toàn hệ thống']
+      cdssAlert: {
+        level: guardCheck.violationType === 'sql_injection' || guardCheck.violationType === 'clinical_bypass' ? 'critical' : 'warning',
+        title: 'CẢNH BÁO AN TOÀN HỆ THỐNG',
+        message: guardCheck.threatDescription || 'Yêu cầu không an toàn bị chặn.',
+      },
+      suggestedChips: ['Tra cứu Dược Thư 2015', 'Thông tư 20/2017/TT-BYT', 'Hướng dẫn an toàn hệ thống']
     };
     return { replyMessage: blockedMsg };
   }
@@ -48,6 +52,12 @@ export async function processClinicalAgentQueryAsync(
   });
 
   const lower = cleanInput.toLowerCase();
+  if (matchDrugInteractionIntent(lower)) {
+    if (localResult.replyMessage) {
+      localResult.replyMessage.text = validateClientOutputGuardrail(localResult.replyMessage.text, cleanInput);
+    }
+    return localResult;
+  }
   // Nếu câu lệnh tạo thẻ tương tác (Action Card) -> Phản hồi ngay (0ms, 0 tokens)
   // Ngoại trừ kịch bản lâm sàng chuyên sâu (Allergy, Renal, ADR...) cần AI phân tích
   if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower)) {

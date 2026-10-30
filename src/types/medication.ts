@@ -32,13 +32,13 @@ export interface MedicationComposition {
     strength: string; // Nồng độ / Hàm lượng (VD: 10mg/1ml)
     molarQuantity?: string; // Nồng độ ion / mEq (VD: 13.4 mEq K+ / 10ml)
   }[];
-  excipients: {
+  excipients?: {
     name: string; // Tên tá dược (Natri metabisulfit, propylene glycol...)
     role: string; // Vai trò dược học (Chất chống oxy hóa, dung môi, chỉnh pH...)
     safetyNotice?: string; // Cảnh báo nhạy cảm đặc biệt
   }[];
   dosageForm: string; // Dạng bào chế (Dung dịch tiêm, Bột đông khô pha tiêm...)
-  appearance: string; // Đặc tính cảm quan (Dung dịch trong suốt, Bột trắng...)
+  appearance?: string; // Đặc tính cảm quan (Dung dịch trong suốt, Bột trắng...)
   phAndOsmolarity?: string; // pH dung dịch & Áp lực thẩm thấu
   packagingSpec: string; // Quy cách đóng gói (Ống thủy tinh 1ml, Hộp 10 ống)
   pharmacopeiaStandard?: string; // Tiêu chuẩn Dược điển (DĐVN V, USP, EP)
@@ -80,22 +80,22 @@ export interface FiveRightsSafetyInfo {
   renalAdjustment?: string; // Hiệu chỉnh chức năng thận (eGFR / CrCl)
   hepaticAdjustment?: string; // Hiệu chỉnh chức năng gan (Child-Pugh)
   // 4. Đúng đường dùng
-  administrationRouteDetails: string; // Đường dùng & kỹ thuật tiêm/truyền
-  compatibleDiluents: string[]; // Dung môi tương thích (NaCl 0.9%, G5%...)
+  administrationRouteDetails?: string; // Đường dùng & kỹ thuật tiêm/truyền
+  compatibleDiluents?: string[]; // Dung môi tương thích (NaCl 0.9%, G5%...)
   infusionRateLimit?: string; // Giới hạn tốc độ tiêm truyền
   routeWarning?: string; // Cảnh báo đường dùng nguy hiểm (VD: Cấm tiêm trực tiếp KCl)
   // 5. Đúng thời gian
-  timingAndFrequency: string; // Thời gian & tần suất dùng (q4h, q8h, trước/sau ăn)
-  mealRelation: string; // Liên quan bữa ăn
+  timingAndFrequency?: string; // Thời gian & tần suất dùng (q4h, q8h, trước/sau ăn)
+  mealRelation?: string; // Liên quan bữa ăn
   stabilityAfterPrep?: string; // Độ ổn định sau khi pha / mở nắp
   // Mở rộng an toàn lâm sàng
-  clinicalMonitoring: string; // Theo dõi lâm sàng
-  adverseReactions: string[]; // Tác dụng phụ thường gặp & dấu hiệu ngộ độc
+  clinicalMonitoring?: string; // Theo dõi lâm sàng
+  adverseReactions?: string[]; // Tác dụng phụ thường gặp & dấu hiệu ngộ độc
   antidote?: string; // Thuốc giải độc đặc hiệu
   blackBoxWarning?: string; // Cảnh báo nguy cơ cao / Hộp đen
-  ddiWarnings: string[]; // Tương tác thuốc nghiêm trọng
-  pregnancyLactation: string; // Phân loại thai kỳ FDA & cho con bú
-  storageAndHandling: string; // Điều kiện bảo quản & quản lý vỏ ống
+  ddiWarnings?: string[]; // Tương tác thuốc nghiêm trọng
+  pregnancyLactation?: string; // Phân loại thai kỳ FDA & cho con bú
+  storageAndHandling?: string; // Điều kiện bảo quản & quản lý vỏ ống
   // Mở rộng Dược Bệnh Viện: ATC, BHYT, TDM & Lọc Máu
   atcCode?: string; // Mã phân loại giải phẫu - điều trị - hóa học ATC (WHO)
   bhytCoverage?: string; // Tỷ lệ thanh toán BHYT theo TT 20/2022/TT-BYT
@@ -123,6 +123,7 @@ export interface MasterMedication {
   wardStockCount: number; // Tồn khả dụng tại tủ trực khoa lâm sàng
   hospitalStockCount: number; // Tồn khả dụng tại Kho Dược bệnh viện
   batchCount?: number; // Số lượng lô FEFO đang lưu kho bệnh viện
+  hospitalStockByUnit?: { unit: string; quantity: number; batchCount: number }[];
   searchAliases: string[]; // Bí danh viết tắt (VD: adre, nor, mor, epi, kcl)
   note?: string;
   clinicalProfile?: FiveRightsSafetyInfo;

@@ -188,8 +188,11 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
     first_active = matched.active_ingredient.split(";")[0].split("+")[0].strip().lower()
     if not matched.clinical_source or "Trang" not in matched.clinical_source:
         from app.models.registry import ClinicalDrugMonograph
-        m_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{first_active}%")).limit(1))
-        mono = m_res.scalar_one_or_none()
+        normalize = lambda value: re.sub(r"[^a-z0-9]+", "", value.casefold())
+        active_key = normalize(first_active)
+        m_res = await db.execute(select(ClinicalDrugMonograph))
+        exact_matches = [candidate for candidate in m_res.scalars() if normalize(candidate.inn) == active_key]
+        mono = exact_matches[0] if len(exact_matches) == 1 else None
         if mono and mono.source: matched.clinical_source = mono.source
     inv_stmt = select(InventoryBatch).where(
         or_(func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"), func.lower(InventoryBatch.item_name).like(f"%{first_active}%"))

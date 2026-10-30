@@ -64,7 +64,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     <div className="flex flex-col h-full bg-slate-50/70 relative overflow-hidden">
       {/* 1. Header */}
       <div className="h-13 sm:h-11 px-3.5 sm:px-4 bg-white border-b border-slate-200/90 flex items-center justify-between shrink-0 shadow-2xs">
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div data-testid="chat-window-drag-handle" className="flex h-full min-w-0 items-center gap-2 sm:gap-2.5 cursor-grab touch-none select-none">
           <div className="w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg bg-teal-800 flex items-center justify-center text-white shadow-2xs">
             <Bot className="w-4 h-4" />
           </div>

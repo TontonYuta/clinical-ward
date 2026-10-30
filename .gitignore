@@ -56,6 +56,12 @@ TEMP/
 **/*.pdf
 !public/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf
 
+# Local database snapshots and generated audit artifacts
+/artifacts/
 
 
 
+
+
+# Local scratch and generated UI artifacts
+/TEMP/

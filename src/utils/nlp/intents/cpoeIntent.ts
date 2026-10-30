@@ -55,9 +55,9 @@ export function handleCpoeIntent(
       activeIngredient: 'Amoxicillin + Clavulanic acid',
       dosage: '1 viên',
       frequency: 'Ngày 2 lần (sau ăn)',
-      route: 'Đường uống',
+      route: 'Uống',
       quantity: 14,
-      unit: 'viên',
+      unit: 'Viên',
       instructions: 'Uống ngay đầu bữa ăn để giảm kích ứng dạ dày'
     });
   }
@@ -68,9 +68,9 @@ export function handleCpoeIntent(
       activeIngredient: 'Paracetamol',
       dosage: '1 viên',
       frequency: 'Ngày 2 - 3 lần (cách 4-6h khi sốt >= 38.5°C)',
-      route: 'Đường uống',
+      route: 'Uống',
       quantity: 10,
-      unit: 'viên',
+      unit: 'Viên',
       instructions: 'Uống sau ăn với nhiều nước. Không dùng quá 4g/ngày'
     });
   }
@@ -81,9 +81,9 @@ export function handleCpoeIntent(
       activeIngredient: 'Ciprofloxacin',
       dosage: '1 viên',
       frequency: 'Ngày 2 lần (cách 12h)',
-      route: 'Đường uống',
+      route: 'Uống',
       quantity: 14,
-      unit: 'viên',
+      unit: 'Viên',
       instructions: 'Uống xa bữa ăn và tránh uống cùng sữa hoặc chế phẩm chứa canxi'
     });
   }
@@ -97,9 +97,9 @@ export function handleCpoeIntent(
         activeIngredient: 'Amoxicillin + Clavulanic acid',
         dosage: '1 viên',
         frequency: 'Ngày 2 lần',
-        route: 'Đường uống',
+        route: 'Uống',
         quantity: 14,
-        unit: 'viên',
+        unit: 'Viên',
         instructions: 'Uống đầu bữa ăn'
       },
       {
@@ -108,9 +108,9 @@ export function handleCpoeIntent(
         activeIngredient: 'Paracetamol',
         dosage: '1 viên',
         frequency: 'Ngày 2 lần (khi sốt/đau)',
-        route: 'Đường uống',
+        route: 'Uống',
         quantity: 10,
-        unit: 'viên',
+        unit: 'Viên',
         instructions: 'Uống sau ăn'
       }
     );
@@ -121,16 +121,20 @@ export function handleCpoeIntent(
     id: orderId,
     patientId: `BN-2026-${String(Date.now()).slice(-3)}`,
     patientName,
+    patientCccd: '001201019283',
+    patientDob: '1984-05-10',
     patientAge: 42,
     patientGender: 'Nam',
     patientWeight: 65,
     doctorName: 'BS.CKII Trần Văn Hùng',
+    doctorCertificate: '009125/BYT-CCHN',
     department: 'Khoa Khám Bệnh',
     diagnosisIcd10,
     diagnosisText,
+    isChronicDisease: false,
     prescriptionType: 'outpatient',
     status: 'draft',
-    createdAt: new Date().toISOString(),
+    prescribedAt: new Date().toISOString(),
     daysPrescribed: 7,
     items,
     clinicalNotes: 'Bệnh nhân tỉnh táo, tiếp xúc tốt, không tiền sử dị ứng penicillin.'
@@ -163,7 +167,7 @@ export function handleCpoeIntent(
     text: replyText,
     timestamp: nowStr,
     legalReference: {
-      lawCode: 'Thông tư 52/2017/TT-BYT & QĐ 2147/QĐ-BYT',
+      lawCode: 'Thông tư 26/2025/TT-BYT & QĐ 2147/QĐ-BYT',
       title: 'Quy chế kê đơn thuốc trong điều trị ngoại trú',
       clause: 'Điều 4 & Điều 7: Trách nhiệm của người kê đơn'
     },

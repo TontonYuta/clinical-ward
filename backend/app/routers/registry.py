@@ -1,9 +1,14 @@
 import re
+import hashlib
+import unicodedata
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.config import settings
 from app.models.registry import DavNationalDrug
+from app.models.inventory import InventoryBatch
 from app.schemas.registry import (
     RegistryPaginatedResponse,
     RegistryStatsResponse,
@@ -11,6 +16,28 @@ from app.schemas.registry import (
 )
 
 router = APIRouter(prefix="/registry", tags=["Cơ Sở Dữ Liệu Dược Quốc Gia (DAV 55.000 SĐK)"])
+
+def _catalog_reader():
+    from app.services.dav_catalog_reader import DavCatalogReader
+    path = settings.DAV_CATALOG_DB_PATH
+    if not path:
+        raise HTTPException(status_code=503, detail="DAV canonical catalog chưa được cấu hình")
+    db_path = Path(path)
+    if not db_path.is_file():
+        raise HTTPException(status_code=503, detail="DAV canonical catalog không tồn tại")
+    try:
+        return DavCatalogReader(db_path, settings.DAV_CATALOG_RUN_ID)
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+@router.get("/catalog")
+def get_canonical_catalog(
+    search: str | None = Query(None), group: str | None = Query(None), pharm_group: str | None = Query(None),
+    page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
+    only_in_warehouse: bool = Query(False), active_only: bool = Query(False),
+):
+    reader = _catalog_reader()
+    return reader.list_registry(search=search, group=group, pharm_group=pharm_group, page=page, page_size=page_size, only_in_warehouse=only_in_warehouse, active_only=active_only, source_mode="legacy_compatible")
 
 GROUP_ALIAS_MAP = {
     "opioid": "Thuốc gây nghiện", "sedative": "Thuốc hướng thần", "emergency": "Thuốc cấp cứu",
@@ -36,6 +63,49 @@ PHARM_MAPPING: dict[str, tuple[list[str], list[str]]] = {
 
 _GROUP_STATS_CACHE: dict[str, int] | None = None
 
+def _normalize_code(value: str | None) -> str:
+    # SĐK is opaque; preserve meaningful punctuation and prefixes.
+    return unicodedata.normalize("NFKC", value or "").strip().casefold()
+
+def _revision(rows: list[tuple]) -> str:
+    digest = hashlib.sha256()
+    for row in rows:
+        digest.update(repr(tuple(row)).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+async def _get_registry_revision(db: AsyncSession) -> str:
+    rows = (await db.execute(select(
+        DavNationalDrug.id, DavNationalDrug.national_code, DavNationalDrug.brand_name,
+        DavNationalDrug.active_ingredient, DavNationalDrug.group, DavNationalDrug.atc_code
+    ).order_by(DavNationalDrug.id))).all()
+    return _revision(rows)
+
+async def _get_inventory_revision(db: AsyncSession) -> str:
+    rows = (await db.execute(select(
+        InventoryBatch.id, InventoryBatch.registration_number,
+        InventoryBatch.current_stock, InventoryBatch.unit
+    ).order_by(InventoryBatch.id))).all()
+    return _revision(rows)
+
+async def _hospital_stock(db: AsyncSession) -> dict[str, list[dict[str, int | str]]]:
+    rows = (await db.execute(select(
+        InventoryBatch.registration_number,
+        InventoryBatch.current_stock, InventoryBatch.unit
+    ))).all()
+    grouped: dict[str, dict[str, list[int]]] = {}
+    for registration_number, quantity, unit in rows:
+        # Inventory is matched only by its registration number. national_code may
+        # be an unrelated internal/legacy identifier and is not a safe fallback.
+        code = _normalize_code(registration_number)
+        if not code or quantity <= 0:
+            continue
+        unit_name = (unit or "").strip() or "Không rõ đơn vị"
+        totals = grouped.setdefault(code, {}).setdefault(unit_name, [0, 0])
+        totals[0] += quantity
+        totals[1] += 1
+    return {code: [{"unit": unit, "quantity": totals[0], "batch_count": totals[1]} for unit, totals in sorted(units.items())] for code, units in grouped.items()}
+
 async def _get_cached_group_stats(db: AsyncSession) -> dict[str, int]:
     global _GROUP_STATS_CACHE
     if _GROUP_STATS_CACHE is None:
@@ -51,6 +121,7 @@ async def get_national_drugs_paginated(
     pharm_group: str | None = Query(None, description="Lọc theo tác dụng dược lý"),
     page: int = Query(1, ge=1, description="Số trang (bắt đầu từ 1)"),
     page_size: int = Query(50, ge=1, le=200, description="Số lượng thuốc mỗi trang"),
+    only_in_warehouse: bool = Query(False, description="Chỉ hiện thuốc đang có tồn kho bệnh viện"),
     db: AsyncSession = Depends(get_db)
 ):
     target_group = GROUP_ALIAS_MAP.get(group.lower()) if group and group.lower() in GROUP_ALIAS_MAP else group
@@ -67,6 +138,17 @@ async def get_national_drugs_paginated(
         q = f"%{search.strip().lower()}%"
         filters.append(or_(func.lower(DavNationalDrug.brand_name).like(q), func.lower(DavNationalDrug.active_ingredient).like(q), func.lower(DavNationalDrug.national_code).like(q), func.lower(DavNationalDrug.note).like(q)))
 
+    stock_by_code = await _hospital_stock(db)
+    hospital_codes = {code for code, units in stock_by_code.items() if any(int(unit["quantity"]) > 0 for unit in units)}
+    if only_in_warehouse:
+        # Keep the filter in SQL so a warehouse request does not hydrate the
+        # entire registry into Python before pagination.
+        stock_codes = [code for code in hospital_codes if code]
+        if stock_codes:
+            filters.append(func.lower(func.trim(DavNationalDrug.national_code)).in_(stock_codes))
+        else:
+            filters.append(DavNationalDrug.id == "__no_hospital_stock__")
+
     try:
         # 1. Total matching count
         count_stmt = select(func.count(DavNationalDrug.id))
@@ -80,9 +162,21 @@ async def get_national_drugs_paginated(
         if filters:
             data_stmt = data_stmt.where(*filters)
         offset = (page - 1) * page_size
-        data_stmt = data_stmt.order_by(DavNationalDrug.brand_name.asc()).offset(offset).limit(page_size)
+        data_stmt = data_stmt.order_by(
+            (DavNationalDrug.national_code == "893100110026").desc(),
+            DavNationalDrug.brand_name.asc(),
+            DavNationalDrug.national_code.asc()
+        ).offset(offset).limit(page_size)
         data_res = await db.execute(data_stmt)
         items = data_res.scalars().all()
+
+        hospital_stock_drug_count = (await db.execute(
+            select(func.count(DavNationalDrug.id)).where(
+                func.lower(func.trim(DavNationalDrug.national_code)).in_(list(hospital_codes))
+            )
+        )).scalar() or 0
+        for drug in items:
+            drug.hospital_stock_by_unit = stock_by_code.get(_normalize_code(drug.national_code), [])
 
         # 3. Overall group statistics (Fast in-memory cached group counts)
         group_stats = await _get_cached_group_stats(db)
@@ -95,7 +189,10 @@ async def get_national_drugs_paginated(
             page_size=page_size,
             total_pages=total_pages,
             group_stats=group_stats,
-            items=items
+            items=items,
+            registry_revision=await _get_registry_revision(db),
+            inventory_revision=await _get_inventory_revision(db),
+            hospital_stock_drug_count=hospital_stock_drug_count
         )
     except Exception as e:
         import traceback
@@ -136,11 +233,15 @@ async def get_drug_by_national_code(national_code: str, refresh: bool = Query(Fa
         if drug.clinical_monograph_id:
             m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == drug.clinical_monograph_id))
             mono = m_res.scalar_one_or_none()
+        # Chỉ tự liên kết hoạt chất đơn khi INN khớp toàn bộ sau chuẩn hóa.
+        # Tìm theo từ con gây gán nhầm thuốc phối hợp/muối (vd. Potassium).
         if not mono and drug.active_ingredient:
-            for w in [x for x in re.findall(r'[a-zA-ZÀ-ỹ]{4,}', drug.active_ingredient) if x.lower() not in {"dưới", "dạng", "chứa", "dung", "dịch", "thuốc", "viên", "tiêm"}]:
-                m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.inn.ilike(f"%{w}%")).limit(1))
-                mono = m_res.scalar_one_or_none()
-                if mono: break
+            normalize = lambda value: re.sub(r"[^a-z0-9]+", "", value.casefold())
+            active_key = normalize(drug.active_ingredient)
+            mono_res = await db.execute(select(ClinicalDrugMonograph))
+            exact_matches = [candidate for candidate in mono_res.scalars() if normalize(candidate.inn) == active_key]
+            if len(exact_matches) == 1:
+                mono = exact_matches[0]
         if mono:
             fields = ("contraindications", "adult_dosage", "indications", "adverse_effects", "precautions", "pregnancy_warning", "pediatric_dosage", "renal_adjustment", "hepatic_adjustment", "drug_interactions", "overdose_treatment", "antidote")
             for fld in fields:

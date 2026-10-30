@@ -1,3 +1,6 @@
+import type { RegistryPageResponse } from '../types/registry';
+import { loadOfflineRegistry } from '../components/Modals/NationalDrugRegistry/offlineRegistry';
+
 /**
  * API Service connecting Frontend to FastAPI Backend (port 8000)
  * Adheres to Thông tư 22/2011, TT 20/2017, TT 36/2018, NĐ 98/2021, NĐ 151/2017, NĐ 130/2018
@@ -279,21 +282,24 @@ export async function chatCopilotApi(query: string, userRole: string, userName: 
 }
 
 // 8. National Drug Registry (55.000 SĐK)
+
 export async function getNationalDrugRegistryApi(params?: {
   search?: string;
   group?: string;
   pharmGroup?: string;
   page?: number;
   pageSize?: number;
-}) {
+  onlyInWarehouse?: boolean;
+}): Promise<RegistryPageResponse> {
   const query = new URLSearchParams();
   if (params?.search) query.set('search', params.search);
   if (params?.group && params.group !== 'all') query.set('group', params.group);
   if (params?.pharmGroup && params.pharmGroup !== 'all') query.set('pharm_group', params.pharmGroup);
   if (params?.page) query.set('page', params.page.toString());
   if (params?.pageSize) query.set('page_size', (params.pageSize || 50).toString());
+  if (params?.onlyInWarehouse) query.set('only_in_warehouse', 'true');
 
-  const res = await fetch(`${API_BASE_URL}/registry?${query.toString()}`);
+  const res = await fetch(`${API_BASE_URL}/registry/catalog?${query.toString()}`);
   if (!res.ok) throw new Error('Không thể nạp danh mục dược quốc gia từ máy chủ');
   return res.json();
 }
@@ -312,16 +318,9 @@ export async function getDrugDetailApi(nationalCode: string, refresh = false) {
     if (res.ok) return await res.json();
   } catch {}
   try {
-    const res = await fetch('/data/vietnam_drug_registry/dav_essential_formulary.json');
-    if (res.ok) {
-      const list = await res.json();
-      const match = list.find((d: any) => 
-        (d.nationalCode && d.nationalCode.trim().toLowerCase() === norm) || 
-        (d.id && d.id.trim().toLowerCase() === norm) ||
-        (d.registrationNumber && d.registrationNumber.trim().toLowerCase() === norm)
-      );
-      if (match) return match;
-    }
+    const list = await loadOfflineRegistry();
+    const match = list.find((d: any) => [d.national_code,d.nationalCode,d.id,d.registrationNumber].some((value) => typeof value === 'string' && value.trim().toLowerCase() === norm));
+    if (match) return match;
   } catch {}
   return null;
 }

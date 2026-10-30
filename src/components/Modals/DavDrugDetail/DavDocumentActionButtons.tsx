@@ -64,20 +64,13 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
   const isLegacyPaper = nationalCode ? !/^\d{12}$/.test(nationalCode) : false;
 
   return (
-    <div className="border border-slate-200 rounded-lg p-3.5 bg-slate-50/70 space-y-2.5 shadow-2xs">
-      <div className="flex items-center justify-between">
-        <span className="text-2xs uppercase font-bold text-slate-500">
-          Hồ Sơ Điện Tử Cục Quản Lý Dược
-        </span>
-        <span className="text-2xs text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-          Pháp lý SmPC
-        </span>
-      </div>
+    <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
+      <div className="text-sm font-semibold text-slate-700">Hồ sơ thuốc</div>
 
       {isResolving ? (
         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-900">
           <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
-          <span>Đang đối soát hồ sơ điện tử TT89 từ Cổng Cục Quản Lý Dược...</span>
+          <span>Đang tải hồ sơ tài liệu…</span>
         </div>
       ) : hasAnyDoc ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
@@ -86,8 +79,8 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
               href={hdsdUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm transition shadow-xs group cursor-pointer"
-              title="Mở toàn văn Tờ Hướng Dẫn Sử Dụng (SmPC) PDF chính thức của Cục QLD"
+              className="inline-flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-blue-700 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm transition group cursor-pointer"
+              title="Mở tờ hướng dẫn sử dụng PDF"
             >
               <div className="flex items-center gap-2 truncate">
                 <FileText className="w-4 h-4 text-blue-100 shrink-0" />
@@ -107,7 +100,7 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
               href={labelUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded bg-white hover:bg-slate-50 text-slate-900 hover:text-blue-700 border border-slate-300 font-semibold text-xs sm:text-sm transition shadow-2xs group cursor-pointer"
+              className="inline-flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-900 hover:text-blue-700 border border-slate-300 font-semibold text-xs sm:text-sm transition group cursor-pointer"
               title="Mở bản vẽ kỹ thuật Mẫu Nhãn Bao Bì lưu hành được Bộ Y Tế phê duyệt"
             >
               <div className="flex items-center gap-2 truncate">

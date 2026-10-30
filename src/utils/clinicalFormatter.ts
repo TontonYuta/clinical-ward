@@ -76,7 +76,10 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
   if (!raw) return [];
 
   // Chuẩn hóa ngắt dòng và dấu gạch đầu
-  const cleaned = raw.replace(/\r\n/g, '\n').trim();
+  const cleaned = raw
+    .replace(/\r\n/g, '\n')
+    .replace(/(^|\n)\s*(?:[•●▪◦‣⁃*-]+\s*)+/g, '$1')
+    .trim();
 
   // Tách câu theo các tiêu mục lâm sàng thường gặp
   const pattern = /(?=(?:Đường uống|Liều uống|Đặt trực tràng|Truyền tĩnh mạch|Tiêm bắp|Tiêm tĩnh mạch|Trên 50 kg|Dưới 50 kg|Sơ sinh|Trẻ em|Đau, sốt|Đau:|Sốt:|Thời kỳ mang thai|Thời kỳ cho con bú|Phản ứng da|Nguy cơ suy gan|Thận trọng đặc biệt|Thuốc uống chống đông|Rửa dạ dày|Điều trị bằng):\s*)/gi;
@@ -89,7 +92,7 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
     const colonIdx = chunk.indexOf(':');
     if (colonIdx > 0 && colonIdx <= 35 && !chunk.slice(0, colonIdx).includes('\n')) {
       const label = chunk.slice(0, colonIdx).trim();
-      const content = chunk.slice(colonIdx + 1).trim();
+      const content = chunk.slice(colonIdx + 1).replace(/^[\s•●▪◦‣⁃*-]+/, '').trim();
       const isImportant = /suy gan|quá liều|tử vong|chống chỉ định|nghiêm trọng|phản vệ|sjs|ten/i.test(chunk);
       items.push({ label, content, isImportant });
     } else {
@@ -106,8 +109,8 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
           }
         }
       } else {
-        items.push({
-          content: chunk,
+      items.push({
+          content: chunk.replace(/^[\s•●▪◦‣⁃*-]+/, '').trim(),
           isImportant: /suy gan|quá liều|tử vong|chống chỉ định|nghiêm trọng/i.test(chunk)
         });
       }
@@ -123,9 +126,9 @@ export function parseClinicalBullets(raw?: string): ClinicalBulletItem[] {
 export function formatContraindicationsList(text?: string): string[] {
   if (!text) return [];
   // Gộp các dòng bị gãy (OCR soft wrap) thành câu hoàn chỉnh
-  const normalized = text.replace(/\r/g, '').replace(/\n+/g, ' ').trim();
+  const normalized = text.replace(/\r/g, '').replace(/[\t ]+/g, ' ').replace(/\n+/g, ' ').trim();
   return normalized
     .split(/[\.;]/)
-    .map((s) => s.trim())
+    .map((s) => s.replace(/^[\s:：,，;；]+/gu, '').replace(/[\s:：,，;；]+$/gu, '').trim())
     .filter((s) => s.length > 3 && !/^(\.|\-|\*)$/.test(s));
 }

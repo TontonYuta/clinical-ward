@@ -101,12 +101,15 @@ export async function fetchSavedPrescriptionAdvices(): Promise<PatientPrescripti
 }
 
 export async function sendMedicationAdviceEmail(
-  advice: PatientPrescriptionAdvice
+  advice: PatientPrescriptionAdvice,
+  options: { sendEmail?: boolean; sendSms?: boolean } = {}
 ): Promise<SendAdviceEmailResponse> {
   const webhookUrl = advice.gasWebhookUrl || getStoredGasWebhookUrl();
   const payload = {
     ...advice,
-    gasWebhookUrl: webhookUrl || undefined
+    gasWebhookUrl: webhookUrl || undefined,
+    sendEmail: options.sendEmail !== false,
+    sendSms: options.sendSms === true
   };
 
   // Lưu lịch dặn dò vào CSDL vĩnh viễn
@@ -123,11 +126,14 @@ export async function sendMedicationAdviceEmail(
       saveAdviceLocally({ ...advice, notificationStatus: 'success', emailSentAt: data.timestamp });
       return data;
     }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || 'Không thể gửi thông báo');
   } catch (err) {
-    console.warn('Backend relay unavailable, trying direct GAS webhook or fallback:', err);
+    if (options.sendSms || !webhookUrl) throw err;
+    console.warn('Backend relay unavailable, trying direct GAS webhook:', err);
   }
 
-  if (webhookUrl && webhookUrl.startsWith('http')) {
+  if (!options.sendSms && webhookUrl && webhookUrl.startsWith('http')) {
     try {
       await fetch(webhookUrl, {
         method: 'POST',
@@ -149,15 +155,14 @@ export async function sendMedicationAdviceEmail(
     }
   }
 
-  const simTime = new Date().toISOString();
-  saveAdviceLocally({ ...advice, notificationStatus: 'success', emailSentAt: simTime });
-  return {
-    success: true,
-    message: `Đã kích hoạt lịch dặn dò và gửi email mô phỏng thành công tới: ${advice.patientEmail}`,
-    timestamp: simTime,
-    emailSentTo: advice.patientEmail,
-    provider: 'local_preview'
-  };
+  // SMS is delivered only by a configured provider. Never report a simulated
+  // notification as sent to a patient's phone.
+  if (options.sendSms) {
+    saveAdviceLocally({ ...advice, notificationStatus: 'error' });
+    throw new Error('Backend chưa khả dụng; không thể xác nhận gửi SMS. Không gửi email thay thế một cách âm thầm.');
+  }
+
+  throw new Error('Không gửi được email: backend không khả dụng và chưa cấu hình Google Apps Script. Lịch đã được lưu nháp.');
 }
 
 export function printMedicationAdvice(advice: PatientPrescriptionAdvice): void {

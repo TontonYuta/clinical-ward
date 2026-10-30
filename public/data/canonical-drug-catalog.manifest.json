@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "dav-canonical-20261030-v12",
+  "generated_at": "2026-10-29T21:29:07.323945+00:00",
+  "source": "DAV catalog canonical DB derived from DAV portal data with linked clinical monographs",
+  "source_db_sha256": "3f3a40b8aad7fb7693fa06907c17e03593c4c5654b30fbb49b1c743e7b2f59e1",
+  "product_count": 54884,
+  "file": "/data/canonical-drug-catalog.json.gz",
+  "encoding": "gzip",
+  "sha256": "3b7a60509cc6c68fc86477b00b237df5faccc0249806ca4310d2a76d02a06546",
+  "bytes": 86612233,
+  "clinical_interactions_are_source_text": true
+}

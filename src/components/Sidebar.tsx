@@ -31,14 +31,13 @@ export interface SidebarProps {
   onOpenUserGuide: () => void;
   onOpenPrintableForms?: () => void;
   onOpenMedicationSafety?: () => void;
-  systemDomain?: 'pharmacy' | 'equipment';
-  onSelectDomain?: (domain: 'pharmacy' | 'equipment') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onTabChange,
   currentUserRole,
+  onSelectUserRole,
   isCollapsed,
   onToggleCollapse,
   onCloseMobile,
@@ -53,8 +52,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUserGuide,
   onOpenPrintableForms,
   onOpenMedicationSafety,
-  systemDomain,
-  onSelectDomain,
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
@@ -65,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isCollapsed ? 'w-16' : 'w-72 max-w-[85vw] md:w-70'
       }`}
     >
-      <SidebarHeader isCollapsed={isCollapsed} onCloseMobile={onCloseMobile} />
+      <SidebarHeader isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} onCloseMobile={onCloseMobile} />
 
       <div
         data-testid="clinical-nav-tabs"
@@ -83,8 +80,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           coldChainTemp={coldChainTemp}
           isColdAlarm={isColdAlarm}
           misallocatedAssetsCount={misallocatedAssetsCount}
-          systemDomain={systemDomain}
-          onSelectDomain={onSelectDomain}
         />
 
         <SidebarLegalLinks
@@ -98,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       </div>
 
-      <SidebarFooter isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} />
+      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onCloseMobile={onCloseMobile} />
     </aside>
   );
 };

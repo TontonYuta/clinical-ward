@@ -40,6 +40,8 @@ export function handlePrescriptionAdviceIntent(
   // 2. Trích xuất Email bệnh nhân
   const emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
   const patientEmail = emailMatch ? emailMatch[1] : (matchedPatient?.email || 'tri.vm@hospital.vn');
+  const phoneMatch = text.match(/(?:\+?84|0)(?:[ .()-]?\d){8,10}/);
+  const patientPhone = phoneMatch?.[0]?.replace(/[ .()-]/g, '') || matchedPatient?.phone;
 
   // 3. Trích xuất các mốc giờ uống thuốc (nếu người dùng chỉ định)
   const timeMatches = text.match(/(\d{1,2})\s*(?:h|giờ|g)/gi);
@@ -121,6 +123,7 @@ export function handlePrescriptionAdviceIntent(
     prescriptionId: 'RX-2026-OUTPATIENT',
     patientName,
     patientEmail,
+    patientPhone,
     diagnosis: matchedPatient?.chronicConditions ? `${matchedPatient.chronicConditions} (eGFR: ${matchedPatient.egfr})` : 'Điều trị ngoại trú & Dặn dò dùng thuốc',
     doctorName: 'BS.CKII Trần Văn Hùng',
     doctorHospital: 'Bệnh Viện Đa Khoa Lâm Sàng',
@@ -141,6 +144,7 @@ export function handlePrescriptionAdviceIntent(
   const replyText = `### 📋 ĐÃ THIẾT LẬP LỊCH DẶN DÒ UỐNG THUỐC CHO BỆNH NHÂN\n\n` +
     `• **Bệnh nhân:** **${patientName}**\n` +
     `• **Email nhận lịch:** \`${patientEmail}\`\n` +
+    `${patientPhone ? `• **Điện thoại:** \`${patientPhone}\` (SMS chỉ gửi khi cấu hình nhà cung cấp)\n` : ''}` +
     `• **Thời gian uống thuốc:** ${hoursNote}\n` +
     `• **Số loại thuốc:** ${matchedMeds.length} mặt hàng (\`${matchedMeds.map(m => m.medicationName).join(', ')}\`)\n` +
     `• **Phương thức thông báo:** Tự động hóa qua Google Apps Script Webhook & Gmail API.\n\n` +
@@ -162,7 +166,7 @@ export function handlePrescriptionAdviceIntent(
     text: replyText,
     timestamp: nowStr,
     legalReference: {
-      lawCode: 'Thông tư 52/2017/TT-BYT & QĐ 2147/QĐ-BYT',
+      lawCode: 'Thông tư 26/2025/TT-BYT & QĐ 2147/QĐ-BYT',
       title: 'Quy chế kê đơn thuốc ngoại trú & Hướng dẫn sử dụng thuốc an toàn',
       clause: 'Điều 7: Hướng dẫn người bệnh sử dụng thuốc'
     },

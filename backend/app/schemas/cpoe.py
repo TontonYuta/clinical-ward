@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 class CpoeItemSchema(BaseModel):
     id: str
@@ -31,6 +31,16 @@ class CpoeOrderCreate(BaseModel):
     digitalSignature: str | None = None
     status: str = "signed"
     items: list[CpoeItemSchema]
+
+    @model_validator(mode="after")
+    def validate_outpatient_duration(self):
+        if self.prescriptionType == "outpatient":
+            maximum = 90 if self.isChronicDisease else 30
+            if not 1 <= self.daysPrescribed <= maximum:
+                raise ValueError(f"Số ngày ngoại trú phải từ 1 đến {maximum} ngày theo Thông tư 26/2025/TT-BYT")
+        elif self.prescriptionType == "inpatient_daily" and self.daysPrescribed != 1:
+            raise ValueError("Y lệnh nội trú hằng ngày phải có thời hạn 1 ngày")
+        return self
 
 class CpoeOrderResponse(BaseModel):
     id: str

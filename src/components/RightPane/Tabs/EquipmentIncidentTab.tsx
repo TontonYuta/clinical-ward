@@ -81,7 +81,14 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden space-y-2.5 w-full">
+    <div className="h-full flex flex-col overflow-hidden gap-2 w-full">
+      <header className="flex items-center justify-end gap-6 px-1">
+        <div className="hidden sm:flex items-center gap-6 pb-1 text-sm">
+          <div><span className="block text-xs text-slate-500">Đang xử lý</span><strong className="mt-0.5 block text-lg font-semibold tabular-nums text-slate-950">{inProgressCount}</strong></div>
+          <div className="h-9 w-px bg-slate-200" />
+          <div><span className="block text-xs text-slate-500">Cần ưu tiên</span><strong className="mt-0.5 block text-lg font-semibold tabular-nums text-slate-950">{urgentCount}</strong></div>
+        </div>
+      </header>
       <EquipmentHeaderRibbon
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -115,11 +122,11 @@ export const EquipmentIncidentTab: React.FC<EquipmentIncidentTabProps> = ({
       </div>
 
       {/* Desktop High-Density Table */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col">
         <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto pb-4">
           <table className="w-full min-w-[1100px] text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100/95 border-b border-slate-200 text-slate-700">
-              <tr className="font-bold text-xs sm:text-sm uppercase tracking-wider">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
+              <tr className="font-semibold text-xs tracking-wide">
                 <th className="py-3.5 px-3.5 whitespace-nowrap">Mã sự cố</th>
                 <th className="py-3.5 px-3.5">Thiết bị</th>
                 <th className="py-3.5 px-3.5">Mô tả sự cố</th>

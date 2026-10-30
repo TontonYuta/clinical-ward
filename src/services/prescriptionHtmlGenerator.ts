@@ -31,7 +31,7 @@ export function generateMedicationHtmlEmail(advice: PatientPrescriptionAdvice, f
       </div>
       <div style="padding:16px 18px;">
         <div style="margin-bottom:12px;font-size:12px;border-bottom:1px dashed #cbd5e1;padding-bottom:10px;">
-          <div><strong>Người bệnh:</strong> ${advice.patientName} ${advice.patientEmail ? `(${advice.patientEmail})` : ''} • <strong>Chẩn đoán:</strong> ${advice.diagnosis || 'Điều trị ngoại trú'}</div>
+          <div><strong>Người bệnh:</strong> ${advice.patientName} ${advice.patientEmail ? `(${advice.patientEmail})` : ''} ${advice.patientPhone ? `• Điện thoại: ${advice.patientPhone}` : ''} • <strong>Chẩn đoán:</strong> ${advice.diagnosis || 'Điều trị ngoại trú'}</div>
           <div style="color:#475569;margin-top:2px;">Thời gian uống: ${advice.startDate} đến ${advice.endDate}</div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #cbd5e1;margin-bottom:14px;">

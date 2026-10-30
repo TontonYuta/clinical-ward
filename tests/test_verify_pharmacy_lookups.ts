@@ -35,7 +35,7 @@ async function testPharmacyLookups() {
   await nationalRegistryBtn.click();
   await page.waitForTimeout(1000);
 
-  const registryModalTitle = page.locator('text=Cổng Dữ Liệu Dược Quốc Gia').or(page.locator('text=Cơ Sở Dữ Liệu Dược Quốc Gia'));
+  const registryModalTitle = page.locator('text=Kho Dược Quốc Gia').or(page.locator('text=Cơ Sở Dữ Liệu Dược Quốc Gia'));
   const isRegistryModalOpen = await registryModalTitle.first().isVisible();
   console.log('✅ 3. Modal "Kho Dược Quốc Gia" mở thành công:', isRegistryModalOpen);
   if (!isRegistryModalOpen) throw new Error('National Drug Registry Modal failed to open');

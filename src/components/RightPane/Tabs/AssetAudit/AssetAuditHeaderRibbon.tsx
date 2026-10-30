@@ -31,10 +31,10 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
   onScanClick,
 }) => {
   return (
-    <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-lg border border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+    <div className="bg-white p-2 sm:px-3 rounded-lg border border-slate-200 shrink-0 flex items-center gap-2 shadow-2xs overflow-x-auto">
       {/* Left: Search Input & Status Filter Pills */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
-        <div className="relative w-full sm:w-64 shrink-0">
+      <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap">
+        <div className="relative w-72 min-w-56 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"

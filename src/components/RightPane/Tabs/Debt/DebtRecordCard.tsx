@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Clock, Check, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Check, ShieldAlert } from 'lucide-react';
 import { DebtRecord } from '../../../../types/clinical';
 import { PrintableFormType } from '../../../Modals/PrintableFormModal';
 
@@ -25,25 +25,23 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
   const isNarcotic = item.itemType === 'Thuốc gây nghiện';
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-3.5 hover:border-slate-300 transition shadow-2xs">
+    <div className="bg-white border-b border-slate-200 px-1 py-4 space-y-3.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs sm:text-sm font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/60">
+          <span className="font-mono text-xs sm:text-sm font-medium text-slate-600">
             {item.code}
           </span>
-          <span className="text-xs sm:text-sm text-slate-500 font-mono font-medium flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-xs sm:text-sm text-slate-500 font-mono font-medium">
             {item.borrowTime}
           </span>
         </div>
         <div>
           {isDebt ? (
-            <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-md">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="text-xs sm:text-sm font-medium text-amber-800">
               Đang nợ
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-md">
+            <span className="text-xs sm:text-sm font-medium text-slate-600">
               Đã hoàn bù
             </span>
           )}
@@ -54,13 +52,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-base sm:text-lg text-slate-900 leading-snug">{item.itemName}</h3>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span
-              className={`text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-md ${
-                isNarcotic
-                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                  : 'bg-slate-100 text-slate-700 border border-slate-200'
-              }`}
-            >
+            <span className={`text-xs sm:text-sm font-medium ${isNarcotic ? 'text-rose-700' : 'text-slate-500'}`}>
               {item.itemType}
             </span>
             <span className="text-xs sm:text-sm text-slate-600 font-medium">
@@ -69,7 +61,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
           </div>
         </div>
         <div className="text-right shrink-0">
-          <span className="font-mono text-lg sm:text-xl font-black text-slate-900 bg-slate-100 border border-slate-200 px-3 py-1 rounded-md inline-block">
+          <span className="font-mono text-base sm:text-lg font-semibold text-slate-900 inline-block">
             {item.quantity}
           </span>
         </div>
@@ -83,16 +75,15 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
         <div>
           {isNarcotic ? (
             item.ampouleDestroyed ? (
-              <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+              <span className="text-xs sm:text-sm font-medium text-slate-600">
                 Đã tiêu hủy vỏ
               </span>
             ) : item.ampouleReturned ? (
-              <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-xs sm:text-sm font-medium text-slate-600">
                 Đã nộp vỏ
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200">
+              <span className="text-xs sm:text-sm font-semibold text-rose-700">
                 <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
                 Nợ vỏ Morphin
               </span>

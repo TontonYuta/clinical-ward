@@ -105,9 +105,6 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
 
     cursor.execute("SELECT COUNT(*) FROM clinical_drug_monographs")
     count = cursor.fetchone()[0]
-    if count >= 600:
-        return count
-
     src = find_monographs_source()
     if not src:
         print("⚠️ Không tìm thấy dtqg_monographs_extracted.json")
@@ -119,7 +116,8 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
         rows = []
         for idx, m in enumerate(monos, 1):
             inn = m.get("inn", "")
-            m_id = m.get("id") or f"DTQG-{idx:04d}-{re.sub(r'[^a-zA-Z0-9]', '', inn)[:20]}"
+            # Stable source row identity: the index distinguishes repeated INNs.
+            m_id = f"DTQG-{idx:04d}-{re.sub(r'[^a-zA-Z0-9]', '', inn)[:20]}"
             rows.append((
                 m_id,
                 inn,

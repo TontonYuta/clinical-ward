@@ -19,7 +19,7 @@ import {
   handleOcrIntent
 } from './intents/utilityIntent';
 import { matchBorrowIntent, handleBorrowIntent } from './intents/borrowIntent';
-import { matchMedicationSafetyIntent, handleMedicationSafetyIntent } from './intents/medicationSafetyIntent';
+import { matchMedicationSafetyIntent, handleMedicationSafetyIntent, matchDrugInteractionIntent, handleDrugInteractionIntent } from './intents/medicationSafetyIntent';
 import { matchBusinessIntent, handleBusinessOverviewIntent } from './intents/businessIntent';
 import { matchDrugLookupGuideIntent, handleDrugLookupGuideIntent } from './intents/drugLookupGuideIntent';
 import { matchPrescriptionAdviceIntent, handlePrescriptionAdviceIntent } from './intents/prescriptionAdviceIntent';
@@ -42,15 +42,24 @@ export function processClinicalUserQuery(
         sender: 'agent',
         text: guardCheck.safeResponse || '🛡️ Yêu cầu bị chặn do vi phạm an toàn.',
         timestamp: nowStr,
-        cdssAlert: guardCheck.violationType === 'sql_injection' || guardCheck.violationType === 'clinical_bypass' ? 'critical' : 'warning',
-        cdssAlertReason: guardCheck.threatDescription,
-        suggestions: ['Tra cứu Dược Thư 2015', 'Thông tư 20/2017/TT-BYT', 'Hướng dẫn an toàn hệ thống']
+        cdssAlert: {
+          level: guardCheck.violationType === 'sql_injection' || guardCheck.violationType === 'clinical_bypass' ? 'critical' : 'warning',
+          title: 'CẢNH BÁO AN TOÀN HỆ THỐNG',
+          message: guardCheck.threatDescription || 'Yêu cầu không an toàn bị chặn.',
+        },
+        suggestedChips: ['Tra cứu Dược Thư 2015', 'Thông tư 20/2017/TT-BYT', 'Hướng dẫn an toàn hệ thống']
       }
     };
   }
 
   const text = guardCheck.sanitizedQuery;
   const lower = text.toLowerCase();
+
+  // Pairwise drug interaction questions need a dedicated path before generic
+  // medication lookup can answer about a single product.
+  if (matchDrugInteractionIntent(lower)) {
+    return handleDrugInteractionIntent(text, lower, nowStr);
+  }
 
   // 0. Hospital Business Operations & 10 Core Workflows
   if (matchBusinessIntent(lower)) {

@@ -1,4 +1,9 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+class HospitalStockUnit(BaseModel):
+    unit: str
+    quantity: int
+    batch_count: int
 
 class DrugItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -43,6 +48,7 @@ class DrugItemResponse(BaseModel):
     antidote: str | None = None
     clinical_source: str | None = None
     clinical_monograph_id: str | None = None
+    hospital_stock_by_unit: list[HospitalStockUnit] = Field(default_factory=list)
 
 class RegistryPaginatedResponse(BaseModel):
     total: int
@@ -51,6 +57,9 @@ class RegistryPaginatedResponse(BaseModel):
     total_pages: int
     group_stats: dict[str, int]
     items: list[DrugItemResponse]
+    registry_revision: str
+    inventory_revision: str
+    hospital_stock_drug_count: int
 
 class RegistryStatsResponse(BaseModel):
     total_drugs: int

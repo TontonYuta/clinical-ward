@@ -4,14 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev": "npm run dev:full",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test:kb": "tsx scripts/verify_clinical_knowledge_base.ts",
     "test:chatbot": "tsx scripts/test_chatbot_suite.ts",
-    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_clinical_formatter.ts"
+    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_clinical_formatter.ts",
+    "dev:full": "python3 scripts/run_dev_stack.py",
+    "dev:api": "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "dev:web": "vite --port=3000 --host=0.0.0.0"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

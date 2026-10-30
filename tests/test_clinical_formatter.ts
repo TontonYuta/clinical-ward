@@ -1,4 +1,5 @@
 import { extractQuickDosageMetrics, parseClinicalBullets, formatContraindicationsList } from '../src/utils/clinicalFormatter';
+import { deepStrictEqual } from 'node:assert';
 
 const sampleAdultDosage = `Liều uống thường dùng là 0,5 - 1 g/lần, 4 - 6 giờ một lần; tối đa là 4 g/ngày. Đặt trực tràng: 0,5 - 1 g/lần, 4 - 6 giờ một lần, tối đa 4 lần/ngày.
 Truyền tĩnh mạch trong 15 phút: Liều được tính theo cân nặng như sau: Trên 50 kg: Liều một lần là 1 g, cứ cách 4 - 6giờ truyền một lần, liều tối đa là 4 g/ngày. Dưới 50 kg: Liều một lần là 15 mg/kg, cứ cách 4 - 6 giờ truyền một lần; tối đa là 60 mg/kg/ngày. Không được vượt quá liều tối đa 3 g/ngày ở bệnh nhân nghiện rượu, suy dinh dưỡng mạn, bị mất nước.`;
@@ -39,9 +40,15 @@ bullets.forEach((b, i) => console.log(`[${i + 1}] ${b.label ? `[${b.label}] ` : 
 if (bullets.length < 2) {
   throw new Error("Bullets should be split into multiple clean points!");
 }
+const duplicatedMarkers = parseClinicalBullets('• • Chỉ dùng khi cần.\n- * Theo dõi sát; liều tiếp theo cách 4 giờ.');
+if (duplicatedMarkers.some((item) => /^[•\-*.:：\s]/u.test(item.content))) {
+  throw new Error('Leading bullet and punctuation markers must be removed from parsed content');
+}
 
 console.log("\n=== TEST CONTRAINDICATIONS LIST ===");
 const contras = formatContraindicationsList(sampleContra);
+const repeatedPunctuation = formatContraindicationsList('Dị ứng với thuốc.. Suy gan nặng: :');
+deepStrictEqual(repeatedPunctuation, ['Dị ứng với thuốc', 'Suy gan nặng']);
 console.log("Parsed contras:", contras);
 if (contras.length < 2) {
   throw new Error("Contraindications should be split into distinct items!");

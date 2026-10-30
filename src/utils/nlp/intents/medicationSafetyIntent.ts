@@ -9,6 +9,48 @@ import { anyKeyword, ProcessedQueryResult } from '../types';
 import { findMatchedMed, MED_CATALOG } from '../entityCatalog';
 import { getMedicationClinicalProfile } from '../../../data/clinicalProfiles';
 
+const CURATED_DDI: Array<{ a: string[]; b: string[]; severity: string; effect: string; action: string; source: string }> = [
+  { a: ['ceftriaxone', 'ceftriaxon'], b: ['calcium', 'calci', 'ringer lactat'], severity: 'Nghiêm trọng', effect: 'Có thể tạo kết tủa ceftriaxon–calci trong đường truyền; trẻ sơ sinh có nguy cơ đặc biệt.', action: 'Không pha/truyền đồng thời cùng đường. Tuân thủ hướng dẫn sản phẩm và phác đồ cơ sở; trẻ sơ sinh cần đánh giá chống chỉ định.', source: 'QĐ 5948/QĐ-BYT; nhãn thuốc ceftriaxon' },
+  { a: ['simvastatin', 'lovastatin'], b: ['clarithromycin', 'erythromycin'], severity: 'Nghiêm trọng', effect: 'Macrolid ức chế CYP3A4, làm tăng phơi nhiễm statin và nguy cơ bệnh cơ/tiêu cơ vân.', action: 'Cần bác sĩ/dược sĩ rà soát lựa chọn kháng sinh hoặc xử trí statin; không tự ngừng thuốc.', source: 'QĐ 5948/QĐ-BYT; nhãn thuốc statin/macrolid' },
+  { a: ['ciprofloxacin', 'levofloxacin'], b: ['theophylline', 'theophyllin'], severity: 'Nghiêm trọng', effect: 'Có thể làm giảm thanh thải theophylline, tăng nguy cơ ngộ độc và co giật/loạn nhịp.', action: 'Tránh phối hợp nếu có lựa chọn; nếu bắt buộc, bác sĩ cần đánh giá liều và theo dõi nồng độ/độc tính.', source: 'QĐ 5948/QĐ-BYT; thông tin kê toa' },
+  { a: ['clopidogrel'], b: ['omeprazole', 'omeprazol', 'esomeprazole', 'esomeprazol'], severity: 'Cần rà soát', effect: 'Ức chế CYP2C19 có thể giảm hoạt hóa clopidogrel và hiệu lực kháng tiểu cầu.', action: 'Bác sĩ cân nhắc PPI thay thế phù hợp; không tự thay đổi thuốc chống kết tập tiểu cầu.', source: 'QĐ 5948/QĐ-BYT; nhãn thuốc clopidogrel' },
+  { a: ['nitroglycerin', 'nitroglycerine', 'isosorbide', 'isosorbid', 'nitrat'], b: ['sildenafil', 'tadalafil', 'vardenafil'], severity: 'Chống chỉ định', effect: 'Giãn mạch cộng hợp có thể gây tụt huyết áp nặng, ngất hoặc thiếu máu cơ tim.', action: 'Không phối hợp; cần cấp cứu/đánh giá y tế nếu đã dùng cùng hoặc xuất hiện chóng mặt, ngất, đau ngực.', source: 'QĐ 5948/QĐ-BYT; nhãn thuốc nitrat/PDE-5' },
+  { a: ['amiodarone', 'amiodaron'], b: ['moxifloxacin', 'levofloxacin', 'erythromycin', 'clarithromycin', 'domperidone', 'domperidon', 'ondansetron', 'haloperidol'], severity: 'Nghiêm trọng', effect: 'Có thể cộng hợp kéo dài QT, tăng nguy cơ xoắn đỉnh và loạn nhịp thất.', action: 'Cần rà soát ECG, điện giải và lựa chọn thuốc bởi bác sĩ; không tự phối hợp.', source: 'QĐ 5948/QĐ-BYT; nhãn thuốc' },
+  { a: ['aceclofenac'], b: ['ketorolac'], severity: 'Chống chỉ định', effect: 'Phối hợp NSAID làm tăng độc tính tiêu hóa và nguy cơ xuất huyết.', action: 'Tránh phối hợp; hỏi bác sĩ/dược sĩ về lựa chọn giảm đau khác.', source: 'QĐ 5948/QĐ-BYT' },
+  { a: ['tramadol'], b: ['linezolid', 'moclobemide', 'moclobemid', 'selegiline', 'selegilin'], severity: 'Chống chỉ định', effect: 'Tăng nguy cơ hội chứng serotonin và độc tính thần kinh nghiêm trọng.', action: 'Không phối hợp nếu chưa có chỉ định chuyên môn; cần đánh giá khẩn nếu kích động, sốt, run/co giật.', source: 'QĐ 5948/QĐ-BYT; nhãn thuốc' },
+];
+
+function checkCuratedInteractions(lower: string): string[] {
+  return CURATED_DDI.filter(pair =>
+    pair.a.some(term => lower.includes(term)) && pair.b.some(term => lower.includes(term)) ||
+    pair.b.some(term => lower.includes(term)) && pair.a.some(term => lower.includes(term))
+  ).map(pair => `• **${pair.severity} — ${pair.a[0]} + ${pair.b[0]}**\n  - Hậu quả: ${pair.effect}\n  - Xử trí: ${pair.action}\n  - Nguồn: ${pair.source}`);
+}
+
+function extractDrugPair(lower: string): [string, string] | null {
+  const names = [...new Set(MED_CATALOG.flatMap(m => [m.name, ...m.aliases]).filter(Boolean))]
+    .filter(name => lower.includes(name.toLowerCase()))
+    .sort((a, b) => b.length - a.length);
+  const unique = names.filter((name, i) => !names.slice(0, i).some(longer => longer.includes(name)));
+  return unique.length >= 2 ? [unique[0], unique[1]] : null;
+}
+
+export function matchDrugInteractionIntent(lower: string): boolean {
+  return anyKeyword(lower, ['tương tác', 'uống cùng', 'dùng cùng', 'phối hợp thuốc', 'kết hợp thuốc']) &&
+    (anyKeyword(lower, ['thuốc', 'uống', 'dùng', 'phối hợp', 'kết hợp']));
+}
+
+export function handleDrugInteractionIntent(text: string, lower: string, nowStr: string): ProcessedQueryResult {
+  const pair = extractDrugPair(lower);
+  const matches = checkCuratedInteractions(lower);
+  const reply = matches.length
+    ? `### Rà soát tương tác thuốc\n\n${matches.join('\n\n')}\n\nThông tin này chỉ sàng lọc các cặp đã có trong nguồn được dẫn; không phát hiện tương tác **không đồng nghĩa** phối hợp an toàn. Cần dược sĩ/bác sĩ kiểm tra liều, bệnh nền và toàn bộ thuốc đang dùng.`
+    : pair
+      ? `### Chưa tìm thấy cảnh báo cho cặp thuốc đã hỏi\n\nĐã nhận diện: **${pair[0]} + ${pair[1]}**. Kho dữ liệu tương tác cục bộ hiện chưa bao phủ đầy đủ cặp này nên không thể kết luận là an toàn. Vui lòng nhờ dược sĩ/bác sĩ kiểm tra nguồn chuyên môn và toàn bộ thuốc, liều dùng, bệnh nền trước khi phối hợp.`
+      : `### Tra cứu tương tác thuốc\n\nVui lòng nêu **tên hai thuốc hoặc hoạt chất** (ví dụ: *clopidogrel uống cùng omeprazole có sao không?*). CSDL hiện tại mới bao phủ một số cặp nguy cơ cao; kết quả âm tính không loại trừ tương tác.`;
+  return { replyMessage: { id: `msg-ddi-${Date.now()}`, sender: 'agent', text: reply, timestamp: nowStr, legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Danh mục tương tác thuốc chống chỉ định', clause: 'Sàng lọc cặp thuốc có trong nguồn cục bộ' } } };
+}
+
 export function matchMedicationSafetyIntent(lower: string): boolean {
   // 1. Nhóm từ khóa hỏi về Chỉ định ("Dùng để làm gì", tác dụng, công dụng)
   const hasIndicationQuery = anyKeyword(lower, [

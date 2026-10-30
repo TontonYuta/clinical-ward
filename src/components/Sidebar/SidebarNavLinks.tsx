@@ -19,8 +19,6 @@ interface SidebarNavLinksProps {
   coldChainTemp?: number;
   isColdAlarm?: boolean;
   misallocatedAssetsCount?: number;
-  systemDomain?: 'pharmacy' | 'equipment';
-  onSelectDomain?: (domain: 'pharmacy' | 'equipment') => void;
 }
 
 interface NavDef {
@@ -43,8 +41,6 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   coldChainTemp = 4.5,
   isColdAlarm = false,
   misallocatedAssetsCount = 0,
-  systemDomain = 'pharmacy',
-  onSelectDomain,
 }) => {
   const handleSelectTab = (tab: DashboardTab) => {
     onTabChange(tab);
@@ -133,14 +129,15 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
               <button
                 key={tab}
                 onClick={() => handleSelectTab(tab)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] transition cursor-pointer ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] transition cursor-pointer ${
                   isActive
-                    ? 'bg-blue-50 text-blue-950 font-bold border border-blue-200/80 shadow-2xs'
-                    : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
+                    ? 'bg-slate-100 text-slate-950 font-semibold border-l-2 border-slate-900 rounded-l-none'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950 font-medium'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title={tooltip}
               >
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-slate-800' : 'text-slate-400'}`} />
                 {!isCollapsed && (
                   <>
                     <span className="flex-1 text-left truncate">{label}</span>
@@ -156,42 +153,8 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      {!isCollapsed && onSelectDomain && (
-        <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => {
-              onSelectDomain('pharmacy');
-              if (['equipment', 'asset_audit'].includes(currentTab)) handleSelectTab('fefo');
-            }}
-            className={`flex-1 py-1 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
-              systemDomain === 'pharmacy' ? 'bg-white text-blue-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Boxes className="w-3.5 h-3.5 text-blue-600" />
-            <span>Thuốc</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onSelectDomain('equipment');
-              if (!['equipment', 'asset_audit'].includes(currentTab)) handleSelectTab('equipment');
-            }}
-            className={`flex-1 py-1 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
-              systemDomain === 'equipment' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Wrench className="w-3.5 h-3.5 text-slate-700" />
-            <span>TBYT</span>
-          </button>
-        </div>
-      )}
-      {systemDomain === 'pharmacy' ? (
-        renderNavList('Nghiệp vụ Thuốc', pharmacyDefs)
-      ) : (
-        renderNavList('Trang thiết bị y tế', equipmentDefs)
-      )}
+    <div className="space-y-4">
+      {renderNavList('Nghiệp vụ', [...pharmacyDefs, ...equipmentDefs])}
     </div>
   );
 };

@@ -91,7 +91,14 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden space-y-2.5 w-full">
+    <div className="flex flex-col h-full overflow-hidden gap-2 w-full">
+      <header className="flex items-center justify-end gap-6 px-1">
+        <div className="hidden sm:flex items-center gap-6 pb-1 text-sm">
+          <div><span className="block text-xs text-slate-500">Phiếu đang nợ</span><strong className="mt-0.5 block text-lg font-semibold tabular-nums text-slate-950">{activeDebts.length}</strong></div>
+          <div className="h-9 w-px bg-slate-200" />
+          <div><span className="block text-xs text-slate-500">Chờ xử lý vỏ ống</span><strong className="mt-0.5 block text-lg font-semibold tabular-nums text-slate-950">{pendingAmpoules.length}</strong></div>
+        </div>
+      </header>
       <DebtHeaderRibbon
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -109,10 +116,11 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       />
 
       {/* Mobile Card List */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-3 pr-0.5 pb-8">
+      <div className="md:hidden flex-1 overflow-y-auto space-y-2 pr-0.5 pb-8">
         {filteredDebts.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-sm shadow-2xs">
-            Không tìm thấy phiếu mượn nào phù hợp với bộ lọc.
+          <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-600 text-sm">
+            <p className="font-medium text-slate-900">Không tìm thấy phiếu phù hợp</p>
+            <p className="mt-1">Thử đổi từ khóa tìm kiếm hoặc trạng thái lọc.</p>
           </div>
         ) : (
           filteredDebts.map((item) => (
@@ -128,19 +136,19 @@ export const DebtLedgerTab: React.FC<DebtLedgerTabProps> = ({
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex-col shadow-xs">
+      <div className="hidden md:flex flex-1 min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden flex-col shadow-sm">
         <div className="overflow-x-auto overflow-y-auto flex-1 w-full pb-4">
           <table className="w-full min-w-[1100px] text-left text-sm border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100/95 border-b border-slate-200 text-slate-700">
-              <tr className="font-bold text-xs sm:text-sm uppercase tracking-wider">
-                <th className="py-3.5 px-3.5 whitespace-nowrap">Mã phiếu</th>
-                <th className="py-3.5 px-3.5">Thuốc / Vật tư</th>
-                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Số lượng</th>
-                <th className="py-3.5 px-3.5">Người bệnh</th>
-                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Thời gian</th>
-                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Vỏ ống</th>
-                <th className="py-3.5 px-3.5 text-center whitespace-nowrap">Trạng thái</th>
-                <th className="py-3.5 px-3.5 text-right whitespace-nowrap">Thao tác</th>
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
+              <tr className="font-semibold text-xs tracking-wide">
+                <th className="py-3 px-4 whitespace-nowrap">Mã phiếu</th>
+                <th className="py-3 px-4">Thuốc / Vật tư</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">Số lượng</th>
+                <th className="py-3 px-4">Người bệnh</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">Thời gian</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">Vỏ ống</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">Trạng thái</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>

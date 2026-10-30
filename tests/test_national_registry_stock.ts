@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const modal = readFileSync(new URL('../src/components/Modals/NationalDrugRegistryModal.tsx', import.meta.url), 'utf8');
+assert.match(modal, /cacheStatus === 'current'.*xác nhận còn khớp với CSDL/s);
+assert.match(modal, /if \(onlyInWarehouse\) throw/);
+assert.doesNotMatch(modal, /Đã cập nhật \$\{off\.total/);
+assert.match(modal, /Chưa tải được dữ liệu mới từ CSDL/);
+const backend = readFileSync(new URL('../backend/app/routers/registry.py', import.meta.url), 'utf8');
+assert.match(backend, /unicodedata\.normalize\(\"NFKC\"/);
+assert.match(backend, /code = _normalize_code\(registration_number\)/);
+assert.doesNotMatch(backend, /_normalize_code\(registration_number\) or _normalize_code\(national_code\)/);
+assert.match(backend, /stocked_ids/);

@@ -38,24 +38,26 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
   onOpenBorrowModal,
 }) => {
   return (
-    <div className="bg-white p-2.5 sm:px-4 sm:py-2.5 rounded-lg border border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+    <div className="bg-white p-2 sm:px-3 sm:py-2 rounded-lg border border-slate-200 shrink-0 flex items-center gap-2 overflow-x-auto">
       {/* Search & Status Filters */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
-        <div className="relative w-full sm:w-64 shrink-0">
+      <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap">
+        <div className="relative w-72 min-w-56 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm tên thuốc, người bệnh, buồng bệnh..."
-            className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400 transition"
+            aria-label="Tìm trong sổ theo dõi nợ"
+            className="w-full min-h-10 pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-700/20 focus:border-teal-700 focus:bg-white text-slate-900 placeholder-slate-400 transition"
           />
         </div>
 
-        <div className="flex items-center gap-1 text-sm bg-slate-100 p-1 rounded-md overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
+        <div role="group" aria-label="Lọc trạng thái phiếu" className="flex items-center gap-1 text-sm border border-slate-200 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none whitespace-nowrap">
           <button
             onClick={() => setFilterStatus('all')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={filterStatus === 'all'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               filterStatus === 'all' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -63,7 +65,8 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setFilterStatus('debt')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={filterStatus === 'debt'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               filterStatus === 'debt' ? 'bg-white text-amber-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -71,7 +74,8 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setFilterStatus('narcotics')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={filterStatus === 'narcotics'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               filterStatus === 'narcotics' ? 'bg-white text-rose-900 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -82,7 +86,8 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
           </button>
           <button
             onClick={() => setFilterStatus('settled')}
-            className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 ${
+            aria-pressed={filterStatus === 'settled'}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
               filterStatus === 'settled' ? 'bg-white text-slate-800 font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
@@ -96,7 +101,7 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
         {returnedAmpoulesCount > 0 && (
           <button
             onClick={onOpenDestruction}
-            className="inline-flex items-center gap-1.5 h-8.5 px-3 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs sm:text-sm font-semibold transition cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 min-h-10 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs sm:text-sm font-semibold transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
             title="Tiêu hủy vỏ ống thuốc gây nghiện"
           >
             <Flame className="w-3.5 h-3.5 text-rose-600" />
@@ -106,7 +111,7 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
 
         <button
           onClick={onOpenBorrowModal}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-teal-800 hover:bg-teal-900 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-98 shadow-xs"
+          className="inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs sm:text-sm font-semibold transition cursor-pointer active:scale-[0.98] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
           title="Lập phiếu mượn khẩn thuốc / vật tư"
         >
           <PlusCircle className="w-3.5 h-3.5" />

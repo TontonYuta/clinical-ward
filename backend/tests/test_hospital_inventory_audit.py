@@ -10,6 +10,7 @@ from app.main import app
 from app.database import AsyncSessionLocal
 from app.models.inventory import InventoryBatch
 from app.models.registry import DavNationalDrug
+from app.seed_inventory_data import INVENTORY_DATA
 
 @pytest.mark.asyncio
 async def test_all_20_hospital_inventory_drugs_verified():
@@ -17,7 +18,7 @@ async def test_all_20_hospital_inventory_drugs_verified():
         async with AsyncSessionLocal() as session:
             stmt = select(InventoryBatch).order_by(InventoryBatch.id)
             batches = (await session.execute(stmt)).scalars().all()
-            assert len(batches) == 20, f"Phải có đủ 20 thuốc trong kho bệnh viện, tìm thấy: {len(batches)}"
+            assert len(batches) == len(INVENTORY_DATA), f"Phải có đủ {len(INVENTORY_DATA)} thuốc trong kho bệnh viện, tìm thấy: {len(batches)}"
 
             for b in batches:
                 sdk = b.national_code or b.registration_number

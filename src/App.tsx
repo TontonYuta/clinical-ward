@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Bot, FileText, Wrench, Boxes, ThermometerSnowflake, Building2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bot } from 'lucide-react';
 import {
   DebtRecord,
   EquipmentTicket,
@@ -31,7 +31,6 @@ import {
   INITIAL_ASSET_AUDIT_RECORDS,
   INITIAL_AUDIT_TRAIL_RECORDS
 } from './data/initialData';
-import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/LeftPane/ChatWindow';
 import { Dashboard, DashboardTab } from './components/RightPane/Dashboard';
@@ -53,8 +52,6 @@ import {
   syncTabToUrl,
   getInitialUserRole,
   saveUserRole,
-  getInitialDomain,
-  saveDomain,
   getInitialSidebarCollapsed,
   saveSidebarCollapsed,
   getInitialCopilotOpen,
@@ -87,17 +84,6 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(getInitialChatMessages);
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(getInitialUserRole);
-  const [systemDomain, setSystemDomain] = useState<'pharmacy' | 'equipment'>(() => getInitialDomain(getInitialTab()));
-
-  const handleSelectDomain = (domain: 'pharmacy' | 'equipment') => {
-    setSystemDomain(domain);
-    saveDomain(domain);
-    if (domain === 'pharmacy' && (currentTab === 'equipment' || currentTab === 'asset_audit')) {
-      setCurrentTab('fefo');
-    } else if (domain === 'equipment' && currentTab !== 'equipment' && currentTab !== 'asset_audit') {
-      setCurrentTab('equipment');
-    }
-  };
   const [authRequest, setAuthRequest] = useState<ClinicalAuthRequest | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(getInitialSidebarCollapsed);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -113,6 +99,12 @@ export default function App() {
   const [selectedAssetForPrint, setSelectedAssetForPrint] = useState<AssetAuditRecord | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(getInitialAudioMuted);
+  const [chatPosition, setChatPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingChat, setIsDraggingChat] = useState(false);
+  const chatDragOffset = useRef({ x: 0, y: 0 });
+  const chatPanelRef = useRef<HTMLDivElement>(null);
+  const dragFrame = useRef<number | null>(null);
+  const pendingChatPosition = useRef<{ x: number; y: number } | null>(null);
   const [showTelegramToast, setShowTelegramToast] = useState<boolean>(false);
   const [isMedicationSafetyOpen, setIsMedicationSafetyOpen] = useState<boolean>(false);
   const [safetyModalMedName, setSafetyModalMedName] = useState<string | undefined>(undefined);
@@ -129,6 +121,62 @@ export default function App() {
     setIsMedicationSafetyOpen(true);
   };
 
+  const handleChatPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    const dragHandle = target.closest('[data-testid="chat-window-drag-handle"]');
+    if (!dragHandle || target.closest('button, input, select, textarea, a')) return;
+    const panel = event.currentTarget;
+    const rect = panel.getBoundingClientRect();
+    if (!rect) return;
+    if (!chatPosition) setChatPosition({ x: rect.left, y: rect.top });
+    pendingChatPosition.current = { x: rect.left, y: rect.top };
+    chatDragOffset.current = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    setIsDraggingChat(true);
+    event.preventDefault();
+    panel.setPointerCapture(event.pointerId);
+  };
+
+  const handleChatPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingChat || isCopilotExpanded) return;
+    const panel = event.currentTarget;
+    const width = panel?.offsetWidth ?? Math.min(440, window.innerWidth - 32);
+    const height = panel?.offsetHeight ?? Math.min(640, window.innerHeight - 40);
+    pendingChatPosition.current = {
+      x: Math.max(8, Math.min(window.innerWidth - width - 8, event.clientX - chatDragOffset.current.x)),
+      y: Math.max(8, Math.min(window.innerHeight - height - 8, event.clientY - chatDragOffset.current.y)),
+    };
+    if (dragFrame.current === null) {
+      dragFrame.current = window.requestAnimationFrame(() => {
+        const next = pendingChatPosition.current;
+        if (next && chatPanelRef.current) {
+          chatPanelRef.current.style.left = String(next.x) + 'px';
+          chatPanelRef.current.style.top = String(next.y) + 'px';
+          chatPanelRef.current.style.right = 'auto';
+          chatPanelRef.current.style.bottom = 'auto';
+        }
+        dragFrame.current = null;
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!isDraggingChat) return;
+    const stopDragging = () => {
+      if (dragFrame.current !== null) {
+        window.cancelAnimationFrame(dragFrame.current);
+        dragFrame.current = null;
+      }
+      const finalPosition = pendingChatPosition.current;
+      if (finalPosition) setChatPosition(finalPosition);
+      pendingChatPosition.current = null;
+      setIsDraggingChat(false);
+    };
+    window.addEventListener('pointerup', stopDragging);
+    window.addEventListener('pointercancel', stopDragging);
+    return () => { window.removeEventListener('pointerup', stopDragging); window.removeEventListener('pointercancel', stopDragging); };
+  }, [isDraggingChat]);
+
   // Stop alarm on unmount
   useEffect(() => {
     return () => {
@@ -139,6 +187,11 @@ export default function App() {
   // Global ergonomics: Cmd+K / Ctrl+K toggles Clinical AI Copilot
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMobileSidebarOpen(false);
+        setIsCopilotOpen(false);
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsCopilotOpen((prev) => !prev);
@@ -148,21 +201,18 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
+  // Keep the page behind the mobile navigation drawer from scrolling.
+  useEffect(() => {
+    if (!isMobileSidebarOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [isMobileSidebarOpen]);
+
   // 1. Tự động đồng bộ Tab sang URL Hash (#cpoe, #fefo...) và LocalStorage
   useEffect(() => {
     syncTabToUrl(currentTab);
-    if (currentTab === 'equipment' || currentTab === 'asset_audit') {
-      if (systemDomain !== 'equipment') {
-        setSystemDomain('equipment');
-        saveDomain('equipment');
-      }
-    } else {
-      if (systemDomain !== 'pharmacy') {
-        setSystemDomain('pharmacy');
-        saveDomain('pharmacy');
-      }
-    }
-  }, [currentTab, systemDomain]);
+  }, [currentTab]);
 
   // 2. Lắng nghe sự kiện hashchange (Hỗ trợ nút Back / Forward trình duyệt)
   useEffect(() => {
@@ -1380,7 +1430,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         const confirmMsg: ChatMessage = {
           id: `msg-cpoe-confirm-${Date.now()}`,
           sender: 'system',
-          text: `✅ **Đã ký duyệt & tạo đơn thuốc thành công (${order.id})**:\n• **Bệnh nhân**: ${order.patientName}\n• **Chẩn đoán**: ${order.diagnosisIcd10} - ${order.diagnosisText}\n• **Số khoản thuốc**: ${order.items?.length || 0} mục • Thời gian: ${order.daysPrescribed} ngày\n• **Quy chế**: Điều 4 Thông tư 52/2017/TT-BYT.`,
+          text: `✅ **Đã ký duyệt & tạo đơn thuốc thành công (${order.id})**:\n• **Bệnh nhân**: ${order.patientName}\n• **Chẩn đoán**: ${order.diagnosisIcd10} - ${order.diagnosisText}\n• **Số khoản thuốc**: ${order.items?.length || 0} mục • Thời gian: ${order.daysPrescribed} ngày\n• **Quy chế**: Điều 4 Thông tư 26/2025/TT-BYT.`,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         };
         setChatMessages(prev => [...prev, confirmMsg]);
@@ -1512,17 +1562,22 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   };
 
   return (
-    <div className="flex flex-row h-screen w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block relative">
+    <div className="flex flex-row h-[100dvh] min-h-0 w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block relative">
       {/* 1. Mobile Drawer Backdrop Overlay */}
       {isMobileSidebarOpen && (
         <div
           onClick={() => setIsMobileSidebarOpen(false)}
+          aria-hidden="true"
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 md:hidden animate-in fade-in duration-200"
         />
       )}
 
       {/* 2. Mobile Drawer Navigation Sidebar */}
       <div
+        id="mobile-navigation-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Điều hướng chính"
         className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl md:hidden transition-transform duration-300 ease-in-out transform ${
           isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } print:hidden`}
@@ -1567,8 +1622,6 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             handleOpenMedicationSafety();
             setIsMobileSidebarOpen(false);
           }}
-          systemDomain={systemDomain}
-          onSelectDomain={handleSelectDomain}
         />
       </div>
 
@@ -1592,38 +1645,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onOpenUserGuide={() => setIsUserGuideOpen(true)}
           onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
           onOpenMedicationSafety={() => handleOpenMedicationSafety()}
-          systemDomain={systemDomain}
-          onSelectDomain={handleSelectDomain}
         />
       </div>
 
       {/* 4. Main Workspace: Sleek Top Header + Central Clinical Dashboard */}
       <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70 print:hidden w-full">
-        <Header
-          currentTab={currentTab}
-          currentUserRole={currentUserRole}
-          onSelectUserRole={handleSelectUserRole}
-          isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={() => {
-            if (typeof window !== 'undefined' && window.innerWidth < 768) {
-              setIsMobileSidebarOpen(prev => !prev);
-            } else {
-              setIsSidebarCollapsed(prev => !prev);
-            }
-          }}
-          isAudioMuted={isAudioMuted}
-          onToggleAudio={() => {
-            if (!isAudioMuted) clinicalAudio.stopAlarm();
-            setIsAudioMuted(!isAudioMuted);
-          }}
-          coldChainAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
-          isCopilotOpen={isCopilotOpen}
-          onToggleCopilot={() => setIsCopilotOpen(prev => !prev)}
-          systemDomain={systemDomain}
-          onSelectDomain={handleSelectDomain}
-        />
-
-        <main className="flex-1 flex flex-col overflow-hidden relative">
+        <main className="flex-1 flex flex-col overflow-hidden relative pt-0 md:pt-0">
           <section className="w-full h-full flex flex-col overflow-hidden">
             <Dashboard
               currentTab={currentTab}
@@ -1669,19 +1696,41 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         coldChainTemp={coldChainState.currentTemp}
         isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
         misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
-        onToggleCopilot={() => setIsCopilotOpen(prev => !prev)}
-        isCopilotOpen={isCopilotOpen}
-        systemDomain={systemDomain}
       />
+      {/* Mobile navigation is opened from the sidebar dock below. */}
+      <button
+        type="button"
+        onClick={() => setIsCopilotOpen((prev) => !prev)}
+        aria-label="Trợ lý AI lâm sàng"
+        title="Trợ lý AI lâm sàng (⌘K / Ctrl+K)"
+        className={`group fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-12 items-center gap-2 rounded-full bg-slate-900 px-3.5 text-white shadow-lg transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
+      >
+        <Bot className="h-5 w-5 text-teal-300" />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-200 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:max-w-28 group-focus-visible:opacity-100">Trợ lý AI</span>
+      </button>
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
       {isCopilotOpen && (
         <div
-          className={`fixed z-50 flex flex-col bg-white shadow-2xl transition-all duration-200 overflow-hidden print:hidden ${
+          ref={chatPanelRef}
+          onPointerDown={handleChatPointerDown}
+          onPointerMove={handleChatPointerMove}
+          onPointerUp={() => {
+            if (pendingChatPosition.current) setChatPosition(pendingChatPosition.current);
+            pendingChatPosition.current = null;
+            setIsDraggingChat(false);
+          }}
+          onPointerCancel={() => {
+            if (pendingChatPosition.current) setChatPosition(pendingChatPosition.current);
+            pendingChatPosition.current = null;
+            setIsDraggingChat(false);
+          }}
+          className={`fixed z-50 flex flex-col bg-white shadow-2xl overflow-hidden print:hidden ${
             isCopilotExpanded
-              ? 'inset-0 sm:inset-3 md:inset-5 h-full sm:h-[calc(100vh-24px)] md:h-[calc(100vh-40px)] w-full sm:w-[calc(100vw-24px)] md:w-[calc(100vw-40px)] max-w-6xl mx-auto my-auto rounded-none sm:rounded-2xl border sm:border-slate-300 ring-2 ring-teal-700/25'
-              : 'inset-0 sm:inset-auto sm:bottom-5 sm:right-6 sm:w-[440px] sm:max-w-[calc(100vw-32px)] sm:h-[640px] sm:max-h-[calc(100vh-80px)] h-full w-full rounded-none sm:rounded-xl border sm:border-slate-300 ring-1 ring-black/5'
-          }`}
+              ? 'inset-0 h-dvh w-screen max-w-none rounded-none border-0 shadow-none'
+              : 'sm:w-[440px] sm:max-w-[calc(100vw-32px)] h-[min(640px,calc(100dvh-112px))] sm:h-[min(640px,calc(100dvh-40px))] max-h-[calc(100dvh-40px)] w-[calc(100vw-32px)] rounded-xl border border-slate-300 ring-1 ring-black/5'
+          } ${!isCopilotExpanded && !chatPosition ? 'right-4 bottom-20 sm:bottom-5 sm:right-5' : ''} ${isDraggingChat ? 'cursor-grabbing' : ''}`}
+          style={!isCopilotExpanded && chatPosition ? { left: chatPosition.x, top: chatPosition.y, right: 'auto', bottom: 'auto' } : undefined}
         >
           <ChatWindow
             messages={chatMessages}
@@ -1698,7 +1747,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             currentUserRole={currentUserRole}
             onClose={() => setIsCopilotOpen(false)}
             isFullScreen={isCopilotExpanded}
-            onToggleFullScreen={() => setIsCopilotExpanded(prev => !prev)}
+            onToggleFullScreen={() => {
+              setIsCopilotExpanded((prev) => !prev);
+              setChatPosition(null);
+              pendingChatPosition.current = null;
+            }}
             pendingDebtsCount={debts.filter(d => d.status === 'debt').length}
             pendingAmpoulesCount={debts.filter(d => d.itemType === 'Thuốc gây nghiện' && !d.ampouleReturned).length}
             urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}

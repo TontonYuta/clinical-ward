@@ -89,7 +89,7 @@ export async function processGeminiClinicalScenario(
   // 1. Kịch bản Tương kỵ Ceftriaxon - Ringer Lactat / Dung dịch Calci
   if (/ceftriaxon/i.test(lower) && /calci|calcium|ringer|lactat|tương kỵ|kết tủa|pha chung|truyền cùng/i.test(lower)) {
     const card: AgentActionCard = {
-      cardType: 'fefo_inventory',
+      cardType: 'fefo_report',
       title: 'Kiểm Tra Tương Kỵ: Ceftriaxon & Ringer Lactat',
       summary: 'Chống chỉ định phối hợp dung dịch chứa Calci (Dược Thư 2015 Trang 371)',
       data: { drug: 'Ceftriaxon 1g', incompatible: 'Ringer Lactat / Calci' },
@@ -157,7 +157,7 @@ export async function processGeminiClinicalScenario(
   // 3. Kịch bản Thẩm định Đơn Ngoại trú & Tương tác Bưởi chùm - Statin
   if (/atorvastatin|statin|rx-2026-012|safeesem/i.test(lower) && /bưởi|nước bưởi|bưởi chùm|grapefruit|uống cùng|thức ăn|xuất viện|dặn dò/i.test(lower)) {
     const card: AgentActionCard = {
-      cardType: 'prescription_advice',
+      cardType: 'cpoe_prescription',
       title: 'Phiếu Dặn Dò Xuất Viện: Võ Minh Trí',
       summary: 'Đơn thuốc RX-2026-012 • Cảnh báo tương tác nước ép bưởi chùm CYP3A4',
       data: { patient: 'Võ Minh Trí', prescriptionId: 'RX-2026-012' },
@@ -193,7 +193,7 @@ export async function processGeminiClinicalScenario(
   // 4. Kịch bản Cảnh báo Thuốc Nguy Cơ Cao: Kali Clorid 10% High-Alert
   if (/kali|kcl/i.test(lower) && /tiêm|tiêm trực tiếp|pha truyền|high-alert|cảnh báo đỏ|nguy cơ cao|nồng độ|ecg/i.test(lower)) {
     const card: AgentActionCard = {
-      cardType: 'fefo_inventory',
+      cardType: 'fefo_report',
       title: 'Thuốc High-Alert: Kali Clorid 10%',
       summary: 'Cấm tiêm tĩnh mạch trực tiếp • Bắt buộc pha loãng theo Dược Thư 2015',
       data: { item: 'Kali clorid 10%', batch: 'LOT-KC24-08', stock: 60 },
@@ -234,7 +234,7 @@ export async function processGeminiClinicalScenario(
       data: { morphinStock: 35, fentanylStock: 160 },
       primaryActionLabel: 'Xác Nhận Thu Hồi Vỏ Ống',
       primaryActionType: 'OPEN_DEBT_SETTLE',
-      targetTab: 'debts',
+      targetTab: 'debt',
       status: 'pending'
     };
     const replyText = aiAnswer || (
@@ -272,7 +272,7 @@ export async function processGeminiClinicalScenario(
       data: { drug: 'Hadunalin (Adrenalin 1mg/ml)', stock: 30, location: 'Tủ cấp cứu A9' },
       primaryActionLabel: 'Xem Phác Đồ TT 51/2017',
       primaryActionType: 'OPEN_MED_SAFETY',
-      targetTab: 'debts',
+      targetTab: 'debt',
       status: 'pending'
     };
     const replyText = aiAnswer || (
@@ -309,7 +309,7 @@ export async function processGeminiClinicalScenario(
       data: { patient: patient?.fullName || 'Võ Minh Trí', allergies: patient?.allergies || 'Penicillin, Aspirin' },
       primaryActionLabel: 'Mở Bảng Đối Soát 5 Đúng',
       primaryActionType: 'OPEN_MED_SAFETY',
-      targetTab: 'debts',
+      targetTab: 'debt',
       status: 'pending'
     };
     const replyText = aiAnswer || (
@@ -399,7 +399,7 @@ export async function processGeminiClinicalScenario(
           sender: 'agent',
           text: replyText,
           timestamp: nowStr,
-          legalReference: { lawCode: 'Thông tư 52/2017/TT-BYT & TT 18/2018/TT-BYT', title: 'Quy chế kê đơn thuốc', clause: 'Đơn thuốc điện tử hợp lệ' },
+          legalReference: { lawCode: 'Thông tư 26/2025/TT-BYT', title: 'Quy chế kê đơn thuốc ngoại trú', clause: 'Đơn thuốc điện tử hợp lệ' },
           card,
           suggestedChips: ['Lập lịch dặn dò cữ thuốc', 'Xem bảng đối soát 5 đúng', 'Đối soát ca trực 07:00 AM']
         },
@@ -416,7 +416,7 @@ export async function processGeminiClinicalScenario(
     if (isColdChainEmergencyQuery || isAbnormalTemp) {
       // 10B. Kịch bản Xử trí Sự Cố Chuỗi Lạnh Vắc xin GSP (Khi có sự cố thực tế hoặc người dùng hỏi phác đồ ứng phó)
       const card: AgentActionCard = {
-        cardType: 'coldchain_monitor',
+        cardType: 'coldchain_status',
         title: 'Cảnh Báo / Xử Trí Sự Cố Chuỗi Lạnh: Tủ Lạnh Vaxigrip T1',
         summary: 'Dải an toàn 2.0°C - 8.0°C • Phác đồ cách ly bảo toàn vắc xin',
         data: { targetTab: 'coldchain', batch: 'LOT-VX25-S1' },

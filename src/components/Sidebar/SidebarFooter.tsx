@@ -3,38 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, UserRound } from 'lucide-react';
+import { UserRole } from '../../types/clinical';
+import { USER_PROFILES } from '../../data/initialData';
 
 interface SidebarFooterProps {
   isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  currentUserRole: UserRole;
+  onSelectUserRole?: (role: UserRole) => void;
+  onCloseMobile?: () => void;
 }
 
+const ROLE_OPTIONS: UserRole[] = ['nurse', 'pharmacist', 'doctor', 'biomedical_engineer', 'director'];
+
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({
-  isCollapsed,
-  onToggleCollapse,
+  isCollapsed, currentUserRole, onSelectUserRole, onCloseMobile,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   return (
-    <div className="border-t border-slate-200/80 p-3 shrink-0 bg-slate-50/70">
-      {!isCollapsed ? (
-        <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
-          <span className="truncate">Chuẩn BYT: TT 26 &amp; NĐ 04/2025</span>
-          <span className="font-mono text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60">
-            GSP 2026
-          </span>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center">
-          <button
-            onClick={onToggleCollapse}
-            className="w-9 h-9 rounded-lg bg-blue-50 text-blue-800 flex items-center justify-center hover:bg-blue-100 transition cursor-pointer"
-            title="Mở rộng menu thanh bên"
-          >
-            <ChevronRight className="w-4.5 h-4.5" />
-          </button>
+    <div className="relative border-t border-slate-200 p-2 shrink-0">
+      {isOpen && onSelectUserRole && (
+        <div role="menu" aria-label="Chọn vai trò" className={`absolute bottom-full mb-2 ${isCollapsed ? 'left-14 w-64' : 'left-2 right-2'} rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50 max-h-[70vh] overflow-y-auto`}>
+          {ROLE_OPTIONS.map((role) => {
+            const item = USER_PROFILES[role];
+            return <button key={role} type="button" role="menuitem" onClick={() => { onSelectUserRole(role); setIsOpen(false); onCloseMobile?.(); }} className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-slate-50 ${role === currentUserRole ? 'bg-slate-50 font-semibold text-slate-900' : 'text-slate-700'}`}><span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">{item.name.split(' ').slice(-2).map((p) => p[0]).join('')}</span><span className="min-w-0 flex-1 truncate">{item.name}</span></button>;
+          })}
         </div>
       )}
+      <button type="button" aria-haspopup="menu" aria-expanded={isOpen} onClick={() => setIsOpen((v) => !v)} className={`flex min-h-11 w-full items-center gap-2.5 rounded-xl p-1.5 text-left hover:bg-slate-100 ${isCollapsed ? 'justify-center' : ''}`} title={`${profile.name} · ${profile.roleName}`}>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700"><UserRound className="h-4 w-4" /></span>
+        {!isCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{profile.name}</span><span className="block truncate text-xs text-slate-500">{profile.roleName}</span></span><ChevronDown className="h-4 w-4 text-slate-500" /></>}
+      </button>
     </div>
   );
 };
