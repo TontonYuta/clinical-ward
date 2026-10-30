@@ -73,15 +73,9 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
           >
             {order.patientName}
           </button>
-          <div className="text-2xs text-slate-500 font-mono shrink-0 flex items-center gap-1 justify-end">
-            <span>CCCD: {order.patientCccd ? `...${order.patientCccd.slice(-4)}` : 'Chưa có'}</span>
-            {order.patientPhone && (
-              <>
-                <span>·</span>
-                <span className="text-slate-700 font-medium">{order.patientPhone}</span>
-              </>
-            )}
-          </div>
+          <span className="text-2xs text-slate-500 font-mono shrink-0">
+            {order.patientId}
+          </span>
         </div>
         <div className="text-2xs sm:text-xs text-slate-600 mt-0.5 truncate">
           <span className="font-mono font-bold text-slate-800">[{order.diagnosisIcd10}]</span> {order.diagnosisText}

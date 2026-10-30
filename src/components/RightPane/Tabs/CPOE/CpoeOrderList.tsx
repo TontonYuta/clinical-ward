@@ -115,7 +115,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
               <tr className="font-semibold text-sm tracking-normal">
                 <th className="py-3 px-3 text-center border-r border-slate-200">STT</th>
                 <th className="py-3 px-3.5 border-r border-slate-200">Mã đơn &amp; Thời gian</th>
-                <th className="py-3 px-3.5 border-r border-slate-200">Người bệnh, CCCD &amp; SĐT</th>
+                <th className="py-3 px-3.5 border-r border-slate-200">Người bệnh</th>
                 <th className="py-3 px-3.5 border-r border-slate-200">Chẩn đoán ICD-10</th>
                 <th className="py-3 px-3.5 text-center border-r border-slate-200">Loại đơn</th>
                 <th className="py-3 px-3.5 border-r border-slate-200">Danh mục thuốc kê</th>
@@ -155,28 +155,20 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                         <div className="text-xs text-slate-500 mt-1 font-mono">{order.prescribedAt}</div>
                       </td>
 
-                      {/* 3. Người bệnh & CCCD */}
+                      {/* 3. Người bệnh & Mã BN */}
                       <td className="py-3 px-3.5 border-r border-slate-100">
                         <button
                           type="button"
                           data-testid="patient-name-btn"
                           onClick={() => onSelectPatient?.(order.patientName)}
-                          className="font-semibold text-slate-900 leading-snug hover:text-slate-700 hover:underline cursor-pointer text-left transition underline-offset-2"
+                          className="font-semibold text-slate-900 leading-snug hover:text-slate-700 hover:underline cursor-pointer text-left transition underline-offset-2 block"
                           title="Bấm để xem hồ sơ bệnh nhân, dị ứng và chức năng thận"
                         >
                           {order.patientName}
                         </button>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          <span>{order.patientId}</span>
-                          <span>·</span>
-                          <span>CCCD: {order.patientCccd}</span>
-                          {order.patientPhone && (
-                            <>
-                              <span>·</span>
-                              <span className="text-slate-800 font-medium">SĐT: {order.patientPhone}</span>
-                            </>
-                          )}
-                        </div>
+                        <span className="text-xs text-slate-500 font-mono mt-0.5 inline-block">
+                          {order.patientId}
+                        </span>
                       </td>
 
                       {/* 4. Chẩn đoán ICD-10 */}

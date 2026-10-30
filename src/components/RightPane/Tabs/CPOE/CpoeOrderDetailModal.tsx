@@ -125,11 +125,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 {order.patientName}
               </button> ({order.patientId})</span>
               <span className="text-slate-300">·</span>
-              <span>CCCD: <strong className="font-mono text-slate-800">{order.patientCccd ? `...${order.patientCccd.slice(-4)}` : 'Chưa có'}</strong></span>
-              <span className="text-slate-300 hidden sm:inline">·</span>
-              <span className="hidden sm:inline">SĐT: <strong className="font-mono text-slate-900 font-semibold">{order.patientPhone || patient?.phone || 'Chưa cập nhật'}</strong></span>
-              <span className="text-slate-300">·</span>
-              <span className="truncate max-w-[200px] sm:max-w-none">Chẩn đoán: <strong className="font-mono text-slate-900 font-bold">[{order.diagnosisIcd10}]</strong> <span className="text-slate-800">{order.diagnosisText}</span></span>
+              <span className="truncate max-w-[280px] sm:max-w-none">Chẩn đoán: <strong className="font-mono text-slate-900 font-bold">[{order.diagnosisIcd10}]</strong> <span className="text-slate-800">{order.diagnosisText}</span></span>
             </div>
           </div>
 

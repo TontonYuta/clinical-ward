@@ -129,27 +129,6 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
                 </span>
               )}
             </div>
-            <div className="text-2xs sm:text-xs text-slate-500 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <span>Phòng: <strong className="text-slate-800 font-semibold">{patient.room}</strong></span>
-              {patient.cccd && (
-                <>
-                  <span className="text-slate-300">·</span>
-                  <span>CCCD: <strong className="text-slate-800 font-mono">{patient.cccd ? `...${patient.cccd.slice(-4)}` : 'Chưa có'}</strong></span>
-                </>
-              )}
-              {patient.phone && (
-                <>
-                  <span className="text-slate-300">·</span>
-                  <span>SĐT: <strong className="text-slate-900 font-mono font-semibold">{patient.phone}</strong></span>
-                </>
-              )}
-              {patient.bloodType && (
-                <>
-                  <span className="text-slate-300 hidden sm:inline">·</span>
-                  <span className="hidden sm:inline">Nhóm máu: <strong className="text-slate-800">{patient.bloodType}</strong></span>
-                </>
-              )}
-            </div>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-1.5 self-end sm:self-auto shrink-0">
