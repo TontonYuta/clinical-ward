@@ -9,30 +9,20 @@ import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, 
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
+import { CdssAlertBanner } from './Cards/CdssAlertBanner';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import { isCloudAIAvailable } from '../../services/geminiService';
 
 interface ChatWindowProps {
-  messages: ChatMessage[];
-  suggestionChips: QuickSuggestionChip[];
+  messages: ChatMessage[]; suggestionChips: QuickSuggestionChip[];
   onSendMessage: (text: string, attachment?: any) => void;
-  isProcessing: boolean;
-  isAudioMuted: boolean;
-  onSelectTab?: (tab: DashboardTab) => void;
-  currentUserRole?: UserRole;
-  onClose?: () => void;
-  pendingDebtsCount?: number;
-  pendingAmpoulesCount?: number;
-  urgentTicketsCount?: number;
-  lowStockCount?: number;
+  isProcessing: boolean; isAudioMuted: boolean; onSelectTab?: (tab: DashboardTab) => void;
+  currentUserRole?: UserRole; onClose?: () => void; pendingDebtsCount?: number;
+  pendingAmpoulesCount?: number; urgentTicketsCount?: number; lowStockCount?: number;
   onExecuteCardAction?: (messageId: string, actionType: string, cardData: any) => void;
-  onClearMessages?: () => void;
-  onOpenAuditTrail?: () => void;
-  onOpenLegalDocs?: () => void;
-  onOpenUserGuide?: () => void;
-  isFullScreen?: boolean;
-  onToggleFullScreen?: () => void;
+  onClearMessages?: () => void; onOpenAuditTrail?: () => void; onOpenLegalDocs?: () => void;
+  onOpenUserGuide?: () => void; isFullScreen?: boolean; onToggleFullScreen?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -80,50 +70,25 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
         <div className="flex items-center gap-1 shrink-0">
           {onOpenUserGuide && (
-            <button
-              type="button"
-              data-testid="chat-hdsd-btn"
-              onClick={onOpenUserGuide}
-              className="px-2 py-1 rounded-md text-slate-700 hover:text-teal-800 hover:bg-teal-50 transition cursor-pointer active:scale-95 flex items-center gap-1 border border-slate-200 hover:border-teal-300 text-xs font-semibold shrink-0"
-              title="Hướng dẫn sử dụng & Kịch bản trợ lý lâm sàng"
-            >
-              <HelpCircle className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-              <span>HDSD</span>
+            <button type="button" data-testid="chat-hdsd-btn" onClick={onOpenUserGuide} className="px-2 py-1 rounded-md text-slate-700 hover:text-teal-800 hover:bg-teal-50 transition cursor-pointer active:scale-95 flex items-center gap-1 border border-slate-200 hover:border-teal-300 text-xs font-semibold shrink-0" title="Hướng dẫn sử dụng">
+              <HelpCircle className="w-3.5 h-3.5 text-teal-700 shrink-0" /><span>HDSD</span>
             </button>
           )}
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
-            title="Cấu hình mô hình AI"
-          >
+          <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Cấu hình mô hình AI">
             <Settings2 className="w-4 h-4" />
           </button>
           {onToggleFullScreen && (
-            <button
-              type="button"
-              onClick={onToggleFullScreen}
-              className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
-              title={isFullScreen ? 'Thu nhỏ cửa sổ' : 'Mở rộng toàn màn hình'}
-              aria-label={isFullScreen ? 'Thu nhỏ' : 'Toàn màn hình'}
-            >
+            <button type="button" onClick={onToggleFullScreen} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title={isFullScreen ? 'Thu nhỏ' : 'Toàn màn hình'} aria-label={isFullScreen ? 'Thu nhỏ' : 'Toàn màn hình'}>
               {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           )}
           {onClearMessages && (
-            <button
-              onClick={onClearMessages}
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
-              title="Làm mới phiên hội thoại"
-            >
+            <button onClick={onClearMessages} className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Làm mới phiên hội thoại">
               <RotateCcw className="w-4 h-4" />
             </button>
           )}
           {onClose && (
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
-              title="Đóng Trợ lý AI"
-            >
+            <button onClick={onClose} className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Đóng Trợ lý AI">
               <X className="w-4.5 h-4.5" />
             </button>
           )}
@@ -145,8 +110,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
 
               <div className="space-y-2 min-w-0 flex-1">
+                {msg.cdssAlert && (
+                  <div className="mb-2">
+                    <CdssAlertBanner alert={msg.cdssAlert} />
+                  </div>
+                )}
                 <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
                   {renderFormattedText(msg.text, isDarkBubble)}
+                  {msg.suggestedChips && msg.suggestedChips.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                      {msg.suggestedChips.map((chip, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleChipClick(chip)}
+                          className="px-2 py-1 rounded-md text-2xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200 transition cursor-pointer active:scale-95"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {isAgent && (msg.sourceStatus || msg.answerType) && (
                     <div className="mt-2 text-2xs text-slate-500" data-testid="chat-source-status">
                       Nguồn: {msg.sourceStatus || msg.answerType}

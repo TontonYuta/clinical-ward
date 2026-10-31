@@ -18,8 +18,8 @@ Căn cứ pháp lý:
 * **Phân loại rõ ràng:**
   * Thuốc tiêm, thuốc uống, thuốc dùng ngoài phải được để ở các ngăn/ô riêng biệt.
   * Thuốc cấp cứu nguy hiểm (Adrenalin, Kali Clorid, Morphin, Heparin) phải dán nhãn nhận diện đặc biệt hoặc để vị trí quy ước chống nhầm lẫn (High-Alert Medications).
-* **Nhiệt độ & Ánh sáng:** Duy trì nhiệt độ phòng $\le 30^\circ\text{C}$ (hoặc bảo quản trong tủ lạnh $2 - 8^\circ\text{C}$ đối với các thuốc sinh phẩm/thuốc nhạy cảm nhiệt độ như Insulin, Oxytocin).
-* **Theo dõi hạn dùng:** Áp dụng nguyên tắc FEFO (Hết hạn trước - Xuất trước / First Expired, First Out). Thuốc cận hạn ($< 6$ tháng) phải báo cáo Khoa Dược để có kế hoạch luân chuyển sử dụng.
+* **Nhiệt độ & Ánh sáng:** Duy trì nhiệt độ phòng ≤ 30°C (hoặc bảo quản trong tủ lạnh 2°C – 8°C đối với các thuốc sinh phẩm/thuốc nhạy cảm nhiệt độ như Insulin, Oxytocin).
+* **Theo dõi hạn dùng:** Áp dụng nguyên tắc FEFO (Hết hạn trước - Xuất trước / First Expired, First Out). Thuốc cận hạn (< 6 tháng) phải báo cáo Khoa Dược để có kế hoạch luân chuyển sử dụng.
 
 ---
 

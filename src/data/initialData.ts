@@ -1130,8 +1130,13 @@ export const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-welcome',
     sender: 'agent',
-    text: 'Trợ lý Agent Lâm Sàng & Quản Lý Dược Bệnh Viện sẵn sàng hỗ trợ kíp trực. Nhập yêu cầu lâm sàng, tra cứu chuyên luận thuốc, dặn dò bệnh nhân hoặc câu hỏi y tế vào khung bên dưới.',
+    text: 'Trợ lý Agent Lâm Sàng & Quản Lý Dược Bệnh Viện sẵn sàng hỗ trợ kíp trực. Nhập yêu cầu lâm sàng, kiểm tra tương tác thuốc, tra cứu chuyên luận Dược Thư hoặc câu hỏi y tế vào khung bên dưới.',
     timestamp: '08:00',
-    suggestedChips: []
+    suggestedChips: [
+      'Kiểm tra Clopidogrel + Omeprazol',
+      'Kiểm tra Nitroglycerin + Sildenafil',
+      'Đối soát ca trực 07:00 AM',
+      'Tra cứu số đăng ký VD-24757-16'
+    ]
   }
 ];

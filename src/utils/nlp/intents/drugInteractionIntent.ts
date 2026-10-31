@@ -23,28 +23,40 @@ export const CURATED_DDI: Array<{ a: string[]; b: string[]; severity: string; ef
   { a: ['tramadol'], b: ['linezolid', 'fluoxetin', 'sertralin', 'maoi'], severity: 'Chống chỉ định tuyệt đối', effect: 'Tích tụ Serotonin tại synap thần kinh gây hội chứng Serotonin ác tính co giật tử vong.', action: 'Chống chỉ định tuyệt đối phối hợp với Linezolid và MAOI.', source: 'QĐ 5948/QĐ-BYT' }
 ];
 
+const COMMON_DDI_DRUGS = [
+  'clopidogrel', 'omeprazol', 'omeprazole', 'esomeprazol', 'esomeprazole', 'pantoprazol',
+  'nitroglycerin', 'sildenafil', 'viagra', 'tadalafil', 'vardenafil', 'isosorbid',
+  'ceftriaxone', 'ceftriaxon', 'calcium', 'calci', 'canxi', 'ringer lactat',
+  'warfarin', 'aspirin', 'ibuprofen', 'diclofenac', 'miconazol', 'fluconazol',
+  'simvastatin', 'lovastatin', 'clarithromycin', 'erythromycin', 'itraconazol', 'ketoconazol',
+  'paracetamol', 'morphin', 'morphine', 'theophylline', 'theophyllin', 'ciprofloxacin',
+  'metformin', 'allopurinol', 'azathioprin', 'amiodaron', 'cordarone', 'colchicin',
+  'tramadol', 'linezolid', 'diazepam', 'fentanyl', 'midazolam', 'adrenalin', 'kcl', 'kali'
+];
+
 export function extractDrugPair(lower: string): [string, string] | null {
-  const names = [...new Set(MED_CATALOG.flatMap(m => [m.name, ...m.aliases]).filter(Boolean))]
-    .filter(name => lower.includes(name.toLowerCase()))
-    .sort((a, b) => b.length - a.length);
-  const unique = names.filter((name, i) => !names.slice(0, i).some(longer => longer.includes(name)));
+  const allNames = [...new Set([
+    ...MED_CATALOG.flatMap(m => [m.name, ...m.aliases]),
+    ...COMMON_DDI_DRUGS,
+    ...CURATED_DDI.flatMap(p => [...p.a, ...p.b])
+  ].filter(Boolean).map(n => n.toLowerCase()))].sort((a, b) => b.length - a.length);
+
+  const matched = allNames.filter(name => lower.includes(name));
+  const unique = matched.filter((name, i) => !matched.slice(0, i).some(longer => longer.includes(name)));
   if (unique.length >= 2) return [unique[0], unique[1]];
-  // Do not treat an ordinary medication question as a pair merely because it
-  // contains a connector such as "với".
+
   if (unique.length === 1 && !/(?:tương tác|phối hợp|kết hợp|dùng chung|uống cùng)/.test(lower)) return null;
 
-  // The ward dispense list is intentionally small, so fall back to the two
-  // phrases around a natural-language connector. The backend normalizer then
-  // resolves these names against the full drug registry/catalog.
   const match = lower.match(/(?:tương tác|phối hợp|kết hợp|dùng chung|uống cùng)?\s*([\p{L}0-9][\p{L}0-9 .()/-]*?)\s+(?:với|và|\+)\s+([\p{L}0-9][\p{L}0-9 .()/-]*?)(?=\s+(?:thế nào|như thế nào|được không|không|vậy|không\?)|[?!.,]|$)/iu);
   if (!match) return null;
-  const clean = (value: string) => value
+  const clean = (val: string) => val
+    .replace(/^(?:bệnh nhân\s+)?(?:đang\s+)?(?:dùng|uống|tiêm|kê|sử dụng)?\s*/i, '')
     .replace(/^(?:kiểm tra|tra cứu|tương tác|phối hợp|kết hợp|dùng chung|uống cùng|dùng|uống)\s+/i, '')
     .replace(/\s+(?:có|tương tác|phối hợp|kết hợp|dùng chung|uống cùng|uống chung|dùng|uống|được không|không)$/i, '')
     .trim();
   const a = clean(match[1]);
   const b = clean(match[2]);
-  return a && b ? [a, b] : null;
+  return a && b && a.length >= 2 && b.length >= 2 ? [a, b] : null;
 }
 
 export function matchDrugInteractionIntent(lower: string): boolean {
@@ -71,20 +83,37 @@ export function matchDrugInteractionIntent(lower: string): boolean {
 
 export function handleDrugInteractionIntent(text: string, lower: string, nowStr: string): ProcessedQueryResult {
   const pair = extractDrugPair(lower);
-  const matches = CURATED_DDI.filter(p =>
+  const matchedRules = CURATED_DDI.filter(p =>
     (p.a.some(t => lower.includes(t)) && p.b.some(t => lower.includes(t))) ||
     (p.b.some(t => lower.includes(t)) && p.a.some(t => lower.includes(t)))
-  ).map(p => `• **${p.severity} — ${p.a[0]} + ${p.b[0]}**\n  - Hậu quả: ${p.effect}\n  - Xử trí: ${p.action}\n  - Nguồn: ${p.source}`);
+  );
+  const matches = matchedRules.map(p => `• **${p.severity} — ${p.a[0]} + ${p.b[0]}**\n  - Hậu quả: ${p.effect}\n  - Xử trí: ${p.action}\n  - Nguồn: ${p.source}`);
+
+  const first = matchedRules[0];
+  const cdssAlert = first ? {
+    level: (/chống chỉ định/i.test(first.severity) ? 'critical' : 'warning') as 'critical' | 'warning',
+    title: `${first.severity.toUpperCase()}`,
+    message: first.effect,
+    antidoteRecommendation: first.action,
+    regulatoryReference: first.source || 'QĐ 5948/QĐ-BYT'
+  } : undefined;
+
+  const suggestedChips = [
+    'Kiểm tra Clopidogrel + Omeprazol',
+    'Kiểm tra Nitroglycerin + Sildenafil',
+    'Kiểm tra Ceftriaxone + Calci',
+    'Kiểm tra Warfarin + Aspirin'
+  ];
 
   if (!pair && (lower.includes('paracetamol') || lower.includes('panadol') || lower.includes('efferalgan'))) {
     const reply = `### 📋 Báo Cáo Tương Tác Thuốc: Paracetamol (Acetaminophen)\nNguồn tham khảo: **Dược thư Quốc gia lần xuất bản II (2015)** và chuyên luận/tờ hướng dẫn hiện hành; cần đối chiếu theo người bệnh.\n\n1. Rượu/ethanol: tránh phối hợp khi có nguy cơ bệnh gan hoặc sử dụng rượu nhiều.\n2. Isoniazid, Carbamazepin, Phenytoin: cần đánh giá nguy cơ độc tính gan.\n3. Opioid: có thể phối hợp giảm đau đa mô thức nhưng phải theo dõi hô hấp.\n4. Warfarin: dùng liều cao kéo dài có thể ảnh hưởng INR; cần theo dõi.\n\n👉 *Nhập tên 2 thuốc để tra cứu cặp thuốc qua backend.*`;
-    return { replyMessage: { id: `msg-ddi-${Date.now()}`, sender: 'agent', text: reply, timestamp: nowStr, legalReference: { lawCode: 'QĐ 2033/QĐ-BYT', title: 'Dược thư Quốc gia lần xuất bản II (2015)', clause: 'Chuyên luận Paracetamol & Tương tác' } } };
+    return { replyMessage: { id: `msg-ddi-${Date.now()}`, sender: 'agent', text: reply, timestamp: nowStr, legalReference: { lawCode: 'QĐ 2033/QĐ-BYT', title: 'Dược thư Quốc gia lần xuất bản II (2015)', clause: 'Chuyên luận Paracetamol & Tương tác' }, suggestedChips } };
   }
 
   const reply = matches.length
-    ? `### Rà soát tương tác thuốc\n\n${matches.join('\n\n')}\n\nThông tin đối chiếu theo **QĐ 5948/QĐ-BYT** và nguồn chuyên luận/tờ hướng dẫn được nêu.`
+    ? `### ⚠️ Rà soát tương tác thuốc (QĐ 5948/QĐ-BYT)\n\n${matches.join('\n\n')}\n\nThông tin đối chiếu theo **QĐ 5948/QĐ-BYT** và nguồn chuyên luận/tờ hướng dẫn được nêu.`
     : pair
       ? `### Phân tích phối hợp thuốc: ${pair[0]} + ${pair[1]}\n\nCặp thuốc **${pair[0]}** và **${pair[1]}** không thuộc danh mục tương tác chống chỉ định theo QĐ 5948/QĐ-BYT. Cần theo dõi liều lượng và chức năng gan thận khi phối hợp.`
-      : `### Tra cứu tương tác thuốc\n\nVui lòng nêu **tên hai thuốc hoặc hoạt chất** (ví dụ: *Paracetamol và Morphin*).`;
-  return { replyMessage: { id: `msg-ddi-${Date.now()}`, sender: 'agent', text: reply, timestamp: nowStr, legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Danh mục tương tác thuốc chống chỉ định', clause: 'Sàng lọc tương tác thuốc' } } };
+      : `### 🔍 Tra cứu tương tác thuốc (QĐ 5948/QĐ-BYT)\n\nVui lòng nêu **tên hai thuốc hoặc hoạt chất** (ví dụ: *Clopidogrel và Omeprazol* hoặc *Nitroglycerin + Sildenafil*) hoặc bấm vào các cặp thuốc kiểm tra nhanh bên dưới.`;
+  return { replyMessage: { id: `msg-ddi-${Date.now()}`, sender: 'agent', text: reply, timestamp: nowStr, legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Danh mục tương tác thuốc chống chỉ định', clause: 'Sàng lọc tương tác thuốc' }, cdssAlert, suggestedChips } };
 }
