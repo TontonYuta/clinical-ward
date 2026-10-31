@@ -288,8 +288,7 @@ async def test_out_of_database_knowledge_boundary():
         # Must NOT leak patient record into drug query
         assert "Võ Minh Trí" not in d_fever["reply_text"]
         assert "BN-8820" not in d_fever["reply_text"]
-        assert d_fever["card"] is not None
-        assert d_fever["card"]["card_type"] == "medication_safety"
+        assert d_fever["card"] is None
 
 if __name__ == "__main__":
     test_sql_injection_detection()

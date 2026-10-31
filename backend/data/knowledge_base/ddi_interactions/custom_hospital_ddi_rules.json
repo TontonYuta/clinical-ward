@@ -1,14 +1,5 @@
 [
   {
-    "stt": 1898,
-    "drug_1": "ThuocThuNghiemA",
-    "drug_2": "ThuocThuNghiemB",
-    "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
-    "consequence": "Thử nghiệm nguy cơ ngộ độc",
-    "action": "Chống chỉ định thử nghiệm",
-    "legal_source": "Quy chế Bệnh viện Đa khoa 2026"
-  },
-  {
     "stt": 1899,
     "drug_1": "Methadon",
     "drug_2": "Voriconazol",

@@ -129,23 +129,31 @@ def test_newly_registered_high_alert_ddis():
     assert "SUY TỦY" in alt_allo.title
 
 def test_custom_rule_registration_endpoint():
-    # Đăng ký tương tác mới qua API
-    res = client.post("/api/v1/clinical-ddi/register-rule", json={
-        "drug_a": "ThuocThuNghiemA",
-        "drug_b": "ThuocThuNghiemB",
-        "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
-        "consequence": "Thử nghiệm nguy cơ ngộ độc",
-        "action": "Chống chỉ định thử nghiệm",
-        "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
-    })
-    assert res.status_code == 200
-    assert res.json()["status"] == "success"
+    from app.services.clinical_ddi_engine.full_catalog import _FILE_CUSTOM
+    import json
+    with open(_FILE_CUSTOM, "r", encoding="utf-8") as f:
+        original_data = json.load(f)
+    try:
+        # Đăng ký tương tác mới qua API
+        res = client.post("/api/v1/clinical-ddi/register-rule", json={
+            "drug_a": "ThuocThuNghiemA",
+            "drug_b": "ThuocThuNghiemB",
+            "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
+            "consequence": "Thử nghiệm nguy cơ ngộ độc",
+            "action": "Chống chỉ định thử nghiệm",
+            "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
+        })
+        assert res.status_code == 200
+        assert res.json()["status"] == "success"
 
-    # Kiểm tra check-pair phát hiện ngay lập tức
-    chk = client.post("/api/v1/clinical-ddi/check-pair", json={
-        "drug_a": "ThuocThuNghiemA 100mg",
-        "drug_b": "ThuocThuNghiemB 50mg"
-    })
-    assert chk.status_code == 200
-    assert chk.json()["has_interaction"] is True
-    assert "Thử nghiệm" in chk.json()["alert"]["mechanism"]
+        # Kiểm tra check-pair phát hiện ngay lập tức
+        chk = client.post("/api/v1/clinical-ddi/check-pair", json={
+            "drug_a": "ThuocThuNghiemA 100mg",
+            "drug_b": "ThuocThuNghiemB 50mg"
+        })
+        assert chk.status_code == 200
+        assert chk.json()["has_interaction"] is True
+        assert "Thử nghiệm" in chk.json()["alert"]["mechanism"]
+    finally:
+        with open(_FILE_CUSTOM, "w", encoding="utf-8") as f:
+            json.dump(original_data, f, ensure_ascii=False, indent=2)

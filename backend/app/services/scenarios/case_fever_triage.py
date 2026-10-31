@@ -89,27 +89,10 @@ class FeverTriageScenario(BaseScenario):
             "• Sốt cao kèm: Co giật, lơ mơ, khó thở, nôn ói liên tục, xuất huyết dưới da (chấm bầm tím), hoặc sốt cao liên tục không hạ sau 2 cữ thuốc."
         )
 
-        card = CopilotActionCard(
-            card_type="medication_safety",
-            title="Hạ Sốt An Toàn: Paracetamol 500mg",
-            summary=f"Sốt {temp_str} • Liều 10-15mg/kg cách 4-6h • Tồn {stock_str} ({loc_str})",
-            data={
-                "medication": "PARACETAMOL 500mg",
-                "activeIngredient": "Paracetamol",
-                "stock": stock_str,
-                "location": loc_str,
-                "dosage": "500mg - 1000mg/lần cách 4-6h (Max 4g/24h)",
-                "batch": batch_no
-            },
-            primary_action_label="Xem Chuyên Luận Paracetamol",
-            primary_action_type="OPEN_MEDICATION_SAFETY",
-            target_tab="fefo"
-        )
-
         return CopilotResponse(
             intent="CLINICAL_FEVER_TRIAGE_PROTOCOL",
             reply_text=reply,
-            card=card,
+            card=None,  # Đã loại bỏ Action Card thừa theo yêu cầu người dùng
             legal_basis="Dược Thư Quốc Gia Việt Nam 2015 Trang 1095 & Hướng dẫn Chẩn đoán Điều trị Bộ Y Tế",
             suggested_chips=[
                 "Thông tin về thuốc Paracetamol",

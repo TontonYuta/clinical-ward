@@ -34,13 +34,15 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isPatientProfile = (/kiểm tra bệnh nhân|thông tin bệnh nhân|hồ sơ bệnh nhân/i.test(lower) || /hồ sơ|bệnh án/i.test(lower)) &&
     /bệnh nhân|người bệnh|ông ấy|bà ấy|ca này|võ minh trí|nguyễn văn an|trần thị mai|đặng thị lan/i.test(lower);
   const isDeictic = /thuốc này|thuốc đó|nó|thuốc vừa nói|thuốc vừa gợi ý|viên này|lọ này|ống này|thuốc trên|thuốc đang hỏi/i.test(lower);
+  const isFever = (/sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì|các loại|thông tin|hướng dẫn/i.test(lower)) ||
+    /thuốc hạ sốt|các loại thuốc hạ sốt|thuốc hạ nhiệt|thuốc giảm sốt/i.test(lower);
 
   return (
     isCeftriaxoneCalcium || isRedMan || isStatinFood || isHighAlertKcl ||
     isAnaphylaxis || isOpioidCalc || isAllergyAudit || isRenal ||
     isColdChain || isPrescription || isAdr ||
     isAmiodarone || isNoradrenalin || isDiazepam || isSalbutamol || isEsomeprazole ||
-    isPatientProfile || isDeictic
+    isPatientProfile || isDeictic || isFever
   );
 }
 
@@ -589,25 +591,6 @@ export async function processGeminiClinicalScenario(
       ? `### 🌡️ HƯỚNG DẪN CÁC LOẠI THUỐC HẠ SỐT & PHÁC ĐỒ XỬ TRÍ AN TOÀN (Dược Thư Quốc Gia 2015)\n\n`
       : `### 🌡️ HƯỚNG DẪN XỬ TRÍ SỐT CAO (${tempStr.toUpperCase()}) & PHÁC ĐỒ HẠ SỐT AN TOÀN\n\n`;
 
-    const card: AgentActionCard = {
-      cardType: 'medication_safety',
-      title: 'Hạ Sốt An Toàn: PARACETAMOL 500mg',
-      summary: 'Lô: LOT-PC24-11A • Tồn: 80 Viên (Kho Dược Nội Trú - Kệ A1 Tầng 1) • SĐK: 893100110026',
-      data: {
-        medication: 'PARACETAMOL 500mg',
-        activeIngredient: 'Paracetamol',
-        stock: '80 Viên',
-        location: 'Kho Dược Nội Trú (Kệ A1 - Tầng 1)',
-        dosage: '500mg - 1000mg/lần cách 4-6h (Max 4g/24h)',
-        batch: 'LOT-PC24-11A',
-        targetTab: 'fefo'
-      },
-      primaryActionLabel: 'Xem Tồn Kho Paracetamol',
-      primaryActionType: 'NAVIGATE_TAB',
-      targetTab: 'fefo',
-      status: 'pending'
-    };
-
     const replyText = (
       titleHeader +
       `Sốt là phản ứng bảo vệ của hệ miễn dịch khi cơ thể gặp nhiễm trùng hoặc viêm cấp tính. Dưới đây là phân loại các nhóm thuốc hạ sốt chuẩn y khoa và phác đồ sử dụng an toàn:\n\n` +
@@ -641,10 +624,8 @@ export async function processGeminiClinicalScenario(
         text: replyText,
         timestamp: nowStr,
         legalReference: { lawCode: 'Dược Thư Quốc Gia Việt Nam 2015 Trang 1095', title: 'Chuyên luận Paracetamol & Thuốc hạ sốt', clause: 'Phác đồ hạ sốt an toàn' },
-        card,
         suggestedChips: ['Thông tin về thuốc Paracetamol', 'Dấu hiệu cảnh báo sốt xuất huyết', 'Kiểm tra hạn dùng FEFO']
-      },
-      card
+      }
     };
   }
 

@@ -85,9 +85,11 @@ export const MedicationSafetyDetailsCard: React.FC<MedicationSafetyDetailsCardPr
         </div>
       )}
 
-      <div className="text-slate-700">
-        <strong className="text-slate-900">Liều dùng:</strong> {data.standardDosing}
-      </div>
+      {(data.standardDosing || data.dosage) && (
+        <div className="text-slate-700">
+          <strong className="text-slate-900">Liều dùng:</strong> {data.standardDosing || data.dosage}
+        </div>
+      )}
 
       {data.antidote && (
         <div className="text-slate-900 font-semibold bg-slate-100 p-1.5 rounded border border-slate-300 flex items-center gap-1.5">
