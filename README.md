@@ -4,6 +4,7 @@
 [![Production Live](https://img.shields.io/badge/Production-clinical--ward.vercel.app-emerald?style=for-the-badge&logo=vercel)](https://clinical-ward.vercel.app)
 [![Playwright Tests](https://img.shields.io/badge/Playwright%20Tests-100%25%20Passed-blue?style=for-the-badge&logo=playwright)](https://clinical-ward.vercel.app)
 [![Legal Compliance](https://img.shields.io/badge/Bộ%20Y%20Tế-TT22%20%7C%20TT20%20%7C%20NĐ98%20%7C%20TT36%20GSP-purple?style=for-the-badge)](https://clinical-ward.vercel.app)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/TontonYuta/clinical-ward)
 
 ---
 
