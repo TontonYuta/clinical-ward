@@ -1,0 +1,11 @@
+[
+  {
+    "stt": 1899,
+    "drug_1": "Methadon",
+    "drug_2": "Voriconazol",
+    "mechanism": "Voriconazol ức chế mạnh CYP3A4, CYP2C19 và CYP2C9 làm giảm độ thanh thải Methadon",
+    "consequence": "Tăng nồng độ Methadon huyết tương gấp 3-4 lần, suy hô hấp cấp, ngừng thở và tử vong",
+    "action": "Tránh phối hợp. Nếu bắt buộc, giảm ngay 50% liều Methadon và theo dõi sát SpO2",
+    "legal_source": "Cảnh báo Dược thư Quốc gia & FDA Boxed Warning"
+  }
+]
