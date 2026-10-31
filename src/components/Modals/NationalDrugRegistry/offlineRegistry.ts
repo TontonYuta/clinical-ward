@@ -86,8 +86,8 @@ export async function queryOfflineRegistry(
       d.group
     ).key === pharmGroup) &&
     (!q || tokens.every((token) => {
-      const haystack = [value(d, 'brandName', 'brand_name'), value(d, 'nationalCode', 'national_code'), value(d, 'activeIngredient', 'active_ingredient_raw'), d.atcCode, d.atc_code].map(normalizeSearch).join(' ');
-      return haystack.includes(token);
+      const haystack = [value(d, 'brandName', 'brand_name'), value(d, 'nationalCode', 'national_code'), value(d, 'activeIngredient', 'active_ingredient_raw'), value(d, 'concentration', 'strength_raw'), value(d, 'dosageForm', 'dosage_form'), d.atcCode, d.atc_code].map(normalizeSearch).join(' ');
+      return haystack.includes(token) || haystack.replace(/\s+/g, '').includes(token.replace(/\s+/g, ''));
     }))
   );
   const items: MasterMedication[] = filtered.slice((page - 1) * pageSize, page * pageSize).map((d: any) => ({
