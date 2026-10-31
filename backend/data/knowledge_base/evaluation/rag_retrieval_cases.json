@@ -5,7 +5,8 @@
     "expected_chunk_ids": [
       "core_inns_monographs_2"
     ],
-    "expected_entity_type": "monograph"
+    "expected_entity_type": "monograph",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "ceftriaxone_calcium",
@@ -13,7 +14,8 @@
     "expected_chunk_ids": [
       "qd_5948_antibiotics_and_antiinflammatory_3"
     ],
-    "expected_entity_type": "ddi"
+    "expected_entity_type": "ddi",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "anaphylaxis_adrenaline",
@@ -21,7 +23,8 @@
     "expected_chunk_ids": [
       "tt51_2017_anaphylaxis_protocol_4"
     ],
-    "expected_entity_type": "circular"
+    "expected_entity_type": "circular",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "opioid_ampoule",
@@ -29,7 +32,8 @@
     "expected_chunk_ids": [
       "tt20_2017_narcotics_management_5"
     ],
-    "expected_entity_type": "circular"
+    "expected_entity_type": "circular",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "clopidogrel_esomeprazole",
@@ -37,7 +41,8 @@
     "expected_chunk_ids": [
       "qd_5948_cardiovascular_and_cns_5"
     ],
-    "expected_entity_type": "ddi"
+    "expected_entity_type": "ddi",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "metformin_renal",
@@ -45,7 +50,8 @@
     "expected_chunk_ids": [
       "core_inns_monographs_7"
     ],
-    "expected_entity_type": "monograph"
+    "expected_entity_type": "monograph",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "vancomycin",
@@ -53,7 +59,8 @@
     "expected_chunk_ids": [
       "core_inns_monographs_6"
     ],
-    "expected_entity_type": "monograph"
+    "expected_entity_type": "monograph",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "shift_handover",
@@ -61,7 +68,8 @@
     "expected_chunk_ids": [
       "tt22_2011_hospital_pharmacy_ward_4"
     ],
-    "expected_entity_type": "circular"
+    "expected_entity_type": "circular",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "para_synonym",
@@ -69,7 +77,8 @@
     "expected_chunk_ids": [
       "core_inns_monographs_2"
     ],
-    "expected_entity_type": "monograph"
+    "expected_entity_type": "monograph",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "cef_calcium_synonym",
@@ -77,7 +86,8 @@
     "expected_chunk_ids": [
       "qd_5948_antibiotics_and_antiinflammatory_3"
     ],
-    "expected_entity_type": "ddi"
+    "expected_entity_type": "ddi",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "anaphylaxis_synonym",
@@ -85,15 +95,17 @@
     "expected_chunk_ids": [
       "tt51_2017_anaphylaxis_protocol_4"
     ],
-    "expected_entity_type": "circular"
+    "expected_entity_type": "circular",
+    "clinical_review": "candidate_unreviewed"
   },
   {
-    "id": "morphine_empty_ampoule",
+    "id": "morphine_ampoule_process",
     "query": "Quản lý vỏ ống morphine sau khi sử dụng ở khoa lâm sàng?",
     "expected_chunk_ids": [
       "tt20_2017_narcotics_management_5"
     ],
-    "expected_entity_type": "circular"
+    "expected_entity_type": "circular",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "renal_metformin_synonym",
@@ -101,7 +113,8 @@
     "expected_chunk_ids": [
       "core_inns_monographs_7"
     ],
-    "expected_entity_type": "monograph"
+    "expected_entity_type": "monograph",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "vanco_rate_synonym",
@@ -109,7 +122,8 @@
     "expected_chunk_ids": [
       "core_inns_monographs_6"
     ],
-    "expected_entity_type": "monograph"
+    "expected_entity_type": "monograph",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "handover_synonym",
@@ -117,7 +131,8 @@
     "expected_chunk_ids": [
       "tt22_2011_hospital_pharmacy_ward_4"
     ],
-    "expected_entity_type": "circular"
+    "expected_entity_type": "circular",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "ppi_clopidogrel_synonym",
@@ -125,7 +140,8 @@
     "expected_chunk_ids": [
       "qd_5948_cardiovascular_and_cns_5"
     ],
-    "expected_entity_type": "ddi"
+    "expected_entity_type": "ddi",
+    "clinical_review": "candidate_unreviewed"
   },
   {
     "id": "morphine_empty_ampoule",
@@ -133,6 +149,7 @@
     "expected_chunk_ids": [
       "tt20_2017_narcotics_management_5"
     ],
-    "expected_entity_type": "circular"
+    "expected_entity_type": "circular",
+    "clinical_review": "candidate_unreviewed"
   }
 ]

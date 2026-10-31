@@ -20,11 +20,13 @@ def evaluate_retrieval(top_k: int = 5) -> dict:
         per_case.append({"id": case["id"], "rank": rank, "top_chunk": results[0].chunk.chunk_id if results else None})
     return {
         "case_count": len(cases),
+        "expert_reviewed_count": sum(1 for case in cases if case.get("clinical_review") == "approved"),
+        "candidate_unreviewed_count": sum(1 for case in cases if case.get("clinical_review") != "approved"),
         "recall_at_k": sum(rank > 0 for rank in [row["rank"] or 0 for row in per_case]) / len(cases),
         "mrr_at_k": sum(reciprocal_ranks) / len(cases),
         "k": top_k,
         "cases": per_case,
-        "note": "Offline retrieval-only metric; cases are curated and do not establish clinical answer accuracy.",
+        "note": "Offline retrieval-only metric; unreviewed cases are engineering candidates and do not establish clinical answer accuracy.",
     }
 
 
