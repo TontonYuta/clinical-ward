@@ -1603,10 +1603,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             setIsMobileSidebarOpen(false);
           }}
           currentUserRole={currentUserRole}
-          onSelectUserRole={(role) => {
+          onSelectUserRole={authenticatedRole ? undefined : (role) => {
             handleSelectUserRole(role);
             setIsMobileSidebarOpen(false);
           }}
+          onLogout={authenticatedRole ? onLogout : undefined}
           isCollapsed={false}
           onToggleCollapse={() => setIsMobileSidebarOpen(false)}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -1695,6 +1696,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
               onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
               onOpenPrintForm={handleOpenPrintForm}
               onOpenMedicationSafety={handleOpenMedicationSafety}
+              auditRecords={auditRecords}
             />
           </section>
         </main>

@@ -37,14 +37,14 @@ const KEYS = {
   CACHED_AUDIT: 'clinical_cached_audit'
 };
 
-const VALID_TABS: DashboardTab[] = ['cpoe', 'debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'];
+const VALID_TABS: DashboardTab[] = ['overview', 'cpoe', 'debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'];
 const VALID_ROLES: UserRole[] = ['nurse', 'doctor', 'pharmacist', 'biomedical_engineer', 'director'];
 
 /**
  * 1. Khôi phục Tab ban đầu từ URL Hash hoặc LocalStorage
  */
 export function getInitialTab(): DashboardTab {
-  if (typeof window === 'undefined') return 'debt';
+  if (typeof window === 'undefined') return 'overview';
 
   // Ưu tiên 1: Lấy từ window.location.hash (#cpoe, #fefo, #equipment...)
   const hash = window.location.hash.replace('#', '').toLowerCase() as DashboardTab;
@@ -62,7 +62,7 @@ export function getInitialTab(): DashboardTab {
     console.warn('Cannot read tab from localStorage', e);
   }
 
-  return 'debt';
+  return 'overview';
 }
 
 /**

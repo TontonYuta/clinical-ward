@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2 } from 'lucide-react';
+import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2, LayoutDashboard } from 'lucide-react';
 import { DashboardTab } from '../RightPane/Dashboard';
 
 interface SidebarNavLinksProps {
@@ -48,6 +48,7 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   };
 
   const pharmacyDefs: NavDef[] = [
+    { tab: 'overview', label: 'Tổng quan', icon: LayoutDashboard, title: 'Tổng quan vận hành' },
     { tab: 'cpoe', label: 'Kê đơn thuốc', icon: Stethoscope, title: 'Kê đơn thuốc nội trú & ngoại trú' },
     {
       tab: 'debt',

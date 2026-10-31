@@ -8,6 +8,7 @@ import {
   IncidentStatus,
   AssetAuditRecord,
   UserRole,
+  AuditTrailRecord,
   type DashboardTab
 } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
@@ -17,6 +18,7 @@ import { EquipmentIncidentTab } from './Tabs/EquipmentIncidentTab';
 import { FefoInventoryTab } from './Tabs/FefoInventoryTab';
 import { ColdChainTab } from './Tabs/ColdChainTab';
 import { AssetAuditTab } from './Tabs/AssetAuditTab';
+import { OperationsOverview } from './OperationsOverview';
 import { PrintableFormType } from '../Modals/PrintableFormModal';
 
 export type { DashboardTab };
@@ -51,6 +53,7 @@ interface DashboardProps {
   onOpenAuditTrail?: () => void;
   onOpenPrintForm?: (formType: PrintableFormType, item?: any) => void;
   onOpenMedicationSafety?: (medNameOrId?: string) => void;
+  auditRecords?: AuditTrailRecord[];
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -83,6 +86,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenAuditTrail,
   onOpenPrintForm,
   onOpenMedicationSafety,
+  auditRecords = [],
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
@@ -111,6 +115,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         ) : (
           <>
+            {currentTab === 'overview' && (
+              <OperationsOverview
+                currentUserRole={currentUserRole}
+                debts={debts}
+                tickets={tickets}
+                batches={batches}
+                coldChainState={coldChainState}
+                assets={assets}
+                auditRecords={auditRecords}
+                allowedTabs={allowedTabs}
+                onTabChange={onTabChange}
+              />
+            )}
             {currentTab === 'cpoe' && (
               <CpoePrescriptionTab
                 doctorName={USER_PROFILES[currentUserRole]?.name}

@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2 } from 'lucide-react';
+import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2, LayoutDashboard } from 'lucide-react';
 import { DashboardTab, UserRole } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
 
@@ -21,6 +21,7 @@ interface MobileBottomNavProps {
 }
 
 const TAB_CONFIG: Record<DashboardTab, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  overview: { label: 'Tổng quan', icon: LayoutDashboard },
   cpoe: { label: 'Kê đơn', icon: Stethoscope },
   debt: { label: 'Sổ nợ', icon: FileText },
   fefo: { label: 'Kho dược', icon: Boxes },
@@ -58,7 +59,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-1 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around select-none print:hidden shadow-lg">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-1 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] flex items-center justify-start overflow-x-auto select-none print:hidden shadow-lg">
       {displayTabs.map((tab) => {
         const config = TAB_CONFIG[tab];
         if (!config) return null;
@@ -70,7 +71,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition cursor-pointer relative ${
+            className={`flex min-w-[4.25rem] flex-1 flex-col items-center justify-center py-1 px-1 rounded-lg transition cursor-pointer relative ${
               isActive ? 'text-blue-900 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
