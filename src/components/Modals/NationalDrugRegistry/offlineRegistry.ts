@@ -19,6 +19,10 @@ function computeGroupStats(list: any[]): Record<string, number> {
   return stats;
 }
 
+function normalizeSearch(value: unknown): string {
+  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
 export async function loadOfflineRegistry(): Promise<any[]> {
   if (cachedRegistry && cachedRegistry.length > 0) return cachedRegistry;
   try {
@@ -70,7 +74,8 @@ export async function queryOfflineRegistry(
   pageSize: number
 ): Promise<{ items: MasterMedication[]; total: number; registryTotal: number; totalPages: number; groupStats: Record<string, number> }> {
   const fullList = await loadOfflineRegistry();
-  const q = search.toLowerCase().trim();
+  const q = normalizeSearch(search);
+  const tokens = q.split(' ').filter(Boolean);
   const groupStats = cachedGroupStats || computeGroupStats(fullList);
   const value = (d: any, camel: string, snake: string) => d[camel] ?? d[snake];
   const filtered = fullList.filter((d: any) =>
@@ -80,7 +85,10 @@ export async function queryOfflineRegistry(
       `${value(d, 'brandName', 'brand_name') || ''} ${value(d, 'activeIngredient', 'active_ingredient_raw') || ''}`,
       d.group
     ).key === pharmGroup) &&
-    (!q || (value(d, 'brandName', 'brand_name') && value(d, 'brandName', 'brand_name').toLowerCase().includes(q)) || (value(d, 'nationalCode', 'national_code') && value(d, 'nationalCode', 'national_code').toLowerCase().includes(q)) || (value(d, 'activeIngredient', 'active_ingredient_raw') && value(d, 'activeIngredient', 'active_ingredient_raw').toLowerCase().includes(q)))
+    (!q || tokens.every((token) => {
+      const haystack = [value(d, 'brandName', 'brand_name'), value(d, 'nationalCode', 'national_code'), value(d, 'activeIngredient', 'active_ingredient_raw'), d.atcCode, d.atc_code].map(normalizeSearch).join(' ');
+      return haystack.includes(token);
+    }))
   );
   const items: MasterMedication[] = filtered.slice((page - 1) * pageSize, page * pageSize).map((d: any) => ({
     id: d.id, nationalCode: value(d, 'nationalCode', 'national_code'), brandName: value(d, 'brandName', 'brand_name'),

@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Printer, ShieldAlert, HeartPulse, User, Phone, Mail, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, Send, MessageSquare } from 'lucide-react';
-import { PatientProfile, findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../services/patientService';
+import { PatientProfile, findPatientByNameOrQuery, findPatientsByQuery, INITIAL_PATIENTS } from '../../services/patientService';
 import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';
 import { INITIAL_DEBT_RECORDS } from '../../data/initialData';
 import { stripLeadingBullets } from '../../utils/clinicalFormatter';
@@ -32,6 +32,7 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<PatientDetailTab>('overview');
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
   const [hospitalNoticeStatus, setHospitalNoticeStatus] = useState<string | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   const handleSendHospitalNotice = (phoneNum?: string) => {
     setIsSmsModalOpen(true);
@@ -46,7 +47,7 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (isOpen) setActiveTab('overview');
+    if (isOpen) { setActiveTab('overview'); setSelectedPatientId(null); }
   }, [isOpen, patientIdOrName]);
 
   // Find related active prescriptions from cached CPOE or INITIAL_PRESCRIPTIONS
@@ -66,11 +67,13 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   if (!isOpen) return null;
 
   // Resolve patient from query or direct object
+  const matches = directPatient ? [directPatient] : (patientIdOrName ? findPatientsByQuery(patientIdOrName, INITIAL_PATIENTS) : []);
   const patient: PatientProfile = directPatient || 
-    (patientIdOrName ? findPatientByNameOrQuery(patientIdOrName, INITIAL_PATIENTS) : null) ||
+    (selectedPatientId ? matches.find((item) => item.id === selectedPatientId) : findPatientByNameOrQuery(patientIdOrName || '', INITIAL_PATIENTS)) ||
     ({ id: '', fullName: '', gender: 'Chưa rõ', email: '', room: 'Chưa có dữ liệu', allergies: 'Chưa có dữ liệu bệnh nhân phù hợp', chronicConditions: 'Chưa có dữ liệu', egfr: 0, creatinine: 0, weightKg: 0 } as PatientProfile);
 
   const patientNotFound = !patient.id;
+  const patientAmbiguous = !directPatient && !selectedPatientId && matches.length > 1;
 
   const relatedPrescriptions = activePrescriptionsList.filter(
     (p: any) => p.patientId === patient.id || p.patientName.toLowerCase().includes(patient.fullName.toLowerCase())
@@ -91,6 +94,11 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
                      patient.egfr >= 15 ? 'G4 (Suy thận nặng)' : 'G5 (Suy thận giai đoạn cuối)';
 
   if (patientNotFound) {
+    if (patientAmbiguous) {
+      return <div role="dialog" aria-modal="true" data-testid="patient-detail-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+        <section className="w-full max-w-2xl border border-slate-300 bg-white p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-slate-950">Có nhiều bệnh nhân phù hợp</h2><p className="mt-2 text-sm text-slate-600">Chọn đúng hồ sơ bằng mã bệnh nhân, ngày sinh hoặc khoa/phòng trước khi xem dữ liệu lâm sàng.</p></div><button type="button" onClick={onClose} aria-label="Đóng" className="border border-slate-300 p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div><div className="mt-5 divide-y divide-slate-200 border-y border-slate-200">{matches.map((item) => <button key={item.id} type="button" onClick={() => setSelectedPatientId(item.id)} className="flex w-full items-center gap-4 p-4 text-left hover:bg-slate-50"><span className="font-mono text-sm font-semibold text-slate-800">{item.id}</span><span className="min-w-0 flex-1"><span className="block font-semibold text-slate-950">{item.fullName}</span><span className="block text-xs text-slate-600">{item.dob || 'Chưa có ngày sinh'} · {item.gender} · {item.department || item.room}</span></span></button>)}</div></section>
+      </div>;
+    }
     return <div role="dialog" aria-modal="true" data-testid="patient-detail-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
       <section className="w-full max-w-lg border border-slate-300 bg-white p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-slate-950">Không tìm thấy bệnh nhân phù hợp</h2><p className="mt-2 text-sm text-slate-600">Không có hồ sơ khớp duy nhất với “{patientIdOrName}”. Hãy tìm bằng mã bệnh nhân hoặc họ tên đầy đủ.</p></div><button type="button" onClick={onClose} aria-label="Đóng" className="border border-slate-300 p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
