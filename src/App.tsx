@@ -63,6 +63,8 @@ import {
   saveCopilotExpanded,
   getInitialAudioMuted,
   saveAudioMuted,
+  getInitialFontScale,
+  saveFontScale,
   getInitialChatMessages,
   saveChatMessages,
   getCachedDebts,
@@ -76,7 +78,7 @@ import {
   clearAllStoredState
 } from './utils/storage/appStatePersistence';
 
-export default function App({ authenticatedRole, onLogout }: { authenticatedRole?: UserRole; onLogout?: () => Promise<void> } = {}) {
+export default function App({ authenticatedRole, authenticatedUsername, onLogout }: { authenticatedRole?: UserRole; authenticatedUsername?: string; onLogout?: () => Promise<void> } = {}) {
   // State khôi phục bền vững từ URL Hash & LocalStorage Cache (SWR chống giật layout khi reload)
   const [debts, setDebts] = useState<DebtRecord[]>(getCachedDebts);
   const [tickets, setTickets] = useState<EquipmentTicket[]>(getCachedTickets);
@@ -113,6 +115,11 @@ export default function App({ authenticatedRole, onLogout }: { authenticatedRole
   const [safetyModalMedName, setSafetyModalMedName] = useState<string | undefined>(undefined);
   const [safetyModalMedId, setSafetyModalMedId] = useState<string | undefined>(undefined);
   const [selectedPatientForGlobalModal, setSelectedPatientForGlobalModal] = useState<string | null>(null);
+  const [fontScale, setFontScale] = useState(getInitialFontScale);
+  useEffect(() => {
+    document.documentElement.style.fontSize = fontScale === 'compact' ? '14px' : fontScale === 'large' ? '18px' : '16px';
+    saveFontScale(fontScale);
+  }, [fontScale]);
 
   useEffect(() => {
     const handleOpenPatient = (e: any) => {
@@ -1608,6 +1615,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             setIsMobileSidebarOpen(false);
           }}
           onLogout={authenticatedRole ? onLogout : undefined}
+          isAuthenticated={Boolean(authenticatedRole)}
+          username={authenticatedUsername}
+          fontScale={fontScale}
+          onFontScaleChange={setFontScale}
           isCollapsed={false}
           onToggleCollapse={() => setIsMobileSidebarOpen(false)}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -1648,6 +1659,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           currentUserRole={currentUserRole}
               onSelectUserRole={authenticatedRole ? undefined : handleSelectUserRole}
               onLogout={authenticatedRole ? onLogout : undefined}
+          isAuthenticated={Boolean(authenticatedRole)}
+          username={authenticatedUsername}
+          fontScale={fontScale}
+          onFontScaleChange={setFontScale}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           debtCount={debts.filter(d => d.status === 'debt').length}
@@ -1696,6 +1711,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
               onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
               onOpenPrintForm={handleOpenPrintForm}
               onOpenMedicationSafety={handleOpenMedicationSafety}
+              onOpenPatientSearch={(query) => window.dispatchEvent(new CustomEvent('open_patient_detail', { detail: { patientName: query } }))}
               auditRecords={auditRecords}
             />
           </section>

@@ -11,6 +11,7 @@ import { SidebarHeader } from './Sidebar/SidebarHeader';
 import { SidebarNavLinks } from './Sidebar/SidebarNavLinks';
 import { SidebarLegalLinks } from './Sidebar/SidebarLegalLinks';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
+import type { AppFontScale } from '../utils/storage/appStatePersistence';
 
 export interface SidebarProps {
   currentTab: DashboardTab;
@@ -18,6 +19,10 @@ export interface SidebarProps {
   currentUserRole: UserRole;
   onSelectUserRole?: (role: UserRole) => void;
   onLogout?: () => Promise<void>;
+  isAuthenticated: boolean;
+  username?: string;
+  fontScale: AppFontScale;
+  onFontScaleChange: (scale: AppFontScale) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onCloseMobile?: () => void;
@@ -40,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUserRole,
   onSelectUserRole,
   onLogout,
+  isAuthenticated, username, fontScale, onFontScaleChange,
   isCollapsed,
   onToggleCollapse,
   onCloseMobile,
@@ -95,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       </div>
 
-      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} onCloseMobile={onCloseMobile} />
+      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} isAuthenticated={isAuthenticated} username={username} fontScale={fontScale} onFontScaleChange={onFontScaleChange} onCloseMobile={onCloseMobile} />
     </aside>
   );
 };
