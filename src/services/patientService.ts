@@ -354,38 +354,17 @@ export async function fetchPatients(): Promise<PatientProfile[]> {
 }
 
 export function findPatientByNameOrQuery(query: string, patients: PatientProfile[] = INITIAL_PATIENTS): PatientProfile | undefined {
-  if (!query) return undefined;
-  const norm = query.toLowerCase().trim();
-  
-  // 1. Match by ID directly
-  const byId = patients.find(p => p.id.toLowerCase() === norm || norm.includes(p.id.toLowerCase()));
-  if (byId) return byId;
-
-  // 2. Match by exact or partial full name
-  const byName = patients.find(p => norm.includes(p.fullName.toLowerCase()) || p.fullName.toLowerCase().includes(norm));
-  if (byName) return byName;
-
-  // 3. Match without parentheses or prefixes e.g. "Võ Minh Trí (BN-8820)"
-  const cleanName = query.replace(/\(.*?\)/g, '').trim().toLowerCase();
-  const byClean = patients.find(p => cleanName.includes(p.fullName.toLowerCase()) || p.fullName.toLowerCase().includes(cleanName));
-  if (byClean) return byClean;
-
-  // 4. Match specific nicknames/surnames
-  return patients.find(p => 
-    (norm.includes('trí') && p.fullName.includes('Trí')) ||
-    (norm.includes('mai') && p.fullName.includes('Mai')) ||
-    (norm.includes('lan') && p.fullName.includes('Lan')) ||
-    (norm.includes('đăng') && p.fullName.includes('Đăng')) ||
-    (norm.includes('dung') && p.fullName.includes('Dung')) ||
-    (norm.includes('toàn') && p.fullName.includes('Toàn')) ||
-    (norm.includes('nam') && p.fullName.includes('Nam')) ||
-    (norm.includes('hưng') && p.fullName.includes('Hưng')) ||
-    (norm.includes('yến') && p.fullName.includes('Yến')) ||
-    (norm.includes('mạnh') && p.fullName.includes('Mạnh')) ||
-    (norm.includes('bảo') && p.fullName.includes('Bảo')) ||
-    (norm.includes('hoàng') && p.fullName.includes('Hoàng')) ||
-    (norm.includes('an') && p.fullName.includes('An'))
-  );
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, ' ').trim();
+  const norm = normalize(query);
+  const withoutParenthetical = normalize(query.replace(/\(.*?\)/g, ''));
+  if (!norm || norm.length < 3) return undefined;
+  const exactId = patients.find((p) => normalize(p.id) === norm);
+  if (exactId) return exactId;
+  const exactName = patients.find((p) => normalize(p.fullName) === norm || normalize(p.fullName) === withoutParenthetical);
+  if (exactName) return exactName;
+  // Partial lookup is allowed only when it identifies one record uniquely.
+  const candidates = patients.filter((p) => normalize(p.fullName).includes(withoutParenthetical) || normalize(p.id).includes(norm));
+  return candidates.length === 1 ? candidates[0] : undefined;
 }
 
 export async function savePatientProfile(patient: PatientProfile): Promise<boolean> {

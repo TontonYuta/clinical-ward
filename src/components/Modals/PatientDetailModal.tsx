@@ -67,8 +67,10 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
 
   // Resolve patient from query or direct object
   const patient: PatientProfile = directPatient || 
-    (patientIdOrName ? findPatientByNameOrQuery(patientIdOrName, INITIAL_PATIENTS) : null) || 
-    INITIAL_PATIENTS[0];
+    (patientIdOrName ? findPatientByNameOrQuery(patientIdOrName, INITIAL_PATIENTS) : null) ||
+    ({ id: '', fullName: '', gender: 'Chưa rõ', email: '', room: 'Chưa có dữ liệu', allergies: 'Chưa có dữ liệu bệnh nhân phù hợp', chronicConditions: 'Chưa có dữ liệu', egfr: 0, creatinine: 0, weightKg: 0 } as PatientProfile);
+
+  const patientNotFound = !patient.id;
 
   const relatedPrescriptions = activePrescriptionsList.filter(
     (p: any) => p.patientId === patient.id || p.patientName.toLowerCase().includes(patient.fullName.toLowerCase())
@@ -87,6 +89,14 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
                      patient.egfr >= 45 ? 'G3a (Giảm nhẹ - trung bình)' :
                      patient.egfr >= 30 ? 'G3b (Giảm trung bình - nặng)' :
                      patient.egfr >= 15 ? 'G4 (Suy thận nặng)' : 'G5 (Suy thận giai đoạn cuối)';
+
+  if (patientNotFound) {
+    return <div role="dialog" aria-modal="true" data-testid="patient-detail-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+      <section className="w-full max-w-lg border border-slate-300 bg-white p-6 shadow-xl">
+        <div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-slate-950">Không tìm thấy bệnh nhân phù hợp</h2><p className="mt-2 text-sm text-slate-600">Không có hồ sơ khớp duy nhất với “{patientIdOrName}”. Hãy tìm bằng mã bệnh nhân hoặc họ tên đầy đủ.</p></div><button type="button" onClick={onClose} aria-label="Đóng" className="border border-slate-300 p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
+      </section>
+    </div>;
+  }
 
   const tabs: [PatientDetailTab, string][] = [
     ['overview', 'Tổng quan lâm sàng'],

@@ -16,10 +16,10 @@ import { PHARMACOLOGICAL_GROUPS } from '../../utils/clinical/pharmacologicalClas
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { getCachedRegistryPage, saveCachedRegistryPage, RegistryPageKey } from '../../utils/storage/registryPageCache';
 
-interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; }
+interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; initialSearch?: string; }
 
 const PAGE_SIZE = 12;
-export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication }) => {
+export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication, initialSearch = '' }) => {
   useModalDismiss(isOpen, onClose);
   const [drugs, setDrugs] = useState<MasterMedication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +37,14 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   const [hospitalStockDrugCount, setHospitalStockDrugCount] = useState(0);
   const [cacheStatus, setCacheStatus] = useState<'none' | 'checking' | 'current' | 'updated' | 'offline' | 'static'>('none');
   const [selectedDrugForDav, setSelectedDrugForDav] = useState<MasterMedication | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSearchInput(initialSearch);
+      setSearch(initialSearch.trim());
+      setPage(1);
+    }
+  }, [isOpen, initialSearch]);
 
   useEffect(() => { const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 250); return () => clearTimeout(t); }, [searchInput]);
 

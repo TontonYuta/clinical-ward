@@ -38,6 +38,7 @@ import { TelegramToast } from './components/Modals/TelegramToast';
 import { ClinicalAuthModal } from './components/Modals/ClinicalAuthModal';
 import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { PatientDetailModal } from './components/Modals/PatientDetailModal';
+import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
@@ -49,7 +50,6 @@ import { clinicalAudio } from './utils/audio';
 const LegalDocsModal = lazy(() => import('./components/Modals/LegalDocsModal').then(m => ({ default: m.LegalDocsModal })));
 const UserGuideModal = lazy(() => import('./components/Modals/UserGuideModal').then(m => ({ default: m.UserGuideModal })));
 const PrintableFormModal = lazy(() => import('./components/Modals/PrintableFormModal').then(m => ({ default: m.PrintableFormModal })));
-const MedicationSafetyModal = lazy(() => import('./components/Modals/MedicationSafetyModal').then(m => ({ default: m.MedicationSafetyModal })));
 import {
   getInitialTab,
   syncTabToUrl,
@@ -111,9 +111,8 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const dragFrame = useRef<number | null>(null);
   const pendingChatPosition = useRef<{ x: number; y: number } | null>(null);
   const [showTelegramToast, setShowTelegramToast] = useState<boolean>(false);
-  const [isMedicationSafetyOpen, setIsMedicationSafetyOpen] = useState<boolean>(false);
-  const [safetyModalMedName, setSafetyModalMedName] = useState<string | undefined>(undefined);
-  const [safetyModalMedId, setSafetyModalMedId] = useState<string | undefined>(undefined);
+  const [isDrugRegistryOpen, setIsDrugRegistryOpen] = useState<boolean>(false);
+  const [drugRegistrySearch, setDrugRegistrySearch] = useState('');
   const [selectedPatientForGlobalModal, setSelectedPatientForGlobalModal] = useState<string | null>(null);
   const [fontScale, setFontScale] = useState(getInitialFontScale);
   useEffect(() => {
@@ -132,14 +131,8 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   }, []);
 
   const handleOpenMedicationSafety = (medNameOrId?: string) => {
-    if (medNameOrId?.startsWith('med-')) {
-      setSafetyModalMedId(medNameOrId);
-      setSafetyModalMedName(undefined);
-    } else {
-      setSafetyModalMedName(medNameOrId);
-      setSafetyModalMedId(undefined);
-    }
-    setIsMedicationSafetyOpen(true);
+    setDrugRegistrySearch(medNameOrId?.trim() || '');
+    setIsDrugRegistryOpen(true);
   };
 
   const handleChatPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -1728,6 +1721,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
               onOpenPrintForm={handleOpenPrintForm}
               onOpenMedicationSafety={handleOpenMedicationSafety}
               onOpenPatientSearch={(query) => window.dispatchEvent(new CustomEvent('open_patient_detail', { detail: { patientName: query } }))}
+              onOpenCopilot={() => setIsCopilotOpen(true)}
               auditRecords={auditRecords}
             />
           </section>
@@ -1848,11 +1842,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           records={auditRecords}
         />
 
-        <MedicationSafetyModal
-          isOpen={isMedicationSafetyOpen}
-          onClose={() => setIsMedicationSafetyOpen(false)}
-          initialMedicationId={safetyModalMedId}
-          initialMedicationName={safetyModalMedName}
+        <NationalDrugRegistryModal
+          isOpen={isDrugRegistryOpen}
+          onClose={() => setIsDrugRegistryOpen(false)}
+          initialSearch={drugRegistrySearch}
+          onSelectMedication={(name) => { setDrugRegistrySearch(name); setIsDrugRegistryOpen(true); }}
         />
 
         {/* Modal Chi Tiết Hồ Sơ Bệnh Nhân Toàn Cục */}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ArrowRight, Boxes, ClipboardList, FileText, Thermometer, Wrench, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Boxes, ClipboardList, FileText, Thermometer, Wrench, CheckCircle2, Bot } from 'lucide-react';
 import type { DashboardTab, UserRole, AuditTrailRecord } from '../../types/clinical';
 import type { DebtRecord, InventoryBatch } from '../../types/pharmacy';
 import type { EquipmentTicket, ColdChainMonitorState, AssetAuditRecord } from '../../types/equipment';
@@ -18,6 +18,7 @@ interface OperationsOverviewProps {
   onTabChange: (tab: DashboardTab) => void;
   onOpenPatient: (query: string) => void;
   onOpenMedication: (query: string) => void;
+  onOpenCopilot?: () => void;
 }
 
 type Tone = 'rose' | 'amber' | 'cyan' | 'blue' | 'emerald';
@@ -26,7 +27,7 @@ const toneClasses: Record<Tone, string> = {
   cyan: 'border-cyan-200 bg-cyan-50 text-cyan-900', blue: 'border-blue-200 bg-blue-50 text-blue-900', emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
 };
 
-export const OperationsOverview: React.FC<OperationsOverviewProps> = ({ currentUserRole, debts, tickets, batches, coldChainState, assets, auditRecords, allowedTabs, onTabChange, onOpenPatient, onOpenMedication }) => {
+export const OperationsOverview: React.FC<OperationsOverviewProps> = ({ currentUserRole, debts, tickets, batches, coldChainState, assets, auditRecords, allowedTabs, onTabChange, onOpenPatient, onOpenMedication, onOpenCopilot }) => {
   const [patientQuery, setPatientQuery] = useState('');
   const [medicationQuery, setMedicationQuery] = useState('');
   const pendingDebts = debts.filter((item) => item.status === 'debt');
@@ -68,5 +69,6 @@ export const OperationsOverview: React.FC<OperationsOverviewProps> = ({ currentU
     <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">{cards.map((card) => <button key={card.label} onClick={() => allowedTabs.includes(card.tab) && onTabChange(card.tab)} className={'border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ' + toneClasses[card.tone]}><span className="block text-xs font-medium opacity-75">{card.label}</span><span className="mt-2 block text-xl font-bold tabular-nums sm:text-2xl">{card.value}</span><span className="mt-1 flex items-center gap-1 text-xs opacity-75">Mở phân hệ <ArrowRight className="h-3 w-3" /></span></button>)}</section>
     <section className="border border-slate-200 bg-white p-4 shadow-sm"><h2 className="font-semibold text-slate-900">Thao tác nhanh</h2><div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{quickActions.map(({ tab, label, icon: Icon }) => <button key={tab} onClick={() => onTabChange(tab)} className="flex items-center gap-3 border border-slate-200 px-3 py-3 text-left text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900"><Icon className="h-5 w-5 text-teal-700" /><span className="flex-1">{label}</span><ArrowRight className="h-4 w-4 text-slate-400" /></button>)}</div></section>
     <section className="grid gap-3 md:grid-cols-2">{canViewAssets && <div className="border border-slate-200 bg-white p-4"><p className="text-xs font-medium text-slate-500">Tài sản cần đối soát</p><p className="mt-1 text-xl font-bold text-slate-900">{misplacedAssets.length}</p></div>}{canViewAudit && <div className="border border-slate-200 bg-white p-4"><p className="text-xs font-medium text-slate-500">Sổ kiểm toán gần đây</p><p className="mt-1 text-xl font-bold text-slate-900">{auditRecords.length} bản ghi trong phiên</p></div>}<div className="border border-slate-200 bg-white p-4"><p className="text-xs font-medium text-slate-500">Nguồn dữ liệu</p><p className="mt-1 text-sm font-semibold text-slate-900">Trạng thái nội bộ và dữ liệu thử nghiệm</p><p className="mt-1 text-xs text-slate-500">Xác nhận lại trên từng phân hệ trước khi dùng cho quyết định lâm sàng.</p></div></section>
+    <section className="border-y border-teal-300 bg-teal-50 p-4" aria-label="AI hỗ trợ"><div className="flex flex-col gap-3 sm:flex-row sm:items-center"><Bot className="h-6 w-6 shrink-0 text-teal-700" /><div className="min-w-0 flex-1"><h2 className="font-semibold text-teal-950">AI hỗ trợ lâm sàng</h2><p className="mt-1 text-sm text-teal-900/80">Hỏi về thuốc, tương tác, quy trình dược và trạng thái vận hành có trích dẫn nguồn.</p></div><button type="button" onClick={onOpenCopilot} className="border border-teal-700 bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Mở trợ lý AI</button></div></section>
   </div></div>;
 };

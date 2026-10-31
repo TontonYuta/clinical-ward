@@ -54,6 +54,7 @@ interface DashboardProps {
   onOpenPrintForm?: (formType: PrintableFormType, item?: any) => void;
   onOpenMedicationSafety?: (medNameOrId?: string) => void;
   onOpenPatientSearch?: (query: string) => void;
+  onOpenCopilot?: () => void;
   auditRecords?: AuditTrailRecord[];
 }
 
@@ -88,6 +89,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenPrintForm,
   onOpenMedicationSafety,
   onOpenPatientSearch,
+  onOpenCopilot,
   auditRecords = [],
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
@@ -130,6 +132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onTabChange={onTabChange}
                 onOpenPatient={onOpenPatientSearch || (() => {})}
                 onOpenMedication={(query) => onOpenMedicationSafety?.(query)}
+                onOpenCopilot={onOpenCopilot}
               />
             )}
             {currentTab === 'cpoe' && (
