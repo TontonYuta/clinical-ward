@@ -4,7 +4,7 @@
  */
 
 import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
-import { Bot } from 'lucide-react';
+import { Bot, Menu } from 'lucide-react';
 import {
   DebtRecord,
   EquipmentTicket,
@@ -1681,6 +1681,22 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
       {/* 4. Main Workspace: Sleek Top Header + Central Clinical Dashboard */}
       <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70 print:hidden w-full">
+        <div className="flex shrink-0 items-center gap-3 border-b border-slate-300 bg-white px-3 py-2 md:hidden">
+          <button
+            type="button"
+            aria-label="Mở điều hướng"
+            aria-controls="mobile-navigation-drawer"
+            aria-expanded={isMobileSidebarOpen}
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="border border-slate-300 p-2 text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Kho Y Tế Lâm Sàng</p>
+            <p className="truncate text-sm font-semibold text-slate-900">{currentTab === 'overview' ? 'Tổng quan' : 'Không gian làm việc'}</p>
+          </div>
+        </div>
         <main className="flex-1 flex flex-col overflow-hidden relative pt-0 md:pt-0">
           <section className="w-full h-full flex flex-col overflow-hidden">
             <Dashboard
