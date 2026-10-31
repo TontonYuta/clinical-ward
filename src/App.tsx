@@ -38,6 +38,7 @@ import { TelegramToast } from './components/Modals/TelegramToast';
 import { ClinicalAuthModal } from './components/Modals/ClinicalAuthModal';
 import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { PatientDetailModal } from './components/Modals/PatientDetailModal';
+import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
@@ -114,6 +115,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [isDrugRegistryOpen, setIsDrugRegistryOpen] = useState<boolean>(false);
   const [drugRegistrySearch, setDrugRegistrySearch] = useState('');
   const [selectedPatientForGlobalModal, setSelectedPatientForGlobalModal] = useState<string | null>(null);
+  const [patients, setPatients] = useState<PatientProfile[]>(INITIAL_PATIENTS);
   const [fontScale, setFontScale] = useState(getInitialFontScale);
   useEffect(() => {
     document.documentElement.style.fontSize = fontScale === 'compact' ? '14px' : fontScale === 'large' ? '18px' : '16px';
@@ -128,6 +130,12 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     };
     window.addEventListener('open_patient_detail', handleOpenPatient);
     return () => window.removeEventListener('open_patient_detail', handleOpenPatient);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetchPatients().then((records) => { if (active && records.length) setPatients(records); });
+    return () => { active = false; };
   }, []);
 
   const handleOpenMedicationSafety = (medNameOrId?: string) => {
@@ -1854,6 +1862,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           isOpen={!!selectedPatientForGlobalModal}
           onClose={() => setSelectedPatientForGlobalModal(null)}
           patientIdOrName={selectedPatientForGlobalModal || ''}
+          patients={patients}
         />
         </Suspense>
       </div>

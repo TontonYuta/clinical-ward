@@ -19,6 +19,7 @@ interface PatientDetailModalProps {
   onClose: () => void;
   patient?: PatientProfile | null;
   patientIdOrName?: string;
+  patients?: PatientProfile[];
   onOpenPrescriptionOrder?: (patient: PatientProfile) => void;
 }
 
@@ -27,6 +28,7 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   onClose,
   patient: directPatient,
   patientIdOrName,
+  patients = INITIAL_PATIENTS,
   onOpenPrescriptionOrder,
 }) => {
   const [activeTab, setActiveTab] = useState<PatientDetailTab>('overview');
@@ -67,9 +69,9 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   if (!isOpen) return null;
 
   // Resolve patient from query or direct object
-  const matches: Array<PatientProfile & { matchType?: 'exact' | 'partial' }> = directPatient ? [{ ...directPatient, matchType: 'exact' }] : (patientIdOrName ? findPatientsByQuery(patientIdOrName, INITIAL_PATIENTS) : []);
+  const matches: Array<PatientProfile & { matchType?: 'exact' | 'partial' }> = directPatient ? [{ ...directPatient, matchType: 'exact' }] : (patientIdOrName ? findPatientsByQuery(patientIdOrName, patients) : []);
   const patient: PatientProfile = directPatient || 
-    (selectedPatientId ? matches.find((item) => item.id === selectedPatientId) : findPatientByNameOrQuery(patientIdOrName || '', INITIAL_PATIENTS)) ||
+    (selectedPatientId ? matches.find((item) => item.id === selectedPatientId) : findPatientByNameOrQuery(patientIdOrName || '', patients)) ||
     ({ id: '', fullName: '', gender: 'Chưa rõ', email: '', room: 'Chưa có dữ liệu', allergies: 'Chưa có dữ liệu bệnh nhân phù hợp', chronicConditions: 'Chưa có dữ liệu', egfr: 0, creatinine: 0, weightKg: 0 } as PatientProfile);
 
   const patientNotFound = !patient.id;
