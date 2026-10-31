@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/*.py": {
-      "excludeFiles": "{docs/**,public/**,dist/**,artifacts/**,TEMP/**,scripts/**,tests/**,backend/data/**,backend/.pytest_cache/**,backend/clinical_hospital.db*,data/vietnam_drug_registry/dav_master_registry.json,**/*.mp4,**/*.png,**/*.jpg,**/*.db,**/*.sqlite3}"
+      "excludeFiles": "{docs/**,public/**,dist/**,artifacts/**,TEMP/**,scripts/**,tests/**,backend/data/**,backend/.pytest_cache/**,backend/.venv/**,backend/clinical_hospital.db*,backend/hospital_clinical.db*,backend/**/__pycache__/**,data/vietnam_drug_registry/dav_master_registry.json,**/*.mp4,**/*.png,**/*.jpg,**/*.db,**/*.sqlite3,**/*.db-wal,**/*.db-shm}"
     }
   },
   "headers": [
