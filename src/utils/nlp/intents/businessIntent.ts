@@ -4,7 +4,7 @@
  * Xử lý Ý định: Bản Đồ 10 Đại Nghiệp Vụ Bệnh Viện & Quy Trình Lâm Sàng Chuẩn BYT (<=100 LOC)
  */
 
-import { AgentActionCard, ChatMessage } from '../../../types/clinical';
+import { ChatMessage } from '../../../types/clinical';
 import { anyKeyword, ProcessedQueryResult } from '../types';
 
 export function matchBusinessIntent(lower: string): boolean {
@@ -63,17 +63,6 @@ Hệ thống Trợ lý Agent Lâm Sàng được thiết kế chuẩn mực theo
     • Tra cứu chính xác 100/100 theo SĐK, biệt dược, hoạt chất; đối soát tồn kho bệnh viện.
     • *Lệnh mẫu:* \`"Thông tin thuốc Rocephin"\`, \`"SĐK VD-24757-16 là thuốc gì"\`.`;
 
-  const card: AgentActionCard = {
-    cardType: 'shift_handover_report',
-    title: 'Danh Mục 10 Đại Nghiệp Vụ Bệnh Viện',
-    summary: 'Quy trình quản lý Dược, Thiết Bị Y Tế & Chuỗi Lạnh theo Thông tư Bộ Y tế',
-    data: { totalWorkflows: 10, status: 'ready' },
-    primaryActionLabel: 'Mở Kho Dược FEFO',
-    primaryActionType: 'OPEN_FEFO_MODAL',
-    targetTab: 'fefo',
-    status: 'pending'
-  };
-
   const replyMessage: ChatMessage = {
     id: `msg-agent-business-${Date.now()}`,
     sender: 'agent',
@@ -84,7 +73,6 @@ Hệ thống Trợ lý Agent Lâm Sàng được thiết kế chuẩn mực theo
       title: 'Hệ thống quản lý lâm sàng bệnh viện',
       clause: 'Căn cứ áp dụng'
     },
-    card,
     suggestedChips: [
       'Đối soát ca trực 07:00 AM',
       'Tra cứu SĐK VD-24757-16',

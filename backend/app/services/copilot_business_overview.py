@@ -2,7 +2,7 @@
 Bản Đồ 10 Đại Nghiệp Vụ Bệnh Viện & Quy Trình Lâm Sàng Chuẩn Bộ Y Tế (<=120 LOC)
 """
 
-from app.schemas.copilot import CopilotResponse, CopilotActionCard
+from app.schemas.copilot import CopilotResponse
 
 CLINICAL_BUSINESS_DIRECTORY = """### 🏥 BẢN ĐỒ 10 ĐẠI NGHIỆP VỤ BỆNH VIỆN & TRỢ LÝ LÂM SÀNG TỰ ĐỘNG
 
@@ -50,18 +50,10 @@ Hệ thống Trợ lý Agent Lâm Sàng được thiết kế tuân thủ nghiê
 """
 
 async def handle_business_overview_intent() -> CopilotResponse:
-    card = CopilotActionCard(
-        card_type="shift_handover_report",
-        title="Danh Mục Nghiệp Vụ Lâm Sàng Bệnh Viện",
-        summary="10 Quy trình quản lý Dược, Thiết Bị Y Tế & Chuỗi Lạnh theo Thông tư Bộ Y tế",
-        data={"total_workflows": 10, "status": "active"},
-        primary_action_label="Xem Kho Dược FEFO",
-        primary_action_type="OPEN_FEFO_MODAL"
-    )
     return CopilotResponse(
         intent="BUSINESS_OVERVIEW",
         reply_text=CLINICAL_BUSINESS_DIRECTORY,
-        card=card,
+        card=None,
         legal_basis="Thông tư 22/2011, TT 20/2017, TT 51/2017 & Nghị định 98/2021",
         suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu SĐK VD-24757-16", "Thuốc cận hạn FEFO", "Báo hỏng máy thở PB840"]
     )
