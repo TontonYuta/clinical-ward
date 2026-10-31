@@ -2,12 +2,33 @@
 SQLite FTS5 Sparse BM25 Index Engine
 Hỗ trợ BM25 ranking cho tri thức y tế, SĐK và văn bản pháp lý (<=180 LOC)
 """
+import os
 import re
 import sqlite3
 from pathlib import Path
 from app.services.rag.types import RagChunk, RetrievedChunk
 
-DB_PATH = Path(__file__).resolve().parent.parent.parent.parent / "clinical_hospital.db"
+def get_fts_db_path() -> str:
+    db_env = os.environ.get("DATABASE_URL", "")
+    if "sqlite" in db_env:
+        clean = re.sub(r"^sqlite(\+aiosqlite)?:///", "", db_env)
+        if clean:
+            target = Path(clean)
+            if not target.is_absolute():
+                target = Path("/") / clean
+            return str(target)
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return "/tmp/clinical_hospital.db"
+    
+    default_path = Path(__file__).resolve().parent.parent.parent.parent / "clinical_hospital.db"
+    try:
+        if default_path.exists() and os.access(str(default_path), os.W_OK):
+            return str(default_path)
+        if os.access(str(default_path.parent), os.W_OK):
+            return str(default_path)
+    except Exception:
+        pass
+    return "/tmp/clinical_hospital.db"
 
 def _sanitize_fts_query(query: str) -> str:
     cleaned = re.sub(r"[^\w\s\-]", " ", query, flags=re.UNICODE)
@@ -18,31 +39,59 @@ def _sanitize_fts_query(query: str) -> str:
     return " OR ".join(f'"{t}"*' for t in tokens[:8])
 
 class SqliteFtsIndex:
-    def __init__(self, db_path: Path = DB_PATH):
-        self.db_path = str(db_path)
+    def __init__(self, db_path: Path | str | None = None):
+        self.db_path = str(db_path) if db_path else get_fts_db_path()
+        self._mem_conn: sqlite3.Connection | None = None
         self._init_fts_table()
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        if self.db_path == ":memory:":
+            if self._mem_conn is None:
+                self._mem_conn = sqlite3.connect(":memory:")
+                self._mem_conn.row_factory = sqlite3.Row
+            return self._mem_conn
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            return conn
+        except sqlite3.OperationalError:
+            self.db_path = ":memory:"
+            return self._get_connection()
 
     def _init_fts_table(self):
-        with self._get_connection() as conn:
-            conn.execute("""
-                CREATE VIRTUAL TABLE IF NOT EXISTS clinical_rag_fts USING fts5(
-                    chunk_id UNINDEXED,
-                    source_doc,
-                    legal_basis,
-                    page_or_section,
-                    title,
-                    content,
-                    keywords,
-                    entity_type UNINDEXED,
-                    tokenize = 'unicode61'
-                )
-            """)
-            conn.commit()
+        try:
+            with self._get_connection() as conn:
+                conn.execute("""
+                    CREATE VIRTUAL TABLE IF NOT EXISTS clinical_rag_fts USING fts5(
+                        chunk_id UNINDEXED,
+                        source_doc,
+                        legal_basis,
+                        page_or_section,
+                        title,
+                        content,
+                        keywords,
+                        entity_type UNINDEXED,
+                        tokenize = 'unicode61'
+                    )
+                """)
+                conn.commit()
+        except sqlite3.OperationalError:
+            self.db_path = ":memory:"
+            with self._get_connection() as conn:
+                conn.execute("""
+                    CREATE VIRTUAL TABLE IF NOT EXISTS clinical_rag_fts USING fts5(
+                        chunk_id UNINDEXED,
+                        source_doc,
+                        legal_basis,
+                        page_or_section,
+                        title,
+                        content,
+                        keywords,
+                        entity_type UNINDEXED,
+                        tokenize = 'unicode61'
+                    )
+                """)
+                conn.commit()
 
     def sync_chunks(self, chunks: list[RagChunk]):
         with self._get_connection() as conn:

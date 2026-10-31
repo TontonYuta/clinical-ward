@@ -7,7 +7,13 @@ import re
 from pathlib import Path
 from app.services.rag.types import RagChunk
 
+LOCAL_DOCS_DIR = Path(__file__).resolve().parent / "knowledge_docs"
 KB_BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "knowledge_base"
+
+def get_active_kb_dir() -> Path:
+    if KB_BASE_DIR.exists() and (KB_BASE_DIR / "clinical_pharmacopoeia").exists():
+        return KB_BASE_DIR
+    return LOCAL_DOCS_DIR
 
 def _extract_keywords(text: str) -> list[str]:
     keywords = set()
@@ -49,11 +55,12 @@ def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, e
         )
     return chunks
 
-def load_all_clinical_chunks(base_dir: Path = KB_BASE_DIR) -> list[RagChunk]:
+def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
+    active_dir = base_dir or get_active_kb_dir()
     all_chunks: list[RagChunk] = []
     
     # 1. Dược thư Quốc Gia 2022
-    mono_path = base_dir / "clinical_pharmacopoeia" / "core_inns_monographs.md"
+    mono_path = active_dir / "clinical_pharmacopoeia" / "core_inns_monographs.md"
     all_chunks.extend(_parse_markdown_chunks(
         mono_path,
         source_doc="Dược Thư Quốc Gia Việt Nam 2022",
@@ -62,14 +69,14 @@ def load_all_clinical_chunks(base_dir: Path = KB_BASE_DIR) -> list[RagChunk]:
     ))
 
     # 2. Tương tác thuốc chống chỉ định QĐ 5948
-    ddi_cardio = base_dir / "ddi_interactions" / "qd_5948_cardiovascular_and_cns.md"
+    ddi_cardio = active_dir / "ddi_interactions" / "qd_5948_cardiovascular_and_cns.md"
     all_chunks.extend(_parse_markdown_chunks(
         ddi_cardio,
         source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Tim Mạch & Thần Kinh)",
         legal_basis="Quyết định 5948/QĐ-BYT",
         entity_type="ddi"
     ))
-    ddi_anti = base_dir / "ddi_interactions" / "qd_5948_antibiotics_and_antiinflammatory.md"
+    ddi_anti = active_dir / "ddi_interactions" / "qd_5948_antibiotics_and_antiinflammatory.md"
     all_chunks.extend(_parse_markdown_chunks(
         ddi_anti,
         source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Kháng Sinh & NSAID)",
@@ -78,7 +85,7 @@ def load_all_clinical_chunks(base_dir: Path = KB_BASE_DIR) -> list[RagChunk]:
     ))
 
     # 3. Thông tư cấp cứu phản vệ TT 51/2017
-    tt51_path = base_dir / "regulatory_circulars" / "tt51_2017_anaphylaxis_protocol.md"
+    tt51_path = active_dir / "regulatory_circulars" / "tt51_2017_anaphylaxis_protocol.md"
     all_chunks.extend(_parse_markdown_chunks(
         tt51_path,
         source_doc="Phác Đồ Cấp Cứu Phản Vệ",
@@ -87,7 +94,7 @@ def load_all_clinical_chunks(base_dir: Path = KB_BASE_DIR) -> list[RagChunk]:
     ))
 
     # 4. Quản lý thuốc gây nghiện TT 20/2017
-    tt20_path = base_dir / "regulatory_circulars" / "tt20_2017_narcotics_management.md"
+    tt20_path = active_dir / "regulatory_circulars" / "tt20_2017_narcotics_management.md"
     all_chunks.extend(_parse_markdown_chunks(
         tt20_path,
         source_doc="Quy Chế Quản Lý Thuốc Kiểm Soát Đặc Biệt",
@@ -96,7 +103,7 @@ def load_all_clinical_chunks(base_dir: Path = KB_BASE_DIR) -> list[RagChunk]:
     ))
 
     # 5. Khoa dược & Tủ trực TT 22/2011
-    tt22_path = base_dir / "regulatory_circulars" / "tt22_2011_hospital_pharmacy_ward.md"
+    tt22_path = active_dir / "regulatory_circulars" / "tt22_2011_hospital_pharmacy_ward.md"
     all_chunks.extend(_parse_markdown_chunks(
         tt22_path,
         source_doc="Quy Chế Tủ Thuốc Cấp Cứu & Tủ Trực Khoa Lâm Sàng",
