@@ -74,8 +74,13 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
         scenario_res.reply_text = validate_output_guardrail(scenario_res.reply_text, query)
         return scenario_res
 
-    # 1. Tra cứu Bản đồ 10 Đại Nghiệp vụ Bệnh viện
-    if any(w in lower_query for w in ["nghiệp vụ", "các nghiệp vụ", "quy trình lâm sàng", "tính năng", "bạn làm được gì", "hướng dẫn hệ thống", "chức năng", "menu"]):
+    # 1. Tra cứu Bản đồ 10 Đại Nghiệp vụ Bệnh viện & Năng lực Hệ thống
+    is_capabilities = any(w in lower_query for w in [
+        "nghiệp vụ", "các nghiệp vụ", "quy trình lâm sàng", "tính năng", "bạn làm được gì",
+        "bạn có thể làm", "bạn giúp được", "hệ thống làm được", "làm được gì", "giúp được gì",
+        "hướng dẫn hệ thống", "hướng dẫn sử dụng", "chức năng", "menu", "bạn là ai"
+    ])
+    if is_capabilities:
         return await handle_business_overview_intent()
 
     # 2. Căn cứ pháp lý & phác đồ Thông tư Bộ Y tế
@@ -124,7 +129,11 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
 
     # 11. Tra cứu Dược Quốc Gia 54.885 SĐK chính xác 100/100
     has_sdk = bool(re.search(r"((?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+)", lower_query))
-    is_deep_pharmacology = any(w in lower_query for w in ["thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"])
+    is_deep_pharmacology = any(w in lower_query for w in [
+        "thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng",
+        "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp",
+        "uống chung", "dùng chung", "chống chỉ định", "dị ứng chéo"
+    ]) or any(c in lower_query for c in [" và ", " với ", " cùng ", " kèm "])
     has_drug_ask = any(w in lower_query for w in [
         "thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "thuốc", "về thuốc",
         "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "uống thế nào", "dùng thế nào",

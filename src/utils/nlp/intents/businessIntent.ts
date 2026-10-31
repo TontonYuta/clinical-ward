@@ -12,7 +12,8 @@ export function matchBusinessIntent(lower: string): boolean {
     'nghiệp vụ', 'nghiep vu', 'các nghiệp vụ', 'cac nghiep vu',
     'quy trình lâm sàng', 'quy trinh lam sang', 'bản đồ nghiệp vụ', 'ban do nghiep vu',
     'chức năng', 'chuc nang', 'tính năng', 'tinh nang',
-    'hệ thống làm được gì', 'chatbot làm được gì', 'bạn làm được gì',
+    'hệ thống làm được gì', 'chatbot làm được gì', 'bạn làm được gì', 'bạn có thể làm',
+    'bạn giúp được', 'bạn là ai', 'làm được gì', 'giúp được gì', 'hỗ trợ được gì', 'hỗ trợ những gì',
     'hướng dẫn sử dụng', 'danh mục nghiệp vụ', '10 nghiệp vụ', '10 đại nghiệp vụ'
   ]);
 }

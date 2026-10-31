@@ -52,15 +52,8 @@ export async function processClinicalAgentQueryAsync(
   });
 
   const lower = cleanInput.toLowerCase();
-  if (matchDrugInteractionIntent(lower)) {
-    if (localResult.replyMessage) {
-      localResult.replyMessage.text = validateClientOutputGuardrail(localResult.replyMessage.text, cleanInput);
-    }
-    return localResult;
-  }
-  // Nếu câu lệnh tạo thẻ tương tác (Action Card) -> Phản hồi ngay (0ms, 0 tokens)
-  // Ngoại trừ kịch bản lâm sàng chuyên sâu (Allergy, Renal, ADR...) và dược lý sâu cần RAG phân tích
-  const isDeepPharmacology = /thời gian bán thải|huyết tương|dược động học|cơ chế tác dụng|tương tác|chống chỉ định|liều tối đa/i.test(lower);
+  const isDdi = matchDrugInteractionIntent(lower);
+  const isDeepPharmacology = isDdi || /thời gian bán thải|huyết tương|dược động học|cơ chế tác dụng|tương tác|chống chỉ định|liều tối đa/i.test(lower);
   if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {
     return localResult;
   }

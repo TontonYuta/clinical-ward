@@ -50,6 +50,38 @@ CLINICAL_DDI_GRAPH: dict[str, list[dict]] = {
             "severity": "Cảnh báo tương tác thần kinh trung ương (FDA Boxed Warning)",
             "mechanism": "Hiệp đồng ức chế thụ thể thần kinh trung ương và hành tủy",
             "consequence": "Ức chế hô hấp nặng, suy hô hấp, hôn mê sâu và tử vong."
+        },
+        {
+            "partner": "paracetamol",
+            "partner_names": ["paracetamol", "panadol", "efferalgan", "acetaminophen"],
+            "severity": "Phối hợp an toàn & Hiệp đồng giảm đau (Multimodal Analgesia)",
+            "mechanism": "Hiệp đồng tác dụng giảm đau đa tầng (bậc thang WHO), tiết kiệm liều Opioid",
+            "consequence": "Tăng hiệu quả giảm đau, tiết kiệm 20-30% liều Morphin, giảm ức chế hô hấp. Duy trì paracetamol <= 4g/ngày."
+        }
+    ],
+    "paracetamol": [
+        {
+            "partner": "morphin",
+            "partner_names": ["morphin", "morphine", "moocphin", "morfin"],
+            "severity": "Phối hợp an toàn & Hiệp đồng giảm đau (Multimodal Analgesia)",
+            "mechanism": "Paracetamol (ức chế tổng hợp Prostaglandin TKTW) + Morphin (chủ vận thụ thể mu-opioid) hiệp đồng tác dụng giảm đau",
+            "consequence": "Tăng hiệu quả giảm đau, tiết kiệm 20-30% liều Morphin (Opioid-sparing), giảm nguy cơ ức chế hô hấp và nghiện. Kiểm soát liều trần Paracetamol <= 4g/ngày."
+        },
+        {
+            "partner": "rượu",
+            "partner_names": ["rượu", "cồn", "ethanol", "bia"],
+            "severity": "Chống chỉ định / Cảnh báo đỏ tổn thương tế bào gan (DĐVN V)",
+            "mechanism": "Ethanol cảm ứng enzym CYP2E1 làm tăng tạo chất chuyển hóa độc NAPQI, đồng thời cạn kiệt Glutathion tại gan",
+            "consequence": "Hoại tử tế bào gan cấp không hồi phục, suy gan cấp đe dọa tính mạng kể cả ở liều paracetamol thông thường."
+        }
+    ],
+    "clopidogrel": [
+        {
+            "partner": "omeprazol",
+            "partner_names": ["omeprazol", "omeprazole", "esomeprazol", "esomeprazole"],
+            "severity": "Chống chỉ định phối hợp (QĐ 5948/QĐ-BYT)",
+            "mechanism": "Omeprazol ức chế enzym CYP2C19 ngăn chuyển tiền chất Clopidogrel thành chất có hoạt tính chống kết tập tiểu cầu",
+            "consequence": "Giảm hiệu lực chống kết tập tiểu cầu, tăng nguy cơ huyết khối trong stent và tái phát nhồi máu cơ tim cấp."
         }
     ]
 }
