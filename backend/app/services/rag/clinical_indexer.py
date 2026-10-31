@@ -59,12 +59,12 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
     active_dir = base_dir or get_active_kb_dir()
     all_chunks: list[RagChunk] = []
     
-    # 1. Dược thư Quốc Gia 2022
+    # 1. Dược thư Quốc gia Việt Nam, lần xuất bản II (2015)
     mono_path = active_dir / "clinical_pharmacopoeia" / "core_inns_monographs.md"
     all_chunks.extend(_parse_markdown_chunks(
         mono_path,
-        source_doc="Dược Thư Quốc Gia Việt Nam 2022",
-        legal_basis="Quyết định 3445/QĐ-BYT",
+        source_doc="Chuyên luận nội bộ trích xuất/bổ sung; cần đối chiếu Dược thư bản gốc",
+        legal_basis="Nguồn dẫn trong từng bản ghi; không tự coi là văn bản pháp quy",
         entity_type="monograph"
     ))
 

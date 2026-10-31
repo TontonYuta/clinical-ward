@@ -68,7 +68,7 @@ async def execute_clinical_rag(
                 f"\"{query}\"\n\n"
                 f"Nguyên tắc bắt buộc (PaperQA2 Grounding):\n"
                 f"1. Chỉ trả lời dựa trên các chứng cứ y văn đã cung cấp ở trên.\n"
-                f"2. Nêu rõ liều dùng chuẩn, liều tối đa, đường dùng và căn cứ pháp lý ([QĐ 3445/QĐ-BYT], [TT 51/2017/TT-BYT], [QĐ 5948/QĐ-BYT]...).\n"
+                f"2. Nêu rõ liều dùng, đường dùng và nguồn cụ thể; không khẳng định văn bản pháp quy nếu chunk không có provenance xác minh.\n"
                 f"3. Nếu có tương tác thuốc chống chỉ định hoặc cảnh báo bệnh nền, BẮT BUỘC cảnh báo đầu tiên.\n"
                 f"4. Định dạng Markdown rõ ràng, gạch đầu dòng, tuyệt đối không bịa đặt."
             )

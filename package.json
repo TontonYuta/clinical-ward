@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test:kb": "tsx scripts/verify_clinical_knowledge_base.ts",
+    "validate:sources": "python3 scripts/validate_clinical_sources.py",
     "test:chatbot": "tsx scripts/test_chatbot_suite.ts",
     "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_clinical_formatter.ts && tsx tests/test_ddi_algorithm.ts",
     "dev:full": "python3 scripts/run_dev_stack.py",

@@ -52,10 +52,10 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Cho phép client cục bộ và production kết nối
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-DDI-Admin-Token"],
 )
 
 # Register Domain Routers
@@ -75,9 +75,9 @@ app.include_router(clinical_ddi.router, prefix=settings.API_V1_STR)
 
 import os
 from fastapi.staticfiles import StaticFiles
-_kb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "knowledge_base"))
-if os.path.exists(_kb_dir):
-    app.mount("/api/v1/pdf", StaticFiles(directory=_kb_dir), name="knowledge_base_pdf")
+_pdf_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "public", "pdf"))
+if os.path.exists(_pdf_dir):
+    app.mount("/api/v1/pdf", StaticFiles(directory=_pdf_dir), name="clinical_source_pdf")
 
 @app.get("/", tags=["Health Check"])
 async def root():

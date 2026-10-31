@@ -314,7 +314,7 @@ export async function processGeminiClinicalScenario(
       `### ⚠️ CẢNH BÁO AN TOÀN ĐƠN THUỐC (QĐ 2147/QĐ-BYT)\n\n` +
       `• **Bệnh nhân:** **${patient ? patient.fullName : 'Võ Minh Trí (BN-8820)'}**\n` +
       `• **Tiền sử dị ứng ghi nhận:** **${patient ? patient.allergies : 'Penicillin, Aspirin (phù mạch, co thắt phế quản)'}**\n` +
-      `• **Cảnh báo CDSS chuyên môn:** Đơn thuốc chứa nhóm Beta-Lactam/Penicillin (như Augmentin, Amoxicillin) bị **CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI** do nguy cơ sốc phản vệ đe dọa tính mạng! Đề xuất đổi sang nhóm Macrolide (Clarithromycin 500mg) hoặc Quinolone theo QĐ 3445/QĐ-BYT.`
+      `• **Cảnh báo CDSS chuyên môn:** Không tự động kết luận chống chỉ định chỉ từ nhóm Beta-Lactam/Penicillin. Cần đối chiếu tiền sử dị ứng, chuyên luận và chỉ định cụ thể trước khi đổi thuốc.`
     );
     return {
       replyMessage: {

@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Khối Thông Tin Lâm Sàng Dược Thư Quốc Gia Việt Nam 2022 (<=200 LOC)
+ * Khối Thông Tin Lâm Sàng Dược thư Quốc gia lần xuất bản II (2015) (<=200 LOC)
  * Font chữ tăng gấp đôi, hỗ trợ scroll ngang và dọc mượt mà với thanh scroll siêu nhỏ
  */
 

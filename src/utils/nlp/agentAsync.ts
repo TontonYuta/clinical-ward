@@ -5,12 +5,13 @@
  */
 
 import { ActionPayload, ChatMessage, UserProfile, AgentActionCard } from '../../types/clinical';
-import { chatCopilotApi } from '../../services/api';
+import { chatCopilotApi, checkPairDdiApi } from '../../services/api';
 import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/geminiService';
 import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../services/gemini/clinicalScenarios';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
 import { matchDrugInteractionIntent } from './intents/medicationSafetyIntent';
+import { extractDrugPair } from './intents/drugInteractionIntent';
 import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -43,6 +44,41 @@ export async function processClinicalAgentQueryAsync(
 
   const cleanInput = guardCheck.sanitizedQuery;
 
+  // DDI queries use the authoritative FastAPI catalog. A backend failure is
+  // reported explicitly instead of being rendered as "no interaction".
+  const lower = cleanInput.toLowerCase();
+  if (matchDrugInteractionIntent(lower)) {
+    const pair = extractDrugPair(lower);
+    if (!pair) {
+      return { replyMessage: {
+        id: `msg-ddi-pair-${Date.now()}`, sender: 'agent',
+        text: 'Để rà soát từ danh mục thuốc, vui lòng nêu rõ tên hai thuốc hoặc hoạt chất (ví dụ: clopidogrel và esomeprazol).',
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      } };
+    }
+    if (pair) {
+      try {
+        const ddi = await checkPairDdiApi(pair[0], pair[1]);
+        const replyText = ddi.has_interaction && ddi.alert
+          ? `### Cảnh báo tương tác thuốc\n\n**${ddi.alert.title}**\n\n- Hậu quả: ${ddi.alert.consequence}\n- Cơ chế: ${ddi.alert.mechanism}\n- Xử trí: ${ddi.alert.action}\n- Mức độ: **${ddi.alert.severity}**\n- Nguồn: ${ddi.alert.source}`
+          : `### Kết quả tra cứu tương tác\n\nChưa tìm thấy tương tác đã được lập chỉ mục cho **${pair[0]} + ${pair[1]}**. Kết quả này không khẳng định phối hợp an toàn; cần đối chiếu chuyên luận và bối cảnh người bệnh.`;
+        return { replyMessage: {
+          id: `msg-ddi-api-${Date.now()}`, sender: 'agent', text: replyText,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Clinical DDI API', clause: 'Tra cứu cặp thuốc' },
+          ragGrounded: true
+        } };
+      } catch {
+        return { replyMessage: {
+          id: `msg-ddi-error-${Date.now()}`, sender: 'agent',
+          text: 'Không thể kết nối bộ máy tra cứu tương tác thuốc. Chưa thể kết luận cặp thuốc này không có tương tác; vui lòng thử lại hoặc đối chiếu dược sĩ.',
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          cdssAlert: { level: 'warning', title: 'Không truy cập được nguồn DDI', message: 'Kết quả chưa được xác nhận từ backend.' }
+        } };
+      }
+    }
+  }
+
   // 1. Phân tích kịch bản nghiệp vụ có Action Card (Mượn thuốc, Báo hỏng, Giao ban, Kho FEFO...)
   const localResult = processClinicalUserQuery(cleanInput, {
     debts: currentState.debts,
@@ -51,7 +87,6 @@ export async function processClinicalAgentQueryAsync(
     coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
   });
 
-  const lower = cleanInput.toLowerCase();
   const isDdi = matchDrugInteractionIntent(lower);
   const isDeepPharmacology = isDdi || /thời gian bán thải|huyết tương|dược động học|cơ chế tác dụng|tương tác|chống chỉ định|liều tối đa/i.test(lower);
   if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {

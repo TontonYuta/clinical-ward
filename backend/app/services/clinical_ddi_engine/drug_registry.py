@@ -1,6 +1,6 @@
 """
 Clinical Drug Registry & Pharmacological Taxonomy (<=195 LOC)
-Nguồn: CSDL Dược Quốc gia DAV, QĐ 5948/QĐ-BYT, QĐ 3445/QĐ-BYT (Dược thư QG 2022)
+Nguồn: CSDL Dược Quốc gia DAV và các nguồn DDI đã ghi provenance theo từng bản ghi; không suy diễn nguồn khi thiếu đối chiếu
 """
 
 DRUG_REGISTRY: dict[str, dict] = {
@@ -11,6 +11,8 @@ DRUG_REGISTRY: dict[str, dict] = {
     "nitroglycerin": {"display": "Nitroglycerin", "aliases": ["nitroglycerin", "nitromint", "nitroglycerine", "nitro"], "classes": ["NITRATE"], "risk": []},
     "isosorbid": {"display": "Isosorbid dinitrat/mononitrat", "aliases": ["isosorbid", "imdur", "isoket"], "classes": ["NITRATE"], "risk": []},
     "sildenafil": {"display": "Sildenafil", "aliases": ["sildenafil", "viagra", "kamagra", "siloflam"], "classes": ["PDE5_INHIBITOR"], "risk": []},
+    "acenocoumarol": {"display": "Acenocoumarol", "aliases": ["acenocoumarol", "sintrom"], "classes": ["VITAMIN_K_ANTAGONIST"], "risk": ["bleeding"]},
+    "tamoxifen": {"display": "Tamoxifen", "aliases": ["tamoxifen", "nolvadex"], "classes": ["SERM"], "risk": []},
     "tadalafil": {"display": "Tadalafil", "aliases": ["tadalafil", "cialis"], "classes": ["PDE5_INHIBITOR"], "risk": []},
     "simvastatin": {"display": "Simvastatin", "aliases": ["simvastatin", "zocor"], "classes": ["STATIN_CYP3A4"], "cyp_sub": ["CYP3A4"], "risk": []},
     "atorvastatin": {"display": "Atorvastatin", "aliases": ["atorvastatin", "lipitor", "atormax"], "classes": ["STATIN_CYP3A4"], "cyp_sub": ["CYP3A4"], "risk": []},

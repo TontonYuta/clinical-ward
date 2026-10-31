@@ -1,5 +1,5 @@
 """
-Service tra cứu thông tin thuốc chuẩn xác 100/100 từ CSDL 54.885 Cục QLD & Kho BV (<=160 LOC)
+Service tra cứu thông tin thuốc từ dữ liệu DAV và kho bệnh viện; độ bao phủ phụ thuộc nguồn/mapping (<=160 LOC)
 """
 
 import re

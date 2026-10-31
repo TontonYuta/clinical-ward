@@ -129,7 +129,7 @@ export const MedicationSafetyModal: React.FC<MedicationSafetyModalProps> = ({
               </h2>
             </div>
             <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
-              <span>Bộ Y Tế • Chuyên luận Dược Thư 2015/2022</span>
+              <span>Bộ Y Tế • Chuyên luận Dược thư Quốc gia lần xuất bản II (2015)</span>
               <span className="text-slate-300">·</span>
               <span>An toàn 5 Đúng (QĐ 2147) &amp; Tương tác thuốc (QĐ 5948)</span>
             </div>

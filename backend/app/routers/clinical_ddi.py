@@ -1,9 +1,11 @@
 """
 Clinical DDI & Prescription Audit Router (<=195 LOC)
-Căn cứ pháp lý: QĐ 5948/QĐ-BYT, QĐ 3445/QĐ-BYT (Dược thư QG 2022)
+Căn cứ pháp lý: QĐ 5948/QĐ-BYT, QĐ 2033/QĐ-BYT (Dược thư Quốc gia lần xuất bản II, 2015)
 """
 from typing import Optional
-from fastapi import APIRouter, Query, HTTPException, status
+import secrets
+from fastapi import APIRouter, Query, HTTPException, status, Header
+from app.config import settings
 from pydantic import BaseModel, Field
 from app.services.clinical_ddi_engine import (
     evaluate_prescription, evaluate_pair, normalize_drug_entity,
@@ -149,7 +151,11 @@ class RegisterCustomRuleRequest(BaseModel):
     evidence_source: str = Field(..., description="Nguồn căn cứ y văn")
 
 @router.post("/register-rule")
-def register_rule_endpoint(req: RegisterCustomRuleRequest):
+def register_rule_endpoint(req: RegisterCustomRuleRequest, admin_token: Optional[str] = Header(None, alias="X-DDI-Admin-Token")):
+    # Catalog mutation is an administrative operation. Never accept it when
+    # no server-side token is configured, and compare tokens in constant time.
+    if not settings.DDI_ADMIN_TOKEN or not admin_token or not secrets.compare_digest(admin_token, settings.DDI_ADMIN_TOKEN):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="DDI catalog mutation is not authorized")
     entry = register_custom_ddi(
         drug_a=req.drug_a, drug_b=req.drug_b,
         mechanism=req.mechanism, consequence=req.consequence,

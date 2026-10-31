@@ -1,0 +1,71 @@
+{
+  "manifest_version": 1,
+  "sources": [
+    {
+      "id": "dtqg-v2-2015",
+      "title": "Dược thư Quốc gia Việt Nam, lần xuất bản II",
+      "edition_year": 2015,
+      "legal_basis": "Quyết định 2033/QĐ-BYT",
+      "public_path": "public/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf",
+      "backend_copy": "backend/data/knowledge_base/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf",
+      "sha256": "2aa81c846a5e760f82658c46816ab63174204a7d95b3e2755b6565288e53d0d1",
+      "bytes": 38795771,
+      "representation": "source_pdf"
+    },
+    {
+      "id": "qd-5948-2021",
+      "title": "Danh mục tương tác thuốc chống chỉ định",
+      "edition_year": 2021,
+      "legal_basis": "Quyết định 5948/QĐ-BYT",
+      "public_path": "public/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+      "backend_copy": "backend/data/knowledge_base/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+      "sha256": "33752c720a342ff68136623c25a2d31041c31cde8245bee009d2b7de8ef1919a",
+      "bytes": 4153090,
+      "representation": "source_pdf"
+    },
+    {
+      "id": "tt-20-2017",
+      "title": "Thuốc kiểm soát đặc biệt",
+      "edition_year": 2017,
+      "legal_basis": "Thông tư 20/2017/TT-BYT",
+      "public_path": "public/pdf/Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf",
+      "backend_copy": "backend/data/knowledge_base/Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf",
+      "sha256": "e638763f61669f04e6ec6947fc7f4cd45f544bbc7accd265afd53a1b7655c720",
+      "bytes": 9648392,
+      "representation": "source_pdf"
+    },
+    {
+      "id": "tt-22-2011",
+      "title": "Khoa Dược bệnh viện",
+      "edition_year": 2011,
+      "legal_basis": "Thông tư 22/2011/TT-BYT",
+      "public_path": "public/pdf/Thong_Tu_22_2011_TT_BYT_Khoa_Duoc_Benh_Vien.pdf",
+      "backend_copy": "backend/data/knowledge_base/Thong_Tu_22_2011_TT_BYT_Khoa_Duoc_Benh_Vien.pdf",
+      "sha256": "709136e49ce00c40c9ca879d3980b891d9734333dd147eb659474c951b6127ab",
+      "bytes": 571706,
+      "representation": "source_pdf"
+    },
+    {
+      "id": "tt-23-2011",
+      "title": "Hướng dẫn sử dụng thuốc",
+      "edition_year": 2011,
+      "legal_basis": "Thông tư 23/2011/TT-BYT",
+      "public_path": "public/pdf/Thong_Tu_23_2011_TT_BYT_Huong_Dan_Su_Dung_Thuoc.pdf",
+      "backend_copy": "backend/data/knowledge_base/Thong_Tu_23_2011_TT_BYT_Huong_Dan_Su_Dung_Thuoc.pdf",
+      "sha256": "dc450ee2046330b7caa50c85c4a4018aaab4e0b5cf32fb429ef68dcf829d3ad6",
+      "bytes": 529325,
+      "representation": "source_pdf"
+    },
+    {
+      "id": "tt-51-2017",
+      "title": "Hướng dẫn phòng, chẩn đoán, xử trí phản vệ",
+      "edition_year": 2017,
+      "legal_basis": "Thông tư 51/2017/TT-BYT",
+      "public_path": "public/pdf/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf",
+      "backend_copy": "backend/data/knowledge_base/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf",
+      "sha256": "cab611be9dd14312a2bc66e465c77c1fdf7ed499af89fb6afb457c72cffbd93a",
+      "bytes": 3008354,
+      "representation": "source_pdf"
+    }
+  ]
+}

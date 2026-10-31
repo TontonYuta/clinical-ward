@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Clinical DDI & Polypharmacy Triage Engine (Client-side) (<=195 LOC)
- * Căn cứ: QĐ 5948/QĐ-BYT, QĐ 3445/QĐ-BYT (Dược thư QG 2022)
+ * Căn cứ: QĐ 5948/QĐ-BYT và nguồn chuyên luận/tờ hướng dẫn có provenance
  */
 
 export type DdiSeverity = 'CONTRAINDICATED' | 'MAJOR' | 'MODERATE' | 'SAFE_SYNERGY';
@@ -110,7 +110,7 @@ export function evaluatePairDdi(rawA: string, rawB: string, p?: PatientClinicalC
       ruleId: 'SYN_MORPH_PARA', severity: 'SAFE_SYNERGY', title: 'MORPHIN + PARACETAMOL: GIẢM ĐAU ĐA MÔ THỨC AN TOÀN',
       drugA: a.display, drugB: b.display, mechanism: 'Giảm đau đa tầng qua thụ thể mu và COX trung ương.',
       clinicalConsequence: 'Tiết kiệm 20-30% liều morphin, giảm suy hô hấp.',
-      actionRecommendation: 'Phối hợp được khuyến cáo (Paracetamol <= 4g/ngày).', legalEvidence: 'Dược thư QG 2022 & WHO'
+      actionRecommendation: 'Có thể cân nhắc theo chỉ định; theo dõi hô hấp và dùng liều theo chuyên luận hiện hành.', legalEvidence: 'Hướng dẫn giảm đau WHO; cần đối chiếu chuyên luận hiện hành'
     };
   }
 
@@ -159,7 +159,7 @@ export function auditPrescriptionList(drugs: string[], p?: PatientClinicalContex
       ruleId: 'POLY_QT', severity: qt.length >= 3 || (p?.baselineQtc && p.baselineQtc >= 480) ? 'CONTRAINDICATED' : 'MAJOR',
       title: `CỘNG DỒN KÉO DÀI QT (${qt.length} THUỐC): NGUY CƠ XOẮN ĐỈNH`, drugA: qt.map(d => d.display).join(', '), drugB: '',
       mechanism: 'Ức chế dòng IKr cộng dồn làm chậm tái cực cơ tim.', clinicalConsequence: 'Xoắn đỉnh, ngừng tim đột ngột.',
-      actionRecommendation: 'Đo ECG 12 chuyển đạo, theo dõi QTc.', legalEvidence: 'Dược Thư QG 2022'
+      actionRecommendation: 'Đo ECG 12 chuyển đạo, theo dõi QTc.', legalEvidence: 'Cần đối chiếu hướng dẫn QT hiện hành'
     });
   }
 

@@ -62,6 +62,24 @@ def test_official_table_3_1_catalog_lookup():
     assert alert_stt301.severity == DdiSeverity.CONTRAINDICATED
     assert "Bảng 3.1, STT 301" in alert_stt301.legal_evidence
 
+def test_catalog_stats_report_loaded_data_and_table_3_2_scope():
+    from app.services.clinical_ddi_engine.full_catalog import get_official_catalog_stats
+    stats = get_official_catalog_stats()
+    assert stats["table_3_1_pairs"] == 633
+    assert stats["table_3_2_groups"] == 68
+    assert stats["table_3_2_loaded_for_scope_only"] is True
+    assert stats["table_3_2_indexed"] is False
+    assert stats["custom_rules"] >= 1
+    assert "chưa được tự động ánh xạ" in stats["coverage_note"]
+
+def test_official_catalog_management_is_not_mislabeled_absolute_contraindication():
+    # STT 633 recommends avoiding/coordinating treatment with washout and
+    # allows use in selected urgent cases with close monitoring.
+    alert = evaluate_pair("Venlafaxin", "Xanh methylen tiêm tĩnh mạch")
+    assert alert is not None
+    assert alert.severity != DdiSeverity.CONTRAINDICATED
+    assert "2 tuần" in alert.action_recommendation
+
 def test_patient_context_dynamic_escalation():
     # Amiodarone + Colchicine bình thường -> MAJOR
     normal_alert = evaluate_pair("Amiodaron", "Colchicin", PatientClinicalContext(egfr=90))
@@ -129,13 +147,24 @@ def test_newly_registered_high_alert_ddis():
     assert "SUY TỦY" in alt_allo.title
 
 def test_custom_rule_registration_endpoint():
+    from app.config import settings
     from app.services.clinical_ddi_engine.full_catalog import _FILE_CUSTOM
     import json
+    settings.DDI_ADMIN_TOKEN = "test-ddi-admin-token"
     with open(_FILE_CUSTOM, "r", encoding="utf-8") as f:
         original_data = json.load(f)
     try:
         # Đăng ký tương tác mới qua API
         res = client.post("/api/v1/clinical-ddi/register-rule", json={
+            "drug_a": "ThuocThuNghiemA",
+            "drug_b": "ThuocThuNghiemB",
+            "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
+            "consequence": "Thử nghiệm nguy cơ ngộ độc",
+            "action": "Chống chỉ định thử nghiệm",
+            "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
+        })
+        assert res.status_code == 403
+        res = client.post("/api/v1/clinical-ddi/register-rule", headers={"X-DDI-Admin-Token": "test-ddi-admin-token"}, json={
             "drug_a": "ThuocThuNghiemA",
             "drug_b": "ThuocThuNghiemB",
             "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
@@ -157,3 +186,4 @@ def test_custom_rule_registration_endpoint():
     finally:
         with open(_FILE_CUSTOM, "w", encoding="utf-8") as f:
             json.dump(original_data, f, ensure_ascii=False, indent=2)
+        settings.DDI_ADMIN_TOKEN = ""

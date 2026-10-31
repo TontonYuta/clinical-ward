@@ -5,6 +5,7 @@ Nạp & Tra cứu toàn bộ 633 cặp tương tác Bảng 3.1 & 68 nhóm Bảng
 import os
 import re
 import json
+import unicodedata
 from typing import Optional
 
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -14,17 +15,29 @@ _FILE_32 = os.path.join(_DATA_DIR, "qd_5948_table_3_2_all_groups.json")
 _FILE_CUSTOM = os.path.join(_DATA_DIR, "custom_hospital_ddi_rules.json")
 
 _INDEX_31: dict[tuple[str, str], dict] = {}
+_TABLE_31_RECORDS = 0
+_TABLE_32_RECORDS = 0
+_CUSTOM_RECORDS = 0
+_TABLE_32_LOADED = False
 _CATALOG_LOADED = False
+_REVIEWED_OCR_CORRECTIONS = {
+    "acenocoumar ol": "acenocoumarol",
+    "pethidi n": "pethidin",
+    "dextromethorp han": "dextromethorphan",
+    "carbamazepin e": "carbamazepine",
+    "roxithromyc in": "roxithromycin",
+}
 
 def _normalize_token(name: str) -> str:
-    cleaned = re.sub(r"\(.*?\)", "", name.lower())
+    cleaned = re.sub(r"\([^)]*\)", " ", name.lower())
+    cleaned = "".join(ch for ch in unicodedata.normalize("NFKD", cleaned) if not unicodedata.combining(ch))
+    cleaned = cleaned.replace("đ", "d")
     cleaned = re.sub(r"[^\w\s-]", " ", cleaned)
-    # Gộp lỗi ngắt từ do OCR/PDF (vd: clarithromyci n -> clarithromycin)
-    cleaned = re.sub(r"(\w+)\s+(\w)$", r"\1\2", cleaned)
-    return " ".join(cleaned.split()).strip()
+    cleaned = " ".join(cleaned.split()).strip()
+    return _REVIEWED_OCR_CORRECTIONS.get(cleaned, cleaned)
 
 def _ensure_loaded():
-    global _CATALOG_LOADED, _INDEX_31
+    global _CATALOG_LOADED, _INDEX_31, _TABLE_31_RECORDS, _TABLE_32_RECORDS, _CUSTOM_RECORDS, _TABLE_32_LOADED
     if _CATALOG_LOADED:
         return
     if not os.path.exists(_FILE_31):
@@ -33,6 +46,7 @@ def _ensure_loaded():
     try:
         with open(_FILE_31, "r", encoding="utf-8") as f:
             pairs = json.load(f)
+        _TABLE_31_RECORDS = len(pairs)
         for p in pairs:
             d1_clean = _normalize_token(p.get("drug_1", ""))
             d2_clean = _normalize_token(p.get("drug_2", ""))
@@ -52,17 +66,21 @@ def _ensure_loaded():
             _INDEX_31[(d1_clean, d2_clean)] = entry
             _INDEX_31[(d2_clean, d1_clean)] = entry
 
-            # Hỗ trợ token đầu tiên (ví dụ: 'calci' khớp 'calci clorid')
-            d1_first = d1_clean.split()[0] if len(d1_clean.split()) > 1 else d1_clean
-            d2_first = d2_clean.split()[0] if len(d2_clean.split()) > 1 else d2_clean
-            if len(d1_first) >= 4 and len(d2_first) >= 4:
-                _INDEX_31.setdefault((d1_first, d2_first), entry)
-                _INDEX_31.setdefault((d2_first, d1_first), entry)
+
+        # Bảng 3.2 được đọc để phản ánh phạm vi dữ liệu, nhưng chưa lập chỉ mục
+        # tự động theo nhóm vì cần ánh xạ nhóm thuốc có kiểm duyệt. Không được
+        # báo cáo rằng các nhóm này đã được engine match như cặp thuốc cụ thể.
+        if os.path.exists(_FILE_32):
+            with open(_FILE_32, "r", encoding="utf-8") as f:
+                table_32 = json.load(f)
+            _TABLE_32_RECORDS = len(table_32)
+            _TABLE_32_LOADED = True
 
         # Nạp các quy tắc tùy chỉnh của bệnh viện nếu có
         if os.path.exists(_FILE_CUSTOM):
             with open(_FILE_CUSTOM, "r", encoding="utf-8") as f:
                 custom_rules = json.load(f)
+            _CUSTOM_RECORDS = len(custom_rules)
             for c in custom_rules:
                 d1 = _normalize_token(c.get("drug_1", ""))
                 d2 = _normalize_token(c.get("drug_2", ""))
@@ -83,19 +101,8 @@ def lookup_official_ddi(inn_a: str, inn_b: str) -> Optional[dict]:
     if (norm_a, norm_b) in _INDEX_31:
         return _INDEX_31[(norm_a, norm_b)]
 
-    # 2. Khớp theo tiền tố / từ đầu tiên nếu độ dài >= 4
-    words_a = [w for w in norm_a.split() if len(w) >= 4]
-    words_b = [w for w in norm_b.split() if len(w) >= 4]
-    for wa in words_a:
-        for wb in words_b:
-            if (wa, wb) in _INDEX_31:
-                return _INDEX_31[(wa, wb)]
-
-    # 3. Quét chứa chuỗi con
-    for (k1, k2), entry in _INDEX_31.items():
-        if ((k1 in norm_a or norm_a in k1) and (k2 in norm_b or norm_b in k2)) and len(k1) >= 4 and len(k2) >= 4:
-            return entry
-
+    # Only exact normalized pair lookup is safe here. OCR corrections and
+    # brand/ingredient aliases must be reviewed in the drug normalizer.
     return None
 
 def register_custom_ddi(drug_a: str, drug_b: str, mechanism: str, consequence: str, action: str, evidence_source: str) -> dict:
@@ -126,11 +133,13 @@ def register_custom_ddi(drug_a: str, drug_b: str, mechanism: str, consequence: s
 
 def get_official_catalog_stats() -> dict:
     _ensure_loaded()
-    total_table_3_1 = 633
-    total_table_3_2 = 68
     return {
-        "table_3_1_pairs": total_table_3_1,
-        "table_3_2_groups": total_table_3_2,
+        "table_3_1_pairs": _TABLE_31_RECORDS,
+        "table_3_2_groups": _TABLE_32_RECORDS,
+        "table_3_2_indexed": False,
+        "table_3_2_loaded_for_scope_only": _TABLE_32_LOADED,
+        "custom_rules": _CUSTOM_RECORDS,
         "indexed_pairs_bidirectional": len(_INDEX_31),
-        "is_loaded": _CATALOG_LOADED
+        "is_loaded": _CATALOG_LOADED,
+        "coverage_note": "Bảng 3.1 và quy tắc tùy chỉnh được tra cứu theo cặp; Bảng 3.2 chưa được tự động ánh xạ nhóm thuốc."
     }

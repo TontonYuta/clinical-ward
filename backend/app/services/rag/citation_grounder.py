@@ -1,6 +1,6 @@
 """
 Citation Grounder & PaperQA2 Claim-Level Attribution
-Đảm bảo 100% bằng chứng y khoa và trích dẫn văn bản pháp lý chính xác (<=190 LOC)
+Gắn trích dẫn từ chunk có nguồn; không tự suy ra provenance khi thiếu bằng chứng (<=190 LOC)
 """
 import re
 from app.services.rag.types import RagCitation, RetrievedChunk, RagResult

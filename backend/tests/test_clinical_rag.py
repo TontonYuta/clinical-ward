@@ -68,7 +68,7 @@ def test_citation_grounder_attribution():
     results = retriever.retrieve("Paracetamol liều tối đa người lớn", top_k=3)
     citations = build_claim_citations(results)
     assert len(citations) > 0
-    assert any("Quyết định 3445" in c.legal_basis for c in citations)
+    assert any("nguồn dẫn trong từng bản ghi" in c.legal_basis.lower() or "2033/QĐ-BYT" in c.legal_basis for c in citations)
     assert len(citations[0].excerpt) > 10
 
 @pytest.mark.asyncio

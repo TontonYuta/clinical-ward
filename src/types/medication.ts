@@ -55,7 +55,7 @@ export interface MedicationAllergyProfile {
 }
 
 export interface FiveRightsSafetyInfo {
-  // Trạng thái kiểm chứng chuyên luận Dược Thư Quốc Gia 2015/2022 (QĐ 2033/QĐ-BYT)
+  // Trạng thái kiểm chứng chuyên luận Dược thư Quốc gia lần xuất bản II (2015)
   isVerifiedMonograph?: boolean;
   // Nguồn trích xuất y tế chính xác (Dược thư Quốc gia & Cục Quản lý Dược)
   officialSource?: OfficialMedicalSource;

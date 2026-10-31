@@ -22,7 +22,7 @@ const REQUIRED_FILES = [
 ];
 
 console.log('======================================================================');
-console.log('🔬 KIỂM TRA TÍNH TOÀN VẸN & PHÁP LÝ KHO TRI THỨC LÂM SÀNG (ZERO-MOCK)');
+console.log('🔬 KIỂM TRA CẤU TRÚC TÀI LIỆU, LIÊN KẾT NGUỒN VÀ MAPPING DAV');
 console.log('======================================================================\n');
 
 let allPassed = true;
@@ -51,7 +51,7 @@ const LEGAL_ANCHORS = [
   { file: 'ddi_interactions/qd_5948_cardiovascular_and_cns.md', term: '5948/QĐ-BYT' },
   { file: 'ddi_interactions/qd_5948_anticoagulants_and_hematology.md', term: '5948/QĐ-BYT' },
   { file: 'ddi_interactions/qd_5948_metabolic_and_gastrointestinal.md', term: '5948/QĐ-BYT' },
-  { file: 'clinical_pharmacopoeia/core_inns_monographs.md', term: '3445/QĐ-BYT' },
+  { file: 'clinical_pharmacopoeia/core_inns_monographs.md', term: 'dữ liệu dẫn xuất' },
   { file: 'regulatory_circulars/tt51_2017_anaphylaxis_protocol.md', term: '51/2017/TT-BYT' },
   { file: 'regulatory_circulars/tt20_2017_narcotics_management.md', term: '20/2017/TT-BYT' },
   { file: 'regulatory_circulars/tt22_2011_hospital_pharmacy_ward.md', term: '22/2011/TT-BYT' }
@@ -91,7 +91,7 @@ if (fs.existsSync(DB_PATH)) {
 
 console.log('\n======================================================================');
 if (allPassed) {
-  console.log('🎯 KẾT QUẢ: 100% TÀI LIỆU LÂM SÀNG ĐẠT CHUẨN XÁC THỰC & KHÔNG BỊA ĐẶT');
+  console.log('🎯 KẾT QUẢ: CÁC KIỂM TRA CẤU TRÚC VÀ LIÊN KẾT ĐÃ QUA; CHƯA THAY THẾ THẨM ĐỊNH LÂM SÀNG');
 } else {
   console.error('❌ CÓ LỖI XẢY RA TRONG QUÁ TRÌNH KIỂM CHỨNG TÀI LIỆU!');
   process.exit(1);

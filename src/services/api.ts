@@ -281,6 +281,35 @@ export async function chatCopilotApi(query: string, userRole: string, userName: 
   return res.json();
 }
 
+export type DdiPairApiResponse = {
+  has_interaction: boolean;
+  alert: null | {
+    rule_id: string; severity: string; title: string; drug_a: string; drug_b: string;
+    mechanism: string; consequence: string; action: string; source: string;
+    escalated?: boolean; escalation_reason?: string | null;
+  };
+};
+
+/** Tra cứu DDI từ cùng engine FastAPI dùng cho kiểm kê lâm sàng. */
+export async function checkPairDdiApi(drugA: string, drugB: string): Promise<DdiPairApiResponse> {
+  const res = await fetch(`${API_BASE_URL}/clinical-ddi/check-pair`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ drug_a: drugA, drug_b: drugB })
+  });
+  if (!res.ok) throw new Error(`DDI backend error: ${res.status}`);
+  return res.json();
+}
+
+export async function auditPrescriptionDdiApi(drugs: string[]) {
+  const res = await fetch(`${API_BASE_URL}/clinical-ddi/audit`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ drugs })
+  });
+  if (!res.ok) throw new Error(`DDI audit backend error: ${res.status}`);
+  return res.json() as Promise<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean }>;
+}
+
 export async function queryPureRagApi(query: string, userRole: string = 'nurse', userName: string = 'ĐD. Lê Thị Thu', patientInfo?: any) {
   const res = await fetch(`${API_BASE_URL}/copilot/rag`, {
     method: 'POST',

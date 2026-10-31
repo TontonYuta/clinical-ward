@@ -11,6 +11,22 @@ from app.services.clinical_ddi_engine.schemas import (
 from app.services.clinical_ddi_engine.normalizer import normalize_drug_entity
 from app.services.clinical_ddi_engine.rules_data import CLASS_DDI_RULES, SAFE_SYNERGIES
 from app.services.clinical_ddi_engine.full_catalog import lookup_official_ddi
+import re
+
+def _catalog_severity(action: str) -> DdiSeverity:
+    """Derive a conservative display tier from the official management text.
+
+    This is a triage label only; preserve the full source recommendation in the
+    alert and do not infer a contraindication from table membership alone.
+    """
+    text = action.lower()
+    if "chống chỉ định" in text:
+        return DdiSeverity.CONTRAINDICATED
+    if any(term in text for term in ("tránh sử dụng", "không khuyến cáo", "không nên phối hợp", "không sử dụng đồng thời")):
+        return DdiSeverity.MAJOR
+    if any(term in text for term in ("theo dõi", "giám sát", "cân nhắc", "cách nhau", "điều chỉnh liều", "định kỳ")):
+        return DdiSeverity.MODERATE
+    return DdiSeverity.MAJOR
 
 class ClinicalDdiDetector:
     def __init__(self):
@@ -70,14 +86,15 @@ class ClinicalDdiDetector:
         # 3. Tra cứu trực tiếp Danh mục 633 cặp Hoạt chất QĐ 5948 (Bảng 3.1)
         direct = lookup_official_ddi(inn_a, inn_b)
         if direct:
+            action = direct.get("action") or direct.get("management") or ""
             return DdiAlert(
                 rule_id=f"QD_5948_TABLE_3_1_STT_{direct['stt']}",
-                severity=DdiSeverity.CONTRAINDICATED,
-                title=f"{direct['drug_1'].upper()} + {direct['drug_2'].upper()}: CHỐNG CHỈ ĐỊNH (QĐ 5948)",
+                severity=_catalog_severity(action),
+                title=f"{direct['drug_1'].upper()} + {direct['drug_2'].upper()}: CẢNH BÁO TƯƠNG TÁC (QĐ 5948)",
                 drug_a=drug_a.display_name, drug_b=drug_b.display_name,
                 inn_a=inn_a, inn_b=inn_b, mechanism=direct["mechanism"] or "Chống chỉ định phối hợp theo QĐ 5948/QĐ-BYT",
                 clinical_consequence=direct["consequence"] or "Tăng nguy cơ biến cố bất lợi nghiêm trọng đe dọa tính mạng.",
-                action_recommendation=direct["action"] or "Chống chỉ định phối hợp.",
+                action_recommendation=action or "Tham khảo khuyến cáo trong nguồn chính thức.",
                 legal_evidence=direct["legal_source"]
             )
 
@@ -98,7 +115,7 @@ class ClinicalDdiDetector:
                 mechanism="Cộng dồn ức chế dòng kali IKr qua kênh HERG tại cơ tâm thất, kéo dài điện thế hoạt động cơ tim.",
                 clinical_consequence="Kéo dài khoảng QTc kịch phát, khởi phát Xoắn đỉnh (Torsades de Pointes), rung thất và ngừng tim đột ngột.",
                 action_recommendation="Đo ECG 12 chuyển đạo trước và trong khi dùng. Giữ Kali máu >= 4.0 mEq/L, Magnesi >= 2.0 mg/dL. Cân nhắc thay thế.",
-                legal_evidence="Dược Thư Quốc Gia 2022 & Thang điểm Tisdale (Circulation 2013)"
+                legal_evidence="Thang điểm Tisdale (Circulation 2013); cần đối chiếu hướng dẫn QT hiện hành"
             ))
 
         # B. Nguy cơ tăng Kali máu đa thuốc (Cumulative Hyperkalemia)

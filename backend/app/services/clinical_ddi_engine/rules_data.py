@@ -1,6 +1,6 @@
 """
 Clinical Interaction Rules & Safe Synergies (<=195 LOC)
-Nguồn: QĐ 5948/QĐ-BYT (Mục 3.1 & 3.2), Dược thư Quốc gia Việt Nam 2022
+Nguồn: QĐ 5948/QĐ-BYT (Mục 3.1 & 3.2), Dược thư Quốc gia Việt Nam lần xuất bản II (2015)
 """
 
 CLASS_DDI_RULES: list[dict] = [
@@ -58,7 +58,7 @@ CLASS_DDI_RULES: list[dict] = [
         "severity": "CONTRAINDICATED", "title": "OPIOID + BENZODIAZEPINE: ỨC CHẾ HÔ HẤP HÔN MÊ TỬ VONG",
         "mech": "Hiệp đồng tác dụng an thần sâu trên thụ thể mu-opioid và GABA-A tại hành tủy não.",
         "conseq": "Ức chế trung tâm hô hấp không hồi phục, ngừng thở đột ngột, hôn mê tử vong.",
-        "action": "Chống chỉ định phối hợp thường quy. Nếu bắt buộc, theo dõi SpO2 liên tục, sẵn sàng Naloxone.", "source": "FDA Boxed Warning & Dược thư QG 2022"
+        "action": "Chống chỉ định phối hợp thường quy. Nếu bắt buộc, theo dõi SpO2 liên tục, sẵn sàng Naloxone.", "source": "FDA Boxed Warning; cần đối chiếu tờ hướng dẫn/SmPC hiện hành"
     },
     {
         "id": "RULE_SEROTONIN_SYNDROME", "class_a": "SEROTONERGIC", "class_b": "MAOI",
@@ -100,7 +100,7 @@ CLASS_DDI_RULES: list[dict] = [
         "severity": "MAJOR", "title": "ỨC CHẾ MEN CHUYỂN / CHẸN AT1 + SPIRONOLACTON: TĂNG KALI MÁU NGUY CẤP",
         "mech": "Hiệp đồng ức chế trục Aldosterone làm giảm đào thải Kali tại ống lượn xa và ống góp.",
         "conseq": "Tăng kali máu kịch phát (> 6.5 mmol/L), loạn nhịp tim thất, ngừng tim đột ngột.",
-        "action": "Theo dõi điện giải đồ Kali máu và creatinin sau 3, 7 và 14 ngày. Tránh phối hợp nếu eGFR < 30.", "source": "QĐ 5948/QĐ-BYT & Dược thư QG 2022"
+        "action": "Theo dõi điện giải đồ Kali máu và creatinin sau 3, 7 và 14 ngày. Tránh phối hợp nếu eGFR < 30.", "source": "QĐ 5948/QĐ-BYT; cần đối chiếu khuyến cáo hiện hành"
     },
     {
         "id": "RULE_METFORMIN_CONTRAST", "class_a": "BIGUANIDE", "class_b": "IODINATED_CONTRAST",
@@ -128,7 +128,7 @@ CLASS_DDI_RULES: list[dict] = [
         "severity": "CONTRAINDICATED", "title": "ALLOPURINOL + AZATHIOPRIN / 6-MP: SUY TỦY XƯƠNG ÁC TÍNH",
         "mech": "Allopurinol ức chế enzym Xanthine Oxidase ngăn cản chuyển hóa bất hoạt Azathioprin/6-MP.",
         "conseq": "Tích lũy nồng độ Thiopurine cực cao gây ức chế tủy xương cấp tính, giảm 3 dòng tế bào máu tử vong.",
-        "action": "Tránh phối hợp. Nếu bắt buộc, giảm 75% liều Azathioprin (chỉ dùng 25% liều chuẩn) và theo dõi công thức máu hàng tuần.", "source": "Dược Thư Quốc Gia 2022 (QĐ 3445/QĐ-BYT) & QĐ 5948/QĐ-BYT"
+        "action": "Tránh phối hợp. Nếu bắt buộc, giảm 75% liều Azathioprin (chỉ dùng 25% liều chuẩn) và theo dõi công thức máu hàng tuần.", "source": "QĐ 5948/QĐ-BYT; cần đối chiếu chuyên luận hiện hành"
     }
 ]
 
@@ -138,6 +138,6 @@ SAFE_SYNERGIES: list[dict] = [
         "title": "MORPHIN + PARACETAMOL: HIỆP ĐỒNG GIẢM ĐAU ĐA MÔ THỨC AN TOÀN",
         "mechanism": "Tác động giảm đau đa cơ chế: Morphin chủ vận thụ thể mu-opioid trung ương, Paracetamol ức chế COX trung ương và kích hoạt con đường Serotonergic giảm đau đi xuống.",
         "consequence": "Tăng hiệu quả giảm đau, tiết kiệm 20-30% liều Morphin, giảm tác dụng phụ ức chế hô hấp và nôn ói. Khuyến cáo bậc thang giảm đau WHO.",
-        "action": "Phối hợp an toàn được khuyến cáo. Duy trì liều Paracetamol <= 4g/ngày.", "source": "Dược thư QG 2022 (QĐ 3445/QĐ-BYT) & Hướng dẫn Giảm đau WHO"
+        "action": "Phối hợp có thể được cân nhắc theo chỉ định; duy trì liều Paracetamol theo chuyên luận được duyệt.", "source": "Hướng dẫn giảm đau WHO; cần đối chiếu chuyên luận hiện hành"
     }
 ]

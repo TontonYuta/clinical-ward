@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Hệ thống Phân loại Dược lý & Tác dụng Trị liệu Lâm sàng (ATC WHO & Dược Thư 2022) (<=200 LOC)
+ * Hệ thống Phân loại Dược lý & Tác dụng Trị liệu Lâm sàng (ATC WHO & Dược thư Quốc gia lần xuất bản II (2015)) (<=200 LOC)
  */
 
 export type PharmacologicalGroupKey =

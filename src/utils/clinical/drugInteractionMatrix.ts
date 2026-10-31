@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Ma trận Tương Tác Thuốc Xác Định (Deterministic DDI Matrix) (<=195 LOC)
- * Căn cứ: QĐ 5948/QĐ-BYT, Dược thư QG 2022, FDA Boxed Warning & SmPC Bộ Y Tế
+ * Căn cứ: QĐ 5948/QĐ-BYT, FDA Boxed Warning và SmPC/tờ hướng dẫn có provenance
  */
 
 export type DdiSeverity = 'CONTRAINDICATED' | 'MAJOR' | 'MODERATE' | 'MINOR';
@@ -35,7 +35,7 @@ const r = (keysA: string[], keysB: string[], severity: DdiSeverity, title: strin
 const DDI_RULES: InteractionRule[] = [
   r(['morphin', 'morphine', 'fentanyl', 'oxycodone', 'pethidine'], ['diazepam', 'seduxen', 'midazolam', 'lorazepam', 'clonazepam'], 'CONTRAINDICATED',
     'OPIOID + BENZODIAZEPINE: NGUY CƠ SUY HÔ HẤP TỬ VONG', 'Tác động hiệp đồng ức chế sâu trên thụ thể mu-opioid và GABA-A tại thân não.',
-    'An thần sâu, ức chế trung tâm hô hấp không hồi phục, hôn mê và tử vong.', 'Chống chỉ định phối hợp thường quy. Sẵn sàng Naloxone + Flumazenil.', 'Cảnh báo Hộp Đen FDA & Dược thư QG 2022'),
+    'An thần sâu, ức chế trung tâm hô hấp không hồi phục, hôn mê và tử vong.', 'Chống chỉ định phối hợp thường quy. Sẵn sàng Naloxone + Flumazenil.', 'Cảnh báo Hộp Đen FDA; cần đối chiếu tờ hướng dẫn hiện hành'),
 
   r(['ceftriaxone', 'rocephin'], ['canxi', 'calcium', 'ringer lactat', 'hartmann'], 'CONTRAINDICATED',
     'CEFTRIAXONE + DỊCH TRUYỀN CHỨA CANXI: NGUY CƠ KẾT TỦA TỬ VONG', 'Muối Ceftriaxone-Canxi không tan kết tủa trong lòng mạch, phổi và nhu mô thận.',
@@ -75,7 +75,7 @@ const DDI_RULES: InteractionRule[] = [
 
   r(['kali clorid', 'kcl', 'potassium'], ['spironolacton', 'aldactone', 'enalapril', 'perindopril', 'losartan'], 'MAJOR',
     'KALI CLORID + HỆ RAAS / THUỐC GIỮ KALI: TĂNG KALI MÁU ÁC TÍNH', 'Giảm thải trừ kali qua thận kết hợp bù kali ngoại sinh liều cao.',
-    'Tăng kali máu ác tính (>6.5 mmol/L), loạn nhịp thất và ngừng tim tâm trương.', 'Theo dõi điện tim liên tục, kiểm tra ion đồ máu mỗi 6-12 giờ.', 'Dược thư QG 2022 & QĐ 2147/QĐ-BYT'),
+    'Tăng kali máu ác tính (>6.5 mmol/L), loạn nhịp thất và ngừng tim tâm trương.', 'Theo dõi điện tim liên tục, kiểm tra ion đồ máu mỗi 6-12 giờ.', 'QĐ 2147/QĐ-BYT; cần đối chiếu hướng dẫn hiện hành'),
 
   r(['vancomycin'], ['furosemid', 'lasix', 'gentamicin', 'amikacin', 'tobramycin'], 'MAJOR',
     'VANCOMYCIN + THUỐC ĐỘC THẬN / TAI: ĐỘC TÍNH TĂNG CƯỜNG', 'Hiệp đồng phá hủy tế bào ống thận và hủy hoại tế bào lông tiền đình ốc tai.',

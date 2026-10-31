@@ -1,5 +1,5 @@
-# Chuyên Luận Dược Thư Lâm Sàng Cốt Lõi (Dược Thư Quốc Gia Việt Nam 2022)
-## Căn cứ pháp lý: Quyết định 3445/QĐ-BYT ngày 23/12/2022 của Bộ Y tế
+# Chuyên luận thuốc nội bộ (dữ liệu dẫn xuất)
+## Trạng thái nguồn: bản tóm lược nội bộ; phải đối chiếu Dược thư/PDF hoặc tờ hướng dẫn được phê duyệt trước khi dùng lâm sàng
 
 ---
 

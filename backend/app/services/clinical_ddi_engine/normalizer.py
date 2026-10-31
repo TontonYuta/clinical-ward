@@ -10,9 +10,10 @@ from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 
 _STRIP_REGEX = re.compile(
     r"\b(\d+(\.\d+)?\s*(mg|g|ml|mcg|iu|ui|%|viên|ống|lọ|chai|túi|vỉ|tab|amp|vial))\b|"
-    r"\b(uống|tiêm|truyền|tĩnh mạch|tiêm bắp|dưới da|đặt|iv|im|sc|po)\b",
+    r"\b(uống|tiêm|truyền|tĩnh mạch|tiêm bắp|dưới da|đặt|xịt|iv|im|sc|po)\b",
     re.IGNORECASE
 )
+_STANDALONE_PRESENTATION = re.compile(r"\b(viên|ống|lọ|chai|túi|vỉ|liều|xịt)\b|\b\d+(?:[.,]\d+)?\b", re.IGNORECASE)
 
 def _remove_vietnamese_accents(text: str) -> str:
     nfkd = unicodedata.normalize('NFKD', text)
@@ -20,6 +21,7 @@ def _remove_vietnamese_accents(text: str) -> str:
 
 def clean_drug_token(raw_name: str) -> str:
     cleaned = _STRIP_REGEX.sub(" ", raw_name.lower())
+    cleaned = _STANDALONE_PRESENTATION.sub(" ", cleaned)
     cleaned = re.sub(r"[^\w\s-]", " ", cleaned)
     cleaned = " ".join(cleaned.split())
     return cleaned.strip()
@@ -43,16 +45,8 @@ def normalize_drug_entity(raw_name: str) -> DrugEntity:
             if cleaned == alias.lower() or cleaned_no_accents == alias_no_accents:
                 return _build_entity(raw_name, inn, meta, brand_matched=alias)
 
-    # 3. Tra cứu theo Token/Substring trong trường hợp đơn kê ghép tên
-    words = cleaned.split()
-    words_no_accents = cleaned_no_accents.split()
-    for inn, meta in DRUG_REGISTRY.items():
-        for alias in meta.get("aliases", []):
-            alias_clean = _remove_vietnamese_accents(alias.lower())
-            if any(w == alias_clean for w in words_no_accents) or (len(alias_clean) >= 4 and alias_clean in cleaned_no_accents):
-                return _build_entity(raw_name, inn, meta, brand_matched=alias)
-
-    # Fallback cho hoạt chất chưa có trong từ điển
+    # Unknown or ambiguous names stay unresolved. Substring matching can map a
+    # product to the wrong INN, which is unsafe for interaction checking.
     return DrugEntity(
         raw_name=raw_name,
         canonical_inn=cleaned_no_accents or cleaned or raw_name.lower().strip(),

@@ -16,3 +16,7 @@ def test_build_manifest_records_hashes_and_counts(tmp_path):
     assert manifest["sources"]["dav"]["record_count"] == 2
     assert manifest["sources"]["pdf"]["sha256"] == hashlib.sha256(pdf.read_bytes()).hexdigest()
     assert manifest["sources"]["pdf"]["bytes"] == len(b"pdf fixture")
+    assert manifest["manifest_version"] == 2
+    assert manifest["sources"]["pdf"]["edition_year"] == 2015
+    assert manifest["sources"]["pdf"]["legal_basis"] == "Quyết định 2033/QĐ-BYT"
+    assert manifest["policy"]["derived_data_requires_matching_sha256"] is True

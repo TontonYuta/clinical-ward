@@ -1,6 +1,6 @@
 /**
  * Comprehensive Automated Logic Test Suite for Clinical AI Chatbot
- * Validates 100% accurate intent routing, entity extraction, CDSS clinical safety alerts, and fallback handling.
+ * Exercises representative intent routing, entity extraction, CDSS alerts, and fallback behavior.
  */
 
 import { processClinicalUserQuery } from '../src/utils/clinicalNLP';

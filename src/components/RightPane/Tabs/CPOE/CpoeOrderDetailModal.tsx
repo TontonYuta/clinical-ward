@@ -11,6 +11,7 @@ import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services
 import { stripLeadingBullets } from '../../../../utils/clinicalFormatter';
 import { SendSmsModal } from '../../../Modals/SendSmsModal';
 import { buildDefaultTimeSlots } from '../../../../services/prescriptionAdviceService';
+import { auditPrescriptionDdiApi } from '../../../../services/api';
 
 export type CpoeDetailTab = 'overview' | 'medications' | 'safety_cdss' | 'advice_schedule' | 'legal_signature';
 
@@ -33,6 +34,8 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<CpoeDetailTab>('overview');
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
+  const [ddiAudit, setDdiAudit] = useState<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean } | null>(null);
+  const [ddiAuditError, setDdiAuditError] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,6 +48,15 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   useEffect(() => {
     if (isOpen) setActiveTab('overview');
   }, [isOpen, order?.id]);
+
+  useEffect(() => {
+    if (!isOpen || !order) return;
+    setDdiAudit(null);
+    setDdiAuditError(false);
+    auditPrescriptionDdiApi(order.items.map((item) => item.activeIngredient || item.medicationName))
+      .then(setDdiAudit)
+      .catch(() => setDdiAuditError(true));
+  }, [isOpen, order]);
 
   if (!isOpen || !order) return null;
 
@@ -414,7 +426,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Quy Định Giới Hạn Liều (Dược Thư Quốc Gia)</h3>
               <div className="space-y-3 text-xs text-slate-700 leading-relaxed">
                 <p>
-                  Mọi khoản thuốc kê đơn cho bệnh nhân nội trú và ngoại trú phải tuân thủ liều khuyến cáo trong Dược thư Quốc gia Việt Nam (Quyết định 3445/QĐ-BYT).
+                  Mọi khoản thuốc kê đơn cho bệnh nhân nội trú và ngoại trú phải được đối chiếu với chuyên luận và tờ hướng dẫn thuốc có provenance trước khi duyệt.
                 </p>
                 <p>
                   Đối với thuốc giảm đau Opioid (Morphin, Fentanyl): Bắt buộc kiểm tra nhịp thở trước khi tiêm; sẵn sàng ống tiêm Naloxon 0.4mg giải độc khi nhịp thở dưới 10 lần/phút.
@@ -436,19 +448,23 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                   Rà Soát Tương Tác Thuốc - Thuốc (Quyết Định 5948/QĐ-BYT)
                 </h3>
-                {hasNarcotics ? (
-                  <div className="space-y-1.5 text-xs text-slate-800 font-medium">
-                    <p className="text-amber-900">
-                      Lưu ý phối hợp với thuốc ức chế thần kinh trung ương: Đơn thuốc có chứa hoạt chất giảm đau Opioid (Morphin/Fentanyl). Cần theo dõi sát tri giác và nhịp thở của người bệnh.
-                    </p>
-                    <p className="text-slate-600 font-normal">
-                      Tránh dùng đồng thời với các thuốc an thần nhóm Benzodiazepin trừ khi có chỉ định phối hợp chuyên khoa gây mê hồi sức.
-                    </p>
+                {ddiAuditError ? (
+                  <p className="text-xs text-amber-800">Không truy cập được bộ máy DDI. Chưa thể kết luận đơn thuốc không có tương tác; cần thử lại hoặc đối chiếu dược sĩ.</p>
+                ) : ddiAudit?.pair_alerts?.length ? (
+                  <div className="space-y-2 text-xs text-rose-900">
+                    {ddiAudit.pair_alerts.map((alert, index) => (
+                      <div key={`${alert.title}-${index}`} className="rounded border border-rose-200 bg-rose-50 p-2">
+                        <p className="font-bold">{alert.severity}: {alert.title}</p>
+                        <p>{alert.consequence}</p>
+                        <p className="mt-1 font-medium">Xử trí: {alert.action}</p>
+                        <p className="mt-1 text-slate-600">Nguồn: {alert.source}</p>
+                      </div>
+                    ))}
                   </div>
+                ) : ddiAudit ? (
+                  <p className="text-xs text-slate-600">Chưa ghi nhận tương tác trong danh mục DDI đã lập chỉ mục. Kết quả này không khẳng định phối hợp an toàn.</p>
                 ) : (
-                  <p className="text-xs text-slate-600">
-                    Không ghi nhận tương tác thuốc nghiêm trọng (chống chỉ định phối hợp) giữa các khoản thuốc trong đơn này.
-                  </p>
+                  <p className="text-xs text-slate-500">Đang rà soát đơn thuốc với bộ máy DDI…</p>
                 )}
               </div>
 

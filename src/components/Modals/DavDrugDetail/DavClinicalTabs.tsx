@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Các Tab Nội Dung Lâm Sàng Chi Tiết Dược Thư Quốc Gia 2022 (<=200 LOC)
+ * Các Tab Nội Dung Lâm Sàng Chi Tiết Dược thư Quốc gia lần xuất bản II (2015) (<=200 LOC)
  * Font chữ tăng gấp đôi, hỗ trợ scroll ngang và dọc mượt mà với thanh scroll siêu nhỏ
  */
 

@@ -1,6 +1,6 @@
 """
 Clinical Drug-Drug Interaction (CDDI) Data Schemas (<=195 LOC)
-Căn cứ: QĐ 5948/QĐ-BYT, QĐ 3445/QĐ-BYT (Dược thư QG 2022) & Chuẩn HL7 FHIR
+Căn cứ: QĐ 5948/QĐ-BYT, QĐ 2033/QĐ-BYT (Dược thư Quốc gia lần xuất bản II, 2015) & Chuẩn HL7 FHIR
 """
 from dataclasses import dataclass, field
 from enum import Enum

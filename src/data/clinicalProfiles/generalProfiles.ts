@@ -88,7 +88,7 @@ export const GENERAL_CLINICAL_PROFILES: Record<string, FiveRightsSafetyInfo> = {
   // Lipid 20% (Lipid Emulsion 20% 100ml / 250ml)
   'med-gen-02': {
     officialSource: {
-      documentName: 'Dược thư Quốc gia Việt Nam 2022 & Phác đồ ngộ độc thuốc tê toàn thân LAST (Hội GMHS VN)',
+      documentName: 'Dược thư Quốc gia lần xuất bản II (2015) & Phác đồ ngộ độc thuốc tê toàn thân LAST (Hội GMHS VN)',
       registrationNumber: 'VN-19823-16',
       manufacturer: 'B.Braun Melsungen AG (CHLB Đức)',
       standardPharmacopeia: 'Dược điển Châu Âu (EP) / DĐVN V',

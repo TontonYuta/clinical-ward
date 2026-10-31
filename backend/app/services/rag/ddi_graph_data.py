@@ -1,5 +1,5 @@
 """
-Dữ liệu Đồ thị Tương tác Thuốc Lâm sàng Chuẩn QĐ 5948/QĐ-BYT & Dược Thư QG 2022 (<=195 LOC)
+ Dữ liệu đồ thị tương tác thuốc dẫn xuất từ QĐ 5948/QĐ-BYT; từng quy tắc phải đối chiếu nguồn trước khi dùng lâm sàng (<=195 LOC)
 """
 
 def _create_ddi(partner: str, partner_names: list[str], severity: str, mechanism: str, consequence: str) -> dict:

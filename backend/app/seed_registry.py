@@ -217,7 +217,7 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_active_ingredient ON dav_national_drugs (active_ingredient)")
     cursor.execute('CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_group ON dav_national_drugs ("group")')
 
-    # Nạp bảng chuyên luận Dược Thư 2022
+    # Nạp bảng chuyên luận thuốc đã trích xuất; kiểm tra provenance trước khi dùng
     seed_clinical_monographs(conn)
 
     cursor.execute("SELECT COUNT(*) FROM dav_national_drugs")

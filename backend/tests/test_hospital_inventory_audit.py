@@ -1,6 +1,6 @@
 """
 backend/tests/test_hospital_inventory_audit.py
-Kiểm thử tự động đối soát 100% 20 thuốc kho bệnh viện với Dược Thư QG 2022 & Cục QLD (<=200 LOC)
+Kiểm thử tự động đối soát 100% 20 thuốc kho bệnh viện với Dược thư Quốc gia lần xuất bản II (2015) & Cục QLD (<=200 LOC)
 """
 
 import pytest

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { Bot } from 'lucide-react';
 import {
   DebtRecord,
@@ -35,19 +35,21 @@ import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/LeftPane/ChatWindow';
 import { Dashboard, DashboardTab } from './components/RightPane/Dashboard';
 import { TelegramToast } from './components/Modals/TelegramToast';
-import { LegalDocsModal } from './components/Modals/LegalDocsModal';
 import { ClinicalAuthModal } from './components/Modals/ClinicalAuthModal';
 import { AuditTrailModal } from './components/Modals/AuditTrailModal';
-import { UserGuideModal } from './components/Modals/UserGuideModal';
-import { PrintableFormModal, PrintableFormType } from './components/Modals/PrintableFormModal';
-import { MedicationSafetyModal } from './components/Modals/MedicationSafetyModal';
 import { PatientDetailModal } from './components/Modals/PatientDetailModal';
+import type { PrintableFormType } from './components/Modals/PrintableFormModal';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
 import { cpoeApi } from './services/api/cpoeApi';
 import { clinicalAudio } from './utils/audio';
+
+const LegalDocsModal = lazy(() => import('./components/Modals/LegalDocsModal').then(m => ({ default: m.LegalDocsModal })));
+const UserGuideModal = lazy(() => import('./components/Modals/UserGuideModal').then(m => ({ default: m.UserGuideModal })));
+const PrintableFormModal = lazy(() => import('./components/Modals/PrintableFormModal').then(m => ({ default: m.PrintableFormModal })));
+const MedicationSafetyModal = lazy(() => import('./components/Modals/MedicationSafetyModal').then(m => ({ default: m.MedicationSafetyModal })));
 import {
   getInitialTab,
   syncTabToUrl,
@@ -1779,6 +1781,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
       {/* 3-7. Non-printable Modals & Floating Overlays */}
       <div className="print:hidden">
+        <Suspense fallback={null}>
         <TelegramToast
           isOpen={showTelegramToast}
           onClose={() => setShowTelegramToast(false)}
@@ -1823,9 +1826,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onClose={() => setSelectedPatientForGlobalModal(null)}
           patientIdOrName={selectedPatientForGlobalModal || ''}
         />
+        </Suspense>
       </div>
 
       {/* 8. Printable Medical Documents Modal (Option A: Bộ Y Tế & Bộ Tài Chính) */}
+      <Suspense fallback={null}>
       <PrintableFormModal
         isOpen={isPrintableFormOpen}
         onClose={() => setIsPrintableFormOpen(false)}
@@ -1840,6 +1845,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         coldChainState={coldChainState}
         currentUserRole={currentUserRole}
       />
+      </Suspense>
     </div>
   );
 }

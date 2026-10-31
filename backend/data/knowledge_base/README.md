@@ -9,7 +9,7 @@ Tài liệu này tổng hợp cấu trúc, nguồn gốc pháp lý và nguyên t
 * **`ddi_interactions/` (Tương Tác Thuốc Chống Chỉ Định):**
   * `qd_5948_antibiotics_and_antiinflammatory.md`: Tương tác chống chỉ định Kháng sinh & Kháng viêm NSAID (Aceclofenac + Ketorolac, Ceftriaxon + Calci, Simvastatin + Macrolid, Ciprofloxacin + Theophyllin, Methotrexat + NSAID).
   * `qd_5948_cardiovascular_and_cns.md`: Tương tác chống chỉ định Tim mạch, Thần kinh & Huyết học (Nitrat + PDE5-i, Amiodaron + QT prolonging/Colchicin, Clopidogrel + PPI, ACEI/Spironolacton + KCl, Tramadol + MAOI).
-* **`clinical_pharmacopoeia/` (Dược Thư Quốc Gia - Dược Điển Lâm Sàng):**
+* **`clinical_pharmacopoeia/` (chuyên luận nội bộ dẫn xuất):**
   * `core_inns_monographs.md`: Chuyên luận liều chuẩn người lớn, liều trẻ em, trần 24h, chỉnh liều suy thận ClCr và chống chỉ định các hoạt chất gốc (Paracetamol, Ceftriaxon, Morphin, Diazepam, Vancomycin, Metformin).
 * **`regulatory_circulars/` (Quy Chế & Thông Tư Chuyên Môn Bệnh Viện):**
   * `tt51_2017_anaphylaxis_protocol.md`: Phác đồ xử trí cấp cứu phản vệ và liều tiêm bắp Adrenalin 1mg/1ml (TT 51/2017/TT-BYT).
@@ -21,19 +21,19 @@ Tài liệu này tổng hợp cấu trúc, nguồn gốc pháp lý và nguyên t
 ### 2. Nguyên Lý Kế Thừa Hoạt Chất (INN-Level Inheritance)
 * Cơ sở dữ liệu thương mại Cục Quản lý Dược (DAV) chứa **54.885 số đăng ký biệt dược**.
 * Việc nhập thủ công liều lượng/tương tác cho từng biệt dược là bất khả thi và dễ sai sót.
-* Toàn bộ 54.885 biệt dược quy về **~743 hoạt chất gốc (INN)** theo Dược thư Quốc gia Việt Nam 2022:
+* Các biệt dược chỉ được quy về INN khi mapping đã được duyệt; không suy diễn độ bao phủ từ tổng số đăng ký:
   $$\text{DAV Drug Record} \xrightarrow{\text{active\_ingredient (INN)}} \text{Clinical Knowledge Base}$$
-* Nhờ cơ chế này, khi bác sĩ kê đơn bất kỳ biệt dược nào (vd: *Hapacol 650, Panadol Extra, Efferalgan*), hệ thống tự động ánh xạ về chuyên luận `Paracetamol` để kiểm tra liều trần 4g/ngày và kiểm tra tương tác thuốc tự động.
+* Việc ánh xạ biệt dược về INN chỉ được coi là hợp lệ khi bản ghi mapping đã được duyệt; không tự động suy ra an toàn hoặc liều dùng từ tên thương mại.
 
 ---
 
-### 3. Cam Kết Xác Thực & Phòng Chống Bịa Đặt Dữ Liệu (Zero-Hallucination)
-* 100% dữ liệu trong kho tri thức này được trích xuất trực tiếp từ các văn bản quy phạm pháp luật và chuyên môn của Bộ Y tế Việt Nam.
-* Tuyệt đối không sinh số liệu giả định về liều dùng hoặc cảnh báo lâm sàng.
+### 3. Kiểm soát provenance và giới hạn sử dụng
+* Dữ liệu dẫn xuất phải giữ provenance và được validator kiểm tra; các bản ghi bổ sung nội bộ không được trình bày như trích nguyên văn PDF.
+* Không dùng kho này như nguồn duy nhất để quyết định điều trị; mọi cảnh báo cần đối chiếu nguồn hiện hành và bối cảnh người bệnh.
 
 ---
 
-### 4. Danh Mục Đường Dẫn Trực Tiếp Đã Kiểm Chứng (100% Active Links)
+### 4. Danh mục liên kết nguồn tham khảo
 * **Cục Quản lý Khám, chữa bệnh (KCB - Bộ Y tế):**
   * QĐ 5948/QĐ-BYT: https://kcb.vn/tin-tuc/danh-muc-tuong-tac-thuoc-chong-chi-dinh-trong-thuc-hanh-lam-sang-va-huong-dan-giam-sat-phan-ung-co-hai-cua-thuoc-adr-tai.html
 * **Trung tâm Quốc gia DI & ADR (canhgiacduoc.org.vn):**
@@ -44,7 +44,7 @@ Tài liệu này tổng hợp cấu trúc, nguồn gốc pháp lý và nguyên t
   * Cổng thông tin Cục Quản lý Dược: https://dav.gov.vn/
 * **Văn bản Quy phạm Pháp luật (Thư Viện Pháp Luật):**
   * QĐ 5948/QĐ-BYT (Tương tác chống chỉ định): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Quyet-dinh-5948-QD-BYT-2021-tai-lieu-chuyen-mon-Danh-muc-tuong-tac-thuoc-chong-chi-dinh-500355.aspx
-  * QĐ 3445/QĐ-BYT (Dược thư Quốc gia Việt Nam 2022): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Quyet-dinh-3445-QD-BYT-2022-ban-hanh-Duoc-thu-quoc-gia-Viet-Nam-lan-thu-ba-549463.aspx
+  * Dược thư Quốc gia lần xuất bản II (2015), QĐ 2033/QĐ-BYT: bản PDF nội bộ được định danh và băm trong `clinical_source_manifest.json`.
   * TT 51/2017/TT-BYT (Phác đồ Adrenalin phản vệ): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-51-2017-TT-BYT-huong-dan-phong-chan-doan-va-xu-tri-phan-ve-371587.aspx
   * TT 20/2017/TT-BYT (Thuốc gây nghiện & vỏ ống): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-20-2017-TT-BYT-huong-dan-Luat-duoc-ve-thuoc-phai-kiem-soat-dac-biet-349887.aspx
   * TT 22/2011/TT-BYT (Tủ trực Khoa Dược): https://thuvienphapluat.vn/van-ban/The-thao-Y-te/Thong-tu-22-2011-TT-BYT-to-chuc-va-hoat-dong-cua-khoa-Duoc-benh-vien-124968.aspx
