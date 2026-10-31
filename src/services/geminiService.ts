@@ -17,13 +17,3 @@ export {
   askGeminiClinicalCopilot,
   type ClinicalContextOptions
 } from './gemini/copilot';
-
-export {
-  analyzeMedicalInvoiceWithGemini,
-  type ParsedInvoiceItem,
-  type ParsedInvoiceResult
-} from './gemini/visionOcr';
-
-export {
-  diagnoseBiomedicalDeviceWithGemini
-} from './gemini/biomedical';

@@ -34,12 +34,6 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     setInputText('');
   };
 
-  /*
-   * Tạm thời tắt phím tắt & macro autocomplete theo yêu cầu người dùng:
-   * const handleSelectMacro = (macro: ClinicalMacro) => { ... };
-   * const handleInputKeyDown = (e: React.KeyboardEvent) => { ... };
-   */
-
   return (
     <div className="p-2 sm:p-3 bg-white shrink-0">
       <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2">

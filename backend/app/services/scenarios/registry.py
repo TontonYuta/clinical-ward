@@ -30,9 +30,6 @@ from app.services.scenarios.case_noradrenalin_shock import NoradrenalinShockScen
 from app.services.scenarios.case_diazepam_seizure import DiazepamSeizureScenario
 from app.services.scenarios.case_salbutamol_asthma import SalbutamolAsthmaScenario
 from app.services.scenarios.case_esomeprazole_ulcer import EsomeprazoleUlcerScenario
-from app.services.scenarios.case_fever_triage import FeverTriageScenario
-from app.services.scenarios.case_headache_pain import HeadachePainScenario
-from app.services.scenarios.case_oncology_specialty import OncologySpecialtyScenario
 from app.services.scenarios.case_patient_inquiry import PatientInquiryScenario
 from app.services.scenarios.case_prescription_inquiry import PrescriptionInquiryScenario
 from app.services.scenarios.case_coldchain_telemetry import ColdChainTelemetryScenario
@@ -54,9 +51,6 @@ SCENARIOS: List[BaseScenario] = [
     DiazepamSeizureScenario(),
     SalbutamolAsthmaScenario(),
     EsomeprazoleUlcerScenario(),
-    FeverTriageScenario(),
-    HeadachePainScenario(),
-    OncologySpecialtyScenario(),
     PatientInquiryScenario(),
     InventoryCheckScenario(),
     PrescriptionInquiryScenario(),

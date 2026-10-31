@@ -24,12 +24,8 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   const isColdChainTelemetry = (/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh|vắc xin|buồng lạnh/i.test(lower) || /datalogger|data logger/i.test(lower)) && (/nhiệt độ|độ ẩm|mấy độ|bao nhiêu|hiện tại|tình trạng|kiểm tra|giám sát|ổn định/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể|người|em bé|bệnh nhân/i.test(lower);
   const isColdChainGeneral = (/chuỗi lạnh|vaxigrip|kho lạnh|tủ lạnh|cách ly vắc xin|quarantine/i.test(lower)) && !/sốt|hạ sốt|thân nhiệt|cơ thể|người|em bé|bệnh nhân/i.test(lower);
   const isColdChain = isColdChainEmergency || isColdChainTelemetry || isColdChainGeneral;
-  const isFever = (/sốt|hạ sốt|thân nhiệt/i.test(lower) && /38|39|40|độ|làm gì|làm sao|uống gì|thuốc gì|các loại|thông tin|hướng dẫn/i.test(lower)) ||
-    /thuốc hạ sốt|các loại thuốc hạ sốt|thuốc hạ nhiệt|thuốc giảm sốt/i.test(lower);
   const isPrescription = (/xem đơn|đơn thuốc của|đơn của|tra cứu đơn/i.test(lower) || /rx-2026-/i.test(lower)) && (INITIAL_PATIENTS.some(p => lower.includes(p.fullName.toLowerCase())) || /rx-2026-/i.test(lower));
   const isAdr = /adr|biến cố|tác dụng phụ|đỏ bừng|ban đỏ|cảnh giác dược|sốc thuốc/i.test(lower);
-  const isHeadache = /đau đầu|nhức đầu|đau nửa đầu|thuốc đau đầu|thuốc trị đau đầu|thuốc giảm đau/i.test(lower);
-  const isOncology = /ung thư|u bướu|carcinoma|khối u ác tính|trị ung thư|chữa ung thư|thuốc ung thư|thuốc trị ung thư|hóa trị ung thư/i.test(lower);
   const isAmiodarone = /amiodaron|amiodarone/i.test(lower);
   const isNoradrenalin = /noradrenalin|norepinephrine/i.test(lower);
   const isDiazepam = /diazepam|seduxen/i.test(lower);
@@ -42,9 +38,9 @@ export function isClinicalScenarioQuery(lower: string): boolean {
   return (
     isCeftriaxoneCalcium || isRedMan || isStatinFood || isHighAlertKcl ||
     isAnaphylaxis || isOpioidCalc || isAllergyAudit || isRenal ||
-    isColdChain || isPrescription || isAdr || isHeadache || isOncology ||
+    isColdChain || isPrescription || isAdr ||
     isAmiodarone || isNoradrenalin || isDiazepam || isSalbutamol || isEsomeprazole ||
-    isPatientProfile || isDeictic || isFever
+    isPatientProfile || isDeictic
   );
 }
 
