@@ -66,3 +66,5 @@ TEMP/
 
 # Local scratch and generated UI artifacts
 /TEMP/
+
+.worktrees/
