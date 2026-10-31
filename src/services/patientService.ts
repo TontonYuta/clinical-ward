@@ -355,24 +355,24 @@ export async function fetchPatients(): Promise<PatientProfile[]> {
 
 export function findPatientByNameOrQuery(query: string, patients: PatientProfile[] = INITIAL_PATIENTS): PatientProfile | undefined {
   const matches = findPatientsByQuery(query, patients);
-  return matches.length === 1 ? matches[0] : undefined;
+  return matches.length === 1 && matches[0].matchType === 'exact' ? matches[0] : undefined;
 }
 
 /** Return every plausible match in stable, deterministic order. Never silently picks one. */
-export function findPatientsByQuery(query: string, patients: PatientProfile[] = INITIAL_PATIENTS): PatientProfile[] {
+export function findPatientsByQuery(query: string, patients: PatientProfile[] = INITIAL_PATIENTS): Array<PatientProfile & { matchType?: 'exact' | 'partial' }> {
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, ' ').trim();
   const norm = normalize(query);
   const withoutParenthetical = normalize(query.replace(/\(.*?\)/g, ''));
   if (!norm || norm.length < 3) return [];
-  const exactId = patients.filter((p) => normalize(p.id) === norm);
+  const exactId = patients.filter((p) => normalize(p.id) === norm).map((p) => ({ ...p, matchType: 'exact' as const }));
   if (exactId.length) return exactId;
-  const exactName = patients.filter((p) => normalize(p.fullName) === norm || normalize(p.fullName) === withoutParenthetical);
+  const exactName = patients.filter((p) => normalize(p.fullName) === norm || normalize(p.fullName) === withoutParenthetical).map((p) => ({ ...p, matchType: 'exact' as const }));
   if (exactName.length) return exactName;
   const tokens = withoutParenthetical.split(' ').filter(Boolean);
   return patients.filter((p) => {
     const haystack = `${normalize(p.fullName)} ${normalize(p.id)} ${normalize(p.cccd || '')}`;
     return tokens.length > 0 && tokens.every((token) => haystack.includes(token));
-  });
+  }).map((p) => ({ ...p, matchType: 'partial' as const }));
 }
 
 export async function savePatientProfile(patient: PatientProfile): Promise<boolean> {

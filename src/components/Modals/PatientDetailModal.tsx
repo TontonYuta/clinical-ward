@@ -67,13 +67,13 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   if (!isOpen) return null;
 
   // Resolve patient from query or direct object
-  const matches = directPatient ? [directPatient] : (patientIdOrName ? findPatientsByQuery(patientIdOrName, INITIAL_PATIENTS) : []);
+  const matches: Array<PatientProfile & { matchType?: 'exact' | 'partial' }> = directPatient ? [{ ...directPatient, matchType: 'exact' }] : (patientIdOrName ? findPatientsByQuery(patientIdOrName, INITIAL_PATIENTS) : []);
   const patient: PatientProfile = directPatient || 
     (selectedPatientId ? matches.find((item) => item.id === selectedPatientId) : findPatientByNameOrQuery(patientIdOrName || '', INITIAL_PATIENTS)) ||
     ({ id: '', fullName: '', gender: 'Chưa rõ', email: '', room: 'Chưa có dữ liệu', allergies: 'Chưa có dữ liệu bệnh nhân phù hợp', chronicConditions: 'Chưa có dữ liệu', egfr: 0, creatinine: 0, weightKg: 0 } as PatientProfile);
 
   const patientNotFound = !patient.id;
-  const patientAmbiguous = !directPatient && !selectedPatientId && matches.length > 1;
+  const patientNeedsSelection = !directPatient && !selectedPatientId && matches.length > 0 && (matches.length > 1 || matches[0].matchType === 'partial');
 
   const relatedPrescriptions = activePrescriptionsList.filter(
     (p: any) => p.patientId === patient.id || p.patientName.toLowerCase().includes(patient.fullName.toLowerCase())
@@ -94,9 +94,9 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
                      patient.egfr >= 15 ? 'G4 (Suy thận nặng)' : 'G5 (Suy thận giai đoạn cuối)';
 
   if (patientNotFound) {
-    if (patientAmbiguous) {
+    if (patientNeedsSelection) {
       return <div role="dialog" aria-modal="true" data-testid="patient-detail-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-        <section className="w-full max-w-2xl border border-slate-300 bg-white p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-slate-950">Có nhiều bệnh nhân phù hợp</h2><p className="mt-2 text-sm text-slate-600">Chọn đúng hồ sơ bằng mã bệnh nhân, ngày sinh hoặc khoa/phòng trước khi xem dữ liệu lâm sàng.</p></div><button type="button" onClick={onClose} aria-label="Đóng" className="border border-slate-300 p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div><div className="mt-5 divide-y divide-slate-200 border-y border-slate-200">{matches.map((item) => <button key={item.id} type="button" onClick={() => setSelectedPatientId(item.id)} className="flex w-full items-center gap-4 p-4 text-left hover:bg-slate-50"><span className="font-mono text-sm font-semibold text-slate-800">{item.id}</span><span className="min-w-0 flex-1"><span className="block font-semibold text-slate-950">{item.fullName}</span><span className="block text-xs text-slate-600">{item.dob || 'Chưa có ngày sinh'} · {item.gender} · {item.department || item.room}</span></span></button>)}</div></section>
+        <section className="w-full max-w-2xl border border-slate-300 bg-white p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-slate-950">{matches.length > 1 ? 'Có nhiều bệnh nhân phù hợp' : 'Xác nhận bệnh nhân'}</h2><p className="mt-2 text-sm text-slate-600">{matches.length > 1 ? 'Chọn đúng hồ sơ bằng mã bệnh nhân, ngày sinh hoặc khoa/phòng trước khi xem dữ liệu lâm sàng.' : 'Tên tìm kiếm chỉ khớp một phần. Xác nhận hồ sơ bằng mã bệnh nhân, ngày sinh hoặc khoa/phòng trước khi mở.'}</p></div><button type="button" onClick={onClose} aria-label="Đóng" className="border border-slate-300 p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div><div className="mt-5 divide-y divide-slate-200 border-y border-slate-200">{matches.map((item) => <button key={item.id} type="button" onClick={() => setSelectedPatientId(item.id)} className="flex w-full items-center gap-4 p-4 text-left hover:bg-slate-50"><span className="font-mono text-sm font-semibold text-slate-800">{item.id}</span><span className="min-w-0 flex-1"><span className="block font-semibold text-slate-950">{item.fullName}</span><span className="block text-xs text-slate-600">{item.dob || 'Chưa có ngày sinh'} · {item.gender} · {item.department || item.room}</span></span></button>)}</div></section>
       </div>;
     }
     return <div role="dialog" aria-modal="true" data-testid="patient-detail-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
