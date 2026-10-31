@@ -39,8 +39,8 @@ export function extractDrugPair(lower: string): [string, string] | null {
   const match = lower.match(/(?:tương tác|phối hợp|kết hợp|dùng chung|uống cùng)?\s*([\p{L}0-9][\p{L}0-9 .()/-]*?)\s+(?:với|và|\+)\s+([\p{L}0-9][\p{L}0-9 .()/-]*?)(?=\s+(?:thế nào|như thế nào|được không|không|vậy|không\?)|[?!.,]|$)/iu);
   if (!match) return null;
   const clean = (value: string) => value
-    .replace(/^(?:kiểm tra|tra cứu|tương tác|phối hợp|kết hợp|dùng|uống)\s+/i, '')
-    .replace(/\s+(?:có|tương tác|phối hợp|kết hợp)$/i, '')
+    .replace(/^(?:kiểm tra|tra cứu|tương tác|phối hợp|kết hợp|dùng chung|uống cùng|dùng|uống)\s+/i, '')
+    .replace(/\s+(?:có|tương tác|phối hợp|kết hợp|dùng chung|uống cùng|uống chung|dùng|uống|được không|không)$/i, '')
     .trim();
   const a = clean(match[1]);
   const b = clean(match[2]);
