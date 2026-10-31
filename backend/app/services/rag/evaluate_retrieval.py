@@ -15,7 +15,10 @@ def evaluate_retrieval(top_k: int = 5) -> dict:
     for case in cases:
         results = retriever.retrieve(case["query"], top_k=top_k)
         expected = set(case["expected_chunk_ids"])
-        rank = next((i + 1 for i, item in enumerate(results) if item.chunk.chunk_id in expected), None)
+        rank = next((i + 1 for i, item in enumerate(results) if any(
+            item.chunk.chunk_id == chunk_id or item.chunk.chunk_id.startswith(f"{chunk_id}_")
+            for chunk_id in expected
+        )), None)
         reciprocal_ranks.append(1 / rank if rank else 0.0)
         per_case.append({"id": case["id"], "rank": rank, "top_chunk": results[0].chunk.chunk_id if results else None})
     return {

@@ -115,3 +115,16 @@ def test_clinical_knowledge_graph_resolves_brand_alias_pair():
     assert "INN:CLOPIDOGREL" in kg["kg_entities"]
     assert any(entity.startswith("DDI:CLOPIDOGREL<->") for entity in kg["kg_entities"])
     assert any("esomeprazol" in alert["mechanism"].lower() or "clopidogrel" in alert["mechanism"].lower() for alert in kg["active_ddi_alerts"])
+
+def test_markdown_indexer_splits_long_sections_with_stable_source_metadata(tmp_path):
+    from app.services.rag.clinical_indexer import _parse_markdown_chunks
+
+    source = tmp_path / "long_source.md"
+    source.write_text("### Điều khoản A\n\n" + ("Thông tin chứng cứ lâm sàng có cấu trúc. " * 90), encoding="utf-8")
+    chunks = _parse_markdown_chunks(source, "Nguồn gốc", "Văn bản số 1", "circular")
+
+    assert len(chunks) > 1
+    assert all(len(chunk.content) <= 1200 for chunk in chunks)
+    assert all(chunk.page_or_section == "Điều khoản A" for chunk in chunks)
+    assert all(chunk.source_doc == "Nguồn gốc" and chunk.legal_basis == "Văn bản số 1" for chunk in chunks)
+    assert len({chunk.chunk_id for chunk in chunks}) == len(chunks)

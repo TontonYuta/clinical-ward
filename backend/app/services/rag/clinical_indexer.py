@@ -38,21 +38,55 @@ def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, e
             continue
         lines = sec.split("\n")
         title_line = lines[0].replace("#", "").strip() if lines else "Tài liệu Y tế"
-        chunk_id = f"{file_path.stem}_{i+1}"
-        keywords = _extract_keywords(title_line + " " + sec[:200])
+        # Bound retrieval units by characters while respecting paragraph and
+        # line boundaries where possible. Carry the section heading as metadata.
+        pieces: list[str] = []
+        current = ""
+        for paragraph in re.split(r"\n\s*\n", sec):
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+            if len(paragraph) > 1200:
+                if current:
+                    pieces.append(current)
+                    current = ""
+                lines = paragraph.splitlines()
+                line_chunk = ""
+                for line in lines:
+                    line = line.strip()
+                    if len(line) > 1200:
+                        if line_chunk:
+                            pieces.append(line_chunk)
+                            line_chunk = ""
+                        pieces.extend(line[start:start + 1200] for start in range(0, len(line), 1200))
+                    elif line_chunk and len(line_chunk) + len(line) + 1 > 1200:
+                        pieces.append(line_chunk)
+                        line_chunk = line
+                    else:
+                        line_chunk = f"{line_chunk}\n{line}".strip()
+                if line_chunk:
+                    pieces.append(line_chunk)
+            elif current and len(current) + len(paragraph) + 2 > 1200:
+                pieces.append(current)
+                current = paragraph
+            else:
+                current = f"{current}\n\n{paragraph}".strip()
+        if current:
+            pieces.append(current)
 
-        chunks.append(
-            RagChunk(
+        for part_idx, part in enumerate(pieces, start=1):
+            chunk_id = f"{file_path.stem}_{i+1}_{part_idx}"
+            keywords = _extract_keywords(title_line + " " + part[:300])
+            chunks.append(RagChunk(
                 chunk_id=chunk_id,
                 source_doc=source_doc,
                 legal_basis=legal_basis,
                 page_or_section=title_line,
                 title=title_line,
-                content=sec,
+                content=part,
                 keywords=keywords,
                 entity_type=entity_type
-            )
-        )
+            ))
     return chunks
 
 def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
