@@ -36,7 +36,7 @@ ENV PYTHONUNBUFFERED=1 \
     CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app"
 
 # Pre-seed hospital database, 54,885 DAV national drugs, and clinical monographs at build time
-RUN python -c "import asyncio; from app.database import engine, Base; from app.seed import seed; from app.seed_registry import seed_dav_registry_if_needed; async def init(): async with engine.begin() as conn: await conn.run_sync(Base.metadata.create_all); await seed(); seed_dav_registry_if_needed('/app/clinical_hospital.db'); asyncio.run(init())"
+RUN python init_db.py
 
 EXPOSE 8000
 
