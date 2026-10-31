@@ -35,9 +35,15 @@ from app.services.scenarios.case_prescription_inquiry import PrescriptionInquiry
 from app.services.scenarios.case_coldchain_telemetry import ColdChainTelemetryScenario
 from app.services.scenarios.case_coldchain_quarantine import ColdChainQuarantineScenario
 from app.services.scenarios.case_adr import AdrReportingScenario
+from app.services.scenarios.case_fever_triage import FeverTriageScenario
+from app.services.scenarios.case_headache_pain import HeadachePainScenario
+from app.services.scenarios.case_oncology_specialty import OncologySpecialtyScenario
 
 SCENARIOS: List[BaseScenario] = [
     MedicationDeicticFollowupScenario(), # Bắt các câu hỏi anaphora "thuốc này", "nó"
+    FeverTriageScenario(),
+    HeadachePainScenario(),
+    OncologySpecialtyScenario(),
     CeftriaxoneCalciumScenario(),
     RedManScenario(),
     StatinFoodScenario(),

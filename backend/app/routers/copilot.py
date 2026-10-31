@@ -132,13 +132,19 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     is_deep_pharmacology = any(w in lower_query for w in [
         "thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng",
         "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp",
-        "uống chung", "dùng chung", "chống chỉ định", "dị ứng chéo"
+        "uống chung", "dùng chung", "chống chỉ định", "dị ứng chéo",
+        "kháng sinh", "chống viêm", "hạ huyết áp", "uống gì", "dùng gì", "gợi ý"
     ]) or any(c in lower_query for c in [" và ", " với ", " cùng ", " kèm "])
-    has_drug_ask = any(w in lower_query for w in [
-        "thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "thuốc", "về thuốc",
-        "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "uống thế nào", "dùng thế nào",
-        "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không"
-    ]) or (matched_med is not None and is_med_info and not is_deep_pharmacology)
+    has_drug_ask = (
+        lower_query.startswith("thuốc ")
+        or " thuốc " in lower_query
+        or any(w in lower_query for w in [
+            "thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "về thuốc",
+            "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "uống thế nào", "dùng thế nào",
+            "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không"
+        ])
+        or (matched_med is not None and is_med_info and not is_deep_pharmacology)
+    )
     if (has_sdk or has_drug_ask) and not is_deep_pharmacology:
         return await lookup_drug_authoritative(query, db, session_id=session_id)
 
