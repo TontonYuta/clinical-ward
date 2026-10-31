@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  clinical-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clinical_ward_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite+aiosqlite:////app/clinical_hospital.db
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app
+    volumes:
+      # Persistent storage for hospital database and custom DDI rules
+      - clinical_data:/app/data
+      - clinical_db:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  clinical_data:
+  clinical_db:

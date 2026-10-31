@@ -7,7 +7,7 @@ import { loadOfflineRegistry } from '../components/Modals/NationalDrugRegistry/o
  */
 
 const defaultBaseUrl = '/api/v1';
-export const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || defaultBaseUrl;
+export const API_BASE_URL = (typeof import.meta !== 'undefined' && ((import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL)) || defaultBaseUrl;
 const ROOT_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 
 function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {

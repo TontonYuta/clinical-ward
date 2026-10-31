@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: clinical-ward-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: CORS_ORIGINS
+        value: https://clinical-ward.vercel.app,http://localhost:3000,http://localhost:3001
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:////app/clinical_hospital.db

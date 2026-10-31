@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Tag, ExternalLink, AlertCircle, Loader2 } from 'lucide-react';
 import { getDavPdfUrl } from '../../../config/clinicalVerification';
+import { API_BASE_URL } from '../../../services/api';
 
 interface DavDocumentActionButtonsProps {
   hdsdPath?: string;
@@ -34,7 +35,7 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
     let active = true;
     setIsResolving(true);
 
-    fetch(`/api/v1/registry/${encodeURIComponent(nationalCode)}/documents`, { credentials: 'include' })
+    fetch(`${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}/documents`, { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active) return;

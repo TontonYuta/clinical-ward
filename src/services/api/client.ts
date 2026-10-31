@@ -4,7 +4,7 @@
  * Unified HTTP API Client with Error Guarding & Timeouts
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || '/api/v1';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || (import.meta.env.VITE_API_URL as string) || '/api/v1';
 
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
