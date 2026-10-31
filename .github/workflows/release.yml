@@ -5,11 +5,6 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag (e.g. v1.0.0)'
-        required: true
-        default: 'v1.0.0'
 
 permissions:
   contents: write
@@ -52,20 +47,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
-          releaseName: 'Clinical Ward Desktop ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}'
+          tagName: "${{ github.ref_name }}"
+          releaseName: "Clinical Ward Desktop ${{ github.ref_name }}"
           releaseBody: |
             🏥 **Clinical Ward Desktop Application (Windows .exe)**
-            
+
             Phiên bản ứng dụng máy tính dành cho Trạm Làm Việc Lâm Sàng Bệnh Viện Thông Minh.
-            
+
             ### Tính Năng Nổi Bật:
             - **Chuẩn Dược Lâm Sàng:** Tuân thủ Thông tư 22/2011/TT-BYT và Quyết định 5948/QĐ-BYT.
             - **Kiểm tra tương tác thuốc (CDSS / DDI):** CSDL 633 cặp tương tác chống chỉ định / thận trọng nghiêm trọng.
             - **Quản lý cơ số tủ trực:** Quản lý thuốc gây nghiện / hướng tâm thần (TT 20/2017/TT-BYT), đối soát nợ vỏ ống ampoule.
             - **Chuỗi lạnh vắc xin:** Giám sát nhiệt độ 2°C - 8°C theo thời gian thực (TT 36/2018/TT-BYT).
-            - **Kết nối Cloud API:** Đồng bộ tự động với Render Backend Service (`https://clinical-ward-api.onrender.com`).
-            
+            - **Kết nối Cloud API:** Đồng bộ tự động với Render Backend Service (https://clinical-ward-api.onrender.com).
+
             ### Hướng Dẫn Cài Đặt:
             1. Tải tệp cài đặt `ClinicalWard_1.0.0_x64-setup.exe` bên dưới.
             2. Chạy tệp `.exe` và làm theo hướng dẫn trên màn hình.
