@@ -191,7 +191,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* 4. Settings Modal */}
-      <ChatSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onKeyUpdated={() => setCloudActive(isCloudAIAvailable())} />
+      <ChatSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };

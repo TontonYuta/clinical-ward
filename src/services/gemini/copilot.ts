@@ -4,12 +4,7 @@
  * Tra cứu Trợ lý Lâm sàng Gemini AI với LRU/TTL Response Cache (<=80 LOC)
  */
 
-import { GoogleGenAI } from '@google/genai';
-import {
-  getGeminiApiKey,
-  CLINICAL_SYSTEM_INSTRUCTION,
-  callGeminiWithFallback
-} from './config';
+import { queryPureRagApi } from '../api';
 
 export interface ClinicalContextOptions {
   activeDebtsCount?: number;
@@ -32,11 +27,6 @@ export async function askGeminiClinicalCopilot(
   query: string,
   clinicalContext?: ClinicalContextOptions
 ): Promise<string | null> {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-    return null;
-  }
-
   let contextStr = '';
   const isShiftQuery = /ca trực|giao ban|đối soát|tồn đọng|khoa phòng|bàn giao|tổng quan/i.test(query);
   if (clinicalContext && isShiftQuery) {
@@ -50,15 +40,8 @@ export async function askGeminiClinicalCopilot(
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const reply = await callGeminiWithFallback(ai, {
-      contents: `${query}${contextStr}`,
-      config: {
-        systemInstruction: CLINICAL_SYSTEM_INSTRUCTION,
-        temperature: 0.2,
-        maxOutputTokens: 800
-      }
-    });
+    const result = await queryPureRagApi(`${query}${contextStr}`);
+    const reply = result?.answer || null;
 
     if (reply) {
       if (COPILOT_RESPONSE_CACHE.size >= MAX_CACHE_ENTRIES) {

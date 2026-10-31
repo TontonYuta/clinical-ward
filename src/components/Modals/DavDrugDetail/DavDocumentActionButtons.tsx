@@ -34,7 +34,7 @@ export const DavDocumentActionButtons: React.FC<DavDocumentActionButtonsProps> =
     let active = true;
     setIsResolving(true);
 
-    fetch(`/api/v1/registry/${encodeURIComponent(nationalCode)}/documents`)
+    fetch(`/api/v1/registry/${encodeURIComponent(nationalCode)}/documents`, { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active) return;

@@ -50,6 +50,7 @@ class RagResult:
     kg_entities: list[str] = field(default_factory=list)
     confidence_score: float = 0.95
     legal_basis: str = ""
+    rag_grounded: bool = True
 
     def to_response_dict(self) -> dict:
         return {
@@ -59,5 +60,5 @@ class RagResult:
             "kg_entities": self.kg_entities,
             "confidence_score": self.confidence_score,
             "legal_basis": self.legal_basis,
-            "rag_grounded": True
+            "rag_grounded": self.rag_grounded
         }

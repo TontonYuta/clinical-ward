@@ -1,8 +1,13 @@
 from contextlib import asynccontextmanager
+import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from app.config import settings
+from app.security.http_headers import SecurityHeadersMiddleware
+from app.security.auth import AuthenticationMiddleware, issue_token, verify_password
+from fastapi import HTTPException, Request, Response
+from pydantic import BaseModel, Field
 from app.database import engine, Base, AsyncSessionLocal
 from app.models.user import User
 from app.seed import seed
@@ -49,6 +54,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(
+    AuthenticationMiddleware,
+    enabled=settings.AUTH_REQUIRED,
+    secret_key=settings.SECRET_KEY,
+    users_json=settings.AUTH_USERS_JSON,
+    trusted_origins=settings.CORS_ORIGINS,
+)
+
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
@@ -72,6 +86,54 @@ app.include_router(prescription_advice.router, prefix=settings.API_V1_STR)
 app.include_router(patients.router, prefix=settings.API_V1_STR)
 app.include_router(sms.router, prefix=settings.API_V1_STR)
 app.include_router(clinical_ddi.router, prefix=settings.API_V1_STR)
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=1, max_length=256)
+
+@app.post(f"{settings.API_V1_STR}/auth/login")
+async def login(payload: LoginRequest, request: Request, response: Response):
+    if not settings.AUTH_REQUIRED:
+        raise HTTPException(status_code=404, detail="Authentication is not enabled")
+    origin = request.headers.get("origin")
+    if origin and origin.rstrip("/") not in {item.rstrip("/") for item in settings.CORS_ORIGINS} | {str(request.base_url).rstrip("/")}:
+        raise HTTPException(status_code=403, detail="Cross-origin request rejected")
+    try:
+        users = json.loads(settings.AUTH_USERS_JSON)
+    except (ValueError, TypeError):
+        users = {}
+    user = users.get(payload.username) if isinstance(users, dict) else None
+    encoded = user.get("password_hash", "") if isinstance(user, dict) else ""
+    if not isinstance(user, dict) or not verify_password(payload.password, encoded):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    role = user.get("role")
+    if role not in {"nurse", "doctor", "pharmacist", "biomedical_engineer", "director"}:
+        raise HTTPException(status_code=403, detail="Account role is invalid")
+    token = issue_token(payload.username, role, settings.SECRET_KEY, settings.AUTH_TOKEN_TTL_SECONDS)
+    response.set_cookie(
+        key="clinical_session", value=token, httponly=True, secure=settings.APP_ENV.lower() in {"production", "prod"},
+        samesite="strict", max_age=settings.AUTH_TOKEN_TTL_SECONDS, path="/",
+    )
+    return {"username": payload.username, "role": role, "expires_in": settings.AUTH_TOKEN_TTL_SECONDS}
+
+@app.get(f"{settings.API_V1_STR}/auth/me")
+async def auth_me(request: Request):
+    if not settings.AUTH_REQUIRED:
+        return {"enabled": False, "authenticated": True, "username": "local", "role": "nurse"}
+    token = request.cookies.get("clinical_session")
+    authorization = request.headers.get("authorization", "")
+    if authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    from app.security.auth import verify_token
+    user = verify_token(token or "", settings.SECRET_KEY)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return {"enabled": True, "authenticated": True, "username": user.username, "role": user.role}
+
+@app.post(f"{settings.API_V1_STR}/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie("clinical_session", path="/", httponly=True, secure=settings.APP_ENV.lower() in {"production", "prod"}, samesite="strict")
+    return {"status": "logged_out"}
 
 import os
 from fastapi.staticfiles import StaticFiles

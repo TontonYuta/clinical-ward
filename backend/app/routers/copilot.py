@@ -175,10 +175,20 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
 
 @router.post("/rag", response_model=RagResponse)
 async def query_pure_clinical_rag(payload: RagQuery):
+    guard_res = validate_input_guardrail(payload.query, user_role=payload.user_role)
+    if not guard_res.is_safe:
+        return RagResponse(
+            query=payload.query,
+            answer=guard_res.safe_response or "Yêu cầu bị chặn bởi rào chắn an toàn.",
+            citations=[], kg_entities=[], confidence_score=0.0,
+            legal_basis="Rào chắn an toàn đầu vào", rag_grounded=False
+        )
     from app.services.rag import execute_clinical_rag
     res = await execute_clinical_rag(
-        query=payload.query,
+        query=guard_res.sanitized_query,
         patient_info=payload.patient_info,
         user_role=payload.user_role
     )
-    return RagResponse(**res.to_response_dict())
+    response = RagResponse(**res.to_response_dict())
+    response.answer = validate_output_guardrail(response.answer, guard_res.sanitized_query)
+    return response

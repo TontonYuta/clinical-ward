@@ -20,6 +20,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
   try {
     const response = await fetch(url, {
       ...fetchOptions,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(fetchOptions.headers || {}),

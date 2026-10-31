@@ -25,7 +25,9 @@ class Settings(BaseModel):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "bme_pharmacy_audit_secret_key_2026")
     APP_ENV: str = os.getenv("APP_ENV", "development")
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}")
-    GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY") or os.getenv("VITE_GEMINI_API_KEY")
+    # Never read browser-prefixed VITE secrets on the backend: VITE values are
+    # intended for public frontend bundles and may be exposed to every user.
+    GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
     CORS_ORIGINS: list[str] = [
         origin.strip() for origin in os.getenv(
             "CORS_ORIGINS",
@@ -35,6 +37,9 @@ class Settings(BaseModel):
     # Required to mutate the clinical DDI catalog. Keep unset in deployments
     # where catalog updates are not enabled.
     DDI_ADMIN_TOKEN: str = os.getenv("DDI_ADMIN_TOKEN", "")
+    AUTH_REQUIRED: bool = os.getenv("AUTH_REQUIRED", "false").strip().lower() in {"1", "true", "yes", "on"}
+    AUTH_USERS_JSON: str = os.getenv("AUTH_USERS_JSON", "{}")
+    AUTH_TOKEN_TTL_SECONDS: int = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "3600"))
     DAV_CATALOG_DB_PATH: str = os.getenv("DAV_CATALOG_DB_PATH", "")
     DAV_CATALOG_RUN_ID: str = os.getenv("DAV_CATALOG_RUN_ID", "dav-canonical-20261030-v12")
 

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, UserRound } from 'lucide-react';
+import { ChevronDown, UserRound, LogOut } from 'lucide-react';
 import { UserRole } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
 
@@ -12,13 +12,14 @@ interface SidebarFooterProps {
   isCollapsed: boolean;
   currentUserRole: UserRole;
   onSelectUserRole?: (role: UserRole) => void;
+  onLogout?: () => Promise<void>;
   onCloseMobile?: () => void;
 }
 
 const ROLE_OPTIONS: UserRole[] = ['nurse', 'pharmacist', 'doctor', 'biomedical_engineer', 'director'];
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({
-  isCollapsed, currentUserRole, onSelectUserRole, onCloseMobile,
+  isCollapsed, currentUserRole, onSelectUserRole, onLogout, onCloseMobile,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
@@ -36,6 +37,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700"><UserRound className="h-4 w-4" /></span>
         {!isCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{profile.name}</span><span className="block truncate text-xs text-slate-500">{profile.roleName}</span></span><ChevronDown className="h-4 w-4 text-slate-500" /></>}
       </button>
+      {onLogout && <button type="button" onClick={() => void onLogout()} className="mt-1 flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-slate-600 hover:bg-red-50 hover:text-red-700"><LogOut className="h-4 w-4" />{!isCollapsed && 'Đăng xuất'}</button>}
     </div>
   );
 };

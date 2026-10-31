@@ -70,7 +70,7 @@ export function saveAdviceLocally(advice: PatientPrescriptionAdvice): void {
 export async function savePrescriptionAdviceToDb(advice: PatientPrescriptionAdvice): Promise<boolean> {
   saveAdviceLocally(advice);
   try {
-    const res = await fetch(`${API_BASE_URL}/prescription-advice`, {
+    const res = await fetch(`${API_BASE_URL}/prescription-advice`, { credentials: 'include',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(advice)
@@ -83,7 +83,7 @@ export async function savePrescriptionAdviceToDb(advice: PatientPrescriptionAdvi
 
 export async function fetchSavedPrescriptionAdvices(): Promise<PatientPrescriptionAdvice[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/prescription-advice`);
+    const res = await fetch(`${API_BASE_URL}/prescription-advice`, { credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
@@ -116,7 +116,7 @@ export async function sendMedicationAdviceEmail(
   savePrescriptionAdviceToDb(advice);
 
   try {
-    const res = await fetch(`${API_BASE_URL}/prescription-advice/send-email`, {
+    const res = await fetch(`${API_BASE_URL}/prescription-advice/send-email`, { credentials: 'include',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

@@ -1,7 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class CopilotQuery(BaseModel):
-    query: str
+    query: str = Field(..., min_length=1, max_length=1500)
     user_role: str = "nurse"
     user_name: str = "ĐD. Lê Thị Thu"
     session_id: str | None = None
@@ -36,11 +36,11 @@ class CopilotResponse(BaseModel):
     abstention_reason: str | None = None
 
 class RagQuery(BaseModel):
-    query: str
+    query: str = Field(..., min_length=1, max_length=1500)
     user_role: str = "nurse"
     user_name: str = "ĐD. Lê Thị Thu"
     patient_info: dict | None = None
-    top_k: int = 4
+    top_k: int = Field(default=4, ge=1, le=8)
 
 class RagResponse(BaseModel):
     query: str

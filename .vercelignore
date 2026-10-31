@@ -21,3 +21,14 @@
 *.pyc
 /backend/data/knowledge_base/*.pdf
 /artifacts/**
+/.venv
+/venv
+/.vercel
+/.vercel_python_packages
+/.esms_browser_profile
+/backend/clinical_hospital.db*
+/artifacts/**
+/data/vietnam_drug_registry/**
+/TEMP/**
+/playwright_audit/**
+/playwright_mobile/**

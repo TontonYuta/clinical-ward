@@ -330,7 +330,7 @@ export const INITIAL_PATIENTS: PatientProfile[] = [
 
 export async function fetchPatients(): Promise<PatientProfile[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/patients`);
+    const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {

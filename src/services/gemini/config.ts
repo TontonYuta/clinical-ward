@@ -37,48 +37,21 @@ export function getActiveGeminiModel(): string {
 }
 
 export async function callGeminiWithFallback(
-  ai: any,
-  params: { contents: any; config?: any }
+  _ai: unknown,
+  _params: { contents: unknown; config?: unknown }
 ): Promise<string | null> {
-  const models = [getActiveGeminiModel(), PRIMARY_GEMINI_MODEL, FALLBACK_GEMINI_MODEL, TERTIARY_GEMINI_MODEL];
-  const uniqueModels = Array.from(new Set(models));
-
-  for (const model of uniqueModels) {
-    try {
-      const res = await ai.models.generateContent({ model, ...params });
-      if (res?.text) return res.text.trim();
-    } catch (err: any) {
-      console.warn(`Model ${model} failed, attempting next model:`, err?.message || err);
-    }
-  }
+  // Browser calls to Gemini were removed. Requests now use the guarded backend.
   return null;
 }
 
 export function getGeminiApiKey(): string | null {
-  try {
-    return (
-      (typeof window !== 'undefined' && localStorage.getItem('clinical_gemini_api_key')) ||
-      (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-      (import.meta as any).env?.GEMINI_API_KEY ||
-      (typeof process !== 'undefined' && process.env?.VITE_GEMINI_API_KEY) ||
-      (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
-      (typeof window !== 'undefined' && (window as any)?.GEMINI_API_KEY) ||
-      null
-    );
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export function saveGeminiApiKey(key: string): void {
-  try {
-    localStorage.setItem('clinical_gemini_api_key', key.trim());
-  } catch (e) {
-    console.warn('Cannot persist Gemini API key to localStorage', e);
-  }
+  void key;
 }
 
 export function isCloudAIAvailable(): boolean {
-  const key = getGeminiApiKey();
-  return Boolean(key && key !== 'MY_GEMINI_API_KEY' && key.trim().length > 10);
+  return false;
 }

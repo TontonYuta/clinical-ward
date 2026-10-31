@@ -8,6 +8,7 @@ Module Bảo Mật & Phòng Thủ Cho Chatbot Lâm Sàng (Clinical AI Guardrails
 """
 
 import re
+import unicodedata
 from typing import NamedTuple, Optional
 
 class GuardrailResult(NamedTuple):
@@ -100,6 +101,10 @@ def sanitize_input_text(text: str) -> str:
     """Làm sạch đầu vào: loại bỏ ký tự điều khiển độc hại, null-byte, chuẩn hóa khoảng trắng."""
     if not text:
         return ""
+    # Normalize compatibility forms and strip invisible formatting characters
+    # before security scanning to reduce Unicode/zero-width filter bypasses.
+    text = unicodedata.normalize("NFKC", text)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
     # 1. Loại bỏ null byte \0 (căn nguyên của các lỗi lách parser C/Python)
     text = text.replace("\0", "").replace("\x00", "")
     # 2. Chuẩn hóa ký tự điều khiển ngoại trừ \n, \t
@@ -119,6 +124,8 @@ def detect_sql_injection(query: str) -> tuple[bool, Optional[str]]:
 
 def detect_prompt_injection(query: str) -> tuple[bool, Optional[str]]:
     """Phát hiện các mẫu Prompt Injection & Jailbreak độc hại."""
+    query = unicodedata.normalize("NFKC", query)
+    query = "".join(ch for ch in query if unicodedata.category(ch) != "Cf")
     for pattern, desc in PROMPT_INJECTION_PATTERNS:
         if re.search(pattern, query):
             return True, desc
@@ -205,6 +212,9 @@ def validate_output_guardrail(raw_response: str, query: str = "") -> str:
     """
     if not raw_response:
         return raw_response
+
+    if len(raw_response) > 12000:
+        raw_response = raw_response[:12000] + "\n\n[Phần còn lại đã được lược bỏ do giới hạn độ dài.]"
 
     # 1. Che giấu API Keys hoặc Bearer Tokens tiềm ẩn
     scrubbed = re.sub(r'(?i)(AIzaSy[A-Za-z0-9_-]{28,35}|sk-[A-Za-z0-9]{32,}|Bearer\s+[A-Za-z0-9_\-\.]{20,})', '[REDACTED_API_KEY]', raw_response)

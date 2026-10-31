@@ -17,6 +17,7 @@ export interface SidebarProps {
   onTabChange: (tab: DashboardTab) => void;
   currentUserRole: UserRole;
   onSelectUserRole?: (role: UserRole) => void;
+  onLogout?: () => Promise<void>;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onCloseMobile?: () => void;
@@ -38,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   currentUserRole,
   onSelectUserRole,
+  onLogout,
   isCollapsed,
   onToggleCollapse,
   onCloseMobile,
@@ -93,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       </div>
 
-      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onCloseMobile={onCloseMobile} />
+      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} onCloseMobile={onCloseMobile} />
     </aside>
   );
 };

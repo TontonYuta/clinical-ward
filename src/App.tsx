@@ -76,7 +76,7 @@ import {
   clearAllStoredState
 } from './utils/storage/appStatePersistence';
 
-export default function App() {
+export default function App({ authenticatedRole, onLogout }: { authenticatedRole?: UserRole; onLogout?: () => Promise<void> } = {}) {
   // State khôi phục bền vững từ URL Hash & LocalStorage Cache (SWR chống giật layout khi reload)
   const [debts, setDebts] = useState<DebtRecord[]>(getCachedDebts);
   const [tickets, setTickets] = useState<EquipmentTicket[]>(getCachedTickets);
@@ -86,7 +86,7 @@ export default function App() {
   const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>(getCachedAuditRecords);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(getInitialChatMessages);
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>(getInitialUserRole);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>(authenticatedRole || getInitialUserRole);
   const [authRequest, setAuthRequest] = useState<ClinicalAuthRequest | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(getInitialSidebarCollapsed);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -1645,7 +1645,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           currentTab={currentTab}
           onTabChange={(tab) => setCurrentTab(tab)}
           currentUserRole={currentUserRole}
-          onSelectUserRole={handleSelectUserRole}
+              onSelectUserRole={authenticatedRole ? undefined : handleSelectUserRole}
+              onLogout={authenticatedRole ? onLogout : undefined}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           debtCount={debts.filter(d => d.status === 'debt').length}

@@ -4,9 +4,7 @@
  * Điều Phối 12 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & CSDL Bệnh Viện Thực Tế (<=280 LOC)
  */
 
-import { GoogleGenAI } from '@google/genai';
 import { AgentActionCard, ColdChainMonitorState } from '../../types/clinical';
-import { getGeminiApiKey, callGeminiWithFallback, CLINICAL_SYSTEM_INSTRUCTION } from './config';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../patientService';
 import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';
 import { ProcessedQueryResult } from '../../utils/nlp/types';
@@ -55,7 +53,6 @@ export async function processGeminiClinicalScenario(
   if (!isClinicalScenarioQuery(lower)) return null;
 
   const patient = findPatientByNameOrQuery(lower, INITIAL_PATIENTS);
-  const apiKey = getGeminiApiKey();
 
   let patientEhr = '';
   if (patient) {
@@ -67,22 +64,10 @@ export async function processGeminiClinicalScenario(
 - Chức năng thận: eGFR ${patient.egfr} mL/min, Creatinine ${patient.creatinine} umol/L, Cân nặng ${patient.weightKg}kg]`;
   }
 
-  let aiAnswer: string | null = null;
-  if (apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      aiAnswer = await callGeminiWithFallback(ai, {
-        contents: `[Yêu cầu chuyên gia Dược Lâm Sàng] Phân tích ca bệnh dựa trên Dược Thư 2015, QĐ 2147/BYT, QĐ 5948/BYT, TT 51/2017:\n${patientEhr}\nCâu hỏi bác sĩ/điều dưỡng: "${rawInput}"`,
-        config: {
-          systemInstruction: CLINICAL_SYSTEM_INSTRUCTION,
-          temperature: 0.2,
-          maxOutputTokens: 800
-        }
-      });
-    } catch (e) {
-      console.warn('Gemini scenario query failed, applying local clinical rule fallback:', e);
-    }
-  }
+  // Do not send browser-held patient context or clinical questions directly
+  // to a third-party model. Scenarios use the deterministic local handling
+  // below; general RAG requests go through the guarded backend endpoint.
+  const aiAnswer: string | null = null;
 
   // 1. Kịch bản Tương kỵ Ceftriaxon - Ringer Lactat / Dung dịch Calci
   if (/ceftriaxon/i.test(lower) && /calci|calcium|ringer|lactat|tương kỵ|kết tủa|pha chung|truyền cùng/i.test(lower)) {
