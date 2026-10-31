@@ -23,19 +23,28 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
             matched_inns.append(inn)
             kg_entities.append(f"INN:{inn.upper()}")
 
-    # 1. Quét tương tác thuốc DDI từ câu truy vấn
-    for inn in matched_inns:
-        ddi_list = CLINICAL_DDI_GRAPH.get(inn, [])
+    # Resolve partner aliases against the canonical DDI graph as well.
+    for inn, ddi_list in CLINICAL_DDI_GRAPH.items():
+        if inn not in matched_inns:
+            continue
         for ddi in ddi_list:
-            if any(p in lower_query for p in ddi["partner_names"]):
+            partner_aliases = set(ddi["partner_names"])
+            for registry_key, registry_entry in DRUG_REGISTRY.items():
+                registry_aliases = [registry_key, *registry_entry.get("aliases", [])]
+                if any(alias in partner_aliases for alias in registry_aliases):
+                    partner_aliases.update(registry_aliases)
+            if any(alias in lower_query for alias in partner_aliases):
+                partner = ddi["partner"]
+                kg_entities.append(f"DDI:{inn.upper()}<->{partner.upper()}")
                 active_ddi_alerts.append({
                     "drug_a": inn.capitalize(),
-                    "drug_b": ddi["partner"].capitalize(),
+                    "drug_b": partner.capitalize(),
                     "severity": ddi["severity"],
                     "mechanism": ddi["mechanism"],
                     "consequence": ddi["consequence"]
                 })
-                kg_entities.append(f"DDI:{inn.upper()}<->{ddi['partner'].upper()}")
+
+    # DDI edges above are emitted only when a known partner alias is present.
 
     # 2. Quét chống chỉ định & cảnh báo cơ quan
     for inn in matched_inns:

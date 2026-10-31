@@ -109,3 +109,9 @@ def test_fts_index_refreshes_changed_content_when_chunk_count_is_unchanged(tmp_p
     refreshed = index.search_bm25("newquery", top_k=1)
     assert refreshed
     assert refreshed[0].chunk.title == "New title"
+
+def test_clinical_knowledge_graph_resolves_brand_alias_pair():
+    kg = expand_clinical_graph("Người uống Plavix dùng Nexium có làm giảm tác dụng không?")
+    assert "INN:CLOPIDOGREL" in kg["kg_entities"]
+    assert any(entity.startswith("DDI:CLOPIDOGREL<->") for entity in kg["kg_entities"])
+    assert any("esomeprazol" in alert["mechanism"].lower() or "clopidogrel" in alert["mechanism"].lower() for alert in kg["active_ddi_alerts"])
