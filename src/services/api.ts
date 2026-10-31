@@ -1,13 +1,14 @@
 import type { RegistryPageResponse } from '../types/registry';
 import { loadOfflineRegistry } from '../components/Modals/NationalDrugRegistry/offlineRegistry';
 
+import { getApiBaseUrl } from '../config/apiConfig';
+
 /**
- * API Service connecting Frontend to FastAPI Backend (port 8000)
+ * API Service connecting Frontend to Backend (Render / Local)
  * Adheres to Thông tư 22/2011, TT 20/2017, TT 36/2018, NĐ 98/2021, NĐ 151/2017, NĐ 130/2018
  */
 
-const defaultBaseUrl = '/api/v1';
-export const API_BASE_URL = (typeof import.meta !== 'undefined' && ((import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL)) || defaultBaseUrl;
+export const API_BASE_URL = getApiBaseUrl();
 const ROOT_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 
 function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {

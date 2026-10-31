@@ -1,0 +1,74 @@
+name: Release Clinical Ward Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Cargo dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://clinical-ward-api.onrender.com/api/v1
+
+      - name: Build Tauri App & Publish Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
+          releaseName: 'Clinical Ward Desktop ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}'
+          releaseBody: |
+            🏥 **Clinical Ward Desktop Application (Windows .exe)**
+            
+            Phiên bản ứng dụng máy tính dành cho Trạm Làm Việc Lâm Sàng Bệnh Viện Thông Minh.
+            
+            ### Tính Năng Nổi Bật:
+            - **Chuẩn Dược Lâm Sàng:** Tuân thủ Thông tư 22/2011/TT-BYT và Quyết định 5948/QĐ-BYT.
+            - **Kiểm tra tương tác thuốc (CDSS / DDI):** CSDL 633 cặp tương tác chống chỉ định / thận trọng nghiêm trọng.
+            - **Quản lý cơ số tủ trực:** Quản lý thuốc gây nghiện / hướng tâm thần (TT 20/2017/TT-BYT), đối soát nợ vỏ ống ampoule.
+            - **Chuỗi lạnh vắc xin:** Giám sát nhiệt độ 2°C - 8°C theo thời gian thực (TT 36/2018/TT-BYT).
+            - **Kết nối Cloud API:** Đồng bộ tự động với Render Backend Service (`https://clinical-ward-api.onrender.com`).
+            
+            ### Hướng Dẫn Cài Đặt:
+            1. Tải tệp cài đặt `ClinicalWard_1.0.0_x64-setup.exe` bên dưới.
+            2. Chạy tệp `.exe` và làm theo hướng dẫn trên màn hình.
+            3. Ứng dụng sẽ tự động tạo biểu tượng trên màn hình Desktop và sẵn sàng sử dụng.
+          releaseDraft: false
+          prerelease: false

@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import type { UserRole } from '../types/auth';
+import { API_BASE_URL as API } from '../config/apiConfig';
 type AuthState = { enabled: boolean; username: string; role: UserRole };
-const API = (import.meta.env.VITE_API_BASE_URL as string | undefined) || (import.meta.env.VITE_API_URL as string | undefined) || '/api/v1';
 
 export function AuthGate({ children }: { children: (auth: AuthState, logout: () => Promise<void>) => React.ReactNode }) {
   const [auth, setAuth] = useState<AuthState | null>(null);
