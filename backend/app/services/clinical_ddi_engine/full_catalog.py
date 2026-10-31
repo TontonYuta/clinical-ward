@@ -13,7 +13,7 @@ _DATA_DIR = os.path.join(_BASE_DIR, "data", "knowledge_base", "ddi_interactions"
 # Vercel excludes the large backend/data tree from the Python function bundle.
 # Ship the small, reviewed DDI exports under api/clinical_ddi_data and use them
 # only when the canonical working-tree path is unavailable.
-_SERVERLESS_DATA_DIR = os.path.abspath(os.path.join(_BASE_DIR, "api", "clinical_ddi_data"))
+_SERVERLESS_DATA_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "api", "clinical_ddi_data"))
 if not os.path.exists(_DATA_DIR) and os.path.exists(_SERVERLESS_DATA_DIR):
     _DATA_DIR = _SERVERLESS_DATA_DIR
 _FILE_31 = os.path.join(_DATA_DIR, "qd_5948_table_3_1_all_pairs.json")
