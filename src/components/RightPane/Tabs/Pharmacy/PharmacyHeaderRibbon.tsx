@@ -9,15 +9,12 @@ import { Search, Database } from 'lucide-react';
 import { PHARMACOLOGICAL_GROUPS, PharmacologicalGroupKey } from '../../../../utils/clinical/pharmacologicalClassification';
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
-export type CommodityFilter = 'all' | 'medication' | 'medical_supply';
 export type StatusFilter = 'all' | 'near_expiry' | 'low_stock';
 export type DavRegulatoryFilter = 'all' | 'controlled' | 'emergency' | 'cold_chain' | 'high_alert' | 'iv_fluid';
 
 interface PharmacyHeaderRibbonProps {
   warehouse: WarehouseFilter;
   setWarehouse: (w: WarehouseFilter) => void;
-  commodity: CommodityFilter;
-  setCommodity: (c: CommodityFilter) => void;
   status: StatusFilter;
   setStatus: (s: StatusFilter) => void;
   pharmacologicalGroup: PharmacologicalGroupKey;
@@ -34,7 +31,7 @@ interface PharmacyHeaderRibbonProps {
 }
 
 export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
-  warehouse, setWarehouse, commodity, setCommodity, status, setStatus,
+  warehouse, setWarehouse, status, setStatus,
   pharmacologicalGroup, setPharmacologicalGroup, davFilter, setDavFilter,
   searchQuery, setSearchQuery, nearExpiryCount, locations, location, setLocation,
   onOpenNationalRegistry,
@@ -59,9 +56,6 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
         </div>
         <select aria-label="Vị trí kho" value={location} onChange={(e) => setLocation(e.target.value)} className="min-h-11 max-w-[220px] bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
           <option value="all">Tất cả vị trí</option>{locations.map((value) => <option key={value} value={value}>{value}</option>)}
-        </select>
-        <select aria-label="Danh mục" value={commodity} onChange={(e) => setCommodity(e.target.value as CommodityFilter)} className="min-h-11 bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
-          <option value="all">Thuốc và vật tư</option><option value="medication">Thuốc</option><option value="medical_supply">Vật tư y tế</option>
         </select>
         <select aria-label="Trạng thái tồn" value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} className="min-h-11 bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
           <option value="all">Tất cả tồn</option><option value="near_expiry">Cận hạn ({nearExpiryCount})</option><option value="low_stock">Dưới tồn tối thiểu</option>

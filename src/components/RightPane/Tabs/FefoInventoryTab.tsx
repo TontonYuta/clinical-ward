@@ -14,7 +14,6 @@ import { PrintableFormType } from '../../Modals/PrintableFormModal';
 import {
   PharmacyHeaderRibbon,
   WarehouseFilter,
-  CommodityFilter,
   StatusFilter,
   DavRegulatoryFilter,
 } from './Pharmacy/PharmacyHeaderRibbon';
@@ -35,7 +34,6 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   batches, onDispatchBatch, onRestockBatches, onOpenPrintForm, isAudioMuted, onOpenSafetyGuide,
 }) => {
   const [warehouse, setWarehouse] = useState<WarehouseFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_warehouse') as WarehouseFilter) || 'all' : 'all'));
-  const [commodity, setCommodity] = useState<CommodityFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_commodity') as CommodityFilter) || 'all' : 'all'));
   const [status, setStatus] = useState<StatusFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_status') as StatusFilter) || 'all' : 'all'));
   const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_pharm_group') as PharmacologicalGroupKey) || 'all' : 'all'));
   const [davFilter, setDavFilter] = useState<DavRegulatoryFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_dav_filter') as DavRegulatoryFilter) || 'all' : 'all'));
@@ -49,14 +47,13 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   useEffect(() => {
     try {
       sessionStorage.setItem('fefo_warehouse', warehouse);
-      sessionStorage.setItem('fefo_commodity', commodity);
       sessionStorage.setItem('fefo_status', status);
       sessionStorage.setItem('fefo_pharm_group', pharmGroup);
       sessionStorage.setItem('fefo_dav_filter', davFilter);
       sessionStorage.setItem('fefo_search', searchQuery);
       sessionStorage.setItem('fefo_location', location);
     } catch {}
-  }, [warehouse, commodity, status, pharmGroup, davFilter, searchQuery, location]);
+  }, [warehouse, status, pharmGroup, davFilter, searchQuery, location]);
 
   const filteredBatches = useMemo(() => {
     return batches.filter((batch) => {
@@ -70,16 +67,11 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
 
       if (location !== 'all' && batch.warehouseLocation.trim() !== location) return false;
 
-      // 2. Bóc tách Thuốc vs Vật tư y tế
-      const isSupply = batch.commodityType === 'medical_supply' || batch.category === 'Vật tư tiêu hao' || batch.category === 'Chỉ phẫu thuật & Khâu';
-      if (commodity === 'medication' && isSupply) return false;
-      if (commodity === 'medical_supply' && !isSupply) return false;
-
-      // 3. Trạng thái FEFO / Mức Min
+      // 2. Trạng thái FEFO / Mức Min
       if (status === 'near_expiry' && !batch.isNearExpiry) return false;
       if (status === 'low_stock' && !(batch.isLowStock || batch.currentStock <= batch.minThreshold)) return false;
 
-      // 4. Phân nhóm tác dụng dược lý lâm sàng (ATC WHO & DTQG)
+      // 3. Phân nhóm tác dụng dược lý lâm sàng (ATC WHO & DTQG)
       if (pharmGroup !== 'all') {
         const grp = resolvePharmacologicalGroup(
           batch.atcCode,
@@ -113,7 +105,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
 
       return true;
     });
-  }, [batches, warehouse, location, commodity, status, pharmGroup, davFilter, searchQuery]);
+  }, [batches, warehouse, location, status, pharmGroup, davFilter, searchQuery]);
 
   const nearExpiryBatches = useMemo(() => batches.filter((b) => b.isNearExpiry), [batches]);
   const lowStockBatches = useMemo(
@@ -132,7 +124,6 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
     <div className="flex flex-col h-full overflow-hidden gap-1.5 w-full">
       <PharmacyHeaderRibbon
         warehouse={warehouse} setWarehouse={setWarehouse}
-        commodity={commodity} setCommodity={setCommodity}
         status={status} setStatus={setStatus}
         pharmacologicalGroup={pharmGroup} setPharmacologicalGroup={setPharmGroup}
         davFilter={davFilter} setDavFilter={setDavFilter}
@@ -163,13 +154,9 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         <div className="overflow-x-auto overflow-y-auto flex-1 w-full">
           <table className="w-full min-w-[1520px] table-fixed text-left text-sm border-collapse">
             <colgroup>
-              <col style={{ width: '70px' }} />
-              <col style={{ width: '190px' }} />
-              <col className="w-[30%]" style={{ minWidth: '360px' }} />
-              <col style={{ width: '220px' }} />
-              <col style={{ width: '270px' }} />
-              <col style={{ width: '200px' }} />
-              <col style={{ width: '240px' }} />
+              <col style={{ width: '70px' }} /><col style={{ width: '190px' }} />
+              <col className="w-[30%]" style={{ minWidth: '360px' }} /><col style={{ width: '220px' }} />
+              <col style={{ width: '270px' }} /><col style={{ width: '200px' }} /><col style={{ width: '240px' }} />
             </colgroup>
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr className="font-semibold text-sm tracking-normal">
@@ -203,23 +190,9 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         </div>
       </div>
 
-      <RestockProposalModal
-        isOpen={isRestockModalOpen} onClose={() => setIsRestockModalOpen(false)}
-        lowStockBatches={lowStockBatches} onConfirmRestock={(ids) => onRestockBatches?.(ids)}
-        onOpenPrintForm={onOpenPrintForm} isAudioMuted={isAudioMuted}
-      />
-      <NationalDrugRegistryModal
-        isOpen={isRegistryModalOpen} onClose={() => setIsRegistryModalOpen(false)}
-        onSelectMedication={onOpenSafetyGuide}
-      />
-      {selectedBatch && (
-        <DavDrugDetailModal
-          isOpen={selectedBatch !== null}
-          onClose={() => setSelectedBatch(null)}
-          batch={selectedBatch}
-          onQuickDispatch={handleQuickDispatch}
-        />
-      )}
+      <RestockProposalModal isOpen={isRestockModalOpen} onClose={() => setIsRestockModalOpen(false)} lowStockBatches={lowStockBatches} onConfirmRestock={(ids) => onRestockBatches?.(ids)} onOpenPrintForm={onOpenPrintForm} isAudioMuted={isAudioMuted} />
+      <NationalDrugRegistryModal isOpen={isRegistryModalOpen} onClose={() => setIsRegistryModalOpen(false)} onSelectMedication={onOpenSafetyGuide} />
+      {selectedBatch && <DavDrugDetailModal isOpen={selectedBatch !== null} onClose={() => setSelectedBatch(null)} batch={selectedBatch} onQuickDispatch={handleQuickDispatch} />}
     </div>
   );
 };
