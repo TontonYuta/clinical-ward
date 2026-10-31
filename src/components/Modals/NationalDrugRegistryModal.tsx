@@ -69,7 +69,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
     let loaded = false;
     try {
       const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, pharmGroup, page, pageSize: PAGE_SIZE, onlyInWarehouse });
-      if (data && Array.isArray(data.items) && (data.items.length > 0 || data.total > 0)) {
+      if (data && Array.isArray(data.items)) {
         const mapped: MasterMedication[] = data.items.map((i: any) => ({
           ...i, id: i.id, nationalCode: i.national_code || i.nationalCode, brandName: i.brand_name || i.brandName,
           activeIngredient: i.active_ingredient || i.activeIngredient, dosageForm: i.dosage_form || i.dosageForm,
@@ -78,7 +78,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           hospitalStockCount: (i.hospital_stock_by_unit || []).reduce((total: number, stock: { quantity: number; unit: string }) => total + (stock.unit === (i.standard_unit || i.standardUnit || 'Viên') ? stock.quantity : 0), 0),
           isControlled: !!(i.is_controlled ?? i.isControlled), isHighAlert: !!(i.is_high_alert ?? i.isHighAlert),
           isCrashCart: !!(i.is_crash_cart ?? i.isCrashCart), defaultDoseQty: 1, wardStockCount: 0,
-          searchAliases: [(i.brand_name || i.brandName || '').toLowerCase()], packagingSpec: i.packaging_spec || i.packagingSpec,
+          searchAliases: [((i.brand_name || i.brandName || '') as string).toLowerCase()], packagingSpec: i.packaging_spec || i.packagingSpec,
           standardPharmacopeia: i.standard_pharmacopeia || i.standardPharmacopeia, shelfLife: i.shelf_life || i.shelfLife,
           manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name || i.applicantName,
           approvalDecision: i.approval_decision || i.approvalDecision, hdsdPath: i.hdsd_path || i.hdsdPath,
@@ -103,9 +103,9 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
         setCacheStatus('static');
         if (isManualSync) { setSyncNotice('Danh mục DAV bản chuẩn hóa đã được tải. API nghiệp vụ chưa cung cấp trạng thái tồn kho trực tiếp.'); setTimeout(() => setSyncNotice(null), 5000); }
       } catch {
-        if (!cached) { setDrugs([]); setTotalCount(0); setTotalPages(1); setHospitalStockDrugCount(0); }
+        setDrugs([]); setTotalCount(0); setTotalPages(1); setHospitalStockDrugCount(0);
         setCacheStatus('offline');
-        setSyncNotice('Chưa tải được dữ liệu mới từ CSDL.');
+        setSyncNotice('Không tải được danh mục thuốc. Kiểm tra kết nối hoặc thử lại.');
       }
     }
     setLoading(false); setIsSyncing(false);
