@@ -27,6 +27,10 @@
 /.vercel_python_packages
 /.esms_browser_profile
 /backend/clinical_hospital.db*
+/backend/hospital_clinical.db*
+/backend/**/__pycache__/**
+/backend/.pytest_cache/**
+/backend/.venv/**
 /artifacts/**
 /data/vietnam_drug_registry/**
 /TEMP/**
