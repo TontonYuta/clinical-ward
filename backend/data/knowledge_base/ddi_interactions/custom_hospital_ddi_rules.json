@@ -1,0 +1,20 @@
+[
+  {
+    "stt": 1898,
+    "drug_1": "ThuocThuNghiemA",
+    "drug_2": "ThuocThuNghiemB",
+    "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
+    "consequence": "Thử nghiệm nguy cơ ngộ độc",
+    "action": "Chống chỉ định thử nghiệm",
+    "legal_source": "Quy chế Bệnh viện Đa khoa 2026"
+  },
+  {
+    "stt": 1899,
+    "drug_1": "Methadon",
+    "drug_2": "Voriconazol",
+    "mechanism": "Voriconazol ức chế mạnh CYP3A4, CYP2C19 và CYP2C9 làm giảm độ thanh thải Methadon",
+    "consequence": "Tăng nồng độ Methadon huyết tương gấp 3-4 lần, suy hô hấp cấp, ngừng thở và tử vong",
+    "action": "Tránh phối hợp. Nếu bắt buộc, giảm ngay 50% liều Methadon và theo dõi sát SpO2",
+    "legal_source": "Cảnh báo Dược thư Quốc gia & FDA Boxed Warning"
+  }
+]

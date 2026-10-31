@@ -66,4 +66,23 @@ if (!hasTw) {
 }
 console.log('✅ Polypharmacy: Triple Whammy alert verified');
 
+// 6. Test Newly Added Interactions
+const alertSofos = evaluatePairDdi('Cordarone', 'Sovaldi');
+if (!alertSofos || alertSofos.severity !== 'CONTRAINDICATED') {
+  throw new Error('Sofosbuvir + Cordarone test failed');
+}
+console.log('✅ New DDI: Cordarone + Sovaldi -> CONTRAINDICATED');
+
+const alertPax = evaluatePairDdi('Paxlovid', 'Simvastatin');
+if (!alertPax || alertPax.severity !== 'CONTRAINDICATED') {
+  throw new Error('Paxlovid + Simvastatin test failed');
+}
+console.log('✅ New DDI: Paxlovid + Simvastatin -> CONTRAINDICATED');
+
+const alertAllo = evaluatePairDdi('Zyloric', 'Imuran');
+if (!alertAllo || alertAllo.severity !== 'CONTRAINDICATED') {
+  throw new Error('Allopurinol + Imuran test failed');
+}
+console.log('✅ New DDI: Zyloric + Imuran -> CONTRAINDICATED');
+
 console.log('🎉 ALL CLIENT DDI ALGORITHM TESTS PASSED 100%!');

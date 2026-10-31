@@ -11,6 +11,7 @@ _BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 _DATA_DIR = os.path.join(_BASE_DIR, "data", "knowledge_base", "ddi_interactions")
 _FILE_31 = os.path.join(_DATA_DIR, "qd_5948_table_3_1_all_pairs.json")
 _FILE_32 = os.path.join(_DATA_DIR, "qd_5948_table_3_2_all_groups.json")
+_FILE_CUSTOM = os.path.join(_DATA_DIR, "custom_hospital_ddi_rules.json")
 
 _INDEX_31: dict[tuple[str, str], dict] = {}
 _CATALOG_LOADED = False
@@ -58,6 +59,17 @@ def _ensure_loaded():
                 _INDEX_31.setdefault((d1_first, d2_first), entry)
                 _INDEX_31.setdefault((d2_first, d1_first), entry)
 
+        # Nạp các quy tắc tùy chỉnh của bệnh viện nếu có
+        if os.path.exists(_FILE_CUSTOM):
+            with open(_FILE_CUSTOM, "r", encoding="utf-8") as f:
+                custom_rules = json.load(f)
+            for c in custom_rules:
+                d1 = _normalize_token(c.get("drug_1", ""))
+                d2 = _normalize_token(c.get("drug_2", ""))
+                if d1 and d2:
+                    _INDEX_31[(d1, d2)] = c
+                    _INDEX_31[(d2, d1)] = c
+
         _CATALOG_LOADED = True
     except Exception as e:
         print(f"[Warning] Không thể nạp qd_5948_table_3_1: {e}")
@@ -85,6 +97,32 @@ def lookup_official_ddi(inn_a: str, inn_b: str) -> Optional[dict]:
             return entry
 
     return None
+
+def register_custom_ddi(drug_a: str, drug_b: str, mechanism: str, consequence: str, action: str, evidence_source: str) -> dict:
+    _ensure_loaded()
+    norm_a = _normalize_token(drug_a)
+    norm_b = _normalize_token(drug_b)
+    entry = {
+        "stt": len(_INDEX_31) // 2 + 1000,
+        "drug_1": drug_a, "drug_2": drug_b,
+        "mechanism": mechanism, "consequence": consequence,
+        "action": action, "legal_source": evidence_source
+    }
+    _INDEX_31[(norm_a, norm_b)] = entry
+    _INDEX_31[(norm_b, norm_a)] = entry
+
+    # Lưu bền vững vào disk
+    existing = []
+    if os.path.exists(_FILE_CUSTOM):
+        try:
+            with open(_FILE_CUSTOM, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        except Exception:
+            existing = []
+    existing.append(entry)
+    with open(_FILE_CUSTOM, "w", encoding="utf-8") as f:
+        json.dump(existing, f, indent=2, ensure_ascii=False)
+    return entry
 
 def get_official_catalog_stats() -> dict:
     _ensure_loaded()

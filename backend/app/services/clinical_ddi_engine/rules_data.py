@@ -108,6 +108,27 @@ CLASS_DDI_RULES: list[dict] = [
         "mech": "Thuốc cản quang gây suy giảm chức năng thận cấp, làm tích lũy Metformin.",
         "conseq": "Nhiễm toan acid lactic đe dọa tính mạng (tỷ lệ tử vong lên tới 50%).",
         "action": "Ngừng Metformin trước 48 giờ chụp cản quang nếu eGFR < 60 mL/phút. Chỉ dùng lại sau 48h khi thận ổn định.", "source": "QĐ 5948/QĐ-BYT & Hướng dẫn ESUR"
+    },
+    {
+        "id": "RULE_AMIODARONE_SOFOSBUVIR", "class_a": "ANTIARRHYTHMIC_III", "class_b": "ANTIVIRAL_HCV",
+        "severity": "CONTRAINDICATED", "title": "AMIODARON + SOFOSBUVIR: NHỊP CHẬM NGUY KỊCH TỬ VONG",
+        "mech": "Hiệp đồng độc tính ức chế nút xoang và hệ thống dẫn truyền nhĩ thất.",
+        "conseq": "Nhịp chậm xoang kịch phát, bloc nhĩ thất độ 3, vô tâm thu đe dọa tính mạng.",
+        "action": "Chống chỉ định phối hợp tuyệt đối. Nếu bắt buộc, theo dõi monitor tim liên tục trong 48h.", "source": "Cảnh báo An Toàn FDA & QĐ 5948/QĐ-BYT"
+    },
+    {
+        "id": "RULE_PAXLOVID_STATIN", "class_a": "STRONG_CYP3A4_INHIBITOR", "class_b": "STATIN_CYP3A4",
+        "severity": "CONTRAINDICATED", "title": "PAXLOVID + SIMVASTATIN / ATORVASTATIN: TIÊU CƠ VÂN CẤP TỬ VONG",
+        "mech": "Ritonavir ức chế gần như hoàn toàn CYP3A4 làm tăng nồng độ Statin lên gấp hàng chục lần.",
+        "conseq": "Tiêu cơ vân cấp (Rhabdomyolysis), myoglobin niệu gây suy thận cấp vô niệu tử vong.",
+        "action": "Chống chỉ định phối hợp. Tạm ngừng Simvastatin/Atorvastatin ít nhất 12 giờ trước khi dùng Paxlovid.", "source": "Hướng Dẫn Điều Trị COVID-19 Bộ Y Tế & FDA EUA"
+    },
+    {
+        "id": "RULE_ALLOPURINOL_THIOPURINE", "class_a": "XANTHINE_OXIDASE_INHIBITOR", "class_b": "THIOPURINE",
+        "severity": "CONTRAINDICATED", "title": "ALLOPURINOL + AZATHIOPRIN / 6-MP: SUY TỦY XƯƠNG ÁC TÍNH",
+        "mech": "Allopurinol ức chế enzym Xanthine Oxidase ngăn cản chuyển hóa bất hoạt Azathioprin/6-MP.",
+        "conseq": "Tích lũy nồng độ Thiopurine cực cao gây ức chế tủy xương cấp tính, giảm 3 dòng tế bào máu tử vong.",
+        "action": "Tránh phối hợp. Nếu bắt buộc, giảm 75% liều Azathioprin (chỉ dùng 25% liều chuẩn) và theo dõi công thức máu hàng tuần.", "source": "Dược Thư Quốc Gia 2022 (QĐ 3445/QĐ-BYT) & QĐ 5948/QĐ-BYT"
     }
 ]
 

@@ -9,6 +9,7 @@ from app.services.clinical_ddi_engine import (
     evaluate_prescription, evaluate_pair, normalize_drug_entity,
     PatientClinicalContext
 )
+from app.services.clinical_ddi_engine.full_catalog import register_custom_ddi, get_official_catalog_stats
 
 router = APIRouter(prefix="/clinical-ddi", tags=["Tương Tác Thuốc & CDSS Lâm Sàng (QĐ 5948/QĐ-BYT)"])
 
@@ -138,3 +139,24 @@ def normalize_endpoint(name: str = Query(..., description="Tên thuốc hoặc b
         "is_p_gp_inhibitor": e.is_p_gp_inhibitor,
         "is_p_gp_substrate": e.is_p_gp_substrate
     }
+
+class RegisterCustomRuleRequest(BaseModel):
+    drug_a: str = Field(..., description="Tên thuốc / hoạt chất 1")
+    drug_b: str = Field(..., description="Tên thuốc / hoạt chất 2")
+    mechanism: str = Field(..., description="Cơ chế tương tác")
+    consequence: str = Field(..., description="Hậu quả lâm sàng")
+    action: str = Field(..., description="Khuyến cáo xử trí")
+    evidence_source: str = Field(..., description="Nguồn căn cứ y văn")
+
+@router.post("/register-rule")
+def register_rule_endpoint(req: RegisterCustomRuleRequest):
+    entry = register_custom_ddi(
+        drug_a=req.drug_a, drug_b=req.drug_b,
+        mechanism=req.mechanism, consequence=req.consequence,
+        action=req.action, evidence_source=req.evidence_source
+    )
+    return {"status": "success", "registered_rule": entry}
+
+@router.get("/catalog-stats")
+def catalog_stats_endpoint():
+    return get_official_catalog_stats()

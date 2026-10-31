@@ -66,6 +66,10 @@ const REGISTRY: Record<string, { display: string; aliases: string[]; classes: st
   furosemid: { display: 'Furosemid', aliases: ['furosemid', 'lasix'], classes: ['LOOP_DIURETIC'], risk: ['nephrotoxic'] },
   metformin: { display: 'Metformin', aliases: ['metformin', 'glucophage'], classes: ['BIGUANIDE'], risk: [] },
   can_quang: { display: 'Thuốc cản quang Iod', aliases: ['can quang', 'xenetix', 'omnipaque'], classes: ['CONTRAST'], risk: ['nephrotoxic'] },
+  sofosbuvir: { display: 'Sofosbuvir', aliases: ['sofosbuvir', 'sovaldi'], classes: ['ANTIVIRAL_HCV'], risk: [] },
+  paxlovid: { display: 'Paxlovid', aliases: ['paxlovid', 'nirmatrelvir', 'ritonavir'], classes: ['STRONG_CYP3A4_INHIBITOR'], risk: [] },
+  allopurinol: { display: 'Allopurinol', aliases: ['allopurinol', 'zyloric'], classes: ['XANTHINE_OXIDASE'], risk: [] },
+  azathioprin: { display: 'Azathioprin', aliases: ['azathioprin', 'imuran'], classes: ['THIOPURINE'], risk: [] },
 };
 
 export function normalizeDrug(raw: string): DrugEntity {
@@ -89,7 +93,10 @@ const CLASS_RULES = [
   { id: 'QUIN_THEO', cA: 'QUINOLONE', cB: 'THEOPHYLLINE', sev: 'MAJOR' as DdiSeverity, title: 'QUINOLON + THEOPHYLLIN: NGỘ ĐỘC CO GIẬT', m: 'Ức chế CYP1A2 giảm thải trừ theophyllin.', c: 'Loạn nhịp thất, co giật toàn thể.', a: 'Giảm 50% liều theophyllin.', s: 'QĐ 5948/QĐ-BYT' },
   { id: 'AMIOD_COLCH', cA: 'ANTIARR_III', cB: 'COLCHICINE', sev: 'MAJOR' as DdiSeverity, title: 'AMIODARON + COLCHICIN: NGỘ ĐỘC COLCHICIN ĐA TẠNG', m: 'Ức chế P-gp giảm thải trừ Colchicin.', c: 'Tiêu cơ vân, suy đa tạng tử vong.', a: 'Cấm dùng nếu suy gan hoặc suy thận.', s: 'QĐ 5948/QĐ-BYT' },
   { id: 'RAAS_K', cA: 'RAAS', cB: 'K_SPARING', sev: 'MAJOR' as DdiSeverity, title: 'RAAS + LỢI TIỂU GIỮ KALI: TĂNG KALI MÁU CẤP', m: 'Hiệp đồng giảm bài tiết kali tại ống góp.', c: 'Ngừng tim do tăng kali.', a: 'Theo dõi điện giải đồ K+.', s: 'QĐ 5948/QĐ-BYT' },
-  { id: 'MET_CONTRAST', cA: 'BIGUANIDE', cB: 'CONTRAST', sev: 'MODERATE' as DdiSeverity, title: 'METFORMIN + CẢN QUANG IOD: NHIỄM TOAN LACTIC', m: 'Thuốc cản quang gây suy thận làm tích lũy metformin.', c: 'Toan lactic tử vong.', a: 'Ngừng metformin 48h nếu eGFR < 60.', s: 'ESUR' }
+  { id: 'MET_CONTRAST', cA: 'BIGUANIDE', cB: 'CONTRAST', sev: 'MODERATE' as DdiSeverity, title: 'METFORMIN + CẢN QUANG IOD: NHIỄM TOAN LACTIC', m: 'Thuốc cản quang gây suy thận làm tích lũy metformin.', c: 'Toan lactic tử vong.', a: 'Ngừng metformin 48h nếu eGFR < 60.', s: 'ESUR' },
+  { id: 'AMIOD_SOFOS', cA: 'ANTIARR_III', cB: 'ANTIVIRAL_HCV', sev: 'CONTRAINDICATED' as DdiSeverity, title: 'AMIODARON + SOFOSBUVIR: NHỊP CHẬM NGUY KỊCH TỬ VONG', m: 'Hiệp đồng ức chế dẫn truyền tim.', c: 'Ngừng tim do nhịp chậm xoang.', a: 'Chống chỉ định tuyệt đối.', s: 'FDA & QĐ 5948' },
+  { id: 'PAX_STATIN', cA: 'STRONG_CYP3A4_INHIBITOR', cB: 'STATIN_3A4', sev: 'CONTRAINDICATED' as DdiSeverity, title: 'PAXLOVID + STATIN: TIÊU CƠ VÂN CẤP TỬ VONG', m: 'Ritonavir ức chế CYP3A4 tăng vọt nồng độ Statin.', c: 'Tiêu cơ vân, suy thận cấp vô niệu.', a: 'Chống chỉ định phối hợp.', s: 'Bộ Y Tế & FDA EUA' },
+  { id: 'ALLO_AZA', cA: 'XANTHINE_OXIDASE', cB: 'THIOPURINE', sev: 'CONTRAINDICATED' as DdiSeverity, title: 'ALLOPURINOL + AZATHIOPRIN: SUY TỦY XƯƠNG ÁC TÍNH', m: 'Ức chế Xanthine Oxidase tích lũy 6-MP.', c: 'Ức chế tủy xương cấp, nhiễm trùng huyết.', a: 'Tránh phối hợp. Nếu dùng giảm 75% liều Aza.', s: 'QĐ 5948 & Dược thư QG' }
 ];
 
 export function evaluatePairDdi(rawA: string, rawB: string, p?: PatientClinicalContext): DdiAlert | null {

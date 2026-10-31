@@ -108,3 +108,44 @@ def test_clinical_ddi_api_endpoints():
     assert audit_data["total_drugs"] == 3
     assert audit_data["synergy_count"] >= 0
     assert audit_data["has_contraindication"] is True
+
+def test_newly_registered_high_alert_ddis():
+    # 1. Cordarone + Sovaldi -> Nhịp chậm nguy kịch
+    alt_sofos = evaluate_pair("Cordarone 200mg", "Sovaldi 400mg")
+    assert alt_sofos is not None
+    assert alt_sofos.severity == DdiSeverity.CONTRAINDICATED
+    assert "NHỊP CHẬM" in alt_sofos.title
+
+    # 2. Paxlovid + Lipitor -> Tiêu cơ vân cấp
+    alt_pax = evaluate_pair("Paxlovid", "Lipitor 20mg")
+    assert alt_pax is not None
+    assert alt_pax.severity == DdiSeverity.CONTRAINDICATED
+    assert "TIÊU CƠ VÂN" in alt_pax.title
+
+    # 3. Allopurinol + Imuran -> Suy tủy xương
+    alt_allo = evaluate_pair("Zyloric 300mg", "Imuran 50mg")
+    assert alt_allo is not None
+    assert alt_allo.severity == DdiSeverity.CONTRAINDICATED
+    assert "SUY TỦY" in alt_allo.title
+
+def test_custom_rule_registration_endpoint():
+    # Đăng ký tương tác mới qua API
+    res = client.post("/api/v1/clinical-ddi/register-rule", json={
+        "drug_a": "ThuocThuNghiemA",
+        "drug_b": "ThuocThuNghiemB",
+        "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
+        "consequence": "Thử nghiệm nguy cơ ngộ độc",
+        "action": "Chống chỉ định thử nghiệm",
+        "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
+    })
+    assert res.status_code == 200
+    assert res.json()["status"] == "success"
+
+    # Kiểm tra check-pair phát hiện ngay lập tức
+    chk = client.post("/api/v1/clinical-ddi/check-pair", json={
+        "drug_a": "ThuocThuNghiemA 100mg",
+        "drug_b": "ThuocThuNghiemB 50mg"
+    })
+    assert chk.status_code == 200
+    assert chk.json()["has_interaction"] is True
+    assert "Thử nghiệm" in chk.json()["alert"]["mechanism"]
