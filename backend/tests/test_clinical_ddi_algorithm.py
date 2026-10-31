@@ -1,0 +1,97 @@
+"""
+Unit & Integration Tests for Clinical DDI & Polypharmacy Engine (<=195 LOC)
+"""
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+from app.services.clinical_ddi_engine import (
+    evaluate_prescription, evaluate_pair, normalize_drug_entity,
+    DdiSeverity, PatientClinicalContext
+)
+
+client = TestClient(app)
+
+def test_hierarchical_normalizer():
+    e1 = normalize_drug_entity("Plavix 75mg uống")
+    assert e1.canonical_inn == "clopidogrel"
+    assert "P2Y12_INHIBITOR" in e1.atc_classes
+    assert e1.brand_matched == "plavix"
+
+    e2 = normalize_drug_entity("Nexium 40mg")
+    assert e2.canonical_inn == "esomeprazol"
+    assert "PPI_CYP2C19" in e2.atc_classes
+
+    e3 = normalize_drug_entity("Cordarone 200mg")
+    assert e3.canonical_inn == "amiodaron"
+    assert "qt_prolonging" in e3.risk_flags
+    assert e3.is_p_gp_inhibitor is True
+
+def test_brand_name_ddi_contraindication():
+    # Plavix + Nexium
+    alert = evaluate_pair("Plavix 75mg", "Nexium 40mg")
+    assert alert is not None
+    assert alert.severity == DdiSeverity.CONTRAINDICATED
+    assert "CLOPIDOGREL + OMEPRAZOL" in alert.title
+
+    # Nitromint + Viagra
+    alert_nitro = evaluate_pair("Nitromint xịt", "Viagra 50mg")
+    assert alert_nitro is not None
+    assert alert_nitro.severity == DdiSeverity.CONTRAINDICATED
+
+    # Rocephin + Ringer Lactat
+    alert_rocephin = evaluate_pair("Rocephin 1g", "Ringer Lactat 500ml")
+    assert alert_rocephin is not None
+    assert alert_rocephin.severity == DdiSeverity.CONTRAINDICATED
+
+def test_safe_synergy_multimodal():
+    alert = evaluate_pair("Morphin 10mg tiêm", "Paracetamol 500mg viên")
+    assert alert is not None
+    assert alert.severity == DdiSeverity.SAFE_SYNERGY
+    assert "HIỆP ĐỒNG GIẢM ĐAU ĐA MÔ THỨC" in alert.title
+
+def test_patient_context_dynamic_escalation():
+    # Amiodarone + Colchicine bình thường -> MAJOR
+    normal_alert = evaluate_pair("Amiodaron", "Colchicin", PatientClinicalContext(egfr=90))
+    assert normal_alert is not None
+    assert normal_alert.severity == DdiSeverity.MAJOR
+    assert normal_alert.escalated_by_patient_context is False
+
+    # Amiodarone + Colchicine khi eGFR=25 -> Leo thang CONTRAINDICATED
+    renal_alert = evaluate_pair("Amiodaron", "Colchicin", PatientClinicalContext(egfr=25))
+    assert renal_alert is not None
+    assert renal_alert.severity == DdiSeverity.CONTRAINDICATED
+    assert renal_alert.escalated_by_patient_context is True
+    assert "eGFR=25" in str(renal_alert.escalation_reason)
+
+    # Metformin + Thuốc cản quang khi eGFR=30 -> CONTRAINDICATED
+    contrast_alert = evaluate_pair("Glucophage 850mg", "Xenetix 300", PatientClinicalContext(egfr=30))
+    assert contrast_alert is not None
+    assert contrast_alert.severity == DdiSeverity.CONTRAINDICATED
+
+def test_polypharmacy_cumulative_risk():
+    # Kéo dài QT cộng dồn: Amiodarone + Levofloxacin + Clarithromycin
+    rep_qt = evaluate_prescription(["Cordarone", "Cravit 500mg", "Klacid 500mg"])
+    assert any(p.syndrome_id == "POLY_QT_PROLONGATION" for p in rep_qt.polypharmacy_alerts)
+
+    # Triple Whammy trên thận: Enalapril + Furosemid + Diclofenac
+    rep_tw = evaluate_prescription(["Renitec 10mg", "Lasix 40mg", "Voltaren 75mg"])
+    assert any(p.syndrome_id == "POLY_TRIPLE_WHAMMY" for p in rep_tw.polypharmacy_alerts)
+
+def test_clinical_ddi_api_endpoints():
+    res_pair = client.post("/api/v1/clinical-ddi/check-pair", json={
+        "drug_a": "Plavix 75mg", "drug_b": "Nexium 40mg"
+    })
+    assert res_pair.status_code == 200
+    data = res_pair.json()
+    assert data["has_interaction"] is True
+    assert data["alert"]["severity"] == "CONTRAINDICATED"
+
+    res_audit = client.post("/api/v1/clinical-ddi/audit", json={
+        "drugs": ["Renitec", "Aldactone", "Panadol"],
+        "patient_context": {"serum_potassium": 5.4, "egfr": 40}
+    })
+    assert res_audit.status_code == 200
+    audit_data = res_audit.json()
+    assert audit_data["total_drugs"] == 3
+    assert audit_data["synergy_count"] >= 0
+    assert audit_data["has_contraindication"] is True

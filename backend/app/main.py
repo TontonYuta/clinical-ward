@@ -19,7 +19,8 @@ from app.routers import (
     registry,
     prescription_advice,
     patients,
-    sms
+    sms,
+    clinical_ddi
 )
 
 @asynccontextmanager
@@ -70,6 +71,7 @@ app.include_router(registry.router, prefix=settings.API_V1_STR)
 app.include_router(prescription_advice.router, prefix=settings.API_V1_STR)
 app.include_router(patients.router, prefix=settings.API_V1_STR)
 app.include_router(sms.router, prefix=settings.API_V1_STR)
+app.include_router(clinical_ddi.router, prefix=settings.API_V1_STR)
 
 import os
 from fastapi.staticfiles import StaticFiles

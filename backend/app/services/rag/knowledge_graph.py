@@ -2,9 +2,9 @@
 Clinical Knowledge Graph Layer (LightRAG & MedGraphRAG Pattern)
 Biểu diễn quan hệ Dược chất <-> Tương tác DDI (QĐ 5948) <-> Chống chỉ định (<=100 LOC)
 """
-import re
 from typing import Optional
 from app.services.rag.ddi_graph_data import CLINICAL_DDI_GRAPH, CLINICAL_CONTRAINDICATION_GRAPH
+from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 
 def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> dict:
     lower_query = query.lower()
@@ -13,10 +13,13 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
     contra_warnings: list[str] = []
     kg_entities: list[str] = []
 
-    # Nhận diện hoạt chất trong câu query
+    # Nhận diện hoạt chất từ INN và Brand Aliases (Hierarchical Entity Resolution)
     all_known_inns = set(list(CLINICAL_DDI_GRAPH.keys()) + list(CLINICAL_CONTRAINDICATION_GRAPH.keys()))
     for inn in all_known_inns:
-        if inn in lower_query:
+        aliases = [inn]
+        if inn in DRUG_REGISTRY:
+            aliases.extend(DRUG_REGISTRY[inn].get("aliases", []))
+        if any(a in lower_query for a in aliases):
             matched_inns.append(inn)
             kg_entities.append(f"INN:{inn.upper()}")
 
@@ -62,8 +65,8 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
                     kg_entities.append(f"RENAL_RISK:{inn.upper()}")
 
     return {
-        "matched_inns": matched_inns,
+        "matched_inns": list(dict.fromkeys(matched_inns)),
         "active_ddi_alerts": active_ddi_alerts,
         "contra_warnings": contra_warnings,
-        "kg_entities": kg_entities
+        "kg_entities": list(dict.fromkeys(kg_entities))
     }
