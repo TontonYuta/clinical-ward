@@ -10,7 +10,6 @@ import { PHARMACOLOGICAL_GROUPS, PharmacologicalGroupKey } from '../../../../uti
 
 export type WarehouseFilter = 'all' | 'inpatient' | 'outpatient';
 export type StatusFilter = 'all' | 'near_expiry' | 'low_stock';
-export type DavRegulatoryFilter = 'all' | 'controlled' | 'emergency' | 'cold_chain' | 'high_alert' | 'iv_fluid';
 
 interface PharmacyHeaderRibbonProps {
   warehouse: WarehouseFilter;
@@ -19,8 +18,6 @@ interface PharmacyHeaderRibbonProps {
   setStatus: (s: StatusFilter) => void;
   pharmacologicalGroup: PharmacologicalGroupKey;
   setPharmacologicalGroup: (g: PharmacologicalGroupKey) => void;
-  davFilter: DavRegulatoryFilter;
-  setDavFilter: (f: DavRegulatoryFilter) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   nearExpiryCount: number;
@@ -32,7 +29,7 @@ interface PharmacyHeaderRibbonProps {
 
 export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
   warehouse, setWarehouse, status, setStatus,
-  pharmacologicalGroup, setPharmacologicalGroup, davFilter, setDavFilter,
+  pharmacologicalGroup, setPharmacologicalGroup,
   searchQuery, setSearchQuery, nearExpiryCount, locations, location, setLocation,
   onOpenNationalRegistry,
 }) => {
@@ -62,9 +59,6 @@ export const PharmacyHeaderRibbon: React.FC<PharmacyHeaderRibbonProps> = ({
         </select>
         <select aria-label="Nhóm dược lý" value={pharmacologicalGroup} onChange={(e) => setPharmacologicalGroup(e.target.value as PharmacologicalGroupKey)} data-testid="pharmacological-class-select" className="min-h-11 max-w-[190px] bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
           <option value="all">Tất cả nhóm</option>{PHARMACOLOGICAL_GROUPS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
-        </select>
-        <select aria-label="Quy chế" value={davFilter} onChange={(e) => setDavFilter(e.target.value as DavRegulatoryFilter)} data-testid="dav-regulatory-select" className="min-h-11 max-w-[190px] bg-white border border-slate-300 rounded-lg px-3 text-sm text-slate-700">
-          <option value="all">Tất cả quy chế</option><option value="controlled">Kiểm soát đặc biệt</option><option value="emergency">Cấp cứu tủ trực</option><option value="cold_chain">Bảo quản lạnh</option><option value="high_alert">Nguy cơ cao</option><option value="iv_fluid">Dịch truyền</option>
         </select>
         <button type="button" onClick={onOpenNationalRegistry} data-testid="btn-open-national-registry" className="min-h-11 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium cursor-pointer transition whitespace-nowrap" title="Tra cứu Kho Dược Quốc Gia"><Database className="w-4 h-4 inline mr-1.5" />Kho Dược Quốc Gia</button>
       </div>

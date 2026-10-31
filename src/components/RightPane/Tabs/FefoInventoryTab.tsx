@@ -15,7 +15,6 @@ import {
   PharmacyHeaderRibbon,
   WarehouseFilter,
   StatusFilter,
-  DavRegulatoryFilter,
 } from './Pharmacy/PharmacyHeaderRibbon';
 import { PharmacyBatchRow } from './Pharmacy/PharmacyBatchRow';
 import { PharmacyBatchCard } from './Pharmacy/PharmacyBatchCard';
@@ -36,7 +35,6 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
   const [warehouse, setWarehouse] = useState<WarehouseFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_warehouse') as WarehouseFilter) || 'all' : 'all'));
   const [status, setStatus] = useState<StatusFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_status') as StatusFilter) || 'all' : 'all'));
   const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_pharm_group') as PharmacologicalGroupKey) || 'all' : 'all'));
-  const [davFilter, setDavFilter] = useState<DavRegulatoryFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_dav_filter') as DavRegulatoryFilter) || 'all' : 'all'));
   const [location, setLocation] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('fefo_location') || 'all' : 'all'));
   const locations = useMemo(() => [...new Set(batches.map((b) => b.warehouseLocation.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi')), [batches]);
   const [searchQuery, setSearchQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('fefo_search') || '' : ''));
@@ -49,11 +47,10 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       sessionStorage.setItem('fefo_warehouse', warehouse);
       sessionStorage.setItem('fefo_status', status);
       sessionStorage.setItem('fefo_pharm_group', pharmGroup);
-      sessionStorage.setItem('fefo_dav_filter', davFilter);
       sessionStorage.setItem('fefo_search', searchQuery);
       sessionStorage.setItem('fefo_location', location);
     } catch {}
-  }, [warehouse, status, pharmGroup, davFilter, searchQuery, location]);
+  }, [warehouse, status, pharmGroup, searchQuery, location]);
 
   const filteredBatches = useMemo(() => {
     return batches.filter((batch) => {
@@ -81,14 +78,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         if (grp.key !== pharmGroup) return false;
       }
 
-      // 5. Phân loại theo Quy chế Cổng Dược Quốc Gia (DAV BYT)
-      if (davFilter === 'controlled' && !batch.isControlledSubstance) return false;
-      if (davFilter === 'emergency' && batch.warehouseType !== 'ward_emergency' && !batch.category.includes('cấp cứu')) return false;
-      if (davFilter === 'cold_chain' && !batch.category.includes('Chuỗi lạnh') && !batch.storageCondition?.includes('2°C')) return false;
-      if (davFilter === 'high_alert' && !batch.category.includes('nguy cơ cao')) return false;
-      if (davFilter === 'iv_fluid' && !batch.category.includes('Dịch truyền')) return false;
-
-      // 6. Tìm kiếm từ khóa hành chính
+      // 4. Tìm kiếm từ khóa hành chính
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
@@ -105,7 +95,7 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
 
       return true;
     });
-  }, [batches, warehouse, location, status, pharmGroup, davFilter, searchQuery]);
+  }, [batches, warehouse, location, status, pharmGroup, searchQuery]);
 
   const nearExpiryBatches = useMemo(() => batches.filter((b) => b.isNearExpiry), [batches]);
   const lowStockBatches = useMemo(
@@ -126,7 +116,6 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
         warehouse={warehouse} setWarehouse={setWarehouse}
         status={status} setStatus={setStatus}
         pharmacologicalGroup={pharmGroup} setPharmacologicalGroup={setPharmGroup}
-        davFilter={davFilter} setDavFilter={setDavFilter}
         searchQuery={searchQuery} setSearchQuery={setSearchQuery}
         nearExpiryCount={nearExpiryBatches.length} locations={locations} location={location} setLocation={setLocation}
         onOpenNationalRegistry={() => setIsRegistryModalOpen(true)}
