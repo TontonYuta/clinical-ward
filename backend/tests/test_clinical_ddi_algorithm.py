@@ -49,6 +49,19 @@ def test_safe_synergy_multimodal():
     assert alert.severity == DdiSeverity.SAFE_SYNERGY
     assert "HIỆP ĐỒNG GIẢM ĐAU ĐA MÔ THỨC" in alert.title
 
+def test_official_table_3_1_catalog_lookup():
+    # Cặp STT 2: Acenocoumarol + Tamoxifen
+    alert_stt2 = evaluate_pair("Acenocoumarol 4mg", "Tamoxifen 20mg")
+    assert alert_stt2 is not None
+    assert alert_stt2.severity == DdiSeverity.CONTRAINDICATED
+    assert "Bảng 3.1, STT 2" in alert_stt2.legal_evidence
+
+    # Cặp STT 301: Domperidon + Roxithromycin
+    alert_stt301 = evaluate_pair("Domperidon 10mg", "Roxithromycin 150mg")
+    assert alert_stt301 is not None
+    assert alert_stt301.severity == DdiSeverity.CONTRAINDICATED
+    assert "Bảng 3.1, STT 301" in alert_stt301.legal_evidence
+
 def test_patient_context_dynamic_escalation():
     # Amiodarone + Colchicine bình thường -> MAJOR
     normal_alert = evaluate_pair("Amiodaron", "Colchicin", PatientClinicalContext(egfr=90))

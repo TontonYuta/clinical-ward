@@ -10,6 +10,7 @@ from app.services.clinical_ddi_engine.schemas import (
 )
 from app.services.clinical_ddi_engine.normalizer import normalize_drug_entity
 from app.services.clinical_ddi_engine.rules_data import CLASS_DDI_RULES, SAFE_SYNERGIES
+from app.services.clinical_ddi_engine.full_catalog import lookup_official_ddi
 
 class ClinicalDdiDetector:
     def __init__(self):
@@ -66,6 +67,20 @@ class ClinicalDdiDetector:
                     legal_evidence=r["source"], escalated_by_patient_context=escalated,
                     escalation_reason=reason
                 )
+        # 3. Tra cứu trực tiếp Danh mục 633 cặp Hoạt chất QĐ 5948 (Bảng 3.1)
+        direct = lookup_official_ddi(inn_a, inn_b)
+        if direct:
+            return DdiAlert(
+                rule_id=f"QD_5948_TABLE_3_1_STT_{direct['stt']}",
+                severity=DdiSeverity.CONTRAINDICATED,
+                title=f"{direct['drug_1'].upper()} + {direct['drug_2'].upper()}: CHỐNG CHỈ ĐỊNH (QĐ 5948)",
+                drug_a=drug_a.display_name, drug_b=drug_b.display_name,
+                inn_a=inn_a, inn_b=inn_b, mechanism=direct["mechanism"] or "Chống chỉ định phối hợp theo QĐ 5948/QĐ-BYT",
+                clinical_consequence=direct["consequence"] or "Tăng nguy cơ biến cố bất lợi nghiêm trọng đe dọa tính mạng.",
+                action_recommendation=direct["action"] or "Chống chỉ định phối hợp.",
+                legal_evidence=direct["legal_source"]
+            )
+
         return None
 
     def evaluate_polypharmacy(self, drugs: list[DrugEntity], patient: Optional[PatientClinicalContext] = None) -> list[PolypharmacyCumulativeAlert]:
