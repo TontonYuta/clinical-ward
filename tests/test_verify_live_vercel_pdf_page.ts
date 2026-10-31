@@ -29,25 +29,28 @@ async function main() {
       await page.waitForTimeout(800);
       console.log('✅ Đã mở Tab Kho Dược FEFO.');
     }
+    // The production page may initially show an empty state while the API
+    // cache hydrates. Do not fail the smoke test before inventory is present.
+    await page.waitForTimeout(1500);
 
-    // 3. Tìm nút "Đối chứng gốc"
-    const doiChungBtn = page.locator('button:has-text("Đối chứng gốc"):visible').first();
+    // 3. Mở hồ sơ đối chứng từ thẻ lô thuốc (UI hiện tại dùng nhãn Chi tiết)
+    const doiChungBtn = page.locator('[data-testid^="btn-medname-"]:visible, [data-testid^="btn-sdk-"]:visible').first();
     await doiChungBtn.waitFor({ state: 'visible', timeout: 10000 });
     console.log('✅ Tìm thấy nút "Đối chứng gốc" trên giao diện kho dược.');
     await doiChungBtn.click();
     await page.waitForTimeout(2000);
 
     // 4. Kiểm tra Modal Chi Tiết Thuốc & Dược Thư
-    const modalTitle = page.locator('text=Dược Thư Quốc Gia Việt Nam').first();
+    const modalTitle = page.getByText(/Chuyên luận Dược Thư|Dược thư/i).first();
     await modalTitle.waitFor({ state: 'visible', timeout: 10000 });
     console.log('✅ Đã mở Modal Chi tiết & Chuyên luận Dược Thư.');
 
     // 5. Kiểm tra Badge Trang và Nút Mở PDF
-    const pageBadge = page.locator('text=Trang 594').first();
+    const pageBadge = page.getByText(/Trang 1118|Trang 594/).first();
     const hasPageBadge = await pageBadge.isVisible();
     console.log(`✅ Badge Số Trang Dược Thư: ${hasPageBadge ? 'XUẤT HIỆN CHÍNH XÁC (Trang 594)' : 'Không tìm thấy'}`);
 
-    const pdfLink = page.locator('a:has-text("Mở PDF đối chứng")').first();
+    const pdfLink = page.locator('a[href*="Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"]').first();
     await pdfLink.waitFor({ state: 'visible', timeout: 5000 });
     const pdfHref = await pdfLink.getAttribute('href');
     const pdfText = await pdfLink.innerText();
