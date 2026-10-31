@@ -20,6 +20,8 @@
 **/__pycache__
 *.pyc
 /backend/data/knowledge_base/*.pdf
+/backend
+/api
 /artifacts/**
 /.venv
 /venv
@@ -31,6 +33,8 @@
 /backend/**/__pycache__/**
 /backend/.pytest_cache/**
 /backend/.venv/**
+/backend
+/api
 /artifacts/**
 /data/vietnam_drug_registry/**
 /TEMP/**
