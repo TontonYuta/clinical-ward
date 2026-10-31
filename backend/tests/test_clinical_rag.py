@@ -37,6 +37,19 @@ def test_clinical_knowledge_graph_ddi():
     alert = kg["active_ddi_alerts"][0]
     assert "kết tủa" in alert["mechanism"].lower()
 
+    # Kiểm tra các cặp tương tác trọng yếu mới bổ sung theo QĐ 5948/QĐ-BYT
+    kg_nitrat = expand_clinical_graph("Bệnh nhân dùng Nitroglycerin có được uống Sildenafil không?")
+    assert any("DDI:NITROGLYCERIN<->SILDENAFIL" in e for e in kg_nitrat["kg_entities"])
+
+    kg_warfarin = expand_clinical_graph("Warfarin uống cùng Fluconazol có sao không?")
+    assert any("DDI:WARFARIN<->MICONAZOL" in e for e in kg_warfarin["kg_entities"])
+
+    kg_allopurinol = expand_clinical_graph("Allopurinol phối hợp Azathioprin")
+    assert any("DDI:ALLOPURINOL<->AZATHIOPRIN" in e for e in kg_allopurinol["kg_entities"])
+
+    kg_metformin = expand_clinical_graph("Metformin tiêm thuốc cản quang iod")
+    assert any("DDI:METFORMIN<->THUỐC CẢN QUANG IOD" in e for e in kg_metformin["kg_entities"])
+
 def test_clinical_knowledge_graph_patient_risk():
     patient = {"egfr": 20, "allergies": ["cephalosporin"]}
     kg = expand_clinical_graph("Kê đơn ceftriaxon cho bệnh nhân", patient_info=patient)

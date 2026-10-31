@@ -13,6 +13,8 @@ const REQUIRED_FILES = [
   'README.md',
   'ddi_interactions/qd_5948_antibiotics_and_antiinflammatory.md',
   'ddi_interactions/qd_5948_cardiovascular_and_cns.md',
+  'ddi_interactions/qd_5948_anticoagulants_and_hematology.md',
+  'ddi_interactions/qd_5948_metabolic_and_gastrointestinal.md',
   'clinical_pharmacopoeia/core_inns_monographs.md',
   'regulatory_circulars/tt51_2017_anaphylaxis_protocol.md',
   'regulatory_circulars/tt20_2017_narcotics_management.md',
@@ -47,6 +49,8 @@ for (const relPath of REQUIRED_FILES) {
 const LEGAL_ANCHORS = [
   { file: 'ddi_interactions/qd_5948_antibiotics_and_antiinflammatory.md', term: '5948/QĐ-BYT' },
   { file: 'ddi_interactions/qd_5948_cardiovascular_and_cns.md', term: '5948/QĐ-BYT' },
+  { file: 'ddi_interactions/qd_5948_anticoagulants_and_hematology.md', term: '5948/QĐ-BYT' },
+  { file: 'ddi_interactions/qd_5948_metabolic_and_gastrointestinal.md', term: '5948/QĐ-BYT' },
   { file: 'clinical_pharmacopoeia/core_inns_monographs.md', term: '3445/QĐ-BYT' },
   { file: 'regulatory_circulars/tt51_2017_anaphylaxis_protocol.md', term: '51/2017/TT-BYT' },
   { file: 'regulatory_circulars/tt20_2017_narcotics_management.md', term: '20/2017/TT-BYT' },
