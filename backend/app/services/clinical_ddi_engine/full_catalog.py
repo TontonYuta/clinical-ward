@@ -28,6 +28,7 @@ _TABLE_31_RECORDS = 0
 _TABLE_32_RECORDS = 0
 _CUSTOM_RECORDS = 0
 _TABLE_32_LOADED = False
+_GROUPS_32: list[dict] = []
 _CATALOG_LOADED = False
 _REVIEWED_OCR_CORRECTIONS = {
     "acenocoumar ol": "acenocoumarol",
@@ -46,7 +47,7 @@ def _normalize_token(name: str) -> str:
     return _REVIEWED_OCR_CORRECTIONS.get(cleaned, cleaned)
 
 def _ensure_loaded():
-    global _CATALOG_LOADED, _INDEX_31, _TABLE_31_RECORDS, _TABLE_32_RECORDS, _CUSTOM_RECORDS, _TABLE_32_LOADED
+    global _CATALOG_LOADED, _INDEX_31, _TABLE_31_RECORDS, _TABLE_32_RECORDS, _CUSTOM_RECORDS, _TABLE_32_LOADED, _GROUPS_32
     if _CATALOG_LOADED:
         return
     if not os.path.exists(_FILE_31):
@@ -83,6 +84,7 @@ def _ensure_loaded():
             with open(_FILE_32, "r", encoding="utf-8") as f:
                 table_32 = json.load(f)
             _TABLE_32_RECORDS = len(table_32)
+            _GROUPS_32 = table_32
             _TABLE_32_LOADED = True
 
         # Nạp các quy tắc tùy chỉnh của bệnh viện nếu có
@@ -112,6 +114,37 @@ def lookup_official_ddi(inn_a: str, inn_b: str) -> Optional[dict]:
 
     # Only exact normalized pair lookup is safe here. OCR corrections and
     # brand/ingredient aliases must be reviewed in the drug normalizer.
+    return None
+
+def lookup_official_group_ddi(inn_a: str, inn_b: str) -> Optional[dict]:
+    """Conservative Bảng 3.2 lookup for explicit drug names only.
+
+    Group text is not expanded into inferred class membership. A match is
+    returned only when each normalized input occurs as a complete token in
+    opposite source group fields, preserving the original group wording.
+    """
+    _ensure_loaded()
+    a, b = _normalize_token(inn_a), _normalize_token(inn_b)
+    if not a or not b:
+        return None
+    def contains(text: str, token: str) -> bool:
+        normalized = text.lower()
+        normalized = "".join(ch for ch in unicodedata.normalize("NFKD", normalized) if not unicodedata.combining(ch)).replace("đ", "d")
+        normalized = re.sub(r"[^\w\s-]", " ", normalized)
+        normalized = " ".join(normalized.split())
+        wanted = _normalize_token(token)
+        return bool(re.search(rf"(?<![\w-]){re.escape(wanted)}(?![\w-])", normalized))
+    for group in _GROUPS_32:
+        g1, g2 = group.get("group_1", ""), group.get("group_2", "")
+        if (contains(g1, a) and contains(g2, b)) or (contains(g1, b) and contains(g2, a)):
+            return {
+                "stt": group.get("stt"),
+                "drug_1": g1, "drug_2": g2,
+                "mechanism": group.get("mechanism", ""),
+                "consequence": group.get("consequence", ""),
+                "action": group.get("management", ""),
+                "legal_source": f"QĐ 5948/QĐ-BYT (Bảng 3.2, STT {group.get('stt')})"
+            }
     return None
 
 def register_custom_ddi(drug_a: str, drug_b: str, mechanism: str, consequence: str, action: str, evidence_source: str) -> dict:
@@ -145,10 +178,10 @@ def get_official_catalog_stats() -> dict:
     return {
         "table_3_1_pairs": _TABLE_31_RECORDS,
         "table_3_2_groups": _TABLE_32_RECORDS,
-        "table_3_2_indexed": False,
-        "table_3_2_loaded_for_scope_only": _TABLE_32_LOADED,
+        "table_3_2_indexed": _TABLE_32_LOADED,
+        "table_3_2_loaded_for_scope_only": False,
         "custom_rules": _CUSTOM_RECORDS,
         "indexed_pairs_bidirectional": len(_INDEX_31),
         "is_loaded": _CATALOG_LOADED,
-        "coverage_note": "Bảng 3.1 và quy tắc tùy chỉnh được tra cứu theo cặp; Bảng 3.2 chưa được tự động ánh xạ nhóm thuốc."
+        "coverage_note": "Bảng 3.1 và quy tắc tùy chỉnh được tra cứu theo cặp; Bảng 3.2 chỉ khớp tên hoạt chất xuất hiện rõ trong nhóm nguồn, không suy diễn theo nhóm thuốc."
     }

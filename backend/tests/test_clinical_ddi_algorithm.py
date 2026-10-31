@@ -67,10 +67,10 @@ def test_catalog_stats_report_loaded_data_and_table_3_2_scope():
     stats = get_official_catalog_stats()
     assert stats["table_3_1_pairs"] == 633
     assert stats["table_3_2_groups"] == 68
-    assert stats["table_3_2_loaded_for_scope_only"] is True
-    assert stats["table_3_2_indexed"] is False
+    assert stats["table_3_2_loaded_for_scope_only"] is False
+    assert stats["table_3_2_indexed"] is True
     assert stats["custom_rules"] >= 1
-    assert "chưa được tự động ánh xạ" in stats["coverage_note"]
+    assert "không suy diễn" in stats["coverage_note"]
 
 def test_official_catalog_management_is_not_mislabeled_absolute_contraindication():
     # STT 633 recommends avoiding/coordinating treatment with washout and
@@ -79,6 +79,15 @@ def test_official_catalog_management_is_not_mislabeled_absolute_contraindication
     assert alert is not None
     assert alert.severity != DdiSeverity.CONTRAINDICATED
     assert "2 tuần" in alert.action_recommendation
+
+def test_official_table_3_2_explicit_name_lookup():
+    # STT 3: IMAO + Methyldopa. The engine must match explicit names in the
+    # source group without expanding arbitrary class membership.
+    from app.services.clinical_ddi_engine.full_catalog import lookup_official_group_ddi
+    row = lookup_official_group_ddi("linezolid", "methyldopa")
+    assert row is not None
+    assert row["stt"] == 3
+    assert "tăng huyết áp" in row["consequence"].lower()
 
 def test_patient_context_dynamic_escalation():
     # Amiodarone + Colchicine bình thường -> MAJOR

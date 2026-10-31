@@ -10,7 +10,7 @@ from app.services.clinical_ddi_engine.schemas import (
 )
 from app.services.clinical_ddi_engine.normalizer import normalize_drug_entity
 from app.services.clinical_ddi_engine.rules_data import CLASS_DDI_RULES, SAFE_SYNERGIES
-from app.services.clinical_ddi_engine.full_catalog import lookup_official_ddi
+from app.services.clinical_ddi_engine.full_catalog import lookup_official_ddi, lookup_official_group_ddi
 import re
 
 def _catalog_severity(action: str) -> DdiSeverity:
@@ -96,6 +96,21 @@ class ClinicalDdiDetector:
                 clinical_consequence=direct["consequence"] or "Tăng nguy cơ biến cố bất lợi nghiêm trọng đe dọa tính mạng.",
                 action_recommendation=action or "Tham khảo khuyến cáo trong nguồn chính thức.",
                 legal_evidence=direct["legal_source"]
+            )
+
+        # Bảng 3.2: only explicit names present in the source groups are
+        # matched. Class membership is never inferred from a partial phrase.
+        group_match = lookup_official_group_ddi(inn_a, inn_b)
+        if group_match:
+            action = group_match.get("action", "")
+            return DdiAlert(
+                rule_id=f"QD_5948_TABLE_3_2_STT_{group_match['stt']}",
+                severity=_catalog_severity(action),
+                title=f"TƯƠNG TÁC THEO NHÓM: {group_match['drug_1']} + {group_match['drug_2']}",
+                drug_a=drug_a.display_name, drug_b=drug_b.display_name,
+                inn_a=inn_a, inn_b=inn_b, mechanism=group_match["mechanism"],
+                clinical_consequence=group_match["consequence"],
+                action_recommendation=action, legal_evidence=group_match["legal_source"]
             )
 
         return None
