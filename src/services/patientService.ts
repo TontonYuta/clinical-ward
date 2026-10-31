@@ -26,6 +26,7 @@ export interface PatientProfile {
   primaryDoctor?: string;
   admissionDate?: string;
   codeStatus?: string;
+  diagnosis?: string;
 }
 
 const STORAGE_KEY_PATIENTS = 'clinical_patients_cache_v1';

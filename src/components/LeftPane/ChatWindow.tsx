@@ -9,7 +9,6 @@ import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, 
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
-import { ActionCardDispatcher } from './Cards/ActionCardDispatcher';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import { isCloudAIAvailable } from '../../services/geminiService';
@@ -163,10 +162,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </div>
                   )}
                 </div>
-
-                {msg.card && onExecuteCardAction && (
-                  <ActionCardDispatcher card={msg.card} messageId={msg.id} onExecuteAction={onExecuteCardAction} onSelectTab={onSelectTab} />
-                )}
               </div>
             </div>
           );

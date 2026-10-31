@@ -16,6 +16,7 @@ export interface PrescriptionItem {
   quantity: number;
   unit: 'Hộp' | 'Vỉ' | 'Viên' | 'Ống' | 'Lọ' | 'Chai';
   instructions: string;
+  durationDays?: number;
   isNarcotic?: boolean;
 }
 

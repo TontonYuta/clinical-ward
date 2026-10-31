@@ -579,7 +579,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         setErrorMessage(
           err.message || 'Chưa cấu hình Google Apps Script Webhook để gửi email. Vui lòng cấu hình Webhook URL bên dưới.'
         );
-        setShowGasConfig(true);
+        setActiveTab('settings');
       }
     }
   };
