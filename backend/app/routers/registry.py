@@ -31,13 +31,21 @@ def _catalog_reader():
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 @router.get("/catalog")
-def get_canonical_catalog(
+async def get_canonical_catalog(
     search: str | None = Query(None), group: str | None = Query(None), pharm_group: str | None = Query(None),
     page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
     only_in_warehouse: bool = Query(False), active_only: bool = Query(False),
+    db: AsyncSession = Depends(get_db)
 ):
-    reader = _catalog_reader()
-    return reader.list_registry(search=search, group=group, pharm_group=pharm_group, page=page, page_size=page_size, only_in_warehouse=only_in_warehouse, active_only=active_only, source_mode="legacy_compatible")
+    try:
+        reader = _catalog_reader()
+        return reader.list_registry(search=search, group=group, pharm_group=pharm_group, page=page, page_size=page_size, only_in_warehouse=only_in_warehouse, active_only=active_only, source_mode="legacy_compatible")
+    except Exception:
+        return await get_national_drugs_paginated(
+            search=search, group=group, pharm_group=pharm_group,
+            page=page, page_size=page_size, only_in_warehouse=only_in_warehouse,
+            db=db
+        )
 
 GROUP_ALIAS_MAP = {
     "opioid": "Thuốc gây nghiện", "sedative": "Thuốc hướng thần", "emergency": "Thuốc cấp cứu",

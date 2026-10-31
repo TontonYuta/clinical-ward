@@ -23,7 +23,9 @@ def resolve_db_path(db_file: str | None = None) -> str:
 def find_data_source() -> tuple[str | None, bool]:
     # 1. Gzip compressed master 55k dataset
     candidates_gz = (
+        "/app/data/vietnam_drug_registry/dav_master_registry.json.gz",
         "data/vietnam_drug_registry/dav_master_registry.json.gz",
+        "backend/data/vietnam_drug_registry/dav_master_registry.json.gz",
         "public/data/vietnam_drug_registry/dav_master_registry.json.gz",
         "../data/vietnam_drug_registry/dav_master_registry.json.gz",
         "../public/data/vietnam_drug_registry/dav_master_registry.json.gz",
@@ -31,6 +33,8 @@ def find_data_source() -> tuple[str | None, bool]:
         "../../public/data/vietnam_drug_registry/dav_master_registry.json.gz",
     )
     for c in candidates_gz:
+        if os.path.exists(c):
+            return os.path.abspath(c), True
         p = os.path.abspath(os.path.join(os.path.dirname(__file__), c))
         if os.path.exists(p):
             return p, True
@@ -40,7 +44,9 @@ def find_data_source() -> tuple[str | None, bool]:
 
     # 2. Essential formulary fallback (tracked in Git)
     candidates_json = (
+        "/app/data/vietnam_drug_registry/dav_essential_formulary.json",
         "data/vietnam_drug_registry/dav_essential_formulary.json",
+        "backend/data/vietnam_drug_registry/dav_essential_formulary.json",
         "public/data/vietnam_drug_registry/dav_essential_formulary.json",
         "../data/vietnam_drug_registry/dav_essential_formulary.json",
         "../public/data/vietnam_drug_registry/dav_essential_formulary.json",
@@ -48,6 +54,8 @@ def find_data_source() -> tuple[str | None, bool]:
         "../../public/data/vietnam_drug_registry/dav_essential_formulary.json",
     )
     for c in candidates_json:
+        if os.path.exists(c):
+            return os.path.abspath(c), False
         p = os.path.abspath(os.path.join(os.path.dirname(__file__), c))
         if os.path.exists(p):
             return p, False
@@ -59,8 +67,9 @@ def find_data_source() -> tuple[str | None, bool]:
 
 def find_monographs_source() -> str | None:
     candidates = (
-        "backend/data/knowledge_base/dtqg_monographs_extracted.json",
+        "/app/data/knowledge_base/dtqg_monographs_extracted.json",
         "data/knowledge_base/dtqg_monographs_extracted.json",
+        "backend/data/knowledge_base/dtqg_monographs_extracted.json",
         "../data/knowledge_base/dtqg_monographs_extracted.json",
         "../../backend/data/knowledge_base/dtqg_monographs_extracted.json",
     )
