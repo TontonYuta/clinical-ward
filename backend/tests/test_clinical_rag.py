@@ -96,3 +96,16 @@ async def test_copilot_chat_rag_integration():
         assert data["intent"] == "CLINICAL_AI_CONSULTATION"
         assert data["rag_grounded"] is True
         assert len(data["citations"]) > 0
+
+def test_fts_index_refreshes_changed_content_when_chunk_count_is_unchanged(tmp_path):
+    from app.services.rag.types import RagChunk
+
+    index = SqliteFtsIndex(tmp_path / "rag-index.sqlite")
+    old_chunk = RagChunk("same-id", "source", "basis", "section", "Old title", "oldquery", ["oldquery"])
+    new_chunk = RagChunk("same-id", "source", "basis", "section", "New title", "newquery", ["newquery"])
+    index.sync_chunks([old_chunk])
+    index.sync_chunks([new_chunk])
+
+    refreshed = index.search_bm25("newquery", top_k=1)
+    assert refreshed
+    assert refreshed[0].chunk.title == "New title"

@@ -1,0 +1,138 @@
+[
+  {
+    "id": "para_dose",
+    "query": "Liều tối đa Paracetamol người lớn trong 24 giờ là bao nhiêu?",
+    "expected_chunk_ids": [
+      "core_inns_monographs_2"
+    ],
+    "expected_entity_type": "monograph"
+  },
+  {
+    "id": "ceftriaxone_calcium",
+    "query": "Ceftriaxon có truyền cùng dung dịch chứa calci được không?",
+    "expected_chunk_ids": [
+      "qd_5948_antibiotics_and_antiinflammatory_3"
+    ],
+    "expected_entity_type": "ddi"
+  },
+  {
+    "id": "anaphylaxis_adrenaline",
+    "query": "Xử trí phản vệ bằng Adrenalin tiêm bắp như thế nào?",
+    "expected_chunk_ids": [
+      "tt51_2017_anaphylaxis_protocol_4"
+    ],
+    "expected_entity_type": "circular"
+  },
+  {
+    "id": "opioid_ampoule",
+    "query": "Quy trình thu hồi và tiêu hủy vỏ ống Morphin gây nghiện?",
+    "expected_chunk_ids": [
+      "tt20_2017_narcotics_management_5"
+    ],
+    "expected_entity_type": "circular"
+  },
+  {
+    "id": "clopidogrel_esomeprazole",
+    "query": "Clopidogrel dùng cùng esomeprazol có tương tác gì?",
+    "expected_chunk_ids": [
+      "qd_5948_cardiovascular_and_cns_5"
+    ],
+    "expected_entity_type": "ddi"
+  },
+  {
+    "id": "metformin_renal",
+    "query": "Metformin cần lưu ý gì khi eGFR dưới 30?",
+    "expected_chunk_ids": [
+      "core_inns_monographs_7"
+    ],
+    "expected_entity_type": "monograph"
+  },
+  {
+    "id": "vancomycin",
+    "query": "Tốc độ truyền và giám sát nồng độ Vancomycin ra sao?",
+    "expected_chunk_ids": [
+      "core_inns_monographs_6"
+    ],
+    "expected_entity_type": "monograph"
+  },
+  {
+    "id": "shift_handover",
+    "query": "Quy trình giao nhận và bàn giao cơ số thuốc giữa các ca trực?",
+    "expected_chunk_ids": [
+      "tt22_2011_hospital_pharmacy_ward_4"
+    ],
+    "expected_entity_type": "circular"
+  },
+  {
+    "id": "para_synonym",
+    "query": "Thuốc hạ sốt paracetamol uống tối đa mấy gam mỗi ngày?",
+    "expected_chunk_ids": [
+      "core_inns_monographs_2"
+    ],
+    "expected_entity_type": "monograph"
+  },
+  {
+    "id": "cef_calcium_synonym",
+    "query": "Có thể pha ceftriaxone với dịch truyền Ringer lactat không?",
+    "expected_chunk_ids": [
+      "qd_5948_antibiotics_and_antiinflammatory_3"
+    ],
+    "expected_entity_type": "ddi"
+  },
+  {
+    "id": "anaphylaxis_synonym",
+    "query": "Phản vệ độ nặng cần tiêm bắp adrenalin liều nào?",
+    "expected_chunk_ids": [
+      "tt51_2017_anaphylaxis_protocol_4"
+    ],
+    "expected_entity_type": "circular"
+  },
+  {
+    "id": "morphine_empty_ampoule",
+    "query": "Quản lý vỏ ống morphine sau khi sử dụng ở khoa lâm sàng?",
+    "expected_chunk_ids": [
+      "tt20_2017_narcotics_management_5"
+    ],
+    "expected_entity_type": "circular"
+  },
+  {
+    "id": "renal_metformin_synonym",
+    "query": "eGFR 25 thì có được tiếp tục dùng metformin không?",
+    "expected_chunk_ids": [
+      "core_inns_monographs_7"
+    ],
+    "expected_entity_type": "monograph"
+  },
+  {
+    "id": "vanco_rate_synonym",
+    "query": "Tránh hội chứng người đỏ khi truyền vancomycin như thế nào?",
+    "expected_chunk_ids": [
+      "core_inns_monographs_6"
+    ],
+    "expected_entity_type": "monograph"
+  },
+  {
+    "id": "handover_synonym",
+    "query": "Điều dưỡng bàn giao trực phải kiểm đếm thuốc và cơ số ra sao?",
+    "expected_chunk_ids": [
+      "tt22_2011_hospital_pharmacy_ward_4"
+    ],
+    "expected_entity_type": "circular"
+  },
+  {
+    "id": "ppi_clopidogrel_synonym",
+    "query": "Tương tác clopidogrel với esomeprazol ra sao?",
+    "expected_chunk_ids": [
+      "qd_5948_cardiovascular_and_cns_5"
+    ],
+    "expected_entity_type": "ddi"
+  },
+  {
+    "id": "morphine_empty_ampoule",
+    "query": "Thu hồi và hủy vỏ ampoule Morphin gây nghiện sau tiêm?",
+    "expected_chunk_ids": [
+      "tt20_2017_narcotics_management_5"
+    ],
+    "expected_entity_type": "circular"
+  }
+]

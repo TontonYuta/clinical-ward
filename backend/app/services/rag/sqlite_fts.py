@@ -5,6 +5,8 @@ Hỗ trợ BM25 ranking cho tri thức y tế, SĐK và văn bản pháp lý (<=
 import os
 import re
 import sqlite3
+import hashlib
+import json
 from pathlib import Path
 from app.services.rag.types import RagChunk, RetrievedChunk
 
@@ -96,8 +98,16 @@ class SqliteFtsIndex:
     def sync_chunks(self, chunks: list[RagChunk]):
         with self._get_connection() as conn:
             count = conn.execute("SELECT COUNT(*) FROM clinical_rag_fts").fetchone()[0]
-            if count >= len(chunks) and count > 0:
-                return  # Đã đồng bộ trước đó
+            fingerprint = hashlib.sha256(json.dumps([
+                (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, c.keywords, c.entity_type)
+                for c in chunks
+            ], ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+            try:
+                row = conn.execute("SELECT value FROM clinical_rag_meta WHERE key = ?", ("chunk_fingerprint",)).fetchone()
+            except sqlite3.OperationalError:
+                row = None
+            if count == len(chunks) and count > 0 and row and row[0] == fingerprint:
+                return  # Index đã khớp chính xác với fingerprint nguồn hiện tại.
 
             conn.execute("DELETE FROM clinical_rag_fts")
             for c in chunks:
@@ -112,6 +122,11 @@ class SqliteFtsIndex:
                     (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section,
                      c.title, c.content, kw_str, c.entity_type)
                 )
+            conn.execute("CREATE TABLE IF NOT EXISTS clinical_rag_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+            conn.execute(
+                "INSERT INTO clinical_rag_meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                ("chunk_fingerprint", fingerprint)
+            )
             conn.commit()
 
     def search_bm25(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
