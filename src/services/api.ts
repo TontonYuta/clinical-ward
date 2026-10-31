@@ -283,6 +283,9 @@ export async function chatCopilotApi(query: string, userRole: string, userName: 
 
 export type DdiPairApiResponse = {
   has_interaction: boolean;
+  source_status?: 'indexed_match' | 'not_indexed' | 'backend_error';
+  source?: string;
+  coverage_note?: string;
   alert: null | {
     rule_id: string; severity: string; title: string; drug_a: string; drug_b: string;
     mechanism: string; consequence: string; action: string; source: string;

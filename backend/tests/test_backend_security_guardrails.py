@@ -296,3 +296,14 @@ if __name__ == "__main__":
     test_validate_input_guardrail()
     test_validate_output_guardrail()
     print("🎉 TẤT CẢ CÁC BÀI TEST PYTHON SECURITY GUARDRAILS ĐỀU ĐẠT 100%!")
+
+@pytest.mark.asyncio
+async def test_chatbot_provenance_metadata_contract():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.post("/api/v1/copilot/chat", json={"query": "Thông tin thuốc PARACETAMOL 500mg"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["answer_type"] == "medication_profile"
+        assert data["source_status"] == "exact_match"

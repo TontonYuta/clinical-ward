@@ -133,7 +133,11 @@ export async function processClinicalAgentQueryAsync(
         card,
         suggestedChips: backendData.suggested_chips || [],
         citations: backendData.citations,
-        ragGrounded: backendData.rag_grounded
+        ragGrounded: backendData.rag_grounded,
+        answerType: backendData.answer_type,
+        sourceStatus: backendData.source_status,
+        confidence: backendData.confidence,
+        abstentionReason: backendData.abstention_reason
       };
 
       return { replyMessage, actionPayload, card };

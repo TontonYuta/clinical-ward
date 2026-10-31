@@ -108,9 +108,17 @@ def check_pair_endpoint(req: CheckPairRequest):
         )
     alert = evaluate_pair(req.drug_a, req.drug_b, ctx)
     if not alert:
-        return {"has_interaction": False, "alert": None}
+        return {
+            "has_interaction": False,
+            "alert": None,
+            "source_status": "not_indexed",
+            "source": "QĐ 5948/QĐ-BYT: Bảng 3.1 và Bảng 3.2",
+            "coverage_note": "Chưa tìm thấy trong chỉ mục hiện có; kết quả không khẳng định phối hợp an toàn.",
+        }
     return {
         "has_interaction": True,
+        "source_status": "indexed_match",
+        "source": "QĐ 5948/QĐ-BYT: Bảng 3.1 và Bảng 3.2",
         "alert": {
             "rule_id": alert.rule_id,
             "severity": alert.severity.value,

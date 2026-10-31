@@ -30,6 +30,10 @@ class CopilotResponse(BaseModel):
     active_medication_location: str | None = None
     citations: list[dict] = []
     rag_grounded: bool = False
+    answer_type: str | None = None
+    source_status: str | None = None
+    confidence: float | None = None
+    abstention_reason: str | None = None
 
 class RagQuery(BaseModel):
     query: str

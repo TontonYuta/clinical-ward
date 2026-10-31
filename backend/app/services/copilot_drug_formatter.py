@@ -115,5 +115,6 @@ async def build_drug_profile_response(
         suggested_chips=chips, session_id=session.session_id,
         active_medication_name=session.active_medication_name,
         active_medication_stock=session.active_medication_stock,
-        active_medication_location=session.active_medication_location
+        active_medication_location=session.active_medication_location,
+        answer_type="medication_profile", source_status="exact_match", confidence=1.0
     )

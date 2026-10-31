@@ -196,3 +196,9 @@ def test_custom_rule_registration_endpoint():
         with open(_FILE_CUSTOM, "w", encoding="utf-8") as f:
             json.dump(original_data, f, ensure_ascii=False, indent=2)
         settings.DDI_ADMIN_TOKEN = ""
+
+def test_check_pair_exposes_source_status_for_unindexed_pair():
+    from app.routers.clinical_ddi import check_pair_endpoint, CheckPairRequest
+    result = check_pair_endpoint(CheckPairRequest(drug_a="thuốc chưa biết alpha", drug_b="thuốc chưa biết beta"))
+    assert result["source_status"] == "not_indexed"
+    assert "không khẳng định" in result["coverage_note"].lower()

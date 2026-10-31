@@ -147,6 +147,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <div className="space-y-2 min-w-0 flex-1">
                 <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
                   {renderFormattedText(msg.text, isDarkBubble)}
+                  {isAgent && (msg.sourceStatus || msg.answerType) && (
+                    <div className="mt-2 text-2xs text-slate-500" data-testid="chat-source-status">
+                      Nguồn: {msg.sourceStatus || msg.answerType}
+                      {typeof msg.confidence === 'number' && ` • Độ tin cậy ${(msg.confidence * 100).toFixed(0)}%`}
+                    </div>
+                  )}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-2xs text-slate-600">
                       <span className="inline-flex items-center gap-1 font-semibold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">

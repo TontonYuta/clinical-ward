@@ -93,6 +93,10 @@ export interface ChatMessage {
   pipelineStage?: 'offline_engine' | 'cloud_gemini_vision' | 'cloud_gemini_reasoning';
   citations?: RagCitationItem[];
   ragGrounded?: boolean;
+  answerType?: string;
+  sourceStatus?: string;
+  confidence?: number;
+  abstentionReason?: string;
 }
 
 export interface QuickSuggestionChip {

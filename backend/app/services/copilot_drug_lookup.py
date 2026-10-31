@@ -55,8 +55,10 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
         kw = session.active_medication_ingredient or session.active_medication_name
 
     if not kw or len(kw) < 2:
+        catalog_count_result = await db.execute(select(func.count(DavNationalDrug.id)))
+        catalog_count = int(catalog_count_result.scalar_one() or 0)
         guide_text = (
-            "### 🏥 CỔNG TRA CỨU DƯỢC QUỐC GIA & DƯỢC THƯ LÂM SÀNG (54.885 THUỐC)\n\n"
+            f"### 🏥 CỔNG TRA CỨU DƯỢC QUỐC GIA & DƯỢC THƯ LÂM SÀNG ({catalog_count:,} BẢN GHI ĐANG LẬP CHỈ MỤC)\n\n"
             "Hệ thống tích hợp dữ liệu chính thống **Cục Quản lý Dược Việt Nam (DAV)**, "
             "**Dược thư Quốc gia DĐVN V** và **Kho dược bệnh viện**:\n\n"
             "1. **Tra cứu theo Tên Biệt Dược hoặc Hoạt Chất (INN):**\n"
@@ -74,6 +76,7 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
             reply_text=guide_text,
             card=None,
             legal_basis="Cục Quản lý Dược Việt Nam & Dược Thư Quốc Gia",
+            answer_type="lookup_guide", source_status="catalog_available", confidence=1.0,
             suggested_chips=["Tra cứu thuốc Rocephin", "Tra cứu SĐK VD-24757-16", "Thông tin thuốc Augmentin", "Paracetamol liều dùng thế nào", "Quy tắc 5 đúng Morphin"]
         )
 
@@ -155,13 +158,14 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
             return CopilotResponse(
                 intent="CLINICAL_TYPO_SUGGESTION", reply_text=reply, card=card,
                 legal_basis="Thông tư 22/2011/TT-BYT & CSDL Cục Quản lý Dược",
-                suggested_chips=[f"Thông tin {best_batch.item_name}", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"]
+            suggested_chips=[f"Thông tin {best_batch.item_name}", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"],
+            answer_type="medication_suggestion", source_status="inventory_suggestion", confidence=best_ratio
             )
 
         clean_target = kw.strip().title() if len(kw) < 25 else kw.strip()
         reply_abstain = (
             f"### 🛡️ TỪ CHỐI ĐƯA CHỈ ĐỊNH (Thực Thể Dược Phẩm Chưa Định Danh)\n\n"
-            f"• **Kết quả đối soát:** Hệ thống đã tra soát qua **54.885 số đăng ký Cục Quản lý Dược (DAV)** và toàn bộ **Dược Thư Quốc Gia 2015**, **không ghi nhận** bất kỳ hoạt chất hoặc biệt dược nào có tên `{clean_target}`.\n"
+            f"• **Kết quả đối soát:** Hệ thống không ghi nhận `{clean_target}` trong danh mục DAV hiện đang lập chỉ mục và kho dữ liệu nội bộ. Điều này không khẳng định tên thuốc không tồn tại ngoài các nguồn đã nạp.\n"
             f"• **Rào chắn an toàn lâm sàng (Safe Abstention - TT 22/2011/TT-BYT & TT 20/2017/TT-BYT):** Trợ lý AI **tuyệt đối không suy đoán hoặc cung cấp liều dùng, chỉ định** cho các tên thuốc chưa được định danh trong CSDL chính thống nhằm ngăn ngừa biến cố gây hại tính mạng người bệnh.\n"
             f"• **Khuyến nghị xử trí:**\n"
             f"  1. Kiểm tra lại vỏ bao bì hộp thuốc, đơn thuốc CPOE hoặc hồ sơ bệnh án để đối chiếu chính xác tên thương mại / hoạt chất quốc tế (INN).\n"
@@ -171,7 +175,9 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION", reply_text=reply_abstain, card=None,
             legal_basis="Thông tư 22/2011/TT-BYT & Dược Thư Quốc Gia Việt Nam",
-            suggested_chips=["Tra cứu SĐK VD-24757-16", "Kho Dược Quốc Gia 55k", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Tra cứu SĐK VD-24757-16", "Kho Dược Quốc Gia 55k", "Đối soát ca trực 07:00 AM"],
+            answer_type="safe_abstention", source_status="not_found", confidence=1.0,
+            abstention_reason="Không tìm thấy thực thể thuốc đã định danh trong danh mục tra cứu"
         )
 
     return await build_drug_profile_response(drugs, db, session)
