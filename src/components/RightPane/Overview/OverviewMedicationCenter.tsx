@@ -5,7 +5,6 @@
  */
 
 import React, { useState } from 'react';
-import { Search } from 'lucide-react';
 import { normalizeLookupQuery } from '../flatDashboardModel';
 
 interface OverviewMedicationCenterProps {
@@ -16,8 +15,7 @@ interface OverviewMedicationCenterProps {
 
 export const OverviewMedicationCenter: React.FC<OverviewMedicationCenterProps> = ({
   canSearch,
-  onOpenMedication,
-  onOpenFefo
+  onOpenMedication
 }) => {
   const [query, setQuery] = useState('');
 
@@ -28,12 +26,12 @@ export const OverviewMedicationCenter: React.FC<OverviewMedicationCenterProps> =
   };
 
   const keyMedications = [
-    { name: 'Adrenalin 1mg/1ml', tag: 'Cấp cứu TT 51', color: 'rose' },
-    { name: 'Morphin 10mg/1ml', tag: 'Gây nghiện TT 20', color: 'purple' },
-    { name: 'Kali Clorid 10% (KCl)', tag: 'High-Alert', color: 'amber' },
-    { name: 'Ceftriaxon 1g', tag: 'Kháng sinh', color: 'blue' },
-    { name: 'Diazepam 10mg/2ml', tag: 'Hướng thần', color: 'purple' },
-    { name: 'Paracetamol 500mg', tag: 'Hạ sốt', color: 'emerald' },
+    { name: 'Adrenalin 1mg/1ml', tag: 'Cấp cứu' },
+    { name: 'Morphin 10mg/1ml', tag: 'Gây nghiện' },
+    { name: 'Kali Clorid 10% (KCl)', tag: 'High-Alert' },
+    { name: 'Ceftriaxon 1g', tag: 'Kháng sinh' },
+    { name: 'Diazepam 10mg/2ml', tag: 'Hướng thần' },
+    { name: 'Paracetamol 500mg', tag: 'Hạ sốt' },
   ];
 
   return (
@@ -42,7 +40,7 @@ export const OverviewMedicationCenter: React.FC<OverviewMedicationCenterProps> =
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-            Thông Tin Dược Lâm Sàng &amp; Dược Thư Quốc Gia
+            Thông tin thuốc
           </h3>
           <span className="text-2xs font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
             54.885 DAV

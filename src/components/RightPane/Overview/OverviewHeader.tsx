@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import type { UserRole } from '../../../types/clinical';
 
 interface OverviewHeaderProps {
@@ -29,7 +29,7 @@ export const OverviewHeader: React.FC<OverviewHeaderProps> = ({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950">
-          Tổng Quan Trạm Làm Việc Hôm Nay
+          Tổng quan trạm làm việc
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
           {roleTitle} · {dateStr}
@@ -44,7 +44,7 @@ export const OverviewHeader: React.FC<OverviewHeaderProps> = ({
           title="Mở trợ lý AI lâm sàng"
         >
           <Bot className="w-3.5 h-3.5" />
-          <span>Trợ Lý Lâm Sàng Y Khoa Thông Minh</span>
+          <span>Trợ lý AI</span>
         </button>
       </div>
     </div>

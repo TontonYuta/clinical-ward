@@ -5,11 +5,10 @@
  */
 
 import React from 'react';
-import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { DashboardTab, UserRole, AuditTrailRecord } from '../../../types/clinical';
 import type { DebtRecord, InventoryBatch } from '../../../types/pharmacy';
 import type { EquipmentTicket, ColdChainMonitorState, AssetAuditRecord } from '../../../types/equipment';
-import { filterOverviewActions } from '../overviewModel';
 
 interface OverviewOperationsKpiProps {
   currentUserRole: UserRole;

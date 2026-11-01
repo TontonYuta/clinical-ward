@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Download, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 interface OverviewLegalDocsProps {
   onOpenLegalDocs?: () => void;
@@ -58,7 +58,7 @@ export const OverviewLegalDocs: React.FC<OverviewLegalDocsProps> = ({
       {/* 1. Header */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-100">
         <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-          Tài Liệu Đính Kèm &amp; Căn Cứ Pháp Lý Lâm Sàng
+          Tài Liệu Đính Kèm
         </h3>
 
         {onOpenLegalDocs && (
@@ -67,7 +67,7 @@ export const OverviewLegalDocs: React.FC<OverviewLegalDocsProps> = ({
             onClick={onOpenLegalDocs}
             className="text-xs font-semibold text-teal-800 hover:text-teal-950 hover:underline cursor-pointer"
           >
-            Mở Cẩm Nang Pháp Quy Đầy Đủ &rarr;
+            Cẩm nang quy định &rarr;
           </button>
         )}
       </div>

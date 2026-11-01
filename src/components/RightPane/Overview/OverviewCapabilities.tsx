@@ -21,30 +21,30 @@ export const OverviewCapabilities: React.FC<OverviewCapabilitiesProps> = ({
     {
       id: 'cpoe',
       tab: 'cpoe' as DashboardTab,
-      title: 'Kê Đơn Thuốc CPOE & CDSS Đối Soát',
-      summary: 'Đơn điện tử TT 26/2025/TT-BYT · Chặn cặp tương tác chống chỉ định QĐ 5948',
-      tag: 'CPOE & Ký số'
+      title: 'Kê đơn thuốc điện tử',
+      summary: 'Kê đơn & tự động kiểm tra tương tác thuốc',
+      tag: 'Kê đơn'
     },
     {
       id: 'registry',
       tab: 'fefo' as DashboardTab,
-      title: 'Dược Thư & 55.000 Biệt Dược Quốc Gia',
-      summary: '54.885 thuốc Cục QLD (DAV) · Toàn văn Dược Thư QG & cảnh báo High-Alert',
-      tag: 'Dược Thư QG'
+      title: 'Tra cứu thuốc & Dược thư',
+      summary: '55.000 thuốc & liều dùng an toàn',
+      tag: 'Dược thư'
     },
     {
       id: 'debt',
       tab: 'debt' as DashboardTab,
-      title: 'Quản Lý Cơ Số Tủ Trực & Thuốc Gây Nghiện',
-      summary: 'Cơ số Min - Max VBHN 07 · Khóa niêm phong nợ vỏ rỗng Morphin TT 20 & TT 18',
-      tag: 'Tủ trực cấp cứu'
+      title: 'Tủ trực & Thuốc gây nghiện',
+      summary: 'Cơ số cấp cứu & quản lý nợ vỏ thuốc',
+      tag: 'Tủ trực'
     },
     {
       id: 'coldchain',
       tab: 'coldchain' as DashboardTab,
-      title: 'Kiểm Soát Hạn FEFO & Chuỗi Lạnh Vắc Xin',
-      summary: 'Xuất kho FEFO hạn ngắn trước · Cảm biến IoT nhiệt độ chuỗi lạnh 2°C - 8°C',
-      tag: 'Kho & Chuỗi lạnh'
+      title: 'Kho dược & Chuỗi lạnh',
+      summary: 'Hạn dùng thuốc & nhiệt độ 2°C - 8°C',
+      tag: 'Kho & nhiệt độ'
     }
   ];
 
@@ -65,7 +65,7 @@ export const OverviewCapabilities: React.FC<OverviewCapabilitiesProps> = ({
             }`}
           >
             <div>
-              <div className="flex items-center justify-between text-2xs text-slate-500 mb-1.5 font-medium">
+              <div className="flex items-center justify-between text-2xs text-slate-500 mb-1 font-medium">
                 <span>{cap.tag}</span>
                 {!isAllowed && <Lock className="w-3 h-3 text-slate-400" />}
               </div>

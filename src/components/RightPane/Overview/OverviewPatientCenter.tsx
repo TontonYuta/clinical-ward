@@ -5,7 +5,6 @@
  */
 
 import React, { useState } from 'react';
-import { Search, ArrowRight } from 'lucide-react';
 import { INITIAL_PATIENTS } from '../../../services/patientService';
 import { normalizeLookupQuery } from '../flatDashboardModel';
 
@@ -34,7 +33,7 @@ export const OverviewPatientCenter: React.FC<OverviewPatientCenterProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-            Thông Tin Bệnh Nhân &amp; Giám Sát Lâm Sàng
+            Thông tin bệnh nhân
           </h3>
           <span className="text-2xs font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
             {INITIAL_PATIENTS.length} NB

@@ -28,20 +28,20 @@ async function main() {
 
   // 1. Verify Header & Branding
   console.log('--- 1. Verifying Header & Branding ---');
-  const title = page.locator('h1:has-text("Tổng Quan Trạm Làm Việc Hôm Nay")');
+  const title = page.locator('h1:has-text("Tổng quan trạm làm việc")');
   await title.waitFor({ state: 'visible', timeout: 5000 });
-  const copilotBanner = page.locator('text=Trợ Lý Lâm Sàng Y Khoa Thông Minh');
-  if (!(await copilotBanner.isVisible())) {
-    throw new Error('FAIL: AI Copilot banner not visible!');
+  const copilotBtn = page.getByRole('button', { name: 'Trợ lý AI', exact: true });
+  if (!(await copilotBtn.isVisible())) {
+    throw new Error('FAIL: AI Copilot button not visible!');
   }
-  console.log('✅ Header & AI Copilot banner visible.');
+  console.log('✅ Header & AI Copilot button visible.');
 
   // 2. Verify 4 Core Capabilities
   console.log('--- 2. Verifying 4 Core Capabilities ---');
-  const capCpoe = page.locator('text=Kê Đơn Thuốc CPOE & CDSS Đối Soát');
-  const capRegistry = page.locator('text=Dược Thư & 55.000 Biệt Dược Quốc Gia');
-  const capDebt = page.locator('text=Quản Lý Cơ Số Tủ Trực & Thuốc Gây Nghiện');
-  const capColdchain = page.locator('text=Kiểm Soát Hạn FEFO & Chuỗi Lạnh Vắc Xin');
+  const capCpoe = page.locator('text=Kê đơn thuốc điện tử');
+  const capRegistry = page.locator('text=Tra cứu thuốc & Dược thư');
+  const capDebt = page.locator('text=Tủ trực & Thuốc gây nghiện');
+  const capColdchain = page.locator('text=Kho dược & Chuỗi lạnh');
 
   if (!(await capCpoe.isVisible()) || !(await capRegistry.isVisible()) || !(await capDebt.isVisible()) || !(await capColdchain.isVisible())) {
     throw new Error('FAIL: One or more capability cards missing!');
@@ -50,19 +50,19 @@ async function main() {
 
   // 3. Verify Patient Clinical Center
   console.log('--- 3. Verifying Patient Clinical Center ---');
-  const patientCenter = page.locator('h3:has-text("Thông Tin Bệnh Nhân & Giám Sát Lâm Sàng")');
+  const patientCenter = page.locator('h3:has-text("Thông tin bệnh nhân")');
   if (!(await patientCenter.isVisible())) {
-    throw new Error('FAIL: Patient Clinical Center header missing!');
+    throw new Error('FAIL: Patient Center header missing!');
   }
-  const patientTri = page.locator('text=Võ Minh Trí');
+  const patientTri = page.locator('button:has-text("Võ Minh Trí")');
   if (!(await patientTri.isVisible())) {
     throw new Error('FAIL: Key patient Võ Minh Trí not listed!');
   }
-  console.log('✅ Patient Clinical Center with key patients (Võ Minh Trí, Trần Huy Hoàng) displayed.');
+  console.log('✅ Patient Center with key patients (Võ Minh Trí, etc.) displayed.');
 
-  // 4. Verify Medication & Clinical Pharmacy Center
+  // 4. Verify Medication Center
   console.log('--- 4. Verifying Medication Center ---');
-  const medCenter = page.locator('h3:has-text("Thông Tin Dược Lâm Sàng & Dược Thư Quốc Gia")');
+  const medCenter = page.locator('h3:has-text("Thông tin thuốc")');
   if (!(await medCenter.isVisible())) {
     throw new Error('FAIL: Medication Center header missing!');
   }
@@ -76,7 +76,7 @@ async function main() {
 
   // 5. Verify Attached Legal Documents & PDFs
   console.log('--- 5. Verifying Attached Legal Documents ---');
-  const legalDocsSection = page.locator('h3:has-text("Tài Liệu Đính Kèm & Căn Cứ Pháp Lý Lâm Sàng")');
+  const legalDocsSection = page.locator('h3:has-text("Tài Liệu Đính Kèm")');
   if (!(await legalDocsSection.isVisible())) {
     throw new Error('FAIL: Attached Legal Documents section missing!');
   }
@@ -110,7 +110,7 @@ async function main() {
 
   // 7. Test Opening LegalDocsModal
   console.log('--- 7. Testing Legal Docs Modal Interaction ---');
-  const openLegalDocsBtn = page.locator('button:has-text("Mở Cẩm Nang Pháp Quy Đầy Đủ")').first();
+  const openLegalDocsBtn = page.locator('button:has-text("Cẩm nang quy định")').first();
   await openLegalDocsBtn.click();
   await page.waitForTimeout(500);
 
@@ -124,8 +124,8 @@ async function main() {
 
   // 8. Capture Fullpage Screenshot of Revamped Overview
   console.log('--- 8. Capturing Screenshot ---');
-  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'revamped_overview_dashboard.png'), fullPage: true });
-  console.log('📸 Saved screenshot: revamped_overview_dashboard.png');
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'minimalist_overview_dashboard.png'), fullPage: true });
+  console.log('📸 Saved screenshot: minimalist_overview_dashboard.png');
 
   await browser.close();
   console.log('🎉 ALL REVAMPED OVERVIEW TESTS PASSED 100%!');
