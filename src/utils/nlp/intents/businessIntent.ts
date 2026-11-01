@@ -8,7 +8,11 @@ import { ChatMessage } from '../../../types/clinical';
 import { anyKeyword, ProcessedQueryResult } from '../types';
 
 export function matchBusinessIntent(lower: string): boolean {
-  return anyKeyword(lower, [
+  const clean = lower.replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+  const isGreeting = clean === 'hi' || clean === 'hello' || clean === 'alo' || clean === 'hey' ||
+    clean === 'chào' || clean === 'xin chào' || clean === 'chào bạn' || clean === 'chào bot' ||
+    clean === 'chào em' || clean === 'chào bác sĩ';
+  return isGreeting || anyKeyword(lower, [
     'nghiệp vụ', 'nghiep vu', 'các nghiệp vụ', 'cac nghiep vu',
     'quy trình lâm sàng', 'quy trinh lam sang', 'bản đồ nghiệp vụ', 'ban do nghiep vu',
     'chức năng', 'chuc nang', 'tính năng', 'tinh nang',

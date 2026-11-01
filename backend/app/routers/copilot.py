@@ -49,6 +49,47 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     query = guard_res.sanitized_query
     lower_query = query.lower()
 
+    # 0. Chào hỏi & hội thoại cơ bản (Greetings & Onboarding)
+    clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
+    greeting_tokens = set(clean_greeting.split())
+    is_pure_greeting = clean_greeting in {
+        "hi", "hello", "chao", "chào", "xin chao", "xin chào", "alo", "hey",
+        "chao ban", "chào bạn", "chao bot", "chào bot", "chao em", "chào em",
+        "chao bac si", "chào bác sĩ", "hi bot", "hello bot", "halo", "yo"
+    } or (len(greeting_tokens) <= 2 and any(t in greeting_tokens for t in ["hi", "hello", "alo", "hey"]))
+    if is_pure_greeting:
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Điều dưỡng"
+        welcome_reply = (
+            f"Chào {role_label} {user_name}! Tôi là **Trợ lý Dược Lâm Sàng & Vận Hành Tủ Trực Bệnh Viện** "
+            f"(tuân thủ TT 22/2011, TT 20/2017, TT 51/2017, NĐ 98/2021 & QĐ 5948/QĐ-BYT).\n\n"
+            f"Tôi sẵn sàng hỗ trợ đồng nghiệp xử lý nhanh các tác vụ trong ca trực:\n\n"
+            f"1. 💊 **Dược thư & Tương tác thuốc:** Tra cứu 54.885 SĐK DAV, liều dùng, tác dụng phụ & tương tác thuốc (QĐ 5948).\n"
+            f"2. 📋 **Tủ trực ca đêm:** Xuất mượn thuốc khẩn cấp, quản lý thu hồi 100% vỏ thuốc gây nghiện (TT 20/2017).\n"
+            f"3. ⏰ **Giao ban & Đối soát:** Bàn giao ca 07:00 AM, kiểm tra chênh lệch sổ sách và nợ vỏ.\n"
+            f"4. 📦 **Kho Dược GSP & Hạn dùng FEFO:** Quét thuốc cận hạn dưới 60 ngày, lập dự trù bù cơ số Mẫu 01.\n"
+            f"5. 🚨 **Phác đồ cấp cứu khẩn cấp:** Xử trí sốc phản vệ Adrenalin (TT 51), phân tầng sốt, giảm đau đa mô thức.\n"
+            f"6. 🩺 **Trang thiết bị y tế:** Báo hỏng máy thở, máy sốc tim, phân loại rủi ro Loại A-B-C-D (NĐ 98).\n"
+            f"7. ❄️ **Chuỗi lạnh vắc xin:** Giám sát nhiệt độ 2°C – 8°C, xử trí sự cố mất điện tủ lạnh.\n\n"
+            f"Đồng nghiệp có thể bấm chọn nhanh các tác vụ bên dưới hoặc nhập câu hỏi trực tiếp."
+        )
+        return CopilotResponse(
+            intent="GREETING_WELCOME", reply_text=welcome_reply,
+            legal_basis="Thông tư 22/2011, TT 20/2017, TT 51/2017 & QĐ 5948/QĐ-BYT",
+            suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Kiểm tra tương tác thuốc", "Đối soát ca trực 07:00 AM", "Thuốc cận hạn FEFO"]
+        )
+
+    is_thanks = clean_greeting in {
+        "cam on", "cảm ơn", "cảm ơn bạn", "cảm ơn bot", "cam on ban", "cam on bot",
+        "thank you", "thanks", "ok", "oke", "ok bot", "da", "dạ", "tam biet", "tạm biệt"
+    }
+    if is_thanks:
+        return CopilotResponse(
+            intent="ACKNOWLEDGMENT",
+            reply_text="Rất hân hạnh được đồng hành hỗ trợ đồng nghiệp trong ca trực bệnh viện! Hãy đặt câu hỏi bất cứ lúc nào nếu cần tra cứu thuốc, đối soát tủ trực hoặc hướng dẫn quy trình lâm sàng.",
+            legal_basis="Hệ thống trợ lý lâm sàng bệnh viện",
+            suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu tương tác thuốc", "Kho Dược FEFO"]
+        )
+
     # 0a. Dặn dò bác sĩ & Lịch uống thuốc qua Google Apps Script / Email
     is_advice = any(w in lower_query for w in ["dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc", "thông báo uống", "gửi mail", "gửi email", "gửi gmail", "uống thuốc hàng ngày"]) or (
         any(w in lower_query for w in ["thông báo", "gửi", "nhắc", "dặn"]) and any(w in lower_query for w in ["uống thuốc", "uống", "đơn thuốc", "lịch thuốc"])
@@ -192,17 +233,19 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
         return await lookup_drug_authoritative(query, db, session_id=session_id)
 
     # 12. Tư vấn lâm sàng sâu bằng Pure RAG
-    rag_res = await execute_clinical_rag(query, user_role=user_role)
-    if rag_res and (rag_res.citations or is_deep_pharmacology):
-        cleaned_reply = validate_output_guardrail(rag_res.answer, query)
-        from app.services.session_context import get_or_create_session
-        session = get_or_create_session(session_id, user_name, user_role)
-        return CopilotResponse(
-            intent="CLINICAL_AI_CONSULTATION", reply_text=cleaned_reply,
-            legal_basis=rag_res.legal_basis or "Dược Thư Quốc Gia Việt Nam",
-            suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Thông tư 51/2017/TT-BYT", "Kiểm tra tương tác thuốc"],
-            session_id=session.session_id, citations=[c.to_dict() for c in rag_res.citations], rag_grounded=True
-        )
+    is_noise_or_too_short = len(lower_query.strip()) < 4 or clean_greeting in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}
+    if not is_noise_or_too_short:
+        rag_res = await execute_clinical_rag(query, user_role=user_role)
+        if rag_res and (rag_res.citations or is_deep_pharmacology):
+            cleaned_reply = validate_output_guardrail(rag_res.answer, query)
+            from app.services.session_context import get_or_create_session
+            session = get_or_create_session(session_id, user_name, user_role)
+            return CopilotResponse(
+                intent="CLINICAL_AI_CONSULTATION", reply_text=cleaned_reply,
+                legal_basis=rag_res.legal_basis or "Dược Thư Quốc Gia Việt Nam",
+                suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Thông tư 51/2017/TT-BYT", "Kiểm tra tương tác thuốc"],
+                session_id=session.session_id, citations=[c.to_dict() for c in rag_res.citations], rag_grounded=True
+            )
 
     # 13. Phản hồi chào mừng và bảng điều hướng lâm sàng
     return CopilotResponse(

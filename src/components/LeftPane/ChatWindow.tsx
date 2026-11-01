@@ -120,7 +120,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   {msg.suggestedChips && msg.suggestedChips.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
                       <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp</span>
-                      {msg.suggestedChips.map((chip, idx) => (
+                      {Array.from(new Set(msg.suggestedChips)).map((chip, idx) => (
                         <button
                           key={idx}
                           type="button"
@@ -134,7 +134,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   )}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-2xs text-slate-600">
-                      {msg.citations.slice(0, 3).map((c, i) => (
+                      <span className="w-full text-2xs font-semibold text-slate-400">Trích dẫn y văn & căn cứ pháp lý:</span>
+                      {Array.from(new Map(msg.citations.map(c => [c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis, c])).values()).slice(0, 3).map((c, i) => (
                         <span key={i} title={`${c.source}: ${c.excerpt || c.section}`} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 cursor-help">
                           <BookOpen className="w-2.5 h-2.5 text-slate-500" />
                           <span className="font-medium truncate max-w-[200px]">{c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis}</span>
