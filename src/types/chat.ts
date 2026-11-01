@@ -74,6 +74,7 @@ export interface RagCitationItem {
   section: string;
   excerpt?: string;
   relevance_score?: number;
+  chunk_id?: string;
 }
 
 export interface ChatMessage {

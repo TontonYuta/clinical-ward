@@ -146,7 +146,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     const next = medications.map((item, itemIndex) => itemIndex === index ? { ...item, medicationName: med.brandName, activeIngredient: med.activeIngredient, unit: med.standardUnit, route: med.route } : item);
     setMedications(next);
     refreshDdiAudit(next);
-    if (med.isNarcotic || /\b(morphin|fentanyl|oxycodon|pethidin)\b/i.test(med.brandName + ' ' + med.activeIngredient)) {
+    if (med.isControlled || /\b(morphin|fentanyl|oxycodon|pethidin)\b/i.test(med.brandName + ' ' + med.activeIngredient)) {
       setTt26FormType('PL2_NARCOTIC');
     } else if (/\b(diazepam|phenobarbital|clonazepam|zolpidem)\b/i.test(med.brandName + ' ' + med.activeIngredient)) {
       if (tt26FormType === 'PL1_STANDARD') setTt26FormType('PL3_PSYCHOTROPIC');

@@ -109,7 +109,7 @@ export async function processClinicalAgentQueryAsync(
   // 2. Thử gọi qua FastAPI Copilot Backend (nắm giữ 54.885 CSDL Cục QLD & tồn kho thực tế)
   try {
     const backendData = await chatCopilotApi(cleanInput, role, name, _clientSessionId);
-    if (backendData && backendData.reply_text && backendData.intent !== 'GENERAL_CLINICAL_ASSISTANCE') {
+    if (backendData && backendData.reply_text) {
       let card: AgentActionCard | undefined = undefined;
       let actionPayload: ActionPayload | undefined = undefined;
 
