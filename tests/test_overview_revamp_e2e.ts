@@ -26,16 +26,15 @@ async function main() {
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(600);
 
-  // 1. Verify Header & Branding & Prominent AI Copilot
+  // 1. Verify Header & Branding (AI banner removed from dashboard per user request)
   console.log('--- 1. Verifying Header & Branding ---');
   const title = page.locator('h1:has-text("Tổng quan trạm làm việc")');
   await title.waitFor({ state: 'visible', timeout: 5000 });
   const copilotBanner = page.locator('h2:has-text("Trợ lý AI Lâm Sàng Y Khoa")');
-  const copilotBtn = page.locator('button:has-text("Mở Trợ lý AI (⌘K)")');
-  if (!(await copilotBanner.isVisible()) || !(await copilotBtn.isVisible())) {
-    throw new Error('FAIL: Prominent AI Copilot banner or button not visible!');
+  if (await copilotBanner.isVisible()) {
+    throw new Error('FAIL: AI Copilot banner should not be on dashboard!');
   }
-  console.log('✅ Header & Prominent AI Copilot visible.');
+  console.log('✅ Clean header verified without AI banner on dashboard.');
 
   // 2. Verify 4 Core Capabilities
   console.log('--- 2. Verifying 4 Core Capabilities ---');
