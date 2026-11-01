@@ -4,6 +4,9 @@ Gắn trích dẫn từ chunk có nguồn; không tự suy ra provenance khi thi
 """
 import re
 import unicodedata
+import json
+from pathlib import Path
+from functools import lru_cache
 from app.services.rag.types import RagCitation, RetrievedChunk, RagResult
 
 _QUERY_STOPWORDS = {
@@ -11,6 +14,51 @@ _QUERY_STOPWORDS = {
     "không", "là", "làm", "một", "muốn", "nào", "như", "thế",
     "thì", "tôi", "và", "về", "với", "xin", "cho", "hôm", "nay",
 }
+
+_BACKEND_DIR = Path(__file__).resolve().parents[3]
+_SOURCE_MANIFEST_PATH = _BACKEND_DIR / "data" / "knowledge_base" / "clinical_source_manifest.json"
+
+@lru_cache(maxsize=1)
+def _load_source_documents() -> tuple[list[dict], dict[str, dict]]:
+    try:
+        manifest = json.loads(_SOURCE_MANIFEST_PATH.read_text(encoding="utf-8"))
+        records_path = _BACKEND_DIR / "data" / "knowledge_base" / "dtqg_monographs_extracted.json"
+        records = json.loads(records_path.read_text(encoding="utf-8"))
+        by_inn = {str(item.get("inn", "")).casefold(): item for item in records if item.get("inn")}
+        return manifest.get("sources", []), by_inn
+    except (OSError, ValueError, TypeError):
+        return [], {}
+
+def _citation_document(source: str, legal_basis: str, section: str) -> tuple[str | None, str | None, int | None]:
+    """Return a verified local PDF path and page only when the citation maps to a known source."""
+    normalized_basis = legal_basis.casefold()
+    normalized_source = source.casefold()
+    candidates, monographs = _load_source_documents()
+    source_text = f"{normalized_source} {normalized_basis}"
+    match = next((
+        item for item in candidates
+        if (item.get("id") == "dtqg-v2-2015" and ("dược thư" in source_text or "2033/qđ-byt" in source_text))
+        or (item.get("legal_basis", "").casefold() and item.get("legal_basis", "").casefold() in source_text)
+    ), None)
+    if match is None:
+        return None, None, None
+
+    # The indexed monograph heading is mapped to its printed page only when
+    # that page is explicitly recorded in the source's extracted metadata.
+    page = None
+    if match.get("id") == "dtqg-v2-2015":
+        section_inn = re.sub(r"^\s*\d+\.\s*", "", section).split("(")[0].split("-")[0].strip().casefold()
+        record = monographs.get(section_inn)
+        source_text = str(record.get("source", "")) if record else ""
+        page_match = re.search(r"Trang\s*(\d+)", source_text, re.IGNORECASE)
+        if not page_match and record and record.get("start_page"):
+            page_match = re.match(r"(\d+)", str(record["start_page"]))
+        page = int(page_match.group(1)) if page_match else None
+    public_path = match.get("public_path")
+    url = f"/{public_path.removeprefix('public/')}" if public_path else None
+    if url and page:
+        url += f"#page={page}"
+    return url, match.get("id"), page
 
 def _normalize_terms(text: str) -> set[str]:
     normalized = unicodedata.normalize("NFKD", text.casefold())
@@ -52,6 +100,7 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCit
         lines = [line.strip() for line in c.content.split("\n") if line.strip() and not line.startswith("#")]
         excerpt = " ".join(lines[:3])[:180] + "..." if lines else c.title
 
+        document_url, document_id, document_page = _citation_document(c.source_doc, c.legal_basis, c.page_or_section)
         citations.append(RagCitation(
             source=c.source_doc,
             legal_basis=c.legal_basis,
@@ -59,6 +108,9 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCit
             excerpt=excerpt,
             relevance_score=min(1.0, r.score * 30.0),
             chunk_id=c.chunk_id,
+            url=document_url,
+            document_id=document_id,
+            page=document_page,
         ))
     return citations
 

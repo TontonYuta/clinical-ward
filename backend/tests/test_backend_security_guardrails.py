@@ -405,6 +405,29 @@ async def test_copilot_acknowledgment_is_not_a_business_menu():
     assert body["reply_text"] == "Rất vui được hỗ trợ bác sĩ."
     assert body["suggested_chips"] == []
 
+def test_drug_profile_response_contains_verified_pdf_citation():
+    from types import SimpleNamespace
+    from app.models.registry import DavNationalDrug
+    from app.services.copilot_drug_formatter import _drug_citation
+
+    drug = DavNationalDrug(id="test", national_code="SDK-1", brand_name="Paracetamol", active_ingredient="Paracetamol", group="Thuốc thường")
+    monograph = SimpleNamespace(title="Paracetamol")
+    citation = _drug_citation(drug, monograph, "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang 1118)")
+    assert citation["document_id"] == "dtqg-v2-2015"
+    assert citation["page"] == 1118
+    assert citation["url"] == "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118"
+
+def test_unverified_drug_source_does_not_link_to_dtqg_pdf():
+    from types import SimpleNamespace
+    from app.models.registry import DavNationalDrug
+    from app.services.copilot_drug_formatter import _drug_citation
+
+    drug = DavNationalDrug(id="test", national_code="SDK-2", brand_name="Drug B", active_ingredient="Drug B", group="Thuốc thường")
+    citation = _drug_citation(drug, SimpleNamespace(title="Drug B"), "CSDL đăng ký thuốc Cục Quản lý Dược")
+    assert citation["document_id"] == "dav-registry"
+    assert citation["url"] == "https://dichvucong.dav.gov.vn/congbothuoc/index"
+    assert citation["page"] is None
+
 @pytest.mark.asyncio
 async def test_self_symptom_prompt_without_case_context_asks_for_clinical_case():
     from httpx import AsyncClient, ASGITransport

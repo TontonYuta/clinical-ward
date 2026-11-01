@@ -207,6 +207,23 @@ def test_citations_expose_stable_chunk_id_and_exact_evidence_excerpt():
     serialized = citation.to_dict()
     assert serialized["chunk_id"] == "core_inns_monographs_2_1"
     assert "Liều tối đa" in serialized["excerpt"]
+    assert serialized["url"] == "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118"
+
+def test_citation_for_known_dtqg_monograph_contains_clickable_pdf_page():
+    from app.services.rag.types import RetrievedChunk
+    chunk = RagChunk("core_inns_monographs_2_1", "Dược thư Quốc gia", "QĐ 2033/QĐ-BYT", "Paracetamol", "Paracetamol", "Liều tối đa: 4 g mỗi ngày.", [], "monograph")
+    serialized = build_claim_citations([RetrievedChunk(chunk, 0.03)])[0].to_dict()
+    assert serialized["url"] == "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118"
+    assert serialized["page"] == 1118
+    assert serialized["document_id"] == "dtqg-v2-2015"
+
+def test_citation_for_verified_regulatory_source_links_to_document_without_invented_page():
+    from app.services.rag.types import RetrievedChunk
+    chunk = RagChunk("tt51_2017_anaphylaxis_protocol_4", "Phác Đồ Cấp Cứu Phản Vệ", "Thông tư 51/2017/TT-BYT", "Xử trí phản vệ", "Adrenalin tiêm bắp", "Tiêm bắp Adrenalin theo phác đồ.", [], "circular")
+    serialized = build_claim_citations([RetrievedChunk(chunk, 0.03)])[0].to_dict()
+    assert serialized["document_id"] == "tt-51-2017"
+    assert serialized["url"] == "/pdf/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf"
+    assert serialized["page"] is None
 
 def test_low_retrieval_scores_do_not_inflate_confidence():
     from app.services.rag.citation_grounder import format_grounded_answer

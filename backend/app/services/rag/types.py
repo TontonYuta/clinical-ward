@@ -32,6 +32,9 @@ class RagCitation:
     excerpt: str
     relevance_score: float = 1.0
     chunk_id: str = ""
+    url: Optional[str] = None
+    document_id: Optional[str] = None
+    page: Optional[int] = None
 
     def to_dict(self) -> dict:
         return {
@@ -41,6 +44,9 @@ class RagCitation:
             "excerpt": self.excerpt,
             "relevance_score": round(self.relevance_score, 3),
             "chunk_id": self.chunk_id,
+            "url": self.url,
+            "document_id": self.document_id,
+            "page": self.page,
         }
 
 @dataclass

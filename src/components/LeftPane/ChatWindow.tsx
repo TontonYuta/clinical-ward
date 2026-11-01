@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, ExternalLink } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -136,10 +136,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-2xs text-slate-600">
                       <span className="w-full text-2xs font-semibold text-slate-400">Trích dẫn y văn & căn cứ pháp lý:</span>
                       {Array.from(new Map(msg.citations.map(c => [c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis, c])).values()).slice(0, 3).map((c, i) => (
-                        <span key={i} title={`${c.source}: ${c.excerpt || c.section}`} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 cursor-help">
+                        <a key={i} href={c.url || undefined} target={c.url ? '_blank' : undefined} rel={c.url ? 'noreferrer' : undefined} title={`${c.source}: ${c.excerpt || c.section}`} aria-label={c.url ? `Mở ${c.source}, ${c.page ? `trang ${c.page}` : c.section}` : `${c.source}: ${c.section}`} className={`inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-1 rounded border border-slate-200 ${c.url ? 'hover:bg-teal-50 hover:border-teal-300 hover:text-teal-900 cursor-pointer' : 'cursor-help'}`}>
                           <BookOpen className="w-2.5 h-2.5 text-slate-500" />
                           <span className="font-medium truncate max-w-[200px]">{c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis}</span>
-                        </span>
+                          {c.page && <span className="text-slate-500">tr. {c.page}</span>}
+                          {c.url && <ExternalLink className="w-2.5 h-2.5" />}
+                        </a>
                       ))}
                     </div>
                   )}

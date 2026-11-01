@@ -3,6 +3,8 @@ Module định dạng hồ sơ Dược thẩm định và thẻ thông tin thu�
 """
 
 import re
+import json
+from pathlib import Path
 from typing import List, Optional
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +12,27 @@ from app.models.registry import DavNationalDrug
 from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.session_context import SessionState
+
+def _drug_citation(matched: DavNationalDrug, monograph: object | None, source: str) -> dict:
+    page_match = re.search(r"Trang\s*(\d+)", source, re.IGNORECASE)
+    page = int(page_match.group(1)) if page_match else None
+    manifest_path = Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "clinical_source_manifest.json"
+    try:
+        sources = json.loads(manifest_path.read_text(encoding="utf-8")).get("sources", [])
+    except (OSError, ValueError, TypeError):
+        sources = []
+    dtqg = next((item for item in sources if item.get("id") == "dtqg-v2-2015"), None)
+    has_dtqg_provenance = bool(source and "dược thư" in source.casefold() and dtqg)
+    title = "Dược thư Quốc gia Việt Nam, lần xuất bản II" if has_dtqg_provenance else "Cơ sở dữ liệu đăng ký thuốc Cục Quản lý Dược"
+    url = f"/{dtqg['public_path'].removeprefix('public/')}" if has_dtqg_provenance else "https://dichvucong.dav.gov.vn/congbothuoc/index"
+    document_id = "dtqg-v2-2015" if has_dtqg_provenance else "dav-registry"
+    if has_dtqg_provenance and page:
+        url += f"#page={page}"
+    return {
+        "source": title, "legal_basis": source or "Cục Quản lý Dược (DAV)",
+        "section": getattr(monograph, "title", None) or matched.active_ingredient,
+        "excerpt": "", "document_id": document_id, "url": url, "page": page if has_dtqg_provenance else None,
+    }
 
 async def build_drug_profile_response(
     drugs: List[DavNationalDrug],
@@ -69,6 +92,7 @@ async def build_drug_profile_response(
                 labels.append(requested_label)
                 details.append(f"- **{requested_label}:** {str(requested_value).strip()}")
             source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
+            citation = _drug_citation(matched, monograph, source)
             reply = "### " + ", ".join(labels) + ": " + matched.brand_name + chr(10) * 2 + chr(10).join(details) + chr(10) * 2 + "**Nguồn:** " + source
             session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
             return CopilotResponse(
@@ -76,6 +100,7 @@ async def build_drug_profile_response(
                 legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
                 active_medication_name=session.active_medication_name,
                 answer_type="medication_fields", source_status="exact_match", confidence=1.0,
+                citations=[citation],
             )
         if key == "stock":
             stock_stmt = select(InventoryBatch).where(or_(
@@ -95,6 +120,7 @@ async def build_drug_profile_response(
         else:
             detail = str(detail).strip()
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
+        citation = _drug_citation(matched, monograph, source)
         reply = f"### {label}: {matched.brand_name}\n\n{detail}\n\n**Nguồn:** {source}"
         session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
         return CopilotResponse(
@@ -102,10 +128,12 @@ async def build_drug_profile_response(
             legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
             active_medication_name=session.active_medication_name,
             answer_type="medication_field", source_status="exact_match", confidence=1.0,
+            citations=[citation],
         )
 
     if query.strip():
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
+        citation = _drug_citation(matched, monograph, source)
         reply = (
             f"### Thuốc: {matched.brand_name}\n\n"
             f"- **Hoạt chất:** {matched.active_ingredient}\n"
@@ -119,6 +147,7 @@ async def build_drug_profile_response(
             legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
             active_medication_name=session.active_medication_name,
             answer_type="medication_summary", source_status="exact_match", confidence=1.0,
+            citations=[citation],
         )
 
     if not matched.clinical_source or "Trang" not in matched.clinical_source:
