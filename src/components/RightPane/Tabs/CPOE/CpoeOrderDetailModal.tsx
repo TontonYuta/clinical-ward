@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, User, Calendar, Pill, MessageSquare, Send } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
@@ -62,11 +63,24 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   if (!isOpen || !order) return null;
 
   const handlePrint = () => {
-    if (!document.getElementById('prescription-print-document')) {
+    const docNode = document.getElementById('prescription-print-document');
+    if (!docNode) {
       window.alert('Không tìm thấy nội dung đơn thuốc để in.');
       return;
     }
-    try { window.print(); } catch { window.alert('Trình duyệt không mở được hộp thoại in. Hãy thử lại hoặc kiểm tra quyền in của trình duyệt.'); }
+    try {
+      document.body.classList.add('printing-prescription');
+      const cleanup = () => {
+        document.body.classList.remove('printing-prescription');
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+      setTimeout(cleanup, 2000);
+    } catch {
+      document.body.classList.remove('printing-prescription');
+      window.alert('Trình duyệt không mở được hộp thoại in. Hãy thử lại hoặc kiểm tra quyền in của trình duyệt.');
+    }
   };
 
   const isOutpatient = order.prescriptionType === 'outpatient';
@@ -97,6 +111,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   ];
 
   return (
+    <>
     <div
       role="dialog"
       aria-modal="true"
@@ -104,7 +119,6 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
       className="prescription-detail-overlay fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-100"
     >
       <div className="prescription-detail-panel bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] flex flex-col overflow-hidden text-slate-900">
-        <div className="hidden print:block"><PrescriptionPrintDocument order={order} /></div>
         
         {/* Header Chuẩn Workstation Y Tế (Zero-Box) */}
         <div className="px-3 sm:px-5 py-2 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 shrink-0">
@@ -709,5 +723,12 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
         initialMessageType="cpoe_prescription"
       />
     </div>
+    {createPortal(
+      <div id="prescription-print-portal">
+        <PrescriptionPrintDocument order={order} />
+      </div>,
+      document.body
+    )}
+    </>
   );
 };

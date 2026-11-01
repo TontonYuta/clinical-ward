@@ -72,8 +72,23 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const [clinicalNotes, setClinicalNotes] = useState('');
   const handlePrintDraft = () => {
     const documentNode = document.getElementById('prescription-print-document');
-    if (!documentNode) { window.alert('Không tìm thấy bản xem trước đơn thuốc.'); return; }
-    window.print();
+    if (!documentNode) {
+      window.alert('Không tìm thấy bản xem trước đơn thuốc.');
+      return;
+    }
+    try {
+      document.body.classList.add('printing-prescription');
+      const cleanup = () => {
+        document.body.classList.remove('printing-prescription');
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+      setTimeout(cleanup, 2000);
+    } catch {
+      document.body.classList.remove('printing-prescription');
+      window.alert('Trình duyệt không mở được hộp thoại in.');
+    }
   };
 
   if (!isOpen) return null;

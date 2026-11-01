@@ -84,14 +84,14 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
       {/* Desktop View: Bảng đơn thuốc điện tử hành chính (Chuẩn TT 26/2025/TT-BYT) */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white border-y border-slate-200 overflow-hidden flex-col">
         <div className="overflow-x-auto overflow-y-auto flex-1 w-full">
-          <table className="w-full min-w-[1180px] table-fixed text-left text-sm border-collapse">
+          <table className="w-full min-w-[1150px] table-fixed text-left text-sm border-collapse">
             <colgroup>
-              <col style={{ width: '60px' }} />
+              <col style={{ width: '50px' }} />
+              <col style={{ width: '160px' }} />
               <col style={{ width: '180px' }} />
-              <col className="w-[24%]" style={{ minWidth: '240px' }} />
-              <col className="w-[26%]" style={{ minWidth: '250px' }} />
-              <col style={{ width: '130px' }} />
-              <col className="w-[38%]" style={{ minWidth: '320px' }} />
+              <col className="w-[32%]" style={{ minWidth: '260px' }} />
+              <col style={{ width: '120px' }} />
+              <col className="w-[48%]" style={{ minWidth: '380px' }} />
             </colgroup>
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr className="font-semibold text-sm tracking-normal">
