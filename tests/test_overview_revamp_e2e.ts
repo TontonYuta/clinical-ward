@@ -131,14 +131,34 @@ async function main() {
   console.log('--- 7. Testing Legal Docs Modal Interaction ---');
   const openLegalDocsBtn = page.locator('button:has-text("Cẩm nang quy định")').first();
   await openLegalDocsBtn.click();
+
+  const legalModal = page.locator('h2:has-text("Căn Cứ Pháp Lý")');
+  await legalModal.waitFor({ state: 'visible', timeout: 8000 });
+  console.log('✅ Successfully opened LegalDocsModal from Overview button!');
+  const closeLegalBtn = page.locator('button:has-text("Đóng")').first();
+  await closeLegalBtn.click();
+  await legalModal.waitFor({ state: 'hidden', timeout: 5000 });
+  await page.waitForTimeout(300);
+
+  // 7B. Test Bottom-Right AI Assistant Launcher ("mở hẳn ra")
+  console.log('--- 7B. Testing Bottom-Right AI Assistant Launcher ---');
+  const floatingAiBtn = page.locator('button[aria-label="Trợ lý AI lâm sàng"]');
+  if (!(await floatingAiBtn.isVisible())) {
+    throw new Error('FAIL: Bottom-right floating AI button not visible!');
+  }
+  const floatingAiText = await floatingAiBtn.textContent();
+  if (!floatingAiText?.includes('Trợ lý AI')) {
+    throw new Error('FAIL: Bottom-right floating AI button does not display text "Trợ lý AI"!');
+  }
+  console.log('✅ Bottom-right floating AI button is fully opened out with text & shortcut badge.');
+  await floatingAiBtn.click();
   await page.waitForTimeout(500);
 
-  const legalModal = page.locator('h2:has-text("Căn Cứ Pháp Lý & Văn Bản Quy Phạm Pháp Luật Y Tế")');
-  if (await legalModal.isVisible()) {
-    console.log('✅ Successfully opened LegalDocsModal from Overview button!');
-    const closeLegalBtn = page.locator('button[aria-label="Đóng"], button:has-text("Đóng")').first();
-    if (await closeLegalBtn.isVisible()) await closeLegalBtn.click();
-    await page.waitForTimeout(300);
+  const closeChatBtn = page.locator('button[title="Đóng Trợ lý AI"]').first();
+  if (await closeChatBtn.isVisible()) {
+    console.log('✅ Bottom-right AI Assistant chat window opened successfully on click!');
+    await closeChatBtn.click();
+    await page.waitForTimeout(400);
   }
 
   // 8. Capture Fullpage Screenshot of Revamped Overview

@@ -51,6 +51,7 @@ import { clinicalAudio } from './utils/audio';
 const LegalDocsModal = lazy(() => import('./components/Modals/LegalDocsModal').then(m => ({ default: m.LegalDocsModal })));
 const UserGuideModal = lazy(() => import('./components/Modals/UserGuideModal').then(m => ({ default: m.UserGuideModal })));
 const PrintableFormModal = lazy(() => import('./components/Modals/PrintableFormModal').then(m => ({ default: m.PrintableFormModal })));
+import { fontScaleToPixels } from './components/Settings/fontScaleModel';
 import {
   getInitialTab,
   syncTabToUrl,
@@ -118,7 +119,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [patients, setPatients] = useState<PatientProfile[]>(INITIAL_PATIENTS);
   const [fontScale, setFontScale] = useState(getInitialFontScale);
   useEffect(() => {
-    document.documentElement.style.fontSize = fontScale === 'compact' ? '14px' : fontScale === 'large' ? '18px' : '16px';
+    document.documentElement.style.fontSize = `${fontScaleToPixels(fontScale)}px`;
     saveFontScale(fontScale);
   }, [fontScale]);
 
@@ -1755,10 +1756,15 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         onClick={() => setIsCopilotOpen((prev) => !prev)}
         aria-label="Trợ lý AI lâm sàng"
         title="Trợ lý AI lâm sàng (⌘K / Ctrl+K)"
-        className={`group fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-12 items-center gap-2 rounded-full bg-slate-900 px-3.5 text-white shadow-lg transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
+        className={`fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-13 items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 px-4 py-2 text-white shadow-xl hover:shadow-2xl border-2 border-teal-500/50 hover:border-teal-400 ring-4 ring-teal-500/20 transition-all duration-200 hover:scale-105 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
       >
-        <Bot className="h-5 w-5 text-teal-300" />
-        <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-200 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:max-w-28 group-focus-visible:opacity-100">Trợ lý AI</span>
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-400"></span>
+        </span>
+        <Bot className="h-5 w-5 text-teal-300 shrink-0" />
+        <span className="text-sm font-bold tracking-tight text-white whitespace-nowrap">Trợ lý AI</span>
+        <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-2xs font-mono font-bold bg-slate-800 text-teal-300 rounded border border-teal-500/30">⌘K</kbd>
       </button>
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
