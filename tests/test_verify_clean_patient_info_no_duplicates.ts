@@ -9,7 +9,7 @@ async function run() {
   const page = await context.newPage();
 
   console.log('🚀 Checking Clean Patient Info in CPOE Table & Patient Detail Header...');
-  await page.goto('http://localhost:3001/#cpoe', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:3001/#cpoe', { waitUntil: 'domcontentloaded' });
 
   // 1. Ensure CPOE tab is active
   const cpoeTabBtn = page.locator('button:has-text("Kê Đơn"), [data-testid="tab-cpoe"]').first();
