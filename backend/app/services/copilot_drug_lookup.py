@@ -46,11 +46,10 @@ def extract_drug_keywords(query: str) -> str:
         "tác", "dụng", "phụ", "không", "mong", "muốn", "tương", "tác", "thành", "phần",
         "của", "thuốc", "này", "đó", "là", "gì", "thế", "nào", "bao", "nhiêu", "hoạt", "chất",
         "thời", "gian", "bán", "thải", "tối", "đa", "huyết", "tương",
+        "có", "hay", "hoặc", "bị", "cho", "đang", "được", "những", "các", "loại", "nhóm", "khác", "chi",
+        "chống", "chỉ", "định", "cách", "dùng", "liều", "lượng", "và", "với", "cùng", "trong", "khi"
     }
     words = [word for word in words if word not in question_terms]
-    # Remove clinical-question terms before resolving an unrecognized medication name.
-    words = [w for w in words if w not in {"chỉ", "định", "tác", "dụng", "phụ", "không", "mong", "muốn", "cách", "dùng", "liều", "lượng"}]
-    words = [w for w in words if w not in {"và", "với", "cùng", "trong", "khi"}]
     return " ".join(words).strip()
 
 async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: str | None = None) -> CopilotResponse:
@@ -58,9 +57,8 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
     session = get_or_create_session(session_id)
     kw = extract_drug_keywords(query)
 
-    is_deictic = any(w in query.lower() for w in [
-        "thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"
-    ]) or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
+    deictic_phrases = ["thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"]
+    is_deictic = any(w in query.lower() for w in deictic_phrases) or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
 
     if (not kw or len(kw) < 2 or is_deictic) and session.active_medication_name:
         kw = session.active_medication_ingredient or session.active_medication_name
@@ -68,7 +66,7 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
     # Resolve question-only field prompts against the active medication in-session.
     query_field_only = any(term in query.lower() for term in [
         "thành phần", "hoạt chất", "tác dụng phụ", "tác dụng không mong muốn",
-        "chống chỉ định", "liều dùng", "liều lượng", "chỉ định", "tương tác thuốc"
+        "chống chỉ định", "liều dùng", "liều lượng", "chỉ định", "tương tác thuốc", "tương tác", "tương kỵ"
     ]) and any(term in query.lower() for term in ["thuốc này", "thuốc đó", "nó", "của thuốc", "của paracetamol"])
     if query_field_only and session.active_medication_name:
         kw = session.active_medication_name

@@ -233,6 +233,7 @@ async def test_out_of_database_knowledge_boundary():
             ("Thành phần của thuốc Paracetamol là gì?", "Hoạt chất", ["Liều lượng dùng", "Tồn kho Bệnh viện", "Phiếu dự trù"]),
             ("Tác dụng phụ của thuốc Paracetamol?", "Tác dụng không mong muốn", ["Liều lượng dùng", "Tồn kho Bệnh viện", "Phiếu dự trù"]),
             ("Tương tác thuốc của thuốc Paracetamol?", "Tương tác thuốc", ["Liều lượng dùng", "Tồn kho Bệnh viện", "Phiếu dự trù"]),
+            ("Paracetamol có tương tác với thuốc nào không", "Tương tác thuốc", ["Liều lượng dùng", "Tồn kho Bệnh viện", "Phiếu dự trù"]),
         ]:
             focused = await client.post("/api/v1/copilot/chat", json={"query": query, "session_id": "focused-drug-field"})
             assert focused.status_code == 200

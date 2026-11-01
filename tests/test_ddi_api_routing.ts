@@ -29,7 +29,18 @@ async function run() {
     const underspecified = await processClinicalAgentQueryAsync('Tra cứu tương tác thuốc', state);
     if (!underspecified.replyMessage.text.includes('nêu tên hai thuốc')) throw new Error('Missing pair prompt');
 
-    console.log('DDI API routing tests passed (backend result, no-match disclaimer, network failure, missing pair).');
+    // Single-drug interaction question should not be mangled as a pair with interrogative words
+    globalThis.fetch = async () => new Response(JSON.stringify({
+      intent: 'MEDICATION_SAFETY_PROFILE',
+      reply_text: '### Tương tác thuốc: Paracetamol\n\nThuốc uống chống đông máu...',
+      legal_basis: 'Dược thư Quốc gia Việt Nam',
+      answer_type: 'medication_field'
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const singleDrug = await processClinicalAgentQueryAsync('Paracetamol có tương tác với thuốc nào không', state);
+    if (!singleDrug.replyMessage.text.includes('Paracetamol')) throw new Error('Failed to resolve single-drug interaction lookup');
+    if (singleDrug.replyMessage.text.includes('thuốc nào')) throw new Error('Mangled interrogative word into drug name');
+
+    console.log('DDI API routing tests passed (backend result, no-match disclaimer, network failure, missing pair, single-drug interaction).');
   } finally {
     globalThis.fetch = originalFetch;
   }

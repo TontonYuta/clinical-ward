@@ -10,7 +10,7 @@ import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/gem
 import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../services/gemini/clinicalScenarios';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
-import { matchDrugInteractionIntent, extractDrugPair, handleDrugInteractionIntent } from './intents/drugInteractionIntent';
+import { matchDrugInteractionIntent, extractDrugPair, extractSingleDrug, handleDrugInteractionIntent } from './intents/drugInteractionIntent';
 import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -50,42 +50,45 @@ export async function processClinicalAgentQueryAsync(
     const pair = extractDrugPair(lower);
     const ddiChips = ['Kiểm tra Clopidogrel + Omeprazol', 'Kiểm tra Nitroglycerin + Sildenafil', 'Kiểm tra Ceftriaxone + Calci', 'Kiểm tra Warfarin + Aspirin'];
     if (!pair) {
-      return { replyMessage: {
-        id: `msg-ddi-pair-${Date.now()}`, sender: 'agent',
-        text: 'Để rà soát tương tác thuốc (QĐ 5948/QĐ-BYT), vui lòng nêu tên hai thuốc hoặc hoạt chất (ví dụ: *Clopidogrel và Omeprazol*). Bác sĩ có thể bấm chọn nhanh các cặp kiểm tra bên dưới:',
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        suggestedChips: ddiChips
-      } };
-    }
-    try {
-      const ddi = await checkPairDdiApi(pair[0], pair[1]);
-      const isCrit = ddi.alert?.severity?.toUpperCase().includes('CONTRAINDICATED') || ddi.alert?.severity?.toLowerCase().includes('chống chỉ định');
-      const cdssAlert = ddi.has_interaction && ddi.alert ? {
-        level: (isCrit ? 'critical' : 'warning') as 'critical' | 'warning',
-        title: ddi.alert.title || `CẢNH BÁO TƯƠNG TÁC: ${pair[0].toUpperCase()} + ${pair[1].toUpperCase()}`,
-        message: `${ddi.alert.consequence} (${ddi.alert.mechanism || ''})`,
-        antidoteRecommendation: ddi.alert.action,
-        regulatoryReference: ddi.alert.source || 'QĐ 5948/QĐ-BYT'
-      } : undefined;
+      if (!extractSingleDrug(lower)) {
+        return { replyMessage: {
+          id: `msg-ddi-pair-${Date.now()}`, sender: 'agent',
+          text: 'Để rà soát tương tác thuốc (QĐ 5948/QĐ-BYT), vui lòng nêu tên hai thuốc hoặc hoạt chất (ví dụ: *Clopidogrel và Omeprazol*). Bác sĩ có thể bấm chọn nhanh các cặp kiểm tra bên dưới:',
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          suggestedChips: ddiChips
+        } };
+      }
+    } else {
+      try {
+        const ddi = await checkPairDdiApi(pair[0], pair[1]);
+        const isCrit = ddi.alert?.severity?.toUpperCase().includes('CONTRAINDICATED') || ddi.alert?.severity?.toLowerCase().includes('chống chỉ định');
+        const cdssAlert = ddi.has_interaction && ddi.alert ? {
+          level: (isCrit ? 'critical' : 'warning') as 'critical' | 'warning',
+          title: ddi.alert.title || `CẢNH BÁO TƯƠNG TÁC: ${pair[0].toUpperCase()} + ${pair[1].toUpperCase()}`,
+          message: `${ddi.alert.consequence} (${ddi.alert.mechanism || ''})`,
+          antidoteRecommendation: ddi.alert.action,
+          regulatoryReference: ddi.alert.source || 'QĐ 5948/QĐ-BYT'
+        } : undefined;
 
-      const replyText = ddi.has_interaction && ddi.alert
-        ? `### ⚠️ Cảnh Báo Tương Tác Thuốc (QĐ 5948/QĐ-BYT)\n\n**${ddi.alert.title}**\n\n- **Hậu quả lâm sàng:** ${ddi.alert.consequence}\n- **Cơ chế dược lý:** ${ddi.alert.mechanism}\n- **Hướng xử trí:** ${ddi.alert.action}\n- **Mức độ:** **${ddi.alert.severity}**\n- **Căn cứ pháp lý:** ${ddi.alert.source}`
-        : `### Chưa ghi nhận cảnh báo trong chỉ mục: ${pair[0]} + ${pair[1]}\n\n${ddi.coverage_note || 'Chưa tìm thấy trong danh mục đã lập chỉ mục; điều này không khẳng định phối hợp an toàn.'}`;
+        const replyText = ddi.has_interaction && ddi.alert
+          ? `### ⚠️ Cảnh Báo Tương Tác Thuốc (QĐ 5948/QĐ-BYT)\n\n**${ddi.alert.title}**\n\n- **Hậu quả lâm sàng:** ${ddi.alert.consequence}\n- **Cơ chế dược lý:** ${ddi.alert.mechanism}\n- **Hướng xử trí:** ${ddi.alert.action}\n- **Mức độ:** **${ddi.alert.severity}**\n- **Căn cứ pháp lý:** ${ddi.alert.source}`
+          : `### Chưa ghi nhận cảnh báo trong chỉ mục: ${pair[0]} + ${pair[1]}\n\n${ddi.coverage_note || 'Chưa tìm thấy trong danh mục đã lập chỉ mục; điều này không khẳng định phối hợp an toàn.'}`;
 
-      return { replyMessage: {
-        id: `msg-ddi-api-${Date.now()}`, sender: 'agent', text: replyText,
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Danh mục tương tác thuốc Bộ Y Tế', clause: 'Sàng lọc tương tác thuốc' },
-        cdssAlert, suggestedChips: ddiChips, ragGrounded: true
-      } };
-    } catch {
-      const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      return { replyMessage: {
-        id: `msg-ddi-offline-${Date.now()}`, sender: 'agent',
-        text: `### Chưa thể kết luận về tương tác thuốc\n\nKhông truy cập được bộ máy DDI nên cặp **${pair[0]} + ${pair[1]}** chưa được kiểm tra. Đây không phải kết quả âm tính hay xác nhận an toàn. Hãy thử lại khi kết nối backend hoạt động hoặc nhờ dược sĩ lâm sàng rà soát.`,
-        timestamp: now, suggestedChips: ddiChips,
-        cdssAlert: { level: 'warning', title: 'CHƯA HOÀN TẤT KIỂM TRA TƯƠNG TÁC', message: 'Nguồn DDI không truy cập được; chưa thể đưa ra kết luận cho cặp thuốc này.' }
-      } };
+        return { replyMessage: {
+          id: `msg-ddi-api-${Date.now()}`, sender: 'agent', text: replyText,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Danh mục tương tác thuốc Bộ Y Tế', clause: 'Sàng lọc tương tác thuốc' },
+          cdssAlert, suggestedChips: ddiChips, ragGrounded: true
+        } };
+      } catch {
+        const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        return { replyMessage: {
+          id: `msg-ddi-offline-${Date.now()}`, sender: 'agent',
+          text: `### Chưa thể kết luận về tương tác thuốc\n\nKhông truy cập được bộ máy DDI nên cặp **${pair[0]} + ${pair[1]}** chưa được kiểm tra. Đây không phải kết quả âm tính hay xác nhận an toàn. Hãy thử lại khi kết nối backend hoạt động hoặc nhờ dược sĩ lâm sàng rà soát.`,
+          timestamp: now, suggestedChips: ddiChips,
+          cdssAlert: { level: 'warning', title: 'CHƯA HOÀN TẤT KIỂM TRA TƯƠNG TÁC', message: 'Nguồn DDI không truy cập được; chưa thể đưa ra kết luận cho cặp thuốc này.' }
+        } };
+      }
     }
   }
 
@@ -112,20 +115,14 @@ export async function processClinicalAgentQueryAsync(
 
       if (backendData.card) {
         card = {
-          cardType: backendData.card.card_type as any,
-          title: backendData.card.title,
-          summary: backendData.card.summary,
-          data: backendData.card.data,
+          cardType: backendData.card.card_type as any, title: backendData.card.title,
+          summary: backendData.card.summary, data: backendData.card.data,
           primaryActionLabel: backendData.card.primary_action_label,
           primaryActionType: backendData.card.primary_action_type,
-          targetTab: backendData.card.target_tab as any,
-          status: 'pending'
+          targetTab: backendData.card.target_tab as any, status: 'pending'
         };
         if (card.targetTab && (card.cardType === 'borrow_confirm' || card.cardType === 'incident_confirm')) {
-          actionPayload = {
-            type: card.cardType === 'borrow_confirm' ? 'DEBT_ADDED' : 'TICKET_CREATED',
-            targetTab: card.targetTab
-          };
+          actionPayload = { type: card.cardType === 'borrow_confirm' ? 'DEBT_ADDED' : 'TICKET_CREATED', targetTab: card.targetTab };
         }
       }
 

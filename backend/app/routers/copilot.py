@@ -67,16 +67,22 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
         return await handle_debt_settle_intent(query, lower_query, db)
 
     # Explicit medication field questions should not be swallowed by broad scenarios/RAG.
-    medication_field_terms = [
-        "thành phần", "hoạt chất", "tác dụng phụ", "tác dụng không mong muốn",
-        "chống chỉ định", "liều dùng", "liều lượng", "liều tối đa", "chỉ định",
-        "tương tác thuốc", "thuốc tương tác", "sđk", "số đăng ký",
+    raw_field_specs = [
+        ("interaction", ["tương tác thuốc", "thuốc tương tác", "tương tác", "tương kỵ", "kỵ thuốc"]),
+        ("adverse_effects", ["tác dụng không mong muốn", "tác dụng phụ"]),
+        ("contraindications", ["chống chỉ định", "cấm dùng"]),
+        ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng"]),
+        ("indications", ["chỉ định", "công dụng"]),
+        ("ingredients", ["thành phần", "hoạt chất"]),
+        ("registry", ["số đăng ký", "sđk"]),
     ]
-    requested_medication_fields = [term for term in medication_field_terms if term in lower_query]
-    has_multiple_medication_fields = len(requested_medication_fields) > 1 or any(
-        connector in lower_query for connector in (" và ", " cùng ", ",")
-    )
-    has_explicit_medication_field = len(requested_medication_fields) == 1 and not has_multiple_medication_fields
+    matched_field_keys = {key for key, phrases in raw_field_specs if any(p in lower_query for p in phrases)}
+    from app.services.copilot_drug_lookup import extract_drug_keywords
+    extracted_kw = extract_drug_keywords(query)
+    is_two_drug = len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))
+    is_deep_complex = any(term in lower_query for term in ("thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"))
+    has_multiple_medication_fields = len(matched_field_keys) > 1 or is_two_drug or is_deep_complex or any(c in lower_query for c in (" và ", " cùng ", ","))
+    has_explicit_medication_field = len(matched_field_keys) == 1 and not has_multiple_medication_fields
     if has_explicit_medication_field:
         # The authoritative lookup supplies the catalog-backed field answer and citation.
         return await lookup_drug_authoritative(query, db, session_id=session_id)
@@ -139,32 +145,19 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     if is_legal and not has_action:
         return await handle_legal_intent(lower_query)
 
-    # 3. Giao ban & Đối soát ca trực 07:00 AM (TT 22 & TT 20)
+    # 3-9. Chuyển tiếp nghiệp vụ bệnh viện
     if any(w in lower_query for w in ["đối soát", "giao ban", "ca trực", "ca đêm", "báo cáo ca", "chốt ca", "bàn giao ca", "07:00", "lệch sổ", "tổng hợp nợ"]):
         return await handle_shift_handover_intent(db)
-
-    # 4. Báo hỏng Trang thiết bị Y tế (NĐ 98/2021)
-    matched_eq = find_matched_eq(lower_query)
-    if matched_eq is not None or any(w in lower_query for w in ["báo hỏng", "sự cố máy", "lỗi thiết bị", "xì khí", "không lên nguồn", "kẹt pít-tông", "chai pin"]):
+    if find_matched_eq(lower_query) is not None or any(w in lower_query for w in ["báo hỏng", "sự cố máy", "lỗi thiết bị", "xì khí", "không lên nguồn", "kẹt pít-tông", "chai pin"]):
         return await handle_equipment_intent(query, lower_query, user_name, db)
-
-    # 5. Kho FEFO & Cận hạn (TT 36/2018 GSP)
     if any(w in lower_query for w in ["fefo", "cận hạn", "hạn dùng", "date", "hết hạn", "sắp hết hạn", "ngày hết hạn", "ưu tiên xuất"]):
         return await handle_fefo_intent(db)
-
-    # 6. Dự trù bù tồn kho Mẫu 01 (TT 22/2011)
     if any(w in lower_query for w in ["dự trù", "mẫu 01", "cạn kho", "sắp hết", "hết thuốc", "bù tồn kho", "chạm ngưỡng", "cơ số"]):
         return await handle_restock_intent(db)
-
-    # 7. Giám sát Chuỗi lạnh Vắc xin (WHO PQS)
     if any(w in lower_query for w in ["chuỗi lạnh", "cold chain", "nhiệt độ tủ lạnh", "datalogger", "vắc xin", "mkt", "mất điện tủ", "arrhenius"]):
         return await handle_coldchain_intent(db)
-
-    # 8. Sổ kiểm toán bất biến (NĐ 130/2018 HMAC-SHA256)
     if any(w in lower_query for w in ["kiểm toán", "toàn vẹn", "chuỗi băm", "sha256", "sha-256", "hmac", "nhật ký bảo mật", "sổ bất biến"]):
         return await handle_audit_intent(db)
-
-    # 9. Thị giác AI Hóa đơn dược phẩm (Vision OCR)
     if any(w in lower_query for w in ["hóa đơn", "ocr", "quét hóa đơn", "bóc tách", "phiếu nhập", "cpc1", "vat"]):
         return await handle_ocr_intent()
 
@@ -205,19 +198,15 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
         from app.services.session_context import get_or_create_session
         session = get_or_create_session(session_id, user_name, user_role)
         return CopilotResponse(
-            intent="CLINICAL_AI_CONSULTATION",
-            reply_text=cleaned_reply,
+            intent="CLINICAL_AI_CONSULTATION", reply_text=cleaned_reply,
             legal_basis=rag_res.legal_basis or "Dược Thư Quốc Gia Việt Nam",
             suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Thông tư 51/2017/TT-BYT", "Kiểm tra tương tác thuốc"],
-            session_id=session.session_id,
-            citations=[c.to_dict() for c in rag_res.citations],
-            rag_grounded=True
+            session_id=session.session_id, citations=[c.to_dict() for c in rag_res.citations], rag_grounded=True
         )
 
     # 13. Phản hồi chào mừng và bảng điều hướng lâm sàng
     return CopilotResponse(
-        intent="GENERAL_CLINICAL_ASSISTANCE",
-        reply_text=CLINICAL_BUSINESS_DIRECTORY,
+        intent="GENERAL_CLINICAL_ASSISTANCE", reply_text=CLINICAL_BUSINESS_DIRECTORY,
         legal_basis="Thông tư 22/2011, TT 20/2017, TT 51/2017 & Nghị định 98/2021",
         suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu SĐK VD-24757-16", "Thuốc cận hạn FEFO", "Báo hỏng máy thở PB840"]
     )

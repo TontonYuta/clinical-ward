@@ -34,6 +34,48 @@ const COMMON_DDI_DRUGS = [
   'tramadol', 'linezolid', 'diazepam', 'fentanyl', 'midazolam', 'adrenalin', 'kcl', 'kali'
 ];
 
+const NON_DRUG_WORDS = new Set([
+  'thuốc nào', 'thuoc nao', 'thuốc gì', 'thuoc gi', 'những thuốc nào', 'các thuốc nào',
+  'thuốc khác', 'thuoc khac', 'những thuốc gì', 'thứ gì', 'cái gì', 'chất gì',
+  'chất nào', 'nhóm nào', 'loại nào', 'gì', 'gi', 'nào', 'nao', 'đâu', 'ai', 'sao',
+  'món gì', 'thức ăn', 'thuốc', 'thuoc', 'loại', 'nhóm', 'hoạt chất', 'thế nào',
+  'được không', 'khác', 'chi', 'thức uống', 'thực phẩm', 'đồ uống', 'rượu bia'
+]);
+
+export function isNonDrug(val: string): boolean {
+  const s = val.toLowerCase().trim();
+  if (s.length < 2) return true;
+  if (NON_DRUG_WORDS.has(s)) return true;
+  if (/^(?:thuốc|chất|loại|nhóm|món)\s+(?:nào|gì|khác|chi)/i.test(s)) return true;
+  if (/^(?:gì|nào|đâu|sao|không|được không)$/i.test(s)) return true;
+  return false;
+}
+
+export function cleanDrugName(val: string): string {
+  let s = val.trim();
+  s = s.replace(/^(?:bệnh nhân\s+)?(?:đang\s+)?(?:dùng|uống|tiêm|kê|sử dụng)?\s*/i, '');
+  s = s.replace(/^(?:kiểm tra|tra cứu|tương tác|phối hợp|kết hợp|dùng chung|uống cùng|dùng|uống)\s+/i, '');
+  let prev = '';
+  while (prev !== s) {
+    prev = s;
+    s = s.replace(/\s+(?:có|bị|cho|được|đang|tương tác|tương kỵ|phối hợp|kết hợp|dùng chung|uống cùng|uống chung|dùng|uống|được không|không)$/i, '').trim();
+  }
+  return s;
+}
+
+export function extractSingleDrug(lower: string): string | null {
+  const allNames = [...new Set([
+    ...MED_CATALOG.flatMap(m => [m.name, ...m.aliases]),
+    ...COMMON_DDI_DRUGS,
+    ...CURATED_DDI.flatMap(p => [...p.a, ...p.b])
+  ].filter(Boolean).map(n => n.toLowerCase()))].sort((a, b) => b.length - a.length);
+
+  for (const name of allNames) {
+    if (lower.includes(name)) return name;
+  }
+  return null;
+}
+
 export function extractDrugPair(lower: string): [string, string] | null {
   const allNames = [...new Set([
     ...MED_CATALOG.flatMap(m => [m.name, ...m.aliases]),
@@ -47,16 +89,14 @@ export function extractDrugPair(lower: string): [string, string] | null {
 
   if (unique.length === 1 && !/(?:tương tác|phối hợp|kết hợp|dùng chung|uống cùng)/.test(lower)) return null;
 
-  const match = lower.match(/(?:tương tác|phối hợp|kết hợp|dùng chung|uống cùng)?\s*([\p{L}0-9][\p{L}0-9 .()/-]*?)\s+(?:với|và|\+)\s+([\p{L}0-9][\p{L}0-9 .()/-]*?)(?=\s+(?:thế nào|như thế nào|được không|không|vậy|không\?)|[?!.,]|$)/iu);
+  const match = lower.match(/(?:tương tác|phối hợp|kết hợp|dùng chung|uống cùng)?\s*([\p{L}0-9][\p{L}0-9 .()/-]*?)\s+(?:có\s+)?(?:tương tác|tương kỵ|phối hợp|kết hợp|dùng chung|uống cùng)?\s*(?:với|và|\+)\s+([\p{L}0-9][\p{L}0-9 .()/-]*?)(?=\s+(?:thế nào|như thế nào|được không|không|vậy|không\?)|[?!.,]|$)/iu);
   if (!match) return null;
-  const clean = (val: string) => val
-    .replace(/^(?:bệnh nhân\s+)?(?:đang\s+)?(?:dùng|uống|tiêm|kê|sử dụng)?\s*/i, '')
-    .replace(/^(?:kiểm tra|tra cứu|tương tác|phối hợp|kết hợp|dùng chung|uống cùng|dùng|uống)\s+/i, '')
-    .replace(/\s+(?:có|tương tác|phối hợp|kết hợp|dùng chung|uống cùng|uống chung|dùng|uống|được không|không)$/i, '')
-    .trim();
-  const a = clean(match[1]);
-  const b = clean(match[2]);
-  return a && b && a.length >= 2 && b.length >= 2 ? [a, b] : null;
+  const a = cleanDrugName(match[1]);
+  const b = cleanDrugName(match[2]);
+  if (!a || !b || a.length < 2 || b.length < 2) return null;
+  if (isNonDrug(a) || isNonDrug(b)) return null;
+  if (a.toLowerCase() === b.toLowerCase()) return null;
+  return [a, b];
 }
 
 export function matchDrugInteractionIntent(lower: string): boolean {
