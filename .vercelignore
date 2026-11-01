@@ -1,4 +1,6 @@
 /.git
+/.worktrees
+/src-tauri/target
 /node_modules
 /dist
 /build
