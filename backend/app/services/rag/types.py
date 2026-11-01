@@ -31,6 +31,7 @@ class RagCitation:
     section: str
     excerpt: str
     relevance_score: float = 1.0
+    chunk_id: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -38,7 +39,8 @@ class RagCitation:
             "legal_basis": self.legal_basis,
             "section": self.section,
             "excerpt": self.excerpt,
-            "relevance_score": round(self.relevance_score, 3)
+            "relevance_score": round(self.relevance_score, 3),
+            "chunk_id": self.chunk_id,
         }
 
 @dataclass

@@ -113,7 +113,7 @@ export const OverviewMedicationCenter: React.FC<OverviewMedicationCenterProps> =
                         High-Alert
                       </span>
                     )}
-                    {med.isNarcotic && (
+                    {med.isControlled && (
                       <span className="text-2xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
                         Gây nghiện
                       </span>

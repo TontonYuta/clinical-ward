@@ -143,6 +143,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       ))}
                     </div>
                   )}
+                  {isAgent && msg.answerType === 'safe_abstention' && (
+                    <div role="status" className="mt-2 border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-950">
+                      Chưa đủ căn cứ trong nguồn đang tra cứu để kết luận. Hãy đối chiếu tài liệu gốc hoặc nhờ dược sĩ lâm sàng xác minh trước khi áp dụng.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

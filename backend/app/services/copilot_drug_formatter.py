@@ -46,19 +46,37 @@ async def build_drug_profile_response(
         ("adverse_effects", ("tác dụng phụ", "tác dụng không mong muốn", "adr"), "adverse_effects", "Tác dụng không mong muốn"),
         ("contraindications", ("chống chỉ định", "cấm dùng"), "contraindications", "Chống chỉ định"),
         ("adult_dosage", ("liều dùng", "liều lượng", "liều tối đa", "cách dùng"), "adult_dosage", "Liều dùng người lớn"),
-        ("indications", ("chỉ định", "công dụng", "dùng để làm gì"), "indications", "Chỉ định"),
+        ("indications", ("chỉ định", "công dụng", "dùng để làm gì", "dùng cho bệnh gì"), "indications", "Chỉ định"),
         ("ingredient", ("thành phần", "hoạt chất"), "active_ingredient", "Hoạt chất"),
         ("stock", ("tồn kho", "còn bao nhiêu", "trong kho", "vị trí kho"), "", "Tồn kho"),
     ]
-    requested = next((spec for spec in field_specs if any(term in lower_query for term in spec[1])), None)
+    requested_fields = [spec for spec in field_specs if any(term in lower_query for term in spec[1])]
     contextual_chips = [
         f"Tác dụng phụ của {matched.active_ingredient.split(';')[0]}?",
         f"Chống chỉ định của {matched.active_ingredient.split(';')[0]}?",
         f"Kiểm tra tương tác của {matched.active_ingredient.split(';')[0]} với thuốc khác",
     ]
 
-    if requested:
-        key, _, field, label = requested
+    if requested_fields:
+        key, _, field, label = requested_fields[0]
+        if len(requested_fields) > 1:
+            labels = []
+            details = []
+            for field_key, _, requested_field, requested_label in requested_fields:
+                requested_value = value(requested_field) if field_key != "stock" else None
+                if not requested_value:
+                    requested_value = f"Chưa có dữ liệu {requested_label.lower()} được xác thực trong nguồn đang lập chỉ mục."
+                labels.append(requested_label)
+                details.append(f"- **{requested_label}:** {str(requested_value).strip()}")
+            source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
+            reply = "### " + ", ".join(labels) + ": " + matched.brand_name + chr(10) * 2 + chr(10).join(details) + chr(10) * 2 + "**Nguồn:** " + source
+            session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+            return CopilotResponse(
+                intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None,
+                legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
+                active_medication_name=session.active_medication_name,
+                answer_type="medication_fields", source_status="exact_match", confidence=1.0,
+            )
         if key == "stock":
             stock_stmt = select(InventoryBatch).where(or_(
                 func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"),

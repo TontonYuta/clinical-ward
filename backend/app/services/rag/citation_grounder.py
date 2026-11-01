@@ -3,7 +3,33 @@ Citation Grounder & PaperQA2 Claim-Level Attribution
 Gắn trích dẫn từ chunk có nguồn; không tự suy ra provenance khi thiếu bằng chứng (<=190 LOC)
 """
 import re
+import unicodedata
 from app.services.rag.types import RagCitation, RetrievedChunk, RagResult
+
+_QUERY_STOPWORDS = {
+    "bao", "bằng", "biết", "các", "có", "của", "được", "gì", "hãy",
+    "không", "là", "làm", "một", "muốn", "nào", "như", "thế",
+    "thì", "tôi", "và", "về", "với", "xin", "cho", "hôm", "nay",
+}
+
+def _normalize_terms(text: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKD", text.casefold())
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char)).replace("đ", "d")
+    return {term for term in re.findall(r"[a-z0-9]+", normalized) if len(term) > 2 and term not in _QUERY_STOPWORDS}
+
+def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
+    query_terms = _normalize_terms(query)
+    evidence_terms = _normalize_terms(" ".join([chunk.chunk.title, chunk.chunk.content, *chunk.chunk.keywords]))
+    if not query_terms or not evidence_terms:
+        return False
+    overlap = query_terms & evidence_terms
+    return bool(overlap) and len(overlap) / len(query_terms) >= 0.25
+
+def _filter_supported_chunks(query: str, retrieved_chunks: list[RetrievedChunk], citations: list[RagCitation]) -> tuple[list[RetrievedChunk], list[RagCitation]]:
+    supported = [chunk for chunk in retrieved_chunks if _has_evidence_overlap(query, chunk)]
+    supported_sections = {f"{item.chunk.legal_basis}_{item.chunk.page_or_section}" for item in supported}
+    supported_citations = [citation for citation in citations if f"{citation.legal_basis}_{citation.section}" in supported_sections]
+    return supported, supported_citations
 
 def _display_source(citation: RagCitation) -> str:
     basis = citation.legal_basis.strip()
@@ -31,7 +57,8 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCit
             legal_basis=c.legal_basis,
             section=c.page_or_section,
             excerpt=excerpt,
-            relevance_score=min(1.0, r.score * 30.0)
+            relevance_score=min(1.0, r.score * 30.0),
+            chunk_id=c.chunk_id,
         ))
     return citations
 
@@ -42,6 +69,17 @@ def format_grounded_answer(
     kg_data: dict,
     llm_generated_text: str | None = None
 ) -> RagResult:
+    # RRF rank scores are relative, not calibrated relevance probabilities.
+    # Require lexical topic support before exposing a retrieved passage.
+    retrieved_chunks, citations = _filter_supported_chunks(query, retrieved_chunks, citations)
+    if not retrieved_chunks:
+        return RagResult(
+            query=query,
+            answer="Chưa tìm thấy tài liệu đủ phù hợp để trả lời chính xác câu hỏi này. Vui lòng nêu rõ tên thuốc, nội dung cần tra cứu hoặc văn bản liên quan.",
+            citations=[], retrieved_chunks=[], kg_entities=[],
+            confidence_score=0.1, legal_basis="", rag_grounded=False,
+        )
+
     if retrieved_chunks and all(r.chunk.entity_type == "ddi" for r in retrieved_chunks):
         asks_about_interactions = any(term in query.casefold() for term in (
             "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
@@ -66,7 +104,7 @@ def format_grounded_answer(
             citations=citations,
             retrieved_chunks=retrieved_chunks,
             kg_entities=kg_data.get("kg_entities", []),
-            confidence_score=0.96,
+            confidence_score=min(0.75, max(0.3, 0.3 + len(_normalize_terms(query) & _normalize_terms(retrieved_chunks[0].chunk.title + " " + retrieved_chunks[0].chunk.content)) * 0.08)),
             legal_basis=primary_basis
         )
 
@@ -116,6 +154,6 @@ def format_grounded_answer(
         citations=citations,
         retrieved_chunks=retrieved_chunks,
         kg_entities=kg_data.get("kg_entities", []),
-        confidence_score=0.98,
+        confidence_score=min(0.75, max(0.3, 0.3 + len(_normalize_terms(query) & _normalize_terms(retrieved_chunks[0].chunk.title + " " + retrieved_chunks[0].chunk.content)) * 0.08)),
         legal_basis=primary_basis
     )
