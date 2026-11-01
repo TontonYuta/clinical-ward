@@ -49,12 +49,12 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
             {order.prescribedAt}
           </span>
           {order.isChronicDisease && (
-            <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-              Mạn ({order.daysPrescribed}d)
+            <span className="text-[10px] text-slate-500 font-mono">
+              · Mạn ({order.daysPrescribed}d)
             </span>
           )}
         </div>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isOutpatient ? 'bg-slate-100 text-slate-700' : 'bg-teal-50 text-teal-800'}`}>
+        <span className="text-[11px] font-medium text-slate-500">
           {isOutpatient ? 'Ngoại trú' : 'Nội trú'}
         </span>
       </div>
@@ -78,7 +78,7 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
           </span>
         </div>
         <div className="text-2xs sm:text-xs text-slate-600 mt-0.5 truncate">
-          <span className="font-mono font-bold text-slate-800">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
+          <span className="font-mono font-bold text-slate-700">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
         <div className="text-slate-600 font-medium truncate max-w-[72%]">
           {order.items.length} khoản: <span className="text-slate-800 font-medium">{order.items.map((i) => i.medicationName.split(' ')[0]).join(', ')}</span>
         </div>
-        <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+        <span className="text-2xs font-medium text-slate-500">
           {order.status === 'signed' && order.digitalSignature ? '✓ Đã ký' : 'Bản nháp · Chưa ký'}
         </span>
       </div>

@@ -87,18 +87,15 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                   return (
                     <tr key={order.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-200 text-slate-800 text-sm">
                       {/* 1. STT */}
-                      <td className="py-3.5 px-3 text-center font-mono text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">{idx + 1}</td>
+                      <td className="py-3.5 px-3 text-center font-mono text-slate-500 font-medium whitespace-nowrap text-sm border-r border-slate-100">{idx + 1}</td>
 
-                      {/* 2. Mã đơn (rộng rãi, chuẩn TT26 14 ký tự) & Thời gian */}
+                      {/* 2. Mã đơn & Thời gian */}
                       <td className="py-3.5 px-4 whitespace-nowrap font-mono border-r border-slate-100">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <button type="button" data-testid="cpoe-order-id-btn" onClick={() => onSelectOrder?.(order)}
-                            className="font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer text-sm transition underline-offset-2" title="Bấm xem chi tiết đơn thuốc">
-                            {order.id}
-                          </button>
-                          <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${meta.colorBadge}`}>{meta.code}</span>
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1 font-mono">{order.prescribedAt}</div>
+                        <button type="button" data-testid="cpoe-order-id-btn" onClick={() => onSelectOrder?.(order)}
+                          className="font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer text-sm transition underline-offset-2 block" title="Bấm xem chi tiết đơn thuốc">
+                          {order.id}
+                        </button>
+                        <div className="text-xs text-slate-500 mt-0.5">{order.prescribedAt}</div>
                       </td>
 
                       {/* 3. Người bệnh & Mã BN (mở rộng rộng rãi) */}
@@ -107,37 +104,33 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                           className="font-bold text-slate-900 text-base leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left transition underline-offset-2 block" title="Xem hồ sơ bệnh án">
                           {order.patientName}
                         </button>
-                        <div className="text-xs text-slate-500 font-mono mt-1 flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">{order.patientId}</span>
-                          {order.patientCccd && <span className="text-slate-500 font-medium">CCCD: ···{order.patientCccd.slice(-4)}</span>}
+                        <div className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span className="text-slate-600 font-medium">{order.patientId}</span>
+                          {order.patientCccd && <span>· CCCD: ···{order.patientCccd.slice(-4)}</span>}
                         </div>
                       </td>
 
                       {/* 4. Chẩn đoán ICD-10 */}
                       <td className="py-3.5 px-4 border-r border-slate-100">
                         <div className="font-medium text-slate-900 leading-relaxed" title={order.diagnosisText}>
-                          <span className="font-mono text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded text-xs mr-1">{order.diagnosisIcd10}</span>
+                          <span className="font-mono text-slate-700 font-bold mr-1.5">[{order.diagnosisIcd10}]</span>
                           {order.diagnosisText}
                         </div>
-                        <div className="text-xs text-slate-500 mt-1"><span className="text-slate-700 font-medium">{fmtDoc(order.doctorName)}</span></div>
+                        <div className="text-xs text-slate-500 mt-0.5 font-medium">{fmtDoc(order.doctorName)}</div>
                       </td>
 
-                      {/* 5. Phân loại đơn & Mẫu TT26 (size chữ to, rõ ràng) */}
+                      {/* 5. Phân loại đơn & Mẫu TT26 (size chữ to, rõ ràng, không thẻ màu rối mắt) */}
                       <td className="py-3.5 px-3 text-center border-r border-slate-100">
-                        <div className="flex flex-col items-center justify-center gap-1.5">
-                          <span className={`inline-flex items-center justify-center font-bold text-sm px-3 py-1 rounded-md border ${meta.colorBadge} shadow-xs text-center`}>
-                            {meta.badgeShort}
-                          </span>
-                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isOutpatient ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-teal-50 text-teal-900 border border-teal-200'}`}>
-                              {isOutpatient ? 'Ngoại trú' : 'Nội trú'}
-                            </span>
-                            {order.isChronicDisease && <span className="text-2xs font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">PL VII ({order.daysPrescribed}d)</span>}
-                          </div>
+                        <div className="font-bold text-sm text-slate-900 leading-snug">
+                          {meta.badgeShort}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1 flex items-center justify-center gap-1.5 flex-wrap">
+                          <span>{isOutpatient ? 'Ngoại trú' : 'Nội trú'}</span>
+                          {order.isChronicDisease && <span>· PL VII ({order.daysPrescribed}d)</span>}
                         </div>
                       </td>
 
-                      {/* 6. Danh mục thuốc kê (bố cục 2 dòng: dòng 1 thuốc & SL, dòng 2 liều & hướng dẫn) */}
+                      {/* 6. Danh mục thuốc kê (bố cục 2 dòng: dòng 1 thuốc & SL, dòng 2 liều & hướng dẫn; thuần túy typography) */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-2">
                           {order.items.map((it, iIdx) => (
@@ -146,13 +139,13 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                                 <span className="font-bold text-slate-900 text-sm leading-snug">
                                   {iIdx + 1}. {it.medicationName}
                                 </span>
-                                <span className="text-xs font-bold text-slate-800 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 shrink-0">
+                                <span className="text-xs font-semibold text-slate-600 font-mono shrink-0">
                                   {it.quantity} {it.unit}
                                 </span>
                               </div>
                               <div className="text-xs text-slate-600 pl-3.5 mt-0.5 flex items-center gap-1.5 flex-wrap">
                                 <span className="text-slate-400 select-none font-mono">↳</span>
-                                {it.route && <span className="text-slate-700 font-medium bg-slate-50 px-1.5 py-0.2 rounded border border-slate-200/60 text-[11px]">[{it.route}]</span>}
+                                {it.route && <span className="text-slate-700 font-medium">[{it.route}]</span>}
                                 <span className="italic text-slate-600 font-normal">
                                   {it.instructions || it.frequency || 'Dùng theo chỉ định của bác sĩ'}
                                 </span>
