@@ -226,7 +226,7 @@ async def test_out_of_database_knowledge_boundary():
         assert field_res.status_code == 200
         assert field_res.json()["answer_type"] == "medication_field"
         assert "Tác dụng không mong muốn" in field_res.json()["reply_text"]
-        assert "Dược thư Quốc gia Việt Nam" in field_res.json()["reply_text"]
+        assert field_res.json()["citations"][0]["page"] == 1118
 
     # Targeted field questions return only the requested medication information.
         for query, required, forbidden in [
@@ -240,11 +240,12 @@ async def test_out_of_database_knowledge_boundary():
             focused_data = focused.json()
             assert focused_data["answer_type"] == "medication_field"
             assert required in focused_data["reply_text"]
+            assert focused_data["citations"] and focused_data["citations"][0]["document_id"] == "dtqg-v2-2015"
             for unrelated in forbidden:
                 assert unrelated not in focused_data["reply_text"]
             assert focused_data["suggested_chips"] and any("Paracetamol" in chip for chip in focused_data["suggested_chips"])
             if required == "Tương tác thuốc":
-                assert "Dược thư Quốc gia Việt Nam" in focused_data["reply_text"]
+                assert focused_data["citations"][0]["page"] == 1118
 
         # Case 5: Complex Specialty (Oncology) -> ONCOLOGY_SPECIALTY_GUIDANCE (Safe Deferral, No Empty Card)
         res_onco = await client.post("/api/v1/copilot/chat", json={
@@ -417,6 +418,10 @@ def test_drug_profile_response_contains_verified_pdf_citation():
     assert citation["page"] == 1118
     assert citation["url"] == "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118"
 
+def test_drug_formatter_fills_wrapped_dosage_lines_for_readable_chat_paragraphs():
+    from app.services.copilot_drug_formatter import _format_clinical_text
+    assert _format_clinical_text("Liều tối đa\n4 g/ngày.") == "Liều tối đa 4 g/ngày."
+
 def test_unverified_drug_source_does_not_link_to_dtqg_pdf():
     from types import SimpleNamespace
     from app.models.registry import DavNationalDrug
@@ -427,6 +432,17 @@ def test_unverified_drug_source_does_not_link_to_dtqg_pdf():
     assert citation["document_id"] == "dav-registry"
     assert citation["url"] == "https://dichvucong.dav.gov.vn/congbothuoc/index"
     assert citation["page"] is None
+
+def test_drug_citation_keeps_clickable_exact_dtqg_page_for_medication_field():
+    from types import SimpleNamespace
+    from app.models.registry import DavNationalDrug
+    from app.services.copilot_drug_formatter import _drug_citation
+
+    drug = DavNationalDrug(id="test-dose", national_code="SDK-3", brand_name="Paracetamol", active_ingredient="Paracetamol", group="Thuốc thường")
+    citation = _drug_citation(drug, SimpleNamespace(title="PARACETAMOL"), "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang 1118) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf")
+    assert citation["document_id"] == "dtqg-v2-2015"
+    assert citation["page"] == 1118
+    assert citation["url"] == "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118"
 
 @pytest.mark.asyncio
 async def test_self_symptom_prompt_without_case_context_asks_for_clinical_case():

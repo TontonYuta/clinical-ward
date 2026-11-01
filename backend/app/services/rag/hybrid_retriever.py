@@ -52,12 +52,13 @@ class HybridRetriever:
             "kết hợp", "uống chung", "dùng chung", "cặp thuốc"
         ))
         from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
-        names_known_drugs = any(
-            alias in lower_query
+        mentioned_drug_aliases = [
+            alias
             for entry in DRUG_REGISTRY.values()
             for alias in entry.get("aliases", [])
-            if len(alias) >= 4
-        )
+            if len(alias) >= 4 and alias in lower_query
+        ]
+        names_known_drugs = bool(mentioned_drug_aliases)
         # Common symptom words inside an adverse-event description must not
         # retrieve DDI evidence unless the user asks about an interaction and
         # names at least one medicine.
@@ -115,6 +116,14 @@ class HybridRetriever:
             if r_dense:
                 rrf_score += 1.0 / (RRF_K_CONSTANT + r_dense)
                 reasons.append(f"Semantic rank #{r_dense}")
+
+            # When a question names a medicine, prioritize evidence about that
+            # medicine over unrelated monographs matching generic clinical terms.
+            chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}".casefold()
+            named_drug_match = any(alias in chunk_text for alias in mentioned_drug_aliases)
+            if named_drug_match:
+                rrf_score += 0.05
+                reasons.append("Explicit named medicine match")
 
             rrf_scored.append(RetrievedChunk(
                 chunk=chunk,

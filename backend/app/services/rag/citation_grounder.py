@@ -144,11 +144,6 @@ def format_grounded_answer(
     # Nếu có văn bản sinh từ LLM (đã qua grounded prompt), kiểm tra và gắn citations
     if llm_generated_text and len(llm_generated_text.strip()) > 30:
         clean_text = llm_generated_text.strip()
-        # Đính kèm danh mục trích dẫn pháp lý vào cuối nếu chưa có
-        if "Nguồn:" not in clean_text and citations:
-            sources = list(dict.fromkeys(_display_source(c) for c in citations[:3] if _display_source(c)))
-            clean_text += f"\n\n**Nguồn:** {', '.join(sources)}"
-
         primary_basis = citations[0].legal_basis if citations else "Dược Thư Quốc Gia Việt Nam"
         return RagResult(
             query=query,
@@ -191,11 +186,6 @@ def format_grounded_answer(
 
     # 3. Trích xuất nội dung từ chunk chính
     parts.append(top_chunk.content)
-
-    # 4. Bảng trích dẫn PaperQA2
-    if citations:
-        sources = list(dict.fromkeys(_display_source(c) for c in citations[:3] if _display_source(c)))
-        parts.append(f"**Nguồn:** {', '.join(sources)}")
 
     full_answer = "\n\n".join(parts)
     primary_basis = top_chunk.legal_basis or (citations[0].legal_basis if citations else "")

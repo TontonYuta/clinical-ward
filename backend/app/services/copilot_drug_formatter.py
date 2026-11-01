@@ -13,6 +13,29 @@ from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.session_context import SessionState
 
+def _format_clinical_text(text: str) -> str:
+    """Join PDF line wraps while preserving blank line paragraphs and list items."""
+    lines = [line.rstrip() for line in text.splitlines()]
+    paragraphs: list[str] = []
+    current: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if current:
+                paragraphs.append(" ".join(current))
+                current = []
+            continue
+        if re.match(r"^(?:[-•*]|[0-9]+[.)])", stripped):
+            if current:
+                paragraphs.append(" ".join(current))
+                current = []
+            paragraphs.append(stripped)
+        else:
+            current.append(stripped)
+    if current:
+        paragraphs.append(" ".join(current))
+    return "\n\n".join(paragraphs)
+
 def _drug_citation(matched: DavNationalDrug, monograph: object | None, source: str) -> dict:
     page_match = re.search(r"Trang\s*(\d+)", source, re.IGNORECASE)
     page = int(page_match.group(1)) if page_match else None
@@ -90,10 +113,10 @@ async def build_drug_profile_response(
                 if not requested_value:
                     requested_value = f"Chưa có dữ liệu {requested_label.lower()} được xác thực trong nguồn đang lập chỉ mục."
                 labels.append(requested_label)
-                details.append(f"- **{requested_label}:** {str(requested_value).strip()}")
+                details.append(f"- **{requested_label}:** {_format_clinical_text(str(requested_value).strip())}")
             source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
             citation = _drug_citation(matched, monograph, source)
-            reply = "### " + ", ".join(labels) + ": " + matched.brand_name + chr(10) * 2 + chr(10).join(details) + chr(10) * 2 + "**Nguồn:** " + source
+            reply = "### " + ", ".join(labels) + ": " + matched.brand_name + chr(10) * 2 + chr(10).join(details)
             session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
             return CopilotResponse(
                 intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None,
@@ -118,10 +141,10 @@ async def build_drug_profile_response(
         if not detail:
             detail = f"Chưa có dữ liệu {label.lower()} được xác thực cho {matched.brand_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
         else:
-            detail = str(detail).strip()
+            detail = _format_clinical_text(str(detail).strip())
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
         citation = _drug_citation(matched, monograph, source)
-        reply = f"### {label}: {matched.brand_name}\n\n{detail}\n\n**Nguồn:** {source}"
+        reply = f"### {label}: {matched.brand_name}\n\n{detail}"
         session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None,
@@ -139,7 +162,7 @@ async def build_drug_profile_response(
             f"- **Hoạt chất:** {matched.active_ingredient}\n"
             f"- **Hàm lượng:** {matched.concentration or 'Chưa ghi nhận'}\n"
             f"- **Dạng bào chế:** {matched.dosage_form or 'Chưa ghi nhận'}\n"
-            f"- **SĐK:** {matched.national_code}\n\n**Nguồn:** {source}"
+            f"- **SĐK:** {matched.national_code}"
         )
         session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
         return CopilotResponse(
