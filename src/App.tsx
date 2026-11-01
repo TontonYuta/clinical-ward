@@ -1730,6 +1730,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
               onOpenMedicationSafety={handleOpenMedicationSafety}
               onOpenPatientSearch={(query) => window.dispatchEvent(new CustomEvent('open_patient_detail', { detail: { patientName: query } }))}
               onOpenCopilot={() => setIsCopilotOpen(true)}
+              onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
               auditRecords={auditRecords}
             />
           </section>
