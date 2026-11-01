@@ -6,6 +6,7 @@
  */
 
 import React, { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType } from '../../../../types/cpoe';
 import { MasterMedication } from '../../../../types/medication';
@@ -189,6 +190,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   };
 
   return (
+    <>
     <div
       role="dialog"
       aria-modal="true"
@@ -197,7 +199,6 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     >
       {/* Container Mở Rộng Chuẩn Workstation CPOE (sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl h-[90vh]) */}
       <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] max-h-[920px] flex flex-col overflow-hidden text-slate-900">
-        <div className="absolute -left-[10000px] top-0"><PrescriptionPrintDocument order={{ id: 'DRAFT-PREVIEW', prescriptionType: rxType, patientId, patientInsuranceId, patientName: patientName || '—', patientCccd, patientAddress, guardianName, patientPhone, patientDob, patientGender, patientWeight: patientWeight ? Number(patientWeight) : undefined, department, diagnosisIcd10, diagnosisText, isChronicDisease: isChronic, daysPrescribed, doctorName: formatDoctorDisplay(doctorName), doctorCertificate: '', prescribedAt: new Date().toLocaleDateString('vi-VN'), status: 'draft', items: medications.filter((m) => m.medicationName).map((m) => ({ ...m, route: normalizeRoute(m.route), unit: normalizeUnit(m.unit) })) }} /></div>
         
         {/* Header Chuẩn Kho Dược: Nền trắng, phẳng, viền slate-200 */}
         <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
@@ -580,5 +581,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
         </form>
       </div>
     </div>
+    {/* Portal document outside modal clipping/scroll container */}
+    {createPortal(
+      <div id="prescription-print-portal">
+        <PrescriptionPrintDocument order={{ id: 'DRAFT-PREVIEW', prescriptionType: rxType, patientId, patientInsuranceId, patientName: patientName || '—', patientCccd, patientAddress, guardianName, patientPhone, patientDob, patientGender, patientWeight: patientWeight ? Number(patientWeight) : undefined, department, diagnosisIcd10, diagnosisText, isChronicDisease: isChronic, daysPrescribed, doctorName: formatDoctorDisplay(doctorName), doctorCertificate: '', prescribedAt: new Date().toLocaleDateString('vi-VN'), status: 'draft', items: medications.filter((m) => m.medicationName).map((m) => ({ ...m, route: normalizeRoute(m.route), unit: normalizeUnit(m.unit) })) }} />
+      </div>,
+      document.body
+    )}
+    </>
   );
 };

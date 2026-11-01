@@ -131,4 +131,28 @@ async function verifyCpoeOrderDetailModal() {
   }
 }
 
-verifyCpoeOrderDetailModal();
+async function verifyPrescriptionPrintFromNewOrderForm() {
+  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  try {
+    await page.goto('http://localhost:5179/#cpoe', { waitUntil: 'networkidle' });
+    await page.locator('button[aria-haspopup=menu]').last().click();
+    await page.getByRole('menuitem').filter({ hasText: 'BS. Trần Văn Hùng' }).click();
+    await page.getByRole('button', { name: /Kê đơn mới/ }).click();
+    const printButton = page.getByRole('button', { name: /In đơn/ });
+    await printButton.waitFor({ state: 'visible' });
+    await page.evaluate(() => { (window as any).__printCalls = 0; window.print = () => { (window as any).__printCalls += 1; }; });
+    await printButton.click();
+    const printCalls = await page.evaluate(() => (window as any).__printCalls);
+    await page.emulateMedia({ media: 'print' });
+    const printDocument = page.locator('#prescription-print-document');
+    const visible = await printDocument.evaluate((el) => getComputedStyle(el).visibility === 'visible' && getComputedStyle(el).display !== 'none');
+    const includesTitle = (await printDocument.innerText()).includes('ĐƠN THUỐC');
+    if (printCalls !== 1 || !visible || !includesTitle) throw new Error('Nút in form mới không gọi print hoặc tài liệu không hiển thị trong print media');
+    console.log('Prescription form print flow passed');
+  } finally {
+    await browser.close();
+  }
+}
+
+verifyCpoeOrderDetailModal().then(verifyPrescriptionPrintFromNewOrderForm);
