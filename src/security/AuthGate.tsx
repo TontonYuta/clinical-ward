@@ -35,7 +35,8 @@ export function AuthGate({ children }: { children: (auth: AuthState, logout: () 
       setAuth({ enabled: true, username: data.username, role: data.role });
     } catch (e) { setError(e instanceof Error ? e.message : 'Đăng nhập thất bại.'); }
   }
-  if (checking) return <div className="min-h-screen grid place-items-center bg-slate-50 text-slate-600">Đang kiểm tra phiên đăng nhập…</div>;
+  // Tạm thời comment kiểm tra phiên đăng nhập cho bản demo:
+  // if (checking) return <div className="min-h-screen grid place-items-center bg-slate-50 text-slate-600">Đang kiểm tra phiên đăng nhập…</div>;
   if (auth) return <>{children(auth, logout)}</>;
   return <main className="min-h-screen grid place-items-center bg-slate-50 p-4"><form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"><h1 className="text-xl font-bold text-slate-900">Clinical Ward</h1><p className="mt-1 text-sm text-slate-600">Đăng nhập bằng tài khoản nội bộ đã được cấp.</p>{error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}<label className="mt-5 block text-sm font-medium">Tên đăng nhập<input name="username" autoComplete="username" required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" /></label><label className="mt-4 block text-sm font-medium">Mật khẩu<input name="password" type="password" autoComplete="current-password" required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" /></label><button className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white">Đăng nhập</button></form></main>;
 }
