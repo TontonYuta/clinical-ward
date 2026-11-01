@@ -1,10 +1,18 @@
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from app.main import app
 from app.database import AsyncSessionLocal
 from app.models.cpoe import CpoePrescription
+from app.database import engine, Base
+from app.models import cpoe as _cpoe_model
+
+@pytest_asyncio.fixture(autouse=True, scope="module")
+async def ensure_cpoe_test_schema():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 def payload(items):

@@ -144,10 +144,10 @@ class MedicationDeicticFollowupScenario(BaseScenario):
             f"• **Hoạt chất chính:** **{med_ingredient}**\n"
             f"• **Vị trí lưu kho:** **{loc_info}** (Hiện tồn: **{stock_info}** - Số lô: `{batch_no}`)\n"
             f"• **Căn cứ chuyên môn:** Dược Thư Quốc Gia Việt Nam 2015 & Dược điển Việt Nam V.\n"
-            f"• **Bạn có thể hỏi thêm:**\n"
+            f"• **Có thể tra cứu tiếp:**\n"
             f"  - *\"Tác dụng phụ của thuốc này là gì?\"*\n"
             f"  - *\"Chống chỉ định của thuốc này?\"*\n"
-            f"  - *\"Bệnh nhân hiện tại có dùng được thuốc này không?\"*"
+            f"  - *\"Đánh giá thuốc này trên người bệnh trong hồ sơ đang chọn\"*"
         )
         return CopilotResponse(
             intent="CLINICAL_DEICTIC_MEDICATION_SUMMARY",

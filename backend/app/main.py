@@ -10,6 +10,7 @@ from fastapi import HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from app.database import engine, Base, AsyncSessionLocal
 from app.models.user import User
+from app.models.cpoe import CpoePrescription
 from app.seed import seed
 from app.seed_registry import seed_dav_registry_if_needed
 from app.routers import (
@@ -33,6 +34,12 @@ async def lifespan(app: FastAPI):
     # Ensure tables exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        from sqlalchemy import inspect, text
+        columns = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("cpoe_prescriptions")})
+        if "patient_insurance_id" not in columns:
+            await conn.execute(text("ALTER TABLE cpoe_prescriptions ADD COLUMN patient_insurance_id VARCHAR"))
+        if "patient_weight" not in columns:
+            await conn.execute(text("ALTER TABLE cpoe_prescriptions ADD COLUMN patient_weight FLOAT"))
 
     # Check if DB has data, if not seed it automatically
     async with AsyncSessionLocal() as session:

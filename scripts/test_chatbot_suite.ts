@@ -90,13 +90,13 @@ const testSuite: TestCase[] = [
   { query: 'chỉ định của vancomycin', expectedCard: 'medication_safety', category: 'Medication Indication' },
 
   // 11. Dặn dò của bác sĩ kê đơn & Thông báo nhắc uống thuốc qua mail Google Script
-  { query: 'Dặn dò bệnh nhân Nguyễn Văn An uống thuốc Paracetamol và Augmentin hàng ngày lúc 7h và 19h gửi mail an.nv@gmail.com', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
-  { query: 'Lên lịch nhắc uống thuốc cho bệnh nhân Trần Thị Mai uống Cipro sáng 8h tối 20h gửi mai@hospital.vn', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
-  { query: 'Dặn dò đơn thuốc cho bệnh nhân', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
-  { query: 'Nhắc bệnh nhân uống thuốc qua mail', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
-  { query: 'Gửi thông báo cho bệnh nhân Võ Minh Trí uống thuốc', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
-  { query: 'Gửi gmail', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
-  { query: 'Thông báo uống thuốc cho bệnh nhân', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
+  { query: 'Dặn dò bệnh nhân Nguyễn Văn An uống thuốc Paracetamol và Augmentin hàng ngày lúc 7h và 19h gửi mail an.nv@gmail.com', expectedCard: 'NO_CARD', category: 'Prescription Advice clarification' },
+  { query: 'Lên lịch nhắc uống thuốc cho bệnh nhân Trần Thị Mai uống Cipro sáng 8h tối 20h gửi mai@hospital.vn', expectedCard: 'NO_CARD', category: 'Prescription Advice clarification' },
+  { query: 'Dặn dò đơn thuốc cho bệnh nhân', expectedCard: 'NO_CARD', category: 'Prescription Advice clarification' },
+  { query: 'Nhắc bệnh nhân uống thuốc qua mail', expectedCard: 'NO_CARD', category: 'Prescription Advice clarification' },
+  { query: 'Gửi thông báo cho bệnh nhân Võ Minh Trí uống thuốc', expectedCard: 'NO_CARD', category: 'Prescription Advice clarification' },
+  { query: 'Gửi gmail', expectedCard: 'NO_CARD', category: 'Prescription Advice clarification' },
+  { query: 'Thông báo uống thuốc cho bệnh nhân', expectedCard: 'NO_CARD', category: 'Prescription Advice clarification' },
 
   // 12. Nghiệp vụ Tự động: Kê đơn thuốc CPOE & Thu hồi vỏ nợ thuốc gây nghiện
   { query: 'Kê đơn cho bệnh nhân Trần Thị Mai viêm họng dùng Augmentin 1g và Paracetamol 500mg', expectedCard: 'cpoe_prescription_draft', category: 'CPOE draft' },

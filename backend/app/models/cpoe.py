@@ -11,6 +11,8 @@ class CpoePrescription(Base):
     patient_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     patient_name: Mapped[str] = mapped_column(String, nullable=False)
     patient_cccd: Mapped[str] = mapped_column(String, nullable=False)
+    patient_insurance_id: Mapped[str] = mapped_column(String, nullable=True)
+    patient_weight: Mapped[float] = mapped_column(nullable=True)
     patient_phone: Mapped[str] = mapped_column(String, nullable=True)
     patient_email: Mapped[str] = mapped_column(String, nullable=True)
     patient_address: Mapped[str] = mapped_column(String, nullable=True)

@@ -69,12 +69,12 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
         "chao bac si", "chào bác sĩ", "hi bot", "hello bot", "halo", "yo"
     } or (len(greeting_tokens) <= 2 and any(t in greeting_tokens for t in ["hi", "hello", "alo", "hey"])) or wellbeing
     if is_pure_greeting:
-        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Điều dưỡng"
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
         if wellbeing:
             return CopilotResponse(
                 intent="GREETING_WELLBEING",
-                reply_text=f"Tôi vẫn sẵn sàng hỗ trợ {role_label.lower()} {user_name}. Còn bạn hôm nay cảm thấy thế nào? Nếu đang hỏi về sức khỏe, hãy cho biết triệu chứng và thời gian xuất hiện.",
-                suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Hướng dẫn chức năng hệ thống"]
+                reply_text=f"Chào {role_label} {user_name}. Trợ lý sẵn sàng hỗ trợ tra cứu thông tin thuốc, rà soát ca bệnh và thực hiện các nghiệp vụ trong hệ thống.",
+                suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Đối soát ca trực"]
             )
         welcome_reply = (
             f"Chào {role_label} {user_name}! Tôi là **Trợ lý Dược Lâm Sàng & Vận Hành Tủ Trực Bệnh Viện** "
@@ -84,7 +84,7 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
             f"2. 📋 **Tủ trực ca đêm:** Xuất mượn thuốc khẩn cấp, quản lý thu hồi 100% vỏ thuốc gây nghiện (TT 20/2017).\n"
             f"3. ⏰ **Giao ban & Đối soát:** Bàn giao ca 07:00 AM, kiểm tra chênh lệch sổ sách và nợ vỏ.\n"
             f"4. 📦 **Kho Dược GSP & Hạn dùng FEFO:** Quét thuốc cận hạn dưới 60 ngày, lập dự trù bù cơ số Mẫu 01.\n"
-            f"5. 🚨 **Phác đồ cấp cứu khẩn cấp:** Xử trí sốc phản vệ Adrenalin (TT 51), phân tầng sốt, giảm đau đa mô thức.\n"
+            f"5. 🚨 **Tra cứu hướng dẫn lâm sàng:** Phác đồ cấp cứu, sàng lọc nguy cơ và thông tin thuốc có căn cứ.\n"
             f"6. 🩺 **Trang thiết bị y tế:** Báo hỏng máy thở, máy sốc tim, phân loại rủi ro Loại A-B-C-D (NĐ 98).\n"
             f"7. ❄️ **Chuỗi lạnh vắc xin:** Giám sát nhiệt độ 2°C – 8°C, xử trí sự cố mất điện tủ lạnh.\n\n"
             f"Đồng nghiệp có thể bấm chọn nhanh các tác vụ bên dưới hoặc nhập câu hỏi trực tiếp."
@@ -145,6 +145,16 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
         # The authoritative lookup supplies the catalog-backed field answer and citation.
         return await lookup_drug_authoritative(query, db, session_id=session_id)
 
+    is_self_symptom_prompt = bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
+    has_explicit_case = any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn "))
+    if is_self_symptom_prompt and not has_explicit_case:
+        return CopilotResponse(
+            intent="CLINICAL_CASE_CLARIFICATION",
+            reply_text="Trợ lý này phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng nêu thông tin nhận diện ca/người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu chủ đề hoặc thuốc cần tra cứu.",
+            answer_type="clarification", source_status="missing_case_context", confidence=1.0,
+            abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh"
+        )
+
     if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
         scenario_res = await detect_and_handle_gemini_clinical_scenario(
             query, lower_query, user_name, db, user_role=user_role, session_id=session_id
@@ -170,13 +180,13 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
             from app.services.session_context import get_or_create_session
             session = get_or_create_session(session_id, user_name, user_role)
             contextual_suggestions = [
-                "Tôi sốt 39°C từ hôm qua, hãy hỏi tuổi và cân nặng của tôi",
-                "Dấu hiệu cảnh báo cần đi cấp cứu là gì?",
-                "Tôi đã dùng thuốc X, có cần kiểm tra tương tác không?",
+                "Rà soát danh sách thuốc đang dùng của người bệnh",
+                "Đánh giá dấu hiệu cảnh báo ở người bệnh sốt",
+                "Kiểm tra tương tác trong danh sách thuốc đang dùng",
             ] if has_contextual_clinical_followups and not is_interaction_question else [
-                "Tôi đang dùng những thuốc nào cần kiểm tra tương tác?",
+                "Rà soát danh sách thuốc đang dùng của người bệnh",
                 "Cơ chế và mức độ nghiêm trọng của tương tác này là gì?",
-                "Tôi nên trao đổi gì với dược sĩ về phối hợp này?",
+                "Nội dung cần trao đổi với dược sĩ lâm sàng về phối hợp này",
             ]
             return CopilotResponse(
                 intent="CLINICAL_AI_CONSULTATION",

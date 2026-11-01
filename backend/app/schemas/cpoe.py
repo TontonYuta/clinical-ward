@@ -19,6 +19,8 @@ class CpoeOrderCreate(BaseModel):
     patientId: str
     patientName: str
     patientCccd: str
+    patientInsuranceId: str | None = None
+    patientWeight: float | None = None
     patientPhone: str | None = None
     patientEmail: str | None = None
     patientAddress: str = ""
@@ -62,6 +64,8 @@ class CpoeOrderResponse(BaseModel):
     patientId: str
     patientName: str
     patientCccd: str
+    patientInsuranceId: str | None = None
+    patientWeight: float | None = None
     patientPhone: str | None = None
     patientEmail: str | None = None
     patientDob: str | None = None

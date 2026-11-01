@@ -6,7 +6,7 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType } from '../../../../types/cpoe';
 import { MasterMedication } from '../../../../types/medication';
 import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
@@ -14,6 +14,7 @@ import { useModalDismiss } from '../../../../hooks/useModalDismiss';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
 import { validatePrescriptionDraft } from '../../../../services/prescriptionValidation';
 import { auditPrescriptionDdiApi } from '../../../../services/api';
+import { PrescriptionPrintDocument } from './PrescriptionPrintDocument';
 
 interface CpoeOrderModalProps {
   isOpen: boolean;
@@ -45,6 +46,8 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const [patientId, setPatientId] = useState('');
   const [patientName, setPatientName] = useState('');
   const [patientCccd, setPatientCccd] = useState('');
+  const [patientWeight, setPatientWeight] = useState('');
+  const [patientInsuranceId, setPatientInsuranceId] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
   const [patientEmail, setPatientEmail] = useState('');
   const [patientAddress, setPatientAddress] = useState('');
@@ -66,6 +69,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const auditRevision = useRef(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [clinicalNotes, setClinicalNotes] = useState('');
+  const handlePrintDraft = () => {
+    const documentNode = document.getElementById('prescription-print-document');
+    if (!documentNode) { window.alert('Không tìm thấy bản xem trước đơn thuốc.'); return; }
+    window.print();
+  };
 
   if (!isOpen) return null;
 
@@ -81,6 +89,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       setPatientEmail(p.email || '');
       setPatientAddress('');
       setPatientDob(p.dob || '');
+      setPatientWeight(String(p.weightKg || ''));
       setPatientGender((p.gender as any) || '');
       setDepartment(p.department || p.room || '');
       if (p.chronicConditions) {
@@ -129,6 +138,8 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors = validatePrescriptionDraft({ patientName, diagnosisText, items: medications.map((med) => ({ medicationName: med.medicationName, dosage: med.dosage, frequency: med.frequency, route: med.route, quantity: med.quantity, durationDays: daysPrescribed })) });
+    const patientAgeMonths = patientDob ? (Date.now() - new Date(patientDob).getTime()) / (1000 * 60 * 60 * 24 * 30.4375) : undefined;
+    if (patientAgeMonths !== undefined && patientAgeMonths < 72 && !(Number(patientWeight) > 0)) errors.push('Bắt buộc ghi cân nặng người bệnh dưới 72 tháng tuổi theo mẫu Phụ lục I TT26.');
     setValidationErrors(errors);
     const medicationCount = medications.filter((med) => med.activeIngredient.trim() || med.medicationName.trim()).length;
     const auditRequired = medicationCount > 1;
@@ -156,6 +167,8 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       patientPhone: finalPhone,
       patientEmail: finalEmail,
       patientCccd: finalCccd,
+      patientWeight: patientWeight ? Number(patientWeight) : undefined,
+      patientInsuranceId: patientInsuranceId.trim() || undefined,
       patientAddress: patientAddress.trim(),
       guardianName: guardianName.trim(),
       patientDob: finalDob,
@@ -184,6 +197,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     >
       {/* Container Mở Rộng Chuẩn Workstation CPOE (sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl h-[90vh]) */}
       <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] max-h-[920px] flex flex-col overflow-hidden text-slate-900">
+        <div className="absolute -left-[10000px] top-0"><PrescriptionPrintDocument order={{ id: 'DRAFT-PREVIEW', prescriptionType: rxType, patientId, patientInsuranceId, patientName: patientName || '—', patientCccd, patientAddress, guardianName, patientPhone, patientDob, patientGender, patientWeight: patientWeight ? Number(patientWeight) : undefined, department, diagnosisIcd10, diagnosisText, isChronicDisease: isChronic, daysPrescribed, doctorName: formatDoctorDisplay(doctorName), doctorCertificate: '', prescribedAt: new Date().toLocaleDateString('vi-VN'), status: 'draft', items: medications.filter((m) => m.medicationName).map((m) => ({ ...m, route: normalizeRoute(m.route), unit: normalizeUnit(m.unit) })) }} /></div>
         
         {/* Header Chuẩn Kho Dược: Nền trắng, phẳng, viền slate-200 */}
         <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
@@ -207,6 +221,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             {/* Phân loại đơn thuốc: Chuyển đổi Ngoại trú / Nội trú */}
             <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+              <button type="button" onClick={handlePrintDraft}
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs sm:text-sm font-semibold cursor-pointer transition">
+                <Printer className="w-4 h-4 inline mr-1" />In đơn
+              </button>
               <button
                 type="button"
                 onClick={() => { setRxType('outpatient'); setDaysPrescribed(0); }}
@@ -263,6 +281,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                       <span>Chọn nhanh bệnh nhân mẫu (Bộ dữ liệu lâm sàng 14 BN)</span>
                     </label>
                     <span className="text-2xs font-mono text-slate-400">Tự động điền 1 chạm</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="text-xs font-semibold text-slate-700">Cân nặng (bắt buộc với trẻ dưới 72 tháng), kg<input type="number" min="0" step="0.1" value={patientWeight} onChange={(e) => setPatientWeight(e.target.value)} className="w-full px-3 py-2 mt-1 bg-slate-50 border border-slate-300 rounded-lg text-sm" /></label>
+                    <label className="text-xs font-semibold text-slate-700">Mã số bảo hiểm y tế (nếu có)<input value={patientInsuranceId} onChange={(e) => setPatientInsuranceId(e.target.value)} className="w-full px-3 py-2 mt-1 bg-slate-50 border border-slate-300 rounded-lg text-sm" /></label>
                   </div>
                   <select
                     value={selectedPatientId}
@@ -500,12 +522,12 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                     <MedicationSearchAutocomplete selectedMedicationName={medication.medicationName} onSelect={(med) => handleSelectMed(index, med)} defaultOnlyCrashCart={false} placeholder="Tìm biệt dược hoặc hoạt chất"/>
                     <p className="text-xs">Hoạt chất: {medication.activeIngredient}</p>
                     <div className="grid grid-cols-2 gap-2">
-                      <input aria-label="Liều mỗi lần" placeholder="Liều mỗi lần" value={medication.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} className="border rounded p-2"/>
-                      <input aria-label="Tần suất" placeholder="Tần suất" value={medication.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="border rounded p-2"/>
+                      <label className="text-xs text-slate-700">Liều mỗi lần<input aria-label="Liều mỗi lần" placeholder="Ví dụ: 1 viên (500 mg)" value={medication.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} className="border rounded p-2 w-full mt-1"/></label>
+                      <label className="text-xs text-slate-700">Tần suất dùng<input aria-label="Tần suất" placeholder="Ví dụ: ngày 2 lần, mỗi 12 giờ" value={medication.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="border rounded p-2 w-full mt-1"/></label>
                       <select aria-label="Đường dùng" value={medication.route} onChange={(e) => updateMedication(index, "route", e.target.value)} className="border rounded p-2"><option value="">Đường dùng</option><option>Uống</option><option>Tiêm bắp</option><option>Tiêm tĩnh mạch</option><option>Truyền tĩnh mạch</option><option>Đặt</option><option>Hít</option></select>
                       <input aria-label="Số lượng" type="number" min="1" value={medication.quantity} onChange={(e) => updateMedication(index, "quantity", Number(e.target.value) || 0)} className="border rounded p-2"/>
                       <select aria-label="Đơn vị" value={medication.unit} onChange={(e) => updateMedication(index, "unit", e.target.value)} className="border rounded p-2">{["Viên","Ống","Lọ","Chai","Hộp","Vỉ"].map((u) => <option key={u}>{u}</option>)}</select>
-                      <input aria-label="Hướng dẫn sử dụng" placeholder="Hướng dẫn sử dụng" value={medication.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} className="border rounded p-2"/>
+                      <label className="text-xs text-slate-700">Thời điểm / cách dùng<input aria-label="Hướng dẫn sử dụng" placeholder="Ví dụ: sau ăn; uống với nước" value={medication.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} className="border rounded p-2 w-full mt-1"/></label>
                     </div>
                   </section>
                 ))}

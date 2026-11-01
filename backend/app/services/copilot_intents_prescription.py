@@ -2,64 +2,17 @@
 Xử lý Ý định: Dặn dò bác sĩ, Kê đơn CPOE & Thu hồi nợ vỏ Morphin trên Backend FastAPI (<=200 LOC)
 """
 import re
-from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.debt import DebtRecord
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 
 async def handle_prescription_advice_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:
-    name_match = re.search(r"(?:bệnh nhân|cho|dặn dò|nhắc)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})", query)
-    if not name_match:
-        return CopilotResponse(intent="PRESCRIPTION_ADVICE", reply_text="Bạn muốn lập lời dặn cho người bệnh nào? Vui lòng chọn hồ sơ người bệnh trước.", answer_type="clarification", source_status="incomplete_input", confidence=1.0)
-    patient_name = name_match.group(1).strip()
-
-    email_match = re.search(r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", query)
-    patient_email = email_match.group(1) if email_match else None
-
-    meds = []
-    if any(k in lower_query for k in ["paracetamol", "panadol", "hạ sốt", "giảm đau"]):
-        meds.append({"name": "Paracetamol 500mg", "inn": "Paracetamol", "dosage": "500mg"})
-    if any(k in lower_query for k in ["augmentin", "amoxicillin", "kháng sinh"]):
-        meds.append({"name": "Augmentin 1g", "inn": "Amoxicillin + Clavulanic", "dosage": "1g"})
-    if any(k in lower_query for k in ["cipro", "ciprofloxacin"]):
-        meds.append({"name": "Ciprofloxacin 500mg", "inn": "Ciprofloxacin", "dosage": "500mg"})
-    if not meds:
-        return CopilotResponse(intent="PRESCRIPTION_ADVICE", reply_text="Vui lòng nêu tên thuốc hoặc chọn đơn thuốc cần lập lời dặn.", answer_type="clarification", source_status="incomplete_input", confidence=1.0)
-
-    card = CopilotActionCard(
-        card_type="medication_schedule",
-        title=f"Lịch Dặn Dò & Nhắc Uống Thuốc: {patient_name}",
-        summary="Kê đơn & dặn dò cữ thuốc hàng ngày • Gửi mail qua Google Apps Script",
-        data={
-            "id": f"ADV-{int(datetime.now(timezone.utc).timestamp()) % 1000000}",
-            "patientName": patient_name,
-            "patientEmail": patient_email or "",
-            "doctorName": user_name or "BS.CKII Trần Văn Hùng",
-            "medications": meds,
-            "diagnosis": "",
-            "status": "pending"
-        },
-        primary_action_label="Gửi Email qua Google Script",
-        primary_action_type="SEND_ADVICE_EMAIL",
-        target_tab="debts"
-    )
-
-    reply_text = (
-        f"### 📋 ĐÃ THIẾT LẬP LỊCH DẶN DÒ UỐNG THUỐC CHO BỆNH NHÂN\n\n"
-        f"• **Bệnh nhân:** **{patient_name}**\n"
-        f"• **Email nhận lịch:** `{patient_email or 'Chưa có - cần bổ sung trước khi gửi'}`\n"
-        f"• **Số loại thuốc:** {len(meds)} mặt hàng ({', '.join(m['name'] for m in meds)})\n"
-        f"• Lịch này là bản nháp, chưa gửi thông báo.\n\n"
-        f"Vui lòng rà soát thông tin trước khi gửi."
-    )
-
     return CopilotResponse(
-        intent="PRESCRIPTION_ADVICE",
-        reply_text=reply_text,
-        card=card,
-        legal_basis="Thông tư 52/2017/TT-BYT & QĐ 2147/QĐ-BYT - Điều 7",
-        suggested_chips=[f"Gửi email nhắc thuốc cho {patient_name}", "In phiếu dặn dò uống thuốc", "Đối soát ca trực 07:00 AM"]
+        intent="PRESCRIPTION_ADVICE_CLARIFICATION",
+        reply_text="Để lập lời dặn, hãy mở hồ sơ người bệnh và chọn đơn thuốc đã kê. Trợ lý chỉ chuyển thông tin từ đơn thực tế sang biểu mẫu; không suy ra liều, thời điểm hoặc thời gian dùng từ nội dung chat.",
+        answer_type="clarification", source_status="missing_selected_order", confidence=1.0,
+        suggested_chips=["Mở hồ sơ người bệnh", "Mở biểu mẫu lời dặn từ đơn đã chọn"]
     )
 
 async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:

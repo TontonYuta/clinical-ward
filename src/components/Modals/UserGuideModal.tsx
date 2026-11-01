@@ -631,7 +631,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
 
                 <div className="space-y-4">
                   <div className="text-sm text-slate-600 leading-relaxed pb-4 border-b border-slate-100">
-                    Trợ lý AI là hệ thống hỗ trợ ra quyết định lâm sàng (CDSS Copilot), giúp bác sĩ và điều dưỡng đối soát liều dùng, tương tác thuốc và quy chế vận hành nhanh chóng. Để sử dụng, nhấn biểu tượng <strong>Trợ Lý AI Lâm Sàng</strong> ở góc phải màn hình và gõ câu hỏi bằng ngôn ngữ tự nhiên.
+                    Chatbot này phục vụ bác sĩ tra cứu thông tin thuốc và quy định có nguồn, rà soát hồ sơ/ca bệnh được xác định, và mở các nghiệp vụ có thể thao tác trong hệ thống. Chatbot không tư vấn trực tiếp cho bệnh nhân; nội dung đơn thuốc và thông báo vẫn cần bác sĩ đối chiếu, hoàn thiện và xác nhận trong biểu mẫu. Để sử dụng, nhấn biểu tượng <strong>Trợ Lý AI Lâm Sàng</strong> ở góc phải màn hình và nhập yêu cầu chuyên môn.
                   </div>
 
                   <div>

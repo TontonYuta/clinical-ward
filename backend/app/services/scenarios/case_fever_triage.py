@@ -39,82 +39,31 @@ class FeverTriageScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
-        temp_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:độ|°c)", lower_query)
-        temp_str = f"{temp_match.group(1)}°C" if temp_match else ""
-
-        batch_res = await db.execute(select(InventoryBatch).where(InventoryBatch.id == "b-1"))
-        batch_pcm = batch_res.scalar_one_or_none()
-        stock_str = f"{batch_pcm.current_stock} {batch_pcm.unit}" if batch_pcm else "80 Viên"
-        batch_no = batch_pcm.batch_number if batch_pcm else "LOT-PC24-11A"
-        loc_str = batch_pcm.warehouse_location if batch_pcm else "Kho Dược Nội Trú (Kệ A1 - Tầng 1)"
-
-        context = "Tôi chưa biết tuổi, cân nặng, nhiệt độ hiện tại, thời gian sốt, bệnh nền/dị ứng hay thuốc bạn đã dùng. Vì vậy tôi chưa thể gợi ý liều cá nhân hóa."
-        reply = (
-            "### Xử trí sốt an toàn\n\n"
-            f"{context}\n\n"
-            "Nếu bạn là người lớn, Paracetamol có thể là lựa chọn hạ sốt thông thường; hãy dùng đúng theo nhãn thuốc và hỏi nhân viên y tế nếu có bệnh gan, uống nhiều rượu, mang thai, dị ứng hoặc bệnh nền. Trẻ em cần liều theo cân nặng, không dùng liều người lớn. Tránh tự dùng Aspirin hoặc Ibuprofen khi chưa rõ nguyên nhân sốt, nhất là khi có khả năng sốt xuất huyết.\n\n"
-            "Đi cấp cứu ngay nếu khó thở, lơ mơ, co giật, cứng gáy, tím tái, mất nước nặng hoặc xuất huyết.\n\n"
-            "Để hướng dẫn phù hợp hơn, hãy cho biết tuổi, cân nặng (nếu là trẻ), nhiệt độ đo được, số ngày sốt, triệu chứng kèm theo, bệnh nền/dị ứng và thuốc đã uống."
-        )
-        return CopilotResponse(
-            intent="CLINICAL_FEVER_TRIAGE_PROTOCOL",
-            reply_text=reply,
-            card=None,
-            legal_basis="Dược Thư Quốc Gia Việt Nam",
-            suggested_chips=["Tôi sốt 39°C từ hôm qua, hãy hỏi tuổi và cân nặng của tôi", "Trẻ sốt: liều thuốc theo cân nặng thế nào?", "Dấu hiệu cảnh báo sốt xuất huyết là gì?"],
-            session_id=ctx.session.session_id if ctx.session else None,
-        )
-
-        if ctx.session:
-            ctx.session.set_active_medication(
-                name="PARACETAMOL 500mg",
-                ingredient="Paracetamol",
-                batch=batch_no,
-                stock=stock_str,
-                location=loc_str,
-                sdk="893100110026"
+        has_case = bool(ctx.patient or any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn ")))
+        if not has_case:
+            return CopilotResponse(
+                intent="CLINICAL_CASE_CLARIFICATION",
+                reply_text="Để tra cứu xử trí sốt theo ca, vui lòng chọn hồ sơ hoặc cung cấp thông tin người bệnh. Nếu cần tài liệu tham khảo chung, hãy nêu rõ nội dung cần tra cứu.",
+                answer_type="clarification", source_status="missing_case_context", confidence=1.0,
+                abstention_reason="Chưa xác định người bệnh hoặc yêu cầu tra cứu chung"
             )
-
-        title_header = (
-            "### 🌡️ HƯỚNG DẪN CÁC LOẠI THUỐC HẠ SỐT & PHÁC ĐỒ XỬ TRÍ AN TOÀN (Dược Thư Quốc Gia 2015)\n\n"
-            if not temp_str else f"### 🌡️ HƯỚNG DẪN XỬ TRÍ SỐT CAO ({temp_str.upper()}) & PHÁC ĐỒ HẠ SỐT AN TOÀN\n\n"
+        temp_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:độ|°c)", lower_query)
+        temp_str = f"{temp_match.group(1)}°C" if temp_match else "chưa cung cấp"
+        context = (
+            f"Ca bệnh đã nêu nhiệt độ {temp_str}; các thông tin tuổi, cân nặng, thời gian sốt, bệnh nền/dị ứng và thuốc đang dùng "
+            "cần được đối chiếu trước khi đánh giá liều hoặc lựa chọn điều trị."
         )
-
         reply = (
-            title_header +
-            "Sốt là phản ứng bảo vệ của hệ miễn dịch khi cơ thể gặp nhiễm trùng hoặc viêm cấp tính. Dưới đây là phân loại các nhóm thuốc hạ sốt chuẩn y khoa và phác đồ sử dụng an toàn:\n\n"
-            f"#### 1. Nhóm thuốc hạ sốt đầu tay: **PARACETAMOL (ACETAMINOPHEN)**\n"
-            f"• **Vị thế lâm sàng:** Thuốc hạ sốt an toàn nhất, ít tác dụng phụ lên đường tiêu hóa và đông máu.\n"
-            f"• **Biệt dược có sẵn trong kho bệnh viện:** **PARACETAMOL 500mg** (Lô: `{batch_no}` | Tồn kho: **{stock_str}** tại *{loc_str}*).\n"
-            "• **Liều lượng chuẩn (Dược Thư Quốc Gia 2015 Trang 1095):**\n"
-            "  - **Người lớn:** Uống **500mg - 1.000mg/lần** (1 - 2 viên 500mg), cách mỗi **4 - 6 giờ** nếu nhiệt độ **≥ 38.5°C**.\n"
-            "  - **Trẻ em:** Liều chuẩn theo cân nặng **10 - 15 mg/kg/lần**, cách mỗi 4 - 6 giờ (tối đa không quá 60 mg/kg/ngày).\n"
-            "• **CẢNH BÁO NGUY HIỂM VỀ LIỀU TỐI ĐA (Chống suy gan cấp):**\n"
-            "  - **Tuyệt đối không uống quá 4.000mg (4g)/24 giờ** ở người lớn (tương đương 8 viên 500mg).\n"
-            "  - Bệnh nhân suy gan hoặc nghiện rượu liều tối đa không quá **2g/24 giờ**.\n\n"
-            "#### 2. Nhóm thuốc thay thế: **NSAIDs (IBUPROFEN)**\n"
-            "• **Chỉ định:** Dùng khi sốt cao không đáp ứng Paracetamol hoặc có kèm triệu chứng đau viêm cấp.\n"
-            "• **Liều dùng người lớn:** **200mg - 400mg/lần**, uống sau khi ăn no, cách mỗi 6 - 8 giờ (tối đa 1.200mg/ngày).\n"
-            "• **Thận trọng & Chống chỉ định:** Người có tiền sử viêm loét dạ dày tá tràng, suy thận mạn tính, hen suyễn.\n\n"
-            "🚨 **HAI CẢNH BÁO BẮT BUỘC TRONG HẠ SỐT (An Toàn Dược Lâm Sàng):**\n"
-            "1. **NGUY CƠ SỐT XUẤT HUYẾT DENGUE:** **Tuyệt đối KHÔNG tự ý dùng Aspirin hoặc Ibuprofen** khi người bệnh sốt chưa rõ nguyên nhân vì gây ức chế ngưng tập tiểu cầu, dẫn đến xuất huyết nội tạng và tiêu hóa dữ dội nguy hiểm tính mạng.\n"
-            "2. **HỘI CHỨNG REYE Ở TRẺ EM:** **Tuyệt đối KHÔNG dùng Aspirin cho trẻ em và thanh thiếu niên** nghi ngờ nhiễm virus cúm hoặc thủy đậu vì có thể gây thoái hóa mỡ gan và phù não cấp tính (tử vong cao).\n\n"
-            "#### 3. Các biện pháp hỗ trợ không dùng thuốc\n"
-            "• **Lau ấm:** Dùng khăn thấm nước ấm **(37°C – 38°C)** lau vùng nách, bẹn, trán. **Tuyệt đối không chườm đá lạnh hoặc cồn**.\n"
-            "• **Bù nước & Điện giải:** Uống nhiều nước ấm, dung dịch Oresol (pha đúng thể tích) để tránh mất nước.\n\n"
-            "🚨 **DẤU HIỆU BÁO ĐỘNG ĐỎ CẦN ĐẾN CƠ SỞ Y TẾ NGAY:**\n"
-            "• Sốt cao kèm: Co giật, lơ mơ, khó thở, nôn ói liên tục, xuất huyết dưới da (chấm bầm tím), hoặc sốt cao liên tục không hạ sau 2 cữ thuốc."
+            "### Tham khảo lâm sàng: đánh giá người bệnh sốt\n\n"
+            f"{context}\n\n"
+            "Rà soát tuổi/cân nặng, toàn trạng, thời gian diễn tiến, bệnh nền, dị ứng và thuốc đang dùng trước khi áp dụng hướng dẫn hạ sốt. Ở trẻ em cần căn cứ cân nặng và chuyên luận tương ứng. Nếu chưa loại trừ sốt xuất huyết, đánh giá nguy cơ chảy máu trước khi cân nhắc NSAID hoặc Aspirin.\n\n"
+            "Dấu hiệu cần đánh giá khẩn gồm khó thở, rối loạn tri giác, co giật, cứng gáy, tím tái, mất nước nặng hoặc xuất huyết.\n\n"
+            "Để rà soát cụ thể, bổ sung tuổi/cân nặng, nhiệt độ và sinh hiệu, thời gian sốt, dấu hiệu kèm theo, bệnh nền/dị ứng và thuốc đã sử dụng."
         )
-
         return CopilotResponse(
             intent="CLINICAL_FEVER_TRIAGE_PROTOCOL",
-            reply_text=reply,
-            card=None,  # Đã loại bỏ Action Card thừa theo yêu cầu người dùng
-            legal_basis="Dược Thư Quốc Gia Việt Nam 2015 Trang 1095 & Hướng dẫn Chẩn đoán Điều trị Bộ Y Tế",
-            suggested_chips=[
-                "Thông tin về thuốc Paracetamol",
-                "Dấu hiệu cảnh báo sốt xuất huyết",
-                "Kiểm tra tồn kho Paracetamol",
-                "Đối soát ca trực 07:00 AM"
-            ]
+            reply_text=reply, card=None,
+            legal_basis="Dược Thư Quốc Gia Việt Nam 2015 & Hướng dẫn Bộ Y tế (đối chiếu nguồn hiện hành)",
+            suggested_chips=["Rà soát ca người bệnh sốt 39°C", "Kiểm tra liều trẻ em theo cân nặng và nguồn", "Dấu hiệu cảnh báo sốt xuất huyết ở người bệnh"],
+            session_id=ctx.session.session_id if ctx.session else None,
         )

@@ -267,12 +267,9 @@ async def test_out_of_database_knowledge_boundary():
         })
         assert res_headache.status_code == 200
         d_head = res_headache.json()
-        assert d_head["intent"] == "HEADACHE_PAIN_RELIEF_GUIDANCE"
-        assert "HƯỚNG DẪN XỬ TRÍ ĐAU ĐẦU" in d_head["reply_text"]
-        assert "PARACETAMOL 500mg" in d_head["reply_text"]
-        assert "80 Viên" in d_head["reply_text"]
-        assert d_head["card"] is not None
-        assert d_head["card"]["card_type"] == "medication_safety"
+        assert d_head["intent"] == "CLINICAL_CASE_CLARIFICATION"
+        assert "người bệnh" in d_head["reply_text"].casefold() or "ca" in d_head["reply_text"].casefold()
+        assert d_head["card"] is None
 
         # Case 7: Format Hijacking via Chat Copilot API -> SECURITY_GUARDRAIL_BLOCKED
         res_format = await client.post("/api/v1/copilot/chat", json={
@@ -310,12 +307,9 @@ async def test_out_of_database_knowledge_boundary():
         })
         assert res_fever.status_code == 200
         d_fever = res_fever.json()
-        assert d_fever["intent"] == "CLINICAL_FEVER_TRIAGE_PROTOCOL"
-        assert "Tôi chưa biết tuổi" in d_fever["reply_text"]
-        assert "500mg - 1.000mg/lần" not in d_fever["reply_text"]
-        assert any("tuổi" in suggestion.lower() for suggestion in d_fever["suggested_chips"])
-        assert "Paracetamol" in d_fever["reply_text"]
-        assert "Ibuprofen" in d_fever["reply_text"]
+        assert d_fever["intent"] == "CLINICAL_CASE_CLARIFICATION"
+        assert d_fever["answer_type"] == "clarification"
+        assert "người bệnh" in d_fever["reply_text"].casefold()
         # Must NOT leak patient record into drug query
         assert "Võ Minh Trí" not in d_fever["reply_text"]
         assert "BN-8820" not in d_fever["reply_text"]
@@ -375,8 +369,64 @@ async def test_copilot_wellbeing_greeting_is_conversational():
     from app.main import app
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post("/api/v1/copilot/chat", json={"query": "Hôm nay bạn thấy thế nào?"})
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Hôm nay bạn thấy thế nào?", "user_role": "doctor", "user_name": "Bác sĩ Test"})
     assert response.status_code == 200
     body = response.json()
     assert body["intent"] == "GREETING_WELLBEING"
-    assert "cảm thấy thế nào" in body["reply_text"]
+    assert "bác sĩ" in body["reply_text"].casefold()
+    assert "cảm thấy thế nào" not in body["reply_text"].casefold()
+    assert "triệu chứng" not in body["reply_text"].casefold()
+
+@pytest.mark.asyncio
+async def test_self_symptom_prompt_without_case_context_asks_for_clinical_case():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Tôi bị sốt, tôi nên uống thuốc nào nhỉ", "user_role": "doctor", "user_name": "Bác sĩ Test"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["intent"] == "CLINICAL_CASE_CLARIFICATION"
+    assert body["card"] is None
+    assert "người bệnh" in body["reply_text"].casefold() or "ca bệnh" in body["reply_text"].casefold()
+    assert "tôi chưa biết tuổi" not in body["reply_text"].casefold()
+
+@pytest.mark.asyncio
+async def test_patient_fever_query_is_framed_as_clinician_reference():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Bệnh nhân Trần Thị Mai sốt 39 độ, cần lưu ý gì khi tra cứu hạ sốt?", "user_role": "doctor", "user_name": "Bác sĩ Test"})
+    assert response.status_code == 200
+    reply = response.json()["reply_text"].casefold()
+    assert "người bệnh" in reply or "bệnh nhân" in reply
+    assert "nếu bạn là người lớn" not in reply
+    assert "hãy cho biết tuổi" not in reply
+
+@pytest.mark.asyncio
+async def test_incomplete_prescription_advice_does_not_create_synthetic_patient_card():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Dặn dò đơn thuốc cho bệnh nhân", "user_role": "doctor", "user_name": "Bác sĩ Test"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["card"] is None
+    assert body["answer_type"] == "clarification"
+    assert "chọn" in body["reply_text"].casefold()
+    assert "đơn thuốc" in body["reply_text"].casefold()
+
+@pytest.mark.asyncio
+async def test_advice_free_text_patient_and_schedule_never_creates_medication_card():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Nhắc thuốc cho Nguyễn Văn A uống Ciprofloxacin lúc 8h và 20h", "user_role": "doctor", "user_name": "Bác sĩ Test"})
+    body = response.json()
+    assert response.status_code == 200
+    assert body["card"] is None
+    assert body["answer_type"] == "clarification"
+    assert "chọn đơn thuốc đã kê" in body["reply_text"].casefold()

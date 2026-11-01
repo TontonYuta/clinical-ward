@@ -1130,7 +1130,7 @@ export const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-welcome',
     sender: 'agent',
-    text: 'Trợ lý Agent Lâm Sàng & Quản Lý Dược Bệnh Viện sẵn sàng hỗ trợ kíp trực. Nhập yêu cầu lâm sàng, kiểm tra tương tác thuốc, tra cứu chuyên luận Dược Thư hoặc câu hỏi y tế vào khung bên dưới.',
+    text: 'Trợ lý nghiệp vụ lâm sàng sẵn sàng hỗ trợ bác sĩ tra cứu thông tin thuốc, quy định chuyên môn, rà soát ca bệnh và thực hiện nghiệp vụ trong hệ thống.',
     timestamp: '08:00',
     suggestedChips: [
       'Kiểm tra tương tác Clopidogrel với Omeprazol',

@@ -55,6 +55,15 @@ export function processClinicalUserQuery(
   const text = guardCheck.sanitizedQuery;
   const lower = text.toLowerCase();
 
+  if (/\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b/i.test(lower) && !/bệnh nhân|người bệnh|ca bệnh|hồ sơ|bn[- ]/i.test(lower)) {
+    return { replyMessage: {
+      id: `msg-case-clarification-${Date.now()}`, sender: 'agent',
+      text: 'Trợ lý phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng chọn hồ sơ hoặc nêu thông tin người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu rõ chủ đề cần tra cứu.',
+      timestamp: nowStr,
+      suggestedChips: ['Tra cứu thông tin thuốc có nguồn', 'Mở hồ sơ người bệnh để rà soát ca']
+    } };
+  }
+
   // Pairwise drug interaction questions need a dedicated path before generic
   // medication lookup can answer about a single product.
   if (matchDrugInteractionIntent(lower)) {
@@ -145,17 +154,13 @@ export function processClinicalUserQuery(
   const replyMessage: ChatMessage = {
     id: `msg-agent-${Date.now()}`,
     sender: 'agent',
-    text: `Tôi là **Trợ lý Agent Lâm Sàng Thông Minh**, đồng hành hỗ trợ kíp trực bệnh viện theo đúng quy chế Bộ Y tế.\n\n` +
-          `Tôi có thể hỗ trợ bạn thực thi tự động các nghiệp vụ chính:\n` +
-          `1. **Dặn dò bác sĩ & Lịch uống thuốc:** Ví dụ: *'Gửi thông báo cho bệnh nhân Võ Minh Trí uống thuốc'*\n` +
-          `2. **Kê đơn thuốc điện tử CPOE:** Ví dụ: *'Kê đơn cho bệnh nhân Trần Thị Mai dùng Augmentin 1g'*\n` +
-          `3. **Thu hồi vỏ nợ thuốc gây nghiện:** Ví dụ: *'Hoàn trả vỏ morphin cho ca trực'*\n` +
-          `4. **Đối soát giao ban ca trực 07:00 AM:** Ví dụ: *'Đối soát ca trực đêm qua và kiểm tra nợ vỏ Morphin'*\n` +
-          `5. **Báo hỏng máy thở & TBYT:** Ví dụ: *'Máy thở PB840 phòng mổ 2 bị xì khí nứt bẫy nước'*\n` +
-          `6. **Kiểm tra thuốc cận hạn FEFO:** Ví dụ: *'Cho tôi xem danh sách thuốc cận hạn dưới 60 ngày'*\n` +
-          `7. **Quét kho cạn & lập dự trù Mẫu 01:** Ví dụ: *'Kiểm tra mặt hàng chạm ngưỡng Min và lập dự trù bù thuốc'*\n` +
-          `8. **Tra cứu Cổng Dược Quốc Gia & Dược Thư:** Ví dụ: *'Thông tin thuốc Hadunalin'*\n\n` +
-          `Hãy chọn gợi ý nhanh bên dưới hoặc bấm nút Micro để ra lệnh bằng giọng nói!`,
+    text: `Trợ lý này phục vụ bác sĩ tra cứu thông tin và thao tác nghiệp vụ trên dữ liệu đã chọn.\n\n` +
+          `Có thể hỗ trợ các việc như:\n` +
+          `1. **Tra cứu thuốc, liều dùng, chống chỉ định và tương tác** từ nguồn có căn cứ.\n` +
+          `2. **Rà soát hồ sơ/ca bệnh** khi bác sĩ xác định người bệnh và cung cấp dữ liệu cần thiết.\n` +
+          `3. **Mở biểu mẫu nghiệp vụ** như kê đơn CPOE, dặn dò từ đơn đã chọn, đối soát ca trực và FEFO.\n` +
+          `4. **Thao tác nghiệp vụ kho, thiết bị và ca trực** trên dữ liệu trong hệ thống.\n\n` +
+          `Mọi nội dung cần được đối chiếu với hồ sơ và xác nhận trong biểu mẫu tương ứng.`,
     timestamp: nowStr,
     legalReference: {
       lawCode: 'NĐ 98 · TT 22 · TT 20 · TT 52 · TT 36 GSP',
@@ -163,9 +168,9 @@ export function processClinicalUserQuery(
       clause: 'Căn cứ áp dụng'
     },
     suggestedChips: [
-      'Gửi thông báo cho bệnh nhân Võ Minh Trí uống thuốc',
-      'Đối soát ca trực 07:00 AM',
-      'Kê đơn cho bệnh nhân Trần Thị Mai dùng Augmentin 1g',
+      'Tra cứu tương tác giữa Clopidogrel và Omeprazol',
+      'Tra cứu thông tin thuốc',
+      'Mở đơn CPOE',
       'Hoàn trả vỏ morphin cho ca trực',
       'Báo hỏng máy thở PB840 phòng mổ 2',
       'Thuốc nào cận hạn dưới 60 ngày'

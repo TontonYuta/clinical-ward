@@ -26,6 +26,7 @@ export interface PrescriptionOrder {
   patientId: string;
   patientName: string;
   patientCccd: string; // Bắt buộc theo TT 26/2025/TT-BYT
+  patientInsuranceId?: string;
   patientAddress?: string;
   guardianName?: string;
   patientPhone?: string;

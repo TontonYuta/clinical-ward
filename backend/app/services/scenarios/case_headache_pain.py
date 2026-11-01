@@ -31,6 +31,22 @@ class HeadachePainScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        has_case = bool(ctx.patient or any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn ")))
+        if not has_case:
+            return CopilotResponse(
+                intent="CLINICAL_CASE_CLARIFICATION",
+                reply_text="Để rà soát đau đầu theo ca, vui lòng chọn hồ sơ hoặc cung cấp thông tin người bệnh. Nếu cần chuyên luận thuốc giảm đau, hãy nêu tên thuốc cần tra cứu.",
+                answer_type="clarification", source_status="missing_case_context", confidence=1.0,
+                abstention_reason="Chưa xác định người bệnh hoặc thuốc cần tra cứu"
+            )
+        has_drug_lookup = any(term in lower_query for term in ("paracetamol", "ibuprofen", "sumatriptan", "ergotamin"))
+        if not has_drug_lookup:
+            return CopilotResponse(
+                intent="CLINICAL_CASE_CLARIFICATION",
+                reply_text="Để rà soát đau đầu theo ca, vui lòng cung cấp tuổi, thời điểm khởi phát, mức độ/đặc điểm đau, sinh hiệu, dấu hiệu thần kinh, bệnh nền, dị ứng và thuốc đang dùng. Không suy ra chẩn đoán hoặc phác đồ khi chưa có dữ liệu ca.",
+                answer_type="clarification", source_status="incomplete_case_context", confidence=1.0,
+                abstention_reason="Thiếu dữ liệu lâm sàng để rà soát đau đầu",
+            )
         batch_res = await db.execute(select(InventoryBatch).where(InventoryBatch.id == "b-1"))
         batch_pcm = batch_res.scalar_one_or_none()
         stock_str = f"{batch_pcm.current_stock} {batch_pcm.unit}" if batch_pcm else "80 Viên"
@@ -48,18 +64,17 @@ class HeadachePainScenario(BaseScenario):
             )
 
         reply = (
-            "### 💊 HƯỚNG DẪN XỬ TRÍ ĐAU ĐẦU & THUỐC GIẢM ĐAU (Dược Thư Quốc Gia 2015)\n\n"
-            "• **Phân tích lâm sàng:** Đau đầu (Cephalea) là triệu chứng thường gặp do nhiều nguyên nhân: căng thẳng thần kinh (Tension headache), "
+            "### 💊 TÀI LIỆU THAM KHẢO: ĐÁNH GIÁ ĐAU ĐẦU VÀ THUỐC GIẢM ĐAU (Dược Thư Quốc Gia 2015)\n\n"
+            "• **Đánh giá ca bệnh:** Đau đầu (Cephalea) có nhiều nguyên nhân như căng thẳng thần kinh (Tension headache), "
             "vận mạch, viêm xoang, huyết áp hoặc đau nửa đầu Migraine.\n\n"
             "• **Thuốc giảm đau bậc 1 ưu tiên (Có sẵn trong CSDL Tồn kho Bệnh viện):**\n"
             f"  • **Biệt dược tồn kho:** **PARACETAMOL 500mg** (Lô: `{batch_no}` | Tồn kho: **{stock_str}** tại {loc_str}).\n"
-            "  • **Liều dùng chuẩn người lớn:** Uống **500mg - 1000mg/lần**, cách mỗi 4 - 6 giờ nếu còn đau. "
-            "**Tuyệt đối không uống quá 4.000mg (4g)/24 giờ** để tránh hoại tử tế bào gan cấp tính.\n"
+            "  • Tra cứu liều theo đúng chuyên luận, dạng bào chế và đặc điểm người bệnh; không dùng thông tin tồn kho để suy ra liều cho ca.\n"
             "  • **Chống chỉ định & Thận trọng:** Người suy gan nặng, thiếu hụt men G6PD, người nghiện rượu; không uống rượu bia trong thời gian dùng thuốc.\n\n"
             "• **Lựa chọn thay thế (Đau đầu do viêm hoặc căng cơ):**\n"
-            "  • **NSAIDs (Ibuprofen):** 200mg - 400mg sau ăn no (chống chỉ định người có tiền sử loét dạ dày tá tràng, suy thận, hen phế quản).\n"
+            "  • **NSAIDs (Ibuprofen):** cần đối chiếu chuyên luận và chống chỉ định/cảnh báo theo người bệnh trước khi cân nhắc.\n"
             "  • **Đau nửa đầu Migraine chuyên biệt:** Cần khám bác sĩ để cân nhắc nhóm Triptan (Sumatriptan) hoặc Ergotamin.\n\n"
-            "🚨 **DẤU HIỆU NGUY HIỂM CẦN ĐI BỆNH VIỆN NGAY (Cảnh báo đỏ Red Flags):**\n"
+            "🚨 **DẤU HIỆU CẢNH BÁO CẦN ĐÁNH GIÁ KHẨN (Red Flags):**\n"
             "• Đau đầu đột ngột dữ dội kiểu \"sét đánh\", đau đầu dữ dội kèm sốt cao cứng gáy, nôn vọt, nhìn mờ, co giật hoặc yếu liệt nửa người."
         )
 
