@@ -73,26 +73,11 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
         if wellbeing:
             return CopilotResponse(
                 intent="GREETING_WELLBEING",
-                reply_text=f"Chào {role_label} {user_name}. Trợ lý sẵn sàng hỗ trợ tra cứu thông tin thuốc, rà soát ca bệnh và thực hiện các nghiệp vụ trong hệ thống.",
-                suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Đối soát ca trực"]
+                reply_text=f"Tôi luôn sẵn sàng hỗ trợ, {role_label.lower()}. Bác sĩ cần tra cứu hoặc xử lý nghiệp vụ nào?",
             )
-        welcome_reply = (
-            f"Chào {role_label} {user_name}! Tôi là **Trợ lý Dược Lâm Sàng & Vận Hành Tủ Trực Bệnh Viện** "
-            f"(tuân thủ TT 22/2011, TT 20/2017, TT 51/2017, NĐ 98/2021 & QĐ 5948/QĐ-BYT).\n\n"
-            f"Tôi sẵn sàng hỗ trợ đồng nghiệp xử lý nhanh các tác vụ trong ca trực:\n\n"
-            f"1. 💊 **Dược thư & Tương tác thuốc:** Tra cứu 54.885 SĐK DAV, liều dùng, tác dụng phụ & tương tác thuốc (QĐ 5948).\n"
-            f"2. 📋 **Tủ trực ca đêm:** Xuất mượn thuốc khẩn cấp, quản lý thu hồi 100% vỏ thuốc gây nghiện (TT 20/2017).\n"
-            f"3. ⏰ **Giao ban & Đối soát:** Bàn giao ca 07:00 AM, kiểm tra chênh lệch sổ sách và nợ vỏ.\n"
-            f"4. 📦 **Kho Dược GSP & Hạn dùng FEFO:** Quét thuốc cận hạn dưới 60 ngày, lập dự trù bù cơ số Mẫu 01.\n"
-            f"5. 🚨 **Tra cứu hướng dẫn lâm sàng:** Phác đồ cấp cứu, sàng lọc nguy cơ và thông tin thuốc có căn cứ.\n"
-            f"6. 🩺 **Trang thiết bị y tế:** Báo hỏng máy thở, máy sốc tim, phân loại rủi ro Loại A-B-C-D (NĐ 98).\n"
-            f"7. ❄️ **Chuỗi lạnh vắc xin:** Giám sát nhiệt độ 2°C – 8°C, xử trí sự cố mất điện tủ lạnh.\n\n"
-            f"Đồng nghiệp có thể bấm chọn nhanh các tác vụ bên dưới hoặc nhập câu hỏi trực tiếp."
-        )
         return CopilotResponse(
-            intent="GREETING_WELCOME", reply_text=welcome_reply,
-            legal_basis="Thông tư 22/2011, TT 20/2017, TT 51/2017 & QĐ 5948/QĐ-BYT",
-            suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Kiểm tra tương tác thuốc", "Đối soát ca trực 07:00 AM", "Thuốc cận hạn FEFO"]
+            intent="GREETING_WELCOME",
+            reply_text=f"Chào {role_label}. Tôi hỗ trợ tra cứu thuốc, rà soát ca bệnh và chuẩn bị nghiệp vụ trong biểu mẫu."
         )
 
     is_thanks = clean_greeting in {
@@ -102,9 +87,7 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
     if is_thanks:
         return CopilotResponse(
             intent="ACKNOWLEDGMENT",
-            reply_text="Rất hân hạnh được đồng hành hỗ trợ đồng nghiệp trong ca trực bệnh viện! Hãy đặt câu hỏi bất cứ lúc nào nếu cần tra cứu thuốc, đối soát tủ trực hoặc hướng dẫn quy trình lâm sàng.",
-            legal_basis="Hệ thống trợ lý lâm sàng bệnh viện",
-            suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu tương tác thuốc", "Kho Dược FEFO"]
+            reply_text="Rất vui được hỗ trợ bác sĩ.",
         )
 
     # 0a. Dặn dò bác sĩ & Lịch uống thuốc qua Google Apps Script / Email

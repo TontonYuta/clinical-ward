@@ -378,6 +378,34 @@ async def test_copilot_wellbeing_greeting_is_conversational():
     assert "triệu chứng" not in body["reply_text"].casefold()
 
 @pytest.mark.asyncio
+async def test_copilot_bare_greeting_is_short_and_physician_focused():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Hi", "user_role": "doctor", "user_name": "Bác sĩ Test"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["intent"] == "GREETING_WELCOME"
+    assert body["reply_text"].startswith("Chào Bác sĩ.")
+    assert len(body["reply_text"].split()) < 30
+    assert body["suggested_chips"] == []
+    assert "mượn" not in body["reply_text"].casefold()
+
+@pytest.mark.asyncio
+async def test_copilot_acknowledgment_is_not_a_business_menu():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Cảm ơn", "user_role": "doctor", "user_name": "Bác sĩ Test"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["intent"] == "ACKNOWLEDGMENT"
+    assert body["reply_text"] == "Rất vui được hỗ trợ bác sĩ."
+    assert body["suggested_chips"] == []
+
+@pytest.mark.asyncio
 async def test_self_symptom_prompt_without_case_context_asks_for_clinical_case():
     from httpx import AsyncClient, ASGITransport
     from app.main import app
