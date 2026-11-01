@@ -57,19 +57,19 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
       {/* Desktop View: Bảng đơn thuốc điện tử hành chính rộng rãi chuẩn TT 26/2025/TT-BYT */}
       <div className="hidden md:flex flex-1 min-h-0 bg-white border-y border-slate-200 overflow-hidden flex-col">
         <div className="overflow-x-auto overflow-y-auto flex-1 w-full">
-          <table className="w-full min-w-[1340px] table-fixed text-left text-sm border-collapse">
+          <table className="w-full min-w-[1420px] table-fixed text-left text-sm border-collapse">
             <colgroup>
               <col style={{ width: '55px' }} />
               <col style={{ width: '230px' }} />
+              <col style={{ width: '250px' }} />
+              <col style={{ width: '230px' }} />
               <col style={{ width: '190px' }} />
-              <col className="w-[26%]" style={{ minWidth: '260px' }} />
-              <col style={{ width: '150px' }} />
-              <col className="w-[44%]" style={{ minWidth: '400px' }} />
+              <col style={{ minWidth: '460px' }} />
             </colgroup>
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-700">
               <tr className="font-semibold text-xs uppercase tracking-wider">
                 <th className="py-3 px-3 text-center border-r border-slate-200">STT</th>
-                <th className="py-3 px-4 border-r border-slate-200">Mã đơn &amp; Thời gian (TT26)</th>
+                <th className="py-3 px-4 border-r border-slate-200">Mã đơn &amp; Thời gian</th>
                 <th className="py-3 px-4 border-r border-slate-200">Người bệnh</th>
                 <th className="py-3 px-4 border-r border-slate-200">Chẩn đoán ICD-10</th>
                 <th className="py-3 px-3.5 text-center border-r border-slate-200">Loại mẫu đơn</th>
@@ -96,44 +96,67 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                             className="font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer text-sm transition underline-offset-2" title="Bấm xem chi tiết đơn thuốc">
                             {order.id}
                           </button>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${meta.colorBadge}`}>{meta.code}</span>
+                          <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${meta.colorBadge}`}>{meta.code}</span>
                         </div>
                         <div className="text-xs text-slate-500 mt-1 font-mono">{order.prescribedAt}</div>
                       </td>
 
-                      {/* 3. Người bệnh & Mã BN */}
+                      {/* 3. Người bệnh & Mã BN (mở rộng rộng rãi) */}
                       <td className="py-3.5 px-4 border-r border-slate-100">
                         <button type="button" data-testid="patient-name-btn" onClick={() => onSelectPatient?.(order.patientName)}
-                          className="font-bold text-slate-900 leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left transition underline-offset-2 block" title="Xem hồ sơ bệnh án">
+                          className="font-bold text-slate-900 text-base leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left transition underline-offset-2 block" title="Xem hồ sơ bệnh án">
                           {order.patientName}
                         </button>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">{order.patientId} {order.patientCccd ? `· ${order.patientCccd.slice(-4)}` : ''}</div>
+                        <div className="text-xs text-slate-500 font-mono mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">{order.patientId}</span>
+                          {order.patientCccd && <span className="text-slate-500 font-medium">CCCD: ···{order.patientCccd.slice(-4)}</span>}
+                        </div>
                       </td>
 
                       {/* 4. Chẩn đoán ICD-10 */}
                       <td className="py-3.5 px-4 border-r border-slate-100">
                         <div className="font-medium text-slate-900 leading-relaxed" title={order.diagnosisText}>
-                          <span className="font-mono text-slate-800 font-bold bg-slate-100 px-1 py-0.5 rounded text-xs mr-1">{order.diagnosisIcd10}</span>
+                          <span className="font-mono text-slate-800 font-bold bg-slate-100 px-1.5 py-0.5 rounded text-xs mr-1">{order.diagnosisIcd10}</span>
                           {order.diagnosisText}
                         </div>
                         <div className="text-xs text-slate-500 mt-1"><span className="text-slate-700 font-medium">{fmtDoc(order.doctorName)}</span></div>
                       </td>
 
-                      {/* 5. Phân loại đơn & Mẫu TT26 */}
-                      <td className="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-slate-100">
-                        <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${isOutpatient ? 'bg-slate-100 text-slate-800' : 'bg-teal-50 text-teal-900'}`}>{isOutpatient ? 'Ngoại trú' : 'Nội trú'}</span>
-                        <div className="text-[11px] font-semibold text-slate-600 mt-1">{meta.badgeShort}</div>
-                        {order.isChronicDisease && <div className="text-3xs font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 mt-1 inline-block">PL VII ({order.daysPrescribed}d)</div>}
+                      {/* 5. Phân loại đơn & Mẫu TT26 (size chữ to, rõ ràng) */}
+                      <td className="py-3.5 px-3 text-center border-r border-slate-100">
+                        <div className="flex flex-col items-center justify-center gap-1.5">
+                          <span className={`inline-flex items-center justify-center font-bold text-sm px-3 py-1 rounded-md border ${meta.colorBadge} shadow-xs text-center`}>
+                            {meta.badgeShort}
+                          </span>
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isOutpatient ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-teal-50 text-teal-900 border border-teal-200'}`}>
+                              {isOutpatient ? 'Ngoại trú' : 'Nội trú'}
+                            </span>
+                            {order.isChronicDisease && <span className="text-2xs font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">PL VII ({order.daysPrescribed}d)</span>}
+                          </div>
+                        </div>
                       </td>
 
-                      {/* 6. Danh mục thuốc kê (rộng rãi, chi tiết) */}
+                      {/* 6. Danh mục thuốc kê (bố cục 2 dòng: dòng 1 thuốc & SL, dòng 2 liều & hướng dẫn) */}
                       <td className="py-3.5 px-4">
-                        <div className="text-xs font-medium text-slate-800 leading-relaxed space-y-0.5">
+                        <div className="space-y-2">
                           {order.items.map((it, iIdx) => (
-                            <div key={it.id || iIdx} className="truncate" title={`${it.medicationName} (${it.quantity} ${it.unit})`}>
-                              <span className="font-bold text-slate-900">{iIdx + 1}. {it.medicationName}</span>
-                              <span className="text-slate-600 ml-1">({it.quantity} {it.unit})</span>
-                              {it.instructions && <span className="text-slate-500 italic ml-1.5">· {it.instructions}</span>}
+                            <div key={it.id || iIdx} className="not-last:border-b not-last:border-slate-100 not-last:pb-2">
+                              <div className="flex items-baseline justify-between gap-3">
+                                <span className="font-bold text-slate-900 text-sm leading-snug">
+                                  {iIdx + 1}. {it.medicationName}
+                                </span>
+                                <span className="text-xs font-bold text-slate-800 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 shrink-0">
+                                  {it.quantity} {it.unit}
+                                </span>
+                              </div>
+                              <div className="text-xs text-slate-600 pl-3.5 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-slate-400 select-none font-mono">↳</span>
+                                {it.route && <span className="text-slate-700 font-medium bg-slate-50 px-1.5 py-0.2 rounded border border-slate-200/60 text-[11px]">[{it.route}]</span>}
+                                <span className="italic text-slate-600 font-normal">
+                                  {it.instructions || it.frequency || 'Dùng theo chỉ định của bác sĩ'}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>

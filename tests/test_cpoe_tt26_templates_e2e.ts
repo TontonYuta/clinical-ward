@@ -37,10 +37,13 @@ async function main() {
   if (colWidths[1].width !== '230px') {
     throw new Error(`FAIL: Expected order ID column to be 230px, got ${colWidths[1].width}`);
   }
-  if (colWidths[2].width !== '190px') {
-    throw new Error(`FAIL: Expected patient column to be 190px, got ${colWidths[2].width}`);
+  if (colWidths[2].width !== '250px') {
+    throw new Error(`FAIL: Expected patient column to be 250px, got ${colWidths[2].width}`);
   }
-  console.log('✅ CPOE Table column widths verified (Mã đơn: 230px, Người bệnh: 190px, Không có cột Thao tác).');
+  if (colWidths[4].width !== '190px') {
+    throw new Error(`FAIL: Expected template column to be 190px, got ${colWidths[4].width}`);
+  }
+  console.log('✅ CPOE Table column widths verified (Mã đơn: 230px, Người bệnh: 250px, Loại mẫu đơn: 190px, Không có cột Thao tác).');
 
   // 2. Open "Kê đơn mới" Modal
   console.log('--- 2. Opening Kê Đơn Thuốc Mới Modal ---');
@@ -148,6 +151,19 @@ async function main() {
     throw new Error('FAIL: Table row 1 does not display Đơn “N” (Gây nghiện) badge!');
   }
   console.log('✅ Newly created order has 14-char code with suffix -N and Đơn “N” (Gây nghiện) badge in table!');
+
+  // Take screenshot of spacious table layout
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'cpoe_table_spacious_layout.png') });
+  console.log('📸 Saved screenshot: cpoe_table_spacious_layout.png');
+
+  // Scroll table container horizontally to show columns 4, 5, 6 clearly
+  const tableContainer = page.locator('.overflow-x-auto.overflow-y-auto');
+  await tableContainer.evaluate((el) => { el.scrollLeft = 320; });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'cpoe_table_medications_twoline.png') });
+  console.log('📸 Saved screenshot: cpoe_table_medications_twoline.png');
+  await tableContainer.evaluate((el) => { el.scrollLeft = 0; });
+  await page.waitForTimeout(200);
 
   // Open Detail Modal
   console.log('--- 7. Opening Narcotic Order Detail Modal ---');
