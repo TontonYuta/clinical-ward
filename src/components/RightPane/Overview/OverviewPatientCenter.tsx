@@ -86,7 +86,7 @@ export const OverviewPatientCenter: React.FC<OverviewPatientCenterProps> = ({
               Nhập họ tên hoặc mã bệnh nhân để tìm kiếm hồ sơ
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Hệ thống lọc trực tiếp thông tin lâm sàng, chẩn đoán và tiền sử dị ứng
+              Hệ thống tra cứu hồ sơ người bệnh theo mã BN, CCCD, buồng giường
             </p>
           </div>
         ) : filteredPatients.length === 0 ? (
@@ -96,8 +96,6 @@ export const OverviewPatientCenter: React.FC<OverviewPatientCenterProps> = ({
         ) : (
           <div className="divide-y divide-slate-100">
             {filteredPatients.map((p) => {
-              const hasAllergy = p.allergies && !p.allergies.toLowerCase().includes('không');
-              const isRenal = p.egfr && p.egfr < 60;
               return (
                 <div
                   key={p.id}
@@ -117,18 +115,10 @@ export const OverviewPatientCenter: React.FC<OverviewPatientCenterProps> = ({
                       </span>
                       <span className="text-slate-500 text-xs font-medium">· {p.room}</span>
                     </div>
-                    <div className="text-xs sm:text-sm text-slate-600 flex items-center gap-2.5 mt-1 flex-wrap">
-                      <span className="truncate">{p.diagnosis || p.chronicConditions}</span>
-                      {hasAllergy && (
-                        <span className="text-rose-700 font-semibold shrink-0">
-                          · Dị ứng: {p.allergies}
-                        </span>
-                      )}
-                      {isRenal && (
-                        <span className="text-amber-800 font-semibold shrink-0">
-                          · eGFR: {p.egfr}
-                        </span>
-                      )}
+                    <div className="text-xs sm:text-sm text-slate-500 flex items-center gap-2 mt-1 flex-wrap">
+                      {p.cccd && <span className="font-mono">CCCD: {p.cccd}</span>}
+                      {p.phone && <span className="font-mono">· SĐT: {p.phone}</span>}
+                      {p.department && <span>· {p.department}</span>}
                     </div>
                   </div>
 

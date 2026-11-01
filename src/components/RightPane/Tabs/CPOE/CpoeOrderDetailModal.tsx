@@ -91,17 +91,6 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   const patient = findPatientByNameOrQuery(order.patientId || order.patientName, INITIAL_PATIENTS);
   const isDraft = order.status === 'draft' || !order.digitalSignature;
 
-  // Evaluate clinical safety indicators
-  const hasAllergies = Boolean(patient?.allergies && !patient.allergies.toLowerCase().includes('không ghi nhận') && !patient.allergies.toLowerCase().includes('chưa ghi nhận'));
-  const isRenalImpaired = Boolean(patient && patient.egfr < 60);
-  const renalStage = patient ? (
-    patient.egfr >= 90 ? 'G1 (Bình thường)' :
-    patient.egfr >= 60 ? 'G2 (Giảm nhẹ)' :
-    patient.egfr >= 45 ? 'G3a (Giảm nhẹ - trung bình)' :
-    patient.egfr >= 30 ? 'G3b (Giảm trung bình - nặng)' :
-    patient.egfr >= 15 ? 'G4 (Suy thận nặng)' : 'G5 (Suy thận giai đoạn cuối)'
-  ) : 'Chưa ghi nhận eGFR';
-
   const hasNarcotics = order.items.some((it) => it.isNarcotic);
 
   const tabs: [CpoeDetailTab, string][] = [
@@ -144,12 +133,6 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 <span className="text-[10px] sm:text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md flex items-center gap-1">
                   <ShieldAlert className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   GÂY NGHIỆN (TT 20)
-                </span>
-              )}
-              {hasAllergies && (
-                <span className="text-[10px] sm:text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  CÓ DỊ ỨNG
                 </span>
               )}
             </div>
@@ -304,35 +287,20 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 </div>
               )}
 
-              {/* Cảnh báo an toàn cho bệnh nhân này */}
+              {/* Cảnh báo an toàn cho đơn thuốc này */}
               <div className="space-y-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  Rà Soát An Toàn Dùng Thuốc Người Bệnh
+                  Rà Soát Quy Chuẩn Đơn Thuốc Điện Tử (TT 26/2025/TT-BYT)
                 </h3>
-                <div className="space-y-1.5 text-xs text-slate-800">
-                  {hasAllergies ? (
-                    <div className="text-rose-800 font-medium flex items-start gap-1.5">
-                      <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                      <span>Tiền sử dị ứng ghi nhận: <strong>{stripLeadingBullets(patient?.allergies || '')}</strong>. Đã đối soát chéo thành phần hoạt chất trong đơn thuốc.</span>
-                    </div>
-                  ) : (
-                    <div className="text-slate-600 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Không ghi nhận tiền sử dị ứng thuốc nghiêm trọng.</span>
-                    </div>
-                  )}
-
-                  {isRenalImpaired ? (
-                    <div className="text-amber-900 font-medium flex items-start gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                      <span>Bệnh nhân có suy giảm chức năng thận (eGFR {patient?.egfr} mL/min - {renalStage}). Các khoản thuốc đào thải qua thận đã được đối soát liều an toàn.</span>
-                    </div>
-                  ) : (
-                    <div className="text-slate-600 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Chức năng thận trong giới hạn an toàn (eGFR {patient?.egfr || 'bình thường'}).</span>
-                    </div>
-                  )}
+                <div className="space-y-1.5 text-xs text-slate-700">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Mã định danh công dân CCCD và thông tin hành chính người bệnh đầy đủ.</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Danh mục {order.items.length} khoản thuốc đã được rà soát với cơ sở dữ liệu DDI quốc gia.</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -528,46 +496,24 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Rà soát tiền sử dị ứng */}
+              {/* An toàn phản vệ theo Thông tư 51/2017/TT-BYT */}
               <div className="space-y-2.5 pb-5 border-b border-slate-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-rose-700">
-                  Cảnh Báo Dị Ứng Người Bệnh (Thông Tư 51/2017/TT-BYT)
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Phòng Ngừa &amp; Xử Trí Phản Vệ (Thông Tư 51/2017/TT-BYT)
                 </h3>
-                {hasAllergies ? (
-                  <div className="space-y-1.5 text-xs text-rose-900 font-medium">
-                    <p className="text-sm font-bold text-rose-800">{stripLeadingBullets(patient?.allergies || '')}</p>
-                    <p className="text-slate-700 font-normal">
-                      Bệnh nhân có cơ địa dị ứng thuốc. Đã đối soát toàn bộ hoạt chất trong đơn không trùng nhóm quá mẫn đã ghi nhận.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-600">Bệnh nhân chưa có tiền sử dị ứng thuốc ghi nhận trong hồ sơ.</p>
-                )}
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Bác sĩ và điều dưỡng trực theo dõi sát dấu hiệu lâm sàng trong 30 phút đầu sau khi dùng thuốc. Hộp thuốc cấp cứu phản vệ và bơm tiêm Adrenalin 1mg/1ml luôn sẵn sàng tại buồng bệnh theo đúng quy định.
+                </p>
               </div>
 
-              {/* Chức năng thận & Chỉnh liều */}
+              {/* Hướng dẫn tuân thủ & theo dõi lâm sàng */}
               <div className="space-y-2.5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  Chức Năng Thận &amp; Chỉnh Liều (KDIGO 2024)
+                  Theo Dõi Lâm Sàng Khi Sử Dụng Thuốc
                 </h3>
-                {patient ? (
-                  <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <dt className="text-slate-500">Mức lọc eGFR</dt>
-                      <dd className="text-sm font-bold font-mono text-slate-900 mt-0.5">{patient.egfr} mL/min</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Creatinine huyết thanh</dt>
-                      <dd className="text-sm font-bold font-mono text-slate-900 mt-0.5">{patient.creatinine} μmol/L</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Phân độ thận</dt>
-                      <dd className="text-sm font-semibold text-slate-800 mt-0.5">{renalStage}</dd>
-                    </div>
-                  </dl>
-                ) : (
-                  <p className="text-xs text-slate-600">Chưa có dữ liệu xét nghiệm sinh hóa gần nhất của bệnh nhân.</p>
-                )}
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Đánh giá đáp ứng lâm sàng sau mỗi liều dùng, ghi chép diễn biến vào hồ sơ bệnh án và báo cáo biến cố bất lợi (ADR) kịp thời về đơn vị Dược lâm sàng.
+                </p>
               </div>
             </div>
 

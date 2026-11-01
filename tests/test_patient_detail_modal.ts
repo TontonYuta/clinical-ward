@@ -56,14 +56,11 @@ async function verifyPatientDetailModal() {
     await modal.waitFor({ state: 'visible', timeout: 5000 });
     console.log('✅ Modal PatientDetailModal đã mở thành công!');
 
-    // 3. Kiểm thử từng Tab trong 6 Tabs
+    // 3. Kiểm thử các Tabs hồ sơ thực tế có trong hệ thống
     const tabNames = [
-      { id: 'overview', name: 'Tổng quan lâm sàng' },
-      { id: 'allergies', name: 'Tiền sử dị ứng & Phản vệ' },
-      { id: 'renal', name: 'Chức năng thận & Chỉnh liều' },
-      { id: 'comorbidities', name: 'Bệnh nền & Chẩn đoán' },
+      { id: 'overview', name: 'Hồ sơ người bệnh' },
       { id: 'prescriptions', name: 'Đơn thuốc' },
-      { id: 'administrative', name: 'Hồ sơ hành chính & CCCD TT26' }
+      { id: 'administrative', name: 'Thông tin hành chính & CCCD TT26' }
     ];
 
     for (const tab of tabNames) {

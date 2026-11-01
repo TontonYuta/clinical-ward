@@ -104,9 +104,8 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                           className="font-bold text-slate-900 text-base leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left transition underline-offset-2 block" title="Xem hồ sơ bệnh án">
                           {order.patientName}
                         </button>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">
                           <span className="text-slate-600 font-medium">{order.patientId}</span>
-                          {order.patientCccd && <span>· CCCD: ···{order.patientCccd.slice(-4)}</span>}
                         </div>
                       </td>
 
