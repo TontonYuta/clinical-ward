@@ -99,6 +99,12 @@ async def test_copilot_chat_rag_integration():
         assert len(data["citations"]) > 0
     assert "Paracetamol" in data["reply_text"]
 
+def test_hybrid_retrieval_ranks_explicitly_named_drug_above_shared_terms():
+    retriever = HybridRetriever()
+    results = retriever.retrieve("Thời gian bán thải và liều tối đa của Paracetamol trong huyết tương", top_k=5)
+    assert results
+    assert "Paracetamol" in results[0].chunk.title
+
 def test_fts_index_refreshes_changed_content_when_chunk_count_is_unchanged(tmp_path):
     from app.services.rag.types import RagChunk
 
@@ -164,6 +170,9 @@ def test_grounded_answers_use_plain_source_lines_without_sample_badges():
     assert "RAG Xác thực" not in result.answer
     assert "PaperQA2 Grounded" not in result.answer
     assert "Chỉ định: hạ sốt" in result.answer
+    assert "**Nguồn:**" not in result.answer
+    assert result.citations
+    assert result.answer.startswith("Chỉ định:")
 
 def test_weak_retrieval_abstains_instead_of_claiming_grounded_answer():
     from app.services.rag.citation_grounder import format_grounded_answer

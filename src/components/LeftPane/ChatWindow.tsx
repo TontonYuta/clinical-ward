@@ -13,6 +13,7 @@ import { CdssAlertBanner } from './Cards/CdssAlertBanner';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import { isCloudAIAvailable } from '../../services/geminiService';
+import { buildSourceIntroduction, removeLegacySourceText } from '../../utils/chatAnswerPresentation';
 
 interface ChatWindowProps {
   messages: ChatMessage[]; suggestionChips: QuickSuggestionChip[];
@@ -104,19 +105,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           const isDarkBubble = msg.sender === 'user' || isSystem;
 
           return (
-            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-2.5 max-w-[96%] sm:max-w-[88%] ${isDarkBubble ? 'ml-auto flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-2.5 w-full ${isDarkBubble ? 'ml-auto flex-row-reverse max-w-[96%] sm:max-w-[88%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
               <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 text-white shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800' : isSystem ? 'bg-slate-700' : 'bg-slate-900'}`}>
                 {isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
 
-              <div className="space-y-2 min-w-0 flex-1">
+              <div className="space-y-2 min-w-0 flex-1 max-w-full">
                 {msg.cdssAlert && (
                   <div className="mb-2">
                     <CdssAlertBanner alert={msg.cdssAlert} />
                   </div>
                 )}
                 <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
-                  {renderFormattedText(msg.text, isDarkBubble)}
+                  {renderFormattedText(removeLegacySourceText(msg.text), isDarkBubble)}
+                  {isAgent && msg.citations?.length ? (
+                    <p data-testid="chat-source-introduction" className="mt-3 border-l-2 border-teal-500 pl-2.5 text-xs font-medium text-slate-600">
+                      {buildSourceIntroduction(msg.citations)}
+                    </p>
+                  ) : null}
                   {msg.suggestedChips && msg.suggestedChips.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
                       <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp</span>
@@ -134,7 +140,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   )}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-2xs text-slate-600">
-                      <span className="w-full text-2xs font-semibold text-slate-400">Trích dẫn y văn & căn cứ pháp lý:</span>
                       {Array.from(new Map(msg.citations.map(c => [c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis, c])).values()).slice(0, 3).map((c, i) => (
                         <a key={i} href={c.url || undefined} target={c.url ? '_blank' : undefined} rel={c.url ? 'noreferrer' : undefined} title={`${c.source}: ${c.excerpt || c.section}`} aria-label={c.url ? `Mở ${c.source}, ${c.page ? `trang ${c.page}` : c.section}` : `${c.source}: ${c.section}`} className={`inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-1 rounded border border-slate-200 ${c.url ? 'hover:bg-teal-50 hover:border-teal-300 hover:text-teal-900 cursor-pointer' : 'cursor-help'}`}>
                           <BookOpen className="w-2.5 h-2.5 text-slate-500" />
