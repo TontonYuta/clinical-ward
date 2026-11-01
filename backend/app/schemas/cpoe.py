@@ -37,6 +37,15 @@ class CpoeOrderCreate(BaseModel):
     prescribedAt: str | None = None
     digitalSignature: str | None = None
     status: str = "draft"
+    tt26FormType: str | None = None
+    receiverCccd: str | None = None
+    receiverName: str | None = None
+    treatmentBatch1: str | None = None
+    treatmentBatch2: str | None = None
+    treatmentBatch3: str | None = None
+    facilityName: str | None = None
+    facilityAddress: str | None = None
+    facilityPhone: str | None = None
     items: list[CpoeItemSchema]
 
     @model_validator(mode="after")
@@ -68,6 +77,8 @@ class CpoeOrderResponse(BaseModel):
     patientWeight: float | None = None
     patientPhone: str | None = None
     patientEmail: str | None = None
+    patientAddress: str | None = None
+    guardianName: str | None = None
     patientDob: str | None = None
     patientGender: str | None = None
     department: str | None = None
@@ -80,5 +91,14 @@ class CpoeOrderResponse(BaseModel):
     prescribedAt: str
     digitalSignature: str | None = None
     status: str
+    tt26FormType: str | None = None
+    receiverCccd: str | None = None
+    receiverName: str | None = None
+    treatmentBatch1: str | None = None
+    treatmentBatch2: str | None = None
+    treatmentBatch3: str | None = None
+    facilityName: str | None = None
+    facilityAddress: str | None = None
+    facilityPhone: str | None = None
     items: list[CpoeItemSchema]
     createdAt: datetime | None = None

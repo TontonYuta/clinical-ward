@@ -8,7 +8,7 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer } from 'lucide-react';
-import { PrescriptionOrder, PrescriptionType } from '../../../../types/cpoe';
+import { PrescriptionOrder, PrescriptionType, Tt26FormType, getTt26FormMetadata } from '../../../../types/cpoe';
 import { MasterMedication } from '../../../../types/medication';
 import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
 import { useModalDismiss } from '../../../../hooks/useModalDismiss';
@@ -60,6 +60,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const [diagnosisText, setDiagnosisText] = useState('');
   const [isChronic, setIsChronic] = useState(false);
   const [daysPrescribed, setDaysPrescribed] = useState(0);
+  const [tt26FormType, setTt26FormType] = useState<Tt26FormType>('PL1_STANDARD');
+  const [receiverCccd, setReceiverCccd] = useState('');
+  const [treatmentBatch1, setTreatmentBatch1] = useState('');
+  const [treatmentBatch2, setTreatmentBatch2] = useState('');
+  const [treatmentBatch3, setTreatmentBatch3] = useState('');
 
   type DraftMedication = { id: string; medicationName: string; activeIngredient: string; unit: string; route: string; quantity: number; dosage: string; frequency: string; instructions: string };
   const emptyMedication = (): DraftMedication => ({ id: 'rxi-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), medicationName: '', activeIngredient: '', unit: 'Viên', route: '', quantity: 0, dosage: '', frequency: '', instructions: '' });
@@ -139,7 +144,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   };
   const handleSelectMed = (index: number, med: MasterMedication) => {
     const next = medications.map((item, itemIndex) => itemIndex === index ? { ...item, medicationName: med.brandName, activeIngredient: med.activeIngredient, unit: med.standardUnit, route: med.route } : item);
-    setMedications(next); refreshDdiAudit(next);
+    setMedications(next);
+    refreshDdiAudit(next);
+    if (med.isNarcotic || /\b(morphin|fentanyl|oxycodon|pethidin)\b/i.test(med.brandName + ' ' + med.activeIngredient)) {
+      setTt26FormType('PL2_NARCOTIC');
+    } else if (/\b(diazepam|phenobarbital|clonazepam|zolpidem)\b/i.test(med.brandName + ' ' + med.activeIngredient)) {
+      if (tt26FormType === 'PL1_STANDARD') setTt26FormType('PL3_PSYCHOTROPIC');
+    }
   };
   const updateMedication = (index: number, field: keyof DraftMedication, value: string | number) => {
     const next = medications.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item);
@@ -175,9 +186,17 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     const finalGender = (patientGender || matchedPatient?.gender || '') as 'Nam' | 'Nữ' | '';
     const finalDept = department || '';
 
+    const suffix = tt26FormType === 'PL2_NARCOTIC' ? 'N' : tt26FormType === 'PL3_PSYCHOTROPIC' ? 'H' : 'C';
+    const orderId = `79001${Date.now().toString().slice(-7)}-${suffix}`;
+
     try { await onSaveOrder({
-      id: `DRAFT-${Date.now()}`,
+      id: orderId,
       prescriptionType: rxType,
+      tt26FormType,
+      receiverCccd: receiverCccd.trim() || undefined,
+      treatmentBatch1: treatmentBatch1.trim() || undefined,
+      treatmentBatch2: treatmentBatch2.trim() || undefined,
+      treatmentBatch3: treatmentBatch3.trim() || undefined,
       patientId: finalPatientId,
       patientName: patientName.trim(),
       patientPhone: finalPhone,
@@ -212,18 +231,18 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
     >
-      {/* Container Mở Rộng Chuẩn Workstation CPOE (sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl h-[90vh]) */}
-      <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] max-h-[920px] flex flex-col overflow-hidden text-slate-900">
+      {/* Container Mở Rộng Chuẩn Workstation CPOE (sm:max-w-6xl xl:max-w-[1400px] h-[94vh]) */}
+      <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-[1400px] h-[100dvh] sm:h-[94vh] max-h-[980px] flex flex-col overflow-hidden text-slate-900">
         
         {/* Header Chuẩn Kho Dược: Nền trắng, phẳng, viền slate-200 */}
-        <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
+        <div className="px-5 sm:px-6 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
                 TT 26/2025/TT-BYT
               </span>
               <div className="flex items-center gap-2">
-                <Stethoscope className="w-5 h-5 text-slate-800" />
+                <Stethoscope className="w-5 h-5 text-teal-700" />
                 <h3 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight">
                   Kê đơn thuốc điều trị
                 </h3>
@@ -238,8 +257,8 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             {/* Phân loại đơn thuốc: Chuyển đổi Ngoại trú / Nội trú */}
             <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200">
               <button type="button" onClick={handlePrintDraft}
-                className="px-4 py-2 border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs sm:text-sm font-semibold cursor-pointer transition">
-                <Printer className="w-4 h-4 inline mr-1" />In đơn
+                className="px-3.5 py-1.5 border border-slate-300 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold cursor-pointer transition">
+                <Printer className="w-4 h-4 inline mr-1 text-slate-600" />In đơn
               </button>
               <button
                 type="button"
@@ -273,6 +292,58 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             >
               <X className="w-5 h-5" />
             </button>
+          </div>
+        </div>
+
+        {/* Thanh phân loại mẫu đơn thuốc chuẩn Thông tư 26/2025/TT-BYT */}
+        <div className="px-5 sm:px-6 py-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Phân loại mẫu đơn TT 26:</span>
+            <div className="inline-flex p-0.5 bg-white rounded-lg border border-slate-300 shadow-2xs gap-1">
+              <button
+                type="button"
+                onClick={() => setTt26FormType('PL1_STANDARD')}
+                className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                  tt26FormType === 'PL1_STANDARD'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                Phụ lục I: Đơn thuốc (-C)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTt26FormType('PL2_NARCOTIC');
+                  if (daysPrescribed > 30) setDaysPrescribed(30);
+                }}
+                className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                  tt26FormType === 'PL2_NARCOTIC'
+                    ? 'bg-rose-700 text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                Phụ lục II: Đơn “N” Gây nghiện (-N)
+              </button>
+              <button
+                type="button"
+                onClick={() => setTt26FormType('PL3_PSYCHOTROPIC')}
+                className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                  tt26FormType === 'PL3_PSYCHOTROPIC'
+                    ? 'bg-purple-700 text-white shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                Phụ lục III: Đơn “H” Hướng thần (-H)
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-2xs font-mono text-slate-500">Mã đơn TT26 dự kiến:</span>
+            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white border border-slate-300 text-slate-900">
+              79001{Date.now().toString().slice(-7)}-{tt26FormType === 'PL2_NARCOTIC' ? 'N' : tt26FormType === 'PL3_PSYCHOTROPIC' ? 'H' : 'C'}
+            </span>
           </div>
         </div>
 
@@ -449,6 +520,84 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                   </div>
                 </div>
 
+                {/* 2b. Chuyên biệt Phụ lục II (Đơn "N") & Phụ lục III (Đơn "H") theo TT 26 */}
+                {tt26FormType === 'PL2_NARCOTIC' && (
+                  <div className="p-3.5 bg-rose-50/70 border border-rose-300 rounded-xl space-y-2.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-rose-950">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldAlert className="w-4 h-4 text-rose-600" />
+                        <span>Quy định Đơn thuốc “N” (Gây nghiện - TT 26)</span>
+                      </span>
+                      <span className="text-2xs font-mono bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mã đuôi: -N</span>
+                    </div>
+                    <p className="text-2xs text-rose-800 leading-relaxed">
+                      Kê tối đa 07 ngày cho bệnh cấp tính; tối đa 30 ngày chia làm 03 đợt điều trị cho bệnh nhân ung thư (Điều 7 &amp; 8 TT 26/2025/TT-BYT).
+                    </p>
+                    <div className="space-y-1.5">
+                      <label className="block text-2xs font-bold text-slate-700">Phân bổ 3 đợt điều trị:</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Đợt 1: Từ ngày ... đến ..."
+                          value={treatmentBatch1}
+                          onChange={(e) => setTreatmentBatch1(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-md"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Đợt 2: Từ ngày ... đến ..."
+                          value={treatmentBatch2}
+                          onChange={(e) => setTreatmentBatch2(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-md"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Đợt 3: Từ ngày ... đến ..."
+                          value={treatmentBatch3}
+                          onChange={(e) => setTreatmentBatch3(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-md"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-2xs font-bold text-slate-700 mb-0.5">
+                        Số định danh cá nhân/số CCCD/hộ chiếu người nhận thuốc (nếu khác người bệnh):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Nhập 12 số CCCD người nhận thuốc..."
+                        value={receiverCccd}
+                        onChange={(e) => setReceiverCccd(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-rose-300 rounded-md"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {tt26FormType === 'PL3_PSYCHOTROPIC' && (
+                  <div className="p-3.5 bg-purple-50/70 border border-purple-300 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-purple-950">
+                      <span className="flex items-center gap-1.5">
+                        <Pill className="w-4 h-4 text-purple-600" />
+                        <span>Quy định Đơn thuốc “H” (Hướng thần, tiền chất - TT 26)</span>
+                      </span>
+                      <span className="text-2xs font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">Mã đuôi: -H</span>
+                    </div>
+                    <div>
+                      <label className="block text-2xs font-bold text-slate-700 mb-0.5">
+                        Số định danh cá nhân/số CCCD/hộ chiếu người nhận thuốc (nếu khác người bệnh):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Nhập 12 số CCCD người nhận thuốc..."
+                        value={receiverCccd}
+                        onChange={(e) => setReceiverCccd(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-purple-300 rounded-md"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* 3. Nhóm chẩn đoán y khoa & thời hạn */}
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -599,7 +748,42 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     {/* Portal document outside modal clipping/scroll container */}
     {createPortal(
       <div id="prescription-print-portal">
-        <PrescriptionPrintDocument order={{ id: 'DRAFT-PREVIEW', prescriptionType: rxType, patientId, patientInsuranceId, patientName: patientName || '—', patientCccd, patientAddress, guardianName, patientPhone, patientDob, patientGender, patientWeight: patientWeight ? Number(patientWeight) : undefined, department, diagnosisIcd10, diagnosisText, isChronicDisease: isChronic, daysPrescribed, doctorName: formatDoctorDisplay(doctorName), doctorCertificate: '', prescribedAt: new Date().toLocaleDateString('vi-VN'), status: 'draft', items: medications.filter((m) => m.medicationName).map((m) => ({ ...m, route: normalizeRoute(m.route), unit: normalizeUnit(m.unit) })) }} />
+        <PrescriptionPrintDocument
+          order={{
+            id: `79001${Date.now().toString().slice(-7)}-${tt26FormType === 'PL2_NARCOTIC' ? 'N' : tt26FormType === 'PL3_PSYCHOTROPIC' ? 'H' : 'C'}`,
+            prescriptionType: rxType,
+            tt26FormType,
+            receiverCccd: receiverCccd.trim() || undefined,
+            treatmentBatch1: treatmentBatch1.trim() || undefined,
+            treatmentBatch2: treatmentBatch2.trim() || undefined,
+            treatmentBatch3: treatmentBatch3.trim() || undefined,
+            patientId,
+            patientInsuranceId,
+            patientName: patientName || '—',
+            patientCccd,
+            patientAddress,
+            guardianName,
+            patientPhone,
+            patientDob,
+            patientGender,
+            patientWeight: patientWeight ? Number(patientWeight) : undefined,
+            department,
+            diagnosisIcd10,
+            diagnosisText,
+            isChronicDisease: isChronic,
+            daysPrescribed,
+            doctorName: formatDoctorDisplay(doctorName),
+            doctorCertificate: '',
+            prescribedAt: new Date().toLocaleDateString('vi-VN'),
+            status: 'draft',
+            clinicalNotes: clinicalNotes.trim() || undefined,
+            items: medications.filter((m) => m.medicationName).map((m) => ({
+              ...m,
+              route: normalizeRoute(m.route),
+              unit: normalizeUnit(m.unit)
+            }))
+          }}
+        />
       </div>,
       document.body
     )}

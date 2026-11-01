@@ -62,6 +62,15 @@ async def get_cpoe_orders(
                 prescribedAt=r.prescribed_at,
                 digitalSignature=r.digital_signature,
                 status=r.status,
+                tt26FormType=getattr(r, "tt26_form_type", None),
+                receiverCccd=getattr(r, "receiver_cccd", None),
+                receiverName=getattr(r, "receiver_name", None),
+                treatmentBatch1=getattr(r, "treatment_batch_1", None),
+                treatmentBatch2=getattr(r, "treatment_batch_2", None),
+                treatmentBatch3=getattr(r, "treatment_batch_3", None),
+                facilityName=getattr(r, "facility_name", None),
+                facilityAddress=getattr(r, "facility_address", None),
+                facilityPhone=getattr(r, "facility_phone", None),
                 items=items,
                 createdAt=r.created_at
             )
@@ -133,6 +142,15 @@ async def create_cpoe_order(
         prescribed_at=payload.prescribedAt or now_str,
         digital_signature=signature,
         status=payload.status,
+        tt26_form_type=payload.tt26FormType,
+        receiver_cccd=payload.receiverCccd,
+        receiver_name=payload.receiverName,
+        treatment_batch_1=payload.treatmentBatch1,
+        treatment_batch_2=payload.treatmentBatch2,
+        treatment_batch_3=payload.treatmentBatch3,
+        facility_name=payload.facilityName,
+        facility_address=payload.facilityAddress,
+        facility_phone=payload.facilityPhone,
         items_json=items_json
     )
     db.add(prescription)
@@ -182,6 +200,15 @@ async def create_cpoe_order(
         prescribedAt=prescription.prescribed_at,
         digitalSignature=prescription.digital_signature,
         status=prescription.status,
+        tt26FormType=prescription.tt26_form_type,
+        receiverCccd=prescription.receiver_cccd,
+        receiverName=prescription.receiver_name,
+        treatmentBatch1=prescription.treatment_batch_1,
+        treatmentBatch2=prescription.treatment_batch_2,
+        treatmentBatch3=prescription.treatment_batch_3,
+        facilityName=prescription.facility_name,
+        facilityAddress=prescription.facility_address,
+        facilityPhone=prescription.facility_phone,
         items=payload.items,
         createdAt=prescription.created_at
     )

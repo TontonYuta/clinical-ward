@@ -35,11 +35,17 @@ async function main() {
   );
   console.log('Colgroup Specs:', colWidths);
 
-  const patientCol = colWidths[2];
-  if (patientCol.width !== '180px') {
-    throw new Error(`FAIL: Patient column width expected 180px, got: ${patientCol.width}`);
+  const orderIdCol = colWidths[1];
+  if (orderIdCol.width !== '230px') {
+    throw new Error(`FAIL: Order ID column width expected 230px, got: ${orderIdCol.width}`);
   }
-  console.log('SUCCESS: Patient column is narrowed to 180px.');
+  console.log('SUCCESS: Order ID and Timestamp column widened to 230px.');
+
+  const patientCol = colWidths[2];
+  if (patientCol.width !== '190px') {
+    throw new Error(`FAIL: Patient column width expected 190px, got: ${patientCol.width}`);
+  }
+  console.log('SUCCESS: Patient column is narrowed to 190px.');
 
   console.log('--- 3. Opening Prescription Detail Modal ---');
   const firstOrderBtn = page.locator('table [data-testid="cpoe-order-id-btn"]').first();

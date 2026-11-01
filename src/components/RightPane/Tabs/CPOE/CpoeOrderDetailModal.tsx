@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, User, Calendar, Pill, MessageSquare, Send } from 'lucide-react';
-import { PrescriptionOrder } from '../../../../types/cpoe';
+import { PrescriptionOrder, resolveTt26FormType, getTt26FormMetadata } from '../../../../types/cpoe';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
 import { stripLeadingBullets } from '../../../../utils/clinicalFormatter';
 import { SendSmsModal } from '../../../Modals/SendSmsModal';
@@ -84,6 +84,8 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   };
 
   const isOutpatient = order.prescriptionType === 'outpatient';
+  const formType = resolveTt26FormType(order);
+  const meta = getTt26FormMetadata(formType);
 
   // Resolve matching patient profile for clinical CDSS grounding
   const patient = findPatientByNameOrQuery(order.patientId || order.patientName, INITIAL_PATIENTS);
@@ -126,6 +128,9 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
             <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
               <span className="font-mono text-2xs sm:text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
                 MÃ ĐƠN: {order.id}
+              </span>
+              <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded border ${meta.colorBadge}`}>
+                {meta.title} ({meta.appendix})
               </span>
               <h2 className="text-sm sm:text-xl font-bold text-slate-950 tracking-tight truncate">
                 Đơn Thuốc Điện Tử <span className="text-2xs sm:text-sm font-normal text-slate-600">({isOutpatient ? 'Ngoại Trú' : 'Nội Trú Theo Ngày'})</span>
@@ -272,6 +277,33 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* Lịch cấp thuốc 3 đợt TT 26 đối với Đơn thuốc "N" */}
+              {(formType === 'PL2_NARCOTIC' || order.treatmentBatch1 || order.treatmentBatch2 || order.treatmentBatch3) && (
+                <div className="p-3.5 bg-rose-50/80 border border-rose-200 rounded-xl space-y-2 text-xs">
+                  <div className="flex items-center justify-between font-bold text-rose-950">
+                    <span className="flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      <span>Lịch Cấp Phát Thuốc 3 Đợt (Điều 8 TT 26/2025 - Tối Đa 30 Ngày)</span>
+                    </span>
+                    <span className="font-mono text-2xs bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mẫu Đơn N</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-1">
+                    <div className="bg-white p-2.5 rounded-lg border border-rose-200 shadow-2xs">
+                      <div className="font-bold text-rose-800">Đợt 1 (Ngày 1 - 10)</div>
+                      <div className="text-slate-700 mt-1 font-medium">{order.treatmentBatch1 || 'Cấp phát tại viện khi kê đơn (10 ngày)'}</div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-rose-200 shadow-2xs">
+                      <div className="font-bold text-rose-800">Đợt 2 (Ngày 11 - 20)</div>
+                      <div className="text-slate-700 mt-1 font-medium">{order.treatmentBatch2 || 'Cấp phát ngày thứ 11 sau đánh giá'}</div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-rose-200 shadow-2xs">
+                      <div className="font-bold text-rose-800">Đợt 3 (Ngày 21 - 30)</div>
+                      <div className="text-slate-700 mt-1 font-medium">{order.treatmentBatch3 || 'Cấp phát ngày thứ 21 sau đánh giá'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Cảnh báo an toàn cho bệnh nhân này */}
               <div className="space-y-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
@@ -347,6 +379,14 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                     <dt className="text-slate-500">Khoa / Buồng / Giường</dt>
                     <dd className="text-sm font-medium text-slate-900 mt-0.5">{order.department || '—'} {order.roomBed ? `(${order.roomBed})` : ''}</dd>
                   </div>
+                  {(order.receiverCccd || order.receiverName) && (
+                    <div className="col-span-2 pt-2 border-t border-slate-200">
+                      <dt className="text-slate-500 font-medium">Người nhận thuốc (nếu khác NB theo TT 26):</dt>
+                      <dd className="text-sm font-bold text-slate-900 mt-0.5">
+                        {order.receiverName ? `${order.receiverName} · ` : ''}CCCD: <span className="font-mono text-indigo-700">{order.receiverCccd}</span>
+                      </dd>
+                    </div>
+                  )}
                 </dl>
               </div>
 

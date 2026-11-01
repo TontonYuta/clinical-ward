@@ -29,5 +29,14 @@ class CpoePrescription(Base):
     prescribed_at: Mapped[str] = mapped_column(String, nullable=False)
     digital_signature: Mapped[str] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String, default="draft", index=True) # draft, signed, dispensed
+    tt26_form_type: Mapped[str] = mapped_column(String, nullable=True) # PL1_STANDARD, PL2_NARCOTIC, PL3_PSYCHOTROPIC
+    receiver_cccd: Mapped[str] = mapped_column(String, nullable=True)
+    receiver_name: Mapped[str] = mapped_column(String, nullable=True)
+    treatment_batch_1: Mapped[str] = mapped_column(String, nullable=True)
+    treatment_batch_2: Mapped[str] = mapped_column(String, nullable=True)
+    treatment_batch_3: Mapped[str] = mapped_column(String, nullable=True)
+    facility_name: Mapped[str] = mapped_column(String, nullable=True)
+    facility_address: Mapped[str] = mapped_column(String, nullable=True)
+    facility_phone: Mapped[str] = mapped_column(String, nullable=True)
     items_json: Mapped[str] = mapped_column(Text, nullable=False) # JSON array of items
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

@@ -64,15 +64,25 @@ async def test_registry_normalizes_registration_number_without_falling_back_to_n
     from sqlalchemy import select
     from app.database import AsyncSessionLocal
     from app.models.inventory import InventoryBatch
+    orig_reg, orig_code = None, None
     async with AsyncSessionLocal() as session:
         batch = (await session.execute(select(InventoryBatch).where(InventoryBatch.id == 'b-1'))).scalar_one()
+        orig_reg = batch.registration_number
+        orig_code = batch.national_code
         batch.registration_number = '  893100110026  '
         batch.national_code = 'UNRELATED-INTERNAL-CODE'
         await session.commit()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
-        response = await client.get('/api/v1/registry', params={'search': '893100110026'})
-        unrelated = await client.get('/api/v1/registry', params={'search': '893100110026', 'only_in_warehouse': True})
-    assert response.status_code == unrelated.status_code == 200
-    item = response.json()['items'][0]
-    assert item['hospital_stock_by_unit'] == [{'unit': 'Viên', 'quantity': 80, 'batch_count': 1}]
-    assert unrelated.json()['items'][0]['national_code'] == '893100110026'
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
+            response = await client.get('/api/v1/registry', params={'search': '893100110026'})
+            unrelated = await client.get('/api/v1/registry', params={'search': '893100110026', 'only_in_warehouse': True})
+        assert response.status_code == unrelated.status_code == 200
+        item = response.json()['items'][0]
+        assert item['hospital_stock_by_unit'] == [{'unit': 'Viên', 'quantity': 80, 'batch_count': 1}]
+        assert unrelated.json()['items'][0]['national_code'] == '893100110026'
+    finally:
+        async with AsyncSessionLocal() as session:
+            batch = (await session.execute(select(InventoryBatch).where(InventoryBatch.id == 'b-1'))).scalar_one()
+            batch.registration_number = orig_reg
+            batch.national_code = orig_code
+            await session.commit()

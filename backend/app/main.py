@@ -36,10 +36,29 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
         from sqlalchemy import inspect, text
         columns = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("cpoe_prescriptions")})
-        if "patient_insurance_id" not in columns:
-            await conn.execute(text("ALTER TABLE cpoe_prescriptions ADD COLUMN patient_insurance_id VARCHAR"))
-        if "patient_weight" not in columns:
-            await conn.execute(text("ALTER TABLE cpoe_prescriptions ADD COLUMN patient_weight FLOAT"))
+        cpoe_extra_cols = [
+            ("patient_insurance_id", "VARCHAR"),
+            ("patient_weight", "FLOAT"),
+            ("patient_address", "VARCHAR"),
+            ("guardian_name", "VARCHAR"),
+            ("department", "VARCHAR"),
+            ("patient_dob", "VARCHAR"),
+            ("patient_gender", "VARCHAR"),
+            ("patient_phone", "VARCHAR"),
+            ("patient_email", "VARCHAR"),
+            ("tt26_form_type", "VARCHAR"),
+            ("receiver_cccd", "VARCHAR"),
+            ("receiver_name", "VARCHAR"),
+            ("treatment_batch_1", "VARCHAR"),
+            ("treatment_batch_2", "VARCHAR"),
+            ("treatment_batch_3", "VARCHAR"),
+            ("facility_name", "VARCHAR"),
+            ("facility_address", "VARCHAR"),
+            ("facility_phone", "VARCHAR"),
+        ]
+        for col_name, col_type in cpoe_extra_cols:
+            if col_name not in columns:
+                await conn.execute(text(f"ALTER TABLE cpoe_prescriptions ADD COLUMN {col_name} {col_type}"))
 
     # Check if DB has data, if not seed it automatically
     async with AsyncSessionLocal() as session:
