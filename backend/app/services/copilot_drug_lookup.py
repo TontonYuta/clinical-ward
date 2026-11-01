@@ -31,15 +31,26 @@ def extract_drug_keywords(query: str) -> str:
         return sdk_match.group(1).upper()
 
     q_lower = cleaned.lower()
-    matched = find_matched_med(q_lower)
-    if matched:
-        has_other_med = any(w in q_lower for w in ["rocephin", "cefaclor", "augmentin", "panadol", "paracetamol"])
-        if not has_other_med or matched["keywords"][0] in q_lower:
-            return matched["keywords"][0]
+    # Retain every distinct medication alias, including both members of a DDI pair.
+    from app.services.copilot_catalog import MEDICATION_CATALOG
+    aliases = sorted((alias for med in MEDICATION_CATALOG for alias in med["keywords"]), key=len, reverse=True)
+    found = [alias for alias in aliases if alias in q_lower]
+    unique_found = [alias for alias in found if not any(alias != other and alias in other for other in found)]
+    if unique_found:
+        return " ".join(dict.fromkeys(unique_found))
 
     for phrase in sorted(STOP_PHRASES, key=len, reverse=True):
         q_lower = q_lower.replace(phrase, " ")
     words = [w.strip(" .,?!:;\"'") for w in q_lower.split() if len(w.strip(" .,?!:;\"'")) >= 2]
+    question_terms = {
+        "tác", "dụng", "phụ", "không", "mong", "muốn", "tương", "tác", "thành", "phần",
+        "của", "thuốc", "này", "đó", "là", "gì", "thế", "nào", "bao", "nhiêu", "hoạt", "chất",
+        "thời", "gian", "bán", "thải", "tối", "đa", "huyết", "tương",
+    }
+    words = [word for word in words if word not in question_terms]
+    # Remove clinical-question terms before resolving an unrecognized medication name.
+    words = [w for w in words if w not in {"chỉ", "định", "tác", "dụng", "phụ", "không", "mong", "muốn", "cách", "dùng", "liều", "lượng"}]
+    words = [w for w in words if w not in {"và", "với", "cùng", "trong", "khi"}]
     return " ".join(words).strip()
 
 async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: str | None = None) -> CopilotResponse:
@@ -53,6 +64,14 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
 
     if (not kw or len(kw) < 2 or is_deictic) and session.active_medication_name:
         kw = session.active_medication_ingredient or session.active_medication_name
+
+    # Resolve question-only field prompts against the active medication in-session.
+    query_field_only = any(term in query.lower() for term in [
+        "thành phần", "hoạt chất", "tác dụng phụ", "tác dụng không mong muốn",
+        "chống chỉ định", "liều dùng", "liều lượng", "chỉ định", "tương tác thuốc"
+    ]) and any(term in query.lower() for term in ["thuốc này", "thuốc đó", "nó", "của thuốc", "của paracetamol"])
+    if query_field_only and session.active_medication_name:
+        kw = session.active_medication_name
 
     if not kw or len(kw) < 2:
         catalog_count_result = await db.execute(select(func.count(DavNationalDrug.id)))
@@ -180,4 +199,4 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
             abstention_reason="Không tìm thấy thực thể thuốc đã định danh trong danh mục tra cứu"
         )
 
-    return await build_drug_profile_response(drugs, db, session)
+    return await build_drug_profile_response(drugs, db, session, query=query)

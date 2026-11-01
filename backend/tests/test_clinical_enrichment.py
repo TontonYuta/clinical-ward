@@ -7,10 +7,15 @@ from sqlalchemy import select
 
 @pytest.mark.asyncio
 async def test_clinical_drug_enrichment_and_empty_handling():
+    from app.seed_registry import seed_dav_registry_if_needed
+    seed_dav_registry_if_needed()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         async with AsyncSessionLocal() as session:
             # 1. Enriched drug (Paracetamol)
-            para_stmt = select(DavNationalDrug).where(DavNationalDrug.active_ingredient.like('%Paracetamol%')).limit(1)
+            para_stmt = select(DavNationalDrug).where(
+                DavNationalDrug.active_ingredient.like('%Paracetamol%'),
+                DavNationalDrug.clinical_monograph_id.is_not(None),
+            ).limit(1)
             para_drug = (await session.execute(para_stmt)).scalar_one()
             
             # 2. Unmatched herbal drug
@@ -53,3 +58,22 @@ async def test_clinical_drug_enrichment_and_empty_handling():
         mono_data = res_mono.json()
         assert mono_data["inn"] == "Paracetamol"
         assert "Giảm đau" in mono_data["drug_class"]
+
+def test_curated_registry_seed_refreshes_exact_clinical_records(tmp_path):
+    import sqlite3
+    from app.seed_registry import seed_dav_registry_if_needed
+
+    db_path = tmp_path / "clinical.db"
+    seed_dav_registry_if_needed(str(db_path))
+    conn = sqlite3.connect(db_path)
+    try:
+        row = conn.execute(
+            "SELECT indications, adult_dosage, antidote, clinical_monograph_id FROM dav_national_drugs WHERE national_code = ?",
+            ("893110151100",),
+        ).fetchone()
+        assert row and "phản vệ" in row[0].lower()
+        assert row[1] and "tiêm bắp" in row[1].lower()
+        assert row[2] and "Phentolamin" in row[2]
+        assert row[3] == "DTQG-2015-Adrenalin"
+    finally:
+        conn.close()

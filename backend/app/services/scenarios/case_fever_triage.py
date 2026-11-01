@@ -27,7 +27,7 @@ class FeverTriageScenario(BaseScenario):
         has_fever_word = any(w in lower_query for w in ["sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "cặp nhiệt độ"])
         has_action_or_temp = any(w in lower_query for w in [
             "38", "39", "40", "độ", "làm gì", "làm sao", "làm thế nào", "xử trí",
-            "uống gì", "thuốc gì", "dùng gì", "cách hạ", "hạ thân nhiệt", "nguy hiểm không", "các loại thuốc", "thông tin", "1 loại"
+            "uống gì", "thuốc gì", "dùng gì", "loại nào", "nên uống", "cách hạ", "hạ thân nhiệt", "nguy hiểm không", "các loại thuốc", "thông tin", "1 loại"
         ])
         is_vaccine_coldchain = any(w in lower_query for w in ["chuỗi lạnh", "vaxigrip", "tủ lạnh", "kho lạnh", "datalogger", "mkt"])
         return (has_antipyretic or (has_fever_word and has_action_or_temp)) and not is_vaccine_coldchain
@@ -47,6 +47,23 @@ class FeverTriageScenario(BaseScenario):
         stock_str = f"{batch_pcm.current_stock} {batch_pcm.unit}" if batch_pcm else "80 Viên"
         batch_no = batch_pcm.batch_number if batch_pcm else "LOT-PC24-11A"
         loc_str = batch_pcm.warehouse_location if batch_pcm else "Kho Dược Nội Trú (Kệ A1 - Tầng 1)"
+
+        context = "Tôi chưa biết tuổi, cân nặng, nhiệt độ hiện tại, thời gian sốt, bệnh nền/dị ứng hay thuốc bạn đã dùng. Vì vậy tôi chưa thể gợi ý liều cá nhân hóa."
+        reply = (
+            "### Xử trí sốt an toàn\n\n"
+            f"{context}\n\n"
+            "Nếu bạn là người lớn, Paracetamol có thể là lựa chọn hạ sốt thông thường; hãy dùng đúng theo nhãn thuốc và hỏi nhân viên y tế nếu có bệnh gan, uống nhiều rượu, mang thai, dị ứng hoặc bệnh nền. Trẻ em cần liều theo cân nặng, không dùng liều người lớn. Tránh tự dùng Aspirin hoặc Ibuprofen khi chưa rõ nguyên nhân sốt, nhất là khi có khả năng sốt xuất huyết.\n\n"
+            "Đi cấp cứu ngay nếu khó thở, lơ mơ, co giật, cứng gáy, tím tái, mất nước nặng hoặc xuất huyết.\n\n"
+            "Để hướng dẫn phù hợp hơn, hãy cho biết tuổi, cân nặng (nếu là trẻ), nhiệt độ đo được, số ngày sốt, triệu chứng kèm theo, bệnh nền/dị ứng và thuốc đã uống."
+        )
+        return CopilotResponse(
+            intent="CLINICAL_FEVER_TRIAGE_PROTOCOL",
+            reply_text=reply,
+            card=None,
+            legal_basis="Dược Thư Quốc Gia Việt Nam",
+            suggested_chips=["Tôi sốt 39°C từ hôm qua, hãy hỏi tuổi và cân nặng của tôi", "Trẻ sốt: liều thuốc theo cân nặng thế nào?", "Dấu hiệu cảnh báo sốt xuất huyết là gì?"],
+            session_id=ctx.session.session_id if ctx.session else None,
+        )
 
         if ctx.session:
             ctx.session.set_active_medication(

@@ -46,6 +46,23 @@ class HybridRetriever:
 
     def retrieve(self, query: str, kg_entities: Optional[list[str]] = None, top_k: int = 5) -> list[RetrievedChunk]:
         kg_entities = kg_entities or []
+        lower_query = query.casefold()
+        asks_about_interactions = any(term in lower_query for term in (
+            "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
+            "kết hợp", "uống chung", "dùng chung", "cặp thuốc"
+        ))
+        from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+        names_known_drugs = any(
+            alias in lower_query
+            for entry in DRUG_REGISTRY.values()
+            for alias in entry.get("aliases", [])
+            if len(alias) >= 4
+        )
+        # Common symptom words inside an adverse-event description must not
+        # retrieve DDI evidence unless the user asks about an interaction and
+        # names at least one medicine.
+        mentions_multiple_known_drugs = sum(any(alias in lower_query for alias in entry.get("aliases", []) if len(alias) >= 4) for entry in DRUG_REGISTRY.values()) >= 2
+        allow_ddi = names_known_drugs and (asks_about_interactions or mentions_multiple_known_drugs)
 
         # 1. Sparse BM25 Retrieval qua SQLite FTS5
         bm25_results = self.fts_index.search_bm25(query, top_k=top_k * 2)
@@ -66,13 +83,19 @@ class HybridRetriever:
             c.chunk_id: idx + 1 for idx, (c, _) in enumerate(semantic_scores[:top_k * 2])
         }
 
+        # DDI chunks are omitted unless a query names a known drug and either
+        # asks about interactions or explicitly names a second known medicine.
+        if not allow_ddi:
+            allowed_ids = {c.chunk_id for c in self.all_chunks if c.entity_type != "ddi"}
+            bm25_rank_map = {cid: rank for cid, rank in bm25_rank_map.items() if cid in allowed_ids}
+            dense_rank_map = {cid: rank for cid, rank in dense_rank_map.items() if cid in allowed_ids}
+
         # 3. Thuật toán Hợp nhất Xếp hạng Nghịch đảo (Reciprocal Rank Fusion - RRF k=60)
         chunk_map: dict[str, RagChunk] = {c.chunk_id: c for c in self.all_chunks}
         all_candidate_ids = set(bm25_rank_map.keys()).union(dense_rank_map.keys())
 
-        if not all_candidate_ids and self.all_chunks:
-            # Fallback nếu không có từ khóa nào khớp
-            all_candidate_ids = {self.all_chunks[0].chunk_id}
+        if not all_candidate_ids:
+            return []
 
         rrf_scored: list[RetrievedChunk] = []
         for cid in all_candidate_ids:

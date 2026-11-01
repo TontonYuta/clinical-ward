@@ -113,7 +113,7 @@ export function handleDrugInteractionIntent(text: string, lower: string, nowStr:
   const reply = matches.length
     ? `### ⚠️ Rà soát tương tác thuốc (QĐ 5948/QĐ-BYT)\n\n${matches.join('\n\n')}\n\nThông tin đối chiếu theo **QĐ 5948/QĐ-BYT** và nguồn chuyên luận/tờ hướng dẫn được nêu.`
     : pair
-      ? `### Phân tích phối hợp thuốc: ${pair[0]} + ${pair[1]}\n\nCặp thuốc **${pair[0]}** và **${pair[1]}** không thuộc danh mục tương tác chống chỉ định theo QĐ 5948/QĐ-BYT. Cần theo dõi liều lượng và chức năng gan thận khi phối hợp.`
+      ? `### Chưa thể kết luận tương tác: ${pair[0]} + ${pair[1]}\n\nKhông thể đối chiếu cặp thuốc này với bộ máy DDI có thẩm quyền trong đường xử lý hiện tại. Điều này **không khẳng định phối hợp an toàn hoặc không có tương tác**. Hãy thử lại khi kết nối backend hoạt động hoặc nhờ dược sĩ lâm sàng rà soát.`
       : `### 🔍 Tra cứu tương tác thuốc (QĐ 5948/QĐ-BYT)\n\nVui lòng nêu **tên hai thuốc hoặc hoạt chất** (ví dụ: *Clopidogrel và Omeprazol* hoặc *Nitroglycerin + Sildenafil*) hoặc bấm vào các cặp thuốc kiểm tra nhanh bên dưới.`;
   return { replyMessage: { id: `msg-ddi-${Date.now()}`, sender: 'agent', text: reply, timestamp: nowStr, legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Danh mục tương tác thuốc chống chỉ định', clause: 'Sàng lọc tương tác thuốc' }, cdssAlert, suggestedChips } };
 }

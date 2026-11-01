@@ -1133,9 +1133,9 @@ export const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
     text: 'Trợ lý Agent Lâm Sàng & Quản Lý Dược Bệnh Viện sẵn sàng hỗ trợ kíp trực. Nhập yêu cầu lâm sàng, kiểm tra tương tác thuốc, tra cứu chuyên luận Dược Thư hoặc câu hỏi y tế vào khung bên dưới.',
     timestamp: '08:00',
     suggestedChips: [
-      'Kiểm tra Clopidogrel + Omeprazol',
-      'Kiểm tra Nitroglycerin + Sildenafil',
-      'Đối soát ca trực 07:00 AM',
+      'Kiểm tra tương tác Clopidogrel với Omeprazol',
+      'Tác dụng phụ của Paracetamol?',
+      'Tra cứu liều dùng của Ceftriaxone',
       'Tra cứu số đăng ký VD-24757-16'
     ]
   }

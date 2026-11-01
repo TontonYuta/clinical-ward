@@ -70,7 +70,7 @@ export async function processClinicalAgentQueryAsync(
 
       const replyText = ddi.has_interaction && ddi.alert
         ? `### ⚠️ Cảnh Báo Tương Tác Thuốc (QĐ 5948/QĐ-BYT)\n\n**${ddi.alert.title}**\n\n- **Hậu quả lâm sàng:** ${ddi.alert.consequence}\n- **Cơ chế dược lý:** ${ddi.alert.mechanism}\n- **Hướng xử trí:** ${ddi.alert.action}\n- **Mức độ:** **${ddi.alert.severity}**\n- **Căn cứ pháp lý:** ${ddi.alert.source}`
-        : `### Kết quả tra cứu tương tác: ${pair[0]} + ${pair[1]}\n\nChưa tìm thấy tương tác chống chỉ định trong danh mục QĐ 5948/QĐ-BYT cho **${pair[0]} + ${pair[1]}**. Lưu ý kết quả này không khẳng định hoàn toàn phối hợp an toàn; cần theo dõi sát chức năng gan thận và các chỉ số sinh tồn của người bệnh.`;
+        : `### Chưa ghi nhận cảnh báo trong chỉ mục: ${pair[0]} + ${pair[1]}\n\n${ddi.coverage_note || 'Chưa tìm thấy trong danh mục đã lập chỉ mục; điều này không khẳng định phối hợp an toàn.'}`;
 
       return { replyMessage: {
         id: `msg-ddi-api-${Date.now()}`, sender: 'agent', text: replyText,
@@ -79,7 +79,13 @@ export async function processClinicalAgentQueryAsync(
         cdssAlert, suggestedChips: ddiChips, ragGrounded: true
       } };
     } catch {
-      return handleDrugInteractionIntent(cleanInput, lower, new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+      const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      return { replyMessage: {
+        id: `msg-ddi-offline-${Date.now()}`, sender: 'agent',
+        text: `### Chưa thể kết luận về tương tác thuốc\n\nKhông truy cập được bộ máy DDI nên cặp **${pair[0]} + ${pair[1]}** chưa được kiểm tra. Đây không phải kết quả âm tính hay xác nhận an toàn. Hãy thử lại khi kết nối backend hoạt động hoặc nhờ dược sĩ lâm sàng rà soát.`,
+        timestamp: now, suggestedChips: ddiChips,
+        cdssAlert: { level: 'warning', title: 'CHƯA HOÀN TẤT KIỂM TRA TƯƠNG TÁC', message: 'Nguồn DDI không truy cập được; chưa thể đưa ra kết luận cho cặp thuốc này.' }
+      } };
     }
   }
 

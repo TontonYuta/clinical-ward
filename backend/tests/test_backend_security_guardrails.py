@@ -191,7 +191,7 @@ async def test_out_of_database_knowledge_boundary():
         assert "TỪ CHỐI ĐƯA CHỈ ĐỊNH" in d_unknown["reply_text"]
         assert "Safe Abstention" in d_unknown["reply_text"]
 
-        # Case 3: National-Only Drug (Decide with Inventory Warning) -> 0 stock in ward
+        # Case 3: General drug lookup gives a concise identity summary, not an unsolicited stock report.
         res_nat = await client.post("/api/v1/copilot/chat", json={
             "query": "Thông tin thuốc Venclexta",
             "user_name": "Điều Dưỡng Trực Ca",
@@ -200,11 +200,11 @@ async def test_out_of_database_knowledge_boundary():
         assert res_nat.status_code == 200
         d_nat = res_nat.json()
         assert d_nat["intent"] == "MEDICATION_SAFETY_PROFILE"
-        assert "CHƯA NHẬP KHO NỘI VIỆN (0 ĐƠN VỊ)" in d_nat["reply_text"]
-        assert "0 Viên" in d_nat["reply_text"]
-        assert "Phiếu dự trù Mẫu 01" in d_nat["reply_text"]
+        assert "Hoạt chất" in d_nat["reply_text"]
+        assert "Tồn kho" not in d_nat["reply_text"]
+        assert "Phiếu dự trù Mẫu 01" not in d_nat["reply_text"]
 
-        # Case 4: In-Stock Drug -> Full batch, location, stock count
+        # Case 4: General in-stock drug lookup remains concise and does not append inventory.
         res_stock = await client.post("/api/v1/copilot/chat", json={
             "query": "Thông tin thuốc PARACETAMOL 500mg",
             "user_name": "Điều Dưỡng Trực Ca",
@@ -213,8 +213,37 @@ async def test_out_of_database_knowledge_boundary():
         assert res_stock.status_code == 200
         d_stock = res_stock.json()
         assert d_stock["intent"] == "MEDICATION_SAFETY_PROFILE"
-        assert "80 Viên" in d_stock["reply_text"]
-        assert "HỒ SƠ DƯỢC THẨM ĐỊNH CHÍNH XÁC" in d_stock["reply_text"]
+        assert "Hoạt chất" in d_stock["reply_text"]
+        assert "80 Viên" not in d_stock["reply_text"]
+        assert "Tồn kho" not in d_stock["reply_text"]
+
+        # A requested field must be returned even when asked with the medication name.
+        field_res = await client.post("/api/v1/copilot/chat", json={
+            "query": "Tác dụng phụ của thuốc Paracetamol?",
+            "user_name": "Điều Dưỡng Trực Ca",
+            "session_id": "focused-field-independent",
+        })
+        assert field_res.status_code == 200
+        assert field_res.json()["answer_type"] == "medication_field"
+        assert "Tác dụng không mong muốn" in field_res.json()["reply_text"]
+        assert "Dược thư Quốc gia Việt Nam" in field_res.json()["reply_text"]
+
+    # Targeted field questions return only the requested medication information.
+        for query, required, forbidden in [
+            ("Thành phần của thuốc Paracetamol là gì?", "Hoạt chất", ["Liều lượng dùng", "Tồn kho Bệnh viện", "Phiếu dự trù"]),
+            ("Tác dụng phụ của thuốc Paracetamol?", "Tác dụng không mong muốn", ["Liều lượng dùng", "Tồn kho Bệnh viện", "Phiếu dự trù"]),
+            ("Tương tác thuốc của thuốc Paracetamol?", "Tương tác thuốc", ["Liều lượng dùng", "Tồn kho Bệnh viện", "Phiếu dự trù"]),
+        ]:
+            focused = await client.post("/api/v1/copilot/chat", json={"query": query, "session_id": "focused-drug-field"})
+            assert focused.status_code == 200
+            focused_data = focused.json()
+            assert focused_data["answer_type"] == "medication_field"
+            assert required in focused_data["reply_text"]
+            for unrelated in forbidden:
+                assert unrelated not in focused_data["reply_text"]
+            assert focused_data["suggested_chips"] and any("Paracetamol" in chip for chip in focused_data["suggested_chips"])
+            if required == "Tương tác thuốc":
+                assert "Dược thư Quốc gia Việt Nam" in focused_data["reply_text"]
 
         # Case 5: Complex Specialty (Oncology) -> ONCOLOGY_SPECIALTY_GUIDANCE (Safe Deferral, No Empty Card)
         res_onco = await client.post("/api/v1/copilot/chat", json={
@@ -281,10 +310,11 @@ async def test_out_of_database_knowledge_boundary():
         assert res_fever.status_code == 200
         d_fever = res_fever.json()
         assert d_fever["intent"] == "CLINICAL_FEVER_TRIAGE_PROTOCOL"
-        assert "HƯỚNG DẪN CÁC LOẠI THUỐC HẠ SỐT" in d_fever["reply_text"]
-        assert "PARACETAMOL" in d_fever["reply_text"]
-        assert "IBUPROFEN" in d_fever["reply_text"]
-        assert "80 Viên" in d_fever["reply_text"]
+        assert "Tôi chưa biết tuổi" in d_fever["reply_text"]
+        assert "500mg - 1.000mg/lần" not in d_fever["reply_text"]
+        assert any("tuổi" in suggestion.lower() for suggestion in d_fever["suggested_chips"])
+        assert "Paracetamol" in d_fever["reply_text"]
+        assert "Ibuprofen" in d_fever["reply_text"]
         # Must NOT leak patient record into drug query
         assert "Võ Minh Trí" not in d_fever["reply_text"]
         assert "BN-8820" not in d_fever["reply_text"]
@@ -305,7 +335,7 @@ async def test_chatbot_provenance_metadata_contract():
         res = await client.post("/api/v1/copilot/chat", json={"query": "Thông tin thuốc PARACETAMOL 500mg"})
         assert res.status_code == 200
         data = res.json()
-        assert data["answer_type"] == "medication_profile"
+        assert data["answer_type"] == "medication_summary"
         assert data["source_status"] == "exact_match"
 
 def test_prompt_injection_normalizes_unicode_and_zero_width_obfuscation():

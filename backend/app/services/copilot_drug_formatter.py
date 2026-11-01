@@ -14,10 +14,94 @@ from app.services.session_context import SessionState
 async def build_drug_profile_response(
     drugs: List[DavNationalDrug],
     db: AsyncSession,
-    session: SessionState
+    session: SessionState,
+    query: str = ""
 ) -> CopilotResponse:
     matched = drugs[0]
     first_active = matched.active_ingredient.split(";")[0].split("+")[0].strip().lower()
+
+    from app.models.registry import ClinicalDrugMonograph
+    monograph = None
+    if matched.clinical_monograph_id:
+        mono_result = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched.clinical_monograph_id))
+        monograph = mono_result.scalar_one_or_none()
+    if monograph is None:
+        normalize = lambda val: re.sub(r"[^a-z0-9]+", "", val.casefold())
+        active_key = normalize(first_active)
+        mono_result = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{first_active}%")))
+        candidates = [c for c in mono_result.scalars().all() if normalize(c.inn) == active_key]
+        monograph = candidates[0] if len(candidates) == 1 else None
+    if monograph is None and matched.clinical_source:
+        mono_result = await db.execute(select(ClinicalDrugMonograph))
+        source_key = re.sub(r"[^a-z0-9]+", "", matched.clinical_source.casefold())
+        source_matches = [m for m in mono_result.scalars().all() if m.source and re.sub(r"[^a-z0-9]+", "", m.source.casefold()) in source_key]
+        monograph = source_matches[0] if len(source_matches) == 1 else None
+
+    def value(field: str) -> Optional[str]:
+        return getattr(matched, field, None) or (getattr(monograph, field, None) if monograph else None)
+
+    lower_query = query.casefold()
+    field_specs = [
+        ("interaction", ("tương tác", "tương kỵ"), "drug_interactions", "Tương tác thuốc"),
+        ("adverse_effects", ("tác dụng phụ", "tác dụng không mong muốn", "adr"), "adverse_effects", "Tác dụng không mong muốn"),
+        ("contraindications", ("chống chỉ định", "cấm dùng"), "contraindications", "Chống chỉ định"),
+        ("adult_dosage", ("liều dùng", "liều lượng", "liều tối đa", "cách dùng"), "adult_dosage", "Liều dùng người lớn"),
+        ("indications", ("chỉ định", "công dụng", "dùng để làm gì"), "indications", "Chỉ định"),
+        ("ingredient", ("thành phần", "hoạt chất"), "active_ingredient", "Hoạt chất"),
+        ("stock", ("tồn kho", "còn bao nhiêu", "trong kho", "vị trí kho"), "", "Tồn kho"),
+    ]
+    requested = next((spec for spec in field_specs if any(term in lower_query for term in spec[1])), None)
+    contextual_chips = [
+        f"Tác dụng phụ của {matched.active_ingredient.split(';')[0]}?",
+        f"Chống chỉ định của {matched.active_ingredient.split(';')[0]}?",
+        f"Kiểm tra tương tác của {matched.active_ingredient.split(';')[0]} với thuốc khác",
+    ]
+
+    if requested:
+        key, _, field, label = requested
+        if key == "stock":
+            stock_stmt = select(InventoryBatch).where(or_(
+                func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"),
+                func.lower(InventoryBatch.item_name).like(f"%{first_active}%")
+            ))
+            stock_res = await db.execute(stock_stmt)
+            stock_batches = stock_res.scalars().all()
+            total_stock = sum(batch.current_stock for batch in stock_batches)
+            detail = f"{total_stock} {matched.standard_unit}"
+            if stock_batches:
+                detail += f"; vị trí: {stock_batches[0].warehouse_location}"
+        else:
+            detail = value(field)
+        if not detail:
+            detail = f"Chưa có dữ liệu {label.lower()} được xác thực cho {matched.brand_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
+        else:
+            detail = str(detail).strip()
+        source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
+        reply = f"### {label}: {matched.brand_name}\n\n{detail}\n\n**Nguồn:** {source}"
+        session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+        return CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None,
+            legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
+            active_medication_name=session.active_medication_name,
+            answer_type="medication_field", source_status="exact_match", confidence=1.0,
+        )
+
+    if query.strip():
+        source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
+        reply = (
+            f"### Thuốc: {matched.brand_name}\n\n"
+            f"- **Hoạt chất:** {matched.active_ingredient}\n"
+            f"- **Hàm lượng:** {matched.concentration or 'Chưa ghi nhận'}\n"
+            f"- **Dạng bào chế:** {matched.dosage_form or 'Chưa ghi nhận'}\n"
+            f"- **SĐK:** {matched.national_code}\n\n**Nguồn:** {source}"
+        )
+        session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+        return CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None,
+            legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
+            active_medication_name=session.active_medication_name,
+            answer_type="medication_summary", source_status="exact_match", confidence=1.0,
+        )
 
     if not matched.clinical_source or "Trang" not in matched.clinical_source:
         from app.models.registry import ClinicalDrugMonograph

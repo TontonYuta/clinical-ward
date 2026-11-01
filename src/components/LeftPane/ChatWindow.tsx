@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -119,6 +119,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   {renderFormattedText(msg.text, isDarkBubble)}
                   {msg.suggestedChips && msg.suggestedChips.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                      <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp</span>
                       {msg.suggestedChips.map((chip, idx) => (
                         <button
                           key={idx}
@@ -131,22 +132,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       ))}
                     </div>
                   )}
-                  {isAgent && (msg.sourceStatus || msg.answerType) && (
-                    <div className="mt-2 text-2xs text-slate-500" data-testid="chat-source-status">
-                      Nguồn: {msg.sourceStatus || msg.answerType}
-                      {typeof msg.confidence === 'number' && ` • Độ tin cậy ${(msg.confidence * 100).toFixed(0)}%`}
-                    </div>
-                  )}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-2xs text-slate-600">
-                      <span className="inline-flex items-center gap-1 font-semibold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
-                        <CheckCircle2 className="w-3 h-3 text-teal-700" />
-                        <span>RAG Xác thực ({msg.citations.length})</span>
-                      </span>
                       {msg.citations.slice(0, 3).map((c, i) => (
                         <span key={i} title={`${c.source}: ${c.excerpt || c.section}`} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 cursor-help">
                           <BookOpen className="w-2.5 h-2.5 text-slate-500" />
-                          <span className="font-medium truncate max-w-[140px]">{c.legal_basis}</span>
+                          <span className="font-medium truncate max-w-[200px]">{c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis}</span>
                         </span>
                       ))}
                     </div>

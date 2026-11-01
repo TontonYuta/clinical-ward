@@ -177,7 +177,22 @@ async def dispatch_clinical_scenario(
         is_med_follow_up=is_med_follow_up
     )
 
-    # 6. Duyệt qua từng Kịch bản đăng ký để tìm handler phù hợp
+    # 6. Symptom/self-care scenarios precede generic medication intent and RAG.
+    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
+        fever_scenario = next(s for s in SCENARIOS if s.scenario_id == "fever_triage")
+        if fever_scenario.can_handle(query, lower_query, ctx):
+            resp = await fever_scenario.handle(query, lower_query, ctx, db)
+            if resp:
+                resp.session_id = session.session_id
+                resp.active_patient_id = session.active_patient_id
+                resp.active_patient_name = session.active_patient_name
+                resp.active_medication_name = session.active_medication_name
+                resp.active_medication_stock = session.active_medication_stock
+                resp.active_medication_location = session.active_medication_location
+                session.last_intent = resp.intent
+                return resp
+
+    # Duyệt qua các scenario theo thứ tự đăng ký.
     for scenario in SCENARIOS:
         if scenario.can_handle(query, lower_query, ctx):
             resp = await scenario.handle(query, lower_query, ctx, db)

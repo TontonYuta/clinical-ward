@@ -16,16 +16,18 @@ async function run() {
     const hit = await processClinicalAgentQueryAsync('Plavix tương tác với Nexium thế nào?', state);
     if (!hit.replyMessage.text.includes('Backend DDI result')) throw new Error('Does not use backend DDI result');
 
-    globalThis.fetch = async () => new Response(JSON.stringify({ has_interaction: false, alert: null }), { status: 200 });
+    globalThis.fetch = async () => new Response(JSON.stringify({ has_interaction: false, source_status: 'not_indexed', coverage_note: 'Chưa được lập chỉ mục; không khẳng định an toàn.', alert: null }), { status: 200 });
     const clear = await processClinicalAgentQueryAsync('Plavix tương tác với Nexium thế nào?', state);
-    if (!clear.replyMessage.text.includes('không khẳng định phối hợp an toàn')) throw new Error('Missing uncertainty wording');
+    if (!clear.replyMessage.text.includes('không khẳng định phối hợp an toàn') && !clear.replyMessage.text.includes('không khẳng định an toàn')) throw new Error('Missing uncertainty wording');
+    if (clear.replyMessage.text.includes('không tìm thấy tương tác chống chỉ định')) throw new Error('Unindexed pair was presented as a negative clinical conclusion');
 
     globalThis.fetch = async () => { throw new Error('offline'); };
     const offline = await processClinicalAgentQueryAsync('Plavix tương tác với Nexium thế nào?', state);
     if (!offline.replyMessage.text.includes('Chưa thể kết luận')) throw new Error('Network error was not distinguished');
+    if (offline.replyMessage.text.includes('không thuộc danh mục')) throw new Error('Local fallback claimed there was no interaction');
 
     const underspecified = await processClinicalAgentQueryAsync('Tra cứu tương tác thuốc', state);
-    if (!underspecified.replyMessage.text.includes('nêu rõ tên hai thuốc')) throw new Error('Missing pair prompt');
+    if (!underspecified.replyMessage.text.includes('nêu tên hai thuốc')) throw new Error('Missing pair prompt');
 
     console.log('DDI API routing tests passed (backend result, no-match disclaimer, network failure, missing pair).');
   } finally {

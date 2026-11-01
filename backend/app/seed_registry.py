@@ -112,16 +112,52 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_inn ON clinical_drug_monographs(inn)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_atc ON clinical_drug_monographs(atc_code)")
 
-    cursor.execute("SELECT COUNT(*) FROM clinical_drug_monographs")
-    count = cursor.fetchone()[0]
     src = find_monographs_source()
     if not src:
         print("⚠️ Không tìm thấy dtqg_monographs_extracted.json")
-        return count
+        cursor.execute("SELECT COUNT(*) FROM clinical_drug_monographs")
+        return cursor.fetchone()[0]
 
     try:
         with open(src, "r", encoding="utf-8") as f:
             monos = json.load(f)
+        registry_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
+        registry_is_gz = False
+        registry_items = []
+        if registry_path:
+            opener = gzip.open if registry_is_gz else open
+            mode = "rt" if registry_is_gz else "r"
+            with opener(registry_path, mode, encoding="utf-8") as f:
+                registry_items = json.load(f)
+
+        # Resolve explicit monograph IDs carried by the curated DAV dataset.
+        monographs_by_id = {m.get("id"): m for m in monos if m.get("id")}
+        for item in registry_items:
+            monograph_id = item.get("clinicalMonographId") or item.get("clinical_monograph_id")
+            if not monograph_id or monograph_id in monographs_by_id:
+                continue
+            monographs_by_id[monograph_id] = {
+                "id": monograph_id,
+                "inn": item.get("activeIngredient", ""),
+                "title": item.get("brandName", ""),
+                "atc_code": item.get("atcCode") or item.get("atc_code"),
+                "drug_class": item.get("drugClass") or item.get("drug_class"),
+                "dosage_forms": item.get("dosageForm") or item.get("dosage_form"),
+                "indications": item.get("indications"),
+                "contraindications": item.get("contraindications"),
+                "precautions": item.get("precautions"),
+                "pregnancy_warning": item.get("pregnancyWarning") or item.get("pregnancy_warning"),
+                "adverse_effects": item.get("adverseEffects") or item.get("adverse_effects"),
+                "adult_dosage": item.get("adultDosage") or item.get("adult_dosage"),
+                "pediatric_dosage": item.get("pediatricDosage") or item.get("pediatric_dosage"),
+                "renal_adjustment": item.get("renalAdjustment") or item.get("renal_adjustment"),
+                "hepatic_adjustment": item.get("hepaticAdjustment") or item.get("hepatic_adjustment"),
+                "drug_interactions": item.get("drugInteractions") or item.get("drug_interactions"),
+                "overdose_treatment": item.get("overdoseTreatment") or item.get("overdose_treatment"),
+                "antidote": item.get("antidote"),
+                "source": item.get("clinicalSource") or item.get("clinical_source"),
+            }
+        monos = list(monos) + [m for m in monographs_by_id.values() if m.get("id")]
         rows = []
         for idx, m in enumerate(monos, 1):
             inn = m.get("inn", "")
@@ -154,6 +190,25 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
         (id, inn, title, atc_code, drug_class, dosage_forms, indications, contraindications, precautions, pregnancy_warning, adverse_effects, adult_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, drug_interactions, overdose_treatment, antidote, source)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rows)
+        conn.commit()
+        active_ids = {row[0] for row in cursor.execute("SELECT id FROM clinical_drug_monographs")}
+        # The essential formulary is intentionally a smaller, curated subset.
+        # Refresh its links and only fill missing fields from exact source IDs.
+        for drug in cursor.execute("SELECT id, clinical_monograph_id FROM dav_national_drugs").fetchall():
+            drug_id, monograph_id = drug
+            if monograph_id not in active_ids:
+                continue
+            monograph = cursor.execute(
+                "SELECT atc_code, drug_class, indications, contraindications, precautions, pregnancy_warning, adult_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, adverse_effects, drug_interactions, overdose_treatment, antidote, source FROM clinical_drug_monographs WHERE id = ?",
+                (monograph_id,),
+            ).fetchone()
+            if not monograph:
+                continue
+            fields = ("atc_code", "drug_class", "indications", "contraindications", "precautions", "pregnancy_warning", "adult_dosage", "pediatric_dosage", "renal_adjustment", "hepatic_adjustment", "adverse_effects", "drug_interactions", "overdose_treatment", "antidote", "clinical_source")
+            updates = {name: value for name, value in zip(fields, monograph) if value}
+            if updates:
+                assignment = ", ".join(f"{name} = COALESCE(NULLIF({name}, ''), ?)" for name in updates)
+                cursor.execute(f"UPDATE dav_national_drugs SET {assignment} WHERE id = ?", (*updates.values(), drug_id))
         conn.commit()
         print(f"✅ Đã nạp {len(rows)} chuyên luận Dược Thư 2015 vào clinical_drug_monographs!")
         return len(rows)
@@ -237,6 +292,31 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     enriched_count = cursor.fetchone()[0]
 
     if existing_count >= 1900 and enriched_count > 0:
+        curated_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
+        if os.path.exists(curated_path):
+            with open(curated_path, "r", encoding="utf-8") as f:
+                curated_items = json.load(f)
+            clinical_columns = (
+                ("atc_code", "atcCode"), ("drug_class", "drugClass"), ("indications", "indications"),
+                ("contraindications", "contraindications"), ("precautions", "precautions"),
+                ("pregnancy_warning", "pregnancyWarning"), ("adult_dosage", "adultDosage"),
+                ("pediatric_dosage", "pediatricDosage"), ("renal_adjustment", "renalAdjustment"),
+                ("hepatic_adjustment", "hepaticAdjustment"), ("adverse_effects", "adverseEffects"),
+                ("drug_interactions", "drugInteractions"), ("overdose_treatment", "overdoseTreatment"),
+                ("antidote", "antidote"), ("clinical_source", "clinicalSource"),
+                ("clinical_monograph_id", "clinicalMonographId"),
+            )
+            for item in curated_items:
+                code = item.get("nationalCode")
+                values = [item.get(source) for _, source in clinical_columns]
+                if not code or not any(values):
+                    continue
+                assignment = ", ".join(f"{column} = ?" for column, _ in clinical_columns)
+                cursor.execute(
+                    f"UPDATE dav_national_drugs SET {assignment} WHERE national_code = ?",
+                    (*values, code),
+                )
+            conn.commit()
         conn.close()
         return existing_count
 
@@ -252,6 +332,15 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     else:
         with open(src_path, "r", encoding="utf-8") as f:
             items = json.load(f)
+
+    curated_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
+    if os.path.exists(curated_path):
+        with open(curated_path, "r", encoding="utf-8") as f:
+            curated_by_code = {item.get("nationalCode"): item for item in json.load(f)}
+        items = [
+            {**item, **{key: value for key, value in curated_by_code.get(item.get("nationalCode"), {}).items() if value is not None}}
+            for item in items
+        ]
 
     rows = [(
         d.get("id") or f"dav-{d.get('nationalCode', '')}",

@@ -11,6 +11,7 @@ from app.services.rag.knowledge_graph import expand_clinical_graph
 from app.services.rag.hybrid_retriever import HybridRetriever
 from app.services.rag.citation_grounder import build_claim_citations
 from app.services.rag.rag_pipeline import execute_clinical_rag
+from app.services.rag.types import RagChunk
 
 def test_clinical_indexer_chunks():
     chunks = load_all_clinical_chunks()
@@ -96,6 +97,7 @@ async def test_copilot_chat_rag_integration():
         assert data["intent"] == "CLINICAL_AI_CONSULTATION"
         assert data["rag_grounded"] is True
         assert len(data["citations"]) > 0
+    assert "Paracetamol" in data["reply_text"]
 
 def test_fts_index_refreshes_changed_content_when_chunk_count_is_unchanged(tmp_path):
     from app.services.rag.types import RagChunk
@@ -146,3 +148,31 @@ async def test_api_responses_include_browser_security_headers():
         assert res.headers["x-content-type-options"] == "nosniff"
         assert res.headers["x-frame-options"] == "DENY"
         assert res.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+
+
+def test_symptom_query_retrieval_does_not_include_unrelated_ddi_chunks():
+    retriever = HybridRetriever()
+    results = retriever.retrieve("Tôi bị sốt, tôi nên uống thuốc nào nhỉ", top_k=4)
+    assert results
+    assert all(result.chunk.entity_type != "ddi" for result in results)
+    assert any("Paracetamol" in result.chunk.title for result in results)
+
+def test_grounded_answers_use_plain_source_lines_without_sample_badges():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    chunk = RagChunk("paracetamol", "Dược thư", "Dược thư Quốc gia", "Paracetamol", "Paracetamol", "Chỉ định: hạ sốt.", [], "monograph")
+    result = format_grounded_answer("Paracetamol chỉ định gì?", [__import__("app.services.rag.types", fromlist=["RetrievedChunk"]).RetrievedChunk(chunk, 0.02)], build_claim_citations([__import__("app.services.rag.types", fromlist=["RetrievedChunk"]).RetrievedChunk(chunk, 0.02)]), {})
+    assert "RAG Xác thực" not in result.answer
+    assert "PaperQA2 Grounded" not in result.answer
+    assert "Chỉ định: hạ sốt" in result.answer
+
+@pytest.mark.asyncio
+async def test_simple_fever_question_routes_to_triage_and_asks_for_context():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.post("/api/v1/copilot/chat", json={"query": "Tôi bị sốt, tôi nên uống thuốc nào nhỉ"})
+    data = res.json()
+    assert res.status_code == 200
+    assert data["intent"] == "CLINICAL_FEVER_TRIAGE_PROTOCOL"
+    assert "Tôi chưa biết tuổi" in data["reply_text"]
+    assert "500mg - 1.000mg/lần" not in data["reply_text"]
+    assert "Tramadol" not in data["reply_text"]
+    assert any("tuổi" in suggestion.lower() for suggestion in data["suggested_chips"])

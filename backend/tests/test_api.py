@@ -309,7 +309,9 @@ async def test_copilot_clinical_intents():
         )
         assert res3.status_code == 200
         data3 = res3.json()
-        assert data3["intent"] in ["CLINICAL_AI_CONSULTATION", "GENERAL_CLINICAL_ASSISTANCE"]
+        assert data3["intent"] == "CLINICAL_AI_CONSULTATION"
+        assert data3["citations"]
+        assert "Morphin" in data3["reply_text"]
         assert len(data3["reply_text"]) > 10
 
 @pytest.mark.asyncio

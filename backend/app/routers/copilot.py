@@ -66,6 +66,29 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     if is_debt_settle:
         return await handle_debt_settle_intent(query, lower_query, db)
 
+    # Explicit medication field questions should not be swallowed by broad scenarios/RAG.
+    medication_field_terms = [
+        "thành phần", "hoạt chất", "tác dụng phụ", "tác dụng không mong muốn",
+        "chống chỉ định", "liều dùng", "liều lượng", "liều tối đa", "chỉ định",
+        "tương tác thuốc", "thuốc tương tác", "sđk", "số đăng ký",
+    ]
+    requested_medication_fields = [term for term in medication_field_terms if term in lower_query]
+    has_multiple_medication_fields = len(requested_medication_fields) > 1 or any(
+        connector in lower_query for connector in (" và ", " cùng ", ",")
+    )
+    has_explicit_medication_field = len(requested_medication_fields) == 1 and not has_multiple_medication_fields
+    if has_explicit_medication_field:
+        # The authoritative lookup supplies the catalog-backed field answer and citation.
+        return await lookup_drug_authoritative(query, db, session_id=session_id)
+
+    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
+        scenario_res = await detect_and_handle_gemini_clinical_scenario(
+            query, lower_query, user_name, db, user_role=user_role, session_id=session_id
+        )
+        if scenario_res and scenario_res.intent == "CLINICAL_FEVER_TRIAGE_PROTOCOL":
+            scenario_res.reply_text = validate_output_guardrail(scenario_res.reply_text, query)
+            return scenario_res
+
     # 0d. 12 Kịch Bản Lâm Sàng Chuyên Sâu Tách File & AMIE Multi-turn Context
     scenario_res = await detect_and_handle_gemini_clinical_scenario(
         query, lower_query, user_name, db, user_role=user_role, session_id=session_id
@@ -73,6 +96,33 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     if scenario_res:
         scenario_res.reply_text = validate_output_guardrail(scenario_res.reply_text, query)
         return scenario_res
+
+    from app.services.rag import execute_clinical_rag
+    is_interaction_question = any(term in lower_query for term in ("tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung"))
+    has_contextual_clinical_followups = any(term in lower_query for term in ("dùng gì", "uống gì", "gợi ý", "nên dùng", "nên uống", "đau đầu", "đau bụng"))
+    if is_interaction_question or has_contextual_clinical_followups:
+        rag_res = await execute_clinical_rag(query, user_role=user_role)
+        if rag_res and (rag_res.citations or is_interaction_question):
+            from app.services.session_context import get_or_create_session
+            session = get_or_create_session(session_id, user_name, user_role)
+            contextual_suggestions = [
+                "Tôi sốt 39°C từ hôm qua, hãy hỏi tuổi và cân nặng của tôi",
+                "Dấu hiệu cảnh báo cần đi cấp cứu là gì?",
+                "Tôi đã dùng thuốc X, có cần kiểm tra tương tác không?",
+            ] if has_contextual_clinical_followups and not is_interaction_question else [
+                "Tôi đang dùng những thuốc nào cần kiểm tra tương tác?",
+                "Cơ chế và mức độ nghiêm trọng của tương tác này là gì?",
+                "Tôi nên trao đổi gì với dược sĩ về phối hợp này?",
+            ]
+            return CopilotResponse(
+                intent="CLINICAL_AI_CONSULTATION",
+                reply_text=validate_output_guardrail(rag_res.answer, query),
+                legal_basis=rag_res.legal_basis or "Dược Thư Quốc Gia Việt Nam",
+                suggested_chips=contextual_suggestions,
+                session_id=session.session_id,
+                citations=[c.to_dict() for c in rag_res.citations],
+                rag_grounded=bool(rag_res.citations),
+            )
 
     # 1. Tra cứu Bản đồ 10 Đại Nghiệp vụ Bệnh viện & Năng lực Hệ thống
     is_capabilities = any(w in lower_query for w in [
@@ -148,8 +198,7 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
     if (has_sdk or has_drug_ask) and not is_deep_pharmacology:
         return await lookup_drug_authoritative(query, db, session_id=session_id)
 
-    # 12. Tư vấn lâm sàng sâu bằng Pure RAG (PaperQA2 Grounded + Hybrid RRF k=60)
-    from app.services.rag import execute_clinical_rag
+    # 12. Tư vấn lâm sàng sâu bằng Pure RAG
     rag_res = await execute_clinical_rag(query, user_role=user_role)
     if rag_res and (rag_res.citations or is_deep_pharmacology):
         cleaned_reply = validate_output_guardrail(rag_res.answer, query)

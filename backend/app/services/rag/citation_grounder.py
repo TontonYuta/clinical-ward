@@ -5,6 +5,12 @@ Gắn trích dẫn từ chunk có nguồn; không tự suy ra provenance khi thi
 import re
 from app.services.rag.types import RagCitation, RetrievedChunk, RagResult
 
+def _display_source(citation: RagCitation) -> str:
+    basis = citation.legal_basis.strip()
+    if basis and "nguồn dẫn trong từng bản ghi" not in basis.casefold():
+        return basis
+    return citation.section or citation.source
+
 def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCitation]:
     citations: list[RagCitation] = []
     seen_sections = set()
@@ -36,13 +42,22 @@ def format_grounded_answer(
     kg_data: dict,
     llm_generated_text: str | None = None
 ) -> RagResult:
+    if retrieved_chunks and all(r.chunk.entity_type == "ddi" for r in retrieved_chunks):
+        asks_about_interactions = any(term in query.casefold() for term in (
+            "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
+            "kết hợp", "uống chung", "dùng chung", "cặp thuốc"
+        ))
+        if not asks_about_interactions:
+            retrieved_chunks = []
+            citations = []
+
     # Nếu có văn bản sinh từ LLM (đã qua grounded prompt), kiểm tra và gắn citations
     if llm_generated_text and len(llm_generated_text.strip()) > 30:
         clean_text = llm_generated_text.strip()
         # Đính kèm danh mục trích dẫn pháp lý vào cuối nếu chưa có
-        if "Căn cứ y văn" not in clean_text and citations:
-            cite_bullets = "\n".join([f"* 📖 **[{c.legal_basis}]** {c.source} ({c.section})" for c in citations[:3]])
-            clean_text += f"\n\n---\n**📚 Căn cứ y văn & Bằng chứng pháp lý (PaperQA2 Grounded):**\n{cite_bullets}"
+        if "Nguồn:" not in clean_text and citations:
+            sources = list(dict.fromkeys(_display_source(c) for c in citations[:3] if _display_source(c)))
+            clean_text += f"\n\n**Nguồn:** {', '.join(sources)}"
 
         primary_basis = citations[0].legal_basis if citations else "Dược Thư Quốc Gia Việt Nam"
         return RagResult(
@@ -60,7 +75,7 @@ def format_grounded_answer(
     if not top_chunk:
         return RagResult(
             query=query,
-            answer="Hệ thống RAG không tìm thấy tài liệu phù hợp trong Dược Thư và các Thông tư Bộ Y tế hiện hành.",
+            answer="Chưa tìm thấy tài liệu đủ phù hợp để trả lời chính xác câu hỏi này. Bạn có thể nêu tên thuốc hoặc chi tiết muốn tra cứu.",
             citations=[],
             retrieved_chunks=[],
             kg_entities=[],
@@ -85,12 +100,12 @@ def format_grounded_answer(
         parts.append(f"🛑 **LƯU Ý AN TOÀN LÂM SÀNG & BỆNH NỀN:**\n{contra_str}")
 
     # 3. Trích xuất nội dung từ chunk chính
-    parts.append(f"📋 **Thông tin lâm sàng chuẩn hóa theo [{top_chunk.legal_basis}]:**\n{top_chunk.content}")
+    parts.append(top_chunk.content)
 
     # 4. Bảng trích dẫn PaperQA2
     if citations:
-        cite_str = "\n".join([f"* 📖 **[{c.legal_basis}]** *{c.source}* - {c.section}" for c in citations[:3]])
-        parts.append(f"---\n**📚 Căn cứ y văn & Bằng chứng pháp lý (PaperQA2 Grounded):**\n{cite_str}")
+        sources = list(dict.fromkeys(_display_source(c) for c in citations[:3] if _display_source(c)))
+        parts.append(f"**Nguồn:** {', '.join(sources)}")
 
     full_answer = "\n\n".join(parts)
     primary_basis = top_chunk.legal_basis or (citations[0].legal_basis if citations else "")
