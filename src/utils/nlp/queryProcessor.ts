@@ -70,6 +70,16 @@ export function processClinicalUserQuery(
     return handleDrugInteractionIntent(text, lower, nowStr);
   }
 
+  const normalizedGreeting = text.toLocaleLowerCase('vi').replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+  const isBareGreeting = ['hi', 'hello', 'alo', 'hey', 'chào', 'xin chào', 'chào bạn', 'chào bot', 'chào em', 'chào bác sĩ'].includes(normalizedGreeting);
+  if (isBareGreeting) {
+    return { replyMessage: {
+      id: 'msg-agent-greeting-' + Date.now(), sender: 'agent',
+      text: 'Chào bác sĩ. Tôi hỗ trợ tra cứu thông tin thuốc và quy định có nguồn, rà soát ca bệnh đã xác định, và chuẩn bị nghiệp vụ để bác sĩ kiểm tra trong biểu mẫu.',
+      timestamp: nowStr,
+    } };
+  }
+
   // 0. Hospital Business Operations & 10 Core Workflows
   if (matchBusinessIntent(lower)) {
     return handleBusinessOverviewIntent(nowStr);

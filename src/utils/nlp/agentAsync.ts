@@ -52,10 +52,11 @@ export async function processClinicalAgentQueryAsync(
     if (!pair) {
       if (!extractSingleDrug(lower)) {
         return { replyMessage: {
-          id: `msg-ddi-pair-${Date.now()}`, sender: 'agent',
-          text: 'Để rà soát tương tác thuốc (QĐ 5948/QĐ-BYT), vui lòng nêu tên hai thuốc hoặc hoạt chất (ví dụ: *Clopidogrel và Omeprazol*). Bác sĩ có thể bấm chọn nhanh các cặp kiểm tra bên dưới:',
+          id: `msg-agent-ddi-pair-${Date.now()}`, sender: 'agent',
+          text: 'Để rà soát tương tác thuốc (QĐ 5948/QĐ-BYT), vui lòng nêu tên hai thuốc hoặc hoạt chất (ví dụ: *Clopidogrel và Omeprazol*).',
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          suggestedChips: ddiChips
+          answerType: 'clarification',
+          sourceStatus: 'missing_interaction_medications'
         } };
       }
     } else {
@@ -75,7 +76,7 @@ export async function processClinicalAgentQueryAsync(
           : `### Chưa ghi nhận cảnh báo trong chỉ mục: ${pair[0]} + ${pair[1]}\n\n${ddi.coverage_note || 'Chưa tìm thấy trong danh mục đã lập chỉ mục; điều này không khẳng định phối hợp an toàn.'}`;
 
         return { replyMessage: {
-          id: `msg-ddi-api-${Date.now()}`, sender: 'agent', text: replyText,
+          id: `msg-agent-ddi-api-${Date.now()}`, sender: 'agent', text: replyText,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           legalReference: { lawCode: 'QĐ 5948/QĐ-BYT', title: 'Danh mục tương tác thuốc Bộ Y Tế', clause: 'Sàng lọc tương tác thuốc' },
           cdssAlert, suggestedChips: ddiChips, ragGrounded: true
@@ -83,7 +84,7 @@ export async function processClinicalAgentQueryAsync(
       } catch {
         const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         return { replyMessage: {
-          id: `msg-ddi-offline-${Date.now()}`, sender: 'agent',
+          id: `msg-agent-ddi-offline-${Date.now()}`, sender: 'agent',
           text: `### Chưa thể kết luận về tương tác thuốc\n\nKhông truy cập được bộ máy DDI nên cặp **${pair[0]} + ${pair[1]}** chưa được kiểm tra. Đây không phải kết quả âm tính hay xác nhận an toàn. Hãy thử lại khi kết nối backend hoạt động hoặc nhờ dược sĩ lâm sàng rà soát.`,
           timestamp: now, suggestedChips: ddiChips,
           cdssAlert: { level: 'warning', title: 'CHƯA HOÀN TẤT KIỂM TRA TƯƠNG TÁC', message: 'Nguồn DDI không truy cập được; chưa thể đưa ra kết luận cho cặp thuốc này.' }
@@ -100,9 +101,17 @@ export async function processClinicalAgentQueryAsync(
     coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
   });
 
+  // Field-specific medication questions must reach the knowledge backend. The
+  // local medication handler only has a broad profile card and would answer
+  // more than the clinician requested (or return unrelated local data).
+  const isSpecificMedicationField = Boolean(
+    /(?:chỉ định|chi dinh|thành phần|thanh phan|liều dùng|liều lượng|chống chỉ định|tác dụng phụ|cơ chế|đường dùng|tần suất|tương tác)/i.test(lower) &&
+    /paracetamol|acetaminophen|thuốc|thuoc|hoạt chất|hoat chat/i.test(lower)
+  );
+
   const isDdi = matchDrugInteractionIntent(lower);
   const isDeepPharmacology = isDdi || /thời gian bán thải|huyết tương|dược động học|cơ chế tác dụng|tương tác|chống chỉ định|liều tối đa/i.test(lower);
-  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {
+  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower) && !isDeepPharmacology && !isSpecificMedicationField) {
     return localResult;
   }
 
@@ -139,7 +148,7 @@ export async function processClinicalAgentQueryAsync(
         actionPayload,
         card,
         suggestedChips: backendData.suggested_chips || [],
-        citations: backendData.citations,
+        citations: backendData.citations || [],
         ragGrounded: backendData.rag_grounded,
         answerType: backendData.answer_type,
         sourceStatus: backendData.source_status,
@@ -150,6 +159,15 @@ export async function processClinicalAgentQueryAsync(
       return { replyMessage, actionPayload, card };
     }
   } catch {}
+
+  if (isSpecificMedicationField) {
+    return { replyMessage: {
+      id: `msg-agent-medication-field-unavailable-${Date.now()}`, sender: 'agent',
+      text: 'Hiện chưa truy cập được nguồn tra cứu để xác minh trường thông tin thuốc này. Vui lòng thử lại khi kết nối backend hoạt động.',
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      answerType: 'abstention', sourceStatus: 'backend_unavailable'
+    } };
+  }
 
   // 3. Xử lý 8 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & Hồ Sơ Bệnh Nhân (Allergy, Renal, ADR...)
   const scenarioResult = await processGeminiClinicalScenario(

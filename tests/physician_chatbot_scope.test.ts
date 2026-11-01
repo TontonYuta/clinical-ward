@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { INITIAL_CHAT_MESSAGES } from '../src/data/initialData';
 import { processClinicalUserQuery } from '../src/utils/nlp/queryProcessor';
 
+const greeting = processClinicalUserQuery('Hi', { debts: [], tickets: [], batches: [], coldChainTemp: 4.5 });
+assert.match(greeting.replyMessage.text, /Chào bác sĩ/);
+assert.doesNotMatch(greeting.replyMessage.text, /BẢN ĐỒ 10|Lệnh mẫu|Cho 2 lọ Morphin/);
+
 const initialMessage = INITIAL_CHAT_MESSAGES[0];
 assert.match(initialMessage.text, /bác sĩ/i);
 assert.doesNotMatch(initialMessage.text, /câu hỏi y tế|hôm nay bạn|tôi bị/i);

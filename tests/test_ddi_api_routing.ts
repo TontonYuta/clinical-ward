@@ -28,6 +28,9 @@ async function run() {
 
     const underspecified = await processClinicalAgentQueryAsync('Tra cứu tương tác thuốc', state);
     if (!underspecified.replyMessage.text.includes('nêu tên hai thuốc')) throw new Error('Missing pair prompt');
+    if (!underspecified.replyMessage.answerType || underspecified.replyMessage.answerType !== 'clarification') throw new Error('Missing clarification answer type');
+    if (underspecified.replyMessage.suggestedChips?.length) throw new Error('Ambiguous DDI clarification contains generic demo prompts');
+    if (!underspecified.replyMessage.id.startsWith('msg-agent-')) throw new Error('Chat rendering message id is missing agent prefix');
 
     // Single-drug interaction question should not be mangled as a pair with interrogative words
     globalThis.fetch = async () => new Response(JSON.stringify({
@@ -39,6 +42,18 @@ async function run() {
     const singleDrug = await processClinicalAgentQueryAsync('Paracetamol có tương tác với thuốc nào không', state);
     if (!singleDrug.replyMessage.text.includes('Paracetamol')) throw new Error('Failed to resolve single-drug interaction lookup');
     if (singleDrug.replyMessage.text.includes('thuốc nào')) throw new Error('Mangled interrogative word into drug name');
+
+    // Specific medication-field questions should use the backend field answer,
+    // rather than being intercepted by the broad local medication card.
+    globalThis.fetch = async () => new Response(JSON.stringify({
+      reply_text: '### Chỉ định: Paracetamol\n\nGiảm đau, hạ sốt.',
+      intent: 'MEDICATION_SAFETY_PROFILE', answer_type: 'medication_field',
+      source_status: 'exact_match', citations: []
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const indication = await processClinicalAgentQueryAsync('Chỉ định của Paracetamol', state);
+    if (!indication.replyMessage.text.includes('Chỉ định: Paracetamol')) throw new Error('Specific medication field did not use backend answer');
+    if (indication.replyMessage.text.includes('Thành Phần Công Thức')) throw new Error('Specific field query returned the broad local medication card');
+    if (indication.replyMessage.answerType !== 'medication_field') throw new Error('Medication field answer type was lost');
 
     console.log('DDI API routing tests passed (backend result, no-match disclaimer, network failure, missing pair, single-drug interaction).');
   } finally {

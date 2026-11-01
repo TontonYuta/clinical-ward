@@ -1,9 +1,10 @@
-export function shouldEnableDevtool(isBrowser: boolean, isProduction: boolean): boolean {
-  return isBrowser && isProduction;
+export function shouldEnableDevtool(isBrowser: boolean, isProduction: boolean, deploymentMode?: string): boolean {
+  const disableDevtool = deploymentMode === 'true' || deploymentMode === '1';
+  return isBrowser && isProduction && !disableDevtool;
 }
 
-export async function initializeDevtoolDeterrent(isBrowser: boolean, isProduction: boolean): Promise<void> {
-  if (!shouldEnableDevtool(isBrowser, isProduction)) return;
+export async function initializeDevtoolDeterrent(isBrowser: boolean, isProduction: boolean, deploymentMode?: string): Promise<void> {
+  if (!shouldEnableDevtool(isBrowser, isProduction, deploymentMode)) return;
   try {
     const { default: DisableDevtool } = await import('disable-devtool');
     DisableDevtool({

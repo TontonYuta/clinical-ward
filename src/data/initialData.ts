@@ -1130,13 +1130,7 @@ export const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-welcome',
     sender: 'agent',
-    text: 'Trợ lý nghiệp vụ lâm sàng sẵn sàng hỗ trợ bác sĩ tra cứu thông tin thuốc, quy định chuyên môn, rà soát ca bệnh và thực hiện nghiệp vụ trong hệ thống.',
-    timestamp: '08:00',
-    suggestedChips: [
-      'Kiểm tra tương tác Clopidogrel với Omeprazol',
-      'Tác dụng phụ của Paracetamol?',
-      'Tra cứu liều dùng của Ceftriaxone',
-      'Tra cứu số đăng ký VD-24757-16'
-    ]
+    text: 'Trợ lý hỗ trợ bác sĩ tra cứu thông tin thuốc và quy định có nguồn, rà soát ca bệnh được xác định, và chuẩn bị nghiệp vụ để bác sĩ kiểm tra trong các biểu mẫu.',
+    timestamp: '08:00'
   }
 ];

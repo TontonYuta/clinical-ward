@@ -104,7 +104,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           const isDarkBubble = msg.sender === 'user' || isSystem;
 
           return (
-            <div key={msg.id} className={`flex gap-2.5 max-w-[96%] sm:max-w-[88%] ${isDarkBubble ? 'ml-auto flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-2.5 max-w-[96%] sm:max-w-[88%] ${isDarkBubble ? 'ml-auto flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
               <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 text-white shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800' : isSystem ? 'bg-slate-700' : 'bg-slate-900'}`}>
                 {isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
