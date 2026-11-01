@@ -56,6 +56,7 @@ TEMP/
 *.pdf
 **/*.pdf
 !public/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf
+!docs/references/tt26_2025/*.pdf
 
 # Local database snapshots and generated audit artifacts
 /artifacts/

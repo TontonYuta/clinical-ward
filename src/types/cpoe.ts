@@ -26,10 +26,12 @@ export interface PrescriptionOrder {
   patientId: string;
   patientName: string;
   patientCccd: string; // Bắt buộc theo TT 26/2025/TT-BYT
+  patientAddress?: string;
+  guardianName?: string;
   patientPhone?: string;
   patientEmail?: string;
   patientDob: string;
-  patientGender: 'Nam' | 'Nữ';
+  patientGender: 'Nam' | 'Nữ' | '';
   department: string;
   roomBed?: string;
   diagnosisIcd10: string; // Mã bệnh ICD-10

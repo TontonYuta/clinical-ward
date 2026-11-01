@@ -45,6 +45,8 @@ async def get_cpoe_orders(
                 patientCccd=r.patient_cccd,
                 patientPhone=getattr(r, "patient_phone", None),
                 patientEmail=getattr(r, "patient_email", None),
+                patientAddress=getattr(r, "patient_address", None),
+                guardianName=getattr(r, "guardian_name", None),
                 patientDob=getattr(r, "patient_dob", None),
                 patientGender=getattr(r, "patient_gender", None),
                 department=getattr(r, "department", None),
@@ -68,9 +70,12 @@ async def create_cpoe_order(
     payload: CpoeOrderCreate,
     db: AsyncSession = Depends(get_db)
 ):
+    if payload.status != "draft":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tạo mới hiện chỉ hỗ trợ lưu bản nháp; chữ ký và phát hành cần workflow tích hợp")
+
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     order_id = payload.id or f"RX-2026-{uuid.uuid4().hex[:6].upper()}"
-    signature = payload.digitalSignature or f"SHA256:{uuid.uuid4().hex[:12]} (Đã ký số TT 26)"
+    signature = payload.digitalSignature if payload.status == "signed" else None
 
     items_dict = [it.model_dump() for it in payload.items]
     items_json = json.dumps(items_dict, ensure_ascii=False)
@@ -83,6 +88,8 @@ async def create_cpoe_order(
         patient_cccd=payload.patientCccd,
         patient_phone=payload.patientPhone,
         patient_email=payload.patientEmail,
+        patient_address=payload.patientAddress,
+        guardian_name=payload.guardianName,
         department=payload.department,
         patient_dob=payload.patientDob,
         patient_gender=payload.patientGender,
@@ -94,31 +101,31 @@ async def create_cpoe_order(
         doctor_certificate=payload.doctorCertificate,
         prescribed_at=payload.prescribedAt or now_str,
         digital_signature=signature,
-        status="signed",
+        status=payload.status,
         items_json=items_json
     )
     db.add(prescription)
     await db.commit()
     await db.refresh(prescription)
 
-    # Ghi nhận vào sổ kiểm toán lâm sàng bất biến
-    med_summary = ", ".join([f"{it.medicationName} ({it.quantity} {it.unit})" for it in payload.items])
-    await record_audit_event(
-        db=db,
-        action_type="CPOE_PRESCRIPTION_SIGNED",
-        action_title=f"Ký y lệnh đơn thuốc điện tử {order_id} ({payload.prescriptionType})",
-        target_item=f"{payload.patientName} ({payload.diagnosisIcd10}) - {med_summary}",
-        legal_basis="Thông tư 26/2025/TT-BYT & Nghị định 130/2018/NĐ-CP",
-        signer_name=payload.doctorName,
-        signer_certificate=payload.doctorCertificate,
-        auth_method="DIGITAL_CERT_BYT",
-        payload_data={
-            "order_id": order_id,
-            "patient_cccd": payload.patientCccd,
-            "icd10": payload.diagnosisIcd10,
-            "items_count": len(payload.items)
-        }
-    )
+    if payload.status == "signed":
+        med_summary = ", ".join([f"{it.medicationName} ({it.quantity} {it.unit})" for it in payload.items])
+        await record_audit_event(
+            db=db,
+            action_type="CPOE_PRESCRIPTION_SIGNED",
+            action_title=f"Ký y lệnh đơn thuốc điện tử {order_id} ({payload.prescriptionType})",
+            target_item=f"{payload.patientName} ({payload.diagnosisIcd10}) - {med_summary}",
+            legal_basis="Thông tư 26/2025/TT-BYT & Nghị định 130/2018/NĐ-CP",
+            signer_name=payload.doctorName,
+            signer_certificate=payload.doctorCertificate,
+            auth_method="DIGITAL_CERT_BYT",
+            payload_data={
+                "order_id": order_id,
+                "patient_cccd": payload.patientCccd,
+                "icd10": payload.diagnosisIcd10,
+                "items_count": len(payload.items)
+            }
+        )
 
     return CpoeOrderResponse(
         id=prescription.id,
@@ -128,6 +135,8 @@ async def create_cpoe_order(
         patientCccd=prescription.patient_cccd,
         patientPhone=prescription.patient_phone,
         patientEmail=prescription.patient_email,
+        patientAddress=prescription.patient_address,
+        guardianName=prescription.guardian_name,
         patientDob=prescription.patient_dob,
         patientGender=prescription.patient_gender,
         department=prescription.department,

@@ -22,16 +22,31 @@ export function handleCpoeIntent(
   lower: string,
   nowStr: string
 ): ProcessedQueryResult {
-  // 1. Trích xuất Tên bệnh nhân
-  let patientName = 'Nguyễn Văn An';
   const nameMatch = text.match(/(?:bệnh nhân|cho|bn)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})/u);
-  if (nameMatch) {
-    patientName = nameMatch[1].trim();
+  const hasPatientIdentity = Boolean(nameMatch || /\b(?:bn|cccd|căn cước|hộ chiếu)\s*[:#]?\s*[\w-]+/iu.test(text));
+  const hasMedication = anyKeyword(lower, ['augmentin', 'amoxicillin', 'paracetamol', 'panadol', 'cipro', 'ciprofloxacin']);
+  const hasDiagnosis = anyKeyword(lower, ['viêm họng', 'viêm phế quản', 'viêm phổi', 'sốt']);
+  const missing = [
+    ...(!hasPatientIdentity ? ['định danh người bệnh'] : []),
+    ...(!hasDiagnosis ? ['chẩn đoán'] : []),
+    ...(!hasMedication ? ['tên thuốc'] : [])
+  ];
+  if (missing.length) {
+    return { replyMessage: {
+      id: `msg-agent-cpoe-clarify-${Date.now()}`,
+      sender: 'agent',
+      text: `Để chuẩn bị bản nháp đơn thuốc theo Điều 6 Thông tư 26/2025/TT-BYT, vui lòng bổ sung: ${missing.join(', ')}. Chưa tạo đơn vì thông tin hiện tại chưa đủ để lập đơn an toàn.`,
+      timestamp: nowStr,
+      legalReference: { lawCode: 'Thông tư 26/2025/TT-BYT', title: 'Yêu cầu chung với nội dung kê đơn thuốc', clause: 'Điều 6' }
+    } };
   }
 
+  // 1. Trích xuất Tên bệnh nhân
+  const patientName = nameMatch?.[1].trim() || 'Người bệnh đã chọn';
+
   // 2. Trích xuất Chẩn đoán
-  let diagnosisText = 'Nhiễm khuẩn đường hô hấp trên cấp';
-  let diagnosisIcd10 = 'J06.9';
+  let diagnosisText = '';
+  let diagnosisIcd10 = '';
   if (lower.includes('viêm họng')) {
     diagnosisText = 'Viêm họng cấp';
     diagnosisIcd10 = 'J02.9';
@@ -88,75 +103,15 @@ export function handleCpoeIntent(
     });
   }
 
-  // Nếu không chỉ định cụ thể, tạo đơn mẫu phối hợp chuẩn ngoại trú
-  if (items.length === 0) {
-    items.push(
-      {
-        id: 'it-1',
-        medicationName: 'Augmentin 1g (Amoxicillin + Acid Clavulanic)',
-        activeIngredient: 'Amoxicillin + Clavulanic acid',
-        dosage: '1 viên',
-        frequency: 'Ngày 2 lần',
-        route: 'Uống',
-        quantity: 14,
-        unit: 'Viên',
-        instructions: 'Uống đầu bữa ăn'
-      },
-      {
-        id: 'it-2',
-        medicationName: 'Paracetamol 500mg',
-        activeIngredient: 'Paracetamol',
-        dosage: '1 viên',
-        frequency: 'Ngày 2 lần (khi sốt/đau)',
-        route: 'Uống',
-        quantity: 10,
-        unit: 'Viên',
-        instructions: 'Uống sau ăn'
-      }
-    );
-  }
-
-  const orderId = `RX-2026-${String(Date.now()).slice(-4)}`;
-  const order: PrescriptionOrder = {
-    id: orderId,
-    patientId: `BN-2026-${String(Date.now()).slice(-3)}`,
-    patientName,
-    patientCccd: '001201019283',
-    patientDob: '1984-05-10',
-    patientAge: 42,
-    patientGender: 'Nam',
-    patientWeight: 65,
-    doctorName: 'BS.CKII Trần Văn Hùng',
-    doctorCertificate: '009125/BYT-CCHN',
-    department: 'Khoa Khám Bệnh',
-    diagnosisIcd10,
-    diagnosisText,
-    isChronicDisease: false,
-    prescriptionType: 'outpatient',
-    status: 'draft',
-    prescribedAt: new Date().toISOString(),
-    daysPrescribed: 7,
-    items,
-    clinicalNotes: 'Bệnh nhân tỉnh táo, tiếp xúc tốt, không tiền sử dị ứng penicillin.'
-  };
-
-  const replyText = `### 📋 THIẾT LẬP ĐƠN THUỐC ĐIỆN TỬ CPOE (${orderId})\n\n` +
-    `• **Bệnh nhân:** **${patientName}** (42T - Nam)\n` +
-    `• **Chẩn đoán:** \`${diagnosisIcd10}\` - **${diagnosisText}**\n` +
-    `• **Bác sĩ kê đơn:** BS.CKII Trần Văn Hùng (Khoa Khám Bệnh)\n` +
-    `• **Thời gian dùng:** 7 ngày điều trị ngoại trú\n` +
-    `• **Danh mục thuốc kê:**\n` +
-    items.map((it, idx) => `  ${idx + 1}. **${it.medicationName}** - SL: \`${it.quantity} ${it.unit}\` (${it.frequency})`).join('\n') +
-    `\n\n🛡️ **Đánh giá an toàn lâm sàng (CDSS):** Đơn thuốc không có tương tác chống chỉ định nguy cơ cao theo Quyết định 5948/QĐ-BYT.\n\n` +
-    `👉 Bác sĩ vui lòng bấm **[Ký duyệt & Tạo đơn thuốc CPOE]** trên thẻ bên dưới để xác thực và đẩy đơn vào hệ thống bệnh viện!`;
+  const replyText = `Có thể mở form CPOE để nhập dữ liệu, nhưng chatbot chưa tạo đơn. Vui lòng chọn hồ sơ người bệnh và nhập xác nhận chẩn đoán, liều, tần suất, đường dùng, số lượng và thời gian sử dụng trong form.`;
 
   const card: AgentActionCard = {
-    cardType: 'cpoe_prescription',
+    cardType: 'cpoe_prescription_draft',
     title: `Đơn Thuốc CPOE: ${patientName}`,
-    summary: `Kê đơn điện tử • Chẩn đoán: ${diagnosisIcd10} - ${diagnosisText}`,
-    data: order,
-    primaryActionLabel: 'Ký duyệt & Tạo đơn thuốc CPOE',
-    primaryActionType: 'EXECUTE_CREATE_CPOE_ORDER',
+    summary: `Bản nháp cần hoàn thiện và rà soát Điều 6 • Chẩn đoán: ${diagnosisIcd10} - ${diagnosisText}`,
+    data: {},
+    primaryActionLabel: 'Mở bản nháp CPOE để rà soát',
+    primaryActionType: 'NAVIGATE_TAB',
     targetTab: 'cpoe',
     status: 'pending'
   };

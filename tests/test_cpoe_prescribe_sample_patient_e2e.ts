@@ -4,7 +4,7 @@ import path from 'path';
 const ARTIFACTS_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-628e-47df-bee0-0357f9f93312';
 
 async function main() {
-  console.log('🚀 Starting CPOE Prescribe Sample Patient & Visibility E2E Test on Port 3001...');
+  console.log('🚀 Starting CPOE Prescribe Sample Patient & Visibility E2E Test on Port 5173...');
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await context.addInitScript(() => {
@@ -17,9 +17,9 @@ async function main() {
   page.on('pageerror', (err) => console.error('💥 UNCAUGHT PAGE ERROR:', err));
 
   try {
-    // 1. Navigate to http://localhost:3001/#cpoe
-    await page.goto('http://localhost:3001/#cpoe', { waitUntil: 'networkidle' });
-    console.log('✅ Loaded http://localhost:3001/#cpoe');
+    // 1. Navigate to the current isolated worktree dev server
+    await page.goto('http://localhost:5173/#cpoe', { waitUntil: 'networkidle' });
+    console.log('✅ Loaded http://localhost:5173/#cpoe');
     await page.waitForTimeout(1000);
 
     // Take screenshot of initial CPOE view
@@ -76,15 +76,25 @@ async function main() {
     // Capture screenshot of filled modal
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'cpoe_modal_sample_patient_filled.png') });
 
-    // 7. Submit prescription
-    const submitBtn = page.locator('button:has-text("Ký số ban hành đơn")');
-    await submitBtn.scrollIntoViewIfNeeded();
+    // 7. Save an unsigned prescription draft
+    await page.locator('input[placeholder="Nhập chẩn đoán lâm sàng..."]').fill('Viêm họng cấp');
+    const medicationSearch = page.locator('input[placeholder="Gõ tìm biệt dược, hoạt chất (adre, mor, ceftri, kcl)..."]');
+    await medicationSearch.fill('Paracetamol');
+    await page.waitForTimeout(500);
+    await medicationSearch.press('ArrowDown');
+    await medicationSearch.press('Enter');
+    await page.locator('input[placeholder="VD: 1 viên/lần, 1 ống/lần"]').fill('1 viên/lần');
+    await page.locator('input[placeholder="VD: 2 lần/ngày (Sáng - Chiều)"]').fill('2 lần/ngày');
+    await page.locator('#prescription-days').fill('5');
+    await page.locator('input[type="number"]').last().fill('10');
+    const submitBtn = page.locator('button:has-text("Lưu bản nháp")');
+    await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
     await submitBtn.click();
-    console.log('✅ Clicked "Ký số ban hành đơn"');
+    console.log('✅ Clicked "Lưu bản nháp"');
 
     // 8. Wait for modal to close
     await modalTitle.waitFor({ state: 'hidden', timeout: 5000 });
-    console.log('✅ Modal closed after signing');
+    console.log('✅ Modal closed after saving draft');
     await page.waitForTimeout(1000);
 
     // 9. Verify the new order appears IMMEDIATELY at Row 1 of the table!

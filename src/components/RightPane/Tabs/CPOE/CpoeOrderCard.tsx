@@ -88,7 +88,7 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
           {order.items.length} khoản: <span className="text-slate-800 font-medium">{order.items.map((i) => i.medicationName.split(' ')[0]).join(', ')}</span>
         </div>
         <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-          {order.status === 'signed' ? '✓ Đã ký số' : 'Bản thảo'}
+          {order.status === 'signed' && order.digitalSignature ? '✓ Đã ký' : 'Bản nháp · Chưa ký'}
         </span>
       </div>
     </article>

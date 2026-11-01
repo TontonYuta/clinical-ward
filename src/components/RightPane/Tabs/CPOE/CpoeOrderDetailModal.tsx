@@ -5,13 +5,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, ShieldCheck, User, Calendar, Pill, MessageSquare, Send } from 'lucide-react';
+import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, User, Calendar, Pill, MessageSquare, Send } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
 import { stripLeadingBullets } from '../../../../utils/clinicalFormatter';
 import { SendSmsModal } from '../../../Modals/SendSmsModal';
 import { buildDefaultTimeSlots } from '../../../../services/prescriptionAdviceService';
 import { auditPrescriptionDdiApi } from '../../../../services/api';
+import { PrescriptionPrintDocument } from './PrescriptionPrintDocument';
 
 export type CpoeDetailTab = 'overview' | 'medications' | 'safety_cdss' | 'advice_schedule' | 'legal_signature';
 
@@ -61,13 +62,18 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   if (!isOpen || !order) return null;
 
   const handlePrint = () => {
-    window.print();
+    if (!document.getElementById('prescription-print-document')) {
+      window.alert('Không tìm thấy nội dung đơn thuốc để in.');
+      return;
+    }
+    try { window.print(); } catch { window.alert('Trình duyệt không mở được hộp thoại in. Hãy thử lại hoặc kiểm tra quyền in của trình duyệt.'); }
   };
 
   const isOutpatient = order.prescriptionType === 'outpatient';
 
   // Resolve matching patient profile for clinical CDSS grounding
   const patient = findPatientByNameOrQuery(order.patientId || order.patientName, INITIAL_PATIENTS);
+  const isDraft = order.status === 'draft' || !order.digitalSignature;
 
   // Evaluate clinical safety indicators
   const hasAllergies = Boolean(patient?.allergies && !patient.allergies.toLowerCase().includes('không ghi nhận') && !patient.allergies.toLowerCase().includes('chưa ghi nhận'));
@@ -95,9 +101,10 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       data-testid="cpoe-order-detail-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-100"
+      className="prescription-detail-overlay fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-100"
     >
-      <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] flex flex-col overflow-hidden text-slate-900">
+      <div className="prescription-detail-panel bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] flex flex-col overflow-hidden text-slate-900">
+        <div className="hidden print:block"><PrescriptionPrintDocument order={order} /></div>
         
         {/* Header Chuẩn Workstation Y Tế (Zero-Box) */}
         <div className="px-3 sm:px-5 py-2 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 shrink-0">
@@ -238,7 +245,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                           </div>
                         )}
                         <div className="text-xs text-slate-700">
-                          Cách dùng: {it.route || 'Uống'} · {it.frequency || it.instructions || 'Theo y lệnh bác sĩ'}
+                          Cách dùng: {it.route || '—'} · {it.frequency || it.instructions || '—'}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
@@ -319,12 +326,12 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   <div>
                     <dt className="text-slate-500">Giới tính &amp; Ngày sinh</dt>
                     <dd className="text-sm font-medium text-slate-800 mt-0.5">
-                      {order.patientGender || patient?.gender || 'Nam'} · {order.patientDob || patient?.dob || '1968-05-14'} {patient?.age ? `(${patient.age} tuổi)` : ''}
+                      {order.patientGender || '—'} · {order.patientDob || '—'}
                     </dd>
                   </div>
                   <div className="col-span-2">
                     <dt className="text-slate-500">Khoa / Buồng / Giường</dt>
-                    <dd className="text-sm font-medium text-slate-900 mt-0.5">{order.department || 'Khoa Cấp Cứu A9'} {order.roomBed ? `(${order.roomBed})` : ''}</dd>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">{order.department || '—'} {order.roomBed ? `(${order.roomBed})` : ''}</dd>
                   </div>
                 </dl>
               </div>
@@ -339,17 +346,16 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   </div>
                   <div>
                     <dt className="text-slate-500">Chứng chỉ hành nghề (CCHN)</dt>
-                    <dd className="text-sm font-mono font-medium text-slate-800 mt-0.5">{order.doctorCertificate || '014829/BYT-CCHN'}</dd>
+                    <dd className="text-sm font-mono font-medium text-slate-800 mt-0.5">{order.doctorCertificate || '—'}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-500">Thời điểm kê đơn</dt>
                     <dd className="text-sm font-mono text-slate-800 mt-0.5">{order.prescribedAt}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Xác thực chứng thư số</dt>
-                    <dd className="text-xs font-semibold text-emerald-800 flex items-center gap-1 mt-0.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{order.digitalSignature || 'Ký số hợp lệ (VNPT-CA Timestamping)'}</span>
+                    <dt className="text-slate-500">Trạng thái đơn</dt>
+                    <dd className="text-xs font-semibold text-slate-800 flex items-center gap-1 mt-0.5">
+                      <span>{order.status === 'signed' && order.digitalSignature ? order.digitalSignature : 'Bản nháp - chưa ký số'}</span>
                     </dd>
                   </div>
                 </dl>
@@ -360,7 +366,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Quy Chế Kê Đơn &amp; Cấp Phát</h3>
                 <p className="text-slate-700 leading-relaxed">
                   {isOutpatient
-                    ? `Đơn thuốc ngoại trú điều trị dài ngày (${order.daysPrescribed} ngày) thuộc danh mục 252 bệnh mạn tính được kê đơn tối đa 90 ngày theo Thông tư 26/2025/TT-BYT.`
+                    ? order.isChronicDisease ? `Đơn ngoại trú ${order.daysPrescribed} ngày; cần xác nhận bệnh thuộc Phụ lục VII và đánh giá ổn định lâm sàng.` : `Đơn ngoại trú ${order.daysPrescribed} ngày; thời hạn tối đa thông thường 30 ngày theo Điều 6 TT26.`
                     : 'Đơn thuốc điều trị nội trú theo ngày. Dược sĩ lâm sàng đối soát và phát thuốc theo ca trực hàng ngày.'}
                 </p>
               </div>
@@ -405,16 +411,16 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                         </div>
                         <div>
                           <dt className="text-slate-500">Đường dùng</dt>
-                          <dd className="font-semibold text-slate-900 mt-0.5">{it.route || 'Uống'}</dd>
+                          <dd className="font-semibold text-slate-900 mt-0.5">{it.route || '—'}</dd>
                         </div>
                         <div>
                           <dt className="text-slate-500">Tần suất dùng</dt>
-                          <dd className="font-medium text-slate-800 mt-0.5">{it.frequency || '1 lần/ngày'}</dd>
+                          <dd className="font-medium text-slate-800 mt-0.5">{it.frequency || '—'}</dd>
                         </div>
                       </dl>
 
                       <div className="text-xs text-slate-800 font-medium bg-slate-50 p-2.5 rounded border border-slate-200">
-                        Chỉ dẫn y lệnh: {it.instructions || 'Dùng theo chỉ dẫn của bác sĩ điều trị.'}
+                        Chỉ dẫn y lệnh: {it.instructions || '—'}
                       </div>
                     </div>
                   ))}
@@ -592,7 +598,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
               <div className="space-y-3 pb-5 border-b border-slate-100">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  Chứng Thư Số &amp; Dấu Thời Gian (TSA)
+                  Trạng thái và dữ liệu chữ ký
                 </h3>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
@@ -601,11 +607,11 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   </div>
                   <div>
                     <dt className="text-slate-500">Chứng chỉ hành nghề khám bệnh, chữa bệnh</dt>
-                    <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{order.doctorCertificate || '014829/BYT-CCHN'}</dd>
+                    <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{order.doctorCertificate || '—'}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Tổ chức cấp chứng thư</dt>
-                    <dd className="text-sm font-medium text-slate-800 mt-0.5">VNPT-CA / Viettel-CA (Ban Cơ yếu Chính phủ)</dd>
+                    <dt className="text-slate-500">Trạng thái đơn</dt>
+                    <dd className="text-sm font-medium text-slate-800 mt-0.5">{order.status === 'signed' && order.digitalSignature ? 'Đã ký (có dữ liệu chữ ký)' : 'Bản nháp - chưa ký số'}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-500">Thời điểm ký số (TSA Timestamp)</dt>
@@ -614,17 +620,15 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   <div className="col-span-2">
                     <dt className="text-slate-500">Chuỗi giá trị băm (SHA-256 Digest)</dt>
                     <dd className="text-xs font-mono text-slate-700 bg-slate-50 p-2 rounded border border-slate-200 break-all mt-0.5">
-                      {order.digitalSignature || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+                      {order.digitalSignature || 'Chưa có dữ liệu chữ ký số'}
                     </dd>
                   </div>
                 </dl>
               </div>
 
               <div className="space-y-2 text-xs text-slate-800">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Liên Thông Cổng Quốc Gia</h3>
-                <p className="leading-relaxed">
-                  Đơn thuốc điện tử được cấp mã định danh quốc gia liên thông trực tiếp với Hệ thống thông tin quản lý kê đơn thuốc và bán thuốc quốc gia của Bộ Y tế theo quy định tại Điều 5 Thông tư 26/2025/TT-BYT.
-                </p>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Tích hợp đơn thuốc</h3>
+                <p className="leading-relaxed">Trạng thái ký số và liên thông chỉ được xác nhận khi có phản hồi từ dịch vụ tích hợp tương ứng.</p>
               </div>
             </div>
 
@@ -651,7 +655,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
         {/* Footer Chuẩn Workstation */}
         <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-500">
-            Đơn thuốc điện tử liên thông Quốc Gia · Mã đơn: <span className="font-mono font-bold text-slate-800">{order.id}</span>
+              {isDraft ? 'Bản nháp - chưa ký' : 'Đơn đã ký'} · Mã nội bộ: <span className="font-mono font-bold text-slate-800">{order.id}</span>
           </div>
           <div className="flex items-center gap-2">
             <button

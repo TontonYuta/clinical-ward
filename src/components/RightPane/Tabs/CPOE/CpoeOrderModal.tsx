@@ -6,12 +6,13 @@
  */
 
 import React, { useState } from 'react';
-import { X, CheckCircle2, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, FileText, Sparkles, Building2, Phone, Mail, Calendar } from 'lucide-react';
+import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType } from '../../../../types/cpoe';
 import { MasterMedication } from '../../../../types/medication';
 import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
 import { useModalDismiss } from '../../../../hooks/useModalDismiss';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
+import { validatePrescriptionDraft } from '../../../../services/prescriptionValidation';
 
 interface CpoeOrderModalProps {
   isOpen: boolean;
@@ -45,23 +46,26 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const [patientCccd, setPatientCccd] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
   const [patientEmail, setPatientEmail] = useState('');
-  const [patientDob, setPatientDob] = useState('1980-01-01');
-  const [patientGender, setPatientGender] = useState<'Nam' | 'Nữ'>('Nam');
-  const [department, setDepartment] = useState('Khoa Khám Bệnh - Phòng 204');
+  const [patientAddress, setPatientAddress] = useState('');
+  const [guardianName, setGuardianName] = useState('');
+  const [patientDob, setPatientDob] = useState('');
+  const [patientGender, setPatientGender] = useState<'Nam' | 'Nữ' | ''>('');
+  const [department, setDepartment] = useState('');
   const [diagnosisIcd10, setDiagnosisIcd10] = useState('');
   const [diagnosisText, setDiagnosisText] = useState('');
   const [isChronic, setIsChronic] = useState(false);
-  const [daysPrescribed, setDaysPrescribed] = useState(30);
+  const [daysPrescribed, setDaysPrescribed] = useState(0);
 
   // Thông số thuốc kê đơn
   const [medName, setMedName] = useState('');
   const [activeIngredient, setActiveIngredient] = useState('');
   const [unit, setUnit] = useState('Viên');
-  const [route, setRoute] = useState('Uống');
-  const [quantity, setQuantity] = useState(10);
-  const [dosage, setDosage] = useState('1 viên/lần');
-  const [frequency, setFrequency] = useState('2 lần/ngày (Sáng - Chiều)');
-  const [instructions, setInstructions] = useState('Uống sau khi ăn no 30 phút, uống nhiều nước');
+  const [route, setRoute] = useState('');
+  const [quantity, setQuantity] = useState(0);
+  const [dosage, setDosage] = useState('');
+  const [frequency, setFrequency] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [clinicalNotes, setClinicalNotes] = useState('');
 
   if (!isOpen) return null;
@@ -76,9 +80,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       setPatientCccd(p.cccd || '');
       setPatientPhone(p.phone || '');
       setPatientEmail(p.email || '');
-      setPatientDob(p.dob || '1980-01-01');
-      setPatientGender((p.gender as any) || 'Nam');
-      setDepartment(p.department || p.room || (rxType === 'outpatient' ? 'Khoa Khám Bệnh - Phòng 204' : 'Khoa Cấp Cứu A9'));
+      setPatientAddress('');
+      setPatientDob(p.dob || '');
+      setPatientGender((p.gender as any) || '');
+      setDepartment(p.department || p.room || '');
       if (p.chronicConditions) {
         setDiagnosisText(p.chronicConditions.split(',')[0].trim());
         if (p.chronicConditions.toLowerCase().includes('tăng huyết áp')) setDiagnosisIcd10('I10');
@@ -98,16 +103,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     setActiveIngredient(med.activeIngredient);
     setUnit(med.standardUnit);
     setRoute(med.route);
-    setQuantity(med.defaultDoseQty || 10);
-    if (med.standardUnit === 'Viên') {
-      setDosage('1 viên/lần');
-      setFrequency('2 lần/ngày (Sáng - Chiều)');
-      setInstructions('Uống sau khi ăn no 30 phút, uống nhiều nước');
-    } else if (med.standardUnit === 'Ống' || med.standardUnit === 'Lọ') {
-      setDosage('1 ống/lần');
-      setFrequency('1 lần/ngày');
-      setInstructions('Tiêm truyền theo đúng chỉ định điều dưỡng khoa');
-    }
+    setQuantity(0);
+    setDosage('');
+    setFrequency('');
+    setInstructions('');
   };
 
   const hasDdiWarning = medName.toLowerCase().includes('morphin') && diagnosisText.toLowerCase().includes('suy hô hấp');
@@ -120,48 +119,51 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!patientName.trim()) return;
+    const errors = validatePrescriptionDraft({ patientName, diagnosisText, items: [{ medicationName: medName, dosage, frequency, route, quantity, durationDays: daysPrescribed }] });
+    setValidationErrors(errors);
+    if (errors.length) return;
 
     const matchedPatient = findPatientByNameOrQuery(patientName, INITIAL_PATIENTS);
-    const finalPatientId = patientId || matchedPatient?.id || `BN-${Math.floor(8800 + Math.random() * 100)}`;
-    const finalCccd = patientCccd.trim() || matchedPatient?.cccd || '001201019283';
+    const finalPatientId = patientId || matchedPatient?.id || '';
+    const finalCccd = patientCccd.trim() || matchedPatient?.cccd || '';
     const finalPhone = patientPhone.trim() || matchedPatient?.phone || undefined;
     const finalEmail = patientEmail.trim() || matchedPatient?.email || undefined;
-    const finalDob = patientDob || matchedPatient?.dob || '1980-01-01';
-    const finalGender = (patientGender || matchedPatient?.gender || 'Nam') as 'Nam' | 'Nữ';
-    const finalDept = department || (rxType === 'outpatient' ? 'Khoa Khám Bệnh - Phòng 204' : 'Khoa Cấp Cứu A9');
+    const finalDob = patientDob || matchedPatient?.dob || '';
+    const finalGender = (patientGender || matchedPatient?.gender || '') as 'Nam' | 'Nữ' | '';
+    const finalDept = department || '';
 
     onSaveOrder({
-      id: `RX-2026-${Math.floor(100 + Math.random() * 900)}`,
+      id: `DRAFT-${Date.now()}`,
       prescriptionType: rxType,
       patientId: finalPatientId,
       patientName: patientName.trim(),
       patientPhone: finalPhone,
       patientEmail: finalEmail,
       patientCccd: finalCccd,
+      patientAddress: patientAddress.trim(),
+      guardianName: guardianName.trim(),
       patientDob: finalDob,
       patientGender: finalGender,
       department: finalDept,
-      diagnosisIcd10: diagnosisIcd10.trim().toUpperCase() || 'I10',
-      diagnosisText: diagnosisText.trim() || 'Khám và kê đơn điều trị ngoại trú',
+      diagnosisIcd10: diagnosisIcd10.trim().toUpperCase(),
+      diagnosisText: diagnosisText.trim(),
       isChronicDisease: rxType === 'outpatient' && isChronic,
       daysPrescribed,
       doctorName: formatDoctorDisplay(doctorName),
-      doctorCertificate: '009125/BYT-CCHN',
+      doctorCertificate: '',
       prescribedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      digitalSignature: `SHA256:${Math.random().toString(36).substring(2, 10)}... (Đã ký số TT 26)`,
-      status: 'signed',
+      status: 'draft',
       clinicalNotes: clinicalNotes.trim() || undefined,
       items: [{
         id: `rxi-${Date.now()}`,
-        medicationName: medName || 'PARACETAMOL 500mg',
-        activeIngredient: activeIngredient || (medName ? medName.split(' ')[0] : 'Paracetamol'),
-        dosage: dosage.trim() || 'Chuẩn',
-        frequency: frequency.trim() || '1 lần/ngày',
+        medicationName: medName,
+        activeIngredient: activeIngredient,
+        dosage: dosage.trim(),
+        frequency: frequency.trim(),
         route: normalizeRoute(route),
         quantity,
         unit: normalizeUnit(unit),
-        instructions: instructions.trim() || 'Dùng theo phác đồ chỉ định của bác sĩ'
+        instructions: instructions.trim(), durationDays: daysPrescribed
       }]
     });
     onClose();
@@ -201,7 +203,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200">
               <button
                 type="button"
-                onClick={() => { setRxType('outpatient'); setDaysPrescribed(30); }}
+                onClick={() => { setRxType('outpatient'); setDaysPrescribed(0); }}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition ${
                   rxType === 'outpatient'
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -212,7 +214,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => { setRxType('inpatient_daily'); setDaysPrescribed(1); setIsChronic(false); }}
+                onClick={() => { setRxType('inpatient_daily'); setDaysPrescribed(0); setIsChronic(false); }}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition ${
                   rxType === 'inpatient_daily'
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -236,6 +238,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
 
         {/* Form Body 2 Cột Trái - Phải Chuẩn Workstation */}
         <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {validationErrors.length > 0 && (
+            <div role="alert" className="px-5 py-2 bg-rose-50 border-b border-rose-200 text-xs text-rose-900">
+              <strong>Chưa thể lưu bản nháp:</strong> {validationErrors.join(' ')}
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto thin-scrollbar">
             <div className="grid grid-cols-1 lg:grid-cols-12 min-h-full divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
               
@@ -367,6 +374,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         onChange={(e) => setPatientGender(e.target.value as 'Nam' | 'Nữ')}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 cursor-pointer transition"
                       >
+                        <option value="">-- Chọn --</option>
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
                       </select>
@@ -383,6 +391,16 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         placeholder="Khoa Khám Bệnh"
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
                       />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Nơi cư trú</label>
+                      <input value={patientAddress} onChange={(e) => setPatientAddress(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm" placeholder="Nơi thường trú/tạm trú/nơi ở hiện tại" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Người đưa trẻ dưới 72 tháng đến khám (nếu có)</label>
+                      <input value={guardianName} onChange={(e) => setGuardianName(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm" />
                     </div>
                   </div>
                 </div>
@@ -445,11 +463,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                           <input
                             id="prescription-days"
                             type="number"
-                            min={1}
+                            min={0}
                             max={isChronic ? 90 : 30}
                             value={daysPrescribed}
                             onChange={(e) =>
-                              setDaysPrescribed(Math.max(1, Math.min(isChronic ? 90 : 30, Number(e.target.value) || 1)))
+                              setDaysPrescribed(Math.max(0, Math.min(isChronic ? 90 : 30, Number(e.target.value) || 0)))
                             }
                             className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 font-semibold focus:outline-none focus:ring-1 focus:ring-slate-400"
                           />
@@ -494,7 +512,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                       <input
                         type="text"
                         readOnly
-                        value={activeIngredient || (medName ? medName.split(' ')[0] : 'Paracetamol')}
+                        value={activeIngredient}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100/80 text-slate-800 text-sm font-medium"
                       />
                     </div>
@@ -507,6 +525,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         onChange={(e) => setRoute(e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer transition font-medium"
                       >
+                        <option value="">-- Chọn đường dùng --</option>
                         <option value="Uống">Đường uống</option>
                         <option value="Tiêm tĩnh mạch">Tiêm tĩnh mạch (IV)</option>
                         <option value="Tiêm bắp">Tiêm bắp (IM)</option>
@@ -543,7 +562,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         type="number"
                         min="1"
                         value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                        onChange={(e) => setQuantity(Math.max(0, Number(e.target.value) || 0))}
                         className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-base font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 transition"
                       />
                     </div>
@@ -633,9 +652,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
             <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
               <span>Bác sĩ chỉ định: <strong className="text-slate-900 font-semibold">{formatDoctorDisplay(doctorName)}</strong></span>
               <span className="text-slate-300">·</span>
-              <span className="font-mono text-slate-500">CCHN: 009125/BYT-CCHN</span>
-              <span className="text-slate-300">·</span>
-              <span className="text-slate-500">Ký số y tế (Nghị định 130/2018/NĐ-CP)</span>
+              <span className="text-slate-500">Bản nháp; chưa ký số hoặc phát hành</span>
             </div>
 
             <div className="flex items-center gap-2.5">
@@ -650,8 +667,8 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                 type="submit"
                 className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs cursor-pointer active:scale-98 transition"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Ký số ban hành đơn</span>
+                <Save className="w-4 h-4" />
+                <span>Lưu bản nháp</span>
               </button>
             </div>
           </div>

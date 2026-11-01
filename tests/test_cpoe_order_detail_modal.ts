@@ -53,6 +53,15 @@ async function verifyCpoeOrderDetailModal() {
     const modal = page.locator('[data-testid="cpoe-order-detail-modal"]');
     await modal.waitFor({ state: 'visible', timeout: 5000 });
     console.log('✅ Modal CpoeOrderDetailModal đã mở thành công!');
+    const printDoc = modal.locator('#prescription-print-document');
+    if (!(await printDoc.count())) throw new Error('Thiếu bản in đơn thuốc riêng');
+    const printText = await printDoc.innerText();
+    if (!printText.includes('ĐƠN THUỐC') || !printText.includes('Thuốc điều trị')) throw new Error('Bản in thiếu nội dung đơn');
+    await page.emulateMedia({ media: 'print' });
+    const visibleInPrint = await printDoc.evaluate((el) => getComputedStyle(el).visibility === 'visible' && getComputedStyle(el).display !== 'none');
+    if (!visibleInPrint) throw new Error('Bản in không hiển thị trong print media');
+    await page.emulateMedia({ media: 'screen' });
+    console.log('✅ Bản in riêng hiện trong print media');
 
     // 3. Kiểm thử từng Tab trong 5 Tabs
     const tabNames = [

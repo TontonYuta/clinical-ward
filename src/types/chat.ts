@@ -56,6 +56,7 @@ export interface AgentActionCard {
     | 'medication_safety'
     | 'medication_schedule'
     | 'cpoe_prescription'
+    | 'cpoe_prescription_draft'
     | 'debt_settle';
   title: string;
   summary: string;

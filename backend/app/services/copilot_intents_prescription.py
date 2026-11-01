@@ -9,17 +9,13 @@ from app.models.debt import DebtRecord
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 
 async def handle_prescription_advice_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:
-    patient_name = "Nguyễn Văn An"
     name_match = re.search(r"(?:bệnh nhân|cho|dặn dò|nhắc)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})", query)
-    if name_match:
-        patient_name = name_match.group(1).strip()
-    elif "trí" in lower_query or "8820" in lower_query:
-        patient_name = "Võ Minh Trí (BN-8820)"
-    elif "mai" in lower_query:
-        patient_name = "Trần Thị Mai"
+    if not name_match:
+        return CopilotResponse(intent="PRESCRIPTION_ADVICE", reply_text="Bạn muốn lập lời dặn cho người bệnh nào? Vui lòng chọn hồ sơ người bệnh trước.", answer_type="clarification", source_status="incomplete_input", confidence=1.0)
+    patient_name = name_match.group(1).strip()
 
     email_match = re.search(r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", query)
-    patient_email = email_match.group(1) if email_match else ("tri.vm@hospital.vn" if "trí" in lower_query or "Trí" in patient_name else "an.nv@gmail.com")
+    patient_email = email_match.group(1) if email_match else None
 
     meds = []
     if any(k in lower_query for k in ["paracetamol", "panadol", "hạ sốt", "giảm đau"]):
@@ -29,10 +25,7 @@ async def handle_prescription_advice_intent(query: str, lower_query: str, user_n
     if any(k in lower_query for k in ["cipro", "ciprofloxacin"]):
         meds.append({"name": "Ciprofloxacin 500mg", "inn": "Ciprofloxacin", "dosage": "500mg"})
     if not meds:
-        meds = [
-            {"name": "Paracetamol 500mg", "inn": "Paracetamol", "dosage": "500mg"},
-            {"name": "Augmentin 1g", "inn": "Amoxicillin + Clavulanic", "dosage": "1g"}
-        ]
+        return CopilotResponse(intent="PRESCRIPTION_ADVICE", reply_text="Vui lòng nêu tên thuốc hoặc chọn đơn thuốc cần lập lời dặn.", answer_type="clarification", source_status="incomplete_input", confidence=1.0)
 
     card = CopilotActionCard(
         card_type="medication_schedule",
@@ -41,10 +34,10 @@ async def handle_prescription_advice_intent(query: str, lower_query: str, user_n
         data={
             "id": f"ADV-{int(datetime.now(timezone.utc).timestamp()) % 1000000}",
             "patientName": patient_name,
-            "patientEmail": patient_email,
+            "patientEmail": patient_email or "",
             "doctorName": user_name or "BS.CKII Trần Văn Hùng",
             "medications": meds,
-            "diagnosis": "Nhiễm khuẩn hô hấp trên & Điều trị ngoại trú",
+            "diagnosis": "",
             "status": "pending"
         },
         primary_action_label="Gửi Email qua Google Script",
@@ -55,10 +48,10 @@ async def handle_prescription_advice_intent(query: str, lower_query: str, user_n
     reply_text = (
         f"### 📋 ĐÃ THIẾT LẬP LỊCH DẶN DÒ UỐNG THUỐC CHO BỆNH NHÂN\n\n"
         f"• **Bệnh nhân:** **{patient_name}**\n"
-        f"• **Email nhận lịch:** `{patient_email}`\n"
+        f"• **Email nhận lịch:** `{patient_email or 'Chưa có - cần bổ sung trước khi gửi'}`\n"
         f"• **Số loại thuốc:** {len(meds)} mặt hàng ({', '.join(m['name'] for m in meds)})\n"
-        f"• **Phương thức thông báo:** Tự động hóa qua Google Apps Script Webhook & Gmail API.\n\n"
-        f"👉 Bác sĩ có thể bấm **[Gửi Email qua Google Script]** trên thẻ để gửi lịch uống thuốc trực tiếp tới bệnh nhân!"
+        f"• Lịch này là bản nháp, chưa gửi thông báo.\n\n"
+        f"Vui lòng rà soát thông tin trước khi gửi."
     )
 
     return CopilotResponse(
@@ -70,38 +63,43 @@ async def handle_prescription_advice_intent(query: str, lower_query: str, user_n
     )
 
 async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:
-    patient_name = "Nguyễn Văn An"
+    # This chatbot route can only clarify or prepare a draft. It must not
+    # produce an order card or imply a completed DDI review from keywords.
     name_match = re.search(r"(?:bệnh nhân|cho|bn)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})", query)
-    if name_match:
-        patient_name = name_match.group(1).strip()
-    elif "mai" in lower_query:
-        patient_name = "Trần Thị Mai"
+    has_patient = bool(name_match or re.search(r"(?:bn|cccd|căn cước|hộ chiếu)\s*[:#]?\s*[\w-]+", lower_query))
+    has_diagnosis = any(term in lower_query for term in ("viêm họng", "viêm phế quản", "viêm phổi", "sốt"))
+    med_match = re.search(r"(?:thuốc|dùng|kê)\s+([\wÀ-ỹ-]+(?:\s+\w+){0,2})", query, re.IGNORECASE)
+    has_medication = bool(med_match and med_match.group(1).lower() not in {"đau đầu", "cho tôi", "bệnh nhân"})
+    missing = [label for present, label in ((has_patient, "định danh người bệnh"), (has_diagnosis, "chẩn đoán"), (has_medication, "tên thuốc")) if not present]
+    if missing:
+        return CopilotResponse(
+            intent="CPOE_CLARIFICATION",
+            reply_text=f"Để chuẩn bị bản nháp theo Điều 6 Thông tư 26/2025/TT-BYT, vui lòng bổ sung: {', '.join(missing)}. Chưa tạo đơn vì thông tin hiện tại chưa đủ.",
+            legal_basis="Thông tư 26/2025/TT-BYT - Điều 6",
+            answer_type="clarification", source_status="incomplete_input", confidence=1.0,
+            abstention_reason="Thiếu dữ liệu nhận diện người bệnh, chẩn đoán hoặc thuốc"
+        )
+    patient_name = name_match.group(1).strip() if name_match else ""
 
     card = CopilotActionCard(
-        card_type="cpoe_prescription",
+        card_type="cpoe_prescription_draft",
         title=f"Đơn Thuốc Điện Tử CPOE: {patient_name}",
-        summary="Kê đơn điều trị ngoại trú • Căn cứ TT 52/2017/TT-BYT",
+        summary="Bản nháp cần hoàn thiện và rà soát theo TT 26/2025/TT-BYT Điều 6",
         data={
             "patientName": patient_name,
             "doctorName": user_name or "BS. Đỗ Minh Tuấn",
-            "diagnosis": "Viêm đường hô hấp trên",
-            "items": [
-                {"name": "Augmentin 1g", "dosage": "1 viên", "frequency": "Ngày 2 lần sau ăn", "quantity": 14, "unit": "viên"},
-                {"name": "Paracetamol 500mg", "dosage": "1 viên", "frequency": "Uống khi sốt >=38.5C", "quantity": 10, "unit": "viên"}
-            ]
+            "diagnosis": "",
+            "items": []
         },
-        primary_action_label="Ký Duyệt Đơn Thuốc CPOE",
-        primary_action_type="SIGN_CPOE_PRESCRIPTION",
-        target_tab="debts"
+        primary_action_label="Mở CPOE để hoàn thiện bản nháp",
+        primary_action_type="NAVIGATE_TAB",
+        target_tab="cpoe"
     )
     return CopilotResponse(
         intent="CPOE_PRESCRIPTION",
-        reply_text=f"### 📋 DỰ THẢO ĐƠN THUỐC ĐIỆN TỬ CPOE CHO BỆNH NHÂN **{patient_name}**\n\n"
-                   f"• **Chẩn đoán:** Viêm đường hô hấp trên\n"
-                   f"• **Thuốc kê:** Augmentin 1g (14 viên), Paracetamol 500mg (10 viên)\n"
-                   f"• **Quy chế:** Theo Điều 6 & 7 Thông tư 52/2017/TT-BYT về đơn thuốc điện tử bệnh viện.",
+        reply_text=f"Thông tin đã đủ để mở form CPOE, nhưng chưa tạo đơn. Vui lòng nhập/chọn thông tin người bệnh, chẩn đoán, liều, số lần dùng, đường dùng, số lượng và thời gian dùng trong form rồi rà soát trước khi lưu bản nháp.",
         card=card,
-        legal_basis="Thông tư 52/2017/TT-BYT - Quy chế kê đơn thuốc",
+        legal_basis="Thông tư 26/2025/TT-BYT - Điều 6 (đối chiếu nội dung kê đơn)",
         suggested_chips=["Dặn dò bệnh nhân uống thuốc", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"]
     )
 

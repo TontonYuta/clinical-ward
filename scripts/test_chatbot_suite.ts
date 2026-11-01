@@ -99,8 +99,8 @@ const testSuite: TestCase[] = [
   { query: 'Thông báo uống thuốc cho bệnh nhân', expectedCard: 'medication_schedule', category: 'Prescription Advice' },
 
   // 12. Nghiệp vụ Tự động: Kê đơn thuốc CPOE & Thu hồi vỏ nợ thuốc gây nghiện
-  { query: 'Kê đơn cho bệnh nhân Trần Thị Mai dùng Augmentin 1g và Paracetamol 500mg', expectedCard: 'cpoe_prescription', category: 'CPOE Prescription' },
-  { query: 'Kê đơn thuốc điện tử cho bệnh nhân', expectedCard: 'cpoe_prescription', category: 'CPOE Prescription' },
+  { query: 'Kê đơn cho bệnh nhân Trần Thị Mai viêm họng dùng Augmentin 1g và Paracetamol 500mg', expectedCard: 'cpoe_prescription_draft', category: 'CPOE draft' },
+  { query: 'Kê đơn thuốc điện tử cho bệnh nhân', expectedCard: 'NO_CARD', category: 'CPOE clarification' },
   { query: 'Hoàn trả vỏ morphin cho ca trực', expectedCard: 'debt_settle', category: 'Debt Return' },
   { query: 'Thanh toán nợ thuốc cho bệnh nhân', expectedCard: 'debt_settle', category: 'Debt Return' },
 
@@ -141,7 +141,14 @@ testSuite.forEach((tc, idx) => {
     isPass = false;
     issues.push(`CDSS Alert sai: mong đợi [${tc.expectedAlert}], nhận được [${alert}]`);
   }
-
+  if (tc.category === 'CPOE clarification' && (card !== 'NO_CARD' || /Augmentin|Paracetamol|Nguyễn Văn An|J06.9/.test(res.replyMessage.text))) {
+    isPass = false;
+    issues.push('Yêu cầu thiếu thông tin không được hỏi lại an toàn, hoặc đã tự sinh dữ liệu đơn');
+  }
+  if (tc.category === 'CPOE draft' && (/Augmentin|Paracetamol|Chưa được kiểm tra|Viêm đường hô hấp/.test(res.replyMessage.text) || res.replyMessage.card?.primaryActionType === 'EXECUTE_CREATE_CPOE_ORDER')) {
+    isPass = false;
+    issues.push('Chatbot đã tự tạo nội dung đơn hoặc phát biểu DDI thay vì yêu cầu hoàn thiện trong CPOE');
+  }
   const num = String(idx + 1).padStart(2, '0');
   if (isPass) {
     passedCount++;
