@@ -31,9 +31,18 @@ def extract_drug_keywords(query: str) -> str:
         return sdk_match.group(1).upper()
 
     q_lower = cleaned.lower()
+    # Remove common request scaffolding and field labels before resolving
+    # compound asks such as "Paracetamol, gồm liều dùng và tác dụng phụ".
+    q_lower = re.sub(
+        r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì)\b",
+        " ", q_lower,
+    )
     # Retain every distinct medication alias, including both members of a DDI pair.
     from app.services.copilot_catalog import MEDICATION_CATALOG
-    aliases = sorted((alias for med in MEDICATION_CATALOG for alias in med["keywords"]), key=len, reverse=True)
+    from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+    aliases = [alias for med in MEDICATION_CATALOG for alias in med["keywords"]]
+    aliases.extend(alias for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []))
+    aliases = sorted(set(aliases), key=len, reverse=True)
     found = [alias for alias in aliases if alias in q_lower]
     unique_found = [alias for alias in found if not any(alias != other and alias in other for other in found)]
     if unique_found:
@@ -136,6 +145,25 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
                  token in drug.active_ingredient.casefold().replace(";", " ").replace("+", " ").split()]
 
     if not drugs:
+        # A two-medicine question is not a single DAV catalog lookup. Route it
+        # back to the clinical evidence path, which can resolve pair evidence.
+        if len(kw.split()) > 1 and any(term in query.casefold() for term in ("tương tác", "tương kỵ", "phối hợp", "dùng cùng", "uống cùng", "kết hợp")):
+            from app.services.rag import execute_clinical_rag
+            rag_res = await execute_clinical_rag(query)
+            if rag_res:
+                from app.security.guardrails import validate_output_guardrail
+                return CopilotResponse(
+                    intent="CLINICAL_AI_CONSULTATION",
+                    reply_text=validate_output_guardrail(rag_res.answer, query),
+                    legal_basis=rag_res.legal_basis or None,
+                    suggested_chips=["Kiểm tra cặp thuốc khác", "Rà soát toàn bộ danh sách thuốc"],
+                    session_id=session.session_id, citations=[c.to_dict() for c in rag_res.citations],
+                    rag_grounded=rag_res.rag_grounded,
+                    answer_type="grounded_reference" if rag_res.rag_grounded else "safe_abstention",
+                    source_status="retrieved_evidence" if rag_res.rag_grounded else "insufficient_retrieval_evidence",
+                    confidence=rag_res.confidence_score,
+                    abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
+                )
         # Nếu từ khóa là triệu chứng hoặc chỉ định lâm sàng -> Chuyển sang Pure RAG
         is_symptom = any(w in kw.lower() or w in query.lower() for w in [
             "hạ sốt", "giảm sốt", "giảm đau", "kháng sinh", "chống viêm", "sốt", "đau đầu",
@@ -144,16 +172,20 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
         if is_symptom:
             from app.services.rag import execute_clinical_rag
             rag_res = await execute_clinical_rag(query)
-            if rag_res and rag_res.citations:
+            if rag_res:
                 from app.security.guardrails import validate_output_guardrail
                 return CopilotResponse(
                     intent="CLINICAL_AI_CONSULTATION",
                     reply_text=validate_output_guardrail(rag_res.answer, query),
-                    legal_basis=rag_res.legal_basis or "Dược Thư Quốc Gia Việt Nam",
+                    legal_basis=rag_res.legal_basis or None,
                     suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Thông tư 51/2017/TT-BYT", "Kiểm tra tương tác thuốc"],
                     session_id=session.session_id,
                     citations=[c.to_dict() for c in rag_res.citations],
-                    rag_grounded=True
+                    rag_grounded=rag_res.rag_grounded,
+                    answer_type="grounded_reference" if rag_res.rag_grounded else "safe_abstention",
+                    source_status="retrieved_evidence" if rag_res.rag_grounded else "insufficient_retrieval_evidence",
+                    confidence=rag_res.confidence_score,
+                    abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời"
                 )
 
         batch_res = await db.execute(select(InventoryBatch))

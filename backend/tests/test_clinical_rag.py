@@ -165,6 +165,56 @@ def test_grounded_answers_use_plain_source_lines_without_sample_badges():
     assert "PaperQA2 Grounded" not in result.answer
     assert "Chỉ định: hạ sốt" in result.answer
 
+def test_weak_retrieval_abstains_instead_of_claiming_grounded_answer():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RetrievedChunk
+    unrelated = RagChunk("tt22_unrelated", "Thông tư 22", "TT22/2011", "Tủ trực", "Quy trình bàn giao tủ trực", "Đếm số lượng thuốc khi giao ca.", ["giao ca"], "circular")
+    result = format_grounded_answer("Cơ chế phân tử của thuốc XZQ-unknown?", [RetrievedChunk(unrelated, 0.0001)], build_claim_citations([RetrievedChunk(unrelated, 0.0001)]), {})
+    assert result.rag_grounded is False
+    assert result.citations == []
+    assert "chưa tìm thấy" in result.answer.casefold()
+
+def test_unrelated_top_chunk_abstains_even_when_rrf_rank_is_high():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RetrievedChunk
+    unrelated = RagChunk("handover", "TT22", "TT22/2011", "Tủ trực", "Quy trình bàn giao tủ trực", "Đếm số lượng thuốc khi giao ca.", ["giao ca"], "circular")
+    result = format_grounded_answer("Tôi muốn biết thời tiết hôm nay", [RetrievedChunk(unrelated, 0.032787)], build_claim_citations([RetrievedChunk(unrelated, 0.032787)]), {})
+    assert result.rag_grounded is False
+    assert result.citations == []
+
+def test_grounded_answer_requires_query_topic_overlap_with_evidence():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RetrievedChunk
+    chunk = RagChunk("para", "Dược thư", "Dược thư Quốc gia", "Paracetamol", "Paracetamol liều dùng", "Liều tối đa của paracetamol ở người lớn là...", ["paracetamol"], "monograph")
+    result = format_grounded_answer("Paracetamol liều dùng tối đa là bao nhiêu?", [RetrievedChunk(chunk, 0.032787)], build_claim_citations([RetrievedChunk(chunk, 0.032787)]), {})
+    assert result.rag_grounded is True
+
+def test_grounded_answer_omits_citations_that_do_not_support_query_topic():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RetrievedChunk
+    relevant = RagChunk("para", "Dược thư", "Dược thư Quốc gia", "Paracetamol", "Paracetamol liều dùng", "Liều tối đa của paracetamol ở người lớn là 4 g mỗi ngày.", ["paracetamol"], "monograph")
+    irrelevant = RagChunk("handover", "TT22", "TT22/2011", "Bàn giao", "Quy trình giao ca tủ trực", "Kiểm đếm thuốc và bàn giao sổ giữa các ca trực.", ["giao ca"], "circular")
+    retrieved = [RetrievedChunk(relevant, 0.03), RetrievedChunk(irrelevant, 0.02)]
+    citations = build_claim_citations(retrieved)
+    result = format_grounded_answer("Paracetamol liều tối đa là bao nhiêu?", retrieved, citations, {})
+    assert result.rag_grounded is True
+    assert all("TT22" not in citation.legal_basis for citation in result.citations)
+
+def test_citations_expose_stable_chunk_id_and_exact_evidence_excerpt():
+    from app.services.rag.types import RetrievedChunk
+    chunk = RagChunk("core_inns_monographs_2_1", "Dược thư", "Dược thư Quốc gia", "Paracetamol", "Paracetamol", "Liều tối đa: 4 g mỗi ngày.", [], "monograph")
+    citation = build_claim_citations([RetrievedChunk(chunk, 0.03)])[0]
+    serialized = citation.to_dict()
+    assert serialized["chunk_id"] == "core_inns_monographs_2_1"
+    assert "Liều tối đa" in serialized["excerpt"]
+
+def test_low_retrieval_scores_do_not_inflate_confidence():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RetrievedChunk
+    chunk = RagChunk("chunk", "source", "basis", "section", "Question-matching source", "Evidence content", [], "monograph")
+    result = format_grounded_answer("question", [RetrievedChunk(chunk, 0.0002)], build_claim_citations([RetrievedChunk(chunk, 0.0002)]), {})
+    assert result.confidence_score < 0.5
+
 @pytest.mark.asyncio
 async def test_simple_fever_question_routes_to_triage_and_asks_for_context():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -185,3 +235,25 @@ async def test_general_fever_reference_uses_clinician_language_without_patient_i
     assert data["intent"] == "CLINICAL_FEVER_TRIAGE_PROTOCOL"
     assert "người bệnh" in data["reply_text"].casefold()
     assert "nếu bạn là người lớn" not in data["reply_text"].casefold()
+
+@pytest.mark.asyncio
+async def test_chat_does_not_claim_grounded_when_weak_retrieval_has_a_citation():
+    from app.services.rag import rag_pipeline
+    from app.services.rag.types import RagChunk, RetrievedChunk
+    from app.services.rag.citation_grounder import build_claim_citations, format_grounded_answer
+    unrelated = RagChunk("weak", "TT22", "TT22/2011", "Tủ trực", "Quy trình bàn giao", "Đếm thuốc khi giao ca.", [], "circular")
+    async def weak_result(query, **kwargs):
+        retrieved = [RetrievedChunk(unrelated, 0.0001)]
+        return format_grounded_answer(query, retrieved, build_claim_citations(retrieved), {})
+    original = rag_pipeline.execute_clinical_rag
+    rag_pipeline.execute_clinical_rag = weak_result
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/api/v1/copilot/chat", json={"query": "cơ chế của XZQ-unknown có ảnh hưởng chuyển hóa như thế nào"})
+        data = response.json()
+        assert response.status_code == 200
+        assert data["rag_grounded"] is False
+        assert data["citations"] == []
+        assert data["source_status"] == "insufficient_retrieval_evidence"
+    finally:
+        rag_pipeline.execute_clinical_rag = original
