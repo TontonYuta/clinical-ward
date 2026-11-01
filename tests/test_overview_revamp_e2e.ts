@@ -92,6 +92,19 @@ async function main() {
   }
   console.log('✅ Medication Center: Sample data hidden by default, live filter successfully shows Adrenalin.');
 
+  // Test opening DavDrugDetailModal directly from overview drug search
+  console.log('--- 4B. Testing DavDrugDetailModal from Overview Drug Search ---');
+  await medAdrenalin.click();
+  await page.waitForTimeout(500);
+
+  const davModal = page.locator('[data-testid="dav-drug-detail-modal"]');
+  await davModal.waitFor({ state: 'visible', timeout: 5000 });
+  console.log('✅ DavDrugDetailModal opened successfully from overview drug search!');
+  const closeDavBtn = page.locator('[data-testid="btn-close-dav-detail"]');
+  await closeDavBtn.click();
+  await davModal.waitFor({ state: 'hidden', timeout: 5000 });
+  await page.waitForTimeout(300);
+
   // 5. Verify Attached Legal Documents & PDFs
   console.log('--- 5. Verifying Attached Legal Documents ---');
   const legalDocsSection = page.locator('h3:has-text("Tài Liệu Đính Kèm")');

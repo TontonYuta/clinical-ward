@@ -40,6 +40,9 @@ import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { PatientDetailModal } from './components/Modals/PatientDetailModal';
 import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
+import { DavDrugDetailModal } from './components/Modals/DavDrugDetailModal';
+import { ALL_MASTER_MEDICATIONS, removeVietnameseTones } from './data/medicationMasterData';
+import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
@@ -115,6 +118,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [showTelegramToast, setShowTelegramToast] = useState<boolean>(false);
   const [isDrugRegistryOpen, setIsDrugRegistryOpen] = useState<boolean>(false);
   const [drugRegistrySearch, setDrugRegistrySearch] = useState('');
+  const [selectedDrugForDavGlobal, setSelectedDrugForDavGlobal] = useState<MasterMedication | null>(null);
   const [selectedPatientForGlobalModal, setSelectedPatientForGlobalModal] = useState<string | null>(null);
   const [patients, setPatients] = useState<PatientProfile[]>(INITIAL_PATIENTS);
   const [fontScale, setFontScale] = useState(getInitialFontScale);
@@ -140,8 +144,41 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   }, []);
 
   const handleOpenMedicationSafety = (medNameOrId?: string) => {
-    setDrugRegistrySearch(medNameOrId?.trim() || '');
-    setIsDrugRegistryOpen(true);
+    if (!medNameOrId || !medNameOrId.trim()) {
+      setDrugRegistrySearch('');
+      setIsDrugRegistryOpen(true);
+      return;
+    }
+    const raw = medNameOrId.trim();
+    const clean = removeVietnameseTones(raw);
+    const found = ALL_MASTER_MEDICATIONS.find((m) => {
+      const b = removeVietnameseTones(m.brandName);
+      const a = removeVietnameseTones(m.activeIngredient);
+      const c = (m.nationalCode || '').toLowerCase();
+      const id = (m.id || '').toLowerCase();
+      return b === clean || a === clean || id === clean || c === clean ||
+             b.includes(clean) || clean.includes(b) ||
+             a.includes(clean) || clean.includes(a);
+    });
+
+    if (found) {
+      setSelectedDrugForDavGlobal(found);
+    } else {
+      const fallbackDrug: MasterMedication = {
+        id: `med-${Date.now()}`,
+        brandName: raw,
+        activeIngredient: raw,
+        concentration: '',
+        route: '',
+        nationalCode: raw,
+        group: 'Thuốc điều trị',
+        isHighAlert: false,
+        isNarcotic: false,
+        isCrashCart: false,
+        searchAliases: [],
+      };
+      setSelectedDrugForDavGlobal(fallbackDrug);
+    }
   };
 
   const handleChatPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -1862,6 +1899,13 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onClose={() => setIsDrugRegistryOpen(false)}
           initialSearch={drugRegistrySearch}
           onSelectMedication={(name) => { setDrugRegistrySearch(name); setIsDrugRegistryOpen(true); }}
+        />
+
+        {/* Modal Thẻ Thông Tin Thuốc Chuẩn Toàn Cục (DavDrugDetailModal) */}
+        <DavDrugDetailModal
+          isOpen={!!selectedDrugForDavGlobal}
+          onClose={() => setSelectedDrugForDavGlobal(null)}
+          drug={selectedDrugForDavGlobal}
         />
 
         {/* Modal Chi Tiết Hồ Sơ Bệnh Nhân Toàn Cục */}
