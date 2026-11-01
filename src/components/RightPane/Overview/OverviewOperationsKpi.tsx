@@ -48,25 +48,25 @@ export const OverviewOperationsKpi: React.FC<OverviewOperationsKpiProps> = ({
   return (
     <div className="space-y-3">
       {/* 1. Thẻ KPI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {kpis.map((kpi) => (
           <button
             key={kpi.label}
             type="button"
             onClick={() => onTabChange(kpi.tab)}
-            className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
-              kpi.alert ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200 hover:border-slate-300'
+            className={`p-4 rounded-2xl border text-left transition cursor-pointer flex items-center justify-between ${
+              kpi.alert ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xs'
             }`}
           >
             <div>
-              <span className="text-2xs text-slate-500 font-medium block">
+              <span className="text-xs sm:text-sm text-slate-600 font-semibold block">
                 {kpi.label}
               </span>
-              <span className={`text-lg font-mono font-bold mt-0.5 block ${kpi.alert ? 'text-amber-900' : 'text-slate-900'}`}>
+              <span className={`text-xl sm:text-2xl font-mono font-bold mt-1 block ${kpi.alert ? 'text-amber-900' : 'text-slate-900'}`}>
                 {kpi.value}
               </span>
             </div>
-            <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
           </button>
         ))}
       </div>

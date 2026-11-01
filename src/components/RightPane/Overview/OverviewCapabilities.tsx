@@ -49,7 +49,7 @@ export const OverviewCapabilities: React.FC<OverviewCapabilitiesProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {capabilities.map((cap) => {
         const isAllowed = allowedTabs.includes(cap.tab);
         return (
@@ -58,28 +58,28 @@ export const OverviewCapabilities: React.FC<OverviewCapabilitiesProps> = ({
             type="button"
             disabled={!isAllowed}
             onClick={() => isAllowed && onTabChange(cap.tab)}
-            className={`p-3.5 rounded-xl border text-left transition flex flex-col justify-between ${
+            className={`p-4 sm:p-5 rounded-2xl border text-left transition flex flex-col justify-between ${
               isAllowed
-                ? 'bg-white border-slate-200 hover:border-teal-400 hover:shadow-2xs cursor-pointer group'
+                ? 'bg-white border-slate-200 hover:border-teal-500 hover:shadow-md cursor-pointer group'
                 : 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
             }`}
           >
             <div>
-              <div className="flex items-center justify-between text-2xs text-slate-500 mb-1 font-medium">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5 font-semibold">
                 <span>{cap.tag}</span>
-                {!isAllowed && <Lock className="w-3 h-3 text-slate-400" />}
+                {!isAllowed && <Lock className="w-3.5 h-3.5 text-slate-400" />}
               </div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug group-hover:text-teal-900">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug group-hover:text-teal-900">
                 {cap.title}
               </h3>
-              <p className="text-2xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 mt-1.5 line-clamp-2 leading-relaxed">
                 {cap.summary}
               </p>
             </div>
 
-            <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-2xs font-semibold text-teal-800">
+            <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs sm:text-sm font-semibold text-teal-800">
               <span>{isAllowed ? 'Mở phân hệ' : 'Khóa'}</span>
-              {isAllowed && <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />}
+              {isAllowed && <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />}
             </div>
           </button>
         );

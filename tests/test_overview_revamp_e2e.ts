@@ -26,15 +26,16 @@ async function main() {
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(600);
 
-  // 1. Verify Header & Branding
+  // 1. Verify Header & Branding & Prominent AI Copilot
   console.log('--- 1. Verifying Header & Branding ---');
   const title = page.locator('h1:has-text("Tổng quan trạm làm việc")');
   await title.waitFor({ state: 'visible', timeout: 5000 });
-  const copilotBtn = page.getByRole('button', { name: 'Trợ lý AI', exact: true });
-  if (!(await copilotBtn.isVisible())) {
-    throw new Error('FAIL: AI Copilot button not visible!');
+  const copilotBanner = page.locator('h2:has-text("Trợ lý AI Lâm Sàng Y Khoa")');
+  const copilotBtn = page.locator('button:has-text("Mở Trợ lý AI (⌘K)")');
+  if (!(await copilotBanner.isVisible()) || !(await copilotBtn.isVisible())) {
+    throw new Error('FAIL: Prominent AI Copilot banner or button not visible!');
   }
-  console.log('✅ Header & AI Copilot button visible.');
+  console.log('✅ Header & Prominent AI Copilot visible.');
 
   // 2. Verify 4 Core Capabilities
   console.log('--- 2. Verifying 4 Core Capabilities ---');
@@ -48,31 +49,49 @@ async function main() {
   }
   console.log('✅ All 4 Workstation Capabilities displayed.');
 
-  // 3. Verify Patient Clinical Center
+  // 3. Verify Patient Clinical Center (No sample data, live filter only)
   console.log('--- 3. Verifying Patient Clinical Center ---');
   const patientCenter = page.locator('h3:has-text("Thông tin bệnh nhân")');
   if (!(await patientCenter.isVisible())) {
     throw new Error('FAIL: Patient Center header missing!');
   }
+  // Check empty state guidance message is present
+  const patientGuide = page.locator('text=Nhập họ tên hoặc mã bệnh nhân để tìm kiếm hồ sơ');
+  if (!(await patientGuide.isVisible())) {
+    throw new Error('FAIL: Initial empty-state guidance missing in Patient Center!');
+  }
+  // Type search query to filter
+  const patientInput = page.locator('input[placeholder*="Nhập tên, mã BN"]');
+  await patientInput.fill('Võ Minh Trí');
+  await page.waitForTimeout(300);
+
   const patientTri = page.locator('button:has-text("Võ Minh Trí")');
   if (!(await patientTri.isVisible())) {
-    throw new Error('FAIL: Key patient Võ Minh Trí not listed!');
+    throw new Error('FAIL: Filtered patient Võ Minh Trí not listed after typing query!');
   }
-  console.log('✅ Patient Center with key patients (Võ Minh Trí, etc.) displayed.');
+  console.log('✅ Patient Center: Sample data hidden by default, live filter successfully shows Võ Minh Trí.');
 
-  // 4. Verify Medication Center
+  // 4. Verify Medication Center (No sample data, live filter only)
   console.log('--- 4. Verifying Medication Center ---');
   const medCenter = page.locator('h3:has-text("Thông tin thuốc")');
   if (!(await medCenter.isVisible())) {
     throw new Error('FAIL: Medication Center header missing!');
   }
-  const medAdrenalin = page.locator('text=Adrenalin 1mg/1ml');
-  const medMorphin = page.locator('text=Morphin 10mg/1ml');
-  const medKcl = page.locator('text=Kali Clorid 10% (KCl)');
-  if (!(await medAdrenalin.isVisible()) || !(await medMorphin.isVisible()) || !(await medKcl.isVisible())) {
-    throw new Error('FAIL: One or more essential medication chips missing!');
+  // Check empty state guidance message is present
+  const medGuide = page.locator('text=Nhập tên thuốc hoặc hoạt chất để tra cứu');
+  if (!(await medGuide.isVisible())) {
+    throw new Error('FAIL: Initial empty-state guidance missing in Medication Center!');
   }
-  console.log('✅ Medication Center with essential emergency & controlled drugs displayed.');
+  // Type search query to filter
+  const medInput = page.locator('input[placeholder*="Nhập tên biệt dược"]');
+  await medInput.fill('Adrenalin');
+  await page.waitForTimeout(300);
+
+  const medAdrenalin = page.locator('button:has-text("Adrenalin")').first();
+  if (!(await medAdrenalin.isVisible())) {
+    throw new Error('FAIL: Filtered medication Adrenalin not listed after typing query!');
+  }
+  console.log('✅ Medication Center: Sample data hidden by default, live filter successfully shows Adrenalin.');
 
   // 5. Verify Attached Legal Documents & PDFs
   console.log('--- 5. Verifying Attached Legal Documents ---');

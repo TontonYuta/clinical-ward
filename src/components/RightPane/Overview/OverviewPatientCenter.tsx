@@ -1,10 +1,11 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Trung Tâm Thông Tin Bệnh Nhân Tối Giản (<=200 LOC)
+ * Trung Tâm Thông Tin Bệnh Nhân - Lọc Theo Từ Khóa (<=200 LOC)
  */
 
 import React, { useState } from 'react';
+import { Search, X, User } from 'lucide-react';
 import { INITIAL_PATIENTS } from '../../../services/patientService';
 import { normalizeLookupQuery } from '../flatDashboardModel';
 
@@ -19,93 +20,130 @@ export const OverviewPatientCenter: React.FC<OverviewPatientCenterProps> = ({
 }) => {
   const [query, setQuery] = useState('');
 
+  const cleanQuery = normalizeLookupQuery(query).toLowerCase();
+
+  // Chỉ lọc khi người dùng đã nhập từ khóa (không hiển thị danh sách mẫu)
+  const filteredPatients = cleanQuery
+    ? INITIAL_PATIENTS.filter((p) => {
+        const nameMatch = p.fullName?.toLowerCase().includes(cleanQuery);
+        const idMatch = p.id.toLowerCase().includes(cleanQuery);
+        const roomMatch = p.room?.toLowerCase().includes(cleanQuery);
+        const diagMatch = (p.diagnosis || p.chronicConditions || '').toLowerCase().includes(cleanQuery);
+        return nameMatch || idMatch || roomMatch || diagMatch;
+      })
+    : [];
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = normalizeLookupQuery(query);
-    if (clean) onOpenPatient(clean);
+    if (cleanQuery && filteredPatients.length > 0) {
+      onOpenPatient(filteredPatients[0].fullName || filteredPatients[0].id);
+    }
   };
 
-  const samplePatients = INITIAL_PATIENTS.slice(0, 3);
-
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-3">
-      {/* 1. Header & Thanh Tìm Kiếm */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
+      {/* 1. Header & Thanh Tìm Kiếm Bệnh Nhân */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
             Thông tin bệnh nhân
           </h3>
-          <span className="text-2xs font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
-            {INITIAL_PATIENTS.length} NB
+          <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+            {INITIAL_PATIENTS.length} hồ sơ
           </span>
         </div>
 
         {canSearch && (
-          <form onSubmit={handleSearch} className="flex items-center gap-1.5 w-full sm:w-64">
+          <form onSubmit={handleSearch} className="relative flex items-center w-full sm:w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Mã BN hoặc họ tên..."
-              className="flex-1 px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600"
+              placeholder="Nhập tên, mã BN hoặc phòng..."
+              className="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-teal-600 transition"
             />
-            <button
-              type="submit"
-              className="px-3 py-1.5 text-xs font-semibold bg-teal-800 hover:bg-teal-900 text-white rounded-lg transition cursor-pointer shrink-0"
-            >
-              Tìm
-            </button>
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-2.5 p-0.5 text-slate-400 hover:text-slate-600"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </form>
         )}
       </div>
 
-      {/* 2. Danh sách bệnh nhân ngắn gọn */}
-      <div className="divide-y divide-slate-100">
-        {samplePatients.map((p) => {
-          const hasAllergy = p.allergies && !p.allergies.toLowerCase().includes('không');
-          const isRenal = p.egfr && p.egfr < 60;
-          return (
-            <div
-              key={p.id}
-              className="py-2 first:pt-0 last:pb-0 flex items-center justify-between gap-2 text-xs"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
+      {/* 2. Danh sách kết quả lọc hoặc hướng dẫn */}
+      <div>
+        {!cleanQuery ? (
+          <div className="py-8 text-center text-slate-500">
+            <User className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-medium text-slate-600">
+              Nhập họ tên hoặc mã bệnh nhân để tìm kiếm hồ sơ
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Hệ thống lọc trực tiếp thông tin lâm sàng, chẩn đoán và tiền sử dị ứng
+            </p>
+          </div>
+        ) : filteredPatients.length === 0 ? (
+          <div className="py-6 text-center text-slate-500 text-sm">
+            Không tìm thấy bệnh nhân phù hợp với từ khóa &ldquo;{query}&rdquo;
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {filteredPatients.map((p) => {
+              const hasAllergy = p.allergies && !p.allergies.toLowerCase().includes('không');
+              const isRenal = p.egfr && p.egfr < 60;
+              return (
+                <div
+                  key={p.id}
+                  className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 text-sm"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => onOpenPatient(p.fullName || p.id)}
+                        className="font-bold text-base text-slate-900 hover:text-teal-800 hover:underline cursor-pointer"
+                      >
+                        {p.fullName}
+                      </button>
+                      <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        {p.id}
+                      </span>
+                      <span className="text-slate-500 text-xs font-medium">· {p.room}</span>
+                    </div>
+                    <div className="text-xs sm:text-sm text-slate-600 flex items-center gap-2.5 mt-1 flex-wrap">
+                      <span className="truncate">{p.diagnosis || p.chronicConditions}</span>
+                      {hasAllergy && (
+                        <span className="text-rose-700 font-semibold shrink-0">
+                          · Dị ứng: {p.allergies}
+                        </span>
+                      )}
+                      {isRenal && (
+                        <span className="text-amber-800 font-semibold shrink-0">
+                          · eGFR: {p.egfr}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => onOpenPatient(p.fullName || p.id)}
-                    className="font-bold text-slate-900 hover:text-teal-800 hover:underline cursor-pointer"
+                    className="text-xs sm:text-sm font-semibold text-teal-800 hover:text-teal-950 px-3 py-1.5 rounded-lg hover:bg-teal-50 border border-slate-200 hover:border-teal-300 transition cursor-pointer shrink-0"
                   >
-                    {p.fullName}
+                    Xem hồ sơ &rarr;
                   </button>
-                  <span className="font-mono text-2xs text-slate-500">[{p.id}]</span>
-                  <span className="text-slate-500 text-2xs">· {p.room}</span>
                 </div>
-                <div className="text-2xs text-slate-600 flex items-center gap-2 mt-0.5">
-                  <span className="truncate">{p.diagnosis || p.chronicConditions}</span>
-                  {hasAllergy && (
-                    <span className="text-rose-700 font-semibold shrink-0">
-                      · Dị ứng: {p.allergies}
-                    </span>
-                  )}
-                  {isRenal && (
-                    <span className="text-amber-800 font-semibold shrink-0">
-                      · eGFR: {p.egfr}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onOpenPatient(p.fullName || p.id)}
-                className="text-2xs font-semibold text-slate-600 hover:text-teal-800 px-2 py-1 rounded hover:bg-slate-50 border border-slate-200 transition cursor-pointer shrink-0"
-              >
-                Hồ sơ &rarr;
-              </button>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
