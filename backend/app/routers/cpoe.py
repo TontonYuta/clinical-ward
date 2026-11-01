@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models.cpoe import CpoePrescription
 from app.schemas.cpoe import CpoeOrderCreate, CpoeOrderResponse, CpoeItemSchema
 from app.services.audit_service import record_audit_event
+from app.services.clinical_ddi_engine import evaluate_prescription
 
 router = APIRouter(prefix="/cpoe", tags=["Chỉ Định & Kê Đơn CPOE (TT 26/2025/TT-BYT)"])
 
@@ -72,6 +73,32 @@ async def create_cpoe_order(
 ):
     if payload.status != "draft":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tạo mới hiện chỉ hỗ trợ lưu bản nháp; chữ ký và phát hành cần workflow tích hợp")
+
+    ddi_report = evaluate_prescription([item.activeIngredient or item.medicationName for item in payload.items])
+    if ddi_report.has_contraindication:
+        pair_alerts = [
+            {
+                "severity": alert.severity.value,
+                "title": alert.title,
+                "drug_a": alert.drug_a,
+                "drug_b": alert.drug_b,
+                "mechanism": alert.mechanism,
+                "consequence": alert.clinical_consequence,
+                "action": alert.action_recommendation,
+                "source": alert.legal_evidence,
+            }
+            for alert in ddi_report.pair_alerts
+            if alert.severity.value == "CONTRAINDICATED"
+        ]
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "CPOE_CONTRAINDICATED_DDI",
+                "source_status": "contraindicated_pair",
+                "message": "Không thể lưu đơn nháp vì phát hiện cặp thuốc chống chỉ định. Điều chỉnh danh sách thuốc và rà soát lại.",
+                "pair_alerts": pair_alerts,
+            },
+        )
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     order_id = payload.id or f"RX-2026-{uuid.uuid4().hex[:6].upper()}"

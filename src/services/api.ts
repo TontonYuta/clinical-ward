@@ -314,7 +314,7 @@ export async function auditPrescriptionDdiApi(drugs: string[]) {
     body: JSON.stringify({ drugs })
   });
   if (!res.ok) throw new Error(`DDI audit backend error: ${res.status}`);
-  return res.json() as Promise<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean }>;
+  return res.json() as Promise<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean; analyzed_pairs_count: number; normalized_drugs: Array<{ raw: string; inn: string; display: string }> }>;
 }
 
 export async function queryPureRagApi(query: string, userRole: string = 'nurse', userName: string = 'ĐD. Lê Thị Thu', patientInfo?: any) {

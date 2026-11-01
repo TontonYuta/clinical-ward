@@ -200,5 +200,11 @@ def test_custom_rule_registration_endpoint():
 def test_check_pair_exposes_source_status_for_unindexed_pair():
     from app.routers.clinical_ddi import check_pair_endpoint, CheckPairRequest
     result = check_pair_endpoint(CheckPairRequest(drug_a="thuốc chưa biết alpha", drug_b="thuốc chưa biết beta"))
-    assert result["source_status"] == "not_indexed"
+    assert result["source_status"] == "none_found_in_checked_source"
     assert "không khẳng định" in result["coverage_note"].lower()
+
+def test_check_pair_returns_insufficient_data_for_unidentified_drugs():
+    from app.routers.clinical_ddi import check_pair_endpoint, CheckPairRequest
+    result = check_pair_endpoint(CheckPairRequest(drug_a="", drug_b=""))
+    assert result["source_status"] == "insufficient_data"
+    assert result["has_interaction"] is None

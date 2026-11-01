@@ -19,3 +19,11 @@ test('reports missing medicine collection and does not accept invented defaults'
   const errors = validatePrescriptionDraft({ patientName: 'A', diagnosisText: 'B', items: [] });
   assert.ok(errors.some((e) => e.includes('ít nhất một thuốc')));
 });
+
+test('validates every medicine in a multi-item prescription independently', () => {
+  const errors = validatePrescriptionDraft({
+    patientName: 'A', diagnosisText: 'B',
+    items: [valid.items[0], { ...valid.items[0], medicationName: 'Amoxicillin', dosage: '' }],
+  });
+  assert.ok(errors.some((error) => error.includes('Thuốc 2: cần ghi liều')));
+});

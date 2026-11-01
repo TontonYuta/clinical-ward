@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 import re
+import unicodedata
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.copilot import CopilotQuery, CopilotResponse, RagQuery, RagResponse
@@ -30,11 +31,19 @@ from app.security.guardrails import validate_input_guardrail, validate_output_gu
 
 router = APIRouter(prefix="/copilot", tags=["Trợ Lý Agent Lâm Sàng Thông Minh"])
 
+def resolve_copilot_identity(payload: CopilotQuery, request: Request) -> tuple[str, str, str]:
+    """Resolve trusted identity and ensure caller-chosen session IDs are owner-scoped."""
+    authenticated = getattr(request.state, "authenticated_user", None)
+    user_name = authenticated.username if authenticated else payload.user_name
+    user_role = authenticated.role if authenticated else payload.user_role
+    requested_session = (payload.session_id or "default_session").strip()
+    # Prefixing is idempotent, which keeps existing tests and legacy clients stable.
+    session_id = requested_session if requested_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{requested_session}"
+    return user_name, user_role, session_id
+
 @router.post("/chat", response_model=CopilotResponse)
-async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(get_db)):
-    user_role = payload.user_role
-    user_name = payload.user_name
-    session_id = payload.session_id or f"session_{user_name.replace(' ', '_')}"
+async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSession = Depends(get_db)):
+    user_name, user_role, session_id = resolve_copilot_identity(payload, request)
 
     # === LỚP BẢO MẬT INPUT GUARDRAIL: CHỐNG PROMPT INJECTION & SQL INJECTION ===
     guard_res = validate_input_guardrail(payload.query, user_role=user_role)
@@ -51,14 +60,22 @@ async def chat_with_copilot(payload: CopilotQuery, db: AsyncSession = Depends(ge
 
     # 0. Chào hỏi & hội thoại cơ bản (Greetings & Onboarding)
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
+    clean_greeting_ascii = "".join(ch for ch in unicodedata.normalize("NFKD", clean_greeting) if not unicodedata.combining(ch)).replace("đ", "d")
     greeting_tokens = set(clean_greeting.split())
+    wellbeing = any(term in clean_greeting_ascii for term in ("hom nay ban thay the nao", "hom nay ban the nao", "how are you", "how do you feel"))
     is_pure_greeting = clean_greeting in {
         "hi", "hello", "chao", "chào", "xin chao", "xin chào", "alo", "hey",
         "chao ban", "chào bạn", "chao bot", "chào bot", "chao em", "chào em",
         "chao bac si", "chào bác sĩ", "hi bot", "hello bot", "halo", "yo"
-    } or (len(greeting_tokens) <= 2 and any(t in greeting_tokens for t in ["hi", "hello", "alo", "hey"]))
+    } or (len(greeting_tokens) <= 2 and any(t in greeting_tokens for t in ["hi", "hello", "alo", "hey"])) or wellbeing
     if is_pure_greeting:
         role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Điều dưỡng"
+        if wellbeing:
+            return CopilotResponse(
+                intent="GREETING_WELLBEING",
+                reply_text=f"Tôi vẫn sẵn sàng hỗ trợ {role_label.lower()} {user_name}. Còn bạn hôm nay cảm thấy thế nào? Nếu đang hỏi về sức khỏe, hãy cho biết triệu chứng và thời gian xuất hiện.",
+                suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Hướng dẫn chức năng hệ thống"]
+            )
         welcome_reply = (
             f"Chào {role_label} {user_name}! Tôi là **Trợ lý Dược Lâm Sàng & Vận Hành Tủ Trực Bệnh Viện** "
             f"(tuân thủ TT 22/2011, TT 20/2017, TT 51/2017, NĐ 98/2021 & QĐ 5948/QĐ-BYT).\n\n"

@@ -68,8 +68,9 @@ async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> Co
     name_match = re.search(r"(?:bệnh nhân|cho|bn)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})", query)
     has_patient = bool(name_match or re.search(r"(?:bn|cccd|căn cước|hộ chiếu)\s*[:#]?\s*[\w-]+", lower_query))
     has_diagnosis = any(term in lower_query for term in ("viêm họng", "viêm phế quản", "viêm phổi", "sốt"))
-    med_match = re.search(r"(?:thuốc|dùng|kê)\s+([\wÀ-ỹ-]+(?:\s+\w+){0,2})", query, re.IGNORECASE)
-    has_medication = bool(med_match and med_match.group(1).lower() not in {"đau đầu", "cho tôi", "bệnh nhân"})
+    medication_terms = ("paracetamol", "augmentin", "amoxicillin", "ibuprofen", "omeprazol", "clopidogrel", "ciprofloxacin")
+    has_medication = any(re.search(rf"\b{term}\b", lower_query, re.IGNORECASE) for term in medication_terms)
+    has_medication = has_medication or bool(re.search(r"thuốc\s+[a-z0-9-]+", lower_query, re.IGNORECASE))
     missing = [label for present, label in ((has_patient, "định danh người bệnh"), (has_diagnosis, "chẩn đoán"), (has_medication, "tên thuốc")) if not present]
     if missing:
         return CopilotResponse(
@@ -97,7 +98,11 @@ async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> Co
     )
     return CopilotResponse(
         intent="CPOE_PRESCRIPTION",
-        reply_text=f"Thông tin đã đủ để mở form CPOE, nhưng chưa tạo đơn. Vui lòng nhập/chọn thông tin người bệnh, chẩn đoán, liều, số lần dùng, đường dùng, số lượng và thời gian dùng trong form rồi rà soát trước khi lưu bản nháp.",
+        reply_text=(
+            "Thông tin đã đủ để mở form CPOE, nhưng chưa tạo đơn. Vui lòng nhập/chọn thông tin người bệnh, chẩn đoán, "
+            "thuốc, liều, số lần dùng, đường dùng, số lượng và thời gian dùng trong form. Tương tác thuốc chưa được kiểm tra "
+            "cho đến khi chạy rà soát trên danh sách đầy đủ; nếu phát hiện cặp chống chỉ định, hệ thống sẽ chặn lưu đơn."
+        ),
         card=card,
         legal_basis="Thông tư 26/2025/TT-BYT - Điều 6 (đối chiếu nội dung kê đơn)",
         suggested_chips=["Dặn dò bệnh nhân uống thuốc", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"]

@@ -16,7 +16,7 @@ async function run() {
     const hit = await processClinicalAgentQueryAsync('Plavix tương tác với Nexium thế nào?', state);
     if (!hit.replyMessage.text.includes('Backend DDI result')) throw new Error('Does not use backend DDI result');
 
-    globalThis.fetch = async () => new Response(JSON.stringify({ has_interaction: false, source_status: 'not_indexed', coverage_note: 'Chưa được lập chỉ mục; không khẳng định an toàn.', alert: null }), { status: 200 });
+    globalThis.fetch = async () => new Response(JSON.stringify({ has_interaction: false, source_status: 'none_found_in_checked_source', coverage_note: 'Chưa được lập chỉ mục; không khẳng định an toàn.', alert: null }), { status: 200 });
     const clear = await processClinicalAgentQueryAsync('Plavix tương tác với Nexium thế nào?', state);
     if (!clear.replyMessage.text.includes('không khẳng định phối hợp an toàn') && !clear.replyMessage.text.includes('không khẳng định an toàn')) throw new Error('Missing uncertainty wording');
     if (clear.replyMessage.text.includes('không tìm thấy tương tác chống chỉ định')) throw new Error('Unindexed pair was presented as a negative clinical conclusion');

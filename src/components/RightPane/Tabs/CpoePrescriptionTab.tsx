@@ -116,34 +116,17 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
     };
   }, []);
 
-  const handleSaveOrder = (newOrder: PrescriptionOrder) => {
-    // 1. Cập nhật state nội bộ ngay lập tức và đưa lên đầu danh sách
+  const handleSaveOrder = async (newOrder: PrescriptionOrder) => {
+    // Persist first. A server DDI rejection must never look like a saved order locally.
+    const saved = await cpoeApi.createCpoeOrder(newOrder);
     setOrders((prev) => {
-      const next = [newOrder, ...prev.filter((o) => o.id !== newOrder.id)];
+      const next = [saved, ...prev.filter((o) => o.id !== saved.id)];
       try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
       return next;
     });
-
-    // 2. Tự động reset bộ lọc sang 'all' và xóa tìm kiếm để bác sĩ nhìn thấy ngay đơn vừa kê tại dòng 1
     setFilterType('all');
     setSearchQuery('');
-    try {
-      sessionStorage.setItem('cpoe_filter_type', 'all');
-      sessionStorage.setItem('cpoe_search_query', '');
-    } catch {}
-
-    // 3. Gửi persist tới backend và đồng bộ dữ liệu
-    cpoeApi.createCpoeOrder(newOrder)
-      .then((saved) => {
-        if (saved) {
-          setOrders((prev) => {
-            const next = prev.map((o) => (o.id === newOrder.id || o.id === saved.id ? { ...o, ...saved } : o));
-            try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
-            return next;
-          });
-        }
-      })
-      .catch((err) => console.warn('Could not persist CPOE order:', err));
+    try { sessionStorage.setItem('cpoe_filter_type', 'all'); sessionStorage.setItem('cpoe_search_query', ''); } catch {}
   };
 
   const outpatientCount = useMemo(() => orders.filter((o) => o.prescriptionType === 'outpatient').length, [orders]);

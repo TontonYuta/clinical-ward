@@ -368,3 +368,15 @@ async def test_cpoe_chat_draft_does_not_claim_ddi_was_cleared():
     assert "không có tương tác chống chỉ định" not in result.reply_text.casefold()
     assert result.card.card_type == "cpoe_prescription_draft"
     assert result.card.primary_action_type == "NAVIGATE_TAB"
+
+@pytest.mark.asyncio
+async def test_copilot_wellbeing_greeting_is_conversational():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Hôm nay bạn thấy thế nào?"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["intent"] == "GREETING_WELLBEING"
+    assert "cảm thấy thế nào" in body["reply_text"]

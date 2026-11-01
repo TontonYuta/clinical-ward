@@ -89,7 +89,11 @@ _SESSIONS: Dict[str, SessionState] = {}
 SESSION_TTL_SECONDS = 1800  # 30 phút
 
 def get_or_create_session(session_id: Optional[str], user_name: str = "Nhân viên y tế", user_role: str = "nurse") -> SessionState:
-    key = (session_id or user_name or "default_session").strip()
+    # Session keys are namespaced by the owner. Callers may provide a
+    # pre-namespaced key when authenticated identity differs from display name.
+    requested = (session_id or "default_session").strip()
+    owner = (user_name or "Nhân viên y tế").strip().casefold()
+    key = requested if requested.startswith(f"{owner}:") else f"{owner}:{requested}"
     now = time.time()
     
     # Dọn dẹp session quá hạn

@@ -5,19 +5,20 @@
  * Giao diện Workstation Mở Rộng 2 Cột, Đồng Bộ Kho Dược (Flat, Neutral Slate, Zero-Box)
  */
 
-import React, { useState } from 'react';
-import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2 } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType } from '../../../../types/cpoe';
 import { MasterMedication } from '../../../../types/medication';
 import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
 import { useModalDismiss } from '../../../../hooks/useModalDismiss';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
 import { validatePrescriptionDraft } from '../../../../services/prescriptionValidation';
+import { auditPrescriptionDdiApi } from '../../../../services/api';
 
 interface CpoeOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveOrder: (newOrder: PrescriptionOrder) => void;
+  onSaveOrder: (newOrder: PrescriptionOrder) => Promise<void>;
   doctorName?: string;
   onOpenSafetyGuide?: (medName: string) => void;
 }
@@ -56,15 +57,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const [isChronic, setIsChronic] = useState(false);
   const [daysPrescribed, setDaysPrescribed] = useState(0);
 
-  // Thông số thuốc kê đơn
-  const [medName, setMedName] = useState('');
-  const [activeIngredient, setActiveIngredient] = useState('');
-  const [unit, setUnit] = useState('Viên');
-  const [route, setRoute] = useState('');
-  const [quantity, setQuantity] = useState(0);
-  const [dosage, setDosage] = useState('');
-  const [frequency, setFrequency] = useState('');
-  const [instructions, setInstructions] = useState('');
+  type DraftMedication = { id: string; medicationName: string; activeIngredient: string; unit: string; route: string; quantity: number; dosage: string; frequency: string; instructions: string };
+  const emptyMedication = (): DraftMedication => ({ id: 'rxi-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), medicationName: '', activeIngredient: '', unit: 'Viên', route: '', quantity: 0, dosage: '', frequency: '', instructions: '' });
+  const [medications, setMedications] = useState<DraftMedication[]>([emptyMedication()]);
+  const [ddiAudit, setDdiAudit] = useState<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean } | null>(null);
+  const [ddiAuditUnavailable, setDdiAuditUnavailable] = useState(false);
+  const [ddiAuditLoading, setDdiAuditLoading] = useState(false);
+  const auditRevision = useRef(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [clinicalNotes, setClinicalNotes] = useState('');
 
@@ -98,30 +97,47 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     }
   };
 
-  const handleSelectMed = (med: MasterMedication) => {
-    setMedName(med.brandName);
-    setActiveIngredient(med.activeIngredient);
-    setUnit(med.standardUnit);
-    setRoute(med.route);
-    setQuantity(0);
-    setDosage('');
-    setFrequency('');
-    setInstructions('');
+  const refreshDdiAudit = async (items: DraftMedication[]) => {
+    const revision = ++auditRevision.current;
+    const ingredients = items.map((item) => item.activeIngredient || item.medicationName).filter(Boolean);
+    if (ingredients.length < 2) { setDdiAudit(null); setDdiAuditUnavailable(false); setDdiAuditLoading(false); return; }
+    setDdiAuditLoading(true);
+    setDdiAudit(null); setDdiAuditUnavailable(false);
+    try {
+      const result = await auditPrescriptionDdiApi(ingredients);
+      if (revision === auditRevision.current) setDdiAudit(result);
+    } catch {
+      if (revision === auditRevision.current) setDdiAuditUnavailable(true);
+    } finally {
+      if (revision === auditRevision.current) setDdiAuditLoading(false);
+    }
   };
-
-  const hasDdiWarning = medName.toLowerCase().includes('morphin') && diagnosisText.toLowerCase().includes('suy hô hấp');
-  const isHighAlertMed = /morphin|fentanyl|adrenalin|kali clorid|kcl/i.test(medName);
+  const handleSelectMed = (index: number, med: MasterMedication) => {
+    const next = medications.map((item, itemIndex) => itemIndex === index ? { ...item, medicationName: med.brandName, activeIngredient: med.activeIngredient, unit: med.standardUnit, route: med.route } : item);
+    setMedications(next); refreshDdiAudit(next);
+  };
+  const updateMedication = (index: number, field: keyof DraftMedication, value: string | number) => {
+    const next = medications.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item);
+    setMedications(next); refreshDdiAudit(next);
+  };
 
   const normalizeRoute = (r: string): PrescriptionOrder['items'][0]['route'] =>
     r.includes('bắp') ? 'Tiêm bắp' : r.includes('Truyền') ? 'Truyền tĩnh mạch' : r.includes('Uống') ? 'Uống' : r.includes('Hít') ? 'Hít' : r.includes('Đặt') ? 'Đặt' : 'Tiêm tĩnh mạch';
   const normalizeUnit = (u: string): PrescriptionOrder['items'][0]['unit'] =>
     (u === 'Lọ' || u === 'Viên' || u === 'Chai' || u === 'Hộp' || u === 'Vỉ') ? u : 'Ống';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errors = validatePrescriptionDraft({ patientName, diagnosisText, items: [{ medicationName: medName, dosage, frequency, route, quantity, durationDays: daysPrescribed }] });
+    const errors = validatePrescriptionDraft({ patientName, diagnosisText, items: medications.map((med) => ({ medicationName: med.medicationName, dosage: med.dosage, frequency: med.frequency, route: med.route, quantity: med.quantity, durationDays: daysPrescribed })) });
     setValidationErrors(errors);
-    if (errors.length) return;
+    const medicationCount = medications.filter((med) => med.activeIngredient.trim() || med.medicationName.trim()).length;
+    const auditRequired = medicationCount > 1;
+    if (errors.length || (auditRequired && (ddiAudit?.has_contraindication || ddiAuditUnavailable || ddiAuditLoading || !ddiAudit))) {
+      if (ddiAudit?.has_contraindication) setValidationErrors([...errors, 'Không thể lưu khi danh sách có cặp thuốc chống chỉ định.']);
+      if (ddiAuditUnavailable) setValidationErrors([...errors, 'Chưa kết nối được bộ kiểm tra tương tác; hãy thử lại trước khi lưu.']);
+      if (ddiAuditLoading) setValidationErrors([...errors, 'Đang kiểm tra tương tác thuốc; vui lòng chờ hoàn tất.']);
+      return;
+    }
 
     const matchedPatient = findPatientByNameOrQuery(patientName, INITIAL_PATIENTS);
     const finalPatientId = patientId || matchedPatient?.id || '';
@@ -132,7 +148,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     const finalGender = (patientGender || matchedPatient?.gender || '') as 'Nam' | 'Nữ' | '';
     const finalDept = department || '';
 
-    onSaveOrder({
+    try { await onSaveOrder({
       id: `DRAFT-${Date.now()}`,
       prescriptionType: rxType,
       patientId: finalPatientId,
@@ -154,19 +170,9 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       prescribedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
       status: 'draft',
       clinicalNotes: clinicalNotes.trim() || undefined,
-      items: [{
-        id: `rxi-${Date.now()}`,
-        medicationName: medName,
-        activeIngredient: activeIngredient,
-        dosage: dosage.trim(),
-        frequency: frequency.trim(),
-        route: normalizeRoute(route),
-        quantity,
-        unit: normalizeUnit(unit),
-        instructions: instructions.trim(), durationDays: daysPrescribed
-      }]
-    });
-    onClose();
+      items: medications.map((med) => ({ id: med.id, medicationName: med.medicationName, activeIngredient: med.activeIngredient, dosage: med.dosage.trim(), frequency: med.frequency.trim(), route: normalizeRoute(med.route), quantity: med.quantity, unit: normalizeUnit(med.unit), instructions: med.instructions.trim(), durationDays: daysPrescribed }))
+    }); onClose(); }
+    catch (error) { setValidationErrors([error instanceof Error ? error.message : 'Máy chủ chưa chấp nhận đơn thuốc.']); }
   };
 
   return (
@@ -484,151 +490,28 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
               {/* CỘT PHẢI: CHỈ ĐỊNH DƯỢC LÝ & AN TOÀN LÂM SÀNG CDSS (lg:col-span-6) */}
               <div className="lg:col-span-6 p-5 sm:p-6 space-y-4.5 bg-slate-50/50">
                 
-                {/* 4. Tra cứu thuốc Cổng Dược Quốc Gia */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                    <Pill className="w-3.5 h-3.5 text-slate-700" />
-                    <span>Tìm và chỉ định thuốc (Cổng Dược quốc gia) <span className="text-rose-500">*</span></span>
-                  </label>
-                  <MedicationSearchAutocomplete
-                    selectedMedicationName={medName}
-                    onSelect={handleSelectMed}
-                    defaultOnlyCrashCart={false}
-                    placeholder="Gõ tìm biệt dược, hoạt chất (adre, mor, ceftri, kcl)..."
-                  />
+                <div className={"flex justify-between items-center"}>
+                  <h4 className="text-xs font-bold uppercase">Danh sách thuốc kê đơn</h4>
+                  <button type="button" onClick={() => setMedications((xs) => [...xs, emptyMedication()])} className="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs"><Plus className="w-4 h-4 inline"/> Thêm thuốc</button>
                 </div>
-
-                {/* 5. Thông số hoạt chất, liều lượng & đường dùng */}
-                <div className="space-y-3 pt-3 border-t border-slate-200">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Quy Cách, Đường Dùng &amp; Số Lượng Kê
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Hoạt chất / Tên gốc
-                      </label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={activeIngredient}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-100/80 text-slate-800 text-sm font-medium"
-                      />
+                {medications.map((medication, index) => (
+                  <section key={medication.id} className="p-3 border rounded-xl bg-white space-y-3">
+                    <div className="flex justify-between"><b>Thuốc {index + 1}</b>{medications.length > 1 && <button type="button" aria-label={"Xóa thuốc " + (index + 1)} onClick={() => { const next = medications.filter((_, i) => i !== index); setMedications(next); refreshDdiAudit(next); }}><Trash2 className="w-4 h-4"/></button>}</div>
+                    <MedicationSearchAutocomplete selectedMedicationName={medication.medicationName} onSelect={(med) => handleSelectMed(index, med)} defaultOnlyCrashCart={false} placeholder="Tìm biệt dược hoặc hoạt chất"/>
+                    <p className="text-xs">Hoạt chất: {medication.activeIngredient}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input aria-label="Liều mỗi lần" placeholder="Liều mỗi lần" value={medication.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} className="border rounded p-2"/>
+                      <input aria-label="Tần suất" placeholder="Tần suất" value={medication.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="border rounded p-2"/>
+                      <select aria-label="Đường dùng" value={medication.route} onChange={(e) => updateMedication(index, "route", e.target.value)} className="border rounded p-2"><option value="">Đường dùng</option><option>Uống</option><option>Tiêm bắp</option><option>Tiêm tĩnh mạch</option><option>Truyền tĩnh mạch</option><option>Đặt</option><option>Hít</option></select>
+                      <input aria-label="Số lượng" type="number" min="1" value={medication.quantity} onChange={(e) => updateMedication(index, "quantity", Number(e.target.value) || 0)} className="border rounded p-2"/>
+                      <select aria-label="Đơn vị" value={medication.unit} onChange={(e) => updateMedication(index, "unit", e.target.value)} className="border rounded p-2">{["Viên","Ống","Lọ","Chai","Hộp","Vỉ"].map((u) => <option key={u}>{u}</option>)}</select>
+                      <input aria-label="Hướng dẫn sử dụng" placeholder="Hướng dẫn sử dụng" value={medication.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} className="border rounded p-2"/>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Đường dùng
-                      </label>
-                      <select
-                        value={route}
-                        onChange={(e) => setRoute(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer transition font-medium"
-                      >
-                        <option value="">-- Chọn đường dùng --</option>
-                        <option value="Uống">Đường uống</option>
-                        <option value="Tiêm tĩnh mạch">Tiêm tĩnh mạch (IV)</option>
-                        <option value="Tiêm bắp">Tiêm bắp (IM)</option>
-                        <option value="Truyền tĩnh mạch">Truyền tĩnh mạch (IV Infusion)</option>
-                        <option value="Đặt">Đặt trực tràng</option>
-                        <option value="Hít">Khí dung / Hít</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Đơn vị tính
-                      </label>
-                      <select
-                        value={unit}
-                        onChange={(e) => setUnit(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer transition font-medium"
-                      >
-                        <option value="Viên">Viên</option>
-                        <option value="Ống">Ống</option>
-                        <option value="Lọ">Lọ</option>
-                        <option value="Chai">Chai</option>
-                        <option value="Hộp">Hộp</option>
-                        <option value="Vỉ">Vỉ</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Số lượng cấp phát <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(0, Number(e.target.value) || 0))}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-base font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 transition"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Liều mỗi lần dùng
-                      </label>
-                      <input
-                        type="text"
-                        value={dosage}
-                        onChange={(e) => setDosage(e.target.value)}
-                        placeholder="VD: 1 viên/lần, 1 ống/lần"
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 transition font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Tần suất chỉ định
-                      </label>
-                      <input
-                        type="text"
-                        value={frequency}
-                        onChange={(e) => setFrequency(e.target.value)}
-                        placeholder="VD: 2 lần/ngày (Sáng - Chiều)"
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 transition font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Hướng dẫn sử dụng &amp; Dặn dò người bệnh
-                    </label>
-                    <input
-                      type="text"
-                      value={instructions}
-                      onChange={(e) => setInstructions(e.target.value)}
-                      placeholder="VD: Uống sau khi ăn no 30 phút, uống nhiều nước"
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 transition"
-                    />
-                  </div>
-                </div>
-
+                  </section>
+                ))}
+                {(ddiAuditUnavailable || ddiAudit?.has_contraindication || (ddiAudit?.pair_alerts?.length ?? 0) > 0) && <div role="alert" className="p-3 border rounded text-xs"><b>{ddiAuditUnavailable ? "Chưa kiểm tra được tương tác" : ddiAudit?.has_contraindication ? "Chống chỉ định phối hợp — không thể lưu đơn" : "Cảnh báo tương tác cần rà soát"}</b>{ddiAudit?.pair_alerts?.map((a, i) => <p key={i}>{a.title} ({a.severity}) — {a.consequence}; Xử trí: {a.action}; Nguồn: {a.source}</p>)}</div>}
                 {/* 6. Cảnh báo an toàn lâm sàng CDSS */}
                 <div className="space-y-3 pt-3 border-t border-slate-200">
-                  {hasDdiWarning && (
-                    <div className="p-3 bg-rose-50 border border-rose-300 rounded-lg flex items-start gap-2.5 text-rose-900 text-xs font-medium">
-                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="font-bold">Cảnh báo CDSS nghiêm trọng:</strong> Chống chỉ định dùng Morphin trên người bệnh suy hô hấp!
-                      </div>
-                    </div>
-                  )}
-
-                  {isHighAlertMed && (
-                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2.5 text-amber-900 text-xs font-medium">
-                      <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="font-bold">Thuốc cảnh báo cao (High-Alert / TT 20):</strong> Yêu cầu điều dưỡng kiểm tra chéo (Double-check) trước khi cấp phát và hoàn trả vỏ thuốc đúng quy trình.
-                      </div>
-                    </div>
-                  )}
-
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Ghi chú lâm sàng cho Dược sĩ / Điều dưỡng phát thuốc (Tùy chọn)

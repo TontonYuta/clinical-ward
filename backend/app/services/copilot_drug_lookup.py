@@ -118,6 +118,22 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
     )
     res = await db.execute(stmt)
     drugs = res.scalars().all()
+    if not drugs and len(kw.split()) == 1:
+        # Exact token matching in the formulary is safer than treating a
+        # known name as an inventory typo suggestion.
+        token = kw.casefold()
+        candidate_result = await db.execute(
+            select(DavNationalDrug)
+            .where(or_(
+                func.lower(DavNationalDrug.brand_name).like(f"%{token}%"),
+                func.lower(DavNationalDrug.active_ingredient).like(f"%{token}%")
+            ))
+            .limit(20)
+        )
+        candidates = candidate_result.scalars().all()
+        drugs = [drug for drug in candidates if
+                 token in drug.brand_name.casefold().split() or
+                 token in drug.active_ingredient.casefold().replace(";", " ").replace("+", " ").split()]
 
     if not drugs:
         # Nếu từ khóa là triệu chứng hoặc chỉ định lâm sàng -> Chuyển sang Pure RAG
@@ -155,7 +171,7 @@ async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: st
                 best_ratio = max_r
                 best_batch = b
 
-        if best_batch and best_ratio >= 0.55:
+        if best_batch and 0.55 <= best_ratio < 0.99:
             sdk_code = best_batch.registration_number or best_batch.national_code or "Đang cập nhật"
             active_name = best_batch.active_ingredient or best_batch.item_name
             reply = (

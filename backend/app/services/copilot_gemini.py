@@ -1,4 +1,5 @@
 import time
+import hashlib
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,9 +42,15 @@ from app.security.guardrails import validate_output_guardrail
 _RESPONSE_CACHE: dict[str, tuple[str, float]] = {}
 CACHE_TTL_SEC = 3600.0  # 1 hour
 MAX_CACHE_ITEMS = 200
+PROMPT_CACHE_VERSION = "v2"
+TOTAL_GEMINI_DEADLINE_SEC = 12.0
+
+def _cache_key(prompt: str) -> str:
+    material = f"{PROMPT_CACHE_VERSION}\0{SYSTEM_PROMPT}\0{prompt.strip()}".encode("utf-8")
+    return hashlib.sha256(material).hexdigest()
 
 async def query_gemini_models(prompt: str, api_key: str) -> str | None:
-    cache_key = prompt.strip().lower()
+    cache_key = _cache_key(prompt)
     cached = _RESPONSE_CACHE.get(cache_key)
     if cached:
         text, timestamp = cached
@@ -57,11 +64,15 @@ async def query_gemini_models(prompt: str, api_key: str) -> str | None:
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 800}
     }
-    async with httpx.AsyncClient(timeout=8.0) as client:
+    deadline = time.monotonic() + TOTAL_GEMINI_DEADLINE_SEC
+    async with httpx.AsyncClient(timeout=httpx.Timeout(4.0, connect=2.0)) as client:
         for model in models:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             try:
-                res = await client.post(url, json=payload)
+                res = await client.post(url, json=payload, timeout=httpx.Timeout(min(4.0, remaining), connect=min(2.0, remaining)))
                 if res.status_code == 200:
                     data = res.json()
                     candidates = data.get("candidates", [])

@@ -96,6 +96,14 @@ def audit_prescription_endpoint(req: AuditPrescriptionRequest):
 
 @router.post("/check-pair")
 def check_pair_endpoint(req: CheckPairRequest):
+    if not req.drug_a.strip() or not req.drug_b.strip():
+        return {
+            "has_interaction": None,
+            "alert": None,
+            "source_status": "insufficient_data",
+            "source": "QĐ 5948/QĐ-BYT: Bảng 3.1 và Bảng 3.2",
+            "coverage_note": "Cần tên hoặc hoạt chất của cả hai thuốc để thực hiện kiểm tra.",
+        }
     ctx = None
     if req.patient_context:
         ctx = PatientClinicalContext(
@@ -111,7 +119,7 @@ def check_pair_endpoint(req: CheckPairRequest):
         return {
             "has_interaction": False,
             "alert": None,
-            "source_status": "not_indexed",
+            "source_status": "none_found_in_checked_source",
             "source": "QĐ 5948/QĐ-BYT: Bảng 3.1 và Bảng 3.2",
             "coverage_note": "Chưa tìm thấy trong chỉ mục hiện có; kết quả không khẳng định phối hợp an toàn.",
         }

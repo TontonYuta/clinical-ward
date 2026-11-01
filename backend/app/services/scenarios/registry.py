@@ -76,15 +76,23 @@ async def dispatch_clinical_scenario(
     # 1. Nạp session và kiểm tra ngữ cảnh đa lượt (AMIE Multi-turn context)
     session = get_or_create_session(session_id, user_name, user_role)
     
-    # 2. Tra cứu danh sách bệnh nhân, đơn thuốc và kho dược
-    res = await db.execute(select(PatientProfile))
-    all_patients = res.scalars().all()
-    
-    rx_res = await db.execute(select(CpoePrescription))
-    all_rxs = rx_res.scalars().all()
-
-    batch_res = await db.execute(select(InventoryBatch))
-    all_batches = batch_res.scalars().all()
+    # Load only domain tables required by a candidate scenario. Drug-only and
+    # conversational scenarios must never scan patient and inventory records.
+    lower = lower_query
+    needs_patients = any(term in lower for term in ("bệnh nhân", "bn ", "hồ sơ", "bệnh án", "dị ứng", "tiền sử", "creatinin", "egfr", "chức năng thận", "đơn thuốc của", "patient", "medication of"))
+    needs_inventory = any(term in lower for term in ("tồn kho", "còn bao nhiêu", "lô thuốc", "hạn dùng", "fefo", "vị trí kho", "kệ nào", "tủ nào"))
+    all_patients = []
+    all_rxs = []
+    all_batches = []
+    if needs_patients:
+        res = await db.execute(select(PatientProfile))
+        all_patients = res.scalars().all()
+        if any(term in lower for term in ("đơn thuốc", "đơn của", "kê đơn", "prescription")):
+            rx_res = await db.execute(select(CpoePrescription))
+            all_rxs = rx_res.scalars().all()
+    if needs_inventory:
+        batch_res = await db.execute(select(InventoryBatch))
+        all_batches = batch_res.scalars().all()
     
     # 3. Định danh bệnh nhân trong câu truy vấn (Tránh nhầm 'trí' trong 'xử trí')
     detected_patient = None
