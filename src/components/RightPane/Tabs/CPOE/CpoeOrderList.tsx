@@ -5,7 +5,6 @@
  */
 
 import React, { useMemo } from 'react';
-import { Eye, FileText } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 import { CpoeOrderCard } from './CpoeOrderCard';
 
@@ -20,22 +19,13 @@ interface CpoeOrderListProps {
 }
 
 function normalizeSearch(str: string): string {
-  return (str || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'd')
-    .trim();
+  return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').trim();
 }
 
 function formatDoctorDisplay(name?: string): string {
   if (!name) return '';
   const trimmed = name.trim();
-  if (/^(bs[\.:\s]|bác sĩ|dr\.)/i.test(trimmed)) {
-    return trimmed;
-  }
-  return `BS. ${trimmed}`;
+  return /^(bs[\.:\s]|bác sĩ|dr\.)/i.test(trimmed) ? trimmed : `BS. ${trimmed}`;
 }
 
 export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
@@ -52,26 +42,19 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
     const qNorm = normalizeSearch(searchQuery);
 
     return orders.filter((o) => {
-      // 1. Lọc theo loại đơn
       if (filterType !== 'all' && o.prescriptionType !== filterType) return false;
-
-      // 2. Tìm kiếm từ khóa
       if (!qRaw) return true;
 
-      const idMatch = o.id.toLowerCase().includes(qRaw);
-      const nameMatch = o.patientName.toLowerCase().includes(qRaw) || normalizeSearch(o.patientName).includes(qNorm);
-      const patientIdMatch = o.patientId.toLowerCase().includes(qRaw);
-      const cccdMatch = (o.patientCccd || '').toLowerCase().includes(qRaw);
-      const icdMatch = o.diagnosisIcd10.toLowerCase().includes(qRaw);
-      const diagMatch = o.diagnosisText.toLowerCase().includes(qRaw) || normalizeSearch(o.diagnosisText).includes(qNorm);
-      const docMatch = o.doctorName.toLowerCase().includes(qRaw) || normalizeSearch(o.doctorName).includes(qNorm);
-      const medMatch = o.items.some(
-        (it) =>
-          it.medicationName.toLowerCase().includes(qRaw) ||
-          normalizeSearch(it.medicationName).includes(qNorm)
+      return (
+        o.id.toLowerCase().includes(qRaw) ||
+        o.patientName.toLowerCase().includes(qRaw) || normalizeSearch(o.patientName).includes(qNorm) ||
+        o.patientId.toLowerCase().includes(qRaw) ||
+        (o.patientCccd || '').toLowerCase().includes(qRaw) ||
+        o.diagnosisIcd10.toLowerCase().includes(qRaw) ||
+        o.diagnosisText.toLowerCase().includes(qRaw) || normalizeSearch(o.diagnosisText).includes(qNorm) ||
+        o.doctorName.toLowerCase().includes(qRaw) || normalizeSearch(o.doctorName).includes(qNorm) ||
+        o.items.some((it) => it.medicationName.toLowerCase().includes(qRaw) || normalizeSearch(it.medicationName).includes(qNorm))
       );
-
-      return idMatch || nameMatch || patientIdMatch || cccdMatch || icdMatch || diagMatch || docMatch || medMatch;
     });
   }, [orders, filterType, searchQuery]);
 
@@ -104,12 +87,11 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
           <table className="w-full min-w-[1180px] table-fixed text-left text-sm border-collapse">
             <colgroup>
               <col style={{ width: '60px' }} />
-              <col style={{ width: '170px' }} />
+              <col style={{ width: '180px' }} />
               <col className="w-[24%]" style={{ minWidth: '240px' }} />
-              <col className="w-[24%]" style={{ minWidth: '240px' }} />
-              <col style={{ width: '140px' }} />
-              <col className="w-[32%]" style={{ minWidth: '320px' }} />
+              <col className="w-[26%]" style={{ minWidth: '250px' }} />
               <col style={{ width: '130px' }} />
+              <col className="w-[38%]" style={{ minWidth: '320px' }} />
             </colgroup>
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
               <tr className="font-semibold text-sm tracking-normal">
@@ -118,14 +100,13 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                 <th className="py-3 px-3.5 border-r border-slate-200">Người bệnh</th>
                 <th className="py-3 px-3.5 border-r border-slate-200">Chẩn đoán ICD-10</th>
                 <th className="py-3 px-3.5 text-center border-r border-slate-200">Loại đơn</th>
-                <th className="py-3 px-3.5 border-r border-slate-200">Danh mục thuốc kê</th>
-                <th className="py-3 px-3.5 text-center">Thao tác</th>
+                <th className="py-3 px-3.5">Danh mục thuốc kê</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 font-medium text-sm">
+                  <td colSpan={6} className="py-8 text-center text-slate-500 font-medium text-sm">
                     Không tìm thấy đơn thuốc khớp với tiêu chí tra cứu.
                   </td>
                 </tr>
@@ -149,6 +130,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                           data-testid="cpoe-order-id-btn"
                           onClick={() => onSelectOrder?.(order)}
                           className="font-medium text-slate-700 hover:text-slate-950 hover:underline cursor-pointer text-sm transition underline-offset-2"
+                          title="Bấm để xem chi tiết đơn thuốc điện tử & ký duyệt"
                         >
                           {order.id}
                         </button>
@@ -194,7 +176,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                       </td>
 
                       {/* 6. Danh mục thuốc kê */}
-                      <td className="py-3 px-3.5 border-r border-slate-100">
+                      <td className="py-3 px-3.5">
                         <div className="text-xs font-medium text-slate-800 line-clamp-2 leading-relaxed" title={order.items.map(i => `${i.medicationName} (${i.quantity} ${i.unit})`).join(', ')}>
                           {order.items.map((it, iIdx) => (
                             <span key={it.id || iIdx}>
@@ -203,19 +185,6 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                             </span>
                           ))}
                         </div>
-                      </td>
-
-                      {/* 7. Thao tác */}
-                      <td className="py-3 px-3.5 text-center whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => onSelectOrder?.(order)}
-                          className="inline-flex items-center gap-1 min-h-8 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer active:scale-98 transition shadow-xs"
-                          title="Xem chi tiết đơn thuốc điện tử & ký duyệt"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Chi tiết</span>
-                        </button>
                       </td>
                     </tr>
                   );

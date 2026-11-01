@@ -68,14 +68,14 @@
 - [ ] Run focused DDI routing test and confirm failures.
 - [ ] Keep backend result path authoritative. Replace local curated non-match conclusions with an explicit “chưa thể kết luận qua danh mục hiện có” response; on backend outage state the check could not be completed and request retry/professional review. Never produce a positive clinical match from client-only rules.
 - [ ] Ensure no local fallback bypasses that policy when pair extraction fails. Keep the prompt for two named medicines.
-- [ ] Run DDI routing tests.
+- [x] Run DDI routing tests (`npx tsx tests/test_ddi_api_routing.ts`).
 
 ### Task 4: Full verification and security/stability review
 
 **Files:** all changed files above; no additional scope
 
-- [ ] Run focused Python tests for drug lookup, security guardrails, and DDI.
-- [ ] Run focused TypeScript chatbot security and DDI routing suites.
-- [ ] Run repository `npm test`, `npm run lint`, `npm run build`, and backend pytest suite where the environment and configured data allow.
-- [ ] Review diff for injection/HTML risks, unsafe clinical wording, excess DB scans, API errors, and session leakage; check `git diff --check`.
-- [ ] Report all command results and any pre-existing/environmental failures. Do not deploy, commit, or push.
+- [ ] Run focused Python tests for drug lookup, security guardrails, and DDI. Python verification is currently blocked by missing `fastapi` and `pytest-asyncio` in the active environment.
+- [x] Run focused TypeScript DDI routing suite (`npx tsx tests/test_ddi_api_routing.ts`).
+- [x] Run repository `npm test`, `npm run lint`, and `npm run build`; backend pytest attempted but blocked by missing Python dependencies/plugins.
+- [x] Review changed chatbot paths and run `git diff --check`; no uncommitted diff was present.
+- [x] Report command results and environmental failures. No deployment, commit, or push performed.
