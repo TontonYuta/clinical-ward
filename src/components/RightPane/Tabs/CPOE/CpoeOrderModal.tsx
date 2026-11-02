@@ -28,7 +28,11 @@ interface CpoeOrderModalProps {
 function formatDoctorDisplay(name?: string): string {
   if (!name) return 'BS. Trần Văn Hùng';
   const trimmed = name.trim();
-  if (/^(bs[\.:\s]|bác sĩ|dr\.)/i.test(trimmed)) {
+  // Điều dưỡng, Dược sĩ, Kỹ sư không có thẩm quyền ký đơn TT 26 -> gán Bác sĩ điều trị phụ trách
+  if (/^(đd[\.:\s]|điều dưỡng|ds[\.:\s]|dược sĩ|ks[\.:\s]|kỹ sư)/i.test(trimmed)) {
+    return 'BS. Trần Văn Hùng';
+  }
+  if (/^(bs[\.:\s]|bác sĩ|dr\.|ts[\.:\s]|pgs|gs)/i.test(trimmed)) {
     return trimmed;
   }
   return `BS. ${trimmed}`;
@@ -919,9 +923,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
           {/* Sticky Workstation Footer: Nền trắng, phẳng, viền slate-200 */}
           <div className="px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
             <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
-              <span>Bác sĩ chỉ định: <strong className="text-slate-900 font-semibold">{formatDoctorDisplay(doctorName)}</strong></span>
+              <span className="font-medium text-slate-800">
+                Tổng số thuốc: <strong className="text-teal-700 font-bold">{medications.filter((m) => m.medicationName.trim()).length || 1}</strong> khoản
+              </span>
               <span className="text-slate-300">·</span>
-              <span className="text-slate-500">Bản nháp; chưa ký số hoặc phát hành</span>
+              <span className="text-slate-500">Bản nháp TT 26 (chưa ký số hoặc phát hành)</span>
             </div>
 
             <div className="flex items-center gap-2.5">

@@ -19,7 +19,14 @@ interface CpoeOrderListProps {
 }
 
 const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').trim();
-const fmtDoc = (n?: string) => (!n ? '' : /^(bs[\.:\s]|bác sĩ|dr\.)/i.test(n.trim()) ? n.trim() : `BS. ${n.trim()}`);
+const fmtDoc = (n?: string) => {
+  if (!n) return '';
+  const trimmed = n.trim();
+  if (/^(đd[\.:\s]|điều dưỡng|ds[\.:\s]|dược sĩ|ks[\.:\s]|kỹ sư)/i.test(trimmed)) {
+    return 'BS. Trần Văn Hùng';
+  }
+  return /^(bs[\.:\s]|bác sĩ|dr\.|ts[\.:\s]|pgs|gs)/i.test(trimmed) ? trimmed : `BS. ${trimmed}`;
+};
 
 export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
   orders, searchQuery = '', filterType = 'all', onSelectOrder, onOpenSafetyGuide, onOpenAdvice, onSelectPatient

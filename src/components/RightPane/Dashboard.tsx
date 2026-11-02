@@ -140,7 +140,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
             {currentTab === 'cpoe' && (
               <CpoePrescriptionTab
-                doctorName={USER_PROFILES[currentUserRole]?.name}
+                doctorName={currentUserRole === 'doctor' ? USER_PROFILES.doctor.name : 'BS. Trần Văn Hùng'}
                 currentUserRole={currentUserRole}
                 onOpenSafetyGuide={onOpenMedicationSafety}
               />
