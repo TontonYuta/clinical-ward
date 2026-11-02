@@ -72,11 +72,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             key={tab}
             onClick={() => onTabChange(tab)}
             className={`flex min-w-[4.25rem] flex-1 flex-col items-center justify-center py-1 px-1 rounded-lg transition cursor-pointer relative ${
-              isActive ? 'text-blue-900 font-bold' : 'text-slate-500 hover:text-slate-800'
+              isActive ? 'text-teal-950 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
-              <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600 stroke-[2.5]' : 'text-slate-500'}`} />
+              <Icon className={`w-5 h-5 ${isActive ? 'text-teal-700 stroke-[2.5]' : 'text-slate-500'}`} />
               {badge && (
                 <span
                   className={`absolute -top-1.5 -right-2 text-white text-[10px] font-bold px-1 rounded-full ring-1 ring-white ${badge.color}`}

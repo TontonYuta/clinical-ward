@@ -52,20 +52,30 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
   return (
     <div
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4"
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4"
     >
-      <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="h-14 px-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-teal-500/20 text-teal-300 flex items-center justify-center border border-teal-500/30">
+      <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
+        <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center border border-teal-200 shrink-0">
               <Boxes className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold">Dự Trù Bổ Sung Thuốc &amp; Vật Tư</h2>
-              <span className="text-[11px] text-teal-200 font-mono">Mẫu 01 · VBHN 07/VBHN-BYT</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-2xs font-semibold text-slate-700 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+                  Mẫu 01 · VBHN 07
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight truncate">
+                  Dự Trù Bổ Sung Thuốc &amp; Vật Tư
+                </h2>
+              </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-teal-200 hover:text-white hover:bg-teal-800">
+          <button
+            onClick={onClose}
+            aria-label="Đóng"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -149,14 +159,15 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
           </div>
         </div>
 
-        <div className="p-3 sm:px-5 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center justify-between text-xs">
+        <div className="px-5 py-3.5 bg-white border-t border-slate-200 shrink-0 flex items-center justify-between text-xs">
           <div className="text-slate-500 font-mono hidden sm:inline">Số phiếu: DT-KD-{new Date().getFullYear()}/042 · Ngày: {todayStr}</div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button onClick={onClose} className="h-8.5 px-3.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-semibold cursor-pointer hover:bg-slate-50">Đóng</button>
+            <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 font-medium text-xs sm:text-sm cursor-pointer hover:bg-slate-50 transition">Đóng</button>
             <button
+              type="button"
               onClick={handleConfirm}
               disabled={lowStockBatches.length === 0 || isSubmitted}
-              className="h-8.5 px-4 rounded-lg bg-teal-800 hover:bg-teal-900 disabled:opacity-50 text-white font-bold flex items-center gap-1.5 cursor-pointer active:scale-98 shadow-xs"
+              className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer active:scale-98 shadow-xs transition"
             >
               {isSubmitted ? (
                 <>
