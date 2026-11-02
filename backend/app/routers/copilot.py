@@ -128,11 +128,15 @@ async def _handle_copilot_chat(
     )):
         from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
         resolved_new_drugs = resolve_registered_medications(lower_query)
-        current_has_explicit_drug = find_matched_med(lower_query) is not None or bool(resolved_new_drugs)
+        current_has_explicit_drug = find_matched_med(lower_query) is not None or bool(resolved_new_drugs) or bool(session.active_medication_name and session.active_medication_name.casefold() in lower_query)
         if current_has_explicit_drug and resolved_new_drugs:
             new_key = resolved_new_drugs[0]
             new_display = DRUG_REGISTRY[new_key].get("display", new_key.title())
             session.set_active_medication(name=new_display, ingredient=new_key)
+            return await lookup_drug_authoritative(
+                query, db, session_id=session_id, user_name=user_name, user_role=user_role
+            )
+        if current_has_explicit_drug:
             return await lookup_drug_authoritative(
                 query, db, session_id=session_id, user_name=user_name, user_role=user_role
             )
@@ -168,10 +172,24 @@ async def _handle_copilot_chat(
             select(DavNationalDrug.id).where(or_(
                 func.lower(DavNationalDrug.brand_name) == cand_drug,
                 func.lower(DavNationalDrug.brand_name).like(f"{cand_drug} %"),
-                func.lower(DavNationalDrug.brand_name).like(f"% {cand_drug}")
+                func.lower(DavNationalDrug.brand_name).like(f"% {cand_drug}"),
+                func.lower(DavNationalDrug.active_ingredient).like(f"%{cand_drug}%")
             )).limit(1)
         )
         has_candidate_drug = cand_res.scalar_one_or_none() is not None
+        if not has_candidate_drug and len(cand_drug.split()) > 1:
+            last_tok = cand_drug.split()[-1]
+            if len(last_tok) >= 4 and last_tok not in symptom_blacklist:
+                cand_res2 = await db.execute(
+                    select(DavNationalDrug.id).where(or_(
+                        func.lower(DavNationalDrug.brand_name) == last_tok,
+                        func.lower(DavNationalDrug.brand_name).like(f"{last_tok} %"),
+                        func.lower(DavNationalDrug.brand_name).like(f"% {last_tok}")
+                    )).limit(1)
+                )
+                if cand_res2.scalar_one_or_none():
+                    cand_drug = last_tok
+                    has_candidate_drug = True
 
     if session.active_medication_name:
         # First resolve any explicit entity from the current turn, including
@@ -183,7 +201,8 @@ async def _handle_copilot_chat(
             for alias in entry.get("aliases", [])
             if len(alias) >= 4
         )
-        if find_matched_med(lower_query) is None and not explicit_registered_drug and not has_candidate_drug:
+        active_already_in_query = bool(session.active_medication_name and session.active_medication_name.casefold() in lower_query)
+        if find_matched_med(lower_query) is None and not explicit_registered_drug and not has_candidate_drug and not active_already_in_query:
             field_only_terms = (
                 "chống chỉ định", "tác dụng phụ", "tác dụng không mong muốn",
                 "liều dùng", "liều tối đa", "thành phần", "hoạt chất",
@@ -202,7 +221,7 @@ async def _handle_copilot_chat(
             else:
                 active_name_in_query = False
         else:
-            active_name_in_query = False
+            active_name_in_query = active_already_in_query
     else:
         active_name_in_query = False
 
@@ -210,7 +229,7 @@ async def _handle_copilot_chat(
         alias.casefold() in lower_query
         for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values()
         for alias in entry.get("aliases", []) if len(alias) >= 4
-    ) or has_candidate_drug
+    ) or has_candidate_drug or active_name_in_query
     if session.active_medication_name and not is_renal_adjustment_request and not explicit_medication_named and any(term in lower_query for term in (
         "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no",
         "trước ăn", "sau ăn", "bao lâu thì tiêm", "tiêm nhắc lại",

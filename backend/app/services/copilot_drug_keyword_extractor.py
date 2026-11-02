@@ -21,7 +21,8 @@ QUESTION_TERMS = {
     "của", "thuốc", "này", "đó", "là", "gì", "thế", "nào", "bao", "nhiêu", "hoạt", "chất",
     "thời", "gian", "bán", "thải", "tối", "đa", "huyết", "tương", "còn",
     "có", "hay", "hoặc", "bị", "cho", "đang", "được", "những", "các", "loại", "nhóm", "khác", "chi",
-    "chống", "chỉ", "định", "cách", "dùng", "liều", "lượng", "và", "với", "cùng", "trong", "khi"
+    "chống", "chỉ", "định", "cách", "dùng", "liều", "lượng", "và", "với", "cùng", "trong", "khi",
+    "tôi", "em", "anh", "chị", "mình", "bạn", "hỏi", "cần", "xin", "giúp", "biết", "xem", "làm", "ơn"
 }
 
 
