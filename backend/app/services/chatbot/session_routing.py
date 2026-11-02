@@ -1,0 +1,139 @@
+import re
+from sqlalchemy import select, or_, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas.copilot import CopilotResponse
+from app.models.registry import DavNationalDrug
+from app.services.copilot_catalog import find_matched_med
+from app.services.copilot_drug_lookup import extract_drug_keywords, lookup_drug_authoritative
+from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
+from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+
+SYMPTOM_BLACKLIST = {
+    "sốt", "hạ sốt", "đau đầu", "đau bụng", "ung thư", "khó thở", "đột quỵ",
+    "cấp cứu", "thuốc", "bệnh nhân", "người bệnh", "hàng ngày", "hàng tuần"
+}
+
+TIMING_TERMS = (
+    "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no",
+    "trước ăn", "sau ăn", "bao lâu thì tiêm", "tiêm nhắc lại",
+    "tần suất", "mỗi bao lâu", "đường dùng", "cách pha",
+)
+
+FIELD_ONLY_TERMS = (
+    "chống chỉ định", "tác dụng phụ", "tác dụng không mong muốn",
+    "liều dùng", "liều tối đa", "thành phần", "hoạt chất",
+    "chỉ định", "công dụng", "thông tin thuốc", "liều tối đa",
+    "còn liều", "sáng hay tối", "uống sáng", "uống tối",
+    "lúc đói", "lúc no", "trước ăn", "sau ăn", "bao lâu thì tiêm",
+    "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng",
+    "cách pha", "gây nghiện", "lệ thuộc", "suy thận", "suy gan",
+    "độc tính", "thuốc đó", "thuốc này", "nó có",
+    "của thuốc này", "của thuốc đó",
+)
+
+def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotResponse | None:
+    is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "chỉnh liều"))
+    if not is_renal:
+        return None
+    subject = any(t in lower_query for t in ("bệnh nhân", "người bệnh", "hồ sơ", "bệnh án", "bn-", "bn "))
+    name_match = re.search(r"(?<!\w)(?:[A-ZÀ-ỸĐ][\wÀ-ỹĐđ'-]+\s+){1,4}[A-ZÀ-ỸĐ][\wÀ-ỹĐđ'-]+(?!\w)", query)
+    has_bn_token = any(token in lower_query for token in ("bn-", "bn "))
+
+    if subject and not name_match and not has_bn_token:
+        return CopilotResponse(
+            intent="CLINICAL_CASE_CLARIFICATION",
+            reply_text="Vui lòng cung cấp họ tên hoặc mã người bệnh và tên thuốc cần rà soát để đánh giá chức năng thận.",
+            answer_type="clarification", source_status="missing_patient_identifier",
+            confidence=1.0, abstention_reason="Câu hỏi có nhắc người bệnh nhưng thiếu định danh cụ thể",
+        )
+
+    has_current_drug = find_matched_med(lower_query) is not None or any(
+        len(alias) >= 4 and alias.casefold() in lower_query
+        for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
+    )
+
+    if subject and name_match and not has_current_drug:
+        return CopilotResponse(
+            intent="CLINICAL_CASE_CLARIFICATION",
+            reply_text="Đã nhận diện người bệnh được nêu. Vui lòng cho biết tên thuốc cần rà soát; hệ thống chưa tra hồ sơ hay đưa ra khuyến cáo liều khi chưa có thuốc cụ thể.",
+            answer_type="clarification", source_status="missing_drug_context",
+            confidence=1.0, abstention_reason="Thiếu tên thuốc trong lượt hiện tại",
+        )
+
+    if subject and any(p in lower_query for p in ("có dùng được không", "dùng được không")) and not has_current_drug:
+        return CopilotResponse(
+            intent="CLINICAL_CASE_CLARIFICATION",
+            reply_text="Để đánh giá suy thận, vui lòng cung cấp tên hoặc mã người bệnh và tên thuốc cần rà soát. Không sử dụng hồ sơ bệnh nhân đang chọn nếu chưa được nêu rõ trong câu hỏi.",
+            answer_type="clarification", source_status="missing_patient_or_drug_context",
+            confidence=1.0, abstention_reason="Thiếu định danh ca bệnh hoặc tên thuốc trong lượt hiện tại",
+        )
+    return None
+
+async def find_dav_candidate_drug(lower_query: str, db: AsyncSession) -> tuple[str, bool]:
+    cand_drug = extract_drug_keywords(lower_query)
+    if not cand_drug or len(cand_drug) < 3 or any(b in cand_drug for b in SYMPTOM_BLACKLIST):
+        return "", False
+    cand_res = await db.execute(
+        select(DavNationalDrug.id).where(or_(
+            func.lower(DavNationalDrug.brand_name) == cand_drug,
+            func.lower(DavNationalDrug.brand_name).like(f"{cand_drug} %"),
+            func.lower(DavNationalDrug.brand_name).like(f"% {cand_drug}"),
+            func.lower(DavNationalDrug.active_ingredient).like(f"%{cand_drug}%")
+        )).limit(1)
+    )
+    if cand_res.scalar_one_or_none() is not None:
+        return cand_drug, True
+    if len(cand_drug.split()) > 1:
+        last_tok = cand_drug.split()[-1]
+        if len(last_tok) >= 4 and last_tok not in SYMPTOM_BLACKLIST:
+            cand_res2 = await db.execute(
+                select(DavNationalDrug.id).where(or_(
+                    func.lower(DavNationalDrug.brand_name) == last_tok,
+                    func.lower(DavNationalDrug.brand_name).like(f"{last_tok} %"),
+                    func.lower(DavNationalDrug.brand_name).like(f"% {last_tok}")
+                )).limit(1)
+            )
+            if cand_res2.scalar_one_or_none() is not None:
+                return last_tok, True
+    return cand_drug, False
+
+def build_insufficient_formulation_response(med_name: str, session_id: str) -> CopilotResponse:
+    return CopilotResponse(
+        intent="MEDICATION_LOOKUP_CLARIFICATION",
+        reply_text=(
+            f"Câu hỏi về thời điểm hoặc cách dùng của {med_name} cần được đối chiếu theo đúng dạng bào chế, hàm lượng và chỉ định. "
+            "Vui lòng cung cấp chế phẩm cụ thể hoặc chỉ định để tra cứu hướng dẫn đã được xác thực."
+        ),
+        answer_type="clarification",
+        source_status="insufficient_formulation_context",
+        session_id=session_id,
+        confidence=1.0,
+    )
+
+def check_contextless_clinical_question(lower_query: str) -> CopilotResponse | None:
+    context_required_terms = (
+        "liều tối đa", "liều dùng", "liều lượng", "chống chỉ định",
+        "tác dụng phụ", "tác dụng không mong muốn", "uống lúc đói",
+        "lúc no", "suy thận", "suy gan", "phụ nữ có thai",
+        "cho con bú", "thuốc đó", "thuốc này", "thuốc này kỵ",
+        "có vỏ ống", "cách bảo quản", "bao lâu thì dừng",
+        "tiêm bắp được", "pha chung", "thuốc giải độc",
+        "hàng ngày hay hàng tuần", "sáng hay tối", "trước ăn bao lâu",
+        "tác dụng kéo dài bao lâu", "dấu hiệu ngộ độc", "gây nghiện không",
+        "liều bolus", "tiêm nhắc lại", "tốc độ truyền",
+    )
+    is_contextless_clinical = any(term in lower_query for term in context_required_terms)
+    is_contextless_stock = any(term in lower_query for term in ("có trong tủ trực không", "còn trong tủ trực", "còn thuốc không"))
+    if is_contextless_clinical or is_contextless_stock:
+        intent = "CLINICAL_SAFE_ABSTENTION" if lower_query.strip().rstrip("?.! ") in {
+            "còn chống chỉ định", "chống chỉ định gì nữa không"
+        } else "MEDICATION_LOOKUP_CLARIFICATION"
+        return CopilotResponse(
+            intent=intent,
+            reply_text="Mình chưa xác định được thuốc cần tra cứu. Vui lòng nêu tên thuốc hoặc hoạt chất (và hàm lượng/dạng dùng nếu liên quan) để trả lời chính xác.",
+            answer_type="safe_abstention" if intent == "CLINICAL_SAFE_ABSTENTION" else "clarification",
+            source_status="missing_medication_context",
+            confidence=1.0,
+            abstention_reason="Thiếu tên thuốc hoặc ngữ cảnh thuốc trong phiên",
+        )
+    return None

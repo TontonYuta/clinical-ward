@@ -1,7 +1,3 @@
-"""
-SQLite FTS5 Sparse BM25 Index Engine
-Hỗ trợ BM25 ranking cho tri thức y tế, SĐK và văn bản pháp lý (<=180 LOC)
-"""
 import os
 import re
 import sqlite3
@@ -10,18 +6,22 @@ import json
 from pathlib import Path
 from app.services.rag.types import RagChunk, RetrievedChunk
 
+CREATE_FTS_TABLE_SQL = """
+CREATE VIRTUAL TABLE IF NOT EXISTS clinical_rag_fts USING fts5(
+    chunk_id UNINDEXED, source_doc, legal_basis, page_or_section,
+    title, content, keywords, entity_type UNINDEXED, tokenize = 'unicode61'
+)
+"""
+
 def get_fts_db_path() -> str:
     db_env = os.environ.get("DATABASE_URL", "")
     if "sqlite" in db_env:
         clean = re.sub(r"^sqlite(\+aiosqlite)?:///", "", db_env)
         if clean:
             target = Path(clean)
-            if not target.is_absolute():
-                target = Path("/") / clean
-            return str(target)
+            return str(Path("/") / clean if not target.is_absolute() else target)
     if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         return "/tmp/clinical_hospital.db"
-    
     default_path = Path(__file__).resolve().parent.parent.parent.parent / "clinical_hospital.db"
     try:
         if default_path.exists() and os.access(str(default_path), os.W_OK):
@@ -35,10 +35,7 @@ def get_fts_db_path() -> str:
 def _sanitize_fts_query(query: str) -> str:
     cleaned = re.sub(r"[^\w\s\-]", " ", query, flags=re.UNICODE)
     tokens = [t.strip() for t in cleaned.split() if len(t.strip()) >= 2]
-    if not tokens:
-        return ""
-    # Kết hợp OR giữa các tokens để tối đa độ bao phủ BM25
-    return " OR ".join(f'"{t}"*' for t in tokens[:8])
+    return " OR ".join(f'"{t}"*' for t in tokens[:8]) if tokens else ""
 
 class SqliteFtsIndex:
     def __init__(self, db_path: Path | str | None = None):
@@ -63,36 +60,12 @@ class SqliteFtsIndex:
     def _init_fts_table(self):
         try:
             with self._get_connection() as conn:
-                conn.execute("""
-                    CREATE VIRTUAL TABLE IF NOT EXISTS clinical_rag_fts USING fts5(
-                        chunk_id UNINDEXED,
-                        source_doc,
-                        legal_basis,
-                        page_or_section,
-                        title,
-                        content,
-                        keywords,
-                        entity_type UNINDEXED,
-                        tokenize = 'unicode61'
-                    )
-                """)
+                conn.execute(CREATE_FTS_TABLE_SQL)
                 conn.commit()
         except sqlite3.OperationalError:
             self.db_path = ":memory:"
             with self._get_connection() as conn:
-                conn.execute("""
-                    CREATE VIRTUAL TABLE IF NOT EXISTS clinical_rag_fts USING fts5(
-                        chunk_id UNINDEXED,
-                        source_doc,
-                        legal_basis,
-                        page_or_section,
-                        title,
-                        content,
-                        keywords,
-                        entity_type UNINDEXED,
-                        tokenize = 'unicode61'
-                    )
-                """)
+                conn.execute(CREATE_FTS_TABLE_SQL)
                 conn.commit()
 
     def sync_chunks(self, chunks: list[RagChunk]):
@@ -107,20 +80,17 @@ class SqliteFtsIndex:
             except sqlite3.OperationalError:
                 row = None
             if count == len(chunks) and count > 0 and row and row[0] == fingerprint:
-                return  # Index đã khớp chính xác với fingerprint nguồn hiện tại.
+                return
 
             conn.execute("DELETE FROM clinical_rag_fts")
             for c in chunks:
-                kw_str = " ".join(c.keywords)
                 conn.execute(
                     """
                     INSERT INTO clinical_rag_fts(
-                        chunk_id, source_doc, legal_basis, page_or_section,
-                        title, content, keywords, entity_type
+                        chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section,
-                     c.title, c.content, kw_str, c.entity_type)
+                    (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, " ".join(c.keywords), c.entity_type)
                 )
             conn.execute("CREATE TABLE IF NOT EXISTS clinical_rag_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
             conn.execute(
@@ -140,38 +110,24 @@ class SqliteFtsIndex:
                 cur = conn.execute(
                     """
                     SELECT chunk_id, source_doc, legal_basis, page_or_section,
-                           title, content, keywords, entity_type,
-                           bm25(clinical_rag_fts) as rank_score
-                    FROM clinical_rag_fts
-                    WHERE clinical_rag_fts MATCH ?
-                    ORDER BY rank_score ASC
-                    LIMIT ?
+                           title, content, keywords, entity_type, bm25(clinical_rag_fts) as rank_score
+                    FROM clinical_rag_fts WHERE clinical_rag_fts MATCH ? ORDER BY rank_score ASC LIMIT ?
                     """,
                     (fts_query, top_k)
                 )
-                rows = cur.fetchall()
-                for rank_idx, row in enumerate(rows):
-                    chunk = RagChunk(
-                        chunk_id=row["chunk_id"],
-                        source_doc=row["source_doc"],
-                        legal_basis=row["legal_basis"],
-                        page_or_section=row["page_or_section"],
-                        title=row["title"],
-                        content=row["content"],
-                        keywords=row["keywords"].split(),
-                        entity_type=row["entity_type"]
-                    )
-                    # Chuyển đổi bm25 score (âm) sang điểm chuẩn hóa dương
+                for rank_idx, row in enumerate(cur.fetchall()):
                     raw_score = float(row["rank_score"])
-                    norm_score = max(0.01, 1.0 / (1.0 + abs(raw_score)))
                     results.append(RetrievedChunk(
-                        chunk=chunk,
-                        score=norm_score,
+                        chunk=RagChunk(
+                            chunk_id=row["chunk_id"], source_doc=row["source_doc"], legal_basis=row["legal_basis"],
+                            page_or_section=row["page_or_section"], title=row["title"], content=row["content"],
+                            keywords=row["keywords"].split(), entity_type=row["entity_type"]
+                        ),
+                        score=max(0.01, 1.0 / (1.0 + abs(raw_score))),
                         bm25_rank=rank_idx + 1,
                         match_reasons=[f"BM25 match rank #{rank_idx+1}"]
                     ))
-        except Exception as e:
-            # Fallback nếu câu query chứa ký tự đặc biệt gây lỗi syntax FTS
+        except Exception:
             return self._fallback_like_search(query, top_k)
 
         return results
@@ -185,29 +141,18 @@ class SqliteFtsIndex:
         with self._get_connection() as conn:
             cur = conn.execute(
                 """
-                SELECT chunk_id, source_doc, legal_basis, page_or_section,
-                       title, content, keywords, entity_type
-                FROM clinical_rag_fts
-                WHERE title LIKE ? OR content LIKE ?
-                LIMIT ?
+                SELECT chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type
+                FROM clinical_rag_fts WHERE title LIKE ? OR content LIKE ? LIMIT ?
                 """,
                 (term, term, top_k)
             )
             for i, row in enumerate(cur.fetchall()):
-                c = RagChunk(
-                    chunk_id=row["chunk_id"],
-                    source_doc=row["source_doc"],
-                    legal_basis=row["legal_basis"],
-                    page_or_section=row["page_or_section"],
-                    title=row["title"],
-                    content=row["content"],
-                    keywords=row["keywords"].split(),
-                    entity_type=row["entity_type"]
-                )
                 results.append(RetrievedChunk(
-                    chunk=c,
-                    score=0.5 / (i + 1),
-                    bm25_rank=i + 1,
-                    match_reasons=["Fallback LIKE search"]
+                    chunk=RagChunk(
+                        chunk_id=row["chunk_id"], source_doc=row["source_doc"], legal_basis=row["legal_basis"],
+                        page_or_section=row["page_or_section"], title=row["title"], content=row["content"],
+                        keywords=row["keywords"].split(), entity_type=row["entity_type"]
+                    ),
+                    score=0.5 / (i + 1), bm25_rank=i + 1, match_reasons=["Fallback LIKE search"]
                 ))
         return results

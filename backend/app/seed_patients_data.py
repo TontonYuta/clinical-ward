@@ -1,6 +1,8 @@
 """
 Dữ liệu khởi tạo Bệnh nhân & Hồ sơ Dặn dò lâm sàng chuẩn Bộ Y tế (<=200 LOC)
 """
+from app.seed_patients_dataset import PATIENTS_EXTRA_DATA
+from app.seed_advices_data import INITIAL_ADVICES_DATA
 
 PATIENTS_DATA = [
     {
@@ -98,154 +100,7 @@ PATIENTS_DATA = [
         "egfr": 110.0,
         "creatinine": 70.0,
         "weight_kg": 64.0
-    },
-    {
-        "id": "BN-8814",
-        "full_name": "Phạm Thị Mai",
-        "dob": "1974-08-25",
-        "age": 52,
-        "gender": "Nữ",
-        "cccd": "031174005829",
-        "phone": "0909556677",
-        "email": "mai.pt@hospital.vn",
-        "room": "Hồi sức Ngoại - Giường 04",
-        "allergies": "Ciprofloxacin (Quinolone - phát ban mề đay)",
-        "chronic_conditions": "Nhiễm trùng ổ bụng sau phẫu thuật, Viêm tụy cấp hồi phục",
-        "egfr": 62.0,
-        "creatinine": 98.0,
-        "weight_kg": 54.0
-    },
-    {
-        "id": "BN-8833",
-        "full_name": "Vũ Đình Hưng",
-        "dob": "1969-05-14",
-        "age": 57,
-        "gender": "Nam",
-        "cccd": "036069001842",
-        "phone": "0913778899",
-        "email": "hung.vd@hospital.vn",
-        "room": "Cấp cứu A9 - Giường 06",
-        "allergies": "Không ghi nhận tiền sử dị ứng thuốc",
-        "chronic_conditions": "Hen phế quản ác tính, Bệnh phổi tắc nghẽn mạn tính (COPD nhóm D)",
-        "egfr": 82.0,
-        "creatinine": 85.0,
-        "weight_kg": 68.0
-    },
-    {
-        "id": "BN-8798",
-        "full_name": "Nguyễn Thị Yến",
-        "dob": "1982-03-05",
-        "age": 44,
-        "gender": "Nữ",
-        "cccd": "079185012948",
-        "phone": "0945990011",
-        "email": "yen.nt@hospital.vn",
-        "room": "Phòng mổ 3 - Gây mê hồi sức",
-        "allergies": "Không ghi nhận tiền sử dị ứng thuốc",
-        "chronic_conditions": "Băng huyết sau sinh giảm thể tích, Thiếu máu sau mổ lấy thai",
-        "egfr": 98.0,
-        "creatinine": 68.0,
-        "weight_kg": 56.0
-    },
-    {
-        "id": "BN-8835",
-        "full_name": "Bùi Đức Mạnh",
-        "dob": "1972-10-15",
-        "age": 54,
-        "gender": "Nam",
-        "cccd": "037072004512",
-        "phone": "0912889922",
-        "email": "manh.bd@hospital.vn",
-        "room": "Khoa Tim Mạch Can Thiệp - Giường 05",
-        "allergies": "Thuốc cản quang chứa Iod",
-        "chronic_conditions": "Bệnh tim thiếu máu cục bộ mạn tính, Rung nhĩ kịch phát",
-        "egfr": 71.0,
-        "creatinine": 90.0,
-        "weight_kg": 75.0
-    },
-    {
-        "id": "BN-8810",
-        "full_name": "Nguyễn Quốc Bảo",
-        "dob": "1983-07-22",
-        "age": 43,
-        "gender": "Nam",
-        "cccd": "079083006734",
-        "phone": "0983112244",
-        "email": "bao.nq@hospital.vn",
-        "room": "Khoa Ngoại Chấn Thương - Giường 08",
-        "allergies": "Không ghi nhận tiền sử dị ứng thuốc",
-        "chronic_conditions": "Đa chấn thương sau tai nạn giao thông, Gãy hở cẳng chân",
-        "egfr": 102.0,
-        "creatinine": 72.0,
-        "weight_kg": 70.0
-    },
-    {
-        "id": "BN-8817",
-        "full_name": "Trần Huy Hoàng",
-        "dob": "1990-06-15",
-        "age": 36,
-        "gender": "Nam",
-        "cccd": "026205006033",
-        "phone": "0963278149",
-        "email": "huyhoang6altt@gmail.com",
-        "room": "Khoa Khám Bệnh - Phòng 204",
-        "allergies": "Không ghi nhận tiền sử dị ứng thuốc",
-        "chronic_conditions": "Cảm cúm (Sốt nhẹ, ho khan, nghẹt mũi)",
-        "egfr": 108.0,
-        "creatinine": 70.0,
-        "weight_kg": 68.0
-    },
-    {
-        "id": "BN-9012",
-        "full_name": "Trần Thị Mai",
-        "dob": "1992-03-25",
-        "age": 34,
-        "gender": "Nữ",
-        "cccd": "001192008899",
-        "phone": "0934567890",
-        "email": "mai.tt@hospital.vn",
-        "room": "Khoa Khám Bệnh - Phòng 102",
-        "allergies": "Không ghi nhận dị ứng",
-        "chronic_conditions": "Hen phế quản nhẹ",
-        "egfr": 105.0,
-        "creatinine": 65.0,
-        "weight_kg": 50.0
-    },
-    {
-        "id": "BN-7701",
-        "full_name": "Nguyễn Văn An",
-        "dob": "1976-12-10",
-        "age": 50,
-        "gender": "Nam",
-        "cccd": "079076001122",
-        "phone": "0977889900",
-        "email": "an.nv@gmail.com",
-        "room": "Khoa Cơ Xương Khớp",
-        "allergies": "Không ghi nhận dị ứng",
-        "chronic_conditions": "Thoái hóa khớp gối",
-        "egfr": 88.0,
-        "creatinine": 82.0,
-        "weight_kg": 65.0
     }
-]
+] + PATIENTS_EXTRA_DATA
 
-INITIAL_ADVICES_DATA = [
-    {
-        "id": "ADV-2026-001",
-        "prescription_id": "RX-2026-0012",
-        "patient_id": "BN-8820",
-        "patient_name": "Võ Minh Trí",
-        "patient_email": "tri.vm@hospital.vn",
-        "patient_phone": "0912345678",
-        "diagnosis": "Đau thắt ngực ổn định & Theo dõi sau cơn cấp",
-        "doctor_name": "BS.CKII Trần Văn Hùng",
-        "doctor_hospital": "Bệnh Viện Đa Khoa Lâm Sàng",
-        "department": "Khoa Tim Mạch Can Thiệp",
-        "start_date": "2026-10-27",
-        "end_date": "2026-11-03",
-        "general_doctor_advice": "Uống thuốc đúng giờ sau ăn, hạn chế muối và chất béo. Tái khám ngay nếu xuất hiện cơn đau thắt ngực trở lại.",
-        "medications_json": '[{"medicationName":"Nitroglycerin 0.5mg ngậm dưới lưỡi","activeIngredient":"Nitroglycerin","dosage":"0.5mg","route":"Ngậm dưới lưỡi","durationDays":7,"timeSlots":[{"id":"morning","label":"Sáng","time":"07:30","dosageText":"Khi có cơn đau","mealRelation":"Bụng đói hoặc khi đau"}]},{"medicationName":"Bisoprolol 2.5mg","activeIngredient":"Bisoprolol fumarat","dosage":"2.5mg","route":"Đường uống","durationDays":14,"timeSlots":[{"id":"morning","label":"Sáng","time":"08:00","dosageText":"1 viên","mealRelation":"Sau ăn sáng"}]}]',
-        "notification_status": "sent",
-        "email_sent_at": "2026-10-27T08:30:00Z"
-    }
-]
+__all__ = ["PATIENTS_DATA", "INITIAL_ADVICES_DATA"]

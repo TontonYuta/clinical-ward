@@ -1,7 +1,3 @@
-"""
-Clinical DDI Detector & Polypharmacy Triage Engine (<=195 LOC)
-Thuật toán 5 giai đoạn: Normalization -> Multi-tier Matching -> Dynamic Escalation -> Polypharmacy Aggregation -> Grounding
-"""
 from typing import Optional
 from itertools import combinations
 from app.services.clinical_ddi_engine.schemas import (
@@ -11,14 +7,9 @@ from app.services.clinical_ddi_engine.schemas import (
 from app.services.clinical_ddi_engine.normalizer import normalize_drug_entity
 from app.services.clinical_ddi_engine.rules_data import CLASS_DDI_RULES, SAFE_SYNERGIES
 from app.services.clinical_ddi_engine.full_catalog import lookup_official_ddi, lookup_official_group_ddi
-import re
+from app.services.clinical_ddi_engine.polypharmacy import evaluate_polypharmacy
 
 def _catalog_severity(action: str) -> DdiSeverity:
-    """Derive a conservative display tier from the official management text.
-
-    This is a triage label only; preserve the full source recommendation in the
-    alert and do not infer a contraindication from table membership alone.
-    """
     text = action.lower()
     if "chống chỉ định" in text:
         return DdiSeverity.CONTRAINDICATED
@@ -38,7 +29,7 @@ class ClinicalDdiDetector:
         if inn_a == inn_b:
             return None
 
-        # 1. Kiểm tra Phối hợp Hiệp đồng An toàn (Safe Synergy)
+        # 1. Phối hợp Hiệp đồng An toàn (Safe Synergy)
         for syn in self.synergies:
             if (inn_a == syn["drug_a"] and inn_b == syn["drug_b"]) or (inn_a == syn["drug_b"] and inn_b == syn["drug_a"]):
                 return DdiAlert(
@@ -50,7 +41,7 @@ class ClinicalDdiDetector:
                     legal_evidence=syn["source"]
                 )
 
-        # 2. Kiểm tra Luật Tương tác Nhóm Dược lý (Tier 2 Class-to-Class)
+        # 2. Luật Tương tác Nhóm Dược lý (Tier 2 Class-to-Class)
         for r in self.rules:
             ca, cb = r["class_a"], r["class_b"]
             match_direct = (ca in drug_a.atc_classes and cb in drug_b.atc_classes)
@@ -60,7 +51,6 @@ class ClinicalDdiDetector:
                 escalated = False
                 reason = None
 
-                # 3. Dynamic Patient Context Escalation (Tầng hiệu chỉnh cơ địa bệnh nhân)
                 if patient:
                     if r["id"] == "RULE_AMIODARONE_COLCHICINE" and ((patient.egfr and patient.egfr < 60) or patient.has_hepatic_impairment):
                         sev = DdiSeverity.CONTRAINDICATED
@@ -83,6 +73,7 @@ class ClinicalDdiDetector:
                     legal_evidence=r["source"], escalated_by_patient_context=escalated,
                     escalation_reason=reason
                 )
+
         # 3. Tra cứu trực tiếp Danh mục 633 cặp Hoạt chất QĐ 5948 (Bảng 3.1)
         direct = lookup_official_ddi(inn_a, inn_b)
         if direct:
@@ -98,8 +89,7 @@ class ClinicalDdiDetector:
                 legal_evidence=direct["legal_source"]
             )
 
-        # Bảng 3.2: only explicit names present in the source groups are
-        # matched. Class membership is never inferred from a partial phrase.
+        # Bảng 3.2: Tương tác theo nhóm
         group_match = lookup_official_group_ddi(inn_a, inn_b)
         if group_match:
             action = group_match.get("action", "")
@@ -116,60 +106,10 @@ class ClinicalDdiDetector:
         return None
 
     def evaluate_polypharmacy(self, drugs: list[DrugEntity], patient: Optional[PatientClinicalContext] = None) -> list[PolypharmacyCumulativeAlert]:
-        alerts: list[PolypharmacyCumulativeAlert] = []
-
-        # A. Nguy cơ kéo dài khoảng QT cộng dồn (Cumulative QTc / Tisdale Score)
-        qt_drugs = [d for d in drugs if "qt_prolonging" in d.risk_flags]
-        if len(qt_drugs) >= 2:
-            is_critical = len(qt_drugs) >= 3 or (patient and patient.baseline_qtc and patient.baseline_qtc >= 480)
-            alerts.append(PolypharmacyCumulativeAlert(
-                syndrome_id="POLY_QT_PROLONGATION",
-                severity=DdiSeverity.CONTRAINDICATED if is_critical else DdiSeverity.MAJOR,
-                title=f"CẢNH BÁO TÍCH LŨY QT ({len(qt_drugs)} THUỐC): NGUY CƠ XOẮN ĐỈNH TỬ VONG",
-                involved_drugs=[d.display_name for d in qt_drugs],
-                mechanism="Cộng dồn ức chế dòng kali IKr qua kênh HERG tại cơ tâm thất, kéo dài điện thế hoạt động cơ tim.",
-                clinical_consequence="Kéo dài khoảng QTc kịch phát, khởi phát Xoắn đỉnh (Torsades de Pointes), rung thất và ngừng tim đột ngột.",
-                action_recommendation="Đo ECG 12 chuyển đạo trước và trong khi dùng. Giữ Kali máu >= 4.0 mEq/L, Magnesi >= 2.0 mg/dL. Cân nhắc thay thế.",
-                legal_evidence="Thang điểm Tisdale (Circulation 2013); cần đối chiếu hướng dẫn QT hiện hành"
-            ))
-
-        # B. Nguy cơ tăng Kali máu đa thuốc (Cumulative Hyperkalemia)
-        k_drugs = [d for d in drugs if "hyperkalemia" in d.risk_flags]
-        if len(k_drugs) >= 2:
-            crit_k = (patient and patient.serum_potassium and patient.serum_potassium >= 5.0) or (patient and patient.egfr and patient.egfr < 30)
-            alerts.append(PolypharmacyCumulativeAlert(
-                syndrome_id="POLY_HYPERKALEMIA",
-                severity=DdiSeverity.CONTRAINDICATED if crit_k else DdiSeverity.MAJOR,
-                title=f"CẢNH BÁO CỘNG DỒN TĂNG KALI MÁU ({len(k_drugs)} THUỐC)",
-                involved_drugs=[d.display_name for d in k_drugs],
-                mechanism="Hiệp đồng ức chế bài tiết Kali qua thận tại trục Renin-Angiotensin-Aldosterone và ống góp.",
-                clinical_consequence="Tăng Kali máu ác tính (> 6.5 mEq/L), rối loạn dẫn truyền tim, sóng T nhọn đối xứng, vô tâm thu.",
-                action_recommendation="Kiểm tra điện giải đồ định kỳ. Tuyệt đối không bổ sung kali ngoại sinh.",
-                legal_evidence="QĐ 5948/QĐ-BYT & Hướng dẫn KDIGO"
-            ))
-
-        # C. Hội chứng Triple Whammy trên thận (RAAS + Lợi tiểu + NSAID)
-        has_raas = any("RAAS_INHIBITOR" in d.atc_classes for d in drugs)
-        has_diuretic = any("LOOP_DIURETIC" in d.atc_classes or "POTASSIUM_SPARING" in d.atc_classes for d in drugs)
-        has_nsaid = any("NSAID" in d.atc_classes for d in drugs)
-        if has_raas and has_diuretic and has_nsaid:
-            sev = DdiSeverity.CONTRAINDICATED if (patient and patient.egfr and patient.egfr < 60) else DdiSeverity.MAJOR
-            tw_drugs = [d.display_name for d in drugs if any(c in d.atc_classes for c in ["RAAS_INHIBITOR", "LOOP_DIURETIC", "POTASSIUM_SPARING", "NSAID"])]
-            alerts.append(PolypharmacyCumulativeAlert(
-                syndrome_id="POLY_TRIPLE_WHAMMY", severity=sev,
-                title="HỘI CHỨNG 'TRIPLE WHAMMY': SUY THẬN CẤP DO BỘ BA THUỐC",
-                involved_drugs=tw_drugs,
-                mechanism="NSAID co tiểu động mạch vào (giảm PG) + RAAS giãn tiểu động mạch ra + Lợi tiểu giảm thể tích tuần hoàn hiệu dụng.",
-                clinical_consequence="Sụt giảm nghiêm trọng áp lực lọc cầu thận, gây suy thận cấp trước thận và hoại tử ống thận cấp tính.",
-                action_recommendation="Chống chỉ định phối hợp tam giác này. Thay thế NSAID bằng Paracetamol hoặc giảm đau thần kinh khác.",
-                legal_evidence="Cảnh báo Cảnh giác Dược Quốc Gia & QĐ 5948/QĐ-BYT"
-            ))
-
-        return alerts
+        return evaluate_polypharmacy(drugs, patient)
 
     def audit_prescription(self, raw_drug_list: list[str], patient: Optional[PatientClinicalContext] = None) -> PrescriptionAuditReport:
         entities = [normalize_drug_entity(item) for item in raw_drug_list if item and item.strip()]
-        # Khử trùng lặp thực thể theo canonical_inn
         unique_entities: list[DrugEntity] = []
         seen_inns = set()
         for e in entities:

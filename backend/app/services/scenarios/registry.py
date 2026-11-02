@@ -1,18 +1,8 @@
-"""
-Bộ điều phối Kịch bản Lâm sàng Chuyên sâu (Scenario Registry & Dispatcher)
-Tập hợp các Scenario Handlers độc lập và quản lý bộ nhớ ngữ cảnh nhiều lượt (AMIE Multi-turn Context & Entity State Tracking).
-"""
-
 from typing import List, Optional
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.patient import PatientProfile
-from app.models.cpoe import CpoePrescription
-from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse
-from app.services.session_context import get_or_create_session
-from app.services.scenarios.context import ClinicalContext
 from app.services.scenarios.base import BaseScenario
+from app.services.scenarios.context_builder import build_scenario_context
 
 # Danh sách Kịch bản Lâm sàng
 from app.services.scenarios.case_medication_deictic_followup import MedicationDeicticFollowupScenario
@@ -38,9 +28,10 @@ from app.services.scenarios.case_adr import AdrReportingScenario
 from app.services.scenarios.case_fever_triage import FeverTriageScenario
 from app.services.scenarios.case_headache_pain import HeadachePainScenario
 from app.services.scenarios.case_oncology_specialty import OncologySpecialtyScenario
+from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 
 SCENARIOS: List[BaseScenario] = [
-    MedicationDeicticFollowupScenario(), # Bắt các câu hỏi anaphora "thuốc này", "nó"
+    MedicationDeicticFollowupScenario(),
     FeverTriageScenario(),
     HeadachePainScenario(),
     OncologySpecialtyScenario(),
@@ -73,155 +64,18 @@ async def dispatch_clinical_scenario(
     session_id: Optional[str],
     db: AsyncSession
 ) -> Optional[CopilotResponse]:
-    # 1. Nạp session và kiểm tra ngữ cảnh đa lượt (AMIE Multi-turn context)
-    session = get_or_create_session(session_id, user_name, user_role)
-    
-    # Load only domain tables required by a candidate scenario. Drug-only and
-    # conversational scenarios must never scan patient and inventory records.
-    lower = lower_query
-    needs_patients = any(term in lower for term in ("bệnh nhân", "bn ", "hồ sơ", "bệnh án", "dị ứng", "tiền sử", "creatinin", "egfr", "chức năng thận", "đơn thuốc của", "patient", "medication of"))
-    needs_inventory = any(term in lower for term in ("tồn kho", "còn bao nhiêu", "lô thuốc", "hạn dùng", "fefo", "vị trí kho", "kệ nào", "tủ nào"))
-    all_patients = []
-    all_rxs = []
-    all_batches = []
-    if needs_patients:
-        res = await db.execute(select(PatientProfile))
-        all_patients = res.scalars().all()
-        if any(term in lower for term in ("đơn thuốc", "đơn của", "kê đơn", "prescription")):
-            rx_res = await db.execute(select(CpoePrescription))
-            all_rxs = rx_res.scalars().all()
-    if needs_inventory:
-        batch_res = await db.execute(select(InventoryBatch))
-        all_batches = batch_res.scalars().all()
-    
-    # 3. Định danh bệnh nhân trong câu truy vấn (Tránh nhầm 'trí' trong 'xử trí')
-    detected_patient = None
-    for p in all_patients:
-        last_word = p.full_name.split()[-1].lower()
-        if (
-            p.full_name.lower() in lower_query
-            or p.id.lower() in lower_query
-            or f"bệnh nhân {last_word}" in lower_query
-            or f"bn {last_word}" in lower_query
-            or f"bn. {last_word}" in lower_query
-        ):
-            detected_patient = p
-            break
+    ctx, session = await build_scenario_context(query, lower_query, user_name, user_role, session_id, db)
 
-    is_follow_up = False
-    if detected_patient:
-        session.set_active_patient(detected_patient.id, detected_patient.full_name)
-    else:
-        for rx in all_rxs:
-            last_word = rx.patient_name.split()[-1].lower()
-            if (
-                rx.patient_name.lower() in lower_query
-                or f"bệnh nhân {last_word}" in lower_query
-                or f"bn {last_word}" in lower_query
-                or f"bn. {last_word}" in lower_query
-            ):
-                session.set_active_patient(rx.patient_id or rx.id, rx.patient_name)
-                break
-
-    # Chỉ kế thừa bệnh nhân khi truy vấn có đại từ chỉ định hoặc hỏi thuộc tính bệnh nhân (chống context leakage)
-    has_patient_deictic = any(w in lower_query for w in [
-        "ông ấy", "bà ấy", "bệnh nhân này", "bệnh nhân đó", "người này", "bệnh nhân", "người bệnh", "ca này",
-        "tiền sử", "dị ứng của", "chức năng thận", "hồ sơ", "bệnh án", "đơn thuốc của"
-    ])
-    has_general_drug_or_system_query = any(w in lower_query for w in [
-        "thuốc", "các loại thuốc", "nhóm thuốc", "dược phẩm", "hoạt chất", "biệt dược",
-        "hạ sốt", "giảm đau", "kháng sinh", "chuỗi lạnh", "tủ lạnh", "mất điện",
-        "fefo", "hạn dùng", "tồn kho", "báo hỏng", "sự cố máy"
-    ]) and not any(w in lower_query for w in ["ông ấy", "bà ấy", "bệnh nhân này", "bệnh nhân đó", "người này", "bệnh nhân"])
-
-    if not detected_patient and session.active_patient_id and has_patient_deictic and not has_general_drug_or_system_query:
-        for p in all_patients:
-            if p.id == session.active_patient_id:
-                detected_patient = p
-                is_follow_up = True
-                break
-        if not detected_patient:
-            is_follow_up = True
-
-    # 4. Ghi nhận thuốc trong câu truy vấn vào Active Medication Slot
-    detected_batch = None
-    for b in all_batches:
-        drug_name_lower = b.item_name.lower()
-        active_ing_lower = (b.active_ingredient or "").lower()
-        # Tìm kiếm theo tên biệt dược hoặc hoạt chất (ít nhất 4 ký tự)
-        if (len(drug_name_lower) >= 4 and drug_name_lower in lower_query) or (
-            len(active_ing_lower) >= 4 and active_ing_lower in lower_query
-        ):
-            detected_batch = b
-            break
-
-    if detected_batch:
-        session.set_active_medication(
-            name=detected_batch.item_name,
-            ingredient=detected_batch.active_ingredient or detected_batch.item_name,
-            batch=detected_batch.batch_number,
-            stock=f"{detected_batch.current_stock} {detected_batch.unit}",
-            location=detected_batch.warehouse_location,
-            sdk=detected_batch.registration_number or detected_batch.national_code
-        )
-
-    # Preserve an active catalog medication for short field-only follow-ups.
-    if not detected_batch and session.active_medication_name:
-        from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
-        explicit_entity = any(
-            len(alias) >= 4 and alias.casefold() in lower_query
-            for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
-        )
-        if not explicit_entity and any(term in lower_query for term in (
-            "liều tối đa", "còn liều", "sáng hay tối", "uống sáng", "uống tối",
-            "lúc đói", "lúc no", "trước ăn", "sau ăn", "bao lâu thì tiêm",
-            "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng", "cách pha",
-        )):
-            session.set_active_medication(
-                name=session.active_medication_name, ingredient=session.active_medication_ingredient,
-                batch=session.active_medication_batch, stock=session.active_medication_stock,
-                location=session.active_medication_location, sdk=session.active_medication_sdk,
-            )
-
-    # Nhận diện câu hỏi chỉ định tiếp diễn về thuốc ("thuốc này", "nó", "thuốc vừa nói")
-    is_med_follow_up = any(w in lower_query for w in [
-        "thuốc này", "thuốc đó", "nó", "thuốc vừa nói", "thuốc vừa gợi ý",
-        "viên này", "lọ này", "ống này", "thuốc trên", "thuốc đang hỏi"
-    ])
-
-    # 5. Khởi tạo ClinicalContext hoàn chỉnh
-    ctx = ClinicalContext(
-        query=query,
-        lower_query=lower_query,
-        user_name=user_name,
-        user_role=user_role,
-        session=session,
-        patient=detected_patient,
-        all_patients=all_patients,
-        all_batches=all_batches,
-        is_follow_up=is_follow_up,
-        is_med_follow_up=is_med_follow_up
-    )
-
-    # 6. Symptom/self-care scenarios precede generic medication intent and RAG.
     if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
         fever_scenario = next(s for s in SCENARIOS if s.scenario_id == "fever_triage")
         if fever_scenario.can_handle(query, lower_query, ctx):
             resp = await fever_scenario.handle(query, lower_query, ctx, db)
             if resp:
-                resp.session_id = session.session_id
-                resp.active_patient_id = session.active_patient_id
-                resp.active_patient_name = session.active_patient_name
-                resp.active_medication_name = session.active_medication_name
-                resp.active_medication_stock = session.active_medication_stock
-                resp.active_medication_location = session.active_medication_location
-                session.last_intent = resp.intent
+                _attach_session_state(resp, session)
                 return resp
 
-    # Duyệt qua các scenario theo thứ tự đăng ký.
     for scenario in SCENARIOS:
         if scenario.scenario_id == "medication_deictic_followup" and session.active_medication_name:
-            from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
             explicit_drug = any(
                 len(alias) >= 4 and alias.casefold() in lower_query
                 for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
@@ -231,13 +85,16 @@ async def dispatch_clinical_scenario(
         if scenario.can_handle(query, lower_query, ctx):
             resp = await scenario.handle(query, lower_query, ctx, db)
             if resp:
-                resp.session_id = session.session_id
-                resp.active_patient_id = session.active_patient_id
-                resp.active_patient_name = session.active_patient_name
-                resp.active_medication_name = session.active_medication_name
-                resp.active_medication_stock = session.active_medication_stock
-                resp.active_medication_location = session.active_medication_location
-                session.last_intent = resp.intent
+                _attach_session_state(resp, session)
                 return resp
 
     return None
+
+def _attach_session_state(resp: CopilotResponse, session) -> None:
+    resp.session_id = session.session_id
+    resp.active_patient_id = session.active_patient_id
+    resp.active_patient_name = session.active_patient_name
+    resp.active_medication_name = session.active_medication_name
+    resp.active_medication_stock = session.active_medication_stock
+    resp.active_medication_location = session.active_medication_location
+    session.last_intent = resp.intent

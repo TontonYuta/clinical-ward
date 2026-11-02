@@ -1,81 +1,45 @@
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
+from datetime import datetime
 import json
 import uuid
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional
+
 from app.database import get_db
 from app.models.cpoe import CpoePrescription
 from app.schemas.cpoe import CpoeOrderCreate, CpoeOrderResponse, CpoeItemSchema
 from app.services.audit_service import record_audit_event
-from app.services.clinical_ddi_engine import evaluate_prescription
+from app.services.cpoe_service import validate_cpoe_ddi, map_prescription_to_response
 
-router = APIRouter(prefix="/cpoe", tags=["Chỉ Định & Kê Đơn CPOE (TT 26/2025/TT-BYT)"])
+router = APIRouter(prefix="/cpoe", tags=["Đơn thuốc điện tử CPOE"])
 
-@router.get("", response_model=list[CpoeOrderResponse])
+@router.get("", response_model=List[CpoeOrderResponse])
 async def get_cpoe_orders(
-    prescription_type: str | None = Query(None, description="outpatient hoặc inpatient_daily"),
-    search: str | None = Query(None, description="Tìm tên bệnh nhân hoặc mã đơn"),
+    patient_id: Optional[str] = Query(None, description="Lọc theo ID bệnh nhân"),
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(CpoePrescription).order_by(CpoePrescription.created_at.desc())
-    res = await db.execute(stmt)
-    records = res.scalars().all()
+    query = select(CpoePrescription).order_by(desc(CpoePrescription.created_at)).limit(limit)
+    if patient_id:
+        query = select(CpoePrescription).where(CpoePrescription.patient_id == patient_id).order_by(desc(CpoePrescription.created_at)).limit(limit)
 
-    orders: list[CpoeOrderResponse] = []
-    for r in records:
-        if prescription_type and r.prescription_type != prescription_type:
-            continue
-        if search:
-            q = search.lower()
-            if q not in r.patient_name.lower() and q not in r.id.lower() and q not in r.diagnosis_icd10.lower():
-                continue
+    result = await db.execute(query)
+    prescriptions = result.scalars().all()
 
-        try:
-            items_raw = json.loads(r.items_json)
-            items = [CpoeItemSchema(**it) for it in items_raw]
-        except Exception:
-            items = []
+    response_list = []
+    for p in prescriptions:
+        items = []
+        if p.items_json:
+            try:
+                raw_items = json.loads(p.items_json)
+                items = [CpoeItemSchema(**it) for it in raw_items]
+            except Exception:
+                items = []
 
-        orders.append(
-            CpoeOrderResponse(
-                id=r.id,
-                prescriptionType=r.prescription_type,
-                patientId=r.patient_id,
-                patientName=r.patient_name,
-                patientCccd=r.patient_cccd,
-                patientInsuranceId=getattr(r, "patient_insurance_id", None),
-                patientWeight=getattr(r, "patient_weight", None),
-                patientPhone=getattr(r, "patient_phone", None),
-                patientEmail=getattr(r, "patient_email", None),
-                patientAddress=getattr(r, "patient_address", None),
-                guardianName=getattr(r, "guardian_name", None),
-                patientDob=getattr(r, "patient_dob", None),
-                patientGender=getattr(r, "patient_gender", None),
-                department=getattr(r, "department", None),
-                diagnosisIcd10=r.diagnosis_icd10,
-                diagnosisText=r.diagnosis_text,
-                isChronicDisease=r.is_chronic_disease,
-                daysPrescribed=r.days_prescribed,
-                doctorName=r.doctor_name,
-                doctorCertificate=r.doctor_certificate,
-                prescribedAt=r.prescribed_at,
-                digitalSignature=r.digital_signature,
-                status=r.status,
-                tt26FormType=getattr(r, "tt26_form_type", None),
-                receiverCccd=getattr(r, "receiver_cccd", None),
-                receiverName=getattr(r, "receiver_name", None),
-                treatmentBatch1=getattr(r, "treatment_batch_1", None),
-                treatmentBatch2=getattr(r, "treatment_batch_2", None),
-                treatmentBatch3=getattr(r, "treatment_batch_3", None),
-                facilityName=getattr(r, "facility_name", None),
-                facilityAddress=getattr(r, "facility_address", None),
-                facilityPhone=getattr(r, "facility_phone", None),
-                items=items,
-                createdAt=r.created_at
-            )
-        )
-    return orders
+        response_list.append(map_prescription_to_response(p, items))
+
+    return response_list
 
 @router.post("", response_model=CpoeOrderResponse, status_code=status.HTTP_201_CREATED)
 async def create_cpoe_order(
@@ -85,31 +49,7 @@ async def create_cpoe_order(
     if payload.status != "draft":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tạo mới hiện chỉ hỗ trợ lưu bản nháp; chữ ký và phát hành cần workflow tích hợp")
 
-    ddi_report = evaluate_prescription([item.activeIngredient or item.medicationName for item in payload.items])
-    if ddi_report.has_contraindication:
-        pair_alerts = [
-            {
-                "severity": alert.severity.value,
-                "title": alert.title,
-                "drug_a": alert.drug_a,
-                "drug_b": alert.drug_b,
-                "mechanism": alert.mechanism,
-                "consequence": alert.clinical_consequence,
-                "action": alert.action_recommendation,
-                "source": alert.legal_evidence,
-            }
-            for alert in ddi_report.pair_alerts
-            if alert.severity.value == "CONTRAINDICATED"
-        ]
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "CPOE_CONTRAINDICATED_DDI",
-                "source_status": "contraindicated_pair",
-                "message": "Không thể lưu đơn nháp vì phát hiện cặp thuốc chống chỉ định. Điều chỉnh danh sách thuốc và rà soát lại.",
-                "pair_alerts": pair_alerts,
-            },
-        )
+    validate_cpoe_ddi(payload.items)
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     order_id = payload.id or f"RX-2026-{uuid.uuid4().hex[:6].upper()}"
@@ -176,39 +116,4 @@ async def create_cpoe_order(
             }
         )
 
-    return CpoeOrderResponse(
-        id=prescription.id,
-        prescriptionType=prescription.prescription_type,
-        patientId=prescription.patient_id,
-        patientName=prescription.patient_name,
-        patientCccd=prescription.patient_cccd,
-        patientInsuranceId=prescription.patient_insurance_id,
-        patientWeight=prescription.patient_weight,
-        patientPhone=prescription.patient_phone,
-        patientEmail=prescription.patient_email,
-        patientAddress=prescription.patient_address,
-        guardianName=prescription.guardian_name,
-        patientDob=prescription.patient_dob,
-        patientGender=prescription.patient_gender,
-        department=prescription.department,
-        diagnosisIcd10=prescription.diagnosis_icd10,
-        diagnosisText=prescription.diagnosis_text,
-        isChronicDisease=prescription.is_chronic_disease,
-        daysPrescribed=prescription.days_prescribed,
-        doctorName=prescription.doctor_name,
-        doctorCertificate=prescription.doctor_certificate,
-        prescribedAt=prescription.prescribed_at,
-        digitalSignature=prescription.digital_signature,
-        status=prescription.status,
-        tt26FormType=prescription.tt26_form_type,
-        receiverCccd=prescription.receiver_cccd,
-        receiverName=prescription.receiver_name,
-        treatmentBatch1=prescription.treatment_batch_1,
-        treatmentBatch2=prescription.treatment_batch_2,
-        treatmentBatch3=prescription.treatment_batch_3,
-        facilityName=prescription.facility_name,
-        facilityAddress=prescription.facility_address,
-        facilityPhone=prescription.facility_phone,
-        items=payload.items,
-        createdAt=prescription.created_at
-    )
+    return map_prescription_to_response(prescription, payload.items)

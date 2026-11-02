@@ -1,8 +1,16 @@
+"""
+Dữ liệu khởi tạo Danh mục Thuốc Quốc gia Cục Quản lý Dược (DAV) (<=200 LOC)
+"""
 import os
-import re
 import json
 import gzip
 import sqlite3
+from app.seed_monographs import seed_clinical_monographs
+from app.seed_registry_helpers import (
+    init_dav_table,
+    update_curated_enrichment,
+    map_drug_item_to_tuple
+)
 
 def resolve_db_path(db_file: str | None = None) -> str:
     if db_file and (os.path.exists(db_file) or "/tmp/" in db_file):
@@ -21,7 +29,6 @@ def resolve_db_path(db_file: str | None = None) -> str:
     return "/tmp/clinical_hospital.db" if os.environ.get("VERCEL") else "clinical_hospital.db"
 
 def find_data_source() -> tuple[str | None, bool]:
-    # 1. Gzip compressed master 55k dataset
     candidates_gz = (
         "/app/data/vietnam_drug_registry/dav_master_registry.json.gz",
         "data/vietnam_drug_registry/dav_master_registry.json.gz",
@@ -42,7 +49,6 @@ def find_data_source() -> tuple[str | None, bool]:
         if os.path.exists(p_root):
             return p_root, True
 
-    # 2. Essential formulary fallback (tracked in Git)
     candidates_json = (
         "/app/data/vietnam_drug_registry/dav_essential_formulary.json",
         "data/vietnam_drug_registry/dav_essential_formulary.json",
@@ -65,257 +71,24 @@ def find_data_source() -> tuple[str | None, bool]:
 
     return None, False
 
-def find_monographs_source() -> str | None:
-    candidates = (
-        "/app/data/knowledge_base/dtqg_monographs_extracted.json",
-        "data/knowledge_base/dtqg_monographs_extracted.json",
-        "backend/data/knowledge_base/dtqg_monographs_extracted.json",
-        "../data/knowledge_base/dtqg_monographs_extracted.json",
-        "../../backend/data/knowledge_base/dtqg_monographs_extracted.json",
-    )
-    for c in candidates:
-        p = os.path.abspath(os.path.join(os.path.dirname(__file__), c))
-        if os.path.exists(p):
-            return p
-        p_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", c))
-        if os.path.exists(p_root):
-            return p_root
-        if os.path.exists(c):
-            return os.path.abspath(c)
-    return None
-
-def seed_clinical_monographs(conn: sqlite3.Connection):
-    cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS clinical_drug_monographs (
-        id TEXT PRIMARY KEY,
-        inn TEXT NOT NULL,
-        title TEXT,
-        atc_code TEXT,
-        drug_class TEXT,
-        dosage_forms TEXT,
-        indications TEXT,
-        contraindications TEXT,
-        precautions TEXT,
-        pregnancy_warning TEXT,
-        adverse_effects TEXT,
-        adult_dosage TEXT,
-        pediatric_dosage TEXT,
-        renal_adjustment TEXT,
-        hepatic_adjustment TEXT,
-        drug_interactions TEXT,
-        overdose_treatment TEXT,
-        antidote TEXT,
-        source TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )""")
-    cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_inn ON clinical_drug_monographs(inn)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_atc ON clinical_drug_monographs(atc_code)")
-
-    src = find_monographs_source()
-    if not src:
-        print("⚠️ Không tìm thấy dtqg_monographs_extracted.json")
-        cursor.execute("SELECT COUNT(*) FROM clinical_drug_monographs")
-        return cursor.fetchone()[0]
-
-    try:
-        with open(src, "r", encoding="utf-8") as f:
-            monos = json.load(f)
-        registry_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
-        registry_is_gz = False
-        registry_items = []
-        if registry_path:
-            opener = gzip.open if registry_is_gz else open
-            mode = "rt" if registry_is_gz else "r"
-            with opener(registry_path, mode, encoding="utf-8") as f:
-                registry_items = json.load(f)
-
-        # Resolve explicit monograph IDs carried by the curated DAV dataset.
-        monographs_by_id = {m.get("id"): m for m in monos if m.get("id")}
-        for item in registry_items:
-            monograph_id = item.get("clinicalMonographId") or item.get("clinical_monograph_id")
-            if not monograph_id or monograph_id in monographs_by_id:
-                continue
-            monographs_by_id[monograph_id] = {
-                "id": monograph_id,
-                "inn": item.get("activeIngredient", ""),
-                "title": item.get("brandName", ""),
-                "atc_code": item.get("atcCode") or item.get("atc_code"),
-                "drug_class": item.get("drugClass") or item.get("drug_class"),
-                "dosage_forms": item.get("dosageForm") or item.get("dosage_form"),
-                "indications": item.get("indications"),
-                "contraindications": item.get("contraindications"),
-                "precautions": item.get("precautions"),
-                "pregnancy_warning": item.get("pregnancyWarning") or item.get("pregnancy_warning"),
-                "adverse_effects": item.get("adverseEffects") or item.get("adverse_effects"),
-                "adult_dosage": item.get("adultDosage") or item.get("adult_dosage"),
-                "pediatric_dosage": item.get("pediatricDosage") or item.get("pediatric_dosage"),
-                "renal_adjustment": item.get("renalAdjustment") or item.get("renal_adjustment"),
-                "hepatic_adjustment": item.get("hepaticAdjustment") or item.get("hepatic_adjustment"),
-                "drug_interactions": item.get("drugInteractions") or item.get("drug_interactions"),
-                "overdose_treatment": item.get("overdoseTreatment") or item.get("overdose_treatment"),
-                "antidote": item.get("antidote"),
-                "source": item.get("clinicalSource") or item.get("clinical_source"),
-            }
-        monos = list(monos) + [m for m in monographs_by_id.values() if m.get("id")]
-        rows = []
-        for idx, m in enumerate(monos, 1):
-            inn = m.get("inn", "")
-            # Stable source row identity: the index distinguishes repeated INNs.
-            m_id = f"DTQG-{idx:04d}-{re.sub(r'[^a-zA-Z0-9]', '', inn)[:20]}"
-            rows.append((
-                m_id,
-                inn,
-                m.get("title", ""),
-                m.get("atc_code"),
-                m.get("drug_class"),
-                m.get("dosage_forms"),
-                m.get("indications"),
-                m.get("contraindications"),
-                m.get("precautions"),
-                m.get("pregnancy_warning"),
-                m.get("adverse_effects"),
-                m.get("adult_dosage"),
-                m.get("pediatric_dosage"),
-                m.get("renal_adjustment"),
-                m.get("hepatic_adjustment"),
-                m.get("drug_interactions"),
-                m.get("overdose_treatment"),
-                m.get("antidote"),
-                m.get("source") or (f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {m.get('start_page')}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if m.get("start_page") else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf")
-            ))
-        cursor.execute("BEGIN TRANSACTION")
-        cursor.executemany("""
-        INSERT OR REPLACE INTO clinical_drug_monographs
-        (id, inn, title, atc_code, drug_class, dosage_forms, indications, contraindications, precautions, pregnancy_warning, adverse_effects, adult_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, drug_interactions, overdose_treatment, antidote, source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, rows)
-        conn.commit()
-        active_ids = {row[0] for row in cursor.execute("SELECT id FROM clinical_drug_monographs")}
-        # The essential formulary is intentionally a smaller, curated subset.
-        # Refresh its links and only fill missing fields from exact source IDs.
-        for drug in cursor.execute("SELECT id, clinical_monograph_id FROM dav_national_drugs").fetchall():
-            drug_id, monograph_id = drug
-            if monograph_id not in active_ids:
-                continue
-            monograph = cursor.execute(
-                "SELECT atc_code, drug_class, indications, contraindications, precautions, pregnancy_warning, adult_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, adverse_effects, drug_interactions, overdose_treatment, antidote, source FROM clinical_drug_monographs WHERE id = ?",
-                (monograph_id,),
-            ).fetchone()
-            if not monograph:
-                continue
-            fields = ("atc_code", "drug_class", "indications", "contraindications", "precautions", "pregnancy_warning", "adult_dosage", "pediatric_dosage", "renal_adjustment", "hepatic_adjustment", "adverse_effects", "drug_interactions", "overdose_treatment", "antidote", "clinical_source")
-            updates = {name: value for name, value in zip(fields, monograph) if value}
-            if updates:
-                assignment = ", ".join(f"{name} = COALESCE(NULLIF({name}, ''), ?)" for name in updates)
-                cursor.execute(f"UPDATE dav_national_drugs SET {assignment} WHERE id = ?", (*updates.values(), drug_id))
-        conn.commit()
-        print(f"✅ Đã nạp {len(rows)} chuyên luận Dược Thư 2015 vào clinical_drug_monographs!")
-        return len(rows)
-    except Exception as e:
-        print(f"Lỗi khi nạp chuyên luận Dược Thư: {e}")
-        return 0
-
 def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     target_db = resolve_db_path(db_file)
     os.makedirs(os.path.dirname(os.path.abspath(target_db)), exist_ok=True)
     conn = sqlite3.connect(target_db)
     cursor = conn.cursor()
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS dav_national_drugs (
-        id VARCHAR(64) PRIMARY KEY, national_code VARCHAR(64) NOT NULL,
-        brand_name VARCHAR(255) NOT NULL, active_ingredient VARCHAR(255) NOT NULL,
-        concentration VARCHAR(255), dosage_form VARCHAR(255), route VARCHAR(100),
-        standard_unit VARCHAR(50) DEFAULT 'Viên', "group" VARCHAR(100) DEFAULT 'Thuốc điều trị chuyên khoa',
-        is_controlled INTEGER DEFAULT 0, is_high_alert INTEGER DEFAULT 0, is_crash_cart INTEGER DEFAULT 0,
-        note TEXT, packaging_spec VARCHAR(255), standard_pharmacopeia VARCHAR(100),
-        shelf_life VARCHAR(100), manufacturer TEXT, country VARCHAR(100),
-        applicant_name TEXT, approval_decision VARCHAR(255),
-        hdsd_path TEXT, label_path TEXT,
-        atc_code TEXT, drug_class TEXT,
-        indications TEXT, contraindications TEXT, precautions TEXT,
-        pregnancy_warning TEXT, adult_dosage TEXT, pediatric_dosage TEXT,
-        renal_adjustment TEXT, hepatic_adjustment TEXT,
-        adverse_effects TEXT, drug_interactions TEXT, overdose_treatment TEXT,
-        antidote TEXT, clinical_source TEXT, clinical_monograph_id TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )""")
-
-    cols_to_add = [
-        ("packaging_spec", "VARCHAR(255)"),
-        ("standard_pharmacopeia", "VARCHAR(100)"),
-        ("shelf_life", "VARCHAR(100)"),
-        ("manufacturer", "TEXT"),
-        ("country", "VARCHAR(100)"),
-        ("applicant_name", "TEXT"),
-        ("approval_decision", "VARCHAR(255)"),
-        ("hdsd_path", "TEXT"),
-        ("label_path", "TEXT"),
-        ("atc_code", "TEXT"),
-        ("drug_class", "TEXT"),
-        ("indications", "TEXT"),
-        ("contraindications", "TEXT"),
-        ("precautions", "TEXT"),
-        ("pregnancy_warning", "TEXT"),
-        ("adult_dosage", "TEXT"),
-        ("pediatric_dosage", "TEXT"),
-        ("renal_adjustment", "TEXT"),
-        ("hepatic_adjustment", "TEXT"),
-        ("adverse_effects", "TEXT"),
-        ("drug_interactions", "TEXT"),
-        ("overdose_treatment", "TEXT"),
-        ("antidote", "TEXT"),
-        ("clinical_source", "TEXT"),
-        ("clinical_monograph_id", "TEXT"),
-        ("created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
-    ]
-    for col_name, col_type in cols_to_add:
-        try:
-            cursor.execute(f"ALTER TABLE dav_national_drugs ADD COLUMN {col_name} {col_type}")
-        except Exception:
-            pass
-
-    cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_national_code ON dav_national_drugs (national_code)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_brand_name ON dav_national_drugs (brand_name)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_active_ingredient ON dav_national_drugs (active_ingredient)")
-    cursor.execute('CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_group ON dav_national_drugs ("group")')
-
-    # Nạp bảng chuyên luận thuốc đã trích xuất; kiểm tra provenance trước khi dùng
+    init_dav_table(cursor)
     seed_clinical_monographs(conn)
 
     cursor.execute("SELECT COUNT(*) FROM dav_national_drugs")
     existing_count = cursor.fetchone()[0]
-
-    # Kiểm tra xem dữ liệu lâm sàng đã có chưa
     cursor.execute("SELECT COUNT(*) FROM dav_national_drugs WHERE contraindications IS NOT NULL")
     enriched_count = cursor.fetchone()[0]
 
+    curated_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
     if existing_count >= 1900 and enriched_count > 0:
-        curated_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
         if os.path.exists(curated_path):
-            with open(curated_path, "r", encoding="utf-8") as f:
-                curated_items = json.load(f)
-            clinical_columns = (
-                ("atc_code", "atcCode"), ("drug_class", "drugClass"), ("indications", "indications"),
-                ("contraindications", "contraindications"), ("precautions", "precautions"),
-                ("pregnancy_warning", "pregnancyWarning"), ("adult_dosage", "adultDosage"),
-                ("pediatric_dosage", "pediatricDosage"), ("renal_adjustment", "renalAdjustment"),
-                ("hepatic_adjustment", "hepaticAdjustment"), ("adverse_effects", "adverseEffects"),
-                ("drug_interactions", "drugInteractions"), ("overdose_treatment", "overdoseTreatment"),
-                ("antidote", "antidote"), ("clinical_source", "clinicalSource"),
-                ("clinical_monograph_id", "clinicalMonographId"),
-            )
-            for item in curated_items:
-                code = item.get("nationalCode")
-                values = [item.get(source) for _, source in clinical_columns]
-                if not code or not any(values):
-                    continue
-                assignment = ", ".join(f"{column} = ?" for column, _ in clinical_columns)
-                cursor.execute(
-                    f"UPDATE dav_national_drugs SET {assignment} WHERE national_code = ?",
-                    (*values, code),
-                )
+            update_curated_enrichment(cursor, curated_path)
             conn.commit()
         conn.close()
         return existing_count
@@ -326,63 +99,20 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
         return existing_count
 
     print(f"🏛️ Seeding DAV registry from {src_path} (gz={is_gz}) into {target_db}...")
-    if is_gz:
-        with gzip.open(src_path, "rt", encoding="utf-8") as f:
-            items = json.load(f)
-    else:
-        with open(src_path, "r", encoding="utf-8") as f:
-            items = json.load(f)
+    opener = gzip.open if is_gz else open
+    mode = "rt" if is_gz else "r"
+    with opener(src_path, mode, encoding="utf-8") as f:
+        items = json.load(f)
 
-    curated_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
     if os.path.exists(curated_path):
         with open(curated_path, "r", encoding="utf-8") as f:
             curated_by_code = {item.get("nationalCode"): item for item in json.load(f)}
         items = [
-            {**item, **{key: value for key, value in curated_by_code.get(item.get("nationalCode"), {}).items() if value is not None}}
+            {**item, **{k: v for k, v in curated_by_code.get(item.get("nationalCode"), {}).items() if v is not None}}
             for item in items
         ]
 
-    rows = [(
-        d.get("id") or f"dav-{d.get('nationalCode', '')}",
-        d.get("nationalCode", ""),
-        d.get("brandName", ""),
-        d.get("activeIngredient", ""),
-        d.get("concentration", ""),
-        d.get("dosageForm", ""),
-        d.get("route", ""),
-        d.get("standardUnit", "Viên"),
-        d.get("group", "Thuốc điều trị chuyên khoa"),
-        1 if d.get("isControlled") else 0,
-        1 if d.get("isHighAlert") else 0,
-        1 if d.get("isCrashCart") else 0,
-        d.get("note", ""),
-        d.get("packagingSpec", ""),
-        d.get("standardPharmacopeia", "NSX"),
-        d.get("shelfLife", "36 tháng"),
-        d.get("manufacturer", ""),
-        d.get("country", "Việt Nam"),
-        d.get("applicantName", ""),
-        d.get("approvalDecision", ""),
-        d.get("hdsdPath") or d.get("hdsd_path"),
-        d.get("labelPath") or d.get("label_path"),
-        d.get("atcCode") or d.get("atc_code"),
-        d.get("drugClass") or d.get("drug_class"),
-        d.get("indications"),
-        d.get("contraindications"),
-        d.get("precautions"),
-        d.get("pregnancyWarning") or d.get("pregnancy_warning"),
-        d.get("adultDosage") or d.get("adult_dosage"),
-        d.get("pediatricDosage") or d.get("pediatric_dosage"),
-        d.get("renalAdjustment") or d.get("renal_adjustment"),
-        d.get("hepaticAdjustment") or d.get("hepatic_adjustment"),
-        d.get("adverseEffects") or d.get("adverse_effects"),
-        d.get("drugInteractions") or d.get("drug_interactions"),
-        d.get("overdoseTreatment") or d.get("overdose_treatment"),
-        d.get("antidote"),
-        d.get("clinicalSource") or d.get("clinical_source"),
-        d.get("clinicalMonographId") or d.get("clinical_monograph_id")
-    ) for d in items]
-
+    rows = [map_drug_item_to_tuple(d) for d in items]
     cursor.execute("PRAGMA synchronous = OFF")
     cursor.execute("PRAGMA journal_mode = WAL")
     cursor.execute("BEGIN TRANSACTION")
