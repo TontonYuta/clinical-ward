@@ -17,13 +17,12 @@ async function main() {
       await page.waitForTimeout(600);
     }
 
-    const query = 'Ceftriaxon kết hợp với Calci có nguy cơ tương tác và chống chỉ định không?';
+    const query = 'Chống chỉ định của Paracetamol?';
     await input.fill(query);
     await input.press('Enter');
 
-    // Wait for agent response
-    await page.waitForSelector('[data-testid="chat-message-agent"]', { timeout: 15000 });
-    await page.waitForTimeout(2000);
+    // Wait for agent message to appear
+    await page.waitForTimeout(4000);
 
     const sourceIntro = page.locator('[data-testid="chat-source-introduction"]').first();
     const isSourceIntroVisible = await sourceIntro.isVisible().catch(() => false);
@@ -44,6 +43,11 @@ async function main() {
 
     await page.screenshot({ path: ARTIFACT_PATH, fullPage: false });
     console.log('✅ Screenshot captured:', ARTIFACT_PATH);
+
+    if (!isDetailsVisible || !isSourceIntroVisible) {
+      throw new Error('Citation details or source intro not visible in UI');
+    }
+    console.log('🎉 Playwright UI RAG and Citation Disclosure test PASSED 100%!');
   } catch (err) {
     console.error('Playwright error:', err);
     throw err;
