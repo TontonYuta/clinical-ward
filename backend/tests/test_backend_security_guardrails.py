@@ -639,3 +639,23 @@ async def test_advice_free_text_patient_and_schedule_never_creates_medication_ca
     assert body["card"] is None
     assert body["answer_type"] == "clarification"
     assert "chọn đơn thuốc đã kê" in body["reply_text"].casefold()
+
+
+@pytest.mark.asyncio
+async def test_single_drug_multi_field_interaction_and_contraindication_authoritative_lookup():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/copilot/chat",
+            json={"query": "Tương tác thuốc và chống chỉ định của paracetamol", "user_role": "doctor", "user_name": "Bác sĩ Test"}
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["intent"] == "MEDICATION_SAFETY_PROFILE"
+    assert body["answer_type"] == "medication_fields"
+    assert "Tương tác thuốc" in body["reply_text"]
+    assert "Chống chỉ định" in body["reply_text"]
+    assert "vui lòng chọn hồ sơ người bệnh" not in body["reply_text"].lower()
+    assert len(body.get("citations") or []) > 0

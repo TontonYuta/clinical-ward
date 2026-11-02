@@ -48,7 +48,12 @@ async def build_drug_profile_response(
         ("ingredient", ("thành phần", "hoạt chất"), "active_ingredient", "Hoạt chất"),
         ("stock", ("tồn kho", "còn bao nhiêu", "trong kho", "vị trí kho"), "", "Tồn kho"),
     ]
-    requested_fields = [spec for spec in field_specs if any(term in lower_query for term in spec[1])]
+    def _matches_spec(spec_key: str, terms: tuple[str, ...]) -> bool:
+        if spec_key == "indications":
+            return any(t in lower_query for t in terms if t != "chỉ định") or bool(re.search(r"(?<!chống\s)(?<!chống)chỉ định", lower_query))
+        return any(t in lower_query for t in terms)
+
+    requested_fields = [spec for spec in field_specs if _matches_spec(spec[0], spec[1])]
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None

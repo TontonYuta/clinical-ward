@@ -318,8 +318,14 @@ async def _handle_copilot_chat(
     if is_debt_settle:
         return await handle_debt_settle_intent(query, lower_query, db)
 
+    resolved_meds_in_query = resolve_registered_medications(lower_query)
+    is_single_drug_interaction = (
+        len(resolved_meds_in_query) == 1
+        and any(term in lower_query for term in ("của", "thuốc này", "thuốc đó", "với thuốc khác"))
+        and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))
+    )
     is_interaction_question = any(term in lower_query for term in ("tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung"))
-    if is_interaction_question and not any(term in lower_query for term in ("tương tác thuốc của thuốc", "tương tác thuốc paracetamol", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "liều dùng", "liều tối đa", "thành phần", "hoạt chất", "chỉ định", "công dụng")):
+    if is_interaction_question and not is_single_drug_interaction and not any(term in lower_query for term in ("tương tác thuốc của thuốc", "tương tác thuốc paracetamol", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "liều dùng", "liều tối đa", "thành phần", "hoạt chất", "chỉ định", "công dụng")):
         from app.services.rag.knowledge_graph import expand_clinical_graph
         from app.services.session_context import get_or_create_session
         ddi_context = expand_clinical_graph(query).get("kg_entities", [])
@@ -360,7 +366,13 @@ async def _handle_copilot_chat(
         ("ingredients", ["thành phần", "hoạt chất"]),
         ("registry", ["số đăng ký", "sđk"]),
     ]
-    matched_field_keys = {key for key, phrases in raw_field_specs if any(p in lower_query for p in phrases)}
+    matched_field_keys = {
+        key for key, phrases in raw_field_specs
+        if (
+            (key == "indications" and (any(p in lower_query for p in phrases if p != "chỉ định") or bool(re.search(r"(?<!chống\s)(?<!chống)chỉ định", lower_query))))
+            or (key != "indications" and any(p in lower_query for p in phrases))
+        )
+    }
     # General medication information and requests for multiple fields must be
     # resolved against the drug catalog before broad clinical scenarios run.
     drug_info_cues = ("thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng", "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất", "tương tác")
@@ -369,16 +381,17 @@ async def _handle_copilot_chat(
     asks_drug_info = any(cue in lower_query for cue in drug_info_cues)
     from app.services.copilot_drug_lookup import extract_drug_keywords
     extracted_kw = extract_drug_keywords(query)
-    is_two_drug = len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))
+    is_two_drug = (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))) or len(resolved_meds_in_query) > 1
+    is_two_drug_interaction = is_interaction_question and is_two_drug
     is_deep_complex = any(term in lower_query for term in ("thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"))
     has_multiple_medication_fields = len(matched_field_keys) > 1 or is_two_drug or is_deep_complex or any(c in lower_query for c in (" và ", " cùng ", ","))
     has_explicit_medication_field = len(matched_field_keys) == 1 and not has_multiple_medication_fields
-    if not is_renal_adjustment_request and asks_multiple_fields and asks_drug_info and not is_deep_complex and not is_interaction_question:
+    if not is_renal_adjustment_request and asks_multiple_fields and asks_drug_info and not is_deep_complex and not is_two_drug_interaction:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
-    if not is_renal_adjustment_request and has_explicit_medication_field and (has_drug_entity or active_name_in_query) and not is_deep_complex:
+    if not is_renal_adjustment_request and has_explicit_medication_field and (has_drug_entity or active_name_in_query) and not is_deep_complex and not is_two_drug_interaction:
         # The authoritative lookup supplies the catalog-backed field answer and citation.
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
-    if not is_renal_adjustment_request and active_name_in_query and asks_drug_info and not is_deep_complex and not is_interaction_question:
+    if not is_renal_adjustment_request and active_name_in_query and asks_drug_info and not is_deep_complex and not is_two_drug_interaction:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     if not is_renal_adjustment_request and not explicit_medication_named and any(term in lower_query for term in (
@@ -416,7 +429,7 @@ async def _handle_copilot_chat(
                 session_id=session.session_id, suggested_chips=["Tra cứu thông tin thuốc", "Nhập tên hoạt chất hoặc biệt dược"],
             )
 
-    if not is_interaction_question and not is_deep_complex and any(term in lower_query for term in ("dùng cho bệnh gì", "dùng để làm gì", "công dụng", "chỉ định")) and any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4):
+    if not is_two_drug_interaction and not is_deep_complex and any(term in lower_query for term in ("dùng cho bệnh gì", "dùng để làm gì", "công dụng", "chỉ định")) and any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4):
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
@@ -428,7 +441,7 @@ async def _handle_copilot_chat(
             return scenario_res
 
     # 0d. 12 Kịch Bản Lâm Sàng Chuyên Sâu Tách File & AMIE Multi-turn Context
-    if has_drug_entity and any(cue in lower_query for cue in drug_info_cues) and not is_interaction_question and not is_deep_complex:
+    if has_drug_entity and any(cue in lower_query for cue in drug_info_cues) and not is_two_drug_interaction and not is_deep_complex:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
     scenario_res = await detect_and_handle_gemini_clinical_scenario(
         query, lower_query, user_name, db, user_role=user_role, session_id=session_id

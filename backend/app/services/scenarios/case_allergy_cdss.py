@@ -14,9 +14,17 @@ class AllergyCdssScenario(BaseScenario):
     scenario_name = "Thẩm định Dị ứng & 5 Đúng CPOE"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
-        if not ctx.patient and any(term in lower_query for term in ("dị ứng", "chống chỉ định", "thẩm định", "an toàn đơn", "5 đúng", "dùng được không")):
-            return True
+        from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
+        has_drug = bool(resolve_registered_medications(lower_query))
+        has_patient_clue = any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca này", "hồ sơ", "đơn thuốc", "tiền sử", "5 đúng", "an toàn đơn", "thẩm định đơn"))
+
+        if has_drug and not has_patient_clue and not ctx.patient:
+            return False
         if not ctx.patient and any(term in lower_query for term in ("egfr", "crcl", "creatinine", "suy thận", "chức năng thận", "chỉnh liều")):
+            return False
+        if not ctx.patient and (has_patient_clue or any(term in lower_query for term in ("thẩm định", "an toàn đơn", "5 đúng"))):
+            return any(term in lower_query for term in ("dị ứng", "chống chỉ định", "thẩm định", "an toàn đơn", "5 đúng", "dùng được không"))
+        if not ctx.patient:
             return False
         return any(w in lower_query for w in ["dị ứng", "chống chỉ định", "thẩm định", "an toàn đơn", "5 đúng", "dùng được không"])
 
