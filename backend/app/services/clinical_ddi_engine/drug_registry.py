@@ -57,5 +57,6 @@ DRUG_REGISTRY: dict[str, dict] = {
     "azathioprin": {"display": "Azathioprin / 6-MP", "aliases": ["azathioprin", "azathioprine", "imuran", "mercaptopurin"], "classes": ["THIOPURINE"], "risk": ["nephrotoxic"]},
     "thuoc_can_quang": {"display": "Thuốc cản quang chứa iod", "aliases": ["thuoc can quang", "can quang", "xenetix", "omnipaque", "ultravist", "iodinated contrast"], "classes": ["IODINATED_CONTRAST"], "entity_role": "contextual_exposure", "risk": ["nephrotoxic"]},
     "methotrexat": {"display": "Methotrexat", "aliases": ["methotrexat", "methotrexate"], "classes": ["ANTIMETABOLITE"], "risk": ["nephrotoxic"]},
+    "amlodipin": {"display": "Amlodipin", "aliases": ["amlodipin", "amlodipine", "norvasc", "amlor"], "classes": ["CALCIUM_CHANNEL_BLOCKER"], "risk": []},
     "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom", "magnesi", "sat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []}
 }
