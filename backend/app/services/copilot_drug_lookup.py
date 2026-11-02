@@ -23,10 +23,10 @@ async def lookup_drug_authoritative(
     if (not kw or len(kw) < 2 or is_deictic) and session.active_medication_name:
         kw = session.active_medication_ingredient or session.active_medication_name
 
-    query_field_only = any(term in query.lower() for term in [
+    query_field_only = (not kw or len(kw) < 2 or is_deictic) and any(term in query.lower() for term in [
         "thành phần", "hoạt chất", "tác dụng phụ", "tác dụng không mong muốn",
         "chống chỉ định", "liều dùng", "liều lượng", "chỉ định", "tương tác thuốc", "tương tác", "tương kỵ"
-    ]) and any(term in query.lower() for term in ["thuốc này", "thuốc đó", "nó", "của thuốc", "của paracetamol"])
+    ])
     if query_field_only and session.active_medication_name:
         kw = session.active_medication_name
 

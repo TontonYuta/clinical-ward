@@ -23,19 +23,24 @@ async def build_drug_profile_response(
     matched = drugs[0]
     first_active = matched.active_ingredient.split(";")[0].split("+")[0].strip().lower()
     clean_active = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", first_active, flags=re.IGNORECASE).strip().lower()
+    clean_inn = re.sub(r"\(.*?\)", "", clean_active).strip()
+    clean_inn = re.sub(r"\b(?:dưới dạng|tương đương|as|equivalent)\b.*$", "", clean_inn, flags=re.IGNORECASE).strip()
 
     monograph = None
     if matched.clinical_monograph_id:
         mono_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched.clinical_monograph_id))
         monograph = mono_res.scalar_one_or_none()
     if monograph is None:
-        target = clean_active if clean_active else first_active
-        mono_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{target}%")))
-        candidates = mono_res.scalars().all()
-        if candidates:
-            normalize = lambda val: re.sub(r"[^a-z0-9]+", "", val.casefold())
-            norm_target = normalize(target)
-            monograph = next((c for c in candidates if norm_target in normalize(c.inn)), candidates[0])
+        for target in [clean_inn, clean_active, first_active]:
+            if not target or len(target) < 3:
+                continue
+            mono_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{target}%")))
+            candidates = mono_res.scalars().all()
+            if candidates:
+                normalize = lambda val: re.sub(r"[^a-z0-9]+", "", val.casefold())
+                norm_target = normalize(target)
+                monograph = next((c for c in candidates if norm_target in normalize(c.inn)), candidates[0])
+                break
 
     def value(field: str) -> Optional[str]:
         return getattr(matched, field, None) or (getattr(monograph, field, None) if monograph else None)

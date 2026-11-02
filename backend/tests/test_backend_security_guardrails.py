@@ -659,3 +659,50 @@ async def test_single_drug_multi_field_interaction_and_contraindication_authorit
     assert "Chống chỉ định" in body["reply_text"]
     assert "vui lòng chọn hồ sơ người bệnh" not in body["reply_text"].lower()
     assert len(body.get("citations") or []) > 0
+
+
+@pytest.mark.asyncio
+async def test_multiturn_primolut_normens_venclexta_isolation():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    sid = "test-multiturn-primolut-normens-venclexta"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Turn 1: Primolut N
+        r1 = await client.post(
+            "/api/v1/copilot/chat",
+            json={"query": "Tôi cần thông tin về tương tác thuốc của Primolut N", "session_id": sid}
+        )
+        assert r1.status_code == 200
+        d1 = r1.json()
+        assert d1["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert "Primolut N" in d1["reply_text"]
+        assert "CYP3A4" in d1["reply_text"]
+        assert d1["active_medication_name"] == "Primolut N"
+
+        # Turn 2: Normens 5mg (must NOT be overwritten by Primolut N)
+        r2 = await client.post(
+            "/api/v1/copilot/chat",
+            json={"query": "Tôi cần thông tin về tương tác của thuốc Normens 5mg", "session_id": sid}
+        )
+        assert r2.status_code == 200
+        d2 = r2.json()
+        assert d2["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert "Normens 5mg" in d2["reply_text"]
+        assert "Primolut N" not in d2["reply_text"]
+        assert "CYP3A4" in d2["reply_text"]
+        assert d2["active_medication_name"] == "Normens 5mg"
+
+        # Turn 3: Venclexta (must NOT hallucinate TT 20, Morphin, Diazepam)
+        r3 = await client.post(
+            "/api/v1/copilot/chat",
+            json={"query": "Tôi cần thông tin về tương tác thuốc của Venclexta", "session_id": sid}
+        )
+        assert r3.status_code == 200
+        d3 = r3.json()
+        assert d3["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert "Venclexta" in d3["reply_text"]
+        assert "Morphin" not in d3["reply_text"]
+        assert "Diazepam" not in d3["reply_text"]
+        assert "Thông tư 20" not in d3["reply_text"]
+        assert d3["active_medication_name"] == "Venclexta"

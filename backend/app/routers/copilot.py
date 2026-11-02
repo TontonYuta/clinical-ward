@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 import re
 import unicodedata
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.copilot import CopilotQuery, CopilotResponse, RagQuery, RagResponse
@@ -157,6 +158,21 @@ async def _handle_copilot_chat(
             )
     # Resolve a field-only follow-up against the active medicine only when the
     # current turn contains no explicit catalog/registry medication entity.
+    from app.services.copilot_drug_lookup import extract_drug_keywords
+    cand_drug = extract_drug_keywords(lower_query)
+    symptom_blacklist = {"sốt", "hạ sốt", "đau đầu", "đau bụng", "ung thư", "khó thở", "đột quỵ", "cấp cứu", "thuốc", "bệnh nhân", "người bệnh", "hàng ngày", "hàng tuần"}
+    has_candidate_drug = False
+    if cand_drug and len(cand_drug) >= 3 and not any(b in cand_drug for b in symptom_blacklist):
+        from app.models.registry import DavNationalDrug
+        cand_res = await db.execute(
+            select(DavNationalDrug.id).where(or_(
+                func.lower(DavNationalDrug.brand_name) == cand_drug,
+                func.lower(DavNationalDrug.brand_name).like(f"{cand_drug} %"),
+                func.lower(DavNationalDrug.brand_name).like(f"% {cand_drug}")
+            )).limit(1)
+        )
+        has_candidate_drug = cand_res.scalar_one_or_none() is not None
+
     if session.active_medication_name:
         # First resolve any explicit entity from the current turn, including
         # names present only in the drug registry. It always supersedes state.
@@ -167,7 +183,7 @@ async def _handle_copilot_chat(
             for alias in entry.get("aliases", [])
             if len(alias) >= 4
         )
-        if find_matched_med(lower_query) is None and not explicit_registered_drug:
+        if find_matched_med(lower_query) is None and not explicit_registered_drug and not has_candidate_drug:
             field_only_terms = (
                 "chống chỉ định", "tác dụng phụ", "tác dụng không mong muốn",
                 "liều dùng", "liều tối đa", "thành phần", "hoạt chất",
@@ -177,9 +193,9 @@ async def _handle_copilot_chat(
                 "bao lâu thì tiêm", "tiêm nhắc lại", "tần suất", "mỗi bao lâu",
                 "đường dùng", "cách pha", "gây nghiện", "lệ thuộc",
                 "suy thận", "suy gan", "độc tính", "thuốc đó", "thuốc này",
-                "nó có", "của thuốc",
+                "nó có", "của thuốc này", "của thuốc đó",
             )
-            if any(term in lower_query for term in field_only_terms):
+            if any(term in lower_query for term in field_only_terms) or lower_query.endswith("của thuốc"):
                 query = f"{query} của thuốc {session.active_medication_name}"
                 lower_query = query.lower()
                 active_name_in_query = session.active_medication_name.casefold() in lower_query
@@ -194,7 +210,7 @@ async def _handle_copilot_chat(
         alias.casefold() in lower_query
         for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values()
         for alias in entry.get("aliases", []) if len(alias) >= 4
-    )
+    ) or has_candidate_drug
     if session.active_medication_name and not is_renal_adjustment_request and not explicit_medication_named and any(term in lower_query for term in (
         "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no",
         "trước ăn", "sau ăn", "bao lâu thì tiêm", "tiêm nhắc lại",
@@ -382,7 +398,7 @@ async def _handle_copilot_chat(
     # resolved against the drug catalog before broad clinical scenarios run.
     drug_info_cues = ("thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng", "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất", "tương tác")
     asks_multiple_fields = len(matched_field_keys) > 1
-    has_drug_entity = find_matched_med(lower_query) is not None or active_name_in_query or any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4)
+    has_drug_entity = find_matched_med(lower_query) is not None or active_name_in_query or any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4) or has_candidate_drug
     asks_drug_info = any(cue in lower_query for cue in drug_info_cues)
     from app.services.copilot_drug_lookup import extract_drug_keywords
     extracted_kw = extract_drug_keywords(query)
