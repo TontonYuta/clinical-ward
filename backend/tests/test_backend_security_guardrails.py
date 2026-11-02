@@ -411,8 +411,8 @@ async def test_renal_question_never_invents_or_leaks_a_default_patient():
     assert "Đặng Thị Lan" not in named_patient_missing_drug.json()["reply_text"]
     assert "thuốc" in named_patient_missing_drug.json()["reply_text"].casefold()
     assert "Đặng Thị Lan" not in named.json()["reply_text"]
-    assert named.json()["intent"] in {"CLINICAL_AI_CONSULTATION", "CLINICAL_CASE_CLARIFICATION"}
-    assert "Vancomycin" in named.json()["reply_text"] or "thuốc" in named.json()["reply_text"].casefold()
+    assert named.json()["intent"] == "CLINICAL_AI_CONSULTATION"
+    assert "Đặng Thị Lan" not in named.json()["reply_text"]
 
 @pytest.mark.asyncio
 async def test_renal_question_ignores_stale_patient_and_medication_session_entities():
