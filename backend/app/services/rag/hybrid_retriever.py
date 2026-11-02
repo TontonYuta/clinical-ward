@@ -7,6 +7,7 @@ from typing import Optional
 from app.services.rag.types import RagChunk, RetrievedChunk
 from app.services.rag.sqlite_fts import SqliteFtsIndex
 from app.services.rag.clinical_indexer import load_all_clinical_chunks
+from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
 
 RRF_K_CONSTANT = 60
 
@@ -51,19 +52,9 @@ class HybridRetriever:
             "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
             "kết hợp", "uống chung", "dùng chung", "cặp thuốc"
         ))
-        from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
-        mentioned_drug_aliases = [
-            alias
-            for entry in DRUG_REGISTRY.values()
-            for alias in entry.get("aliases", [])
-            if len(alias) >= 4 and alias in lower_query
-        ]
-        names_known_drugs = bool(mentioned_drug_aliases)
-        # Common symptom words inside an adverse-event description must not
-        # retrieve DDI evidence unless the user asks about an interaction and
-        # names at least one medicine.
-        mentions_multiple_known_drugs = sum(any(alias in lower_query for alias in entry.get("aliases", []) if len(alias) >= 4) for entry in DRUG_REGISTRY.values()) >= 2
-        allow_ddi = names_known_drugs and (asks_about_interactions or mentions_multiple_known_drugs)
+        resolved_query_drugs = resolve_registered_medications(query)
+        mentions_multiple_known_drugs = len(resolved_query_drugs) >= 2
+        allow_ddi = bool(resolved_query_drugs) and (asks_about_interactions or mentions_multiple_known_drugs)
 
         # 1. Sparse BM25 Retrieval qua SQLite FTS5
         bm25_results = self.fts_index.search_bm25(query, top_k=top_k * 2)
@@ -86,6 +77,18 @@ class HybridRetriever:
 
         # DDI chunks are omitted unless a query names a known drug and either
         # asks about interactions or explicitly names a second known medicine.
+        allowed_ddi_ids = set()
+        for chunk in self.all_chunks:
+            if chunk.entity_type != "ddi":
+                continue
+            chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}"
+            chunk_drugs = set(resolve_registered_medications(chunk_text))
+            if len(resolved_query_drugs) >= 2 and set(resolved_query_drugs).issubset(chunk_drugs):
+                allowed_ddi_ids.add(chunk.chunk_id)
+        ddi_ids = {chunk.chunk_id for chunk in self.all_chunks if chunk.entity_type == "ddi"}
+        if asks_about_interactions or mentions_multiple_known_drugs:
+            bm25_rank_map = {cid: rank for cid, rank in bm25_rank_map.items() if cid not in ddi_ids or cid in allowed_ddi_ids}
+            dense_rank_map = {cid: rank for cid, rank in dense_rank_map.items() if cid not in ddi_ids or cid in allowed_ddi_ids}
         if not allow_ddi:
             allowed_ids = {c.chunk_id for c in self.all_chunks if c.entity_type != "ddi"}
             bm25_rank_map = {cid: rank for cid, rank in bm25_rank_map.items() if cid in allowed_ids}
@@ -94,6 +97,23 @@ class HybridRetriever:
         # 3. Thuật toán Hợp nhất Xếp hạng Nghịch đảo (Reciprocal Rank Fusion - RRF k=60)
         chunk_map: dict[str, RagChunk] = {c.chunk_id: c for c in self.all_chunks}
         all_candidate_ids = set(bm25_rank_map.keys()).union(dense_rank_map.keys())
+
+        if len(resolved_query_drugs) == 1:
+            requested_drug = resolved_query_drugs[0]
+            incompatible_ids = set()
+            for cid in all_candidate_ids:
+                chunk = chunk_map.get(cid)
+                if not chunk or chunk.entity_type == "ddi":
+                    continue
+                text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}"
+                chunk_drugs = set(resolve_registered_medications(text))
+                title_drugs = set(resolve_registered_medications(chunk.title))
+                if (title_drugs and requested_drug not in title_drugs) or (
+                    chunk_drugs and requested_drug not in chunk_drugs
+                    and chunk.entity_type in {"monograph", "medication", "drug_profile"}
+                ):
+                    incompatible_ids.add(cid)
+            all_candidate_ids -= incompatible_ids
 
         if not all_candidate_ids:
             return []
@@ -120,10 +140,13 @@ class HybridRetriever:
             # When a question names a medicine, prioritize evidence about that
             # medicine over unrelated monographs matching generic clinical terms.
             chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}".casefold()
-            named_drug_match = any(alias in chunk_text for alias in mentioned_drug_aliases)
+            named_drug_match = bool(set(resolved_query_drugs) & set(resolve_registered_medications(chunk_text)))
             if named_drug_match:
                 rrf_score += 0.05
                 reasons.append("Explicit named medicine match")
+            if chunk.entity_type == "ddi" and cid in allowed_ddi_ids:
+                rrf_score += 0.20
+                reasons.append("Registered medicine overlap with DDI evidence")
 
             rrf_scored.append(RetrievedChunk(
                 chunk=chunk,

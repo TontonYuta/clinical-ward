@@ -1,65 +1,13 @@
-"""
-Service tra cứu thông tin thuốc từ dữ liệu DAV và kho bệnh viện; độ bao phủ phụ thuộc nguồn/mapping (<=160 LOC)
-"""
-
-import re
+"""Service tra cứu thông tin thuốc từ dữ liệu DAV và kho bệnh viện (<=180 LOC)."""
 import difflib
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.registry import DavNationalDrug
 from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
-from app.services.copilot_catalog import find_matched_med
 from app.services.copilot_drug_formatter import build_drug_profile_response
+from app.services.copilot_drug_keyword_extractor import extract_drug_keywords
 
-STOP_PHRASES = [
-    "tôi muốn tra cứu thông tin về thuốc", "tôi muốn tra cứu thông tin thuốc", "tôi muốn tra cứu về thuốc", "tôi muốn tra cứu thuốc",
-    "tôi muốn tìm thông tin về thuốc", "tôi muốn tìm thuốc", "tôi muốn hỏi thông tin về thuốc", "tôi muốn hỏi về thuốc",
-    "làm ơn cho tôi biết thông tin về thuốc", "cho tôi biết thông tin về thuốc", "cho tôi hỏi thông tin về thuốc", "cho tôi hỏi về thuốc",
-    "tìm giúp tôi thuốc", "kiểm tra giúp tôi thuốc", "tra cứu giúp tôi thuốc", "tra cứu thông tin về thuốc", "tra cứu thông tin thuốc",
-    "thông tin về thuốc", "thông tin thuốc", "hỏi thông tin về thuốc", "hỏi về thuốc", "trong kho còn thuốc", "bệnh viện có thuốc",
-    "danh mục thuốc", "danh sách thuốc", "có những loại thuốc nào", "dùng để làm gì", "có tác dụng gì", "dùng thế nào",
-    "liều lượng", "liều dùng", "số đăng ký", "thuốc gì", "là thuốc gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần",
-    "cho tôi", "cho em", "cho anh", "cho mình", "tôi cần", "em cần", "mình cần", "hãy cho", "lấy cho", "cần", "muốn", "lấy", "tìm",
-    "thuốc", "về", "sđk", "mã", "html", "code", "website", "trị", "chữa", "uống"
-]
-
-def extract_drug_keywords(query: str) -> str:
-    cleaned = query.strip()
-    sdk_match = re.search(r"((?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+)", cleaned, re.IGNORECASE)
-    if sdk_match:
-        return sdk_match.group(1).upper()
-
-    q_lower = cleaned.lower()
-    # Remove common request scaffolding and field labels before resolving
-    # compound asks such as "Paracetamol, gồm liều dùng và tác dụng phụ".
-    q_lower = re.sub(
-        r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì)\b",
-        " ", q_lower,
-    )
-    # Retain every distinct medication alias, including both members of a DDI pair.
-    from app.services.copilot_catalog import MEDICATION_CATALOG
-    from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
-    aliases = [alias for med in MEDICATION_CATALOG for alias in med["keywords"]]
-    aliases.extend(alias for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []))
-    aliases = sorted(set(aliases), key=len, reverse=True)
-    found = [alias for alias in aliases if alias in q_lower]
-    unique_found = [alias for alias in found if not any(alias != other and alias in other for other in found)]
-    if unique_found:
-        return " ".join(dict.fromkeys(unique_found))
-
-    for phrase in sorted(STOP_PHRASES, key=len, reverse=True):
-        q_lower = q_lower.replace(phrase, " ")
-    words = [w.strip(" .,?!:;\"'") for w in q_lower.split() if len(w.strip(" .,?!:;\"'")) >= 2]
-    question_terms = {
-        "tác", "dụng", "phụ", "không", "mong", "muốn", "tương", "tác", "thành", "phần",
-        "của", "thuốc", "này", "đó", "là", "gì", "thế", "nào", "bao", "nhiêu", "hoạt", "chất",
-        "thời", "gian", "bán", "thải", "tối", "đa", "huyết", "tương",
-        "có", "hay", "hoặc", "bị", "cho", "đang", "được", "những", "các", "loại", "nhóm", "khác", "chi",
-        "chống", "chỉ", "định", "cách", "dùng", "liều", "lượng", "và", "với", "cùng", "trong", "khi"
-    }
-    words = [word for word in words if word not in question_terms]
-    return " ".join(words).strip()
 
 async def lookup_drug_authoritative(
     query: str, db: AsyncSession, session_id: str | None = None,
@@ -75,7 +23,6 @@ async def lookup_drug_authoritative(
     if (not kw or len(kw) < 2 or is_deictic) and session.active_medication_name:
         kw = session.active_medication_ingredient or session.active_medication_name
 
-    # Resolve question-only field prompts against the active medication in-session.
     query_field_only = any(term in query.lower() for term in [
         "thành phần", "hoạt chất", "tác dụng phụ", "tác dụng không mong muốn",
         "chống chỉ định", "liều dùng", "liều lượng", "chỉ định", "tương tác thuốc", "tương tác", "tương kỵ"
@@ -90,36 +37,26 @@ async def lookup_drug_authoritative(
             f"### 🏥 CỔNG TRA CỨU DƯỢC QUỐC GIA & DƯỢC THƯ LÂM SÀNG ({catalog_count:,} BẢN GHI ĐANG LẬP CHỈ MỤC)\n\n"
             "Hệ thống tích hợp dữ liệu chính thống **Cục Quản lý Dược Việt Nam (DAV)**, "
             "**Dược thư Quốc gia DĐVN V** và **Kho dược bệnh viện**:\n\n"
-            "1. **Tra cứu theo Tên Biệt Dược hoặc Hoạt Chất (INN):**\n"
-            "   • *Ví dụ:* `\"Thông tin thuốc Rocephin\"`, `\"Augmentin 1g\"`, `\"Paracetamol\"`...\n"
-            "2. **Tra cứu theo Số Đăng Ký Lưu Hành (SĐK) Cục QLD:**\n"
-            "   • *Ví dụ:* `\"SĐK VD-24757-16 là thuốc gì\"`, `\"Tra cứu SĐK VN-17037-13\"`...\n"
-            "3. **Tra cứu Chỉ Định, Tác Dụng & Liều Dùng Chuẩn DĐVN V:**\n"
-            "   • *Ví dụ:* `\"Paracetamol liều dùng thế nào\"`, `\"Morphin dùng để làm gì\"`...\n"
-            "4. **Đối Soát Tồn Kho & Hạn Dùng FEFO Bệnh Viện:**\n"
-            "   • Tự động đối soát cơ số tủ trực cấp cứu, số lô và ngày hết hạn.\n\n"
-            "👉 *Bạn có thể bấm vào các gợi ý nhanh bên dưới hoặc nhập trực tiếp tên thuốc / số đăng ký cần tra cứu!*"
+            "1. **Tra cứu theo Tên Biệt Dược hoặc Hoạt Chất (INN):** `\"Paracetamol\"`, `\"Ibuprofen\"`...\n"
+            "2. **Tra cứu theo Số Đăng Ký Lưu Hành (SĐK) Cục QLD:** `\"SĐK VD-24757-16\"`...\n"
+            "3. **Tra cứu Chỉ Định & Liều Dùng Chuẩn DĐVN V:** `\"Liều dùng Paracetamol\"`...\n"
+            "4. **Đối Soát Tồn Kho & Hạn Dùng FEFO Bệnh Viện.**"
         )
         return CopilotResponse(
-            intent="MEDICATION_LOOKUP_GUIDE",
-            reply_text=guide_text,
-            card=None,
+            intent="MEDICATION_LOOKUP_GUIDE", reply_text=guide_text, card=None,
             legal_basis="Cục Quản lý Dược Việt Nam & Dược Thư Quốc Gia",
             answer_type="lookup_guide", source_status="catalog_available", confidence=1.0,
-            suggested_chips=["Tra cứu thuốc Rocephin", "Tra cứu SĐK VD-24757-16", "Thông tin thuốc Augmentin", "Paracetamol liều dùng thế nào", "Quy tắc 5 đúng Morphin"]
+            suggested_chips=["Tra cứu thuốc Rocephin", "Tra cứu SĐK VD-24757-16", "Thông tin Paracetamol", "Kiểm tra tương tác thuốc"]
         )
 
-    # 1. Tra cứu CSDL 54.885 thuốc Cục QLD
     search_term = f"%{kw.lower()}%"
     stmt = (
         select(DavNationalDrug)
-        .where(
-            or_(
-                func.lower(DavNationalDrug.national_code).like(search_term),
-                func.lower(DavNationalDrug.brand_name).like(search_term),
-                func.lower(DavNationalDrug.active_ingredient).like(search_term)
-            )
-        )
+        .where(or_(
+            func.lower(DavNationalDrug.national_code).like(search_term),
+            func.lower(DavNationalDrug.brand_name).like(search_term),
+            func.lower(DavNationalDrug.active_ingredient).like(search_term)
+        ))
         .order_by(
             (DavNationalDrug.national_code == (session.active_medication_sdk or "")).desc(),
             (func.lower(DavNationalDrug.brand_name) == kw.lower()).desc(),
@@ -131,16 +68,12 @@ async def lookup_drug_authoritative(
     res = await db.execute(stmt)
     drugs = res.scalars().all()
     if not drugs and len(kw.split()) == 1:
-        # Exact token matching in the formulary is safer than treating a
-        # known name as an inventory typo suggestion.
         token = kw.casefold()
         candidate_result = await db.execute(
-            select(DavNationalDrug)
-            .where(or_(
+            select(DavNationalDrug).where(or_(
                 func.lower(DavNationalDrug.brand_name).like(f"%{token}%"),
                 func.lower(DavNationalDrug.active_ingredient).like(f"%{token}%")
-            ))
-            .limit(20)
+            )).limit(20)
         )
         candidates = candidate_result.scalars().all()
         drugs = [drug for drug in candidates if
@@ -148,8 +81,6 @@ async def lookup_drug_authoritative(
                  token in drug.active_ingredient.casefold().replace(";", " ").replace("+", " ").split()]
 
     if not drugs:
-        # A two-medicine question is not a single DAV catalog lookup. Route it
-        # back to the clinical evidence path, which can resolve pair evidence.
         if len(kw.split()) > 1 and any(term in query.casefold() for term in ("tương tác", "tương kỵ", "phối hợp", "dùng cùng", "uống cùng", "kết hợp")):
             from app.services.rag import execute_clinical_rag
             rag_res = await execute_clinical_rag(query)
@@ -167,7 +98,6 @@ async def lookup_drug_authoritative(
                     confidence=rag_res.confidence_score,
                     abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
                 )
-        # Nếu từ khóa là triệu chứng hoặc chỉ định lâm sàng -> Chuyển sang Pure RAG
         is_symptom = any(w in kw.lower() or w in query.lower() for w in [
             "hạ sốt", "giảm sốt", "giảm đau", "kháng sinh", "chống viêm", "sốt", "đau đầu",
             "loại hạ sốt", "loại giảm đau", "loại kháng sinh", "loại nào", "thuốc gì", "uống gì"
@@ -182,8 +112,7 @@ async def lookup_drug_authoritative(
                     reply_text=validate_output_guardrail(rag_res.answer, query),
                     legal_basis=rag_res.legal_basis or None,
                     suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Thông tư 51/2017/TT-BYT", "Kiểm tra tương tác thuốc"],
-                    session_id=session.session_id,
-                    citations=[c.to_dict() for c in rag_res.citations],
+                    session_id=session.session_id, citations=[c.to_dict() for c in rag_res.citations],
                     rag_grounded=rag_res.rag_grounded,
                     answer_type="grounded_reference" if rag_res.rag_grounded else "safe_abstention",
                     source_status="retrieved_evidence" if rag_res.rag_grounded else "insufficient_retrieval_evidence",
@@ -211,14 +140,11 @@ async def lookup_drug_authoritative(
             active_name = best_batch.active_ingredient or best_batch.item_name
             reply = (
                 f"### 🔍 KHÔNG TÌM THẤY TÊN CHÍNH XÁC - GỢI Ý ĐỐI SOÁT CHÍNH TẢ\n\n"
-                f"• Hệ thống không tìm thấy mặt hàng mang tên `{kw}` trong CSDL 54.885 số đăng ký Cục Quản lý Dược.\n"
-                f"👉 **Có phải bạn đang tìm mặt hàng sau trong tủ trực bệnh viện:**\n"
-                f"• **{best_batch.item_name}** (Hoạt chất: **{active_name}** | SĐK: `{sdk_code}` | Tồn kho: **{best_batch.current_stock} {best_batch.unit}** tại {best_batch.warehouse_location})\n\n"
-                f"*(Bấm vào nút hành động bên dưới để đối soát chi tiết thông tin thuốc & tồn kho)*"
+                f"• Hệ thống không tìm thấy `{kw}` trong CSDL 54.885 số đăng ký Cục Quản lý Dược.\n"
+                f"👉 **Có phải bạn đang tìm:** **{best_batch.item_name}** (Hoạt chất: **{active_name}** | SĐK: `{sdk_code}`)\n"
             )
             card = CopilotActionCard(
-                card_type="medication_safety",
-                title=f"Gợi ý: {best_batch.item_name}",
+                card_type="medication_safety", title=f"Gợi ý: {best_batch.item_name}",
                 summary=f"SĐK: {sdk_code} • Tồn: {best_batch.current_stock} {best_batch.unit} ({best_batch.warehouse_location})",
                 data={"national_code": sdk_code, "brand_name": best_batch.item_name, "active_ingredient": active_name, "targetTab": "fefo"},
                 primary_action_label=f"Xem {best_batch.item_name}", primary_action_type="NAVIGATE_TAB", target_tab="fefo"
@@ -226,19 +152,18 @@ async def lookup_drug_authoritative(
             return CopilotResponse(
                 intent="CLINICAL_TYPO_SUGGESTION", reply_text=reply, card=card,
                 legal_basis="Thông tư 22/2011/TT-BYT & CSDL Cục Quản lý Dược",
-            suggested_chips=[f"Thông tin {best_batch.item_name}", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"],
-            answer_type="medication_suggestion", source_status="inventory_suggestion", confidence=best_ratio
+                suggested_chips=[f"Thông tin {best_batch.item_name}", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"],
+                answer_type="medication_suggestion", source_status="inventory_suggestion", confidence=best_ratio
             )
 
         clean_target = kw.strip().title() if len(kw) < 25 else kw.strip()
         reply_abstain = (
             f"### 🛡️ TỪ CHỐI ĐƯA CHỈ ĐỊNH (Thực Thể Dược Phẩm Chưa Định Danh)\n\n"
-            f"• **Kết quả đối soát:** Hệ thống không ghi nhận `{clean_target}` trong danh mục DAV hiện đang lập chỉ mục và kho dữ liệu nội bộ. Điều này không khẳng định tên thuốc không tồn tại ngoài các nguồn đã nạp.\n"
-            f"• **Rào chắn an toàn lâm sàng (Safe Abstention - TT 22/2011/TT-BYT & TT 20/2017/TT-BYT):** Trợ lý AI **tuyệt đối không suy đoán hoặc cung cấp liều dùng, chỉ định** cho các tên thuốc chưa được định danh trong CSDL chính thống nhằm ngăn ngừa biến cố gây hại tính mạng người bệnh.\n"
+            f"• **Kết quả đối soát:** Hệ thống không ghi nhận `{clean_target}` trong danh mục DAV hiện đang lập chỉ mục và kho dữ liệu nội bộ.\n"
+            f"• **Rào chắn an toàn lâm sàng (Safe Abstention - TT 22/2011/TT-BYT & TT 20/2017/TT-BYT):** Trợ lý AI **tuyệt đối không suy đoán hoặc cung cấp liều dùng, chỉ định** cho các tên thuốc chưa được định danh trong CSDL chính thống.\n"
             f"• **Khuyến nghị xử trí:**\n"
-            f"  1. Kiểm tra lại vỏ bao bì hộp thuốc, đơn thuốc CPOE hoặc hồ sơ bệnh án để đối chiếu chính xác tên thương mại / hoạt chất quốc tế (INN).\n"
-            f"  2. Tra cứu trực tiếp trên [Cổng dịch vụ công Cục Quản lý Dược](https://dichvucong.dav.gov.vn).\n"
-            f"  3. Liên hệ Dược sĩ lâm sàng / Khoa Dược bệnh viện để được thẩm định chuyên môn."
+            f"  1. Kiểm tra lại vỏ bao bì hộp thuốc, đơn thuốc CPOE hoặc hồ sơ bệnh án.\n"
+            f"  2. Tra cứu trực tiếp trên Cổng dịch vụ công Cục Quản lý Dược hoặc Dược thư Quốc gia Việt Nam."
         )
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION", reply_text=reply_abstain, card=None,

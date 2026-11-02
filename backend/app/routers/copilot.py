@@ -19,6 +19,7 @@ from app.services.copilot_intents_actions import (
     handle_restock_intent
 )
 from app.services.copilot_drug_lookup import lookup_drug_authoritative
+from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
 from app.services.copilot_business_overview import handle_business_overview_intent, CLINICAL_BUSINESS_DIRECTORY
 from app.services.copilot_gemini import ask_backend_gemini_copilot
 from app.services.copilot_intents_prescription import (
@@ -116,7 +117,8 @@ async def _handle_copilot_chat(
                 answer_type="clarification", source_status="missing_patient_or_drug_context",
                 confidence=1.0, abstention_reason="Thiếu định danh ca bệnh hoặc tên thuốc trong lượt hiện tại",
             )
-    if session.active_medication_name and not is_renal_adjustment_request and any(term in lower_query for term in (
+    is_deep_complex = any(term in lower_query for term in ("thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"))
+    if session.active_medication_name and not is_renal_adjustment_request and not is_deep_complex and any(term in lower_query for term in (
         "liều tối đa", "còn liều", "liều dùng", "liều lượng", "tác dụng phụ",
         "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất",
         "chỉ định", "công dụng", "gây nghiện", "độc tính", "sáng hay tối",
@@ -124,10 +126,15 @@ async def _handle_copilot_chat(
         "tiêm nhắc lại", "bao lâu thì tiêm", "tần suất", "mỗi bao lâu",
     )):
         from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
-        current_has_explicit_drug = find_matched_med(lower_query) is not None or any(
-            len(alias) >= 4 and alias.casefold() in lower_query
-            for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
-        )
+        resolved_new_drugs = resolve_registered_medications(lower_query)
+        current_has_explicit_drug = find_matched_med(lower_query) is not None or bool(resolved_new_drugs)
+        if current_has_explicit_drug and resolved_new_drugs:
+            new_key = resolved_new_drugs[0]
+            new_display = DRUG_REGISTRY[new_key].get("display", new_key.title())
+            session.set_active_medication(name=new_display, ingredient=new_key)
+            return await lookup_drug_authoritative(
+                query, db, session_id=session_id, user_name=user_name, user_role=user_role
+            )
         if not current_has_explicit_drug:
             session_query = lower_query
             timing_question = any(term in session_query for term in (
@@ -348,7 +355,7 @@ async def _handle_copilot_chat(
         ("interaction", ["tương tác thuốc", "thuốc tương tác", "tương tác", "tương kỵ", "kỵ thuốc"]),
         ("adverse_effects", ["tác dụng không mong muốn", "tác dụng phụ"]),
         ("contraindications", ["chống chỉ định", "cấm dùng"]),
-        ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng"]),
+        ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều"]),
         ("indications", ["chỉ định", "công dụng"]),
         ("ingredients", ["thành phần", "hoạt chất"]),
         ("registry", ["số đăng ký", "sđk"]),
@@ -356,7 +363,7 @@ async def _handle_copilot_chat(
     matched_field_keys = {key for key, phrases in raw_field_specs if any(p in lower_query for p in phrases)}
     # General medication information and requests for multiple fields must be
     # resolved against the drug catalog before broad clinical scenarios run.
-    drug_info_cues = ("thông tin thuốc", "tra cứu thuốc", "thuốc ", "liều dùng", "liều tối đa", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất", "tương tác")
+    drug_info_cues = ("thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng", "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất", "tương tác")
     asks_multiple_fields = len(matched_field_keys) > 1
     has_drug_entity = find_matched_med(lower_query) is not None or active_name_in_query or any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4)
     asks_drug_info = any(cue in lower_query for cue in drug_info_cues)
@@ -508,17 +515,19 @@ async def _handle_copilot_chat(
         "uống chung", "dùng chung", "chống chỉ định", "dị ứng chéo",
         "kháng sinh", "chống viêm", "hạ huyết áp", "uống gì", "dùng gì", "gợi ý"
     ]) or any(c in lower_query for c in [" và ", " với ", " cùng ", " kèm "])
+    has_registered_drug = bool(resolve_registered_medications(lower_query))
     has_drug_ask = (
         lower_query.startswith("thuốc ")
         or " thuốc " in lower_query
         or any(w in lower_query for w in [
-            "thông tin thuốc", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "về thuốc",
-            "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "uống thế nào", "dùng thế nào",
+            "thông tin", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "về thuốc",
+            "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "còn liều", "liều", "uống thế nào", "dùng thế nào",
             "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không"
         ])
+        or has_registered_drug
         or (matched_med is not None and is_med_info and not is_deep_pharmacology)
     )
-    if (has_sdk or has_drug_ask) and not is_deep_pharmacology and not is_interaction_question:
+    if (has_sdk or has_drug_ask) and not is_deep_pharmacology and not is_interaction_question and not is_renal_adjustment_request and not is_deep_complex:
         return await lookup_drug_authoritative(query, db, session_id=session_id)
 
     # 12. Tư vấn lâm sàng sâu bằng Pure RAG
@@ -553,15 +562,23 @@ async def _handle_copilot_chat(
             cleaned_reply = validate_output_guardrail(rag_res.answer, query)
             from app.services.session_context import get_or_create_session
             session = get_or_create_session(session_id, user_name, user_role)
+            target_drugs = resolve_registered_medications(lower_query) or ([session.active_medication_ingredient] if session.active_medication_ingredient else [])
+            from app.services.chatbot.output_validator import validate_grounded_reply
+            cleaned_reply, validated_citations, is_grounded = validate_grounded_reply(
+                cleaned_reply, [c.to_dict() for c in rag_res.citations], target_drugs
+            )
+            from app.services.chatbot.chip_generator import generate_suggested_chips
+            active_key = target_drugs[0] if target_drugs else None
+            chips = generate_suggested_chips(active_key, "general")
             return CopilotResponse(
                 intent="CLINICAL_AI_CONSULTATION", reply_text=cleaned_reply,
                 legal_basis=rag_res.legal_basis or None,
-                suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Thông tư 51/2017/TT-BYT", "Kiểm tra tương tác thuốc"],
-                session_id=session.session_id, citations=[c.to_dict() for c in rag_res.citations], rag_grounded=rag_res.rag_grounded,
-                answer_type="grounded_reference" if rag_res.rag_grounded else "safe_abstention",
-                source_status="retrieved_evidence" if rag_res.rag_grounded else "insufficient_retrieval_evidence",
-                confidence=rag_res.confidence_score,
-                abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời"
+                suggested_chips=chips,
+                session_id=session.session_id, citations=validated_citations, rag_grounded=rag_res.rag_grounded and is_grounded,
+                answer_type="grounded_reference" if (rag_res.rag_grounded and is_grounded) else "safe_abstention",
+                source_status="retrieved_evidence" if (rag_res.rag_grounded and is_grounded) else "insufficient_retrieval_evidence",
+                confidence=rag_res.confidence_score if is_grounded else 0.5,
+                abstention_reason=None if (rag_res.rag_grounded and is_grounded) else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời"
             )
 
     # 13. Phản hồi chào mừng và bảng điều hướng lâm sàng

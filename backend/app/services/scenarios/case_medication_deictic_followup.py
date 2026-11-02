@@ -17,6 +17,9 @@ class MedicationDeicticFollowupScenario(BaseScenario):
     scenario_name = "Phân giải từ thay thế thuốc đang kích hoạt (Deictic Follow-up)"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
+        from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
+        if bool(resolve_registered_medications(lower_query)):
+            return False
         # Nhận diện các đại từ chỉ định thay thế cho thuốc vừa trao đổi
         is_deictic = any(w in lower_query for w in [
             "thuốc này", "thuốc đó", "nó", "thuốc vừa nói", "thuốc vừa gợi ý",
