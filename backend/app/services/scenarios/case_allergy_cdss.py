@@ -14,6 +14,10 @@ class AllergyCdssScenario(BaseScenario):
     scenario_name = "Thẩm định Dị ứng & 5 Đúng CPOE"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
+        if not ctx.patient and any(term in lower_query for term in ("dị ứng", "chống chỉ định", "thẩm định", "an toàn đơn", "5 đúng", "dùng được không")):
+            return True
+        if not ctx.patient and any(term in lower_query for term in ("egfr", "crcl", "creatinine", "suy thận", "chức năng thận", "chỉnh liều")):
+            return False
         return any(w in lower_query for w in ["dị ứng", "chống chỉ định", "thẩm định", "an toàn đơn", "5 đúng", "dùng được không"])
 
     async def handle(
@@ -24,6 +28,13 @@ class AllergyCdssScenario(BaseScenario):
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
         p = ctx.patient
+        if not p:
+            return CopilotResponse(
+                intent="CLINICAL_CASE_CLARIFICATION",
+                reply_text="Để kiểm tra dị ứng hoặc chống chỉ định, vui lòng chọn hồ sơ người bệnh hoặc cung cấp mã người bệnh và danh sách thuốc cần rà soát. Không dùng hồ sơ mẫu mặc định.",
+                answer_type="clarification", source_status="missing_patient_context",
+                confidence=1.0, abstention_reason="Thiếu hồ sơ người bệnh và thuốc trong lượt hiện tại",
+            )
         patient_name = p.full_name if p else "Võ Minh Trí (BN-8820)"
         patient_allergies = p.allergies if p else "Penicillin, Aspirin (phù mạch, co thắt)"
 

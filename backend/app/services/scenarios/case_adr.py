@@ -13,7 +13,14 @@ class AdrReportingScenario(BaseScenario):
     scenario_name = "Báo cáo Cảnh giác Dược ADR"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
-        return any(w in lower_query for w in ["adr", "biến cố", "tác dụng phụ", "cảnh giác dược"])
+        asks_to_report_or_process_adr = any(w in lower_query for w in [
+            "báo cáo adr", "lập báo cáo adr", "cảnh giác dược", "biến cố bất lợi",
+            "phản ứng có hại", "ghi nhận adr", "báo cáo phản ứng có hại",
+        ])
+        identifies_drug_or_case = any(w in lower_query for w in [
+            "do thuốc", "sau khi dùng", "sau dùng", "bệnh nhân", "người bệnh",
+        ]) or bool(ctx.active_medication_name)
+        return asks_to_report_or_process_adr and identifies_drug_or_case
 
     async def handle(
         self,

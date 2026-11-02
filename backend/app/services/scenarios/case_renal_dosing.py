@@ -13,7 +13,16 @@ class RenalDosingScenario(BaseScenario):
     scenario_name = "Hiệu chỉnh liều suy thận Cockcroft-Gault"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
-        return any(w in lower_query for w in ["suy thận", "chức năng thận", "cockcroft", "creatinine", "egfr", "crcl", "chỉnh liều"])
+        has_renal_question = any(w in lower_query for w in ["suy thận", "chức năng thận", "cockcroft", "creatinine", "egfr", "crcl", "chỉnh liều"])
+        has_identified_patient = bool(ctx.patient and any(term in lower_query for term in (
+            "bệnh nhân", "người bệnh", "hồ sơ", "bệnh án", "bn-", "bn "
+        )))
+        has_identified_drug = bool(ctx.active_medication_name and any(term in lower_query for term in (
+            "thuốc này", "thuốc đó", "thuốc vừa nói", "liều", "chỉnh", "dùng được"
+        ))) or any(alias.casefold() in lower_query for entry in __import__(
+            "app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]
+        ).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4)
+        return has_renal_question and has_identified_patient and has_identified_drug
 
     async def handle(
         self,
@@ -23,9 +32,16 @@ class RenalDosingScenario(BaseScenario):
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
         p = ctx.patient
-        patient_name = p.full_name if p else "Đặng Thị Lan (62t, Nữ, 58kg)"
-        egfr = p.egfr if p else 52.0
-        creatinine = p.creatinine if p else 110.0
+        if not p:
+            return CopilotResponse(
+                intent="CLINICAL_CASE_CLARIFICATION",
+                reply_text="Để đánh giá suy thận, vui lòng chọn hồ sơ hoặc cung cấp định danh người bệnh cùng tên thuốc cần rà soát. Không sử dụng hồ sơ đang chọn nếu chưa được nêu rõ trong câu hỏi.",
+                answer_type="clarification", source_status="missing_patient_context",
+                confidence=1.0, abstention_reason="Chưa xác định người bệnh trong lượt hiện tại",
+            )
+        patient_name = p.full_name
+        egfr = p.egfr
+        creatinine = p.creatinine
 
         card = CopilotActionCard(
             card_type="medication_safety",

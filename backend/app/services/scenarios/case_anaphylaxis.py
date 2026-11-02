@@ -13,7 +13,13 @@ class AnaphylaxisScenario(BaseScenario):
     scenario_name = "Phác đồ Adrenalin Phản Vệ TT 51/2017"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
-        return any(w in lower_query for w in ["phác đồ", "sốc phản vệ", "phản vệ", "adrenalin", "hadunalin", "51/2017", "tt 51", "tiêm bắp"])
+        has_anaphylaxis_context = any(w in lower_query for w in ["phản vệ", "sốc phản vệ", "tt 51", "thông tư 51", "phác đồ phản vệ"])
+        has_active_adrenaline = bool(ctx.active_medication_name and any(w in ctx.active_medication_name.casefold() for w in ["adrenalin", "hadunalin"]))
+        explicit_adrenaline_protocol_question = any(w in lower_query for w in ["adrenalin", "hadunalin"]) and any(w in lower_query for w in ["liều", "tiêm", "nhắc lại", "phác đồ", "đường dùng"])
+        has_red_flag_symptoms = any(w in lower_query for w in ["khó thở", "thở rít", "tụt huyết áp", "mày đay", "phù môi", "phù thanh quản", "phản vệ"])
+        return has_anaphylaxis_context and (
+            has_red_flag_symptoms or has_active_adrenaline or explicit_adrenaline_protocol_question
+        ) or explicit_adrenaline_protocol_question and any(w in lower_query for w in ["phác đồ", "liều", "nhắc lại"])
 
     async def handle(
         self,

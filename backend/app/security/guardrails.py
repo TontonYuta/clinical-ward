@@ -63,6 +63,7 @@ PROMPT_INJECTION_PATTERNS = [
 
     # Clinical Safety & CDSS Guardrail Bypass (Phá vỡ an toàn y tế & Thuốc gây nghiện)
     (r"(?i)(?:quên đi|bỏ qua|không cần)\s+(?:cảnh báo|quy định|nguyên tắc)\s+(?:an toàn|y tế|dược lý|cdss|thông tư 20|thông tư 22|thông tư 51)", "Clinical Safety Bypass: Yêu cầu bỏ qua quy tắc an toàn y tế và dược lâm sàng"),
+    (r"(?i)bỏ qua\s+(?:tất cả\s+|mọi\s+)?(?:quy chế|quy định|nguyên tắc|cảnh báo)\s+(?:an toàn\s+)?(?:trước đây|đã nêu|hiện hành|y tế)?", "Clinical Safety Bypass: Yêu cầu bỏ qua quy chế an toàn"),
     (r"(?i)(?:bỏ qua|miễn)\s+(?:xác thực|ký duyệt|hai chữ ký|chữ ký bác sĩ|quy trình duyệt cấp phát)", "Clinical Safety Bypass: Yêu cầu vượt mặt cơ chế kiểm soát hai chữ ký đối với thuốc độc"),
     (r"(?i)(?:cấp|xuất|lấy)\s+(?:gấp\s+)?(?:\d+\s+)?(?:lọ|ống|viên)?\s*(?:morphin|fentanyl|adrenalin|kali)\s+(?:không cần|bỏ qua)\s+(?:ký|duyệt|đơn|xác thực)", "Clinical Safety Bypass: Cố tình yêu cầu xuất thuốc gây nghiện/nguy kịch không cần đơn"),
 

@@ -14,9 +14,14 @@ class NoradrenalinShockScenario(BaseScenario):
     scenario_name = "Noradrenalin 4mg/4ml Sốc Nhiễm Trùng"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
-        matches_drug = "noradrenalin" in lower_query or "norepinephrine" in lower_query or "rx-2026-005" in lower_query or "trần văn toàn" in lower_query or (
-            ctx.is_med_follow_up and ctx.active_medication_name and "noradrenalin" in ctx.active_medication_name.lower()
+        mentions_noradrenaline = any(term in lower_query for term in ("noradrenalin", "norepinephrine", "rx-2026-005", "trần văn toàn"))
+        mentions_alternative_pressor = any(term in lower_query for term in ("dopamin", "dobutamin", "adrenalin", "vasopressin"))
+        is_explicit_noradrenaline_followup = bool(
+            ctx.is_med_follow_up and ctx.active_medication_name
+            and "noradrenalin" in ctx.active_medication_name.casefold()
+            and not mentions_alternative_pressor
         )
+        matches_drug = mentions_noradrenaline and not mentions_alternative_pressor or is_explicit_noradrenaline_followup
         has_keywords = any(w in lower_query for w in ["sốc", "sốc nhiễm trùng", "nhiễm khuẩn", "vận mạch", "cvc", "đường truyền", "tĩnh mạch trung tâm", "hoại tử", "thoát mạch", "liều", "pha truyền", "pha", "tồn kho"])
         return matches_drug and (has_keywords or ctx.is_med_follow_up)
 

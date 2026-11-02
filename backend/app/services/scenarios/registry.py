@@ -165,6 +165,24 @@ async def dispatch_clinical_scenario(
             sdk=detected_batch.registration_number or detected_batch.national_code
         )
 
+    # Preserve an active catalog medication for short field-only follow-ups.
+    if not detected_batch and session.active_medication_name:
+        from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+        explicit_entity = any(
+            len(alias) >= 4 and alias.casefold() in lower_query
+            for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
+        )
+        if not explicit_entity and any(term in lower_query for term in (
+            "liều tối đa", "còn liều", "sáng hay tối", "uống sáng", "uống tối",
+            "lúc đói", "lúc no", "trước ăn", "sau ăn", "bao lâu thì tiêm",
+            "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng", "cách pha",
+        )):
+            session.set_active_medication(
+                name=session.active_medication_name, ingredient=session.active_medication_ingredient,
+                batch=session.active_medication_batch, stock=session.active_medication_stock,
+                location=session.active_medication_location, sdk=session.active_medication_sdk,
+            )
+
     # Nhận diện câu hỏi chỉ định tiếp diễn về thuốc ("thuốc này", "nó", "thuốc vừa nói")
     is_med_follow_up = any(w in lower_query for w in [
         "thuốc này", "thuốc đó", "nó", "thuốc vừa nói", "thuốc vừa gợi ý",
@@ -202,6 +220,14 @@ async def dispatch_clinical_scenario(
 
     # Duyệt qua các scenario theo thứ tự đăng ký.
     for scenario in SCENARIOS:
+        if scenario.scenario_id == "medication_deictic_followup" and session.active_medication_name:
+            from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+            explicit_drug = any(
+                len(alias) >= 4 and alias.casefold() in lower_query
+                for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
+            )
+            if explicit_drug:
+                continue
         if scenario.can_handle(query, lower_query, ctx):
             resp = await scenario.handle(query, lower_query, ctx, db)
             if resp:

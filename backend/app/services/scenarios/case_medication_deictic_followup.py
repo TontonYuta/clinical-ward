@@ -21,6 +21,10 @@ class MedicationDeicticFollowupScenario(BaseScenario):
         is_deictic = any(w in lower_query for w in [
             "thuốc này", "thuốc đó", "nó", "thuốc vừa nói", "thuốc vừa gợi ý",
             "viên này", "lọ này", "ống này", "thuốc đang hỏi", "thuốc trên"
+        ]) or any(w in lower_query for w in [
+            "liều tối đa", "còn liều", "sáng hay tối", "uống sáng", "uống tối",
+            "lúc đói", "lúc no", "trước ăn", "sau ăn", "bao lâu thì tiêm",
+            "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng", "cách pha",
         ])
         has_active_med = bool(ctx.session and ctx.session.active_medication_name)
         return is_deictic and has_active_med
@@ -46,8 +50,12 @@ class MedicationDeicticFollowupScenario(BaseScenario):
         is_adr_ask = any(w in lower_query for w in ["tác dụng phụ", "tác dụng không mong muốn", "adr", "nguy hiểm", "biến chứng", "độc tính"])
         is_contra_ask = any(w in lower_query for w in ["chống chỉ định", "cấm dùng", "không được dùng", "kiêng cữ", "lưu ý"])
         is_dose_ask = any(w in lower_query for w in ["liều dùng", "cách dùng", "uống thế nào", "tiêm thế nào", "liều lượng", "bao nhiêu"])
+        is_frequency_ask = any(w in lower_query for w in ["hàng ngày", "hàng tuần", "mỗi ngày", "mỗi tuần", "sáng hay tối", "trước ăn", "lúc đói", "lúc no"])
+        is_formulation_timing_ask = any(w in lower_query for w in ["liều tối đa", "còn liều", "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no", "trước ăn", "sau ăn", "bao lâu thì tiêm", "tiêm nhắc lại", "tần suất", "mỗi bao lâu"])
+        is_route_ask = any(w in lower_query for w in ["tiêm tĩnh mạch", "tiêm bắp", "tiêm trực tiếp", "pha loãng", "đường dùng"])
+        is_dependence_ask = any(w in lower_query for w in ["gây nghiện", "phụ thuộc", "lệ thuộc"])
         is_loc_stock_ask = any(w in lower_query for w in ["ở đâu", "kệ nào", "vị trí", "tủ nào", "còn bao nhiêu", "tồn kho"])
-        is_patient_eval = any(w in lower_query for w in ["bệnh nhân", "người bệnh", "dùng được không", "an toàn không", "hợp không"]) or bool(patient)
+        is_patient_eval = any(w in lower_query for w in ["bệnh nhân", "người bệnh", "dùng được không", "an toàn không", "hợp không"])
 
         # 2. Xử lý kịch bản Đánh giá Thuốc trên Bệnh Nhân Đang Kích Hoạt (Cross-Entity Context)
         if is_patient_eval and patient:
@@ -117,6 +125,30 @@ class MedicationDeicticFollowupScenario(BaseScenario):
                 card=card,
                 legal_basis="Thông tư 22/2011/TT-BYT & Thông tư 36/2018/TT-BYT GSP",
                 suggested_chips=["Xem bảng kho Dược", "Lập phiếu dự trù bù tồn kho", "Đối soát ca trực 07:00 AM"]
+            )
+
+        if is_dependence_ask:
+            reply = (
+                f"### Nguy cơ lệ thuộc thuốc: {med_name}\n\n"
+                f"{med_name} (hoạt chất {med_ingredient}) cần được đánh giá theo đúng chế phẩm, liều và thời gian sử dụng. "
+                "Không tự ý ngừng thuốc nếu đã dùng kéo dài; vui lòng đối chiếu chuyên luận/tờ hướng dẫn đã phê duyệt hoặc dược sĩ lâm sàng."
+            )
+            return CopilotResponse(intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, answer_type="medication_field", source_status="contextual_reference", session_id=ctx.session_id)
+
+        if is_frequency_ask or is_formulation_timing_ask:
+            return CopilotResponse(
+                intent="MEDICATION_LOOKUP_CLARIFICATION",
+                reply_text=f"Bạn đang hỏi tần suất dùng {med_name}. Vui lòng nêu chỉ định và chế phẩm/hàm lượng cụ thể để đối chiếu liều dùng đã được xác thực; không suy ra tần suất chỉ từ tên thuốc.",
+                answer_type="clarification", source_status="insufficient_dosing_context",
+                session_id=ctx.session_id, confidence=1.0,
+            )
+
+        if is_route_ask or (is_dose_ask and not any(w in lower_query for w in ["liều dùng", "liều lượng", "bao nhiêu"])):
+            return CopilotResponse(
+                intent="MEDICATION_LOOKUP_CLARIFICATION",
+                reply_text=f"Để trả lời về đường dùng/cách pha của {med_name}, cần biết chính xác dạng bào chế, hàm lượng và chế phẩm. Vui lòng cung cấp các thông tin này để đối chiếu hướng dẫn đã phê duyệt.",
+                answer_type="clarification", source_status="insufficient_formulation_context",
+                session_id=ctx.session_id, confidence=1.0,
             )
 
         # 4. Xử lý hỏi ADR / Tác dụng phụ của thuốc đang kích hoạt

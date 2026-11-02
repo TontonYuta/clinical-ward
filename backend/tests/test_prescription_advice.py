@@ -140,10 +140,12 @@ async def test_patients_crud_and_clinical_profiles():
 
 @pytest.mark.asyncio
 async def test_copilot_clinical_scenarios():
+    import uuid
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # Kịch bản 1: Thẩm định dị ứng bệnh nhân Trí
-        q1 = {"query": "Kiểm tra an toàn dị ứng đơn thuốc cho bệnh nhân Võ Minh Trí"}
+        isolated_session = f"scenario-regression-{uuid.uuid4().hex}"
+        q1 = {"query": "Kiểm tra an toàn dị ứng đơn thuốc cho bệnh nhân Võ Minh Trí", "user_name": "Scenario QA", "user_role": "doctor", "session_id": isolated_session}
         r1 = await ac.post("/api/v1/copilot/chat", json=q1)
         assert r1.status_code == 200
         d1 = r1.json()
@@ -152,8 +154,10 @@ async def test_copilot_clinical_scenarios():
         assert d1["card"] is not None
 
         # Kịch bản 2: Hiệu chỉnh liều suy thận bệnh nhân Lan
-        q2 = {"query": "Chỉnh liều suy thận cho bệnh nhân Đặng Thị Lan"}
+        q2 = {"query": "Chỉnh liều suy thận cho bệnh nhân Đặng Thị Lan", "user_name": "Scenario QA", "user_role": "doctor", "session_id": isolated_session}
         r2 = await ac.post("/api/v1/copilot/chat", json=q2)
         assert r2.status_code == 200
         d2 = r2.json()
-        assert d2["intent"] == "CLINICAL_RENAL_DOSING"
+        assert d2["intent"] == "CLINICAL_CASE_CLARIFICATION"
+        assert d2["answer_type"] == "clarification"
+        assert "Đặng Thị Lan" not in d2["reply_text"]

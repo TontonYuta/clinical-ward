@@ -38,6 +38,9 @@ class PatientInquiryScenario(BaseScenario):
         has_patient_target = bool(ctx.patient) or any(p.full_name.lower() in lower_query or p.id.lower() in lower_query for p in ctx.all_patients)
         # Không trùng với tra cứu đơn thuốc cụ thể (có chữ "đơn thuốc", "xem đơn")
         is_rx_only = any(w in lower_query for w in ["xem đơn", "đơn thuốc của", "đơn của"])
+        is_renal_dose_adjustment = any(term in lower_query for term in ("suy thận", "chỉnh liều", "egfr", "crcl", "creatinine"))
+        if is_renal_dose_adjustment:
+            return False
         return has_patient_ask and has_patient_target and not is_rx_only
 
     async def handle(
