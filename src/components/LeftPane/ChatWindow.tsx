@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, ExternalLink } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -139,14 +139,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </div>
                   )}
                   {msg.citations && msg.citations.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-2xs text-slate-600">
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-1.5 text-2xs text-slate-600">
                       {Array.from(new Map(msg.citations.map(c => [c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis, c])).values()).slice(0, 3).map((c, i) => (
-                        <a key={i} href={c.url || undefined} target={c.url ? '_blank' : undefined} rel={c.url ? 'noreferrer' : undefined} title={`${c.source}: ${c.excerpt || c.section}`} aria-label={c.url ? `Mở ${c.source}, ${c.page ? `trang ${c.page}` : c.section}` : `${c.source}: ${c.section}`} className={`inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-1 rounded border border-slate-200 ${c.url ? 'hover:bg-teal-50 hover:border-teal-300 hover:text-teal-900 cursor-pointer' : 'cursor-help'}`}>
-                          <BookOpen className="w-2.5 h-2.5 text-slate-500" />
-                          <span className="font-medium truncate max-w-[200px]">{c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis}</span>
-                          {c.page && <span className="text-slate-500">tr. {c.page}</span>}
-                          {c.url && <ExternalLink className="w-2.5 h-2.5" />}
-                        </a>
+                        <details key={i} className="rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+                          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 font-medium hover:bg-teal-50">
+                            <BookOpen className="w-3 h-3 text-slate-500" />
+                            <span className="truncate">{c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis}</span>
+                            {c.page && <span className="shrink-0 text-slate-500">tr. {c.page}</span>}
+                            <ChevronDown className="ml-auto h-3 w-3 shrink-0" />
+                          </summary>
+                          <div className="space-y-1 border-t border-slate-200 px-2.5 py-2 text-xs">
+                            <p className="font-semibold text-slate-800">{c.source}{c.page ? ` · trang ${c.page}` : c.section ? ` · ${c.section}` : ''}</p>
+                            {c.excerpt?.trim() && <blockquote className="border-l-2 border-teal-500 pl-2 text-slate-700">{c.excerpt}</blockquote>}
+                            {c.url && <a href={c.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-teal-800 underline">Mở tài liệu gốc <ExternalLink className="h-3 w-3" /></a>}
+                          </div>
+                        </details>
                       ))}
                     </div>
                   )}

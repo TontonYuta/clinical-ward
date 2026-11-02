@@ -334,6 +334,39 @@ async def test_chatbot_provenance_metadata_contract():
         assert data["answer_type"] == "medication_summary"
         assert data["source_status"] == "exact_match"
 
+@pytest.mark.asyncio
+async def test_medication_field_followup_uses_active_medication_and_explicit_switch_wins():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+    from app.services.session_context import clear_session
+    sid = "med-followup-context"
+    clear_session("doctor test:" + sid)
+
+@pytest.mark.asyncio
+async def test_followup_without_medication_context_asks_for_clarification():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+    from app.services.session_context import clear_session
+    sid = "med-followup-no-context"
+    clear_session("doctor test:" + sid)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Còn chống chỉ định?", "user_role": "doctor", "user_name": "Doctor Test", "session_id": sid})
+    body = response.json()
+    assert body["intent"] == "CLINICAL_SAFE_ABSTENTION"
+    assert body["source_status"] == "not_found"
+    clear_session("doctor test:" + sid)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post("/api/v1/copilot/chat", json={"query": "Thông tin thuốc PARACETAMOL 500mg", "user_role": "doctor", "user_name": "Doctor Test", "session_id": sid})
+        assert first.status_code == 200
+        followup = await client.post("/api/v1/copilot/chat", json={"query": "Còn chống chỉ định?", "user_role": "doctor", "user_name": "Doctor Test", "session_id": sid})
+        switched = await client.post("/api/v1/copilot/chat", json={"query": "Metformin liều dùng thế nào?", "user_role": "doctor", "user_name": "Doctor Test", "session_id": sid})
+    body = followup.json()
+    assert body["intent"] == "MEDICATION_SAFETY_PROFILE"
+    assert "Paracetamol" in body["reply_text"]
+    assert switched.status_code == 200
+    assert "Metformin" in switched.json()["reply_text"]
+    clear_session("doctor test:" + sid)
+
 def test_prompt_injection_normalizes_unicode_and_zero_width_obfuscation():
     from app.security.guardrails import detect_prompt_injection
 
@@ -412,11 +445,13 @@ def test_drug_profile_response_contains_verified_pdf_citation():
     from app.services.copilot_drug_formatter import _drug_citation
 
     drug = DavNationalDrug(id="test", national_code="SDK-1", brand_name="Paracetamol", active_ingredient="Paracetamol", group="Thuốc thường")
-    monograph = SimpleNamespace(title="Paracetamol")
+    monograph = SimpleNamespace(title="Paracetamol", indications="Giảm đau, hạ sốt.")
     citation = _drug_citation(drug, monograph, "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang 1118)")
     assert citation["document_id"] == "dtqg-v2-2015"
     assert citation["page"] == 1118
     assert citation["url"] == "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118"
+    assert citation["excerpt"] == "Giảm đau, hạ sốt."
+    assert len(citation["excerpt"]) <= 240
 
 def test_drug_formatter_fills_wrapped_dosage_lines_for_readable_chat_paragraphs():
     from app.services.copilot_drug_formatter import _format_clinical_text

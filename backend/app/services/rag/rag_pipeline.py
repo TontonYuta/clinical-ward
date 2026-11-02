@@ -21,7 +21,8 @@ async def execute_clinical_rag(
     query: str,
     patient_info: Optional[dict] = None,
     user_role: str = "nurse",
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    conversation_context: str = ""
 ) -> RagResult:
     retriever = get_rag_retriever()
 
@@ -62,7 +63,9 @@ async def execute_clinical_rag(
             from app.services.copilot_gemini import query_gemini_models
 
             prompt = (
-                f"Bạn là Chuyên gia Dược lâm sàng & Pháp lý Bệnh viện. Dưới đây là các tài liệu bằng chứng đã truy xuất:\n"
+                f"Bạn là Chuyên gia Dược lâm sàng & Pháp lý Bệnh viện.\n"
+                f"=== NGỮ CẢNH HỘI THOẠI (chỉ giúp hiểu câu hỏi tiếp nối, không phải chứng cứ y khoa) ===\n{conversation_context or '(không có)'}\n\n"
+                f"=== CHỨNG CỨ ĐÃ TRUY XUẤT (nguồn duy nhất để đưa ra thông tin chuyên môn) ===\n"
                 f"{evidence_context}{ddi_alert_context}\n\n"
                 f"Hãy trả lời câu hỏi sau của nhân viên y tế ({user_role}):\n"
                 f"\"{query}\"\n\n"

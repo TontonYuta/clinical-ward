@@ -61,9 +61,12 @@ def extract_drug_keywords(query: str) -> str:
     words = [word for word in words if word not in question_terms]
     return " ".join(words).strip()
 
-async def lookup_drug_authoritative(query: str, db: AsyncSession, session_id: str | None = None) -> CopilotResponse:
+async def lookup_drug_authoritative(
+    query: str, db: AsyncSession, session_id: str | None = None,
+    user_name: str = "Nhân viên y tế", user_role: str = "nurse",
+) -> CopilotResponse:
     from app.services.session_context import get_or_create_session
-    session = get_or_create_session(session_id)
+    session = get_or_create_session(session_id, user_name, user_role)
     kw = extract_drug_keywords(query)
 
     deictic_phrases = ["thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"]

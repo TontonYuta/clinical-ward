@@ -4,7 +4,13 @@ Giữ phiên làm việc của nhân viên y tế: active_patient, active_medica
 """
 
 import time
+from dataclasses import dataclass
 from typing import Optional, Dict, Any
+
+@dataclass(frozen=True)
+class ConversationTurn:
+    user_text: str
+    assistant_text: str
 
 class SessionState:
     def __init__(self, session_id: str, user_name: str, user_role: str):
@@ -31,6 +37,45 @@ class SessionState:
         self.last_intent: Optional[str] = None
         self.last_updated: float = time.time()
         self.turn_count: int = 0
+        self.conversation_turns: list[ConversationTurn] = []
+
+    def append_conversation_turn(self, user_text: str, assistant_text: str) -> None:
+        user = self._truncate_history_text(user_text)
+        assistant = self._truncate_history_text(assistant_text)
+        if user or assistant:
+            self.conversation_turns.append(ConversationTurn(user, assistant))
+            self.conversation_turns = self.conversation_turns[-8:]
+        self.last_query = user or self.last_query
+        self.touch()
+
+    @staticmethod
+    def _truncate_history_text(text: str) -> str:
+        cleaned = (text or "").strip()
+        return cleaned if len(cleaned) <= 2000 else cleaned[:1999] + "…"
+
+    def render_recent_history(self, max_turns: int = 8, max_chars: int = 12000) -> str:
+        if max_turns <= 0 or max_chars <= 0:
+            return ""
+        turns = self.conversation_turns[-max_turns:]
+        selected: list[ConversationTurn] = []
+        char_count = 0
+        for turn in reversed(turns):
+            block = f"Bác sĩ: {turn.user_text}\nTrợ lý: {turn.assistant_text}"
+            additional = len(block) + (2 if selected else 0)
+            if char_count + additional > max_chars:
+                if not selected:
+                    remaining = max_chars - len(f"Bác sĩ: ") - len(f"\nTrợ lý: ")
+                    if remaining > 0:
+                        user_budget = max(0, remaining // 2)
+                        assistant_budget = max(0, remaining - user_budget)
+                        selected = [ConversationTurn(
+                            turn.user_text[-user_budget:] if user_budget else "",
+                            turn.assistant_text[-assistant_budget:] if assistant_budget else "",
+                        )]
+                break
+            selected.insert(0, turn)
+            char_count += additional
+        return "\n\n".join(f"Bác sĩ: {turn.user_text}\nTrợ lý: {turn.assistant_text}" for turn in selected)
 
     def touch(self):
         self.last_updated = time.time()

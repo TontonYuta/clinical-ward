@@ -62,3 +62,28 @@ async def test_scenario_dispatch_skips_patient_and_inventory_reads_for_greeting(
     result = await dispatch_clinical_scenario("Hi", "hi", "alice", "nurse", "alice:scenario", Database())
     assert result is None
     clear_session("alice:scenario")
+
+
+def test_conversation_history_is_bounded_ordered_and_truncated():
+    session = get_or_create_session("history-bounds", "alice", "nurse")
+    session.append_conversation_turn("q1", "a1")
+    session.append_conversation_turn("q2", "a2")
+    rendered = session.render_recent_history(max_turns=1, max_chars=100)
+    assert "q2" in rendered and "a2" in rendered
+    assert "q1" not in rendered
+
+    session.append_conversation_turn("u" * 2500, "a" * 2500)
+    latest = session.render_recent_history(max_turns=8, max_chars=5000)
+    assert len(latest) <= 5000
+    assert "…" in latest
+    clear_session("alice:history-bounds")
+
+def test_conversation_history_evicts_oldest_until_character_budget():
+    session = get_or_create_session("history-eviction", "alice", "nurse")
+    for i in range(5):
+        session.append_conversation_turn(f"question-{i}-" + "x" * 35, f"answer-{i}-" + "y" * 35)
+    rendered = session.render_recent_history(max_turns=8, max_chars=180)
+    assert len(rendered) <= 180
+    assert "question-4" in rendered
+    assert "question-0" not in rendered
+    clear_session("alice:history-eviction")

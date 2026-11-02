@@ -42,3 +42,9 @@ def test_multiple_requested_drug_fields_are_not_misrouted_to_adr_reporting():
     case = next(item for item in report["cases"] if item["id"] == "drug_multiple_fields")
     assert case["actual_intent"] == "MEDICATION_SAFETY_PROFILE"
     assert case["actual_answer_type"] == "medication_fields"
+
+def test_chatbot_evaluation_includes_bounded_context_and_source_provenance_contracts():
+    report = evaluate_chatbot_sync()
+    categories = {case["category"] for case in report["cases"]}
+    assert {"multi_turn_context", "citation_provenance"} <= categories
+    assert report["case_count"] >= 14

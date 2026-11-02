@@ -17,4 +17,10 @@ assert.equal(
   '### Chỉ định\n\nGiảm đau, hạ sốt.'
 );
 assert.equal(removeLegacySourceText('Nguồn: DAV'), '');
+const quoteCitation: RagCitationItem = {
+  source: 'Dược thư Quốc gia Việt Nam', legal_basis: 'QĐ 2033/QĐ-BYT', section: 'Paracetamol',
+  excerpt: 'Liều dùng tham khảo.', url: '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118', page: 1118,
+};
+assert.equal(quoteCitation.excerpt, 'Liều dùng tham khảo.');
+assert.ok(quoteCitation.url?.includes('#page=1118'));
 console.log('Chat answer presentation tests passed.');

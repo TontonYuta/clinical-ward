@@ -71,6 +71,7 @@ def test_citation_grounder_attribution():
     assert len(citations) > 0
     assert any("nguồn dẫn trong từng bản ghi" in c.legal_basis.lower() or "2033/QĐ-BYT" in c.legal_basis for c in citations)
     assert len(citations[0].excerpt) > 10
+    assert all(len(citation.excerpt) <= 240 for citation in citations)
 
 @pytest.mark.asyncio
 async def test_end_to_end_rag_endpoint():
@@ -98,6 +99,50 @@ async def test_copilot_chat_rag_integration():
         assert data["rag_grounded"] is True
         assert len(data["citations"]) > 0
     assert "Paracetamol" in data["reply_text"]
+
+@pytest.mark.asyncio
+async def test_rag_prompt_separates_bounded_conversation_context_from_evidence(monkeypatch):
+    from app.services.rag import rag_pipeline
+    from app.services.rag.types import RagChunk, RetrievedChunk
+    captured = {}
+    chunk = RagChunk("ctx-test", "Dược thư", "QĐ 2033/QĐ-BYT", "Paracetamol", "Paracetamol", "Liều tham khảo là 500 mg.", [], "monograph")
+    class Retriever:
+        def retrieve(self, *args, **kwargs):
+            return [RetrievedChunk(chunk, 0.04)]
+    async def fake_query(prompt, key):
+        captured["prompt"] = prompt
+        return "Trả lời có căn cứ."
+    monkeypatch.setattr(rag_pipeline, "get_rag_retriever", lambda: Retriever())
+    monkeypatch.setattr(rag_pipeline.settings, "GEMINI_API_KEY", "test-api-key-12345")
+    monkeypatch.setattr("app.services.copilot_gemini.query_gemini_models", fake_query)
+    await execute_clinical_rag("Còn chống chỉ định?", conversation_context="Bác sĩ: Thông tin thuốc Paracetamol\nTrợ lý: Liều 500mg")
+    assert "NGỮ CẢNH HỘI THOẠI" in captured["prompt"]
+    assert "CHỨNG CỨ #1" in captured["prompt"]
+    assert captured["prompt"].index("NGỮ CẢNH HỘI THOẠI") < captured["prompt"].index("CHỨNG CỨ #1")
+
+@pytest.mark.asyncio
+async def test_chat_records_each_reply_in_owner_scoped_session():
+    from app.services.session_context import get_or_create_session, clear_session
+    session_id = "chat-history-record"
+    clear_session("test clinician:" + session_id)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post("/api/v1/copilot/chat", json={"query": "Hi", "user_name": "Test Clinician", "session_id": session_id})
+    assert first.status_code == 200
+    session = get_or_create_session(session_id, "Test Clinician", "nurse")
+    history = session.render_recent_history()
+    assert "Hi" in history and "Chào" in history
+    clear_session(session.session_id)
+
+@pytest.mark.asyncio
+async def test_interaction_clarification_stays_deterministic_despite_history():
+    from app.services.session_context import get_or_create_session, clear_session
+    session = get_or_create_session("ddi-history-clarification", "ddi clinician", "doctor")
+    session.append_conversation_turn("Tra cứu thuốc Warfarin", "Đã tra cứu Warfarin.")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/copilot/chat", json={"query": "Kiểm tra tương tác thuốc", "user_role": "doctor", "user_name": "DDI Clinician", "session_id": "ddi-history-clarification"})
+    assert response.status_code == 200
+    assert response.json()["intent"] == "MEDICATION_INTERACTION_CLARIFICATION"
+    clear_session(session.session_id)
 
 def test_hybrid_retrieval_ranks_explicitly_named_drug_above_shared_terms():
     retriever = HybridRetriever()

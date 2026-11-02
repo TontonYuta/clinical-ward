@@ -43,6 +43,19 @@ def resolve_copilot_identity(payload: CopilotQuery, request: Request) -> tuple[s
 
 @router.post("/chat", response_model=CopilotResponse)
 async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSession = Depends(get_db)):
+    from app.services.session_context import get_or_create_session
+    user_name, user_role, session_id = resolve_copilot_identity(payload, request)
+    session = get_or_create_session(session_id, user_name, user_role)
+    history = session.render_recent_history()
+    response = await _handle_copilot_chat(payload, request, db, session=session, history=history)
+    # Attachments and patient-record details are intentionally not part of this buffer.
+    session.append_conversation_turn(payload.query, response.reply_text)
+    response.session_id = session.session_id
+    return response
+
+async def _handle_copilot_chat(
+    payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str
+):
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
 
     # === LỚP BẢO MẬT INPUT GUARDRAIL: CHỐNG PROMPT INJECTION & SQL INJECTION ===
@@ -57,6 +70,32 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
 
     query = guard_res.sanitized_query
     lower_query = query.lower()
+    # Resolve a field-only follow-up against the active medicine only when the
+    # current turn contains no explicit catalog/registry medication entity.
+    if session.active_medication_name:
+        from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+        explicit_registered_drug = any(
+            alias.casefold() in lower_query
+            for entry in DRUG_REGISTRY.values()
+            for alias in entry.get("aliases", [])
+            if len(alias) >= 4
+        )
+        if find_matched_med(lower_query) is None and not explicit_registered_drug:
+            field_only_terms = (
+                "chống chỉ định", "tác dụng phụ", "tác dụng không mong muốn",
+                "liều dùng", "liều tối đa", "thành phần", "hoạt chất",
+                "chỉ định", "công dụng", "thông tin thuốc",
+            )
+            if any(term in lower_query for term in field_only_terms):
+                query = f"{query} của thuốc {session.active_medication_name}"
+                lower_query = query.lower()
+                active_name_in_query = session.active_medication_name.casefold() in lower_query
+            else:
+                active_name_in_query = False
+        else:
+            active_name_in_query = False
+    else:
+        active_name_in_query = False
 
     # 0. Chào hỏi & hội thoại cơ bản (Greetings & Onboarding)
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
@@ -154,7 +193,7 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
     # resolved against the drug catalog before broad clinical scenarios run.
     drug_info_cues = ("thông tin thuốc", "tra cứu thuốc", "thuốc ", "liều dùng", "liều tối đa", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất", "tương tác")
     asks_multiple_fields = len(matched_field_keys) > 1
-    has_drug_entity = find_matched_med(lower_query) is not None or any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4)
+    has_drug_entity = find_matched_med(lower_query) is not None or active_name_in_query or any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4)
     asks_drug_info = any(cue in lower_query for cue in drug_info_cues)
     from app.services.copilot_drug_lookup import extract_drug_keywords
     extracted_kw = extract_drug_keywords(query)
@@ -163,10 +202,10 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
     has_multiple_medication_fields = len(matched_field_keys) > 1 or is_two_drug or is_deep_complex or any(c in lower_query for c in (" và ", " cùng ", ","))
     has_explicit_medication_field = len(matched_field_keys) == 1 and not has_multiple_medication_fields
     if asks_multiple_fields and asks_drug_info and not is_deep_complex and not is_interaction_question:
-        return await lookup_drug_authoritative(query, db, session_id=session_id)
-    if has_explicit_medication_field and has_drug_entity and not is_deep_complex:
+        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+    if has_explicit_medication_field and (has_drug_entity or active_name_in_query) and not is_deep_complex:
         # The authoritative lookup supplies the catalog-backed field answer and citation.
-        return await lookup_drug_authoritative(query, db, session_id=session_id)
+        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     is_self_symptom_prompt = bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
     has_explicit_case = any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn "))
@@ -192,7 +231,7 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
             )
 
     if not is_interaction_question and not is_deep_complex and any(term in lower_query for term in ("dùng cho bệnh gì", "dùng để làm gì", "công dụng", "chỉ định")) and any(alias in lower_query for entry in __import__("app.services.clinical_ddi_engine.drug_registry", fromlist=["DRUG_REGISTRY"]).DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4):
-        return await lookup_drug_authoritative(query, db, session_id=session_id)
+        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
         scenario_res = await detect_and_handle_gemini_clinical_scenario(
@@ -204,7 +243,7 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
 
     # 0d. 12 Kịch Bản Lâm Sàng Chuyên Sâu Tách File & AMIE Multi-turn Context
     if has_drug_entity and any(cue in lower_query for cue in drug_info_cues) and not is_interaction_question and not is_deep_complex:
-        return await lookup_drug_authoritative(query, db, session_id=session_id)
+        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
     scenario_res = await detect_and_handle_gemini_clinical_scenario(
         query, lower_query, user_name, db, user_role=user_role, session_id=session_id
     )
@@ -215,7 +254,7 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
     from app.services.rag import rag_pipeline
     has_contextual_clinical_followups = any(term in lower_query for term in ("dùng gì", "uống gì", "gợi ý", "nên dùng", "nên uống", "đau đầu", "đau bụng"))
     if is_interaction_question or has_contextual_clinical_followups:
-        rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role)
+        rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role, conversation_context=history)
         if rag_res:
             from app.services.session_context import get_or_create_session
             session = get_or_create_session(session_id, user_name, user_role)
@@ -322,7 +361,7 @@ async def chat_with_copilot(payload: CopilotQuery, request: Request, db: AsyncSe
                 answer_type="safe_abstention", source_status="no_retrieval_results",
                 confidence=0.0, abstention_reason="Không có tài liệu truy xuất phù hợp",
             )
-        rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role)
+        rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role, conversation_context=history)
         if rag_res and (rag_res.citations or not rag_res.rag_grounded or is_deep_pharmacology):
             cleaned_reply = validate_output_guardrail(rag_res.answer, query)
             from app.services.session_context import get_or_create_session

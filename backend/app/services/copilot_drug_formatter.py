@@ -51,10 +51,21 @@ def _drug_citation(matched: DavNationalDrug, monograph: object | None, source: s
     document_id = "dtqg-v2-2015" if has_dtqg_provenance else "dav-registry"
     if has_dtqg_provenance and page:
         url += f"#page={page}"
+    excerpt = ""
+    if monograph is not None:
+        for field in ("indications", "contraindications", "adult_dosage", "adverse_effects", "composition", "description"):
+            value = getattr(monograph, field, None)
+            if value and str(value).strip():
+                excerpt = _format_clinical_text(str(value)).strip()
+                break
+    if not excerpt:
+        excerpt = str(getattr(matched, "indications", "") or "").strip()
+    if len(excerpt) > 240:
+        excerpt = excerpt[:239].rstrip() + "…"
     return {
         "source": title, "legal_basis": source or "Cục Quản lý Dược (DAV)",
         "section": getattr(monograph, "title", None) or matched.active_ingredient,
-        "excerpt": "", "document_id": document_id, "url": url, "page": page if has_dtqg_provenance else None,
+        "excerpt": excerpt, "document_id": document_id, "url": url, "page": page if has_dtqg_provenance else None,
     }
 
 async def build_drug_profile_response(

@@ -96,9 +96,10 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCit
             continue
         seen_sections.add(sec_key)
 
-        # Trích đoạn ngắn gọn (excerpt) không quá 180 ký tự
+        # Bounded excerpt is shown to clinicians next to the exact source link.
         lines = [line.strip() for line in c.content.split("\n") if line.strip() and not line.startswith("#")]
-        excerpt = " ".join(lines[:3])[:180] + "..." if lines else c.title
+        excerpt_text = " ".join(lines[:3]).strip() or c.title
+        excerpt = excerpt_text if len(excerpt_text) <= 240 else excerpt_text[:239].rstrip() + "…"
 
         document_url, document_id, document_page = _citation_document(c.source_doc, c.legal_basis, c.page_or_section)
         citations.append(RagCitation(
