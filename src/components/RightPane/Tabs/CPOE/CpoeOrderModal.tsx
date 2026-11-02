@@ -235,30 +235,34 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-[1400px] h-[100dvh] sm:h-[94vh] max-h-[980px] flex flex-col overflow-hidden text-slate-900">
         
         {/* Header Chuẩn Kho Dược: Nền trắng, phẳng, viền slate-200 */}
-        <div className="px-5 sm:px-6 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
+        <div className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
+              <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
                 TT 26/2025/TT-BYT
               </span>
               <div className="flex items-center gap-2">
-                <Stethoscope className="w-5 h-5 text-teal-700" />
+                <Stethoscope className="w-5 h-5 text-teal-700 shrink-0" />
                 <h3 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight">
                   Kê đơn thuốc điều trị
                 </h3>
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5 truncate">
-              Bác sĩ chỉ định: <strong className="text-slate-800 font-semibold">{formatDoctorDisplay(doctorName)}</strong> · Trạm làm việc lâm sàng CPOE
+            <p className="text-xs text-slate-500 mt-1 truncate">
+              Bác sĩ chỉ định: <strong className="text-slate-800 font-semibold">{formatDoctorDisplay(doctorName)}</strong>
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Phân loại đơn thuốc: Chuyển đổi Ngoại trú / Nội trú */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* Phân loại đơn thuốc: Ngoại trú / Nội trú */}
             <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200">
-              <button type="button" onClick={handlePrintDraft}
-                className="px-3.5 py-1.5 border border-slate-300 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold cursor-pointer transition">
-                <Printer className="w-4 h-4 inline mr-1 text-slate-600" />In đơn
+              <button
+                type="button"
+                onClick={handlePrintDraft}
+                className="px-3 py-1.5 border border-slate-300 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold cursor-pointer transition flex items-center gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-600" />
+                <span>In đơn</span>
               </button>
               <button
                 type="button"
@@ -269,7 +273,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
                 }`}
               >
-                Ngoại trú (Đơn xuất viện)
+                Ngoại trú
               </button>
               <button
                 type="button"
@@ -280,7 +284,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
                 }`}
               >
-                Nội trú (Y lệnh ngày)
+                Nội trú (y lệnh ngày)
               </button>
             </div>
 
@@ -288,7 +292,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Đóng form kê đơn"
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -296,20 +300,20 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
         </div>
 
         {/* Thanh phân loại mẫu đơn thuốc chuẩn Thông tư 26/2025/TT-BYT */}
-        <div className="px-5 sm:px-6 py-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Phân loại mẫu đơn TT 26:</span>
-            <div className="inline-flex p-0.5 bg-white rounded-lg border border-slate-300 shadow-2xs gap-1">
+        <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="text-xs font-medium text-slate-600">Mẫu đơn:</span>
+            <div className="inline-flex p-0.5 bg-white rounded-lg border border-slate-200 shadow-2xs gap-1">
               <button
                 type="button"
                 onClick={() => setTt26FormType('PL1_STANDARD')}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
                   tt26FormType === 'PL1_STANDARD'
                     ? 'bg-emerald-700 text-white shadow-xs'
                     : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                Phụ lục I: Đơn thuốc (-C)
+                Đơn thuốc (-C)
               </button>
               <button
                 type="button"
@@ -317,30 +321,30 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                   setTt26FormType('PL2_NARCOTIC');
                   if (daysPrescribed > 30) setDaysPrescribed(30);
                 }}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
                   tt26FormType === 'PL2_NARCOTIC'
                     ? 'bg-rose-700 text-white shadow-xs'
                     : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                Phụ lục II: Đơn “N” Gây nghiện (-N)
+                Đơn “N” Gây nghiện (-N)
               </button>
               <button
                 type="button"
                 onClick={() => setTt26FormType('PL3_PSYCHOTROPIC')}
-                className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
                   tt26FormType === 'PL3_PSYCHOTROPIC'
                     ? 'bg-purple-700 text-white shadow-xs'
                     : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                Phụ lục III: Đơn “H” Hướng thần (-H)
+                Đơn “H” Hướng thần (-H)
               </button>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-2xs font-mono text-slate-500">Mã đơn TT26 dự kiến:</span>
+            <span className="text-xs text-slate-500">Mã dự kiến:</span>
             <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white border border-slate-300 text-slate-900">
               79001{Date.now().toString().slice(-7)}-{tt26FormType === 'PL2_NARCOTIC' ? 'N' : tt26FormType === 'PL3_PSYCHOTROPIC' ? 'H' : 'C'}
             </span>
@@ -350,52 +354,45 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
         {/* Form Body 2 Cột Trái - Phải Chuẩn Workstation */}
         <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {validationErrors.length > 0 && (
-            <div role="alert" className="px-5 py-2 bg-rose-50 border-b border-rose-200 text-xs text-rose-900">
+            <div role="alert" className="px-6 py-2.5 bg-rose-50 border-b border-rose-200 text-xs text-rose-900">
               <strong>Chưa thể lưu bản nháp:</strong> {validationErrors.join(' ')}
             </div>
           )}
           <div className="flex-1 overflow-y-auto thin-scrollbar">
             <div className="grid grid-cols-1 lg:grid-cols-12 min-h-full divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
               
-              {/* CỘT TRÁI: HÀNH CHÍNH NGƯỜI BỆNH & CHẨN ĐOÁN (lg:col-span-6) */}
-              <div className="lg:col-span-6 p-5 sm:p-6 space-y-4.5 bg-white">
+              {/* CỘT TRÁI: HÀNH CHÍNH NGƯỜI BỆNH & CHẨN ĐOÁN (lg:col-span-5 xl:col-span-5) */}
+              <div className="lg:col-span-5 xl:col-span-5 p-6 space-y-5 bg-white">
                 
                 {/* 1. Chọn nhanh bệnh nhân mẫu */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Chọn nhanh bệnh nhân mẫu (Bộ dữ liệu lâm sàng 14 BN)</span>
-                    </label>
-                    <span className="text-2xs font-mono text-slate-400">Tự động điền 1 chạm</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="text-xs font-semibold text-slate-700">Cân nặng (bắt buộc với trẻ dưới 72 tháng), kg<input type="number" min="0" step="0.1" value={patientWeight} onChange={(e) => setPatientWeight(e.target.value)} className="w-full px-3 py-2 mt-1 bg-slate-50 border border-slate-300 rounded-lg text-sm" /></label>
-                    <label className="text-xs font-semibold text-slate-700">Mã số bảo hiểm y tế (nếu có)<input value={patientInsuranceId} onChange={(e) => setPatientInsuranceId(e.target.value)} className="w-full px-3 py-2 mt-1 bg-slate-50 border border-slate-300 rounded-lg text-sm" /></label>
-                  </div>
+                <div className="space-y-1.5 pb-1">
+                  <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Chọn nhanh bệnh nhân mẫu</span>
+                  </label>
                   <select
                     value={selectedPatientId}
                     onChange={(e) => handleSelectSamplePatient(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 cursor-pointer transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 cursor-pointer transition"
                   >
                     <option value="">-- Bấm để chọn tự động điền hồ sơ bệnh nhân mẫu --</option>
                     {INITIAL_PATIENTS.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.id} · {p.fullName} ({p.gender}, {p.age} tuổi) - SĐT: {p.phone || 'Chưa có'} · {p.department || p.room}
+                        {p.id} · {p.fullName} ({p.gender}, {p.age} tuổi) · {p.department || p.room}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 {/* 2. Nhóm thông tin hành chính người bệnh */}
-                <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="space-y-4 pt-4 border-t border-slate-100">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Thông Tin Hành Chính Người Bệnh (Bắt Buộc TT 26)
+                    Thông tin hành chính
                   </h4>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
                         Họ và tên người bệnh <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -411,28 +408,28 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                             setPatientEmail(p.email || '');
                           }
                         }}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-semibold transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 font-semibold transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Số CCCD (12 chữ số định danh) <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Số CCCD / Định danh <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
                         placeholder="001201019283"
                         value={patientCccd}
                         onChange={(e) => setPatientCccd(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-mono transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 font-mono transition"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-slate-500" />
-                        <span>Số điện thoại (Nhận SMS đơn thuốc) <span className="text-rose-500">*</span></span>
+                      <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        <span>Số điện thoại <span className="text-rose-500">*</span></span>
                       </label>
                       <input
                         type="tel"
@@ -448,13 +445,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                             if (!patientEmail) setPatientEmail(p.email || '');
                           }
                         }}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-mono transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 font-mono transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                        <Mail className="w-3 h-3 text-slate-500" />
-                        <span>Email nhận bản sao đơn thuốc</span>
+                      <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+                        <Mail className="w-3 h-3 text-slate-400" />
+                        <span>Email (tùy chọn)</span>
                       </label>
                       <input
                         type="email"
@@ -462,32 +459,32 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         placeholder="benhnhan@example.com"
                         value={patientEmail}
                         onChange={(e) => setPatientEmail(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-500" />
+                      <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-400" />
                         <span>Ngày sinh</span>
                       </label>
                       <input
                         type="date"
                         value={patientDob}
                         onChange={(e) => setPatientDob(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
                         Giới tính
                       </label>
                       <select
                         value={patientGender}
                         onChange={(e) => setPatientGender(e.target.value as 'Nam' | 'Nữ')}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 cursor-pointer transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 cursor-pointer transition"
                       >
                         <option value="">-- Chọn --</option>
                         <option value="Nam">Nam</option>
@@ -495,8 +492,8 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-slate-500" />
+                      <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-slate-400" />
                         <span>Khoa / Phòng</span>
                       </label>
                       <input
@@ -504,109 +501,144 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         value={department}
                         onChange={(e) => setDepartment(e.target.value)}
                         placeholder="Khoa Khám Bệnh"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Nơi cư trú</label>
-                      <input value={patientAddress} onChange={(e) => setPatientAddress(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm" placeholder="Nơi thường trú/tạm trú/nơi ở hiện tại" />
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Cân nặng (kg)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="Bắt buộc với trẻ < 72 tháng"
+                        value={patientWeight}
+                        onChange={(e) => setPatientWeight(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Người đưa trẻ dưới 72 tháng đến khám (nếu có)</label>
-                      <input value={guardianName} onChange={(e) => setGuardianName(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm" />
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Mã thẻ BHYT (nếu có)</label>
+                      <input
+                        value={patientInsuranceId}
+                        onChange={(e) => setPatientInsuranceId(e.target.value)}
+                        placeholder="Số thẻ BHYT"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Nơi cư trú</label>
+                      <input
+                        value={patientAddress}
+                        onChange={(e) => setPatientAddress(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                        placeholder="Địa chỉ cư trú"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Người giám hộ (trẻ &lt; 72 tháng)</label>
+                      <input
+                        value={guardianName}
+                        onChange={(e) => setGuardianName(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                        placeholder="Họ tên cha / mẹ / người đưa trẻ đi khám"
+                      />
                     </div>
                   </div>
                 </div>
 
                 {/* 2b. Chuyên biệt Phụ lục II (Đơn "N") & Phụ lục III (Đơn "H") theo TT 26 */}
                 {tt26FormType === 'PL2_NARCOTIC' && (
-                  <div className="p-3.5 bg-rose-50/70 border border-rose-300 rounded-xl space-y-2.5">
+                  <div className="p-4 bg-rose-50/70 border border-rose-200 rounded-xl space-y-3">
                     <div className="flex items-center justify-between text-xs font-bold text-rose-950">
                       <span className="flex items-center gap-1.5">
                         <ShieldAlert className="w-4 h-4 text-rose-600" />
-                        <span>Quy định Đơn thuốc “N” (Gây nghiện - TT 26)</span>
+                        <span>Đơn thuốc “N” (Gây nghiện - TT 26)</span>
                       </span>
-                      <span className="text-2xs font-mono bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mã đuôi: -N</span>
+                      <span className="text-2xs font-mono bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mã: -N</span>
                     </div>
                     <p className="text-2xs text-rose-800 leading-relaxed">
-                      Kê tối đa 07 ngày cho bệnh cấp tính; tối đa 30 ngày chia làm 03 đợt điều trị cho bệnh nhân ung thư (Điều 7 &amp; 8 TT 26/2025/TT-BYT).
+                      Kê tối đa 07 ngày cho bệnh cấp tính; tối đa 30 ngày chia làm 03 đợt điều trị cho bệnh nhân ung thư.
                     </p>
                     <div className="space-y-1.5">
-                      <label className="block text-2xs font-bold text-slate-700">Phân bổ 3 đợt điều trị:</label>
+                      <label className="block text-2xs font-bold text-slate-700">Phân bổ 3 đợt điều trị (nếu kê 30 ngày):</label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <input
                           type="text"
                           placeholder="Đợt 1: Từ ngày ... đến ..."
                           value={treatmentBatch1}
                           onChange={(e) => setTreatmentBatch1(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-md"
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-lg"
                         />
                         <input
                           type="text"
                           placeholder="Đợt 2: Từ ngày ... đến ..."
                           value={treatmentBatch2}
                           onChange={(e) => setTreatmentBatch2(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-md"
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-lg"
                         />
                         <input
                           type="text"
                           placeholder="Đợt 3: Từ ngày ... đến ..."
                           value={treatmentBatch3}
                           onChange={(e) => setTreatmentBatch3(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-md"
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-rose-300 rounded-lg"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-2xs font-bold text-slate-700 mb-0.5">
-                        Số định danh cá nhân/số CCCD/hộ chiếu người nhận thuốc (nếu khác người bệnh):
+                      <label className="block text-2xs font-bold text-slate-700 mb-1">
+                        CCCD người nhận thuốc (nếu khác người bệnh):
                       </label>
                       <input
                         type="text"
-                        placeholder="Nhập 12 số CCCD người nhận thuốc..."
+                        placeholder="Số CCCD người nhận thuốc..."
                         value={receiverCccd}
                         onChange={(e) => setReceiverCccd(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-rose-300 rounded-md"
+                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-rose-300 rounded-lg"
                       />
                     </div>
                   </div>
                 )}
 
                 {tt26FormType === 'PL3_PSYCHOTROPIC' && (
-                  <div className="p-3.5 bg-purple-50/70 border border-purple-300 rounded-xl space-y-2">
+                  <div className="p-4 bg-purple-50/70 border border-purple-200 rounded-xl space-y-3">
                     <div className="flex items-center justify-between text-xs font-bold text-purple-950">
                       <span className="flex items-center gap-1.5">
                         <Pill className="w-4 h-4 text-purple-600" />
-                        <span>Quy định Đơn thuốc “H” (Hướng thần, tiền chất - TT 26)</span>
+                        <span>Đơn thuốc “H” (Hướng thần, tiền chất - TT 26)</span>
                       </span>
-                      <span className="text-2xs font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">Mã đuôi: -H</span>
+                      <span className="text-2xs font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">Mã: -H</span>
                     </div>
                     <div>
-                      <label className="block text-2xs font-bold text-slate-700 mb-0.5">
-                        Số định danh cá nhân/số CCCD/hộ chiếu người nhận thuốc (nếu khác người bệnh):
+                      <label className="block text-2xs font-bold text-slate-700 mb-1">
+                        CCCD người nhận thuốc (nếu khác người bệnh):
                       </label>
                       <input
                         type="text"
-                        placeholder="Nhập 12 số CCCD người nhận thuốc..."
+                        placeholder="Số CCCD người nhận thuốc..."
                         value={receiverCccd}
                         onChange={(e) => setReceiverCccd(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-purple-300 rounded-md"
+                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-purple-300 rounded-lg"
                       />
                     </div>
                   </div>
                 )}
 
                 {/* 3. Nhóm chẩn đoán y khoa & thời hạn */}
-                <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="space-y-4 pt-4 border-t border-slate-100">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Chẩn Đoán Lâm Sàng &amp; Thời Hạn Điều Trị
+                    Chẩn đoán lâm sàng
                   </h4>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
                         Mã ICD-10 <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -614,11 +646,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         placeholder="VD: I10"
                         value={diagnosisIcd10}
                         onChange={(e) => setDiagnosisIcd10(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-mono uppercase font-semibold transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 font-mono uppercase font-semibold transition"
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
                         Chẩn đoán xác định <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -626,13 +658,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         placeholder="Nhập chẩn đoán lâm sàng..."
                         value={diagnosisText}
                         onChange={(e) => setDiagnosisText(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-medium transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 font-medium transition"
                       />
                     </div>
                   </div>
 
                   {rxType === 'outpatient' && (
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                       <label className="flex items-start gap-2.5 text-xs text-slate-800 cursor-pointer">
                         <input
                           type="checkbox"
@@ -642,16 +674,16 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                             setIsChronic(checked);
                             if (!checked && daysPrescribed > 30) setDaysPrescribed(30);
                           }}
-                          className="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                          className="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-400 cursor-pointer"
                         />
                         <span className="font-medium">
-                          Người bệnh thuộc danh mục bệnh tại Phụ lục VII và đã điều trị ổn định (Kê tối đa 90 ngày)
+                          Bệnh mạn tính ổn định theo Phụ lục VII (Kê tối đa 90 ngày)
                         </span>
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center pt-1 border-t border-slate-200/60">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-center pt-2 border-t border-slate-200/60">
                         <div>
                           <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="prescription-days">
-                            Số ngày sử dụng đơn thuốc
+                            Số ngày dùng thuốc
                           </label>
                           <input
                             id="prescription-days"
@@ -662,11 +694,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                             onChange={(e) =>
                               setDaysPrescribed(Math.max(0, Math.min(isChronic ? 90 : 30, Number(e.target.value) || 0)))
                             }
-                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 font-semibold focus:outline-none focus:ring-1 focus:ring-slate-400"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 font-semibold focus:outline-none focus:ring-1 focus:ring-slate-400 transition"
                           />
                         </div>
                         <p className="text-2xs text-slate-500 leading-relaxed">
-                          {isChronic ? '• Kê tối đa 90 ngày theo tình trạng lâm sàng (TT 26).' : '• Kê tối đa 30 ngày cho đơn ngoại trú thông thường.'}
+                          {isChronic ? '• Kê tối đa 90 ngày theo tình trạng bệnh (TT 26).' : '• Kê tối đa 30 ngày cho đơn ngoại trú thông thường.'}
                         </p>
                       </div>
                     </div>
@@ -674,43 +706,210 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                 </div>
               </div>
 
-              {/* CỘT PHẢI: CHỈ ĐỊNH DƯỢC LÝ & AN TOÀN LÂM SÀNG CDSS (lg:col-span-6) */}
-              <div className="lg:col-span-6 p-5 sm:p-6 space-y-4.5 bg-slate-50/50">
+              {/* CỘT PHẢI: CHỈ ĐỊNH DƯỢC LÝ & AN TOÀN LÂM SÀNG CDSS (lg:col-span-7 xl:col-span-7) */}
+              <div className="lg:col-span-7 xl:col-span-7 p-6 space-y-5 bg-slate-50/40">
                 
-                <div className={"flex justify-between items-center"}>
-                  <h4 className="text-xs font-bold uppercase">Danh sách thuốc kê đơn</h4>
-                  <button type="button" onClick={() => setMedications((xs) => [...xs, emptyMedication()])} className="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs"><Plus className="w-4 h-4 inline"/> Thêm thuốc</button>
-                </div>
-                {medications.map((medication, index) => (
-                  <section key={medication.id} className="p-3 border rounded-xl bg-white space-y-3">
-                    <div className="flex justify-between"><b>Thuốc {index + 1}</b>{medications.length > 1 && <button type="button" aria-label={"Xóa thuốc " + (index + 1)} onClick={() => { const next = medications.filter((_, i) => i !== index); setMedications(next); refreshDdiAudit(next); }}><Trash2 className="w-4 h-4"/></button>}</div>
-                    <MedicationSearchAutocomplete selectedMedicationName={medication.medicationName} onSelect={(med) => handleSelectMed(index, med)} defaultOnlyCrashCart={false} placeholder="Tìm biệt dược hoặc hoạt chất"/>
-                    <p className="text-xs">Hoạt chất: {medication.activeIngredient}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="text-xs text-slate-700">Liều mỗi lần<input aria-label="Liều mỗi lần" placeholder="Ví dụ: 1 viên (500 mg)" value={medication.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} className="border rounded p-2 w-full mt-1"/></label>
-                      <label className="text-xs text-slate-700">Tần suất dùng<input aria-label="Tần suất" placeholder="Ví dụ: ngày 2 lần, mỗi 12 giờ" value={medication.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="border rounded p-2 w-full mt-1"/></label>
-                      <select aria-label="Đường dùng" value={medication.route} onChange={(e) => updateMedication(index, "route", e.target.value)} className="border rounded p-2"><option value="">Đường dùng</option><option>Uống</option><option>Tiêm bắp</option><option>Tiêm tĩnh mạch</option><option>Truyền tĩnh mạch</option><option>Đặt</option><option>Hít</option></select>
-                      <input aria-label="Số lượng" type="number" min="1" value={medication.quantity} onChange={(e) => updateMedication(index, "quantity", Number(e.target.value) || 0)} className="border rounded p-2"/>
-                      <select aria-label="Đơn vị" value={medication.unit} onChange={(e) => updateMedication(index, "unit", e.target.value)} className="border rounded p-2">{["Viên","Ống","Lọ","Chai","Hộp","Vỉ"].map((u) => <option key={u}>{u}</option>)}</select>
-                      <label className="text-xs text-slate-700">Thời điểm / cách dùng<input aria-label="Hướng dẫn sử dụng" placeholder="Ví dụ: sau ăn; uống với nước" value={medication.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} className="border rounded p-2 w-full mt-1"/></label>
-                    </div>
-                  </section>
-                ))}
-                {(ddiAuditUnavailable || ddiAudit?.has_contraindication || (ddiAudit?.pair_alerts?.length ?? 0) > 0) && <div role="alert" className="p-3 border rounded text-xs"><b>{ddiAuditUnavailable ? "Chưa kiểm tra được tương tác" : ddiAudit?.has_contraindication ? "Chống chỉ định phối hợp — không thể lưu đơn" : "Cảnh báo tương tác cần rà soát"}</b>{ddiAudit?.pair_alerts?.map((a, i) => <p key={i}>{a.title} ({a.severity}) — {a.consequence}; Xử trí: {a.action}; Nguồn: {a.source}</p>)}</div>}
-                {/* 6. Cảnh báo an toàn lâm sàng CDSS */}
-                <div className="space-y-3 pt-3 border-t border-slate-200">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Ghi chú lâm sàng cho Dược sĩ / Điều dưỡng phát thuốc (Tùy chọn)
-                    </label>
-                    <input
-                      type="text"
-                      value={clinicalNotes}
-                      onChange={(e) => setClinicalNotes(e.target.value)}
-                      placeholder="Ghi chú theo dõi đặc biệt, xét nghiệm lại chức năng gan/thận..."
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 transition"
-                    />
+                <div className="flex justify-between items-center pb-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Danh mục thuốc điều trị
+                    </h4>
+                    <span className="text-xs text-slate-400 font-mono">({medications.length} thuốc)</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setMedications((xs) => [...xs, emptyMedication()])}
+                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm thuốc</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {medications.map((medication, index) => (
+                    <section
+                      key={medication.id}
+                      className="p-4 sm:p-5 border border-slate-200 rounded-xl bg-white shadow-xs space-y-4 transition hover:border-slate-300"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-mono text-xs font-semibold rounded">
+                            #{String(index + 1).padStart(2, '0')}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-800">
+                            {medication.medicationName || 'Thuốc mới'}
+                          </span>
+                        </div>
+                        {medications.length > 1 && (
+                          <button
+                            type="button"
+                            aria-label={"Xóa thuốc " + (index + 1)}
+                            onClick={() => {
+                              const next = medications.filter((_, i) => i !== index);
+                              setMedications(next);
+                              refreshDdiAudit(next);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer"
+                            title="Xóa thuốc này"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Tên thuốc / Biệt dược <span className="text-rose-500">*</span>
+                        </label>
+                        <MedicationSearchAutocomplete
+                          selectedMedicationName={medication.medicationName}
+                          onSelect={(med) => handleSelectMed(index, med)}
+                          defaultOnlyCrashCart={false}
+                          placeholder="Tìm biệt dược hoặc hoạt chất"
+                        />
+                        {medication.activeIngredient && (
+                          <p className="text-2xs text-slate-500 mt-1 font-medium">
+                            Hoạt chất: <strong className="text-slate-700">{medication.activeIngredient}</strong>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Liều lượng & Tần suất dùng */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            Liều mỗi lần
+                          </label>
+                          <input
+                            aria-label="Liều mỗi lần"
+                            placeholder="Ví dụ: 1 viên (500 mg)"
+                            value={medication.dosage}
+                            onChange={(e) => updateMedication(index, "dosage", e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            Tần suất dùng
+                          </label>
+                          <input
+                            aria-label="Tần suất"
+                            placeholder="Ví dụ: ngày 2 lần, mỗi 12 giờ"
+                            value={medication.frequency}
+                            onChange={(e) => updateMedication(index, "frequency", e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Đường dùng, Số lượng, Đơn vị tính */}
+                      <div className="grid grid-cols-3 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            Đường dùng
+                          </label>
+                          <select
+                            aria-label="Đường dùng"
+                            value={medication.route}
+                            onChange={(e) => updateMedication(index, "route", e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 cursor-pointer transition"
+                          >
+                            <option value="">Đường dùng</option>
+                            <option value="Uống">Uống</option>
+                            <option value="Tiêm bắp">Tiêm bắp</option>
+                            <option value="Tiêm tĩnh mạch">Tiêm tĩnh mạch</option>
+                            <option value="Truyền tĩnh mạch">Truyền tĩnh mạch</option>
+                            <option value="Đặt">Đặt</option>
+                            <option value="Hít">Hít</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            Số lượng
+                          </label>
+                          <input
+                            aria-label="Số lượng"
+                            type="number"
+                            min="1"
+                            value={medication.quantity}
+                            onChange={(e) => updateMedication(index, "quantity", Number(e.target.value) || 0)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            Đơn vị
+                          </label>
+                          <select
+                            aria-label="Đơn vị"
+                            value={medication.unit}
+                            onChange={(e) => updateMedication(index, "unit", e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 cursor-pointer transition"
+                          >
+                            {["Viên","Ống","Lọ","Chai","Hộp","Vỉ","Gói"].map((u) => (
+                              <option key={u} value={u}>{u}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Hướng dẫn sử dụng */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Cách dùng / Dặn dò người bệnh
+                        </label>
+                        <input
+                          aria-label="Hướng dẫn sử dụng"
+                          placeholder="Ví dụ: sau ăn; uống với nước"
+                          value={medication.instructions}
+                          onChange={(e) => updateMedication(index, "instructions", e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition"
+                        />
+                      </div>
+                    </section>
+                  ))}
+                </div>
+
+                {(ddiAuditUnavailable || ddiAudit?.has_contraindication || (ddiAudit?.pair_alerts?.length ?? 0) > 0) && (
+                  <div
+                    role="alert"
+                    className={`p-4 border rounded-xl text-xs space-y-2 ${
+                      ddiAudit?.has_contraindication
+                        ? 'bg-rose-50 border-rose-300 text-rose-950'
+                        : 'bg-amber-50 border-amber-300 text-amber-950'
+                    }`}
+                  >
+                    <b className="flex items-center gap-1.5 font-bold">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>
+                        {ddiAuditUnavailable
+                          ? "Chưa kiểm tra được tương tác"
+                          : ddiAudit?.has_contraindication
+                          ? "Chống chỉ định phối hợp — không thể lưu đơn"
+                          : "Cảnh báo tương tác cần rà soát"}
+                      </span>
+                    </b>
+                    {ddiAudit?.pair_alerts?.map((a, i) => (
+                      <p key={i} className="text-2xs leading-relaxed pl-5">
+                        • <strong>{a.title}</strong> ({a.severity}) — {a.consequence}; Xử trí: {a.action}; Nguồn: {a.source}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* 6. Ghi chú lâm sàng CDSS */}
+                <div className="pt-3 border-t border-slate-200">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Ghi chú lâm sàng cho Dược sĩ / Điều dưỡng phát thuốc (Tùy chọn)
+                  </label>
+                  <input
+                    type="text"
+                    value={clinicalNotes}
+                    onChange={(e) => setClinicalNotes(e.target.value)}
+                    placeholder="Ghi chú theo dõi đặc biệt, xét nghiệm lại chức năng gan/thận..."
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 transition"
+                  />
                 </div>
 
               </div>
@@ -718,7 +917,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
           </div>
 
           {/* Sticky Workstation Footer: Nền trắng, phẳng, viền slate-200 */}
-          <div className="px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
+          <div className="px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
             <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
               <span>Bác sĩ chỉ định: <strong className="text-slate-900 font-semibold">{formatDoctorDisplay(doctorName)}</strong></span>
               <span className="text-slate-300">·</span>
