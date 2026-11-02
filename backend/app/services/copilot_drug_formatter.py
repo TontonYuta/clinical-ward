@@ -22,17 +22,20 @@ async def build_drug_profile_response(
 ) -> CopilotResponse:
     matched = drugs[0]
     first_active = matched.active_ingredient.split(";")[0].split("+")[0].strip().lower()
+    clean_active = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", first_active, flags=re.IGNORECASE).strip().lower()
 
     monograph = None
     if matched.clinical_monograph_id:
         mono_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched.clinical_monograph_id))
         monograph = mono_res.scalar_one_or_none()
     if monograph is None:
-        normalize = lambda val: re.sub(r"[^a-z0-9]+", "", val.casefold())
-        active_key = normalize(first_active)
-        mono_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{first_active}%")))
-        candidates = [c for c in mono_res.scalars().all() if normalize(c.inn) == active_key]
-        monograph = candidates[0] if len(candidates) == 1 else None
+        target = clean_active if clean_active else first_active
+        mono_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{target}%")))
+        candidates = mono_res.scalars().all()
+        if candidates:
+            normalize = lambda val: re.sub(r"[^a-z0-9]+", "", val.casefold())
+            norm_target = normalize(target)
+            monograph = next((c for c in candidates if norm_target in normalize(c.inn)), candidates[0])
 
     def value(field: str) -> Optional[str]:
         return getattr(matched, field, None) or (getattr(monograph, field, None) if monograph else None)

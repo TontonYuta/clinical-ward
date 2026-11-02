@@ -318,10 +318,15 @@ async def _handle_copilot_chat(
     if is_debt_settle:
         return await handle_debt_settle_intent(query, lower_query, db)
 
+    from app.services.copilot_drug_lookup import extract_drug_keywords
+    extracted_kw = extract_drug_keywords(query)
     resolved_meds_in_query = resolve_registered_medications(lower_query)
+    is_two_drug = (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))) or len(resolved_meds_in_query) > 1
+
     is_single_drug_interaction = (
-        len(resolved_meds_in_query) == 1
-        and any(term in lower_query for term in ("của", "thuốc này", "thuốc đó", "với thuốc khác"))
+        not is_two_drug
+        and (len(resolved_meds_in_query) == 1 or (bool(extracted_kw) and len(extracted_kw) >= 3))
+        and any(term in lower_query for term in ("của", "thuốc này", "thuốc đó", "với thuốc khác", "về tương tác", "thông tin tương tác", "tương tác của", "tương tác thuốc của"))
         and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))
     )
     is_interaction_question = any(term in lower_query for term in ("tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung"))
@@ -406,7 +411,11 @@ async def _handle_copilot_chat(
             confidence=1.0, abstention_reason="Thiếu thuốc hoặc đối tượng cần đánh giá",
         )
 
-    is_self_symptom_prompt = bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
+    is_general_reference_inquiry = any(term in lower_query for term in (
+        "thông tin về", "thông tin", "tài liệu", "tra cứu", "hướng dẫn", "phác đồ",
+        "thuốc hạ sốt", "thuốc giảm đau", "nhóm thuốc", "danh mục", "chuyên luận"
+    ))
+    is_self_symptom_prompt = not is_general_reference_inquiry and bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
     has_explicit_case = any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn "))
     if is_self_symptom_prompt and not has_explicit_case:
         return CopilotResponse(
@@ -436,12 +445,12 @@ async def _handle_copilot_chat(
         scenario_res = await detect_and_handle_gemini_clinical_scenario(
             query, lower_query, user_name, db, user_role=user_role, session_id=session_id
         )
-        if scenario_res and scenario_res.intent == "CLINICAL_FEVER_TRIAGE_PROTOCOL":
+        if scenario_res:
             scenario_res.reply_text = validate_output_guardrail(scenario_res.reply_text, query)
             return scenario_res
 
     # 0d. 12 Kịch Bản Lâm Sàng Chuyên Sâu Tách File & AMIE Multi-turn Context
-    if has_drug_entity and any(cue in lower_query for cue in drug_info_cues) and not is_two_drug_interaction and not is_deep_complex:
+    if not is_renal_adjustment_request and has_drug_entity and any(cue in lower_query for cue in drug_info_cues) and not is_two_drug_interaction and not is_deep_complex:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
     scenario_res = await detect_and_handle_gemini_clinical_scenario(
         query, lower_query, user_name, db, user_role=user_role, session_id=session_id

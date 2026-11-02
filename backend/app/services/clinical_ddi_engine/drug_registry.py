@@ -58,5 +58,7 @@ DRUG_REGISTRY: dict[str, dict] = {
     "thuoc_can_quang": {"display": "Thuốc cản quang chứa iod", "aliases": ["thuoc can quang", "can quang", "xenetix", "omnipaque", "ultravist", "iodinated contrast"], "classes": ["IODINATED_CONTRAST"], "entity_role": "contextual_exposure", "risk": ["nephrotoxic"]},
     "methotrexat": {"display": "Methotrexat", "aliases": ["methotrexat", "methotrexate"], "classes": ["ANTIMETABOLITE"], "risk": ["nephrotoxic"]},
     "amlodipin": {"display": "Amlodipin", "aliases": ["amlodipin", "amlodipine", "norvasc", "amlor"], "classes": ["CALCIUM_CHANNEL_BLOCKER"], "risk": []},
+    "aspirin": {"display": "Aspirin", "aliases": ["aspirin", "acetylsalicylic acid", "aspegic", "aspirin ph8"], "classes": ["ANTIPLATELET", "NSAID"], "risk": ["bleeding"]},
+    "norethisteron": {"display": "Norethisteron (Primolut N)", "aliases": ["primolut", "primolut n", "norethisterone", "norethisteron"], "classes": ["PROGESTOGEN"], "risk": []},
     "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom", "magnesi", "sat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []}
 }
