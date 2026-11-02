@@ -116,6 +116,20 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rows)
         conn.commit()
+        cursor.execute("""
+            UPDATE dav_national_drugs
+            SET clinical_monograph_id = (
+                SELECT m.id FROM clinical_drug_monographs m
+                WHERE lower(m.inn) = lower(dav_national_drugs.active_ingredient)
+                LIMIT 1
+            )
+            WHERE clinical_monograph_id IS NULL
+              AND EXISTS (
+                SELECT 1 FROM clinical_drug_monographs m
+                WHERE lower(m.inn) = lower(dav_national_drugs.active_ingredient)
+            )
+        """)
+        conn.commit()
         active_ids = {row[0] for row in cursor.execute("SELECT id FROM clinical_drug_monographs")}
         for drug in cursor.execute("SELECT id, clinical_monograph_id FROM dav_national_drugs").fetchall():
             drug_id, monograph_id = drug

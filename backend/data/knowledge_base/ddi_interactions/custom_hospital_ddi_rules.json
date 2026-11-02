@@ -7,5 +7,32 @@
     "consequence": "Tăng nồng độ Methadon huyết tương gấp 3-4 lần, suy hô hấp cấp, ngừng thở và tử vong",
     "action": "Tránh phối hợp. Nếu bắt buộc, giảm ngay 50% liều Methadon và theo dõi sát SpO2",
     "legal_source": "Cảnh báo Dược thư Quốc gia & FDA Boxed Warning"
+  },
+  {
+    "stt": 1900,
+    "drug_1": "Venetoclax",
+    "drug_2": "Ketoconazol",
+    "mechanism": "Ketoconazol ức chế mạnh CYP3A4 và P-gp làm tăng nồng độ Venetoclax huyết tương lên 2-8 lần",
+    "consequence": "Nguy cơ bùng phát Hội chứng Ly giải Khối u (TLS) cấp tính, tăng acid uric máu, suy thận cấp nguy kịch và giảm bạch cầu trung tính nặng",
+    "action": "Chống chỉ định phối hợp trong giai đoạn bắt đầu điều trị và chuẩn liều. Giai đoạn duy trì phải giảm liều Venetoclax ít nhất 75%",
+    "legal_source": "Tờ hướng dẫn sử dụng Venclexta (Bộ Y tế) • FDA Boxed Warning"
+  },
+  {
+    "stt": 1901,
+    "drug_1": "Venetoclax",
+    "drug_2": "Clarithromycin",
+    "mechanism": "Clarithromycin ức chế mạnh enzym CYP3A4 làm tăng nồng độ Venetoclax huyết tương",
+    "consequence": "Tăng nguy cơ Hội chứng Ly giải Khối u (TLS) đe dọa tính mạng và độc tính huyết học nghiêm trọng",
+    "action": "Chống chỉ định phối hợp trong giai đoạn bắt đầu và chuẩn liều. Giai đoạn duy trì phải giảm liều Venetoclax ít nhất 75%",
+    "legal_source": "Tờ hướng dẫn sử dụng Venclexta (Bộ Y tế)"
+  },
+  {
+    "stt": 1902,
+    "drug_1": "Riluzol",
+    "drug_2": "Ciprofloxacin",
+    "mechanism": "Ciprofloxacin ức chế mạnh CYP1A2 làm giảm thải trừ và tăng nồng độ Riluzol huyết tương",
+    "consequence": "Tăng nguy cơ độc tính tế bào gan (tăng men gan ALT/AST cấp), ngủ gà, chóng mặt và an thần",
+    "action": "Thận trọng cao độ. Theo dõi sát chức năng gan ALT/AST và cân nhắc kháng sinh thay thế không ức chế CYP1A2",
+    "legal_source": "Tờ hướng dẫn sử dụng Teglutik (SĐK 840110202926) • Dược thư Quốc gia Việt Nam"
   }
 ]

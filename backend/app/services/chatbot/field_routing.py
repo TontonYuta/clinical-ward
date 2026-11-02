@@ -101,4 +101,8 @@ async def handle_field_or_drug_inquiry(
     if active_name_in_query and asks_drug_info and not is_deep_complex and not is_two_drug_interaction:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
+    is_standalone_drug_query = (has_drug_entity or active_name_in_query) and len(lower_query.split()) <= 4 and not is_deep_complex and not is_two_drug_interaction and not is_interaction_question
+    if is_standalone_drug_query:
+        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+
     return None

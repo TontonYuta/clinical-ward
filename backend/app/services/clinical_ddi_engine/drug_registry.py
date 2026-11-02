@@ -60,5 +60,7 @@ DRUG_REGISTRY: dict[str, dict] = {
     "amlodipin": {"display": "Amlodipin", "aliases": ["amlodipin", "amlodipine", "norvasc", "amlor"], "classes": ["CALCIUM_CHANNEL_BLOCKER"], "risk": []},
     "aspirin": {"display": "Aspirin", "aliases": ["aspirin", "acetylsalicylic acid", "aspegic", "aspirin ph8"], "classes": ["ANTIPLATELET", "NSAID"], "risk": ["bleeding"]},
     "norethisteron": {"display": "Norethisteron (Primolut N)", "aliases": ["primolut", "primolut n", "norethisterone", "norethisteron"], "classes": ["PROGESTOGEN"], "risk": []},
+    "venetoclax": {"display": "Venetoclax (Venclexta)", "aliases": ["venetoclax", "venclexta"], "classes": ["BCL2_INHIBITOR"], "cyp_sub": ["CYP3A4"], "p_gp_sub": True, "risk": ["tls", "neutropenia"]},
+    "riluzol": {"display": "Riluzol (Teglutik)", "aliases": ["riluzol", "riluzole", "teglutik", "rilutek"], "classes": ["GLUTAMATE_ANTAGONIST"], "cyp_sub": ["CYP1A2"], "risk": ["hepatotoxic"]},
     "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom", "magnesi", "sat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []}
 }
