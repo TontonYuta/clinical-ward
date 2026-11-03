@@ -7,6 +7,13 @@ import json
 import gzip
 import sqlite3
 
+def sanitize_title(title: str | None, inn: str) -> str:
+    if not title or not title.strip():
+        return inn.upper()
+    t = title.strip()
+    bad = ("quá trình", "điều trị", "tham khảo", "huyết thanh", "bảo hiểm", "chứa", "creatinin", "mẫn cảm")
+    return inn.upper() if t.endswith(".") or any(b in t.lower() for b in bad) or len(t.split()) > 6 else t
+
 def find_monographs_source() -> str | None:
     candidates = (
         "/app/data/knowledge_base/dtqg_monographs_extracted.json",
@@ -101,7 +108,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
             inn = m.get("inn", "")
             m_id = f"DTQG-{idx:04d}-{re.sub(r'[^a-zA-Z0-9]', '', inn)[:20]}"
             rows.append((
-                m_id, inn, m.get("title", ""), m.get("atc_code"), m.get("drug_class"),
+                m_id, inn, sanitize_title(m.get("title"), inn), m.get("atc_code"), m.get("drug_class"),
                 m.get("dosage_forms"), m.get("indications"), m.get("contraindications"),
                 m.get("precautions"), m.get("pregnancy_warning"), m.get("adverse_effects"),
                 m.get("adult_dosage"), m.get("pediatric_dosage"), m.get("renal_adjustment"),
