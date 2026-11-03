@@ -1,10 +1,14 @@
 """
 Router API Trợ Lý Agent Lâm Sàng Thông Minh (Copilot & Clinical RAG) (<=80 LOC)
 """
+import uuid
+import time
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.schemas.copilot import CopilotQuery, CopilotResponse, RagQuery, RagResponse
+from app.models.copilot_log import CopilotChatLog
+from app.schemas.copilot import CopilotQuery, CopilotResponse, RagQuery, RagResponse, CopilotChatLogResponse
 from app.services.session_context import get_or_create_session
 from app.security.guardrails import validate_input_guardrail, validate_output_guardrail
 from app.services.chatbot.copilot_orchestrator import (
@@ -31,7 +35,33 @@ async def chat_with_copilot(
     )
     session.append_conversation_turn(payload.query, response.reply_text)
     response.session_id = session.session_id
+
+    try:
+        log_entry = CopilotChatLog(
+            id=f"CHAT-{int(time.time()*1000)}-{uuid.uuid4().hex[:6]}",
+            session_id=session.session_id,
+            user_name=user_name,
+            user_role=user_role,
+            query=payload.query,
+            reply_text=response.reply_text,
+            intent=response.intent,
+            answer_type=response.answer_type,
+        )
+        db.add(log_entry)
+        await db.commit()
+    except Exception:
+        pass
+
     return response
+
+@router.get("/history", response_model=list[CopilotChatLogResponse])
+async def get_copilot_chat_history(
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(CopilotChatLog).order_by(CopilotChatLog.created_at.desc()).limit(limit)
+    res = await db.execute(stmt)
+    return res.scalars().all()
 
 @router.post("/rag", response_model=RagResponse)
 async def query_pure_clinical_rag(payload: RagQuery):

@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+from pydantic import BaseModel, Field, ConfigDict
 
 class CopilotQuery(BaseModel):
     query: str = Field(..., min_length=1, max_length=1500)
@@ -50,3 +51,16 @@ class RagResponse(BaseModel):
     confidence_score: float = 0.95
     legal_basis: str = ""
     rag_grounded: bool = True
+
+class CopilotChatLogResponse(BaseModel):
+    id: str
+    session_id: str
+    user_name: str
+    user_role: str
+    query: str
+    reply_text: str
+    intent: str | None = None
+    answer_type: str | None = None
+    created_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)

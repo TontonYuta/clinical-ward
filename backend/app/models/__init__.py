@@ -9,6 +9,7 @@ from app.models.cpoe import CpoePrescription
 from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
 from app.models.patient import PatientProfile, PrescriptionAdviceRecord
 from app.models.sms import SmsDeliveryLog
+from app.models.copilot_log import CopilotChatLog
 
 __all__ = [
     "User",
@@ -25,4 +26,5 @@ __all__ = [
     "PatientProfile",
     "PrescriptionAdviceRecord",
     "SmsDeliveryLog",
+    "CopilotChatLog",
 ]
