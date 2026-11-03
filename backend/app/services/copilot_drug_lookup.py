@@ -3,6 +3,7 @@ Service tra cứu thông tin thuốc từ dữ liệu DAV và kho bệnh viện 
 Tích hợp Lexical Trie Matcher và Fuzzy Candidate Search đảm bảo độ chính xác và hiệu năng cao.
 """
 from typing import List, Optional
+import re
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
@@ -23,6 +24,8 @@ async def lookup_drug_authoritative(
     sdk = matcher.extract_sdk(query)
     meds = matcher.extract_medications(query)
     kw = sdk if sdk else (meds[0] if meds else extract_drug_keywords(query))
+    if kw:
+        kw = re.sub(r"[\s\xa0]+", " ", kw).strip()
 
     deictic_phrases = ["thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"]
     is_deictic = any(w in query.lower() for w in deictic_phrases) or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
@@ -76,7 +79,8 @@ async def lookup_drug_authoritative(
             suggested_chips=["Tra cứu thuốc Rocephin", "Tra cứu SĐK VD-24757-16", "Thông tin Paracetamol", "Kiểm tra tương tác thuốc"]
         )
 
-    search_term = f"%{kw.lower()}%"
+    kw_clean = re.sub(r"[\s\xa0]+", " ", kw).strip()
+    search_term = f"%{kw_clean.lower()}%"
     stmt = (
         select(DavNationalDrug)
         .where(or_(
@@ -85,8 +89,10 @@ async def lookup_drug_authoritative(
             func.lower(DavNationalDrug.active_ingredient).like(search_term)
         ))
         .order_by(
-            (func.lower(DavNationalDrug.brand_name) == kw.lower()).desc(),
-            func.lower(DavNationalDrug.brand_name).like(f"%{kw.lower()}%").desc(),
+            (func.lower(DavNationalDrug.brand_name) == kw_clean.lower()).desc(),
+            func.lower(DavNationalDrug.brand_name).like(f"{kw_clean.lower()}%").desc(),
+            func.lower(DavNationalDrug.brand_name).like(f"%{kw_clean.lower()}%").desc(),
+            (func.lower(DavNationalDrug.active_ingredient) == kw_clean.lower()).desc(),
             DavNationalDrug.national_code.asc()
         )
         .limit(5)
