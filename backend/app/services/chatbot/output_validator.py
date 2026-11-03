@@ -8,11 +8,27 @@ def validate_grounded_reply(
     reply_text: str,
     citations: list[dict[str, Any]],
     target_drug_keys: list[str],
+    query: str = "",
 ) -> tuple[str, list[dict[str, Any]], bool]:
     """Validate that reply and citations match the requested target drug.
 
     Returns (validated_reply, validated_citations, is_valid).
     """
+    reply_lower = reply_text.casefold()
+    query_lower = (query or "").casefold()
+    reply_drugs = resolve_registered_medications(reply_lower)
+
+    # Prevent accidental drift into controlled substances when not queried
+    controlled_unrelated = any(d in ("morphine", "diazepam", "fentanyl") for d in reply_drugs) and not any(
+        k in query_lower for k in ("morphin", "diazepam", "fentanyl", "gây nghiện", "hướng thần", "giảm đau ung thư", "đau nặng", "an thần", "co giật")
+    )
+    if controlled_unrelated:
+        safe_reply = (
+            "Chưa tìm thấy tài liệu hướng dẫn chuyên môn phù hợp cho nội dung tra cứu này trong nguồn tri thức đang lập chỉ mục.\n"
+            "Vui lòng tham khảo phác đồ điều trị chuyên khoa của Bộ Y tế hoặc xin ý kiến dược sĩ lâm sàng."
+        )
+        return safe_reply, [], False
+
     if not target_drug_keys:
         return reply_text, citations, True
 
@@ -20,25 +36,19 @@ def validate_grounded_reply(
     for c in citations:
         source_text = f"{c.get('source', '')} {c.get('section', '')} {c.get('excerpt', '')}".casefold()
         resolved_citation_drugs = resolve_registered_medications(source_text)
-        # Citation is valid if it contains the target drug or is a general protocol
         if any(key in resolved_citation_drugs for key in target_drug_keys) or not resolved_citation_drugs:
             valid_citations.append(c)
 
-    # Check for critical cross-drug leak in the answer
-    reply_lower = reply_text.casefold()
-    reply_drugs = resolve_registered_medications(reply_lower)
     leak_drugs = [d for d in reply_drugs if d not in target_drug_keys and DRUG_REGISTRY.get(d, {}).get("entity_role") != "contextual_exposure"]
 
-    # If the reply explicitly talks about another drug while missing the target drug entirely
     target_present = any(
-        alias in reply_lower
+        alias in reply_lower or key in reply_lower
         for key in target_drug_keys
         for alias in DRUG_REGISTRY.get(key, {}).get("aliases", [key])
     )
 
     if not target_present and leak_drugs:
-        target_entry = DRUG_REGISTRY.get(target_drug_keys[0].lower(), {})
-        target_display = target_entry.get("display", target_drug_keys[0].title())
+        target_display = target_drug_keys[0].title()
         safe_reply = (
             f"### Thông tin đối chiếu lâm sàng: {target_display}\n\n"
             f"Hiện chưa tìm thấy tài liệu chuyên luận đầy đủ cho hoạt chất **{target_display}** trong kho dữ liệu cục bộ.\n"

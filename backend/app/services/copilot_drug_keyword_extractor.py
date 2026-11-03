@@ -33,7 +33,14 @@ QUESTION_TERMS = {
     "gây", "nghiện", "lệ", "thuộc", "đó", "này", "kia", "ấy", "nó",
     "kiểm", "tra", "nhân", "người", "an", "toàn", "dị", "ứng", "đơn", "theo", "dõi", "xét", "nghiệm",
     "inj", "tab", "caps", "cap", "cream", "gel", "susp", "sol", "drops", "injection", "tablet", "infusion",
-    "tac", "dung", "phu", "chong", "chi", "dinh", "lieu", "luong", "tuong", "thanh", "phan", "hoat", "chat", "toi", "da", "thong", "tin", "thuoc"
+    "tac", "dung", "phu", "chong", "chi", "dinh", "lieu", "luong", "tuong", "thanh", "phan", "hoat", "chat", "toi", "da", "thong", "tin", "thuoc",
+    "tại", "tai", "ở", "từ", "đến", "vào", "ra", "lên", "xuống", "về", "qua", "theo", "do", "bởi", "giữa",
+    "tăng", "tang", "giảm", "giam", "hạ", "ha", "cao", "thấp",
+    "huyết", "áp", "tim", "mạch", "thận", "gan", "phổi", "phế", "quản", "dạ", "dày", "não", "máu", "đường",
+    "hen", "sốt", "đau", "loét", "viêm", "khuẩn", "nhiễm", "sốc", "phản", "vệ", "đột", "quỵ", "ung", "thư", "hạch", "co", "thắt", "giãn",
+    "thai", "phụ", "nữ", "trẻ", "sơ", "sinh", "lớn", "già", "bé",
+    "quy", "chế", "quản", "lý", "tủ", "trực", "kho", "ca", "viện",
+    "uống", "tiêm", "truyền", "bôi", "nhỏ", "đặt", "uong", "tiem", "truyen", "thông", "tin"
 }
 
 
@@ -51,7 +58,7 @@ def extract_drug_keywords(query: str) -> str:
     if explicit_med_pattern:
         cand_name = explicit_med_pattern.group(1).strip(" .")
         cand_name = re.split(r"[.?!,;:]\s+", cand_name)[0]
-        cand_name = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%)?", " ", cand_name, flags=re.IGNORECASE).strip()
+        cand_name = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?", " ", cand_name, flags=re.IGNORECASE).strip()
         cand_words = [w.lower() for w in cand_name.split() if w.lower() not in QUESTION_TERMS and len(w) >= 2]
         if cand_words:
             return " ".join(cand_words).lower()
@@ -61,7 +68,7 @@ def extract_drug_keywords(query: str) -> str:
         r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|còn liều|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì|còn|liều|điều trị|chữa trị|điều|trị|chữa|thong tin|tra cuu|thuoc|lieu dung|lieu luong|lieu toi da|con lieu|cach dung|tac dung phu|tac dung khong mong muon|chong chi dinh|chi dinh|cong dung|thanh phan|hoat chat|tuong tac|dieu tri|chua tri)\b",
         " ", q_lower,
     )
-    q_lower = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%)?", " ", q_lower, flags=re.IGNORECASE)
+    q_lower = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?", " ", q_lower, flags=re.IGNORECASE)
     q_lower = re.sub(
         r"(?:nếu|suy thận|suy gan|egfr|crcl|creatinin|chỉnh|hiệu chỉnh|liều|mỗi ngày|mỗi tuần|theo dõi|xét nghiệm|nào|hạ kali|nổi ban|phát ban|đau đầu|buồn nôn|sao|thì|ra sao|thế nào)",
         " ", q_lower,

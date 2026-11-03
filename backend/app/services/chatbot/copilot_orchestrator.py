@@ -152,7 +152,8 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     is_med_info = any(w in lower_query for w in ["thời gian bán thải", "chỉ định", "chống chỉ định", "tác dụng phụ", "tác dụng", "công dụng", "tương tác", "dùng để làm gì", "liều tối đa", "liều dùng", "là gì", "dị ứng", "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào", "thế nào", "như thế nào", "bao nhiêu", "hỏi về", "thông tin"])
     has_drug_ask = lower_query.startswith("thuốc ") or " thuốc " in lower_query or any(w in lower_query for w in ["thông tin", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "về thuốc", "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "còn liều", "liều", "uống thế nào", "dùng thế nào", "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không"]) or has_reg_drug or (matched_med is not None and is_med_info and not is_deep_pharm)
 
-    if (has_sdk or has_drug_ask) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex:
+    cand_kw_present = bool(extract_drug_keywords(lower_query))
+    if (has_sdk or (has_drug_ask and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex:
         return await lookup_drug_authoritative(query, db, session_id=session_id)
 
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()

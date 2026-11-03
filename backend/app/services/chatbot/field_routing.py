@@ -11,8 +11,9 @@ from app.services.rag.knowledge_graph import expand_clinical_graph
 RAW_FIELD_SPECS = [
     ("interaction", ["tương tác thuốc", "thuốc tương tác", "tương tác", "tương kỵ", "kỵ thuốc", "tuong tac thuoc", "tuong tac", "tuong ky", "ky thuoc", "kỵ gì"]),
     ("adverse_effects", ["tác dụng không mong muốn", "tác dụng phụ", "tac dung phu", "tac dung khong mong muon"]),
-    ("contraindications", ["chống chỉ định", "cấm dùng", "chong chi dinh", "cam dung"]),
-    ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều", "lieu toi da", "lieu dung", "lieu luong", "cach dung"]),
+    ("contraindications", ["chống chỉ định", "cấm dùng", "chong chi dinh", "cam dung", "có dùng được", "dùng được", "có uống được", "uống được"]),
+    ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều", "lieu toi da", "lieu dung", "lieu luong", "cach dung", "trẻ em", "cho bé", "nhi khoa"]),
+    ("pregnancy", ["phụ nữ có thai", "mang thai", "thai kỳ", "cho con bú", "phu nu co thai", "thai ky"]),
     ("indications", ["chỉ định", "công dụng", "chi dinh", "cong dung", "điều trị", "dieu tri", "chữa bệnh", "chua benh"]),
     ("ingredients", ["thành phần", "hoạt chất", "thanh phan", "hoat chat"]),
     ("registry", ["số đăng ký", "sđk", "so dang ky", "sdk"]),

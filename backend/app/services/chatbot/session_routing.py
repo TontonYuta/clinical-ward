@@ -8,9 +8,16 @@ from app.services.copilot_drug_lookup import extract_drug_keywords, lookup_drug_
 from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
 from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 
-SYMPTOM_BLACKLIST = {
+CLINICAL_NON_DRUG_TERMS = {
     "sốt", "hạ sốt", "đau đầu", "đau bụng", "ung thư", "khó thở", "đột quỵ",
-    "cấp cứu", "thuốc", "bệnh nhân", "người bệnh", "hàng ngày", "hàng tuần"
+    "cấp cứu", "thuốc", "bệnh nhân", "người bệnh", "hàng ngày", "hàng tuần",
+    "tại", "ở", "tăng", "giảm", "hạ", "hen", "phế quản", "phổi", "huyết áp",
+    "đường huyết", "tiểu đường", "đái tháo đường", "suy thận", "suy gan", "suy tim",
+    "thai", "phụ nữ", "có thai", "mang thai", "thai kỳ", "cho con bú", "trẻ em",
+    "sơ sinh", "người lớn", "cao tuổi", "quy chế", "quy định", "thông tư", "nghị định",
+    "tủ trực", "ca trực", "kho", "tồn kho", "nhiễm khuẩn", "nhiễm trùng", "vi khuẩn",
+    "viêm dạ dày", "loét dạ dày", "dị ứng", "sốc phản vệ", "phản vệ", "tiêu chảy", "táo bón",
+    "co thắt", "giãn cơ", "kháng sinh", "chống viêm", "giảm đau"
 }
 
 TIMING_TERMS = (
@@ -71,7 +78,7 @@ def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotRespo
 
 async def find_dav_candidate_drug(lower_query: str, db: AsyncSession) -> tuple[str, bool]:
     cand_drug = extract_drug_keywords(lower_query)
-    if not cand_drug or len(cand_drug) < 3 or any(b in cand_drug for b in SYMPTOM_BLACKLIST):
+    if not cand_drug or len(cand_drug) < 3 or cand_drug in CLINICAL_NON_DRUG_TERMS or any(b == cand_drug for b in CLINICAL_NON_DRUG_TERMS):
         return "", False
     active_cond = (
         func.lower(DavNationalDrug.active_ingredient).like(f"%{cand_drug}%")
@@ -100,7 +107,7 @@ async def find_dav_candidate_drug(lower_query: str, db: AsyncSession) -> tuple[s
         return cand_drug, True
     if len(cand_drug.split()) > 1:
         last_tok = cand_drug.split()[-1]
-        if len(last_tok) >= 4 and last_tok not in SYMPTOM_BLACKLIST:
+        if len(last_tok) >= 4 and last_tok not in CLINICAL_NON_DRUG_TERMS:
             cand_res2 = await db.execute(
                 select(DavNationalDrug.id).where(or_(
                     func.lower(DavNationalDrug.brand_name) == last_tok,

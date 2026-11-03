@@ -75,11 +75,15 @@ async def handle_deep_rag_consultation(
 
     cleaned_reply = validate_output_guardrail(rag_res.answer, query)
     session = get_or_create_session(session_id, user_name, user_role)
+    from app.services.copilot_drug_keyword_extractor import extract_drug_keywords
+    cand_kw = extract_drug_keywords(lower_query)
     target_drugs = resolve_registered_medications(lower_query) or (
-        [session.active_medication_ingredient] if session.active_medication_ingredient else []
+        [session.active_medication_ingredient] if session.active_medication_ingredient else (
+            [cand_kw] if cand_kw and len(cand_kw) >= 3 else []
+        )
     )
     cleaned_reply, validated_citations, is_grounded = validate_grounded_reply(
-        cleaned_reply, [c.to_dict() for c in rag_res.citations], target_drugs
+        cleaned_reply, [c.to_dict() for c in rag_res.citations], target_drugs, query=query
     )
     active_key = target_drugs[0] if target_drugs else None
     chips = generate_suggested_chips(active_key, "general")

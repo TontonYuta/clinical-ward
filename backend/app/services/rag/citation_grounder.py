@@ -11,12 +11,18 @@ _QUERY_STOPWORDS = {
     "bao", "bằng", "biết", "các", "có", "của", "được", "gì", "hãy",
     "không", "là", "làm", "một", "muốn", "nào", "như", "thế",
     "thì", "tôi", "và", "về", "với", "xin", "cho", "hôm", "nay",
+    "thuốc", "thuoc", "bệnh", "benh", "nhân", "nhan", "người", "nguoi",
+    "dùng", "dung", "uống", "uong", "tiêm", "tiem", "truyền", "truyen",
+    "điều", "dieu", "trị", "tri", "thông", "thong", "tin", "ở", "tại", "tai",
+    "giúp", "giup", "hỏi", "hoi", "bác", "bac", "sĩ", "si", "dược", "duoc",
 }
 
 def _normalize_terms(text: str) -> set[str]:
-    normalized = unicodedata.normalize("NFKD", text.casefold())
-    normalized = "".join(char for char in normalized if not unicodedata.combining(char)).replace("đ", "d")
-    return {term for term in re.findall(r"[a-z0-9]+", normalized) if len(term) > 2 and term not in _QUERY_STOPWORDS}
+    accented = {w for w in re.findall(r"[\w]+", text.casefold()) if len(w) >= 2 and w not in _QUERY_STOPWORDS}
+    norm = unicodedata.normalize("NFKD", text.casefold())
+    unaccented = "".join(char for char in norm if not unicodedata.combining(char)).replace("đ", "d")
+    unacc_words = {w for w in re.findall(r"[a-z0-9]+", unaccented) if len(w) >= 3 and w not in _QUERY_STOPWORDS}
+    return accented | unacc_words
 
 def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
     query_terms = _normalize_terms(query)
@@ -24,7 +30,8 @@ def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
     if not query_terms or not evidence_terms:
         return False
     overlap = query_terms & evidence_terms
-    return bool(overlap) and len(overlap) / len(query_terms) >= 0.25
+    min_count = 2 if len(query_terms) >= 3 else 1
+    return bool(overlap) and len(overlap) >= min_count and len(overlap) / len(query_terms) >= 0.25
 
 def _filter_supported_chunks(query: str, retrieved_chunks: list[RetrievedChunk], citations: list[RagCitation]) -> tuple[list[RetrievedChunk], list[RagCitation]]:
     supported = [chunk for chunk in retrieved_chunks if _has_evidence_overlap(query, chunk)]
