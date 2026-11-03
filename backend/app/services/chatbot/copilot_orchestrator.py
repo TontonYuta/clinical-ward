@@ -57,6 +57,10 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if greeting_res:
         return greeting_res
 
+    out_scope = handle_out_of_scope_or_pricing(lower_query)
+    if out_scope:
+        return out_scope
+
     if lower_query.strip().strip("?.!") in {
         "tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư",
         "tra cuu duoc thu", "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu"
@@ -180,9 +184,6 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
 
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
     if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:
-        out_scope = handle_out_of_scope_or_pricing(lower_query)
-        if out_scope:
-            return out_scope
         deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm)
         if deep_rag:
             return deep_rag

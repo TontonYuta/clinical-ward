@@ -142,13 +142,38 @@ def handle_out_of_scope_or_pricing(lower_query: str) -> CopilotResponse | None:
             confidence=1.0,
             abstention_reason="Ngoài phạm vi hoặc thiếu dữ liệu đơn thuốc",
         )
-    if any(term in lower_query for term in ("thời tiết", "dự báo thời tiết", "giá vàng", "tỷ giá", "kết quả bóng đá", "tin tức giải trí")):
+
+    is_frivolous = any(term in lower_query for term in (
+        "thời tiết", "dự báo thời tiết", "giá vàng", "tỷ giá", "bóng đá", "tin tức giải trí",
+        "kể chuyện cười", "chuyện cười", "chuyện ma", "kể chuyện", "làm thơ", "bài thơ", "thơ tình",
+        "hát đi", "hát một bài", "chơi game", "hôm nay ăn gì", "ăn món gì", "nấu món gì", "công thức nấu",
+        "có người yêu chưa", "người yêu", "bạn gái", "bạn trai", "tán gái", "thích ai", "yêu ai",
+        "mấy tuổi", "sinh năm bao nhiêu", "quê ở đâu", "nhà ở đâu",
+        "xổ số", "vietlott", "lô đề", "xem bói", "tử vi", "phong thủy", "cung hoàng đạo",
+        "chính trị", "bầu cử", "tổng thống", "showbiz", "hoa hậu", "giải toán", "viết code", "viết văn",
+        "chém gió", "buôn chuyện", "nói chuyện linh tinh", "chuyện linh tinh", "linh tinh", "vớ vẩn", "tào lao"
+    ))
+    has_med_anchor = any(k in lower_query for k in (
+        "thuốc", "liều", "dược", "bệnh", "chữa", "điều trị", "kháng sinh", "sốt", "đau", "viêm",
+        "phác đồ", "tồn kho", "tủ trực", "bệnh nhân", "huyết áp", "truyền dịch", "paracetamol", "morphin"
+    ))
+    if is_frivolous and not has_med_anchor:
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",
-            reply_text="Câu hỏi này nằm ngoài phạm vi trợ lý lâm sàng và nghiệp vụ bệnh viện. Tôi có thể hỗ trợ tra cứu thuốc, tương tác thuốc, hướng dẫn chuyên môn hoặc quy trình trong hệ thống.",
+            reply_text=(
+                "### 🛡️ TỪ CHỐI TIẾP NHẬN: CÂU HỎI NGOÀI PHẠM VI CHUYÊN MÔN\n\n"
+                "Hệ thống là **Trợ lý Dược lâm sàng & Nghiệp vụ Bệnh viện chuyên dụng**, tuân thủ nghiêm ngặt các quy định Bộ Y tế.\n\n"
+                "Hệ thống **chỉ hỗ trợ** các nội dung chuyên môn và nghiệp vụ y tế sau:\n"
+                "1. **Tra cứu thuốc & Dược thư:** 54.885 thuốc cấp phép DAV, chỉ định, liều dùng, chống chỉ định, hoạt chất DĐVN V.\n"
+                "2. **Rà soát tương tác thuốc (DDI):** Cảnh báo tương tác chống chỉ định theo QĐ 5948/QĐ-BYT.\n"
+                "3. **Phác đồ điều trị & cấp cứu:** Phản vệ (TT 51/2017), quản lý thuốc gây nghiện (TT 20/2017), phác đồ WHO/BYT.\n"
+                "4. **Nghiệp vụ kho Dược & tủ trực:** Tồn kho FEFO, giao ban ca trực, lập dự trù cơ số (TT 22/2011).\n\n"
+                "👉 **Em xin phép từ chối trả lời các câu hỏi giải trí, đời sống hoặc nằm ngoài nghiệp vụ y tế.** Vui lòng gửi câu hỏi chuyên môn hoặc tên thuốc cần tra cứu ạ!"
+            ),
             answer_type="safe_abstention",
             source_status="out_of_scope",
             confidence=1.0,
             abstention_reason="Câu hỏi ngoài phạm vi trợ lý lâm sàng",
+            suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Hướng dẫn sử dụng hệ thống"]
         )
     return None
