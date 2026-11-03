@@ -144,6 +144,22 @@ async def test_interaction_clarification_stays_deterministic_despite_history():
     assert response.json()["intent"] == "MEDICATION_INTERACTION_CLARIFICATION"
     clear_session(session.session_id)
 
+@pytest.mark.asyncio
+async def test_interaction_clarification_with_active_medication_suggests_contextual_chips():
+    from app.services.session_context import get_or_create_session, clear_session
+    sid = "test-active-ddi-contextual-chips"
+    clear_session(sid)
+    session = get_or_create_session(sid, "Dr. Chi", "doctor")
+    session.set_active_medication("Clopidogrel", "Clopidogrel")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/copilot/chat", json={"query": "Kiểm tra tương tác thuốc", "user_role": "doctor", "user_name": "Dr. Chi", "session_id": sid})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["intent"] == "MEDICATION_INTERACTION_CLARIFICATION"
+    assert "Clopidogrel" in data["reply_text"]
+    assert any("Clopidogrel" in chip for chip in data["suggested_chips"])
+    clear_session(sid)
+
 def test_hybrid_retrieval_ranks_explicitly_named_drug_above_shared_terms():
     retriever = HybridRetriever()
     results = retriever.retrieve("Thời gian bán thải và liều tối đa của Paracetamol trong huyết tương", top_k=5)

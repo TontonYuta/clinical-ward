@@ -62,13 +62,28 @@ async def handle_interaction_clarification(
     )
     if len(named_drugs) < 2 and not known_interaction_pair:
         session = get_or_create_session(session_id, user_name, user_role)
+        active_name = session.active_medication_name if session else None
+        if active_name:
+            reply = (
+                f"Bạn đang quan tâm đến tương tác của **{active_name}**. Vui lòng cung cấp thêm tên thuốc thứ hai "
+                "(hoặc danh sách các thuốc dùng cùng) để rà soát tương tác theo Quyết định 5948/QĐ-BYT."
+            )
+            chips = [
+                f"Tương tác {active_name} và Omeprazol",
+                f"Tương tác {active_name} và Aspirin",
+                "Kiểm tra toàn bộ đơn thuốc",
+            ]
+        else:
+            reply = "Vui lòng cung cấp tên hai thuốc (hoạt chất hoặc biệt dược) cần kiểm tra tương tác. Nếu muốn kiểm tra toàn bộ đơn, hãy gửi danh sách thuốc đang dùng."
+            chips = ["Tương tác giữa Clopidogrel và Omeprazol", "Tương tác giữa Warfarin và Aspirin", "Tương tác giữa Ciprofloxacin và Canxi"]
+
         return CopilotResponse(
             intent="MEDICATION_INTERACTION_CLARIFICATION",
-            reply_text="Vui lòng cung cấp tên hai thuốc (hoạt chất hoặc biệt dược) cần kiểm tra tương tác. Nếu muốn kiểm tra toàn bộ đơn, hãy gửi danh sách thuốc đang dùng.",
+            reply_text=reply,
             answer_type="clarification", source_status="missing_interaction_medications",
             confidence=1.0, abstention_reason="Chưa xác định được ít nhất hai thuốc cần kiểm tra",
-            session_id=session.session_id,
-            suggested_chips=["Tương tác giữa Clopidogrel và Omeprazol", "Tương tác giữa Warfarin và Aspirin", "Tương tác giữa Ciprofloxacin và Canxi"],
+            session_id=session.session_id if session else None,
+            suggested_chips=chips,
         )
     return None
 

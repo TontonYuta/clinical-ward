@@ -82,6 +82,8 @@ class FeverTriageScenario(BaseScenario):
         return CopilotResponse(
             intent="CLINICAL_FEVER_TRIAGE_PROTOCOL",
             reply_text=reply, card=None,
+            answer_type="guideline",
+            source_status="clinical_guideline",
             legal_basis="Dược Thư Quốc Gia Việt Nam 2015 & Hướng dẫn Bộ Y tế (đối chiếu nguồn hiện hành)",
             suggested_chips=["Thông tin thuốc Paracetamol 500mg", "Dấu hiệu cảnh báo sốt xuất huyết ở người bệnh", "Kiểm tra liều trẻ em theo cân nặng"],
             session_id=ctx.session.session_id if ctx.session else None,
