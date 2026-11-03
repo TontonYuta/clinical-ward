@@ -17,44 +17,41 @@ class GastroenteritisDehydrationScenario(BaseScenario):
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
         has_dehydration_diarrhea = any(w in lower_query for w in ["đi ngoài", "tiêu chảy", "mất nước", "nhiễm trùng tiêu hóa", "ngộ độc thực phẩm", "ngộ độc thức ăn"])
-        has_abd_fever = ("đau bụng" in lower_query or "bụng" in lower_query) and ("buồn nôn" in lower_query or "nôn" in lower_query) and ("sốt" in lower_query)
-        has_symptom_ask = any(w in lower_query for w in ["biểu hiện của", "dấu hiệu của", "là bệnh gì", "bị gì", "nguyên nhân", "xử trí", "uống gì", "truyền gì"])
+        has_nausea_fever = ("buồn nôn" in lower_query or "nôn" in lower_query) and ("sốt" in lower_query)
+        has_symptom_ask = any(w in lower_query for w in ["biểu hiện", "dấu hiệu", "là bệnh gì", "bị gì", "nguyên nhân", "xử trí", "uống gì", "truyền gì", "thuốc nào", "dùng thuốc gì", "sử dụng thuốc"])
         is_allergy = any(w in lower_query for w in ["dị ứng", "tiêm kháng sinh", "ong đốt", "sốc phản vệ"])
-        return (has_dehydration_diarrhea or (has_abd_fever and has_symptom_ask)) and not is_allergy
+        return (has_dehydration_diarrhea or (has_nausea_fever and (has_symptom_ask or "bụng" in lower_query or "đau bụng" in lower_query))) and not is_allergy
 
     async def handle(
         self, query: str, lower_query: str, ctx: ClinicalContext, db: AsyncSession
     ) -> Optional[CopilotResponse]:
-        has_abd_fever = ("đau bụng" in lower_query or "bụng" in lower_query) and ("buồn nôn" in lower_query or "nôn" in lower_query) and ("sốt" in lower_query)
+        has_nausea_fever = ("buồn nôn" in lower_query or "nôn" in lower_query) and ("sốt" in lower_query)
+        has_abd = "đau bụng" in lower_query or "bụng" in lower_query
 
-        if has_abd_fever:
+        if has_nausea_fever:
+            title_suffix = "ĐAU BỤNG, BUỒN NÔN, SỐT CAO" if has_abd else "BUỒN NÔN & SỐT CAO"
             reply_md = (
-                "### 🩺 ĐỊNH HƯỚNG LÂM SÀNG: ĐAU BỤNG, BUỒN NÔN, SỐT CAO\n\n"
-                "Tam chứng **đau bụng + buồn nôn/nôn + sốt cao** là dấu hiệu cảnh báo của tình trạng nhiễm trùng tiêu hóa hoặc viêm cấp tính trong ổ bụng, cần được thăm khám khẩn trương:\n\n"
+                f"### 🩺 ĐỊNH HƯỚNG LÂM SÀNG: {title_suffix}\n\n"
+                "Biểu hiện **buồn nôn/nôn kèm sốt cao** là dấu hiệu cảnh báo của tình trạng nhiễm trùng cấp tính (tiêu hóa hoặc toàn thân), cần tiếp cận xử trí theo đúng phác đồ an toàn dược:\n\n"
                 "---\n\n"
                 "#### 1. CÁC NGUYÊN NHÂN LÂM SÀNG CẦN PHÂN BIỆT\n"
-                "1. **Nhiễm trùng tiêu hóa cấp (Acute Enteritis / Food Poisoning):**\n"
-                "   * Viêm dạ dày - ruột do vi khuẩn xâm lấn (*Salmonella*, *Shigella*, *Campylobacter*, *E. coli*).\n"
-                "   * Thường kèm đi ngoài phân lỏng, đau quặn bụng từng cơn, sốt cao rét run.\n"
+                "1. **Nhiễm trùng tiêu hóa cấp (Acute Gastroenteritis / Ngộ độc thực phẩm):**\n"
+                "   * Do vi khuẩn (*Salmonella*, *E. coli*) hoặc virus (*Rotavirus*, *Norovirus*). Thường kèm buồn nôn, nôn, sốt, có thể đau quặn bụng hoặc tiêu chảy.\n"
                 "2. **Cảnh báo bệnh lý ngoại khoa ổ bụng (CẦN LOẠI TRỪ KHẨN CẤP):**\n"
-                "   * **Viêm ruột thừa cấp:** Khởi đầu đau quanh rốn/thượng vị rồi khu trú hố chậu phải (điểm MacBurney (+)), buồn nôn, sốt tăng dần.\n"
-                "   * **Viêm tụy cấp:** Đau quặn dữ dội thượng vị xuyên ra sau lưng sau bữa ăn nhiều đạm/mỡ hoặc rượu bia, nôn liên tục không giảm đau.\n"
-                "   * **Viêm túi mật / Nhiễm trùng đường mật:** Đau hạ sườn phải, sốt cao rét run, có thể vàng da (tam chứng Charcot).\n"
-                "3. **Phản vệ độ II có triệu chứng tiêu hóa (TT 51/2017/TT-BYT):** Cần lưu ý nếu khởi phát đột ngột ngay sau tiếp xúc dị nguyên (thuốc/thức ăn), thường kèm mày đay, khó thở hoặc tụt HA.\n\n"
+                "   * Viêm ruột thừa cấp, viêm tụy cấp, viêm túi mật/nhiễm trùng đường mật cấp.\n"
+                "3. **Sốt xuất huyết Dengue thể cảnh báo:** Sốt cao ngày 1-3 kèm nôn mửa, đau mỏi cơ khớp, cần theo dõi hematocrit và tiểu cầu.\n\n"
                 "---\n\n"
-                "#### 2. KHUYẾN CÁO XỬ TRÍ & CẬN LÂM SÀNG (HƯỚNG DẪN BỘ Y TẾ)\n"
-                "* **Khám thực thể:** Thăm khám bụng tìm phản ứng thành bụng, cảm ứng phúc mạc, vị trí điểm đau khu trú.\n"
-                "* **Chỉ định cận lâm sàng cấp thiết:**\n"
-                "  * Siêu âm ổ bụng tổng quát (loại trừ viêm ruột thừa, viêm tụy, sỏi mật).\n"
-                "  * Công thức máu (Bạch cầu, tỷ lệ Neutrophil), CRP/Procalcitonin đánh giá mức độ nhiễm khuẩn.\n"
-                "  * Xét nghiệm men tụy (Amylase, Lipase), men gan, điện giải đồ.\n"
-                "* **Lưu ý an toàn dược:** Tuyệt đối **không tự ý dùng thuốc giảm đau mạnh (Opioid)** hoặc thuốc cầm nôn/cầm tiêu chảy trước khi bác sĩ ngoại khoa thăm khám, để tránh che lấp triệu chứng cấp cứu ngoại khoa."
+                "#### 2. NGUYÊN TẮC AN TOÀN DƯỢC & THUỐC SỬ DỤNG (HƯỚNG DẪN BỘ Y TẾ)\n"
+                "* **Hạ sốt an toàn:** Ưu tiên **Paracetamol** (10-15 mg/kg cách 4-6h ở trẻ em; 500mg/lần ở người lớn khi sốt >= 38.5°C). **Tuyệt đối KHÔNG dùng NSAID (Aspirin, Ibuprofen)** vì nguy cơ xuất huyết tiêu hóa và suy thận cấp khi đang nôn mửa hoặc chưa loại trừ Dengue.\n"
+                "* **Bù nước & điện giải:** Dung dịch Oresol pha đúng nồng độ, uống từng ngụm nhỏ 5-10ml mỗi 3-5 phút (tránh uống nhiều 1 lúc gây kích thích nôn).\n"
+                "* **Thuốc chống nôn:** Chỉ dùng (Ondansetron, Domperidon) khi có chỉ định bác sĩ sau khi loại trừ tắc ruột hoặc ngoại khoa.\n"
+                "* **Cảnh báo cấp cứu:** Nhập viện ngay nếu nôn liên tục không thể bù nước đường uống, li bì, nôn ra máu, hoặc đau bụng khu trú."
             )
             return CopilotResponse(
                 intent="CLINICAL_AI_CONSULTATION",
                 reply_text=validate_output_guardrail(reply_md, query),
                 legal_basis="Hướng dẫn Chẩn đoán Điều trị Ngoại khoa & Tiêu hóa Bộ Y Tế",
-                suggested_chips=["Cấp cứu viêm ruột thừa", "Siêu âm ổ bụng cấp", "Định lượng CRP/Bạch cầu"],
+                suggested_chips=["Xử trí hạ sốt an toàn", "Bù nước điện giải Oresol", "Xét nghiệm công thức máu/CRP"],
                 answer_type="grounded_reference",
                 source_status="retrieved_evidence",
                 confidence=1.0

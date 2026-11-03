@@ -40,6 +40,7 @@ MINED_PRODUCTION_CASES = [
     ("bị ảo giác à", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ"]),
     ("bạn kém quá", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ", "tiếp thu phản ánh"]),
     ("bạn có thể giúp tôi học toán được không", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi"]),
+    ("Biểu hiện buồn nôn, sốt cao thì nên sử dụng thuốc nào", "CLINICAL_AI_CONSULTATION", ["buồn nôn", "sốt cao", "paracetamol", "oresol"]),
 ]
 
 @pytest.mark.asyncio
