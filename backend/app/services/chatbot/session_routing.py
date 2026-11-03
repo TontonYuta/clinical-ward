@@ -150,6 +150,14 @@ def build_insufficient_formulation_response(med_name: str, session_id: str) -> C
     )
 
 def check_contextless_clinical_question(lower_query: str) -> CopilotResponse | None:
+    is_general_consultation = any(term in lower_query for term in (
+        "thuốc điều trị", "thuốc trị", "thuốc hạ", "thuốc chữa", "thuốc dùng cho",
+        "hướng dẫn điều trị", "phác đồ điều trị", "nhóm thuốc", "lựa chọn thuốc",
+        "huyết áp", "tăng huyết áp", "hạ huyết áp", "đái tháo đường", "tiểu đường"
+    ))
+    if is_general_consultation:
+        return None
+
     context_required_terms = (
         "liều tối đa", "liều dùng", "liều lượng", "chống chỉ định",
         "tác dụng phụ", "tác dụng không mong muốn", "uống lúc đói",

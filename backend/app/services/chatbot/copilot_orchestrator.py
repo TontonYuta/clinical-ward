@@ -113,12 +113,13 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         return field_res
 
     if not is_renal and not explicit_named and any(term in lower_query for term in ("suy thận", "suy gan", "thai kỳ", "phụ nữ có thai", "cho con bú", "thuốc giảm đau", "thuốc chống đông", "thuốc tim mạch", "thuốc dạ dày", "thuốc tiểu đường", "pha chung", "tương kỵ", "tương tác thuốc")) and not session.active_medication_name:
-        return CopilotResponse(
-            intent="MEDICATION_LOOKUP_CLARIFICATION",
-            reply_text="Vui lòng nêu tên thuốc/hoạt chất và thông tin người bệnh liên quan (nếu cần đánh giá ca cụ thể) để tra cứu đúng nguồn. Với tương tác hoặc pha truyền, hãy cung cấp đầy đủ các thuốc/dịch cần rà soát.",
-            answer_type="clarification", source_status="missing_clinical_subject", confidence=1.0,
-            abstention_reason="Thiếu thuốc hoặc đối tượng cần đánh giá"
-        )
+        if not any(term in lower_query for term in ("huyết áp", "tăng huyết áp", "hạ huyết áp", "ung thư", "u bướu", "hen phế quản", "đái tháo đường")):
+            return CopilotResponse(
+                intent="MEDICATION_LOOKUP_CLARIFICATION",
+                reply_text="Vui lòng nêu tên thuốc/hoạt chất và thông tin người bệnh liên quan (nếu cần đánh giá ca cụ thể) để tra cứu đúng nguồn. Với tương tác hoặc pha truyền, hãy cung cấp đầy đủ các thuốc/dịch cần rà soát.",
+                answer_type="clarification", source_status="missing_clinical_subject", confidence=1.0,
+                abstention_reason="Thiếu thuốc hoặc đối tượng cần đánh giá"
+            )
 
     is_general_ref = any(term in lower_query for term in ("thông tin về", "thông tin", "tài liệu", "tra cứu", "hướng dẫn", "phác đồ", "thuốc hạ sốt", "thuốc giảm đau", "nhóm thuốc", "danh mục", "chuyên luận"))
     is_self_symptom = not is_general_ref and bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
@@ -150,7 +151,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     ):
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")) and not has_candidate_drug:
+    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "huyết áp", "tăng huyết áp", "hạ huyết áp")) and not has_candidate_drug:
         sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
         if sc_res:
             sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)

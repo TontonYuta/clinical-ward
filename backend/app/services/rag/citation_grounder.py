@@ -29,6 +29,17 @@ def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
     evidence_terms = _normalize_terms(" ".join([chunk.chunk.title, chunk.chunk.content, *chunk.chunk.keywords]))
     if not query_terms or not evidence_terms:
         return False
+
+    core_disease_groups = [
+        {"huyết", "áp"}, {"huyet", "ap"},
+        {"tiểu", "đường"}, {"tieu", "duong"},
+        {"đái", "tháo"}, {"dai", "thao"},
+        {"hen", "phế"}, {"hen", "phe"},
+    ]
+    for grp in core_disease_groups:
+        if grp.issubset(query_terms) and not (grp & evidence_terms):
+            return False
+
     overlap = query_terms & evidence_terms
     min_count = 2 if len(query_terms) >= 3 else 1
     return bool(overlap) and len(overlap) >= min_count and len(overlap) / len(query_terms) >= 0.25

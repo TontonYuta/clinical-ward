@@ -115,7 +115,7 @@ async def handle_field_or_drug_inquiry(
     has_multiple_medication_fields = len(matched_field_keys) > 1 or is_two_drug or is_deep_complex or any(c in lower_query for c in (" và ", " cùng ", ","))
     has_explicit_medication_field = len(matched_field_keys) == 1 and not has_multiple_medication_fields
 
-    if asks_multiple_fields and asks_drug_info and not is_deep_complex and not is_two_drug_interaction:
+    if asks_multiple_fields and asks_drug_info and (has_drug_entity or active_name_in_query) and not is_deep_complex and not is_two_drug_interaction:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     if has_explicit_medication_field and (has_drug_entity or active_name_in_query) and not is_deep_complex and not is_two_drug_interaction:
