@@ -4,6 +4,7 @@ Chunking theo từng chuyên luận, điều khoản và tương tác thuốc (<
 """
 import os
 import re
+import json
 from pathlib import Path
 from app.services.rag.types import RagChunk
 
@@ -16,14 +17,15 @@ def get_active_kb_dir() -> Path:
     return LOCAL_DOCS_DIR
 
 def _extract_keywords(text: str) -> list[str]:
-    keywords = set()
-    matches = re.findall(r"([A-Za-z0-9\-]{3,}|[\w\s]{4,})", text)
-    stopwords = {"căn", "cứ", "pháp", "lý", "quy", "định", "theo", "khoản", "điều", "trong", "cho", "của", "các"}
-    for m in matches:
-        w = m.strip().lower()
-        if len(w) >= 3 and w not in stopwords:
-            keywords.add(w)
-    return list(keywords)[:30]
+    tokens = re.findall(r"\w+", text, flags=re.UNICODE)
+    stopwords = {
+        "căn", "cứ", "pháp", "lý", "quy", "định", "theo", "khoản", "điều", "trong",
+        "cho", "của", "các", "thuộc", "được", "người", "bệnh", "những", "khi", "hoặc",
+        "dùng", "với", "không", "thành", "phần", "tính", "chất", "tham", "khảo", "thông", "tin",
+        "dưới", "đây", "dạng", "dược", "lâm", "sàng", "chuyên", "luận", "thuốc"
+    }
+    keywords = {t.strip().lower() for t in tokens if len(t.strip()) >= 3 and t.strip().lower() not in stopwords}
+    return sorted(list(keywords))[:40]
 
 def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, entity_type: str) -> list[RagChunk]:
     if not file_path.exists():
@@ -89,11 +91,111 @@ def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, e
             ))
     return chunks
 
+def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
+    candidates = (
+        base_dir / "dtqg_monographs_extracted.json",
+        base_dir / "data" / "knowledge_base" / "dtqg_monographs_extracted.json",
+        Path(__file__).resolve().parents[3] / "data" / "knowledge_base" / "dtqg_monographs_extracted.json",
+        Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "dtqg_monographs_extracted.json",
+    )
+    json_path = next((c for c in candidates if c.exists()), None)
+    if not json_path:
+        return []
+
+    try:
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+    chunks: list[RagChunk] = []
+    for idx, m in enumerate(data, 1):
+        inn = m.get("inn") or ""
+        if not inn:
+            continue
+        title = m.get("title") or inn
+        slug = re.sub(r"[^a-zA-Z0-9]", "_", inn).lower()[:20]
+        page = m.get("start_page")
+        legal_basis = m.get("source") or (f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {page}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if page else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf")
+        page_sec = f"{title} (Trang {page})" if page else title
+        lines = (m.get("drug_class") or "").splitlines()
+        drug_class_first = lines[0].strip() if lines else ""
+
+        # 1. Chunk Chỉ định & Liều lượng
+        dosage_parts = []
+        if m.get("drug_class"): dosage_parts.append(f"* **Nhóm dược lý:** {m['drug_class']}")
+        if m.get("atc_code"): dosage_parts.append(f"* **Mã ATC:** {m['atc_code']}")
+        if m.get("dosage_forms"): dosage_parts.append(f"* **Dạng bào chế:** {m['dosage_forms']}")
+        if m.get("indications"): dosage_parts.append(f"* **Chỉ định điều trị:** {m['indications']}")
+        if m.get("adult_dosage"): dosage_parts.append(f"* **Liều người lớn:** {m['adult_dosage']}")
+        if m.get("pediatric_dosage"): dosage_parts.append(f"* **Liều trẻ em:** {m['pediatric_dosage']}")
+        if m.get("renal_adjustment"): dosage_parts.append(f"* **Hiệu chỉnh liều suy thận:** {m['renal_adjustment']}")
+        if m.get("hepatic_adjustment"): dosage_parts.append(f"* **Hiệu chỉnh liều suy gan:** {m['hepatic_adjustment']}")
+        if dosage_parts:
+            content_a = f"### Chỉ định & Liều dùng: {title} (Hoạt chất: {inn})\n" + "\n".join(dosage_parts)
+            kws_a = _extract_keywords(f"{inn} {title} {drug_class_first} {(m.get('indications') or '')[:300]} chỉ định liều dùng người lớn trẻ em suy thận suy gan")
+            if m.get("atc_code"): kws_a.append(m["atc_code"].lower())
+            dosage_title = f"Chỉ định & Liều lượng: {inn} ({title}) - {drug_class_first}" if drug_class_first else f"Chỉ định & Liều lượng: {inn} ({title})"
+            chunks.append(RagChunk(
+                chunk_id=f"dtqg_{slug}_{idx}_dosage",
+                source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
+                legal_basis=legal_basis,
+                page_or_section=page_sec,
+                title=dosage_title,
+                content=content_a,
+                keywords=kws_a,
+                entity_type="monograph"
+            ))
+
+        # 2. Chunk Chống chỉ định & Thận trọng
+        safety_parts = []
+        if m.get("contraindications"): safety_parts.append(f"* **Chống chỉ định:** {m['contraindications']}")
+        if m.get("precautions"): safety_parts.append(f"* **Thận trọng:** {m['precautions']}")
+        if m.get("pregnancy_warning"): safety_parts.append(f"* **Thai kỳ & Cho con bú:** {m['pregnancy_warning']}")
+        if safety_parts:
+            content_b = f"### Chống chỉ định & An toàn lâm sàng: {title} (Hoạt chất: {inn})\n" + "\n".join(safety_parts)
+            kws_b = _extract_keywords(f"{inn} {title} {(m.get('contraindications') or '')[:200]} {(m.get('precautions') or '')[:200]} chống chỉ định thận trọng cảnh báo thai kỳ phụ nữ có thai cho con bú")
+            chunks.append(RagChunk(
+                chunk_id=f"dtqg_{slug}_{idx}_safety",
+                source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
+                legal_basis=legal_basis,
+                page_or_section=f"{title} - An toàn lâm sàng (Trang {page})" if page else f"{title} - An toàn lâm sàng",
+                title=f"Chống chỉ định & Thận trọng: {inn} ({title})",
+                content=content_b,
+                keywords=kws_b,
+                entity_type="monograph"
+            ))
+
+        # 3. Chunk Tác dụng phụ, Tương tác & Quá liều
+        inter_parts = []
+        if m.get("adverse_effects"): inter_parts.append(f"* **Tác dụng không mong muốn (ADR):** {m['adverse_effects']}")
+        if m.get("drug_interactions"): inter_parts.append(f"* **Tương tác thuốc:** {m['drug_interactions']}")
+        if m.get("overdose_treatment"): inter_parts.append(f"* **Xử trí quá liều:** {m['overdose_treatment']}")
+        if m.get("antidote"): inter_parts.append(f"* **Thuốc giải độc đặc hiệu:** {m['antidote']}")
+        if inter_parts:
+            content_c = f"### Tác dụng phụ, Tương tác & Quá liều: {title} (Hoạt chất: {inn})\n" + "\n".join(inter_parts)
+            kws_c = _extract_keywords(f"{inn} {title} {(m.get('adverse_effects') or '')[:200]} {(m.get('drug_interactions') or '')[:200]} tác dụng phụ tác dụng không mong muốn adr tương tác thuốc quá liều ngộ độc giải độc")
+            if m.get("antidote"): kws_c.append(m["antidote"].lower())
+            chunks.append(RagChunk(
+                chunk_id=f"dtqg_{slug}_{idx}_inter",
+                source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
+                legal_basis=legal_basis,
+                page_or_section=f"{title} - Tương tác & Quá liều (Trang {page})" if page else f"{title} - Tương tác & Quá liều",
+                title=f"Tác dụng phụ, Tương tác & Quá liều: {inn} ({title})",
+                content=content_c,
+                keywords=kws_c,
+                entity_type="monograph"
+            ))
+
+    return chunks
+
 def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
     active_dir = base_dir or get_active_kb_dir()
     all_chunks: list[RagChunk] = []
     
-    # 1. Dược thư Quốc gia Việt Nam, lần xuất bản II (2015)
+    # 1. Dược thư Quốc gia Việt Nam, lần xuất bản II (2015) - Toàn bộ 771 Chuyên luận
+    all_chunks.extend(_parse_extracted_dtqg_chunks(active_dir))
+
+    # Core stubs bảo tồn tính tương thích ngược
     mono_path = active_dir / "clinical_pharmacopoeia" / "core_inns_monographs.md"
     all_chunks.extend(_parse_markdown_chunks(
         mono_path,

@@ -11,33 +11,48 @@ from app.services.clinical_ddi_engine.entity_resolution import resolve_registere
 
 RRF_K_CONSTANT = 60
 
+CLINICAL_STOPWORDS = {
+    "tôi", "bị", "nên", "uống", "thuốc", "nào", "nhỉ", "cho", "của", "các",
+    "và", "là", "có", "không", "với", "được", "trong", "khi", "ở", "gì", "sao",
+    "thế", "như", "làm", "để", "ra", "vào", "lại", "đã", "đang", "sẽ", "hay",
+    "hoặc", "này", "đó", "đây", "người", "bệnh"
+}
+
 def _compute_semantic_score(chunk: RagChunk, query: str, kg_entities: list[str]) -> float:
-    lower_query = query.lower()
+    lower_query = query.casefold()
     score = 0.0
-    tokens = set(re.findall(r"\w{3,}", lower_query))
+    raw_tokens = set(re.findall(r"\w{2,}", lower_query))
+    content_tokens = {t for t in raw_tokens if t not in CLINICAL_STOPWORDS}
+    tokens = content_tokens if content_tokens else raw_tokens
 
     # Khớp tiêu đề và văn bản
-    title_lower = chunk.title.lower()
-    content_lower = chunk.content.lower()
+    title_lower = chunk.title.casefold()
+    content_lower = chunk.content.casefold()
 
     for t in tokens:
-        if t in title_lower:
-            score += 3.0
-        elif t in content_lower:
-            score += 1.0
+        if re.search(rf"\b{re.escape(t)}\b", title_lower):
+            score += 5.0
+        elif re.search(rf"\b{re.escape(t)}\b", content_lower):
+            score += 1.5
 
     # Khớp từ khóa chuyên môn trích xuất
+    query_word_set = set(tokens)
     for kw in chunk.keywords:
-        if kw in lower_query:
-            score += 2.0
+        kw_clean = kw.casefold()
+        if kw_clean in query_word_set and kw_clean not in CLINICAL_STOPWORDS:
+            score += 3.0
 
     # Thưởng điểm nếu chunk khớp với thực thể Đồ thị tri thức (KG Entities)
     for kg in kg_entities:
-        clean_kg = kg.split(":")[-1].lower()
+        clean_kg = kg.split(":")[-1].casefold()
         if clean_kg in title_lower or clean_kg in content_lower:
             score += 4.0
 
     return score
+
+def _is_direct_subject_chunk(chunk: RagChunk, drug_name: str) -> bool:
+    clean_title = chunk.title.casefold().split(" - ")[0]
+    return drug_name.casefold() in clean_title or chunk.page_or_section.casefold().startswith(drug_name.casefold())
 
 class HybridRetriever:
     def __init__(self, fts_index: Optional[SqliteFtsIndex] = None):
@@ -57,7 +72,8 @@ class HybridRetriever:
         allow_ddi = bool(resolved_query_drugs) and (asks_about_interactions or mentions_multiple_known_drugs)
 
         # 1. Sparse BM25 Retrieval qua SQLite FTS5
-        bm25_results = self.fts_index.search_bm25(query, top_k=top_k * 2)
+        candidate_limit = max(50, top_k * 5)
+        bm25_results = self.fts_index.search_bm25(query, top_k=candidate_limit)
         bm25_rank_map: dict[str, int] = {
             r.chunk.chunk_id: idx + 1 for idx, r in enumerate(bm25_results)
         }
@@ -72,7 +88,7 @@ class HybridRetriever:
         # Sắp xếp Dense Ranking
         semantic_scores.sort(key=lambda x: x[1], reverse=True)
         dense_rank_map: dict[str, int] = {
-            c.chunk_id: idx + 1 for idx, (c, _) in enumerate(semantic_scores[:top_k * 2])
+            c.chunk_id: idx + 1 for idx, (c, _) in enumerate(semantic_scores[:candidate_limit])
         }
 
         # DDI chunks are omitted unless a query names a known drug and either
@@ -100,10 +116,17 @@ class HybridRetriever:
 
         if len(resolved_query_drugs) == 1:
             requested_drug = resolved_query_drugs[0]
+            has_direct_monographs = any(
+                _is_direct_subject_chunk(chunk_map[cid], requested_drug)
+                for cid in all_candidate_ids if cid in chunk_map
+            )
             incompatible_ids = set()
             for cid in all_candidate_ids:
                 chunk = chunk_map.get(cid)
                 if not chunk or chunk.entity_type == "ddi":
+                    continue
+                if has_direct_monographs and not _is_direct_subject_chunk(chunk, requested_drug):
+                    incompatible_ids.add(cid)
                     continue
                 text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}"
                 chunk_drugs = set(resolve_registered_medications(text))
@@ -139,11 +162,16 @@ class HybridRetriever:
 
             # When a question names a medicine, prioritize evidence about that
             # medicine over unrelated monographs matching generic clinical terms.
-            chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}".casefold()
-            named_drug_match = bool(set(resolved_query_drugs) & set(resolve_registered_medications(chunk_text)))
-            if named_drug_match:
-                rrf_score += 0.05
-                reasons.append("Explicit named medicine match")
+            title_drug_match = any(d in chunk.title.casefold() for d in resolved_query_drugs)
+            if title_drug_match:
+                rrf_score += 0.25
+                reasons.append("Direct monograph title match for query drug")
+            else:
+                chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}".casefold()
+                named_drug_match = bool(set(resolved_query_drugs) & set(resolve_registered_medications(chunk_text)))
+                if named_drug_match:
+                    rrf_score += 0.05
+                    reasons.append("Explicit named medicine match")
             if chunk.entity_type == "ddi" and cid in allowed_ddi_ids:
                 rrf_score += 0.20
                 reasons.append("Registered medicine overlap with DDI evidence")

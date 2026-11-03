@@ -32,9 +32,18 @@ def get_fts_db_path() -> str:
         pass
     return "/tmp/clinical_hospital.db"
 
+VIETNAMESE_STOPWORDS = {
+    "tôi", "bị", "nên", "uống", "thuốc", "nào", "nhỉ", "cho", "của", "các",
+    "và", "là", "có", "không", "với", "được", "trong", "khi", "ở", "gì", "sao",
+    "thế", "như", "làm", "để", "ra", "vào", "lại", "đã", "đang", "sẽ", "hay",
+    "hoặc", "này", "đó", "đây", "người", "bệnh"
+}
+
 def _sanitize_fts_query(query: str) -> str:
     cleaned = re.sub(r"[^\w\s\-]", " ", query, flags=re.UNICODE)
-    tokens = [t.strip() for t in cleaned.split() if len(t.strip()) >= 2]
+    all_tokens = [t.strip() for t in cleaned.split() if len(t.strip()) >= 2]
+    content_tokens = [t for t in all_tokens if t.casefold() not in VIETNAMESE_STOPWORDS]
+    tokens = content_tokens if content_tokens else all_tokens
     return " OR ".join(f'"{t}"*' for t in tokens[:8]) if tokens else ""
 
 class SqliteFtsIndex:

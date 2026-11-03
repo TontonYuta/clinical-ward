@@ -35,7 +35,7 @@ def resolve_citation_document(source: str, legal_basis: str, section: str) -> tu
         section_inn = re.sub(r"^\s*\d+\.\s*", "", section).split("(")[0].split("-")[0].strip().casefold()
         record = monographs.get(section_inn)
         source_text = str(record.get("source", "")) if record else ""
-        page_match = re.search(r"Trang\s*(\d+)", source_text, re.IGNORECASE)
+        page_match = re.search(r"Trang\s*(\d+)", f"{legal_basis} {section} {source_text}", re.IGNORECASE)
         if not page_match and record and record.get("start_page"):
             page_match = re.match(r"(\d+)", str(record["start_page"]))
         page = int(page_match.group(1)) if page_match else None
