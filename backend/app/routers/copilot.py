@@ -56,7 +56,7 @@ async def chat_with_copilot(
 
 @router.get("/history", response_model=list[CopilotChatLogResponse])
 async def get_copilot_chat_history(
-    limit: int = 100,
+    limit: int = 5,
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(CopilotChatLog).order_by(CopilotChatLog.created_at.desc()).limit(limit)

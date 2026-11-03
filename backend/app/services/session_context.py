@@ -44,7 +44,7 @@ class SessionState:
         assistant = self._truncate_history_text(assistant_text)
         if user or assistant:
             self.conversation_turns.append(ConversationTurn(user, assistant))
-            self.conversation_turns = self.conversation_turns[-8:]
+            self.conversation_turns = self.conversation_turns[-5:]
         self.last_query = user or self.last_query
         self.touch()
 
@@ -53,7 +53,13 @@ class SessionState:
         cleaned = (text or "").strip()
         return cleaned if len(cleaned) <= 2000 else cleaned[:1999] + "…"
 
-    def render_recent_history(self, max_turns: int = 8, max_chars: int = 12000) -> str:
+    def get_recent_turns(self, limit: int = 5) -> list[dict]:
+        return [
+            {"user": t.user_text, "assistant": t.assistant_text}
+            for t in self.conversation_turns[-limit:]
+        ]
+
+    def render_recent_history(self, max_turns: int = 5, max_chars: int = 8000) -> str:
         if max_turns <= 0 or max_chars <= 0:
             return ""
         turns = self.conversation_turns[-max_turns:]

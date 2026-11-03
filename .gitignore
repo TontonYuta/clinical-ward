@@ -26,6 +26,7 @@ ENV/
 *.log
 production_chat_logs*
 production_improvement_report.md
+recent_*_qa_logs*
 .DS_Store
 .env*
 !.env.example
