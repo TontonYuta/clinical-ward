@@ -107,9 +107,19 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
             answer_type="clarification", source_status="missing_case_context", confidence=1.0, abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh"
         )
 
-    if any(term in lower_query for term in ("thuốc này", "thuốc đó", "thuốc vừa nói", "nó có", "của thuốc này")) and not session.active_medication_name:
+    deictic_or_unanchored = (
+        any(term in lower_query for term in ("thuốc này", "thuốc đó", "thuốc vừa nói", "nó có", "của thuốc này", "của thuốc đó"))
+        or lower_query.strip().strip("?.!") in (
+            "thông tin chi tiết đầy đủ", "thong tin chi tiet day du", "thông tin chi tiết", "thong tin chi tiet",
+            "thông tin đầy đủ", "thong tin day du", "tóm tắt thông tin thuốc đó", "tom tat thong tin thuoc do",
+            "tóm tắt thông tin", "tom tat thong tin", "tóm tắt thuốc đó", "tom tat thuoc do", "tóm tắt", "tom tat",
+            "hồ sơ đầy đủ", "ho so day du", "hồ sơ chi tiết", "ho so chi tiet", "toàn bộ thông tin", "toan bo thong tin"
+        )
+    )
+    if deictic_or_unanchored and not session.active_medication_name:
         return CopilotResponse(
-            intent="MEDICATION_LOOKUP_CLARIFICATION", reply_text="Mình chưa xác định được thuốc đang được nhắc tới trong cuộc hội thoại này. Vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký để tra cứu.",
+            intent="MEDICATION_LOOKUP_CLARIFICATION",
+            reply_text="Dạ xin lỗi bác sĩ, hiện chưa xác định được thuốc đang được nhắc tới trong phiên hội thoại này. Bác sĩ vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký để tra cứu thông tin chi tiết / tóm tắt ạ.",
             answer_type="clarification", source_status="missing_medication_context", confidence=1.0, session_id=session.session_id, suggested_chips=["Tra cứu thông tin thuốc", "Nhập tên hoạt chất hoặc biệt dược"]
         )
 

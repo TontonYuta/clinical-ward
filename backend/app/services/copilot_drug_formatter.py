@@ -109,7 +109,11 @@ async def build_drug_profile_response(
             source_status="exact_match", confidence=1.0, citations=[build_drug_citation(matched, monograph, source)]
         )
 
-    is_full_profile = any(p in lower_query for p in ("thông tin đầy đủ", "thong tin day du", "hồ sơ đầy đủ", "ho so day du", "toàn bộ thông tin", "toan bo thong tin", "chi tiết đầy đủ", "full thông tin"))
+    is_full_profile = any(p in lower_query for p in (
+        "thông tin đầy đủ", "thong tin day du", "hồ sơ đầy đủ", "ho so day du",
+        "toàn bộ thông tin", "toan bo thong tin", "chi tiết đầy đủ", "full thông tin",
+        "thông tin chi tiết", "thong tin chi tiet", "hồ sơ chi tiết", "ho so chi tiet"
+    ))
     if query.strip() and not is_full_profile:
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
         reply = (f"### Thuốc: {matched.brand_name}\n\n- **Hoạt chất:** {matched.active_ingredient}\n"

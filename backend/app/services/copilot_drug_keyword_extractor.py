@@ -19,6 +19,14 @@ STOP_PHRASES = [
     "thuốc", "về", "sđk", "mã", "html", "code", "website", "trị", "chữa", "uống", "còn liều", "liều",
     "dược thư quốc gia", "dược thư", "tra cứu dược thư", "tra cứu", "kiểm tra tương tác hai thuốc", "kiểm tra tương tác", "tương tác hai thuốc", "hai thuốc", "các thuốc",
     "kháng sinh", "khang sinh", "thuốc kháng sinh", "thuoc khang sinh",
+    "thông tin chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ",
+    "thong tin chi tiet day du", "thong tin chi tiet", "thong tin day du",
+    "chi tiết đầy đủ", "chi tiet day du", "toàn bộ thông tin", "toan bo thong tin",
+    "tóm tắt thông tin thuốc đó", "tóm tắt thông tin thuốc này", "tóm tắt thông tin thuốc",
+    "tóm tắt thông tin", "tóm tắt thuốc đó", "tóm tắt thuốc này", "tóm tắt thuốc", "tóm tắt",
+    "tom tat thong tin thuoc do", "tom tat thong tin thuoc nay", "tom tat thong tin thuoc",
+    "tom tat thong tin", "tom tat thuoc", "tom tat",
+    "hồ sơ đầy đủ", "ho so day du", "hồ sơ chi tiết", "ho so chi tiet", "toàn bộ hồ sơ", "toan bo ho so",
     "thuốc cản quang", "tiêm thuốc cản quang", "cản quang", "chụp ct", "chụp mri", "chụp x-quang", "nồng độ đáy", "nồng độ đỉnh", "trough level", "trough", "peak", "định lượng"
 ]
 
@@ -44,7 +52,8 @@ QUESTION_TERMS = {
     "thai", "phụ", "nữ", "trẻ", "sơ", "sinh", "lớn", "già", "bé",
     "quy", "chế", "quản", "lý", "tủ", "trực", "kho", "ca", "viện",
     "uống", "tiêm", "truyền", "bôi", "nhỏ", "đặt", "uong", "tiem", "truyen", "thông", "tin",
-    "quốc", "quoc", "gia", "hai", "thư", "thu", "cản", "quang", "ct", "mri", "ăn", "an", "no", "đói", "doi", "trước", "truoc", "sau", "bữa", "bua", "kháng", "khang"
+    "quốc", "quoc", "gia", "hai", "thư", "thu", "cản", "quang", "ct", "mri", "ăn", "an", "no", "đói", "doi", "trước", "truoc", "sau", "bữa", "bua", "kháng", "khang",
+    "tóm", "tắt", "tom", "tat", "tiết", "tiet", "đầy", "đủ", "day", "du", "hồ", "sơ", "ho", "so", "toàn", "bộ", "toan", "bo"
 }
 
 
@@ -70,7 +79,7 @@ def extract_drug_keywords(query: str) -> str:
 
     q_lower = cleaned.lower()
     q_lower = re.sub(
-        r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|còn liều|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì|còn|liều|điều trị|chữa trị|điều|trị|chữa|thong tin|tra cuu|thuoc|lieu dung|lieu luong|lieu toi da|con lieu|cach dung|tac dung phu|tac dung khong mong muon|chong chi dinh|chi dinh|cong dung|thanh phan|hoat chat|tuong tac|dieu tri|chua tri)\b",
+        r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|còn liều|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì|còn|liều|điều trị|chữa trị|điều|trị|chữa|thong tin|tra cuu|thuoc|lieu dung|lieu luong|lieu toi da|con lieu|cach dung|tac dung phu|tac dung khong mong muon|chong chi dinh|chi dinh|cong dung|thanh phan|hoat chat|tuong tac|dieu tri|chua tri|tóm tắt|tom tat|tóm|tắt|chi tiết|chi tiet|đầy đủ|day du|hồ sơ|ho so|toàn bộ|toan bo)\b",
         " ", q_lower,
     )
     q_lower = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?", " ", q_lower, flags=re.IGNORECASE)

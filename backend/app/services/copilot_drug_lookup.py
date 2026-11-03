@@ -27,6 +27,23 @@ async def lookup_drug_authoritative(
     deictic_phrases = ["thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"]
     is_deictic = any(w in query.lower() for w in deictic_phrases) or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
 
+    if is_deictic and not session.active_medication_name:
+        return CopilotResponse(
+            intent="MEDICATION_LOOKUP_CLARIFICATION",
+            reply_text="Dạ xin lỗi bác sĩ, hiện chưa xác định được thuốc đang được nhắc tới trong phiên hội thoại này. Bác sĩ vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký để tra cứu thông tin chi tiết / tóm tắt ạ.",
+            answer_type="clarification", source_status="missing_medication_context", confidence=1.0,
+            session_id=session.session_id, suggested_chips=["Tra cứu thông tin thuốc", "Nhập tên hoạt chất hoặc biệt dược"]
+        )
+
+    is_unanchored_info = any(p in query.lower() for p in ("chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ", "tóm tắt thông tin", "tóm tắt", "hồ sơ đầy đủ"))
+    if is_unanchored_info and not session.active_medication_name and (not kw or len(kw) < 2):
+        return CopilotResponse(
+            intent="MEDICATION_LOOKUP_CLARIFICATION",
+            reply_text="Dạ xin lỗi bác sĩ, hiện chưa xác định được thuốc cần tra cứu trong phiên hội thoại này. Bác sĩ vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký để hệ thống hiển thị tóm tắt / thông tin chi tiết ạ.",
+            answer_type="clarification", source_status="missing_medication_context", confidence=1.0,
+            session_id=session.session_id, suggested_chips=["Tra cứu thuốc Teglutik", "Tra cứu thuốc Paracetamol", "Tra cứu SĐK VD-24757-16"]
+        )
+
     if (not kw or len(kw) < 2 or is_deictic) and session.active_medication_name:
         kw = session.active_medication_ingredient or session.active_medication_name
 
