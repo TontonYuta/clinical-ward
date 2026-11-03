@@ -27,6 +27,9 @@ MINED_PRODUCTION_CASES = [
     ("lại trả lời sai thông tin rồi", "CONVERSATIONAL_CORRECTION", ["tiếp thu", "câu hỏi cụ thể"]),
     ("bạn không xử lý được à", "BOT_CAPABILITY_CLARIFICATION", ["tra cứu thuốc", "54.885"]),
     ("triệu chứng đau bụng, buồn nôn, sốt cao là biểu hiện của gì", "CLINICAL_AI_CONSULTATION", ["đau bụng", "ngoại khoa"]),
+    ("trả lời chung chung quá, tôi ko hài lòng với đáp án bạn đưa ra", "CONVERSATIONAL_FEEDBACK", ["tiếp thu", "không trả lời chung chung"]),
+    ("Ông là ai", "BUSINESS_OVERVIEW", ["bản đồ 10 đại nghiệp vụ"]),
+    ("Tôi muốn kê đơn thuốc cho bệnh nhân mới, mở form kê đơn cho tôi", "CPOE_CLARIFICATION", ["mở biểu mẫu kê đơn cpoe"]),
 ]
 
 @pytest.mark.asyncio

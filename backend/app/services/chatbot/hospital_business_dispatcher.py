@@ -56,7 +56,8 @@ async def dispatch_operational_business(
     is_capabilities = any(w in lower_query for w in [
         "nghiệp vụ", "các nghiệp vụ", "quy trình lâm sàng", "tính năng", "bạn làm được gì",
         "bạn có thể làm", "bạn giúp được", "hệ thống làm được", "làm được gì", "giúp được gì",
-        "hướng dẫn hệ thống", "hướng dẫn sử dụng", "chức năng", "menu", "bạn là ai"
+        "hướng dẫn hệ thống", "hướng dẫn sử dụng", "chức năng", "menu", "bạn là ai",
+        "ông là ai", "anh là ai", "em là ai", "mày là ai", "who are you", "ai đấy", "ai thế"
     ])
     if is_capabilities:
         return await handle_business_overview_intent()

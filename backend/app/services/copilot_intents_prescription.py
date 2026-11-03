@@ -26,12 +26,30 @@ async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> Co
     has_medication = has_medication or bool(re.search(r"thuốc\s+[a-z0-9-]+", lower_query, re.IGNORECASE))
     missing = [label for present, label in ((has_patient, "định danh người bệnh"), (has_diagnosis, "chẩn đoán"), (has_medication, "tên thuốc")) if not present]
     if missing:
+        is_open_form = any(w in lower_query for w in ["mở form", "mo form", "mở biểu mẫu", "mở giao diện", "mở cpoe", "vào form"])
+        nav_card = CopilotActionCard(
+            card_type="cpoe_navigation",
+            title="Biểu Mẫu Kê Đơn Điện Tử CPOE",
+            summary="Mở form kê đơn trực tiếp theo Thông tư 26/2025/TT-BYT",
+            data={"targetTab": "cpoe"},
+            primary_action_label="Mở Form Kê Đơn CPOE",
+            primary_action_type="NAVIGATE_TAB",
+            target_tab="cpoe"
+        ) if is_open_form else None
+
+        reply = (
+            f"Dạ hệ thống đã sẵn sàng mở biểu mẫu kê đơn CPOE. Để lưu đơn theo Điều 6 Thông tư 26/2025/TT-BYT, bác sĩ vui lòng bổ sung: {', '.join(missing)} trực tiếp trong form hoặc gửi tại đây để em điền sẵn ạ."
+            if is_open_form
+            else f"Để chuẩn bị bản nháp theo Điều 6 Thông tư 26/2025/TT-BYT, vui lòng bổ sung: {', '.join(missing)}. Chưa tạo đơn vì thông tin hiện tại chưa đủ."
+        )
         return CopilotResponse(
             intent="CPOE_CLARIFICATION",
-            reply_text=f"Để chuẩn bị bản nháp theo Điều 6 Thông tư 26/2025/TT-BYT, vui lòng bổ sung: {', '.join(missing)}. Chưa tạo đơn vì thông tin hiện tại chưa đủ.",
+            reply_text=reply,
+            card=nav_card,
             legal_basis="Thông tư 26/2025/TT-BYT - Điều 6",
             answer_type="clarification", source_status="incomplete_input", confidence=1.0,
-            abstention_reason="Thiếu dữ liệu nhận diện người bệnh, chẩn đoán hoặc thuốc"
+            abstention_reason="Thiếu dữ liệu nhận diện người bệnh, chẩn đoán hoặc thuốc",
+            suggested_chips=["Mở form kê đơn CPOE", "Kê Paracetamol cho bệnh nhân Nguyễn Văn A", "Tra cứu tương tác thuốc"]
         )
     patient_name = name_match.group(1).strip() if name_match else ""
 

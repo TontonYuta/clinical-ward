@@ -79,18 +79,41 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu tồn kho thuốc"]
         )
 
+    is_bot_identity = any(c in clean_greeting_ascii for c in (
+        "ban la ai", "ong la ai", "anh la ai", "em la ai", "may la ai",
+        "who are you", "ban ten gi", "ten la gi", "ai the", "ai day", "ai do"
+    ))
+    if is_bot_identity:
+        return CopilotResponse(
+            intent="BUSINESS_OVERVIEW",
+            reply_text=CLINICAL_BUSINESS_DIRECTORY,
+            card=None,
+            legal_basis="Thông tư 22/2011, TT 20/2017, TT 51/2017 & Nghị định 98/2021",
+            suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu SĐK VD-24757-16", "Thuốc cận hạn FEFO", "Báo hỏng máy thở PB840"]
+        )
+
     is_style_feedback = any(c in clean_greeting_ascii for c in (
         "dung trong tam", "gon gang", "ngan gon", "cung nhac", "may moc", "dai dong",
-        "dai qua", "tu nhien hon", "linh hoat hon", "ngan thoi", "gon hon", "ngan hon"
+        "dai qua", "tu nhien hon", "linh hoat hon", "ngan thoi", "gon hon", "ngan hon",
+        "chung chung", "ko hai long", "khong hai long", "chua hai long", "chua dung y",
+        "khong dung y", "chua thoa dang", "khong thoa dang", "tra loi kem", "tra loi te"
     )) and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "tuong tac", "chong chi dinh"))
     if is_style_feedback:
         role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
-        return CopilotResponse(
-            intent="CONVERSATIONAL_FEEDBACK",
-            reply_text=(
+        if any(c in clean_greeting_ascii for c in ("chung chung", "hai long", "chua dung y", "khong dung y", "chua thoa dang")):
+            reply_msg = (
+                f"Dạ em xin chân thành tiếp thu phản hồi của {role_label.lower()}! "
+                f"Em xin rút kinh nghiệm sẽ đi thẳng vào chi tiết chuyên môn cụ thể và số liệu lâm sàng rõ ràng, không trả lời chung chung. "
+                f"{role_label} đang cần làm rõ thông tin chi tiết về thuốc, phác đồ điều trị hay quy trình nào để em hỗ trợ chính xác ngay ạ?"
+            )
+        else:
+            reply_msg = (
                 f"Dạ em xin tiếp thu góp ý của {role_label.lower()}! Em sẽ trả lời ngắn gọn, đúng trọng tâm và linh hoạt hơn, "
                 f"tập trung trực diện vào thông tin lâm sàng cốt lõi. {role_label} cần tra cứu hay xử lý nghiệp vụ gì tiếp theo ạ?"
-            ),
+            )
+        return CopilotResponse(
+            intent="CONVERSATIONAL_FEEDBACK",
+            reply_text=reply_msg,
             answer_type="conversational_feedback",
             confidence=1.0,
             suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu Dược Thư Quốc Gia"]
