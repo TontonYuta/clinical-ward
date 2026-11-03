@@ -139,7 +139,8 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn",
         "chống chỉ định", "thành phần", "hoạt chất", "tương tác", "điều trị", "dùng để", "dùng cho",
         "chữa", "tác dụng", "uống", "tiêm", "truyền", "sử dụng",
-        "thong tin thuoc", "thong tin", "tra cuu thuoc", "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac"
+        "thong tin thuoc", "thong tin", "tra cuu thuoc", "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac",
+        "số lượng", "so luong", "tồn kho", "ton kho", "trong kho"
     )
     has_drug_ent = find_matched_med(lower_query) is not None or active_in_query or any(alias in lower_query for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4) or has_candidate_drug
     if not is_renal and has_drug_ent and any(cue in lower_query for cue in drug_cues) and not is_two_drug and not is_deep_complex:

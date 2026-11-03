@@ -17,6 +17,7 @@ RAW_FIELD_SPECS = [
     ("indications", ["chỉ định", "công dụng", "chi dinh", "cong dung", "điều trị", "dieu tri", "chữa bệnh", "chua benh"]),
     ("ingredients", ["thành phần", "hoạt chất", "thanh phan", "hoat chat"]),
     ("registry", ["số đăng ký", "sđk", "so dang ky", "sdk"]),
+    ("stock", ["số lượng", "so luong", "tồn kho", "ton kho", "trong kho", "còn bao nhiêu", "con bao nhieu", "vị trí kho", "vi tri kho"]),
 ]
 
 def extract_matched_field_keys(lower_query: str) -> set[str]:
@@ -81,7 +82,8 @@ async def handle_field_or_drug_inquiry(
         "liều lượng", "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng",
         "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần",
         "hoạt chất", "tương tác", "thong tin thuoc", "thong tin", "tra cuu thuoc",
-        "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac"
+        "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac",
+        "số lượng", "so luong", "tồn kho", "ton kho", "trong kho"
     )
     asks_multiple_fields = len(matched_field_keys) > 1
     has_drug_entity = (

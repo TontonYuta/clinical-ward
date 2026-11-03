@@ -57,7 +57,7 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
         (r"\b(?:thành\s+phần|hoạt\s+chất|chứa\s+chất\s+gì)\b", 3.0),
     ],
     "stock_inquiry": [
-        (r"\b(?:tồn\s+kho|còn\s+bao\s+nhiêu|trong\s+kho|vị\s+trí\s+kho)\b", 3.0),
+        (r"\b(?:tồn\s+kho|còn\s+bao\s+nhiêu|trong\s+kho|vị\s+trí\s+kho|số\s+lượng|so\s+luong|còn\s+lại|con\s+lai|số\s+hộp|số\s+viên|số\s+lọ)\b", 3.0),
         (r"\b(?:hạn\s+dùng|hạn\s+sử\s+dụng|fefo)\b", 2.5),
     ],
 }
