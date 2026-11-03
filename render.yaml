@@ -14,3 +14,5 @@ services:
         value: https://clinical-ward.vercel.app,http://localhost:3000,http://localhost:3001
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
+      - key: RENDER_DEPLOY_TRIGGER
+        value: "20261103-c47026c"
