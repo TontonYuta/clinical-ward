@@ -1,0 +1,37 @@
+name: Autonomous Production Log Learning
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Chạy tự động mỗi 6 giờ
+  workflow_dispatch:        # Kích hoạt thủ công 1-chạm bất kỳ lúc nào
+
+jobs:
+  auto-learn:
+    name: Harvest Recent Production Logs & Self-Improve
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r backend/requirements.txt
+
+      - name: Harvest Latest Logs & Run Continuous Learning Loop
+        run: |
+          python scripts/auto_improve_from_production_logs.py --limit 30
+
+      - name: Upload Learning Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-learning-report
+          path: production_improvement_report.md

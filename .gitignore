@@ -25,6 +25,7 @@ ENV/
 # Logs & Environment variables
 *.log
 production_chat_logs*
+production_improvement_report.md
 .DS_Store
 .env*
 !.env.example
