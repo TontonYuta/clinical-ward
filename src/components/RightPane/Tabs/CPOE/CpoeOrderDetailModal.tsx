@@ -55,12 +55,15 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
     if (!isOpen || !order) return;
     setDdiAudit(null);
     setDdiAuditError(false);
-    auditPrescriptionDdiApi(order.items.map((item) => item.activeIngredient || item.medicationName))
+    const items = Array.isArray(order.items) ? order.items : [];
+    auditPrescriptionDdiApi(items.map((item) => item?.activeIngredient || item?.medicationName).filter(Boolean))
       .then(setDdiAudit)
       .catch(() => setDdiAuditError(true));
   }, [isOpen, order]);
 
   if (!isOpen || !order) return null;
+
+  const safeItems = Array.isArray(order.items) ? order.items : [];
 
   const handlePrint = () => {
     const docNode = document.getElementById('prescription-print-document');
@@ -91,11 +94,11 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   const patient = findPatientByNameOrQuery(order.patientId || order.patientName, INITIAL_PATIENTS);
   const isDraft = order.status === 'draft' || !order.digitalSignature;
 
-  const hasNarcotics = order.items.some((it) => it.isNarcotic);
+  const hasNarcotics = safeItems.some((it) => it?.isNarcotic);
 
   const tabs: [CpoeDetailTab, string][] = [
     ['overview', 'Tổng quan đơn thuốc'],
-    ['medications', `Danh mục thuốc (${order.items.length})`],
+    ['medications', `Danh mục thuốc (${safeItems.length})`],
     ['safety_cdss', 'An toàn lâm sàng & CDSS'],
     ['advice_schedule', 'Hướng dẫn dặn dò & Lịch dùng'],
     ['legal_signature', 'Pháp lý & Ký số TT26'],
@@ -223,13 +226,13 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               <div className="space-y-3 pb-5 border-b border-slate-100">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Danh Mục Thuốc Kê Đơn ({order.items.length} khoản)
+                    Danh Mục Thuốc Kê Đơn ({safeItems.length} khoản)
                   </h3>
                   <span className="text-xs text-slate-500 font-medium">Liều dùng &amp; Số lượng</span>
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {order.items.map((it, idx) => (
+                  {safeItems.map((it, idx) => (
                     <div key={it.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
                       <div className="space-y-0.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -299,7 +302,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Danh mục {order.items.length} khoản thuốc đã được rà soát với cơ sở dữ liệu DDI quốc gia.</span>
+                    <span>Danh mục {safeItems.length} khoản thuốc đã được rà soát với cơ sở dữ liệu DDI quốc gia.</span>
                   </div>
                 </div>
               </div>
@@ -403,13 +406,13 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               <div className="space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Chi Tiết Từng Khoản Thuốc Kê Đơn ({order.items.length} khoản)
+                    Chi Tiết Từng Khoản Thuốc Kê Đơn ({safeItems.length} khoản)
                   </h3>
                   <span className="text-xs text-slate-500">Liều lượng &amp; Hướng dẫn y lệnh</span>
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {order.items.map((it, idx) => (
+                  {safeItems.map((it, idx) => (
                     <div key={it.id || idx} className="py-4 first:pt-0 last:pb-0 space-y-2">
                       <div className="flex items-baseline justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -536,7 +539,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                     Phân Bổ Lịch Dùng Thuốc Trong Ngày
                   </h3>
                   <span className="text-xs font-mono font-medium text-slate-500">
-                    {order.items.length} cữ thuốc chỉ định
+                    {safeItems.length} cữ thuốc chỉ định
                   </span>
                 </div>
 
@@ -556,7 +559,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  {order.items.map((it, idx) => (
+                  {safeItems.map((it, idx) => (
                     <div key={it.id || idx} className="p-3 bg-slate-50 rounded border border-slate-200 space-y-1">
                       <div className="flex items-center justify-between">
                         <strong className="text-sm font-bold text-slate-900">{it.medicationName}</strong>
@@ -696,7 +699,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
         orderId={order.id}
         doctorName={order.doctorName}
         diagnosis={`${order.diagnosisIcd10 ? `[${order.diagnosisIcd10}] ` : ''}${order.diagnosisText || ''}`}
-        medications={order.items?.map((it, idx) => ({
+        medications={safeItems.map((it, idx) => ({
           id: `sched-${idx}`,
           medicationName: it.medicationName,
           activeIngredient: it.activeIngredient,

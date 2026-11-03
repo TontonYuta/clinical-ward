@@ -35,13 +35,31 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
     const qRaw = searchQuery.trim().toLowerCase();
     const qNorm = norm(searchQuery);
     return orders.filter((o) => {
+      if (!o || typeof o !== 'object') return false;
       if (filterType !== 'all' && o.prescriptionType !== filterType) return false;
       if (!qRaw) return true;
+      const id = (o.id || '').toLowerCase();
+      const pName = (o.patientName || '').toLowerCase();
+      const pId = (o.patientId || '').toLowerCase();
+      const pCccd = (o.patientCccd || '').toLowerCase();
+      const icd = (o.diagnosisIcd10 || '').toLowerCase();
+      const dText = (o.diagnosisText || '').toLowerCase();
+      const docName = (o.doctorName || '').toLowerCase();
+      const items = Array.isArray(o.items) ? o.items : [];
       return (
-        o.id.toLowerCase().includes(qRaw) || o.patientName.toLowerCase().includes(qRaw) || norm(o.patientName).includes(qNorm) ||
-        o.patientId.toLowerCase().includes(qRaw) || (o.patientCccd || '').toLowerCase().includes(qRaw) ||
-        o.diagnosisIcd10.toLowerCase().includes(qRaw) || o.diagnosisText.toLowerCase().includes(qRaw) || norm(o.diagnosisText).includes(qNorm) ||
-        o.doctorName.toLowerCase().includes(qRaw) || o.items.some((it) => it.medicationName.toLowerCase().includes(qRaw) || norm(it.medicationName).includes(qNorm))
+        id.includes(qRaw) ||
+        pName.includes(qRaw) ||
+        norm(pName).includes(qNorm) ||
+        pId.includes(qRaw) ||
+        pCccd.includes(qRaw) ||
+        icd.includes(qRaw) ||
+        dText.includes(qRaw) ||
+        norm(dText).includes(qNorm) ||
+        docName.includes(qRaw) ||
+        items.some((it) => {
+          const mName = (it?.medicationName || '').toLowerCase();
+          return mName.includes(qRaw) || norm(mName).includes(qNorm);
+        })
       );
     });
   }, [orders, filterType, searchQuery]);
@@ -139,7 +157,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                       {/* 6. Danh mục thuốc kê (bố cục 2 dòng: dòng 1 thuốc & SL, dòng 2 liều & hướng dẫn; thuần túy typography) */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-2">
-                          {order.items.map((it, iIdx) => (
+                          {(order.items || []).map((it, iIdx) => (
                             <div key={it.id || iIdx} className="not-last:border-b not-last:border-slate-100 not-last:pb-2">
                               <div className="flex items-baseline justify-between gap-3">
                                 <span className="font-bold text-slate-900 text-sm leading-snug">

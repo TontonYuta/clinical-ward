@@ -24,6 +24,46 @@ interface CpoePrescriptionTabProps {
   onOpenSafetyGuide?: (medName?: string) => void;
 }
 
+/** Chuẩn hóa an toàn dữ liệu đơn thuốc, chống crash khi bị chỉnh sửa bất thường qua DevTools/Network */
+function sanitizeCpoeOrder(raw: any): PrescriptionOrder | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : `RX-${Date.now()}`;
+  const patientName = typeof raw.patientName === 'string' && raw.patientName.trim() ? raw.patientName.trim() : 'Bệnh nhân chưa định danh';
+  const patientId = typeof raw.patientId === 'string' && raw.patientId.trim() ? raw.patientId.trim() : 'BN-0000';
+  const diagnosisIcd10 = typeof raw.diagnosisIcd10 === 'string' && raw.diagnosisIcd10.trim() ? raw.diagnosisIcd10.trim() : 'R69';
+  const diagnosisText = typeof raw.diagnosisText === 'string' && raw.diagnosisText.trim() ? raw.diagnosisText.trim() : 'Theo dõi điều trị';
+  const doctorName = typeof raw.doctorName === 'string' && raw.doctorName.trim() ? raw.doctorName.trim() : 'BS. Trần Văn Hùng';
+
+  const rawItems = Array.isArray(raw.items) ? raw.items : [];
+  const items = rawItems.map((it: any, idx: number) => ({
+    id: typeof it?.id === 'string' ? it.id : `rxi-${idx + 1}`,
+    medicationName: typeof it?.medicationName === 'string' && it.medicationName.trim() ? it.medicationName.trim() : 'Thuốc điều trị',
+    activeIngredient: typeof it?.activeIngredient === 'string' ? it.activeIngredient : '',
+    dosage: typeof it?.dosage === 'string' ? it.dosage : '',
+    frequency: typeof it?.frequency === 'string' ? it.frequency : 'Dùng theo chỉ định',
+    route: typeof it?.route === 'string' ? it.route : 'Uống',
+    quantity: typeof it?.quantity === 'number' && !isNaN(it.quantity) ? it.quantity : 1,
+    unit: typeof it?.unit === 'string' && it.unit.trim() ? it.unit.trim() : 'Viên',
+    instructions: typeof it?.instructions === 'string' ? it.instructions : '',
+    isNarcotic: Boolean(it?.isNarcotic),
+    durationDays: typeof it?.durationDays === 'number' ? it.durationDays : undefined,
+  }));
+
+  return {
+    ...raw,
+    id,
+    patientName,
+    patientId,
+    patientCccd: typeof raw.patientCccd === 'string' ? raw.patientCccd : '',
+    diagnosisIcd10,
+    diagnosisText,
+    doctorName,
+    prescriptionType: raw.prescriptionType === 'inpatient_daily' ? 'inpatient_daily' : 'outpatient',
+    items,
+    status: raw.status || 'signed',
+  };
+}
+
 export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
   doctorName = 'BS. Trần Văn Hùng',
   currentUserRole = 'doctor',
@@ -35,10 +75,17 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((o: any) => o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604');
+          const sanitized = parsed
+            .map(sanitizeCpoeOrder)
+            .filter((o): o is PrescriptionOrder => o !== null && (o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604'));
+          if (sanitized.length > 0) {
+            return sanitized;
+          }
         }
       }
-    } catch {}
+    } catch {
+      try { localStorage.removeItem('clinical_cached_cpoe'); } catch {}
+    }
     return INITIAL_PRESCRIPTIONS;
   });
 
@@ -75,10 +122,11 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
     let isMounted = true;
     cpoeApi.fetchCpoeOrders()
       .then((live) => {
-        if (isMounted && live && live.length > 0) {
+        if (isMounted && Array.isArray(live) && live.length > 0) {
+          const validLive = live.map(sanitizeCpoeOrder).filter((o): o is PrescriptionOrder => o !== null);
           setOrders((prev) => {
-            const liveIds = new Set(live.map((o) => o.id));
-            const enrichedLive = live.map((o) => {
+            const liveIds = new Set(validLive.map((o) => o.id));
+            const enrichedLive = validLive.map((o) => {
               if (!o.patientPhone) {
                 const p = findPatientByNameOrQuery(o.patientName, INITIAL_PATIENTS);
                 if (p?.phone) {
@@ -87,10 +135,12 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
               }
               return o;
             });
-            const localOnly = prev.filter(
+            const localOnly = (prev || []).filter(
               (o) => !liveIds.has(o.id) && (o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604')
             );
             const merged = [...localOnly, ...enrichedLive]
+              .map(sanitizeCpoeOrder)
+              .filter((o): o is PrescriptionOrder => o !== null)
               .filter((o, idx, arr) => arr.findIndex((item) => item.id === o.id) === idx)
               .filter((o) => o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604');
             try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(merged)); } catch {}
@@ -101,9 +151,10 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       .catch((err) => console.warn('CPOE API offline:', err));
 
     const handleCpoeCreated = (e: any) => {
-      if (e.detail) {
+      const sanitized = sanitizeCpoeOrder(e?.detail);
+      if (sanitized) {
         setOrders((prev) => {
-          const next = [e.detail, ...prev.filter((o) => o.id !== e.detail.id)];
+          const next = [sanitized, ...(prev || []).filter((o) => o.id !== sanitized.id)];
           try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
           return next;
         });

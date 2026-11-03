@@ -85,7 +85,7 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
       {/* Hàng 3: Danh mục thuốc & Trạng thái */}
       <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-2xs sm:text-xs">
         <div className="text-slate-600 font-medium truncate max-w-[72%]">
-          {order.items.length} khoản: <span className="text-slate-800 font-medium">{order.items.map((i) => i.medicationName.split(' ')[0]).join(', ')}</span>
+          {(order.items || []).length} khoản: <span className="text-slate-800 font-medium">{(order.items || []).map((i) => (i?.medicationName || '').split(' ')[0]).filter(Boolean).join(', ')}</span>
         </div>
         <span className="text-2xs font-medium text-slate-500">
           {order.status === 'signed' && order.digitalSignature ? '✓ Đã ký' : 'Bản nháp · Chưa ký'}
