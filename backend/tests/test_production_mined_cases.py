@@ -12,6 +12,11 @@ MINED_PRODUCTION_CASES = [
     ("Bệnh nhân bị hen phế quản có dùng được Propranolol không?", "MEDICATION_SAFETY_PROFILE", ["propranolol"]),
     ("Kiểm tra tương tác giữa Clopidogrel và Omeprazol và Aspirin", "MEDICATION_SAFETY_PROFILE", ["clopidogrel", "omeprazol"]),
     ("chong chi dinh venclexta", "MEDICATION_SAFETY_PROFILE", ["cyp3a"]),
+    ("Thông tin đầy đủ của Teglutik", "MEDICATION_SAFETY_PROFILE", ["riluzole", "chỉ định điều trị", "chống chỉ định"]),
+    ("Liều dùng của Teglutik", "MEDICATION_SAFETY_PROFILE", ["50mg", "12 giờ"]),
+    ("Tác dụng phụ của Teglutik", "MEDICATION_SAFETY_PROFILE", ["tăng enzym gan", "alt/ast"]),
+    ("sai rồi, tôi cần tương tác thuốc của paracetamol", "MEDICATION_SAFETY_PROFILE", ["dạ xin lỗi", "paracetamol"]),
+    ("sai rồi", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ"]),
 ]
 
 @pytest.mark.asyncio

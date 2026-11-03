@@ -40,7 +40,26 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             intent="ACKNOWLEDGMENT",
             reply_text="Rất vui được hỗ trợ bác sĩ.",
         )
+
+    is_pure_correction = clean_greeting in {
+        "sai roi", "sai rồi", "nham roi", "nhầm rồi", "khong dung", "không đúng",
+        "khong phai", "không phải", "bi nham", "bị nhầm"
+    }
+    if is_pure_correction:
+        return CopilotResponse(
+            intent="CONVERSATIONAL_CORRECTION",
+            reply_text="Dạ xin lỗi bác sĩ! Bác sĩ vui lòng cho biết thông tin cần sửa đổi hoặc câu hỏi cụ thể để hệ thống hỗ trợ chính xác hơn ạ.",
+            answer_type="conversational_correction",
+            confidence=1.0,
+        )
     return None
+
+def attach_correction_empathy(reply_text: str, query: str) -> str:
+    lower = query.casefold()
+    cues = ("sai rồi", "sai roi", "nhầm rồi", "nham roi", "không phải", "khong phai", "bị nhầm", "bi nham")
+    if any(c in lower for c in cues) and not reply_text.startswith("Dạ xin lỗi"):
+        return f"Dạ xin lỗi bác sĩ, hệ thống xin cập nhật lại thông tin:\n\n{reply_text}"
+    return reply_text
 
 def handle_out_of_scope_or_pricing(lower_query: str) -> CopilotResponse | None:
     if any(term in lower_query for term in ("giá bao nhiêu", "bao nhiêu tiền", "giá thuốc", "đơn này kê", "đơn này đúng", "duyệt đơn này")):

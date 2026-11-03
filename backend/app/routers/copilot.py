@@ -33,6 +33,8 @@ async def chat_with_copilot(
         session=session,
         history=session.render_recent_history()
     )
+    from app.services.chatbot.conversational_handler import attach_correction_empathy
+    response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
     session.append_conversation_turn(payload.query, response.reply_text)
     response.session_id = session.session_id
 
