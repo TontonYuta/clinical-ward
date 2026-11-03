@@ -36,6 +36,8 @@ MINED_PRODUCTION_CASES = [
     ("nói chuyện linh tinh một chút đi", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
     ("bạn có biết kết quả sổ xố hôm nay không", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
     ("Kiểm tra Warfarin + Aspirin", "MEDICATION_SAFETY_PROFILE", ["warfarin", "aspirin", "xuất huyết", "qđ 5948"]),
+    ("lại ảo giác rồi", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ", "tiếp thu"]),
+    ("bị ảo giác à", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ"]),
 ]
 
 @pytest.mark.asyncio
@@ -93,3 +95,34 @@ async def test_mined_multiturn_ddi_deictic():
         assert "warfarin" in d2["reply_text"].lower()
         assert "aspirin" in d2["reply_text"].lower()
         assert "xuất huyết" in d2["reply_text"].lower()
+
+@pytest.mark.asyncio
+async def test_mined_doctor_hung_session_cases():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        sess = "doctor_hung_sess_1793696158581"
+        r1 = await client.post("/api/v1/copilot/chat", json={
+            "query": "Warfarin Sodium Tablets USP 1mg", "user_name": "BS. Trần Văn Hùng", "user_role": "doctor", "session_id": sess
+        })
+        assert r1.status_code == 200
+        d1 = r1.json()
+        assert d1["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert "890110007625" in d1["reply_text"]
+
+        r2 = await client.post("/api/v1/copilot/chat", json={
+            "query": "\\đây là tóm tắt mà, tôi cần thông tin đầy đủ nhất", "user_name": "BS. Trần Văn Hùng", "user_role": "doctor", "session_id": sess
+        })
+        assert r2.status_code == 200
+        d2 = r2.json()
+        assert d2["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert d2["answer_type"] == "medication_profile"
+        assert "Warfarin" in d2["reply_text"]
+        assert "Lokelma" not in d2["reply_text"]
+
+        r3 = await client.post("/api/v1/copilot/chat", json={
+            "query": "lại ảo giác rồi", "user_name": "BS. Trần Văn Hùng", "user_role": "doctor", "session_id": sess
+        })
+        assert r3.status_code == 200
+        d3 = r3.json()
+        assert d3["intent"] == "CONVERSATIONAL_CORRECTION"
+        assert "dạ xin lỗi bác sĩ" in d3["reply_text"].lower()
+        assert "adrenalin" not in d3["reply_text"].lower()

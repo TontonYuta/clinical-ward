@@ -18,7 +18,8 @@ CLINICAL_NON_DRUG_TERMS = {
     "tủ trực", "ca trực", "kho", "tồn kho", "nhiễm khuẩn", "nhiễm trùng", "vi khuẩn",
     "viêm dạ dày", "loét dạ dày", "dị ứng", "sốc phản vệ", "phản vệ", "tiêu chảy", "táo bón",
     "co thắt", "giãn cơ", "kháng sinh", "chống viêm", "giảm đau",
-    "tóm tắt", "tom tat", "chi tiết", "chi tiet", "đầy đủ", "day du", "hồ sơ", "ho so"
+    "tóm tắt", "tom tat", "chi tiết", "chi tiet", "đầy đủ", "day du", "hồ sơ", "ho so",
+    "đây", "day", "nhất", "nhat", "tóm tắt mà", "đầy đủ nhất", "chi tiết nhất"
 }
 
 TIMING_TERMS = (
@@ -111,7 +112,7 @@ async def find_dav_candidate_drug(lower_query: str, db: AsyncSession) -> tuple[s
         return cand_drug, True
     if len(cand_drug.split()) > 1:
         last_tok = cand_drug.split()[-1]
-        if len(last_tok) >= 4 and last_tok not in CLINICAL_NON_DRUG_TERMS:
+        if len(last_tok) >= 4 and last_tok not in CLINICAL_NON_DRUG_TERMS and last_tok not in ("đây", "day", "nhất", "nhat", "kia", "đó", "do", "vừa", "rồi", "cơ", "mà"):
             cand_res2 = await db.execute(
                 select(DavNationalDrug.id).where(or_(
                     func.lower(DavNationalDrug.brand_name) == last_tok,

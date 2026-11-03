@@ -35,7 +35,10 @@ async def lookup_drug_authoritative(
             session_id=session.session_id, suggested_chips=["Tra cứu thông tin thuốc", "Nhập tên hoạt chất hoặc biệt dược"]
         )
 
-    is_unanchored_info = any(p in query.lower() for p in ("chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ", "tóm tắt thông tin", "tóm tắt", "hồ sơ đầy đủ"))
+    is_unanchored_info = any(p in query.lower() for p in (
+        "chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ", "đầy đủ nhất",
+        "chi tiết nhất", "tóm tắt thông tin", "tóm tắt", "hồ sơ đầy đủ", "toàn bộ thông tin"
+    ))
     if is_unanchored_info and not session.active_medication_name and (not kw or len(kw) < 2):
         return CopilotResponse(
             intent="MEDICATION_LOOKUP_CLARIFICATION",
@@ -44,15 +47,15 @@ async def lookup_drug_authoritative(
             session_id=session.session_id, suggested_chips=["Tra cứu thuốc Teglutik", "Tra cứu thuốc Paracetamol", "Tra cứu SĐK VD-24757-16"]
         )
 
-    if (not kw or len(kw) < 2 or is_deictic) and session.active_medication_name:
-        kw = session.active_medication_ingredient or session.active_medication_name
+    if (not kw or len(kw) < 2 or is_deictic or (is_unanchored_info and not meds and not sdk)) and session.active_medication_name:
+        kw = session.active_medication_sdk or session.active_medication_ingredient or session.active_medication_name
 
     query_field_only = (not kw or len(kw) < 2 or is_deictic) and any(term in query.lower() for term in [
         "thành phần", "hoạt chất", "tác dụng phụ", "tác dụng không mong muốn",
         "chống chỉ định", "liều dùng", "liều lượng", "chỉ định", "tương tác thuốc", "tương tác", "tương kỵ"
     ])
     if query_field_only and session.active_medication_name:
-        kw = session.active_medication_name
+        kw = session.active_medication_sdk or session.active_medication_name
 
     if not kw or len(kw) < 2:
         catalog_count_res = await db.execute(select(func.count(DavNationalDrug.id)))
@@ -82,7 +85,6 @@ async def lookup_drug_authoritative(
             func.lower(DavNationalDrug.active_ingredient).like(search_term)
         ))
         .order_by(
-            (DavNationalDrug.national_code == (session.active_medication_sdk or "")).desc(),
             (func.lower(DavNationalDrug.brand_name) == kw.lower()).desc(),
             func.lower(DavNationalDrug.brand_name).like(f"%{kw.lower()}%").desc(),
             DavNationalDrug.national_code.asc()

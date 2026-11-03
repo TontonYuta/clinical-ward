@@ -179,7 +179,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
 
     cand_kw_present = bool(extract_drug_keywords(lower_query))
     if (has_sdk or (has_drug_ask and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex:
-        return await lookup_drug_authoritative(query, db, session_id=session_id)
+        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
     if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:

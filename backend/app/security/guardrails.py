@@ -26,7 +26,7 @@ def sanitize_input_text(text: str) -> str:
     MAX_QUERY_LENGTH = 1500
     if len(text) > MAX_QUERY_LENGTH:
         text = text[:MAX_QUERY_LENGTH]
-    return text.strip()
+    return text.strip().lstrip("\\/")
 
 def detect_sql_injection(query: str) -> tuple[bool, Optional[str]]:
     """Phát hiện các mẫu SQL Injection độc hại."""

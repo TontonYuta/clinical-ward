@@ -25,7 +25,8 @@ COMMON_EXCLUSIONS: Set[str] = {
     "pha", "tiêm", "tiem", "truyền", "truyen", "nhỏ", "nho", "bôi", "boi", "dán", "dan", "đặt", "dat",
     "cách", "cach", "dùng", "dung", "thông", "tin", "thong", "tỏi", "nghệ", "cao", "lá", "củ",
     "nhất", "nhat", "nhát", "nhiều", "nhieu", "ít", "it", "nguy", "hiểm", "hiem", "tốt", "tot", "xấu", "xau",
-    "tóm", "tom", "tắt", "tat", "tiết", "tiet", "đầy", "day", "đủ", "du", "hồ", "ho", "sơ", "so", "bản", "ban", "ghi", "toàn", "toan", "bộ", "bo"
+    "tóm", "tom", "tắt", "tat", "tiết", "tiet", "đầy", "day", "đủ", "du", "hồ", "ho", "sơ", "so", "bản", "ban", "ghi", "toàn", "toan", "bộ", "bo",
+    "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá"
 }
 
 class TrieNode:
@@ -85,10 +86,10 @@ class DrugLexicalMatcher:
                 if ingredient:
                     for part in ingredient.replace("+", ";").replace("/", ";").split(";"):
                         clean_part = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", part.strip(), flags=re.I).strip()
-                        if len(clean_part) >= 2:
+                        if len(clean_part) >= 3 and clean_part.lower() not in COMMON_EXCLUSIONS:
                             self.insert(clean_part, clean_part, "ingredient")
                             salt_sub = re.sub(salt_pattern, "", clean_part, flags=re.I).strip()
-                            if len(salt_sub) >= 3:
+                            if len(salt_sub) >= 3 and salt_sub.lower() not in COMMON_EXCLUSIONS:
                                 self.insert(salt_sub, salt_sub, "ingredient")
             try:
                 cursor.execute("SELECT title, inn FROM clinical_drug_monographs")
@@ -132,7 +133,7 @@ class DrugLexicalMatcher:
                         if j + 1 == n or not src[j+1].isalnum():
                             longest = (i, j + 1, node.canonical or "", node.entity_type or "")
                     j += 1
-                if longest and longest[2].lower() not in COMMON_EXCLUSIONS:
+                if longest and len(longest[2]) >= 3 and longest[2].lower() not in COMMON_EXCLUSIONS:
                     candidates.append(longest)
 
         candidates.sort(key=lambda x: (x[0], -(x[1] - x[0])))

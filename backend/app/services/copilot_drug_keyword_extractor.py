@@ -22,6 +22,7 @@ STOP_PHRASES = [
     "thông tin chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ",
     "thong tin chi tiet day du", "thong tin chi tiet", "thong tin day du",
     "chi tiết đầy đủ", "chi tiet day du", "toàn bộ thông tin", "toan bo thong tin",
+    "thông tin đầy đủ nhất", "thông tin chi tiết nhất", "chi tiết nhất", "đầy đủ nhất", "đây là tóm tắt mà", "đây là tóm tắt",
     "tóm tắt thông tin thuốc đó", "tóm tắt thông tin thuốc này", "tóm tắt thông tin thuốc",
     "tóm tắt thông tin", "tóm tắt thuốc đó", "tóm tắt thuốc này", "tóm tắt thuốc", "tóm tắt",
     "tom tat thong tin thuoc do", "tom tat thong tin thuoc nay", "tom tat thong tin thuoc",
@@ -56,7 +57,7 @@ QUESTION_TERMS = {
     "quốc", "quoc", "gia", "hai", "thư", "thu", "cản", "quang", "ct", "mri", "ăn", "an", "no", "đói", "doi", "trước", "truoc", "sau", "bữa", "bua", "kháng", "khang",
     "tóm", "tắt", "tom", "tat", "tiết", "tiet", "đầy", "đủ", "day", "du", "hồ", "sơ", "ho", "so", "toàn", "bộ", "toan", "bo",
     "tốt", "tot", "hơn", "hon", "hay", "kém", "kem", "mạnh", "manh", "yếu", "yeu", "so", "sánh", "sanh",
-    "kia", "đó", "đấy", "ấy", "vậy", "này", "trên", "dưới", "vừa", "rồi", "cơ", "mà", "chúng", "nó", "nhé", "nha", "ạ"
+    "kia", "đó", "đấy", "ấy", "vậy", "này", "trên", "dưới", "vừa", "rồi", "cơ", "mà", "chúng", "nó", "nhé", "nha", "ạ", "đây", "day", "nhất", "nhat"
 }
 
 
