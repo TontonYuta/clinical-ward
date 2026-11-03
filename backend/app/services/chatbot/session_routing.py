@@ -41,6 +41,7 @@ FIELD_ONLY_TERMS = (
     "thông tin chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ",
     "tóm tắt thông tin thuốc đó", "tóm tắt thông tin", "tóm tắt",
     "hồ sơ đầy đủ", "hồ sơ chi tiết", "toàn bộ thông tin",
+    "trẻ em", "cho trẻ em", "nhi khoa", "cho bé", "trẻ nhỏ",
 )
 
 def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotResponse | None:
@@ -175,3 +176,49 @@ def check_contextless_clinical_question(lower_query: str) -> CopilotResponse | N
             abstention_reason="Thiếu tên thuốc hoặc ngữ cảnh thuốc trong phiên",
         )
     return None
+
+def check_pediatric_guidance_request(lower_query: str, query: str, session_id: str) -> CopilotResponse | None:
+    ped_cues = (
+        "tôi cần cho trẻ em", "cần cho trẻ em", "dành cho trẻ em", "cho trẻ em", "dùng cho trẻ em",
+        "trẻ em thì sao", "nhi khoa thì sao", "liều trẻ em", "liều cho trẻ em", "thuốc cho trẻ em",
+        "trẻ nhỏ thì sao", "cho trẻ nhỏ", "trẻ em uống được không", "trẻ em dùng được không",
+        "cho be", "cho bé", "tre em", "cho tre em"
+    )
+    is_pediatric = any(cue in lower_query for cue in ped_cues) or lower_query.strip().rstrip("?.! ") in {
+        "tôi cần cho trẻ em", "cho trẻ em", "trẻ em", "nhi khoa", "liều trẻ em", "trẻ nhỏ"
+    }
+    if not is_pediatric:
+        return None
+
+    reply_md = (
+        "### 👶 NGUYÊN TẮC AN TOÀN DƯỢC NHI KHOA & HƯỚNG DẪN KÊ ĐƠN CHO TRẺ EM\n\n"
+        "*(Căn cứ Dược thư Quốc gia Việt Nam & Hướng dẫn Dược lâm sàng Nhi khoa - Bộ Y tế)*\n\n"
+        "---\n\n"
+        "#### 1. NGUYÊN TẮC VÀNG TRONG SỬ DỤNG THUỐC CHO TRẺ EM\n"
+        "• **Tuyệt đối không chia nhỏ liều người lớn cảm tính:** Trẻ em không phải là người lớn thu nhỏ. Khả năng chuyển hóa qua gan và lọc qua thận của trẻ khác biệt theo từng giai đoạn lứa tuổi.\n"
+        "• **Cách tính liều chuẩn:** Luôn tính liều theo **cân nặng thực tế ($mg/kg/ngày$ hoặc $mg/kg/lần$)** hoặc **diện tích da ($m^2$)**.\n"
+        "• **Ưu tiên dạng bào chế phù hợp:** Gói bột/cốm pha hỗn dịch, dung dịch/siro uống, hoặc viên đặt trực tràng khi trẻ nôn mửa nhiều.\n\n"
+        "#### 2. LIỀU CHUẨN CÁC NHÓM THUỐC THƯỜNG DÙNG TRONG NHI KHOA\n"
+        "• **Hạ sốt & Giảm đau (Paracetamol):**\n"
+        "  - **Liều chuẩn:** $10 - 15\\text{ mg/kg/lần}$, uống cách mỗi $4 - 6\\text{ giờ}$ khi trẻ sốt $\\ge 38.5^\\circ\\text{C}$.\n"
+        "  - **Liều tối đa:** Không vượt quá $60\\text{ mg/kg/ngày}$ (hoặc tối đa $4\\text{ liều}/24\\text{ giờ}$).\n"
+        "• **Bù nước & Điện giải (Oresol / ORS áp lực thẩm thấu thấp):**\n"
+        "  - **Trẻ < 2 tuổi:** Uống $50 - 100\\text{ mL}$ sau mỗi lần đi ngoài phân lỏng hoặc nôn.\n"
+        "  - **Trẻ 2 – 10 tuổi:** Uống $100 - 200\\text{ mL}$ sau mỗi lần đi ngoài.\n"
+        "  - **Cách uống:** Cho uống từng thìa nhỏ hoặc ngụm nhỏ, không uống vội để tránh nôn trớ.\n\n"
+        "#### 3. CẢNH BÁO NGUY HIỂM & CHỐNG CHỈ ĐỊNH ĐẶC THÙ Ở TRẺ EM\n"
+        "⚠️ **Chống chỉ định tuyệt đối Aspirin & Salicylat:** Trẻ em dưới 16 tuổi sốt do virus cúm hoặc thủy đậu tuyệt đối không dùng Aspirin (nguy cơ mắc **Hội chứng Reye** gây thoái hóa mỡ gan não cấp tử vong cao).\n"
+        "⚠️ **Thận trọng Kháng sinh:** Không dùng **Tetracyclin** cho trẻ dưới 8 tuổi (gây hỏng men răng và chậm phát triển xương); nhóm **Fluoroquinolon** (Ciprofloxacin, Levofloxacin...) chống chỉ định thường quy cho trẻ dưới 18 tuổi (nguy cơ tổn thương sụn khớp).\n\n"
+        "---\n"
+        "👉 **Bác sĩ vui lòng gửi tên thuốc cụ thể kèm độ tuổi và cân nặng (kg) của bé** để em rà soát liều chuẩn và chống chỉ định chi tiết nhất cho bệnh nhi ạ!"
+    )
+    return CopilotResponse(
+        intent="CLINICAL_PEDIATRIC_GUIDANCE",
+        reply_text=reply_md,
+        legal_basis="Dược thư Quốc gia Việt Nam & Hướng dẫn Dược lâm sàng Nhi khoa BYT",
+        suggested_chips=["Liều Paracetamol cho trẻ em", "Cách bù nước Oresol trẻ em", "Chống chỉ định thuốc nhi khoa"],
+        answer_type="grounded_reference",
+        source_status="retrieved_evidence",
+        confidence=1.0,
+        session_id=session_id
+    )

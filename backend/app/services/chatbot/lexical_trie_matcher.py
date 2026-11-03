@@ -26,7 +26,8 @@ COMMON_EXCLUSIONS: Set[str] = {
     "cách", "cach", "dùng", "dung", "thông", "tin", "thong", "tỏi", "nghệ", "cao", "lá", "củ",
     "nhất", "nhat", "nhát", "nhiều", "nhieu", "ít", "it", "nguy", "hiểm", "hiem", "tốt", "tot", "xấu", "xau",
     "tóm", "tom", "tắt", "tat", "tiết", "tiet", "đầy", "day", "đủ", "du", "hồ", "ho", "sơ", "so", "bản", "ban", "ghi", "toàn", "toan", "bộ", "bo",
-    "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá", "bạn", "ban", "kém", "kem", "tệ", "te", "dở", "chán", "chan", "thật", "that"
+    "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá", "bạn", "ban", "kém", "kem", "tệ", "te", "dở", "chán", "chan", "thật", "that",
+    "trong", "ngoai", "ngoài", "tren", "trên", "duoi", "dưới", "giua", "giữa", "truoc", "trước", "sau", "hoac", "hoặc", "vi", "vì", "neu", "nếu", "thi", "thì", "nhu", "như", "rat", "rất", "lam", "lắm", "cung", "cùng", "kem", "kèm", "theo", "de", "để", "dang", "đang", "da", "đã", "se", "sẽ", "vua", "vừa", "moi", "mới", "tung", "từng", "hieu", "hiểu", "noi", "nói", "viet", "viết", "doc", "đọc", "gui", "gửi", "tra loi", "trả lời", "cau", "câu", "nut", "nút", "bam", "bấm"
 }
 
 class TrieNode:

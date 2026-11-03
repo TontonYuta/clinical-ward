@@ -63,15 +63,39 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             confidence=1.0
         )
 
+    # 2. Phát hiện phản hồi góp ý về bố cục giao diện / hiển thị nút bấm
+    is_ui_layout_feedback = any(c in clean_greeting_ascii for c in (
+        "tai lieu goc", "bam nut", "nut ben duoi", "o duoi cuoi", "duoi cuoi", "o tren cung", "tren cung",
+        "dieu chinh lai", "can dieu chinh", "bo cuc", "giao dien", "hien thi chua", "nut bam", "vi tri nut"
+    ))
+    if is_ui_layout_feedback:
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
+        return CopilotResponse(
+            intent="FEEDBACK_UI_ADJUSTMENT",
+            reply_text=(
+                f"### 📐 TIẾP NHẬN GÓP Ý VỀ BỐ CỤC & HIỂN THỊ THÔNG TIN\n\n"
+                f"Dạ em xin chân thành cảm ơn {role_label} đã phản hồi rất chi tiết về cách trình bày ạ!\n\n"
+                f"• **Ghi nhận trải nghiệm:** Em xin tiếp thu góp ý về vị trí liên kết tài liệu đối chứng/Dược thư và nút mở chuyên luận gốc để đồng bộ luồng đọc thuận mắt nhất, tránh gây phân tán khi thao tác lâm sàng.\n"
+                f"• **Điều chỉnh giao diện:** Nhóm phát triển đang tối ưu để đưa các nút hành động (Action buttons) và liên kết nguồn dữ liệu đối chứng về đúng vị trí trực quan, liền mạch với nội dung trích xuất.\n\n"
+                f"{role_label} cần tra cứu thuốc hoặc kiểm tra nghiệp vụ lâm sàng nào tiếp theo để em phục vụ ngay ạ?"
+            ),
+            legal_basis="Chuẩn thiết kế công thái học lâm sàng & Trải nghiệm người dùng",
+            suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu Dược Thư Quốc Gia"],
+            answer_type="feedback_acknowledgment",
+            confidence=1.0
+        )
+
     corr_cues = (
         "tra loi sai", "sai thong tin", "lai sai", "sai roi", "nham roi", "khong dung", "sai bet",
         "ao giac", "lai ao giac", "bi ao giac", "tra loi linh tinh", "linh tinh roi", "linh tinh qua",
-        "noi linh tinh roi", "vo van", "tao lao", "lai nham", "nham to",
+        "noi linh tinh roi", "vo van", "tao lao", "lai nham", "nham to", "nham lan",
         "kem qua", "kem the", "ban kem", "kem that", "kem coi", "te qua", "te that", "ban te",
         "do qua", "ban do", "do the", "chan qua", "chan the", "that vong", "trai nghiem te",
         "chat luong kem", "vo dung", "khong dung duoc", "kem lam", "kem qua di",
-        "lech huong", "khong lien quan", "khong dung cau hoi", "van con sai", "lac de",
-        "tra loi lung tung", "noi lung tung", "khong lien quan den cau hoi"
+        "lech huong", "lai lech", "lech huong roi", "khong lien quan", "khong dung cau hoi",
+        "van con sai", "van sai", "sai muc dich", "sai huong", "nham muc dich", "khong dung muc dich",
+        "lac de", "tra loi lung tung", "noi lung tung", "khong lien quan den cau hoi",
+        "can cai thien", "can cai thien tiep", "chua chuan", "chua dung"
     )
     is_pure_correction = (clean_greeting in {
         "sai roi", "sai rồi", "nham roi", "nhầm rồi", "khong dung", "không đúng",
@@ -81,7 +105,7 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
         "dở quá", "do qua", "chán quá", "chan qua", "thất vọng", "that vong", "bạn dở quá", "bạn tệ quá"
     } or (
         any(c in clean_greeting_ascii for c in corr_cues)
-        and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "chong chi dinh", "benh nhan", "nguoi benh", "ca benh", "noi chuyen", "chuyen"))
+        and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "chong chi dinh", "benh nhan", "nguoi benh", "ca benh", "noi chuyen", "chuyen", "tuong tac"))
     )) and not any(term in clean_greeting_ascii for term in ("noi chuyen", "chuyen linh tinh", "tro chuyen", "tam su"))
     if is_pure_correction:
         role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"

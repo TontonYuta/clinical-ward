@@ -16,15 +16,48 @@ class GastroenteritisDehydrationScenario(BaseScenario):
     scenario_name = "Xử trí triệu chứng tiêu hóa, đau bụng & sốt cấp"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
+        has_oresol = any(w in lower_query for w in ["oresol", "ors", "bù nước", "bu nuoc", "dien giai", "điện giải", "hydrite", "bù điện giải"])
         has_dehydration_diarrhea = any(w in lower_query for w in ["đi ngoài", "tiêu chảy", "mất nước", "nhiễm trùng tiêu hóa", "ngộ độc thực phẩm", "ngộ độc thức ăn"])
         has_nausea_fever = ("buồn nôn" in lower_query or "nôn" in lower_query) and ("sốt" in lower_query)
         has_symptom_ask = any(w in lower_query for w in ["biểu hiện", "dấu hiệu", "là bệnh gì", "bị gì", "nguyên nhân", "xử trí", "uống gì", "truyền gì", "thuốc nào", "dùng thuốc gì", "sử dụng thuốc"])
         is_allergy = any(w in lower_query for w in ["dị ứng", "tiêm kháng sinh", "ong đốt", "sốc phản vệ"])
-        return (has_dehydration_diarrhea or (has_nausea_fever and (has_symptom_ask or "bụng" in lower_query or "đau bụng" in lower_query))) and not is_allergy
+        return (has_oresol or has_dehydration_diarrhea or (has_nausea_fever and (has_symptom_ask or "bụng" in lower_query or "đau bụng" in lower_query))) and not is_allergy
 
     async def handle(
         self, query: str, lower_query: str, ctx: ClinicalContext, db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        has_oresol = any(w in lower_query for w in ["oresol", "ors", "bù nước", "bu nuoc", "dien giai", "điện giải", "hydrite", "bù điện giải"])
+        if has_oresol and not ("sốt cao" in lower_query and "buồn nôn" in lower_query):
+            reply_md = (
+                "### 💧 HƯỚNG DẪN DƯỢC LÂM SÀNG: BÙ NƯỚC & ĐIỆN GIẢI BẰNG DUNG DỊCH ORESOL (ORS)\n\n"
+                "*(Theo Phác đồ xử trí tiêu chảy và mất nước - Tổ chức Y tế Thế giới (WHO) & Dược thư Quốc gia Việt Nam)*\n\n"
+                "---\n\n"
+                "#### 1. NGUYÊN TẮC PHA ORESOL ĐÚNG CHUẨN (QUAN TRỌNG NHẤT)\n"
+                "• **Pha đúng thể tích nước ghi trên gói:**\n"
+                "  - Loại gói pha **200 mL:** Pha với đúng 200 mL nước đun sôi để nguội.\n"
+                "  - Loại gói pha **1000 mL (1 Lít):** Pha với đúng 1000 mL nước đun sôi để nguội.\n"
+                "• **Cảnh báo an toàn dược:** **TUYỆT ĐỐI KHÔNG chia nhỏ gói thuốc** để pha từng ít một (dễ gây sai lệch tỷ lệ điện giải $\\to$ nguy cơ ngộ độc muối hoặc phù não cấp). Không đun sôi dung dịch sau khi pha, không pha với sữa/nước khoáng/nước ngọt.\n"
+                "• **Thời hạn sử dụng:** Dung dịch đã pha chỉ uống trong vòng **24 giờ**, bảo quản nơi mát hoặc ngăn mát tủ lạnh.\n\n"
+                "#### 2. LIỀU DÙNG VÀ CÁCH CHO UỐNG THEO LỨA TUỔI\n"
+                "• **Cách uống:** Uống từng ngụm nhỏ (bằng thìa hoặc cốc), không uống ừng ực một lượng lớn để tránh kích thích nôn.\n"
+                "• **Liều bù sau mỗi lần đi ngoài phân lỏng hoặc nôn:**\n"
+                "  - **Trẻ dưới 2 tuổi:** 50 – 100 mL sau mỗi lần đi ngoài.\n"
+                "  - **Trẻ từ 2 – 10 tuổi:** 100 – 200 mL sau mỗi lần đi ngoài.\n"
+                "  - **Trẻ lớn và người lớn:** Uống theo nhu cầu khát (thường 200 – 400 mL sau mỗi lần đi ngoài), tối đa 2 – 3 lít/ngày.\n\n"
+                "#### 3. DẤU HIỆU CẢNH BÁO MẤT NƯỚC NẶNG CẦN NHẬP VIỆN TRUYỀN DỊCH NGAY\n"
+                "• Người bệnh li bì, khó đánh thức, mắt trũng sâu, véo da bụng mất rất chậm (> 2 giây).\n"
+                "• Không thể uống được hoặc nôn mửa liên tục mọi thứ vừa ăn/uống.\n"
+                "• Khát nước dữ dội, mạch nhanh yếu, tụt huyết áp hoặc tiểu rất ít/không có nước tiểu trong 6 giờ."
+            )
+            return CopilotResponse(
+                intent="CLINICAL_AI_CONSULTATION",
+                reply_text=validate_output_guardrail(reply_md, query),
+                legal_basis="Dược thư Quốc gia Việt Nam & Phác đồ Bù nước WHO",
+                suggested_chips=["Cách pha Oresol chuẩn", "Phân độ mất nước WHO", "Dấu hiệu mất nước nguy hiểm"],
+                answer_type="grounded_reference",
+                source_status="retrieved_evidence",
+                confidence=1.0
+            )
         has_nausea_fever = ("buồn nôn" in lower_query or "nôn" in lower_query) and ("sốt" in lower_query)
         has_abd = "đau bụng" in lower_query or "bụng" in lower_query
 

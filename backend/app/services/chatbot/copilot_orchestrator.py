@@ -45,10 +45,17 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     # 1. First-line filter: Greetings, Thanks, Dissatisfaction/Corrections, Frivolous/Out-of-scope
     greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
     if greeting_res:
+        if greeting_res.intent in {
+            "CONVERSATIONAL_CORRECTION", "FEEDBACK_DATA_ENRICHMENT",
+            "FEEDBACK_UI_ADJUSTMENT", "CONVERSATIONAL_FEEDBACK",
+            "GREETING_WELCOME", "GREETING_WELLBEING"
+        }:
+            session.set_active_medication(name="", ingredient="", sdk="")
         return greeting_res
 
     out_scope = handle_out_of_scope_or_pricing(lower_query)
     if out_scope:
+        session.set_active_medication(name="", ingredient="", sdk="")
         return out_scope
 
     is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "chỉnh liều"))

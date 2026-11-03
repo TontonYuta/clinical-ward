@@ -6,7 +6,8 @@ from app.services.clinical_ddi_engine.entity_resolution import resolve_registere
 from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 from app.services.chatbot.session_routing import (
     find_dav_candidate_drug, build_insufficient_formulation_response,
-    check_contextless_clinical_question, TIMING_TERMS, FIELD_ONLY_TERMS
+    check_contextless_clinical_question, check_pediatric_guidance_request,
+    TIMING_TERMS, FIELD_ONLY_TERMS
 )
 
 async def resolve_active_drug_and_terms(
@@ -22,12 +23,14 @@ async def resolve_active_drug_and_terms(
     is_deep_complex: bool,
 ) -> tuple[str, str, bool, bool, bool, CopilotResponse | None]:
     cand_drug, has_candidate_drug = await find_dav_candidate_drug(lower_query, db)
-    is_field_only = any(term in lower_query for term in (
+    is_complaint = any(c in lower_query for c in ("sai", "nham", "nhầm", "lỗi", "loi", "cải thiện", "cai thien", "điều chỉnh", "dieu chinh", "lệch", "lech", "kém", "kem", "dở", "do", "tệ", "te"))
+    is_field_only = not is_complaint and any(term in lower_query for term in (
         "liều tối đa", "còn liều", "liều dùng", "liều lượng", "tác dụng phụ", "tác dụng không mong muốn",
         "chống chỉ định", "thành phần", "hoạt chất", "chỉ định", "công dụng", "gây nghiện", "độc tính",
         "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no", "trước ăn", "sau ăn",
         "tiêm nhắc lại", "bao lâu thì tiêm", "tần suất", "mỗi bao lâu",
-        "chong chi dinh", "tac dung phu", "lieu dung", "lieu luong", "lieu toi da", "thanh phan", "chi dinh", "cong dung", "tuong tac"
+        "chong chi dinh", "tac dung phu", "lieu dung", "lieu luong", "lieu toi da", "thanh phan", "chi dinh", "cong dung", "tuong tac",
+        "trẻ em", "cho trẻ em", "tre em", "cho tre em", "nhi khoa", "cho bé", "cho be", "trẻ nhỏ", "tre nho"
     ))
     if session.active_medication_name and not is_renal and not is_deep_complex and is_field_only:
         resolved_new_drugs = resolve_registered_medications(lower_query)
@@ -60,7 +63,7 @@ async def resolve_active_drug_and_terms(
     if session.active_medication_name and not active_in_query:
         explicit_reg = any(a.casefold() in lower_query for entry in DRUG_REGISTRY.values() for a in entry.get("aliases", []) if len(a) >= 4)
         if find_matched_med(lower_query) is None and not explicit_reg and not has_candidate_drug:
-            if any(term in lower_query for term in FIELD_ONLY_TERMS) or lower_query.endswith("của thuốc"):
+            if not is_complaint and (any(term in lower_query for term in FIELD_ONLY_TERMS) or lower_query.endswith("của thuốc")):
                 query = f"{query} của thuốc {session.active_medication_name}"
                 lower_query = query.lower()
                 active_in_query = True
@@ -89,6 +92,9 @@ async def resolve_active_drug_and_terms(
         return query, lower_query, active_in_query, explicit_named, has_candidate_drug, build_insufficient_formulation_response(session.active_medication_name, session_id)
 
     if not session.active_medication_name and not is_renal and not explicit_named:
+        ped_res = check_pediatric_guidance_request(lower_query, query, session_id)
+        if ped_res:
+            return query, lower_query, active_in_query, explicit_named, has_candidate_drug, ped_res
         contextless_res = check_contextless_clinical_question(lower_query)
         if contextless_res:
             return query, lower_query, active_in_query, explicit_named, has_candidate_drug, contextless_res
