@@ -19,6 +19,7 @@ from app.services.chatbot.field_routing import handle_interaction_clarification,
 from app.services.chatbot.hospital_business_dispatcher import dispatch_clinical_subflows, dispatch_operational_business
 from app.services.chatbot.pure_rag_handler import handle_contextual_rag_followup, handle_deep_rag_consultation
 from app.services.chatbot.drug_comparison import handle_clinical_drug_comparison
+from app.services.chatbot.fsm_router import route_fsm_context
 
 def resolve_copilot_identity(payload: CopilotQuery, request: Request) -> tuple[str, str, str]:
     authenticated = getattr(request.state, "authenticated_user", None)
@@ -60,6 +61,10 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     out_scope = handle_out_of_scope_or_pricing(lower_query)
     if out_scope:
         return out_scope
+
+    fsm_res = await route_fsm_context(query, lower_query, db, session=session, session_id=session_id, user_name=user_name, user_role=user_role)
+    if fsm_res:
+        return fsm_res
 
     if lower_query.strip().strip("?.!") in {
         "tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư",

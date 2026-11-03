@@ -126,3 +126,41 @@ async def test_mined_doctor_hung_session_cases():
         assert d3["intent"] == "CONVERSATIONAL_CORRECTION"
         assert "dạ xin lỗi bác sĩ" in d3["reply_text"].lower()
         assert "adrenalin" not in d3["reply_text"].lower()
+
+@pytest.mark.asyncio
+async def test_fsm_device_isolation_multi_session():
+    """Kiểm thử tính cô lập context 100% giữa các máy/thiết bị khác nhau (Device Context Isolation)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Máy A: Bác sĩ Khoa Cấp cứu tra cứu Warfarin
+        sess_a = "device_a_emergency_ward_sess"
+        r_a1 = await client.post("/api/v1/copilot/chat", json={
+            "query": "Warfarin Sodium Tablets USP 1mg", "user_name": "BS. Cấp Cứu", "user_role": "doctor", "session_id": sess_a
+        })
+        assert r_a1.status_code == 200
+        assert "Warfarin" in r_a1.json()["reply_text"]
+
+        # Máy B: Bác sĩ Khoa Nội thần kinh tra cứu Teglutik
+        sess_b = "device_b_neurology_ward_sess"
+        r_b1 = await client.post("/api/v1/copilot/chat", json={
+            "query": "Teglutik", "user_name": "BS. Thần Kinh", "user_role": "doctor", "session_id": sess_b
+        })
+        assert r_b1.status_code == 200
+        assert "Teglutik" in r_b1.json()["reply_text"]
+
+        # Máy A hỏi tiếp: "đây là tóm tắt mà, tôi cần thông tin đầy đủ nhất" -> PHẢI LÀ WARFARIN, không được dính Teglutik
+        r_a2 = await client.post("/api/v1/copilot/chat", json={
+            "query": "đây là tóm tắt mà, tôi cần thông tin đầy đủ nhất", "user_name": "BS. Cấp Cứu", "user_role": "doctor", "session_id": sess_a
+        })
+        assert r_a2.status_code == 200
+        d_a2 = r_a2.json()
+        assert "Warfarin" in d_a2["reply_text"]
+        assert "Teglutik" not in d_a2["reply_text"]
+
+        # Máy B hỏi tiếp: "thông tin chi tiết đầy đủ của thuốc đó" -> PHẢI LÀ TEGLUTIK, không được dính Warfarin
+        r_b2 = await client.post("/api/v1/copilot/chat", json={
+            "query": "thông tin chi tiết đầy đủ", "user_name": "BS. Thần Kinh", "user_role": "doctor", "session_id": sess_b
+        })
+        assert r_b2.status_code == 200
+        d_b2 = r_b2.json()
+        assert "Teglutik" in d_b2["reply_text"] or "riluzole" in d_b2["reply_text"].lower()
+        assert "Warfarin" not in d_b2["reply_text"]

@@ -25,6 +25,10 @@ class SessionState:
         # Ngữ cảnh đơn thuốc
         self.active_prescription_id: Optional[str] = None
         
+        # Finite State Machine (FSM)
+        self.fsm_state: str = "IDLE"  # "IDLE", "DRUG_FOCUSED", "DDI_COMPARISON", "CLINICAL_PROTOCOL"
+        self.comparison_drugs: list[str] = []
+
         # Ngữ cảnh thuốc / dược phẩm đang tương tác (Active Medication Slot)
         self.active_medication_name: Optional[str] = None
         self.active_medication_ingredient: Optional[str] = None
@@ -112,6 +116,12 @@ class SessionState:
         self.active_medication_stock = stock
         self.active_medication_location = location
         self.active_medication_sdk = sdk
+        self.fsm_state = "DRUG_FOCUSED"
+        self.touch()
+
+    def set_comparison_drugs(self, drugs: list[str]) -> None:
+        self.comparison_drugs = drugs
+        self.fsm_state = "DDI_COMPARISON"
         self.touch()
 
     def clear_active_medication(self):
@@ -121,6 +131,8 @@ class SessionState:
         self.active_medication_stock = None
         self.active_medication_location = None
         self.active_medication_sdk = None
+        self.fsm_state = "IDLE"
+        self.comparison_drugs = []
         self.touch()
 
     def to_dict(self) -> Dict[str, Any]:
