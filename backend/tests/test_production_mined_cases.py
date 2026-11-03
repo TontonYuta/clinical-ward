@@ -26,6 +26,7 @@ MINED_PRODUCTION_CASES = [
     ("Bạn trả lời bị cứng nhắc quá", "CONVERSATIONAL_FEEDBACK", ["tiếp thu góp ý", "linh hoạt hơn"]),
     ("lại trả lời sai thông tin rồi", "CONVERSATIONAL_CORRECTION", ["tiếp thu", "câu hỏi cụ thể"]),
     ("bạn không xử lý được à", "BOT_CAPABILITY_CLARIFICATION", ["tra cứu thuốc", "54.885"]),
+    ("triệu chứng đau bụng, buồn nôn, sốt cao là biểu hiện của gì", "CLINICAL_AI_CONSULTATION", ["đau bụng", "ngoại khoa"]),
 ]
 
 @pytest.mark.asyncio
