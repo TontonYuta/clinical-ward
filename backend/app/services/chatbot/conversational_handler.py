@@ -52,6 +52,23 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             answer_type="conversational_correction",
             confidence=1.0,
         )
+
+    is_style_feedback = any(c in clean_greeting_ascii for c in (
+        "dung trong tam", "gon gang", "ngan gon", "cung nhac", "may moc", "dai dong",
+        "dai qua", "tu nhien hon", "linh hoat hon", "ngan thoi", "gon hon", "ngan hon"
+    )) and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "tuong tac", "chong chi dinh"))
+    if is_style_feedback:
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
+        return CopilotResponse(
+            intent="CONVERSATIONAL_FEEDBACK",
+            reply_text=(
+                f"Dạ em xin tiếp thu góp ý của {role_label.lower()}! Em sẽ trả lời ngắn gọn, đúng trọng tâm và linh hoạt hơn, "
+                f"tập trung trực diện vào thông tin lâm sàng cốt lõi. {role_label} cần tra cứu hay xử lý nghiệp vụ gì tiếp theo ạ?"
+            ),
+            answer_type="conversational_feedback",
+            confidence=1.0,
+            suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu Dược Thư Quốc Gia"]
+        )
     return None
 
 def attach_correction_empathy(reply_text: str, query: str) -> str:

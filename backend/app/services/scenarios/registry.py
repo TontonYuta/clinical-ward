@@ -27,6 +27,7 @@ from app.services.scenarios.case_coldchain_quarantine import ColdChainQuarantine
 from app.services.scenarios.case_adr import AdrReportingScenario
 from app.services.scenarios.case_fever_triage import FeverTriageScenario
 from app.services.scenarios.case_headache_pain import HeadachePainScenario
+from app.services.scenarios.case_gastroenteritis_dehydration import GastroenteritisDehydrationScenario
 from app.services.scenarios.case_oncology_specialty import OncologySpecialtyScenario
 from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 
@@ -34,6 +35,7 @@ SCENARIOS: List[BaseScenario] = [
     MedicationDeicticFollowupScenario(),
     FeverTriageScenario(),
     HeadachePainScenario(),
+    GastroenteritisDehydrationScenario(),
     OncologySpecialtyScenario(),
     CeftriaxoneCalciumScenario(),
     RedManScenario(),
