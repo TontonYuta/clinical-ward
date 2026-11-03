@@ -168,9 +168,12 @@ if os.path.exists(_pdf_dir):
     app.mount("/api/v1/pdf", StaticFiles(directory=_pdf_dir), name="clinical_source_pdf")
 
 @app.get("/", tags=["Health Check"])
+@app.get("/health", tags=["Health Check"])
+@app.get(f"{settings.API_V1_STR}/health", tags=["Health Check"])
 async def root():
     return {
         "status": "healthy",
+        "commit": os.getenv("RENDER_GIT_COMMIT", os.getenv("GIT_COMMIT", "HEAD")),
         "system": settings.APP_NAME,
         "docs_url": "/docs",
         "legal_compliance": [

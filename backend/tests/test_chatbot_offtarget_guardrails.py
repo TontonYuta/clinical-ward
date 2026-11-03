@@ -68,3 +68,21 @@ async def test_teglutik_lookup_returns_riluzole():
         q = CopilotQuery(query="Teglutik", user_name="test_user", user_role="doctor", session_id="test_teg")
         res = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
         assert "riluzole" in res.reply_text.lower()
+
+@pytest.mark.asyncio
+async def test_unaccented_venclexta_interaction_returns_monograph():
+    async with AsyncSessionLocal() as db:
+        session = get_or_create_session("test_unacc_venc", "test_user", "doctor")
+        q = CopilotQuery(query="tuong tac thuoc venclexta", user_name="test_user", user_role="doctor", session_id="test_unacc_venc")
+        res = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
+        assert "cyp3a4" in res.reply_text.lower()
+        assert "venclexta" in res.reply_text.lower()
+
+@pytest.mark.asyncio
+async def test_unaccented_venclexta_contraindication_returns_monograph():
+    async with AsyncSessionLocal() as db:
+        session = get_or_create_session("test_unacc_contra", "test_user", "doctor")
+        q = CopilotQuery(query="chong chi dinh venclexta", user_name="test_user", user_role="doctor", session_id="test_unacc_contra")
+        res = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
+        assert "cyp3a" in res.reply_text.lower()
+        assert "chống chỉ định" in res.reply_text.lower()

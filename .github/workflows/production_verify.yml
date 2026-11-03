@@ -1,0 +1,36 @@
+name: Production Verification Loop
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'scripts/**'
+      - 'render.yaml'
+      - '.github/workflows/production_verify.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-production:
+    name: Verify Live Render Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Test Dependencies
+        run: pip install httpx
+
+      - name: Wait for Render Deployment & Execute Live Verification Suite
+        env:
+          TARGET_COMMIT: ${{ github.sha }}
+        run: |
+          python scripts/deploy_and_verify_production_loop.py --expected-commit "$TARGET_COMMIT" --max-wait 540

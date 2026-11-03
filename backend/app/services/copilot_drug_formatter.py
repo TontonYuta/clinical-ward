@@ -1,5 +1,6 @@
 """Module định dạng hồ sơ Dược thẩm định và thẻ thông tin thuốc (<=185 LOC)."""
 import re
+import unicodedata
 from typing import List, Optional
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,9 +11,7 @@ from app.services.session_context import SessionState
 from app.services.copilot_drug_citation_helper import format_clinical_text, build_drug_citation
 from app.services.chatbot.chip_generator import generate_suggested_chips
 
-_format_clinical_text = format_clinical_text
-_drug_citation = build_drug_citation
-
+_format_clinical_text, _drug_citation = format_clinical_text, build_drug_citation
 
 async def build_drug_profile_response(
     drugs: List[DavNationalDrug],
@@ -46,6 +45,8 @@ async def build_drug_profile_response(
         return getattr(matched, field, None) or (getattr(monograph, field, None) if monograph else None)
 
     lower_query = query.casefold()
+    _strip = lambda s: unicodedata.normalize('NFKD', s.replace('đ', 'd').replace('Đ', 'D')).encode('ASCII', 'ignore').decode('utf-8')
+    unacc_query = _strip(lower_query)
     field_specs = [
         ("monitoring", ("theo dõi", "xét nghiệm", "giám sát"), "description", "Theo dõi / xét nghiệm"),
         ("interaction", ("tương tác", "tương kỵ", "kỵ thuốc"), "drug_interactions", "Tương tác thuốc"),
@@ -58,12 +59,17 @@ async def build_drug_profile_response(
         ("ingredient", ("thành phần", "hoạt chất"), "active_ingredient", "Hoạt chất"),
         ("stock", ("tồn kho", "còn bao nhiêu", "trong kho", "vị trí kho"), "", "Tồn kho"),
     ]
+    _term_match = lambda t: bool(re.search(rf"\b{re.escape(t)}\b", lower_query)) or bool(re.search(rf"\b{re.escape(_strip(t))}\b", unacc_query))
     def _matches_spec(spec_key: str, terms: tuple[str, ...]) -> bool:
         if spec_key == "indications":
-            return any(t in lower_query for t in terms if t != "chỉ định") or bool(re.search(r"(?<!chống\s)(?<!chống)chỉ định", lower_query))
-        return any(t in lower_query for t in terms)
+            has_other = any(_term_match(t) for t in terms if t != "chỉ định")
+            has_ind = bool(re.search(r"(?<!chống\s)(?<!chống)chỉ định", lower_query)) or bool(re.search(r"(?<!chong\s)(?<!chong)chi dinh", unacc_query))
+            return has_other or has_ind
+        return any(_term_match(t) for t in terms)
 
     requested_fields = [spec for spec in field_specs if _matches_spec(spec[0], spec[1])]
+    if any(s[0] == "pediatric_dosage" for s in requested_fields):
+        requested_fields = [s for s in requested_fields if s[0] != "adult_dosage"]
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None
