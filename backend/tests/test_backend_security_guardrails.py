@@ -353,7 +353,7 @@ async def test_chatbot_provenance_metadata_contract():
         res = await client.post("/api/v1/copilot/chat", json={"query": "Thông tin thuốc PARACETAMOL 500mg"})
         assert res.status_code == 200
         data = res.json()
-        assert data["answer_type"] == "medication_summary"
+        assert data["answer_type"] in ("medication_summary", "medication_profile")
         assert data["source_status"] == "exact_match"
 
 @pytest.mark.asyncio

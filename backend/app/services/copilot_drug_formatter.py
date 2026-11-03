@@ -109,55 +109,95 @@ async def build_drug_profile_response(
             source_status="exact_match", confidence=1.0, citations=[build_drug_citation(matched, monograph, source)]
         )
 
-    is_full_profile = any(p in lower_query for p in (
-        "thông tin đầy đủ", "thong tin day du", "hồ sơ đầy đủ", "ho so day du",
-        "toàn bộ thông tin", "toan bo thong tin", "chi tiết đầy đủ", "full thông tin",
-        "thông tin chi tiết", "thong tin chi tiet", "hồ sơ chi tiết", "ho so chi tiet"
+    is_summary_request = any(p in lower_query for p in (
+        "tóm tắt", "tom tat", "ngắn gọn", "ngan gon", "vắn tắt", "van tat",
+        "sơ lược", "so luoc", "summary", "brief", "ngắn thôi"
     ))
-    if query.strip() and not is_full_profile:
-        source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
-        reply = (f"### Thuốc: {matched.brand_name}\n\n- **Hoạt chất:** {matched.active_ingredient}\n"
-                 f"- **Hàm lượng:** {matched.concentration or 'Chưa ghi nhận'}\n- **Dạng bào chế:** {matched.dosage_form or 'Chưa ghi nhận'}\n"
-                 f"- **SĐK:** {matched.national_code}")
-        session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
-        return CopilotResponse(
-            intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=source,
-            suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
-            answer_type="medication_summary", source_status="exact_match", confidence=1.0, citations=[build_drug_citation(matched, monograph, source)]
-        )
-
     batches = await get_batches()
     in_stock = sum(b.current_stock for b in batches)
-    header_title = f"### 💊 HỒ SƠ DƯỢC THẨM ĐỊNH CHÍNH XÁC (CỤC QUẢN LÝ DƯỢC - BỘ Y TẾ)\n" if in_stock > 0 else f"### 📋 HỒ SƠ DƯỢC QUỐC GIA - CHƯA NHẬP KHO NỘI VIỆN (0 ĐƠN VỊ)\n"
-    details = (
-        f"{header_title}"
-        f"• **Tên biệt dược:** **{matched.brand_name}** | **SĐK:** `{matched.national_code}`\n"
-        f"• **Hoạt chất:** **{matched.active_ingredient}** | **Hàm lượng:** {matched.concentration or 'Theo HS công bố'}\n"
-        f"• **Dạng bào chế:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **Đường dùng:** {matched.route or 'Theo chỉ định'}\n"
-        f"• **Đơn vị:** {matched.standard_unit} | **Phân loại:** **{matched.group}** ({'Kiểm soát ĐB TT 20' if matched.is_controlled else 'Thuốc thường'})\n"
+    loc = batches[0].warehouse_location if batches else "Kho Dược Quốc Gia"
+    prof_source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "Cục Quản lý Dược (DAV) & Dược Thư Quốc Gia Việt Nam"
+
+    ing = matched.active_ingredient
+    conc = matched.concentration
+    if ing and conc and re.match(r"^[\d.,\s]+(?:mg|g|mcg|ml|%|iu|ui)\b", ing.strip(), re.IGNORECASE):
+        ing, conc = conc, ing
+
+    is_stock_ask = any(w in lower_query for w in ("tồn kho", "ton kho", "trong kho", "còn bao nhiêu", "con bao nhieu", "số lượng", "so luong"))
+
+    if is_summary_request:
+        val_ind = value("indications")
+        ind_snippet = f"\n• **Chỉ định chính:** {_format_clinical_text(str(val_ind).strip())[:160]}..." if val_ind else ""
+        val_contra = value("contraindications")
+        contra_snippet = f"\n• **Chống chỉ định:** {_format_clinical_text(str(val_contra).strip())[:160]}..." if val_contra else ""
+        stock_snippet = f"\n• **Tồn kho nội viện:** {in_stock} {matched.standard_unit} ({'Có sẵn tại kho' if in_stock > 0 else 'Chưa nhập kho'})" if is_stock_ask else ""
+        reply = (
+            f"### 📋 TÓM TẮT THÔNG TIN THUỐC: {matched.brand_name}\n\n"
+            f"• **Hoạt chất:** **{ing}** | **Hàm lượng:** {conc or 'Theo HS công bố'}\n"
+            f"• **Dạng bào chế:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **SĐK:** `{matched.national_code}`\n"
+            f"• **Phân loại:** {matched.group} ({'Kiểm soát ĐB TT 20' if matched.is_controlled else 'Thuốc thường'})"
+            f"{ind_snippet}{contra_snippet}{stock_snippet}"
+        )
+        session.set_active_medication(name=matched.brand_name, ingredient=ing, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
+        return CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=prof_source,
+            suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
+            answer_type="medication_summary", source_status="exact_match", confidence=1.0, citations=[_drug_citation(matched, monograph, prof_source)]
+        )
+
+    # Đầy đủ và đúng cấu trúc chuẩn Dược thư Quốc gia & Cục Quản lý Dược
+    header = (
+        f"### 💊 HỒ SƠ DƯỢC LÂM SÀNG & CHUYÊN LUẬN ĐỐI CHỨNG: {matched.brand_name}\n"
+        f"*(Căn cứ Dược thư Quốc gia Việt Nam DĐVN V & CSDL Cục Quản lý Dược - Bộ Y tế)*\n\n---\n\n"
+        f"#### 1. THÔNG TIN ĐỊNH DANH & PHÁP LÝ LƯU HÀNH\n"
+        f"• **Tên biệt dược:** **{matched.brand_name}** | **Mã SĐK (DAV):** `{matched.national_code}`\n"
+        f"• **Hoạt chất chính (INN):** **{ing}**\n"
+        f"• **Hàm lượng / Nồng độ:** {conc or 'Theo hồ sơ công bố'}\n"
+        f"• **Dạng bào chế & Đường dùng:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **Đường dùng:** {matched.route or 'Theo chỉ định'}\n"
+        f"• **Quy cách đóng gói:** {matched.packaging_spec or 'Theo tiêu chuẩn NSX'} | **Đơn vị:** {matched.standard_unit}\n"
+        f"• **Phân loại quản lý:** **{matched.group}** ({'Thuốc kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT)' if matched.is_controlled else 'Thuốc thông thường'})\n"
+        f"• **Nhóm dược lý & ATC:** {value('drug_class') or matched.drug_class or 'Đang cập nhật'} | **Mã ATC:** `{value('atc_code') or matched.atc_code or 'DĐVN V'}`\n\n"
     )
-    for k, icon, lbl in [("indications", "🎯", "Chỉ định điều trị"), ("contraindications", "⚠️", "Chống chỉ định"), ("adult_dosage", "🛡️", "Liều lượng dùng"), ("adverse_effects", "🚨", "Tác dụng không mong muốn"), ("antidote", "🧪", "Thuốc giải độc (Antidote)")]:
-        val = value(k)
-        if val: details += f"{icon} **{lbl}:** {format_clinical_text(str(val).strip())}\n"
+
+    body = "".join(
+        f"{lbl} {_format_clinical_text(str(value(k) or (value('overdose_treatment') if k == 'antidote' else '') or default).strip())}\n\n"
+        for lbl, k, default in [
+            ("#### 2. CHỈ ĐỊNH ĐIỀU TRỊ (INDICATIONS)\n🎯", "indications", "Theo hướng dẫn chẩn đoán và điều trị chuyên khoa được Bộ Y tế phê duyệt."),
+            ("#### 3. LIỀU LƯỢNG & ĐƯỜNG DÙNG (DOSAGE & ADMINISTRATION)\n🛡️ **Liều người lớn:**", "adult_dosage", "Tuân thủ liều chỉ định của bác sĩ điều trị và tờ HDSD kèm theo."),
+            ("👶 **Liều trẻ em:**", "pediatric_dosage", "Tính liều theo cân nặng (mg/kg) hoặc diện tích da; đối soát kỹ tờ HDSD hoặc chuyên khoa nhi."),
+            ("⚙️ **Hiệu chỉnh liều (Suy thận / Suy gan):**", "renal_adjustment", "Chưa có khuyến cáo hiệu chỉnh đặc thù; theo dõi chức năng thận và men gan."),
+            ("#### 4. CHỐNG CHỈ ĐỊNH (CONTRAINDICATIONS)\n⚠️", "contraindications", "Mẫn cảm hoặc quá mẫn với hoạt chất và bất kỳ tá dược nào của thuốc."),
+            ("#### 5. THẬN TRỌNG & CẢNH BÁO ĐẶC BIỆT (PRECAUTIONS & WARNINGS)\n🤰 **Phụ nữ có thai & Cho con bú:**", "pregnancy_warning", "Chỉ sử dụng khi lợi ích điều trị vượt trội nguy cơ tiềm ẩn đối với thai nhi hoặc trẻ bú mẹ."),
+            ("🔍 **Thận trọng lâm sàng:**", "precautions", "Đọc kỹ hướng dẫn sử dụng trước khi dùng; tuân thủ theo dõi của nhân viên y tế."),
+            ("#### 6. TÁC DỤNG KHÔNG MONG MUỐN (ADR & ADVERSE EFFECTS)\n🚨", "adverse_effects", "Báo ngay cho bác sĩ hoặc dược sĩ lâm sàng nếu gặp phản ứng bất lợi nghi do thuốc."),
+            ("#### 7. TƯƠNG TÁC THUỐC (DRUG INTERACTIONS)\n⚡", "drug_interactions", "Rà soát tương tác chống chỉ định hoặc cần lưu ý theo Quyết định 5948/QĐ-BYT."),
+            ("#### 8. QUÁ LIỀU & THUỐC GIẢI ĐỘC (OVERDOSE & ANTIDOTE)\n🧪", "antidote", "Trường hợp quá liều, ngưng thuốc ngay lập tức và điều trị triệu chứng tại cơ sở y tế.")
+        ]
+    )
+    sec_stock = (
+        f"#### 9. TÌNH TRẠNG KHO DƯỢC BỆNH VIỆN & TỦ TRỰC\n"
+        f"📦 **Tồn kho khả dụng:** **{in_stock} {matched.standard_unit}** ({'Có sẵn tại kho nội viện' if in_stock > 0 else 'Chưa có tồn kho thực tế trong bệnh viện'})\n"
+        f"📍 **Vị trí lưu kho:** `{loc}`\n"
+    ) if is_stock_ask else ""
+    details = header + body + sec_stock
 
     card = CopilotActionCard(
         card_type="medication_safety", title=f"Dược Quốc Gia: {matched.brand_name}",
-        summary=f"SĐK: {matched.national_code} | Hoạt chất: {matched.active_ingredient}",
+        summary=f"SĐK: {matched.national_code} | Hoạt chất: {ing}",
         data={"national_code": matched.national_code, "brand_name": matched.brand_name,
-              "active_ingredient": matched.active_ingredient, "group": matched.group, "in_stock": in_stock},
+              "active_ingredient": ing, "group": matched.group, "in_stock": in_stock},
         primary_action_label="Xem Chi Tiết Thuốc", primary_action_type="OPEN_MEDICATION_SAFETY"
     )
     session.set_active_medication(
-        name=matched.brand_name, ingredient=matched.active_ingredient,
+        name=matched.brand_name, ingredient=ing,
         batch=batches[0].batch_number if batches else matched.national_code,
         stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho",
-        location=batches[0].warehouse_location if batches else "Kho Dược Quốc Gia", sdk=matched.national_code
+        location=loc, sdk=matched.national_code
     )
-    prof_source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "Cục Quản lý Dược (DAV) & Dược Thư Quốc Gia Việt Nam"
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE", reply_text=details, card=card, legal_basis=prof_source,
         suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
         active_medication_stock=session.active_medication_stock, active_medication_location=session.active_medication_location,
         answer_type="medication_profile", source_status="exact_match", confidence=1.0,
-        citations=[build_drug_citation(matched, monograph, prof_source)]
+        citations=[_drug_citation(matched, monograph, prof_source)]
     )

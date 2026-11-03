@@ -73,8 +73,9 @@ async def route_fsm_context(
         is_summary = any(p in lower_query for p in SUMMARY_PATTERNS)
         if is_summary:
             target_kw = session.active_medication_sdk or session.active_medication_name
+            summary_query = f"tóm tắt {target_kw}"
             return await lookup_drug_authoritative(
-                target_kw, db, session_id=session_id, user_name=user_name, user_role=user_role
+                summary_query, db, session_id=session_id, user_name=user_name, user_role=user_role
             )
 
         is_ddi_ask = any(p in lower_query for p in DDI_INQUIRY_PATTERNS)
