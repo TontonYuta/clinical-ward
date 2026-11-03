@@ -30,7 +30,8 @@ def format_clinical_text(text: str) -> str:
 
 
 def build_drug_citation(matched: DavNationalDrug, monograph: object | None, source: str) -> dict:
-    page_match = re.search(r"Trang\s*(\d+)", source, re.IGNORECASE)
+    legal = source or getattr(monograph, "source", None) or getattr(matched, "clinical_source", None) or ""
+    page_match = re.search(r"Trang\s*(\d+)", legal, re.IGNORECASE)
     page = int(page_match.group(1)) if page_match else None
     manifest_path = Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "clinical_source_manifest.json"
     try:
@@ -38,7 +39,7 @@ def build_drug_citation(matched: DavNationalDrug, monograph: object | None, sour
     except (OSError, ValueError, TypeError):
         sources = []
     dtqg = next((item for item in sources if item.get("id") == "dtqg-v2-2015"), None)
-    has_dtqg_provenance = bool(source and "dược thư" in source.casefold() and dtqg)
+    has_dtqg_provenance = bool(legal and "dược thư" in legal.casefold() and dtqg)
     title = "Dược thư Quốc gia Việt Nam, lần xuất bản II" if has_dtqg_provenance else "Cơ sở dữ liệu đăng ký thuốc Cục Quản lý Dược"
     url = f"/{dtqg['public_path'].removeprefix('public/')}" if has_dtqg_provenance else "https://dichvucong.dav.gov.vn/congbothuoc/index"
     document_id = "dtqg-v2-2015" if has_dtqg_provenance else "dav-registry"
@@ -56,7 +57,7 @@ def build_drug_citation(matched: DavNationalDrug, monograph: object | None, sour
     if len(excerpt) > 240:
         excerpt = excerpt[:239].rstrip() + "…"
     return {
-        "source": title, "legal_basis": source or "Cục Quản lý Dược (DAV)",
+        "source": title, "legal_basis": legal or "Cục Quản lý Dược (DAV)",
         "section": getattr(monograph, "title", None) or matched.active_ingredient,
         "excerpt": excerpt, "document_id": document_id, "url": url, "page": page if has_dtqg_provenance else None,
     }

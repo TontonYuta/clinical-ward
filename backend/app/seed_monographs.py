@@ -106,7 +106,12 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
         rows = []
         for idx, m in enumerate(monos, 1):
             inn = m.get("inn", "")
-            m_id = f"DTQG-{idx:04d}-{re.sub(r'[^a-zA-Z0-9]', '', inn)[:20]}"
+            m_id = m.get("id") or f"DTQG-{idx:04d}-{re.sub(r'[^a-zA-Z0-9]', '', inn)[:20]}"
+            src_val = m.get("source") or ""
+            if "Trang " not in src_val and m.get("start_page"):
+                src_val = f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {m.get('start_page')}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
+            elif not src_val:
+                src_val = "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
             rows.append((
                 m_id, inn, sanitize_title(m.get("title"), inn), m.get("atc_code"), m.get("drug_class"),
                 m.get("dosage_forms"), m.get("indications"), m.get("contraindications"),
@@ -114,7 +119,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 m.get("adult_dosage"), m.get("pediatric_dosage"), m.get("renal_adjustment"),
                 m.get("hepatic_adjustment"), m.get("drug_interactions"), m.get("overdose_treatment"),
                 m.get("antidote"),
-                m.get("source") or (f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {m.get('start_page')}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if m.get("start_page") else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf")
+                src_val
             ))
         cursor.execute("BEGIN TRANSACTION")
         cursor.executemany("""
@@ -123,17 +128,33 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rows)
         conn.commit()
+        # Đồng bộ các stub cũ với chuyên luận đầy đủ DTQG-0XXX
+        stubs = cursor.execute("SELECT id, inn FROM clinical_drug_monographs WHERE id LIKE 'DTQG-2015-%' OR id LIKE 'DTQG-2022-%'").fetchall()
+        clinical_cols = ['atc_code', 'drug_class', 'dosage_forms', 'indications', 'contraindications', 'precautions', 'pregnancy_warning', 'adverse_effects', 'adult_dosage', 'pediatric_dosage', 'renal_adjustment', 'hepatic_adjustment', 'drug_interactions', 'overdose_treatment', 'antidote', 'source']
+        for stub_id, inn in stubs:
+            clean_inn = re.sub(r'\(.*?\)', '', inn).strip()
+            matches = cursor.execute("SELECT id, length(coalesce(indications,'')) + length(coalesce(adult_dosage,'')) FROM clinical_drug_monographs WHERE id LIKE 'DTQG-0%' AND lower(inn) LIKE ?", (f"%{clean_inn.lower()}%",)).fetchall()
+            if matches:
+                best_mid = max(matches, key=lambda x: x[1])[0]
+                best_data = cursor.execute(f"SELECT {', '.join(clinical_cols)} FROM clinical_drug_monographs WHERE id = ?", (best_mid,)).fetchone()
+                set_clause = ', '.join([f"{c} = COALESCE(?, {c})" for c in clinical_cols])
+                cursor.execute(f"UPDATE clinical_drug_monographs SET {set_clause} WHERE id = ?", (*best_data, stub_id))
+        conn.commit()
+
         cursor.execute("""
             UPDATE dav_national_drugs
             SET clinical_monograph_id = (
                 SELECT m.id FROM clinical_drug_monographs m
-                WHERE lower(m.inn) = lower(dav_national_drugs.active_ingredient)
+                WHERE lower(dav_national_drugs.active_ingredient) LIKE lower(m.inn) || '%'
+                   OR lower(dav_national_drugs.brand_name) = lower(m.inn)
+                ORDER BY length(coalesce(m.indications, '')) + length(coalesce(m.adult_dosage, '')) DESC
                 LIMIT 1
             )
             WHERE clinical_monograph_id IS NULL
               AND EXISTS (
                 SELECT 1 FROM clinical_drug_monographs m
-                WHERE lower(m.inn) = lower(dav_national_drugs.active_ingredient)
+                WHERE lower(dav_national_drugs.active_ingredient) LIKE lower(m.inn) || '%'
+                   OR lower(dav_national_drugs.brand_name) = lower(m.inn)
             )
         """)
         conn.commit()

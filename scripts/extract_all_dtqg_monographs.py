@@ -104,19 +104,19 @@ def extract_sections(raw_text: str) -> dict:
     dosage = data.get("dosage_and_administration") or ""
     
     # Sub-parsing adult dosage
-    adult_m = re.search(r'Người lớn:\s*\n?([\s\S]*?)(?=\nTrẻ em:|\nNgười cao tuổi:|\nSuy thận:|\nSuy gan:|\Z)', dosage)
-    data["adult_dosage"] = clean_text(adult_m.group(1)) if adult_m else None
+    adult_m = re.search(r'(?:Người lớn|Liều người lớn)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Trẻ em|Liều trẻ em)|(?:\n[A-ZĐ][a-zà-ỹ\s]+:|\nNgười cao tuổi|\nSuy thận|\nSuy gan)|\Z)', dosage, re.IGNORECASE)
+    data["adult_dosage"] = clean_text(adult_m.group(1)) if adult_m else (clean_text(dosage) if dosage else None)
     
     # Sub-parsing pediatric dosage
-    ped_m = re.search(r'Trẻ em:\s*\n?([\s\S]*?)(?=\nNgười lớn:|\nNgười cao tuổi:|\nSuy thận:|\nSuy gan:|\Z)', dosage)
+    ped_m = re.search(r'(?:Trẻ em|Liều trẻ em)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Người lớn|Liều người lớn)|(?:\n[A-ZĐ][a-zà-ỹ\s]+:|\nNgười cao tuổi|\nSuy thận|\nSuy gan)|\Z)', dosage, re.IGNORECASE)
     data["pediatric_dosage"] = clean_text(ped_m.group(1)) if ped_m else None
     
     # Sub-parsing renal adjustment
-    renal_m = re.search(r'Suy thận:\s*\n?([\s\S]*?)(?=\nSuy gan:|\nTương tác|\Z)', dosage)
+    renal_m = re.search(r'(?:Suy thận|Người bệnh suy thận|Hiệu chỉnh ở người suy thận|Hiệu chỉnh liều ở người suy thận)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Suy gan|Người cao tuổi|Tương tác|Độ ổn định|Quá liều)|\Z)', dosage, re.IGNORECASE)
     data["renal_adjustment"] = clean_text(renal_m.group(1)) if renal_m else None
     
     # Sub-parsing hepatic adjustment
-    hepatic_m = re.search(r'Suy gan:\s*\n?([\s\S]*?)(?=\nSuy thận:|\nTương tác|\Z)', dosage)
+    hepatic_m = re.search(r'(?:Suy gan|Người bệnh suy gan|Hiệu chỉnh ở người suy gan|Hiệu chỉnh liều ở người suy gan)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Suy thận|Người cao tuổi|Tương tác|Độ ổn định|Quá liều)|\Z)', dosage, re.IGNORECASE)
     data["hepatic_adjustment"] = clean_text(hepatic_m.group(1)) if hepatic_m else None
     
     # Identify specific antidote if mentioned in overdose treatment
@@ -164,7 +164,7 @@ def main():
             "drug_interactions": parsed.get("drug_interactions"),
             "overdose_treatment": parsed.get("overdose_and_treatment"),
             "antidote": parsed.get("antidote"),
-            "source": "Dược thư Quốc gia Việt Nam"
+            "source": f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {cur['start_page']}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if cur.get("start_page") else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
         }
         monographs.append(entry)
         
