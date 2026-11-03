@@ -26,7 +26,8 @@ from app.routers import (
     prescription_advice,
     patients,
     sms,
-    clinical_ddi
+    clinical_ddi,
+    mcp
 )
 
 @asynccontextmanager
@@ -112,6 +113,7 @@ app.include_router(prescription_advice.router, prefix=settings.API_V1_STR)
 app.include_router(patients.router, prefix=settings.API_V1_STR)
 app.include_router(sms.router, prefix=settings.API_V1_STR)
 app.include_router(clinical_ddi.router, prefix=settings.API_V1_STR)
+app.include_router(mcp.router, prefix=settings.API_V1_STR)
 
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=100)
