@@ -15,4 +15,4 @@ services:
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261103-mcp-a67141f"
+        value: "20261103-fix-31266c8"
