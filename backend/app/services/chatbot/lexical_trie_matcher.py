@@ -26,7 +26,7 @@ COMMON_EXCLUSIONS: Set[str] = {
     "cách", "cach", "dùng", "dung", "thông", "tin", "thong", "tỏi", "nghệ", "cao", "lá", "củ",
     "nhất", "nhat", "nhát", "nhiều", "nhieu", "ít", "it", "nguy", "hiểm", "hiem", "tốt", "tot", "xấu", "xau",
     "tóm", "tom", "tắt", "tat", "tiết", "tiet", "đầy", "day", "đủ", "du", "hồ", "ho", "sơ", "so", "bản", "ban", "ghi", "toàn", "toan", "bộ", "bo",
-    "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá"
+    "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá", "bạn", "ban", "kém", "kem", "tệ", "te", "dở", "chán", "chan", "thật", "that"
 }
 
 class TrieNode:

@@ -41,6 +41,16 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
 
     query = guard_res.sanitized_query
     lower_query = query.lower()
+
+    # 1. First-line filter: Greetings, Thanks, Dissatisfaction/Corrections, Frivolous/Out-of-scope
+    greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
+    if greeting_res:
+        return greeting_res
+
+    out_scope = handle_out_of_scope_or_pricing(lower_query)
+    if out_scope:
+        return out_scope
+
     is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "chỉnh liều"))
     renal_res = check_renal_adjustment_request(query, lower_query)
     if renal_res:
@@ -54,22 +64,11 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if early_resp:
         return early_resp
 
-    greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
-    if greeting_res:
-        return greeting_res
-
-    out_scope = handle_out_of_scope_or_pricing(lower_query)
-    if out_scope:
-        return out_scope
-
     fsm_res = await route_fsm_context(query, lower_query, db, session=session, session_id=session_id, user_name=user_name, user_role=user_role)
     if fsm_res:
         return fsm_res
 
-    if lower_query.strip().strip("?.!") in {
-        "tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư",
-        "tra cuu duoc thu", "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu"
-    }:
+    if lower_query.strip().strip("?.!") in {"tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư", "tra cuu duoc thu", "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu"}:
         return await lookup_drug_authoritative("", db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     subflow_res = await dispatch_clinical_subflows(query, lower_query, user_name, db)

@@ -44,21 +44,26 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
     corr_cues = (
         "tra loi sai", "sai thong tin", "lai sai", "sai roi", "nham roi", "khong dung", "sai bet",
         "ao giac", "lai ao giac", "bi ao giac", "tra loi linh tinh", "linh tinh roi", "linh tinh qua",
-        "noi linh tinh roi", "vo van", "tao lao", "lai nham", "nham to"
+        "noi linh tinh roi", "vo van", "tao lao", "lai nham", "nham to",
+        "kem qua", "kem the", "ban kem", "kem that", "kem coi", "te qua", "te that", "ban te",
+        "do qua", "ban do", "do the", "chan qua", "chan the", "that vong", "trai nghiem te",
+        "chat luong kem", "vo dung", "khong dung duoc", "kem lam", "kem qua di"
     )
     is_pure_correction = (clean_greeting in {
         "sai roi", "sai rồi", "nham roi", "nhầm rồi", "khong dung", "không đúng",
         "khong phai", "không phải", "bi nham", "bị nhầm", "lại ảo giác rồi", "ảo giác rồi",
-        "lai ao giac roi", "ao giac roi", "bị ảo giác à", "bi ao giac a", "nói linh tinh rồi", "linh tinh rồi"
+        "lai ao giac roi", "ao giac roi", "bị ảo giác à", "bi ao giac a", "nói linh tinh rồi", "linh tinh rồi",
+        "bạn kém quá", "ban kem qua", "kém quá", "kem qua", "kém thế", "kem the", "tệ quá", "te qua",
+        "dở quá", "do qua", "chán quá", "chan qua", "thất vọng", "that vong", "bạn dở quá", "bạn tệ quá"
     } or (
         any(c in clean_greeting_ascii for c in corr_cues)
         and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "tuong tac", "chong chi dinh", "benh nhan", "nguoi benh", "ca benh", "noi chuyen", "chuyen"))
     )) and not any(term in clean_greeting_ascii for term in ("noi chuyen", "chuyen linh tinh", "tro chuyen", "tam su"))
     if is_pure_correction:
-        role_label = "bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "anh/chị"
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
         return CopilotResponse(
             intent="CONVERSATIONAL_CORRECTION",
-            reply_text=f"Dạ xin lỗi {role_label}! Em xin tiếp thu để hoàn thiện liên tục. {role_label.title()} vui lòng cho biết câu hỏi cụ thể hoặc thông tin cần điều chỉnh để em hỗ trợ chính xác hơn ạ.",
+            reply_text=f"Dạ xin lỗi {role_label}! Em rất tiếc vì trải nghiệm chưa tốt và xin tiếp thu phản ánh để liên tục hoàn thiện chất lượng hỗ trợ. {role_label} vui lòng cho biết câu hỏi cụ thể hoặc thông tin cần tra cứu để em phục vụ chính xác nhất ạ.",
             answer_type="conversational_correction",
             confidence=1.0,
             suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu Dược Thư Quốc Gia"]
@@ -157,7 +162,8 @@ def handle_out_of_scope_or_pricing(lower_query: str) -> CopilotResponse | None:
         "chuyen cuoi", "chuyen ma", "ke chuyen", "lam tho", "bai tho", "tho tinh", "hat di", "hat mot bai",
         "choi game", "game gi", "lien quan", "hom nay an gi", "an mon gi", "nau mon gi", "cong thuc nau",
         "nguoi yeu", "ban gai", "ban trai", "tan gai", "thich ai", "yeu ai", "may tuoi", "sinh nam bao nhieu",
-        "que o dau", "nha o dau", "xem boi", "tu vi", "phong thuy", "cung hoang dao", "giai toan", "viet code",
+        "que o dau", "nha o dau", "xem boi", "tu vi", "phong thuy", "cung hoang dao", "giai toan", "hoc toan",
+        "day toan", "bai toan", "hoc van", "hoc tieng anh", "hoc hoa", "hoc ly", "viet code",
         "chem gio", "buon chuyen", "noi chuyen linh tinh", "chuyen linh tinh", "linh tinh", "vo van", "tao lao"
     )
     is_frivolous = any(term in ascii_q for term in frivolous_terms)

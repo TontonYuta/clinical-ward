@@ -119,7 +119,8 @@ async def lookup_drug_authoritative(
                 func.lower(ClinicalDrugMonograph.inn) == kw.lower(),
                 func.lower(ClinicalDrugMonograph.inn).like(f"{kw.lower()} %"),
                 func.lower(ClinicalDrugMonograph.inn).like(f"% {kw.lower()}%"),
-                func.lower(ClinicalDrugMonograph.title).like(f"%{kw.lower()}%")
+                func.lower(ClinicalDrugMonograph.title) == kw.lower(),
+                func.lower(ClinicalDrugMonograph.title).like(f"{kw.lower()} %")
             )).limit(1)
         )
         monograph = mono_res.scalar_one_or_none()

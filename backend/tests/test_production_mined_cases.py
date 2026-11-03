@@ -38,6 +38,8 @@ MINED_PRODUCTION_CASES = [
     ("Kiểm tra Warfarin + Aspirin", "MEDICATION_SAFETY_PROFILE", ["warfarin", "aspirin", "xuất huyết", "qđ 5948"]),
     ("lại ảo giác rồi", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ", "tiếp thu"]),
     ("bị ảo giác à", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ"]),
+    ("bạn kém quá", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ", "tiếp thu phản ánh"]),
+    ("bạn có thể giúp tôi học toán được không", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi"]),
 ]
 
 @pytest.mark.asyncio
