@@ -2,7 +2,7 @@ import re
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.copilot import CopilotResponse
-from app.models.registry import DavNationalDrug
+from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
 from app.services.copilot_catalog import find_matched_med
 from app.services.copilot_drug_lookup import extract_drug_keywords, lookup_drug_authoritative
 from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
@@ -73,15 +73,30 @@ async def find_dav_candidate_drug(lower_query: str, db: AsyncSession) -> tuple[s
     cand_drug = extract_drug_keywords(lower_query)
     if not cand_drug or len(cand_drug) < 3 or any(b in cand_drug for b in SYMPTOM_BLACKLIST):
         return "", False
+    active_cond = (
+        func.lower(DavNationalDrug.active_ingredient).like(f"%{cand_drug}%")
+        if len(cand_drug) >= 4 else
+        func.lower(DavNationalDrug.active_ingredient).like(f"{cand_drug} %")
+    )
     cand_res = await db.execute(
         select(DavNationalDrug.id).where(or_(
             func.lower(DavNationalDrug.brand_name) == cand_drug,
             func.lower(DavNationalDrug.brand_name).like(f"{cand_drug} %"),
             func.lower(DavNationalDrug.brand_name).like(f"% {cand_drug}"),
-            func.lower(DavNationalDrug.active_ingredient).like(f"%{cand_drug}%")
+            active_cond
         )).limit(1)
     )
     if cand_res.scalar_one_or_none() is not None:
+        return cand_drug, True
+    mono_res = await db.execute(
+        select(ClinicalDrugMonograph.id).where(or_(
+            func.lower(ClinicalDrugMonograph.inn) == cand_drug,
+            func.lower(ClinicalDrugMonograph.inn).like(f"{cand_drug} %"),
+            func.lower(ClinicalDrugMonograph.inn).like(f"% {cand_drug}%"),
+            func.lower(ClinicalDrugMonograph.title).like(f"%{cand_drug}%")
+        )).limit(1)
+    )
+    if mono_res.scalar_one_or_none() is not None:
         return cand_drug, True
     if len(cand_drug.split()) > 1:
         last_tok = cand_drug.split()[-1]
@@ -90,10 +105,21 @@ async def find_dav_candidate_drug(lower_query: str, db: AsyncSession) -> tuple[s
                 select(DavNationalDrug.id).where(or_(
                     func.lower(DavNationalDrug.brand_name) == last_tok,
                     func.lower(DavNationalDrug.brand_name).like(f"{last_tok} %"),
-                    func.lower(DavNationalDrug.brand_name).like(f"% {last_tok}")
+                    func.lower(DavNationalDrug.brand_name).like(f"% {last_tok}"),
+                    func.lower(DavNationalDrug.active_ingredient).like(f"%{last_tok}%")
                 )).limit(1)
             )
             if cand_res2.scalar_one_or_none() is not None:
+                return last_tok, True
+            mono_res2 = await db.execute(
+                select(ClinicalDrugMonograph.id).where(or_(
+                    func.lower(ClinicalDrugMonograph.inn) == last_tok,
+                    func.lower(ClinicalDrugMonograph.inn).like(f"{last_tok} %"),
+                    func.lower(ClinicalDrugMonograph.inn).like(f"% {last_tok}%"),
+                    func.lower(ClinicalDrugMonograph.title).like(f"%{last_tok}%")
+                )).limit(1)
+            )
+            if mono_res2.scalar_one_or_none() is not None:
                 return last_tok, True
     return cand_drug, False
 

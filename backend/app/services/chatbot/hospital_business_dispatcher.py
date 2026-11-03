@@ -1,3 +1,4 @@
+import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.copilot import CopilotResponse
 from app.services.copilot_catalog import find_matched_med, find_matched_eq
@@ -75,13 +76,13 @@ async def dispatch_operational_business(
     ]):
         return await handle_equipment_intent(query, lower_query, user_name, db)
 
-    if any(w in lower_query for w in ["fefo", "cận hạn", "hạn dùng", "date", "hết hạn", "sắp hết hạn", "ngày hết hạn", "ưu tiên xuất"]):
+    if any(w in lower_query for w in ["fefo", "cận hạn", "hạn dùng", "hết hạn", "sắp hết hạn", "ngày hết hạn", "ưu tiên xuất"]) or re.search(r"\bdate\b", lower_query):
         return await handle_fefo_intent(db)
 
     if any(w in lower_query for w in ["dự trù", "mẫu 01", "cạn kho", "sắp hết", "hết thuốc", "bù tồn kho", "chạm ngưỡng", "cơ số"]):
         return await handle_restock_intent(db)
 
-    if any(w in lower_query for w in ["chuỗi lạnh", "cold chain", "nhiệt độ tủ lạnh", "datalogger", "vắc xin", "mkt", "mất điện tủ", "arrhenius"]):
+    if any(w in lower_query for w in ["chuỗi lạnh", "cold chain", "nhiệt độ tủ lạnh", "datalogger", "mất điện tủ", "arrhenius", "giám sát tủ lạnh", "nhiệt độ bảo quản"]) or re.search(r"\bmkt\b", lower_query):
         return await handle_coldchain_intent(db)
 
     if any(w in lower_query for w in ["kiểm toán", "toàn vẹn", "chuỗi băm", "sha256", "sha-256", "hmac", "nhật ký bảo mật", "sổ bất biến"]):

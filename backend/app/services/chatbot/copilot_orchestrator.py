@@ -62,11 +62,15 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
 
     extracted_kw = extract_drug_keywords(query)
     resolved_meds = resolve_registered_medications(lower_query)
-    is_two_drug = (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))) or len(resolved_meds) > 1
-    is_single_interaction = not is_two_drug and (len(resolved_meds) == 1 or len(extracted_kw) >= 3) and any(term in lower_query for term in ("của", "thuốc này", "thuốc đó", "với thuốc khác", "về tương tác", "thông tin tương tác", "tương tác của", "tương tác thuốc của")) and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))
-    is_interaction_q = any(term in lower_query for term in ("tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung"))
+    is_two_drug = (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))) or len(resolved_meds) > 1
+    has_interaction_term = any(term in lower_query for term in ("tương tác", "tương kỵ", "kỵ thuốc", "kỵ với", "kỵ gì", "tuong tac", "tuong ky", "ky thuoc"))
+    is_interaction_q = has_interaction_term or any(term in lower_query for term in ("phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung", "uong cung", "dung cung"))
+    has_single_cand = (has_candidate_drug or len(resolved_meds) == 1 or len(extracted_kw) >= 3 or active_in_query) and not is_two_drug
+    is_single_interaction = (
+        has_single_cand and has_interaction_term and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))
+    )
 
-    if is_interaction_q and not is_single_interaction and not any(term in lower_query for term in ("tương tác thuốc của thuốc", "tương tác thuốc paracetamol", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "liều dùng", "liều tối đa", "thành phần", "hoạt chất", "chỉ định", "công dụng")):
+    if is_interaction_q and not is_single_interaction and not any(term in lower_query for term in ("tương tác thuốc của thuốc", "tương tác thuốc paracetamol", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "liều dùng", "liều tối đa", "thành phần", "hoạt chất", "chỉ định", "công dụng", "chong chi dinh", "tac dung phu", "lieu dung")):
         clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role)
         if clarification_res:
             return clarification_res
@@ -102,16 +106,24 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
             answer_type="clarification", source_status="missing_medication_context", confidence=1.0, session_id=session.session_id, suggested_chips=["Tra cứu thông tin thuốc", "Nhập tên hoạt chất hoặc biệt dược"]
         )
 
-    if not is_two_drug and not is_deep_complex and any(term in lower_query for term in ("dùng cho bệnh gì", "dùng để làm gì", "công dụng", "chỉ định")) and any(alias in lower_query for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4):
+    if not is_two_drug and not is_deep_complex and any(term in lower_query for term in ("dùng cho bệnh gì", "dùng để làm gì", "công dụng", "chỉ định", "điều trị gì", "trị gì", "chữa gì")) and (
+        has_candidate_drug or any(alias in lower_query for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4)
+    ):
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
+    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")) and not has_candidate_drug:
         sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
         if sc_res:
             sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
             return sc_res
 
-    drug_cues = ("thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng", "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất", "tương tác")
+    drug_cues = (
+        "thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng",
+        "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn",
+        "chống chỉ định", "thành phần", "hoạt chất", "tương tác", "điều trị", "dùng để", "dùng cho",
+        "chữa", "tác dụng", "uống", "tiêm", "truyền", "sử dụng",
+        "thong tin thuoc", "thong tin", "tra cuu thuoc", "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac"
+    )
     has_drug_ent = find_matched_med(lower_query) is not None or active_in_query or any(alias in lower_query for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4) or has_candidate_drug
     if not is_renal and has_drug_ent and any(cue in lower_query for cue in drug_cues) and not is_two_drug and not is_deep_complex:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)

@@ -9,20 +9,20 @@ from app.services.session_context import get_or_create_session
 from app.services.rag.knowledge_graph import expand_clinical_graph
 
 RAW_FIELD_SPECS = [
-    ("interaction", ["tương tác thuốc", "thuốc tương tác", "tương tác", "tương kỵ", "kỵ thuốc"]),
-    ("adverse_effects", ["tác dụng không mong muốn", "tác dụng phụ"]),
-    ("contraindications", ["chống chỉ định", "cấm dùng"]),
-    ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều"]),
-    ("indications", ["chỉ định", "công dụng"]),
-    ("ingredients", ["thành phần", "hoạt chất"]),
-    ("registry", ["số đăng ký", "sđk"]),
+    ("interaction", ["tương tác thuốc", "thuốc tương tác", "tương tác", "tương kỵ", "kỵ thuốc", "tuong tac thuoc", "tuong tac", "tuong ky", "ky thuoc", "kỵ gì"]),
+    ("adverse_effects", ["tác dụng không mong muốn", "tác dụng phụ", "tac dung phu", "tac dung khong mong muon"]),
+    ("contraindications", ["chống chỉ định", "cấm dùng", "chong chi dinh", "cam dung"]),
+    ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều", "lieu toi da", "lieu dung", "lieu luong", "cach dung"]),
+    ("indications", ["chỉ định", "công dụng", "chi dinh", "cong dung", "điều trị", "dieu tri", "chữa bệnh", "chua benh"]),
+    ("ingredients", ["thành phần", "hoạt chất", "thanh phan", "hoat chat"]),
+    ("registry", ["số đăng ký", "sđk", "so dang ky", "sdk"]),
 ]
 
 def extract_matched_field_keys(lower_query: str) -> set[str]:
     return {
         key for key, phrases in RAW_FIELD_SPECS
         if (
-            (key == "indications" and (any(p in lower_query for p in phrases if p != "chỉ định") or bool(re.search(r"(?<!chống\s)(?<!chống)chỉ định", lower_query))))
+            (key == "indications" and (any(p in lower_query for p in phrases if p not in ("chỉ định", "chi dinh")) or bool(re.search(r"(?<!chống\s)(?<!chống)(?<!chong\s)(?<!chong)(?:chỉ định|chi dinh)", lower_query))))
             or (key != "indications" and any(p in lower_query for p in phrases))
         )
     }
@@ -72,7 +72,8 @@ async def handle_field_or_drug_inquiry(
         "thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng",
         "liều lượng", "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng",
         "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần",
-        "hoạt chất", "tương tác"
+        "hoạt chất", "tương tác", "thong tin thuoc", "thong tin", "tra cuu thuoc",
+        "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac"
     )
     asks_multiple_fields = len(matched_field_keys) > 1
     has_drug_entity = (

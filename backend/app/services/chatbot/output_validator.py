@@ -37,7 +37,8 @@ def validate_grounded_reply(
     )
 
     if not target_present and leak_drugs:
-        target_display = DRUG_REGISTRY[target_drug_keys[0]].get("display", target_drug_keys[0].title())
+        target_entry = DRUG_REGISTRY.get(target_drug_keys[0].lower(), {})
+        target_display = target_entry.get("display", target_drug_keys[0].title())
         safe_reply = (
             f"### Thông tin đối chiếu lâm sàng: {target_display}\n\n"
             f"Hiện chưa tìm thấy tài liệu chuyên luận đầy đủ cho hoạt chất **{target_display}** trong kho dữ liệu cục bộ.\n"

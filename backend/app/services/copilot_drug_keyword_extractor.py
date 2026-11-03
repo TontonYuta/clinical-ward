@@ -13,6 +13,9 @@ STOP_PHRASES = [
     "danh mục thuốc", "danh sách thuốc", "có những loại thuốc nào", "dùng để làm gì", "có tác dụng gì", "dùng thế nào",
     "liều lượng", "liều dùng", "số đăng ký", "thuốc gì", "là thuốc gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần",
     "cho tôi", "cho em", "cho anh", "cho mình", "tôi cần", "em cần", "mình cần", "hãy cho", "lấy cho", "cần", "muốn", "lấy", "tìm",
+    "bác sĩ", "dược sĩ", "điều dưỡng", "y tá", "hỏi chút", "hỏi thăm", "cho hỏi", "xin hỏi",
+    "điều trị", "chữa trị", "trị bệnh", "chữa bệnh",
+    "tuong tac thuoc", "tuong tac", "thong tin thuoc", "thong tin", "chong chi dinh", "tac dung phu", "lieu dung", "thanh phan", "chi dinh", "dieu tri",
     "thuốc", "về", "sđk", "mã", "html", "code", "website", "trị", "chữa", "uống", "còn liều", "liều"
 ]
 
@@ -22,7 +25,15 @@ QUESTION_TERMS = {
     "thời", "gian", "bán", "thải", "tối", "đa", "huyết", "tương", "còn",
     "có", "hay", "hoặc", "bị", "cho", "đang", "được", "những", "các", "loại", "nhóm", "khác", "chi",
     "chống", "chỉ", "định", "cách", "dùng", "liều", "lượng", "và", "với", "cùng", "trong", "khi",
-    "tôi", "em", "anh", "chị", "mình", "bạn", "hỏi", "cần", "xin", "giúp", "biết", "xem", "làm", "ơn"
+    "tôi", "em", "anh", "chị", "mình", "bạn", "hỏi", "cần", "xin", "giúp", "biết", "xem", "làm", "ơn",
+    "bác", "sĩ", "dược", "chút", "nhé", "ạ", "ơi", "nha", "với", "à",
+    "điều", "trị", "chữa", "bệnh", "sao",
+    "kỵ", "kị", "ky", "ki", "kỵ thuốc",
+    "sáng", "trưa", "chiều", "tối", "đêm", "ngày", "tuần", "tháng", "năm", "lần", "giờ", "phút",
+    "gây", "nghiện", "lệ", "thuộc", "đó", "này", "kia", "ấy", "nó",
+    "kiểm", "tra", "nhân", "người", "an", "toàn", "dị", "ứng", "đơn", "theo", "dõi", "xét", "nghiệm",
+    "inj", "tab", "caps", "cap", "cream", "gel", "susp", "sol", "drops", "injection", "tablet", "infusion",
+    "tac", "dung", "phu", "chong", "chi", "dinh", "lieu", "luong", "tuong", "thanh", "phan", "hoat", "chat", "toi", "da", "thong", "tin", "thuoc"
 }
 
 
@@ -32,9 +43,22 @@ def extract_drug_keywords(query: str) -> str:
     if sdk_match:
         return sdk_match.group(1).upper()
 
+    # Direct pattern: "thuốc/hoạt chất/biệt dược <TênThuốc>"
+    if re.search(r"^(?:thuốc|thuoc)\s+(?:đó|này|kia|ấy|nó|vừa nói|vừa hỏi)\b", cleaned, re.IGNORECASE):
+        explicit_med_pattern = None
+    else:
+        explicit_med_pattern = re.search(r"(?:thuốc|hoạt chất|biệt dược|thuoc|hoat chat|biet duoc)\s+([a-zA-Z0-9À-ỹ.-]+(?:\s+[a-zA-Z0-9À-ỹ.-]+){0,2})", cleaned, re.IGNORECASE)
+    if explicit_med_pattern:
+        cand_name = explicit_med_pattern.group(1).strip(" .")
+        cand_name = re.split(r"[.?!,;:]\s+", cand_name)[0]
+        cand_name = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%)?", " ", cand_name, flags=re.IGNORECASE).strip()
+        cand_words = [w.lower() for w in cand_name.split() if w.lower() not in QUESTION_TERMS and len(w) >= 2]
+        if cand_words:
+            return " ".join(cand_words).lower()
+
     q_lower = cleaned.lower()
     q_lower = re.sub(
-        r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|còn liều|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì|còn|liều)\b",
+        r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|còn liều|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì|còn|liều|điều trị|chữa trị|điều|trị|chữa|thong tin|tra cuu|thuoc|lieu dung|lieu luong|lieu toi da|con lieu|cach dung|tac dung phu|tac dung khong mong muon|chong chi dinh|chi dinh|cong dung|thanh phan|hoat chat|tuong tac|dieu tri|chua tri)\b",
         " ", q_lower,
     )
     q_lower = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%)?", " ", q_lower, flags=re.IGNORECASE)
@@ -43,14 +67,14 @@ def extract_drug_keywords(query: str) -> str:
         " ", q_lower,
     )
     q_lower = re.sub(
-        r"\b(?:xử trí|nguy cơ|bệnh nhân|người bệnh|có|không|thì|thế nào|ra sao|nếu|theo dõi|xét nghiệm)\b",
+        r"\b(?:xử trí|nguy cơ|bệnh nhân|người bệnh|có|không|thì|thế nào|ra sao|nếu|theo dõi|xét nghiệm|kỵ|kị|ky|ki|inj|tab|caps|cap|cream|gel|susp|sol|drops|injection|tablet|infusion)\b",
         " ", q_lower, flags=re.IGNORECASE,
     )
 
     aliases = [alias for med in MEDICATION_CATALOG for alias in med["keywords"]]
     aliases.extend(alias for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []))
     aliases = sorted(set(aliases), key=len, reverse=True)
-    found = [alias for alias in aliases if alias in q_lower]
+    found = [alias for alias in aliases if len(alias) >= 2 and bool(re.search(rf"(?<!\w){re.escape(alias)}(?!\w)", q_lower))]
     unique_found = [alias for alias in found if not any(alias != other and alias in other for other in found)]
 
     named_tail = re.search(r"(?:thuốc|hoạt chất)\s+([\wÀ-ỹ-]+(?:\s+[\wÀ-ỹ-]+){0,2})\s*$", q_lower)
@@ -68,4 +92,4 @@ def extract_drug_keywords(query: str) -> str:
         q_lower = q_lower.replace(phrase, " ")
     words = [w.strip(" .,?!:;\"'") for w in q_lower.split() if len(w.strip(" .,?!:;\"'")) >= 2]
     words = [word for word in words if word not in QUESTION_TERMS]
-    return " ".join(words).strip()
+    return " ".join(words).strip().lower()

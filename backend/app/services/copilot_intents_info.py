@@ -84,10 +84,10 @@ async def handle_coldchain_intent(db: AsyncSession) -> CopilotResponse:
     stmt = select(ColdChainCurrentState).limit(1)
     res = await db.execute(stmt)
     state = res.scalar_one_or_none()
-    current_temp = state.current_temp if state else 4.5
-    mkt = state.mkt_value if state else 4.8
-    is_quarantine = state.is_quarantined if state else False
-    is_outage = state.is_outage if state else False
+    current_temp = getattr(state, "current_temp", 4.5) if state else 4.5
+    mkt = getattr(state, "mkt_temp", getattr(state, "mkt_value", 4.8)) if state else 4.8
+    is_quarantine = getattr(state, "is_quarantined", False) if state else False
+    is_outage = getattr(state, "is_outage", False) if state else False
 
     status_text = "BÌNH THƯỜNG (2.0°C - 8.0°C)" if not is_outage and not is_quarantine else "CẢNH BÁO BIỆT TRỮ CÁCH LY"
     reply_text = (f"### ❄️ BÁO CÁO GIÁM SÁT DÂY CHUYỀN LẠNH (COLD CHAIN - GSP)\n\n"

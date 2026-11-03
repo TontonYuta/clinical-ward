@@ -2,7 +2,7 @@
 import difflib
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.registry import DavNationalDrug
+from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
 from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.copilot_drug_formatter import build_drug_profile_response
@@ -79,6 +79,27 @@ async def lookup_drug_authoritative(
         drugs = [drug for drug in candidates if
                  token in drug.brand_name.casefold().split() or
                  token in drug.active_ingredient.casefold().replace(";", " ").replace("+", " ").split()]
+
+    if not drugs:
+        mono_res = await db.execute(
+            select(ClinicalDrugMonograph).where(or_(
+                func.lower(ClinicalDrugMonograph.inn) == kw.lower(),
+                func.lower(ClinicalDrugMonograph.inn).like(f"{kw.lower()} %"),
+                func.lower(ClinicalDrugMonograph.inn).like(f"% {kw.lower()}%"),
+                func.lower(ClinicalDrugMonograph.title).like(f"%{kw.lower()}%")
+            )).limit(1)
+        )
+        monograph = mono_res.scalar_one_or_none()
+        if monograph:
+            drugs = [DavNationalDrug(
+                id=f"MONO-{monograph.id}", national_code=monograph.atc_code or "DĐVN V",
+                brand_name=monograph.title or monograph.inn.title(), active_ingredient=monograph.inn,
+                atc_code=monograph.atc_code, drug_class=monograph.drug_class,
+                indications=monograph.indications, contraindications=monograph.contraindications,
+                adverse_effects=monograph.adverse_effects, drug_interactions=monograph.drug_interactions,
+                adult_dosage=monograph.adult_dosage, clinical_source="Dược Thư Quốc Gia Việt Nam",
+                clinical_monograph_id=monograph.id
+            )]
 
     if not drugs:
         if len(kw.split()) > 1 and any(term in query.casefold() for term in ("tương tác", "tương kỵ", "phối hợp", "dùng cùng", "uống cùng", "kết hợp")):
