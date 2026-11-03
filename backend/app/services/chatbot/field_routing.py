@@ -30,14 +30,25 @@ def extract_matched_field_keys(lower_query: str) -> set[str]:
     }
 
 async def handle_interaction_clarification(
-    query: str, lower_query: str, session_id: str, user_name: str, user_role: str
+    query: str, lower_query: str, session_id: str, user_name: str, user_role: str, session: Any = None
 ) -> CopilotResponse | None:
     from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
     from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
 
-    trie_meds = get_drug_lexical_matcher().extract_medications(query)
+    matcher = get_drug_lexical_matcher()
+    trie_meds = matcher.extract_medications(query)
     if len(trie_meds) >= 2:
         return format_multi_ddi_response(trie_meds, query, session_id=session_id)
+
+    is_deictic = any(ref in lower_query for ref in ("2 thuốc", "hai thuốc", "thuốc kia", "thuốc đó", "hai loại", "2 loại", "vừa rồi", "chúng nó", "cơ mà")) and any(t in lower_query for t in ("tương tác", "tương kỵ", "kỵ", "tuong tac", "tuong ky", "phối hợp", "uống cùng", "dùng cùng"))
+    if is_deictic and session and getattr(session, "conversation_turns", None):
+        for turn in reversed(session.conversation_turns):
+            prev_meds = matcher.extract_medications(turn.user_text)
+            if len(prev_meds) >= 2:
+                return format_multi_ddi_response(prev_meds, query, session_id=session_id)
+            prev_asst = matcher.extract_medications(turn.assistant_text)
+            if len(prev_asst) >= 2:
+                return format_multi_ddi_response(prev_asst, query, session_id=session_id)
 
     ddi_context = expand_clinical_graph(query).get("kg_entities", [])
     named_drugs = {entity for entity in ddi_context if entity.startswith("INN:")}

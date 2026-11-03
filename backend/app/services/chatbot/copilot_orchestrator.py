@@ -71,18 +71,17 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if subflow_res:
         return subflow_res
 
-    extracted_kw = extract_drug_keywords(query)
-    resolved_meds = resolve_registered_medications(lower_query)
+    extracted_kw, resolved_meds = extract_drug_keywords(query), resolve_registered_medications(lower_query)
     is_two_drug = (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))) or len(resolved_meds) > 1
     has_interaction_term = any(term in lower_query for term in ("tương tác", "tương kỵ", "kỵ thuốc", "kỵ với", "kỵ gì", "tuong tac", "tuong ky", "ky thuoc"))
-    is_interaction_q = has_interaction_term or any(term in lower_query for term in ("phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung", "uong cung", "dung cung"))
-    has_single_cand = (has_candidate_drug or len(resolved_meds) == 1 or len(extracted_kw) >= 3 or active_in_query) and not is_two_drug
-    is_single_interaction = (
-        has_single_cand and has_interaction_term and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))
-    )
+    is_check_multi = is_two_drug and ("+" in lower_query or any(w in lower_query for w in ("kiểm tra", "kiem tra", "check", "rà soát", "ra soat")))
+    is_interaction_q = has_interaction_term or is_check_multi or any(term in lower_query for term in ("phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung", "uong cung", "dung cung"))
+    is_deictic_interaction = has_interaction_term and any(ref in lower_query for ref in ("2 thuốc", "hai thuốc", "thuốc kia", "thuốc đó", "vừa rồi", "hai loại", "2 loại", "chúng nó", "cơ mà"))
+    has_single_cand = (has_candidate_drug or len(resolved_meds) == 1 or len(extracted_kw) >= 3 or active_in_query) and not is_two_drug and not is_deictic_interaction
+    is_single_interaction = has_single_cand and has_interaction_term and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))
 
-    if is_interaction_q and not is_single_interaction and not any(term in lower_query for term in ("tương tác thuốc của thuốc", "tương tác thuốc paracetamol", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "liều dùng", "liều tối đa", "thành phần", "hoạt chất", "chỉ định", "công dụng", "chong chi dinh", "tac dung phu", "lieu dung")):
-        clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role)
+    if (is_interaction_q or is_deictic_interaction) and not is_single_interaction and not any(term in lower_query for term in ("tương tác thuốc của thuốc", "tương tác thuốc paracetamol", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "liều dùng", "liều tối đa", "thành phần", "hoạt chất", "chỉ định", "công dụng", "chong chi dinh", "tac dung phu", "lieu dung")):
+        clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)
         if clarification_res:
             return clarification_res
 

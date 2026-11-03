@@ -47,6 +47,13 @@ CLASS_DDI_RULES: list[dict] = [
         "action": "Chống chỉ định phối hợp đồng thời 2 NSAID. Chỉ dùng 1 loại ở liều thấp nhất hiệu quả.", "source": "QĐ 5948/QĐ-BYT (Mục 3.2)"
     },
     {
+        "id": "RULE_WARFARIN_NSAID", "class_a": "VITAMIN_K_ANTAGONIST", "class_b": "NSAID",
+        "severity": "CONTRAINDICATED", "title": "KHÁNG VITAMIN K (WARFARIN) + NSAID / ASPIRIN: XUẤT HUYẾT TIÊU HÓA Ồ ẠT",
+        "mech": "Hiệp đồng tác dụng chống đông máu và ức chế ngưng tập tiểu cầu, kết hợp tổn thương bào mòn niêm mạc dạ dày tá tràng của NSAID.",
+        "conseq": "Nguy cơ xuất huyết tiêu hóa ồ ạt, loét thủng dạ dày, chảy máu kéo dài đe dọa tính mạng.",
+        "action": "Chống chỉ định phối hợp thường quy. Nếu bắt buộc chỉ định tim mạch (van cơ học), giám sát chặt INR và dùng kèm PPI bảo vệ dạ dày.", "source": "QĐ 5948/QĐ-BYT (Mục 3.2) & Dược Thư Quốc Gia Việt Nam"
+    },
+    {
         "id": "RULE_NSAID_METHOTREXATE", "class_a": "NSAID", "class_b": "ANTIMETABOLITE",
         "severity": "CONTRAINDICATED", "title": "NSAID + METHOTREXAT: TÍCH LŨY ĐỘC TÍNH TỦY XƯƠNG CẤP",
         "mech": "NSAID giảm bài tiết Methotrexat qua ống thận và giảm lưu lượng máu thận.",

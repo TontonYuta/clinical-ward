@@ -35,6 +35,7 @@ MINED_PRODUCTION_CASES = [
     ("bạn có người yêu chưa", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
     ("nói chuyện linh tinh một chút đi", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
     ("bạn có biết kết quả sổ xố hôm nay không", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
+    ("Kiểm tra Warfarin + Aspirin", "MEDICATION_SAFETY_PROFILE", ["warfarin", "aspirin", "xuất huyết", "qđ 5948"]),
 ]
 
 @pytest.mark.asyncio
@@ -70,3 +71,25 @@ async def test_mined_multiturn_deictic_context():
         d_summary = r_summary.json()
         assert d_summary["answer_type"] == "medication_summary"
         assert "840110202926" in d_summary["reply_text"]
+
+@pytest.mark.asyncio
+async def test_mined_multiturn_ddi_deictic():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        sess = "mined_ddi_deictic_sess"
+        r1 = await client.post("/api/v1/copilot/chat", json={
+            "query": "Kiểm tra Warfarin + Aspirin", "user_name": "BS. Trần Văn Hùng", "user_role": "doctor", "session_id": sess
+        })
+        assert r1.status_code == 200
+        d1 = r1.json()
+        assert d1["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert "xuất huyết" in d1["reply_text"].lower()
+
+        r2 = await client.post("/api/v1/copilot/chat", json={
+            "query": "Tương tác của 2 thuốc kia cơ mà", "user_name": "BS. Trần Văn Hùng", "user_role": "doctor", "session_id": sess
+        })
+        assert r2.status_code == 200
+        d2 = r2.json()
+        assert d2["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert "warfarin" in d2["reply_text"].lower()
+        assert "aspirin" in d2["reply_text"].lower()
+        assert "xuất huyết" in d2["reply_text"].lower()
