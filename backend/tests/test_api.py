@@ -21,116 +21,117 @@ async def test_health_check():
         assert data["status"] == "healthy"
         assert len(data["legal_compliance"]) >= 5
 
-@pytest.mark.asyncio
-async def test_debts_workflow_and_narcotic_lock():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # 1. Get initial debts
-        res = await client.get("/api/v1/debts")
-        assert res.status_code == 200
-        debts = res.json()
-        assert len(debts) == 12
-
-        # 2. Filter debts
-        res_debt = await client.get("/api/v1/debts?status=debt")
-        assert res_debt.status_code == 200
-        active_debts = res_debt.json()
-        assert all(d["status"] == "debt" for d in active_debts)
-
-        # 3. Search debt
-        res_search = await client.get("/api/v1/debts?search=Adrenalin")
-        assert res_search.status_code == 200
-        assert len(res_search.json()) >= 1
-
-        # 4. Emergency borrow a narcotic (Morphin)
-        borrow_payload = {
-            "item_name": "Morphin sulfat 10mg/1ml",
-            "item_type": "Thuốc gây nghiện",
-            "quantity": 2,
-            "patient_name": "Nguyễn Văn Test (BN-9999)",
-            "patient_room": "Buồng Cấp Cứu 1 - Giường 01",
-            "borrower": "ĐD. Lê Thị Thu",
-            "clinical_reason": "Test giảm đau cấp cứu nhồi máu cơ tim",
-            "auth_method": "PIN"
-        }
-        res_borrow = await client.post("/api/v1/debts/borrow", json=borrow_payload)
-        assert res_borrow.status_code == 201
-        new_debt = res_borrow.json()
-        debt_id = new_debt["id"]
-        assert new_debt["status"] == "debt"
-        assert new_debt["ampoule_returned"] is False  # Narcotic must require ampoule return
-
-        # 5. HARD CLINICAL RULE: Settle MUST FAIL (409 Conflict) if ampoule not returned!
-        res_settle_fail = await client.put(
-            f"/api/v1/debts/{debt_id}/settle",
-            json={"settler": "DS. Nguyễn Bích Ngọc", "auth_method": "PIN"}
-        )
-        assert res_settle_fail.status_code == 409
-        assert "BẮT BUỘC THU HỒI VỎ" in res_settle_fail.json()["detail"]
-
-        # 6. Return ampoule
-        res_return = await client.put(f"/api/v1/debts/{debt_id}/return-ampoule")
-        assert res_return.status_code == 200
-        assert res_return.json()["ampoule_returned"] is True
-
-        # 7. Settle should now succeed
-        res_settle_ok = await client.put(
-            f"/api/v1/debts/{debt_id}/settle",
-            json={"settler": "DS. Nguyễn Bích Ngọc", "auth_method": "PIN"}
-        )
-        assert res_settle_ok.status_code == 200
-        assert res_settle_ok.json()["status"] == "settled"
-
-        # 8. Destroy ampoules council
-        res_destroy = await client.post(
-            "/api/v1/debts/destroy-ampoules",
-            json={
-                "pharmacist_name": "DS. Nguyễn Bích Ngọc",
-                "nurse_name": "ĐD. Lê Thị Thu",
-                "doctor_witness": "BS. Trần Văn Hùng",
-                "method": "Đập vỡ ngâm hóa chất khử hoạt tính theo quy trình TT 20/2017"
-            }
-        )
-        assert res_destroy.status_code == 200
-
-@pytest.mark.asyncio
-async def test_equipment_incident_and_handover():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # 1. Get equipment tickets
-        res = await client.get("/api/v1/equipment")
-        assert res.status_code == 200
-        tickets = res.json()
-        assert len(tickets) == 10
-
-        # 2. Report incident
-        incident_payload = {
-            "device_name": "Máy sốc tim ngoài lồng ngực Philips",
-            "device_model": "HeartStart XL",
-            "serial_number": "PHI-TEST-8899",
-            "risk_class": "D",
-            "location": "Khoa Hồi Sức Tích Cực (ICU) - Xe tiêm 1",
-            "accessory_issue": "Dây cáp ECG 3 chuyển đạo bị rách vỏ cách điện",
-            "urgency": "urgent",
-            "assigned_engineer": "KS. Đặng Văn Nam"
-        }
-        res_inc = await client.post("/api/v1/equipment/incidents", json=incident_payload)
-        assert res_inc.status_code == 201
-        ticket = res_inc.json()
-        ticket_id = ticket["id"]
-        assert ticket["status"] == "reported"
-
-        # 3. Handover and electrical safety test
-        handover_payload = {
-            "assigned_engineer": "KS. Đặng Văn Nam",
-            "clinical_receiver": "BS. Trần Văn Hùng",
-            "test_result": "Đạt chuẩn an toàn dòng rò điện và đo năng lượng xung nạp 200J sai số < 2%",
-            "auth_method": "PIN"
-        }
-        res_handover = await client.put(f"/api/v1/equipment/{ticket_id}/handover", json=handover_payload)
-        assert res_handover.status_code == 200
-        updated = res_handover.json()
-        assert updated["status"] == "resolved"
-        assert updated["handover_engineer"] == "KS. Đặng Văn Nam"
-        assert updated["handover_receiver"] == "BS. Trần Văn Hùng"
+# Tạm thời comment tính năng Sổ nợ vỏ và TBYT theo yêu cầu người dùng
+# @pytest.mark.asyncio
+# async def test_debts_workflow_and_narcotic_lock():
+#     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+#         # 1. Get initial debts
+#         res = await client.get("/api/v1/debts")
+#         assert res.status_code == 200
+#         debts = res.json()
+#         assert len(debts) == 12
+# 
+#         # 2. Filter debts
+#         res_debt = await client.get("/api/v1/debts?status=debt")
+#         assert res_debt.status_code == 200
+#         active_debts = res_debt.json()
+#         assert all(d["status"] == "debt" for d in active_debts)
+# 
+#         # 3. Search debt
+#         res_search = await client.get("/api/v1/debts?search=Adrenalin")
+#         assert res_search.status_code == 200
+#         assert len(res_search.json()) >= 1
+# 
+#         # 4. Emergency borrow a narcotic (Morphin)
+#         borrow_payload = {
+#             "item_name": "Morphin sulfat 10mg/1ml",
+#             "item_type": "Thuốc gây nghiện",
+#             "quantity": 2,
+#             "patient_name": "Nguyễn Văn Test (BN-9999)",
+#             "patient_room": "Buồng Cấp Cứu 1 - Giường 01",
+#             "borrower": "ĐD. Lê Thị Thu",
+#             "clinical_reason": "Test giảm đau cấp cứu nhồi máu cơ tim",
+#             "auth_method": "PIN"
+#         }
+#         res_borrow = await client.post("/api/v1/debts/borrow", json=borrow_payload)
+#         assert res_borrow.status_code == 201
+#         new_debt = res_borrow.json()
+#         debt_id = new_debt["id"]
+#         assert new_debt["status"] == "debt"
+#         assert new_debt["ampoule_returned"] is False  # Narcotic must require ampoule return
+# 
+#         # 5. HARD CLINICAL RULE: Settle MUST FAIL (409 Conflict) if ampoule not returned!
+#         res_settle_fail = await client.put(
+#             f"/api/v1/debts/{debt_id}/settle",
+#             json={"settler": "DS. Nguyễn Bích Ngọc", "auth_method": "PIN"}
+#         )
+#         assert res_settle_fail.status_code == 409
+#         assert "BẮT BUỘC THU HỒI VỎ" in res_settle_fail.json()["detail"]
+# 
+#         # 6. Return ampoule
+#         res_return = await client.put(f"/api/v1/debts/{debt_id}/return-ampoule")
+#         assert res_return.status_code == 200
+#         assert res_return.json()["ampoule_returned"] is True
+# 
+#         # 7. Settle should now succeed
+#         res_settle_ok = await client.put(
+#             f"/api/v1/debts/{debt_id}/settle",
+#             json={"settler": "DS. Nguyễn Bích Ngọc", "auth_method": "PIN"}
+#         )
+#         assert res_settle_ok.status_code == 200
+#         assert res_settle_ok.json()["status"] == "settled"
+# 
+#         # 8. Destroy ampoules council
+#         res_destroy = await client.post(
+#             "/api/v1/debts/destroy-ampoules",
+#             json={
+#                 "pharmacist_name": "DS. Nguyễn Bích Ngọc",
+#                 "nurse_name": "ĐD. Lê Thị Thu",
+#                 "doctor_witness": "BS. Trần Văn Hùng",
+#                 "method": "Đập vỡ ngâm hóa chất khử hoạt tính theo quy trình TT 20/2017"
+#             }
+#         )
+#         assert res_destroy.status_code == 200
+# 
+# @pytest.mark.asyncio
+# async def test_equipment_incident_and_handover():
+#     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+#         # 1. Get equipment tickets
+#         res = await client.get("/api/v1/equipment")
+#         assert res.status_code == 200
+#         tickets = res.json()
+#         assert len(tickets) == 10
+# 
+#         # 2. Report incident
+#         incident_payload = {
+#             "device_name": "Máy sốc tim ngoài lồng ngực Philips",
+#             "device_model": "HeartStart XL",
+#             "serial_number": "PHI-TEST-8899",
+#             "risk_class": "D",
+#             "location": "Khoa Hồi Sức Tích Cực (ICU) - Xe tiêm 1",
+#             "accessory_issue": "Dây cáp ECG 3 chuyển đạo bị rách vỏ cách điện",
+#             "urgency": "urgent",
+#             "assigned_engineer": "KS. Đặng Văn Nam"
+#         }
+#         res_inc = await client.post("/api/v1/equipment/incidents", json=incident_payload)
+#         assert res_inc.status_code == 201
+#         ticket = res_inc.json()
+#         ticket_id = ticket["id"]
+#         assert ticket["status"] == "reported"
+# 
+#         # 3. Handover and electrical safety test
+#         handover_payload = {
+#             "assigned_engineer": "KS. Đặng Văn Nam",
+#             "clinical_receiver": "BS. Trần Văn Hùng",
+#             "test_result": "Đạt chuẩn an toàn dòng rò điện và đo năng lượng xung nạp 200J sai số < 2%",
+#             "auth_method": "PIN"
+#         }
+#         res_handover = await client.put(f"/api/v1/equipment/{ticket_id}/handover", json=handover_payload)
+#         assert res_handover.status_code == 200
+#         updated = res_handover.json()
+#         assert updated["status"] == "resolved"
+#         assert updated["handover_engineer"] == "KS. Đặng Văn Nam"
+#         assert updated["handover_receiver"] == "BS. Trần Văn Hùng"
 
 @pytest.mark.asyncio
 async def test_inventory_fefo_and_restock():
@@ -224,43 +225,44 @@ async def test_cold_chain_outage_and_quarantine():
         res_final = await client.get("/api/v1/coldchain/status")
         assert res_final.json()["is_quarantined"] is False
 
-@pytest.mark.asyncio
-async def test_assets_management_and_audit():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # 1. Get assets
-        res = await client.get("/api/v1/assets")
-        assert res.status_code == 200
-        assets = res.json()
-        assert len(assets) == 12
-
-        # 2. Scan QR
-        target_asset = assets[0]
-        res_scan = await client.post(f"/api/v1/assets/{target_asset['id']}/scan-qr")
-        assert res_scan.status_code == 200
-        assert res_scan.json()["id"] == target_asset["id"]
-
-        # 3. Transfer asset (Mẫu 01/TSC-ĐC)
-        transfer_payload = {
-            "new_department": "Khoa Hồi Sức Tích Cực (ICU)",
-            "engineer_name": "KS. Đặng Văn Nam",
-            "receiver_name": "ĐD. Lê Thị Thu",
-            "transfer_reason": "Điều chuyển hỗ trợ cấp cứu theo lệnh Ban Giám Đốc"
-        }
-        res_transfer = await client.put(f"/api/v1/assets/{target_asset['id']}/transfer", json=transfer_payload)
-        assert res_transfer.status_code == 200
-        transferred = res_transfer.json()
-        assert transferred["registered_department"] == "Khoa Hồi Sức Tích Cực (ICU)"
-        assert transferred["actual_department"] == "Khoa Hồi Sức Tích Cực (ICU)"
-        assert transferred["is_misallocated"] is False
-
-        # 4. Liquidate asset
-        liquidate_payload = {
-            "director_name": "TS.BS. Nguyễn Văn An",
-            "reason": "Hao mòn vô hình và hư hỏng không thể phục hồi theo Điều 39 NĐ 151/2017"
-        }
-        res_liq = await client.put(f"/api/v1/assets/{target_asset['id']}/liquidate", json=liquidate_payload)
-        assert res_liq.status_code == 200
-        assert res_liq.json()["pending_liquidation"] is True
+# Tạm thời comment tính năng Quản lý tài sản TBYT theo yêu cầu người dùng
+# @pytest.mark.asyncio
+# async def test_assets_management_and_audit():
+#     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+#         # 1. Get assets
+#         res = await client.get("/api/v1/assets")
+#         assert res.status_code == 200
+#         assets = res.json()
+#         assert len(assets) == 12
+# 
+#         # 2. Scan QR
+#         target_asset = assets[0]
+#         res_scan = await client.post(f"/api/v1/assets/{target_asset['id']}/scan-qr")
+#         assert res_scan.status_code == 200
+#         assert res_scan.json()["id"] == target_asset["id"]
+# 
+#         # 3. Transfer asset (Mẫu 01/TSC-ĐC)
+#         transfer_payload = {
+#             "new_department": "Khoa Hồi Sức Tích Cực (ICU)",
+#             "engineer_name": "KS. Đặng Văn Nam",
+#             "receiver_name": "ĐD. Lê Thị Thu",
+#             "transfer_reason": "Điều chuyển hỗ trợ cấp cứu theo lệnh Ban Giám Đốc"
+#         }
+#         res_transfer = await client.put(f"/api/v1/assets/{target_asset['id']}/transfer", json=transfer_payload)
+#         assert res_transfer.status_code == 200
+#         transferred = res_transfer.json()
+#         assert transferred["registered_department"] == "Khoa Hồi Sức Tích Cực (ICU)"
+#         assert transferred["actual_department"] == "Khoa Hồi Sức Tích Cực (ICU)"
+#         assert transferred["is_misallocated"] is False
+# 
+#         # 4. Liquidate asset
+#         liquidate_payload = {
+#             "director_name": "TS.BS. Nguyễn Văn An",
+#             "reason": "Hao mòn vô hình và hư hỏng không thể phục hồi theo Điều 39 NĐ 151/2017"
+#         }
+#         res_liq = await client.put(f"/api/v1/assets/{target_asset['id']}/liquidate", json=liquidate_payload)
+#         assert res_liq.status_code == 200
+#         assert res_liq.json()["pending_liquidation"] is True
 
 @pytest.mark.asyncio
 async def test_tamper_evident_audit_ledger_integrity():
@@ -282,25 +284,23 @@ async def test_tamper_evident_audit_ledger_integrity():
 @pytest.mark.asyncio
 async def test_copilot_clinical_intents():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # Test emergency borrow query
-        res1 = await client.post(
-            "/api/v1/copilot/chat",
-            json={"query": "Tôi cần lấy 2 ống Morphin cho bệnh nhân buồng cấp cứu 3"}
-        )
-        assert res1.status_code == 200
-        data1 = res1.json()
-        assert data1["intent"] == "BORROW_EMERGENCY_ITEM"
-        assert "Thông tư 22" in data1["legal_basis"]
-
-        # Test equipment malfunction query
-        res2 = await client.post(
-            "/api/v1/copilot/chat",
-            json={"query": "Máy thở phòng mổ 2 bị xì khí nứt bẫy nước"}
-        )
-        assert res2.status_code == 200
-        data2 = res2.json()
-        assert data2["intent"] == "REPORT_EQUIPMENT_INCIDENT"
-        assert "Nghị định 98" in data2["legal_basis"]
+        # Tạm comment test BORROW và EQUIPMENT theo yêu cầu tạm ẩn tính năng
+        # res1 = await client.post(
+        #     "/api/v1/copilot/chat",
+        #     json={"query": "Tôi cần lấy 2 ống Morphin cho bệnh nhân buồng cấp cứu 3"}
+        # )
+        # assert res1.status_code == 200
+        # data1 = res1.json()
+        # assert data1["intent"] == "BORROW_EMERGENCY_ITEM"
+        # assert "Thông tư 22" in data1["legal_basis"]
+        # res2 = await client.post(
+        #     "/api/v1/copilot/chat",
+        #     json={"query": "Máy thở phòng mổ 2 bị xì khí nứt bẫy nước"}
+        # )
+        # assert res2.status_code == 200
+        # data2 = res2.json()
+        # assert data2["intent"] == "REPORT_EQUIPMENT_INCIDENT"
+        # assert "Nghị định 98" in data2["legal_basis"]
 
         # Test clinical consultation inquiry
         res3 = await client.post(

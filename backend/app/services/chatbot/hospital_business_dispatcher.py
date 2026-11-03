@@ -41,12 +41,13 @@ async def dispatch_clinical_subflows(
     if is_cpoe:
         return await handle_cpoe_intent(query, lower_query, user_name)
 
-    is_debt_settle = any(w in lower_query for w in [
-        "trả vỏ", "hoàn trả vỏ", "thu hồi vỏ", "thanh toán nợ", "thanh toán sổ nợ",
-        "trả nợ thuốc", "xóa nợ thuốc", "đối soát vỏ morphin", "xác nhận trả vỏ"
-    ]) and not any(w in lower_query for w in ["quy định", "thông tư", "nghị định"])
-    if is_debt_settle:
-        return await handle_debt_settle_intent(query, lower_query, db)
+    # Tạm thời comment tính năng xử lý trả nợ vỏ theo yêu cầu người dùng
+    # is_debt_settle = any(w in lower_query for w in [
+    #     "trả vỏ", "hoàn trả vỏ", "thu hồi vỏ", "thanh toán nợ", "thanh toán sổ nợ",
+    #     "trả nợ thuốc", "xóa nợ thuốc", "đối soát vỏ morphin", "xác nhận trả vỏ"
+    # ]) and not any(w in lower_query for w in ["quy định", "thông tư", "nghị định"])
+    # if is_debt_settle:
+    #     return await handle_debt_settle_intent(query, lower_query, db)
 
     return None
 
@@ -72,10 +73,11 @@ async def dispatch_operational_business(
     if any(w in lower_query for w in ["đối soát", "giao ban", "ca trực", "ca đêm", "báo cáo ca", "chốt ca", "bàn giao ca", "07:00", "lệch sổ", "tổng hợp nợ"]):
         return await handle_shift_handover_intent(db)
 
-    if find_matched_eq(lower_query) is not None or any(w in lower_query for w in [
-        "báo hỏng", "sự cố máy", "lỗi thiết bị", "xì khí", "không lên nguồn", "kẹt pít-tông", "chai pin"
-    ]):
-        return await handle_equipment_intent(query, lower_query, user_name, db)
+    # Tạm thời comment tính năng báo hỏng TBYT theo yêu cầu người dùng
+    # if find_matched_eq(lower_query) is not None or any(w in lower_query for w in [
+    #     "báo hỏng", "sự cố máy", "lỗi thiết bị", "xì khí", "không lên nguồn", "kẹt pít-tông", "chai pin"
+    # ]):
+    #     return await handle_equipment_intent(query, lower_query, user_name, db)
 
     if any(w in lower_query for w in ["fefo", "cận hạn", "hạn dùng", "hết hạn", "sắp hết hạn", "ngày hết hạn", "ưu tiên xuất"]) or re.search(r"\bdate\b", lower_query):
         return await handle_fefo_intent(db)
@@ -102,7 +104,8 @@ async def dispatch_operational_business(
         "dị ứng", "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào",
         "thế nào", "như thế nào", "bao nhiêu", "hỏi về", "thông tin"
     ])
-    if matched_med is not None and not is_med_info and (has_dispense_verb or any(c.isdigit() for c in query)):
-        return await handle_borrow_intent(query, lower_query, user_name)
+    # Tạm thời comment tính năng mượn nợ thuốc tủ trực theo yêu cầu người dùng
+    # if matched_med is not None and not is_med_info and (has_dispense_verb or any(c.isdigit() for c in query)):
+    #     return await handle_borrow_intent(query, lower_query, user_name)
 
     return None

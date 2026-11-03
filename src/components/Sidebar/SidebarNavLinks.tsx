@@ -50,17 +50,18 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
   const pharmacyDefs: NavDef[] = [
     { tab: 'overview', label: 'Tổng quan', icon: LayoutDashboard, title: 'Tổng quan vận hành' },
     { tab: 'cpoe', label: 'Kê đơn thuốc', icon: Stethoscope, title: 'Kê đơn thuốc nội trú & ngoại trú' },
-    {
-      tab: 'debt',
-      label: 'Sổ nợ vỏ',
-      icon: FileText,
-      title: 'Sổ theo dõi nợ vỏ thuốc tủ trực',
-      badge: debtCount > 0 ? (
-        <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/80 tabular-nums">
-          {debtCount}
-        </span>
-      ) : null
-    },
+    // Tạm thời comment tính năng Sổ nợ vỏ theo yêu cầu người dùng
+    // {
+    //   tab: 'debt',
+    //   label: 'Sổ nợ vỏ',
+    //   icon: FileText,
+    //   title: 'Sổ theo dõi nợ vỏ thuốc tủ trực',
+    //   badge: debtCount > 0 ? (
+    //     <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/80 tabular-nums">
+    //       {debtCount}
+    //     </span>
+    //   ) : null
+    // },
     {
       tab: 'fefo',
       label: 'Kho dược',
@@ -87,30 +88,31 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
     }
   ];
 
-  const equipmentDefs: NavDef[] = [
-    {
-      tab: 'equipment',
-      label: 'Sự cố thiết bị',
-      icon: Wrench,
-      title: 'Quản lý báo hỏng và sửa chữa',
-      badge: urgentTicketsCount > 0 ? (
-        <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200/80 tabular-nums">
-          {urgentTicketsCount}
-        </span>
-      ) : null
-    },
-    {
-      tab: 'asset_audit',
-      label: 'Kiểm kê tài sản',
-      icon: Building2,
-      title: 'Kiểm kê và điều chuyển tài sản',
-      badge: misallocatedAssetsCount > 0 ? (
-        <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/80 tabular-nums">
-          {misallocatedAssetsCount}
-        </span>
-      ) : null
-    }
-  ];
+  // Tạm thời comment tính năng TBYT và Kiểm kê tài sản theo yêu cầu người dùng
+  // const equipmentDefs: NavDef[] = [
+  //   {
+  //     tab: 'equipment',
+  //     label: 'Sự cố thiết bị',
+  //     icon: Wrench,
+  //     title: 'Quản lý báo hỏng và sửa chữa',
+  //     badge: urgentTicketsCount > 0 ? (
+  //       <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200/80 tabular-nums">
+  //         {urgentTicketsCount}
+  //       </span>
+  //     ) : null
+  //   },
+  //   {
+  //     tab: 'asset_audit',
+  //     label: 'Kiểm kê tài sản',
+  //     icon: Building2,
+  //     title: 'Kiểm kê và điều chuyển tài sản',
+  //     badge: misallocatedAssetsCount > 0 ? (
+  //       <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/80 tabular-nums">
+  //         {misallocatedAssetsCount}
+  //       </span>
+  //     ) : null
+  //   }
+  // ];
 
   const renderNavList = (title: string, defs: NavDef[]) => {
     const visibleDefs = defs.filter(d => allowedTabs.includes(d.tab));
@@ -155,7 +157,7 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
 
   return (
     <div className="space-y-4">
-      {renderNavList('Nghiệp vụ', [...pharmacyDefs, ...equipmentDefs])}
+      {renderNavList('Nghiệp vụ', pharmacyDefs)}
     </div>
   );
 };

@@ -42,11 +42,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   misallocatedAssetsCount,
 }) => {
   const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
-  const allowedTabs = profile.allowedTabs || ['debt'];
+  const allowedTabs = profile.allowedTabs || ['overview'];
   
   const displayTabs = React.useMemo(() => {
-    const filtered = (Object.keys(TAB_CONFIG) as DashboardTab[]).filter(t => allowedTabs.includes(t));
-    return filtered.length > 0 ? filtered : allowedTabs.slice(0, 4);
+    // Tạm thời comment / ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
+    const hiddenTabs: DashboardTab[] = ['debt', 'equipment', 'asset_audit'];
+    const filtered = (Object.keys(TAB_CONFIG) as DashboardTab[])
+      .filter(t => !hiddenTabs.includes(t) && allowedTabs.includes(t));
+    return filtered.length > 0 ? filtered : (['overview', 'cpoe'] as DashboardTab[]);
   }, [allowedTabs]);
 
   const getBadge = (tab: DashboardTab) => {

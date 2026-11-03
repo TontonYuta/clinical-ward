@@ -146,7 +146,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             )}
 
-            {currentTab === 'debt' && (
+            {/* Tạm thời comment tính năng Sổ nợ vỏ và TBYT theo yêu cầu người dùng */}
+            {/* {currentTab === 'debt' && (
               <DebtLedgerTab
                 debts={debts}
                 onSettleDebt={onSettleDebt}
@@ -158,9 +159,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 isAudioMuted={isAudioMuted}
                 currentUserRole={currentUserRole}
               />
-            )}
+            )} */}
 
-            {currentTab === 'equipment' && (
+            {/* {currentTab === 'equipment' && (
               <EquipmentIncidentTab
                 tickets={tickets}
                 onUpdateTicketStatus={onUpdateTicketStatus}
@@ -169,7 +170,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 isAudioMuted={isAudioMuted}
                 currentUserRole={currentUserRole}
               />
-            )}
+            )} */}
 
             {currentTab === 'fefo' && (
               <FefoInventoryTab
@@ -193,7 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             )}
 
-            {currentTab === 'asset_audit' && (
+            {/* {currentTab === 'asset_audit' && (
               <AssetAuditTab
                 assets={assets}
                 onConfirmTransfer={onConfirmTransfer}
@@ -203,7 +204,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 isAudioMuted={isAudioMuted}
                 currentUserRole={currentUserRole}
               />
-            )}
+            )} */}
           </>
         )}
       </div>

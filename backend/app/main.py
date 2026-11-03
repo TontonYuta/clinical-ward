@@ -100,11 +100,12 @@ app.add_middleware(
 )
 
 # Register Domain Routers
-app.include_router(debts.router, prefix=settings.API_V1_STR)
-app.include_router(equipment.router, prefix=settings.API_V1_STR)
+# Tạm thời comment router TBYT & Sổ nợ vỏ theo yêu cầu người dùng
+# app.include_router(debts.router, prefix=settings.API_V1_STR)
+# app.include_router(equipment.router, prefix=settings.API_V1_STR)
 app.include_router(inventory.router, prefix=settings.API_V1_STR)
 app.include_router(coldchain.router, prefix=settings.API_V1_STR)
-app.include_router(assets.router, prefix=settings.API_V1_STR)
+# app.include_router(assets.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
 app.include_router(copilot.router, prefix=settings.API_V1_STR)
 app.include_router(cpoe.router, prefix=settings.API_V1_STR)

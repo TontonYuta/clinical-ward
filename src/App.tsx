@@ -283,7 +283,8 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').toLowerCase() as DashboardTab;
-      if (['cpoe', 'debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'].includes(hash)) {
+      // Tạm thời comment điều hướng tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
+      if (['overview', 'cpoe', 'fefo', 'coldchain'].includes(hash)) {
         setCurrentTab(hash);
       }
     };
@@ -302,20 +303,13 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   useEffect(() => {
     let isMounted = true;
     Promise.allSettled([
-      debtApi.fetchDebts(),
-      equipmentApi.fetchEquipmentTickets(),
+      // Tạm thời comment đồng bộ ngầm cho TBYT và Sổ nợ vỏ theo yêu cầu người dùng
+      // debtApi.fetchDebts(),
+      // equipmentApi.fetchEquipmentTickets(),
       inventoryApi.fetchInventoryBatches(),
-    ]).then(([resDebts, resTickets, resBatches]) => {
+    ]).then(([resBatches]) => {
       if (!isMounted) return;
-      if (resDebts.status === 'fulfilled' && resDebts.value.length > 0) {
-        setDebts(resDebts.value);
-        saveCachedDebts(resDebts.value);
-      }
-      if (resTickets.status === 'fulfilled' && resTickets.value.length > 0) {
-        setTickets(resTickets.value);
-        saveCachedTickets(resTickets.value);
-      }
-      if (resBatches.status === 'fulfilled' && resBatches.value.length > 0) {
+      if (resBatches && resBatches.status === 'fulfilled' && resBatches.value.length > 0) {
         setBatches(resBatches.value);
         saveCachedBatches(resBatches.value);
       }

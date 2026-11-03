@@ -50,7 +50,8 @@ const GUIDE_TABS: GuideTabMeta[] = [
   { id: 'shift_workflow', label: 'Quy trình ca trực & Ký số', icon: Clock },
   { id: 'cpoe_safety', label: 'Kê đơn CPOE & An toàn', icon: FileText },
   { id: 'pharmacy_stock', label: 'Kho Dược & Tủ trực', icon: Boxes },
-  { id: 'equipment_incident', label: 'Thiết bị Y tế & Sự cố', icon: Wrench },
+  // Tạm thời comment hướng dẫn TBYT theo yêu cầu người dùng
+  // { id: 'equipment_incident', label: 'Thiết bị Y tế & Sự cố', icon: Wrench },
   { id: 'clinical_ai', label: 'Trợ lý AI Lâm sàng', icon: Bot },
 ];
 

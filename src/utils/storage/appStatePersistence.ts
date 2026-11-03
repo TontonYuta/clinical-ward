@@ -37,7 +37,8 @@ const KEYS = {
   CACHED_AUDIT: 'clinical_cached_audit'
 };
 
-const VALID_TABS: DashboardTab[] = ['overview', 'cpoe', 'debt', 'equipment', 'fefo', 'coldchain', 'asset_audit'];
+// Tạm thời ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
+const VALID_TABS: DashboardTab[] = ['overview', 'cpoe', 'fefo', 'coldchain'];
 const VALID_ROLES: UserRole[] = ['nurse', 'doctor', 'pharmacist', 'biomedical_engineer', 'director'];
 
 /**

@@ -114,12 +114,18 @@ async def handle_deep_rag_consultation(
 
     cleaned_reply = validate_output_guardrail(rag_res.answer, query)
     from app.services.copilot_drug_keyword_extractor import extract_drug_keywords
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
     cand_kw = extract_drug_keywords(lower_query)
-    target_drugs = resolve_registered_medications(lower_query) or (
-        [session.active_medication_ingredient] if session.active_medication_ingredient else (
-            [cand_kw] if cand_kw and len(cand_kw) >= 3 else []
-        )
-    )
+    extracted_meds = get_drug_lexical_matcher().extract_medications(query)
+    resolved_query_drugs = resolve_registered_medications(lower_query) or extracted_meds
+    if resolved_query_drugs:
+        target_drugs = [d.lower() for d in resolved_query_drugs]
+    elif cand_kw and len(cand_kw) >= 3:
+        target_drugs = [cand_kw.lower()]
+    elif session.active_medication_ingredient:
+        target_drugs = [session.active_medication_ingredient.lower()]
+    else:
+        target_drugs = []
     cleaned_reply, validated_citations, is_grounded = validate_grounded_reply(
         cleaned_reply, [c.to_dict() for c in rag_res.citations], target_drugs, query=query
     )
