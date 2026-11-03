@@ -95,6 +95,34 @@ PRODUCTION_TESTS = [
         "query": "Nhiệt độ bảo quản vắc xin trong tủ lạnh chuyên dụng",
         "must_have": ["36/2018", "2", "8"],
         "forbidden": ["tăng sức"]
+    },
+    {
+        "id": "PROD-13",
+        "name": "Lookup Guide Chip: Tra cứu Dược Thư Quốc Gia",
+        "query": "Tra cứu Dược Thư Quốc Gia",
+        "must_have": ["cổng tra cứu"],
+        "forbidden": ["jevax"]
+    },
+    {
+        "id": "PROD-14",
+        "name": "DDI Menu Chip: Kiểm tra tương tác hai thuốc",
+        "query": "Kiểm tra tương tác hai thuốc",
+        "must_have": ["vui lòng cung cấp", "hai thuốc"],
+        "forbidden": ["sohaibu"]
+    },
+    {
+        "id": "PROD-15",
+        "name": "Suggested Chip Followup: Liều dùng của Venclexta",
+        "query": "Liều dùng của Venclexta",
+        "must_have": ["venclexta", "chuẩn liều"],
+        "forbidden": ["chưa có dữ liệu", "không tìm thấy"]
+    },
+    {
+        "id": "PROD-16",
+        "name": "Administration Timing: Zithromax trước hay sau ăn",
+        "query": "Kháng sinh Zithromax uống trước hay sau ăn?",
+        "must_have": ["zithromax"],
+        "forbidden": ["metformin", "adrenalin"]
     }
 ]
 

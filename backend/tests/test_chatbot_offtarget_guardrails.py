@@ -86,3 +86,31 @@ async def test_unaccented_venclexta_contraindication_returns_monograph():
         res = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
         assert "cyp3a" in res.reply_text.lower()
         assert "chống chỉ định" in res.reply_text.lower()
+
+@pytest.mark.asyncio
+async def test_catalog_guide_query_returns_lookup_guide_not_jevax():
+    async with AsyncSessionLocal() as db:
+        session = get_or_create_session("test_guide", "test_user", "doctor")
+        q = CopilotQuery(query="Tra cứu Dược Thư Quốc Gia", user_name="test_user", user_role="doctor", session_id="test_guide")
+        res = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
+        assert res.intent == "MEDICATION_LOOKUP_GUIDE"
+        assert "jevax" not in res.reply_text.lower()
+        assert "cổng tra cứu" in res.reply_text.lower()
+
+@pytest.mark.asyncio
+async def test_two_drugs_interaction_prompt_returns_clarification_not_sohaibu():
+    async with AsyncSessionLocal() as db:
+        session = get_or_create_session("test_two_ddi", "test_user", "doctor")
+        q = CopilotQuery(query="Kiểm tra tương tác hai thuốc", user_name="test_user", user_role="doctor", session_id="test_two_ddi")
+        res = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
+        assert res.intent == "MEDICATION_INTERACTION_CLARIFICATION"
+        assert "sohaibu" not in res.reply_text.lower()
+
+@pytest.mark.asyncio
+async def test_zithromax_meal_timing_returns_dosage_monograph():
+    async with AsyncSessionLocal() as db:
+        session = get_or_create_session("test_zithro", "test_user", "doctor")
+        q = CopilotQuery(query="Kháng sinh Zithromax uống trước hay sau ăn?", user_name="test_user", user_role="doctor", session_id="test_zithro")
+        res = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
+        assert res.intent == "MEDICATION_SAFETY_PROFILE"
+        assert "zithromax" in res.reply_text.lower()

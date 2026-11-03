@@ -54,7 +54,7 @@ async def build_drug_profile_response(
         ("contraindications", ("chống chỉ định", "cấm dùng", "có dùng được", "dùng được", "có uống được", "uống được"), "contraindications", "Chống chỉ định"),
         ("pediatric_dosage", ("liều trẻ em", "trẻ em", "nhi khoa", "trẻ sơ sinh", "cho bé"), "pediatric_dosage", "Liều dùng trẻ em"),
         ("pregnancy", ("mang thai", "thai kỳ", "cho con bú", "phụ nữ có thai"), "pregnancy_warning", "Cảnh báo phụ nữ mang thai & cho con bú"),
-        ("adult_dosage", ("liều dùng", "liều lượng", "liều tối đa", "cách dùng", "còn liều", "liều"), "adult_dosage", "Liều dùng người lớn"),
+        ("adult_dosage", ("liều dùng", "liều lượng", "liều tối đa", "cách dùng", "còn liều", "liều", "uống lúc nào", "trước ăn", "sau ăn", "khi đói", "khi no", "trước hay sau ăn"), "adult_dosage", "Liều dùng người lớn"),
         ("indications", ("chỉ định", "công dụng", "dùng để làm gì", "dùng cho bệnh gì"), "indications", "Chỉ định"),
         ("ingredient", ("thành phần", "hoạt chất"), "active_ingredient", "Hoạt chất"),
         ("stock", ("tồn kho", "còn bao nhiêu", "trong kho", "vị trí kho"), "", "Tồn kho"),
@@ -73,7 +73,7 @@ async def build_drug_profile_response(
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None
-    contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields})
+    contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields}, drug_name=matched.brand_name)
 
     if requested_fields:
         key, _, field, label = requested_fields[0]

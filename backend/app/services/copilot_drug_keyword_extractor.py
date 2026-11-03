@@ -16,7 +16,10 @@ STOP_PHRASES = [
     "bác sĩ", "dược sĩ", "điều dưỡng", "y tá", "hỏi chút", "hỏi thăm", "cho hỏi", "xin hỏi",
     "điều trị", "chữa trị", "trị bệnh", "chữa bệnh",
     "tuong tac thuoc", "tuong tac", "thong tin thuoc", "thong tin", "chong chi dinh", "tac dung phu", "lieu dung", "thanh phan", "chi dinh", "dieu tri",
-    "thuốc", "về", "sđk", "mã", "html", "code", "website", "trị", "chữa", "uống", "còn liều", "liều"
+    "thuốc", "về", "sđk", "mã", "html", "code", "website", "trị", "chữa", "uống", "còn liều", "liều",
+    "dược thư quốc gia", "dược thư", "tra cứu dược thư", "tra cứu", "kiểm tra tương tác hai thuốc", "kiểm tra tương tác", "tương tác hai thuốc", "hai thuốc", "các thuốc",
+    "kháng sinh", "khang sinh", "thuốc kháng sinh", "thuoc khang sinh",
+    "thuốc cản quang", "tiêm thuốc cản quang", "cản quang", "chụp ct", "chụp mri", "chụp x-quang", "nồng độ đáy", "nồng độ đỉnh", "trough level", "trough", "peak", "định lượng"
 ]
 
 QUESTION_TERMS = {
@@ -40,12 +43,14 @@ QUESTION_TERMS = {
     "hen", "sốt", "đau", "loét", "viêm", "khuẩn", "nhiễm", "sốc", "phản", "vệ", "đột", "quỵ", "ung", "thư", "hạch", "co", "thắt", "giãn",
     "thai", "phụ", "nữ", "trẻ", "sơ", "sinh", "lớn", "già", "bé",
     "quy", "chế", "quản", "lý", "tủ", "trực", "kho", "ca", "viện",
-    "uống", "tiêm", "truyền", "bôi", "nhỏ", "đặt", "uong", "tiem", "truyen", "thông", "tin"
+    "uống", "tiêm", "truyền", "bôi", "nhỏ", "đặt", "uong", "tiem", "truyen", "thông", "tin",
+    "quốc", "quoc", "gia", "hai", "thư", "thu", "cản", "quang", "ct", "mri", "ăn", "an", "no", "đói", "doi", "trước", "truoc", "sau", "bữa", "bua", "kháng", "khang"
 }
 
 
 def extract_drug_keywords(query: str) -> str:
     cleaned = (query or "").strip()
+    cleaned = re.sub(r"\s*\([^)]*\)", " ", cleaned)
     sdk_match = re.search(r"((?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+)", cleaned, re.IGNORECASE)
     if sdk_match:
         return sdk_match.group(1).upper()

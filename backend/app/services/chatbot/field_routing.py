@@ -12,7 +12,7 @@ RAW_FIELD_SPECS = [
     ("interaction", ["tương tác thuốc", "thuốc tương tác", "tương tác", "tương kỵ", "kỵ thuốc", "tuong tac thuoc", "tuong tac", "tuong ky", "ky thuoc", "kỵ gì"]),
     ("adverse_effects", ["tác dụng không mong muốn", "tác dụng phụ", "tac dung phu", "tac dung khong mong muon"]),
     ("contraindications", ["chống chỉ định", "cấm dùng", "chong chi dinh", "cam dung", "có dùng được", "dùng được", "có uống được", "uống được"]),
-    ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều", "lieu toi da", "lieu dung", "lieu luong", "cach dung", "trẻ em", "cho bé", "nhi khoa"]),
+    ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều", "lieu toi da", "lieu dung", "lieu luong", "cach dung", "trẻ em", "cho bé", "nhi khoa", "uống lúc nào", "trước hay sau ăn", "trước ăn", "sau ăn"]),
     ("pregnancy", ["phụ nữ có thai", "mang thai", "thai kỳ", "cho con bú", "phu nu co thai", "thai ky"]),
     ("indications", ["chỉ định", "công dụng", "chi dinh", "cong dung", "điều trị", "dieu tri", "chữa bệnh", "chua benh"]),
     ("ingredients", ["thành phần", "hoạt chất", "thanh phan", "hoat chat"]),
@@ -48,7 +48,7 @@ async def handle_interaction_clarification(
             answer_type="clarification", source_status="missing_interaction_medications",
             confidence=1.0, abstention_reason="Chưa xác định được ít nhất hai thuốc cần kiểm tra",
             session_id=session.session_id,
-            suggested_chips=["Kiểm tra tương tác giữa hai thuốc", "Rà soát danh sách thuốc của người bệnh"],
+            suggested_chips=["Tương tác giữa Clopidogrel và Omeprazol", "Tương tác giữa Warfarin và Aspirin", "Tương tác giữa Ciprofloxacin và Canxi"],
         )
     return None
 
