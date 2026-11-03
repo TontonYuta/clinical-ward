@@ -186,8 +186,9 @@ if __name__ == "__main__":
     parser.add_argument("--max-wait", type=int, default=0, help="Max wait seconds for deployment")
     args = parser.parse_args()
 
-    if args.max_wait > 0:
-        wait_for_deployment(args.expected_commit, args.max_wait)
+    if args.max_wait > 0 and not wait_for_deployment(args.expected_commit, args.max_wait) and args.expected_commit:
+        print(f"\n❌ [CRITICAL DEPLOY FAILURE] Render did not deploy '{args.expected_commit[:7]}'. Check Render Dashboard.")
+        sys.exit(1)
 
     p, total, errs = execute_production_suite()
     print(f"\n📊 Production Verification Score: {p}/{total} ({(p/total)*100:.1f}%)")

@@ -1,0 +1,11 @@
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache
+tests
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+*.log
