@@ -56,7 +56,7 @@ async def build_drug_profile_response(
                 monograph = max(candidates, key=_score_mono)
 
     def value(field: str) -> Optional[str]:
-        return getattr(matched, field, None) or (getattr(monograph, field, None) if monograph else None)
+        return (getattr(monograph, field, None) if monograph else None) or getattr(matched, field, None)
 
     lower_query = query.casefold()
     from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
