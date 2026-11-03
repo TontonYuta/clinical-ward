@@ -16,4 +16,4 @@ services:
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261103-render-fix"
+        value: "20261103-fix-any-import"
