@@ -164,3 +164,26 @@ async def test_fsm_device_isolation_multi_session():
         d_b2 = r_b2.json()
         assert "Teglutik" in d_b2["reply_text"] or "riluzole" in d_b2["reply_text"].lower()
         assert "Warfarin" not in d_b2["reply_text"]
+
+@pytest.mark.asyncio
+async def test_clinical_rag_gatekeeper_blocks_unqualified_queries():
+    """Kiểm thử Cổng RAG Gatekeeper: Chặn đứng truy vấn mơ hồ/phi lâm sàng, cấm tuyệt đối trả về Adrenalin."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Ca 1: Câu hỏi mơ hồ không có thực thể y tế
+        r1 = await client.post("/api/v1/copilot/chat", json={
+            "query": "cái này dùng thế nào nhỉ cho tôi biết thêm", "user_name": "BS. Test", "user_role": "doctor"
+        })
+        assert r1.status_code == 200
+        d1 = r1.json()
+        assert d1["intent"] == "CLINICAL_SAFE_ABSTENTION"
+        assert "adrenalin" not in d1["reply_text"].lower()
+        assert "từ chối" in d1["reply_text"].lower()
+
+        # Ca 2: Câu hỏi phác đồ chuyên môn hợp lệ -> ĐƯỢC PHÉP QUA CỔNG
+        r2 = await client.post("/api/v1/copilot/chat", json={
+            "query": "Phác đồ cấp cứu sốc phản vệ theo Thông tư 51", "user_name": "BS. Test", "user_role": "doctor"
+        })
+        assert r2.status_code == 200
+        d2 = r2.json()
+        assert d2["intent"] in ("CLINICAL_AI_CONSULTATION", "CLINICAL_ANAPHYLAXIS_EMERGENCY")
+        assert "51/2017" in d2["reply_text"]

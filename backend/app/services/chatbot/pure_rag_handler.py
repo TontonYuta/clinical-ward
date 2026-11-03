@@ -52,6 +52,24 @@ async def handle_contextual_rag_followup(
         abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
     )
 
+CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
+    "thông tư", "tt 51", "tt 20", "tt 22", "qđ 5948", "qd 5948", "phác đồ", "hướng dẫn điều trị",
+    "nghị định", "quy chế", "phản vệ", "sốc phản vệ", "ngộ độc", "cấp cứu", "mất nước", "bù nước",
+    "bù dịch", "tiêu chảy", "sốt co giật", "sốt cao", "dược động học", "thời gian bán thải",
+    "bán thải", "cơ chế tác dụng", "cơ chế", "chuyển hóa", "cyp", "cyp3a4", "cyp2c19", "nồng độ đáy",
+    "nồng độ đỉnh", "trough", "peak", "huyết tương", "tương kỵ", "pha chung", "đường truyền",
+    "dị ứng chéo", "phối hợp", "tương tác", "chống chỉ định", "suy thận", "suy gan", "phụ nữ mang thai",
+    "thai kỳ", "cho con bú", "trẻ sơ sinh", "lọc máu", "chạy thận", "đau bụng", "buồn nôn",
+    "đau đầu", "chóng mặt", "khó thở", "triệu chứng", "biểu hiện của"
+)
+
+def is_qualified_clinical_rag_query(lower_query: str, session) -> bool:
+    has_clinical_pattern = any(p in lower_query for p in CLINICAL_KNOWLEDGE_GATE_PATTERNS)
+    has_active_or_explicit = bool(
+        resolve_registered_medications(lower_query) or (session and session.active_medication_name)
+    )
+    return has_clinical_pattern or (has_active_or_explicit and any(t in lower_query for t in ("như thế nào", "tại sao", "cơ chế", "dược lực", "lưu ý", "xử trí", "tác dụng", "điều trị", "dùng", "uống")))
+
 async def handle_deep_rag_consultation(
     query: str,
     lower_query: str,
@@ -61,6 +79,27 @@ async def handle_deep_rag_consultation(
     user_name: str,
     is_deep_pharmacology: bool,
 ) -> CopilotResponse | None:
+    session = get_or_create_session(session_id, user_name, user_role)
+    if not is_qualified_clinical_rag_query(lower_query, session) and not is_deep_pharmacology:
+        return CopilotResponse(
+            intent="CLINICAL_SAFE_ABSTENTION",
+            reply_text=(
+                "### 🛡️ TỪ CHỐI TIẾP NHẬN (Nằm ngoài phạm vi tri thức hoặc chưa rõ ngữ cảnh lâm sàng)\n\n"
+                "Trợ lý AI nội viện chỉ cung cấp thông tin chuyên môn khi xác định rõ chủ đề y khoa đã được kiểm chứng:\n"
+                "1. **Tra cứu Dược thư & Thuốc:** Biệt dược, hoạt chất (54.885 thuốc DAV), chỉ định, liều dùng, chống chỉ định.\n"
+                "2. **Tương tác thuốc (DDI):** Kiểm tra tương tác chống chỉ định theo QĐ 5948/QĐ-BYT.\n"
+                "3. **Phác đồ cấp cứu & Thông tư:** Xử trí phản vệ (TT 51/2017), quản lý thuốc kiểm soát đặc biệt (TT 20/2017).\n"
+                "4. **Kho Dược & Tủ trực:** Kiểm tra số lượng tồn kho và hạn dùng FEFO.\n\n"
+                "Bác sĩ vui lòng nêu rõ tên thuốc, phác đồ điều trị hoặc nội dung chuyên môn cụ thể để em hỗ trợ chính xác ạ."
+            ),
+            answer_type="safe_abstention",
+            source_status="unqualified_clinical_query",
+            confidence=1.0,
+            session_id=session.session_id,
+            suggested_chips=["Tra cứu thuốc Teglutik", "Kiểm tra tương tác Warfarin + Aspirin", "Phác đồ phản vệ TT 51/2017"],
+            legal_basis="Thông tư 22/2011/TT-BYT & Quyết định 5948/QĐ-BYT"
+        )
+
     top_results = HybridRetriever().retrieve(query, top_k=1)
     if not top_results:
         return CopilotResponse(
@@ -74,7 +113,6 @@ async def handle_deep_rag_consultation(
         return None
 
     cleaned_reply = validate_output_guardrail(rag_res.answer, query)
-    session = get_or_create_session(session_id, user_name, user_role)
     from app.services.copilot_drug_keyword_extractor import extract_drug_keywords
     cand_kw = extract_drug_keywords(lower_query)
     target_drugs = resolve_registered_medications(lower_query) or (

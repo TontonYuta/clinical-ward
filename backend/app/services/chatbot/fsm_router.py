@@ -38,7 +38,8 @@ def has_explicit_new_medication(lower_query: str, current_active_drug: Optional[
                     continue
                 return True
     matched = find_matched_med(lower_query)
-    if matched and current_active_drug and matched.casefold() not in current_active_drug.casefold():
+    matched_name = matched.get("name", "") if isinstance(matched, dict) else (matched or "")
+    if matched_name and current_active_drug and matched_name.casefold() not in current_active_drug.casefold():
         return True
     return False
 
