@@ -6,6 +6,7 @@ services:
     dockerContext: ./backend
     plan: free
     region: singapore
+    autoDeploy: true
     envVars:
       - key: PORT
         value: 8000
