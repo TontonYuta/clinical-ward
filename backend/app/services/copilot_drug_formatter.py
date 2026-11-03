@@ -20,28 +20,40 @@ async def build_drug_profile_response(
     query: str = ""
 ) -> CopilotResponse:
     matched = drugs[0]
+    from app.services.combination_drug_service import (
+        resolve_combination_monographs,
+        build_combination_drug_profile,
+        parse_combination_ingredients
+    )
+    combo_ingredients = parse_combination_ingredients(matched.active_ingredient)
+    is_combination = len(combo_ingredients) >= 2 or any(term in (matched.active_ingredient or "") for term in (";", "+"))
+    primary_mono, components = None, []
+    if is_combination:
+        primary_mono, components = await resolve_combination_monographs(matched, db)
+
     first_active = matched.active_ingredient.split(";")[0].split("+")[0].strip().lower()
     clean_active = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", first_active, flags=re.IGNORECASE).strip().lower()
     clean_inn = re.sub(r"\(.*?\)", "", clean_active).strip()
     clean_inn = re.sub(r"\b(?:dưới dạng|tương đương|as|equivalent)\b.*$", "", clean_inn, flags=re.IGNORECASE).strip()
 
-    monograph = None
-    mono_targets = [t for t in [clean_inn, clean_active, first_active] if t and len(t) >= 3]
-    conds = []
-    if matched.clinical_monograph_id:
-        conds.append(ClinicalDrugMonograph.id == matched.clinical_monograph_id)
-    for t in mono_targets:
-        conds.append(func.lower(ClinicalDrugMonograph.inn).like(f"%{t}%"))
-    if conds:
-        mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*conds)))
-        candidates = mono_res.scalars().all()
-        if candidates:
-            def _score_mono(m: ClinicalDrugMonograph) -> int:
-                fields = (m.indications, m.adult_dosage, m.pediatric_dosage, m.precautions,
-                          m.adverse_effects, m.drug_interactions, m.overdose_treatment,
-                          m.renal_adjustment, m.pregnancy_warning, m.dosage_forms)
-                return sum(len(f or "") for f in fields)
-            monograph = max(candidates, key=_score_mono)
+    monograph = primary_mono
+    if not monograph and matched.clinical_monograph_id:
+        mono_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched.clinical_monograph_id))
+        monograph = mono_res.scalar_one_or_none()
+
+    if not monograph:
+        mono_targets = [t for t in [clean_inn, clean_active, first_active] if t and len(t) >= 3]
+        conds = [func.lower(ClinicalDrugMonograph.inn).like(f"%{t}%") for t in mono_targets]
+        if conds:
+            mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*conds)))
+            candidates = mono_res.scalars().all()
+            if candidates:
+                def _score_mono(m: ClinicalDrugMonograph) -> int:
+                    fields = (m.indications, m.adult_dosage, m.pediatric_dosage, m.precautions,
+                              m.adverse_effects, m.drug_interactions, m.overdose_treatment,
+                              m.renal_adjustment, m.pregnancy_warning, m.dosage_forms)
+                    return sum(len(f or "") for f in fields)
+                monograph = max(candidates, key=_score_mono)
 
     def value(field: str) -> Optional[str]:
         return getattr(matched, field, None) or (getattr(monograph, field, None) if monograph else None)
@@ -79,6 +91,51 @@ async def build_drug_profile_response(
         return (await db.execute(stmt)).scalars().all()
 
     if requested_fields:
+        if is_combination and not primary_mono and len(components) >= 2:
+            labels, details = [], []
+            combo_citations = []
+            legal_bases = []
+            for field_key, _, req_field, req_label in requested_fields:
+                if field_key == "stock":
+                    stock_batches = await get_batches()
+                    total_stock = sum(batch.current_stock for batch in stock_batches)
+                    details.append(f"- **{req_label}:** {total_stock} {matched.standard_unit}" + (f"; vị trí: {stock_batches[0].warehouse_location}" if stock_batches else ""))
+                    labels.append(req_label)
+                    continue
+                comp_lines = []
+                for c in components:
+                    ing_name = c["ingredient_name"]
+                    if c["status"] == "verified_dtqg":
+                        mono = c["monograph"]
+                        val = getattr(mono, req_field, None)
+                        if val:
+                            comp_lines.append(f"  * **{ing_name}** (*{mono.title}*): {format_clinical_text(str(val).strip())}")
+                        src = mono.source or matched.clinical_source or "Dược thư Quốc gia Việt Nam"
+                        combo_citations.append(_drug_citation(matched, mono, src))
+                        legal_bases.append(src)
+                    else:
+                        comp_lines.append(f"  * **{ing_name}:** {c.get('note', 'Chưa có chuyên luận độc lập trong Dược thư Quốc gia')}")
+                labels.append(req_label)
+                details.append(f"- **{req_label} theo từng hoạt chất:**\n" + "\n".join(comp_lines))
+
+            reply = f"### {', '.join(labels)}: {matched.brand_name}\n*(Đối soát thành phần phối hợp chuẩn DĐVN V)*\n\n" + "\n\n".join(details)
+            unique_citations = []
+            seen_urls = set()
+            for cit in combo_citations:
+                u = cit.get("url")
+                if u not in seen_urls:
+                    seen_urls.add(u)
+                    unique_citations.append(cit)
+            session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+            return CopilotResponse(
+                intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None,
+                legal_basis=" • ".join(dict.fromkeys(legal_bases)) if legal_bases else "Dược Thư Quốc Gia Việt Nam",
+                suggested_chips=contextual_chips, session_id=session.session_id,
+                active_medication_name=session.active_medication_name,
+                answer_type="medication_fields", source_status="exact_match", confidence=1.0,
+                citations=unique_citations
+            )
+
         key, _, field, label = requested_fields[0]
         if len(requested_fields) > 1:
             labels, details = [], []
@@ -145,6 +202,17 @@ async def build_drug_profile_response(
             intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=prof_source,
             suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
             answer_type="medication_summary", source_status="exact_match", confidence=1.0, citations=[_drug_citation(matched, monograph, prof_source)]
+        )
+
+    if is_combination and (primary_mono or len(components) >= 2):
+        reply, combo_citations, legal_str = build_combination_drug_profile(matched, primary_mono, components, query=query)
+        session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
+        return CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=legal_str,
+            suggested_chips=contextual_chips, session_id=session.session_id,
+            active_medication_name=session.active_medication_name,
+            answer_type="medication_profile", source_status="exact_match", confidence=1.0,
+            citations=combo_citations
         )
 
     # Đầy đủ và đúng cấu trúc chuẩn Dược thư Quốc gia & Cục Quản lý Dược

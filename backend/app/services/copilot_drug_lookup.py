@@ -23,7 +23,15 @@ async def lookup_drug_authoritative(
 
     sdk = matcher.extract_sdk(query)
     meds = matcher.extract_medications(query)
-    kw = sdk if sdk else (meds[0] if meds else extract_drug_keywords(query))
+    kw = sdk
+    if not kw:
+        if len(meds) >= 2 and not any(term in query.casefold() for term in ("tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "uống chung", "uong cung", "dung cung", "tuong tac")):
+            combined_brand = f"{meds[0]} {meds[1]}"
+            cand_res = await db.execute(select(DavNationalDrug.brand_name).where(func.lower(DavNationalDrug.brand_name).like(f"{combined_brand.lower()}%")).limit(1))
+            if cand_res.scalar_one_or_none():
+                kw = combined_brand
+        if not kw:
+            kw = meds[0] if meds else extract_drug_keywords(query)
     if kw:
         kw = re.sub(r"[\s\xa0]+", " ", kw).strip()
 
