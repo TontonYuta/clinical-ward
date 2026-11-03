@@ -18,6 +18,7 @@ from app.services.chatbot.multiturn_handler import resolve_active_drug_and_terms
 from app.services.chatbot.field_routing import handle_interaction_clarification, handle_field_or_drug_inquiry
 from app.services.chatbot.hospital_business_dispatcher import dispatch_clinical_subflows, dispatch_operational_business
 from app.services.chatbot.pure_rag_handler import handle_contextual_rag_followup, handle_deep_rag_consultation
+from app.services.chatbot.drug_comparison import handle_clinical_drug_comparison
 
 def resolve_copilot_identity(payload: CopilotQuery, request: Request) -> tuple[str, str, str]:
     authenticated = getattr(request.state, "authenticated_user", None)
@@ -56,11 +57,10 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if greeting_res:
         return greeting_res
 
-    if lower_query.strip().strip("?.!") in (
-        "tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia",
-        "tra cứu dược thư", "tra cuu duoc thu", "dược thư quốc gia", "duoc thu quoc gia",
-        "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu"
-    ):
+    if lower_query.strip().strip("?.!") in {
+        "tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư",
+        "tra cuu duoc thu", "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu"
+    }:
         return await lookup_drug_authoritative("", db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     subflow_res = await dispatch_clinical_subflows(query, lower_query, user_name, db)
@@ -81,6 +81,10 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role)
         if clarification_res:
             return clarification_res
+
+    comp_res = await handle_clinical_drug_comparison(query, lower_query, db, session_id, user_name, user_role)
+    if comp_res:
+        return comp_res
 
     field_res = await handle_field_or_drug_inquiry(
         query, lower_query, db, session=session, session_id=session_id, user_name=user_name,

@@ -2,6 +2,7 @@
 Aho-Corasick Lexical Trie Matcher cho 55,000 thuốc DAV & Chuyên luận DĐVN V.
 Đảm bảo trích xuất thực thể thuốc chuẩn xác < 0.1ms, kháng lỗi chính tả và gõ không dấu (<= 195 LOC).
 """
+import difflib
 import re
 import sqlite3
 import unicodedata
@@ -41,6 +42,8 @@ class DrugLexicalMatcher:
         self.root = TrieNode()
         self.canonical_brands: Set[str] = set()
         self.canonical_inns: Set[str] = set()
+        self._name_map: Dict[str, str] = {}
+        self._candidates_by_first: Dict[str, List[str]] = {}
         self._is_loaded = False
 
     def insert(self, term: str, canonical: str, entity_type: str = "brand") -> None:
@@ -97,12 +100,17 @@ class DrugLexicalMatcher:
             except Exception:
                 pass
             conn.close()
+            for c in self.canonical_brands | self.canonical_inns:
+                low = strip_accents(c.lower())
+                if low and len(low) >= 3:
+                    self._name_map[low] = c
+                    self._candidates_by_first.setdefault(low[0], []).append(low)
             self._is_loaded = True
         except Exception:
             pass
 
     def extract_medications(self, text: str) -> List[str]:
-        """Trích xuất tất cả các thực thể thuốc có trong văn bản (kể cả không dấu)."""
+        """Trích xuất tất cả các thực thể thuốc có trong văn bản (kể cả không dấu & lỗi chính tả)."""
         if not self._is_loaded:
             self.load_from_db()
 
@@ -127,7 +135,6 @@ class DrugLexicalMatcher:
                 if longest and longest[2].lower() not in COMMON_EXCLUSIONS:
                     candidates.append(longest)
 
-        # Ưu tiên các thực thể dài hơn và giữ trật tự xuất hiện trong câu
         candidates.sort(key=lambda x: (x[0], -(x[1] - x[0])))
         results: List[str] = []
         seen: Set[str] = set()
@@ -137,6 +144,7 @@ class DrugLexicalMatcher:
                 seen.add(canon.lower())
                 results.append(canon)
                 last_end = end
+
         return results
 
     def extract_sdk(self, text: str) -> Optional[str]:

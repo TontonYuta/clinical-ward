@@ -16,7 +16,7 @@ STOP_PHRASES = [
     "bác sĩ", "dược sĩ", "điều dưỡng", "y tá", "hỏi chút", "hỏi thăm", "cho hỏi", "xin hỏi",
     "điều trị", "chữa trị", "trị bệnh", "chữa bệnh",
     "tuong tac thuoc", "tuong tac", "thong tin thuoc", "thong tin", "chong chi dinh", "tac dung phu", "lieu dung", "thanh phan", "chi dinh", "dieu tri",
-    "thuốc", "về", "sđk", "mã", "html", "code", "website", "trị", "chữa", "uống", "còn liều", "liều",
+    "thuốc", "về", "sđk", "mã", "html", "website", "trị", "chữa", "uống", "còn liều", "liều",
     "dược thư quốc gia", "dược thư", "tra cứu dược thư", "tra cứu", "kiểm tra tương tác hai thuốc", "kiểm tra tương tác", "tương tác hai thuốc", "hai thuốc", "các thuốc",
     "kháng sinh", "khang sinh", "thuốc kháng sinh", "thuoc khang sinh",
     "thông tin chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ",
@@ -53,7 +53,8 @@ QUESTION_TERMS = {
     "quy", "chế", "quản", "lý", "tủ", "trực", "kho", "ca", "viện",
     "uống", "tiêm", "truyền", "bôi", "nhỏ", "đặt", "uong", "tiem", "truyen", "thông", "tin",
     "quốc", "quoc", "gia", "hai", "thư", "thu", "cản", "quang", "ct", "mri", "ăn", "an", "no", "đói", "doi", "trước", "truoc", "sau", "bữa", "bua", "kháng", "khang",
-    "tóm", "tắt", "tom", "tat", "tiết", "tiet", "đầy", "đủ", "day", "du", "hồ", "sơ", "ho", "so", "toàn", "bộ", "toan", "bo"
+    "tóm", "tắt", "tom", "tat", "tiết", "tiet", "đầy", "đủ", "day", "du", "hồ", "sơ", "ho", "so", "toàn", "bộ", "toan", "bo",
+    "tốt", "tot", "hơn", "hon", "hay", "kém", "kem", "mạnh", "manh", "yếu", "yeu", "so", "sánh", "sanh"
 }
 
 

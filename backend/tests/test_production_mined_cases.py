@@ -20,6 +20,7 @@ MINED_PRODUCTION_CASES = [
     ("Thông tin chi tiết đầy đủ", "MEDICATION_LOOKUP_CLARIFICATION", ["chưa xác định được thuốc"]),
     ("Tóm tắt thông tin thuốc đó", "MEDICATION_LOOKUP_CLARIFICATION", ["chưa xác định được thuốc"]),
     ("Tôi muốn hỏi số lượng Tamiflu hiện tại", "MEDICATION_SAFETY_PROFILE", ["tồn kho: tamiflu"]),
+    ("Pracetamol tốt hay eferagan codein tốt", "MEDICATION_SAFETY_PROFILE", ["paracetamol", "efferalgan codein", "thang giảm đau", "who"]),
 ]
 
 @pytest.mark.asyncio
