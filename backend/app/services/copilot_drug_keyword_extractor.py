@@ -27,6 +27,7 @@ STOP_PHRASES = [
     "tom tat thong tin thuoc do", "tom tat thong tin thuoc nay", "tom tat thong tin thuoc",
     "tom tat thong tin", "tom tat thuoc", "tom tat",
     "hồ sơ đầy đủ", "ho so day du", "hồ sơ chi tiết", "ho so chi tiet", "toàn bộ hồ sơ", "toan bo ho so",
+    "lại trả lời sai thông tin rồi", "lại trả lời sai", "trả lời sai thông tin", "trả lời sai", "sai thông tin rồi", "sai thông tin", "bạn không xử lý được à", "không xử lý được à", "không xử lý được",
     "thuốc cản quang", "tiêm thuốc cản quang", "cản quang", "chụp ct", "chụp mri", "chụp x-quang", "nồng độ đáy", "nồng độ đỉnh", "trough level", "trough", "peak", "định lượng"
 ]
 

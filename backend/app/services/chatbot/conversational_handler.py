@@ -44,13 +44,39 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
     is_pure_correction = clean_greeting in {
         "sai roi", "sai rồi", "nham roi", "nhầm rồi", "khong dung", "không đúng",
         "khong phai", "không phải", "bi nham", "bị nhầm"
-    }
+    } or (
+        any(c in clean_greeting_ascii for c in (
+            "tra loi sai", "sai thong tin", "lai sai", "sai roi", "nham roi", "khong dung", "sai bet"
+        )) and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "tuong tac", "chong chi dinh"))
+    )
     if is_pure_correction:
+        role_label = "bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "anh/chị"
         return CopilotResponse(
             intent="CONVERSATIONAL_CORRECTION",
-            reply_text="Dạ xin lỗi bác sĩ! Bác sĩ vui lòng cho biết thông tin cần sửa đổi hoặc câu hỏi cụ thể để hệ thống hỗ trợ chính xác hơn ạ.",
+            reply_text=f"Dạ xin lỗi {role_label}! Em xin tiếp thu để hoàn thiện liên tục. {role_label.title()} vui lòng cho biết câu hỏi cụ thể hoặc thông tin cần điều chỉnh để em hỗ trợ chính xác hơn ạ.",
             answer_type="conversational_correction",
             confidence=1.0,
+            suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu Dược Thư Quốc Gia"]
+        )
+
+    is_capability_query = any(c in clean_greeting_ascii for c in (
+        "khong xu ly duoc", "khong lam duoc", "khong biet lam", "khong tra loi duoc", "lam duoc gi", "co the lam gi"
+    ))
+    if is_capability_query:
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
+        return CopilotResponse(
+            intent="BOT_CAPABILITY_CLARIFICATION",
+            reply_text=(
+                f"Dạ em là Trợ lý Dược lâm sàng & Nghiệp vụ nội viện. Em có thể hỗ trợ {role_label.lower()}:\n\n"
+                f"1. **Tra cứu thuốc & Dược thư:** Tra cứu 54.885 thuốc DAV, chỉ định, liều dùng, chống chỉ định, hoạt chất DĐVN V.\n"
+                f"2. **Rà soát tương tác thuốc (DDI):** Kiểm tra tương tác chống chỉ định theo QĐ 5948/QĐ-BYT.\n"
+                f"3. **Phác đồ cấp cứu & lâm sàng:** Cấp cứu phản vệ (TT 51/2017), quản lý thuốc gây nghiện (TT 20/2017), tiêu chảy mất nước, sốt cao.\n"
+                f"4. **Kiểm tra kho dược & FEFO:** Tồn kho thực tế tại kho nội trú, tủ trực và hạn dùng.\n\n"
+                f"{role_label} vui lòng gửi tên thuốc hoặc nội dung cần tra cứu cụ thể để em xử lý ạ!"
+            ),
+            answer_type="capability_overview",
+            confidence=1.0,
+            suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu tồn kho thuốc"]
         )
 
     is_style_feedback = any(c in clean_greeting_ascii for c in (

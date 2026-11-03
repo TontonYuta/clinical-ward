@@ -24,6 +24,8 @@ MINED_PRODUCTION_CASES = [
     ("đau bụng, đi ngoài, mất nước là biểu hiện của gì", "CLINICAL_AI_CONSULTATION", ["đau bụng", "tiêu hóa", "bù nước & điện giải"]),
     ("Tôi muốn bạn trả lời đúng trọng tâm và gọn gàng hơn", "CONVERSATIONAL_FEEDBACK", ["tiếp thu góp ý", "đúng trọng tâm"]),
     ("Bạn trả lời bị cứng nhắc quá", "CONVERSATIONAL_FEEDBACK", ["tiếp thu góp ý", "linh hoạt hơn"]),
+    ("lại trả lời sai thông tin rồi", "CONVERSATIONAL_CORRECTION", ["tiếp thu", "câu hỏi cụ thể"]),
+    ("bạn không xử lý được à", "BOT_CAPABILITY_CLARIFICATION", ["tra cứu thuốc", "54.885"]),
 ]
 
 @pytest.mark.asyncio
