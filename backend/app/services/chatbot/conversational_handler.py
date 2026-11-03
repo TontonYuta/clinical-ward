@@ -143,16 +143,19 @@ def handle_out_of_scope_or_pricing(lower_query: str) -> CopilotResponse | None:
             abstention_reason="Ngoài phạm vi hoặc thiếu dữ liệu đơn thuốc",
         )
 
-    is_frivolous = any(term in lower_query for term in (
-        "thời tiết", "dự báo thời tiết", "giá vàng", "tỷ giá", "bóng đá", "tin tức giải trí",
-        "kể chuyện cười", "chuyện cười", "chuyện ma", "kể chuyện", "làm thơ", "bài thơ", "thơ tình",
-        "hát đi", "hát một bài", "chơi game", "hôm nay ăn gì", "ăn món gì", "nấu món gì", "công thức nấu",
-        "có người yêu chưa", "người yêu", "bạn gái", "bạn trai", "tán gái", "thích ai", "yêu ai",
-        "mấy tuổi", "sinh năm bao nhiêu", "quê ở đâu", "nhà ở đâu",
-        "xổ số", "vietlott", "lô đề", "xem bói", "tử vi", "phong thủy", "cung hoàng đạo",
-        "chính trị", "bầu cử", "tổng thống", "showbiz", "hoa hậu", "giải toán", "viết code", "viết văn",
-        "chém gió", "buôn chuyện", "nói chuyện linh tinh", "chuyện linh tinh", "linh tinh", "vớ vẩn", "tào lao"
-    ))
+    clean_q = re.sub(r"[^\w\s]", "", lower_query).strip()
+    ascii_q = "".join(ch for ch in unicodedata.normalize("NFKD", clean_q) if not unicodedata.combining(ch)).replace("đ", "d")
+
+    frivolous_terms = (
+        "xo so", "so xo", "ve so", "lo de", "danh de", "danh lo", "vietlott", "kqxs", "quay so",
+        "thoi tiet", "du bao thoi tiet", "gia vang", "ty gia", "bitcoin", "chung khoan", "bong da", "showbiz",
+        "chuyen cuoi", "chuyen ma", "ke chuyen", "lam tho", "bai tho", "tho tinh", "hat di", "hat mot bai",
+        "choi game", "game gi", "lien quan", "hom nay an gi", "an mon gi", "nau mon gi", "cong thuc nau",
+        "nguoi yeu", "ban gai", "ban trai", "tan gai", "thich ai", "yeu ai", "may tuoi", "sinh nam bao nhieu",
+        "que o dau", "nha o dau", "xem boi", "tu vi", "phong thuy", "cung hoang dao", "giai toan", "viet code",
+        "chem gio", "buon chuyen", "noi chuyen linh tinh", "chuyen linh tinh", "linh tinh", "vo van", "tao lao"
+    )
+    is_frivolous = any(term in ascii_q for term in frivolous_terms)
     has_med_anchor = any(k in lower_query for k in (
         "thuốc", "liều", "dược", "bệnh", "chữa", "điều trị", "kháng sinh", "sốt", "đau", "viêm",
         "phác đồ", "tồn kho", "tủ trực", "bệnh nhân", "huyết áp", "truyền dịch", "paracetamol", "morphin"

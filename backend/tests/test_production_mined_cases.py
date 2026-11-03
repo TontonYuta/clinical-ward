@@ -34,6 +34,7 @@ MINED_PRODUCTION_CASES = [
     ("hôm nay ăn gì ngon", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
     ("bạn có người yêu chưa", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
     ("nói chuyện linh tinh một chút đi", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
+    ("bạn có biết kết quả sổ xố hôm nay không", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
 ]
 
 @pytest.mark.asyncio
