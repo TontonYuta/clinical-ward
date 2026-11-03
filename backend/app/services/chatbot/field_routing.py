@@ -31,6 +31,13 @@ def extract_matched_field_keys(lower_query: str) -> set[str]:
 async def handle_interaction_clarification(
     query: str, lower_query: str, session_id: str, user_name: str, user_role: str
 ) -> CopilotResponse | None:
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
+
+    trie_meds = get_drug_lexical_matcher().extract_medications(query)
+    if len(trie_meds) >= 2:
+        return format_multi_ddi_response(trie_meds, query, session_id=session_id)
+
     ddi_context = expand_clinical_graph(query).get("kg_entities", [])
     named_drugs = {entity for entity in ddi_context if entity.startswith("INN:")}
     known_interaction_pair = any(entity.startswith("DDI:") for entity in ddi_context)

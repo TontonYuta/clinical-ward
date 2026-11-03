@@ -45,29 +45,26 @@ async def build_drug_profile_response(
         return getattr(matched, field, None) or (getattr(monograph, field, None) if monograph else None)
 
     lower_query = query.casefold()
-    _strip = lambda s: unicodedata.normalize('NFKD', s.replace('đ', 'd').replace('Đ', 'D')).encode('ASCII', 'ignore').decode('utf-8')
-    unacc_query = _strip(lower_query)
-    field_specs = [
-        ("monitoring", ("theo dõi", "xét nghiệm", "giám sát"), "description", "Theo dõi / xét nghiệm"),
-        ("interaction", ("tương tác", "tương kỵ", "kỵ thuốc"), "drug_interactions", "Tương tác thuốc"),
-        ("adverse_effects", ("tác dụng phụ", "tác dụng không mong muốn", "adr", "nổi ban", "phát ban"), "adverse_effects", "Tác dụng không mong muốn"),
-        ("contraindications", ("chống chỉ định", "cấm dùng", "có dùng được", "dùng được", "có uống được", "uống được"), "contraindications", "Chống chỉ định"),
-        ("pediatric_dosage", ("liều trẻ em", "trẻ em", "nhi khoa", "trẻ sơ sinh", "cho bé"), "pediatric_dosage", "Liều dùng trẻ em"),
-        ("pregnancy", ("mang thai", "thai kỳ", "cho con bú", "phụ nữ có thai"), "pregnancy_warning", "Cảnh báo phụ nữ mang thai & cho con bú"),
-        ("adult_dosage", ("liều dùng", "liều lượng", "liều tối đa", "cách dùng", "còn liều", "liều", "uống lúc nào", "trước ăn", "sau ăn", "khi đói", "khi no", "trước hay sau ăn"), "adult_dosage", "Liều dùng người lớn"),
-        ("indications", ("chỉ định", "công dụng", "dùng để làm gì", "dùng cho bệnh gì"), "indications", "Chỉ định"),
-        ("ingredient", ("thành phần", "hoạt chất"), "active_ingredient", "Hoạt chất"),
-        ("stock", ("tồn kho", "còn bao nhiêu", "trong kho", "vị trí kho"), "", "Tồn kho"),
+    from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
+    intent_to_field = {
+        "pediatric_dosage": ("pediatric_dosage", "pediatric_dosage", "Liều dùng trẻ em"),
+        "adult_dosage": ("adult_dosage", "adult_dosage", "Liều dùng người lớn"),
+        "contraindications": ("contraindications", "contraindications", "Chống chỉ định"),
+        "adverse_effects": ("adverse_effects", "adverse_effects", "Tác dụng không mong muốn"),
+        "drug_interactions": ("interaction", "drug_interactions", "Tương tác thuốc"),
+        "indications": ("indications", "indications", "Chỉ định"),
+        "ingredient": ("ingredient", "active_ingredient", "Hoạt chất"),
+        "pregnancy_warning": ("pregnancy", "pregnancy_warning", "Cảnh báo phụ nữ mang thai & cho con bú"),
+        "renal_adjustment": ("renal_adjustment", "renal_adjustment", "Hiệu chỉnh liều suy thận"),
+        "stock_inquiry": ("stock", "", "Tồn kho"),
+    }
+    ranked = rank_clinical_intents(query, min_score=1.5)
+    requested_fields = [
+        (intent_to_field[k][0], (), intent_to_field[k][1], intent_to_field[k][2])
+        for k, _ in ranked if k in intent_to_field
     ]
-    _term_match = lambda t: bool(re.search(rf"\b{re.escape(t)}\b", lower_query)) or bool(re.search(rf"\b{re.escape(_strip(t))}\b", unacc_query))
-    def _matches_spec(spec_key: str, terms: tuple[str, ...]) -> bool:
-        if spec_key == "indications":
-            has_other = any(_term_match(t) for t in terms if t != "chỉ định")
-            has_ind = bool(re.search(r"(?<!chống\s)(?<!chống)chỉ định", lower_query)) or bool(re.search(r"(?<!chong\s)(?<!chong)chi dinh", unacc_query))
-            return has_other or has_ind
-        return any(_term_match(t) for t in terms)
-
-    requested_fields = [spec for spec in field_specs if _matches_spec(spec[0], spec[1])]
+    if any(term in lower_query for term in ("theo dõi", "xét nghiệm", "giám sát")):
+        requested_fields.append(("monitoring", (), "description", "Theo dõi / xét nghiệm"))
     if any(s[0] == "pediatric_dosage" for s in requested_fields):
         requested_fields = [s for s in requested_fields if s[0] != "adult_dosage"]
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications

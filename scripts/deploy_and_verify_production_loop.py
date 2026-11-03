@@ -123,6 +123,13 @@ PRODUCTION_TESTS = [
         "query": "Kháng sinh Zithromax uống trước hay sau ăn?",
         "must_have": ["zithromax"],
         "forbidden": ["metformin", "adrenalin"]
+    },
+    {
+        "id": "PROD-17",
+        "name": "Triple DDI: Clopidogrel + Aspirin + Omeprazol",
+        "query": "Kiểm tra tương tác giữa Clopidogrel và Omeprazol và Aspirin",
+        "must_have": ["clopidogrel", "omeprazol", "chống chỉ định"],
+        "forbidden": []
     }
 ]
 
