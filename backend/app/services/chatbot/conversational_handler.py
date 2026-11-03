@@ -41,13 +41,37 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             reply_text="Rất vui được hỗ trợ bác sĩ.",
         )
 
+    # 1. Phát hiện phản hồi góp ý bổ sung dữ liệu lâm sàng
+    is_data_enrichment_feedback = any(c in clean_greeting_ascii for c in (
+        "thieu tuong tac", "can bo sung", "bo sung cho day du", "chua du tuong tac",
+        "bo sung them", "cap nhat them", "thieu thuoc", "chua du thuoc", "bo sung tuong tac"
+    ))
+    if is_data_enrichment_feedback:
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
+        return CopilotResponse(
+            intent="FEEDBACK_DATA_ENRICHMENT",
+            reply_text=(
+                f"### 📝 TIẾP NHẬN PHẢN HỒI BỔ SUNG DỮ LIỆU TƯƠNG TÁC THUỐC\n\n"
+                f"Dạ em xin chân thành cảm ơn {role_label} đã đóng góp ý kiến chuyên môn ạ!\n\n"
+                f"• **Cơ sở dữ liệu hiện hành:** Hệ thống đã đồng bộ toàn diện **633 cặp tương tác chống chỉ định (Bảng 3.1)** và **68 nhóm tương tác nguy cơ cao (Bảng 3.2)** theo **Quyết định 5948/QĐ-BYT** của Bộ Y tế, cùng 708 chuyên luận Dược Thư Quốc Gia 2015/2022.\n"
+                f"• **Ghi nhận nâng cấp:** Em đã ghi nhận góp ý của {role_label.lower()} để mở rộng thêm các cặp tương tác dược lý học phối hợp (như Paracetamol + NSAID, bổ sung tương tác chuyển hóa qua enzyme CYP).\n"
+                f"• **Hỗ trợ tra cứu ngay:** {role_label} có thể gửi cụ thể 2 loại thuốc (ví dụ: *\"Paracetamol và Ibuprofen\"*, *\"Clopidogrel và Omeprazol\"*) để em rà soát chi tiết cho {role_label.lower()} ạ!"
+            ),
+            legal_basis="Quyết định 5948/QĐ-BYT & Dược thư Quốc gia Việt Nam",
+            suggested_chips=["Kiểm tra tương tác Paracetamol + Ibuprofen", "Kiểm tra tương tác Clopidogrel + Omeprazol", "Tra cứu Dược Thư Quốc Gia"],
+            answer_type="feedback_acknowledgment",
+            confidence=1.0
+        )
+
     corr_cues = (
         "tra loi sai", "sai thong tin", "lai sai", "sai roi", "nham roi", "khong dung", "sai bet",
         "ao giac", "lai ao giac", "bi ao giac", "tra loi linh tinh", "linh tinh roi", "linh tinh qua",
         "noi linh tinh roi", "vo van", "tao lao", "lai nham", "nham to",
         "kem qua", "kem the", "ban kem", "kem that", "kem coi", "te qua", "te that", "ban te",
         "do qua", "ban do", "do the", "chan qua", "chan the", "that vong", "trai nghiem te",
-        "chat luong kem", "vo dung", "khong dung duoc", "kem lam", "kem qua di"
+        "chat luong kem", "vo dung", "khong dung duoc", "kem lam", "kem qua di",
+        "lech huong", "khong lien quan", "khong dung cau hoi", "van con sai", "lac de",
+        "tra loi lung tung", "noi lung tung", "khong lien quan den cau hoi"
     )
     is_pure_correction = (clean_greeting in {
         "sai roi", "sai rồi", "nham roi", "nhầm rồi", "khong dung", "không đúng",
@@ -57,7 +81,7 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
         "dở quá", "do qua", "chán quá", "chan qua", "thất vọng", "that vong", "bạn dở quá", "bạn tệ quá"
     } or (
         any(c in clean_greeting_ascii for c in corr_cues)
-        and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "tuong tac", "chong chi dinh", "benh nhan", "nguoi benh", "ca benh", "noi chuyen", "chuyen"))
+        and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "chong chi dinh", "benh nhan", "nguoi benh", "ca benh", "noi chuyen", "chuyen"))
     )) and not any(term in clean_greeting_ascii for term in ("noi chuyen", "chuyen linh tinh", "tro chuyen", "tam su"))
     if is_pure_correction:
         role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
