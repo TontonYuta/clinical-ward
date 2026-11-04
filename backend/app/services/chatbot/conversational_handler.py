@@ -143,10 +143,14 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu tồn kho thuốc"]
         )
 
-    is_bot_identity = any(c in clean_greeting_ascii for c in (
-        "ban la ai", "ong la ai", "anh la ai", "em la ai", "may la ai",
-        "who are you", "ban ten gi", "ten la gi", "ai the", "ai day", "ai do"
+    has_clinical_anchor = any(k in clean_greeting_ascii for k in (
+        "mg", "mcg", "g", "ml", "tuong tac", "chong chi dinh", "giai doc", "ngo doc",
+        "doc tinh", "thai", "uong", "tiem", "lieu", "benh", "thuoc", "than", "gan", "sot", "dieu tri"
     ))
+    is_bot_identity = bool(re.search(
+        r"\b(?:ban la ai|ong la ai|anh la ai|em la ai|may la ai|who are you|ban ten gi|ten la gi|ai the|ai day|ai do)\b",
+        clean_greeting_ascii
+    )) and not has_clinical_anchor
     if is_bot_identity:
         return CopilotResponse(
             intent="BUSINESS_OVERVIEW",
@@ -207,23 +211,26 @@ def handle_out_of_scope_or_pricing(lower_query: str) -> CopilotResponse | None:
             abstention_reason="Ngoài phạm vi hoặc thiếu dữ liệu đơn thuốc",
         )
 
-    clean_q = re.sub(r"[^\w\s]", "", lower_query).strip()
-    ascii_q = "".join(ch for ch in unicodedata.normalize("NFKD", clean_q) if not unicodedata.combining(ch)).replace("đ", "d")
+    clean_q = re.sub(r"[^\w\s]", " ", lower_query).strip()
+    ascii_q = " ".join("".join(ch for ch in unicodedata.normalize("NFKD", clean_q) if not unicodedata.combining(ch)).replace("đ", "d").split())
 
-    frivolous_terms = (
-        "xo so", "so xo", "ve so", "lo de", "danh de", "danh lo", "vietlott", "kqxs", "quay so",
-        "thoi tiet", "du bao thoi tiet", "gia vang", "ty gia", "bitcoin", "chung khoan", "bong da", "showbiz",
-        "chuyen cuoi", "chuyen ma", "ke chuyen", "lam tho", "bai tho", "tho tinh", "hat di", "hat mot bai",
-        "choi game", "game gi", "lien quan", "hom nay an gi", "an mon gi", "nau mon gi", "cong thuc nau",
-        "nguoi yeu", "ban gai", "ban trai", "tan gai", "thich ai", "yeu ai", "may tuoi", "sinh nam bao nhieu",
-        "que o dau", "nha o dau", "xem boi", "tu vi", "phong thuy", "cung hoang dao", "giai toan", "hoc toan",
-        "day toan", "bai toan", "hoc van", "hoc tieng anh", "hoc hoa", "hoc ly", "viet code",
-        "chem gio", "buon chuyen", "noi chuyen linh tinh", "chuyen linh tinh", "linh tinh", "vo van", "tao lao"
+    frivolous_patterns = (
+        r"\b(?:xo so|so xo|ve so|lo de|danh de|danh lo|vietlott|kqxs|quay so)\b",
+        r"\b(?:thoi tiet|du bao thoi tiet|gia vang|ty gia|bitcoin|chung khoan|bong da|showbiz)\b",
+        r"\b(?:chuyen cuoi|chuyen ma|ke chuyen|lam tho|bai tho|tho tinh|hat di|hat mot bai)\b",
+        r"\b(?:choi game|game gi|hom nay an gi|an mon gi|nau mon gi|cong thuc nau)\b",
+        r"\b(?:nguoi yeu|ban gai|ban trai|tan gai|thich ai|yeu ai|may tuoi|sinh nam bao nhieu)\b",
+        r"\b(?:que o dau|nha o dau|xem boi|tu vi|phong thuy|cung hoang dao)\b",
+        r"\b(?:giai toan|hoc toan|day toan|bai toan|hoc van|hoc tieng anh|hoc hoa|hoc ly|viet code)\b",
+        r"\b(?:chem gio|buon chuyen|noi chuyen linh tinh|chuyen linh tinh|linh tinh|vo van|tao lao)\b",
     )
-    is_frivolous = any(term in ascii_q for term in frivolous_terms)
+    is_frivolous = any(bool(re.search(pat, ascii_q)) for pat in frivolous_patterns)
     has_med_anchor = any(k in lower_query for k in (
         "thuốc", "liều", "dược", "bệnh", "chữa", "điều trị", "kháng sinh", "sốt", "đau", "viêm",
-        "phác đồ", "tồn kho", "tủ trực", "bệnh nhân", "huyết áp", "truyền dịch", "paracetamol", "morphin"
+        "phác đồ", "tồn kho", "tủ trực", "bệnh nhân", "huyết áp", "truyền dịch", "paracetamol", "morphin",
+        "tác dụng", "chống chỉ định", "thất điều", "độc tính", "ngộ độc", "quá liều", "men gan",
+        "thai kỳ", "cho con bú", "suy thận", "suy gan", "suy tim", "phenytoin", "aspirin", "insulin",
+        "amiodaron", "loét", "co giật", "kháng histamin", "antacid", "dị ứng", "phản vệ"
     ))
     if is_frivolous and not has_med_anchor:
         return CopilotResponse(

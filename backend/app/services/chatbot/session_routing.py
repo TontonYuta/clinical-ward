@@ -48,8 +48,27 @@ def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotRespo
     is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "chỉnh liều"))
     if not is_renal:
         return None
-    subject = any(t in lower_query for t in ("bệnh nhân", "người bệnh", "hồ sơ", "bệnh án", "bn-", "bn "))
+
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    matcher = get_drug_lexical_matcher()
+    extracted_meds = matcher.extract_medications(lower_query)
+    cand_kw = extract_drug_keywords(lower_query)
+
     name_match = re.search(r"(?<!\w)(?:[A-ZÀ-ỸĐ][\wÀ-ỹĐđ'-]+\s+){1,4}[A-ZÀ-ỸĐ][\wÀ-ỹĐđ'-]+(?!\w)", query)
+    pat_name_lower = name_match.group(0).casefold() if name_match else ""
+    is_cand_just_name = bool(pat_name_lower and (cand_kw == pat_name_lower or cand_kw in pat_name_lower or pat_name_lower in cand_kw))
+    valid_cand = cand_kw and cand_kw not in CLINICAL_NON_DRUG_TERMS and not is_cand_just_name
+
+    has_current_drug = bool(extracted_meds) or bool(valid_cand) or find_matched_med(lower_query) is not None or any(
+        len(alias) >= 4 and alias.casefold() in lower_query
+        for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
+    )
+
+    # Nếu câu hỏi đã nêu rõ thuốc (như Enoxaparin, Ceftriaxon, Clarithromycin, Meropenem...): Không chặn đòi tên bệnh nhân
+    if has_current_drug:
+        return None
+
+    subject = any(t in lower_query for t in ("bệnh nhân", "người bệnh", "hồ sơ", "bệnh án", "bn-", "bn "))
     has_bn_token = any(token in lower_query for token in ("bn-", "bn "))
 
     if subject and not name_match and not has_bn_token:
@@ -59,11 +78,6 @@ def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotRespo
             answer_type="clarification", source_status="missing_patient_identifier",
             confidence=1.0, abstention_reason="Câu hỏi có nhắc người bệnh nhưng thiếu định danh cụ thể",
         )
-
-    has_current_drug = find_matched_med(lower_query) is not None or any(
-        len(alias) >= 4 and alias.casefold() in lower_query
-        for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
-    )
 
     if subject and name_match and not has_current_drug:
         return CopilotResponse(
@@ -150,6 +164,14 @@ def build_insufficient_formulation_response(med_name: str, session_id: str) -> C
     )
 
 def check_contextless_clinical_question(lower_query: str) -> CopilotResponse | None:
+    from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+
+    if find_clinical_specialty_consultation(lower_query):
+        return None
+    if get_drug_lexical_matcher().extract_medications(lower_query):
+        return None
+
     is_general_consultation = any(term in lower_query for term in (
         "thuốc điều trị", "thuốc trị", "thuốc hạ", "thuốc chữa", "thuốc dùng cho",
         "hướng dẫn điều trị", "phác đồ điều trị", "nhóm thuốc", "lựa chọn thuốc",

@@ -24,9 +24,9 @@ class FeverTriageScenario(BaseScenario):
             "cách hạ sốt", "hướng dẫn hạ sốt", "phác đồ hạ sốt", "cho tôi 1 loại thuốc hạ sốt", "loại thuốc hạ sốt",
             "cho tôi thuốc hạ sốt", "1 loại thuốc hạ sốt", "loại hạ sốt"
         ])
-        has_dengue_warning = any(w in lower_query for w in [
-            "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo sốt", "dấu hiệu nguy hiểm", "dấu hiệu cảnh báo sốt xuất huyết"
-        ])
+        has_dengue_warning = ("sốt xuất huyết" in lower_query or "dengue" in lower_query) or (
+            "dấu hiệu cảnh báo" in lower_query and any(w in lower_query for w in ["sốt", "dengue", "tiểu cầu", "hct", "chảy máu", "xuất huyết"])
+        )
         has_fever_word = any(w in lower_query for w in ["sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "cặp nhiệt độ"])
         has_action_or_temp = any(w in lower_query for w in [
             "38", "39", "40", "độ", "làm gì", "làm sao", "làm thế nào", "xử trí",
@@ -42,9 +42,9 @@ class FeverTriageScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
-        has_dengue_warning = any(w in lower_query for w in [
-            "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo"
-        ])
+        has_dengue_warning = ("sốt xuất huyết" in lower_query or "dengue" in lower_query) or (
+            "dấu hiệu cảnh báo" in lower_query and any(w in lower_query for w in ["sốt", "dengue", "tiểu cầu", "hct", "chảy máu", "xuất huyết"])
+        )
         if has_dengue_warning:
             reply = (
                 "### Hướng dẫn chuyên môn: Dấu hiệu Cảnh Báo Sốt Xuất Huyết Dengue & Lưu Ý Dùng Thuốc\n\n"

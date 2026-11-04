@@ -37,7 +37,7 @@ class AmiodaroneQtScenario(BaseScenario):
             )
 
         reply = (
-            f"### 🫀 CẢNH BÁO AN TOÀN THUỐC LOẠN NHỊP: AMIODARON 200MG (DƯỢC THƯ TRANG 112)\n\n"
+            f"### 🫀 CẢNH BÁO AN TOÀN THUỐC LOẠN NHỊP: Amiodaron 200mg (DƯỢC THƯ TRANG 112)\n\n"
             f"• **Dữ liệu kho viện:** Lô `b-17` - `LOT-AM25-C1`, hiện tồn **180 Viên** tại **Tủ thuốc Hồi sức Cấp cứu Tim Mạch**.\n"
             f"• **Đặc tính dược lý học:** Thuốc chống loạn nhịp nhóm III, thời gian bán thải ($t_{{1/2}}$) cực dài (khoảng **20 - 100 ngày**) và tích lũy mô mỡ.\n"
             f"• **Cảnh báo tương tác gây xoắn đỉnh (Torsades de Pointes):**\n"

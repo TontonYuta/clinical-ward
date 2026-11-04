@@ -92,7 +92,13 @@ async def resolve_active_drug_and_terms(
     if active_in_query and any(term in lower_query for term in TIMING_TERMS):
         return query, lower_query, active_in_query, explicit_named, has_candidate_drug, build_insufficient_formulation_response(session.active_medication_name, session_id)
 
-    if not session.active_medication_name and not is_renal and not explicit_named:
+    is_anaphylaxis_query = any(w in lower_query for w in ["phản vệ", "sốc phản vệ", "tt 51", "thông tư 51"])
+    if not session.active_medication_name and not is_renal and not explicit_named and not is_anaphylaxis_query:
+        from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+        spec_hit = find_clinical_specialty_consultation(query)
+        if spec_hit:
+            resp = synthesize_specialty_response(query, spec_hit, user_name=user_name, user_role=user_role, session_id=session_id)
+            return query, lower_query, active_in_query, explicit_named, has_candidate_drug, resp
         ped_res = check_pediatric_guidance_request(lower_query, query, session_id)
         if ped_res:
             return query, lower_query, active_in_query, explicit_named, has_candidate_drug, ped_res

@@ -283,99 +283,25 @@ async def build_drug_profile_response(
             citations=combo_citations
         )
 
-    # 1. TẦNG 1: THẺ TÓM TẮT HÀNH ĐỘNG NHANH (Fast Clinical Glance - 3s Ra Quyết Định)
-    val_ind = value("indications")
-    val_adult_dose = value("adult_dosage")
-    val_ped_dose = value("pediatric_dosage")
-    val_contra = value("contraindications")
-    val_renal = value("renal_adjustment")
-
-    ind_short = _format_clinical_text(str(val_ind or "Theo chỉ định của bác sĩ chuyên khoa.").strip())[:220]
-    dose_short = _format_clinical_text(str(val_adult_dose or "Tuân thủ theo chỉ định liều và tờ HDSD.").strip())[:200]
-    contra_short = _format_clinical_text(str(val_contra or "Mẫn cảm với bất kỳ thành phần nào của thuốc.").strip())[:180]
-
-    from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
-    catalog_ddis = find_all_interactions_for_drug(clean_name) + find_all_interactions_for_drug(clean_inn)
-    unique_ddis = []
-    seen_p = set()
-    for cd in catalog_ddis:
-        if cd.get("partner") not in seen_p:
-            seen_p.add(cd.get("partner"))
-            unique_ddis.append(cd)
-
-    top_ddi_text = "Chưa ghi nhận tương tác chống chỉ định nguy hiểm trong CSDL QĐ 5948."
-    if unique_ddis:
-        top_ddi_text = "; ".join(f"**{cd.get('partner')}** ({cd.get('severity')})" for cd in unique_ddis[:3])
-
-    stock_fast_line = f"• **📦 Tồn kho nội viện:** **{in_stock} {matched.standard_unit}** ({'Có sẵn tại kho' if in_stock > 0 else 'Chưa có tồn kho'}) | Vị trí: `{loc}`\n" if is_stock_ask else ""
-
-    fast_glance_block = (
-        f"### 💊 TRA CỨU NHANH DƯỢC LÂM SÀNG: {clean_name}\n"
-        f"*(Căn cứ CSDL Dược Quốc gia DAV & Dược thư Quốc gia Việt Nam DĐVN V)*\n\n"
-        f"• **Hoạt chất chính (INN):** **{ing}** | **Hàm lượng:** {conc or 'Theo hồ sơ công bố'}\n"
-        f"• **Dạng bào chế & SĐK:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | SĐK: `{matched.national_code}`\n"
-        f"• **🎯 Chỉ định chính:** {ind_short}\n"
-        f"• **🛡️ Liều dùng chuẩn:** {dose_short}\n"
-        f"• **🚫 Chống chỉ định:** {contra_short}\n"
-        f"• **⚡ Tương tác đáng chú ý:** {top_ddi_text}\n"
-        f"{stock_fast_line}\n"
-        f"---\n\n"
-    )
-
-    # 2. TẦNG 2: THAM KHẢO CHUYÊN SÂU TOÀN VĂN DĐVN V (Deep Monograph Collapsible)
-    df_forms = value("dosage_forms") or matched.dosage_form or "Đạt chuẩn DĐVN V"
-    header = (
-        f"<details>\n"
-        f"<summary><b>📖 Xem Chuyên Luận Toàn Văn Dược Thư Quốc Gia DĐVN V & Dược Động Học (Nhấn để mở rộng)</b></summary>\n\n"
-        f"#### 1. THÔNG TIN ĐỊNH DANH & DẠNG BÀO CHẾ LƯU HÀNH\n"
-        f"• **Tên biệt dược:** **{clean_name}** | **Mã SĐK (DAV):** `{matched.national_code}`\n"
-        f"• **Hoạt chất chính (INN):** **{ing}**\n"
-        f"• **Hàm lượng / Nồng độ:** {conc or 'Theo hồ sơ công bố'}\n"
-        f"• **Dạng bào chế lưu hành:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **Đường dùng:** {matched.route or 'Theo chỉ định'}\n"
-        f"• **Quy cách đóng gói:** {matched.packaging_spec or 'Theo tiêu chuẩn NSX'} | **Đơn vị:** {matched.standard_unit}\n"
-        f"• **Phân loại quản lý:** **{matched.group}** ({'Thuốc kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT)' if matched.is_controlled else 'Thuốc thông thường'})\n"
-        f"• **Nhóm dược lý & ATC:** {value('drug_class') or matched.drug_class or 'Đang cập nhật'} | **Mã ATC:** `{value('atc_code') or matched.atc_code or 'DĐVN V'}`\n"
-        f"• **Các dạng bào chế chuẩn trong Dược thư:** {_format_clinical_text(str(df_forms).strip())}\n\n"
-    )
-
-    body_items = [
-        ("#### 2. CHỈ ĐỊNH ĐIỀU TRỊ (INDICATIONS)\n🎯", "indications", "Theo hướng dẫn chẩn đoán và điều trị chuyên khoa được Bộ Y tế phê duyệt."),
-        ("#### 3. LIỀU LƯỢNG & ĐƯỜNG DÙNG (DOSAGE & ADMINISTRATION)\n🛡️ **Liều người lớn & Đường dùng:**", "adult_dosage", "Tuân thủ liều chỉ định của bác sĩ điều trị và tờ HDSD kèm theo."),
-        ("👶 **Liều trẻ em (theo cân nặng mg/kg & lứa tuổi):**", "pediatric_dosage", "Tính liều theo cân nặng (mg/kg) hoặc diện tích da; đối soát kỹ tờ HDSD hoặc chuyên khoa nhi."),
-        ("⚙️ **Hiệu chỉnh liều suy thận:**", "renal_adjustment", "Chưa có khuyến cáo hiệu chỉnh đặc thù; theo dõi chức năng thận và Clcr."),
-        ("🩺 **Hiệu chỉnh liều suy gan:**", "hepatic_adjustment", "Dùng thận trọng ở bệnh nhân suy giảm chức năng gan; chống chỉ định ở suy gan nặng tiến triển."),
-        ("#### 4. CHỐNG CHỈ ĐỊNH (CONTRAINDICATIONS)\n⚠️", "contraindications", "Mẫn cảm hoặc quá mẫn với hoạt chất và bất kỳ tá dược nào của thuốc."),
-        ("#### 5. THẬN TRỌNG & CẢNH BÁO ĐẶC BIỆT (PRECAUTIONS & WARNINGS)\n🤰 **Phụ nữ có thai & Cho con bú:**", "pregnancy_warning", "Chỉ sử dụng khi lợi ích điều trị vượt trội nguy cơ tiềm ẩn đối với thai nhi hoặc trẻ bú mẹ."),
-        ("🔍 **Thận trọng lâm sàng & Nguy cơ độc tính:**", "precautions", "Đọc kỹ hướng dẫn sử dụng trước khi dùng; tuân thủ theo dõi của nhân viên y tế."),
-        ("#### 6. TÁC DỤNG KHÔNG MONG MUỐN (ADR & ADVERSE EFFECTS)\n🚨", "adverse_effects", "Báo ngay cho bác sĩ hoặc dược sĩ lâm sàng nếu gặp phản ứng bất lợi nghi do thuốc."),
-        ("#### 7. TƯƠNG TÁC THUỐC (DRUG INTERACTIONS)\n⚡", "drug_interactions", "Rà soát tương tác chống chỉ định hoặc cần lưu ý theo Quyết định 5948/QĐ-BYT."),
-        ("#### 8. QUÁ LIỀU & THUỐC GIẢI ĐỘC (OVERDOSE & ANTIDOTE)\n⚠️ **Biểu hiện ngộ độc & Quá liều:**", "overdose_treatment", "Triệu chứng ngộ độc cấp tính hoặc quá liều theo cảnh báo lâm sàng."),
-        ("🧪 **Thuốc giải độc đặc hiệu & Xử trí (Antidote):**", "antidote", "Trường hợp quá liều, ngưng thuốc ngay lập tức và điều trị triệu chứng tại cơ sở y tế.")
-    ]
-    body_parts = []
-    for lbl, k, default in body_items:
-        val = value(k)
-        if k == "drug_interactions":
-            if unique_ddis:
-                extra = "\n\n*⚠️ Tương tác đáng chú ý theo QĐ 5948/QĐ-BYT & HDSD:*\n" + "\n".join(
-                    f"• **{cd.get('partner')}** (`{cd.get('severity')}`): {cd.get('consequence')}" for cd in unique_ddis[:5]
-                )
-                val = f"{val}\n{extra}" if val else extra.strip()
-        body_parts.append(f"{lbl} {_format_clinical_text(str(val or default).strip())}\n\n")
-    body = "".join(body_parts)
-    details_tail = "\n</details>"
-    details = fast_glance_block + header + body + details_tail
-
     session.set_active_medication(
         name=clean_name, ingredient=ing,
         batch=batches[0].batch_number if batches else matched.national_code,
         stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho",
         location=loc, sdk=matched.national_code
     )
-    return CopilotResponse(
-        intent="MEDICATION_SAFETY_PROFILE", reply_text=details, card=None, legal_basis=prof_source,
-        suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
-        active_medication_stock=session.active_medication_stock, active_medication_location=session.active_medication_location,
-        answer_type="medication_profile", source_status="exact_match", confidence=1.0,
-        citations=[_drug_citation(matched, monograph, prof_source)]
+
+    from app.services.chatbot.conversational_clinical_engine import build_fluent_drug_profile_response
+    resp = build_fluent_drug_profile_response(
+        matched_drug=matched,
+        monograph=monograph,
+        stock=in_stock,
+        location=loc,
+        query=query,
+        user_name=getattr(session, "user_name", "Bác sĩ"),
+        user_role=getattr(session, "user_role", "doctor"),
+        session_id=session.session_id
     )
+    resp.active_medication_name = session.active_medication_name
+    resp.active_medication_stock = session.active_medication_stock
+    resp.active_medication_location = session.active_medication_location
+    return resp

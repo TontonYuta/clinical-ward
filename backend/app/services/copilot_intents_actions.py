@@ -122,7 +122,11 @@ async def handle_fefo_intent(db: AsyncSession) -> CopilotResponse:
         primary_action_type="NAVIGATE_TAB",
         target_tab="fefo"
     )
-    reply_lines = ["### 📅 BÁO CÁO TỒN KHO THEO NGUYÊN TẮC FEFO (TT 36/2018/TT-BYT)\n"]
+    reply_lines = [
+        "### 📅 BÁO CÁO TỒN KHO THEO NGUYÊN TẮC FEFO (TT 36/2018/TT-BYT)\n",
+        "• **Nguyên tắc FEFO (First Expired, First Out):** Thuốc có hạn dùng ngắn hơn phải được xuất trước. Dược sĩ kho kiểm tra đối chiếu số lô hạn dùng trên thực tế với phần mềm trước khi giao thuốc cho các khoa lâm sàng.",
+        "• **Giám sát cận hạn:** Hệ thống rà soát toàn bộ lô thuốc trong kho nội trú và tủ trực, cảnh báo các mặt hàng có hạn dùng dưới 60 ngày để ưu tiên cấp phát hoặc điều chuyển đơn vị khác.\n"
+    ]
     for b in near_expiry[:4]:
         reply_lines.append(f"• **{b.item_name}** (Lô `{b.batch_number}`): Còn **{b.days_left} ngày** (Hạn dùng: `{b.expiry_date}`) - Tồn `{b.current_stock} {b.unit}`")
     return CopilotResponse(
@@ -130,7 +134,7 @@ async def handle_fefo_intent(db: AsyncSession) -> CopilotResponse:
         reply_text="\n".join(reply_lines),
         card=card,
         legal_basis="Thông tư 36/2018/TT-BYT (Thực hành tốt bảo quản thuốc GSP) & Thông tư 22/2011/TT-BYT",
-        suggested_chips=["Kiểm tra hạn dùng FEFO", "Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26"]
+        suggested_chips=["Kiểm tra hạn dùng FEFO", "Danh mục thuốc cận hạn < 60 ngày", "Quy tắc xuất kho FEFO"]
     )
 
 async def handle_restock_intent(db: AsyncSession) -> CopilotResponse:
@@ -153,7 +157,11 @@ async def handle_restock_intent(db: AsyncSession) -> CopilotResponse:
         primary_action_type="NAVIGATE_TAB",
         target_tab="fefo"
     )
-    reply_lines = ["### 📦 ĐỀ XUẤT DỰ TRÙ BỔ SUNG CƠ SỐ TỦ TRỰC (TT 22 MẪU 01)\n"]
+    reply_lines = [
+        "### 📦 ĐỀ XUẤT DỰ TRÙ BỔ SUNG CƠ SỐ TỦ TRỰC (TT 22 MẪU 01)\n",
+        "• **Cơ sở lập dự trù:** Căn cứ vào số lượng thuốc đã dùng theo y lệnh trong ca trực để lập phiếu lĩnh bù thuốc cấp cứu.",
+        "• **Quy trình phê duyệt:** Dược sĩ kho duyệt và cấp phát bù đúng số lượng và chủng loại để tủ trực luôn đủ cơ số quy định.\n"
+    ]
     for b in low_stocks[:4]:
         needed = (b.max_threshold or 20) - b.current_stock
         reply_lines.append(f"• **{b.item_name}**: Tồn hiện tại `{b.current_stock} {b.unit}` / Min `{b.min_threshold}` ➡️ Cần bù **+{needed} {b.unit}**")

@@ -168,6 +168,14 @@ async def lookup_drug_authoritative(
                     abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
                 )
 
+    if not drugs:
+        from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+        from app.services.chatbot.copilot_orchestrator import normalize_conversational_query
+        norm_q = normalize_conversational_query(query)
+        spec_item = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_q)
+        if spec_item:
+            return synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session.session_id)
+
     from app.services.chatbot.corrective_rag import evaluate_crag_tripartite
     crag_res = await evaluate_crag_tripartite(
         query=query, raw_kw=kw, direct_drugs=drugs, db=db,

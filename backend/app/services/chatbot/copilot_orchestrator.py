@@ -22,6 +22,34 @@ from app.services.chatbot.drug_comparison import handle_clinical_drug_comparison
 from app.services.chatbot.fsm_router import route_fsm_context
 from app.services.chatbot.sandwich_pipeline import execute_clinical_sandwich_pipeline
 
+def normalize_conversational_query(text: str) -> str:
+    cleaned = (text or "").strip()
+    prefix_patterns = [
+        r"^(?:kính gửi|kinh gui)\s+(?:bác sĩ|bac si|dược sĩ|duoc si|thầy|cô)?\s*,\s*(?:cho\s+(?:em|tôi|mình)\s+hỏi\s*|cho\s+hỏi\s*|hỏi\s*)?",
+        r"^(?:kính gửi|kinh gui)\s+(?:bác sĩ|bac si|dược sĩ|duoc si|thầy|cô)?\s*:\s*",
+        r"^(?:bs|bác sĩ|dược sĩ)\s+ơi\s*,?\s*(?:cho\s+(?:em|tôi|mình)\s+hỏi\s*|cho\s+hỏi\s*|hỏi\s*)?",
+        r"^(?:tư vấn chuyên môn|hội chẩn chuyên môn|tra cứu chuyên môn)\s*(?:giúp\s+(?:tôi|em|mình))?\s*:\s*",
+        r"^(?:đồng nghiệp|dong nghiep)\s+hỗ trợ\s+tra cứu\s*:\s*",
+        r"^(?:cho\s+(?:mình|em|tôi)\s+hỏi\s+(?:chi tiết|nhanh|rõ)?\s*(?:về\s+ca\s+này)?\s*:\s*)",
+        r"^(?:xin hỏi|cho hỏi|nhờ hỗ trợ|hỗ trợ tra cứu)\s*:\s*",
+    ]
+    for p in prefix_patterns:
+        cleaned = re.sub(p, "", cleaned, flags=re.IGNORECASE).strip()
+
+    suffix_patterns = [
+        r"\s*(?:đối với|cho)\s+bệnh nhân này\s*\??$",
+        r"\s*theo phác đồ hướng dẫn\s*\??$",
+        r"\s*theo đúng chuẩn dược thư và bộ y tế\s*\??$",
+        r"\s*theo chuẩn dược thư\s*\??$",
+        r"\s*được không ạ\s*\??$",
+        r"\s*có được không\s*\??$",
+        r"\s*ạ\s*\??$",
+        r"\s*\?+$"
+    ]
+    for p in suffix_patterns:
+        cleaned = re.sub(p, "", cleaned, flags=re.IGNORECASE).strip()
+    return cleaned if len(cleaned) >= 3 else text
+
 def resolve_copilot_identity(payload: CopilotQuery, request: Request) -> tuple[str, str, str]:
     authenticated = getattr(request.state, "authenticated_user", None)
     user_name = authenticated.username if authenticated else payload.user_name
@@ -83,12 +111,31 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     }:
         return await lookup_drug_authoritative("", db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    subflow_res = await dispatch_clinical_subflows(query, lower_query, user_name, db, user_role=user_role)
+    norm_query = normalize_conversational_query(query)
+    norm_lower = norm_query.lower()
+
+    subflow_res = await dispatch_clinical_subflows(norm_query, norm_lower, user_name, db, user_role=user_role)
     if subflow_res:
         return subflow_res
 
-    extracted_kw, resolved_meds = extract_drug_keywords(query), resolve_registered_medications(lower_query)
-    is_two_drug = (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))) or len(resolved_meds) > 1
+    sc_early = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
+    if sc_early:
+        sc_early.reply_text = validate_output_guardrail(sc_early.reply_text, query)
+        return sc_early
+
+    from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+    spec_early = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
+    if spec_early:
+        return synthesize_specialty_response(query, spec_early, user_name=user_name, user_role=user_role, session_id=session_id)
+
+    extracted_kw, resolved_meds = extract_drug_keywords(norm_query), resolve_registered_medications(norm_lower)
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    matcher = get_drug_lexical_matcher()
+    lex_meds = matcher.extract_medications(norm_query)
+
+    is_two_drug = len(resolved_meds) >= 2 or len(lex_meds) >= 2 or (
+        len(extracted_kw.split()) >= 2 and any(term in lower_query for term in ("tương tác", "tương kỵ", "kỵ thuốc", "kỵ với", "phối hợp", "uống cùng", "uống chung", "dùng cùng", "uong cung", "dung cung", "tuong tac"))
+    )
     has_interaction_term = any(term in lower_query for term in ("tương tác", "tương kỵ", "kỵ thuốc", "kỵ với", "kỵ gì", "tuong tac", "tuong ky", "ky thuoc"))
     is_check_multi = is_two_drug and ("+" in lower_query or any(w in lower_query for w in ("kiểm tra", "kiem tra", "check", "rà soát", "ra soat")))
     is_two_drug_inquiry = is_two_drug and (
@@ -118,6 +165,10 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         return field_res
 
     if not is_renal and not explicit_named and any(term in lower_query for term in ("suy thận", "suy gan", "thai kỳ", "phụ nữ có thai", "cho con bú", "thuốc giảm đau", "thuốc chống đông", "thuốc tim mạch", "thuốc dạ dày", "thuốc tiểu đường", "pha chung", "tương kỵ", "tương tác thuốc")) and not session.active_medication_name:
+        from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+        spec_item = find_clinical_specialty_consultation(query)
+        if spec_item:
+            return synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
         if not any(term in lower_query for term in ("huyết áp", "tăng huyết áp", "hạ huyết áp", "ung thư", "u bướu", "hen phế quản", "đái tháo đường")):
             return CopilotResponse(
                 intent="MEDICATION_LOOKUP_CLARIFICATION",
@@ -171,6 +222,11 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
             sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
             return sc_res
 
+    from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+    spec_item = find_clinical_specialty_consultation(query)
+    if spec_item:
+        return synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
+
     drug_cues = (
         "thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng",
         "liều tối đa", "còn liều", "liều", "chỉ định", "công dụng", "tác dụng phụ", "tác dụng không mong muốn",
@@ -179,14 +235,14 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         "thong tin thuoc", "thong tin", "tra cuu thuoc", "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac",
         "số lượng", "so luong", "tồn kho", "ton kho", "trong kho"
     )
-    has_drug_ent = find_matched_med(lower_query) is not None or active_in_query or any(alias in lower_query for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4) or has_candidate_drug
-    if not is_renal and has_drug_ent and any(cue in lower_query for cue in drug_cues) and not is_two_drug and not is_deep_complex:
+    has_drug_ent = find_matched_med(lower_query) is not None or find_matched_med(norm_lower) is not None or active_in_query or any(alias in lower_query or alias in norm_lower for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4) or has_candidate_drug or bool(lex_meds)
+    if not is_renal and has_drug_ent and any(cue in lower_query or cue in norm_lower for cue in drug_cues) and not is_two_drug and not is_deep_complex:
         is_personalized_request = any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:
                 return sandwich_res
-        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+        return await lookup_drug_authoritative(norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     sc_res2 = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
     if sc_res2:
@@ -197,20 +253,19 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if contextual_rag:
         return contextual_rag
 
-    ops_res = await dispatch_operational_business(query, lower_query, user_name, db)
+    ops_res = await dispatch_operational_business(norm_query, norm_lower, user_name, db)
     if ops_res:
         return ops_res
 
     has_sdk = bool(re.search(r"((?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+)", lower_query))
     is_deep_pharm = any(w in lower_query for w in [
-        "thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng", "tương tác", "tương kỵ",
-        "phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung", "chống chỉ định",
-        "dị ứng chéo", "kháng sinh", "chống viêm", "hạ huyết áp", "uống gì", "dùng gì", "gợi ý"
-    ]) or any(c in lower_query for c in [" và ", " với ", " cùng ", " kèm "])
+        "thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng",
+        "dị ứng chéo", "thải trừ", "sinh khả dụng"
+    ])
     has_reg_drug = bool(resolve_registered_medications(lower_query))
     matched_med = find_matched_med(lower_query)
     is_med_info = any(w in lower_query for w in ["thời gian bán thải", "chỉ định", "chống chỉ định", "tác dụng phụ", "tác dụng", "công dụng", "tương tác", "dùng để làm gì", "liều tối đa", "liều dùng", "là gì", "dị ứng", "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào", "thế nào", "như thế nào", "bao nhiêu", "hỏi về", "thông tin"])
-    has_drug_ask = lower_query.startswith("thuốc ") or " thuốc " in lower_query or any(w in lower_query for w in ["thông tin", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "về thuốc", "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "còn liều", "liều", "uống thế nào", "dùng thế nào", "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không"]) or has_reg_drug or (matched_med is not None and is_med_info and not is_deep_pharm)
+    has_drug_ask = lower_query.startswith("thuốc ") or " thuốc " in lower_query or any(w in lower_query for w in ["thông tin", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "về thuốc", "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "còn liều", "liều", "uống thế nào", "dùng thế nào", "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không", "uống lúc nào"]) or has_reg_drug or bool(lex_meds) or (matched_med is not None and is_med_info and not is_deep_pharm)
 
     cand_kw_present = bool(extract_drug_keywords(lower_query))
     is_short_drug_candidate = len(lower_query.split()) <= 3 and cand_kw_present and not any(w in lower_query for w in ["chào", "hello", "hi", "tủ trực", "báo hỏng", "hư hỏng", "máy thở", "monitor", "kiểm kê", "giao ban"])
@@ -220,7 +275,12 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:
                 return sandwich_res
-        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+        return await lookup_drug_authoritative(norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+
+    from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response, get_clinical_persona_greeting
+    spec_direct = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
+    if spec_direct:
+        return synthesize_specialty_response(query, spec_direct, user_name=user_name, user_role=user_role, session_id=session_id)
 
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
     if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:
@@ -228,8 +288,18 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         if deep_rag:
             return deep_rag
 
+    greeting = get_clinical_persona_greeting(user_name, user_role)
+    fallback_reply = (
+        f"{greeting} em đã tiếp nhận câu hỏi chuyên môn của đồng nghiệp.\n\n"
+        f"Để đảm bảo độ chính xác 100% theo CSDL Dược Quốc gia (DAV 54.885 thuốc & DĐVN V), "
+        f"đồng nghiệp vui lòng cung cấp thêm tên thuốc/hoạt chất hoặc ca bệnh cụ thể:\n"
+        f"• **Tra cứu thuốc:** Tên biệt dược, hoạt chất (INN) hoặc số đăng ký (SĐK).\n"
+        f"• **Kiểm tra tương tác:** Cặp thuốc phối hợp (ví dụ: *Clopidogrel + Omeprazol*).\n"
+        f"• **Quy chế & Nghiệp vụ:** Thẩm định đơn TT 26, phác đồ phản vệ TT 51, hạn dùng FEFO TT 36.\n\n"
+        f"Em luôn sẵn sàng hỗ trợ đồng nghiệp ngay ạ!"
+    )
     return CopilotResponse(
-        intent="GENERAL_CLINICAL_ASSISTANCE", reply_text=CLINICAL_BUSINESS_DIRECTORY,
+        intent="GENERAL_CLINICAL_ASSISTANCE", reply_text=fallback_reply,
         legal_basis="Thông tư 26/2025, TT 52/2017, QĐ 5948 & DĐVN V",
-        suggested_chips=["Kiểm tra đơn thuốc theo TT 26", "Tương tác giữa Clopidogrel và Omeprazol", "Mở form gửi email/sms", "Thuốc cận hạn FEFO"]
+        suggested_chips=["Kiểm tra đơn thuốc theo TT 26", "Tương tác giữa Clopidogrel và Omeprazol", "Tra cứu Dược Thư Quốc Gia"]
     )

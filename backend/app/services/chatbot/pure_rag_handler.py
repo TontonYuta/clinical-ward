@@ -67,9 +67,12 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
 )
 
 def is_qualified_clinical_rag_query(lower_query: str, session) -> bool:
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
     has_clinical_pattern = any(p in lower_query for p in CLINICAL_KNOWLEDGE_GATE_PATTERNS)
     has_active_or_explicit = bool(
-        resolve_registered_medications(lower_query) or (session and session.active_medication_name)
+        resolve_registered_medications(lower_query)
+        or bool(get_drug_lexical_matcher().extract_medications(lower_query))
+        or (session and session.active_medication_name)
     )
     return has_clinical_pattern or (has_active_or_explicit and any(t in lower_query for t in ("như thế nào", "tại sao", "cơ chế", "dược lực", "lưu ý", "xử trí", "tác dụng", "điều trị", "dùng", "uống")))
 

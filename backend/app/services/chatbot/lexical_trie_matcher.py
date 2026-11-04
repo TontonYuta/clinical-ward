@@ -27,7 +27,13 @@ COMMON_EXCLUSIONS: Set[str] = {
     "nhất", "nhat", "nhát", "nhiều", "nhieu", "ít", "it", "nguy", "hiểm", "hiem", "tốt", "tot", "xấu", "xau",
     "tóm", "tom", "tắt", "tat", "tiết", "tiet", "đầy", "day", "đủ", "du", "hồ", "ho", "sơ", "so", "bản", "ban", "ghi", "toàn", "toan", "bộ", "bo",
     "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá", "bạn", "ban", "kém", "kem", "tệ", "te", "dở", "chán", "chan", "thật", "that",
-    "trong", "ngoai", "ngoài", "tren", "trên", "duoi", "dưới", "giua", "giữa", "truoc", "trước", "sau", "hoac", "hoặc", "vi", "vì", "neu", "nếu", "thi", "thì", "nhu", "như", "rat", "rất", "lam", "lắm", "cung", "cùng", "kem", "kèm", "theo", "de", "để", "dang", "đang", "da", "đã", "se", "sẽ", "vua", "vừa", "moi", "mới", "tung", "từng", "hieu", "hiểu", "noi", "nói", "viet", "viết", "doc", "đọc", "gui", "gửi", "tra loi", "trả lời", "cau", "câu", "nut", "nút", "bam", "bấm"
+    "trong", "ngoai", "ngoài", "tren", "trên", "duoi", "dưới", "giua", "giữa", "truoc", "trước", "sau", "hoac", "hoặc", "vi", "vì", "neu", "nếu", "thi", "thì", "nhu", "như", "rat", "rất", "lam", "lắm", "cung", "cùng", "kem", "kèm", "theo", "de", "để", "dang", "đang", "da", "đã", "se", "sẽ", "vua", "vừa", "moi", "mới", "tung", "từng", "hieu", "hiểu", "noi", "nói", "viet", "viết", "doc", "đọc", "gui", "gửi", "tra loi", "trả lời", "cau", "câu", "nut", "nút", "bam", "bấm",
+    "nang", "năng", "gói", "goi", "ống", "ong", "chai", "lọ", "lo", "tuýp", "tuyp", "vỉ", "vi", "hộp", "hop", "chức", "chuc", "thận", "than", "gan", "tim",
+    "huyết", "huyet", "áp", "ap", "đường", "duong", "khuẩn", "khuan", "thanh", "tinh", "chế", "che", "an thần", "an than", "kinh", "thần kinh", "than kinh", "thần",
+    "đồng", "dong", "nghiệp", "nghiep", "kính", "kinh", "hỗ", "ho", "trợ", "tro", "chuyên", "chuyen", "môn", "mon", "hướng", "huong", "dẫn", "dan", "phác", "phac", "đồ", "do",
+    "chuẩn", "chuan", "chi", "nhân", "nhan", "đối", "doi", "quy", "định", "dinh", "thông", "tư", "tu", "nghị", "nghi", "điều", "dieu", "khoa", "phòng", "phong", "toàn", "văn", "van",
+    "mang", "gửi", "gui", "giảm", "giam", "loét", "loet", "nấm", "nam", "miệng", "mieng", "tai", "mũi", "họng", "hong", "khớp", "khop", "trĩ", "tri", "ngủ", "ngu",
+    "đồng nghiệp", "dong nghiep", "kính gửi", "kinh gui", "tư vấn", "tu van", "chuyên môn", "chuyen mon", "hỗ trợ", "ho tro"
 }
 
 class TrieNode:

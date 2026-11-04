@@ -30,10 +30,14 @@ STOP_PHRASES = [
     "tom tat thong tin", "tom tat thuoc", "tom tat",
     "hồ sơ đầy đủ", "ho so day du", "hồ sơ chi tiết", "ho so chi tiet", "toàn bộ hồ sơ", "toan bo ho so",
     "lại trả lời sai thông tin rồi", "lại trả lời sai", "trả lời sai thông tin", "trả lời sai", "sai thông tin rồi", "sai thông tin", "bạn không xử lý được à", "không xử lý được à", "không xử lý được",
-    "thuốc cản quang", "tiêm thuốc cản quang", "cản quang", "chụp ct", "chụp mri", "chụp x-quang", "nồng độ đáy", "nồng độ đỉnh", "trough level", "trough", "peak", "định lượng"
+    "thuốc cản quang", "tiêm thuốc cản quang", "cản quang", "chụp ct", "chụp mri", "chụp x-quang", "nồng độ đáy", "nồng độ đỉnh", "trough level", "trough", "peak", "định lượng",
+    "đồng nghiệp hỗ trợ tra cứu", "tư vấn chuyên môn giúp tôi", "cho mình hỏi chi tiết về ca này", "kính gửi bác sĩ cho em hỏi", "kính gửi bác sĩ", "bs ơi cho hỏi",
+    "đối với bệnh nhân này", "theo phác đồ hướng dẫn", "theo đúng chuẩn dược thư và bộ y tế", "theo đúng chuẩn dược thư", "theo đúng chuẩn"
 ]
 
 QUESTION_TERMS = {
+    "đồng", "nghiệp", "hỗ", "trợ", "kính", "gửi", "chuyên", "môn", "phác", "đồ", "chuẩn", "hướng", "dẫn", "đối", "mang", "súc", "miệng", "xịt", "rửa", "tai", "biến",
+    "chữ", "ký", "số", "cận", "hạn", "kiểm", "định", "bàn", "giao", "bù", "tồn", "vỏ", "ống", "hủy",
     "tác", "dụng", "phụ", "không", "mong", "muốn", "tương", "thành", "phần",
     "của", "thuốc", "này", "đó", "là", "gì", "thế", "nào", "bao", "nhiêu", "hoạt", "chất",
     "thời", "gian", "bán", "thải", "tối", "đa", "huyết", "tương", "còn",
@@ -59,7 +63,8 @@ QUESTION_TERMS = {
     "tóm", "tắt", "tom", "tat", "tiết", "tiet", "đầy", "đủ", "day", "du", "hồ", "sơ", "ho", "so", "toàn", "bộ", "toan", "bo",
     "tốt", "tot", "hơn", "hon", "hay", "kém", "kem", "mạnh", "manh", "yếu", "yeu", "so", "sánh", "sanh",
     "kia", "đó", "đấy", "ấy", "vậy", "này", "trên", "dưới", "vừa", "rồi", "cơ", "mà", "chúng", "nó", "nhé", "nha", "ạ", "đây", "day", "nhất", "nhat", "quá", "qua", "tệ", "te", "dở", "chán", "chan", "thật", "that", "thế", "the",
-    "biểu", "hiện", "dấu", "triệu", "chứng", "nên", "sử", "thì", "nào", "buồn", "nôn", "nào"
+    "biểu", "hiện", "dấu", "triệu", "chứng", "nên", "sử", "thì", "nào", "buồn", "nôn", "nào",
+    "điểm", "thời", "đáy", "đỉnh", "nồng", "độ", "chế", "độ", "chỉnh", "hiệu", "chức", "năng"
 }
 
 

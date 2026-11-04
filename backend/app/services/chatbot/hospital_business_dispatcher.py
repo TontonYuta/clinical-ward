@@ -26,14 +26,19 @@ from app.services.copilot_intents_prescription import (
 async def dispatch_clinical_subflows(
     query: str, lower_query: str, user_name: str, db: AsyncSession, user_role: str = "doctor"
 ) -> CopilotResponse | None:
-    is_advice = any(w in lower_query for w in [
-        "dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc",
-        "thông báo uống", "gửi mail", "gửi email", "gửi gmail", "uống thuốc hàng ngày",
-        "gửi sms", "nhắn tin", "mở form gửi", "mở form email", "mở form sms", "email/sms"
-    ]) or (
-        any(w in lower_query for w in ["thông báo", "gửi", "nhắc", "dặn"])
-        and any(w in lower_query for w in ["uống thuốc", "uống", "đơn thuốc", "lịch thuốc", "sms", "email"])
-    ) or lower_query.strip() in ["gửi gmail", "gửi mail", "gmail", "email", "xem email", "in phiếu dặn dò", "gửi sms", "sms"]
+    is_advice = (
+        any(w in lower_query for w in [
+            "dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc",
+            "thông báo uống", "gửi mail", "gửi email", "gửi gmail", "uống thuốc hàng ngày",
+            "gửi sms", "nhắn tin", "mở form gửi", "mở form email", "mở form sms", "email/sms", "phiếu dặn dò", "cữ uống thuốc", "xuất viện"
+        ]) or (
+            any(w in lower_query for w in ["gửi sms", "gửi email", "gửi tin nhắn", "nhắn tin", "soạn sms", "soạn tin nhắn", "nhắc nhở"])
+            and any(w in lower_query for w in ["uống thuốc", "đơn thuốc", "lịch thuốc", "người bệnh", "bệnh nhân"])
+        ) or lower_query.strip() in ["gửi gmail", "gửi mail", "gmail", "email", "xem email", "in phiếu dặn dò", "gửi sms", "sms"]
+    ) and not any(w in lower_query for w in [
+        "thời điểm nào", "uống vào lúc nào", "uống lúc nào", "tác hại gì", "trùng lặp hoạt chất", "duplicate therapy",
+        "thẩm định", "kiểm tra", "tra cứu"
+    ])
     if is_advice:
         return await handle_prescription_advice_intent(query, lower_query, user_name, user_role=user_role)
 
@@ -45,10 +50,15 @@ async def dispatch_clinical_subflows(
     if is_prescription_audit:
         return await handle_prescription_audit_intent(query, lower_query, user_name, user_role, db, session_id="")
 
+    is_cpoe_inquiry = any(w in lower_query for w in [
+        "tối đa bao nhiêu ngày", "bao nhiêu ngày", "mấy ngày", "quy định", "thông tư", "nghị định",
+        "cảnh báo tự động", "cơ chế", "dị ứng chéo", "chữ ký số", "hợp lệ của chữ ký số", "tính hợp lệ",
+        "theo phác đồ hướng dẫn", "theo đúng chuẩn", "hướng dẫn kê đơn", "giảm đau", "đau đầu", "kê đơn thuốc morphin"
+    ])
     is_cpoe = (any(w in lower_query for w in [
         "kê đơn", "tạo đơn thuốc", "lập đơn thuốc", "kê toa", "kê đơn cpoe", "cpoe đơn thuốc", "đơn thuốc điện tử",
         "mở form kê đơn", "mở form cpoe", "mở cpoe", "form kê đơn", "xem đơn thuốc", "xem đơn", "đơn thuốc bệnh nhân", "danh sách đơn thuốc"
-    ]) or ("cpoe" in lower_query and any(w in lower_query for w in ["mở", "form", "biểu mẫu", "xem"]))) and not is_advice
+    ]) or ("cpoe" in lower_query and any(w in lower_query for w in ["mở", "form", "biểu mẫu", "xem"]))) and not is_advice and not is_cpoe_inquiry
     if is_cpoe:
         return await handle_cpoe_intent(query, lower_query, user_name, user_role=user_role)
 
@@ -65,23 +75,34 @@ async def dispatch_clinical_subflows(
 async def dispatch_operational_business(
     query: str, lower_query: str, user_name: str, db: AsyncSession
 ) -> CopilotResponse | None:
-    is_capabilities = any(w in lower_query for w in [
-        "nghiệp vụ", "các nghiệp vụ", "quy trình lâm sàng", "tính năng", "bạn làm được gì",
-        "bạn có thể làm", "bạn giúp được", "hệ thống làm được", "làm được gì", "giúp được gì",
-        "hướng dẫn hệ thống", "hướng dẫn sử dụng", "chức năng", "menu", "bạn là ai",
-        "ông là ai", "anh là ai", "em là ai", "mày là ai", "who are you", "ai đấy", "ai thế"
+    has_clinical_context = any(w in lower_query for w in [
+        "chức năng thận", "chức năng gan", "chức năng tim", "chỉnh liều", "suy thận", "suy gan",
+        "liều lượng", "uống", "tiêm", "thuốc", "mg", "mcg"
     ])
+    is_capabilities = (any(w in lower_query for w in [
+        "nghiệp vụ", "các nghiệp vụ", "quy trình lâm sàng", "tính năng hệ thống", "bạn làm được gì",
+        "bạn có thể làm", "bạn giúp được", "hệ thống làm được", "làm được gì", "giúp được gì",
+        "hướng dẫn hệ thống", "hướng dẫn sử dụng", "chức năng hệ thống", "menu hệ thống", "bạn là ai",
+        "ông là ai", "anh là ai", "em là ai", "mày là ai", "who are you"
+    ]) or lower_query.strip().strip("?.! ") in ["menu", "chức năng", "tính năng", "bạn là ai"]) and not has_clinical_context
     if is_capabilities:
         return await handle_business_overview_intent()
 
+    has_clinical_question = any(w in lower_query for w in [
+        "chỉnh liều", "liều dùng", "liều lượng", "uống lúc nào", "uống thế nào", "dùng để làm gì",
+        "tác dụng phụ", "tác hại", "suy thận", "clcr", "egfr", "co thắt", "co giật", "sốt cao", "buồn nôn", "nghi ngờ sốt xuất huyết"
+    ]) and not any(w in lower_query for w in [
+        "thông tư", "nghị định", "quy chế", "quy định", "tiêu chuẩn nhiệt độ", "kiểm định", "chuỗi lạnh"
+    ])
     is_legal = any(w in lower_query for w in [
         "phác đồ", "quy định", "quy chế", "thông tư", "nghị định", "tiêu chuẩn", "hướng dẫn", "tiêu hủy", "vỡ", "làm mất", "thuốc gây nghiện", "hướng thần", "kiểm soát đặc biệt"
-    ])
-    has_action = any(w in lower_query for w in ["mượn", "lấy", "xuất", "hỏng", "báo hỏng", "kê", "cần"])
+    ]) and not has_clinical_question
+    has_action = any(w in lower_query for w in ["mượn", "lấy", "xuất", "hỏng", "báo hỏng", "cần"])
     if is_legal and not has_action:
         return await handle_legal_intent(lower_query)
 
-    if any(w in lower_query for w in ["đối soát", "giao ban", "ca trực", "ca đêm", "báo cáo ca", "chốt ca", "bàn giao ca", "07:00", "lệch sổ", "tổng hợp nợ"]):
+    is_audit_trail_ask = any(w in lower_query for w in ["sổ kiểm toán", "audit trail", "hmac", "sha256", "bất biến"])
+    if not is_audit_trail_ask and any(w in lower_query for w in ["đối soát", "giao ban", "ca trực", "ca đêm", "báo cáo ca", "chốt ca", "bàn giao ca", "07:00", "lệch sổ", "tổng hợp nợ"]):
         return await handle_shift_handover_intent(db)
 
     # Tạm thời comment tính năng báo hỏng TBYT theo yêu cầu người dùng

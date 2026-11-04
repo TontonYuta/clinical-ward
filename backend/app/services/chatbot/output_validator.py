@@ -19,7 +19,7 @@ def validate_grounded_reply(
     reply_drugs = resolve_registered_medications(reply_lower)
 
     # Prevent accidental drift into controlled substances when not queried
-    controlled_unrelated = any(d in ("morphine", "diazepam", "fentanyl") for d in reply_drugs) and not any(
+    controlled_unrelated = not target_drug_keys and any(d in ("morphine", "diazepam", "fentanyl") for d in reply_drugs) and not any(
         k in query_lower for k in ("morphin", "diazepam", "fentanyl", "gây nghiện", "hướng thần", "giảm đau ung thư", "đau nặng", "an thần", "co giật")
     )
     if controlled_unrelated:
