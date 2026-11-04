@@ -51,14 +51,12 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
         return CopilotResponse(
             intent="FEEDBACK_DATA_ENRICHMENT",
             reply_text=(
-                f"### 📝 TIẾP NHẬN PHẢN HỒI BỔ SUNG DỮ LIỆU TƯƠNG TÁC THUỐC\n\n"
-                f"Dạ em xin chân thành cảm ơn {role_label} đã đóng góp ý kiến chuyên môn ạ!\n\n"
-                f"• **Cơ sở dữ liệu hiện hành:** Hệ thống đã đồng bộ toàn diện **633 cặp tương tác chống chỉ định (Bảng 3.1)** và **68 nhóm tương tác nguy cơ cao (Bảng 3.2)** theo **Quyết định 5948/QĐ-BYT** của Bộ Y tế, cùng 708 chuyên luận Dược Thư Quốc Gia 2015/2022.\n"
-                f"• **Ghi nhận nâng cấp:** Em đã ghi nhận góp ý của {role_label.lower()} để mở rộng thêm các cặp tương tác dược lý học phối hợp (như Paracetamol + NSAID, bổ sung tương tác chuyển hóa qua enzyme CYP).\n"
-                f"• **Hỗ trợ tra cứu ngay:** {role_label} có thể gửi cụ thể 2 loại thuốc (ví dụ: *\"Paracetamol và Ibuprofen\"*, *\"Clopidogrel và Omeprazol\"*) để em rà soát chi tiết cho {role_label.lower()} ạ!"
+                f"Đã ghi nhận phản hồi của {role_label} về việc bổ sung và chuẩn hóa dữ liệu chuyên môn.\n\n"
+                f"• **Đối soát hiện hành:** Hệ thống đang đối chiếu trực tiếp theo danh mục 633 cặp tương tác chống chỉ định (QĐ 5948/QĐ-BYT) và 771 chuyên luận Dược Thư Quốc Gia (DĐVN V).\n"
+                f"• **Điểm cần làm rõ:** {role_label} đang nhận thấy thông tin chưa chuẩn xác hoặc cần bổ sung ở cặp thuốc/phác đồ cụ thể nào để hệ thống đối soát và cập nhật ngay vào cơ sở dữ liệu ạ?"
             ),
             legal_basis="Quyết định 5948/QĐ-BYT & Dược thư Quốc gia Việt Nam",
-            suggested_chips=["Kiểm tra tương tác Paracetamol + Ibuprofen", "Kiểm tra tương tác Clopidogrel + Omeprazol", "Tra cứu Dược Thư Quốc Gia"],
+            suggested_chips=["Simvastatin và Clarithromycin", "Clopidogrel và Omeprazol", "Tra cứu Dược Thư Quốc Gia"],
             answer_type="feedback_acknowledgment",
             confidence=1.0
         )
@@ -123,9 +121,14 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu Dược Thư Quốc Gia"]
         )
 
+    has_clinical_anchor = bool(re.search(
+        r"\b(?:mg|mcg|ml|tuong tac|chong chi dinh|giai doc|ngo doc|doc tinh|thai|uong|tiem|lieu|benh|thuoc|than|gan|sot|dieu tri)\b",
+        clean_greeting_ascii
+    ))
+
     is_capability_query = any(c in clean_greeting_ascii for c in (
         "khong xu ly duoc", "khong lam duoc", "khong biet lam", "khong tra loi duoc", "lam duoc gi", "co the lam gi"
-    ))
+    )) and not has_clinical_anchor and not any(term in clean_greeting_ascii for term in ("thuoc", "hoi ve", "tra cuu"))
     if is_capability_query:
         role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
         return CopilotResponse(
@@ -143,10 +146,6 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Tra cứu tồn kho thuốc"]
         )
 
-    has_clinical_anchor = any(k in clean_greeting_ascii for k in (
-        "mg", "mcg", "g", "ml", "tuong tac", "chong chi dinh", "giai doc", "ngo doc",
-        "doc tinh", "thai", "uong", "tiem", "lieu", "benh", "thuoc", "than", "gan", "sot", "dieu tri"
-    ))
     is_bot_identity = bool(re.search(
         r"\b(?:ban la ai|ong la ai|anh la ai|em la ai|may la ai|who are you|ban ten gi|ten la gi|ai the|ai day|ai do)\b",
         clean_greeting_ascii

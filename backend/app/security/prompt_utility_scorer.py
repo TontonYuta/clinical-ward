@@ -6,10 +6,13 @@ Nguyên tắc:
 3. Ràng buộc 100% đối soát với CSDL Dược Thư Quốc Gia 2015, 55.000 thuốc DAV và quy chế Bộ Y tế.
 Căn cứ: MedAbstain (arXiv:2601.12471), Self-RAG (ICLR 2024), NeMo Guardrails (NVIDIA).
 """
+import os
+import sqlite3
 import re
 import math
 from dataclasses import dataclass, field
 from typing import Optional
+from app.config import _DEFAULT_DB_PATH
 from app.security.guardrails import (
     sanitize_input_text,
     detect_sql_injection,
@@ -26,17 +29,8 @@ class PromptUtilityResult:
     intent_detected: Optional[str] = None
     grounded_source: Optional[str] = None
 
-# Danh mục từ khóa thực thể lâm sàng & nghiệp vụ bệnh viện chuẩn CSDL
-CLINICAL_ENTITIES_LEXICON = {
-    # Thuốc và Hoạt chất chính
-    "paracetamol", "acetaminophen", "morphin", "morphine", "fentanyl", "ceftriaxon",
-    "ceftriaxone", "adrenalin", "adrenaline", "epinephrine", "diazepam", "vancomycin",
-    "meropenem", "meroright", "amiodaron", "amiodarone", "noradrenalin", "noradrenaline",
-    "kali clorid", "kali", "kcl", "lipid 20%", "insulin", "heparin", "enoxaparin",
-    "aspirin", "ibuprofen", "diclofenac", "omeprazol", "esomeprazol", "nexium",
-    "clopidogrel", "plavix", "nitroglycerin", "viagra", "sildenafil", "sofosbuvir",
-    "sovaldi", "paxlovid", "simvastatin", "atorvastatin", "allopurinol", "zyloric",
-    "azathioprin", "imuran", "colchicin", "vaxigrip", "oresol", "natri clorid", "ringer",
+# Từ khóa triệu chứng, bệnh danh và nghiệp vụ lâm sàng bệnh viện
+CORE_CLINICAL_SYMPTOMS_AND_OPERATIONS = {
     # Triệu chứng & Bệnh danh
     "sốt", "sốt cao", "buồn nôn", "nôn", "nôn ói", "co giật", "khó thở", "đau ngực",
     "đau đầu", "tụt huyết áp", "tăng huyết áp", "huyết áp", "phản vệ", "sốc phản vệ",
@@ -48,6 +42,72 @@ CLINICAL_ENTITIES_LEXICON = {
     "máy thở", "máy sốc tim", "monitor", "khí máu", "báo hỏng", "sự cố", "liều dùng",
     "tương tác thuốc", "tương kỵ", "đặt trực tràng", "đặt hậu môn", "tiêm bắp", "tiêm tĩnh mạch"
 }
+
+# Cache động nạp từ CSDL (54.885 thuốc DAV & 771 chuyên luận DĐVN V)
+_DYNAMIC_DRUG_LEXICON_CACHE: Optional[set[str]] = None
+
+def get_dynamic_clinical_lexicon() -> set[str]:
+    """
+    Nạp động toàn bộ danh mục thực thể Dược từ CSDL Quốc Gia (DAV) và Dược Thư Việt Nam.
+    Tuyệt đối KHÔNG hardcode danh mục thuốc tĩnh, đảm bảo tự động khớp 100% mọi thuốc trong CSDL.
+    """
+    global _DYNAMIC_DRUG_LEXICON_CACHE
+    if _DYNAMIC_DRUG_LEXICON_CACHE is not None:
+        return _DYNAMIC_DRUG_LEXICON_CACHE
+
+    lexicon = set(CORE_CLINICAL_SYMPTOMS_AND_OPERATIONS)
+    db_candidates = [
+        "/tmp/clinical_hospital.db",
+        _DEFAULT_DB_PATH,
+        "clinical_hospital.db",
+        "backend/clinical_hospital.db"
+    ]
+    target_db = next((p for p in db_candidates if os.path.exists(p)), None)
+
+    if target_db:
+        try:
+            conn = sqlite3.connect(target_db, timeout=5.0)
+            c = conn.cursor()
+
+            # 1. Nạp toàn bộ hoạt chất chuẩn quốc tế (INN / Title) từ 771 chuyên luận Dược điển V
+            c.execute("SELECT lower(inn), lower(title) FROM clinical_drug_monographs;")
+            for r in c.fetchall():
+                if r[0] and len(r[0].strip()) >= 3:
+                    lexicon.add(r[0].strip())
+                if r[1] and len(r[1].strip()) >= 3:
+                    lexicon.add(r[1].strip())
+
+            # 2. Nạp toàn bộ tên biệt dược và gốc từ từ 54.885 thuốc Cục Quản lý Dược (DAV)
+            c.execute("SELECT lower(brand_name) FROM dav_national_drugs WHERE brand_name IS NOT NULL;")
+            stop_words = {
+                'thông', 'tin', 'cho', 'tôi', 'hỏi', 'về', 'của', 'các', 'những', 'làm', 'được', 'gì',
+                'nào', 'sao', 'ở', 'tại', 'với', 'và', 'hoặc', 'có', 'không', 'thì', 'là', 'bạn',
+                'mình', 'em', 'anh', 'chị', 'bác', 'sĩ', 'điều', 'dưỡng', 'bệnh', 'nhân', 'người',
+                'tra', 'cứu', 'hướng', 'dẫn', 'xem', 'hãy', 'lấy', 'tìm', 'dùng', 'uống', 'tiêm',
+                'kê', 'đơn', 'viên', 'nén', 'nang', 'lọ', 'chai', 'ống', 'hộp', 'gói', 'thuốc',
+                'dung', 'dịch', 'hỗn', 'bột', 'kem', 'gel', 'mg', 'ml', 'g', 'mcg', 'iu', 'ui',
+                'plus', 'forte', 'retard', 'xr', 'mr', 'cr', 'sr', 'nhũ', 'tương'
+            }
+            for (brand_raw,) in c.fetchall():
+                if not brand_raw:
+                    continue
+                clean_b = re.sub(r'[^a-zA-Z0-9à-ỹÀ-Ỹ\s]', ' ', brand_raw).strip()
+                tokens = clean_b.split()
+                if tokens:
+                    w1 = tokens[0]
+                    if len(w1) >= 3 and w1 not in stop_words and not w1.isdigit():
+                        lexicon.add(w1)
+                    if len(tokens) >= 2:
+                        w12 = f"{tokens[0]} {tokens[1]}"
+                        if len(w12) >= 5 and tokens[0] not in stop_words and tokens[1] not in stop_words:
+                            lexicon.add(w12)
+            conn.close()
+        except Exception:
+            # Fallback an toàn nếu SQLite đang bận
+            pass
+
+    _DYNAMIC_DRUG_LEXICON_CACHE = lexicon
+    return _DYNAMIC_DRUG_LEXICON_CACHE
 
 # Các từ rác / thán từ cụt lủn không mang giá trị lâm sàng
 PURE_NOISE_TOKENS = {
@@ -139,12 +199,15 @@ def compute_prompt_utility(
             reason="Chuỗi số ngẫu nhiên không khớp mã hồ sơ bệnh nhân hay văn bản y tế"
         )
 
-    # 3. Quét và Khớp Thực Thể Lâm Sàng (Clinical Entity Matching against CSDL)
+    # 3. Quét và Khớp Thực Thể Lâm Sàng (Dynamic CSDL Entity Matching)
     found_entities: list[str] = []
-    for term in CLINICAL_ENTITIES_LEXICON:
-        # Khớp theo ranh giới từ hoặc cụm từ
-        if re.search(r"\b" + re.escape(term) + r"\b", lower_query):
-            found_entities.append(term)
+    dynamic_lexicon = get_dynamic_clinical_lexicon()
+    clean_words = re.findall(r'[\w]+', lower_query)
+    for n in (1, 2, 3):
+        for i in range(len(clean_words) - n + 1):
+            ngram = " ".join(clean_words[i:i+n])
+            if ngram in dynamic_lexicon and ngram not in found_entities:
+                found_entities.append(ngram)
 
     # 4. Xác định Căn cứ CSDL (Grounding Source)
     grounded_source = None
@@ -161,14 +224,19 @@ def compute_prompt_utility(
             grounded_source = "CSDL 55.000 Thuốc Cục Quản Lý Dược (DAV)"
 
     # 5. Tính Điểm Tính Hữu Ích (Prompt Utility Index - PUI)
-    # S_entity: Có thực thể lâm sàng hay không
-    s_entity = min(1.0, len(found_entities) * 0.40) if found_entities else 0.0
+    # S_entity: Có thực thể lâm sàng chuẩn CSDL hay không (1 thực thể chuẩn CSDL đã đủ điều kiện giá trị cao)
+    s_entity = min(1.0, 0.70 + len(found_entities) * 0.15) if found_entities else 0.0
 
-    # S_intent: Ý định lâm sàng rõ ràng (hỏi thuốc gì, xử trí, liều, kiểm kê,...)
-    has_action = any(w in lower_query for w in [
-        "uống", "tiêm", "dùng", "cho", "lấy", "kê", "xử trí", "hạ sốt", "kiểm tra",
-        "báo hỏng", "hướng dẫn", "phác đồ", "tương tác", "chống chỉ định", "liều"
-    ])
+    # S_intent: Ý định lâm sàng rõ ràng (tra cứu thuốc, liều, chỉ định, xử trí, kiểm kê,...)
+    is_clarification = bool(intent and "CLARIFICATION" in intent)
+    has_action = (
+        (bool(intent and ("MEDICATION" in intent or "CLINICAL" in intent or "INVENTORY" in intent)) and not is_clarification) or
+        any(w in lower_query for w in [
+            "uống", "tiêm", "dùng", "cho", "lấy", "kê", "xử trí", "hạ sốt", "kiểm tra",
+            "báo hỏng", "hướng dẫn", "phác đồ", "tương tác", "chống chỉ định", "liều",
+            "thông tin", "tra cứu", "chỉ định", "tác dụng", "cơ chế", "biệt dược", "hoạt chất"
+        ])
+    )
     s_intent = 0.90 if has_action else 0.40
 
     # S_entropy: Độ tự nhiên ngôn ngữ
@@ -189,6 +257,17 @@ def compute_prompt_utility(
             reason="Prompt không chứa bất kỳ thực thể lâm sàng, thuốc hay quy chế y tế nào",
             entities_found=[],
             intent_detected=intent
+        )
+
+    if is_clarification:
+        return PromptUtilityResult(
+            utility_score=min(0.65, pui),
+            is_useful=False,
+            category="need_clarification",
+            reason="Prompt có thực thể y tế nhưng thiếu bối cảnh ca bệnh cụ thể (cần làm rõ)",
+            entities_found=found_entities,
+            intent_detected=intent,
+            grounded_source=grounded_source
         )
 
     if pui >= 0.70 and len(found_entities) >= 1:

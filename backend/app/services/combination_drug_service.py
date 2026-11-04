@@ -32,12 +32,44 @@ CANONICAL_COMBINED_MONOGRAPHS: dict[frozenset[str], str] = {
     frozenset(["cyanocobalamin", "hydroxocobalamin"]): "DTQG-0173-Cyanocobalaminandhyd",
 }
 
+def extract_concise_drug_class(raw_class: Optional[str]) -> str:
+    """Trích xuất tên nhóm dược lý súc tích dòng đầu tiên, loại bỏ toàn bộ khối dược động học rườm rà."""
+    if not raw_class:
+        return "Thuốc điều trị chuyên khoa"
+    first_block = raw_class.strip().split('\n')[0].strip()
+    for kw in ['Dạng thuốc', 'Dược lý', 'Cơ chế', 'Dược động học']:
+        if kw in first_block:
+            first_block = first_block.split(kw)[0].strip()
+    first_block = re.sub(r'[.;,]+$', '', first_block).strip()
+    if len(first_block) > 120:
+        first_block = first_block[:119].rsplit(' ', 1)[0] + '...'
+    return first_block or "Thuốc điều trị chuyên khoa"
+
+def clean_monograph_field(text: Optional[str], max_chars: int = 220) -> str:
+    """Làm sạch văn bản OCR, hàn gắn ngắt dòng và cắt tỉa lịch sự theo ranh giới câu."""
+    if not text:
+        return "Theo chỉ định chuyên khoa."
+    cleaned = format_clinical_text(text).strip()
+    cleaned = re.sub(r'([a-zA-Zà-ỹÀ-Ỹ]+)\s*\n+\s*([a-zA-Zà-ỹÀ-Ỹ]+)', r'\1 \2', cleaned)
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    if len(cleaned) <= max_chars:
+        return cleaned
+    truncated = cleaned[:max_chars]
+    last_punct = max(truncated.rfind('.'), truncated.rfind(';'), truncated.rfind(','))
+    if last_punct > 80:
+        return truncated[:last_punct + 1]
+    last_space = truncated.rfind(' ')
+    if last_space > 80:
+        return truncated[:last_space] + '...'
+    return truncated + '...'
+
 SALT_SUFFIXES = re.compile(
     r"\b(?:maleat|maleate|hydroclorid|hydrochloride|hcl|phosphat|phosphate|"
     r"natri|sodium|calci|calcium|kali|potassium|fumarat|fumarate|acetat|acetate|"
     r"succinat|succinate|sulfat|sulfate|clorid|chloride|nitrat|nitrate|"
     r"trihydrat|trihydrate|dihydrat|dihydrate|dipropionat|dipropionate|"
-    r"valerat|valerate|tartrat|tartrate)\b",
+    r"valerat|valerate|tartrat|tartrate|arginin|arginine|besilat|besylate|"
+    r"erbumin|erbumine|mesylat|mesylate)\b",
     re.IGNORECASE
 )
 
@@ -133,13 +165,21 @@ async def resolve_combination_monographs(
                 matched_mono = m
                 break
 
-        # Khớp tiền tố hoặc dạng rút gọn
+        # Khớp tiền tố hoặc dạng rút gọn: ưu tiên monograph dài nhất và startswith
         if not matched_mono:
+            candidates = []
             for m in all_monos:
                 m_norm = _normalize_substance(m.inn)
-                if len(ing_norm) >= 5 and (ing_norm in m_norm or m_norm in ing_norm):
-                    matched_mono = m
-                    break
+                if len(m_norm) >= 4:
+                    if ing_norm.startswith(m_norm):
+                        candidates.append((len(m_norm), 2, m))
+                    elif m_norm.startswith(ing_norm):
+                        candidates.append((len(m_norm), 1, m))
+                    elif len(m_norm) >= 6 and m_norm in ing_norm:
+                        candidates.append((len(m_norm), 0, m))
+            if candidates:
+                candidates.sort(key=lambda x: (x[1], x[0]), reverse=True)
+                matched_mono = candidates[0][2]
 
         if matched_mono:
             component_details.append({
@@ -244,10 +284,10 @@ def build_combination_drug_profile(
             mono = c["monograph"]
             profile_parts.append(
                 f"**{idx}. Hoạt chất {ing_name}** (Chuyên luận DĐVN V: *{mono.title}* - Mã ATC: `{mono.atc_code or 'DĐVN V'}`):\n"
-                f"  * **Nhóm dược lý:** {mono.drug_class or 'Đang cập nhật'}\n"
-                f"  * **Chỉ định cốt lõi:** {format_clinical_text(mono.indications or 'Theo chỉ định chuyên khoa.')[:200]}...\n"
-                f"  * **Liều chuẩn:** {format_clinical_text(mono.adult_dosage or 'Theo chỉ định bác sĩ.')[:200]}...\n"
-                f"  * **Cảnh báo an toàn chính:** {format_clinical_text(mono.contraindications or 'Quá mẫn với hoạt chất.')[:180]}...\n"
+                f"  * **Nhóm dược lý:** {extract_concise_drug_class(mono.drug_class)}\n"
+                f"  * **Chỉ định cốt lõi:** {clean_monograph_field(mono.indications, max_chars=200)}\n"
+                f"  * **Liều chuẩn:** {clean_monograph_field(mono.adult_dosage, max_chars=200)}\n"
+                f"  * **Cảnh báo an toàn chính:** {clean_monograph_field(mono.contraindications, max_chars=180)}\n"
             )
         else:
             profile_parts.append(

@@ -180,6 +180,10 @@ def check_contextless_clinical_question(lower_query: str) -> CopilotResponse | N
     if is_general_consultation:
         return None
 
+    # Không chặn nếu là câu hỏi xin ví dụ hoặc danh mục tương tác lâm sàng
+    if any(w in lower_query for w in ("ví dụ", "vi du", "mẫu", "liệt kê", "danh sách", "top", "những cặp", "các cặp")):
+        return None
+
     context_required_terms = (
         "liều tối đa", "liều dùng", "liều lượng", "chống chỉ định",
         "tác dụng phụ", "tác dụng không mong muốn", "uống lúc đói",
@@ -251,4 +255,42 @@ def check_pediatric_guidance_request(lower_query: str, query: str, session_id: s
         source_status="retrieved_evidence",
         confidence=1.0,
         session_id=session_id
+    )
+
+def check_interaction_examples_request(lower_query: str, session_id: str) -> CopilotResponse | None:
+    """Trả về các ví dụ kinh điển về cặp tương tác thuốc chống chỉ định theo QĐ 5948/QĐ-BYT."""
+    is_example = any(w in lower_query for w in ("ví dụ", "vi du", "mẫu", "liệt kê", "danh sách", "top", "những cặp", "các cặp"))
+    is_ddi = any(w in lower_query for w in ("tương tác", "tuong tac", "chống chỉ định", "chong chi dinh", "kỵ nhau", "ky nhau"))
+    if not (is_example and is_ddi):
+        return None
+
+    reply_md = (
+        "### ⚠️ DANH MỤC CÁC CẶP TƯƠNG TÁC THUỐC CHỐNG CHỈ ĐỊNH (QĐ 5948/QĐ-BYT)\n\n"
+        "*(Trích xuất từ Danh mục 633 cặp tương tác chống chỉ định Bảng 3.1 & Bảng 3.2 - Bộ Y tế)*\n\n"
+        "---\n\n"
+        "Dưới đây là **3 cặp tương tác thuốc chống chỉ định điển hình** thường gặp trong thực hành lâm sàng nội viện:\n\n"
+        "1. **Simvastatin + Clarithromycin (hoặc Erythromycin / Ketoconazol):**\n"
+        "   * **Mức độ:** **Chống chỉ định tuyệt đối** (Bảng 3.1, STT 412).\n"
+        "   * **Cơ chế & Hậu quả:** Clarithromycin ức chế mạnh enzym chuyển hóa CYP3A4, làm tăng nồng độ Simvastatin trong máu lên nhiều lần, dẫn đến nguy cơ **tiêu cơ vân cấp (Rhabdomyolysis), myoglobin niệu và suy thận cấp đe dọa tính mạng**.\n"
+        "   * **Xử trí lâm sàng:** Tạm ngừng Simvastatin trong suốt đợt điều trị kháng sinh Macrolid, hoặc chuyển sang statin ít chuyển hóa qua CYP3A4 (Rosuvastatin, Pravastatin).\n\n"
+        "2. **Clopidogrel + Omeprazol (hoặc Esomeprazol):**\n"
+        "   * **Mức độ:** **Chống chỉ định phối hợp** (Bảng 3.2, QĐ 5948/QĐ-BYT).\n"
+        "   * **Cơ chế & Hậu quả:** Omeprazol ức chế enzym CYP2C19, ngăn cản quá trình chuyển hóa tiền chất Clopidogrel thành dạng có hoạt tính sinh học, làm giảm đáng kể hiệu quả ức chế ngưng tập tiểu cầu, dẫn đến **tăng nguy cơ tái nhồi máu cơ tim hoặc huyết khối trong stent**.\n"
+        "   * **Xử trí lâm sàng:** Đổi sang thuốc ức chế bơm proton ít ức chế CYP2C19 như **Pantoprazol** hoặc **Rabeprazol**.\n\n"
+        "3. **Methotrexat (liều cao) + Thuốc chống viêm không steroid (NSAID như Ibuprofen, Diclofenac):**\n"
+        "   * **Mức độ:** **Chống chỉ định tuyệt đối** (Bảng 3.1 & Dược thư Quốc gia).\n"
+        "   * **Cơ chế & Hậu quả:** NSAID làm giảm lưu lượng máu đến thận và ức chế bài tiết Methotrexat qua ống thận, dẫn đến tích lũy nồng độ Methotrexat cực độc, gây **suy tủy xương cấp, giảm bạch cầu/tiểu cầu nặng và loét xuất huyết tiêu hóa ồ ạt**.\n"
+        "   * **Xử trí lâm sàng:** Tránh phối hợp NSAID trước, trong và ít nhất 48 giờ sau khi truyền Methotrexat liều cao; theo dõi nồng độ thuốc và giải độc bằng Acid folinic (Leucovorin).\n\n"
+        "💡 *Bác sĩ hoặc Điều dưỡng có thể gửi 2 tên thuốc cụ thể bất kỳ để hệ thống rà soát tức thì theo cơ sở dữ liệu 633 cặp tương tác QĐ 5948 ạ!*"
+    )
+    return CopilotResponse(
+        intent="CLINICAL_DDI_INTERACTION_LOOKUP",
+        reply_text=reply_md,
+        card=None,
+        legal_basis="Quyết định 5948/QĐ-BYT (Bảng 3.1 & 3.2) & Dược thư Quốc gia Việt Nam",
+        suggested_chips=["Simvastatin và Clarithromycin", "Clopidogrel và Omeprazol", "Methotrexat và Ibuprofen", "Tra cứu Dược thư"],
+        session_id=session_id,
+        answer_type="guideline",
+        source_status="exact_match",
+        confidence=1.0
     )

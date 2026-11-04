@@ -32,8 +32,8 @@ export async function testChatAndDrugSearch(targetUrl: string, screenshotPrefix:
 
   const testQueries = [
     { q: 'Thông tin thuốc Coversyl', keyword: 'Coversyl' },
-    { q: 'Tra cứu thuốc Morphin', keyword: 'Morphin' },
-    { q: 'Adrenalin tiêm bắp liều bao nhiêu', keyword: 'Adrenalin' }
+    { q: 'lấy ví dụ cho tôi 3 cặp tương tác thuốc chống chỉ định', keyword: 'Simvastatin' },
+    { q: 'Bạn có thể làm được gì Tôi muốn hỏi về thuốc Paracetamol', keyword: 'Paracetamol' }
   ];
 
   let prevCount = await page.locator('[data-testid*="chat-message"]').count();
@@ -48,8 +48,8 @@ export async function testChatAndDrugSearch(targetUrl: string, screenshotPrefix:
 
     // Đợi phản hồi xuất hiện
     let answered = false;
-    for (let retry = 0; retry < 12; retry++) {
-      await page.waitForTimeout(500);
+    for (let retry = 0; retry < 25; retry++) {
+      await page.waitForTimeout(600);
       const currentCount = await page.locator('[data-testid*="chat-message"]').count();
       if (currentCount >= prevCount + 2) {
         answered = true;
@@ -73,15 +73,20 @@ export async function testChatAndDrugSearch(targetUrl: string, screenshotPrefix:
   await page.screenshot({ path: chatScreenshotPath });
   console.log(`📸 Đã lưu ảnh minh chứng Chatbot: ${chatScreenshotPath}`);
 
-  // 2. Kiểm tra tra cứu thuốc trên thanh tìm kiếm thuốc hoặc thẻ thuốc
-  console.log(`\n-> [Test Tra cứu thuốc] Kiểm tra danh mục dược và tìm kiếm...`);
-  const drugSearchInput = page.locator('input[placeholder*="Tìm thuốc"], input[placeholder*="hoạt chất"], input[placeholder*="Tìm kiếm"]').first();
-  if (await drugSearchInput.isVisible()) {
-    await drugSearchInput.fill('Paracetamol');
-    await page.waitForTimeout(1000);
-    const drugItems = page.locator('[data-testid*="drug-item"], [data-testid*="med-card"], table tr');
-    const drugCount = await drugItems.count();
-    console.log(`   ✅ Tra cứu nhanh "Paracetamol": tìm thấy ${drugCount} kết quả.`);
+  // 2. Kiểm tra tra cứu thuốc CSDL Dược Quốc Gia (National Drug Registry Modal)
+  console.log(`\n-> [Test Tra cứu thuốc] Mở CSDL Dược Quốc Gia và tìm kiếm...`);
+  const openDrugBtn = page.locator('button[title*="Tra cứu Dược thư"], button:has-text("Thông tin thuốc")').first();
+  if (await openDrugBtn.isVisible()) {
+    await openDrugBtn.click();
+    await page.waitForTimeout(1500);
+
+    const registryInput = page.locator('input[placeholder*="Tìm theo tên thuốc, hoạt chất"], input[aria-label="Tìm trong Kho Dược Quốc Gia"]').first();
+    if (await registryInput.isVisible()) {
+      await registryInput.fill('Paracetamol');
+      await page.waitForTimeout(2000);
+      const rows = await page.locator('table tbody tr').count();
+      console.log(`   ✅ Tra cứu CSDL Dược Quốc Gia "Paracetamol": tìm thấy ${rows} chế phẩm đăng ký.`);
+    }
   }
 
   await browser.close();

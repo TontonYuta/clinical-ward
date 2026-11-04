@@ -89,3 +89,19 @@ async def test_filtered_history_api_excludes_garbage():
             assert log["is_useful"] is True
             assert log["query"] != "alo test 123"
             assert log["utility_score"] is not None and log["utility_score"] >= 0.50
+
+def test_dynamic_csdl_drug_recognition_no_hardcoding():
+    """Kiểm tra đối soát động 100% mọi thuốc trong CSDL (Coversyl, Perindopril, Amlodipin, v.v.), không còn hardcode."""
+    dynamic_drugs = [
+        "Thông tin thuốc Coversyl",
+        "Tra cứu biệt dược Plavix 75mg",
+        "Nexium 40mg liều dùng cho viêm loét dạ dày",
+        "Thuốc Perindopril chỉ định trong trường hợp nào",
+        "Liều dùng Amlodipin cho người cao tuổi tăng huyết áp"
+    ]
+    for q in dynamic_drugs:
+        res = compute_prompt_utility(q, reply_text="Dược Thư Quốc Gia Việt Nam 2015", intent="MEDICATION_LOOKUP")
+        assert res.is_useful is True, f"Thuốc CSDL '{q}' bị đánh giá sai thành is_useful=False!"
+        assert res.category == "high_value_clinical", f"Thuốc CSDL '{q}' phải là high_value_clinical, nhận: {res.category}"
+        assert res.utility_score >= 0.70, f"Điểm của '{q}' quá thấp: {res.utility_score}"
+        assert len(res.entities_found) >= 1, f"Không nhận diện được thực thể thuốc trong '{q}'!"

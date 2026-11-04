@@ -7,6 +7,7 @@ from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 from app.services.chatbot.session_routing import (
     find_dav_candidate_drug, build_insufficient_formulation_response,
     check_contextless_clinical_question, check_pediatric_guidance_request,
+    check_interaction_examples_request,
     TIMING_TERMS, FIELD_ONLY_TERMS
 )
 
@@ -22,6 +23,10 @@ async def resolve_active_drug_and_terms(
     is_renal: bool,
     is_deep_complex: bool,
 ) -> tuple[str, str, bool, bool, bool, CopilotResponse | None]:
+    ddi_examples_res = check_interaction_examples_request(lower_query, session_id)
+    if ddi_examples_res:
+        return query, lower_query, False, False, False, ddi_examples_res
+
     cand_drug, has_candidate_drug = await find_dav_candidate_drug(lower_query, db)
     is_complaint = any(c in lower_query for c in ("sai", "nham", "nhầm", "lỗi", "loi", "cải thiện", "cai thien", "điều chỉnh", "dieu chinh", "lệch", "lech", "kém", "kem", "dở", "do", "tệ", "te"))
     is_field_only = not is_complaint and any(term in lower_query for term in (
@@ -102,6 +107,9 @@ async def resolve_active_drug_and_terms(
         ped_res = check_pediatric_guidance_request(lower_query, query, session_id)
         if ped_res:
             return query, lower_query, active_in_query, explicit_named, has_candidate_drug, ped_res
+        ddi_examples_res = check_interaction_examples_request(lower_query, session_id)
+        if ddi_examples_res:
+            return query, lower_query, active_in_query, explicit_named, has_candidate_drug, ddi_examples_res
         contextless_res = check_contextless_clinical_question(lower_query)
         if contextless_res:
             return query, lower_query, active_in_query, explicit_named, has_candidate_drug, contextless_res
