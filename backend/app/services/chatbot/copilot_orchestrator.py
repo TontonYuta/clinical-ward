@@ -78,7 +78,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if lower_query.strip().strip("?.!") in {"tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư", "tra cuu duoc thu", "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu"}:
         return await lookup_drug_authoritative("", db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    subflow_res = await dispatch_clinical_subflows(query, lower_query, user_name, db)
+    subflow_res = await dispatch_clinical_subflows(query, lower_query, user_name, db, user_role=user_role)
     if subflow_res:
         return subflow_res
 

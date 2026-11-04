@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.debt import DebtRecord
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 
-async def handle_prescription_advice_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:
+async def handle_prescription_advice_intent(query: str, lower_query: str, user_name: str, user_role: str = "doctor") -> CopilotResponse:
     is_open_advice_form = any(w in lower_query for w in [
         "mở form", "mo form", "mở biểu mẫu", "mở giao diện", "mở form gửi", "gửi email", "gửi mail", "gửi sms", "nhắn tin", "mở form dặn dò", "mở giao diện dặn dò"
     ])
@@ -22,9 +22,9 @@ async def handle_prescription_advice_intent(query: str, lower_query: str, user_n
     ) if is_open_advice_form else None
 
     reply = (
-        "Dạ hệ thống đã sẵn sàng mở biểu mẫu dặn dò và gửi Email/SMS. Bác sĩ có thể nhập lời dặn, chọn lịch dùng thuốc và gửi trực tiếp tới bệnh nhân bằng nút bên dưới."
+        "Dạ hệ thống đã sẵn sàng mở biểu mẫu dặn dò và gửi Email/SMS. Bác sĩ/Điều dưỡng vui lòng kiểm tra danh sách cữ thuốc, thông tin liên lạc và bấm xác nhận gửi trực tiếp trên biểu mẫu; chatbot chỉ hỗ trợ mở form theo phân quyền, không tự ý gửi email/sms từ nội dung chat."
         if is_open_advice_form
-        else "Để lập lời dặn, hãy mở hồ sơ người bệnh và chọn đơn thuốc đã kê. Trợ lý chỉ chuyển thông tin từ đơn thực tế sang biểu mẫu; không suy ra liều, thời điểm hoặc thời gian dùng từ nội dung chat."
+        else "Để lập lời dặn, hãy mở hồ sơ người bệnh và chọn đơn thuốc đã kê. Trợ lý chỉ chuyển thông tin từ đơn thực tế sang biểu mẫu; không suy ra liều, thời điểm hoặc thời gian dùng từ nội dung chat và không tự ý gửi email/sms."
     )
 
     return CopilotResponse(
@@ -35,7 +35,23 @@ async def handle_prescription_advice_intent(query: str, lower_query: str, user_n
         suggested_chips=["Mở form gửi email/sms", "Mở hồ sơ người bệnh", "Mở biểu mẫu lời dặn từ đơn đã chọn"]
     )
 
-async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:
+async def handle_cpoe_intent(query: str, lower_query: str, user_name: str, user_role: str = "doctor") -> CopilotResponse:
+    can_prescribe = user_role in ("doctor", "director")
+    if not can_prescribe:
+        return CopilotResponse(
+            intent="CPOE_ROLE_RESTRICTED",
+            reply_text=(
+                "⚠️ **Từ chối quyền kê đơn (RBAC):** Theo Thông tư 26/2025/TT-BYT và Luật Khám bệnh, chữa bệnh, "
+                "chức năng kê đơn thuốc chỉ dành riêng cho Bác sĩ điều trị có chứng chỉ hành nghề. "
+                "Chatbot chỉ hỗ trợ mở form theo đúng phân quyền; Điều dưỡng không có thẩm quyền kê đơn mà chỉ có quyền xem đơn và lập lịch dặn dò."
+            ),
+            card=None,
+            answer_type="role_restriction",
+            source_status="unauthorized_role",
+            confidence=1.0,
+            suggested_chips=["Mở form gửi email/sms", "Tra cứu Dược Thư Quốc Gia", "Xem danh mục thuốc Cục QLD"],
+        )
+
     # This chatbot route can only clarify or prepare a draft. It must not
     # produce an order card or imply a completed DDI review from keywords.
     name_match = re.search(r"(?:bệnh nhân|cho|bn)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})", query)
@@ -58,7 +74,7 @@ async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> Co
         ) if is_open_form else None
 
         reply = (
-            f"Dạ hệ thống đã sẵn sàng mở biểu mẫu kê đơn CPOE. Để lưu đơn theo Điều 6 Thông tư 26/2025/TT-BYT, bác sĩ vui lòng bổ sung: {', '.join(missing)} trực tiếp trong form hoặc gửi tại đây để em điền sẵn ạ."
+            f"Dạ hệ thống đã sẵn sàng mở biểu mẫu kê đơn CPOE theo phân quyền của Bác sĩ. Để lưu đơn theo Điều 6 Thông tư 26/2025/TT-BYT, bác sĩ vui lòng bổ sung: {', '.join(missing)} trực tiếp trong form; chatbot chỉ hỗ trợ mở form chứ không tự ý kê đơn thuốc."
             if is_open_form
             else f"Để chuẩn bị bản nháp theo Điều 6 Thông tư 26/2025/TT-BYT, vui lòng bổ sung: {', '.join(missing)}. Chưa tạo đơn vì thông tin hiện tại chưa đủ."
         )

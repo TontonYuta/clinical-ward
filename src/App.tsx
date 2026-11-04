@@ -1422,12 +1422,28 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         }
       }
       if (cardData?.openModal === 'cpoe_prescription') {
-        setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
+        const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
+        if (canPrescribe) {
+          setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
+        }
       } else if (cardData?.openModal === 'prescription_advice') {
         setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
       }
       markExecuted();
     } else if (actionType === 'OPEN_CPOE_PRESCRIPTION') {
+      const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
+      if (!canPrescribe) {
+        setChatMessages(prev => [
+          ...prev,
+          {
+            id: `msg-perm-${Date.now()}`,
+            sender: 'system',
+            text: '⚠️ **Từ chối phân quyền (RBAC):** Theo Thông tư 26/2025/TT-BYT của Bộ Y tế, quyền kê đơn CPOE chỉ dành riêng cho Bác sĩ điều trị có chứng chỉ hành nghề. Chatbot chỉ hỗ trợ mở form theo đúng phân quyền; Điều dưỡng không có thẩm quyền kê đơn mà chỉ có quyền xem đơn và lập lịch dặn dò.',
+            timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          }
+        ]);
+        return;
+      }
       if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
         setCurrentTab('cpoe');
       }

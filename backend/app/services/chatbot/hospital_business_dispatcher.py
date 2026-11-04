@@ -23,7 +23,7 @@ from app.services.copilot_intents_prescription import (
 )
 
 async def dispatch_clinical_subflows(
-    query: str, lower_query: str, user_name: str, db: AsyncSession
+    query: str, lower_query: str, user_name: str, db: AsyncSession, user_role: str = "doctor"
 ) -> CopilotResponse | None:
     is_advice = any(w in lower_query for w in [
         "dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc",
@@ -33,13 +33,13 @@ async def dispatch_clinical_subflows(
         and any(w in lower_query for w in ["uống thuốc", "uống", "đơn thuốc", "lịch thuốc"])
     ) or lower_query.strip() in ["gửi gmail", "gửi mail", "gmail", "email", "xem email", "in phiếu dặn dò"]
     if is_advice:
-        return await handle_prescription_advice_intent(query, lower_query, user_name)
+        return await handle_prescription_advice_intent(query, lower_query, user_name, user_role=user_role)
 
     is_cpoe = any(w in lower_query for w in [
         "kê đơn", "tạo đơn thuốc", "lập đơn thuốc", "kê toa", "kê đơn cpoe", "cpoe đơn thuốc", "đơn thuốc điện tử"
     ]) and not is_advice
     if is_cpoe:
-        return await handle_cpoe_intent(query, lower_query, user_name)
+        return await handle_cpoe_intent(query, lower_query, user_name, user_role=user_role)
 
     # Tạm thời comment tính năng xử lý trả nợ vỏ theo yêu cầu người dùng
     # is_debt_settle = any(w in lower_query for w in [
