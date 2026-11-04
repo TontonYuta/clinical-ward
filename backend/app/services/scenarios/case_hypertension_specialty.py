@@ -48,7 +48,7 @@ class HypertensionSpecialtyScenario(BaseScenario):
                 "🛡️ **Khuyến cáo lâm sàng:** Chuyển ngay bác sĩ Sản khoa và Tim mạch phối hợp theo dõi; tầm soát đạm niệu và các dấu hiệu tiền sản giật (đau đầu, mờ mắt, đau thượng vị)."
             )
             legal = "Hướng dẫn Điều trị Tăng Huyết Áp Thai Kỳ - Hội Tim Mạch Việt Nam (VNHA) & ESC Guidelines"
-            chips = ["Dược thư Quốc gia DĐVN V", "Phác đồ tiền sản giật", "Methyldopa trong thai kỳ", "Đối soát ca trực 07:00 AM"]
+            chips = ["Dược thư Quốc gia DĐVN V", "Phác đồ tiền sản giật", "Methyldopa trong thai kỳ", "Thẩm định đơn thuốc theo TT 26"]
 
         elif is_renal:
             reply = (

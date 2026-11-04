@@ -62,5 +62,5 @@ class DiazepamSeizureScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 520 & Thông tư 20/2017/TT-BYT",
-            suggested_chips=["Xem đơn thuốc RX-2026-006", "Kiểm tra Tủ sắt thuốc hướng thần", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem đơn thuốc RX-2026-006", "Kiểm tra Tủ sắt thuốc hướng thần", "Thẩm định đơn thuốc theo TT 26"]
         )

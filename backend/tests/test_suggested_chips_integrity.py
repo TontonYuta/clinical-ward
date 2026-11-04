@@ -23,6 +23,8 @@ VERIFIED_SUGGESTED_QUERIES = [
     "Xem bảng kho Dược",
     "Kiểm tra hạn dùng FEFO",
     "Lập phiếu dự trù bù tồn kho",
+    "Thẩm định đơn thuốc theo TT 26",
+    "Kiểm tra đơn thuốc",
     "Đối soát ca trực 07:00 AM",
     "Kê đơn thuốc CPOE",
     "Mở form gửi email/sms",

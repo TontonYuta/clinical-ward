@@ -56,5 +56,5 @@ class HighAlertKclScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 788 & Danh mục High-Alert ISMP/BYT",
-            suggested_chips=["Xem đơn bù điện giải RX-2026-001", "Kiểm tra tồn kho High-Alert", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem đơn bù điện giải RX-2026-001", "Kiểm tra tồn kho High-Alert", "Thẩm định đơn thuốc theo TT 26"]
         )

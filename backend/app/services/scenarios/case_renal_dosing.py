@@ -65,5 +65,5 @@ class RenalDosingScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia Việt Nam 2015 & Hướng dẫn KDIGO",
-            suggested_chips=["Lập lịch dặn dò cữ thuốc", "Xem chuyên luận Ciprofloxacin", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Lập lịch dặn dò cữ thuốc", "Xem chuyên luận Ciprofloxacin", "Thẩm định đơn thuốc theo TT 26"]
         )

@@ -11,6 +11,7 @@ from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.scenarios.base import BaseScenario
 from app.services.scenarios.context import ClinicalContext
+from app.services.dav_normalizer import clean_brand_name
 
 class MedicationDeicticFollowupScenario(BaseScenario):
     scenario_id = "medication_deictic_followup"
@@ -43,7 +44,7 @@ class MedicationDeicticFollowupScenario(BaseScenario):
         if not ctx.session or not ctx.session.active_medication_name:
             return None
 
-        med_name = ctx.session.active_medication_name
+        med_name = clean_brand_name(ctx.session.active_medication_name)
         med_ingredient = ctx.session.active_medication_ingredient or med_name
         batch_no = ctx.session.active_medication_batch or "Theo CSDL"
         stock_info = ctx.session.active_medication_stock or "Theo tồn kho"
@@ -101,7 +102,7 @@ class MedicationDeicticFollowupScenario(BaseScenario):
                 reply_text=reply,
                 card=card,
                 legal_basis="Dược Thư Quốc Gia 2015 & Quyết định 2147/QĐ-BYT",
-                suggested_chips=[f"Tra cứu chuyên luận {med_ingredient}", "Đối soát ca trực 07:00 AM", "Xem danh sách đơn thuốc CPOE"]
+                suggested_chips=[f"Tra cứu chuyên luận {med_ingredient}", "Kiểm tra tương tác thuốc", "Xem danh sách đơn thuốc CPOE"]
             )
 
         # 3. Xử lý hỏi Vị trí / Tồn kho của thuốc đang kích hoạt
@@ -128,7 +129,7 @@ class MedicationDeicticFollowupScenario(BaseScenario):
                 reply_text=reply,
                 card=card,
                 legal_basis="Thông tư 22/2011/TT-BYT & Thông tư 36/2018/TT-BYT GSP",
-                suggested_chips=[f"Kiểm tra tồn kho {med_ingredient}", "Lập phiếu dự trù bù tồn kho", "Đối soát ca trực 07:00 AM"]
+                suggested_chips=[f"Kiểm tra tồn kho {med_ingredient}", "Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26"]
             )
 
         if is_dependence_ask:
@@ -170,7 +171,7 @@ class MedicationDeicticFollowupScenario(BaseScenario):
                 intent="CLINICAL_DEICTIC_ADR_INFO",
                 reply_text=reply,
                 legal_basis="Dược Thư Quốc Gia Việt Nam 2015 & Hướng dẫn Cảnh giác Dược Bộ Y Tế",
-                suggested_chips=[f"Kiểm tra tồn kho {med_ingredient}", "Phác đồ Adrenalin phản vệ TT 51", "Đối soát ca trực 07:00 AM"]
+                suggested_chips=[f"Kiểm tra tương tác {med_ingredient}", "Phác đồ Adrenalin phản vệ TT 51", "Thẩm định đơn thuốc theo TT 26"]
             )
 
         # 5. Phản hồi tổng quan về thuốc đang kích hoạt
@@ -189,5 +190,5 @@ class MedicationDeicticFollowupScenario(BaseScenario):
             intent="CLINICAL_DEICTIC_MEDICATION_SUMMARY",
             reply_text=reply,
             legal_basis="Dược Thư Quốc Gia Việt Nam 2015",
-            suggested_chips=[f"Tác dụng phụ của {med_ingredient}", f"Vị trí kho của {med_ingredient}", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=[f"Tác dụng phụ của {med_ingredient}", f"Chống chỉ định của {med_ingredient}", "Kiểm tra tương tác thuốc"]
         )

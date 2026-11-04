@@ -50,5 +50,5 @@ class OpioidMmeScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Thông tư 20/2017/TT-BYT & Hướng dẫn Giảm đau Bộ Y Tế",
-            suggested_chips=["Đối soát ca trực 07:00 AM", "Xem đơn thuốc RX-2026-001", "Kiểm tra sổ nợ tủ trực"]
+            suggested_chips=["Thẩm định đơn thuốc theo TT 26", "Xem đơn thuốc RX-2026-001", "Kiểm tra tương tác thuốc"]
         )

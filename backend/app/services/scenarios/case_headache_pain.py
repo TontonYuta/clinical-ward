@@ -104,7 +104,7 @@ class HeadachePainScenario(BaseScenario):
                 "Paracetamol liều tối đa bao nhiêu",
                 "Kiểm tra hạn dùng FEFO",
                 "Thông tin thuốc Prasocare",
-                "Đối soát ca trực 07:00 AM"
+                "Thẩm định đơn thuốc theo TT 26"
             ],
             session_id=ctx.session.session_id if ctx.session else None,
             active_medication_name="PARACETAMOL 500mg",

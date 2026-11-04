@@ -135,7 +135,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       {buildSourceIntroduction(msg.citations)}
                     </p>
                   ) : null}
-                  {isAgent && msg.card && msg.card.primaryActionLabel && (
+                  {isAgent && msg.card && msg.card.primaryActionLabel && !['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket', 'medication_safety'].includes((msg.card as any).card_type || (msg.card as any).type || '') && (
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-2xs font-semibold text-slate-800 truncate">{msg.card.title}</p>

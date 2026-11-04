@@ -45,7 +45,7 @@ async def handle_legal_intent(lower_query: str) -> CopilotResponse:
         reply_text=f"### 📋 {title}\n\n{content}\n\n> [!NOTE]\n> **Căn cứ áp dụng:** {basis}.",
         card=card,
         legal_basis=basis,
-        suggested_chips=["Phác đồ cấp cứu phản vệ", "Quy định vỏ ống Morphin", "Kiểm định thiết bị Loại D"]
+        suggested_chips=["Phác đồ cấp cứu phản vệ", "Thông tư 26/2025/TT-BYT kê đơn", "Quy định kê đơn ngoại trú TT 52"]
     )
 
 async def handle_shift_handover_intent(db: AsyncSession) -> CopilotResponse:
@@ -77,7 +77,7 @@ async def handle_shift_handover_intent(db: AsyncSession) -> CopilotResponse:
         reply_text=summary_text,
         card=card,
         legal_basis="Điều 10 Thông tư 22/2011/TT-BYT & Điều 15 Thông tư 20/2017/TT-BYT",
-        suggested_chips=["Thu hồi vỏ ống Morphin", "Lập phiếu bù tủ trực Mẫu 01", "Kiểm tra nhiệt độ chuỗi lạnh"]
+        suggested_chips=["Kiểm tra tương tác thuốc", "Kiểm tra hạn dùng FEFO", "Kiểm tra nhiệt độ chuỗi lạnh"]
     )
 
 async def handle_coldchain_intent(db: AsyncSession) -> CopilotResponse:
@@ -140,7 +140,7 @@ async def handle_audit_intent(db: AsyncSession) -> CopilotResponse:
         reply_text=reply_text,
         card=card,
         legal_basis="Nghị định 130/2018/NĐ-CP & Tiêu chuẩn ISO 27799 An Toàn Thông Tin Y Tế",
-        suggested_chips=["Xuất nhật ký kiểm toán SHA-256", "Đối soát ca trực 07:00 AM"]
+        suggested_chips=["Xuất nhật ký kiểm toán SHA-256", "Thẩm định đơn thuốc theo TT 26"]
     )
 
 async def handle_ocr_intent() -> CopilotResponse:
@@ -169,5 +169,5 @@ async def handle_ocr_intent() -> CopilotResponse:
         reply_text=reply_text,
         card=card,
         legal_basis="Nghị định 123/2020/NĐ-CP về Hóa đơn, Chứng từ & Thông tư 36/2018/TT-BYT",
-        suggested_chips=["Xem kho FEFO", "Đối soát ca trực"]
+        suggested_chips=["Xem kho FEFO", "Thẩm định đơn thuốc theo TT 26"]
     )

@@ -65,5 +65,5 @@ class NoradrenalinShockScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 1032 & Hướng dẫn Chẩn đoán Sốc Nhiễm Trùng Bộ Y Tế",
-            suggested_chips=["Xem đơn thuốc RX-2026-005", "Kiểm tra cơ số Tủ cấp cứu A9", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem đơn thuốc RX-2026-005", "Kiểm tra cơ số Tủ cấp cứu A9", "Thẩm định đơn thuốc theo TT 26"]
         )

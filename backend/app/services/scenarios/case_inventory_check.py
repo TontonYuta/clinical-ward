@@ -70,5 +70,5 @@ class InventoryCheckScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Thông tư 22/2011/TT-BYT & Nguyên tắc GSP",
-            suggested_chips=["Xem bảng kho Dược", "Lập phiếu bù cơ số", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem bảng kho Dược", "Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26"]
         )

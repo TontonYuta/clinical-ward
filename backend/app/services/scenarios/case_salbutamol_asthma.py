@@ -62,5 +62,5 @@ class SalbutamolAsthmaScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 1234 & Phác đồ Cấp cứu Cơn hen Phế quản GINA/BYT",
-            suggested_chips=["Xem đơn thuốc RX-2026-008", "Kiểm tra Tủ cấp cứu Hô hấp A9", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem đơn thuốc RX-2026-008", "Kiểm tra Tủ cấp cứu Hô hấp A9", "Thẩm định đơn thuốc theo TT 26"]
         )

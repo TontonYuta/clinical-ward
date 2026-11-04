@@ -130,7 +130,7 @@ async def handle_fefo_intent(db: AsyncSession) -> CopilotResponse:
         reply_text="\n".join(reply_lines),
         card=card,
         legal_basis="Thông tư 36/2018/TT-BYT (Thực hành tốt bảo quản thuốc GSP) & Thông tư 22/2011/TT-BYT",
-        suggested_chips=["Kiểm tra hạn dùng FEFO", "Lập phiếu dự trù bù tồn kho", "Đối soát ca trực 07:00 AM"]
+        suggested_chips=["Kiểm tra hạn dùng FEFO", "Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26"]
     )
 
 async def handle_restock_intent(db: AsyncSession) -> CopilotResponse:
@@ -162,5 +162,5 @@ async def handle_restock_intent(db: AsyncSession) -> CopilotResponse:
         reply_text="\n".join(reply_lines),
         card=card,
         legal_basis="Mẫu số 01/TT22 Thông tư 22/2011/TT-BYT Quy chế Khoa Dược",
-        suggested_chips=["Kiểm tra hạn dùng FEFO", "Đối soát ca trực 07:00 AM", "Kê đơn thuốc CPOE"]
+        suggested_chips=["Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26", "Kê đơn thuốc CPOE"]
     )

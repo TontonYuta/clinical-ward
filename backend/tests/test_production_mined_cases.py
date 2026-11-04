@@ -28,7 +28,7 @@ MINED_PRODUCTION_CASES = [
     ("bạn không xử lý được à", "BOT_CAPABILITY_CLARIFICATION", ["tra cứu thuốc", "54.885"]),
     ("triệu chứng đau bụng, buồn nôn, sốt cao là biểu hiện của gì", "CLINICAL_AI_CONSULTATION", ["đau bụng", "ngoại khoa"]),
     ("trả lời chung chung quá, tôi ko hài lòng với đáp án bạn đưa ra", "CONVERSATIONAL_FEEDBACK", ["tiếp thu", "không trả lời chung chung"]),
-    ("Ông là ai", "BUSINESS_OVERVIEW", ["bản đồ 10 đại nghiệp vụ"]),
+    ("Ông là ai", "BUSINESS_OVERVIEW", ["hệ thống trợ lý", "lâm sàng"]),
     ("Tôi muốn kê đơn thuốc cho bệnh nhân mới, mở form kê đơn cho tôi", "CPOE_CLARIFICATION", ["mở biểu mẫu kê đơn cpoe"]),
     ("kể cho tôi một câu chuyện cười đi", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),
     ("hôm nay ăn gì ngon", "CLINICAL_SAFE_ABSTENTION", ["từ chối tiếp nhận", "ngoài phạm vi chuyên môn"]),

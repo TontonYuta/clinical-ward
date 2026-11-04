@@ -56,5 +56,5 @@ class RedManScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 1455 & Thông tư 51/2017/TT-BYT",
-            suggested_chips=["Xem đơn thuốc RX-2026-011", "Tra cứu chuyên luận Vancomycin", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem đơn thuốc RX-2026-011", "Tra cứu chuyên luận Vancomycin", "Thẩm định đơn thuốc theo TT 26"]
         )

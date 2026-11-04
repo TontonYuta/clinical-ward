@@ -39,5 +39,5 @@ class AdrReportingScenario(BaseScenario):
             intent="CLINICAL_ADR_REPORTING",
             reply_text=reply,
             legal_basis="Thông tư 51/2017/TT-BYT & QĐ 1088/QĐ-BYT",
-            suggested_chips=["Phác đồ Adrenalin phản vệ TT 51", "Lập phiếu báo hỏng", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Phác đồ Adrenalin phản vệ TT 51", "Kiểm tra tương tác thuốc", "Thẩm định đơn thuốc theo TT 26"]
         )

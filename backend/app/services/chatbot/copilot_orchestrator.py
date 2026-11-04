@@ -221,6 +221,6 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
 
     return CopilotResponse(
         intent="GENERAL_CLINICAL_ASSISTANCE", reply_text=CLINICAL_BUSINESS_DIRECTORY,
-        legal_basis="Thông tư 22/2011, TT 20/2017, TT 51/2017 & Nghị định 98/2021",
-        suggested_chips=["Đối soát ca trực 07:00 AM", "Tra cứu SĐK VD-24757-16", "Thuốc cận hạn FEFO", "Báo hỏng máy thở PB840"]
+        legal_basis="Thông tư 26/2025, TT 52/2017, QĐ 5948 & DĐVN V",
+        suggested_chips=["Kiểm tra đơn thuốc theo TT 26", "Tương tác giữa Clopidogrel và Omeprazol", "Mở form gửi email/sms", "Thuốc cận hạn FEFO"]
     )

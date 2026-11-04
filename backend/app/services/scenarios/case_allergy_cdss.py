@@ -66,5 +66,5 @@ class AllergyCdssScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Quyết định 2147/QĐ-BYT & QĐ 5948/QĐ-BYT",
-            suggested_chips=["Dặn dò bệnh nhân uống thuốc", "Đổi sang Clarithromycin 500mg", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Dặn dò bệnh nhân uống thuốc", "Đổi sang Clarithromycin 500mg", "Thẩm định đơn thuốc theo TT 26"]
         )

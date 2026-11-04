@@ -62,5 +62,5 @@ class AnaphylaxisScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Thông tư 51/2017/TT-BYT Hướng dẫn phòng, chẩn đoán và xử trí phản vệ",
-            suggested_chips=["Xem tủ cấp cứu Hồi sức A9", "Đối soát ca trực 07:00 AM", "Tra cứu đơn RX-2026-004"]
+            suggested_chips=["Xem tủ cấp cứu Hồi sức A9", "Thẩm định đơn thuốc theo TT 26", "Tra cứu đơn RX-2026-004"]
         )

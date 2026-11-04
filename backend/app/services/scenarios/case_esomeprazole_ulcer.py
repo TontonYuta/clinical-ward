@@ -62,5 +62,5 @@ class EsomeprazoleUlcerScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 586 & Hướng dẫn Xử trí Xuất huyết Tiêu hóa VNAGE/BYT",
-            suggested_chips=["Xem hồ sơ bệnh nhân BN-8791", "Kiểm tra tồn kho Prasocare", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem hồ sơ bệnh nhân BN-8791", "Kiểm tra tồn kho Prasocare", "Thẩm định đơn thuốc theo TT 26"]
         )

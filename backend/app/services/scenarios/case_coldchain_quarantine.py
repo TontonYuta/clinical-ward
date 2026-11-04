@@ -64,5 +64,5 @@ class ColdChainQuarantineScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Thông tư 36/2018/TT-BYT Thực hành tốt bảo quản thuốc GSP",
-            suggested_chips=["Xem biểu đồ chuỗi lạnh", "Đối soát ca trực 07:00 AM", "Kiểm tra kho lạnh GSP"]
+            suggested_chips=["Xem biểu đồ chuỗi lạnh", "Thẩm định đơn thuốc theo TT 26", "Kiểm tra kho lạnh GSP"]
         )

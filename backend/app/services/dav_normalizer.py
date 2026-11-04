@@ -3,6 +3,18 @@ import re
 from typing import Any
 
 
+def clean_brand_name(name: str | None) -> str:
+    """Loại bỏ các thông tin nhà máy, cơ sở đóng gói, địa chỉ trong ngoặc của tên thuốc CSDL DAV."""
+    if not name:
+        return ""
+    # Nếu có ghi chú nhà sản xuất/đóng gói/địa chỉ ở cuối, lược bỏ từ dấu mở ngoặc đến hết
+    cleaned = re.sub(r"\s*\((?:Cơ sở|Nhà sản xuất|Địa chỉ|Đóng gói|Xuất xưởng|NSX).*?\)\s*$", "", name, flags=re.IGNORECASE)
+    # Xử lý trường hợp ngoặc lồng nhau (Thailand)
+    cleaned = re.sub(r"\s*\((?:Cơ sở|Nhà sản xuất|Địa chỉ|Đóng gói|Xuất xưởng|NSX)[^)]*(?:\([^)]*\)[^)]*)*\)", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"[\s,\-]+$", "", cleaned)
+    return cleaned.strip() or name
+
+
 def _text(value: Any) -> str | None:
     if value is None:
         return None
@@ -28,8 +40,9 @@ def normalize_dav_record(raw: dict[str, Any]) -> dict[str, Any]:
     if raw.get("isDaRutSoDangKy") is True: flags.append("registration_withdrawn")
     if raw.get("isHetHan") is True: flags.append("registration_expired")
     if raw.get("isDeleted") is True: flags.append("source_marked_deleted")
+    raw_brand = _text(raw.get("tenThuoc") or raw.get("brandName") or raw.get("name"))
     return {
-        "source_id": _text(raw.get("id") or raw.get("nationalCode") or code), "national_code": code, "brand_name": _text(raw.get("tenThuoc") or raw.get("brandName") or raw.get("name")),
+        "source_id": _text(raw.get("id") or raw.get("nationalCode") or code), "national_code": code, "brand_name": clean_brand_name(raw_brand),
         "active_ingredient_raw": active, "strength_raw": _text(basic.get("hamLuong") or raw.get("hamLuong")),
         "dosage_form": _text(basic.get("dangBaoChe") or raw.get("dangBaoChe")), "package_spec": _text(basic.get("dongGoi") or raw.get("dongGoi")),
         "standard_pharmacopeia": _text(basic.get("tieuChuan") or raw.get("tieuChuan")), "shelf_life": _text(basic.get("tuoiTho") or raw.get("tuoiTho")),

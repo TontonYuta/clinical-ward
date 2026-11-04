@@ -69,5 +69,5 @@ class PrescriptionInquiryScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Thông tư 52/2017/TT-BYT & TT 18/2018/TT-BYT",
-            suggested_chips=["Lập lịch dặn dò cữ thuốc", "Xem bảng đối soát 5 đúng", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Lập lịch dặn dò cữ thuốc", "Xem bảng đối soát 5 đúng", "Thẩm định đơn thuốc theo TT 26"]
         )

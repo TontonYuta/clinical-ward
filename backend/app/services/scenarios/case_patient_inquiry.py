@@ -108,6 +108,6 @@ class PatientInquiryScenario(BaseScenario):
             suggested_chips=[
                 f"Đơn thuốc của {target_patient.full_name.split()[-1]}",
                 f"Hiệu chỉnh liều suy thận {target_patient.full_name.split()[-1]}",
-                "Đối soát ca trực 07:00 AM"
+                "Thẩm định đơn thuốc theo TT 26"
             ]
         )

@@ -72,6 +72,7 @@ import {
   saveFontScale,
   getInitialChatMessages,
   saveChatMessages,
+  clearStoredChatMessages,
   getCachedDebts,
   saveCachedDebts,
   getCachedTickets,
@@ -1933,11 +1934,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             lowStockCount={batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
             onExecuteCardAction={handleExecuteCardAction}
             onClearMessages={() => {
-              if (typeof window !== 'undefined') {
-                try {
-                  localStorage.removeItem('clinical_ward_chat_messages');
-                } catch {}
-              }
+              clearStoredChatMessages();
               setChatMessages(INITIAL_CHAT_MESSAGES);
             }}
             onOpenAuditTrail={() => setIsAuditTrailOpen(true)}

@@ -10,6 +10,7 @@ from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.session_context import SessionState
 from app.services.copilot_drug_citation_helper import format_clinical_text, build_drug_citation
 from app.services.chatbot.chip_generator import generate_suggested_chips
+from app.services.dav_normalizer import clean_brand_name
 
 _format_clinical_text, _drug_citation = format_clinical_text, build_drug_citation
 
@@ -20,6 +21,7 @@ async def build_drug_profile_response(
     query: str = ""
 ) -> CopilotResponse:
     matched = drugs[0]
+    clean_name = clean_brand_name(matched.brand_name)
     from app.services.combination_drug_service import (
         resolve_combination_monographs,
         build_combination_drug_profile,
@@ -90,7 +92,7 @@ async def build_drug_profile_response(
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None
-    contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields}, drug_name=matched.brand_name)
+    contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields}, drug_name=clean_name)
 
     async def get_batches():
         stmt = select(InventoryBatch).where(or_(func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"), func.lower(InventoryBatch.item_name).like(f"%{first_active}%")))
@@ -124,7 +126,7 @@ async def build_drug_profile_response(
                 labels.append(req_label)
                 details.append(f"- **{req_label} theo từng hoạt chất:**\n" + "\n".join(comp_lines))
 
-            reply = f"### {', '.join(labels)}: {matched.brand_name}\n*(Đối soát thành phần phối hợp chuẩn DĐVN V)*\n\n" + "\n\n".join(details)
+            reply = f"### {', '.join(labels)}: {clean_name}\n*(Đối soát thành phần phối hợp chuẩn DĐVN V)*\n\n" + "\n\n".join(details)
             unique_citations = []
             seen_urls = set()
             for cit in combo_citations:
@@ -132,7 +134,7 @@ async def build_drug_profile_response(
                 if u not in seen_urls:
                     seen_urls.add(u)
                     unique_citations.append(cit)
-            session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+            session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
             return CopilotResponse(
                 intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None,
                 legal_basis=" • ".join(dict.fromkeys(legal_bases)) if legal_bases else "Dược Thư Quốc Gia Việt Nam",
@@ -151,8 +153,8 @@ async def build_drug_profile_response(
                 labels.append(req_label)
                 details.append(f"- **{req_label}:** {format_clinical_text(str(req_val).strip())}")
             source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
-            reply = "### " + ", ".join(labels) + ": " + matched.brand_name + "\n\n" + "\n".join(details)
-            session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+            reply = "### " + ", ".join(labels) + ": " + clean_name + "\n\n" + "\n".join(details)
+            session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
             return CopilotResponse(
                 intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=source,
                 suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
@@ -220,15 +222,15 @@ async def build_drug_profile_response(
             if detail:
                 detail = f"{format_clinical_text(str(detail).strip())}{ddi_block}"
             elif combined_ddis:
-                detail = f"Thông tin tương tác đối soát từ Dược thư Quốc gia và Quyết định 5948/QĐ-BYT cho **{matched.brand_name}** ({clean_inn.title()}):\n{ddi_block}"
+                detail = f"Thông tin tương tác đối soát từ Dược thư Quốc gia và Quyết định 5948/QĐ-BYT cho **{clean_name}** ({clean_inn.title()}):\n{ddi_block}"
             else:
-                detail = f"Chưa có dữ liệu tương tác thuốc được xác thực cho {matched.brand_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
+                detail = f"Chưa có dữ liệu tương tác thuốc được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
         else:
-            detail = format_clinical_text(str(detail).strip()) if detail else f"Chưa có dữ liệu {label.lower()} được xác thực cho {matched.brand_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
+            detail = format_clinical_text(str(detail).strip()) if detail else f"Chưa có dữ liệu {label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
-        session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+        session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
         return CopilotResponse(
-            intent="MEDICATION_SAFETY_PROFILE", reply_text=f"### {label}: {matched.brand_name}\n\n{detail}",
+            intent="MEDICATION_SAFETY_PROFILE", reply_text=f"### {label}: {clean_name}\n\n{detail}",
             card=None, legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
             active_medication_name=session.active_medication_name, answer_type="medication_field",
             source_status="exact_match", confidence=1.0, citations=[build_drug_citation(matched, monograph, source)]
@@ -257,13 +259,13 @@ async def build_drug_profile_response(
         contra_snippet = f"\n• **Chống chỉ định:** {_format_clinical_text(str(val_contra).strip())[:160]}..." if val_contra else ""
         stock_snippet = f"\n• **Tồn kho nội viện:** {in_stock} {matched.standard_unit} ({'Có sẵn tại kho' if in_stock > 0 else 'Chưa nhập kho'})" if is_stock_ask else ""
         reply = (
-            f"### 📋 TÓM TẮT THÔNG TIN THUỐC: {matched.brand_name}\n\n"
+            f"### 📋 TÓM TẮT THÔNG TIN THUỐC: {clean_name}\n\n"
             f"• **Hoạt chất:** **{ing}** | **Hàm lượng:** {conc or 'Theo HS công bố'}\n"
             f"• **Dạng bào chế:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **SĐK:** `{matched.national_code}`\n"
             f"• **Phân loại:** {matched.group} ({'Kiểm soát ĐB TT 20' if matched.is_controlled else 'Thuốc thường'})"
             f"{ind_snippet}{contra_snippet}{stock_snippet}"
         )
-        session.set_active_medication(name=matched.brand_name, ingredient=ing, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
+        session.set_active_medication(name=clean_name, ingredient=ing, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=prof_source,
             suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
@@ -272,7 +274,7 @@ async def build_drug_profile_response(
 
     if is_combination and (primary_mono or len(components) >= 2):
         reply, combo_citations, legal_str = build_combination_drug_profile(matched, primary_mono, components, query=query)
-        session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
+        session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=legal_str,
             suggested_chips=contextual_chips, session_id=session.session_id,
@@ -293,7 +295,7 @@ async def build_drug_profile_response(
     contra_short = _format_clinical_text(str(val_contra or "Mẫn cảm với bất kỳ thành phần nào của thuốc.").strip())[:180]
 
     from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
-    catalog_ddis = find_all_interactions_for_drug(matched.brand_name) + find_all_interactions_for_drug(clean_inn)
+    catalog_ddis = find_all_interactions_for_drug(clean_name) + find_all_interactions_for_drug(clean_inn)
     unique_ddis = []
     seen_p = set()
     for cd in catalog_ddis:
@@ -308,7 +310,7 @@ async def build_drug_profile_response(
     stock_fast_line = f"• **📦 Tồn kho nội viện:** **{in_stock} {matched.standard_unit}** ({'Có sẵn tại kho' if in_stock > 0 else 'Chưa có tồn kho'}) | Vị trí: `{loc}`\n" if is_stock_ask else ""
 
     fast_glance_block = (
-        f"### 💊 TRA CỨU NHANH DƯỢC LÂM SÀNG: {matched.brand_name}\n"
+        f"### 💊 TRA CỨU NHANH DƯỢC LÂM SÀNG: {clean_name}\n"
         f"*(Căn cứ CSDL Dược Quốc gia DAV & Dược thư Quốc gia Việt Nam DĐVN V)*\n\n"
         f"• **Hoạt chất chính (INN):** **{ing}** | **Hàm lượng:** {conc or 'Theo hồ sơ công bố'}\n"
         f"• **Dạng bào chế & SĐK:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | SĐK: `{matched.national_code}`\n"
@@ -326,7 +328,7 @@ async def build_drug_profile_response(
         f"<details>\n"
         f"<summary><b>📖 Xem Chuyên Luận Toàn Văn Dược Thư Quốc Gia DĐVN V & Dược Động Học (Nhấn để mở rộng)</b></summary>\n\n"
         f"#### 1. THÔNG TIN ĐỊNH DANH & DẠNG BÀO CHẾ LƯU HÀNH\n"
-        f"• **Tên biệt dược:** **{matched.brand_name}** | **Mã SĐK (DAV):** `{matched.national_code}`\n"
+        f"• **Tên biệt dược:** **{clean_name}** | **Mã SĐK (DAV):** `{matched.national_code}`\n"
         f"• **Hoạt chất chính (INN):** **{ing}**\n"
         f"• **Hàm lượng / Nồng độ:** {conc or 'Theo hồ sơ công bố'}\n"
         f"• **Dạng bào chế lưu hành:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **Đường dùng:** {matched.route or 'Theo chỉ định'}\n"
@@ -364,21 +366,14 @@ async def build_drug_profile_response(
     details_tail = "\n</details>"
     details = fast_glance_block + header + body + details_tail
 
-    card = CopilotActionCard(
-        card_type="medication_safety", title=f"Dược Quốc Gia: {matched.brand_name}",
-        summary=f"SĐK: {matched.national_code} | Hoạt chất: {ing}",
-        data={"national_code": matched.national_code, "brand_name": matched.brand_name,
-              "active_ingredient": ing, "group": matched.group, "in_stock": in_stock},
-        primary_action_label="Xem Chi Tiết Thuốc", primary_action_type="OPEN_MEDICATION_SAFETY"
-    )
     session.set_active_medication(
-        name=matched.brand_name, ingredient=ing,
+        name=clean_name, ingredient=ing,
         batch=batches[0].batch_number if batches else matched.national_code,
         stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho",
         location=loc, sdk=matched.national_code
     )
     return CopilotResponse(
-        intent="MEDICATION_SAFETY_PROFILE", reply_text=details, card=card, legal_basis=prof_source,
+        intent="MEDICATION_SAFETY_PROFILE", reply_text=details, card=None, legal_basis=prof_source,
         suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
         active_medication_stock=session.active_medication_stock, active_medication_location=session.active_medication_location,
         answer_type="medication_profile", source_status="exact_match", confidence=1.0,

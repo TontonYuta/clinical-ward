@@ -54,5 +54,5 @@ class CeftriaxoneCalciumScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 371 & QĐ 5948/QĐ-BYT",
-            suggested_chips=["Xem bảng kho Dược Nội Trú", "Đối soát ca trực 07:00 AM", "Tra cứu SĐK 840110304425"]
+            suggested_chips=["Xem bảng kho Dược Nội Trú", "Thẩm định đơn thuốc theo TT 26", "Tra cứu SĐK 840110304425"]
         )

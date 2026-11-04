@@ -200,11 +200,22 @@ export function saveFontScale(scale: AppFontScale): void {
 export function getInitialChatMessages(): ChatMessage[] {
   if (typeof window === 'undefined') return INITIAL_CHAT_MESSAGES;
   try {
-    const raw = localStorage.getItem(KEYS.CHAT_MESSAGES);
+    const raw = localStorage.getItem(KEYS.CHAT_MESSAGES) || localStorage.getItem('clinical_ward_chat_messages');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        // Tự động thanh lọc các tin nhắn cũ chứa các form nghiệp vụ đã lược bỏ (Mượn cơ số, Sự cố TBYT, Sổ nợ vỏ)
+        const cleaned = parsed.filter(m => {
+          if (!m) return false;
+          const cardType = (m.card?.card_type || m.card?.type || '') as string;
+          if (['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket'].includes(cardType)) {
+            return false;
+          }
+          return true;
+        });
+        if (cleaned.length > 0) {
+          return cleaned;
+        }
       }
     }
   } catch (e) {}
@@ -216,6 +227,16 @@ export function saveChatMessages(messages: ChatMessage[]): void {
     // Chỉ lưu 40 tin nhắn gần nhất để tiết kiệm bộ nhớ localStorage
     const truncated = messages.slice(-40);
     localStorage.setItem(KEYS.CHAT_MESSAGES, JSON.stringify(truncated));
+  } catch (e) {}
+}
+
+export function clearStoredChatMessages(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(KEYS.CHAT_MESSAGES);
+    localStorage.removeItem('clinical_ward_chat_messages');
+    localStorage.removeItem('clinical_chat_messages');
+    localStorage.removeItem('chat_messages');
   } catch (e) {}
 }
 

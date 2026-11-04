@@ -114,7 +114,7 @@ async def handle_cpoe_intent(query: str, lower_query: str, user_name: str, user_
         ),
         card=card,
         legal_basis="Thông tư 26/2025/TT-BYT - Điều 6 (đối chiếu nội dung kê đơn)",
-        suggested_chips=["Dặn dò bệnh nhân uống thuốc", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"]
+        suggested_chips=["Dặn dò bệnh nhân uống thuốc", "Thẩm định đơn thuốc theo TT 26", "Kiểm tra hạn dùng FEFO"]
     )
 
 async def handle_debt_settle_intent(query: str, lower_query: str, db: AsyncSession) -> CopilotResponse:
@@ -132,7 +132,7 @@ async def handle_debt_settle_intent(query: str, lower_query: str, db: AsyncSessi
             reply_text="### ✅ TẤT CẢ VỎ THUỐC & SỔ NỢ ĐÃ ĐƯỢC ĐỐI SOÁT HOÀN TẤT!\n\n"
                        "• Không có vỏ thuốc gây nghiện nào đang tồn đọng chưa thu hồi theo Điều 15 Thông tư 20/2017/TT-BYT.",
             legal_basis="Thông tư 20/2017/TT-BYT - Điều 15",
-            suggested_chips=["Đối soát ca trực 07:00 AM", "Kê đơn thuốc CPOE", "Kiểm tra hạn dùng FEFO"]
+            suggested_chips=["Thẩm định đơn thuốc theo TT 26", "Kê đơn thuốc CPOE", "Kiểm tra hạn dùng FEFO"]
         )
 
     card = CopilotActionCard(
@@ -160,7 +160,7 @@ async def handle_debt_settle_intent(query: str, lower_query: str, db: AsyncSessi
                    f"• **Căn cứ pháp lý**: Bắt buộc đối chiếu vỏ rỗng theo Điều 15 Thông tư 20/2017/TT-BYT.",
         card=card,
         legal_basis="Thông tư 20/2017/TT-BYT - Quản lý thuốc gây nghiện",
-        suggested_chips=["Đối soát ca trực 07:00 AM", "Lập dự trù bù thuốc Mẫu 01", "Kê đơn thuốc CPOE"]
+        suggested_chips=["Thẩm định đơn thuốc theo TT 26", "Kiểm tra hạn dùng FEFO", "Kê đơn thuốc CPOE"]
     )
 
 async def handle_prescription_audit_intent(query: str, lower_query: str, user_name: str, user_role: str, db: AsyncSession, session_id: str) -> CopilotResponse:

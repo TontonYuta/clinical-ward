@@ -59,5 +59,5 @@ class AmiodaroneQtScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Dược Thư Quốc Gia 2015 Trang 112 & Hướng dẫn Cấp cứu Loạn nhịp Tim VNHA/BYT",
-            suggested_chips=["Xem đơn bù điện giải Kali", "Kiểm tra tồn kho Amiodaron", "Đối soát ca trực 07:00 AM"]
+            suggested_chips=["Xem đơn bù điện giải Kali", "Kiểm tra tồn kho Amiodaron", "Thẩm định đơn thuốc theo TT 26"]
         )

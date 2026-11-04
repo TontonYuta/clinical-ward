@@ -54,6 +54,6 @@ class OncologySpecialtyScenario(BaseScenario):
                 "Chăm sóc giảm nhẹ ung thư",
                 "Quy chế thuốc gây nghiện TT 20",
                 "Tra cứu thuốc Morphine trong Dược thư",
-                "Đối soát ca trực 07:00 AM"
+                "Thẩm định đơn thuốc theo TT 26"
             ]
         )

@@ -44,7 +44,7 @@ async def suggest_inventory_typo(
         return CopilotResponse(
             intent="CLINICAL_TYPO_SUGGESTION", reply_text=reply, card=card,
             legal_basis="Thông tư 22/2011/TT-BYT & CSDL Cục Quản lý Dược",
-            suggested_chips=[f"Thông tin {best_batch.item_name}", "Đối soát ca trực 07:00 AM", "Kiểm tra hạn dùng FEFO"],
+            suggested_chips=[f"Thông tin {best_batch.item_name}", "Thẩm định đơn thuốc theo TT 26", "Kiểm tra hạn dùng FEFO"],
             answer_type="medication_suggestion", source_status="inventory_suggestion", confidence=best_ratio
         )
     return None
