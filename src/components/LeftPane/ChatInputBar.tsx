@@ -41,12 +41,18 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   const baseTextRef = useRef<string>('');
   const latestSpokenTextRef = useRef<string>('');
   const silenceTimerRef = useRef<number | null>(null);
+  const hasDispatchedRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
       if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
       if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch {}
+        try {
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.abort();
+        } catch {}
       }
     };
   }, []);
@@ -69,6 +75,36 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     }
   }, [speechError]);
 
+  const dispatchVoiceMessage = (rawText: string) => {
+    const textToSend = rawText.trim();
+    if (!textToSend || hasDispatchedRef.current || isProcessing) return;
+    hasDispatchedRef.current = true;
+
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    latestSpokenTextRef.current = '';
+    baseTextRef.current = '';
+    setInputText('');
+    setIsCountingDown(false);
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
+    }
+
+    setIsListening(false);
+    if (!isAudioMuted) clinicalAudio.playMicBeep(false);
+
+    onSendMessage(textToSend);
+  };
+
   const stopListening = () => {
     if (silenceTimerRef.current) {
       window.clearTimeout(silenceTimerRef.current);
@@ -76,28 +112,29 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     }
     setIsCountingDown(false);
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch {}
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch {}
+      recognitionRef.current = null;
     }
     setIsListening(false);
     if (!isAudioMuted) clinicalAudio.playMicBeep(false);
   };
 
   const handleInstantSend = () => {
-    if (silenceTimerRef.current) {
-      window.clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
     const textToSend = (latestSpokenTextRef.current || inputText).trim();
-    latestSpokenTextRef.current = '';
-    stopListening();
-    if (textToSend && !isProcessing) {
-      onSendMessage(textToSend);
-      setInputText('');
-      baseTextRef.current = '';
+    if (textToSend) {
+      dispatchVoiceMessage(textToSend);
+    } else {
+      stopListening();
     }
   };
 
   const handleCancelVoice = () => {
+    hasDispatchedRef.current = true;
     if (silenceTimerRef.current) {
       window.clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
@@ -109,6 +146,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   };
 
   const handleStopKeepText = () => {
+    hasDispatchedRef.current = true;
     if (silenceTimerRef.current) {
       window.clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
@@ -140,6 +178,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   const startListening = () => {
     setSpeechError(null);
     setIsCountingDown(false);
+    hasDispatchedRef.current = false;
 
     // Kiểm tra Secure Context (Bắt buộc HTTPS hoặc localhost theo chuẩn W3C)
     if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
@@ -155,7 +194,12 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
     try {
       if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch {}
+        try {
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.abort();
+        } catch {}
       }
       const recognition = new SpeechRecognition();
       recognition.lang = 'vi-VN';
@@ -176,6 +220,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       };
 
       recognition.onresult = (event: any) => {
+        if (hasDispatchedRef.current) return;
         let fullSpoken = '';
         for (let i = 0; i < event.results.length; ++i) {
           fullSpoken += event.results[i][0].transcript;
@@ -195,13 +240,8 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
             setIsCountingDown(true);
             silenceTimerRef.current = window.setTimeout(() => {
               const textToSend = latestSpokenTextRef.current.trim();
-              if (textToSend && !isProcessing) {
-                latestSpokenTextRef.current = '';
-                stopListening();
-                onSendMessage(textToSend);
-                setInputText('');
-                baseTextRef.current = '';
-                setIsCountingDown(false);
+              if (textToSend) {
+                dispatchVoiceMessage(textToSend);
               }
             }, 2000);
           }
@@ -226,17 +266,9 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         setIsCountingDown(false);
         if (!isAudioMuted) clinicalAudio.playMicBeep(false);
 
-        // Nếu người dùng bật tự gửi và đã có nội dung văn bản nói xong
-        if (autoSendOnSilence && latestSpokenTextRef.current.trim() && !isProcessing) {
-          const textToSend = latestSpokenTextRef.current.trim();
-          if (silenceTimerRef.current) {
-            window.clearTimeout(silenceTimerRef.current);
-            silenceTimerRef.current = null;
-          }
-          onSendMessage(textToSend);
-          setInputText('');
-          baseTextRef.current = '';
-          latestSpokenTextRef.current = '';
+        // Nếu người dùng bật tự gửi, chưa từng dispatch và có nội dung văn bản nói xong
+        if (autoSendOnSilence && !hasDispatchedRef.current && latestSpokenTextRef.current.trim()) {
+          dispatchVoiceMessage(latestSpokenTextRef.current);
         }
       };
 
@@ -257,11 +289,8 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (isListening) stopListening();
     if (!inputText.trim() || isProcessing) return;
-    onSendMessage(inputText.trim());
-    setInputText('');
-    baseTextRef.current = '';
+    dispatchVoiceMessage(inputText);
   };
 
   return (

@@ -116,6 +116,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const dragFrame = useRef<number | null>(null);
   const pendingChatPosition = useRef<{ x: number; y: number } | null>(null);
+  const lastSentMessageRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
   const [showTelegramToast, setShowTelegramToast] = useState<boolean>(false);
   const [isDrugRegistryOpen, setIsDrugRegistryOpen] = useState<boolean>(false);
   const [drugRegistrySearch, setDrugRegistrySearch] = useState('');
@@ -1572,13 +1573,28 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
   // Handler: User sends a message from Left Pane input / chips / voice / image
   const handleSendMessage = async (inputText: string, attachment?: any) => {
+    const trimmed = (inputText || '').trim();
+    if (!trimmed) return;
+
+    // Chống gửi trùng lặp (Deduplication Guard: ngăn chặn cùng nội dung gửi liên tiếp trong 1.5s)
+    const now = Date.now();
+    if (
+      !attachment &&
+      lastSentMessageRef.current.text.toLowerCase() === trimmed.toLowerCase() &&
+      now - lastSentMessageRef.current.time < 1500
+    ) {
+      console.warn('⚠️ Ngăn chặn tin nhắn gửi trùng lặp trong 1.5s:', trimmed);
+      return;
+    }
+    lastSentMessageRef.current = { text: trimmed, time: now };
+
     const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
     // 1. Add user message
     const userMsg: ChatMessage = {
       id: `msg-user-${Date.now()}`,
       sender: 'user',
-      text: inputText,
+      text: trimmed,
       timestamp: nowStr,
       attachments: attachment ? [attachment] : undefined
     };
@@ -1589,7 +1605,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     try {
       // 2. Process query with clinical agent engine (FastAPI Copilot REST API + Local Clinical fallback)
       const { replyMessage, actionPayload } = await processClinicalAgentQueryAsync(
-        inputText,
+        trimmed,
         {
           debts,
           tickets,

@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, ExternalLink, ChevronDown, FileText } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, FileText } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -70,11 +70,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {onOpenUserGuide && (
-            <button type="button" data-testid="chat-hdsd-btn" onClick={onOpenUserGuide} className="px-2 py-1 rounded-md text-slate-700 hover:text-teal-800 hover:bg-teal-50 transition cursor-pointer active:scale-95 flex items-center gap-1 border border-slate-200 hover:border-teal-300 text-xs font-semibold shrink-0" title="Hướng dẫn sử dụng">
-              <HelpCircle className="w-3.5 h-3.5 text-teal-700 shrink-0" /><span>HDSD</span>
-            </button>
-          )}
           <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Cấu hình mô hình AI">
             <Settings2 className="w-4 h-4" />
           </button>
