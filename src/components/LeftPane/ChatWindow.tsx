@@ -104,11 +104,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           {messages.map((msg) => {
           const isAgent = msg.sender === 'agent';
           const isSystem = msg.sender === 'system';
-          const isDarkBubble = msg.sender === 'user' || isSystem;
+          const isUser = msg.sender === 'user';
+          const isRightAligned = isUser || isSystem;
 
           return (
-            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-2.5 w-full ${isDarkBubble ? 'ml-auto flex-row-reverse max-w-[96%] sm:max-w-[88%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
-              <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 text-white shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800' : isSystem ? 'bg-slate-700' : 'bg-slate-900'}`}>
+            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-2.5 w-full ${isRightAligned ? 'ml-auto flex-row-reverse max-w-[96%] sm:max-w-[88%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+              <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800 text-white' : isSystem ? 'bg-slate-200 text-slate-700' : 'bg-teal-600 text-white'}`}>
                 {isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
 
@@ -123,8 +124,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     />
                   </div>
                 )}
-                <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
-                  {renderFormattedText(removeLegacySourceText(msg.text), isDarkBubble)}
+                <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${
+                  isUser
+                    ? 'bg-teal-50/90 border border-teal-200 text-slate-900 rounded-tr-xs'
+                    : isSystem
+                    ? 'bg-slate-100 border border-slate-200 text-slate-800 rounded-xl'
+                    : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'
+                }`}>
+                  {renderFormattedText(removeLegacySourceText(msg.text), false)}
                   {isAgent && msg.citations?.length ? (
                     <p data-testid="chat-source-introduction" className="mt-3 border-l-2 border-teal-500 pl-2.5 text-xs font-medium text-slate-600">
                       {buildSourceIntroduction(msg.citations)}

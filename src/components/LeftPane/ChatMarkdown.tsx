@@ -51,8 +51,8 @@ export const formatInlineMarkdown = (rawText: string, isDark: boolean = false): 
       return (
         <code
           key={i}
-          className={`px-1.5 py-0.5 rounded font-mono text-2xs font-semibold border ${
-            isDark ? 'bg-slate-800 text-teal-300 border-slate-700' : 'bg-slate-100 text-teal-800 border-slate-200'
+          className={`px-1.5 py-0.5 rounded font-mono text-2xs font-medium border ${
+            isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-100 text-slate-800 border-slate-200'
           }`}
         >
           {part.slice(1, -1)}
@@ -137,21 +137,21 @@ export const renderFormattedText = (rawText: string, isDark: boolean = false): R
 
     // 4. Tiêu đề Markdown (#, ##, ###, ####)
     const h1 = line.match(/^#\s+(.+)$/);
-    if (h1) { elements.push(<h2 key={`h1-${i}`} className="font-bold text-base text-slate-900 mt-3 mb-1.5 border-b border-slate-200/60 pb-1">{formatInlineMarkdown(h1[1], isDark)}</h2>); i++; continue; }
+    if (h1) { elements.push(<h2 key={`h1-${i}`} className="font-bold text-base text-slate-900 mt-3 mb-1.5 border-b border-slate-200/80 pb-1">{formatInlineMarkdown(h1[1], isDark)}</h2>); i++; continue; }
     const h2 = line.match(/^##\s+(.+)$/);
     if (h2) { elements.push(<h3 key={`h2-${i}`} className="font-bold text-sm text-slate-900 mt-2.5 mb-1">{formatInlineMarkdown(h2[1], isDark)}</h3>); i++; continue; }
     const h3 = line.match(/^###\s+(.+)$/);
-    if (h3) { elements.push(<h4 key={`h3-${i}`} className="font-bold text-xs sm:text-sm text-teal-800 mt-2 mb-1 flex items-center gap-1.5">{formatInlineMarkdown(h3[1], isDark)}</h4>); i++; continue; }
+    if (h3) { elements.push(<h4 key={`h3-${i}`} className="font-bold text-xs sm:text-sm text-slate-900 mt-2 mb-1 flex items-center gap-1.5">{formatInlineMarkdown(h3[1], isDark)}</h4>); i++; continue; }
     const h4 = line.match(/^####\s+(.+)$/);
     if (h4) { elements.push(<h5 key={`h4-${i}`} className="font-semibold text-xs text-slate-800 mt-1.5 mb-0.5">{formatInlineMarkdown(h4[1], isDark)}</h5>); i++; continue; }
-    if (line === '') { elements.push(<div key={`spacer-${i}`} className="h-1" />); i++; continue; }
+    if (line === '') { elements.push(<div key={`spacer-${i}`} className="h-1.5" />); i++; continue; }
 
     // 6. Danh sách có số (1. , 2. )
     const numMatch = line.match(/^(\d+)[\.\)]\s+(.+)$/);
     if (numMatch) {
       elements.push(
-        <div key={`num-${i}`} className="flex items-start gap-1.5 my-0.5 pl-1 leading-relaxed text-xs sm:text-sm">
-          <span className="font-bold text-teal-700 text-xs shrink-0 mt-0.5 min-w-[14px]">{numMatch[1]}.</span>
+        <div key={`num-${i}`} className="flex items-start gap-1.5 my-1 pl-0.5 leading-relaxed text-xs sm:text-sm text-slate-800">
+          <span className="font-semibold text-slate-600 text-xs shrink-0 mt-0.5 min-w-[16px]">{numMatch[1]}.</span>
           <div className="flex-1">{formatInlineMarkdown(numMatch[2], isDark)}</div>
         </div>
       );
@@ -164,8 +164,8 @@ export const renderFormattedText = (rawText: string, isDark: boolean = false): R
     if (bulletMatch) {
       const isNested = rawLine.startsWith('   ') || rawLine.startsWith('\t');
       elements.push(
-        <div key={`bullet-${i}`} className={`flex items-start gap-2 my-0.5 leading-relaxed text-xs sm:text-sm ${isNested ? 'pl-4' : 'pl-1'}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 mt-1.5 shrink-0" />
+        <div key={`bullet-${i}`} className={`flex items-start gap-2 my-1 leading-relaxed text-xs sm:text-sm text-slate-800 ${isNested ? 'pl-4' : 'pl-0.5'}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 shrink-0" />
           <div className="flex-1">{formatInlineMarkdown(bulletMatch[1], isDark)}</div>
         </div>
       );
@@ -175,7 +175,7 @@ export const renderFormattedText = (rawText: string, isDark: boolean = false): R
 
     // 8. Dòng văn bản bình thường
     elements.push(
-      <div key={`p-${i}`} className="my-0.5 leading-relaxed text-xs sm:text-sm">
+      <div key={`p-${i}`} className="my-1 leading-relaxed text-xs sm:text-sm text-slate-800">
         {formatInlineMarkdown(line, isDark)}
       </div>
     );

@@ -49,12 +49,12 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
             {order.prescribedAt}
           </span>
           {order.isChronicDisease && (
-            <span className="text-[10px] text-slate-500 font-mono">
+            <span className="text-2xs text-slate-500 font-mono">
               · Mạn ({order.daysPrescribed}d)
             </span>
           )}
         </div>
-        <span className="text-[11px] font-medium text-slate-500">
+        <span className="text-2xs font-medium text-slate-500">
           {isOutpatient ? 'Ngoại trú' : 'Nội trú'}
         </span>
       </div>

@@ -187,8 +187,8 @@ const VALID_FONT_SCALES: AppFontScale[] = ['compact', 'standard', 'large'];
 export function getInitialFontScale(): AppFontScale {
   try {
     const saved = localStorage.getItem(KEYS.FONT_SCALE) as AppFontScale | null;
-    return saved && VALID_FONT_SCALES.includes(saved) ? saved : 'large';
-  } catch { return 'large'; }
+    return saved && VALID_FONT_SCALES.includes(saved) ? saved : 'standard';
+  } catch { return 'standard'; }
 }
 export function saveFontScale(scale: AppFontScale): void {
   try { localStorage.setItem(KEYS.FONT_SCALE, scale); } catch {}
