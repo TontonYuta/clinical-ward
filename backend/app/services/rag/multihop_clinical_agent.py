@@ -46,10 +46,10 @@ def is_multihop_clinical_case(query: str, lower_query: str) -> bool:
     matcher = get_drug_lexical_matcher()
     meds = matcher.extract_medications(query)
     resolved = resolve_registered_medications(q_low)
-    total_meds = len(set(meds + resolved))
+    total_meds = len(_canonicalize_meds(meds + resolved))
 
-    # Pattern A: Formal clinical case with subject, condition, and prescription cue
-    if has_subject and (has_condition or has_prescribe_cue) and total_meds >= 2:
+    # Pattern A: Formal clinical case with subject, organ condition, and prescription cue
+    if has_subject and has_condition and (has_prescribe_cue or total_meds >= 2):
         return True
 
     # Pattern B: Polypharmacy evaluation with 3 or more medications
@@ -166,7 +166,26 @@ async def execute_multihop_clinical_evaluation(
     # HOP 2: Regimen-Internal Drug Interactions (QĐ 5948)
     # =========================================================================
     hop2_findings: List[str] = []
-    if "spironolacton" in current_meds and any(m in current_meds for m in ("perindopril", "enalapril", "losartan")):
+    from app.services.clinical_ddi_engine.detector import ClinicalDdiDetector
+    from app.services.clinical_ddi_engine.normalizer import normalize_drug_entity
+    from itertools import combinations
+
+    detector = ClinicalDdiDetector()
+    detected_alerts = []
+    all_pairs = list(combinations(all_involved_inns, 2))
+    for d1, d2 in all_pairs:
+        ea = normalize_drug_entity(d1)
+        eb = normalize_drug_entity(d2)
+        alert = detector.evaluate_pair(ea, eb)
+        if alert:
+            detected_alerts.append(alert)
+            hop2_findings.append(
+                f"⚡ **TƯƠNG TÁC THUỐC LÂM SÀNG ({alert.legal_evidence or 'QĐ 5948/QĐ-BYT'}):** "
+                f"{alert.title}. {alert.mechanism} — Hậu quả: {alert.clinical_consequence}. "
+                f"Khuyến cáo xử trí: {alert.action_recommendation}"
+            )
+
+    if not hop2_findings and "spironolacton" in current_meds and any(m in current_meds for m in ("perindopril", "enalapril", "losartan")):
         hop2_findings.append(
             "⚡ **TƯƠNG TÁC TĂNG KALI MÁU CỘNG HƯỞNG (QĐ 5948/QĐ-BYT):** Phối hợp thuốc ức chế hệ RAAS (Coversyl/Enalapril) "
             "với thuốc lợi tiểu giữ Kali (Spironolacton) làm tăng giữ Kali máu tại ống thận gấp 3 - 5 lần. "
@@ -223,26 +242,43 @@ async def execute_multihop_clinical_evaluation(
         hop4_lines.append("- Chưa phát hiện xung đột nghiêm trọng với các thuốc bổ sung.")
 
     hop4_lines.append("\n#### 3. KHUYẾN CÁO PHÁC ĐỒ TOÀN DIỆN & THAY THẾ AN TOÀN (Hop 4):")
-    hop4_lines.append(
-        "• **1. THUỐC CẦN NGỪNG NGAY:**\n"
-        "  - **Ngừng Metformin:** Thay thế bằng **Linagliptin 5 mg/ngày** (uống 1 viên/ngày, thải trừ 95% qua mật/phân, KHÔNG CẦN chỉnh liều ở mọi mức độ suy thận) hoặc Insulin phác đồ cá thể hóa.\n"
-        "  - **Không kê NSAID (Meloxicam/Celecoxib):** Tránh hoàn toàn nguy cơ suy thận cấp và đợt cấp suy tim mất bù."
-    )
-    hop4_lines.append(
-        "• **2. THUỐC CẦN HIỆU CHỈNH LIỀU:**\n"
-        "  - **Coversyl (Perindopril):** Giảm liều còn **2 mg mỗi 2 ngày** (hoặc 2.5 mg muối arginin mỗi 2 ngày) theo DĐVN V trang 1131.\n"
-        "  - **Colchicin (nếu dùng điều trị đợt gout cấp):** Liều tối đa **0.5 mg/ngày** hoặc cách nhật, theo dõi sát triệu chứng yếu cơ hoặc tiêu chảy."
-    )
-    hop4_lines.append(
-        "• **3. LỰA CHỌN THAY THẾ GIẢM ĐAU AN TOÀN CHO ĐỢT CẤP GOUT:**\n"
-        "  - Có thể cân nhắc **Corticoid đường uống ngắn ngày** (Prednisolon 20 - 30 mg/ngày trong 3 - 5 ngày rồi ngừng hẳn) là giải pháp thay thế hàng đầu cho NSAID khi suy thận kèm suy tim; kết hợp chườm lạnh tại khớp gối viêm."
-    )
-    hop4_lines.append(
-        "• **4. THÔNG SỐ CẬN LÂM SÀNG CẦN THEO DÕI SÁT (Monitoring):**\n"
-        "  - **Điện giải đồ (Kali máu K+):** Bắt buộc làm sau 3 - 5 ngày điều chỉnh do dùng đồng thời Coversyl và Spironolacton.\n"
-        "  - **Creatinin huyết tương & eGFR/ClCr:** Đánh giá lại sau 7 - 14 ngày.\n"
-        "  - **Dấu hiệu quá tải dịch:** Cân nặng hàng ngày, tình trạng phù hai chi dưới và khó thở khi nằm."
-    )
+    # Discontinuations
+    discont = []
+    for alert in detected_alerts:
+        discont.append(f"- **{alert.title}:** {alert.action_recommendation}")
+    if "metformin" in current_meds and has_severe_ckd:
+        discont.append("- **Ngừng Metformin:** Thay thế bằng **Linagliptin 5 mg/ngày** (uống 1 viên/ngày, thải trừ 95% qua mật/phân, KHÔNG CẦN chỉnh liều ở mọi mức độ suy thận) hoặc Insulin phác đồ cá thể hóa.")
+    if any(m in proposed_meds for m in ("meloxicam", "celecoxib", "diclofenac", "ibuprofen")) and (has_severe_ckd or "suy tim" in q_low):
+        discont.append("- **Không kê NSAID (Meloxicam/Celecoxib):** Tránh hoàn toàn nguy cơ suy thận cấp và đợt cấp suy tim mất bù.")
+    if discont:
+        hop4_lines.append("• **1. THUỐC CẦN NGỪNG HOẶC ĐIỀU CHỈNH CAN THIỆP NGAY:**\n" + "\n".join(f"  {d}" for d in discont))
+
+    # Adjustments
+    adjust = []
+    if any(m in current_meds for m in ("perindopril", "enalapril")) and has_severe_ckd:
+        adjust.append("- **Coversyl (Perindopril):** Giảm liều còn **2 mg mỗi 2 ngày** (hoặc 2.5 mg muối arginin mỗi 2 ngày) theo DĐVN V trang 1131.")
+    if "colchicin" in proposed_meds and has_severe_ckd:
+        adjust.append("- **Colchicin (nếu dùng điều trị đợt gout cấp):** Liều tối đa **0.5 mg/ngày** hoặc cách nhật, theo dõi sát triệu chứng yếu cơ hoặc tiêu chảy.")
+    if adjust:
+        hop4_lines.append("• **2. THUỐC CẦN HIỆU CHỈNH LIỀU:**\n" + "\n".join(f"  {a}" for a in adjust))
+
+    # Alternatives
+    if any(m in proposed_meds for m in ("meloxicam", "celecoxib", "diclofenac", "ibuprofen", "colchicin")):
+        hop4_lines.append(
+            "• **3. LỰA CHỌN THAY THẾ GIẢM ĐAU AN TOÀN CHO ĐỢT CẤP GOUT:**\n"
+            "  - Có thể cân nhắc **Corticoid đường uống ngắn ngày** (Prednisolon 20 - 30 mg/ngày trong 3 - 5 ngày rồi ngừng hẳn) là giải pháp thay thế hàng đầu cho NSAID khi suy thận kèm suy tim; kết hợp chườm lạnh tại khớp gối viêm."
+        )
+
+    # Monitoring
+    monitoring = []
+    if "spironolacton" in current_meds and any(m in current_meds for m in ("perindopril", "enalapril")):
+        monitoring.append("- **Điện giải đồ (Kali máu K+):** Bắt buộc làm sau 3 - 5 ngày điều chỉnh do dùng đồng thời Coversyl và Spironolacton.")
+    if clcr is not None:
+        monitoring.append("- **Creatinin huyết tương & eGFR/ClCr:** Đánh giá lại sau 7 - 14 ngày.")
+    if "suy tim" in q_low or "phù" in q_low:
+        monitoring.append("- **Dấu hiệu quá tải dịch:** Cân nặng hàng ngày, tình trạng phù hai chi dưới và khó thở khi nằm.")
+    if monitoring:
+        hop4_lines.append("• **4. THÔNG SỐ CẬN LÂM SÀNG CẦN THEO DÕI SÁT (Monitoring):**\n" + "\n".join(f"  {m}" for m in monitoring))
 
     full_answer_draft = "\n".join(hop4_lines)
 
@@ -293,6 +329,21 @@ async def execute_multihop_clinical_evaluation(
             page=None
         )
     ]
+
+    for alert in detected_alerts:
+        citations.append(
+            RagCitation(
+                source=alert.legal_evidence or "Quyết định 5948/QĐ-BYT",
+                legal_basis=alert.legal_evidence or "QĐ 5948/QĐ-BYT",
+                section=alert.title,
+                excerpt=f"{alert.mechanism} Hậu quả: {alert.clinical_consequence}. Xử trí: {alert.action_recommendation}",
+                relevance_score=1.0,
+                chunk_id=f"ddi_{alert.rule_id}",
+                url=None,
+                document_id="qd-5948-byt",
+                page=None
+            )
+        )
 
     # Grounding Chunks across Hops
     retrieved_chunks: List[RetrievedChunk] = [
@@ -401,6 +452,21 @@ async def execute_multihop_clinical_evaluation(
             score=0.96
         )
     ]
+
+    for alert in detected_alerts:
+        retrieved_chunks.append(
+            RetrievedChunk(
+                chunk=RagChunk(
+                    chunk_id=f"ddi_{alert.rule_id}",
+                    source_doc=alert.legal_evidence or "Quyết định 5948/QĐ-BYT",
+                    legal_basis=alert.legal_evidence or "QĐ 5948/QĐ-BYT",
+                    page_or_section="Tương tác thuốc chống chỉ định",
+                    title=alert.title,
+                    content=f"{alert.title}. {alert.mechanism}. {alert.clinical_consequence}. {alert.action_recommendation}"
+                ),
+                score=0.98
+            )
+        )
 
     kg_data = {
         "graph_context_text": "Hội chẩn đa thuốc: Metformin (ClCr < 30 mL/phút), Meloxicam (NSAID), Spironolacton, Coversyl (Perindopril 2 mg mỗi 2 ngày), Colchicin (0.5 mg/ngày).",

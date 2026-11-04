@@ -74,7 +74,7 @@ async def test_multihop_clinical_evaluation_execution():
     assert "2 mg mỗi 2 ngày" in res.answer
 
     # Hop 2: Regimen-Internal Drug Interactions (QĐ 5948)
-    assert "TƯƠNG TÁC TĂNG KALI MÁU CỘNG HƯỞNG" in res.answer
+    assert "TĂNG KALI MÁU" in res.answer
     assert "QĐ 5948" in res.answer
 
     # Hop 3: Proposed Additions Safety & Efficacy Assessment
