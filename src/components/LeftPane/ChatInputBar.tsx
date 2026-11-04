@@ -39,6 +39,13 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (speechError) {
+      const timer = window.setTimeout(() => setSpeechError(null), 10000);
+      return () => window.clearTimeout(timer);
+    }
+  }, [speechError]);
+
   const stopListening = () => {
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
@@ -47,12 +54,31 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     if (!isAudioMuted) clinicalAudio.playMicBeep(false);
   };
 
-  const startListening = () => {
+  const startListening = async () => {
     setSpeechError(null);
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setSpeechError('Trình duyệt chưa hỗ trợ Web Speech API. Vui lòng dùng Chrome, Edge hoặc Safari.');
       return;
+    }
+
+    // 1. Chủ động kích hoạt popup xin quyền micro chuẩn W3C nếu trình duyệt chưa cấp quyền
+    if (navigator?.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err: any) {
+        console.warn('getUserMedia mic request failed:', err);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi thử lại.');
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          setSpeechError('Không tìm thấy thiết bị micro kết nối với máy tính.');
+        } else {
+          setSpeechError('Không thể mở micro. Vui lòng kiểm tra quyền micro trên trình duyệt.');
+        }
+        setIsListening(false);
+        return;
+      }
     }
 
     try {
@@ -87,7 +113,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
       recognition.onerror = (event: any) => {
         if (event.error === 'not-allowed') {
-          setSpeechError('Trình duyệt chưa được cấp quyền micro.');
+          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi thử lại.');
         } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
           setSpeechError(`Lỗi micro: ${event.error}`);
         }
@@ -109,7 +135,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
   const toggleListening = () => {
     if (isListening) stopListening();
-    else startListening();
+    else void startListening();
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -143,18 +169,28 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       )}
 
       {speechError && (
-        <div className="flex items-center justify-between px-2.5 py-1 mb-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 animate-in fade-in">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between px-2.5 py-1 mb-1.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 animate-in fade-in shadow-2xs">
+          <div className="flex items-center gap-1.5 min-w-0 pr-1.5">
             <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span>{speechError}</span>
+            <span className="text-2xs sm:text-xs leading-tight">{speechError}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setSpeechError(null)}
-            className="text-amber-700 hover:text-amber-950 font-bold ml-1 cursor-pointer"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => void startListening()}
+              className="px-1.5 py-0.5 rounded-sm bg-amber-200 hover:bg-amber-300 text-amber-900 text-3xs font-bold transition cursor-pointer"
+            >
+              Thử lại
+            </button>
+            <button
+              type="button"
+              onClick={() => setSpeechError(null)}
+              className="text-amber-700 hover:text-amber-950 font-bold px-1 cursor-pointer"
+              title="Đóng thông báo"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 

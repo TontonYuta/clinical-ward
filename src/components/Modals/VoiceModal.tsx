@@ -58,14 +58,29 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleStartRealRecording = () => {
+  const handleStartRealRecording = async () => {
     setSpeechError(null);
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      // Fallback to simulated demo
       handleStartSimulatedRecording();
       return;
+    }
+
+    if (navigator?.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err: any) {
+        console.warn('getUserMedia mic request failed:', err);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi thử lại.');
+        } else {
+          setSpeechError('Không thể mở micro. Vui lòng kiểm tra quyền micro trên trình duyệt.');
+        }
+        setIsRecording(false);
+        return;
+      }
     }
 
     try {
@@ -87,8 +102,9 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
 
       recognition.onresult = (event: any) => {
         let fullTranscript = '';
-        for (let i = 0; i < event.results.length; ++i) {
-          fullTranscript += event.results[i][0].transcript;
+        for (let i = event.results.length - 1; i >= 0; --i) {
+          fullTranscript = event.results[i][0].transcript;
+          break;
         }
         if (fullTranscript.trim()) {
           setTranscript(fullTranscript.trim());
@@ -98,7 +114,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
       recognition.onerror = (event: any) => {
         console.warn('Web Speech API event error:', event.error);
         if (event.error === 'not-allowed') {
-          setSpeechError('Trình duyệt chưa được cấp quyền micro.');
+          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi thử lại.');
         } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
           setSpeechError(`Lỗi nhận diện: ${event.error}`);
         }
