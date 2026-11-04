@@ -18,10 +18,13 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
         (r"\b\d+\s*kg\b", 2.0),
         (r"\bmg/kg\b", 2.5),
     ],
+    "administration_timing": [
+        (r"\b(?:trước\s+hay\s+sau\s+ăn|trước\s+ăn|sau\s+ăn|uống\s+lúc\s+nào|lúc\s+no|lúc\s+đói|cùng\s+bữa\s+ăn|sau\s+bữa\s+ăn|trước\s+bữa\s+ăn)\b", 3.5),
+        (r"\b(?:uống\s+trước|uống\s+sau|uống\s+khi\s+nào|thời\s+điểm\s+uống|thời\s+điểm\s+dùng)\b", 2.5),
+    ],
     "adult_dosage": [
         (r"\bliều\s+(?:dùng|lượng|tối\s+đa|uống|người\s+lớn)\b", 2.5),
         (r"\b(?:uống\s+mấy\s+viên|ngày\s+mấy\s+lần|cách\s+dùng|còn\s+liều)\b", 2.0),
-        (r"\b(?:uống\s+lúc\s+nào|trước\s+hay\s+sau\s+ăn|trước\s+ăn|sau\s+ăn|khi\s+no|khi\s+đói)\b", 2.5),
         (r"\bliều\b", 1.0),
     ],
     "contraindications": [

@@ -66,6 +66,7 @@ async def build_drug_profile_response(
     lower_query = query.casefold()
     from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
     intent_to_field = {
+        "administration_timing": ("timing", "precautions", "Thời điểm & Cách dùng thuốc (Trước/Sau ăn)"),
         "pediatric_dosage": ("pediatric_dosage", "pediatric_dosage", "Liều dùng trẻ em"),
         "adult_dosage": ("adult_dosage", "adult_dosage", "Liều dùng người lớn"),
         "contraindications": ("contraindications", "contraindications", "Chống chỉ định"),
@@ -164,7 +165,34 @@ async def build_drug_profile_response(
         else:
             detail = value(field)
 
-        if field == "drug_interactions" or label == "Tương tác thuốc":
+        if key == "timing" or "Thời điểm" in label:
+            from app.services.clinical_prescription_auditor import TIMING_GUIDELINES
+            combined = f"{matched.brand_name.lower()} {clean_inn.lower()}"
+            specific_timing = None
+            if any(term in combined for term in ["zithromax", "azithromycin"]):
+                specific_timing = (
+                    "• **Dạng viên nén bao phim (Tablets):** Có thể uống **trước hoặc sau bữa ăn** (thức ăn không làm giảm sinh khả dụng của dạng viên nén bao phim).\n"
+                    "• **Dạng viên nang (Capsules) hoặc Bột pha hỗn dịch uống (Oral Suspension):** Bắt buộc uống **lúc đói: ít nhất 1 giờ trước bữa ăn hoặc 2 giờ sau bữa ăn** vì thức ăn làm giảm hấp thu thuốc tới 50%.\n"
+                    "• **Lưu ý tương tác:** Không uống cùng lúc với thuốc kháng acid chứa Nhôm hoặc Magie (phải uống cách xa ít nhất 2 giờ)."
+                )
+            else:
+                for guide in TIMING_GUIDELINES.values():
+                    if any(kw in combined for kw in guide["keywords"]):
+                        specific_timing = (
+                            f"• **Thời điểm khuyến cáo:** {guide['timing']}.\n"
+                            f"• **Cách dùng:** {guide['instruction']}.\n"
+                            f"• **Cơ sở dược lý:** {guide['rationale']}"
+                        )
+                        break
+
+            if specific_timing:
+                detail = specific_timing + (f"\n\n*(Thông tin bổ sung từ Dược thư: {format_clinical_text(str(detail or ''))[:250]}...)*" if detail else "")
+            else:
+                detail = (
+                    f"• **Khuyến cáo chung:** Uống thuốc cùng một cốc nước đầy (150 - 200ml nước ấm) sau bữa ăn no 15 - 30 phút để giảm kích ứng dạ dày, trừ trường hợp có chỉ định dùng trước ăn riêng biệt.\n\n"
+                    f"*(Trích dẫn DĐVN V: {format_clinical_text(str(detail or 'Tuân thủ liều dùng và cách dùng của bác sĩ điều trị.'))})*"
+                )
+        elif field == "drug_interactions" or label == "Tương tác thuốc":
             from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
             brand_ddis = find_all_interactions_for_drug(matched.brand_name)
             inn_ddis = find_all_interactions_for_drug(clean_inn)

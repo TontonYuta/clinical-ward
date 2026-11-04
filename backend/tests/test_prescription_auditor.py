@@ -173,3 +173,22 @@ def test_timing_and_administration_guidance(auditor):
     xr_warning = next((c for c in timing_checks if "phóng thích kéo dài" in c.title), None)
     assert xr_warning is not None
     assert "KHÔNG ĐƯỢC bẻ đôi, nghiền nát" in xr_warning.detail
+
+@pytest.mark.asyncio
+async def test_copilot_drug_administration_timing_zithromax():
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.post("/api/v1/copilot/chat", json={
+            "query": "Kháng sinh Zithromax uống trước hay sau ăn?",
+            "user_name": "BS. Hùng",
+            "user_role": "doctor"
+        })
+        assert res.status_code == 200
+        d = res.json()
+        assert d["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert "Thời điểm" in d["reply_text"]
+        assert "trước hoặc sau" in d["reply_text"] or "lúc đói" in d["reply_text"]
+        assert "Zithromax" in d["reply_text"]
+
