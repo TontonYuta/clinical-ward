@@ -313,7 +313,7 @@ def check_interaction_examples_request(lower_query: str, session_id: str) -> Cop
     is_followup = any(w in lower_query for w in (
         "cặp nữa", "cap nua", "thêm cặp", "them cap", "nữa đi", "nua di",
         "tiếp đi", "tiep di", "xem tiếp", "xem tiep", "tiếp nữa", "tiep nua",
-        "thêm vài cặp", "them vai cap", "mấy cặp nữa", "may cap nua"
+        "tiếp theo", "tiep theo", "thêm vài cặp", "them vai cap", "mấy cặp nữa", "may cap nua"
     )) or bool(re.search(r"\b(?:lấy|thêm|cho)\s+\d+\s+cặp\b", lower_query))
 
     is_example = any(w in lower_query for w in ("ví dụ", "vi du", "mẫu", "liệt kê", "danh sách", "top", "những cặp", "các cặp", "cặp nào", "cap nao"))

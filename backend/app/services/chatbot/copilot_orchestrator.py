@@ -87,6 +87,12 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         session.set_active_medication(name="", ingredient="", sdk="")
         return out_scope
 
+    # 2. SOTA RAG: CRAG Contextual Query Rewriter & Multi-turn Clinical De-contextualization
+    from app.services.rag.query_rewriter import rewrite_clinical_query
+    rewritten_res = await rewrite_clinical_query(query, history=history)
+    query = rewritten_res.rewritten_query
+    lower_query = query.lower()
+
     is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "chỉnh liều"))
     renal_res = check_renal_adjustment_request(query, lower_query)
     if renal_res:

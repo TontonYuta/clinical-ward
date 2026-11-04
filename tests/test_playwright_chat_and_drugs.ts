@@ -32,7 +32,9 @@ export async function testChatAndDrugSearch(targetUrl: string, screenshotPrefix:
 
   const testQueries = [
     { q: 'Thông tin thuốc Coversyl', keyword: 'Coversyl' },
+    { q: 'nó có kỵ với thuốc hạ áp nào không', keyword: 'Coversyl' },
     { q: 'lấy ví dụ cho tôi 3 cặp tương tác thuốc chống chỉ định', keyword: 'Simvastatin' },
+    { q: 'lấy 4 cặp nữa', keyword: 'tiếp theo' },
     { q: 'Bạn có thể làm được gì Tôi muốn hỏi về thuốc Paracetamol', keyword: 'Paracetamol' }
   ];
 
