@@ -70,7 +70,7 @@ class HypertensionSpecialtyScenario(BaseScenario):
                 "- Thận trọng cao độ khi dùng thuốc lợi tiểu giữ kali (Spironolacton) ở bệnh nhân suy thận nặng do nguy cơ tăng kali máu ác tính."
             )
             legal = "Khuyến Cáo Lâm Sàng Hội Tim Mạch Việt Nam (VNHA) & KDIGO Clinical Practice Guideline for Hypertension in CKD"
-            chips = ["Theo dõi Creatinin & Kali máu", "Amlodipin hiệu chỉnh liều", "Furosemid trong suy thận", "Tra cứu Dược Thư 2015"]
+            chips = ["Theo dõi Creatinin & Kali máu", "Amlodipin hiệu chỉnh liều", "Furosemid trong suy thận", "Tra cứu Dược Thư Quốc Gia"]
 
         else:
             reply = (

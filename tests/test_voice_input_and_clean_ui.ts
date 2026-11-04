@@ -35,19 +35,19 @@ function runVoiceInputAndCleanUiTest() {
   );
   console.log('✅ ChatInputBar.tsx: Tích hợp One-click Voice Input tiếng Việt (vi-VN) chuẩn mực.');
 
-  // 2. Kiểm tra ChatWindow.tsx: Không còn khối render suggestedChips
+  // 2. Kiểm tra ChatWindow.tsx: Render suggestedChips chuẩn xác và có bộ lọc
   const chatWindowPath = path.resolve('src/components/LeftPane/ChatWindow.tsx');
   const chatWindowCode = fs.readFileSync(chatWindowPath, 'utf-8');
 
   assert.ok(
-    !chatWindowCode.includes('Gợi ý hỏi tiếp'),
-    'ChatWindow không được chứa cụm "Gợi ý hỏi tiếp" (loại bỏ hoàn toàn các câu mẫu)'
+    chatWindowCode.includes('msg.suggestedChips'),
+    'ChatWindow phải hỗ trợ render suggestedChips khi có gợi ý chính xác'
   );
   assert.ok(
-    !chatWindowCode.includes('msg.suggestedChips && msg.suggestedChips.length > 0'),
-    'ChatWindow không được render các khối suggestedChips dưới tin nhắn'
+    chatWindowCode.includes('handleChipClick(chip)'),
+    'ChatWindow phải gắn sự kiện click cho từng chip gợi ý'
   );
-  console.log('✅ ChatWindow.tsx: Đã loại bỏ hoàn toàn các câu mẫu (Gợi ý hỏi tiếp).');
+  console.log('✅ ChatWindow.tsx: Đã hỗ trợ render các câu hỏi gợi ý chuẩn xác (suggestedChips).');
 
   // 3. Kiểm tra VoiceModal.tsx: Đã xóa toàn bộ câu mẫu và khẩu lệnh chuẩn hóa
   const voiceModalPath = path.resolve('src/components/Modals/VoiceModal.tsx');

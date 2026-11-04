@@ -103,10 +103,10 @@ async def handle_equipment_intent(query: str, lower_query: str, user_name: str, 
     )
 
 async def handle_fefo_intent(db: AsyncSession) -> CopilotResponse:
-    stmt = select(InventoryBatch).order_by(InventoryBatch.days_left_to_expiry.asc())
+    stmt = select(InventoryBatch).order_by(InventoryBatch.days_left.asc())
     res = await db.execute(stmt)
     batches = res.scalars().all()
-    near_expiry = [b for b in batches if b.days_left_to_expiry < 60]
+    near_expiry = [b for b in batches if b.days_left < 60]
 
     card = CopilotActionCard(
         card_type="fefo_report",
@@ -114,23 +114,23 @@ async def handle_fefo_intent(db: AsyncSession) -> CopilotResponse:
         summary=f"Có {len(near_expiry)} lô thuốc cần ưu tiên xuất theo Thông tư 36 GSP",
         data={
             "batches": [
-                {"name": b.name, "batch": b.batch_number, "expiry": b.expiry_date, "days_left": b.days_left_to_expiry, "stock": b.current_stock, "unit": b.unit}
+                {"name": b.item_name, "batch": b.batch_number, "expiry": b.expiry_date, "days_left": b.days_left, "stock": b.current_stock, "unit": b.unit}
                 for b in near_expiry
             ]
         },
         primary_action_label="Điều Phối Xuất Kho FEFO",
         primary_action_type="NAVIGATE_TAB",
-        target_tab="inventory"
+        target_tab="fefo"
     )
     reply_lines = ["### 📅 BÁO CÁO TỒN KHO THEO NGUYÊN TẮC FEFO (TT 36/2018/TT-BYT)\n"]
     for b in near_expiry[:4]:
-        reply_lines.append(f"• **{b.name}** (Lô `{b.batch_number}`): Còn **{b.days_left_to_expiry} ngày** (Hạn dùng: `{b.expiry_date}`) - Tồn `{b.current_stock} {b.unit}`")
+        reply_lines.append(f"• **{b.item_name}** (Lô `{b.batch_number}`): Còn **{b.days_left} ngày** (Hạn dùng: `{b.expiry_date}`) - Tồn `{b.current_stock} {b.unit}`")
     return CopilotResponse(
         intent="QUERY_FEFO_EXPIRY",
         reply_text="\n".join(reply_lines),
         card=card,
-        legal_basis="Thông tư 36/2018/TT-BYT (Thực hành tốt bảo quản thuốc GSP)",
-        suggested_chips=["Lập danh sách luân chuyển", "Xem phân hệ Kho Dược"]
+        legal_basis="Thông tư 36/2018/TT-BYT (Thực hành tốt bảo quản thuốc GSP) & Thông tư 22/2011/TT-BYT",
+        suggested_chips=["Kiểm tra hạn dùng FEFO", "Lập phiếu dự trù bù tồn kho", "Đối soát ca trực 07:00 AM"]
     )
 
 async def handle_restock_intent(db: AsyncSession) -> CopilotResponse:
@@ -145,22 +145,22 @@ async def handle_restock_intent(db: AsyncSession) -> CopilotResponse:
         summary=f"Có {len(low_stocks)} mặt hàng chạm ngưỡng cơ số tối thiểu cần bổ sung",
         data={
             "items": [
-                {"name": b.name, "needed": (b.max_threshold or 20) - b.current_stock, "unit": b.unit}
+                {"name": b.item_name, "needed": (b.max_threshold or 20) - b.current_stock, "unit": b.unit}
                 for b in low_stocks
             ]
         },
         primary_action_label="Ký Duyệt Dự Trù Mẫu 01",
         primary_action_type="NAVIGATE_TAB",
-        target_tab="inventory"
+        target_tab="fefo"
     )
     reply_lines = ["### 📦 ĐỀ XUẤT DỰ TRÙ BỔ SUNG CƠ SỐ TỦ TRỰC (TT 22 MẪU 01)\n"]
     for b in low_stocks[:4]:
         needed = (b.max_threshold or 20) - b.current_stock
-        reply_lines.append(f"• **{b.name}**: Tồn hiện tại `{b.current_stock} {b.unit}` / Min `{b.min_threshold}` ➡️ Cần bù **+{needed} {b.unit}**")
+        reply_lines.append(f"• **{b.item_name}**: Tồn hiện tại `{b.current_stock} {b.unit}` / Min `{b.min_threshold}` ➡️ Cần bù **+{needed} {b.unit}**")
     return CopilotResponse(
         intent="PROPOSE_RESTOCK_PLAN",
         reply_text="\n".join(reply_lines),
         card=card,
         legal_basis="Mẫu số 01/TT22 Thông tư 22/2011/TT-BYT Quy chế Khoa Dược",
-        suggested_chips=["Xem phiếu dự trù Mẫu 01", "Duyệt bổ sung cơ số"]
+        suggested_chips=["Kiểm tra hạn dùng FEFO", "Đối soát ca trực 07:00 AM", "Kê đơn thuốc CPOE"]
     )

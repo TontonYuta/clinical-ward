@@ -62,7 +62,8 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
     "thai kỳ", "cho con bú", "trẻ sơ sinh", "lọc máu", "chạy thận", "đau bụng", "buồn nôn",
     "đau đầu", "chóng mặt", "khó thở", "triệu chứng", "biểu hiện của",
     "nhiễm khuẩn", "nhiễm trùng", "nhiễm khuẩn huyết", "nhiễm trùng huyết", "sốc nhiễm khuẩn", "sốc nhiễm trùng",
-    "sepsis", "viêm phổi", "viêm màng não", "suy hô hấp", "hôn mê", "co giật", "kháng sinh"
+    "sepsis", "viêm phổi", "viêm màng não", "suy hô hấp", "hôn mê", "co giật", "kháng sinh",
+    "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo đỏ", "red flag", "hạ sốt", "thuốc hạ sốt", "oresol"
 )
 
 def is_qualified_clinical_rag_query(lower_query: str, session) -> bool:

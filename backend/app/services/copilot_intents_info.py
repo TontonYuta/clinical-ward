@@ -65,7 +65,7 @@ async def handle_shift_handover_intent(db: AsyncSession) -> CopilotResponse:
         data={
             "total_debts": len(active_debts),
             "pending_ampoules_count": len(pending_narcotics),
-            "pending_list": [{"patient": d.patient_name, "room": d.patient_room, "quantity": f"{d.quantity} {d.unit}"} for d in pending_narcotics[:3]],
+            "pending_list": [{"patient": d.patient_name, "room": d.patient_room, "quantity": f"{d.quantity} {getattr(d, 'unit', 'ống')}"} for d in pending_narcotics[:3]],
             "replenishment": [{"name": "Morphin sulfat 10mg", "needed": len(pending_narcotics)}]
         },
         primary_action_label="Xuất Biên Bản Giao Ban PDF",

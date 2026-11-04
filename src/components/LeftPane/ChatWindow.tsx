@@ -143,6 +143,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       </button>
                     </div>
                   )}
+                  {isAgent && msg.suggestedChips && msg.suggestedChips.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                      <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp:</span>
+                      {Array.from(new Set(msg.suggestedChips.filter(c => c && c.trim().length >= 4))).map((chip, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleChipClick(chip)}
+                          className="px-2.5 py-1 rounded-md text-2xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200 transition cursor-pointer active:scale-95 text-left shadow-2xs"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-1.5 text-2xs text-slate-600">
                       {Array.from(new Map(msg.citations.map(c => [c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis, c])).values()).slice(0, 3).map((c, i) => (

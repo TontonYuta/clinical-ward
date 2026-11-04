@@ -32,7 +32,8 @@ async def resolve_active_drug_and_terms(
         "chong chi dinh", "tac dung phu", "lieu dung", "lieu luong", "lieu toi da", "thanh phan", "chi dinh", "cong dung", "tuong tac",
         "trẻ em", "cho trẻ em", "tre em", "cho tre em", "nhi khoa", "cho bé", "cho be", "trẻ nhỏ", "tre nho"
     ))
-    if session.active_medication_name and not is_renal and not is_deep_complex and is_field_only:
+    is_oresol = any(w in lower_query for w in ["oresol", "ors", "hydrite", "bù nước điện giải"])
+    if session.active_medication_name and not is_renal and not is_deep_complex and not is_oresol and is_field_only:
         resolved_new_drugs = resolve_registered_medications(lower_query)
         current_has_explicit = (
             find_matched_med(lower_query) is not None

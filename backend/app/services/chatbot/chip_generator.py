@@ -13,7 +13,10 @@ def generate_suggested_chips(
     if route == "emergency":
         return ["Phác đồ cấp cứu phản vệ TT 51/2017/TT-BYT", "Liều Adrenalin tiêm bắp cấp cứu"]
     if route == "ddi_pair_assessment":
-        return ["Cơ chế và mức độ nghiêm trọng của tương tác này", "Biện pháp xử trí hoặc phối hợp thay thế an toàn"]
+        if drug_name:
+            target_clean = drug_name.split("(")[0].strip()
+            return [f"Cơ chế tương tác {target_clean}", f"Thuốc thay thế an toàn cho {target_clean}"]
+        return ["Kiểm tra tương tác Clopidogrel + Omeprazol", "Kiểm tra tương tác Warfarin + Aspirin"]
 
     target = drug_name
     if not target and active_drug_key and active_drug_key in DRUG_REGISTRY:

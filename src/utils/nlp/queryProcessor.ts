@@ -48,7 +48,7 @@ export function processClinicalUserQuery(
           title: 'CẢNH BÁO AN TOÀN HỆ THỐNG',
           message: guardCheck.threatDescription || 'Yêu cầu không an toàn bị chặn.',
         },
-        suggestedChips: ['Tra cứu Dược Thư 2015', 'Thông tư 20/2017/TT-BYT', 'Hướng dẫn an toàn hệ thống']
+        suggestedChips: ['Tra cứu Dược Thư Quốc Gia', 'Quy định bảo quản Morphin TT 20', 'Hướng dẫn sử dụng hệ thống']
       }
     };
   }

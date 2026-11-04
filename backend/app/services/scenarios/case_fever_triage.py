@@ -24,13 +24,16 @@ class FeverTriageScenario(BaseScenario):
             "cách hạ sốt", "hướng dẫn hạ sốt", "phác đồ hạ sốt", "cho tôi 1 loại thuốc hạ sốt", "loại thuốc hạ sốt",
             "cho tôi thuốc hạ sốt", "1 loại thuốc hạ sốt", "loại hạ sốt"
         ])
+        has_dengue_warning = any(w in lower_query for w in [
+            "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo sốt", "dấu hiệu nguy hiểm", "dấu hiệu cảnh báo sốt xuất huyết"
+        ])
         has_fever_word = any(w in lower_query for w in ["sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "cặp nhiệt độ"])
         has_action_or_temp = any(w in lower_query for w in [
             "38", "39", "40", "độ", "làm gì", "làm sao", "làm thế nào", "xử trí",
-            "uống gì", "thuốc gì", "dùng gì", "loại nào", "nên uống", "cách hạ", "hạ thân nhiệt", "nguy hiểm không", "các loại thuốc", "thông tin", "1 loại"
+            "uống gì", "thuốc gì", "dùng gì", "loại nào", "nên uống", "cách hạ", "hạ thân nhiệt", "nguy hiểm không", "các loại thuốc", "thông tin", "1 loại", "cảnh báo"
         ])
         is_vaccine_coldchain = any(w in lower_query for w in ["chuỗi lạnh", "vaxigrip", "tủ lạnh", "kho lạnh", "datalogger", "mkt"])
-        return (has_antipyretic or (has_fever_word and has_action_or_temp)) and not is_vaccine_coldchain
+        return (has_dengue_warning or has_antipyretic or (has_fever_word and has_action_or_temp)) and not is_vaccine_coldchain
 
     async def handle(
         self,
@@ -39,6 +42,42 @@ class FeverTriageScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        has_dengue_warning = any(w in lower_query for w in [
+            "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo"
+        ])
+        if has_dengue_warning:
+            reply = (
+                "### Hướng dẫn chuyên môn: Dấu hiệu Cảnh Báo Sốt Xuất Huyết Dengue & Lưu Ý Dùng Thuốc\n\n"
+                "Theo **Hướng dẫn Chẩn đoán & Điều trị Sốt xuất huyết Dengue (Bộ Y tế - QĐ 2760/QĐ-BYT)**, người bệnh sốt cao cần được theo dõi sát các **dấu hiệu cảnh báo nguy hiểm (thường xuất hiện từ ngày thứ 3 đến ngày thứ 7 của bệnh)**:\n\n"
+                "• **7 Dấu hiệu cảnh báo sốt xuất huyết Dengue cần nhập viện / cấp cứu ngay:**\n"
+                "  1. **Tri giác thay đổi:** Vật vã, lừ đừ, li bì, mệt lả.\n"
+                "  2. **Đau bụng:** Đau nhiều và liên tục hoặc tăng cảm giác đau vùng gan (hạ sườn phải).\n"
+                "  3. **Nôn ói nhiều:** Nôn liên tục (>= 3 lần/1 giờ hoặc >= 4 lần/6 giờ).\n"
+                "  4. **Xuất huyết niêm mạc:** Chảy máu cam, chảy máu chân răng, nôn ra máu, đi ngoài phân đen, tiểu ra máu hoặc rong kinh bất thường.\n"
+                "  5. **Gan to:** Sờ thấy gan to > 2 cm dưới bờ sườn, ấn đau.\n"
+                "  6. **Giảm lượng nước tiểu:** Tiểu ít hoặc không đi tiểu trong vòng 6 - 8 giờ.\n"
+                "  7. **Cận lâm sàng:** Hematocrit (HCT) tăng cao kèm số lượng tiểu cầu giảm nhanh chóng.\n\n"
+                "• **Nguyên tắc dùng thuốc hạ sốt an toàn khi nghi ngờ sốt xuất huyết:**\n"
+                "  - **Lựa chọn duy nhất:** **Paracetamol đơn chất** với liều 10 - 15 mg/kg/lần, cách 4 - 6 giờ (người lớn tối đa 1g/lần và không quá 4g/ngày).\n"
+                "  - ⛔ **CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI:** **Aspirin, Ibuprofen, Diclofenac và các NSAID khác**. Các thuốc này ức chế kết tập tiểu cầu và kích ứng niêm mạc dạ dày, gây **xuất huyết ồ ạt, sốc và toan chuyển hóa đe dọa tính mạng**!\n"
+                "  - **Bù nước điện giải:** Khuyến khích uống nhiều dung dịch Oresol (pha đúng tỷ lệ) hoặc nước trái cây, nước dừa.\n\n"
+                "⚠️ **Khuyến cáo lâm sàng:** Khi xuất hiện bất kỳ dấu hiệu cảnh báo nào ở trên, người bệnh phải được đưa đến cơ sở y tế gần nhất để điều trị và truyền dịch theo phác đồ."
+            )
+            return CopilotResponse(
+                intent="CLINICAL_FEVER_TRIAGE_PROTOCOL",
+                reply_text=reply,
+                card=None,
+                answer_type="guideline",
+                source_status="clinical_guideline",
+                legal_basis="Quyết định 2760/QĐ-BYT (Hướng dẫn Chẩn đoán, Điều trị Sốt xuất huyết Dengue) & Dược Thư Quốc Gia 2015",
+                suggested_chips=[
+                    "Liều Paracetamol hạ sốt cho người lớn",
+                    "Liều Paracetamol cho trẻ em theo cân nặng",
+                    "Cách pha và uống dung dịch Oresol bù nước"
+                ],
+                session_id=ctx.session.session_id if ctx.session else None,
+            )
+
         has_active_patient_in_session = bool(ctx.patient or (ctx.session and ctx.session.active_patient_id))
         query_has_case_mention = any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn "))
         if has_active_patient_in_session and not query_has_case_mention and not any(term in lower_query for term in ("tài liệu tham khảo chung", "chuyên luận")):
@@ -52,7 +91,7 @@ class FeverTriageScenario(BaseScenario):
         has_case = bool(ctx.patient or query_has_case_mention)
         is_general_reference = any(term in lower_query for term in (
             "thông tin", "tài liệu", "tham khảo", "hướng dẫn", "phác đồ",
-            "thuốc hạ sốt", "các loại thuốc", "nhóm thuốc", "danh mục"
+            "thuốc hạ sốt", "các loại thuốc", "nhóm thuốc", "danh mục", "cảnh báo", "sốt xuất huyết"
         ))
         if not has_case and not is_general_reference:
             return CopilotResponse(
@@ -85,6 +124,10 @@ class FeverTriageScenario(BaseScenario):
             answer_type="guideline",
             source_status="clinical_guideline",
             legal_basis="Dược Thư Quốc Gia Việt Nam 2015 & Hướng dẫn Bộ Y tế (đối chiếu nguồn hiện hành)",
-            suggested_chips=["Thông tin thuốc Paracetamol 500mg", "Dấu hiệu cảnh báo sốt xuất huyết ở người bệnh", "Kiểm tra liều trẻ em theo cân nặng"],
+            suggested_chips=[
+                "Dấu hiệu cảnh báo sốt xuất huyết ở người bệnh",
+                "Liều Paracetamol cho trẻ em theo cân nặng",
+                "Thông tin thuốc Paracetamol 500mg"
+            ],
             session_id=ctx.session.session_id if ctx.session else None,
         )

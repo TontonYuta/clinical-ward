@@ -47,8 +47,8 @@ async def dispatch_clinical_subflows(
 
     is_cpoe = (any(w in lower_query for w in [
         "kê đơn", "tạo đơn thuốc", "lập đơn thuốc", "kê toa", "kê đơn cpoe", "cpoe đơn thuốc", "đơn thuốc điện tử",
-        "mở form kê đơn", "mở form cpoe", "mở cpoe", "form kê đơn"
-    ]) or ("cpoe" in lower_query and any(w in lower_query for w in ["mở", "form", "biểu mẫu"]))) and not is_advice
+        "mở form kê đơn", "mở form cpoe", "mở cpoe", "form kê đơn", "xem đơn thuốc", "xem đơn", "đơn thuốc bệnh nhân", "danh sách đơn thuốc"
+    ]) or ("cpoe" in lower_query and any(w in lower_query for w in ["mở", "form", "biểu mẫu", "xem"]))) and not is_advice
     if is_cpoe:
         return await handle_cpoe_intent(query, lower_query, user_name, user_role=user_role)
 
@@ -90,7 +90,7 @@ async def dispatch_operational_business(
     # ]):
     #     return await handle_equipment_intent(query, lower_query, user_name, db)
 
-    if any(w in lower_query for w in ["fefo", "cận hạn", "hạn dùng", "hết hạn", "sắp hết hạn", "ngày hết hạn", "ưu tiên xuất"]) or re.search(r"\bdate\b", lower_query):
+    if any(w in lower_query for w in ["fefo", "cận hạn", "hạn dùng", "hết hạn", "sắp hết hạn", "ngày hết hạn", "ưu tiên xuất", "bảng kho", "kho dược", "tồn kho dược", "bảng kho dược"]) or re.search(r"\bdate\b", lower_query):
         return await handle_fefo_intent(db)
 
     if any(w in lower_query for w in ["dự trù", "mẫu 01", "cạn kho", "sắp hết", "hết thuốc", "bù tồn kho", "chạm ngưỡng", "cơ số"]):

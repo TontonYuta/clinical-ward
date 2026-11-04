@@ -18,7 +18,8 @@ class MedicationDeicticFollowupScenario(BaseScenario):
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
         from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
-        if bool(resolve_registered_medications(lower_query)):
+        has_explicit_therapy = any(w in lower_query for w in ["oresol", "ors", "hydrite", "adrenalin", "fentanyl", "diazepam", "ceftriaxon"])
+        if has_explicit_therapy or bool(resolve_registered_medications(lower_query)):
             return False
         # Nhận diện các đại từ chỉ định thay thế cho thuốc vừa trao đổi
         is_deictic = any(w in lower_query for w in [
@@ -100,7 +101,7 @@ class MedicationDeicticFollowupScenario(BaseScenario):
                 reply_text=reply,
                 card=card,
                 legal_basis="Dược Thư Quốc Gia 2015 & Quyết định 2147/QĐ-BYT",
-                suggested_chips=[f"Tra cứu chuyên luận {med_ingredient}", "Đối soát ca trực 07:00 AM", "Xem đơn thuốc bệnh nhân"]
+                suggested_chips=[f"Tra cứu chuyên luận {med_ingredient}", "Đối soát ca trực 07:00 AM", "Xem danh sách đơn thuốc CPOE"]
             )
 
         # 3. Xử lý hỏi Vị trí / Tồn kho của thuốc đang kích hoạt
@@ -127,7 +128,7 @@ class MedicationDeicticFollowupScenario(BaseScenario):
                 reply_text=reply,
                 card=card,
                 legal_basis="Thông tư 22/2011/TT-BYT & Thông tư 36/2018/TT-BYT GSP",
-                suggested_chips=["Xem bảng kho Dược", "Lập phiếu dự trù bù tồn kho", "Đối soát ca trực 07:00 AM"]
+                suggested_chips=[f"Kiểm tra tồn kho {med_ingredient}", "Lập phiếu dự trù bù tồn kho", "Đối soát ca trực 07:00 AM"]
             )
 
         if is_dependence_ask:

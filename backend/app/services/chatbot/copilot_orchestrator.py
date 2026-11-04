@@ -37,7 +37,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         return CopilotResponse(
             intent="SECURITY_GUARDRAIL_BLOCKED", reply_text=guard_res.safe_response,
             legal_basis="OWASP LLM01:2025, TT 20/2017 & An toàn An ninh Y tế",
-            suggested_chips=["Tra cứu Dược Thư 2015", "Quy chế thuốc gây nghiện TT 20", "Hướng dẫn sử dụng hệ thống"]
+            suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Quy chế thuốc gây nghiện TT 20", "Hướng dẫn sử dụng hệ thống"]
         )
 
     query = guard_res.sanitized_query
@@ -76,7 +76,11 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if fsm_res:
         return fsm_res
 
-    if lower_query.strip().strip("?.!") in {"tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư", "tra cuu duoc thu", "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu"}:
+    if lower_query.strip().strip("?.!") in {
+        "tra cứu dược thư quốc gia", "tra cuu duoc thu quoc gia", "tra cứu dược thư", "tra cuu duoc thu",
+        "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu",
+        "tra cứu dược thư 2015", "dược thư 2015", "dược thư", "dược thư qg"
+    }:
         return await lookup_drug_authoritative("", db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     subflow_res = await dispatch_clinical_subflows(query, lower_query, user_name, db, user_role=user_role)
