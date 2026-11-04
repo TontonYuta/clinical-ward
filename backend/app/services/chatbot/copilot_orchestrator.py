@@ -200,7 +200,8 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     has_drug_ask = lower_query.startswith("thuốc ") or " thuốc " in lower_query or any(w in lower_query for w in ["thông tin", "tra cứu thuốc", "sđk", "số đăng ký", "là thuốc gì", "dược thư", "về thuốc", "hỏi về thuốc", "biệt dược", "hoạt chất", "liều dùng", "liều lượng", "còn liều", "liều", "uống thế nào", "dùng thế nào", "dùng để làm gì", "chỉ định", "chống chỉ định", "tác dụng phụ", "uống được không", "dùng được không"]) or has_reg_drug or (matched_med is not None and is_med_info and not is_deep_pharm)
 
     cand_kw_present = bool(extract_drug_keywords(lower_query))
-    if (has_sdk or (has_drug_ask and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex:
+    is_short_drug_candidate = len(lower_query.split()) <= 3 and cand_kw_present and not any(w in lower_query for w in ["chào", "hello", "hi", "tủ trực", "báo hỏng", "hư hỏng", "máy thở", "monitor", "kiểm kê", "giao ban"])
+    if (has_sdk or ((has_drug_ask or is_short_drug_candidate) and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex:
         is_personalized_request = any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "ngắn gọn", "tóm tắt", "3 ý", "giải thích", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)

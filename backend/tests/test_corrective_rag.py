@@ -58,3 +58,29 @@ async def test_crag_tripartite_branch1_decide_exact_paracetamol():
         assert resp.intent == "MEDICATION_SAFETY_PROFILE"
         assert resp.confidence >= 0.85
         assert "paracetamol" in resp.reply_text.lower()
+
+@pytest.mark.asyncio
+async def test_crag_end_to_end_router_single_word_typo():
+    from unittest.mock import MagicMock
+    from app.schemas.copilot import CopilotQuery
+    from app.services.session_context import get_or_create_session
+    from app.services.chatbot.copilot_orchestrator import handle_copilot_chat
+
+    session = get_or_create_session("test_router_crag", "BS. Hùng", "doctor")
+    mock_request = MagicMock()
+    mock_request.headers = {}
+    mock_request.state = MagicMock()
+
+    payload = CopilotQuery(
+        query="venclex",
+        session_id="test_router_crag",
+        user_role="doctor",
+        user_name="BS. Hùng"
+    )
+
+    async with AsyncSessionLocal() as db:
+        resp = await handle_copilot_chat(payload, mock_request, db, session=session, history="")
+        assert resp.intent == "CLINICAL_TYPO_SUGGESTION"
+        assert resp.answer_type == "corrective_clarification"
+        assert "venclexta" in resp.reply_text.lower()
+
