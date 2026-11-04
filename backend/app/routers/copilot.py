@@ -39,6 +39,8 @@ async def chat_with_copilot(
     response.session_id = session.session_id
 
     try:
+        from app.security.prompt_utility_scorer import compute_prompt_utility
+        util = compute_prompt_utility(payload.query, reply_text=response.reply_text, intent=response.intent)
         log_entry = CopilotChatLog(
             id=f"CHAT-{int(time.time()*1000)}-{uuid.uuid4().hex[:6]}",
             session_id=session.session_id,
@@ -48,6 +50,10 @@ async def chat_with_copilot(
             reply_text=response.reply_text,
             intent=response.intent,
             answer_type=response.answer_type,
+            utility_score=util.utility_score,
+            is_useful=util.is_useful,
+            quality_category=util.category,
+            grounded_source=util.grounded_source,
         )
         db.add(log_entry)
         await db.commit()
@@ -59,9 +65,16 @@ async def chat_with_copilot(
 @router.get("/history", response_model=list[CopilotChatLogResponse])
 async def get_copilot_chat_history(
     limit: int = 5,
+    filter_useful: bool = False,
+    min_score: float = 0.0,
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(CopilotChatLog).order_by(CopilotChatLog.created_at.desc()).limit(limit)
+    stmt = select(CopilotChatLog)
+    if filter_useful:
+        stmt = stmt.where(CopilotChatLog.is_useful.is_(True))
+    if min_score > 0.0:
+        stmt = stmt.where(CopilotChatLog.utility_score >= min_score)
+    stmt = stmt.order_by(CopilotChatLog.created_at.desc()).limit(limit)
     res = await db.execute(stmt)
     return res.scalars().all()
 

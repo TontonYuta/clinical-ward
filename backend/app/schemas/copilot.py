@@ -61,6 +61,10 @@ class CopilotChatLogResponse(BaseModel):
     reply_text: str
     intent: str | None = None
     answer_type: str | None = None
+    utility_score: float | None = None
+    is_useful: bool = True
+    quality_category: str | None = None
+    grounded_source: str | None = None
     created_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -82,6 +82,18 @@ AUDIT_DATA = [
 async def seed():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        from sqlalchemy import inspect, text
+        chat_log_cols = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("copilot_chat_logs")})
+        copilot_extra_cols = [
+            ("utility_score", "FLOAT DEFAULT 0.5"),
+            ("is_useful", "BOOLEAN DEFAULT 1"),
+            ("quality_category", "VARCHAR(64) DEFAULT 'high_value_clinical'"),
+            ("grounded_source", "VARCHAR(256)"),
+        ]
+        for col_name, col_type in copilot_extra_cols:
+            if col_name not in chat_log_cols:
+                await conn.execute(text(f"ALTER TABLE copilot_chat_logs ADD COLUMN {col_name} {col_type}"))
+
         await conn.execute(User.__table__.delete())
         await conn.execute(DebtRecord.__table__.delete())
         await conn.execute(EquipmentTicket.__table__.delete())
