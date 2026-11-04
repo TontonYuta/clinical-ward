@@ -59,7 +59,14 @@ async def query_gemini_models(prompt: str, api_key: str) -> str | None:
             return text
         _RESPONSE_CACHE.pop(cache_key, None)
 
-    models = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite"]
+    models = [
+        "gemini-2.5-flash-lite",
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-flash-lite-latest",
+        "gemini-3.5-flash-lite",
+    ]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
