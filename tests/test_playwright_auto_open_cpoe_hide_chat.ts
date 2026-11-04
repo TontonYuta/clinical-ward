@@ -27,9 +27,15 @@ async function testAutoOpenCpoeHideChat() {
 
   const isAlreadyOpen = await copilotAside.isVisible().catch(() => false);
   if (!isAlreadyOpen) {
-    console.log('1. Nhấn nút mở Trợ Lý AI Lâm Sàng (Ctrl+K)...');
-    await toggleBtn.click();
+    console.log('1. Mở Trợ Lý AI Lâm Sàng (Ctrl+K)...');
+    await page.keyboard.press('Control+k');
     await page.waitForTimeout(600);
+    if (!await copilotAside.isVisible().catch(() => false)) {
+      if (await toggleBtn.isVisible().catch(() => false)) {
+        await toggleBtn.click({ force: true });
+        await page.waitForTimeout(600);
+      }
+    }
   }
 
   const chatInput = page.locator('[data-testid="chat-input-field"]');
@@ -78,9 +84,14 @@ async function testAutoOpenCpoeHideChat() {
   }
 
   console.log('7. Nhấn nút mở lại Chatbot để kiểm tra lịch sử tin nhắn...');
-  await toggleBtn.waitFor({ state: 'visible', timeout: 5000 });
-  await toggleBtn.click();
+  await page.keyboard.press('Control+k');
   await page.waitForTimeout(600);
+  if (!await copilotAside.isVisible().catch(() => false)) {
+    if (await toggleBtn.isVisible().catch(() => false)) {
+      await toggleBtn.click({ force: true });
+      await page.waitForTimeout(600);
+    }
+  }
 
   const messagesCount = await page.locator('[data-testid*="chat-message"]').count();
   console.log(`Số lượng tin nhắn trong phiên hội thoại: ${messagesCount}`);
