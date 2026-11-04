@@ -153,19 +153,20 @@ def build_crag_clarification_response(
         f"\n\n---\n👉 *{role_label} có thể nhấn trực tiếp vào các gợi ý bên dưới để xem hồ sơ an toàn và chỉ định ngay lập tức ạ.*"
     )
 
-    card = CopilotActionCard(
-        card_type="medication_safety",
-        title=f"Gợi ý đối soát: {top['brand_name']}",
-        summary=f"SĐK: {top['national_code']} • Hoạt chất: {top['active_ingredient']}",
-        data={"national_code": top['national_code'], "brand_name": top['brand_name'], "active_ingredient": top['active_ingredient']},
-        primary_action_label=f"Xem {top['brand_name']}",
-        primary_action_type="OPEN_MEDICATION_SAFETY"
-    )
+    # Tạm thời comment thẻ thông tin Action Card và gợi ý chips theo yêu cầu người dùng
+    # card = CopilotActionCard(
+    #     card_type="medication_safety",
+    #     title=f"Gợi ý đối soát: {top['brand_name']}",
+    #     summary=f"SĐK: {top['national_code']} • Hoạt chất: {top['active_ingredient']}",
+    #     data={"national_code": top['national_code'], "brand_name": top['brand_name'], "active_ingredient": top['active_ingredient']},
+    #     primary_action_label=f"Xem {top['brand_name']}",
+    #     primary_action_type="OPEN_MEDICATION_SAFETY"
+    # )
 
     return CopilotResponse(
         intent="CLINICAL_TYPO_SUGGESTION",
         reply_text=reply,
-        card=card,
+        card=None,
         legal_basis="Corrective RAG (ICLR 2024), MedAbstain (arXiv:2601.12471) & CSDL Cục Quản lý Dược",
         suggested_chips=chips,
         session_id=session_id,

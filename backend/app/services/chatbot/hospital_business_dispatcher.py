@@ -94,12 +94,13 @@ async def dispatch_operational_business(
     ]) and not any(w in lower_query for w in [
         "thông tư", "nghị định", "quy chế", "quy định", "tiêu chuẩn nhiệt độ", "kiểm định", "chuỗi lạnh"
     ])
-    is_legal = any(w in lower_query for w in [
-        "phác đồ", "quy định", "quy chế", "thông tư", "nghị định", "tiêu chuẩn", "hướng dẫn", "tiêu hủy", "vỡ", "làm mất", "thuốc gây nghiện", "hướng thần", "kiểm soát đặc biệt"
-    ]) and not has_clinical_question
-    has_action = any(w in lower_query for w in ["mượn", "lấy", "xuất", "hỏng", "báo hỏng", "cần"])
-    if is_legal and not has_action:
-        return await handle_legal_intent(lower_query)
+    # Tạm thời comment handle_legal_intent theo yêu cầu người dùng để chuyển sang tra cứu SOTA RAG
+    # is_legal = any(w in lower_query for w in [
+    #     "phác đồ", "quy định", "quy chế", "thông tư", "nghị định", "tiêu chuẩn", "hướng dẫn", "tiêu hủy", "vỡ", "làm mất", "thuốc gây nghiện", "hướng thần", "kiểm soát đặc biệt"
+    # ]) and not has_clinical_question
+    # has_action = any(w in lower_query for w in ["mượn", "lấy", "xuất", "hỏng", "báo hỏng", "cần"])
+    # if is_legal and not has_action:
+    #     return await handle_legal_intent(lower_query)
 
     is_audit_trail_ask = any(w in lower_query for w in ["sổ kiểm toán", "audit trail", "hmac", "sha256", "bất biến"])
     if not is_audit_trail_ask and any(w in lower_query for w in ["đối soát", "giao ban", "ca trực", "ca đêm", "báo cáo ca", "chốt ca", "bàn giao ca", "07:00", "lệch sổ", "tổng hợp nợ"]):

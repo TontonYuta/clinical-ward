@@ -1138,7 +1138,7 @@ async def synthesize_specialty_response(
         intent=chosen_intent,
         reply_text=synth_res.conversational_answer,
         legal_basis=legal,
-        suggested_chips=chips,
+        suggested_chips=[],
         session_id=session_id,
         answer_type="grounded_reference",
         source_status=synth_res.source_status,

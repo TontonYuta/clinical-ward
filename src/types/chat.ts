@@ -57,6 +57,7 @@ export interface AgentActionCard {
     | 'medication_schedule'
     | 'cpoe_prescription'
     | 'cpoe_prescription_draft'
+    | 'cpoe_navigation'
     | 'debt_settle';
   title: string;
   summary: string;

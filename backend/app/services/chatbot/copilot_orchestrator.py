@@ -142,10 +142,11 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if subflow_res:
         return subflow_res
 
-    sc_early = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
-    if sc_early:
-        sc_early.reply_text = validate_output_guardrail(sc_early.reply_text, query)
-        return sc_early
+    # Tạm thời comment detect_and_handle_gemini_clinical_scenario theo yêu cầu người dùng để tập trung test SOTA RAG
+    # sc_early = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
+    # if sc_early:
+    #     sc_early.reply_text = validate_output_guardrail(sc_early.reply_text, query)
+    #     return sc_early
 
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
     spec_early = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
@@ -201,23 +202,24 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
                 abstention_reason="Thiếu thuốc hoặc đối tượng cần đánh giá"
             )
 
-    is_general_ref = any(term in lower_query for term in ("thông tin về", "thông tin", "tài liệu", "tra cứu", "hướng dẫn", "phác đồ", "thuốc hạ sốt", "thuốc giảm đau", "nhóm thuốc", "danh mục", "chuyên luận"))
-    is_self_symptom = not is_general_ref and bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
-    if is_self_symptom and not any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn ")):
-        chips = [
-            "Hướng dẫn sử dụng thuốc hạ sốt",
-            "Liều Paracetamol hạ sốt người lớn",
-            "Dấu hiệu cảnh báo sốt xuất huyết"
-        ] if "sốt" in lower_query else [
-            "Tra cứu tài liệu tham khảo chung",
-            "Thông tin chuyên luận Dược Thư"
-        ]
-        return CopilotResponse(
-            intent="CLINICAL_CASE_CLARIFICATION",
-            reply_text="Trợ lý này phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng nêu thông tin nhận diện ca/người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu chủ đề hoặc thuốc cần tra cứu.",
-            answer_type="clarification", source_status="missing_case_context", confidence=1.0, abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh",
-            suggested_chips=chips
-        )
+    # Tạm thời comment chặn triệu chứng bản thân theo yêu cầu người dùng để chuyển sang tra cứu SOTA RAG
+    # is_general_ref = any(term in lower_query for term in ("thông tin về", "thông tin", "tài liệu", "tra cứu", "hướng dẫn", "phác đồ", "thuốc hạ sốt", "thuốc giảm đau", "nhóm thuốc", "danh mục", "chuyên luận"))
+    # is_self_symptom = not is_general_ref and bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
+    # if is_self_symptom and not any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn ")):
+    #     chips = [
+    #         "Hướng dẫn sử dụng thuốc hạ sốt",
+    #         "Liều Paracetamol hạ sốt người lớn",
+    #         "Dấu hiệu cảnh báo sốt xuất huyết"
+    #     ] if "sốt" in lower_query else [
+    #         "Tra cứu tài liệu tham khảo chung",
+    #         "Thông tin chuyên luận Dược Thư"
+    #     ]
+    #     return CopilotResponse(
+    #         intent="CLINICAL_CASE_CLARIFICATION",
+    #         reply_text="Trợ lý này phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng nêu thông tin nhận diện ca/người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu chủ đề hoặc thuốc cần tra cứu.",
+    #         answer_type="clarification", source_status="missing_case_context", confidence=1.0, abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh",
+    #         suggested_chips=chips
+    #     )
 
     deictic_or_unanchored = (
         any(term in lower_query for term in ("thuốc này", "thuốc đó", "thuốc vừa nói", "nó có", "của thuốc này", "của thuốc đó"))
@@ -240,11 +242,12 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     ):
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "huyết áp", "tăng huyết áp", "hạ huyết áp")) and not has_candidate_drug:
-        sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
-        if sc_res:
-            sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
-            return sc_res
+    # Tạm thời comment detect_and_handle_gemini_clinical_scenario theo yêu cầu người dùng
+    # if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "huyết áp", "tăng huyết áp", "hạ huyết áp")) and not has_candidate_drug:
+    #     sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
+    #     if sc_res:
+    #         sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
+    #         return sc_res
 
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
     spec_item = find_clinical_specialty_consultation(query)
@@ -268,10 +271,11 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
                 return sandwich_res
         return await lookup_drug_authoritative(norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    sc_res2 = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
-    if sc_res2:
-        sc_res2.reply_text = validate_output_guardrail(sc_res2.reply_text, query)
-        return sc_res2
+    # Tạm thời comment detect_and_handle_gemini_clinical_scenario theo yêu cầu người dùng
+    # sc_res2 = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
+    # if sc_res2:
+    #     sc_res2.reply_text = validate_output_guardrail(sc_res2.reply_text, query)
+    #     return sc_res2
 
     contextual_rag = await handle_contextual_rag_followup(query, lower_query, user_role, history, session_id, user_name, is_interaction_q, explicit_named, session.active_medication_name)
     if contextual_rag:
@@ -325,5 +329,5 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     return CopilotResponse(
         intent="GENERAL_CLINICAL_ASSISTANCE", reply_text=fallback_reply,
         legal_basis="Thông tư 26/2025, TT 52/2017, QĐ 5948 & DĐVN V",
-        suggested_chips=["Kiểm tra đơn thuốc theo TT 26", "Tương tác giữa Clopidogrel và Omeprazol", "Tra cứu Dược Thư Quốc Gia"]
+        suggested_chips=[]
     )

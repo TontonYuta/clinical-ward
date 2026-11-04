@@ -42,7 +42,7 @@ async def handle_contextual_rag_followup(
         intent="CLINICAL_AI_CONSULTATION",
         reply_text=validate_output_guardrail(rag_res.answer, query),
         legal_basis=rag_res.legal_basis or None,
-        suggested_chips=contextual_suggestions,
+        suggested_chips=[],
         session_id=session.session_id,
         citations=[c.to_dict() for c in rag_res.citations],
         rag_grounded=rag_res.rag_grounded,
@@ -106,7 +106,7 @@ async def handle_deep_rag_consultation(
             source_status="unqualified_clinical_query",
             confidence=1.0,
             session_id=session.session_id,
-            suggested_chips=["Tra cứu thuốc Teglutik", "Kiểm tra tương tác Warfarin + Aspirin", "Phác đồ phản vệ TT 51/2017"],
+            suggested_chips=[],
             legal_basis="Thông tư 22/2011/TT-BYT & Quyết định 5948/QĐ-BYT"
         )
 
@@ -140,12 +140,12 @@ async def handle_deep_rag_consultation(
         cleaned_reply, [c.to_dict() for c in rag_res.citations], target_drugs, query=query
     )
     active_key = target_drugs[0] if target_drugs else None
-    chips = generate_suggested_chips(active_key, "general")
+    # chips = generate_suggested_chips(active_key, "general")
     return CopilotResponse(
         intent="CLINICAL_AI_CONSULTATION",
         reply_text=cleaned_reply,
         legal_basis=rag_res.legal_basis or None,
-        suggested_chips=chips,
+        suggested_chips=[],
         session_id=session.session_id,
         citations=validated_citations,
         rag_grounded=rag_res.rag_grounded and is_grounded,

@@ -32,7 +32,8 @@ STOP_PHRASES = [
     "lại trả lời sai thông tin rồi", "lại trả lời sai", "trả lời sai thông tin", "trả lời sai", "sai thông tin rồi", "sai thông tin", "bạn không xử lý được à", "không xử lý được à", "không xử lý được",
     "thuốc cản quang", "tiêm thuốc cản quang", "cản quang", "chụp ct", "chụp mri", "chụp x-quang", "nồng độ đáy", "nồng độ đỉnh", "trough level", "trough", "peak", "định lượng",
     "đồng nghiệp hỗ trợ tra cứu", "tư vấn chuyên môn giúp tôi", "cho mình hỏi chi tiết về ca này", "kính gửi bác sĩ cho em hỏi", "kính gửi bác sĩ", "bs ơi cho hỏi",
-    "đối với bệnh nhân này", "theo phác đồ hướng dẫn", "theo đúng chuẩn dược thư và bộ y tế", "theo đúng chuẩn dược thư", "theo đúng chuẩn"
+    "đối với bệnh nhân này", "theo phác đồ hướng dẫn", "theo đúng chuẩn dược thư và bộ y tế", "theo đúng chuẩn dược thư", "theo đúng chuẩn",
+    "tài liệu tham khảo chung", "tài liệu tham khảo", "tham khảo chung", "xử trí người bệnh sốt cao", "uống thuốc nào nhỉ", "uống thuốc nào", "nên uống thuốc nào", "nên dùng thuốc nào", "thuốc nào nhỉ", "thuốc gì nhỉ"
 ]
 
 QUESTION_TERMS = {
@@ -44,8 +45,8 @@ QUESTION_TERMS = {
     "có", "hay", "hoặc", "bị", "cho", "đang", "được", "những", "các", "loại", "nhóm", "khác", "chi",
     "chống", "chỉ", "định", "cách", "dùng", "liều", "lượng", "và", "với", "cùng", "trong", "khi",
     "tôi", "em", "anh", "chị", "mình", "bạn", "hỏi", "cần", "xin", "giúp", "biết", "xem", "làm", "ơn",
-    "bác", "sĩ", "dược", "chút", "nhé", "ạ", "ơi", "nha", "với", "à",
-    "điều", "trị", "chữa", "bệnh", "sao",
+    "bác", "sĩ", "dược", "chút", "nhé", "ạ", "ơi", "nha", "với", "à", "nhỉ", "nhi", "hở", "sao",
+    "điều", "trị", "chữa", "bệnh", "tài", "liệu", "tham", "khảo", "chung", "xử", "trí",
     "kỵ", "kị", "ky", "ki", "kỵ thuốc",
     "sáng", "trưa", "chiều", "tối", "đêm", "ngày", "tuần", "tháng", "năm", "lần", "giờ", "phút",
     "gây", "nghiện", "lệ", "thuộc", "đó", "này", "kia", "ấy", "nó",

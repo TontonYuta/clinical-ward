@@ -19,13 +19,15 @@ async def detect_and_handle_gemini_clinical_scenario(
 ) -> Optional[CopilotResponse]:
     """
     Entrypoint điều phối kịch bản lâm sàng chuyên sâu.
-    Tương thích ngược 100% với các router và service gọi đến.
+    Tạm thời comment các kịch bản lưu sẵn để mọi câu hỏi đi thẳng vào pipeline SOTA RAG.
     """
-    return await dispatch_clinical_scenario(
-        query=query,
-        lower_query=lower_query,
-        user_name=user_name,
-        user_role=user_role,
-        session_id=session_id,
-        db=db
-    )
+    # Tạm thời comment toàn bộ scenario lưu sẵn theo yêu cầu người dùng
+    # return await dispatch_clinical_scenario(
+    #     query=query,
+    #     lower_query=lower_query,
+    #     user_name=user_name,
+    #     user_role=user_role,
+    #     session_id=session_id,
+    #     db=db
+    # )
+    return None

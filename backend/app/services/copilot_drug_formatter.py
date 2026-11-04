@@ -92,7 +92,8 @@ async def build_drug_profile_response(
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None
-    contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields}, drug_name=clean_name)
+    # contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields}, drug_name=clean_name)
+    contextual_chips = []
 
     async def get_batches():
         stmt = select(InventoryBatch).where(or_(func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"), func.lower(InventoryBatch.item_name).like(f"%{first_active}%")))

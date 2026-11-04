@@ -113,11 +113,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
 
               <div className="space-y-2 min-w-0 flex-1 max-w-full">
+                {/* Tạm thời comment CDSS Alert Banner theo yêu cầu người dùng để tập trung test SOTA RAG
                 {msg.cdssAlert && (
                   <div className="mb-2">
                     <CdssAlertBanner alert={msg.cdssAlert} />
                   </div>
                 )}
+                */}
                 <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
                   {renderFormattedText(removeLegacySourceText(msg.text), isDarkBubble)}
                   {isAgent && msg.citations?.length ? (
@@ -125,6 +127,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       {buildSourceIntroduction(msg.citations)}
                     </p>
                   ) : null}
+                  {/* Tạm thời comment thẻ thông tin Action Card có sẵn theo yêu cầu người dùng để tập trung test SOTA RAG
                   {isAgent && msg.card && msg.card.primaryActionLabel && !['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket', 'medication_safety'].includes((msg.card as any).card_type || (msg.card as any).type || '') && (
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
                       <div className="min-w-0">
@@ -145,6 +148,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       </button>
                     </div>
                   )}
+                  */}
+                  {/* Tạm thời comment các thẻ gợi ý (suggested chips) có sẵn theo yêu cầu người dùng
                   {isAgent && msg.suggestedChips && msg.suggestedChips.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
                       <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp:</span>
@@ -160,6 +165,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       ))}
                     </div>
                   )}
+                  */}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-1.5 text-2xs text-slate-600">
                       {Array.from(new Map(msg.citations.map(c => [c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis, c])).values()).slice(0, 3).map((c, i) => (
