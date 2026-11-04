@@ -40,8 +40,19 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   }, []);
 
   useEffect(() => {
+    // Tự động giải phóng lỗi khi người dùng mở lại quyền Micro trên trình duyệt
+    if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'microphone' as PermissionName }).then((status) => {
+        status.onchange = () => {
+          if (status.state === 'granted') {
+            setSpeechError(null);
+          }
+        };
+      }).catch(() => {});
+    }
+
     if (speechError) {
-      const timer = window.setTimeout(() => setSpeechError(null), 10000);
+      const timer = window.setTimeout(() => setSpeechError(null), 12000);
       return () => window.clearTimeout(timer);
     }
   }, [speechError]);
@@ -54,31 +65,38 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     if (!isAudioMuted) clinicalAudio.playMicBeep(false);
   };
 
-  const startListening = async () => {
-    setSpeechError(null);
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setSpeechError('Trình duyệt chưa hỗ trợ Web Speech API. Vui lòng dùng Chrome, Edge hoặc Safari.');
-      return;
-    }
-
-    // 1. Chủ động kích hoạt popup xin quyền micro chuẩn W3C nếu trình duyệt chưa cấp quyền
-    if (navigator?.mediaDevices?.getUserMedia) {
+  const requestMicPermissionDirectly = async () => {
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach((t) => t.stop());
+        setSpeechError(null);
+        void startListening();
       } catch (err: any) {
-        console.warn('getUserMedia mic request failed:', err);
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi thử lại.');
+          setSpeechError('Micro đang bị chặn trong Cài đặt trình duyệt. Bấm vào biểu tượng 🔒 hoặc 🎛️ bên trái thanh URL, chọn "Cho phép Micro" rồi thử lại.');
         } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
           setSpeechError('Không tìm thấy thiết bị micro kết nối với máy tính.');
         } else {
-          setSpeechError('Không thể mở micro. Vui lòng kiểm tra quyền micro trên trình duyệt.');
+          setSpeechError('Không thể mở micro. Vui lòng kiểm tra cài đặt quyền micro trên trình duyệt.');
         }
-        setIsListening(false);
-        return;
       }
+    }
+  };
+
+  const startListening = async () => {
+    setSpeechError(null);
+
+    // Kiểm tra Secure Context (Bắt buộc HTTPS hoặc localhost theo chuẩn W3C)
+    if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      setSpeechError('Tính năng micro yêu cầu kết nối bảo mật HTTPS hoặc localhost.');
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechError('Trình duyệt chưa hỗ trợ Web Speech API. Vui lòng dùng Chrome, Edge, Safari hoặc Cốc Cốc.');
+      return;
     }
 
     try {
@@ -112,8 +130,11 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       };
 
       recognition.onerror = (event: any) => {
+        console.warn('SpeechRecognition error:', event.error);
         if (event.error === 'not-allowed') {
-          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi thử lại.');
+          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 hoặc 🎛️ trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi bấm "Thử lại".');
+        } else if (event.error === 'network') {
+          setSpeechError('Lỗi kết nối dịch vụ nhận dạng giọng nói. Vui lòng kiểm tra mạng Internet.');
         } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
           setSpeechError(`Lỗi micro: ${event.error}`);
         }
@@ -127,9 +148,10 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
       recognitionRef.current = recognition;
       recognition.start();
-    } catch {
-      setSpeechError('Không thể khởi động micro.');
-      setIsListening(false);
+    } catch (err: any) {
+      console.warn('SpeechRecognition start exception:', err);
+      // Fallback: nếu gọi trực tiếp thất bại do cần prompt getUserMedia
+      void requestMicPermissionDirectly();
     }
   };
 
@@ -177,10 +199,11 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
-              onClick={() => void startListening()}
-              className="px-1.5 py-0.5 rounded-sm bg-amber-200 hover:bg-amber-300 text-amber-900 text-3xs font-bold transition cursor-pointer"
+              onClick={() => void requestMicPermissionDirectly()}
+              className="px-2 py-0.5 rounded-sm bg-amber-200 hover:bg-amber-300 text-amber-900 text-3xs font-bold transition cursor-pointer"
+              title="Yêu cầu trình duyệt cấp quyền Micro"
             >
-              Thử lại
+              Cấp quyền / Thử lại
             </button>
             <button
               type="button"
