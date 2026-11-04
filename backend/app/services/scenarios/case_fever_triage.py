@@ -89,16 +89,24 @@ class FeverTriageScenario(BaseScenario):
                 session_id=ctx.session.session_id if ctx.session else None,
             )
         has_case = bool(ctx.patient or query_has_case_mention)
+        is_self_patient = any(term in lower_query for term in ("tôi bị", "em bị", "mình bị", "người nhà tôi", "tôi đang bị", "bản thân"))
         is_general_reference = any(term in lower_query for term in (
             "thông tin", "tài liệu", "tham khảo", "hướng dẫn", "phác đồ",
-            "thuốc hạ sốt", "các loại thuốc", "nhóm thuốc", "danh mục", "cảnh báo", "sốt xuất huyết"
-        ))
+            "thuốc hạ sốt", "các loại thuốc", "nhóm thuốc", "danh mục", "cảnh báo", "sốt xuất huyết",
+            "triệu chứng", "buồn nôn", "nôn", "uống thuốc gì", "dùng thuốc gì", "thuốc gì", "xử trí", "nguyên tắc"
+        )) and not is_self_patient
         if not has_case and not is_general_reference:
             return CopilotResponse(
                 intent="CLINICAL_CASE_CLARIFICATION",
                 reply_text="Để tra cứu xử trí sốt theo ca, vui lòng chọn hồ sơ hoặc cung cấp thông tin người bệnh. Nếu cần tài liệu tham khảo chung, hãy nêu rõ nội dung cần tra cứu.",
                 answer_type="clarification", source_status="missing_case_context", confidence=1.0,
-                abstention_reason="Chưa xác định người bệnh hoặc yêu cầu tra cứu chung"
+                abstention_reason="Chưa xác định người bệnh hoặc yêu cầu tra cứu chung",
+                suggested_chips=[
+                    "Hướng dẫn chuyên môn: Sử dụng thuốc hạ sốt chung",
+                    "Liều Paracetamol hạ sốt cho người lớn",
+                    "Dấu hiệu cảnh báo nguy hiểm khi sốt cao kèm nôn"
+                ],
+                session_id=ctx.session.session_id if ctx.session else None,
             )
         temp_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:độ|°c)", lower_query)
         temp_str = f"{temp_match.group(1)}°C" if temp_match else "chưa cung cấp"
@@ -106,6 +114,14 @@ class FeverTriageScenario(BaseScenario):
             f"Ca bệnh đã nêu nhiệt độ {temp_str}; các thông tin tuổi, cân nặng, thời gian sốt, bệnh nền/dị ứng và thuốc đang dùng "
             "cần được đối chiếu trước khi đánh giá liều hoặc lựa chọn điều trị."
         ) if has_case and temp_match else "Hướng dẫn sử dụng thuốc hạ sốt và xử trí người bệnh sốt an toàn theo Dược thư Quốc gia Việt Nam & Phác đồ Bộ Y tế."
+        nausea_note = ""
+        if any(term in lower_query for term in ("buồn nôn", "nôn")):
+            nausea_note = (
+                "\n\n• **Lưu ý lâm sàng khi Sốt cao kèm Buồn nôn / Nôn ói:**\n"
+                "  - **Đường dùng thuốc:** Khi người bệnh nôn ói nhiều không thể uống được, ưu tiên dùng **Paracetamol dạng viên đạn đặt hậu môn (đặt trực tràng: 150mg/250mg/500mg)** hoặc truyền tĩnh mạch tại cơ sở y tế. Tránh ép uống liên tục vì dễ nôn trớ gây sai lệch liều.\n"
+                "  - **Bù nước & Điện giải:** Uống từng thìa nhỏ dung dịch Oresol hoặc nước điện giải để không kích thích phản xạ nôn.\n"
+                "  - ⚠️ **Dấu hiệu cảnh báo nguy hiểm:** Nôn ói liên tục (>= 3 lần/1 giờ hoặc >= 4 lần/6 giờ) là một trong các dấu hiệu cảnh báo sốt xuất huyết nặng hoặc nhiễm trùng huyết / thần kinh, cần chuyển cấp cứu ngay."
+            )
         reply = (
             "### Hướng dẫn chuyên môn: Sử dụng thuốc hạ sốt & Xử trí người bệnh sốt\n\n"
             f"{context}\n\n"
@@ -117,17 +133,25 @@ class FeverTriageScenario(BaseScenario):
             "  - *Liều người lớn:* 200mg - 400mg mỗi 4 - 6 giờ khi cần (tối đa 1200mg/ngày không kê đơn).\n"
             "  - ⚠️ **CẢNH BÁO AN TOÀN LÂM SÀNG:** Tuyệt đối **KHÔNG dùng Ibuprofen hoặc Aspirin** khi người bệnh nghi ngờ hoặc chưa loại trừ **Sốt xuất huyết Dengue** do nguy cơ gây xuất huyết ồ ạt đe dọa tính mạng!\n\n"
             "• **Dấu hiệu cảnh báo đỏ (Red Flags) cần chuyển cấp cứu:** Sốt cao liên tục không hạ sau 48h, co giật, lơ mơ, khó thở, nôn ói liên tục, xuất huyết dưới da hoặc mất nước nặng."
+            f"{nausea_note}"
         )
+        suggested_chips = [
+            "Dấu hiệu cảnh báo sốt xuất huyết ở người bệnh",
+            "Liều Paracetamol cho trẻ em theo cân nặng",
+            "Thông tin thuốc Paracetamol 500mg"
+        ]
+        if any(term in lower_query for term in ("buồn nôn", "nôn")):
+            suggested_chips = [
+                "Cách dùng Paracetamol đặt hậu môn khi nôn",
+                "Cách bù nước Oresol từng ngụm nhỏ",
+                "Dấu hiệu cảnh báo sốt xuất huyết ở người bệnh"
+            ]
         return CopilotResponse(
             intent="CLINICAL_FEVER_TRIAGE_PROTOCOL",
             reply_text=reply, card=None,
             answer_type="guideline",
             source_status="clinical_guideline",
             legal_basis="Dược Thư Quốc Gia Việt Nam 2015 & Hướng dẫn Bộ Y tế (đối chiếu nguồn hiện hành)",
-            suggested_chips=[
-                "Dấu hiệu cảnh báo sốt xuất huyết ở người bệnh",
-                "Liều Paracetamol cho trẻ em theo cân nặng",
-                "Thông tin thuốc Paracetamol 500mg"
-            ],
+            suggested_chips=suggested_chips,
             session_id=ctx.session.session_id if ctx.session else None,
         )

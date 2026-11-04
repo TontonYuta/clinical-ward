@@ -129,10 +129,19 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     is_general_ref = any(term in lower_query for term in ("thông tin về", "thông tin", "tài liệu", "tra cứu", "hướng dẫn", "phác đồ", "thuốc hạ sốt", "thuốc giảm đau", "nhóm thuốc", "danh mục", "chuyên luận"))
     is_self_symptom = not is_general_ref and bool(re.search(r"\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b", lower_query))
     if is_self_symptom and not any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn ")):
+        chips = [
+            "Hướng dẫn sử dụng thuốc hạ sốt",
+            "Liều Paracetamol hạ sốt người lớn",
+            "Dấu hiệu cảnh báo sốt xuất huyết"
+        ] if "sốt" in lower_query else [
+            "Tra cứu tài liệu tham khảo chung",
+            "Thông tin chuyên luận Dược Thư"
+        ]
         return CopilotResponse(
             intent="CLINICAL_CASE_CLARIFICATION",
             reply_text="Trợ lý này phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng nêu thông tin nhận diện ca/người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu chủ đề hoặc thuốc cần tra cứu.",
-            answer_type="clarification", source_status="missing_case_context", confidence=1.0, abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh"
+            answer_type="clarification", source_status="missing_case_context", confidence=1.0, abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh",
+            suggested_chips=chips
         )
 
     deictic_or_unanchored = (
