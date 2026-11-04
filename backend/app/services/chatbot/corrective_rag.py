@@ -20,10 +20,19 @@ def is_exact_drug_match(kw: str, drug: DavNationalDrug) -> bool:
 
     if kw_c == b_c or kw_c == i_c or kw_c == s_c:
         return True
-    tokens_b = [t.strip(",.()[]/+-;") for t in b_c.split()]
-    tokens_i = [t.strip(",.()[]/+-;") for t in i_c.split()]
+    tokens_b = [t.strip(",.()[]/+-;") for t in b_c.split() if t.strip(",.()[]/+-;")]
+    tokens_i = [t.strip(",.()[]/+-;") for t in i_c.split() if t.strip(",.()[]/+-;")]
     if kw_c in tokens_b or kw_c in tokens_i:
         return True
+
+    # Đối soát tương đồng hậu tố Latinh/Pháp (Codein vs Codeine, Morphin vs Morphine)
+    tokens_k = [t.strip(",.()[]/+-;") for t in kw_c.split() if t.strip(",.()[]/+-;")]
+    if len(tokens_k) >= 2:
+        tk_stripped = [t.rstrip("e") for t in tokens_k]
+        tb_stripped = [t.rstrip("e") for t in tokens_b]
+        if tk_stripped == tb_stripped or (len(tb_stripped) >= len(tk_stripped) and tb_stripped[:len(tk_stripped)] == tk_stripped):
+            return True
+
     return False
 
 async def find_crag_candidates(

@@ -114,7 +114,9 @@ class HybridRetriever:
         chunk_map: dict[str, RagChunk] = {c.chunk_id: c for c in self.all_chunks}
         all_candidate_ids = set(bm25_rank_map.keys()).union(dense_rank_map.keys())
 
-        if len(resolved_query_drugs) == 1:
+        is_protocol_query = any(p in lower_query for p in ("quy trình", "tiêu hủy", "thu hồi", "vỏ ống", "thông tư", "nghị định", "phản vệ", "xử trí", "cấp cứu", "tủ trực"))
+
+        if len(resolved_query_drugs) == 1 and not is_protocol_query:
             requested_drug = resolved_query_drugs[0]
             has_direct_monographs = any(
                 _is_direct_subject_chunk(chunk_map[cid], requested_drug)
@@ -123,7 +125,7 @@ class HybridRetriever:
             incompatible_ids = set()
             for cid in all_candidate_ids:
                 chunk = chunk_map.get(cid)
-                if not chunk or chunk.entity_type == "ddi":
+                if not chunk or chunk.entity_type in {"ddi", "circular", "protocol", "guideline", "regulatory"}:
                     continue
                 if has_direct_monographs and not _is_direct_subject_chunk(chunk, requested_drug):
                     incompatible_ids.add(cid)
@@ -160,18 +162,22 @@ class HybridRetriever:
                 rrf_score += 1.0 / (RRF_K_CONSTANT + r_dense)
                 reasons.append(f"Semantic rank #{r_dense}")
 
-            # When a question names a medicine, prioritize evidence about that
-            # medicine over unrelated monographs matching generic clinical terms.
-            title_drug_match = any(d in chunk.title.casefold() for d in resolved_query_drugs)
-            if title_drug_match:
-                rrf_score += 0.25
-                reasons.append("Direct monograph title match for query drug")
+            if is_protocol_query and chunk.entity_type in {"circular", "protocol", "guideline", "regulatory"}:
+                rrf_score += 0.30
+                reasons.append("Clinical circular / regulatory protocol match")
             else:
-                chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}".casefold()
-                named_drug_match = bool(set(resolved_query_drugs) & set(resolve_registered_medications(chunk_text)))
-                if named_drug_match:
-                    rrf_score += 0.05
-                    reasons.append("Explicit named medicine match")
+                # When a question names a medicine, prioritize evidence about that
+                # medicine over unrelated monographs matching generic clinical terms.
+                title_drug_match = any(d in chunk.title.casefold() for d in resolved_query_drugs)
+                if title_drug_match:
+                    rrf_score += 0.25
+                    reasons.append("Direct monograph title match for query drug")
+                else:
+                    chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}".casefold()
+                    named_drug_match = bool(set(resolved_query_drugs) & set(resolve_registered_medications(chunk_text)))
+                    if named_drug_match:
+                        rrf_score += 0.05
+                        reasons.append("Explicit named medicine match")
             if chunk.entity_type == "ddi" and cid in allowed_ddi_ids:
                 rrf_score += 0.20
                 reasons.append("Registered medicine overlap with DDI evidence")

@@ -38,9 +38,9 @@ def test_intent_feature_matrix_scoring_and_ranking():
     pedia_intent = get_primary_clinical_intent("Liều dùng Paracetamol cho trẻ em 15kg")
     assert pedia_intent == "pediatric_dosage"
 
-    # 2. Meal timing -> adult dosage
+    # 2. Meal timing -> administration_timing
     meal_intent = get_primary_clinical_intent("Kháng sinh Zithromax uống trước hay sau ăn?")
-    assert meal_intent == "adult_dosage"
+    assert meal_intent == "administration_timing"
 
     # 3. Contraindications
     contra_intent = get_primary_clinical_intent("Bệnh nhân bị hen phế quản có dùng được Propranolol không?")
