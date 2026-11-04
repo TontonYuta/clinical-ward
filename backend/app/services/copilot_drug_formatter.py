@@ -127,6 +127,25 @@ async def build_drug_profile_response(
                 details.append(f"- **{req_label} theo từng hoạt chất:**\n" + "\n".join(comp_lines))
 
             reply = f"### {', '.join(labels)}: {clean_name}\n*(Đối soát thành phần phối hợp chuẩn DĐVN V)*\n\n" + "\n\n".join(details)
+            is_conversational_question = any(w in lower_query for w in (
+                "sáng hay tối", "lúc nào", "khi nào", "trước hay sau", "thế nào",
+                "như thế nào", "được không", "uống cùng", "cho trẻ em", "cho bé",
+                "suy thận", "phụ nữ có thai", "sốt bao nhiêu", "dùng sao"
+            ))
+            if is_conversational_question and details:
+                try:
+                    from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
+                    u_role = getattr(session, "user_role", "doctor") or "doctor"
+                    synth_res = await synthesize_grounded_clinical_response(
+                        query=query,
+                        evidence_context=f"Thông tin phối hợp hoạt chất CSDL y tế: Thuốc {clean_name}. {', '.join(labels)}:\n" + "\n".join(details),
+                        source_label="DĐVN V (QĐ 2033/QĐ-BYT)",
+                        user_role=u_role
+                    )
+                    if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
+                        reply = synth_res.conversational_answer
+                except Exception:
+                    pass
             unique_citations = []
             seen_urls = set()
             for cit in combo_citations:
@@ -229,8 +248,30 @@ async def build_drug_profile_response(
             detail = format_clinical_text(str(detail).strip()) if detail else f"Chưa có dữ liệu {label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
         session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
+
+        reply_text = f"### {label}: {clean_name}\n\n{detail}"
+        is_conversational_question = any(w in lower_query for w in (
+            "sáng hay tối", "lúc nào", "khi nào", "trước hay sau", "thế nào",
+            "như thế nào", "được không", "uống cùng", "cho trẻ em", "cho bé",
+            "suy thận", "phụ nữ có thai", "sốt bao nhiêu", "dùng sao"
+        ))
+        if is_conversational_question and detail:
+            try:
+                from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
+                u_role = getattr(session, "user_role", "doctor") or "doctor"
+                synth_res = await synthesize_grounded_clinical_response(
+                    query=query,
+                    evidence_context=f"Thông tin xác thực từ CSDL y tế: Thuốc {clean_name} ({clean_inn.title()}). {label}: {detail}",
+                    source_label=source,
+                    user_role=u_role
+                )
+                if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
+                    reply_text = synth_res.conversational_answer
+            except Exception:
+                pass
+
         return CopilotResponse(
-            intent="MEDICATION_SAFETY_PROFILE", reply_text=f"### {label}: {clean_name}\n\n{detail}",
+            intent="MEDICATION_SAFETY_PROFILE", reply_text=reply_text,
             card=None, legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
             active_medication_name=session.active_medication_name, answer_type="medication_field",
             source_status="exact_match", confidence=1.0, citations=[build_drug_citation(matched, monograph, source)]
