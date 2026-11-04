@@ -105,3 +105,41 @@ def test_dynamic_csdl_drug_recognition_no_hardcoding():
         assert res.category == "high_value_clinical", f"Thuốc CSDL '{q}' phải là high_value_clinical, nhận: {res.category}"
         assert res.utility_score >= 0.70, f"Điểm của '{q}' quá thấp: {res.utility_score}"
         assert len(res.entities_found) >= 1, f"Không nhận diện được thực thể thuốc trong '{q}'!"
+
+@pytest.mark.asyncio
+async def test_multiturn_ddi_continuation_and_flexible_counts():
+    """Kiểm tra hội thoại đa lượt tiếp nối: 'lấy ví dụ cho tôi 5 cặp...' và 'lấy 4 cặp nữa'."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # 1. Yêu cầu 5 cặp tương tác chống chỉ định
+        res1 = await ac.post("/api/v1/copilot/chat", json={
+            "query": "lấy ví dụ cho tôi 5 cặp tương tác thuốc chống chỉ định",
+            "user_name": "BS. Lâm Sàng",
+            "user_role": "doctor",
+            "session_id": "test_ddi_continuation_sess"
+        })
+        assert res1.status_code == 200
+        d1 = res1.json()
+        assert d1["intent"] == "CLINICAL_DDI_INTERACTION_LOOKUP"
+        assert "5 cặp tương tác thuốc chống chỉ định" in d1["reply_text"]
+        assert "Simvastatin" in d1["reply_text"]
+        assert "Clopidogrel" in d1["reply_text"]
+        assert "Methotrexat" in d1["reply_text"]
+        assert "Warfarin" in d1["reply_text"]
+        assert "Spironolacton" in d1["reply_text"]
+
+        # 2. Yêu cầu xem tiếp (follow-up): "lấy 4 cặp nữa"
+        res2 = await ac.post("/api/v1/copilot/chat", json={
+            "query": "lấy 4 cặp nữa",
+            "user_name": "BS. Lâm Sàng",
+            "user_role": "doctor",
+            "session_id": "test_ddi_continuation_sess"
+        })
+        assert res2.status_code == 200
+        d2 = res2.json()
+        assert d2["intent"] == "CLINICAL_DDI_INTERACTION_LOOKUP"
+        assert "tiếp theo" in d2["reply_text"]
+        # Phải chứa các cặp tiếp theo (Warfarin, Spironolacton, Amiodaron, Carbamazepin)
+        assert any(k in d2["reply_text"] for k in ("Warfarin", "Amiodaron", "Spironolacton", "Carbamazepin"))
+        util = compute_prompt_utility("lấy 4 cặp nữa", reply_text=d2["reply_text"], intent=d2["intent"])
+        assert util.is_useful is True
+        assert util.category == "high_value_clinical"

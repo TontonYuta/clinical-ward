@@ -40,7 +40,8 @@ CORE_CLINICAL_SYMPTOMS_AND_OPERATIONS = {
     "kê đơn", "cpoe", "mượn vỏ", "trả vỏ", "nợ vỏ", "giao ban", "ca trực", "đối soát",
     "fefo", "hạn dùng", "cận hạn", "tồn kho", "dự trù", "bù kho", "bơm tiêm điện",
     "máy thở", "máy sốc tim", "monitor", "khí máu", "báo hỏng", "sự cố", "liều dùng",
-    "tương tác thuốc", "tương kỵ", "đặt trực tràng", "đặt hậu môn", "tiêm bắp", "tiêm tĩnh mạch"
+    "tương tác thuốc", "tương tác", "chống chỉ định", "tương kỵ", "đặt trực tràng", "đặt hậu môn", "tiêm bắp", "tiêm tĩnh mạch",
+    "cặp tương tác", "cặp thuốc", "cặp nữa", "thêm cặp"
 }
 
 # Cache động nạp từ CSDL (54.885 thuốc DAV & 771 chuyên luận DĐVN V)
@@ -208,6 +209,11 @@ def compute_prompt_utility(
             ngram = " ".join(clean_words[i:i+n])
             if ngram in dynamic_lexicon and ngram not in found_entities:
                 found_entities.append(ngram)
+
+    # Nhận diện các câu hỏi hội thoại tiếp nối lâm sàng (Multi-turn Follow-up / DDI continuation)
+    is_ddi_followup = bool(re.search(r"\b(?:\d+\s+cặp|cặp\s+nữa|thêm\s+\d+\s+cặp|thêm\s+cặp|xem\s+tiếp|tiếp\s+tục)\b", lower_query))
+    if is_ddi_followup and "cặp tương tác" not in found_entities:
+        found_entities.append("cặp tương tác")
 
     # 4. Xác định Căn cứ CSDL (Grounding Source)
     grounded_source = None

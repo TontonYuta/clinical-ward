@@ -257,38 +257,116 @@ def check_pediatric_guidance_request(lower_query: str, query: str, session_id: s
         session_id=session_id
     )
 
+DDI_CONTRAINDICATION_CATALOG = [
+    {
+        "pair": "Simvastatin + Clarithromycin (hoặc Erythromycin / Ketoconazol)",
+        "level": "Chống chỉ định tuyệt đối (Bảng 3.1, STT 412 - QĐ 5948)",
+        "mechanism": "Clarithromycin ức chế mạnh enzym chuyển hóa CYP3A4, làm tăng nồng độ Simvastatin trong máu lên nhiều lần, dẫn đến nguy cơ tiêu cơ vân cấp (Rhabdomyolysis), myoglobin niệu và suy thận cấp đe dọa tính mạng.",
+        "management": "Tạm ngừng Simvastatin trong suốt đợt điều trị kháng sinh Macrolid, hoặc chuyển sang statin ít chuyển hóa qua CYP3A4 (Rosuvastatin, Pravastatin)."
+    },
+    {
+        "pair": "Clopidogrel + Omeprazol (hoặc Esomeprazol)",
+        "level": "Chống chỉ định phối hợp (Bảng 3.2 - QĐ 5948/QĐ-BYT)",
+        "mechanism": "Omeprazol ức chế enzym CYP2C19, ngăn cản quá trình chuyển hóa tiền chất Clopidogrel thành dạng có hoạt tính sinh học, làm giảm đáng kể hiệu quả ức chế ngưng tập tiểu cầu, dẫn đến tăng nguy cơ tái nhồi máu cơ tim hoặc huyết khối trong stent.",
+        "management": "Đổi sang thuốc ức chế bơm proton ít ức chế CYP2C19 như Pantoprazol hoặc Rabeprazol."
+    },
+    {
+        "pair": "Methotrexat (liều cao) + Thuốc chống viêm không steroid (NSAID như Ibuprofen, Diclofenac)",
+        "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948 & DĐVN V)",
+        "mechanism": "NSAID làm giảm lưu lượng máu đến thận và ức chế bài tiết Methotrexat qua ống thận, dẫn đến tích lũy nồng độ Methotrexat cực độc, gây suy tủy xương cấp, giảm bạch cầu/tiểu cầu nặng và loét xuất huyết tiêu hóa ồ ạt.",
+        "management": "Tránh phối hợp NSAID trước, trong và ít nhất 48 giờ sau khi truyền Methotrexat liều cao; theo dõi nồng độ thuốc và giải độc bằng Acid folinic (Leucovorin)."
+    },
+    {
+        "pair": "Warfarin + Thuốc chống viêm không steroid (NSAID như Meloxicam, Diclofenac, Celecoxib)",
+        "level": "Chống chỉ định phối hợp / Nguy cơ xuất huyết nghiêm trọng (Bảng 3.1 & 3.2 - QĐ 5948)",
+        "mechanism": "Tác động cộng hưởng kép: NSAID gây tổn thương trợt loét niêm mạc dạ dày và ức chế kết tập tiểu cầu, cộng hưởng với tác dụng ức chế tổng hợp yếu tố đông máu của Warfarin.",
+        "management": "Nguy cơ xuất huyết tiêu hóa ồ ạt và kéo dài thời gian đông máu INR khó kiểm soát. Ưu tiên giảm đau bằng Paracetamol; nếu bắt buộc phải dùng NSAID phải theo dõi chặt chẽ INR và bổ sung PPI bảo vệ dạ dày."
+    },
+    {
+        "pair": "Spironolacton + Kali Clorid (KCl dạng uống hoặc tiêm truyền)",
+        "level": "Chống chỉ định tuyệt đối khi dùng đồng thời kéo dài (Bảng 3.1 - QĐ 5948)",
+        "mechanism": "Spironolacton là thuốc lợi tiểu đối kháng Aldosteron tại ống lượn xa làm giảm thải trừ Kali qua nước tiểu. Bổ sung thêm Kali ngoại sinh gây ứ đọng Kali cấp tính.",
+        "management": "Nguy cơ tăng kali máu ác tính (> 6.5 mmol/L), dẫn đến rối loạn dẫn truyền tim, rung thất và ngừng tim đột ngột. Tuyệt đối không bổ sung kali thường quy khi đang dùng lợi tiểu giữ kali trừ khi có hạ kali máu nặng và có monitor theo dõi liên tục."
+    },
+    {
+        "pair": "Amiodaron + Levofloxacin (hoặc Moxifloxacin / Ciprofloxacin)",
+        "level": "Chống chỉ định phối hợp (Bảng 3.1 - QĐ 5948 & DĐVN V)",
+        "mechanism": "Cả hai thuốc đều có tác dụng làm chậm tái cực thất cơ tim, dẫn đến kéo dài khoảng QT hiệp đồng trên điện tâm đồ.",
+        "management": "Kéo dài khoảng QTc bệnh lý (> 500ms), kích phát loạn nhịp thất ác tính dạng xoắn đỉnh (Torsades de pointes) và đột tử do tim. Chọn kháng sinh nhóm khác không gây kéo dài khoảng QT (như Beta-lactam) cho bệnh nhân đang dùng Amiodaron."
+    },
+    {
+        "pair": "Carbamazepin + Clarithromycin (hoặc Erythromycin)",
+        "level": "Chống chỉ định phối hợp (Bảng 3.1 - QĐ 5948)",
+        "mechanism": "Clarithromycin ức chế mạnh isoenzym CYP3A4, làm giảm độ thanh thải Carbamazepin qua gan và tăng nồng độ Carbamazepin trong huyết tương lên gấp 2-3 lần.",
+        "management": "Gây hội chứng ngộ độc thần kinh cấp tính: thất điều (ataxia), rung giật nhãn cầu, nhìn đôi, lơ mơ, co giật và ức chế hô hấp. Sử dụng Azithromycin hoặc chuyển sang nhóm kháng sinh không ức chế CYP3A4."
+    },
+    {
+        "pair": "Ergotamin + Kháng sinh Macrolid (Clarithromycin, Erythromycin)",
+        "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948)",
+        "mechanism": "Macrolid ức chế enzym chuyển hóa CYP3A4 làm tăng nồng độ Ergotamin trong máu, gây co thắt mạch máu ngoại vi nghiêm trọng.",
+        "management": "Gây thiếu máu cục bộ cấp tính và hoại tử mô đầu chi (Hội chứng Ergotism). Chống chỉ định dùng đồng thời; nếu đã dùng phải ngưng ngay và truyền cấp cứu bằng thuốc giãn mạch như Nitroprussid."
+    }
+]
+
 def check_interaction_examples_request(lower_query: str, session_id: str) -> CopilotResponse | None:
-    """Trả về các ví dụ kinh điển về cặp tương tác thuốc chống chỉ định theo QĐ 5948/QĐ-BYT."""
-    is_example = any(w in lower_query for w in ("ví dụ", "vi du", "mẫu", "liệt kê", "danh sách", "top", "những cặp", "các cặp"))
+    """Trả về các ví dụ kinh điển về cặp tương tác thuốc chống chỉ định theo QĐ 5948/QĐ-BYT với khả năng phân trang linh hoạt."""
+    is_followup = any(w in lower_query for w in (
+        "cặp nữa", "cap nua", "thêm cặp", "them cap", "nữa đi", "nua di",
+        "tiếp đi", "tiep di", "xem tiếp", "xem tiep", "tiếp nữa", "tiep nua",
+        "thêm vài cặp", "them vai cap", "mấy cặp nữa", "may cap nua"
+    )) or bool(re.search(r"\b(?:lấy|thêm|cho)\s+\d+\s+cặp\b", lower_query))
+
+    is_example = any(w in lower_query for w in ("ví dụ", "vi du", "mẫu", "liệt kê", "danh sách", "top", "những cặp", "các cặp", "cặp nào", "cap nao"))
     is_ddi = any(w in lower_query for w in ("tương tác", "tuong tac", "chống chỉ định", "chong chi dinh", "kỵ nhau", "ky nhau"))
-    if not (is_example and is_ddi):
+    is_initial_req = (is_example and is_ddi) or (is_ddi and any(w in lower_query for w in ("nhiều", "nhieu", "điển hình", "dien hinh", "hay gặp", "hay gap")))
+
+    if not (is_initial_req or is_followup):
         return None
 
-    reply_md = (
-        "### ⚠️ DANH MỤC CÁC CẶP TƯƠNG TÁC THUỐC CHỐNG CHỈ ĐỊNH (QĐ 5948/QĐ-BYT)\n\n"
-        "*(Trích xuất từ Danh mục 633 cặp tương tác chống chỉ định Bảng 3.1 & Bảng 3.2 - Bộ Y tế)*\n\n"
-        "---\n\n"
-        "Dưới đây là **3 cặp tương tác thuốc chống chỉ định điển hình** thường gặp trong thực hành lâm sàng nội viện:\n\n"
-        "1. **Simvastatin + Clarithromycin (hoặc Erythromycin / Ketoconazol):**\n"
-        "   * **Mức độ:** **Chống chỉ định tuyệt đối** (Bảng 3.1, STT 412).\n"
-        "   * **Cơ chế & Hậu quả:** Clarithromycin ức chế mạnh enzym chuyển hóa CYP3A4, làm tăng nồng độ Simvastatin trong máu lên nhiều lần, dẫn đến nguy cơ **tiêu cơ vân cấp (Rhabdomyolysis), myoglobin niệu và suy thận cấp đe dọa tính mạng**.\n"
-        "   * **Xử trí lâm sàng:** Tạm ngừng Simvastatin trong suốt đợt điều trị kháng sinh Macrolid, hoặc chuyển sang statin ít chuyển hóa qua CYP3A4 (Rosuvastatin, Pravastatin).\n\n"
-        "2. **Clopidogrel + Omeprazol (hoặc Esomeprazol):**\n"
-        "   * **Mức độ:** **Chống chỉ định phối hợp** (Bảng 3.2, QĐ 5948/QĐ-BYT).\n"
-        "   * **Cơ chế & Hậu quả:** Omeprazol ức chế enzym CYP2C19, ngăn cản quá trình chuyển hóa tiền chất Clopidogrel thành dạng có hoạt tính sinh học, làm giảm đáng kể hiệu quả ức chế ngưng tập tiểu cầu, dẫn đến **tăng nguy cơ tái nhồi máu cơ tim hoặc huyết khối trong stent**.\n"
-        "   * **Xử trí lâm sàng:** Đổi sang thuốc ức chế bơm proton ít ức chế CYP2C19 như **Pantoprazol** hoặc **Rabeprazol**.\n\n"
-        "3. **Methotrexat (liều cao) + Thuốc chống viêm không steroid (NSAID như Ibuprofen, Diclofenac):**\n"
-        "   * **Mức độ:** **Chống chỉ định tuyệt đối** (Bảng 3.1 & Dược thư Quốc gia).\n"
-        "   * **Cơ chế & Hậu quả:** NSAID làm giảm lưu lượng máu đến thận và ức chế bài tiết Methotrexat qua ống thận, dẫn đến tích lũy nồng độ Methotrexat cực độc, gây **suy tủy xương cấp, giảm bạch cầu/tiểu cầu nặng và loét xuất huyết tiêu hóa ồ ạt**.\n"
-        "   * **Xử trí lâm sàng:** Tránh phối hợp NSAID trước, trong và ít nhất 48 giờ sau khi truyền Methotrexat liều cao; theo dõi nồng độ thuốc và giải độc bằng Acid folinic (Leucovorin).\n\n"
-        "💡 *Bác sĩ hoặc Điều dưỡng có thể gửi 2 tên thuốc cụ thể bất kỳ để hệ thống rà soát tức thì theo cơ sở dữ liệu 633 cặp tương tác QĐ 5948 ạ!*"
-    )
+    count_match = re.search(r"(\d+)\s+cặp", lower_query)
+    total_available = len(DDI_CONTRAINDICATION_CATALOG)
+    requested_count = int(count_match.group(1)) if count_match else (4 if is_followup else 3)
+    requested_count = max(1, min(requested_count, total_available))
+
+    if is_followup:
+        start_idx = 3
+        end_idx = min(start_idx + requested_count, total_available)
+        selected_pairs = DDI_CONTRAINDICATION_CATALOG[start_idx:end_idx]
+        if not selected_pairs:
+            selected_pairs = DDI_CONTRAINDICATION_CATALOG[:requested_count]
+            start_idx = 0
+    else:
+        start_idx = 0
+        selected_pairs = DDI_CONTRAINDICATION_CATALOG[:requested_count]
+
+    actual_count = len(selected_pairs)
+    title_suffix = "tiếp theo" if is_followup else "điển hình"
+
+    lines = [
+        "### ⚠️ DANH MỤC CÁC CẶP TƯƠNG TÁC THUỐC CHỐNG CHỈ ĐỊNH (QĐ 5948/QĐ-BYT)\n",
+        f"*(Trích xuất từ Danh mục 633 cặp tương tác chống chỉ định Bảng 3.1 & Bảng 3.2 - Bộ Y tế)*\n",
+        "---\n",
+        f"Dưới đây là **{actual_count} cặp tương tác thuốc chống chỉ định {title_suffix}** thường gặp trong thực hành lâm sàng nội viện:\n"
+    ]
+
+    for idx, item in enumerate(selected_pairs, start=start_idx + 1):
+        lines.append(f"{idx}. **{item['pair']}:**")
+        lines.append(f"   * **Mức độ:** **{item['level']}**")
+        lines.append(f"   * **Cơ chế & Hậu quả:** {item['mechanism']}")
+        lines.append(f"   * **Xử trí lâm sàng:** {item['management']}\n")
+
+    lines.append("💡 *Bác sĩ hoặc Điều dưỡng có thể gửi 2 tên thuốc cụ thể bất kỳ để hệ thống rà soát tức thì theo cơ sở dữ liệu 633 cặp tương tác QĐ 5948 ạ!*")
+    reply_md = "\n".join(lines)
+
+    chips = [item["pair"].split(" (")[0] for item in selected_pairs[:3]]
+    chips.append("Tra cứu Dược thư")
+
     return CopilotResponse(
         intent="CLINICAL_DDI_INTERACTION_LOOKUP",
         reply_text=reply_md,
         card=None,
         legal_basis="Quyết định 5948/QĐ-BYT (Bảng 3.1 & 3.2) & Dược thư Quốc gia Việt Nam",
-        suggested_chips=["Simvastatin và Clarithromycin", "Clopidogrel và Omeprazol", "Methotrexat và Ibuprofen", "Tra cứu Dược thư"],
+        suggested_chips=chips,
         session_id=session_id,
         answer_type="guideline",
         source_status="exact_match",
