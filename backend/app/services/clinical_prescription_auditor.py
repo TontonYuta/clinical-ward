@@ -92,6 +92,54 @@ TIMING_GUIDELINES = {
         "timing": "Uống vào buổi sáng khi bụng đói, trước ăn sáng 30 - 60 phút",
         "instruction": "Uống nguyên viên với một ly nước đầy. Cách xa các thuốc chứa Canxi, Sắt ít nhất 4 giờ.",
         "rationale": "Thức ăn và khoáng chất làm giảm đáng kể sinh khả dụng của hormon tuyến giáp."
+    },
+    "biguanide_diabetes": {
+        "keywords": ["metformin", "glucophage", "panfor"],
+        "timing": "Uống trong hoặc ngay sau bữa ăn",
+        "instruction": "Uống cùng bữa ăn với nhiều nước để giảm tác dụng không mong muốn trên đường tiêu hóa (buồn nôn, tiêu chảy, đầy bụng).",
+        "rationale": "Thức ăn giúp giảm đáng kể kích ứng niêm mạc dạ dày - ruột và giảm nguy cơ hạ đường huyết quá mức (DĐVN V Trang 955 & ADA)."
+    },
+    "sulfonylurea_diabetes": {
+        "keywords": ["gliclazid", "gliclazide", "diamicron", "glimepirid", "glimepiride", "amaryl", "glibenclamid"],
+        "timing": "Uống trước bữa ăn sáng hoặc bữa ăn chính 15 - 30 phút",
+        "instruction": "Bắt buộc phải ăn đúng bữa sau khi uống thuốc. Không được bỏ bữa để tránh nguy cơ hạ đường huyết nguy kịch.",
+        "rationale": "Kích thích tế bào beta tụy tiết insulin đúng thời điểm nồng độ glucose máu tăng cao sau ăn (DĐVN V)."
+    },
+    "sglt2_inhibitor": {
+        "keywords": ["empagliflozin", "jardiance", "dapagliflozin", "forxiga"],
+        "timing": "Uống vào buổi sáng (trước hoặc sau ăn đều được)",
+        "instruction": "Uống nguyên viên với một ly nước đầy. Duy trì uống đủ nước trong ngày (1.5 - 2 lít) để phòng ngừa nhiễm trùng tiết niệu và mất nước.",
+        "rationale": "Thuốc tăng bài tiết đường qua nước tiểu; uống buổi sáng giúp tránh tiểu đêm làm gián đoạn giấc ngủ (DĐVN V & KDIGO)."
+    },
+    "gastrointestinal_adsorbent": {
+        "keywords": ["diosmectite", "smecta", "smectago", "sucralfat", "sucralfate", "phosphalugel", "gaviscon", "gastropulgite"],
+        "timing": "Uống xa bữa ăn và cách xa các thuốc khác ít nhất 2 giờ",
+        "instruction": "Trong điều trị tiêu chảy hoặc viêm dạ dày ruột: uống xa bữa ăn (lúc đói). Trong trào ngược dạ dày thực quản: uống sau bữa ăn. Bắt buộc uống cách xa các thuốc khác tối thiểu 2 giờ.",
+        "rationale": "Thuốc có đặc tính hấp phụ hoặc tạo màng bao niêm mạc, nếu uống chung sẽ cản trở và làm giảm hấp thu các thuốc khác (DĐVN V Trang 535)."
+    },
+    "bisphosphonate_osteoporosis": {
+        "keywords": ["alendronat", "alendronate", "fosamax", "risedronat", "risedronate"],
+        "timing": "Uống vào buổi sáng ngay sau khi thức dậy, ít nhất 30 - 60 phút trước bữa ăn đầu tiên",
+        "instruction": "Uống với 200ml nước lọc nguội (không dùng nước khoáng, trà, sữa). Phải giữ tư thế ngồi hoặc đứng thẳng ít nhất 30 phút sau khi uống, tuyệt đối không nằm.",
+        "rationale": "Phòng ngừa nguy cơ viêm loét thực quản nghiêm trọng và đảm bảo thuốc được hấp thu (sinh khả dụng < 1% - DĐVN V Trang 138)."
+    },
+    "macrolide_antibiotic": {
+        "keywords": ["clarithromycin", "klacid", "erythromycin"],
+        "timing": "Dạng viên thường uống không phụ thuộc bữa ăn; dạng giải phóng kéo dài (OD/MR) uống cùng bữa ăn",
+        "instruction": "Uống nguyên viên với nhiều nước. Không bẻ hoặc nghiền viên giải phóng kéo dài.",
+        "rationale": "Thức ăn làm tăng sinh khả dụng của dạng viên giải phóng kéo dài (DĐVN V Trang 404)."
+    },
+    "tetracycline_antibiotic": {
+        "keywords": ["doxycyclin", "doxycycline", "tetracyclin", "tetracycline"],
+        "timing": "Uống sau ăn no hoặc cùng bữa ăn với nhiều nước (ít nhất 200ml)",
+        "instruction": "Uống ở tư thế đứng hoặc ngồi thẳng. Không nằm trong vòng 30 phút sau khi uống. Cách xa sữa, canxi, sắt ít nhất 2 giờ.",
+        "rationale": "Phòng tránh kích ứng và loét thực quản do viên thuốc đọng lại tại thực quản (DĐVN V Trang 542)."
+    },
+    "acei_arb_cardiac": {
+        "keywords": ["perindopril", "coversyl", "captopril", "enalapril", "losartan", "telmisartan", "micardis", "valsartan"],
+        "timing": "Uống vào buổi sáng cố định cùng một thời điểm mỗi ngày (Perindopril uống trước bữa ăn sáng)",
+        "instruction": "Uống nguyên viên với nước. Đối với Captopril/Perindopril: thức ăn làm giảm hấp thu nên ưu tiên uống trước ăn sáng 30 phút.",
+        "rationale": "Duy trì kiểm soát huyết áp liên tục 24 giờ và hạn chế hạ huyết áp tư thế đứng (VNHA & DĐVN V Trang 1130)."
     }
 }
 

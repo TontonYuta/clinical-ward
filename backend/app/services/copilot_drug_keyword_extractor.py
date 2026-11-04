@@ -51,7 +51,7 @@ QUESTION_TERMS = {
     "tại", "tai", "ở", "từ", "đến", "vào", "ra", "lên", "xuống", "về", "qua", "theo", "do", "bởi", "giữa",
     "tăng", "tang", "giảm", "giam", "hạ", "ha", "cao", "thấp",
     "huyết", "áp", "tim", "mạch", "thận", "gan", "phổi", "phế", "quản", "dạ", "dày", "não", "máu", "đường",
-    "hen", "sốt", "đau", "loét", "viêm", "khuẩn", "nhiễm", "sốc", "phản", "vệ", "đột", "quỵ", "ung", "thư", "hạch", "co", "thắt", "giãn",
+    "hen", "sốt", "đau", "loét", "viêm", "khuẩn", "nhiễm", "sốc", "phản", "vệ", "đột", "quỵ", "ung", "thư", "hạch", "co", "thắt", "giãn", "suy", "mắc", "mãn", "cấp",
     "thai", "phụ", "nữ", "trẻ", "sơ", "sinh", "lớn", "già", "bé",
     "quy", "chế", "quản", "lý", "tủ", "trực", "kho", "ca", "viện",
     "uống", "tiêm", "truyền", "bôi", "nhỏ", "đặt", "uong", "tiem", "truyen", "thông", "tin",
@@ -90,7 +90,7 @@ def extract_drug_keywords(query: str) -> str:
     )
     q_lower = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?", " ", q_lower, flags=re.IGNORECASE)
     q_lower = re.sub(
-        r"(?:nếu|suy thận|suy gan|egfr|crcl|creatinin|chỉnh|hiệu chỉnh|liều|mỗi ngày|mỗi tuần|theo dõi|xét nghiệm|nào|hạ kali|nổi ban|phát ban|đau đầu|buồn nôn|sao|thì|ra sao|thế nào)",
+        r"(?:nếu|suy tim|suy thận|suy gan|suy hô hấp|suy tủy|suy giảm|egfr|crcl|creatinin|chỉnh|hiệu chỉnh|liều|mỗi ngày|mỗi tuần|theo dõi|xét nghiệm|nào|hạ kali|nổi ban|phát ban|đau đầu|buồn nôn|sao|thì|ra sao|thế nào)",
         " ", q_lower,
     )
     q_lower = re.sub(

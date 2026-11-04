@@ -84,6 +84,9 @@ class DrugLexicalMatcher:
             for brand, ingredient, code in cursor.fetchall():
                 if brand:
                     self.insert(brand, brand, "brand")
+                    clean_brand = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", brand, flags=re.I).strip()
+                    if len(clean_brand) >= 3 and clean_brand.lower() not in COMMON_EXCLUSIONS and clean_brand != brand:
+                        self.insert(clean_brand, clean_brand, "brand")
                 if ingredient:
                     for part in ingredient.replace("+", ";").replace("/", ";").split(";"):
                         clean_part = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", part.strip(), flags=re.I).strip()
