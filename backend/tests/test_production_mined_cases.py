@@ -190,3 +190,26 @@ async def test_clinical_rag_gatekeeper_blocks_unqualified_queries():
         d2 = r2.json()
         assert d2["intent"] in ("CLINICAL_AI_CONSULTATION", "CLINICAL_ANAPHYLAXIS_EMERGENCY")
         assert "51/2017" in d2["reply_text"]
+
+@pytest.mark.asyncio
+async def test_nurse_sepsis_and_role_address():
+    """Kiểm thử ca lâm sàng thực tế: Điều dưỡng hỏi về nhiễm khuẩn huyết và xưng hô chuẩn theo vai trò."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Ca 1: Điều dưỡng hỏi về nhiễm khuẩn huyết nặng -> Phải được tư vấn chỉ định lâm sàng (không bị chặn nhầm)
+        r1 = await client.post("/api/v1/copilot/chat", json={
+            "query": "nhiễm khuẩn huyết nặng là gì?", "user_name": "ĐD. Lê Thị Thu", "user_role": "nurse"
+        })
+        assert r1.status_code == 200
+        d1 = r1.json()
+        assert d1["intent"] == "CLINICAL_AI_CONSULTATION"
+        assert d1["answer_type"] in ("grounded_reference", "clinical_guideline")
+
+        # Ca 2: Từ chối câu hỏi ngoài lề nhưng xưng hô 'Điều dưỡng' thay vì 'Bác sĩ'
+        r2 = await client.post("/api/v1/copilot/chat", json={
+            "query": "chơi trò chơi điện tử gì hay", "user_name": "ĐD. Lê Thị Thu", "user_role": "nurse"
+        })
+        assert r2.status_code == 200
+        d2 = r2.json()
+        assert d2["intent"] == "CLINICAL_SAFE_ABSTENTION"
+        assert "Điều dưỡng" in d2["reply_text"]
+        assert "Bác sĩ" not in d2["reply_text"]

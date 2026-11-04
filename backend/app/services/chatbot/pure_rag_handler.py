@@ -60,7 +60,9 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
     "nồng độ đỉnh", "trough", "peak", "huyết tương", "tương kỵ", "pha chung", "đường truyền",
     "dị ứng chéo", "phối hợp", "tương tác", "chống chỉ định", "suy thận", "suy gan", "phụ nữ mang thai",
     "thai kỳ", "cho con bú", "trẻ sơ sinh", "lọc máu", "chạy thận", "đau bụng", "buồn nôn",
-    "đau đầu", "chóng mặt", "khó thở", "triệu chứng", "biểu hiện của"
+    "đau đầu", "chóng mặt", "khó thở", "triệu chứng", "biểu hiện của",
+    "nhiễm khuẩn", "nhiễm trùng", "nhiễm khuẩn huyết", "nhiễm trùng huyết", "sốc nhiễm khuẩn", "sốc nhiễm trùng",
+    "sepsis", "viêm phổi", "viêm màng não", "suy hô hấp", "hôn mê", "co giật", "kháng sinh"
 )
 
 def is_qualified_clinical_rag_query(lower_query: str, session) -> bool:
@@ -80,6 +82,10 @@ async def handle_deep_rag_consultation(
     is_deep_pharmacology: bool,
 ) -> CopilotResponse | None:
     session = get_or_create_session(session_id, user_name, user_role)
+    is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
+    is_nurse = any(k in (user_role or "").lower() for k in ("nurse", "dieu_duong", "dd")) or any(k in (user_name or "").lower() for k in ("đd", "điều dưỡng", "dieu duong", "yt", "y tá"))
+    role_label = "Bác sĩ" if is_doc else ("Điều dưỡng" if is_nurse else "Nhân viên y tế")
+
     if not is_qualified_clinical_rag_query(lower_query, session) and not is_deep_pharmacology:
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",
@@ -90,7 +96,7 @@ async def handle_deep_rag_consultation(
                 "2. **Tương tác thuốc (DDI):** Kiểm tra tương tác chống chỉ định theo QĐ 5948/QĐ-BYT.\n"
                 "3. **Phác đồ cấp cứu & Thông tư:** Xử trí phản vệ (TT 51/2017), quản lý thuốc kiểm soát đặc biệt (TT 20/2017).\n"
                 "4. **Kho Dược & Tủ trực:** Kiểm tra số lượng tồn kho và hạn dùng FEFO.\n\n"
-                "Bác sĩ vui lòng nêu rõ tên thuốc, phác đồ điều trị hoặc nội dung chuyên môn cụ thể để em hỗ trợ chính xác ạ."
+                f"{role_label} vui lòng nêu rõ tên thuốc, phác đồ điều trị hoặc nội dung chuyên môn cụ thể để em hỗ trợ chính xác ạ."
             ),
             answer_type="safe_abstention",
             source_status="unqualified_clinical_query",
