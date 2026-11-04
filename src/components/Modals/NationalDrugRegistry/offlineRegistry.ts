@@ -10,6 +10,16 @@ import { resolvePharmacologicalGroup } from '../../../utils/clinical/pharmacolog
 let cachedRegistry: any[] | null = null;
 let cachedGroupStats: Record<string, number> | null = null;
 
+export function getOfflineCachedDrug(code?: string | null): any | null {
+  if (!cachedRegistry || !code) return null;
+  const norm = code.trim().toLowerCase();
+  return cachedRegistry.find((d: any) =>
+    [d.national_code, d.nationalCode, d.id, d.registrationNumber].some(
+      (val) => typeof val === 'string' && val.trim().toLowerCase() === norm
+    )
+  ) || null;
+}
+
 function computeGroupStats(list: any[]): Record<string, number> {
   const stats: Record<string, number> = {};
   for (const it of list) {

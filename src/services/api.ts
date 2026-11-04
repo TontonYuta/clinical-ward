@@ -1,5 +1,5 @@
 import type { RegistryPageResponse } from '../types/registry';
-import { loadOfflineRegistry } from '../components/Modals/NationalDrugRegistry/offlineRegistry';
+import { loadOfflineRegistry, getOfflineCachedDrug } from '../components/Modals/NationalDrugRegistry/offlineRegistry';
 
 import { getApiBaseUrl } from '../config/apiConfig';
 
@@ -356,17 +356,53 @@ export async function getDrugDocumentsApi(nationalCode: string) {
   return res.json();
 }
 
-export async function getDrugDetailApi(nationalCode: string, refresh = false) {
+const drugDetailCache = new Map<string, any>();
+
+export function getCachedDrugDetail(nationalCode?: string | null): any | null {
+  if (!nationalCode) return null;
   const norm = nationalCode.trim().toLowerCase();
+  if (drugDetailCache.has(norm)) {
+    return drugDetailCache.get(norm);
+  }
+  const fromOffline = getOfflineCachedDrug(norm);
+  if (fromOffline) {
+    drugDetailCache.set(norm, fromOffline);
+    return fromOffline;
+  }
+  return null;
+}
+
+export function setCachedDrugDetail(nationalCode: string, data: any): void {
+  if (!nationalCode || !data) return;
+  const norm = nationalCode.trim().toLowerCase();
+  drugDetailCache.set(norm, data);
+}
+
+export async function getDrugDetailApi(nationalCode: string, refresh = false) {
+  if (!nationalCode) return null;
+  const norm = nationalCode.trim().toLowerCase();
+  if (!refresh && drugDetailCache.has(norm)) {
+    return drugDetailCache.get(norm);
+  }
+
   const url = `${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}${refresh ? '?refresh=true' : ''}`;
   try {
     const res = await apiFetch(url, refresh ? { cache: 'no-store' } : undefined);
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        drugDetailCache.set(norm, data);
+        return data;
+      }
+    }
   } catch {}
   try {
     const list = await loadOfflineRegistry();
     const match = list.find((d: any) => [d.national_code,d.nationalCode,d.id,d.registrationNumber].some((value) => typeof value === 'string' && value.trim().toLowerCase() === norm));
-    if (match) return match;
+    if (match) {
+      drugDetailCache.set(norm, match);
+      return match;
+    }
   } catch {}
   return null;
 }

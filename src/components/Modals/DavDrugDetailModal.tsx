@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, RotateCw, FileText } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
-import { getDrugDetailApi } from '../../services/api';
+import { getDrugDetailApi, getCachedDrugDetail } from '../../services/api';
 import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
 import {
   formatContraindicationsList,
@@ -46,9 +46,6 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   isOpen, onClose, batch, drug,
 }) => {
   useModalDismiss(isOpen, onClose);
-  const [liveDrug, setLiveDrug] = useState<any>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [activeTab, setActiveTab] = useState<DrugDetailTab>('overview');
 
   const itemName = batch?.itemName || drug?.brandName || 'Chưa đặt tên';
   const sdk = batch?.registrationNumber || batch?.nationalCode || drug?.nationalCode || 'Chưa cập nhật';
@@ -56,22 +53,54 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   const strength = batch?.concentration || drug?.concentration;
   const davPortalUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}`;
 
+  // Đồng bộ tức thời bộ nhớ đệm: Nếu thuốc đã có trong cache, khởi tạo liveDrug ngay từ render đầu tiên (0ms)
+  const initialCached = getCachedDrugDetail(sdk);
+  const [currentSdk, setCurrentSdk] = useState(sdk);
+  const [liveDrug, setLiveDrug] = useState<any>(initialCached);
+  const [loadingDetail, setLoadingDetail] = useState<boolean>(() => !initialCached && sdk !== 'Chưa cập nhật' && isOpen);
+  const [activeTab, setActiveTab] = useState<DrugDetailTab>('overview');
+
+  // Khắc phục triệt để lỗi flash dữ liệu cũ: Đồng bộ xóa stale state ngay trong render phase khi SDK thay đổi
+  if (currentSdk !== sdk) {
+    setCurrentSdk(sdk);
+    const cached = getCachedDrugDetail(sdk);
+    setLiveDrug(cached || null);
+    setLoadingDetail(!cached && sdk !== 'Chưa cập nhật' && isOpen);
+  }
+
   const loadDetails = (isManual = false) => {
-    if (!isOpen || !sdk || sdk === 'Chưa cập nhật') { setLoadingDetail(false); return; }
+    if (!isOpen || !sdk || sdk === 'Chưa cập nhật') {
+      setLoadingDetail(false);
+      return;
+    }
+    const cached = !isManual ? getCachedDrugDetail(sdk) : null;
+    if (cached) {
+      setLiveDrug(cached);
+      setLoadingDetail(false);
+      return;
+    }
     setLoadingDetail(true);
     getDrugDetailApi(sdk, isManual)
-      .then((res) => { if (res) setLiveDrug(res); setLoadingDetail(false); })
-      .catch(() => { setLoadingDetail(false); });
+      .then((res) => {
+        if (res) setLiveDrug(res);
+        setLoadingDetail(false);
+      })
+      .catch(() => {
+        setLoadingDetail(false);
+      });
   };
 
   useEffect(() => {
     if (isOpen && sdk && sdk !== 'Chưa cập nhật') {
-      setLiveDrug(null);
       loadDetails(false);
+    } else if (!isOpen) {
+      setLiveDrug(null);
     }
   }, [isOpen, sdk]);
 
-  useEffect(() => { if (isOpen) setActiveTab('overview'); }, [isOpen, sdk]);
+  useEffect(() => {
+    if (isOpen) setActiveTab('overview');
+  }, [isOpen, sdk]);
 
   if (!isOpen || (!batch && !drug)) return null;
 
@@ -223,9 +252,47 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
         </div>
 
         {/* Nội Dung Theo Từng Tab: Bố Cục Trái - Phải Chuẩn Y Tế (Zero-Box, Phẳng, Không Dấu Chấm) */}
-        
-        {/* TAB 1: TỔNG QUAN */}
-        {activeTab === 'overview' && (
+        {loadingDetail && !liveDrug ? (
+          <div data-testid="dav-modal-loading-skeleton" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200 bg-white">
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 space-y-6 animate-pulse">
+              <div className="space-y-3 pb-5 border-b border-slate-100">
+                <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-full"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-4/5"></div>
+              </div>
+              <div className="space-y-3 pb-5 border-b border-slate-100">
+                <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-full"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-5/6"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-2/3"></div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-full"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-3/4"></div>
+              </div>
+            </div>
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 space-y-6 animate-pulse">
+              <div className="space-y-3 pb-5 border-b border-slate-200">
+                <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="h-8 bg-slate-200/60 rounded"></div>
+                  <div className="h-8 bg-slate-200/60 rounded"></div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                <div className="space-y-2">
+                  <div className="h-3.5 bg-slate-200/50 rounded w-full"></div>
+                  <div className="h-3.5 bg-slate-200/50 rounded w-4/5"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* TAB 1: TỔNG QUAN */}
+            {activeTab === 'overview' && (
           <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
             {/* Cột Trái: Lâm sàng quan trọng nhất */}
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
@@ -792,6 +859,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               </dl>
             </div>
           </div>
+        )}
+          </>
         )}
 
         {/* Footer */}
