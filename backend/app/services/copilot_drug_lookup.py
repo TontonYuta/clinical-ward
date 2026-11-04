@@ -168,25 +168,12 @@ async def lookup_drug_authoritative(
                     abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
                 )
 
-        typo_res = await suggest_inventory_typo(kw, db)
-        if typo_res:
-            return typo_res
-
-        clean_target = kw.strip().title() if len(kw) < 25 else kw.strip()
-        reply_abstain = (
-            f"### 🛡️ TỪ CHỐI ĐƯA CHỈ ĐỊNH (Thực Thể Dược Phẩm Chưa Định Danh)\n\n"
-            f"• **Kết quả đối soát:** Hệ thống không ghi nhận `{clean_target}` trong danh mục DAV hiện đang lập chỉ mục và kho dữ liệu nội bộ.\n"
-            f"• **Rào chắn an toàn lâm sàng (Safe Abstention - TT 22/2011/TT-BYT & TT 20/2017/TT-BYT):** Trợ lý AI **tuyệt đối không suy đoán hoặc cung cấp liều dùng, chỉ định** cho các tên thuốc chưa được định danh trong CSDL chính thống.\n"
-            f"• **Khuyến nghị xử trí:**\n"
-            f"  1. Kiểm tra lại vỏ bao bì hộp thuốc, đơn thuốc CPOE hoặc hồ sơ bệnh án.\n"
-            f"  2. Tra cứu trực tiếp trên Cổng dịch vụ công Cục Quản lý Dược hoặc Dược thư Quốc gia Việt Nam."
-        )
-        return CopilotResponse(
-            intent="CLINICAL_SAFE_ABSTENTION", reply_text=reply_abstain, card=None,
-            legal_basis="Thông tư 22/2011/TT-BYT & Dược Thư Quốc Gia Việt Nam",
-            suggested_chips=["Tra cứu SĐK VD-24757-16", "Kho Dược Quốc Gia 55k", "Đối soát ca trực 07:00 AM"],
-            answer_type="safe_abstention", source_status="not_found", confidence=1.0,
-            abstention_reason="Không tìm thấy thực thể thuốc đã định danh trong danh mục tra cứu"
-        )
+    from app.services.chatbot.corrective_rag import evaluate_crag_tripartite
+    crag_res = await evaluate_crag_tripartite(
+        query=query, raw_kw=kw, direct_drugs=drugs, db=db,
+        session_id=session.session_id, user_name=user_name, user_role=user_role
+    )
+    if crag_res:
+        return crag_res
 
     return await build_drug_profile_response(drugs, db, session, query=query)

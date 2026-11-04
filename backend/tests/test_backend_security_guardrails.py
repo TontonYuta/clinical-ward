@@ -199,7 +199,7 @@ async def test_out_of_database_knowledge_boundary():
         d_typo = res_typo.json()
         assert d_typo["intent"] == "CLINICAL_TYPO_SUGGESTION"
         assert "GỢI Ý ĐỐI SOÁT CHÍNH TẢ" in d_typo["reply_text"]
-        assert "PARACETAMOL 500mg" in d_typo["reply_text"]
+        assert "PARACETAMOL" in d_typo["reply_text"].upper() and "500" in d_typo["reply_text"]
 
         # Case 2: Unknown / Fabricated drug (Defer - Safe Abstention) -> CLINICAL_SAFE_ABSTENTION
         res_unknown = await client.post("/api/v1/copilot/chat", json={

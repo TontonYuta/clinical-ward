@@ -154,17 +154,30 @@ class DrugLexicalMatcher:
         return sdk_m.group(1).upper() if sdk_m else None
 
     def fuzzy_candidate_search(self, token: str, top_k: int = 3) -> List[str]:
-        """Tìm kiếm mờ khi người dùng gõ sai 1-2 ký tự (ví dụ: venclext -> Venclexta)."""
+        """Tìm kiếm mờ khi người dùng gõ sai hoặc viết tắt (CRAG Framework)."""
         token_clean = strip_accents(token.strip().lower())
-        if len(token_clean) < 4 or token_clean in COMMON_EXCLUSIONS:
+        if len(token_clean) < 3 or token_clean in COMMON_EXCLUSIONS:
             return []
         matches = []
+        seen = set()
         for brand in self.canonical_brands:
             b_norm = strip_accents(brand.lower())
             if b_norm.startswith(token_clean) or (len(token_clean) >= 5 and token_clean in b_norm):
-                matches.append(brand)
-                if len(matches) >= top_k:
-                    break
+                if b_norm not in seen:
+                    seen.add(b_norm)
+                    matches.append(brand)
+                    if len(matches) >= top_k:
+                        break
+        if len(matches) < top_k and token_clean:
+            pool = self._candidates_by_first.get(token_clean[0], [])
+            close = difflib.get_close_matches(token_clean, pool, n=top_k, cutoff=0.6)
+            for c in close:
+                orig = self._name_map.get(c, c.title())
+                if orig.lower() not in seen:
+                    seen.add(orig.lower())
+                    matches.append(orig)
+                    if len(matches) >= top_k:
+                        break
         return matches
 
 _MATCHER_INSTANCE: Optional[DrugLexicalMatcher] = None
