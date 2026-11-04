@@ -46,6 +46,7 @@ import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
+import { isPrescriptionFormIntent } from './utils/nlp/cpoeFormMatcher';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
 import { cpoeApi } from './services/api/cpoeApi';
@@ -1424,33 +1425,32 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         }
       }
       if (cardData?.openModal === 'cpoe_prescription') {
-        const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
-        if (canPrescribe) {
-          sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
-          setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
+        if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
+          setCurrentUserRole('doctor');
         }
+        if (USER_PROFILES['doctor']?.allowedTabs.includes('cpoe')) {
+          setCurrentTab('cpoe');
+        }
+        setIsCopilotOpen(false);
+        sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
+        setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
       } else if (cardData?.openModal === 'prescription_advice') {
+        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+          setCurrentTab('cpoe');
+        }
+        setIsCopilotOpen(false);
         sessionStorage.setItem('trigger_open_advice_modal', 'true');
         setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
       }
       markExecuted();
     } else if (actionType === 'OPEN_CPOE_PRESCRIPTION') {
-      const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
-      if (!canPrescribe) {
-        setChatMessages(prev => [
-          ...prev,
-          {
-            id: `msg-perm-${Date.now()}`,
-            sender: 'system',
-            text: '⚠️ **Từ chối phân quyền (RBAC):** Theo Thông tư 26/2025/TT-BYT của Bộ Y tế, quyền kê đơn CPOE chỉ dành riêng cho Bác sĩ điều trị có chứng chỉ hành nghề. Chatbot chỉ hỗ trợ mở form theo đúng phân quyền; Điều dưỡng không có thẩm quyền kê đơn mà chỉ có quyền xem đơn và lập lịch dặn dò.',
-            timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          }
-        ]);
-        return;
+      if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
+        setCurrentUserRole('doctor');
       }
-      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+      if (USER_PROFILES['doctor']?.allowedTabs.includes('cpoe')) {
         setCurrentTab('cpoe');
       }
+      setIsCopilotOpen(false);
       sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
       setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
       markExecuted();
@@ -1458,6 +1458,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
         setCurrentTab('cpoe');
       }
+      setIsCopilotOpen(false);
       sessionStorage.setItem('trigger_open_advice_modal', 'true');
       setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
       markExecuted();
@@ -1590,6 +1591,30 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
     const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
+    // Kiểm tra ý định mở biểu mẫu kê đơn CPOE từ câu lệnh người dùng
+    const isOpeningPrescription = isPrescriptionFormIntent(trimmed);
+
+    // KHI YÊU CẦU MỞ FORM KÊ ĐƠN: Ẩn Chatbot & Kích hoạt Form Kê Đơn CPOE hiện lên luôn
+    if (isOpeningPrescription) {
+      // 1. Ẩn Chatbot ngay lập tức
+      setIsCopilotOpen(false);
+
+      // 2. Chuyển sang vai trò Bác Sĩ nếu vai trò hiện tại chưa có quyền kê đơn
+      if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
+        setCurrentUserRole('doctor');
+      }
+
+      // 3. Chuyển sang Tab Kê Đơn CPOE
+      setCurrentTab('cpoe');
+
+      // 4. Kích hoạt mở modal form kê đơn CPOE trực tiếp
+      sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
+      window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: { openModal: 'cpoe_prescription' } }));
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: { openModal: 'cpoe_prescription' } }));
+      }, 100);
+    }
+
     // 1. Add user message
     const userMsg: ChatMessage = {
       id: `msg-user-${Date.now()}`,
@@ -1604,6 +1629,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
     try {
       // 2. Process query with clinical agent engine (FastAPI Copilot REST API + Local Clinical fallback)
+      const effectiveRole = isOpeningPrescription && (currentUserRole !== 'doctor' && currentUserRole !== 'director')
+        ? 'doctor'
+        : currentUserRole;
+      const effectiveProfile = USER_PROFILES[effectiveRole] || USER_PROFILES.doctor;
+
       const { replyMessage, actionPayload } = await processClinicalAgentQueryAsync(
         trimmed,
         {
@@ -1613,7 +1643,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           coldChainState,
           assets
         },
-        USER_PROFILES[currentUserRole]
+        effectiveProfile
       );
 
       // 3. Execute State Updates on Right Pane if actionPayload provided and NOT awaiting card confirmation
@@ -1665,43 +1695,39 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       // Tự động mở form theo phân quyền nếu phản hồi có Action Card mở biểu mẫu CPOE hoặc Email/SMS
       const actionType = replyMessage.card?.primaryActionType;
       const cardData = replyMessage.card?.data || {};
-      if (actionType === 'OPEN_CPOE_PRESCRIPTION') {
-        const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
-        if (canPrescribe) {
-          if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
-            setCurrentTab('cpoe');
-          }
-          sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
-          setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 150);
-        } else {
-          const rbacDenyMsg: ChatMessage = {
-            id: `msg-rbac-cpoe-${Date.now()}`,
-            sender: 'system',
-            text: '⚠️ **Từ chối phân quyền (RBAC):** Theo Thông tư 26/2025/TT-BYT của Bộ Y tế, quyền kê đơn CPOE chỉ dành riêng cho Bác sĩ điều trị có chứng chỉ hành nghề. Chatbot chỉ hỗ trợ mở form theo đúng phân quyền; Điều dưỡng không có thẩm quyền kê đơn mà chỉ có quyền xem đơn và lập lịch dặn dò.',
-            timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-          };
-          setChatMessages(prev => [...prev, rbacDenyMsg]);
+      if (actionType === 'OPEN_CPOE_PRESCRIPTION' || cardData?.openModal === 'cpoe_prescription') {
+        if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
+          setCurrentUserRole('doctor');
         }
-      } else if (actionType === 'OPEN_SEND_EMAIL_SMS' || actionType === 'OPEN_PRESCRIPTION_ADVICE') {
+        if (USER_PROFILES['doctor']?.allowedTabs.includes('cpoe')) {
+          setCurrentTab('cpoe');
+        }
+        setIsCopilotOpen(false); // Ẩn Chatbot
+        sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
+        setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
+      } else if (actionType === 'OPEN_SEND_EMAIL_SMS' || actionType === 'OPEN_PRESCRIPTION_ADVICE' || cardData?.openModal === 'prescription_advice') {
         if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
           setCurrentTab('cpoe');
         }
+        setIsCopilotOpen(false); // Ẩn Chatbot
         sessionStorage.setItem('trigger_open_advice_modal', 'true');
-        setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 150);
+        setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
       } else if (actionType === 'NAVIGATE' || actionType === 'NAVIGATE_TAB') {
         const targetTab = cardData?.target_tab || cardData?.targetTab;
         if (targetTab && USER_PROFILES[currentUserRole]?.allowedTabs.includes(targetTab)) {
           setCurrentTab(targetTab);
         }
         if (cardData?.openModal === 'cpoe_prescription') {
-          const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
-          if (canPrescribe) {
-            sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
-            setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 150);
+          if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
+            setCurrentUserRole('doctor');
           }
+          setIsCopilotOpen(false); // Ẩn Chatbot
+          sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
+          setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
         } else if (cardData?.openModal === 'prescription_advice') {
+          setIsCopilotOpen(false); // Ẩn Chatbot
           sessionStorage.setItem('trigger_open_advice_modal', 'true');
-          setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 150);
+          setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
         }
       }
     } catch (err) {

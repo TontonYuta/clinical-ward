@@ -13,7 +13,7 @@
     "test:kb": "tsx scripts/verify_clinical_knowledge_base.ts",
     "validate:sources": "python3 scripts/validate_clinical_sources.py",
     "test:chatbot": "tsx scripts/test_chatbot_suite.ts",
-    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_clinical_formatter.ts && tsx tests/test_ddi_algorithm.ts && tsx tests/test_disable_devtool_gate.ts && tsx tests/test_operations_overview_navigation.ts && tsx tests/test_operations_overview_model.ts && tsx tests/test_flat_dashboard_model.ts && tsx tests/test_font_scale_model.ts && tsx tests/test_patient_lookup_logic.ts && tsx tests/test_offline_registry_search.ts && tsx tests/test_pdf_files_integrity.ts && tsx tests/test_voice_input_and_clean_ui.ts",
+    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_clinical_formatter.ts && tsx tests/test_ddi_algorithm.ts && tsx tests/test_disable_devtool_gate.ts && tsx tests/test_operations_overview_navigation.ts && tsx tests/test_operations_overview_model.ts && tsx tests/test_flat_dashboard_model.ts && tsx tests/test_font_scale_model.ts && tsx tests/test_patient_lookup_logic.ts && tsx tests/test_offline_registry_search.ts && tsx tests/test_pdf_files_integrity.ts && tsx tests/test_voice_input_and_clean_ui.ts && tsx tests/test_cpoe_form_matcher.ts",
     "dev:full": "python3 scripts/run_dev_stack.py",
     "dev:api": "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
     "dev:web": "vite --port=3000 --host=0.0.0.0"

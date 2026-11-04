@@ -232,6 +232,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
+      data-testid="cpoe-order-modal"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
     >
