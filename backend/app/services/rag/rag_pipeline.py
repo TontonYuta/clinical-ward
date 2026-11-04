@@ -85,10 +85,32 @@ async def execute_clinical_rag(
             llm_answer = None
 
     # 6. Đóng gói kết quả RAG có chứng thực
-    return format_grounded_answer(
+    rag_res = format_grounded_answer(
         query=query,
         retrieved_chunks=retrieved_chunks,
         citations=citations,
         kg_data=kg_data,
         llm_generated_text=llm_answer
     )
+
+    # 7. Self-RAG Reflective Verification Layer (ICLR 2024)
+    if rag_res.rag_grounded and rag_res.answer:
+        from app.services.rag.self_rag_verifier import verify_clinical_answer
+        audit_res = verify_clinical_answer(
+            query=query,
+            answer=rag_res.answer,
+            retrieved_chunks=retrieved_chunks,
+            kg_data=kg_data
+        )
+        rag_res.factuality_score = audit_res["factuality_score"]
+        rag_res.hallucination_rate = audit_res["hallucination_rate"]
+        rag_res.critique_verdict = audit_res["critique_verdict"]
+        rag_res.claims_audit = audit_res["claims_audit"]
+        rag_res.answer = audit_res["cleaned_answer"]
+
+        # Nếu phát hiện mâu thuẫn lâm sàng nghiêm trọng hoặc hallucination rate > 0.6
+        if audit_res["critique_verdict"] == "REJECT":
+            rag_res.rag_grounded = False
+            rag_res.confidence_score = 0.2
+
+    return rag_res

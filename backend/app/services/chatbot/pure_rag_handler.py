@@ -51,6 +51,8 @@ async def handle_contextual_rag_followup(
         source_status="retrieved_evidence" if rag_res.rag_grounded else "insufficient_retrieval_evidence",
         confidence=rag_res.confidence_score,
         abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
+        factuality_score=getattr(rag_res, "factuality_score", 1.0),
+        critique_verdict=getattr(rag_res, "critique_verdict", "PASS"),
     )
 
 CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
@@ -157,4 +159,6 @@ async def handle_deep_rag_consultation(
         source_status="retrieved_evidence" if (rag_res.rag_grounded and is_grounded) else "insufficient_retrieval_evidence",
         confidence=rag_res.confidence_score if is_grounded else 0.5,
         abstention_reason=None if (rag_res.rag_grounded and is_grounded) else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
+        factuality_score=getattr(rag_res, "factuality_score", 1.0),
+        critique_verdict=getattr(rag_res, "critique_verdict", "PASS"),
     )

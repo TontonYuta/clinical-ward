@@ -35,6 +35,8 @@ class CopilotResponse(BaseModel):
     source_status: str | None = None
     confidence: float | None = None
     abstention_reason: str | None = None
+    factuality_score: float | None = None
+    critique_verdict: str | None = None
 
 class RagQuery(BaseModel):
     query: str = Field(..., min_length=1, max_length=1500)
@@ -51,6 +53,8 @@ class RagResponse(BaseModel):
     confidence_score: float = 0.95
     legal_basis: str = ""
     rag_grounded: bool = True
+    factuality_score: float = 1.0
+    critique_verdict: str = "PASS"
 
 class CopilotChatLogResponse(BaseModel):
     id: str

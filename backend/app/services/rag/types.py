@@ -59,6 +59,10 @@ class RagResult:
     confidence_score: float = 0.95
     legal_basis: str = ""
     rag_grounded: bool = True
+    factuality_score: float = 1.0
+    hallucination_rate: float = 0.0
+    critique_verdict: str = "PASS"
+    claims_audit: list[dict] = field(default_factory=list)
 
     def to_response_dict(self) -> dict:
         return {
@@ -68,5 +72,9 @@ class RagResult:
             "kg_entities": self.kg_entities,
             "confidence_score": self.confidence_score,
             "legal_basis": self.legal_basis,
-            "rag_grounded": self.rag_grounded
+            "rag_grounded": self.rag_grounded,
+            "factuality_score": self.factuality_score,
+            "hallucination_rate": self.hallucination_rate,
+            "critique_verdict": self.critique_verdict,
+            "claims_audit": self.claims_audit,
         }
