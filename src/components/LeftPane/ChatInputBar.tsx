@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Send, Mic, MicOff, Image as ImageIcon, AlertCircle, Clock, X } from 'lucide-react';
 import { QuickSuggestionChip } from '../../types/clinical';
 import { ImageModal } from '../Modals/ImageModal';
 import { clinicalAudio } from '../../utils/audio';
@@ -27,12 +27,24 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [autoSendOnSilence, setAutoSendOnSilence] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('clinical_voice_auto_send') !== 'false';
+      } catch {}
+    }
+    return true;
+  });
+  const [isCountingDown, setIsCountingDown] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const baseTextRef = useRef<string>('');
+  const latestSpokenTextRef = useRef<string>('');
+  const silenceTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
+      if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch {}
       }
@@ -58,11 +70,52 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   }, [speechError]);
 
   const stopListening = () => {
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    setIsCountingDown(false);
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
     }
     setIsListening(false);
     if (!isAudioMuted) clinicalAudio.playMicBeep(false);
+  };
+
+  const handleInstantSend = () => {
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    const textToSend = (latestSpokenTextRef.current || inputText).trim();
+    latestSpokenTextRef.current = '';
+    stopListening();
+    if (textToSend && !isProcessing) {
+      onSendMessage(textToSend);
+      setInputText('');
+      baseTextRef.current = '';
+    }
+  };
+
+  const handleCancelVoice = () => {
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    latestSpokenTextRef.current = '';
+    stopListening();
+    setInputText(baseTextRef.current);
+    setIsCountingDown(false);
+  };
+
+  const handleStopKeepText = () => {
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    latestSpokenTextRef.current = '';
+    stopListening();
+    setIsCountingDown(false);
   };
 
   const requestMicPermissionDirectly = async () => {
@@ -86,6 +139,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
   const startListening = () => {
     setSpeechError(null);
+    setIsCountingDown(false);
 
     // Kiểm tra Secure Context (Bắt buộc HTTPS hoặc localhost theo chuẩn W3C)
     if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
@@ -110,6 +164,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       recognition.maxAlternatives = 1;
 
       baseTextRef.current = inputText.trim();
+      latestSpokenTextRef.current = baseTextRef.current;
 
       // Cập nhật trạng thái đang lắng nghe ngay lập tức cho người dùng
       setIsListening(true);
@@ -128,7 +183,28 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         const clean = fullSpoken.trim();
         if (clean) {
           const base = baseTextRef.current;
-          setInputText(base ? `${base} ${clean}` : clean);
+          const merged = base ? `${base} ${clean}` : clean;
+          setInputText(merged);
+          latestSpokenTextRef.current = merged;
+
+          // Logic Tự động gửi sau 2.0s im lặng nếu người dùng bật autoSendOnSilence
+          if (autoSendOnSilence) {
+            if (silenceTimerRef.current) {
+              window.clearTimeout(silenceTimerRef.current);
+            }
+            setIsCountingDown(true);
+            silenceTimerRef.current = window.setTimeout(() => {
+              const textToSend = latestSpokenTextRef.current.trim();
+              if (textToSend && !isProcessing) {
+                latestSpokenTextRef.current = '';
+                stopListening();
+                onSendMessage(textToSend);
+                setInputText('');
+                baseTextRef.current = '';
+                setIsCountingDown(false);
+              }
+            }, 2000);
+          }
         }
       };
 
@@ -142,11 +218,26 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
           setSpeechError(`Lỗi micro: ${event.error}`);
         }
         setIsListening(false);
+        setIsCountingDown(false);
       };
 
       recognition.onend = () => {
         setIsListening(false);
+        setIsCountingDown(false);
         if (!isAudioMuted) clinicalAudio.playMicBeep(false);
+
+        // Nếu người dùng bật tự gửi và đã có nội dung văn bản nói xong
+        if (autoSendOnSilence && latestSpokenTextRef.current.trim() && !isProcessing) {
+          const textToSend = latestSpokenTextRef.current.trim();
+          if (silenceTimerRef.current) {
+            window.clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+          }
+          onSendMessage(textToSend);
+          setInputText('');
+          baseTextRef.current = '';
+          latestSpokenTextRef.current = '';
+        }
       };
 
       recognitionRef.current = recognition;
@@ -154,6 +245,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     } catch (err: any) {
       console.warn('SpeechRecognition start exception:', err);
       setIsListening(false);
+      setIsCountingDown(false);
       void requestMicPermissionDirectly();
     }
   };
@@ -175,21 +267,86 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   return (
     <div className="p-2 sm:p-3 bg-white shrink-0">
       {isListening && (
-        <div className="flex items-center justify-between px-2.5 py-1 mb-1.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 animate-in fade-in">
-          <div className="flex items-center gap-1.5 font-medium">
-            <span className="relative flex h-2 w-2">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-1.5 mb-1.5 bg-rose-50/95 border border-rose-200 rounded-lg text-xs text-rose-800 animate-in fade-in shadow-2xs">
+          <div className="flex items-center gap-1.5 font-medium min-w-0">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
             </span>
-            <span>Đang nghe tiếng Việt... Hãy nói câu hỏi hoặc yêu cầu</span>
+            <span className="text-2xs sm:text-xs truncate">
+              {isCountingDown && autoSendOnSilence ? (
+                <span className="inline-flex items-center gap-1 text-rose-800 font-semibold bg-rose-100/90 px-1.5 py-0.5 rounded-sm animate-pulse">
+                  <Clock className="w-3 h-3 text-rose-600" />
+                  Ngừng nói... Tự gửi sau 2s
+                </span>
+              ) : (
+                'Đang nghe tiếng Việt... Hãy nói câu hỏi'
+              )}
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={stopListening}
-            className="text-2xs font-bold text-rose-700 hover:text-rose-900 px-1.5 py-0.5 rounded-sm hover:bg-rose-100 transition cursor-pointer"
-          >
-            Dừng
-          </button>
+
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
+            {/* Chế độ tự động gửi sau 2s im lặng */}
+            <button
+              type="button"
+              data-testid="voice-auto-send-toggle"
+              onClick={() => {
+                const nextVal = !autoSendOnSilence;
+                setAutoSendOnSilence(nextVal);
+                if (!nextVal && silenceTimerRef.current) {
+                  window.clearTimeout(silenceTimerRef.current);
+                  silenceTimerRef.current = null;
+                  setIsCountingDown(false);
+                }
+                try {
+                  localStorage.setItem('clinical_voice_auto_send', String(nextVal));
+                } catch {}
+              }}
+              className={`text-3xs px-1.5 py-0.5 rounded-sm border transition cursor-pointer font-medium ${
+                autoSendOnSilence
+                  ? 'bg-rose-100 border-rose-300 text-rose-800 hover:bg-rose-200'
+                  : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+              }`}
+              title={autoSendOnSilence ? 'Đang bật tự gửi sau 2s im lặng (Bấm để tắt)' : 'Đang tắt tự gửi (Bấm để bật)'}
+            >
+              Tự gửi: {autoSendOnSilence ? 'Bật (2s)' : 'Tắt'}
+            </button>
+
+            {/* Dừng nghe và giữ lại văn bản trong ô nhập để gõ thêm hoặc chỉnh sửa */}
+            <button
+              type="button"
+              data-testid="voice-stop-btn"
+              onClick={handleStopKeepText}
+              className="text-3xs sm:text-2xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-sm transition cursor-pointer"
+              title="Dừng thu âm và giữ lại văn bản trong ô nhập để chỉnh sửa"
+            >
+              Dừng sửa
+            </button>
+
+            {/* Gửi ngay lập tức câu hỏi lâm sàng */}
+            <button
+              type="button"
+              data-testid="voice-instant-send-btn"
+              onClick={handleInstantSend}
+              disabled={isProcessing}
+              className="inline-flex items-center gap-1 text-3xs sm:text-2xs font-bold text-white bg-teal-800 hover:bg-teal-900 px-2 py-0.5 rounded-sm shadow-2xs transition cursor-pointer disabled:opacity-50"
+              title="Gửi ngay câu hỏi lâm sàng không cần chờ 2 giây"
+            >
+              <Send className="w-2.5 h-2.5" />
+              <span>Gửi ngay</span>
+            </button>
+
+            {/* Hủy bỏ hoàn toàn đoạn thu âm vừa nói, trả về nội dung ban đầu */}
+            <button
+              type="button"
+              data-testid="voice-cancel-btn"
+              onClick={handleCancelVoice}
+              className="text-rose-600 hover:text-rose-900 hover:bg-rose-100 p-1 rounded-sm transition cursor-pointer"
+              title="Hủy bỏ đoạn vừa nói (khôi phục văn bản cũ)"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
