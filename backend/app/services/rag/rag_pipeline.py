@@ -113,4 +113,28 @@ async def execute_clinical_rag(
             rag_res.rag_grounded = False
             rag_res.confidence_score = 0.2
 
+    # 8. CDSS Alert Sentinel: Tự động kích hoạt khi phát hiện tương tác nguy hiểm trong KG
+    if kg_data.get("active_ddi_alerts"):
+        top = kg_data["active_ddi_alerts"][0]
+        is_contra = "chống chỉ định" in top["severity"].lower() or "mức độ 1" in top["severity"].lower()
+        sub_drug = None
+        conseq_lower = (top.get("consequence", "") + " " + top.get("mechanism", "")).lower()
+        if "pantoprazol" in conseq_lower or "omeprazol" in top.get("drug_a", "").lower() or "omeprazol" in top.get("drug_b", "").lower():
+            sub_drug = "Pantoprazol 40mg"
+        elif "linagliptin" in conseq_lower:
+            sub_drug = "Linagliptin 5mg"
+        elif "prednisolon" in conseq_lower:
+            sub_drug = "Prednisolon 20mg"
+        elif "giảm liều" in conseq_lower:
+            sub_drug = "Hiệu chỉnh giảm 50% liều"
+
+        rag_res.cdss_alert = {
+            "level": "critical" if is_contra else "warning",
+            "title": "🛑 CHỐNG CHỈ ĐỊNH (QĐ 5948/QĐ-BYT)" if is_contra else "⚠️ CẢNH BÁO TƯƠNG TÁC THUỐC (QĐ 5948)",
+            "message": f"{top['drug_a']} + {top['drug_b']}: {top['consequence']}",
+            "antidoteRecommendation": f"Cơ chế: {top['mechanism']}. Khuyến cáo xử trí: Không phối hợp hoặc chuyển đổi sang thuốc thay thế an toàn.",
+            "regulatoryReference": "Quyết định 5948/QĐ-BYT",
+            "substituteDrug": sub_drug
+        }
+
     return rag_res

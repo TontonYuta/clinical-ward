@@ -132,7 +132,15 @@ export async function processClinicalAgentQueryAsync(
           answerType: backendData.answer_type,
           sourceStatus: backendData.source_status,
           confidence: backendData.confidence,
-          abstentionReason: backendData.abstention_reason
+          abstentionReason: backendData.abstention_reason,
+          cdssAlert: backendData.cdss_alert ? {
+            level: backendData.cdss_alert.level || 'critical',
+            title: backendData.cdss_alert.title,
+            message: backendData.cdss_alert.message,
+            antidoteRecommendation: backendData.cdss_alert.antidoteRecommendation,
+            regulatoryReference: backendData.cdss_alert.regulatoryReference,
+            substituteDrug: backendData.cdss_alert.substituteDrug,
+          } : undefined
         },
         actionPayload, card
       };

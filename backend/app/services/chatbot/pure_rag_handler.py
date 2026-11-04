@@ -39,6 +39,8 @@ async def handle_contextual_rag_followup(
         "Cơ chế và mức độ nghiêm trọng của tương tác này là gì?",
         "Nội dung cần trao đổi với dược sĩ lâm sàng về phối hợp này",
     ]
+    from app.schemas.copilot import CopilotCdssAlert
+    cdss_alert_obj = CopilotCdssAlert(**rag_res.cdss_alert) if getattr(rag_res, "cdss_alert", None) else None
     return CopilotResponse(
         intent="CLINICAL_AI_CONSULTATION",
         reply_text=validate_output_guardrail(rag_res.answer, query),
@@ -53,6 +55,7 @@ async def handle_contextual_rag_followup(
         abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
         factuality_score=getattr(rag_res, "factuality_score", 1.0),
         critique_verdict=getattr(rag_res, "critique_verdict", "PASS"),
+        cdss_alert=cdss_alert_obj,
     )
 
 CLINICAL_KNOWLEDGE_GATE_PATTERNS = (

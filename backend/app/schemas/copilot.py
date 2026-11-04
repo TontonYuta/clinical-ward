@@ -16,6 +16,14 @@ class CopilotActionCard(BaseModel):
     primary_action_type: str | None = None
     target_tab: str | None = None
 
+class CopilotCdssAlert(BaseModel):
+    level: str = "critical"  # "critical", "warning", "info"
+    title: str
+    message: str
+    antidoteRecommendation: str | None = None
+    regulatoryReference: str | None = None
+    substituteDrug: str | None = None
+
 class CopilotResponse(BaseModel):
     intent: str
     reply_text: str
@@ -37,6 +45,7 @@ class CopilotResponse(BaseModel):
     abstention_reason: str | None = None
     factuality_score: float | None = None
     critique_verdict: str | None = None
+    cdss_alert: CopilotCdssAlert | None = None
 
 class RagQuery(BaseModel):
     query: str = Field(..., min_length=1, max_length=1500)

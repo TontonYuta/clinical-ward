@@ -113,13 +113,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
 
               <div className="space-y-2 min-w-0 flex-1 max-w-full">
-                {/* Tạm thời comment CDSS Alert Banner theo yêu cầu người dùng để tập trung test SOTA RAG
                 {msg.cdssAlert && (
                   <div className="mb-2">
-                    <CdssAlertBanner alert={msg.cdssAlert} />
+                    <CdssAlertBanner
+                      alert={msg.cdssAlert}
+                      onSubstitute={(drug) =>
+                        handleChipClick(`Thay thế bằng ${drug} và kiểm tra lại an toàn đơn thuốc`)
+                      }
+                    />
                   </div>
                 )}
-                */}
                 <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${isDarkBubble ? 'bg-slate-900 text-white rounded-tr-xs' : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'}`}>
                   {renderFormattedText(removeLegacySourceText(msg.text), isDarkBubble)}
                   {isAgent && msg.citations?.length ? (

@@ -149,6 +149,8 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
             c.to_dict() if hasattr(c, "to_dict") else (c.model_dump() if hasattr(c, "model_dump") else dict(c))
             for c in multihop_rag.citations
         ] if multihop_rag.citations else []
+        from app.schemas.copilot import CopilotCdssAlert
+        cdss_alert_obj = CopilotCdssAlert(**multihop_rag.cdss_alert) if multihop_rag.cdss_alert else None
         return CopilotResponse(
             intent="CLINICAL_AI_CONSULTATION",
             reply_text=multihop_rag.answer,
@@ -165,7 +167,8 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
             source_status="rag_grounded_verified" if multihop_rag.critique_verdict == "PASS" else "rag_grounded_caution",
             critique_verdict=multihop_rag.critique_verdict,
             factuality_score=multihop_rag.factuality_score,
-            session_id=session_id
+            session_id=session_id,
+            cdss_alert=cdss_alert_obj
         )
 
     subflow_res = await dispatch_clinical_subflows(norm_query, norm_lower, user_name, db, user_role=user_role)

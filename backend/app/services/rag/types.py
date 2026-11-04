@@ -63,6 +63,7 @@ class RagResult:
     hallucination_rate: float = 0.0
     critique_verdict: str = "PASS"
     claims_audit: list[dict] = field(default_factory=list)
+    cdss_alert: Optional[dict] = None
 
     def to_response_dict(self) -> dict:
         return {

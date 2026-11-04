@@ -484,6 +484,42 @@ async def execute_multihop_clinical_evaluation(
         kg_data=kg_data
     )
 
+    cdss_alert_data = None
+    if any("CHỐNG CHỈ ĐỊNH" in f for f in hop1_findings) or any("BÁO ĐỘNG ĐỎ" in f for f in hop3_findings) or detected_alerts:
+        top_msg = ""
+        top_rec = ""
+        sub_drug = None
+        if any("CHỐNG CHỈ ĐỊNH" in f for f in hop1_findings):
+            top_msg = "Metformin chống chỉ định tuyệt đối khi ClCr < 30 mL/phút do nguy cơ nhiễm toan Lactic."
+            top_rec = "Ngừng Metformin ngay. Thay thế bằng Linagliptin 5 mg/ngày hoặc Insulin."
+            sub_drug = "Linagliptin 5mg"
+        elif any("BÁO ĐỘNG ĐỎ" in f for f in hop3_findings):
+            top_msg = "NSAID chống chỉ định trên bệnh nhân suy thận nặng và suy tim."
+            top_rec = "Thay bằng Corticoid đường uống ngắn ngày (Prednisolon 20-30mg) kết hợp chườm lạnh."
+            sub_drug = "Prednisolon 20mg"
+        elif detected_alerts:
+            top_msg = f"{detected_alerts[0].title}: {detected_alerts[0].clinical_consequence}"
+            top_rec = detected_alerts[0].action_recommendation
+            if "pantoprazol" in top_rec.lower():
+                sub_drug = "Pantoprazol 40mg"
+            elif "giảm 50%" in top_rec.lower() or "giảm liều" in top_rec.lower():
+                sub_drug = "Hiệu chỉnh giảm 50% liều"
+            elif "linagliptin" in top_rec.lower():
+                sub_drug = "Linagliptin 5mg"
+            elif "prednisolon" in top_rec.lower():
+                sub_drug = "Prednisolon 20mg"
+            elif "tránh phối hợp" in top_rec.lower():
+                sub_drug = "Tránh phối hợp / Đổi sang nhóm an toàn"
+
+        cdss_alert_data = {
+            "level": "critical",
+            "title": "🛑 CHỐNG CHỈ ĐỊNH LÂM SÀNG (QĐ 5948/QĐ-BYT & DĐVN V)",
+            "message": top_msg,
+            "antidoteRecommendation": top_rec,
+            "regulatoryReference": "Quyết định 5948/QĐ-BYT & Dược thư Quốc gia DĐVN V",
+            "substituteDrug": sub_drug
+        }
+
     return RagResult(
         query=query,
         answer=audit_res["cleaned_answer"],
@@ -496,5 +532,6 @@ async def execute_multihop_clinical_evaluation(
         factuality_score=audit_res["factuality_score"],
         hallucination_rate=audit_res["hallucination_rate"],
         critique_verdict=audit_res["critique_verdict"],
-        claims_audit=audit_res["claims_audit"]
+        claims_audit=audit_res["claims_audit"],
+        cdss_alert=cdss_alert_data
     )

@@ -3,7 +3,7 @@
 Xử lý ma trận tam giác kết hợp O(N^2) dưới 1ms, trả lời tất định không ảo giác (<= 150 LOC).
 """
 from typing import List, Optional
-from app.schemas.copilot import CopilotResponse, CopilotActionCard
+from app.schemas.copilot import CopilotResponse, CopilotActionCard, CopilotCdssAlert
 from app.services.clinical_ddi_engine.detector import ClinicalDdiDetector
 from app.services.clinical_ddi_engine.schemas import DdiSeverity
 
@@ -63,6 +63,29 @@ def format_multi_ddi_response(
         lines.append(f"* **Xử trí:** {poly.action_recommendation}")
         lines.append(f"* **Căn cứ:** `{poly.legal_evidence}`\n")
 
+    cdss_alert = None
+    if report.pair_alerts:
+        top_alert = report.pair_alerts[0]
+        substitute_drug = None
+        action_rec = top_alert.action_recommendation
+        if "pantoprazol" in action_rec.lower():
+            substitute_drug = "Pantoprazol 40mg"
+        elif "linagliptin" in action_rec.lower():
+            substitute_drug = "Linagliptin 5mg"
+        elif "prednisolon" in action_rec.lower():
+            substitute_drug = "Prednisolon 20mg"
+        elif "giảm 50%" in action_rec.lower() or "giảm liều" in action_rec.lower():
+            substitute_drug = "Hiệu chỉnh giảm 50% liều"
+
+        cdss_alert = CopilotCdssAlert(
+            level="critical" if has_contra else "warning",
+            title="🛑 CHỐNG CHỈ ĐỊNH (QĐ 5948/QĐ-BYT)" if has_contra else "⚠️ CẢNH BÁO TƯƠNG TÁC THUỐC (QĐ 5948)",
+            message=f"{top_alert.title}: {top_alert.clinical_consequence}",
+            antidoteRecommendation=top_alert.action_recommendation,
+            regulatoryReference=top_alert.legal_evidence or "Quyết định 5948/QĐ-BYT",
+            substituteDrug=substitute_drug
+        )
+
     card = CopilotActionCard(
         card_type="medication_safety",
         title="Cảnh báo Tương tác QĐ 5948",
@@ -77,6 +100,7 @@ def format_multi_ddi_response(
         intent="MEDICATION_SAFETY_PROFILE",
         reply_text="\n".join(lines).strip(),
         card=card,
+        cdss_alert=cdss_alert,
         legal_basis="Quyết định 5948/QĐ-BYT Ban hành Danh mục Tương tác Thuốc",
         answer_type="grounded_reference",
         source_status="retrieved_evidence",

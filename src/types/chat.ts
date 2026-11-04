@@ -38,6 +38,7 @@ export interface CdssAlert {
   message: string;
   antidoteRecommendation?: string;
   regulatoryReference?: string;
+  substituteDrug?: string;
 }
 
 export interface AgentActionCard {
