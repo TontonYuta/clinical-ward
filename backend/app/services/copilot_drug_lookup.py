@@ -174,7 +174,7 @@ async def lookup_drug_authoritative(
         norm_q = normalize_conversational_query(query)
         spec_item = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_q)
         if spec_item:
-            return synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session.session_id)
+            return await synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session.session_id)
 
     from app.services.chatbot.corrective_rag import evaluate_crag_tripartite
     crag_res = await evaluate_crag_tripartite(

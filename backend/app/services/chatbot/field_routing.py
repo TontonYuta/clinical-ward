@@ -64,7 +64,7 @@ async def handle_interaction_clarification(
         from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
         spec_item = find_clinical_specialty_consultation(query)
         if spec_item:
-            return synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
+            return await synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
 
         session = get_or_create_session(session_id, user_name, user_role)
         active_name = session.active_medication_name if session else None

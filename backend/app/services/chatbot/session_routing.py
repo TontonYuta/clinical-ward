@@ -1,4 +1,7 @@
 import re
+import json
+from pathlib import Path
+from typing import Any
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.copilot import CopilotResponse
@@ -257,80 +260,142 @@ def check_pediatric_guidance_request(lower_query: str, query: str, session_id: s
         session_id=session_id
     )
 
-DDI_CONTRAINDICATION_CATALOG = [
-    {
-        "pair": "Simvastatin + Clarithromycin (hoặc Erythromycin / Ketoconazol)",
-        "level": "Chống chỉ định tuyệt đối (Bảng 3.1, STT 412 - QĐ 5948)",
-        "mechanism": "Clarithromycin ức chế mạnh enzym chuyển hóa CYP3A4, làm tăng nồng độ Simvastatin trong máu lên nhiều lần, dẫn đến nguy cơ tiêu cơ vân cấp (Rhabdomyolysis), myoglobin niệu và suy thận cấp đe dọa tính mạng.",
-        "management": "Tạm ngừng Simvastatin trong suốt đợt điều trị kháng sinh Macrolid, hoặc chuyển sang statin ít chuyển hóa qua CYP3A4 (Rosuvastatin, Pravastatin)."
-    },
-    {
-        "pair": "Clopidogrel + Omeprazol (hoặc Esomeprazol)",
-        "level": "Chống chỉ định phối hợp (Bảng 3.2 - QĐ 5948/QĐ-BYT)",
-        "mechanism": "Omeprazol ức chế enzym CYP2C19, ngăn cản quá trình chuyển hóa tiền chất Clopidogrel thành dạng có hoạt tính sinh học, làm giảm đáng kể hiệu quả ức chế ngưng tập tiểu cầu, dẫn đến tăng nguy cơ tái nhồi máu cơ tim hoặc huyết khối trong stent.",
-        "management": "Đổi sang thuốc ức chế bơm proton ít ức chế CYP2C19 như Pantoprazol hoặc Rabeprazol."
-    },
-    {
-        "pair": "Methotrexat (liều cao) + Thuốc chống viêm không steroid (NSAID như Ibuprofen, Diclofenac)",
-        "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948 & DĐVN V)",
-        "mechanism": "NSAID làm giảm lưu lượng máu đến thận và ức chế bài tiết Methotrexat qua ống thận, dẫn đến tích lũy nồng độ Methotrexat cực độc, gây suy tủy xương cấp, giảm bạch cầu/tiểu cầu nặng và loét xuất huyết tiêu hóa ồ ạt.",
-        "management": "Tránh phối hợp NSAID trước, trong và ít nhất 48 giờ sau khi truyền Methotrexat liều cao; theo dõi nồng độ thuốc và giải độc bằng Acid folinic (Leucovorin)."
-    },
-    {
-        "pair": "Warfarin + Thuốc chống viêm không steroid (NSAID như Meloxicam, Diclofenac, Celecoxib)",
-        "level": "Chống chỉ định phối hợp / Nguy cơ xuất huyết nghiêm trọng (Bảng 3.1 & 3.2 - QĐ 5948)",
-        "mechanism": "Tác động cộng hưởng kép: NSAID gây tổn thương trợt loét niêm mạc dạ dày và ức chế kết tập tiểu cầu, cộng hưởng với tác dụng ức chế tổng hợp yếu tố đông máu của Warfarin.",
-        "management": "Nguy cơ xuất huyết tiêu hóa ồ ạt và kéo dài thời gian đông máu INR khó kiểm soát. Ưu tiên giảm đau bằng Paracetamol; nếu bắt buộc phải dùng NSAID phải theo dõi chặt chẽ INR và bổ sung PPI bảo vệ dạ dày."
-    },
-    {
-        "pair": "Spironolacton + Kali Clorid (KCl dạng uống hoặc tiêm truyền)",
-        "level": "Chống chỉ định tuyệt đối khi dùng đồng thời kéo dài (Bảng 3.1 - QĐ 5948)",
-        "mechanism": "Spironolacton là thuốc lợi tiểu đối kháng Aldosteron tại ống lượn xa làm giảm thải trừ Kali qua nước tiểu. Bổ sung thêm Kali ngoại sinh gây ứ đọng Kali cấp tính.",
-        "management": "Nguy cơ tăng kali máu ác tính (> 6.5 mmol/L), dẫn đến rối loạn dẫn truyền tim, rung thất và ngừng tim đột ngột. Tuyệt đối không bổ sung kali thường quy khi đang dùng lợi tiểu giữ kali trừ khi có hạ kali máu nặng và có monitor theo dõi liên tục."
-    },
-    {
-        "pair": "Amiodaron + Levofloxacin (hoặc Moxifloxacin / Ciprofloxacin)",
-        "level": "Chống chỉ định phối hợp (Bảng 3.1 - QĐ 5948 & DĐVN V)",
-        "mechanism": "Cả hai thuốc đều có tác dụng làm chậm tái cực thất cơ tim, dẫn đến kéo dài khoảng QT hiệp đồng trên điện tâm đồ.",
-        "management": "Kéo dài khoảng QTc bệnh lý (> 500ms), kích phát loạn nhịp thất ác tính dạng xoắn đỉnh (Torsades de pointes) và đột tử do tim. Chọn kháng sinh nhóm khác không gây kéo dài khoảng QT (như Beta-lactam) cho bệnh nhân đang dùng Amiodaron."
-    },
-    {
-        "pair": "Carbamazepin + Clarithromycin (hoặc Erythromycin)",
-        "level": "Chống chỉ định phối hợp (Bảng 3.1 - QĐ 5948)",
-        "mechanism": "Clarithromycin ức chế mạnh isoenzym CYP3A4, làm giảm độ thanh thải Carbamazepin qua gan và tăng nồng độ Carbamazepin trong huyết tương lên gấp 2-3 lần.",
-        "management": "Gây hội chứng ngộ độc thần kinh cấp tính: thất điều (ataxia), rung giật nhãn cầu, nhìn đôi, lơ mơ, co giật và ức chế hô hấp. Sử dụng Azithromycin hoặc chuyển sang nhóm kháng sinh không ức chế CYP3A4."
-    },
-    {
-        "pair": "Ergotamin + Kháng sinh Macrolid (Clarithromycin, Erythromycin)",
-        "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948)",
-        "mechanism": "Macrolid ức chế enzym chuyển hóa CYP3A4 làm tăng nồng độ Ergotamin trong máu, gây co thắt mạch máu ngoại vi nghiêm trọng.",
-        "management": "Gây thiếu máu cục bộ cấp tính và hoại tử mô đầu chi (Hội chứng Ergotism). Chống chỉ định dùng đồng thời; nếu đã dùng phải ngưng ngay và truyền cấp cứu bằng thuốc giãn mạch như Nitroprussid."
-    },
-    {
-        "pair": "Digoxin + Clarithromycin (hoặc Erythromycin)",
-        "level": "Chống chỉ định phối hợp / Tương tác mức độ nặng (Bảng 3.1 - QĐ 5948)",
-        "mechanism": "Clarithromycin ức chế P-glycoprotein tại ruột và thận, đồng thời tiêu diệt vi khuẩn đường ruột Eubacterium lentum chuyển hóa Digoxin, làm tăng vọt nồng độ Digoxin trong huyết thanh lên gấp 2 lần.",
-        "management": "Nguy cơ ngộ độc Digoxin cấp tính: loạn nhịp tim chậm, block nhĩ thất, nhìn vàng và ngừng tim. Tránh phối hợp hoặc phải giảm liều Digoxin 50% kèm theo dõi nồng độ đỉnh/đáy trong máu."
-    },
-    {
-        "pair": "Allopurinol + Azathioprin (hoặc 6-Mercaptopurin)",
-        "level": "Chống chỉ định phối hợp / Độc tính tủy xương tối cấp (Bảng 3.1 - QĐ 5948)",
-        "mechanism": "Allopurinol ức chế enzym Xanthine Oxidase - con đường chuyển hóa thải trừ chính của Azathioprin và 6-MP, gây tích lũy chất chuyển hóa độc hại 6-thioguanine nucleotides.",
-        "management": "Nguy cơ suy tủy toàn bộ cực kỳ nguy kịch: giảm bạch cầu hạt đe dọa nhiễm trùng huyết tử vong, giảm tiểu cầu xuất huyết nội tạng. Bắt buộc giảm liều Azathioprin/6-MP xuống 1/4 - 1/3 liều thông thường nếu bắt buộc dùng."
-    },
-    {
-        "pair": "Methotrexat + Cotrimoxazol (Trimethoprim/Sulfamethoxazol)",
-        "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948 & DĐVN V)",
-        "mechanism": "Hiệp đồng ức chế chu trình Acid Folic: Trimethoprim ức chế dihydrofolate reductase cộng hưởng với Methotrexat, đồng thời Sulfamethoxazol cạnh tranh gắn kết albumin huyết tương và giảm bài tiết Methotrexat qua thận.",
-        "management": "Nguy cơ ngộ độc Methotrexat bùng phát: ức chế tủy xương nặng, thiếu máu hồng cầu to, loét hoại tử niêm mạc miệng và suy thận cấp. Chống chỉ định dùng chung; chọn kháng sinh nhóm khác thay thế Cotrimoxazol."
-    },
-    {
-        "pair": "Ciprofloxacin + Theophyllin",
-        "level": "Chống chỉ định phối hợp / Độc tính Theophyllin (Bảng 3.1 - QĐ 5948)",
-        "mechanism": "Ciprofloxacin ức chế mạnh isoenzym CYP1A2, làm giảm độ thanh thải Theophyllin qua gan từ 30% đến 50%.",
-        "management": "Tích lũy nồng độ Theophyllin gây co giật toàn thể, loạn nhịp nhanh thất nguy hiểm và tử vong. Nếu bắt buộc dùng chung phải giảm liều Theophyllin ít nhất 50% và định lượng nồng độ thuốc liên tục."
-    }
-]
+_LOADED_DDI_CATALOG: list[dict[str, Any]] | None = None
+
+def get_ddi_catalog() -> list[dict[str, Any]]:
+    global _LOADED_DDI_CATALOG
+    if _LOADED_DDI_CATALOG is not None:
+        return _LOADED_DDI_CATALOG
+
+    # 12 Cặp tương tác thuốc kinh điển thường gặp nhất trong thực hành lâm sàng nội viện
+    classic_pairs = [
+        {
+            "pair": "Simvastatin + Clarithromycin (hoặc Erythromycin / Ketoconazol)",
+            "level": "Chống chỉ định tuyệt đối (Bảng 3.1, STT 412 - QĐ 5948)",
+            "mechanism": "Clarithromycin ức chế mạnh enzym chuyển hóa CYP3A4, làm tăng nồng độ Simvastatin trong máu lên nhiều lần, dẫn đến nguy cơ tiêu cơ vân cấp (Rhabdomyolysis), myoglobin niệu và suy thận cấp đe dọa tính mạng.",
+            "management": "Tạm ngừng Simvastatin trong suốt đợt điều trị kháng sinh Macrolid, hoặc chuyển sang statin ít chuyển hóa qua CYP3A4 (Rosuvastatin, Pravastatin)."
+        },
+        {
+            "pair": "Clopidogrel + Omeprazol (hoặc Esomeprazol)",
+            "level": "Chống chỉ định phối hợp (Bảng 3.2 - QĐ 5948/QĐ-BYT)",
+            "mechanism": "Omeprazol ức chế enzym CYP2C19, ngăn cản quá trình chuyển hóa tiền chất Clopidogrel thành dạng có hoạt tính sinh học, làm giảm đáng kể hiệu quả ức chế ngưng tập tiểu cầu, dẫn đến tăng nguy cơ tái nhồi máu cơ tim hoặc huyết khối trong stent.",
+            "management": "Đổi sang thuốc ức chế bơm proton ít ức chế CYP2C19 như Pantoprazol hoặc Rabeprazol."
+        },
+        {
+            "pair": "Methotrexat (liều cao) + Thuốc chống viêm không steroid (NSAID như Ibuprofen, Diclofenac)",
+            "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948 & DĐVN V)",
+            "mechanism": "NSAID làm giảm lưu lượng máu đến thận và ức chế bài tiết Methotrexat qua ống thận, dẫn đến tích lũy nồng độ Methotrexat cực độc, gây suy tủy xương cấp, giảm bạch cầu/tiểu cầu nặng và loét xuất huyết tiêu hóa ồ ạt.",
+            "management": "Tránh phối hợp NSAID trước, trong và ít nhất 48 giờ sau khi truyền Methotrexat liều cao; theo dõi nồng độ thuốc và giải độc bằng Acid folinic (Leucovorin)."
+        },
+        {
+            "pair": "Warfarin + Thuốc chống viêm không steroid (NSAID như Meloxicam, Diclofenac, Celecoxib)",
+            "level": "Chống chỉ định phối hợp / Nguy cơ xuất huyết nghiêm trọng (Bảng 3.1 & 3.2 - QĐ 5948)",
+            "mechanism": "Tác động cộng hưởng kép: NSAID gây tổn thương trợt loét niêm mạc dạ dày và ức chế kết tập tiểu cầu, cộng hưởng với tác dụng ức chế tổng hợp yếu tố đông máu của Warfarin.",
+            "management": "Nguy cơ xuất huyết tiêu hóa ồ ạt và kéo dài thời gian đông máu INR khó kiểm soát. Ưu tiên giảm đau bằng Paracetamol; nếu bắt buộc phải dùng NSAID phải theo dõi chặt chẽ INR và bổ sung PPI bảo vệ dạ dày."
+        },
+        {
+            "pair": "Spironolacton + Kali Clorid (KCl dạng uống hoặc tiêm truyền)",
+            "level": "Chống chỉ định tuyệt đối khi dùng đồng thời kéo dài (Bảng 3.1 - QĐ 5948)",
+            "mechanism": "Spironolacton là thuốc lợi tiểu đối kháng Aldosteron tại ống lượn xa làm giảm thải trừ Kali qua nước tiểu. Bổ sung thêm Kali ngoại sinh gây ứ đọng Kali cấp tính.",
+            "management": "Nguy cơ tăng kali máu ác tính (> 6.5 mmol/L), dẫn đến rối loạn dẫn truyền tim, rung thất và ngừng tim đột ngột. Tuyệt đối không bổ sung kali thường quy khi đang dùng lợi tiểu giữ kali trừ khi có hạ kali máu nặng và có monitor theo dõi liên tục."
+        },
+        {
+            "pair": "Amiodaron + Levofloxacin (hoặc Moxifloxacin / Ciprofloxacin)",
+            "level": "Chống chỉ định phối hợp (Bảng 3.1 - QĐ 5948 & DĐVN V)",
+            "mechanism": "Cả hai thuốc đều có tác dụng làm chậm tái cực thất cơ tim, dẫn đến kéo dài khoảng QT hiệp đồng trên điện tâm đồ.",
+            "management": "Kéo dài khoảng QTc bệnh lý (> 500ms), kích phát loạn nhịp thất ác tính dạng xoắn đỉnh (Torsades de pointes) và đột tử do tim. Chọn kháng sinh nhóm khác không gây kéo dài khoảng QT (như Beta-lactam) cho bệnh nhân đang dùng Amiodaron."
+        },
+        {
+            "pair": "Carbamazepin + Clarithromycin (hoặc Erythromycin)",
+            "level": "Chống chỉ định phối hợp (Bảng 3.1 - QĐ 5948)",
+            "mechanism": "Clarithromycin ức chế mạnh isoenzym CYP3A4, làm giảm độ thanh thải Carbamazepin qua gan và tăng nồng độ Carbamazepin trong huyết tương lên gấp 2-3 lần.",
+            "management": "Gây hội chứng ngộ độc thần kinh cấp tính: thất điều (ataxia), rung giật nhãn cầu, nhìn đôi, lơ mơ, co giật và ức chế hô hấp. Sử dụng Azithromycin hoặc chuyển sang nhóm kháng sinh không ức chế CYP3A4."
+        },
+        {
+            "pair": "Ergotamin + Kháng sinh Macrolid (Clarithromycin, Erythromycin)",
+            "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948)",
+            "mechanism": "Macrolid ức chế enzym chuyển hóa CYP3A4 làm tăng nồng độ Ergotamin trong máu, gây co thắt mạch máu ngoại vi nghiêm trọng.",
+            "management": "Gây thiếu máu cục bộ cấp tính và hoại tử mô đầu chi (Hội chứng Ergotism). Chống chỉ định dùng đồng thời; nếu đã dùng phải ngưng ngay và truyền cấp cứu bằng thuốc giãn mạch như Nitroprussid."
+        },
+        {
+            "pair": "Digoxin + Clarithromycin (hoặc Erythromycin)",
+            "level": "Chống chỉ định phối hợp / Tương tác mức độ nặng (Bảng 3.1 - QĐ 5948)",
+            "mechanism": "Clarithromycin ức chế P-glycoprotein tại ruột và thận, đồng thời tiêu diệt vi khuẩn đường ruột Eubacterium lentum chuyển hóa Digoxin, làm tăng vọt nồng độ Digoxin trong huyết thanh lên gấp 2 lần.",
+            "management": "Nguy cơ ngộ độc Digoxin cấp tính: loạn nhịp tim chậm, block nhĩ thất, nhìn vàng và ngừng tim. Tránh phối hợp hoặc phải giảm liều Digoxin 50% kèm theo dõi nồng độ đỉnh/đáy trong máu."
+        },
+        {
+            "pair": "Allopurinol + Azathioprin (hoặc 6-Mercaptopurin)",
+            "level": "Chống chỉ định phối hợp / Độc tính tủy xương tối cấp (Bảng 3.1 - QĐ 5948)",
+            "mechanism": "Allopurinol ức chế enzym Xanthine Oxidase - con đường chuyển hóa thải trừ chính của Azathioprin và 6-MP, gây tích lũy chất chuyển hóa độc hại 6-thioguanine nucleotides.",
+            "management": "Nguy cơ suy tủy toàn bộ cực kỳ nguy kịch: giảm bạch cầu hạt đe dọa nhiễm trùng huyết tử vong, giảm tiểu cầu xuất huyết nội tạng. Bắt buộc giảm liều Azathioprin/6-MP xuống 1/4 - 1/3 liều thông thường nếu bắt buộc dùng."
+        },
+        {
+            "pair": "Methotrexat + Cotrimoxazol (Trimethoprim/Sulfamethoxazol)",
+            "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948 & DĐVN V)",
+            "mechanism": "Hiệp đồng ức chế chu trình Acid Folic: Trimethoprim ức chế dihydrofolate reductase cộng hưởng với Methotrexat, đồng thời Sulfamethoxazol cạnh tranh gắn kết albumin huyết tương và giảm bài tiết Methotrexat qua thận.",
+            "management": "Nguy cơ ngộ độc Methotrexat bùng phát: ức chế tủy xương nặng, thiếu máu hồng cầu to, loét hoại tử niêm mạc miệng và suy thận cấp. Chống chỉ định dùng chung; chọn kháng sinh nhóm khác thay thế Cotrimoxazol."
+        },
+        {
+            "pair": "Ciprofloxacin + Theophyllin",
+            "level": "Chống chỉ định phối hợp / Độc tính Theophyllin (Bảng 3.1 - QĐ 5948)",
+            "mechanism": "Ciprofloxacin ức chế mạnh isoenzym CYP1A2, làm giảm độ thanh thải Theophyllin qua gan từ 30% đến 50%.",
+            "management": "Tích lũy nồng độ Theophyllin gây co giật toàn thể, loạn nhịp nhanh thất nguy hiểm và tử vong. Nếu bắt buộc dùng chung phải giảm liều Theophyllin ít nhất 50% và định lượng nồng độ thuốc liên tục."
+        }
+    ]
+
+    base_dir = Path(__file__).resolve().parent.parent.parent.parent
+    ddi_path = base_dir / "data" / "knowledge_base" / "ddi_interactions" / "qd_5948_table_3_1_all_pairs.json"
+    if not ddi_path.exists():
+        ddi_path = base_dir.parent / "api" / "clinical_ddi_data" / "qd_5948_table_3_1_all_pairs.json"
+
+    raw_pairs = []
+    if ddi_path.exists():
+        try:
+            with open(ddi_path, "r", encoding="utf-8") as f:
+                raw_pairs = json.load(f)
+        except Exception:
+            raw_pairs = []
+
+    catalog: list[dict[str, Any]] = list(classic_pairs)
+    seen: set[str] = {c["pair"].lower() for c in classic_pairs}
+
+    for item in raw_pairs:
+        d1 = str(item.get("drug_1", "")).strip()
+        d2 = str(item.get("drug_2", "")).strip()
+        stt = item.get("stt", len(catalog) + 1)
+        mech = str(item.get("mechanism", "")).strip()
+        cons = str(item.get("consequence", "")).strip()
+        mgmt = str(item.get("management", "")).strip()
+        pair_str = f"{d1} + {d2}"
+        if pair_str.lower() in seen or f"{d2} + {d1}".lower() in seen:
+            continue
+        full_mech = f"{mech}. {cons}" if cons else mech
+        catalog.append({
+            "stt": stt,
+            "drug_1": d1,
+            "drug_2": d2,
+            "pair": pair_str,
+            "level": f"Chống chỉ định tuyệt đối (Bảng 3.1, STT {stt} - QĐ 5948/QĐ-BYT)",
+            "mechanism": full_mech,
+            "management": mgmt
+        })
+        seen.add(pair_str.lower())
+
+    _LOADED_DDI_CATALOG = catalog
+    return _LOADED_DDI_CATALOG
+
+class _DynamicDdiCatalog(list):
+    """Proxy list đối soát động trực tiếp từ 633 cặp tương tác CSDL QĐ 5948/QĐ-BYT."""
+    def __len__(self):
+        return len(get_ddi_catalog())
+    def __getitem__(self, item):
+        return get_ddi_catalog()[item]
+    def __iter__(self):
+        return iter(get_ddi_catalog())
+    def __bool__(self):
+        return bool(get_ddi_catalog())
+
+DDI_CONTRAINDICATION_CATALOG = _DynamicDdiCatalog()
 
 def check_interaction_examples_request(lower_query: str, session_id: str) -> CopilotResponse | None:
     """Trả về các ví dụ kinh điển về cặp tương tác thuốc chống chỉ định theo QĐ 5948/QĐ-BYT với khả năng phân trang linh hoạt."""

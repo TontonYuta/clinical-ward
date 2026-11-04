@@ -219,6 +219,20 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
         legal_basis="Quyết định 5948/QĐ-BYT",
         entity_type="ddi"
     ))
+    ddi_meta = active_dir / "ddi_interactions" / "qd_5948_metabolic_and_gastrointestinal.md"
+    all_chunks.extend(_parse_markdown_chunks(
+        ddi_meta,
+        source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Chuyển Hóa & Tiêu Hóa)",
+        legal_basis="Quyết định 5948/QĐ-BYT",
+        entity_type="ddi"
+    ))
+    ddi_blood = active_dir / "ddi_interactions" / "qd_5948_anticoagulants_and_hematology.md"
+    all_chunks.extend(_parse_markdown_chunks(
+        ddi_blood,
+        source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Chống Đông & Huyết Học)",
+        legal_basis="Quyết định 5948/QĐ-BYT",
+        entity_type="ddi"
+    ))
 
     # 3. Thông tư cấp cứu phản vệ TT 51/2017
     tt51_path = active_dir / "regulatory_circulars" / "tt51_2017_anaphylaxis_protocol.md"
@@ -246,5 +260,42 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
         legal_basis="Thông tư 22/2011/TT-BYT",
         entity_type="circular"
     ))
+
+    # 6. Hướng dẫn Dược Lâm Sàng & An Toàn Thuốc Chuyên Sâu (Specialty Clinical Guidelines)
+    try:
+        from app.services.chatbot.conversational_clinical_engine import SPECIALTY_CLINICAL_KNOWLEDGE
+        for idx, item in enumerate(SPECIALTY_CLINICAL_KNOWLEDGE):
+            topic = item.get("topic", "Hướng dẫn Lâm sàng")
+            bluf = item.get("bluf", "")
+            details_list = item.get("details", [])
+            details_text = "\n".join(details_list)
+            warnings = item.get("warnings", "")
+            legal = item.get("legal", "Dược thư Quốc gia Việt Nam DĐVN V & Hướng dẫn Bộ Y tế")
+            clean_slug = re.sub(r"[^\w]+", "_", topic.lower())[:35]
+
+            body_lines = [
+                f"### Hướng Dẫn Dược Lâm Sàng: {topic}",
+                f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf}",
+                f"**Chi tiết thực hành & Cơ sở dược lý học:**\n{details_text}"
+            ]
+            if warnings:
+                body_lines.append(f"**Cảnh báo an toàn quan trọng:** {warnings}")
+
+            full_content = "\n\n".join(body_lines)
+            kw_pool = item.get("keywords", []) + _extract_keywords(f"{topic} {bluf} {details_text}")
+            unique_kws = sorted(list(set(kw.strip().lower() for kw in kw_pool if len(kw.strip()) >= 2)))
+
+            all_chunks.append(RagChunk(
+                chunk_id=f"spec_guideline_{idx}_{clean_slug}",
+                source_doc=f"Hướng Dẫn Chuyên Môn Lâm Sàng: {topic}",
+                legal_basis=legal,
+                page_or_section=topic,
+                title=topic,
+                content=full_content,
+                keywords=unique_kws,
+                entity_type="guideline"
+            ))
+    except Exception:
+        pass
 
     return all_chunks

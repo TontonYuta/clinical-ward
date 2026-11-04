@@ -108,7 +108,7 @@ async def resolve_active_drug_and_terms(
         from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
         spec_hit = find_clinical_specialty_consultation(query)
         if spec_hit:
-            resp = synthesize_specialty_response(query, spec_hit, user_name=user_name, user_role=user_role, session_id=session_id)
+            resp = await synthesize_specialty_response(query, spec_hit, user_name=user_name, user_role=user_role, session_id=session_id)
             return query, lower_query, active_in_query, explicit_named, has_candidate_drug, resp
         ped_res = check_pediatric_guidance_request(lower_query, query, session_id)
         if ped_res:

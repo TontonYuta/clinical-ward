@@ -150,7 +150,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
     spec_early = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
     if spec_early:
-        return synthesize_specialty_response(query, spec_early, user_name=user_name, user_role=user_role, session_id=session_id)
+        return await synthesize_specialty_response(query, spec_early, user_name=user_name, user_role=user_role, session_id=session_id)
 
     extracted_kw, resolved_meds = extract_drug_keywords(norm_query), resolve_registered_medications(norm_lower)
     from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
@@ -192,7 +192,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
         spec_item = find_clinical_specialty_consultation(query)
         if spec_item:
-            return synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
+            return await synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
         if not any(term in lower_query for term in ("huyết áp", "tăng huyết áp", "hạ huyết áp", "ung thư", "u bướu", "hen phế quản", "đái tháo đường")):
             return CopilotResponse(
                 intent="MEDICATION_LOOKUP_CLARIFICATION",
@@ -249,7 +249,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
     spec_item = find_clinical_specialty_consultation(query)
     if spec_item:
-        return synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
+        return await synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
 
     drug_cues = (
         "thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng",
@@ -304,7 +304,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response, get_clinical_persona_greeting
     spec_direct = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
     if spec_direct:
-        return synthesize_specialty_response(query, spec_direct, user_name=user_name, user_role=user_role, session_id=session_id)
+        return await synthesize_specialty_response(query, spec_direct, user_name=user_name, user_role=user_role, session_id=session_id)
 
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
     if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:

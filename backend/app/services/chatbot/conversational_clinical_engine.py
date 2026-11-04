@@ -982,6 +982,18 @@ SPECIALTY_CLINICAL_KNOWLEDGE = [
         ],
         "warnings": "Tránh dùng các thuốc kháng Histamin H1 thế hệ 1 (như diphenhydramine, clopheniramin) để gây ngủ cho người già vì tác dụng kháng cholinergic gây khô miệng, bí tiểu cấp và mê sảng cấp tính.",
         "legal": "Tiêu chuẩn Beers Hiệp hội Lão khoa Hoa Kỳ (AGS) & Dược thư Quốc gia Việt Nam DĐVN V"
+    },
+    {
+        "keywords": ["chăm sóc giảm nhẹ", "ung thư", "giảm đau ung thư", "thang giảm đau who", "palliative care", "morphin ung thư", "đau ung thư"],
+        "topic": "Chăm sóc giảm nhẹ và quản lý đau trong ung thư theo WHO",
+        "bluf": "Quản lý đau trong chăm sóc giảm nhẹ ung thư tuân thủ Thang giảm đau 3 bậc của WHO (Bậc 1: Không opioid; Bậc 2: Opioid yếu như Codein/Tramadol; Bậc 3: Opioid mạnh như Morphin, Fentanyl) kết hợp thuốc bổ trợ và tôn trọng nguyên tắc kê đơn theo giờ, theo đường uống.",
+        "details": [
+            "• **Thang giảm đau 3 bậc WHO:** Bậc 1 (đau nhẹ: Paracetamol, NSAIDs) -> Bậc 2 (đau vừa: Codein, Tramadol phối hợp giảm đau ngoại vi) -> Bậc 3 (đau nặng: Morphin uống hoặc tiêm, Fentanyl dán qua da).",
+            "• **Nguyên tắc dùng thuốc Opioid (Thông tư 20/2017/TT-BYT):** 'By the clock' (dùng đúng giờ cố định, không đợi đau mới uống), 'By the mouth' (ưu tiên đường uống), và 'For the individual' (cá thể hóa liều theo đáp ứng của người bệnh).",
+            "• **Xử trí tác dụng phụ thường gặp:** Bắt buộc kê kèm thuốc nhuận tràng (như Macrogol/Lactulose) để dự phòng táo bón do Morphin, thuốc chống nôn (Metoclopramid, Ondansetron) trong những ngày đầu dùng Opioid."
+        ],
+        "warnings": "Đơn thuốc gây nghiện điều trị bệnh mạn tính/ung thư được kê tối đa không quá 30 ngày (chia 3 đợt kê đơn theo Thông tư 20/2017/TT-BYT). Luôn theo dõi dấu hiệu ức chế hô hấp và sẵn sàng Naloxon giải độc.",
+        "legal": "Hướng dẫn Chăm sóc Giảm nhẹ - Bộ Y tế & Thông tư 20/2017/TT-BYT"
     }
 ]
 
@@ -1052,7 +1064,8 @@ TOPIC_ANCHORS: Dict[str, List[str]] = {
     'Nguyên tắc sử dụng kháng sinh Aminoglycosid (Gentamicin, Amikacin) ở trẻ sơ sinh nhiễm khuẩn huyết': ['aminoglycosid', 'gentamicin', 'amikacin', 'trẻ sơ sinh'],
     'Hướng dẫn điều trị bệnh trĩ an toàn ở phụ nữ mang thai': ['trĩ', 'daflon'],
     'Nguyên tắc vàng sử dụng thuốc ở người cao tuổi: Bắt đầu liều thấp, tăng chậm rãi (Start low, go slow)': ['người cao tuổi', 'start low', 'người già', 'lão khoa'],
-    'Lựa chọn thuốc an thần gây ngủ an toàn và hạn chế tối đa nguy cơ té ngã ở người cao tuổi': ['an thần', 'té ngã', 'melatonin', 'mất ngủ']
+    'Lựa chọn thuốc an thần gây ngủ an toàn và hạn chế tối đa nguy cơ té ngã ở người cao tuổi': ['an thần', 'té ngã', 'melatonin', 'mất ngủ'],
+    'Chăm sóc giảm nhẹ và quản lý đau trong ung thư theo WHO': ['giảm nhẹ', 'ung thư', 'giảm đau', 'palliative']
 }
 
 def find_clinical_specialty_consultation(query: str) -> Optional[Dict[str, Any]]:
@@ -1081,43 +1094,55 @@ def find_clinical_specialty_consultation(query: str) -> Optional[Dict[str, Any]]
             return best_item
     return best_item
 
-def synthesize_specialty_response(
+async def synthesize_specialty_response(
     query: str,
     knowledge: Dict[str, Any],
     user_name: str = "Bác sĩ",
     user_role: str = "doctor",
     session_id: Optional[str] = None
 ) -> CopilotResponse:
-    greeting = get_clinical_persona_greeting(user_name, user_role)
-    topic = knowledge["topic"]
-    bluf = knowledge["bluf"]
-    details_lines = "\n".join(knowledge["details"])
+    from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
+
+    topic = knowledge.get("topic", "Hướng dẫn Lâm sàng")
+    bluf = knowledge.get("bluf", "")
+    details_lines = "\n".join(knowledge.get("details", []))
     warnings = knowledge.get("warnings", "")
     legal = knowledge.get("legal", "Dược thư Quốc gia Việt Nam DĐVN V & Hướng dẫn Bộ Y tế")
-    
-    paragraphs = [
-        f"{greeting} hệ thống cung cấp thông tin chuyên môn thẩm định về **{topic}**:\n",
-        f"💡 **Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf}\n",
-        f"### 📋 Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n{details_lines}\n",
-        f"⚠️ **Cảnh báo an toàn quan trọng:** {warnings}\n",
-        f"*(Căn cứ pháp lý & Tài liệu đối soát: {legal})*\n\n"
-        f"Đồng nghiệp cần tra cứu thêm phác đồ xử trí hay hướng dẫn phối hợp thuốc nào liên quan không ạ?"
-    ]
-    
-    reply_text = "\n".join(paragraphs)
+
+    evidence_context = (
+        f"### Hướng Dẫn Dược Lâm Sàng: {topic}\n\n"
+        f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf}\n\n"
+        f"**Chi tiết thực hành & Cơ sở dược lý học:**\n{details_lines}\n\n"
+        f"**Cảnh báo an toàn quan trọng:** {warnings}"
+    )
+
+    synth_res = await synthesize_grounded_clinical_response(
+        query=query,
+        evidence_context=evidence_context,
+        source_label=legal,
+        user_role=user_role,
+        user_name=user_name
+    )
+
     chips = generate_smart_clinical_chips(query)
     is_legal_topic = any(k in topic.lower() for k in ["thông tư", "quy chế", "quy định", "nghị định", "luật dược"])
-    chosen_intent = "LEGAL_GUIDANCE" if is_legal_topic else "MEDICATION_SAFETY_PROFILE"
-    
+    is_onco_topic = any(k in topic.lower() for k in ["ung thư", "u bướu", "oncology"])
+    if is_onco_topic:
+        chosen_intent = "ONCOLOGY_SPECIALTY_GUIDANCE"
+    elif is_legal_topic:
+        chosen_intent = "LEGAL_GUIDANCE"
+    else:
+        chosen_intent = "MEDICATION_SAFETY_PROFILE"
+
     return CopilotResponse(
         intent=chosen_intent,
-        reply_text=reply_text,
+        reply_text=synth_res.conversational_answer,
         legal_basis=legal,
         suggested_chips=chips,
         session_id=session_id,
         answer_type="grounded_reference",
-        source_status="exact_match",
-        confidence=1.0,
+        source_status=synth_res.source_status,
+        confidence=synth_res.grounded_confidence,
         citations=[{
             "source": legal,
             "title": topic,

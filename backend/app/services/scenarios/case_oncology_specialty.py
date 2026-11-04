@@ -28,6 +28,16 @@ class OncologySpecialtyScenario(BaseScenario):
         ctx: ClinicalContext,
         db: AsyncSession
     ) -> Optional[CopilotResponse]:
+        if any(w in lower_query for w in ["giảm nhẹ", "giảm đau", "palliative", "morphin"]):
+            from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+            spec_item = find_clinical_specialty_consultation(query)
+            if spec_item:
+                res = await synthesize_specialty_response(
+                    query, spec_item, user_name=ctx.user_name, user_role=ctx.user_role, session_id=ctx.session_id
+                )
+                res.intent = "ONCOLOGY_SPECIALTY_GUIDANCE"
+                return res
+
         reply = (
             "### 🎗️ TƯ VẤN CHUYÊN KHOA UNG BƯỚU (Quy Chuẩn Điều Trị Đa Mô Thức)\n\n"
             "• **Bản chất bệnh học:** \"Ung thư\" là tập hợp hơn 200 bệnh lý ác tính phức tạp với cơ chế sinh học phân tử khác biệt. "
