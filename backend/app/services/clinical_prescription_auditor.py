@@ -327,7 +327,7 @@ class ClinicalPrescriptionAuditor:
         # ----------------------------------------------------
         # 3. THẨM ĐỊNH LIỀU DÙNG THEO TUỔI, CÂN NẶNG & CHỨC NĂNG THẬN
         # ----------------------------------------------------
-        patient_egfr = patient_data.get("egfr") or patient_data.get("clcr")
+        patient_egfr = patient_data.get("egfr") or patient_data.get("clcr") or order_data.get("patientEgfr") or order_data.get("egfr") or order_data.get("patientClcr") or order_data.get("clcr")
         for it in items:
             med_name = (it.get("medicationName") or "").lower()
             act_name = (it.get("activeIngredient") or "").lower()

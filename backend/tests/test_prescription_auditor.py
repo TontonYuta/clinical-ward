@@ -121,6 +121,34 @@ def test_dosage_safety_metformin_renal_contraindication(auditor):
     assert renal_check.severity == "contraindicated"
     assert any("NGỪNG Metformin" in r for r in result.recommendations)
 
+def test_dosage_safety_metformin_order_level_egfr(auditor):
+    # eGFR đặt trực tiếp trong order_data (CPOE payload)
+    order_data = {
+        "id": "RX-RENAL-02",
+        "prescriptionType": "inpatient",
+        "facilityName": "Bệnh viện Đa khoa Lâm sàng",
+        "patientName": "Trần Thị Lan",
+        "patientAge": 72,
+        "patientEgfr": 25.0,
+        "doctorName": "BS. Trần Văn Hùng",
+        "doctorCertificate": "012345/BYT-CCHN",
+        "status": "signed",
+        "items": [
+            {
+                "medicationName": "Glucophage 850mg",
+                "activeIngredient": "Metformin",
+                "dosage": "850mg x 2",
+                "quantity": 20
+            }
+        ]
+    }
+    result = auditor.audit_prescription(order_data)
+    renal_check = next((c for c in result.clinical_checks if "Metformin ở bệnh nhân suy thận nặng" in c.title), None)
+    assert renal_check is not None
+    assert renal_check.passed is False
+    assert renal_check.severity == "contraindicated"
+    assert result.overall_status == "REJECTED"
+
 def test_timing_and_administration_guidance(auditor):
     # Kê Ibuprofen và Esomeprazol và Glucophage XR -> Phải có hướng dẫn thời điểm & dạng bào chế
     order_data = {
