@@ -143,7 +143,7 @@ async def build_drug_profile_response(
                         source_label="DĐVN V (QĐ 2033/QĐ-BYT)",
                         user_role=u_role
                     )
-                    if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
+                    if synth_res and synth_res.conversational_answer:
                         reply = synth_res.conversational_answer
                 except Exception:
                     pass
@@ -251,23 +251,30 @@ async def build_drug_profile_response(
         session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
 
         reply_text = f"### {label}: {clean_name}\n\n{detail}"
-        is_conversational_question = any(w in lower_query for w in (
-            "sáng hay tối", "lúc nào", "khi nào", "trước hay sau", "thế nào",
-            "như thế nào", "được không", "uống cùng", "cho trẻ em", "cho bé",
-            "suy thận", "phụ nữ có thai", "sốt bao nhiêu", "dùng sao"
-        ))
-        if is_conversational_question and detail:
+        is_rag_grounded = False
+        res_source_status = "exact_match"
+        if detail:
             try:
                 from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
                 u_role = getattr(session, "user_role", "doctor") or "doctor"
+                u_name = getattr(session, "user_name", "Bác sĩ") or "Bác sĩ"
+                evidence_ctx = (
+                    f"### {label}: {clean_name} ({clean_inn.title()})\n"
+                    f"**Kết luận lâm sàng chính (Core Clinical Guidance):** Hướng dẫn {label.lower()} cho **{clean_name}** ({clean_inn.title()}) đối soát chuẩn Dược thư Quốc gia.\n\n"
+                    f"**Chi tiết thực hành & Hướng dẫn sử dụng:**\n{detail}\n\n"
+                    f"**Cảnh báo an toàn & Chống chỉ định:** Bắt buộc tuân thủ đúng liều lượng chỉ định theo tuổi/cân nặng và rà soát các yếu tố an toàn của người bệnh trước khi chỉ định."
+                )
                 synth_res = await synthesize_grounded_clinical_response(
                     query=query,
-                    evidence_context=f"Thông tin xác thực từ CSDL y tế: Thuốc {clean_name} ({clean_inn.title()}). {label}: {detail}",
+                    evidence_context=evidence_ctx,
                     source_label=source,
-                    user_role=u_role
+                    user_role=u_role,
+                    user_name=u_name
                 )
-                if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
+                if synth_res and synth_res.conversational_answer:
                     reply_text = synth_res.conversational_answer
+                    is_rag_grounded = True
+                    res_source_status = synth_res.source_status
             except Exception:
                 pass
 
@@ -275,7 +282,7 @@ async def build_drug_profile_response(
             intent="MEDICATION_SAFETY_PROFILE", reply_text=reply_text,
             card=None, legal_basis=source, suggested_chips=contextual_chips, session_id=session.session_id,
             active_medication_name=session.active_medication_name, answer_type="medication_field",
-            source_status="exact_match", confidence=1.0, citations=[build_drug_citation(matched, monograph, source)]
+            source_status=res_source_status, confidence=1.0, rag_grounded=is_rag_grounded, citations=[build_drug_citation(matched, monograph, source)]
         )
 
     is_summary_request = any(p in lower_query for p in (
@@ -333,7 +340,7 @@ async def build_drug_profile_response(
     )
 
     from app.services.chatbot.conversational_clinical_engine import build_fluent_drug_profile_response
-    resp = build_fluent_drug_profile_response(
+    resp = await build_fluent_drug_profile_response(
         matched_drug=matched,
         monograph=monograph,
         stock=in_stock,

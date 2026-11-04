@@ -21,7 +21,7 @@ def get_clinical_persona_greeting(user_name: str, user_role: str) -> str:
         return "Kính gửi Dược sĩ lâm sàng,"
     return "Chào Quý đồng nghiệp y tế,"
 
-def build_fluent_drug_profile_response(
+async def build_fluent_drug_profile_response(
     matched_drug: Any,
     monograph: Any,
     stock: int,
@@ -31,12 +31,12 @@ def build_fluent_drug_profile_response(
     user_role: str = "doctor",
     session_id: Optional[str] = None
 ) -> CopilotResponse:
-    """Xây dựng phản hồi tra cứu thuốc liền mạch, súc tích, chuẩn mực như các LLM y tế hàng đầu."""
+    """Xây dựng phản hồi tra cứu thuốc liền mạch, súc tích chuẩn PaperQA2 Evidence Synthesis."""
     greeting = get_clinical_persona_greeting(user_name, user_role)
     clean_name = matched_drug.brand_name.split("(")[0].strip()
     active_ing = matched_drug.active_ingredient or "Hoạt chất chuẩn"
     q_lower = query.lower()
-    
+
     # Bóc tách dữ liệu chuẩn DĐVN V
     ind = (monograph.indications if monograph and monograph.indications else None) or matched_drug.indications or "Theo đơn chỉ định chuyên khoa"
     adult_d = (monograph.adult_dosage if monograph and monograph.adult_dosage else None) or matched_drug.adult_dosage or "Tuân thủ chỉ định điều trị"
@@ -45,7 +45,7 @@ def build_fluent_drug_profile_response(
     renal = (monograph.renal_adjustment if monograph and monograph.renal_adjustment else None) or matched_drug.renal_adjustment or "Chưa có khuyến cáo hiệu chỉnh đặc thù; theo dõi ClCr"
     preg = (monograph.pregnancy_warning if monograph and monograph.pregnancy_warning else None) or matched_drug.pregnancy_warning or "Chỉ dùng khi lợi ích điều trị vượt trội nguy cơ đối với thai nhi"
     adr = (monograph.adverse_effects if monograph and monograph.adverse_effects else None) or matched_drug.adverse_effects or "Theo dõi các phản ứng dị ứng hoặc quá mẫn"
-    
+
     # Tra cứu tương tác QĐ 5948
     ddis = find_all_interactions_for_drug(clean_name)
     top_ddi_list = []
@@ -55,63 +55,61 @@ def build_fluent_drug_profile_response(
         if p and p not in seen:
             seen.add(p)
             top_ddi_list.append(f"**{p}** ({d.get('severity')}: {d.get('consequence')})")
-    
+
     ddi_summary = "; ".join(top_ddi_list[:3]) if top_ddi_list else "Chưa ghi nhận tương tác chống chỉ định nguy hiểm trong CSDL QĐ 5948."
 
-    # Xây dựng phản hồi hội thoại liền mạch
-    paragraphs = []
-    paragraphs.append(f"{greeting} thông tin chuyên luận thẩm định cho thuốc **{clean_name}** ({active_ing}):\n")
-    
-    # Đưa câu trả lời trọng tâm (BLUF) lên đầu nếu câu hỏi hỏi cụ thể 1 khía cạnh
-    if any(w in q_lower for w in ["uống lúc nào", "thời điểm", "trước hay sau ăn", "lúc đói", "lúc no"]):
-        from app.services.clinical_prescription_auditor import TIMING_GUIDELINES
-        specific_timing = None
-        for guide in TIMING_GUIDELINES.values():
-            if any(kw in clean_name.lower() or kw in active_ing.lower() for kw in guide["keywords"]):
-                specific_timing = f"💡 **Khuyến cáo thời điểm dùng:** {guide['timing']}. **Cách dùng:** {guide['instruction']}. *({guide['rationale']})*"
-                break
-        if specific_timing:
-            paragraphs.append(specific_timing + "\n")
-        else:
-            paragraphs.append("💡 **Khuyến cáo thời điểm dùng:** Uống sau bữa ăn no 15 - 30 phút cùng cốc nước đầy (150 - 200ml) để giảm kích ứng đường tiêu hóa.\n")
-            
-    elif any(w in q_lower for w in ["suy thận", "chỉnh liều", "egfr", "crcl"]):
-        paragraphs.append(f"⚙️ **Hiệu chỉnh liều theo chức năng thận:** {format_clinical_text(renal)}\n")
-        
-    elif any(w in q_lower for w in ["thai", "có thai", "mang thai", "cho con bú"]):
-        paragraphs.append(f"🤰 **Cảnh báo thai kỳ & Cho con bú:** {format_clinical_text(preg)}\n")
-        
-    elif any(w in q_lower for w in ["liều", "liều lượng", "trẻ em", "bao nhiêu mg"]):
-        paragraphs.append(f"🛡️ **Liều lượng chuẩn:**\n• **Người lớn:** {format_clinical_text(adult_d)}\n• **Trẻ em:** {format_clinical_text(ped_d)}\n")
-        
-    elif any(w in q_lower for w in ["chống chỉ định", "không được dùng", "kỵ"]):
-        paragraphs.append(f"🚫 **Chống chỉ định quan trọng:** {format_clinical_text(contra)}\n")
+    source_str = (monograph.source if monograph and monograph.source else matched_drug.clinical_source) or "Dược thư Quốc gia Việt Nam (DĐVN V) & Cục Quản lý Dược (DAV)"
 
-    # Khối thông tin cốt lõi trình bày rõ ràng, thoáng mắt
-    core_summary = [
-        f"### 📋 Tổng Quan Dược Lâm Sàng & An Toàn Thuốc",
-        f"• **Hoạt chất chính:** **{active_ing or 'Theo hồ sơ công bố'}** | **Số đăng ký (DAV):** `{matched_drug.national_code}` | **Dạng bào chế:** {matched_drug.dosage_form or 'Theo tiêu chuẩn NSX'}",
-        f"• **🎯 Chỉ định chính:** {format_clinical_text(ind)[:250]}...",
-        f"• **🛡️ Liều dùng người lớn:** {format_clinical_text(adult_d)[:250]}...",
-        f"• **👶 Liều dùng trẻ em:** {format_clinical_text(ped_d)[:200]}...",
-        f"• **🚫 Chống chỉ định:** {format_clinical_text(contra)[:220]}...",
-        f"• **⚡ Tương tác đáng chú ý (QĐ 5948):** {ddi_summary}",
+    # RAG Retrieval: Lấy chunks thực tế từ CSDL RAG FTS
+    from app.services.rag.hybrid_retriever import HybridRetriever
+    from app.services.rag.citation_grounder import build_claim_citations
+    from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
+
+    retriever = HybridRetriever()
+    search_q = f"{clean_name} {active_ing}"
+    retrieved_chunks = retriever.retrieve(search_q, top_k=3)
+
+    relevant_chunks = [
+        r for r in retrieved_chunks
+        if clean_name.lower() in r.chunk.title.lower() or active_ing.lower() in r.chunk.title.lower()
+        or clean_name.lower() in r.chunk.content.lower() or active_ing.lower() in r.chunk.content.lower()
+    ]
+
+    citations = []
+    if relevant_chunks:
+        citations = [c.to_dict() for c in build_claim_citations(relevant_chunks)]
+
+    if not citations:
+        citations = [build_drug_citation(matched_drug, monograph, source_str)]
+
+    # Chuẩn bị bối cảnh chứng cứ (Evidence Context) chuẩn PaperQA2
+    evidence_blocks = [
+        f"### Hồ Sơ Dược Lâm Sàng: {clean_name} ({active_ing})",
+        f"• **Hoạt chất chính:** **{active_ing}** | **Số đăng ký (DAV):** `{matched_drug.national_code}` | **Dạng bào chế:** {matched_drug.dosage_form or 'Đạt chuẩn DĐVN V'}",
+        f"**Kết luận lâm sàng chính (Core Clinical Guidance):** {clean_name} ({active_ing}) có chỉ định chính: {format_clinical_text(ind)}.",
+        f"**Chi tiết thực hành & Hướng dẫn sử dụng:**",
+        f"• Liều dùng người lớn: {format_clinical_text(adult_d)}",
+        f"• Liều dùng trẻ em: {format_clinical_text(ped_d)}",
+        f"• Tương tác thuốc đáng chú ý (QĐ 5948): {ddi_summary}",
+        f"**Cảnh báo an toàn & Chống chỉ định:** {format_clinical_text(contra)}. Hiệu chỉnh liều suy thận: {format_clinical_text(renal)}. Cảnh báo phụ nữ mang thai / cho con bú: {format_clinical_text(preg)}."
     ]
     if any(w in q_lower for w in ["tồn kho", "còn thuốc", "số lượng", "trong kho", "ở đâu", "còn bao nhiêu"]):
-        core_summary.append(f"• **📦 Tồn kho bệnh viện:** **{stock} {matched_drug.standard_unit}** (Vị trí: `{location}`)")
-    paragraphs.append("\n".join(core_summary))
-    
-    # Lưu ý an toàn và kết thúc hội thoại
-    source_str = (monograph.source if monograph and monograph.source else matched_drug.clinical_source) or "Dược thư Quốc gia Việt Nam DĐVN V & Cục Quản Lý Dược (DAV)"
-    paragraphs.append(
-        f"\n⚠️ **Lưu ý an toàn lâm sàng:** Bắt buộc rà soát tiền sử dị ứng và chức năng gan/thận của bệnh nhân trước khi chỉ định. "
-        f"*(Căn cứ: {source_str})*\n\n"
-        f"Bác sĩ cần rà soát thêm tương tác thuốc hay tính toán liều cho đối tượng cụ thể nào nữa không ạ?"
+        evidence_blocks.append(f"• Tồn kho bệnh viện: {stock} {matched_drug.standard_unit} (Vị trí: `{location}`).")
+
+    for r in relevant_chunks:
+        evidence_blocks.append(f"[{r.chunk.title}]: {r.chunk.content}")
+
+    synth_res = await synthesize_grounded_clinical_response(
+        query=query,
+        evidence_context="\n\n".join(evidence_blocks),
+        source_label=source_str,
+        user_role=user_role,
+        user_name=user_name
     )
-    
-    reply_text = "\n".join(paragraphs)
+
+    reply_text = synth_res.conversational_answer if synth_res and synth_res.conversational_answer else "\n".join(evidence_blocks)
     chips = generate_smart_clinical_chips(query, drug_name=clean_name, active_ingredient=active_ing)
-    
+
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE",
         reply_text=reply_text,
@@ -119,9 +117,10 @@ def build_fluent_drug_profile_response(
         suggested_chips=chips,
         session_id=session_id,
         answer_type="medication_profile",
-        source_status="exact_match",
-        confidence=1.0,
-        citations=[build_drug_citation(matched_drug, monograph, source_str)]
+        source_status=synth_res.source_status if synth_res else "exact_match",
+        confidence=synth_res.grounded_confidence if synth_res else 1.0,
+        rag_grounded=True,
+        citations=citations
     )
 
 # ==============================================================================

@@ -11,6 +11,7 @@ import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../se
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { processClinicalUserQuery } from './queryProcessor';
 import { matchDrugInteractionIntent, extractDrugPair } from './intents/drugInteractionIntent';
+import { matchMedicationSafetyIntent } from './intents/medicationSafetyIntent';
 import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -92,7 +93,9 @@ export async function processClinicalAgentQueryAsync(
   );
   const isDdi = matchDrugInteractionIntent(lower);
   const isDeepPharmacology = isDdi || /thời gian bán thải|huyết tương|dược động học|cơ chế tác dụng|tương tác|chống chỉ định|liều tối đa/i.test(lower);
-  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isClinicalScenarioQuery(lower) && !isDeepPharmacology && !isSpecificMedicationField) {
+  const isMedicationSafetyCard = localResult.replyMessage?.card?.cardType === 'medication_safety';
+  const isMedicationLookup = isMedicationSafetyCard || matchMedicationSafetyIntent(lower) || isSpecificMedicationField;
+  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isMedicationLookup && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {
     return localResult;
   }
 

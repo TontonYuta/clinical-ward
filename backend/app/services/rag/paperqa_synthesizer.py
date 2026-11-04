@@ -149,16 +149,16 @@ def _format_deterministic_synthesis(
     else:
         greeting = "Chào Quý đồng nghiệp y tế,"
 
-    title_match = re.search(r"###\s+(?:Hướng Dẫn Dược Lâm Sàng:\s*)?(.*?)\n", evidence_context)
+    title_match = re.search(r"###\s+(?:Hướng Dẫn Dược Lâm Sàng:\s*|Hồ Sơ Dược Lâm Sàng:\s*|Thông Tin Thuốc:\s*)?(.*?)\n", evidence_context)
     topic_title = title_match.group(1).strip() if title_match else ""
 
-    bluf_match = re.search(r"\*\*Kết luận lâm sàng chính[^\*]*\*\*:\s*([^\n]+(?:\n[^\n#]+)*)", evidence_context)
+    bluf_match = re.search(r"\*\*Kết luận lâm sàng chính[^\*:]*(?::\*\*|\*\*:)[\s:]*([^\n]+(?:\n[^\n#]+)*)", evidence_context)
     bluf_text = bluf_match.group(1).strip() if bluf_match else ""
 
-    details_match = re.search(r"\*\*Chi tiết thực hành[^\*]*\*\*:\s*([\s\S]*?)(?=\*\*Cảnh báo|\Z)", evidence_context)
+    details_match = re.search(r"\*\*Chi tiết thực hành[^\*:]*(?::\*\*|\*\*:)[\s:]*([\s\S]*?)(?=\*\*Cảnh báo|\Z)", evidence_context)
     details_text = details_match.group(1).strip() if details_match else ""
 
-    warnings_match = re.search(r"\*\*Cảnh báo an toàn[^\*]*\*\*:\s*([^\n]+(?:\n[^\n#]+)*)", evidence_context)
+    warnings_match = re.search(r"\*\*Cảnh báo an toàn[^\*:]*(?::\*\*|\*\*:)[\s:]*([^\n]+(?:\n[^\n#]+)*)", evidence_context)
     warnings_text = warnings_match.group(1).strip() if warnings_match else ""
 
     parts: List[str] = []
@@ -166,6 +166,10 @@ def _format_deterministic_synthesis(
         parts.append(f"{greeting} hệ thống cung cấp thông tin chuyên môn thẩm định về **{topic_title}**:\n")
     else:
         parts.append(f"{greeting} hệ thống cung cấp thông tin chuyên môn đối soát theo nguồn [{source_label}]:\n")
+
+    id_line = re.search(r"(•\s+\*\*Hoạt chất chính:\*\*.*?)\n", evidence_context)
+    if id_line:
+        parts.append(f"{id_line.group(1).strip()}\n")
 
     if bluf_text:
         parts.append(f"💡 **Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf_text}\n")

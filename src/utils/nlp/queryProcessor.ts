@@ -56,14 +56,15 @@ export function processClinicalUserQuery(
   const text = guardCheck.sanitizedQuery;
   const lower = text.toLowerCase();
 
-  if (/\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b/i.test(lower) && !/bệnh nhân|người bệnh|ca bệnh|hồ sơ|bn[- ]/i.test(lower)) {
-    return { replyMessage: {
-      id: `msg-case-clarification-${Date.now()}`, sender: 'agent',
-      text: 'Trợ lý phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng chọn hồ sơ hoặc nêu thông tin người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu rõ chủ đề cần tra cứu.',
-      timestamp: nowStr,
-      suggestedChips: ['Tra cứu thông tin thuốc có nguồn', 'Mở hồ sơ người bệnh để rà soát ca']
-    } };
-  }
+  // Tạm thời comment chặn triệu chứng bản thân ở frontend theo yêu cầu người dùng để chuyển toàn bộ sang SOTA RAG backend
+  // if (/\b(tôi|em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|em|mình)\b/i.test(lower) && !/bệnh nhân|người bệnh|ca bệnh|hồ sơ|bn[- ]/i.test(lower)) {
+  //   return { replyMessage: {
+  //     id: `msg-case-clarification-${Date.now()}`, sender: 'agent',
+  //     text: 'Trợ lý phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng chọn hồ sơ hoặc nêu thông tin người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu rõ chủ đề cần tra cứu.',
+  //     timestamp: nowStr,
+  //     suggestedChips: ['Tra cứu thông tin thuốc có nguồn', 'Mở hồ sơ người bệnh để rà soát ca']
+  //   } };
+  // }
 
   // Pairwise drug interaction questions need a dedicated path before generic
   // medication lookup can answer about a single product.
