@@ -1,14 +1,14 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Thanh Nhập Liệu Chatbot Lâm Sàng (<=120 LOC)
+ * Thanh Nhập Liệu Chatbot Lâm Sàng - Nhập giọng nói tiếng Việt trực tiếp (<=120 LOC)
  */
 
-import React, { useState } from 'react';
-import { Send, Mic, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Mic, MicOff, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { QuickSuggestionChip } from '../../types/clinical';
-import { VoiceModal } from '../Modals/VoiceModal';
 import { ImageModal } from '../Modals/ImageModal';
+import { clinicalAudio } from '../../utils/audio';
 
 interface ChatInputBarProps {
   onSendMessage: (text: string, attachment?: any) => void;
@@ -24,18 +24,140 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   isAudioMuted,
 }) => {
   const [inputText, setInputText] = useState('');
-  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [isImageOpen, setIsImageOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+
+  const recognitionRef = useRef<any>(null);
+  const baseTextRef = useRef<string>('');
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch {}
+      }
+    };
+  }, []);
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+    }
+    setIsListening(false);
+    if (!isAudioMuted) clinicalAudio.playMicBeep(false);
+  };
+
+  const startListening = () => {
+    setSpeechError(null);
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechError('Trình duyệt chưa hỗ trợ Web Speech API. Vui lòng dùng Chrome, Edge hoặc Safari.');
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch {}
+      }
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'vi-VN';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      baseTextRef.current = inputText.trim();
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setSpeechError(null);
+        if (!isAudioMuted) clinicalAudio.playMicBeep(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let fullSpoken = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          fullSpoken += event.results[i][0].transcript;
+        }
+        const clean = fullSpoken.trim();
+        if (clean) {
+          const base = baseTextRef.current;
+          setInputText(base ? `${base} ${clean}` : clean);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error === 'not-allowed') {
+          setSpeechError('Trình duyệt chưa được cấp quyền micro.');
+        } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          setSpeechError(`Lỗi micro: ${event.error}`);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        if (!isAudioMuted) clinicalAudio.playMicBeep(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      setSpeechError('Không thể khởi động micro.');
+      setIsListening(false);
+    }
+  };
+
+  const toggleListening = () => {
+    if (isListening) stopListening();
+    else startListening();
+  };
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isListening) stopListening();
     if (!inputText.trim() || isProcessing) return;
-    onSendMessage(inputText);
+    onSendMessage(inputText.trim());
     setInputText('');
+    baseTextRef.current = '';
   };
 
   return (
     <div className="p-2 sm:p-3 bg-white shrink-0">
+      {isListening && (
+        <div className="flex items-center justify-between px-2.5 py-1 mb-1.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 animate-in fade-in">
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+            </span>
+            <span>Đang nghe tiếng Việt... Hãy nói câu hỏi hoặc yêu cầu</span>
+          </div>
+          <button
+            type="button"
+            onClick={stopListening}
+            className="text-2xs font-bold text-rose-700 hover:text-rose-900 px-1.5 py-0.5 rounded-sm hover:bg-rose-100 transition cursor-pointer"
+          >
+            Dừng
+          </button>
+        </div>
+      )}
+
+      {speechError && (
+        <div className="flex items-center justify-between px-2.5 py-1 mb-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 animate-in fade-in">
+          <div className="flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>{speechError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSpeechError(null)}
+            className="text-amber-700 hover:text-amber-950 font-bold ml-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2">
         <div className="relative flex-1">
           <input
@@ -43,18 +165,23 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Nhập câu hỏi hoặc yêu cầu lâm sàng..."
+            placeholder={isListening ? '🎙️ Đang nghe tiếng Việt... Hãy nói câu hỏi' : 'Nhập câu hỏi hoặc yêu cầu lâm sàng...'}
             className="w-full pl-3.5 pr-18 sm:pr-22 h-10.5 sm:h-11 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
             disabled={isProcessing}
           />
           <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
             <button
               type="button"
-              onClick={() => setIsVoiceOpen(true)}
-              title="Giọng nói lâm sàng"
-              className="p-1 sm:p-1.5 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              data-testid="chat-voice-btn"
+              onClick={toggleListening}
+              title={isListening ? 'Đang thu âm giọng nói (Bấm để dừng)' : 'Nhập bằng giọng nói (Micro tiếng Việt)'}
+              className={`p-1 sm:p-1.5 rounded-md transition cursor-pointer ${
+                isListening
+                  ? 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-300 hover:bg-rose-700'
+                  : 'hover:bg-slate-200 text-slate-500 hover:text-slate-800'
+              }`}
             >
-              <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              {isListening ? <MicOff className="w-4 h-4 sm:w-4.5 sm:h-4.5" /> : <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />}
             </button>
             <button
               type="button"
@@ -77,15 +204,6 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         </button>
       </form>
 
-      <VoiceModal
-        isOpen={isVoiceOpen}
-        onClose={() => setIsVoiceOpen(false)}
-        onSelectTranscript={(txt, sendImmediately) => {
-          if (sendImmediately) onSendMessage(txt);
-          else setInputText(txt);
-        }}
-        isAudioMuted={isAudioMuted}
-      />
       <ImageModal
         isOpen={isImageOpen}
         onClose={() => setIsImageOpen(false)}
