@@ -87,6 +87,7 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
 
     corr_cues = (
         "tra loi sai", "sai thong tin", "lai sai", "sai roi", "nham roi", "khong dung", "sai bet",
+        "sai cho nay", "sai cho nay roi", "sai cho nay roi nhe", "sai o day", "sai roi nhe",
         "ao giac", "lai ao giac", "bi ao giac", "tra loi linh tinh", "linh tinh roi", "linh tinh qua",
         "noi linh tinh roi", "vo van", "tao lao", "lai nham", "nham to", "nham lan",
         "kem qua", "kem the", "ban kem", "kem that", "kem coi", "te qua", "te that", "ban te",
@@ -95,20 +96,25 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
         "lech huong", "lai lech", "lech huong roi", "khong lien quan", "khong dung cau hoi",
         "van con sai", "van sai", "sai muc dich", "sai huong", "nham muc dich", "khong dung muc dich",
         "lac de", "tra loi lung tung", "noi lung tung", "khong lien quan den cau hoi",
-        "can cai thien", "can cai thien tiep", "chua chuan", "chua dung"
+        "can cai thien", "can cai thien tiep", "chua chuan", "chua dung", "chua dung roi",
+        "chua dung nhe", "chua chinh xac", "chua on", "chua dung lam", "chua chuan lam"
     )
     is_pure_correction = (clean_greeting in {
         "sai roi", "sai rồi", "nham roi", "nhầm rồi", "khong dung", "không đúng",
         "khong phai", "không phải", "bi nham", "bị nhầm", "lại ảo giác rồi", "ảo giác rồi",
         "lai ao giac roi", "ao giac roi", "bị ảo giác à", "bi ao giac a", "nói linh tinh rồi", "linh tinh rồi",
         "bạn kém quá", "ban kem qua", "kém quá", "kem qua", "kém thế", "kem the", "tệ quá", "te qua",
-        "dở quá", "do qua", "chán quá", "chan qua", "thất vọng", "that vong", "bạn dở quá", "bạn tệ quá"
+        "dở quá", "do qua", "chán quá", "chan qua", "thất vọng", "that vong", "bạn dở quá", "bạn tệ quá",
+        "sai chỗ này rồi nhé", "sai chỗ này rồi", "sai chỗ này", "chưa đúng rồi", "chưa đúng nhé"
     } or (
         any(c in clean_greeting_ascii for c in corr_cues)
         and not any(k in clean_greeting_ascii for k in ("mg", "mcg", "chong chi dinh", "benh nhan", "nguoi benh", "ca benh", "noi chuyen", "chuyen", "tuong tac"))
     )) and not any(term in clean_greeting_ascii for term in ("noi chuyen", "chuyen linh tinh", "tro chuyen", "tam su"))
     if is_pure_correction:
-        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
+        u_role = (user_role or "").lower()
+        u_name = (user_name or "").lower()
+        is_doc = any(k in u_role for k in ("doctor", "bac_si", "physician", "bs")) or any(k in u_name for k in ("bác", "bac", "bs", "dr", "doctor", "physician"))
+        role_label = "Bác sĩ" if is_doc else "Nhân viên y tế"
         return CopilotResponse(
             intent="CONVERSATIONAL_CORRECTION",
             reply_text=f"Dạ xin lỗi {role_label}! Em rất tiếc vì trải nghiệm chưa tốt và xin tiếp thu phản ánh để liên tục hoàn thiện chất lượng hỗ trợ. {role_label} vui lòng cho biết câu hỏi cụ thể hoặc thông tin cần tra cứu để em phục vụ chính xác nhất ạ.",

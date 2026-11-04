@@ -94,19 +94,35 @@ async def retrieve_ground_truth_context(nlu_data: Dict[str, Any], db: AsyncSessi
     active = matched_drug.active_ingredient.split(";")[0].split("+")[0].strip().lower()
     clean_inn = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", active, flags=re.IGNORECASE).strip()
 
-    # 2. Tìm Monograph tương ứng trong ClinicalDrugMonograph
-    monograph = None
+    # 2. Tìm Monograph tương ứng trong ClinicalDrugMonograph (ưu tiên bản ghi đầy đủ nhất)
+    candidates = []
     if matched_drug.clinical_monograph_id:
         m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched_drug.clinical_monograph_id))
-        monograph = m_res.scalar_one_or_none()
-    if not monograph and len(clean_inn) >= 3:
-        m_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn).like(f"%{clean_inn}%")))
-        monograph = m_res.scalars().first()
+        m = m_res.scalar_one_or_none()
+        if m:
+            candidates.append(m)
+    if len(clean_inn) >= 3:
+        m_res = await db.execute(select(ClinicalDrugMonograph).where(or_(
+            func.lower(ClinicalDrugMonograph.inn).like(f"%{clean_inn.lower()}%"),
+            func.lower(ClinicalDrugMonograph.title).like(f"%{clean_inn.lower()}%"),
+            func.lower(ClinicalDrugMonograph.title).like(f"%{matched_drug.brand_name.lower()}%")
+        )))
+        candidates.extend(m_res.scalars().all())
+
+    if candidates:
+        def _score_mono(m: ClinicalDrugMonograph) -> int:
+            fields = (m.indications, m.adult_dosage, m.pediatric_dosage, m.precautions,
+                      m.adverse_effects, m.drug_interactions, m.overdose_treatment,
+                      m.renal_adjustment, m.pregnancy_warning, m.dosage_forms)
+            return sum(len(f or "") for f in fields)
+        monograph = max(candidates, key=_score_mono)
+    else:
+        monograph = None
 
     # 3. Lấy tồn kho thực tế nếu có
     batch_stmt = select(InventoryBatch).where(func.lower(InventoryBatch.item_name).like(f"%{matched_drug.brand_name.lower()}%"))
     batches = (await db.execute(batch_stmt)).scalars().all()
-    stock_qty = sum(b.current_stock for b in batches)
+    stock_qty = sum(batch.current_stock for batch in batches)
     location = batches[0].warehouse_location if batches else "Kho Dược Trung Tâm"
 
     ind = (monograph.indications if monograph and monograph.indications else None) or matched_drug.indications or "Theo đơn chỉ định bác sĩ"
@@ -114,7 +130,26 @@ async def retrieve_ground_truth_context(nlu_data: Dict[str, Any], db: AsyncSessi
     ped_d = (monograph.pediatric_dosage if monograph and monograph.pediatric_dosage else None) or matched_drug.pediatric_dosage or "Thận trọng theo cân nặng/diện tích da"
     contra = (monograph.contraindications if monograph and monograph.contraindications else None) or matched_drug.contraindications or "Mẫn cảm với bất kỳ thành phần nào của thuốc"
     adr = (monograph.adverse_effects if monograph and monograph.adverse_effects else None) or matched_drug.adverse_effects or "Xem chi tiết trong tờ hướng dẫn sử dụng"
-    interact = (monograph.drug_interactions if monograph and monograph.drug_interactions else None) or matched_drug.drug_interactions or "Chưa ghi nhận tương tác chống chỉ định nguy kịch"
+    
+    from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
+    ddis = find_all_interactions_for_drug(matched_drug.brand_name) + find_all_interactions_for_drug(clean_inn)
+    ddi_notes = []
+    seen_d = set()
+    for d in ddis:
+        if d.get("partner") not in seen_d:
+            seen_d.add(d.get("partner"))
+            ddi_notes.append(f"Cảnh báo phối hợp với {d.get('partner')}: {d.get('consequence')} (Xử trí: {d.get('action')})")
+    extra_ddi = " • ".join(ddi_notes[:3])
+
+    if monograph and monograph.drug_interactions:
+        interact = f"{monograph.drug_interactions} ({extra_ddi})" if extra_ddi else monograph.drug_interactions
+    elif matched_drug.drug_interactions:
+        interact = f"{matched_drug.drug_interactions} ({extra_ddi})" if extra_ddi else matched_drug.drug_interactions
+    elif extra_ddi:
+        interact = f"Tương tác đáng chú ý (QĐ 5948/QĐ-BYT): {extra_ddi}"
+    else:
+        interact = "Chưa ghi nhận tương tác chống chỉ định nguy kịch"
+
     renal = (monograph.renal_adjustment if monograph and monograph.renal_adjustment else None) or matched_drug.renal_adjustment or "Không yêu cầu hiệu chỉnh đặc biệt"
     preg = (monograph.pregnancy_warning if monograph and monograph.pregnancy_warning else None) or matched_drug.pregnancy_warning or "Tham khảo ý kiến bác sĩ"
 

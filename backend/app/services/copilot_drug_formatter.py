@@ -37,23 +37,28 @@ async def build_drug_profile_response(
     clean_inn = re.sub(r"\b(?:dưới dạng|tương đương|as|equivalent)\b.*$", "", clean_inn, flags=re.IGNORECASE).strip()
 
     monograph = primary_mono
-    if not monograph and matched.clinical_monograph_id:
-        mono_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched.clinical_monograph_id))
-        monograph = mono_res.scalar_one_or_none()
-
     if not monograph:
-        mono_targets = [t for t in [clean_inn, clean_active, first_active] if t and len(t) >= 3]
+        candidates = []
+        if matched.clinical_monograph_id:
+            mono_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched.clinical_monograph_id))
+            m = mono_res.scalar_one_or_none()
+            if m:
+                candidates.append(m)
+
+        mono_targets = [t for t in [clean_inn, clean_active, first_active, matched.brand_name.lower()] if t and len(t) >= 3]
         conds = [func.lower(ClinicalDrugMonograph.inn).like(f"%{t}%") for t in mono_targets]
+        conds.extend([func.lower(ClinicalDrugMonograph.title).like(f"%{t}%") for t in mono_targets])
         if conds:
             mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*conds)))
-            candidates = mono_res.scalars().all()
-            if candidates:
-                def _score_mono(m: ClinicalDrugMonograph) -> int:
-                    fields = (m.indications, m.adult_dosage, m.pediatric_dosage, m.precautions,
-                              m.adverse_effects, m.drug_interactions, m.overdose_treatment,
-                              m.renal_adjustment, m.pregnancy_warning, m.dosage_forms)
-                    return sum(len(f or "") for f in fields)
-                monograph = max(candidates, key=_score_mono)
+            candidates.extend(mono_res.scalars().all())
+
+        if candidates:
+            def _score_mono(m: ClinicalDrugMonograph) -> int:
+                fields = (m.indications, m.adult_dosage, m.pediatric_dosage, m.precautions,
+                          m.adverse_effects, m.drug_interactions, m.overdose_treatment,
+                          m.renal_adjustment, m.pregnancy_warning, m.dosage_forms)
+                return sum(len(f or "") for f in fields)
+            monograph = max(candidates, key=_score_mono)
 
     def value(field: str) -> Optional[str]:
         return (getattr(monograph, field, None) if monograph else None) or getattr(matched, field, None)
@@ -158,7 +163,40 @@ async def build_drug_profile_response(
             detail = f"{total_stock} {matched.standard_unit}" + (f"; vị trí: {stock_batches[0].warehouse_location}" if stock_batches else "")
         else:
             detail = value(field)
-        detail = format_clinical_text(str(detail).strip()) if detail else f"Chưa có dữ liệu {label.lower()} được xác thực cho {matched.brand_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
+
+        if field == "drug_interactions" or label == "Tương tác thuốc":
+            from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
+            brand_ddis = find_all_interactions_for_drug(matched.brand_name)
+            inn_ddis = find_all_interactions_for_drug(clean_inn)
+            combined_ddis = []
+            seen_ddi = set()
+            for d in brand_ddis + inn_ddis:
+                p = d.get("partner", "")
+                if p not in seen_ddi:
+                    seen_ddi.add(p)
+                    combined_ddis.append(d)
+
+            ddi_block = ""
+            if combined_ddis:
+                ddi_block = "\n\n#### ⚠️ CÁC TƯƠNG TÁC ĐÁNG CHÚ Ý THEO QUYẾT ĐỊNH 5948/QĐ-BYT & HDSD:\n"
+                for idx, item in enumerate(combined_ddis, 1):
+                    ddi_block += (
+                        f"• **{idx}. Phối hợp với {item.get('partner')}:**\n"
+                        f"  - **Mức độ:** `{item.get('severity')}`\n"
+                        f"  - **Cơ chế:** {item.get('mechanism')}\n"
+                        f"  - **Hậu quả:** {item.get('consequence')}\n"
+                        f"  - **Xử trí lâm sàng:** {item.get('action')}\n"
+                        f"  - *Căn cứ:* {item.get('source')}\n"
+                    )
+
+            if detail:
+                detail = f"{format_clinical_text(str(detail).strip())}{ddi_block}"
+            elif combined_ddis:
+                detail = f"Thông tin tương tác đối soát từ Dược thư Quốc gia và Quyết định 5948/QĐ-BYT cho **{matched.brand_name}** ({clean_inn.title()}):\n{ddi_block}"
+            else:
+                detail = f"Chưa có dữ liệu tương tác thuốc được xác thực cho {matched.brand_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
+        else:
+            detail = format_clinical_text(str(detail).strip()) if detail else f"Chưa có dữ liệu {label.lower()} được xác thực cho {matched.brand_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
         session.set_active_medication(name=matched.brand_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
         return CopilotResponse(
@@ -231,23 +269,39 @@ async def build_drug_profile_response(
         f"• **Các dạng bào chế chuẩn trong Dược thư:** {_format_clinical_text(str(df_forms).strip())}\n\n"
     )
 
-    body = "".join(
-        f"{lbl} {_format_clinical_text(str(value(k) or default).strip())}\n\n"
-        for lbl, k, default in [
-            ("#### 2. CHỈ ĐỊNH ĐIỀU TRỊ (INDICATIONS)\n🎯", "indications", "Theo hướng dẫn chẩn đoán và điều trị chuyên khoa được Bộ Y tế phê duyệt."),
-            ("#### 3. LIỀU LƯỢNG & ĐƯỜNG DÙNG (DOSAGE & ADMINISTRATION)\n🛡️ **Liều người lớn & Đường dùng:**", "adult_dosage", "Tuân thủ liều chỉ định của bác sĩ điều trị và tờ HDSD kèm theo."),
-            ("👶 **Liều trẻ em (theo cân nặng mg/kg & lứa tuổi):**", "pediatric_dosage", "Tính liều theo cân nặng (mg/kg) hoặc diện tích da; đối soát kỹ tờ HDSD hoặc chuyên khoa nhi."),
-            ("⚙️ **Hiệu chỉnh liều suy thận:**", "renal_adjustment", "Chưa có khuyến cáo hiệu chỉnh đặc thù; theo dõi chức năng thận và Clcr."),
-            ("🩺 **Hiệu chỉnh liều suy gan:**", "hepatic_adjustment", "Dùng thận trọng ở bệnh nhân suy giảm chức năng gan; chống chỉ định ở suy gan nặng tiến triển."),
-            ("#### 4. CHỐNG CHỈ ĐỊNH (CONTRAINDICATIONS)\n⚠️", "contraindications", "Mẫn cảm hoặc quá mẫn với hoạt chất và bất kỳ tá dược nào của thuốc."),
-            ("#### 5. THẬN TRỌNG & CẢNH BÁO ĐẶC BIỆT (PRECAUTIONS & WARNINGS)\n🤰 **Phụ nữ có thai & Cho con bú:**", "pregnancy_warning", "Chỉ sử dụng khi lợi ích điều trị vượt trội nguy cơ tiềm ẩn đối với thai nhi hoặc trẻ bú mẹ."),
-            ("🔍 **Thận trọng lâm sàng & Nguy cơ độc tính:**", "precautions", "Đọc kỹ hướng dẫn sử dụng trước khi dùng; tuân thủ theo dõi của nhân viên y tế."),
-            ("#### 6. TÁC DỤNG KHÔNG MONG MUỐN (ADR & ADVERSE EFFECTS)\n🚨", "adverse_effects", "Báo ngay cho bác sĩ hoặc dược sĩ lâm sàng nếu gặp phản ứng bất lợi nghi do thuốc."),
-            ("#### 7. TƯƠNG TÁC THUỐC (DRUG INTERACTIONS)\n⚡", "drug_interactions", "Rà soát tương tác chống chỉ định hoặc cần lưu ý theo Quyết định 5948/QĐ-BYT."),
-            ("#### 8. QUÁ LIỀU & THUỐC GIẢI ĐỘC (OVERDOSE & ANTIDOTE)\n⚠️ **Biểu hiện ngộ độc & Quá liều:**", "overdose_treatment", "Triệu chứng ngộ độc cấp tính hoặc quá liều theo cảnh báo lâm sàng."),
-            ("🧪 **Thuốc giải độc đặc hiệu & Xử trí (Antidote):**", "antidote", "Trường hợp quá liều, ngưng thuốc ngay lập tức và điều trị triệu chứng tại cơ sở y tế.")
-        ]
-    )
+    body_items = [
+        ("#### 2. CHỈ ĐỊNH ĐIỀU TRỊ (INDICATIONS)\n🎯", "indications", "Theo hướng dẫn chẩn đoán và điều trị chuyên khoa được Bộ Y tế phê duyệt."),
+        ("#### 3. LIỀU LƯỢNG & ĐƯỜNG DÙNG (DOSAGE & ADMINISTRATION)\n🛡️ **Liều người lớn & Đường dùng:**", "adult_dosage", "Tuân thủ liều chỉ định của bác sĩ điều trị và tờ HDSD kèm theo."),
+        ("👶 **Liều trẻ em (theo cân nặng mg/kg & lứa tuổi):**", "pediatric_dosage", "Tính liều theo cân nặng (mg/kg) hoặc diện tích da; đối soát kỹ tờ HDSD hoặc chuyên khoa nhi."),
+        ("⚙️ **Hiệu chỉnh liều suy thận:**", "renal_adjustment", "Chưa có khuyến cáo hiệu chỉnh đặc thù; theo dõi chức năng thận và Clcr."),
+        ("🩺 **Hiệu chỉnh liều suy gan:**", "hepatic_adjustment", "Dùng thận trọng ở bệnh nhân suy giảm chức năng gan; chống chỉ định ở suy gan nặng tiến triển."),
+        ("#### 4. CHỐNG CHỈ ĐỊNH (CONTRAINDICATIONS)\n⚠️", "contraindications", "Mẫn cảm hoặc quá mẫn với hoạt chất và bất kỳ tá dược nào của thuốc."),
+        ("#### 5. THẬN TRỌNG & CẢNH BÁO ĐẶC BIỆT (PRECAUTIONS & WARNINGS)\n🤰 **Phụ nữ có thai & Cho con bú:**", "pregnancy_warning", "Chỉ sử dụng khi lợi ích điều trị vượt trội nguy cơ tiềm ẩn đối với thai nhi hoặc trẻ bú mẹ."),
+        ("🔍 **Thận trọng lâm sàng & Nguy cơ độc tính:**", "precautions", "Đọc kỹ hướng dẫn sử dụng trước khi dùng; tuân thủ theo dõi của nhân viên y tế."),
+        ("#### 6. TÁC DỤNG KHÔNG MONG MUỐN (ADR & ADVERSE EFFECTS)\n🚨", "adverse_effects", "Báo ngay cho bác sĩ hoặc dược sĩ lâm sàng nếu gặp phản ứng bất lợi nghi do thuốc."),
+        ("#### 7. TƯƠNG TÁC THUỐC (DRUG INTERACTIONS)\n⚡", "drug_interactions", "Rà soát tương tác chống chỉ định hoặc cần lưu ý theo Quyết định 5948/QĐ-BYT."),
+        ("#### 8. QUÁ LIỀU & THUỐC GIẢI ĐỘC (OVERDOSE & ANTIDOTE)\n⚠️ **Biểu hiện ngộ độc & Quá liều:**", "overdose_treatment", "Triệu chứng ngộ độc cấp tính hoặc quá liều theo cảnh báo lâm sàng."),
+        ("🧪 **Thuốc giải độc đặc hiệu & Xử trí (Antidote):**", "antidote", "Trường hợp quá liều, ngưng thuốc ngay lập tức và điều trị triệu chứng tại cơ sở y tế.")
+    ]
+    body_parts = []
+    for lbl, k, default in body_items:
+        val = value(k)
+        if k == "drug_interactions":
+            from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
+            catalog_ddis = find_all_interactions_for_drug(matched.brand_name) + find_all_interactions_for_drug(clean_inn)
+            if catalog_ddis:
+                unique_ddis = []
+                seen_p = set()
+                for cd in catalog_ddis:
+                    if cd.get("partner") not in seen_p:
+                        seen_p.add(cd.get("partner"))
+                        unique_ddis.append(cd)
+                extra = "\n\n*⚠️ Tương tác đáng chú ý theo QĐ 5948/QĐ-BYT & HDSD:*\n" + "\n".join(
+                    f"• **{cd.get('partner')}** (`{cd.get('severity')}`): {cd.get('consequence')}" for cd in unique_ddis[:3]
+                )
+                val = f"{val}\n{extra}" if val else extra.strip()
+        body_parts.append(f"{lbl} {_format_clinical_text(str(val or default).strip())}\n\n")
+    body = "".join(body_parts)
     sec_stock = (
         f"#### 9. TÌNH TRẠNG KHO DƯỢC BỆNH VIỆN & TỦ TRỰC\n"
         f"📦 **Tồn kho khả dụng:** **{in_stock} {matched.standard_unit}** ({'Có sẵn tại kho nội viện' if in_stock > 0 else 'Chưa có tồn kho thực tế trong bệnh viện'})\n"

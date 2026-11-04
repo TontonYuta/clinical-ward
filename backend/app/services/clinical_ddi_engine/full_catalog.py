@@ -173,6 +173,80 @@ def register_custom_ddi(drug_a: str, drug_b: str, mechanism: str, consequence: s
         json.dump(existing, f, indent=2, ensure_ascii=False)
     return entry
 
+def find_all_interactions_for_drug(drug_name: str, limit: int = 6) -> list[dict]:
+    _ensure_loaded()
+    norm = _normalize_token(drug_name)
+    if not norm or len(norm) < 3:
+        return []
+    results = []
+    seen = set()
+
+    # 1. Tìm các cặp tương tác cụ thể trong Bảng 3.1 & Quy tắc tùy chỉnh
+    for (a, b), data in _INDEX_31.items():
+        if norm in a or norm in b or a in norm or b in norm:
+            partner = b if (norm in a or a in norm) else a
+            pair_key = tuple(sorted([a, b]))
+            if pair_key not in seen:
+                seen.add(pair_key)
+                results.append({
+                    "partner": partner.title(),
+                    "severity": data.get("severity") or data.get("level") or "Chống chỉ định / Nguy cơ cao",
+                    "mechanism": data.get("mechanism", ""),
+                    "consequence": data.get("consequence", ""),
+                    "action": data.get("action", ""),
+                    "source": data.get("legal_source") or data.get("source") or "Quyết định 5948/QĐ-BYT"
+                })
+        if len(results) >= limit:
+            break
+
+    # 2. Tìm các tương tác nhóm dược lý (CLASS_DDI_RULES) từ QĐ 5948/QĐ-BYT
+    if len(results) < limit:
+        try:
+            from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+            from app.services.clinical_ddi_engine.rules_data import CLASS_DDI_RULES
+
+            drug_classes = set()
+            for key, reg in DRUG_REGISTRY.items():
+                aliases = [key] + reg.get("aliases", [])
+                if any(norm == _normalize_token(al) or norm in _normalize_token(al) or _normalize_token(al) in norm for al in aliases):
+                    for c in reg.get("classes", []):
+                        drug_classes.add(c)
+
+            if drug_classes:
+                for rule in CLASS_DDI_RULES:
+                    ca = rule.get("class_a")
+                    cb = rule.get("class_b")
+                    target_class = None
+                    if ca in drug_classes:
+                        target_class = cb
+                    elif cb in drug_classes:
+                        target_class = ca
+
+                    if target_class:
+                        partner_names = []
+                        for k, r in DRUG_REGISTRY.items():
+                            if target_class in r.get("classes", []):
+                                partner_names.append(r.get("display") or k.title())
+
+                        partner_label = ", ".join(partner_names[:4]) if partner_names else target_class
+                        rule_key = rule.get("id") or f"{ca}_{cb}"
+                        if rule_key not in seen:
+                            seen.add(rule_key)
+                            results.append({
+                                "partner": f"{partner_label} (Nhóm {target_class})",
+                                "severity": rule.get("severity", "Chống chỉ định / Nguy cơ cao"),
+                                "mechanism": rule.get("mech", ""),
+                                "consequence": rule.get("conseq", ""),
+                                "action": rule.get("action", ""),
+                                "source": rule.get("source", "QĐ 5948/QĐ-BYT (Mục 3.2)")
+                            })
+                    if len(results) >= limit:
+                        break
+        except Exception:
+            pass
+
+    return results
+
 def get_official_catalog_stats() -> dict:
     _ensure_loaded()
     return {

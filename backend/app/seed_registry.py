@@ -90,6 +90,7 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
         if os.path.exists(curated_path):
             update_curated_enrichment(cursor, curated_path)
             conn.commit()
+        seed_clinical_monographs(conn)
         conn.close()
         return existing_count
 
@@ -122,6 +123,7 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     conn.commit()
+    seed_clinical_monographs(conn)
     conn.close()
     print(f"✅ Đã nạp thành công {len(rows)} loại thuốc Cục Quản lý Dược vào SQLite ({target_db})!")
     return len(rows)

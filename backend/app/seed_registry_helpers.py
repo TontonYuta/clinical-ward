@@ -82,13 +82,15 @@ def update_curated_enrichment(cursor: sqlite3.Cursor, curated_path: str):
         curated_items = json.load(f)
     for item in curated_items:
         code = item.get("nationalCode")
-        values = [item.get(source) for _, source in CLINICAL_COLUMNS]
-        if not code or not any(values):
+        if not code:
             continue
-        assignment = ", ".join(f"{column} = ?" for column, _ in CLINICAL_COLUMNS)
+        valid_updates = {col: item[source] for col, source in CLINICAL_COLUMNS if item.get(source) is not None}
+        if not valid_updates:
+            continue
+        set_clause = ", ".join(f"{col} = ?" for col in valid_updates)
         cursor.execute(
-            f"UPDATE dav_national_drugs SET {assignment} WHERE national_code = ?",
-            (*values, code),
+            f"UPDATE dav_national_drugs SET {set_clause} WHERE national_code = ?",
+            (*valid_updates.values(), code),
         )
 
 def map_drug_item_to_tuple(d: dict) -> tuple:

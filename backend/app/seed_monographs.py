@@ -102,7 +102,9 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 "antidote": item.get("antidote"),
                 "source": item.get("clinicalSource") or item.get("clinical_source"),
             }
-        monos = list(monos) + [m for m in monographs_by_id.values() if m.get("id")]
+        monos_dict = {m.get("id"): m for m in monos if m.get("id")}
+        monos_dict.update(monographs_by_id)
+        monos = list(monos_dict.values()) + [m for m in monos if not m.get("id")]
         rows = []
         for idx, m in enumerate(monos, 1):
             inn = m.get("inn", "")
@@ -141,39 +143,63 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 cursor.execute(f"UPDATE clinical_drug_monographs SET {set_clause} WHERE id = ?", (*best_data, stub_id))
         conn.commit()
 
+        # 1. Liên kết Monograph cực nhanh bằng đối soát bộ nhớ O(1)
+        cursor.execute("SELECT id, inn, title FROM clinical_drug_monographs ORDER BY length(coalesce(indications, '')) + length(coalesce(adult_dosage, '')) DESC")
+        monos_for_link = cursor.fetchall()
+        mono_by_inn = {}
+        for mid, minn, mtitle in monos_for_link:
+            if minn:
+                k = re.sub(r"\(.*?\)", "", minn).strip().lower()
+                if k and k not in mono_by_inn:
+                    mono_by_inn[k] = mid
+            if mtitle:
+                k = mtitle.strip().lower()
+                if k and k not in mono_by_inn:
+                    mono_by_inn[k] = mid
+
+        cursor.execute("SELECT id, active_ingredient, brand_name FROM dav_national_drugs WHERE clinical_monograph_id IS NULL")
+        drugs_to_link = cursor.fetchall()
+
+        link_updates = []
+        for did, act, brnd in drugs_to_link:
+            chosen_id = None
+            if act:
+                clean_act = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", act.split(";")[0].split("+")[0], flags=re.IGNORECASE).strip().lower()
+                clean_act = re.sub(r"\(.*?\)", "", clean_act).strip()
+                if clean_act in mono_by_inn:
+                    chosen_id = mono_by_inn[clean_act]
+            if not chosen_id and brnd:
+                clean_brnd = brnd.strip().lower()
+                if clean_brnd in mono_by_inn:
+                    chosen_id = mono_by_inn[clean_brnd]
+            if chosen_id:
+                link_updates.append((chosen_id, did))
+
+        if link_updates:
+            cursor.executemany("UPDATE dav_national_drugs SET clinical_monograph_id = ? WHERE id = ?", link_updates)
+            conn.commit()
+
+        # 2. Cập nhật đồng loạt các trường lâm sàng từ chuyên luận (Batch Update)
         cursor.execute("""
             UPDATE dav_national_drugs
-            SET clinical_monograph_id = (
-                SELECT m.id FROM clinical_drug_monographs m
-                WHERE lower(dav_national_drugs.active_ingredient) LIKE lower(m.inn) || '%'
-                   OR lower(dav_national_drugs.brand_name) = lower(m.inn)
-                ORDER BY length(coalesce(m.indications, '')) + length(coalesce(m.adult_dosage, '')) DESC
-                LIMIT 1
-            )
-            WHERE clinical_monograph_id IS NULL
-              AND EXISTS (
-                SELECT 1 FROM clinical_drug_monographs m
-                WHERE lower(dav_national_drugs.active_ingredient) LIKE lower(m.inn) || '%'
-                   OR lower(dav_national_drugs.brand_name) = lower(m.inn)
-            )
+            SET
+                atc_code = COALESCE(NULLIF(dav_national_drugs.atc_code, ''), (SELECT atc_code FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                drug_class = COALESCE(NULLIF(dav_national_drugs.drug_class, ''), (SELECT drug_class FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                indications = COALESCE(NULLIF(dav_national_drugs.indications, ''), (SELECT indications FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                contraindications = COALESCE(NULLIF(dav_national_drugs.contraindications, ''), (SELECT contraindications FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                precautions = COALESCE(NULLIF(dav_national_drugs.precautions, ''), (SELECT precautions FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                pregnancy_warning = COALESCE(NULLIF(dav_national_drugs.pregnancy_warning, ''), (SELECT pregnancy_warning FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                adult_dosage = COALESCE(NULLIF(dav_national_drugs.adult_dosage, ''), (SELECT adult_dosage FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                pediatric_dosage = COALESCE(NULLIF(dav_national_drugs.pediatric_dosage, ''), (SELECT pediatric_dosage FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                renal_adjustment = COALESCE(NULLIF(dav_national_drugs.renal_adjustment, ''), (SELECT renal_adjustment FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                hepatic_adjustment = COALESCE(NULLIF(dav_national_drugs.hepatic_adjustment, ''), (SELECT hepatic_adjustment FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                adverse_effects = COALESCE(NULLIF(dav_national_drugs.adverse_effects, ''), (SELECT adverse_effects FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                drug_interactions = COALESCE(NULLIF(dav_national_drugs.drug_interactions, ''), (SELECT drug_interactions FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                overdose_treatment = COALESCE(NULLIF(dav_national_drugs.overdose_treatment, ''), (SELECT overdose_treatment FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                antidote = COALESCE(NULLIF(dav_national_drugs.antidote, ''), (SELECT antidote FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
+                clinical_source = COALESCE(NULLIF(dav_national_drugs.clinical_source, ''), (SELECT source FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id))
+            WHERE clinical_monograph_id IS NOT NULL
         """)
-        conn.commit()
-        active_ids = {row[0] for row in cursor.execute("SELECT id FROM clinical_drug_monographs")}
-        for drug in cursor.execute("SELECT id, clinical_monograph_id FROM dav_national_drugs").fetchall():
-            drug_id, monograph_id = drug
-            if monograph_id not in active_ids:
-                continue
-            monograph = cursor.execute(
-                "SELECT atc_code, drug_class, indications, contraindications, precautions, pregnancy_warning, adult_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, adverse_effects, drug_interactions, overdose_treatment, antidote, source FROM clinical_drug_monographs WHERE id = ?",
-                (monograph_id,),
-            ).fetchone()
-            if not monograph:
-                continue
-            fields = ("atc_code", "drug_class", "indications", "contraindications", "precautions", "pregnancy_warning", "adult_dosage", "pediatric_dosage", "renal_adjustment", "hepatic_adjustment", "adverse_effects", "drug_interactions", "overdose_treatment", "antidote", "clinical_source")
-            updates = {name: value for name, value in zip(fields, monograph) if value}
-            if updates:
-                assignment = ", ".join(f"{name} = COALESCE(NULLIF({name}, ''), ?)" for name in updates)
-                cursor.execute(f"UPDATE dav_national_drugs SET {assignment} WHERE id = ?", (*updates.values(), drug_id))
         conn.commit()
         print(f"✅ Đã nạp {len(rows)} chuyên luận Dược Thư 2015 vào clinical_drug_monographs!")
         return len(rows)
