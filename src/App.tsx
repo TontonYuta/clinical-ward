@@ -1932,7 +1932,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
             lowStockCount={batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
             onExecuteCardAction={handleExecuteCardAction}
-            onClearMessages={() => setChatMessages(INITIAL_CHAT_MESSAGES)}
+            onClearMessages={() => {
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.removeItem('clinical_ward_chat_messages');
+                } catch {}
+              }
+              setChatMessages(INITIAL_CHAT_MESSAGES);
+            }}
             onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
             onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
             onOpenUserGuide={() => setIsUserGuideOpen(true)}
