@@ -29,7 +29,8 @@ import { validateClientInputGuardrail } from '../security/clinicalGuardrails';
 
 export function processClinicalUserQuery(
   rawInput: string,
-  currentState: ClinicalQueryState
+  currentState: ClinicalQueryState,
+  userRole?: string
 ): ProcessedQueryResult {
   const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
@@ -92,12 +93,12 @@ export function processClinicalUserQuery(
 
   // 0c. Doctor Prescription Advice & Daily Medication Schedule (GAS Webhook / Email Reminder)
   if (matchPrescriptionAdviceIntent(lower)) {
-    return handlePrescriptionAdviceIntent(text, lower, nowStr);
+    return handlePrescriptionAdviceIntent(text, lower, nowStr, userRole);
   }
 
   // 0d. Electronic Prescription CPOE (Kê đơn thuốc điện tử & duyệt đơn)
   if (matchCpoeIntent(lower)) {
-    return handleCpoeIntent(text, lower, nowStr);
+    return handleCpoeIntent(text, lower, nowStr, userRole);
   }
 
   // 0e. Settle Debt & Return Narcotic Ampoules (Hoàn trả vỏ thuốc độc gây nghiện & xóa nợ)

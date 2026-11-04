@@ -84,7 +84,7 @@ export async function processClinicalAgentQueryAsync(
   const localResult = processClinicalUserQuery(cleanInput, {
     debts: currentState.debts, tickets: currentState.tickets, batches: currentState.batches,
     coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
-  });
+  }, role);
 
   const isSpecificMedicationField = Boolean(
     /(?:chỉ định|chi dinh|thành phần|thanh phan|liều dùng|liều lượng|chống chỉ định|tác dụng phụ|cơ chế|đường dùng|tần suất|tương tác)/i.test(lower) &&

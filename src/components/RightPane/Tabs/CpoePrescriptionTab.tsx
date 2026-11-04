@@ -166,9 +166,18 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
     };
 
     const handleOpenAdviceModal = (e: any) => {
-      const targetOrder = e?.detail?.order || orders[0] || INITIAL_PRESCRIPTIONS[0];
+      const targetOrder = e?.detail?.order || INITIAL_PRESCRIPTIONS[0];
       setAdviceOrder(targetOrder);
     };
+
+    if (sessionStorage.getItem('trigger_open_cpoe_modal') === 'true') {
+      sessionStorage.removeItem('trigger_open_cpoe_modal');
+      setIsModalOpen(true);
+    }
+    if (sessionStorage.getItem('trigger_open_advice_modal') === 'true') {
+      sessionStorage.removeItem('trigger_open_advice_modal');
+      setAdviceOrder(INITIAL_PRESCRIPTIONS[0]);
+    }
 
     window.addEventListener('cpoe_order_created', handleCpoeCreated);
     window.addEventListener('open_cpoe_prescription_modal', handleOpenCpoeModal);

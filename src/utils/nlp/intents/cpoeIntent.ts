@@ -20,8 +20,29 @@ export function matchCpoeIntent(lower: string): boolean {
 export function handleCpoeIntent(
   text: string,
   lower: string,
-  nowStr: string
+  nowStr: string,
+  userRole: string = 'doctor'
 ): ProcessedQueryResult {
+  const canPrescribe = userRole !== 'nurse';
+  const isOpenForm = anyKeyword(lower, [
+    'mở form', 'mo form', 'mở biểu mẫu', 'mo bieu mau', 'mở giao diện', 'mở cpoe', 'vào form',
+    'mở form kê đơn', 'mở form cpoe'
+  ]);
+
+  // Enforce strict RBAC: Nurses cannot prescribe
+  if (!canPrescribe && (isOpenForm || lower.includes('kê đơn') || lower.includes('kê toa'))) {
+    return {
+      replyMessage: {
+        id: `msg-agent-cpoe-rbac-${Date.now()}`,
+        sender: 'agent',
+        text: '⚠️ **Từ chối quyền kê đơn (RBAC):** Theo Thông tư 26/2025/TT-BYT và Luật Khám bệnh, chữa bệnh, chức năng kê đơn thuốc chỉ dành riêng cho Bác sĩ điều trị có chứng chỉ hành nghề. Chatbot chỉ hỗ trợ mở form theo đúng phân quyền; Điều dưỡng không có thẩm quyền kê đơn mà chỉ có quyền xem đơn và lập lịch dặn dò.',
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Thông tư 26/2025/TT-BYT', title: 'Quy chế kê đơn thuốc', clause: 'Điều 4' },
+        suggestedChips: ['Mở form gửi email/sms', 'Tra cứu Dược Thư Quốc Gia', 'Xem danh mục thuốc Cục QLD']
+      }
+    };
+  }
+
   const nameMatch = text.match(/(?:bệnh nhân|cho|bn)\s+([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+){1,3})/u);
   const hasPatientIdentity = Boolean(nameMatch || /\b(?:bn|cccd|căn cước|hộ chiếu)\s*[:#]?\s*[\w-]+/iu.test(text));
   const hasMedication = anyKeyword(lower, ['augmentin', 'amoxicillin', 'paracetamol', 'panadol', 'cipro', 'ciprofloxacin']);
@@ -31,6 +52,32 @@ export function handleCpoeIntent(
     ...(!hasDiagnosis ? ['chẩn đoán'] : []),
     ...(!hasMedication ? ['tên thuốc'] : [])
   ];
+
+  if (isOpenForm) {
+    const navCard: AgentActionCard = {
+      cardType: 'cpoe_navigation',
+      title: 'Biểu Mẫu Kê Đơn Điện Tử CPOE',
+      summary: 'Mở form kê đơn trực tiếp theo Thông tư 26/2025/TT-BYT',
+      data: { targetTab: 'cpoe', target_tab: 'cpoe', openModal: 'cpoe_prescription' },
+      primaryActionLabel: 'Mở Form Kê Đơn CPOE',
+      primaryActionType: 'OPEN_CPOE_PRESCRIPTION',
+      targetTab: 'cpoe',
+      status: 'pending'
+    };
+    return {
+      replyMessage: {
+        id: `msg-agent-cpoe-open-${Date.now()}`,
+        sender: 'agent',
+        text: `Dạ hệ thống đã sẵn sàng mở biểu mẫu kê đơn CPOE theo phân quyền của Bác sĩ. Để lưu đơn theo Điều 6 Thông tư 26/2025/TT-BYT, bác sĩ vui lòng bổ sung: ${missing.length ? missing.join(', ') : 'thông tin lâm sàng'} trực tiếp trong form; chatbot chỉ hỗ trợ mở form chứ không tự ý kê đơn thuốc.`,
+        timestamp: nowStr,
+        legalReference: { lawCode: 'Thông tư 26/2025/TT-BYT', title: 'Yêu cầu chung với nội dung kê đơn thuốc', clause: 'Điều 6' },
+        card: navCard,
+        suggestedChips: ['Mở form kê đơn CPOE', 'Kê Paracetamol cho bệnh nhân Nguyễn Văn A', 'Tra cứu tương tác thuốc']
+      },
+      card: navCard
+    };
+  }
+
   if (missing.length) {
     return { replyMessage: {
       id: `msg-agent-cpoe-clarify-${Date.now()}`,
