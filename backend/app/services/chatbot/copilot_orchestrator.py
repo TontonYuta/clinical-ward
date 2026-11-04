@@ -115,7 +115,25 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         "dược thư quốc gia", "duoc thu quoc gia", "tra cứu thuốc", "tra cuu thuoc", "cổng tra cứu",
         "tra cứu dược thư 2015", "dược thư 2015", "dược thư", "dược thư qg"
     }:
-        return await lookup_drug_authoritative("", db, session_id=session_id, user_name=user_name, user_role=user_role)
+        session.set_active_medication(name="", ingredient="", sdk="")
+        portal_text = (
+            "### 📖 CỔNG TRA CỨU DƯỢC THƯ QUỐC GIA VIỆT NAM (DĐVN V)\n\n"
+            "Hệ thống đã nạp sẵn toàn bộ **771 chuyên luận Dược Thư Quốc Gia Việt Nam (QĐ 2033/QĐ-BYT)** "
+            "và **54.885 số đăng ký thuốc Cục Quản lý Dược (DAV)**.\n\n"
+            "Đồng nghiệp có thể tra cứu nhanh bằng cách:\n"
+            "• Gõ trực tiếp tên biệt dược hoặc hoạt chất vào ô chat (ví dụ: *Coversyl, Augmentin, Zithromax, Ciprofloxacin...*).\n"
+            "• Hoặc bấm vào nút **'Thông tin thuốc' / 'Tra cứu Dược thư'** trên thanh công cụ để mở giao diện tìm kiếm nâng cao."
+        )
+        return CopilotResponse(
+            intent="MEDICATION_LOOKUP_GUIDE",
+            reply_text=portal_text,
+            legal_basis="Dược thư Quốc gia Việt Nam Lần II (2015) & CSDL Cục Quản lý Dược (DAV)",
+            suggested_chips=["Thông tin thuốc Coversyl", "Thông tin thuốc Augmentin", "Thông tin thuốc Zithromax"],
+            session_id=session_id,
+            answer_type="medication_lookup_guide",
+            source_status="exact_match",
+            confidence=1.0
+        )
 
     norm_query = normalize_conversational_query(query)
     norm_lower = norm_query.lower()

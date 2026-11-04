@@ -106,8 +106,8 @@ def _fast_heuristic_rewrite(query: str, history: str) -> Optional[ClinicalRewrit
             fallback_used=False
         )
 
-    # TH2: Hội thoại tiếp nối danh mục tương tác thuốc ("lấy 4 cặp nữa", "thêm 3 cặp nữa")
-    m_ddi_more = re.search(r"(?:lấy|thêm|cho)\s+(\d+)\s+cặp(?:\s+nữa|\s+tiep)?", lower_q)
+    # TH2: Hội thoại tiếp nối danh mục tương tác thuốc ("lấy 4 cặp nữa", "lấy ví dụ 5 cặp nữa", "thêm 3 cặp nữa")
+    m_ddi_more = re.search(r"\b(\d+)\s+cặp\b", lower_q)
     if m_ddi_more or any(w in lower_q for w in ("cặp nữa", "cap nua", "thêm cặp", "xem tiếp các cặp")):
         count_num = m_ddi_more.group(1) if m_ddi_more else "4"
         return ClinicalRewriteResult(

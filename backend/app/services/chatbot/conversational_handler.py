@@ -41,6 +41,37 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             reply_text="Rất vui được hỗ trợ bác sĩ.",
         )
 
+    is_capability_or_help = any(c in clean_greeting_ascii for c in (
+        "giup toi duoc khong", "giup em duoc khong", "ban giup toi duoc khong",
+        "ban giup em duoc khong", "co the giup toi", "co the giup em",
+        "hoi ve thong tin cac loai thuoc", "hoi ve thong tin thuoc",
+        "ban co the lam gi", "ban lam duoc gi", "ban co the giup gi",
+        "huong dan su dung", "cach su dung"
+    ))
+    q_tokens = set(clean_greeting_ascii.split())
+    is_non_clinical = bool(q_tokens & {"toan", "tho", "vang"}) or any(w in clean_greeting_ascii for w in (
+        "hoc toan", "chuyen cuoi", "cau chuyen cuoi", "lam tho", "bai tho",
+        "xo so", "so xo", "nguoi yeu", "thoi tiet", "gia vang", "nau an", "bong da", "da banh"
+    ))
+    if is_capability_or_help and not is_non_clinical:
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else ("Điều dưỡng" if "nurse" in user_role.lower() or "đd" in user_name.lower() else "Đồng nghiệp")
+        return CopilotResponse(
+            intent="GENERAL_CLINICAL_ASSISTANCE",
+            reply_text=(
+                f"Dạ được chứ ạ! Em là Trợ lý Dược lâm sàng & An toàn Thuốc nội viện, luôn sẵn sàng hỗ trợ {role_label} 24/7.\n\n"
+                f"{role_label} có thể tra cứu và thực hiện các nghiệp vụ:\n"
+                f"1. **Tra cứu hồ sơ thuốc & Chuyên luận DĐVN V:** Gửi tên biệt dược, hoạt chất hoặc SĐK (ví dụ: *Coversyl, Paracetamol, Zithromax, Augmentin...*).\n"
+                f"2. **Kiểm tra tương tác thuốc (DDI):** Rà soát các cặp tương tác chống chỉ định theo QĐ 5948/QĐ-BYT (ví dụ: *Clopidogrel + Omeprazol*, hoặc gõ *'lấy ví dụ 3 cặp tương tác chống chỉ định'*).\n"
+                f"3. **Liều dùng & Hiệu chỉnh suy thận:** Liều chuẩn người lớn, liều trẻ em theo cân nặng, hiệu chỉnh liều suy thận theo độ thanh thải Creatinin ($Cl_{{cr}}$).\n"
+                f"4. **Quy chế & Nghiệp vụ nội viện:** Quản lý thuốc gây nghiện (TT 20), xử trí phản vệ (TT 51), thẩm định đơn CPOE (TT 26), quản lý tủ trực & kho GSP (TT 36/TT 22).\n\n"
+                f"{role_label} muốn tra cứu thuốc hoặc chủ đề chuyên môn nào trước ạ?"
+            ),
+            legal_basis="Dược thư Quốc gia Việt Nam DĐVN V & Quyết định 5948/QĐ-BYT",
+            suggested_chips=["Thông tin thuốc Coversyl", "Liều Paracetamol cho trẻ em", "Ví dụ tương tác chống chỉ định", "Quy chế thuốc gây nghiện TT 20"],
+            answer_type="guideline",
+            confidence=1.0
+        )
+
     # 1. Phát hiện phản hồi góp ý bổ sung dữ liệu lâm sàng
     is_data_enrichment_feedback = any(c in clean_greeting_ascii for c in (
         "thieu tuong tac", "can bo sung", "bo sung cho day du", "chua du tuong tac",

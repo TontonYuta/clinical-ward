@@ -305,6 +305,30 @@ DDI_CONTRAINDICATION_CATALOG = [
         "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948)",
         "mechanism": "Macrolid ức chế enzym chuyển hóa CYP3A4 làm tăng nồng độ Ergotamin trong máu, gây co thắt mạch máu ngoại vi nghiêm trọng.",
         "management": "Gây thiếu máu cục bộ cấp tính và hoại tử mô đầu chi (Hội chứng Ergotism). Chống chỉ định dùng đồng thời; nếu đã dùng phải ngưng ngay và truyền cấp cứu bằng thuốc giãn mạch như Nitroprussid."
+    },
+    {
+        "pair": "Digoxin + Clarithromycin (hoặc Erythromycin)",
+        "level": "Chống chỉ định phối hợp / Tương tác mức độ nặng (Bảng 3.1 - QĐ 5948)",
+        "mechanism": "Clarithromycin ức chế P-glycoprotein tại ruột và thận, đồng thời tiêu diệt vi khuẩn đường ruột Eubacterium lentum chuyển hóa Digoxin, làm tăng vọt nồng độ Digoxin trong huyết thanh lên gấp 2 lần.",
+        "management": "Nguy cơ ngộ độc Digoxin cấp tính: loạn nhịp tim chậm, block nhĩ thất, nhìn vàng và ngừng tim. Tránh phối hợp hoặc phải giảm liều Digoxin 50% kèm theo dõi nồng độ đỉnh/đáy trong máu."
+    },
+    {
+        "pair": "Allopurinol + Azathioprin (hoặc 6-Mercaptopurin)",
+        "level": "Chống chỉ định phối hợp / Độc tính tủy xương tối cấp (Bảng 3.1 - QĐ 5948)",
+        "mechanism": "Allopurinol ức chế enzym Xanthine Oxidase - con đường chuyển hóa thải trừ chính của Azathioprin và 6-MP, gây tích lũy chất chuyển hóa độc hại 6-thioguanine nucleotides.",
+        "management": "Nguy cơ suy tủy toàn bộ cực kỳ nguy kịch: giảm bạch cầu hạt đe dọa nhiễm trùng huyết tử vong, giảm tiểu cầu xuất huyết nội tạng. Bắt buộc giảm liều Azathioprin/6-MP xuống 1/4 - 1/3 liều thông thường nếu bắt buộc dùng."
+    },
+    {
+        "pair": "Methotrexat + Cotrimoxazol (Trimethoprim/Sulfamethoxazol)",
+        "level": "Chống chỉ định tuyệt đối (Bảng 3.1 - QĐ 5948 & DĐVN V)",
+        "mechanism": "Hiệp đồng ức chế chu trình Acid Folic: Trimethoprim ức chế dihydrofolate reductase cộng hưởng với Methotrexat, đồng thời Sulfamethoxazol cạnh tranh gắn kết albumin huyết tương và giảm bài tiết Methotrexat qua thận.",
+        "management": "Nguy cơ ngộ độc Methotrexat bùng phát: ức chế tủy xương nặng, thiếu máu hồng cầu to, loét hoại tử niêm mạc miệng và suy thận cấp. Chống chỉ định dùng chung; chọn kháng sinh nhóm khác thay thế Cotrimoxazol."
+    },
+    {
+        "pair": "Ciprofloxacin + Theophyllin",
+        "level": "Chống chỉ định phối hợp / Độc tính Theophyllin (Bảng 3.1 - QĐ 5948)",
+        "mechanism": "Ciprofloxacin ức chế mạnh isoenzym CYP1A2, làm giảm độ thanh thải Theophyllin qua gan từ 30% đến 50%.",
+        "management": "Tích lũy nồng độ Theophyllin gây co giật toàn thể, loạn nhịp nhanh thất nguy hiểm và tử vong. Nếu bắt buộc dùng chung phải giảm liều Theophyllin ít nhất 50% và định lượng nồng độ thuốc liên tục."
     }
 ]
 

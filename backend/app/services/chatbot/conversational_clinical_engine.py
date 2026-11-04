@@ -506,7 +506,7 @@ SPECIALTY_CLINICAL_KNOWLEDGE = [
         "legal": "Thông tư số 51/2017/TT-BYT Hướng dẫn phòng, chẩn đoán và xử trí phản vệ - Bộ Y tế"
     },
     {
-        "keywords": ["thông tư 20", "gây nghiện", "morphin", "hủy vỏ", "bảo quản"],
+        "keywords": ["thông tư 20", "tt 20", "gây nghiện", "thuốc gây nghiện", "morphin", "hủy vỏ", "bảo quản", "quy chế"],
         "topic": "Quy chế quản lý và bảo quản thuốc gây nghiện theo Thông tư 20/2017/TT-BYT",
         "bluf": "Thuốc gây nghiện (Morphin, Fentanyl) phải được quản lý chặt chẽ theo Thông tư 20/2017/TT-BYT: Bảo quản trong tủ sắt có khóa riêng, lập sổ theo dõi xuất nhập tồn và hủy vỏ ống có biên bản.",
         "details": [
@@ -1106,9 +1106,11 @@ def synthesize_specialty_response(
     
     reply_text = "\n".join(paragraphs)
     chips = generate_smart_clinical_chips(query)
+    is_legal_topic = any(k in topic.lower() for k in ["thông tư", "quy chế", "quy định", "nghị định", "luật dược"])
+    chosen_intent = "LEGAL_GUIDANCE" if is_legal_topic else "MEDICATION_SAFETY_PROFILE"
     
     return CopilotResponse(
-        intent="MEDICATION_SAFETY_PROFILE",
+        intent=chosen_intent,
         reply_text=reply_text,
         legal_basis=legal,
         suggested_chips=chips,
