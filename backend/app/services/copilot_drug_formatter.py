@@ -253,11 +253,50 @@ async def build_drug_profile_response(
             citations=combo_citations
         )
 
-    # Đầy đủ và đúng cấu trúc chuẩn Dược thư Quốc gia & Cục Quản lý Dược
+    # 1. TẦNG 1: THẺ TÓM TẮT HÀNH ĐỘNG NHANH (Fast Clinical Glance - 3s Ra Quyết Định)
+    val_ind = value("indications")
+    val_adult_dose = value("adult_dosage")
+    val_ped_dose = value("pediatric_dosage")
+    val_contra = value("contraindications")
+    val_renal = value("renal_adjustment")
+
+    ind_short = _format_clinical_text(str(val_ind or "Theo chỉ định của bác sĩ chuyên khoa.").strip())[:220]
+    dose_short = _format_clinical_text(str(val_adult_dose or "Tuân thủ theo chỉ định liều và tờ HDSD.").strip())[:200]
+    contra_short = _format_clinical_text(str(val_contra or "Mẫn cảm với bất kỳ thành phần nào của thuốc.").strip())[:180]
+
+    from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
+    catalog_ddis = find_all_interactions_for_drug(matched.brand_name) + find_all_interactions_for_drug(clean_inn)
+    unique_ddis = []
+    seen_p = set()
+    for cd in catalog_ddis:
+        if cd.get("partner") not in seen_p:
+            seen_p.add(cd.get("partner"))
+            unique_ddis.append(cd)
+
+    top_ddi_text = "Chưa ghi nhận tương tác chống chỉ định nguy hiểm trong CSDL QĐ 5948."
+    if unique_ddis:
+        top_ddi_text = "; ".join(f"**{cd.get('partner')}** ({cd.get('severity')})" for cd in unique_ddis[:3])
+
+    stock_fast_line = f"• **📦 Tồn kho nội viện:** **{in_stock} {matched.standard_unit}** ({'Có sẵn tại kho' if in_stock > 0 else 'Chưa có tồn kho'}) | Vị trí: `{loc}`\n" if is_stock_ask else ""
+
+    fast_glance_block = (
+        f"### 💊 TRA CỨU NHANH DƯỢC LÂM SÀNG: {matched.brand_name}\n"
+        f"*(Căn cứ CSDL Dược Quốc gia DAV & Dược thư Quốc gia Việt Nam DĐVN V)*\n\n"
+        f"• **Hoạt chất chính (INN):** **{ing}** | **Hàm lượng:** {conc or 'Theo hồ sơ công bố'}\n"
+        f"• **Dạng bào chế & SĐK:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | SĐK: `{matched.national_code}`\n"
+        f"• **🎯 Chỉ định chính:** {ind_short}\n"
+        f"• **🛡️ Liều dùng chuẩn:** {dose_short}\n"
+        f"• **🚫 Chống chỉ định:** {contra_short}\n"
+        f"• **⚡ Tương tác đáng chú ý:** {top_ddi_text}\n"
+        f"{stock_fast_line}\n"
+        f"---\n\n"
+    )
+
+    # 2. TẦNG 2: THAM KHẢO CHUYÊN SÂU TOÀN VĂN DĐVN V (Deep Monograph Collapsible)
     df_forms = value("dosage_forms") or matched.dosage_form or "Đạt chuẩn DĐVN V"
     header = (
-        f"### 💊 HỒ SƠ DƯỢC LÂM SÀNG & CHUYÊN LUẬN ĐỐI CHỨNG: {matched.brand_name}\n"
-        f"*(Căn cứ Dược thư Quốc gia Việt Nam DĐVN V & CSDL Cục Quản lý Dược - Bộ Y tế)*\n\n---\n\n"
+        f"<details>\n"
+        f"<summary><b>📖 Xem Chuyên Luận Toàn Văn Dược Thư Quốc Gia DĐVN V & Dược Động Học (Nhấn để mở rộng)</b></summary>\n\n"
         f"#### 1. THÔNG TIN ĐỊNH DANH & DẠNG BÀO CHẾ LƯU HÀNH\n"
         f"• **Tên biệt dược:** **{matched.brand_name}** | **Mã SĐK (DAV):** `{matched.national_code}`\n"
         f"• **Hoạt chất chính (INN):** **{ing}**\n"
@@ -287,27 +326,15 @@ async def build_drug_profile_response(
     for lbl, k, default in body_items:
         val = value(k)
         if k == "drug_interactions":
-            from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
-            catalog_ddis = find_all_interactions_for_drug(matched.brand_name) + find_all_interactions_for_drug(clean_inn)
-            if catalog_ddis:
-                unique_ddis = []
-                seen_p = set()
-                for cd in catalog_ddis:
-                    if cd.get("partner") not in seen_p:
-                        seen_p.add(cd.get("partner"))
-                        unique_ddis.append(cd)
+            if unique_ddis:
                 extra = "\n\n*⚠️ Tương tác đáng chú ý theo QĐ 5948/QĐ-BYT & HDSD:*\n" + "\n".join(
-                    f"• **{cd.get('partner')}** (`{cd.get('severity')}`): {cd.get('consequence')}" for cd in unique_ddis[:3]
+                    f"• **{cd.get('partner')}** (`{cd.get('severity')}`): {cd.get('consequence')}" for cd in unique_ddis[:5]
                 )
                 val = f"{val}\n{extra}" if val else extra.strip()
         body_parts.append(f"{lbl} {_format_clinical_text(str(val or default).strip())}\n\n")
     body = "".join(body_parts)
-    sec_stock = (
-        f"#### 9. TÌNH TRẠNG KHO DƯỢC BỆNH VIỆN & TỦ TRỰC\n"
-        f"📦 **Tồn kho khả dụng:** **{in_stock} {matched.standard_unit}** ({'Có sẵn tại kho nội viện' if in_stock > 0 else 'Chưa có tồn kho thực tế trong bệnh viện'})\n"
-        f"📍 **Vị trí lưu kho:** `{loc}`\n"
-    ) if is_stock_ask else ""
-    details = header + body + sec_stock
+    details_tail = "\n</details>"
+    details = fast_glance_block + header + body + details_tail
 
     card = CopilotActionCard(
         card_type="medication_safety", title=f"Dược Quốc Gia: {matched.brand_name}",

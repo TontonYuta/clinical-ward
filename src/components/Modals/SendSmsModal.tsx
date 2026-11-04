@@ -1078,14 +1078,32 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
 
                   {/* Thanh phụ: Đo lường SMS hoặc Chỉ dẫn Email */}
                   {activeTab === 'sms' ? (
-                    <div className="flex items-center justify-between text-2xs sm:text-xs text-slate-500 mt-1 px-0.5">
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span>Độ dài: <strong className="text-slate-900 font-mono">{charsCount}</strong> ký tự</span>
-                        <span>·</span>
-                        <span className="hidden sm:inline">Định dạng: <strong className={isUnicode ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>{isUnicode ? 'Có dấu (UCS-2)' : 'Không dấu (GSM)'}</strong></span>
+                    <div className="space-y-2 mt-1.5">
+                      <div className="flex items-center justify-between text-2xs sm:text-xs text-slate-500 px-0.5">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span>Độ dài: <strong className="text-slate-900 font-mono">{charsCount}</strong> ký tự</span>
+                          <span>·</span>
+                          <span className="hidden sm:inline">Định dạng: <strong className={isUnicode ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>{isUnicode ? 'Có dấu (UCS-2)' : 'Không dấu (GSM)'}</strong></span>
+                        </div>
+                        <div className="font-semibold text-slate-700 font-mono">
+                          {segmentsCount} tin ({charsCount <= maxPerSegment ? `${charsCount}/${maxPerSegment}` : `${segmentsCount} SMS`})
+                        </div>
                       </div>
-                      <div className="font-semibold text-slate-700 font-mono">
-                        {segmentsCount} tin ({charsCount <= maxPerSegment ? `${charsCount}/${maxPerSegment}` : `${segmentsCount} SMS`})
+
+                      {/* Khung mô phỏng hiển thị tin nhắn trên điện thoại người bệnh (Live Mobile Screen) */}
+                      <div className="bg-slate-100 p-2.5 sm:p-3 rounded-xl border border-slate-300">
+                        <div className="text-3xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                          <span>Xem trước trên điện thoại người bệnh ({phone || '0963278149'}):</span>
+                          <span className="font-mono text-emerald-800 font-bold bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                            {esmsBrandname || 'BV_LAMSANG'}
+                          </span>
+                        </div>
+                        <div className="bg-teal-800 text-white p-2.5 sm:p-3 rounded-2xl rounded-tr-xs text-xs font-sans leading-relaxed shadow-xs max-w-md ml-auto">
+                          {content || 'Chưa có nội dung tin nhắn... Vui lòng nhập nội dung hoặc chọn mẫu chuẩn bên trái.'}
+                        </div>
+                        <div className="text-right text-3xs text-slate-400 mt-1 font-mono">
+                          Vừa xong · Cổng phát tin SMS Brandname Y Tế
+                        </div>
                       </div>
                     </div>
                   ) : (

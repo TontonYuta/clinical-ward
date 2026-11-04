@@ -62,6 +62,24 @@ export interface PrescriptionOrder {
   facilityPhone?: string;
 }
 
+export interface NursingMarSlot {
+  slotId: 'morning' | 'noon' | 'afternoon' | 'evening';
+  slotLabel: string; // "Sáng (08:00)", "Trưa (12:00)", "Chiều (16:00)", "Tối (20:00)"
+  scheduledTime: string;
+  status: 'completed' | 'pending' | 'skipped';
+  administeredBy?: string; // "ĐD. Hoàng Thị Lan"
+  administeredAt?: string; // "08:05 04/11/2026"
+  notes?: string; // "Người bệnh hợp tác tốt, mạch 78, huyết áp 120/80"
+}
+
+export interface NursingMedicationAdministration {
+  orderItemId: string;
+  medicationName: string;
+  dosage: string;
+  route: string;
+  slots: NursingMarSlot[];
+}
+
 export function resolveTt26FormType(order: {
   tt26FormType?: Tt26FormType;
   id?: string;

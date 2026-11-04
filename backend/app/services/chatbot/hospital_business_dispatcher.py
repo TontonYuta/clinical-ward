@@ -20,6 +20,7 @@ from app.services.copilot_intents_prescription import (
     handle_prescription_advice_intent,
     handle_cpoe_intent,
     handle_debt_settle_intent,
+    handle_prescription_audit_intent,
 )
 
 async def dispatch_clinical_subflows(
@@ -35,6 +36,14 @@ async def dispatch_clinical_subflows(
     ) or lower_query.strip() in ["gửi gmail", "gửi mail", "gmail", "email", "xem email", "in phiếu dặn dò", "gửi sms", "sms"]
     if is_advice:
         return await handle_prescription_advice_intent(query, lower_query, user_name, user_role=user_role)
+
+    is_prescription_audit = any(w in lower_query for w in [
+        "kiểm tra đơn thuốc", "thẩm định đơn thuốc", "đơn thuốc đúng luật", "đơn thuốc đúng quy định",
+        "đơn thuốc hợp lệ chưa", "phù hợp chẩn đoán", "thẩm định đơn", "kiểm tra đơn", "rà soát đơn thuốc",
+        "thể thức đơn", "đơn thuốc có phù hợp", "liều dùng phù hợp chưa"
+    ])
+    if is_prescription_audit:
+        return await handle_prescription_audit_intent(query, lower_query, user_name, user_role, db, session_id="")
 
     is_cpoe = (any(w in lower_query for w in [
         "kê đơn", "tạo đơn thuốc", "lập đơn thuốc", "kê toa", "kê đơn cpoe", "cpoe đơn thuốc", "đơn thuốc điện tử",

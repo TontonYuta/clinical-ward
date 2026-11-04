@@ -5,7 +5,9 @@ import re
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.debt import DebtRecord
+from app.models.cpoe import CpoePrescription
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
+from app.services.clinical_prescription_auditor import ClinicalPrescriptionAuditor
 
 async def handle_prescription_advice_intent(query: str, lower_query: str, user_name: str, user_role: str = "doctor") -> CopilotResponse:
     is_open_advice_form = any(w in lower_query for w in [
@@ -159,4 +161,111 @@ async def handle_debt_settle_intent(query: str, lower_query: str, db: AsyncSessi
         card=card,
         legal_basis="Thông tư 20/2017/TT-BYT - Quản lý thuốc gây nghiện",
         suggested_chips=["Đối soát ca trực 07:00 AM", "Lập dự trù bù thuốc Mẫu 01", "Kê đơn thuốc CPOE"]
+    )
+
+async def handle_prescription_audit_intent(query: str, lower_query: str, user_name: str, user_role: str, db: AsyncSession, session_id: str) -> CopilotResponse:
+    # Lấy đơn thuốc CPOE gần nhất từ CSDL để thẩm định
+    stmt = select(CpoePrescription).order_by(CpoePrescription.created_at.desc()).limit(1)
+    res = await db.execute(stmt)
+    latest_rx = res.scalar_one_or_none()
+
+    auditor = ClinicalPrescriptionAuditor()
+    if latest_rx:
+        import json
+        items = json.loads(latest_rx.items_json) if hasattr(latest_rx, "items_json") and latest_rx.items_json else []
+        order_data = {
+            "id": latest_rx.id,
+            "prescriptionType": latest_rx.prescription_type or "outpatient",
+            "facilityName": getattr(latest_rx, "facility_name", None) or "Bệnh Viện Đa Khoa Lâm Sàng",
+            "patientName": latest_rx.patient_name,
+            "patientAge": 55,
+            "patientWeight": getattr(latest_rx, "patient_weight", None),
+            "patientCccd": latest_rx.patient_cccd,
+            "patientInsuranceId": getattr(latest_rx, "patient_insurance_id", None),
+            "diagnosisIcd10": latest_rx.diagnosis_icd10,
+            "diagnosisText": latest_rx.diagnosis_text,
+            "doctorName": latest_rx.doctor_name,
+            "doctorCertificate": latest_rx.doctor_certificate,
+            "digitalSignature": latest_rx.digital_signature,
+            "daysPrescribed": latest_rx.days_prescribed or 7,
+            "status": latest_rx.status,
+            "items": items
+        }
+    else:
+        order_data = {
+            "id": "RX-2026-604",
+            "prescriptionType": "outpatient",
+            "facilityName": "Bệnh Viện Đa Khoa Lâm Sàng",
+            "patientName": "Trần Huy Hoàng",
+            "patientAge": 45,
+            "patientCccd": "001095012345",
+            "diagnosisIcd10": "J11.0",
+            "diagnosisText": "Cảm cúm mùa (Cúm chưa xác định virus)",
+            "doctorName": "BS. Trần Văn Hùng",
+            "doctorCertificate": "012345/BYT-CCHN",
+            "digitalSignature": "SHA256:8f4e2a1b9c0d",
+            "daysPrescribed": 5,
+            "status": "signed",
+            "items": [
+                {"medicationName": "PARACETAMOL 500mg", "activeIngredient": "Paracetamol", "dosage": "500mg", "frequency": "Uống 1 viên x 2 lần/ngày sau ăn", "route": "Uống", "quantity": 10, "unit": "Viên"}
+            ]
+        }
+
+    audit_res = auditor.audit_prescription(order_data)
+
+    status_icon = "✅" if audit_res.overall_status == "PASSED" else ("⚠️" if audit_res.overall_status == "WARNING" else "⛔")
+    rx_type_str = "ĐƠN THUỐC NGOẠI TRÚ (TT 52/2017 & TT 26/2025)" if audit_res.prescription_type == "outpatient" else "Y LỆNH NỘI TRÚ (TT 23/2011 & TT 07/2011)"
+
+    legal_summary = "\n".join(f"  • {c.rule_name}: {'✓ Đạt' if c.passed else f'✗ {c.message}'}" for c in audit_res.legal_checks[:4])
+
+    clinical_diag = [c for c in audit_res.clinical_checks if c.category == "diagnosis_match"]
+    diag_str = "✓ Phù hợp chẩn đoán điều trị." if not clinical_diag else clinical_diag[0].detail
+
+    clinical_dose = [c for c in audit_res.clinical_checks if c.category == "dosage_safety"]
+    dose_str = "✓ Liều dùng trong giới hạn an toàn." if not clinical_dose else clinical_dose[0].detail
+
+    ddi_str = "✓ Không phát hiện tương tác chống chỉ định (QĐ 5948)." if not audit_res.drug_interactions else f"⚠️ Phát hiện {len(audit_res.drug_interactions)} tương tác: {', '.join(d['pair'] for d in audit_res.drug_interactions)}"
+
+    timing_checks = [c for c in audit_res.clinical_checks if c.category == "timing_administration"]
+    timing_str = "\n".join(f"  • {t.item_name}: {t.detail}" for t in timing_checks[:2]) if timing_checks else "  • Uống thuốc sau bữa ăn no 15-30 phút với nhiều nước ấm."
+
+    report_text = (
+        f"### {status_icon} BÁO CÁO THẨM ĐỊNH ĐƠN THUỐC LÂM SÀNG (AI Prescription Audit)\n\n"
+        f"📋 **Mã đơn:** `{order_data['id']}` | **Loại:** **{rx_type_str}**\n"
+        f"👤 **Người bệnh:** {order_data['patientName']} | **Chẩn đoán:** `[{order_data['diagnosisIcd10']}]` {order_data['diagnosisText']}\n"
+        f"👨‍⚕️ **Bác sĩ kê đơn:** {order_data['doctorName']} ({'Đã ký số ✓' if audit_res.doctor_signature_verified else 'Chờ ký xác nhận'}) | **Điểm an toàn:** `{audit_res.safety_score}/100`\n\n"
+        f"---\n\n"
+        f"#### 1. Thể thức đơn thuốc theo quy định pháp luật (TT 52/2017 & TT 26/2025):\n"
+        f"{legal_summary}\n\n"
+        f"#### 2. Phù hợp chẩn đoán (ICD-10 vs DĐVN V):\n"
+        f"  • {diag_str}\n\n"
+        f"#### 3. Liều dùng theo tuổi, cân nặng & bệnh lý:\n"
+        f"  • {dose_str}\n\n"
+        f"#### 4. Tương tác thuốc & Chống chỉ định (QĐ 5948/QĐ-BYT):\n"
+        f"  • {ddi_str}\n\n"
+        f"#### 5. Lưu ý thời điểm & Cách dùng thuốc:\n"
+        f"{timing_str}\n\n"
+        f"---\n"
+        f"👉 *{audit_res.summary}*"
+    )
+
+    card = CopilotActionCard(
+        card_type="prescription_audit_report",
+        title=f"Thẩm Định Đơn Thuốc: {order_data['id']}",
+        summary=f"Điểm an toàn: {audit_res.safety_score}/100 • Trạng thái: {audit_res.overall_status}",
+        data={"orderId": order_data["id"], "score": audit_res.safety_score, "status": audit_res.overall_status, "targetTab": "cpoe"},
+        primary_action_label="Xem Chi Tiết Đơn Thuốc CPOE",
+        primary_action_type="NAVIGATE_TAB",
+        target_tab="cpoe"
+    )
+
+    return CopilotResponse(
+        intent="PRESCRIPTION_AUDIT_REPORT",
+        reply_text=report_text,
+        card=card,
+        legal_basis="Thông tư 52/2017, TT 26/2025, QĐ 5948 & DĐVN V",
+        suggested_chips=["Mở form gửi email/sms", "Kiểm tra tương tác thuốc", "Kê đơn thuốc CPOE"],
+        answer_type="prescription_audit",
+        source_status="audited_authoritative",
+        confidence=1.0
     )

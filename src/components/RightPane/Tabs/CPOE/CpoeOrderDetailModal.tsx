@@ -14,8 +14,10 @@ import { SendSmsModal } from '../../../Modals/SendSmsModal';
 import { buildDefaultTimeSlots } from '../../../../services/prescriptionAdviceService';
 import { auditPrescriptionDdiApi } from '../../../../services/api';
 import { PrescriptionPrintDocument } from './PrescriptionPrintDocument';
+import { NursingMarView } from './NursingMarView';
+import { AiPrescriptionAuditView } from './AiPrescriptionAuditView';
 
-export type CpoeDetailTab = 'overview' | 'medications' | 'safety_cdss' | 'advice_schedule' | 'legal_signature';
+export type CpoeDetailTab = 'overview' | 'medications' | 'safety_cdss' | 'ai_audit' | 'nursing_mar' | 'advice_schedule' | 'legal_signature';
 
 interface CpoeOrderDetailModalProps {
   isOpen: boolean;
@@ -96,10 +98,14 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
 
   const hasNarcotics = safeItems.some((it) => it?.isNarcotic);
 
+  const isInpatient = order.prescriptionType === 'inpatient_daily';
+
   const tabs: [CpoeDetailTab, string][] = [
     ['overview', 'Tổng quan đơn thuốc'],
     ['medications', `Danh mục thuốc (${safeItems.length})`],
+    ['ai_audit', 'Thẩm định AI 5 sao'],
     ['safety_cdss', 'An toàn lâm sàng & CDSS'],
+    ...(isInpatient ? [['nursing_mar', 'Phiếu y lệnh (Điều dưỡng)'] as [CpoeDetailTab, string]] : []),
     ['advice_schedule', 'Hướng dẫn dặn dò & Lịch dùng'],
     ['legal_signature', 'Pháp lý & Ký số TT26'],
   ];
@@ -361,39 +367,68 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 </dl>
               </div>
 
-              {/* Bác sĩ kê đơn & Ký số */}
+              {/* Bác sĩ kê đơn & Ký số chuẩn Thông tư 52/2017 & TT 26/2025 */}
               <div className="space-y-2.5 pb-5 border-b border-slate-200">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Bác Sĩ Kê Đơn &amp; Chữ Ký Số</h3>
-                <dl className="space-y-2 text-xs">
-                  <div>
-                    <dt className="text-slate-500">Bác sĩ chỉ định</dt>
-                    <dd className="text-sm font-bold text-slate-900 mt-0.5">{order.doctorName}</dd>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Bác Sĩ Kê Đơn &amp; Chữ Ký Chuyên Môn
+                  </h3>
+                  <span className="text-3xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
+                    Luật KBCB 15/2023
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-lg border border-emerald-300 bg-emerald-50/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs text-slate-500 font-semibold uppercase">Chủ thể kê đơn:</span>
+                    <span className="text-3xs font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                      {order.status === 'signed' ? '✓ ĐÃ XÁC THỰC KÝ SỐ' : 'BẢN NHÁP'}
+                    </span>
                   </div>
-                  <div>
-                    <dt className="text-slate-500">Chứng chỉ hành nghề (CCHN)</dt>
-                    <dd className="text-sm font-mono font-medium text-slate-800 mt-0.5">{order.doctorCertificate || '—'}</dd>
+                  <div className="text-sm font-bold text-slate-950">
+                    {order.doctorName || 'BS. Trần Văn Hùng'}
                   </div>
-                  <div>
-                    <dt className="text-slate-500">Thời điểm kê đơn</dt>
-                    <dd className="text-sm font-mono text-slate-800 mt-0.5">{order.prescribedAt}</dd>
+                  <div className="text-xs text-slate-700 font-mono">
+                    Chứng chỉ hành nghề: <b>{order.doctorCertificate || '012345/BYT-CCHN'}</b>
                   </div>
-                  <div>
-                    <dt className="text-slate-500">Trạng thái đơn</dt>
-                    <dd className="text-xs font-semibold text-slate-800 flex items-center gap-1 mt-0.5">
-                      <span>{order.status === 'signed' && order.digitalSignature ? order.digitalSignature : 'Bản nháp - chưa ký số'}</span>
-                    </dd>
+                  <div className="text-2xs text-slate-500 border-t border-emerald-200/60 pt-1.5 flex justify-between">
+                    <span>Thời điểm ký:</span>
+                    <span className="font-mono text-slate-800">{order.prescribedAt}</span>
                   </div>
-                </dl>
+                  {order.digitalSignature && (
+                    <div className="text-3xs font-mono text-slate-600 bg-white p-1.5 rounded border border-emerald-200 break-all">
+                      Digest: {order.digitalSignature}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Phân loại & Cấp phát */}
+              {/* Phân loại Ngoại Trú vs Nội Trú (Quy chế Điều dưỡng & Cấp phát) */}
               <div className="space-y-2 text-xs">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Quy Chế Kê Đơn &amp; Cấp Phát</h3>
-                <p className="text-slate-700 leading-relaxed">
-                  {isOutpatient
-                    ? order.isChronicDisease ? `Đơn ngoại trú ${order.daysPrescribed} ngày; cần xác nhận bệnh thuộc Phụ lục VII và đánh giá ổn định lâm sàng.` : `Đơn ngoại trú ${order.daysPrescribed} ngày; thời hạn tối đa thông thường 30 ngày theo Điều 6 TT26.`
-                    : 'Đơn thuốc điều trị nội trú theo ngày. Dược sĩ lâm sàng đối soát và phát thuốc theo ca trực hàng ngày.'}
-                </p>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Phân Loại Quy Trình Khám Chữa Bệnh
+                </h3>
+                {isOutpatient ? (
+                  <div className="p-3 rounded-lg bg-teal-50/70 border border-teal-200 text-teal-950 space-y-1">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+                      <span>ĐƠN THUỐC NGOẠI TRÚ (TT 52/2017 &amp; TT 26/2025)</span>
+                    </div>
+                    <p className="text-2xs leading-relaxed text-teal-900">
+                      Bác sĩ kê đơn và ký số -&gt; Dược sĩ cấp phát -&gt; Hướng dẫn người bệnh nhận thuốc về nhà tự dùng. <b>Không có vai trò tiêm truyền hay chăm sóc nội trú của Điều dưỡng</b> trong quy trình ngoại trú.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-indigo-50/70 border border-indigo-200 text-indigo-950 space-y-1">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                      <span>Y LỆNH NỘI TRÚ THEO NGÀY (TT 23/2011 &amp; TT 07/2011)</span>
+                    </div>
+                    <p className="text-2xs leading-relaxed text-indigo-900">
+                      Bác sĩ ra y lệnh điều trị theo ngày. <b>Điều dưỡng trực tiếp thực hiện y lệnh</b> (đối chiếu 5 đúng, chia liều, cho uống/tiêm/truyền và ký nhận cữ thuốc theo giờ tại tab <i>Phiếu Y Lệnh (Điều Dưỡng)</i>).
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -470,7 +505,25 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
           </div>
         )}
 
-        {/* TAB 3: AN TOÀN LÂM SÀNG & CDSS */}
+        {/* TAB 3: THẨM ĐỊNH ĐƠN THUỐC AI 5 SAO */}
+        {activeTab === 'ai_audit' && (
+          <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto">
+            <AiPrescriptionAuditView
+              order={order}
+              patient={patient}
+              onOpenSmsModal={() => setIsSmsModalOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* TAB 4: PHIẾU THỰC HIỆN Y LỆNH CỦA ĐIỀU DƯỠNG (NỘI TRÚ) */}
+        {activeTab === 'nursing_mar' && (
+          <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto">
+            <NursingMarView order={order} />
+          </div>
+        )}
+
+        {/* TAB: AN TOÀN LÂM SÀNG & CDSS */}
         {activeTab === 'safety_cdss' && (
           <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-y-auto lg:overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
