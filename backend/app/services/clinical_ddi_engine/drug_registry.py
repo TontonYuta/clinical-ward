@@ -64,5 +64,8 @@ DRUG_REGISTRY: dict[str, dict] = {
     "riluzol": {"display": "Riluzol (Teglutik)", "aliases": ["riluzol", "riluzole", "teglutik", "rilutek"], "classes": ["GLUTAMATE_ANTAGONIST"], "cyp_sub": ["CYP1A2"], "risk": ["hepatotoxic"]},
     "perindopril": {"display": "Perindopril (Coversyl)", "aliases": ["perindopril", "coversyl", "coversyl plus", "coveram"], "classes": ["RAAS_INHIBITOR", "ACEI"], "risk": ["hyperkalemia"]},
     "telmisartan": {"display": "Telmisartan (Micardis)", "aliases": ["telmisartan", "micardis", "micardis plus", "twynsta"], "classes": ["RAAS_INHIBITOR", "ARB"], "risk": ["hyperkalemia"]},
+    "meloxicam": {"display": "Meloxicam", "aliases": ["meloxicam", "mobic", "camrox"], "classes": ["NSAID"], "risk": ["bleeding", "nephrotoxic"]},
+    "celecoxib": {"display": "Celecoxib", "aliases": ["celecoxib", "celebrex"], "classes": ["NSAID"], "risk": ["bleeding", "nephrotoxic"]},
+    "linagliptin": {"display": "Linagliptin", "aliases": ["linagliptin", "trajenta"], "classes": ["DPP4I"], "risk": []},
     "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom hydroxyd", "magnesi", "sat sulfat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []}
 }

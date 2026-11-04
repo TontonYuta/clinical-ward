@@ -138,15 +138,39 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     norm_query = normalize_conversational_query(query)
     norm_lower = norm_query.lower()
 
+    # =========================================================================
+    # MULTI-HOP CLINICAL AGENT & COT REASONING (IRCoT ACL 2023 / Med-PaLM 2)
+    # Intercept complex multi-condition & polypharmacy cases before subflows or 1-drug consults
+    # =========================================================================
+    from app.services.rag.multihop_clinical_agent import is_multihop_clinical_case, execute_multihop_clinical_evaluation
+    if is_multihop_clinical_case(query, norm_lower):
+        multihop_rag = await execute_multihop_clinical_evaluation(query, user_role=user_role)
+        citations_data = [
+            c.to_dict() if hasattr(c, "to_dict") else (c.model_dump() if hasattr(c, "model_dump") else dict(c))
+            for c in multihop_rag.citations
+        ] if multihop_rag.citations else []
+        return CopilotResponse(
+            intent="CLINICAL_AI_CONSULTATION",
+            reply_text=multihop_rag.answer,
+            legal_basis=multihop_rag.legal_basis,
+            citations=citations_data,
+            suggested_chips=[
+                "Hiệu chỉnh liều theo ClCr",
+                "Phác đồ thay thế an toàn cho thận",
+                "Theo dõi điện giải đồ K+ và Creatinin"
+            ],
+            confidence=multihop_rag.confidence_score,
+            rag_grounded=multihop_rag.rag_grounded,
+            answer_type="multihop_case_consultation",
+            source_status="rag_grounded_verified" if multihop_rag.critique_verdict == "PASS" else "rag_grounded_caution",
+            critique_verdict=multihop_rag.critique_verdict,
+            factuality_score=multihop_rag.factuality_score,
+            session_id=session_id
+        )
+
     subflow_res = await dispatch_clinical_subflows(norm_query, norm_lower, user_name, db, user_role=user_role)
     if subflow_res:
         return subflow_res
-
-    # Tạm thời comment detect_and_handle_gemini_clinical_scenario theo yêu cầu người dùng để tập trung test SOTA RAG
-    # sc_early = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
-    # if sc_early:
-    #     sc_early.reply_text = validate_output_guardrail(sc_early.reply_text, query)
-    #     return sc_early
 
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
     spec_early = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
