@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, HelpCircle, BookOpen, ExternalLink, ChevronDown, FileText } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -123,6 +123,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       {buildSourceIntroduction(msg.citations)}
                     </p>
                   ) : null}
+                  {isAgent && msg.card && msg.card.primaryActionLabel && (
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-2xs font-semibold text-slate-800 truncate">{msg.card.title}</p>
+                        {msg.card.summary && <p className="text-3xs text-slate-500 truncate">{msg.card.summary}</p>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onExecuteCardAction?.(
+                          msg.id,
+                          msg.card?.primaryActionType || 'NAVIGATE',
+                          { ...(msg.card?.data || {}), target_tab: msg.card?.targetTab || msg.card?.data?.targetTab }
+                        )}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-800 hover:bg-teal-900 text-white shadow-2xs hover:shadow transition flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>{msg.card.primaryActionLabel}</span>
+                      </button>
+                    </div>
+                  )}
                   {msg.suggestedChips && msg.suggestedChips.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
                       <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp</span>

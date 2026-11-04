@@ -8,11 +8,31 @@ from app.models.debt import DebtRecord
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 
 async def handle_prescription_advice_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:
+    is_open_advice_form = any(w in lower_query for w in [
+        "mở form", "mo form", "mở biểu mẫu", "mở giao diện", "mở form gửi", "gửi email", "gửi mail", "gửi sms", "nhắn tin", "mở form dặn dò", "mở giao diện dặn dò"
+    ])
+    advice_card = CopilotActionCard(
+        card_type="prescription_advice_navigation",
+        title="Biểu Mẫu Dặn Dò & Gửi Email/SMS",
+        summary="Mở biểu mẫu lập lịch dùng thuốc và gửi hướng dẫn cho người bệnh qua Email/SMS",
+        data={"targetTab": "cpoe", "target_tab": "cpoe", "openModal": "prescription_advice"},
+        primary_action_label="Mở Form Gửi Email/SMS",
+        primary_action_type="OPEN_SEND_EMAIL_SMS",
+        target_tab="cpoe",
+    ) if is_open_advice_form else None
+
+    reply = (
+        "Dạ hệ thống đã sẵn sàng mở biểu mẫu dặn dò và gửi Email/SMS. Bác sĩ có thể nhập lời dặn, chọn lịch dùng thuốc và gửi trực tiếp tới bệnh nhân bằng nút bên dưới."
+        if is_open_advice_form
+        else "Để lập lời dặn, hãy mở hồ sơ người bệnh và chọn đơn thuốc đã kê. Trợ lý chỉ chuyển thông tin từ đơn thực tế sang biểu mẫu; không suy ra liều, thời điểm hoặc thời gian dùng từ nội dung chat."
+    )
+
     return CopilotResponse(
         intent="PRESCRIPTION_ADVICE_CLARIFICATION",
-        reply_text="Để lập lời dặn, hãy mở hồ sơ người bệnh và chọn đơn thuốc đã kê. Trợ lý chỉ chuyển thông tin từ đơn thực tế sang biểu mẫu; không suy ra liều, thời điểm hoặc thời gian dùng từ nội dung chat.",
+        reply_text=reply,
+        card=advice_card,
         answer_type="clarification", source_status="missing_selected_order", confidence=1.0,
-        suggested_chips=["Mở hồ sơ người bệnh", "Mở biểu mẫu lời dặn từ đơn đã chọn"]
+        suggested_chips=["Mở form gửi email/sms", "Mở hồ sơ người bệnh", "Mở biểu mẫu lời dặn từ đơn đã chọn"]
     )
 
 async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> CopilotResponse:
@@ -31,9 +51,9 @@ async def handle_cpoe_intent(query: str, lower_query: str, user_name: str) -> Co
             card_type="cpoe_navigation",
             title="Biểu Mẫu Kê Đơn Điện Tử CPOE",
             summary="Mở form kê đơn trực tiếp theo Thông tư 26/2025/TT-BYT",
-            data={"targetTab": "cpoe"},
+            data={"targetTab": "cpoe", "target_tab": "cpoe", "openModal": "cpoe_prescription"},
             primary_action_label="Mở Form Kê Đơn CPOE",
-            primary_action_type="NAVIGATE_TAB",
+            primary_action_type="OPEN_CPOE_PRESCRIPTION",
             target_tab="cpoe"
         ) if is_open_form else None
 

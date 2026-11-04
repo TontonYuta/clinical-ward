@@ -1413,14 +1413,32 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           setCurrentTab('fefo');
         }
       }
-    } else if (actionType === 'NAVIGATE') {
+    } else if (actionType === 'NAVIGATE' || actionType === 'NAVIGATE_TAB') {
       const targetTab = cardData?.target_tab || cardData?.targetTab;
       if (targetTab) {
-        const userAllowedTabs = USER_PROFILES[currentUserRole]?.allowedTabs || ['debt'];
+        const userAllowedTabs = USER_PROFILES[currentUserRole]?.allowedTabs || ['cpoe'];
         if (userAllowedTabs.includes(targetTab)) {
           setCurrentTab(targetTab);
         }
       }
+      if (cardData?.openModal === 'cpoe_prescription') {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
+      } else if (cardData?.openModal === 'prescription_advice') {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
+      }
+      markExecuted();
+    } else if (actionType === 'OPEN_CPOE_PRESCRIPTION') {
+      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+        setCurrentTab('cpoe');
+      }
+      setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
+      markExecuted();
+    } else if (actionType === 'OPEN_SEND_EMAIL_SMS' || actionType === 'OPEN_PRESCRIPTION_ADVICE') {
+      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+        setCurrentTab('cpoe');
+      }
+      setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
+      markExecuted();
     } else if (actionType === 'OPEN_AUDIT_MODAL') {
       setIsAuditTrailOpen(true);
     } else if (actionType === 'OPEN_LEGAL_MODAL') {
