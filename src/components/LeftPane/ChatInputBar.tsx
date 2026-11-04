@@ -75,9 +75,18 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     }
   }, [speechError]);
 
+  // Tự động giải phóng cờ voice dispatch khi bot đã hoàn tất phản hồi
+  useEffect(() => {
+    if (!isProcessing) {
+      hasDispatchedRef.current = false;
+    }
+  }, [isProcessing]);
+
   const dispatchVoiceMessage = (rawText: string) => {
     const textToSend = rawText.trim();
-    if (!textToSend || hasDispatchedRef.current || isProcessing) return;
+    if (!textToSend || hasDispatchedRef.current || isProcessing) {
+      return;
+    }
     hasDispatchedRef.current = true;
 
     if (silenceTimerRef.current) {
@@ -111,6 +120,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       silenceTimerRef.current = null;
     }
     setIsCountingDown(false);
+    hasDispatchedRef.current = false;
     if (recognitionRef.current) {
       try {
         recognitionRef.current.onresult = null;
@@ -127,7 +137,19 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   const handleInstantSend = () => {
     const textToSend = (latestSpokenTextRef.current || inputText).trim();
     if (textToSend) {
-      dispatchVoiceMessage(textToSend);
+      if (silenceTimerRef.current) {
+        window.clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      if (isListening) {
+        stopListening();
+      }
+      hasDispatchedRef.current = false;
+      latestSpokenTextRef.current = '';
+      baseTextRef.current = '';
+      setInputText('');
+      setIsCountingDown(false);
+      onSendMessage(textToSend);
     } else {
       stopListening();
     }
@@ -289,8 +311,24 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputText.trim() || isProcessing) return;
-    dispatchVoiceMessage(inputText);
+    const textToSend = inputText.trim();
+    if (!textToSend || isProcessing) return;
+
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (isListening) {
+      stopListening();
+    }
+
+    hasDispatchedRef.current = false;
+    latestSpokenTextRef.current = '';
+    baseTextRef.current = '';
+    setInputText('');
+    setIsCountingDown(false);
+
+    onSendMessage(textToSend);
   };
 
   return (
@@ -412,7 +450,10 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
             data-testid="chat-input-field"
             type="text"
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              hasDispatchedRef.current = false;
+            }}
             placeholder={isListening ? '🎙️ Đang nghe tiếng Việt... Hãy nói câu hỏi' : 'Nhập câu hỏi hoặc yêu cầu lâm sàng...'}
             className="w-full pl-3.5 pr-18 sm:pr-22 h-10.5 sm:h-11 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
             disabled={isProcessing}
