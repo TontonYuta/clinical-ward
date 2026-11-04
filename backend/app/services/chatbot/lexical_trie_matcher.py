@@ -33,7 +33,8 @@ COMMON_EXCLUSIONS: Set[str] = {
     "đồng", "dong", "nghiệp", "nghiep", "kính", "kinh", "hỗ", "ho", "trợ", "tro", "chuyên", "chuyen", "môn", "mon", "hướng", "huong", "dẫn", "dan", "phác", "phac", "đồ", "do",
     "chuẩn", "chuan", "chi", "nhân", "nhan", "đối", "doi", "quy", "định", "dinh", "thông", "tư", "tu", "nghị", "nghi", "điều", "dieu", "khoa", "phòng", "phong", "toàn", "văn", "van",
     "mang", "gửi", "gui", "giảm", "giam", "loét", "loet", "nấm", "nam", "miệng", "mieng", "tai", "mũi", "họng", "hong", "khớp", "khop", "trĩ", "tri", "ngủ", "ngu",
-    "đồng nghiệp", "dong nghiep", "kính gửi", "kinh gui", "tư vấn", "tu van", "chuyên môn", "chuyen mon", "hỗ trợ", "ho tro"
+    "đồng nghiệp", "dong nghiep", "kính gửi", "kinh gui", "tư vấn", "tu van", "chuyên môn", "chuyen mon", "hỗ trợ", "ho tro",
+    "khan", "ho", "ho khan", "nhom", "nhóm", "đặc", "dac", "loãng", "loang", "bột", "bot", "tinh thể", "dung dịch", "hỗn dịch", "nhũ tương"
 }
 
 class TrieNode:

@@ -24,7 +24,8 @@ def resolve_registered_medications(text: str) -> list[str]:
                 aliases.append((alias, key))
     # A plain electrolyte/context word should not become a drug entity. Only
     # resolve potassium chloride when the full medication name is present.
-    aliases = [(alias, key) for alias, key in aliases if alias != "kali"]
+    # Exclude single generic tokens like 'kali', 'nhom' (collides with 'nhóm'), 'sat' (collides with 'sát').
+    aliases = [(alias, key) for alias, key in aliases if alias not in ("kali", "nhom", "sat")]
     aliases.sort(key=lambda pair: len(pair[0]), reverse=True)
 
     matches: list[tuple[int, int, str]] = []

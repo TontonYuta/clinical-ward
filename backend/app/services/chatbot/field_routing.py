@@ -53,7 +53,7 @@ async def handle_interaction_clarification(
 
     ddi_context = expand_clinical_graph(query).get("kg_entities", [])
     named_drugs = {entity for entity in ddi_context if entity.startswith("INN:")}
-    known_interaction_pair = any(entity.startswith("DDI:") for entity in ddi_context)
+    known_interaction_pair = any(entity.startswith("DDI:") or entity.startswith("CLASS_DDI:") for entity in ddi_context)
 
     named_drugs.update(
         f"INN:{ingredient}"

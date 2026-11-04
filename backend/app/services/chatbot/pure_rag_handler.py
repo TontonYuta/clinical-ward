@@ -2,6 +2,7 @@ from app.schemas.copilot import CopilotResponse
 from app.services.rag import rag_pipeline
 from app.services.rag.hybrid_retriever import HybridRetriever
 from app.services.session_context import get_or_create_session
+from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
 from app.services.chatbot.output_validator import validate_grounded_reply
 from app.services.chatbot.chip_generator import generate_suggested_chips
@@ -63,7 +64,10 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
     "đau đầu", "chóng mặt", "khó thở", "triệu chứng", "biểu hiện của",
     "nhiễm khuẩn", "nhiễm trùng", "nhiễm khuẩn huyết", "nhiễm trùng huyết", "sốc nhiễm khuẩn", "sốc nhiễm trùng",
     "sepsis", "viêm phổi", "viêm màng não", "suy hô hấp", "hôn mê", "co giật", "kháng sinh",
-    "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo đỏ", "red flag", "hạ sốt", "thuốc hạ sốt", "oresol"
+    "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo đỏ", "red flag", "hạ sốt", "thuốc hạ sốt", "oresol",
+    "macrolid", "statin", "acei", "arb", "ccb", "chẹn beta", "quinolon", "nsaid", "opioid", "benzodiazepin",
+    "sglt2", "dpp4", "tiểu đường", "đái tháo đường", "huyết áp", "đổi thuốc", "thay thế", "ho khan", "nhóm thuốc",
+    "đổi sang", "chuyển sang", "thay bằng", "đổi nhóm", "thay thế bằng"
 )
 
 def is_qualified_clinical_rag_query(lower_query: str, session) -> bool:
@@ -130,7 +134,7 @@ async def handle_deep_rag_consultation(
     resolved_query_drugs = resolve_registered_medications(lower_query) or extracted_meds
     if resolved_query_drugs:
         target_drugs = [d.lower() for d in resolved_query_drugs]
-    elif cand_kw and len(cand_kw) >= 3:
+    elif cand_kw and len(cand_kw) >= 3 and (cand_kw.lower() in DRUG_REGISTRY or any(cand_kw.lower() in v.get("aliases", []) for v in DRUG_REGISTRY.values())):
         target_drugs = [cand_kw.lower()]
     elif session.active_medication_ingredient:
         target_drugs = [session.active_medication_ingredient.lower()]

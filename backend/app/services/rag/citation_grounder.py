@@ -136,7 +136,9 @@ def format_grounded_answer(
         )
 
     parts: list[str] = []
-    if kg_data.get("active_ddi_alerts"):
+    if kg_data.get("graph_context_text"):
+        parts.append(kg_data["graph_context_text"])
+    elif kg_data.get("active_ddi_alerts"):
         for alert in kg_data["active_ddi_alerts"]:
             parts.append(
                 f"⚠️ **CẢNH BÁO TƯƠNG TÁC THUỐC CHỐNG CHỈ ĐỊNH ({alert['severity']}):**\n"

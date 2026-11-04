@@ -263,7 +263,21 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         "số lượng", "so luong", "tồn kho", "ton kho", "trong kho"
     )
     has_drug_ent = find_matched_med(lower_query) is not None or find_matched_med(norm_lower) is not None or active_in_query or any(alias in lower_query or alias in norm_lower for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4) or has_candidate_drug or bool(lex_meds)
-    if not is_renal and has_drug_ent and any(cue in lower_query or cue in norm_lower for cue in drug_cues) and not is_two_drug and not is_deep_complex:
+    
+    is_deep_pharm = any(w in lower_query for w in [
+        "thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng",
+        "dị ứng chéo", "thải trừ", "sinh khả dụng"
+    ])
+
+    is_therapeutic_alternative = any(term in lower_query for term in (
+        "đổi sang", "chuyển sang", "thay thế", "thay bằng", "đổi nhóm", "đổi thuốc", "lựa chọn thay thế"
+    )) or ("ho khan" in lower_query and any(term in lower_query for term in ("coversyl", "enalapril", "perindopril", "acei", "ức chế men chuyển")))
+    if is_therapeutic_alternative:
+        deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm)
+        if deep_rag:
+            return deep_rag
+
+    if not is_renal and not is_therapeutic_alternative and has_drug_ent and any(cue in lower_query or cue in norm_lower for cue in drug_cues) and not is_two_drug and not is_deep_complex:
         is_personalized_request = any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
@@ -297,7 +311,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
 
     cand_kw_present = bool(extract_drug_keywords(lower_query))
     is_short_drug_candidate = len(lower_query.split()) <= 3 and cand_kw_present and not any(w in lower_query for w in ["chào", "hello", "hi", "tủ trực", "báo hỏng", "hư hỏng", "máy thở", "monitor", "kiểm kê", "giao ban"])
-    if (has_sdk or ((has_drug_ask or is_short_drug_candidate) and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex:
+    if (has_sdk or ((has_drug_ask or is_short_drug_candidate) and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex and not is_therapeutic_alternative:
         is_personalized_request = any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)

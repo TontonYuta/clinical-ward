@@ -41,6 +41,11 @@ async def execute_clinical_rag(
 
     # 4. Tạo bối cảnh chứng cứ thực tế (Evidence Context)
     evidence_blocks: list[str] = []
+    if kg_data.get("graph_context_text"):
+        evidence_blocks.append(
+            "=== [ĐỒ THỊ TRI THỨC ĐA TẦNG LIGHTRAG (DUAL-LEVEL GRAPH)] ===\n" +
+            kg_data["graph_context_text"]
+        )
     for idx, r in enumerate(retrieved_chunks):
         evidence_blocks.append(
             f"=== [CHỨNG CỨ #{idx+1}] Nguồn: {r.chunk.source_doc} | Căn cứ: {r.chunk.legal_basis} ===\n"

@@ -62,5 +62,7 @@ DRUG_REGISTRY: dict[str, dict] = {
     "norethisteron": {"display": "Norethisteron (Primolut N)", "aliases": ["primolut", "primolut n", "norethisterone", "norethisteron"], "classes": ["PROGESTOGEN"], "risk": []},
     "venetoclax": {"display": "Venetoclax (Venclexta)", "aliases": ["venetoclax", "venclexta"], "classes": ["BCL2_INHIBITOR"], "cyp_sub": ["CYP3A4"], "p_gp_sub": True, "risk": ["tls", "neutropenia"]},
     "riluzol": {"display": "Riluzol (Teglutik)", "aliases": ["riluzol", "riluzole", "teglutik", "rilutek"], "classes": ["GLUTAMATE_ANTAGONIST"], "cyp_sub": ["CYP1A2"], "risk": ["hepatotoxic"]},
-    "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom", "magnesi", "sat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []}
+    "perindopril": {"display": "Perindopril (Coversyl)", "aliases": ["perindopril", "coversyl", "coversyl plus", "coveram"], "classes": ["RAAS_INHIBITOR", "ACEI"], "risk": ["hyperkalemia"]},
+    "telmisartan": {"display": "Telmisartan (Micardis)", "aliases": ["telmisartan", "micardis", "micardis plus", "twynsta"], "classes": ["RAAS_INHIBITOR", "ARB"], "risk": ["hyperkalemia"]},
+    "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom hydroxyd", "magnesi", "sat sulfat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []}
 }
