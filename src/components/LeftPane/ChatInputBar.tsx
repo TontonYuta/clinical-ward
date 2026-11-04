@@ -84,7 +84,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     }
   };
 
-  const startListening = async () => {
+  const startListening = () => {
     setSpeechError(null);
 
     // Kiểm tra Secure Context (Bắt buộc HTTPS hoặc localhost theo chuẩn W3C)
@@ -95,7 +95,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setSpeechError('Trình duyệt chưa hỗ trợ Web Speech API. Vui lòng dùng Chrome, Edge, Safari hoặc Cốc Cốc.');
+      setSpeechError('Trình duyệt này chưa hỗ trợ nhận dạng giọng nói trực tiếp. Vui lòng dùng Chrome, Edge, Safari hoặc Cốc Cốc.');
       return;
     }
 
@@ -111,10 +111,13 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
       baseTextRef.current = inputText.trim();
 
+      // Cập nhật trạng thái đang lắng nghe ngay lập tức cho người dùng
+      setIsListening(true);
+      if (!isAudioMuted) clinicalAudio.playMicBeep(true);
+
       recognition.onstart = () => {
         setIsListening(true);
         setSpeechError(null);
-        if (!isAudioMuted) clinicalAudio.playMicBeep(true);
       };
 
       recognition.onresult = (event: any) => {
@@ -132,7 +135,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       recognition.onerror = (event: any) => {
         console.warn('SpeechRecognition error:', event.error);
         if (event.error === 'not-allowed') {
-          setSpeechError('Micro đang bị chặn. Hãy bấm biểu tượng 🔒 hoặc 🎛️ trên thanh địa chỉ trình duyệt, chọn "Cho phép Micro" rồi bấm "Thử lại".');
+          setSpeechError('Micro đang bị chặn trong trình duyệt. Hãy bấm biểu tượng 🔒 hoặc 🎛️ bên cạnh thanh URL (hoặc Cài đặt > Safari/Chrome > Micro), chọn "Cho phép Micro" rồi bấm "Thử lại".');
         } else if (event.error === 'network') {
           setSpeechError('Lỗi kết nối dịch vụ nhận dạng giọng nói. Vui lòng kiểm tra mạng Internet.');
         } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
@@ -150,7 +153,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       recognition.start();
     } catch (err: any) {
       console.warn('SpeechRecognition start exception:', err);
-      // Fallback: nếu gọi trực tiếp thất bại do cần prompt getUserMedia
+      setIsListening(false);
       void requestMicPermissionDirectly();
     }
   };
