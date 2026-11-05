@@ -87,7 +87,10 @@ def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: 
             if iv_items:
                 lines.append(f"    + **Truyền tĩnh mạch (15 phút):** {' '.join(iv_items)}")
             for ot in other_items:
-                lines.append(f"    + {ot}")
+                if "không được vượt quá" in ot.lower() or "tối đa" in ot.lower():
+                    lines.append(f"    + *Lưu ý an toàn liều tối đa:* {ot}")
+                else:
+                    lines.append(f"    + {ot}")
         elif adult_chunks:
             lines.append("  - **Người lớn:**")
             bullets = adult_chunks if is_detailed else adult_chunks[:2]
@@ -111,7 +114,9 @@ def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: 
                 current_route = "oral"
 
             clean_c = re.sub(r'^(?:Đau,\s*sốt:\s*|Uống:\s*|Đặt trực tràng:\s*|Đường trực tràng:\s*|Truyền tĩnh mạch trong \d+ phút:\s*|Truyền tĩnh mạch:\s*|Đau sau phẫu thuật:\s*|Sốt sau khi tiêm chủng ở trẻ nhỏ:\s*)', '', c, flags=re.IGNORECASE).strip()
-            if not clean_c or len(clean_c) < 5:
+            clean_c = re.sub(r';\s*Trẻ\s*(?:em)?\s*', '; ', clean_c, flags=re.IGNORECASE)
+            clean_c = re.sub(r'^Trẻ\s*(?:em)?\s*', '', clean_c, flags=re.IGNORECASE).strip()
+            if not clean_c or len(clean_c) < 5 or clean_c.lower() in ("liều được tính theo cân nặng.", "liều được tính theo cân nặng:"):
                 continue
 
             if current_route == "oral":
@@ -134,7 +139,7 @@ def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: 
                 for it in ped_rectal:
                     lines.append(f"      * {it}")
             if ped_iv and is_detailed:
-                lines.append("    + **Truyền tĩnh mạch (15 phút):**")
+                lines.append("    + **Truyền tĩnh mạch (15 phút - tính theo cân nặng):**")
                 for it in ped_iv:
                     lines.append(f"      * {it}")
             for ot in ped_other:

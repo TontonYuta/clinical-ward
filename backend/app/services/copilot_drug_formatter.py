@@ -340,6 +340,16 @@ async def build_drug_profile_response(
                     f"• **Nguyên tắc dùng thuốc cho người cao tuổi:** Bắt đầu từ liều thấp nhất có hiệu quả lâm sàng.\n"
                     f"• **Lưu ý chức năng:** Người cao tuổi thường có suy giảm sinh lý chức năng lọc của cầu thận và giảm chuyển hóa qua gan; cần định kỳ xét nghiệm độ thanh thải creatinin (eGFR) và theo dõi nguy cơ tích lũy độc tính hoặc hạ huyết áp tư thế."
                 )
+            elif field_key in ("adult_dosage", "dosage") or "liều dùng" in req_label.lower():
+                from app.services.chatbot.conversational_clinical_engine import format_hierarchical_dosage
+                ad_val = value("adult_dosage")
+                pd_val = value("pediatric_dosage")
+                dose_lines = format_hierarchical_dosage(str(ad_val or ""), str(pd_val or ""), is_detailed=True)
+                if dose_lines:
+                    detail = "\n".join(dose_lines)
+                else:
+                    raw_val = value(req_field)
+                    detail = format_clinical_text(str(raw_val).strip()) if raw_val else f"Chưa có dữ liệu {req_label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
             else:
                 raw_val = value(req_field)
                 detail = format_clinical_text(str(raw_val).strip()) if raw_val else f"Chưa có dữ liệu {req_label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
