@@ -32,15 +32,28 @@ async def chat_with_copilot(
 ):
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
     session = get_or_create_session(session_id, user_name, user_role)
-    response = await handle_copilot_chat(
-        payload, request, db,
-        session=session,
-        history=session.render_recent_history()
-    )
-    from app.services.chatbot.conversational_handler import attach_correction_empathy
-    response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
-    session.append_conversation_turn(payload.query, response.reply_text)
-    response.session_id = session.session_id
+
+    from app.services.cache.clinical_cache import get_clinical_cache
+    clinical_cache = get_clinical_cache()
+
+    cached_resp = clinical_cache.get(payload.query, user_role=user_role)
+    if cached_resp:
+        response = cached_resp.model_copy(deep=True)
+        response.session_id = session.session_id
+        session.append_conversation_turn(payload.query, response.reply_text)
+    else:
+        response = await handle_copilot_chat(
+            payload, request, db,
+            session=session,
+            history=session.render_recent_history()
+        )
+        from app.services.chatbot.conversational_handler import attach_correction_empathy
+        response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
+        session.append_conversation_turn(payload.query, response.reply_text)
+        response.session_id = session.session_id
+
+        # Lưu kết quả lâm sàng hợp lệ vào cache
+        clinical_cache.set(payload.query, user_role, response)
 
     try:
         from app.security.prompt_utility_scorer import compute_prompt_utility
@@ -76,16 +89,29 @@ async def chat_with_copilot_stream(
     session = get_or_create_session(session_id, user_name, user_role)
 
     async def event_generator():
-        # 1. Xử lý câu truy vấn qua bộ máy Copilot Orchestrator
-        response = await handle_copilot_chat(
-            payload, request, db,
-            session=session,
-            history=session.render_recent_history()
-        )
-        from app.services.chatbot.conversational_handler import attach_correction_empathy
-        response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
-        session.append_conversation_turn(payload.query, response.reply_text)
-        response.session_id = session.session_id
+        # 1. Kiểm tra bộ nhớ đệm lâm sàng (Clinical LRU Cache) để đạt latency < 1ms
+        from app.services.cache.clinical_cache import get_clinical_cache
+        clinical_cache = get_clinical_cache()
+
+        cached_resp = clinical_cache.get(payload.query, user_role=user_role)
+        if cached_resp:
+            response = cached_resp.model_copy(deep=True)
+            response.session_id = session.session_id
+            session.append_conversation_turn(payload.query, response.reply_text)
+        else:
+            # Xử lý câu truy vấn qua bộ máy Copilot Orchestrator
+            response = await handle_copilot_chat(
+                payload, request, db,
+                session=session,
+                history=session.render_recent_history()
+            )
+            from app.services.chatbot.conversational_handler import attach_correction_empathy
+            response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
+            session.append_conversation_turn(payload.query, response.reply_text)
+            response.session_id = session.session_id
+
+            # Lưu vào cache lâm sàng nếu thỏa mãn điều kiện tri thức thuần túy
+            clinical_cache.set(payload.query, user_role, response)
 
         # 2. Ghi nhật ký bất đồng bộ
         try:
@@ -144,6 +170,12 @@ async def chat_with_copilot_stream(
             "X-Accel-Buffering": "no"
         }
     )
+
+@router.get("/cache/stats")
+async def get_copilot_cache_stats():
+    """Lấy số liệu giám sát hiệu năng bộ nhớ đệm lâm sàng (Hits, Misses, Hit Ratio)."""
+    from app.services.cache.clinical_cache import get_clinical_cache
+    return get_clinical_cache().get_stats()
 
 @router.get("/history", response_model=list[CopilotChatLogResponse])
 async def get_copilot_chat_history(

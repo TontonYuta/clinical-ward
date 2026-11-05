@@ -91,6 +91,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Warning: Không thể warm up lexical matcher: {e}")
 
+    # Khởi tạo bộ nhớ đệm lâm sàng đa tầng (Clinical LRU Cache - GPTCache pattern)
+    try:
+        from app.services.cache.clinical_cache import get_clinical_cache
+        get_clinical_cache()
+    except Exception as e:
+        print(f"Warning: Không thể khởi tạo clinical cache: {e}")
+
     yield
 
 app = FastAPI(
