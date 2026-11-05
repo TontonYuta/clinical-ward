@@ -37,30 +37,16 @@ async def parse_clinical_prompt_nlu(query: str, user_role: str, api_key: Optiona
     elif any(w in lower for w in ["chi tiết", "đầy đủ", "toàn diện", "dược động học"]):
         style = "detailed_monograph"
 
-    STOPWORDS = {"thích", "dung", "dùng", "uống", "uong", "cho", "hỏi", "hoi", "bác", "sĩ", "bac", "si", "bệnh", "nhân", "benh", "nhan", "người", "nhà", "nguoi", "nha", "thuốc", "thuoc"}
-    valid_meds = [m for m in extracted_meds if m.lower() not in STOPWORDS and len(m) >= 3]
-    primary_drug = sdk or (valid_meds[0] if valid_meds else (cand_kw if cand_kw.lower() not in STOPWORDS else ""))
-
-    # Nếu có Gemini API Key và câu hỏi dài / phức tạp: Dùng Gemini NLU để chuẩn hóa
-    if api_key and len(query.split()) >= 6:
-        nlu_prompt = (
-            f"Trích xuất JSON từ câu hỏi y tế sau:\n"
-            f"Query: \"{query}\"\n"
-            f"Định dạng JSON bắt buộc:\n"
-            f"{{\"drug_entities\": [\"tên hoạt chất hoặc biệt dược\"], \"clinical_goal\": \"tóm tắt mục tiêu lâm sàng\", \"patient_factors\": \"tuổi, cân nặng, bệnh nền nếu có\"}}\n"
-            f"Chỉ trả về JSON thuần túy, không kèm giải thích."
-        )
-        try:
-            nlu_raw = await query_gemini_models(nlu_prompt, api_key)
-            if nlu_raw:
-                clean_json = re.search(r"\{.*\}", nlu_raw, re.DOTALL)
-                if clean_json:
-                    parsed = json.loads(clean_json.group(0))
-                    if parsed.get("drug_entities"):
-                        extracted_meds = parsed["drug_entities"]
-                        primary_drug = extracted_meds[0]
-        except Exception:
-            pass
+    from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_async
+    schema_res = await extract_clinical_query_schema_async(query)
+    if schema_res.medications:
+        valid_meds = [m.surface_form for m in schema_res.medications]
+        primary_drug = sdk or schema_res.medications[0].surface_form
+        extracted_meds = valid_meds
+    else:
+        STOPWORDS = {"thích", "dung", "dùng", "uống", "uong", "cho", "hỏi", "hoi", "bác", "sĩ", "bac", "si", "bệnh", "nhân", "benh", "nhan", "người", "nhà", "nguoi", "nha", "thuốc", "thuoc"}
+        valid_meds = [m for m in extracted_meds if m.lower() not in STOPWORDS and len(m) >= 3]
+        primary_drug = sdk or (valid_meds[0] if valid_meds else (cand_kw if cand_kw.lower() not in STOPWORDS else ""))
 
     return {
         "primary_drug": primary_drug,

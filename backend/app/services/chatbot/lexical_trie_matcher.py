@@ -20,7 +20,7 @@ COMMON_EXCLUSIONS: Set[str] = {
     "liều", "lieu", "viên", "vien", "an", "ăn", "va", "và", "với", "voi", "uống", "uong",
     "ngày", "ngay", "đau", "dau", "sốt", "sot", "bé", "be", "trẻ", "tre", "kho", "ca",
     "viện", "vien", "bệnh", "benh", "thuốc", "thuoc", "chống", "chong", "chỉ", "chi", "định", "dinh",
-    "tác", "tac", "dụng", "dung", "phụ", "phu", "tương", "tuong", "hai", "ba", "bốn", "năm",
+    "tác", "tac", "dụng", "dung", "phụ", "phu", "tương", "tuong", "một", "mot", "hai", "ba", "bốn", "năm",
     "khi", "no", "đói", "doi", "sáng", "sang", "tối", "toi", "trưa", "trua", "nước", "nuoc",
     "pha", "tiêm", "tiem", "truyền", "truyen", "nhỏ", "nho", "bôi", "boi", "dán", "dan", "đặt", "dat",
     "cách", "cach", "dùng", "dung", "thông", "tin", "thong", "tỏi", "nghệ", "cao", "lá", "củ",

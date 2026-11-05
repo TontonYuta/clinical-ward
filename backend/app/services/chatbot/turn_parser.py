@@ -123,3 +123,10 @@ def parse_chat_turn(text: str, session_context: Mapping | None = None) -> Parsed
         requested_fields=requested_fields, references_previous_entity=refs_previous,
         switches_subject=switches_subject, ambiguities=ambiguities, confidence=confidence
     )
+
+
+def parse_chat_turn_schema(text: str, session_context: Mapping | None = None):
+    """Trích xuất Ý định & Thực thể chuẩn Pydantic V2 Schema (Zero-Hardcode)."""
+    from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
+    return extract_clinical_query_schema_deterministic(text, session_context)
+
