@@ -13,6 +13,7 @@ import { processClinicalUserQuery } from './queryProcessor';
 import { matchDrugInteractionIntent, extractDrugPair } from './intents/drugInteractionIntent';
 import { matchMedicationSafetyIntent } from './intents/medicationSafetyIntent';
 import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
+import { SmoothStreamBuffer } from './streamBuffer';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -98,7 +99,9 @@ export async function processClinicalAgentQueryAsync(
   const isMedicationLookup = isMedicationSafetyCard || matchMedicationSafetyIntent(lower) || isSpecificMedicationField;
   if ((localResult.replyMessage?.card || localResult.actionPayload) && !isMedicationLookup && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {
     if (localResult.replyMessage?.text && onToken) {
-      onToken(localResult.replyMessage.text, localResult.replyMessage.text);
+      const buffer = new SmoothStreamBuffer(onToken);
+      buffer.push(localResult.replyMessage.text);
+      await buffer.finish();
     }
     return localResult;
   }

@@ -33,12 +33,35 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   isFullScreen = false, onToggleFullScreen,
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isUserScrolledUpRef = useRef(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
 
+  const isStreamingAny = messages.some(m => m.isStreaming);
+
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isProcessing]);
+    if (isStreamingAny) {
+      // Khi đang stream token: nếu bác sĩ không cuộn ngược lên đọc tài liệu cũ,
+      // tự động bám đáy bằng scrollTop trực tiếp để triệt tiêu 100% rung lắc và layout thrashing
+      if (!isUserScrolledUpRef.current) {
+        const container = messagesContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    } else {
+      // Khi stream xong hoặc có tin nhắn mới hoàn tất: cuộn mượt dịu dàng 1 lần
+      isUserScrolledUpRef.current = false;
+      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isProcessing, isStreamingAny]);
+
+  const handleContainerScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isUserScrolledUpRef.current = distanceFromBottom > 80;
+  };
 
   const handleChipClick = (chipOrText: string | QuickSuggestionChip) => {
     if (!isAudioMuted) clinicalAudio.playTelegramChime();
@@ -99,7 +122,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* 2. Messages Stream */}
-      <div className="flex-1 overflow-y-auto p-3.5 sm:p-4">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleContainerScroll}
+        className="flex-1 overflow-y-auto p-3.5 sm:p-4"
+      >
         <div className={`space-y-3.5 ${isFullScreen ? 'max-w-4xl mx-auto w-full' : 'w-full'}`}>
           {messages.map((msg) => {
           const isAgent = msg.sender === 'agent';

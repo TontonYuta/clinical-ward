@@ -117,12 +117,18 @@ async def chat_with_copilot_stream(
         if not tokens:
             tokens = [full_text]
 
-        chunk_size = 2
-        for i in range(0, len(tokens), chunk_size):
+        # Gửi ngay chunk đầu tiên không trễ để lập tức kích hoạt typewriter trên UI (TTFT < 5ms)
+        chunk_size = 3
+        if tokens:
+            first_chunk = "".join(tokens[0:chunk_size])
+            event_payload = json.dumps({"type": "token", "content": first_chunk}, ensure_ascii=False)
+            yield f"data: {event_payload}\n\n"
+
+        for i in range(chunk_size, len(tokens), chunk_size):
             chunk = "".join(tokens[i:i + chunk_size])
             event_payload = json.dumps({"type": "token", "content": chunk}, ensure_ascii=False)
             yield f"data: {event_payload}\n\n"
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.012)
 
         # 4. Truyền phát gói dữ liệu hoàn tất chứa toàn bộ metadata, cards, alerts
         done_dict = response.model_dump()
@@ -133,7 +139,7 @@ async def chat_with_copilot_stream(
         event_generator(),
         media_type="text/event-stream",
         headers={
-            "Cache-Control": "no-cache",
+            "Cache-Control": "no-cache, no-transform",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no"
         }

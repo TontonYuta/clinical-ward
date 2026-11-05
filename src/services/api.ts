@@ -1,5 +1,6 @@
 import type { RegistryPageResponse } from '../types/registry';
 import { loadOfflineRegistry, getOfflineCachedDrug } from '../components/Modals/NationalDrugRegistry/offlineRegistry';
+import { SmoothStreamBuffer } from '../utils/nlp/streamBuffer';
 
 import { getApiBaseUrl } from '../config/apiConfig';
 
@@ -317,31 +318,44 @@ export async function chatCopilotApiStream(
   let accumulatedText = '';
   let finalResponseData: any = null;
   let buffer = '';
+  const streamBuffer = onToken ? new SmoothStreamBuffer(onToken) : null;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith('data: ')) continue;
-      const jsonStr = trimmed.slice(6);
-      try {
-        const parsed = JSON.parse(jsonStr);
-        if (parsed.type === 'token') {
-          accumulatedText += parsed.content;
-          onToken?.(parsed.content, accumulatedText);
-        } else if (parsed.type === 'done') {
-          finalResponseData = parsed.response;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+        const jsonStr = trimmed.slice(6);
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.type === 'token') {
+            accumulatedText += parsed.content;
+            if (streamBuffer) {
+              streamBuffer.push(parsed.content);
+            } else {
+              onToken?.(parsed.content, accumulatedText);
+            }
+          } else if (parsed.type === 'done') {
+            finalResponseData = parsed.response;
+          }
+        } catch {
+          // bỏ qua chunk JSON chưa hoàn chỉnh
         }
-      } catch {
-        // bỏ qua chunk JSON chưa hoàn chỉnh
       }
     }
+
+    if (streamBuffer) {
+      await streamBuffer.finish();
+    }
+  } finally {
+    streamBuffer?.stop();
   }
 
   if (finalResponseData) {

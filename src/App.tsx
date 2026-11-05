@@ -295,8 +295,11 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // 3. Tự động lưu bền vững các tùy chọn giao diện khi thay đổi
-  useEffect(() => { saveChatMessages(chatMessages); }, [chatMessages]);
+  // 3. Tự động lưu bền vững các tùy chọn giao diện khi thay đổi (chặn ghi I/O localStorage khi đang stream)
+  useEffect(() => {
+    if (chatMessages.some(m => m.isStreaming)) return;
+    saveChatMessages(chatMessages);
+  }, [chatMessages]);
   useEffect(() => { saveSidebarCollapsed(isSidebarCollapsed); }, [isSidebarCollapsed]);
   useEffect(() => { saveCopilotOpen(isCopilotOpen); }, [isCopilotOpen]);
   useEffect(() => { saveCopilotExpanded(isCopilotExpanded); }, [isCopilotExpanded]);
