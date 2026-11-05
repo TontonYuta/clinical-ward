@@ -260,9 +260,8 @@ async def build_fluent_drug_profile_response(
     token = extract_inline_citation_token(source_str)
 
     # 1. Định danh thuốc
-    header_title = f"thông tin chuyên môn chi tiết (toàn văn CSDL Dược thư)" if is_detailed else "thông tin chuyên môn thẩm định"
     header_block = (
-        f"{greeting} hệ thống cung cấp {header_title} về **{drug_header}**:\n\n"
+        f"{greeting} gửi thông tin chuyên môn về **{drug_header}** (theo Dược thư Quốc gia Việt Nam):\n\n"
         f"• **Hoạt chất chính:** **{active_ing}** | **Số đăng ký (DAV):** `{matched_drug.national_code}` | **Dạng bào chế:** {matched_drug.dosage_form or 'Đạt chuẩn DĐVN V'}"
     )
 

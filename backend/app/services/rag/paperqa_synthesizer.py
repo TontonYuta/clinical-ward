@@ -160,9 +160,9 @@ def _format_deterministic_synthesis(
 
     parts: List[str] = []
     if topic_title:
-        parts.append(f"{greeting} hệ thống cung cấp thông tin chuyên môn thẩm định về **{topic_title}**:\n")
+        parts.append(f"{greeting} gửi Bác sĩ thông tin chuyên môn thẩm định về **{topic_title}**:\n")
     else:
-        parts.append(f"{greeting} hệ thống cung cấp thông tin chuyên môn đối soát theo nguồn [{source_label}]:\n")
+        parts.append(f"{greeting} gửi Bác sĩ thông tin chuyên môn đối soát theo nguồn [{source_label}]:\n")
 
     id_line = re.search(r"(•\s+\*\*Hoạt chất chính:\*\*.*?)\n", evidence_context)
     if id_line:

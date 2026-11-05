@@ -158,11 +158,10 @@ def build_crag_clarification_response(
         chips.append("Tra cứu Dược Thư Quốc Gia")
 
     reply = (
-        f"### 🔍 GỢI Ý ĐỐI SOÁT CHÍNH TẢ & THỰC THỂ DƯỢC PHẨM (CRAG Framework)\n\n"
-        f"Dạ {role_label}, hệ thống không ghi nhận tên chính xác **\"{raw_kw}\"** trong CSDL 54,885 thuốc Cục Quản lý Dược (DAV).\n\n"
-        f"Căn cứ thuật toán **Corrective RAG (ICLR 2024)** và đối soát ngữ âm dược lý, có phải {role_label} đang muốn tra cứu một trong các thuốc sau:\n\n"
+        f"Dạ thưa {role_label}, hiện chưa tìm thấy tên chính xác **\"{raw_kw}\"** trong Dược thư Quốc gia và Danh mục thuốc lưu hành.\n\n"
+        f"Dựa trên đối soát âm vị và hoạt chất lâm sàng, có thể {role_label} đang muốn tìm một trong các thuốc sau không ạ:\n\n"
         + "\n\n".join(cand_lines) +
-        f"\n\n---\n👉 *{role_label} có thể nhấn trực tiếp vào các gợi ý bên dưới để xem hồ sơ an toàn và chỉ định ngay lập tức ạ.*"
+        f"\n\n---\n👉 *{role_label} có thể chọn các gợi ý bên dưới để xem ngay chỉ định và liều dùng khuyến cáo ạ.*"
     )
 
     # Tạm thời comment thẻ thông tin Action Card và gợi ý chips theo yêu cầu người dùng
@@ -179,7 +178,7 @@ def build_crag_clarification_response(
         intent="CLINICAL_TYPO_SUGGESTION",
         reply_text=reply,
         card=None,
-        legal_basis="Corrective RAG (ICLR 2024), MedAbstain (arXiv:2601.12471) & CSDL Cục Quản lý Dược",
+        legal_basis="Dược Thư Quốc Gia Việt Nam & Danh mục thuốc lưu hành",
         suggested_chips=chips,
         session_id=session_id,
         answer_type="corrective_clarification",
@@ -198,20 +197,20 @@ def build_crag_safe_deferral_response(
     clean_target = raw_kw.strip().title() if len(raw_kw) < 25 else raw_kw.strip()
 
     reply = (
-        f"### 🛡️ TỪ CHỐI ĐƯA CHỈ ĐỊNH (Safe Abstention & Deferral - MedAbstain)\n\n"
-        f"• **Kết quả rà soát:** Không tìm thấy thực thể dược phẩm `{clean_target}` trong Danh mục 54,885 thuốc Cục Quản lý Dược và 771 Chuyên luận Dược thư Quốc gia.\n"
-        f"• **Rào chắn an toàn (Tripartite Safe Abstention - TT 22/2011/TT-BYT & MedAbstain arXiv:2601.12471):** Trợ lý lâm sàng **tuyệt đối không suy diễn hoặc cung cấp hướng dẫn điều trị** cho các tên chất chưa được định danh trong CSDL chính thống.\n\n"
-        f"• **Khuyến nghị xử trí y khoa:**\n"
-        f"  1. Kiểm tra lại nhãn bao bì gốc, đơn thuốc CPOE hoặc hồ sơ bệnh án của người bệnh.\n"
-        f"  2. Đối chiếu trực tiếp với Khoa Dược lâm sàng hoặc Cổng dịch vụ công Cục Quản lý Dược (DAV)."
+        f"Dạ thưa {role_label}, hiện tại tôi chưa có dữ liệu chính thức về **\"{clean_target}\"** "
+        f"trong Dược thư Quốc gia Việt Nam và các Hướng dẫn điều trị của Bộ Y tế hiện hành.\n\n"
+        f"Để đảm bảo an toàn tuyệt đối cho người bệnh, tôi xin phép không suy đoán thông tin khi chưa có nguồn chứng cứ y khoa xác thực.\n\n"
+        f"**Khuyến nghị chuyên môn:**\n"
+        f"1. {role_label} vui lòng kiểm tra lại nhãn bao bì gốc, số đăng ký hoặc tên hoạt chất trên đơn thuốc.\n"
+        f"2. Tham khảo trực tiếp ý kiến của Dược sĩ lâm sàng hoặc tờ hướng dẫn sử dụng chính thức từ nhà sản xuất ạ."
     )
 
     return CopilotResponse(
         intent="CLINICAL_SAFE_ABSTENTION",
         reply_text=reply,
         card=None,
-        legal_basis="MedAbstain (arXiv:2601.12471), TT 22/2011/TT-BYT & QĐ 5948/QĐ-BYT",
-        suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Kiểm tra danh mục thuốc nội viện", "Hướng dẫn sử dụng hệ thống"],
+        legal_basis="Dược Thư Quốc Gia Việt Nam & Hướng dẫn điều trị của Bộ Y tế",
+        suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Kiểm tra danh mục thuốc nội viện", "Nhập lại tên hoạt chất"],
         session_id=session_id,
         answer_type="safe_abstention",
         source_status="insufficient_evidence",

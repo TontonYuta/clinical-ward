@@ -80,7 +80,7 @@ def format_multi_ddi_response(
             f"• **Khuyến cáo thực hành:** Đã đối soát {report.analyzed_pairs_count} cặp phối hợp; tiếp tục theo dõi đáp ứng điều trị lâm sàng và tuân thủ liều lượng chỉ định."
         )
         reply = (
-            "Kính gửi Bác sĩ, hệ thống cung cấp báo cáo thẩm định tương tác đa thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
+            "Kính gửi Bác sĩ, dưới đây là kết quả rà soát tương tác thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
             f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf}\n\n"
             f"### Ma Trận Đối Soát Tương Tác Chéo (Polypharmacy Cross-Matrix)\n{matrix_markdown}\n\n"
             f"### Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n"
@@ -203,7 +203,7 @@ def format_multi_ddi_response(
         warning_block = f"> [!WARNING] Cảnh báo an toàn quan trọng & Chống chỉ định (QĐ 5948/QĐ-BYT)\n" + "\n".join(warn_bullets)
 
     reply_text = (
-        "Kính gửi Bác sĩ, hệ thống cung cấp báo cáo thẩm định tương tác đa thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
+        "Kính gửi Bác sĩ, dưới đây là kết quả rà soát tương tác thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
         f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{core_guidance}\n\n"
         f"### Ma Trận Đối Soát Tương Tác Chéo (Polypharmacy Cross-Matrix)\n{matrix_markdown}\n\n"
         f"### Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n" + "\n".join(detail_lines) + "\n\n"
