@@ -15,6 +15,7 @@ _QUERY_STOPWORDS = {
     "dùng", "dung", "uống", "uong", "tiêm", "tiem", "truyền", "truyen",
     "điều", "dieu", "trị", "tri", "thông", "thong", "tin", "ở", "tại", "tai",
     "giúp", "giup", "hỏi", "hoi", "bác", "bac", "sĩ", "si", "dược", "duoc",
+    "tương", "tuong", "tác", "tac", "chú", "chu", "ý", "y", "cần", "can"
 }
 
 def _normalize_terms(text: str) -> set[str]:
@@ -25,6 +26,14 @@ def _normalize_terms(text: str) -> set[str]:
     return accented | unacc_words
 
 def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
+    # Bắt buộc khớp thực thể dược phẩm nếu câu hỏi nêu đích danh thuốc
+    from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
+    resolved_query_drugs = resolve_registered_medications(query)
+    if resolved_query_drugs and chunk.chunk.entity_type in {"monograph", "medication", "drug_profile"}:
+        chunk_text = f"{chunk.chunk.title} {chunk.chunk.content}".casefold()
+        if not any(d in chunk_text for d in resolved_query_drugs):
+            return False
+
     query_terms = _normalize_terms(query)
     evidence_terms = _normalize_terms(" ".join([chunk.chunk.title, chunk.chunk.content, *chunk.chunk.keywords]))
     if not query_terms or not evidence_terms:

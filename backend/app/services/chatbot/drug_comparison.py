@@ -12,7 +12,7 @@ from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
 from app.security.guardrails import validate_output_guardrail
 
 COMPARISON_PATTERN = re.compile(
-    r"\b(?:tốt\s+hay\b|hay\b.*tốt|tốt\s+hơn|nào\s+tốt|nào\s+mạnh\s+hơn|so\s+sánh\s+giữa|so\s+sánh|khác\s+nhau|khác\s+gì)\b",
+    r"\b(?:tốt\s+hay\b|hay\b.*tốt|tốt\s+hơn|nào\s+tốt|nào\s+mạnh\s+hơn|so\s+sánh\s+giữa|so\s+sánh|khác\s+nhau|khác\s+gì|\bdùng\b.+\bhay\b|\bchọn\b.+\bhay\b|\bnên\s+dùng\b.+\bhay\b)\b",
     re.IGNORECASE
 )
 

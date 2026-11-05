@@ -15,7 +15,9 @@ CLINICAL_STOPWORDS = {
     "tôi", "bị", "nên", "uống", "thuốc", "nào", "nhỉ", "cho", "của", "các",
     "và", "là", "có", "không", "với", "được", "trong", "khi", "ở", "gì", "sao",
     "thế", "như", "làm", "để", "ra", "vào", "lại", "đã", "đang", "sẽ", "hay",
-    "hoặc", "này", "đó", "đây", "người", "bệnh"
+    "hoặc", "này", "đó", "đây", "người", "bệnh", "cần", "muốn", "hỏi", "thông",
+    "tin", "về", "tương", "tác", "chú", "ý", "biết", "xin", "giúp", "hướng", "dẫn",
+    "chi", "tiết", "đầy", "đủ", "nhất"
 }
 
 def _compute_semantic_score(chunk: RagChunk, query: str, kg_entities: list[str]) -> float:
@@ -43,10 +45,22 @@ def _compute_semantic_score(chunk: RagChunk, query: str, kg_entities: list[str])
             score += 3.0
 
     # Thưởng điểm nếu chunk khớp với thực thể Đồ thị tri thức (KG Entities)
+    has_target_drug_entity = False
+    has_kg_match = False
     for kg in kg_entities:
         clean_kg = kg.split(":")[-1].casefold()
-        if clean_kg in title_lower or clean_kg in content_lower:
-            score += 4.0
+        if len(clean_kg) >= 3:
+            has_target_drug_entity = True
+            if clean_kg in title_lower:
+                score += 40.0
+                has_kg_match = True
+            elif clean_kg in content_lower:
+                score += 15.0
+                has_kg_match = True
+
+    # Nếu có target drug entity, nhưng chunk này là monograph của thuốc khác thì không cho điểm
+    if has_target_drug_entity and chunk.entity_type in {"monograph", "medication", "drug_profile"} and not has_kg_match:
+        return 0.0
 
     return score
 
@@ -116,18 +130,31 @@ class HybridRetriever:
 
         is_protocol_query = any(p in lower_query for p in ("quy trình", "tiêu hủy", "thu hồi", "vỏ ống", "thông tư", "nghị định", "phản vệ", "xử trí", "cấp cứu", "tủ trực"))
 
-        if len(resolved_query_drugs) == 1 and not is_protocol_query:
-            requested_drug = resolved_query_drugs[0]
-            has_direct_monographs = any(
-                _is_direct_subject_chunk(chunk_map[cid], requested_drug)
-                for cid in all_candidate_ids if cid in chunk_map
-            )
+        target_drugs_for_filtering = list(resolved_query_drugs)
+        if not target_drugs_for_filtering and kg_entities:
+            for kg in kg_entities:
+                c_kg = kg.split(":")[-1].casefold()
+                if len(c_kg) >= 3 and c_kg not in target_drugs_for_filtering:
+                    target_drugs_for_filtering.append(c_kg)
+
+        if len(target_drugs_for_filtering) == 1 and not is_protocol_query:
+            requested_drug = target_drugs_for_filtering[0]
+            direct_monograph_chunks = [
+                c for c in self.all_chunks
+                if _is_direct_subject_chunk(c, requested_drug) or requested_drug in c.title.casefold()
+            ]
+            if direct_monograph_chunks:
+                for c in direct_monograph_chunks:
+                    all_candidate_ids.add(c.chunk_id)
+                    dense_rank_map[c.chunk_id] = min(dense_rank_map.get(c.chunk_id, 999), 1)
+
+            has_direct_monographs = bool(direct_monograph_chunks)
             incompatible_ids = set()
             for cid in all_candidate_ids:
                 chunk = chunk_map.get(cid)
                 if not chunk or chunk.entity_type in {"ddi", "circular", "protocol", "guideline", "regulatory"}:
                     continue
-                if has_direct_monographs and not _is_direct_subject_chunk(chunk, requested_drug):
+                if has_direct_monographs and not (_is_direct_subject_chunk(chunk, requested_drug) or requested_drug in chunk.title.casefold()):
                     incompatible_ids.add(cid)
                     continue
                 text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}"

@@ -34,7 +34,8 @@ STOP_PHRASES = [
     "đồng nghiệp hỗ trợ tra cứu", "tư vấn chuyên môn giúp tôi", "cho mình hỏi chi tiết về ca này", "kính gửi bác sĩ cho em hỏi", "kính gửi bác sĩ", "bs ơi cho hỏi",
     "đối với bệnh nhân này", "theo phác đồ hướng dẫn", "theo đúng chuẩn dược thư và bộ y tế", "theo đúng chuẩn dược thư", "theo đúng chuẩn",
     "tài liệu tham khảo chung", "tài liệu tham khảo", "tham khảo chung", "xử trí người bệnh sốt cao", "uống thuốc nào nhỉ", "uống thuốc nào", "nên uống thuốc nào", "nên dùng thuốc nào", "thuốc nào nhỉ", "thuốc gì nhỉ",
-    "ho khan", "đổi sang nhóm nào", "đổi nhóm nào", "chuyển sang nhóm nào", "thay thế thuốc nào", "thay bằng thuốc nào", "đổi sang nhóm", "đổi sang thuốc", "chuyển sang nhóm", "chuyển sang thuốc", "thay thế bằng"
+    "ho khan", "đổi sang nhóm nào", "đổi nhóm nào", "chuyển sang nhóm nào", "thay thế thuốc nào", "thay bằng thuốc nào", "đổi sang nhóm", "đổi sang thuốc", "chuyển sang nhóm", "chuyển sang thuốc", "thay thế bằng",
+    "nhóm thuốc chống dị ứng", "nhóm thuốc chống di ứng", "nhóm thuốc kháng histamin", "thuốc chống dị ứng", "thuốc chống di ứng", "thuốc kháng histamin", "chống dị ứng", "chống di ứng", "kháng histamin", "kiêng gì", "kiêng ăn gì", "kiêng uống gì", "nhóm thuốc", "nhom thuoc"
 ]
 
 QUESTION_TERMS = {
@@ -68,7 +69,9 @@ QUESTION_TERMS = {
     "kia", "đó", "đấy", "ấy", "vậy", "này", "trên", "dưới", "vừa", "rồi", "cơ", "mà", "chúng", "nó", "nhé", "nha", "ạ", "đây", "day", "nhất", "nhat", "quá", "qua", "tệ", "te", "dở", "chán", "chan", "thật", "that", "thế", "the",
     "biểu", "hiện", "dấu", "triệu", "chứng", "nên", "sử", "thì", "nào", "buồn", "nôn", "nào",
     "điểm", "thời", "đáy", "đỉnh", "nồng", "độ", "chế", "độ", "chỉnh", "hiệu", "chức", "năng",
-    "rượu", "ruou", "bia", "cồn", "con", "sữa", "sua", "thức", "thuc"
+    "rượu", "ruou", "bia", "cồn", "con", "sữa", "sua", "thức", "thuc",
+    "kiêng", "kieng", "chống", "chong", "dị", "di", "ứng", "ung", "kháng", "khang", "histamin", "antihistamin",
+    "cái", "thêm", "nữa", "chút", "ít"
 }
 
 

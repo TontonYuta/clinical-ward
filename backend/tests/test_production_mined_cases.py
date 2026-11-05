@@ -19,7 +19,7 @@ MINED_PRODUCTION_CASES = [
     ("sai rồi", "CONVERSATIONAL_CORRECTION", ["dạ xin lỗi bác sĩ"]),
     ("Thông tin chi tiết đầy đủ", "MEDICATION_LOOKUP_CLARIFICATION", ["chưa xác định được thuốc"]),
     ("Tóm tắt thông tin thuốc đó", "MEDICATION_LOOKUP_CLARIFICATION", ["chưa xác định được thuốc"]),
-    ("Tôi muốn hỏi số lượng Tamiflu hiện tại", "MEDICATION_SAFETY_PROFILE", ["tồn kho: tamiflu"]),
+    ("Tôi muốn hỏi số lượng Tamiflu hiện tại", "MEDICATION_SAFETY_PROFILE", ["tồn kho", "tamiflu"]),
     ("Pracetamol tốt hay eferagan codein tốt", "MEDICATION_SAFETY_PROFILE", ["paracetamol", "efferalgan codein", "thang giảm đau", "who"]),
     ("đau bụng, đi ngoài, mất nước là biểu hiện của gì", "CLINICAL_AI_CONSULTATION", ["đau bụng", "tiêu hóa", "bù nước & điện giải"]),
     ("Tôi muốn bạn trả lời đúng trọng tâm và gọn gàng hơn", "CONVERSATIONAL_FEEDBACK", ["tiếp thu góp ý", "đúng trọng tâm"]),

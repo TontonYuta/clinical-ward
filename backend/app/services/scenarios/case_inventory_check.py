@@ -15,9 +15,7 @@ class InventoryCheckScenario(BaseScenario):
     scenario_name = "Tra cứu tồn kho thực tế & vị trí lưu trữ"
 
     def can_handle(self, query: str, lower_query: str, ctx: ClinicalContext) -> bool:
-        return any(w in lower_query for w in ["còn bao nhiêu", "tồn kho", "số lượng còn", "vị trí lưu trữ", "kệ nào", "tủ nào"]) and any(
-            w in lower_query for w in ["morphin", "fentanyl", "hadunalin", "kali", "diazepam", "vaxigrip", "paracetamol", "meropenem", "meroright", "ceftriaxon"]
-        )
+        return any(w in lower_query for w in ["còn bao nhiêu", "tồn kho", "số lượng còn", "vị trí lưu trữ", "kệ nào", "tủ nào", "còn mấy", "còn lại bao nhiêu"])
 
     async def handle(
         self,
@@ -35,7 +33,26 @@ class InventoryCheckScenario(BaseScenario):
                 break
         
         if not matched_batch:
-            return None
+            is_doc = any(k in (ctx.user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs"))
+            role_label = "Bác sĩ" if is_doc else "Đồng nghiệp"
+            unstocked_reply = (
+                f"### 📦 ĐỐI SOÁT TỒN KHO TỦ TRỰC & KHO DƯỢC BỆNH VIỆN\n\n"
+                f"Dạ {role_label}, hệ thống đã rà soát CSDL Tủ trực Khoa Lâm sàng và Kho Dược:\n"
+                f"• **Kết quả kiểm tra:** Hiện tại **chưa ghi nhận cơ số tồn kho trực tiếp** cho mặt hàng/nhóm thuốc này tại Tủ trực khoa phòng.\n"
+                f"• **Hướng dẫn xử trí:**\n"
+                f"  1. Lập **Phiếu dự trù bổ sung thuốc (Mẫu số 01/TT 22)** để lĩnh bổ sung từ Kho Dược Trung tâm.\n"
+                f"  2. Đối chiếu cơ số tại Tủ thuốc Cấp cứu Khoa Cấp cứu / Khoa Khám bệnh.\n"
+                f"  3. Xem toàn bộ danh mục xuất nhập tồn và hạn dùng tại Tab **'Bảng Kho Dược & FEFO'**."
+            )
+            return CopilotResponse(
+                intent="CLINICAL_INVENTORY_LOOKUP",
+                reply_text=unstocked_reply,
+                legal_basis="Thông tư 22/2011/TT-BYT & Nguyên tắc GSP",
+                suggested_chips=["Xem bảng kho Dược", "Kiểm tra hạn dùng FEFO", "Lập phiếu dự trù thuốc"],
+                answer_type="inventory_lookup",
+                source_status="unstocked_hospital_inventory",
+                confidence=0.95
+            )
 
         if ctx.session:
             ctx.session.set_active_medication(
@@ -70,5 +87,8 @@ class InventoryCheckScenario(BaseScenario):
             reply_text=reply,
             card=card,
             legal_basis="Thông tư 22/2011/TT-BYT & Nguyên tắc GSP",
-            suggested_chips=["Xem bảng kho Dược", "Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26"]
+            suggested_chips=["Xem bảng kho Dược", "Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26"],
+            answer_type="inventory_lookup",
+            source_status="exact_match",
+            confidence=1.0
         )

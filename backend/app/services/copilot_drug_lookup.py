@@ -95,19 +95,32 @@ async def lookup_drug_authoritative(
         )
 
     kw_clean = re.sub(r"[\s\xa0]+", " ", kw).strip()
-    search_term = f"%{kw_clean.lower()}%"
+    search_terms = [kw_clean]
+    comp_m = re.match(r"^([^(]+)\s*\(([^)]+)\)$", kw_clean)
+    if comp_m:
+        p1, p2 = comp_m.group(1).strip(), comp_m.group(2).strip()
+        if p1 and p1 not in search_terms:
+            search_terms.append(p1)
+        if p2 and p2 not in search_terms:
+            search_terms.append(p2)
+
+    conds = []
+    for term in search_terms:
+        st = f"%{term.lower()}%"
+        conds.extend([
+            func.lower(DavNationalDrug.national_code).like(st),
+            func.lower(DavNationalDrug.brand_name).like(st),
+            func.lower(DavNationalDrug.active_ingredient).like(st)
+        ])
+
     stmt = (
         select(DavNationalDrug)
-        .where(or_(
-            func.lower(DavNationalDrug.national_code).like(search_term),
-            func.lower(DavNationalDrug.brand_name).like(search_term),
-            func.lower(DavNationalDrug.active_ingredient).like(search_term)
-        ))
+        .where(or_(*conds))
         .order_by(
-            (func.lower(DavNationalDrug.brand_name) == kw_clean.lower()).desc(),
-            func.lower(DavNationalDrug.brand_name).like(f"{kw_clean.lower()}%").desc(),
-            func.lower(DavNationalDrug.brand_name).like(f"%{kw_clean.lower()}%").desc(),
-            (func.lower(DavNationalDrug.active_ingredient) == kw_clean.lower()).desc(),
+            or_(*[(func.lower(DavNationalDrug.brand_name) == term.lower()) for term in search_terms]).desc(),
+            or_(*[func.lower(DavNationalDrug.brand_name).like(f"{term.lower()}%") for term in search_terms]).desc(),
+            or_(*[func.lower(DavNationalDrug.brand_name).like(f"%{term.lower()}%") for term in search_terms]).desc(),
+            or_(*[(func.lower(DavNationalDrug.active_ingredient) == term.lower()) for term in search_terms]).desc(),
             DavNationalDrug.national_code.asc()
         )
         .limit(5)
@@ -129,21 +142,26 @@ async def lookup_drug_authoritative(
                  token in drug.active_ingredient.casefold().replace(";", " ").replace("+", " ").split()]
 
     if not drugs:
-        fuzzy_cands = matcher.fuzzy_candidate_search(kw, top_k=1)
-        if fuzzy_cands:
-            cand_res = await db.execute(select(DavNationalDrug).where(func.lower(DavNationalDrug.brand_name) == fuzzy_cands[0].lower()).limit(5))
-            drugs = cand_res.scalars().all()
+        for term in search_terms:
+            fuzzy_cands = matcher.fuzzy_candidate_search(term, top_k=1)
+            if fuzzy_cands:
+                cand_res = await db.execute(select(DavNationalDrug).where(func.lower(DavNationalDrug.brand_name) == fuzzy_cands[0].lower()).limit(5))
+                drugs = cand_res.scalars().all()
+                if drugs:
+                    break
 
     if not drugs:
-        mono_res = await db.execute(
-            select(ClinicalDrugMonograph).where(or_(
-                func.lower(ClinicalDrugMonograph.inn) == kw.lower(),
-                func.lower(ClinicalDrugMonograph.inn).like(f"{kw.lower()} %"),
-                func.lower(ClinicalDrugMonograph.inn).like(f"% {kw.lower()}%"),
-                func.lower(ClinicalDrugMonograph.title) == kw.lower(),
-                func.lower(ClinicalDrugMonograph.title).like(f"{kw.lower()} %")
-            )).limit(1)
-        )
+        mono_conds = []
+        for term in search_terms:
+            t_low = term.lower()
+            mono_conds.extend([
+                func.lower(ClinicalDrugMonograph.inn) == t_low,
+                func.lower(ClinicalDrugMonograph.inn).like(f"{t_low} %"),
+                func.lower(ClinicalDrugMonograph.inn).like(f"% {t_low}%"),
+                func.lower(ClinicalDrugMonograph.title) == t_low,
+                func.lower(ClinicalDrugMonograph.title).like(f"{t_low} %")
+            ])
+        mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*mono_conds)).limit(1))
         monograph = mono_res.scalar_one_or_none()
         if monograph:
             drugs = [DavNationalDrug(
@@ -162,17 +180,32 @@ async def lookup_drug_authoritative(
             rag_res = await execute_clinical_rag(query)
             if rag_res:
                 from app.security.guardrails import validate_output_guardrail
+                from app.services.chatbot.output_validator import validate_grounded_reply
+                target_keys = [t.lower() for t in search_terms]
+                cleaned_reply, validated_citations, is_grounded = validate_grounded_reply(
+                    rag_res.answer, [c.to_dict() for c in rag_res.citations], target_keys, query=query
+                )
+                if not is_grounded:
+                    return CopilotResponse(
+                        intent="CLINICAL_SAFE_ABSTENTION",
+                        reply_text=cleaned_reply,
+                        legal_basis="Dược Thư Quốc Gia Việt Nam & CSDL Cục Quản lý Dược",
+                        answer_type="safe_abstention",
+                        source_status="insufficient_retrieval_evidence",
+                        confidence=0.5,
+                        session_id=session.session_id,
+                    )
                 return CopilotResponse(
                     intent="CLINICAL_AI_CONSULTATION",
-                    reply_text=validate_output_guardrail(rag_res.answer, query),
+                    reply_text=validate_output_guardrail(cleaned_reply, query),
                     legal_basis=rag_res.legal_basis or None,
                     suggested_chips=["Kiểm tra cặp thuốc khác", "Rà soát toàn bộ danh sách thuốc"],
-                    session_id=session.session_id, citations=[c.to_dict() for c in rag_res.citations],
-                    rag_grounded=rag_res.rag_grounded,
-                    answer_type="grounded_reference" if rag_res.rag_grounded else "safe_abstention",
-                    source_status="retrieved_evidence" if rag_res.rag_grounded else "insufficient_retrieval_evidence",
+                    session_id=session.session_id, citations=validated_citations,
+                    rag_grounded=rag_res.rag_grounded and is_grounded,
+                    answer_type="grounded_reference" if (rag_res.rag_grounded and is_grounded) else "safe_abstention",
+                    source_status="retrieved_evidence" if (rag_res.rag_grounded and is_grounded) else "insufficient_retrieval_evidence",
                     confidence=rag_res.confidence_score,
-                    abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
+                    abstention_reason=None if (rag_res.rag_grounded and is_grounded) else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
                 )
 
     if not drugs:

@@ -20,6 +20,18 @@ def is_exact_drug_match(kw: str, drug: DavNationalDrug) -> bool:
 
     if kw_c == b_c or kw_c == i_c or kw_c == s_c:
         return True
+
+    # Composite name check: "INN (Brand)" e.g. "Riluzol (Teglutik)", "Venetoclax (Venclexta)"
+    import re
+    comp_m = re.match(r"^([^(]+)\s*\(([^)]+)\)$", kw.strip())
+    if comp_m:
+        p1 = comp_m.group(1).strip().lower()
+        p2 = comp_m.group(2).strip().lower()
+        if p1 in (b_c, i_c) or p2 in (b_c, i_c) or b_c in (p1, p2) or i_c in (p1, p2):
+            return True
+        if any(p in b_c.split() or p in i_c.replace(";", " ").replace("+", " ").split() for p in (p1, p2) if len(p) >= 3):
+            return True
+
     tokens_b = [t.strip(",.()[]/+-;") for t in b_c.split() if t.strip(",.()[]/+-;")]
     tokens_i = [t.strip(",.()[]/+-;") for t in i_c.split() if t.strip(",.()[]/+-;")]
     if kw_c in tokens_b or kw_c in tokens_i:

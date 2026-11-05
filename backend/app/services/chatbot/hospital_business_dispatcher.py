@@ -127,6 +127,15 @@ async def dispatch_operational_business(
     if any(w in lower_query for w in ["hóa đơn", "ocr", "quét hóa đơn", "bóc tách", "phiếu nhập", "cpc1", "vat"]):
         return await handle_ocr_intent()
 
+    if any(w in lower_query for w in ["còn bao nhiêu", "số lượng còn", "tồn kho bao nhiêu", "còn mấy", "còn lại bao nhiêu", "còn thuốc không"]):
+        from app.services.scenarios.case_inventory_check import InventoryCheckScenario
+        from app.services.scenarios.context import ClinicalContext
+        ctx = ClinicalContext(query=query, lower_query=lower_query, user_name=user_name, user_role="doctor")
+        sc = InventoryCheckScenario()
+        inv_res = await sc.handle(query, lower_query, ctx, db)
+        if inv_res:
+            return inv_res
+
     matched_med = find_matched_med(lower_query)
     has_dispense_verb = any(w in lower_query for w in ["mượn", "lấy", "rút", "xuất", "cần", "xin", "tiêm", "truyền", "cấp phát"]) or (
         "cho" in lower_query and any(w in lower_query for w in ["lọ", "ống", "chai", "viên", "liều", "morphin", "adre"])

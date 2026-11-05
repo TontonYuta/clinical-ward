@@ -1225,6 +1225,82 @@ SPECIALTY_CLINICAL_KNOWLEDGE = [
         ],
         "warnings": "Đơn thuốc gây nghiện điều trị bệnh mạn tính/ung thư được kê tối đa không quá 30 ngày (chia 3 đợt kê đơn theo Thông tư 20/2017/TT-BYT). Luôn theo dõi dấu hiệu ức chế hô hấp và sẵn sàng Naloxon giải độc.",
         "legal": "Hướng dẫn Chăm sóc Giảm nhẹ - Bộ Y tế & Thông tư 20/2017/TT-BYT"
+    },
+    {
+        "keywords": ["tiểu đường", "đái tháo đường", "tieu duong", "dai thao duong", "chú ý", "lưu ý", "sinh hoạt", "ăn uống"],
+        "topic": "Nguyên tắc sử dụng thuốc và lưu ý sinh hoạt ở người bệnh đái tháo đường (tiểu đường)",
+        "bluf": "Người bệnh đái tháo đường cần kiểm soát chặt chẽ đường huyết (mục tiêu HbA1c < 7.0%, đường huyết đói 80 - 130 mg/dL), chủ động phòng ngừa biến cố hạ đường huyết, tuân thủ hướng dẫn dùng thuốc theo bữa ăn và duy trì lối sống khoa học.",
+        "details": [
+            "• **Mục tiêu điều trị & Kiểm soát:** Kiểm soát đường huyết cá thể hóa (HbA1c < 7.0%, người trẻ khỏe mạnh có thể < 6.5%, người cao tuổi nhiều bệnh đồng mắc 7.5 - 8.0%), huyết áp mục tiêu < 130/80 mmHg.",
+            "• **Lưu ý an toàn dùng thuốc:**",
+            "  - *Nhóm Sulfonylurea (Gliclazid, Glimepirid) & Insulin:* Cảnh báo nguy cơ HẠ ĐƯỜNG HUYẾT (đói lả, run rẩy, vã mồ hôi, tim đập nhanh). Người bệnh luôn mang theo 3 - 4 viên kẹo hoặc gói đường để xử trí cấp thời.",
+            "  - *Metformin:* Uống trong hoặc ngay sau bữa ăn để giảm kích ứng đường tiêu hóa; định kỳ kiểm tra chức năng thận (eGFR), tạm ngừng thuốc trước 48h khi chụp CT có tiêm thuốc cản quang.",
+            "  - *Nhóm SGLT2i (Dapagliflozin, Empagliflozin):* Uống nhiều nước, giữ vệ sinh đường tiết niệu để ngừa nhiễm nấm/nhiễm khuẩn niệu; cảnh báo nguy cơ toan ceton euglycemic.",
+            "• **Chế độ ăn uống & Sinh hoạt:** Hạn chế đường tinh luyện và tinh bột hấp thu nhanh, tăng cường rau xanh và chất xơ; TUYỆT ĐỐI KHÔNG UỐNG RƯỢU BIA lúc đói vì gây hạ đường huyết sâu khó hồi phục; tập thể dục vừa sức ít nhất 150 phút/tuần; kiểm tra bàn chân hàng ngày phát hiện sớm vết loét."
+        ],
+        "warnings": "Khi có triệu chứng hạ đường huyết (đường huyết mao mạch < 3.9 mmol/L): Áp dụng quy tắc 15 (uống 15g đường tương đương 3 thìa đường pha nước hoặc 150ml nước ngọt, nghỉ ngơi 15 phút rồi đo lại).",
+        "legal": "Hướng dẫn Chẩn đoán và Điều trị Đái tháo đường típ 2 - Quyết định 5481/QĐ-BYT & ADA Standards of Care 2024"
+    },
+    {
+        "keywords": ["tai biến", "tai bien", "đột quỵ", "dot quy", "tai biến mạch máu não", "tai bien mach mau nao", "sinh hoạt", "uống thuốc"],
+        "topic": "Xử trí cấp cứu, dùng thuốc và chăm sóc người bệnh tai biến mạch máu não / đột quỵ cấp",
+        "bluf": "Khi phát hiện nghi ngờ tai biến mạch máu não (đột quỵ), điều tối quan trọng là NHẬN DIỆN NHANH DẤU HIỆU FAST, GỌI NGAY CẤP CỨU 115 trong 'giờ vàng' (< 4.5 giờ) và TUYỆT ĐỐI KHÔNG TỰ Ý CHO UỐNG BẤT KỲ THUỐC NÀO TẠI NHÀ.",
+        "details": [
+            "• **Quy tắc nhận diện FAST:** F (Face - Méo miệng, liệt mặt), A (Arm - Yếu tay chân một bên), S (Speech - Nói ngọng, không nói được), T (Time - Giờ vàng khẩn cấp, đưa ngay đến bệnh viện có đơn vị đột quỵ).",
+            "• **CẢNH BÁO NGUY HIỂM SỐNG CÒN (KHÔNG ĐƯỢC LÀM TẠI NHÀ):**",
+            "  - *TUYỆT ĐỐI KHÔNG tự ý cho uống An Cung Ngưu Hoàng Hoàn:* Có thể gây xuất huyết não ồ ạt nếu bệnh nhân bị đột quỵ thể chảy máu não.",
+            "  - *TUYỆT ĐỐI KHÔNG tự ý cho uống Aspirin/thuốc chống đông hoặc hạ áp khẩn cấp (nhỏ Adalat dưới lưỡi)* khi chưa chụp CT/MRI não xác định thể bệnh (nhồi máu hay xuất huyết).",
+            "  - *TUYỆT ĐỐI KHÔNG chích máu đầu ngón tay/dái tai hay cạo gió* gây nhiễm trùng và làm mất 'giờ vàng' tiêu sợi huyết (rTPA < 4.5 giờ, lấy huyết khối < 6 giờ).",
+            "• **Sơ cứu tại chỗ:** Đặt người bệnh nằm nghiêng an toàn (tư thế hồi sức) nghiêng sang một bên để tránh hít sặc đờm dãi, nới lỏng cổ áo, không cho ăn uống bất cứ thứ gì.",
+            "• **Sinh hoạt và dùng thuốc giai đoạn phục hồi:** Tuân thủ tuyệt đối đơn thuốc của bác sĩ chuyên khoa (chống kết tập tiểu cầu, statin, kiểm soát huyết áp); chế độ ăn giảm muối (< 5g muối/ngày), kiêng rượu bia, thuốc lá; tập vật lý trị liệu phục hồi chức năng sớm."
+        ],
+        "warnings": "Đột quỵ não là tình trạng cấp cứu nội khoa tối khẩn cấp. Mọi trì hoãn cho người bệnh nằm nghỉ ở nhà hoặc tự điều trị đều dẫn đến tàn phế vĩnh viễn hoặc tử vong.",
+        "legal": "Hướng dẫn Chẩn đoán và Xử trí Đột quỵ não - Quyết định 5331/QĐ-BYT & AHA/ASA Guidelines"
+    },
+    {
+        "keywords": ["chống dị ứng", "chong di ung", "kháng histamin", "khang histamin", "thuốc dị ứng", "thuoc di ung", "thuốc chống dị ứng", "kiêng gì", "kiêng", "kieng"],
+        "topic": "Hướng dẫn sử dụng nhóm thuốc chống dị ứng (kháng Histamin H1) và các lưu ý kiêng kỵ quan trọng",
+        "bluf": "Thuốc chống dị ứng nhóm kháng Histamin H1 có hiệu quả cao trong điều trị viêm mũi dị ứng, mày đay, dị ứng thời tiết và thức ăn. Khi sử dụng, người bệnh CẦN TUYỆT ĐỐI KIÊNG RƯỢU BIA, CẨN TRỌNG KHI LÁI XE và chú ý tương tác với nước hoa quả.",
+        "details": [
+            "• **Phân loại hai thế hệ kháng Histamin H1:**",
+            "  - *Thế hệ 1 (Clorpheniramin, Promethazin, Diphenhydramin, Hydroxyzin):* Qua hàng rào máu não mạnh, gây tác dụng an thần và BUỒN NGỦ RÕ RỆT, thời gian tác dụng ngắn (dùng 2 - 3 lần/ngày).",
+            "  - *Thế hệ 2 (Cetirizin, Loratadin, Fexofenadin, Desloratadin, Levocetirizin):* Ít qua hàng rào máu não, RẤT ÍT BUỒN NGỦ, tác dụng kéo dài (dùng 1 lần/ngày), là lựa chọn ưu tiên ban ngày.",
+            "• **CÁC ĐIỀU KIÊNG KỴ & LƯU Ý SỐNG CÒN ('KIÊNG GÌ'):**",
+            "  - *TUYỆT ĐỐI KIÊNG RƯỢU, BIA VÀ ĐỒ UỐNG CÓ CỒN:* Cồn hiệp đồng làm tăng tác dụng ức chế hệ thần kinh trung ương của thuốc, gây lơ mơ, tụt huyết áp và ức chế hô hấp nguy hiểm.",
+            "  - *KIÊNG LÁI XE VÀ VẬN HÀNH MÁY MÓC:* Đặc biệt khi dùng kháng histamin thế hệ 1 hoặc trong những ngày đầu dùng thuốc.",
+            "  - *KIÊNG UỐNG FEXOFENADIN CÙNG NƯỚC ÉP BƯỞI CHÙM, CAM, TÁO:* Các flavonoid trong nước ép trái cây ức chế chất vận chuyển OATP1A2 ở ruột, làm giảm hấp thu Fexofenadin từ 40% đến 70%. Bắt buộc uống Fexofenadin với nước lọc đun sôi để nguội.",
+            "  - *Kiêng kỵ ở bệnh nhân có bệnh nền:* Thuốc thế hệ 1 có tác dụng kháng cholinergic, chống chỉ định hoặc thận trọng cao độ ở người phì đại tuyến tiền liệt (gây bí tiểu cấp), glôcôm góc đóng và hen phế quản nặng."
+        ],
+        "warnings": "Thuốc kháng histamin đường uống KHÔNG CÓ TÁC DỤNG THAY THẾ ADRENALIN trong cấp cứu sốc phản vệ (theo Thông tư 51/2017/TT-BYT).",
+        "legal": "Dược thư Quốc gia Việt Nam DĐVN V & Phác đồ Dị ứng Miễn dịch Lâm sàng - Bộ Y tế"
+    },
+    {
+        "keywords": ["sốc tim", "soc tim", "noradrenalin", "dopamin", "dopamine", "norepinephrine", "vận mạch sốc tim"],
+        "topic": "Lựa chọn vận mạch trong sốc tim: Noradrenalin so với Dopamin",
+        "bluf": "Trong sốc tim và sốc nhiễm khuẩn, NORADRENALIN LÀ THUỐC VẬN MẠCH ĐƯỢC ƯU TIÊN LỰA CHỌN HÀNG ĐẦU thay vì Dopamin, do Dopamin làm tăng đáng kể nguy cơ rối loạn nhịp tim ác tính và tăng tỷ lệ tử vong.",
+        "details": [
+            "• **Bằng chứng thử nghiệm lâm sàng kinh điển (SOAP II Trial - NEJM 2010):** Thử nghiệm ngẫu nhiên có đối chứng trên 1.679 bệnh nhân sốc của De Backer et al. (NEJM 2010; 362:779-789) chứng minh phân nhóm sốc tim dùng Dopamin có tỷ lệ tử vong 28 ngày cao hơn có ý nghĩa thống kê so với Noradrenalin, đồng thời Dopamin làm tăng gấp đôi tỷ lệ loạn nhịp tim (nhĩ và thất).",
+            "• **Dược lực học & Cơ chế:**",
+            "  - *Noradrenalin (Norepinephrine):* Kích thích mạnh thụ thể alpha-1 adrenergic gây co mạch nâng huyết áp hiệu quả, kích thích vừa phải beta-1 giúp tăng co bóp cơ tim mà ít làm tăng nhịp tim quá mức.",
+            "  - *Dopamin:* Kích thích thụ thể beta-1 adrenergic mạnh hơn ở liều vận mạch, gây nhịp tim nhanh rõ rệt, tăng tiêu thụ oxy cơ tim và kích hoạt các ổ loạn nhịp thất đe dọa tính mạng trong bối cảnh cơ tim đang thiếu máu cục bộ.",
+            "• **Chiến lược phối hợp chuẩn:** Khi huyết áp đã được nâng bằng Noradrenalin nhưng cung lượng tim vẫn giảm (chỉ số tim CI < 2.2 L/min/m2), phối hợp thêm thuốc tăng co bóp cơ tim inotrope như Dobutamin thay vì dùng Dopamin liều cao."
+        ],
+        "warnings": "Noradrenalin bắt buộc truyền qua catheter tĩnh mạch trung tâm hoặc đường truyền ngoại vi lớn với máy truyền dịch tự động có kiểm soát, tránh thoát mạch gây hoại tử mô.",
+        "legal": "AHA/ESC Guidelines for the Management of Cardiogenic Shock & SOAP II Trial (NEJM 2010)"
+    },
+    {
+        "keywords": ["đau bụng", "đi ngoài", "mất nước", "tiêu chảy", "bù nước", "oresol", "biểu hiện của gì", "tiêu hóa"],
+        "topic": "Đánh giá triệu chứng đau bụng, đi ngoài, mất nước và nguyên tắc bù nước & điện giải",
+        "bluf": "Triệu chứng đau bụng kèm đi ngoài (tiêu chảy) và mất nước là biểu hiện điển hình của nhiễm trùng đường tiêu hóa (viêm dạ dày - ruột cấp hoặc ngộ độc thực phẩm). Nguyên tắc điều trị cốt lõi là đánh giá mức độ mất nước và khẩn cấp bù nước & điện giải.",
+        "details": [
+            "• **Đánh giá dấu hiệu mất nước:** Mất nước nhẹ/vừa (khát nước, môi khô, mắt trũng, véo da mất chậm) hoặc mất nước nặng (li bì, mạch nhanh nhỏ, huyết áp tụt, vô niệu) cần nhập viện truyền dịch tĩnh mạch cấp cứu (Ringer Lactat).",
+            "• **Bù nước & Điện giải đường uống (Oresol):** Pha đúng tỷ lệ 1 gói Oresol với chính xác lượng nước quy định (200ml hoặc 1000ml nước đun sôi để nguội); uống từng ngụm nhỏ liên tục sau mỗi lần đi ngoài.",
+            "• **Lưu ý an toàn dùng thuốc:**",
+            "  - *TUYỆT ĐỐI KHÔNG dùng thuốc cầm tiêu chảy (Loperamid) trong tiêu chảy nhiễm trùng cấp* vì làm ứ đọng vi khuẩn và độc tố trong ruột, tăng nguy cơ liệt ruột và nhiễm độc toàn thân.",
+            "  - *Kháng sinh:* Chỉ sử dụng khi có chỉ định của bác sĩ trong trường hợp tiêu chảy phân có máu (hội chứng lỵ) hoặc sốt cao nhiễm trùng."
+        ],
+        "warnings": "Đưa người bệnh đến cơ sở y tế ngay khi có các dấu hiệu nguy hiểm: Phân có máu, sốt cao liên tục không hạ, nôn tất cả mọi thứ không uống được Oresol, hoặc dấu hiệu li bì, mắt trũng sâu.",
+        "legal": "Hướng dẫn Xử trí Tiêu chảy Cấp - Bộ Y tế & Phác đồ Xử trí Bù dịch WHO"
     }
 ]
 
@@ -1296,7 +1372,12 @@ TOPIC_ANCHORS: Dict[str, List[str]] = {
     'Hướng dẫn điều trị bệnh trĩ an toàn ở phụ nữ mang thai': ['trĩ', 'daflon'],
     'Nguyên tắc vàng sử dụng thuốc ở người cao tuổi: Bắt đầu liều thấp, tăng chậm rãi (Start low, go slow)': ['người cao tuổi', 'start low', 'người già', 'lão khoa'],
     'Lựa chọn thuốc an thần gây ngủ an toàn và hạn chế tối đa nguy cơ té ngã ở người cao tuổi': ['an thần', 'té ngã', 'melatonin', 'mất ngủ'],
-    'Chăm sóc giảm nhẹ và quản lý đau trong ung thư theo WHO': ['giảm nhẹ', 'ung thư', 'giảm đau', 'palliative']
+    'Chăm sóc giảm nhẹ và quản lý đau trong ung thư theo WHO': ['giảm nhẹ', 'ung thư', 'giảm đau', 'palliative'],
+    'Nguyên tắc sử dụng thuốc và lưu ý sinh hoạt ở người bệnh đái tháo đường (tiểu đường)': ['tiểu đường', 'đái tháo đường', 'tieu duong', 'dai thao duong'],
+    'Xử trí cấp cứu, dùng thuốc và chăm sóc người bệnh tai biến mạch máu não / đột quỵ cấp': ['tai biến', 'tai bien', 'đột quỵ', 'dot quy'],
+    'Hướng dẫn sử dụng nhóm thuốc chống dị ứng (kháng Histamin H1) và các lưu ý kiêng kỵ quan trọng': ['chống dị ứng', 'chong di ung', 'kháng histamin', 'khang histamin', 'thuốc dị ứng', 'thuoc di ung'],
+    'Lựa chọn vận mạch trong sốc tim: Noradrenalin so với Dopamin': ['sốc tim', 'soc tim', 'noradrenalin', 'dopamin'],
+    'Đánh giá triệu chứng đau bụng, đi ngoài, mất nước và nguyên tắc bù nước & điện giải': ['đi ngoài', 'mất nước', 'tiêu chảy']
 }
 
 def find_clinical_specialty_consultation(query: str) -> Optional[Dict[str, Any]]:
@@ -1358,10 +1439,13 @@ async def synthesize_specialty_response(
     chips = generate_smart_clinical_chips(query)
     is_legal_topic = any(k in topic.lower() for k in ["thông tư", "quy chế", "quy định", "nghị định", "luật dược"])
     is_onco_topic = any(k in topic.lower() for k in ["ung thư", "u bướu", "oncology"])
+    is_consultation = any(k in query.lower() for k in ["biểu hiện", "triệu chứng", "của gì", "là gì", "thế nào", "như thế nào", "kiêng gì", "dùng thuốc nào", "nên dùng", "sinh hoạt"])
     if is_onco_topic:
         chosen_intent = "ONCOLOGY_SPECIALTY_GUIDANCE"
     elif is_legal_topic:
         chosen_intent = "LEGAL_GUIDANCE"
+    elif is_consultation:
+        chosen_intent = "CLINICAL_AI_CONSULTATION"
     else:
         chosen_intent = "MEDICATION_SAFETY_PROFILE"
 
