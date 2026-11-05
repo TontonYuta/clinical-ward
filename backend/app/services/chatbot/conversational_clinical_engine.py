@@ -1305,10 +1305,27 @@ SPECIALTY_CLINICAL_KNOWLEDGE = [
         ],
         "warnings": "Đưa người bệnh đến cơ sở y tế ngay khi có các dấu hiệu nguy hiểm: Phân có máu, sốt cao liên tục không hạ, nôn tất cả mọi thứ không uống được Oresol, hoặc dấu hiệu li bì, mắt trũng sâu.",
         "legal": "Hướng dẫn Xử trí Tiêu chảy Cấp - Bộ Y tế & Phác đồ Xử trí Bù dịch WHO"
+    },
+    {
+        "keywords": ["sốt", "kiêng gì khi bị sốt", "bị sốt", "kiêng gì", "sốt kiêng gì", "ăn uống khi sốt", "chăm sóc khi sốt"],
+        "topic": "Hướng dẫn chăm sóc, chế độ ăn uống và kiêng cữ khi bị sốt",
+        "bluf": "Khi bị sốt, nguyên tắc cốt lõi là bù đủ nước và điện giải (Oresol, nước ấm), mặc thoáng mát, nghỉ ngơi; TUYỆT ĐỐI KHÔNG đắp chăn kín, không chườm đá lạnh, kiêng rượu bia và đồ ăn cay nóng nhiều dầu mỡ.",
+        "details": [
+            "• **Chế độ bù dịch & Dinh dưỡng:** Uống nhiều nước (nước lọc ấm, dung dịch Oresol pha đúng tỷ lệ, nước dừa, nước cam/chanh giàu vitamin C); ăn thức ăn lỏng, mềm, dễ tiêu (cháo loãng, súp gà, canh dinh dưỡng) chia làm nhiều bữa nhỏ.",
+            "• **Những điều CẦN KIÊNG CỮ khi bị sốt:**",
+            "  - *Kiêng đắp chăn quá dày hoặc mặc nhiều áo ấm:* Giữ nhiệt làm nhiệt độ cơ thể tăng vọt, nguy cơ co giật do sốt cao ở trẻ nhỏ.",
+            "  - *Kiêng chườm nước đá lạnh đột ngột:* Nước đá gây co mạch ngoại vi đột ngột, cản trở thoát nhiệt và làm tăng nhiệt độ trung tâm cơ thể; chỉ chườm bằng khăn ấm (thấp hơn thân nhiệt 1 - 2°C) vào các vị trí nách, bẹn, trán.",
+            "  - *Kiêng rượu, bia, trà đặc, cà phê:* Gây mất nước, kích thích tim đập nhanh và tương tác tăng độc tính phá hủy gan khi dùng thuốc hạ sốt Paracetamol.",
+            "  - *Kiêng đồ ăn cay nóng, chiên rán nhiều dầu mỡ, đồ quá ngọt:* Gây khó tiêu, đầy bụng, làm tăng gánh nặng chuyển hóa cho cơ thể.",
+            "• **Hướng dẫn dùng thuốc hạ sốt an toàn:** Chỉ dùng thuốc hạ sốt khi nhiệt độ >= 38.5°C; ưu tiên Paracetamol đơn chất liều 10 - 15 mg/kg ở trẻ em hoặc 500mg - 1000mg ở người lớn, cách mỗi 4 - 6 giờ (tối đa 4g/ngày)."
+        ],
+        "warnings": "Cần đưa người bệnh đến cơ sở y tế ngay nếu: Sốt cao liên tục >= 39.5°C không hạ sau khi dùng thuốc, sốt kéo dài trên 3 ngày, co giật, khó thở, nôn ói nhiều không uống được, hoặc xuất hiện ban xuất huyết dưới da.",
+        "legal": "Hướng dẫn Chẩn đoán, Điều trị và Chăm sóc Sốt - Bộ Y tế"
     }
 ]
 
 TOPIC_ANCHORS: Dict[str, List[str]] = {
+    'Hướng dẫn chăm sóc, chế độ ăn uống và kiêng cữ khi bị sốt': ['sốt', 'bị sốt'],
     'An toàn của Paracetamol trong thai kỳ': ['paracetamol', 'acetaminophen'],
     'Chống chỉ định tuyệt đối Ibuprofen trong 3 tháng cuối thai kỳ': ['ibuprofen'],
     'Độ an toàn của Penicillin và Cephalosporin trong thai kỳ': ['penicillin', 'cephalosporin', 'amoxicillin'],

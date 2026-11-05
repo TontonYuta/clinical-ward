@@ -202,22 +202,15 @@ class SelfRagVerifier:
             critique_verdict = "REJECT"
 
         cleaned_answer = answer
-        # If contradiction or major hallucination, add self-reflective audit footer
+        # If contradiction or major hallucination, return polite medical notice
         if critique_verdict == "REJECT" and contradiction_found:
             cleaned_answer = (
-                f"### 🛑 CẢNH BÁO PHẢN TƯ SELF-RAG (ICLR 2024: Phát hiện mâu thuẫn an toàn lâm sàng)\n\n"
-                f"Nội dung chứa khẳng định mâu thuẫn nghiêm trọng với tài liệu chuẩn:\n"
+                f"Dạ thưa Bác sĩ, phát hiện thông tin chưa đủ tin cậy khi đối soát với y văn chuẩn:\n"
                 f"- {fatal_reasons[0]}\n\n"
-                f"Hệ thống tự động từ chối thông tin không an toàn này để bảo vệ người bệnh."
+                f"Để đảm bảo an toàn cho người bệnh, xin phép dừng cung cấp khuyến nghị này."
             )
-        elif critique_verdict in ("PASS", "CAUTION"):
-            # Append discrete audit line
-            verdict_badge = "✅ ĐÃ XÁC THỰC" if critique_verdict == "PASS" else "⚠️ THẬN TRỌNG"
-            audit_note = (
-                f"\n\n> 🛡️ *Kiểm định phản tư Self-RAG (ICLR 2024): {verdict_badge} — "
-                f"Độ trung thực: {int(factuality_score * 100)}% ({supported_count}/{total_claims} mệnh đề đối soát y văn DĐVN V & QĐ 5948).*"
-            )
-            cleaned_answer = answer + audit_note
+        else:
+            cleaned_answer = answer
 
         return {
             "factuality_score": factuality_score,

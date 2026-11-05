@@ -69,7 +69,7 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
     "đau đầu", "chóng mặt", "khó thở", "triệu chứng", "biểu hiện của",
     "nhiễm khuẩn", "nhiễm trùng", "nhiễm khuẩn huyết", "nhiễm trùng huyết", "sốc nhiễm khuẩn", "sốc nhiễm trùng",
     "sepsis", "viêm phổi", "viêm màng não", "suy hô hấp", "hôn mê", "co giật", "kháng sinh",
-    "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo đỏ", "red flag", "hạ sốt", "thuốc hạ sốt", "oresol",
+    "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo đỏ", "red flag", "hạ sốt", "thuốc hạ sốt", "oresol", "sốt", "kiêng gì", "kiêng",
     "macrolid", "statin", "acei", "arb", "ccb", "chẹn beta", "quinolon", "nsaid", "opioid", "benzodiazepin",
     "sglt2", "dpp4", "tiểu đường", "đái tháo đường", "huyết áp", "đổi thuốc", "thay thế", "ho khan", "nhóm thuốc",
     "đổi sang", "chuyển sang", "thay bằng", "đổi nhóm", "thay thế bằng"
@@ -103,13 +103,12 @@ async def handle_deep_rag_consultation(
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",
             reply_text=(
-                "### 🛡️ TỪ CHỐI TIẾP NHẬN (Nằm ngoài phạm vi tri thức hoặc chưa rõ ngữ cảnh lâm sàng)\n\n"
-                "Trợ lý AI nội viện chỉ cung cấp thông tin chuyên môn khi xác định rõ chủ đề y khoa đã được kiểm chứng:\n"
-                "1. **Tra cứu Dược thư & Thuốc:** Biệt dược, hoạt chất (54.885 thuốc DAV), chỉ định, liều dùng, chống chỉ định.\n"
+                f"Dạ thưa {role_label}, để hỗ trợ chuyên môn chính xác nhất, {role_label} vui lòng nêu rõ tên thuốc (biệt dược hoặc hoạt chất), phác đồ bệnh lý hoặc nội dung chuyên môn cụ thể ạ.\n\n"
+                "Tôi sẵn sàng hỗ trợ tra cứu về:\n"
+                "1. **Chuyên khảo thuốc:** Chỉ định, liều lượng, chống chỉ định chuẩn Dược thư Quốc gia Việt Nam.\n"
                 "2. **Tương tác thuốc (DDI):** Kiểm tra tương tác chống chỉ định theo QĐ 5948/QĐ-BYT.\n"
                 "3. **Phác đồ cấp cứu & Thông tư:** Xử trí phản vệ (TT 51/2017), quản lý thuốc kiểm soát đặc biệt (TT 20/2017).\n"
-                "4. **Kho Dược & Tủ trực:** Kiểm tra số lượng tồn kho và hạn dùng FEFO.\n\n"
-                f"{role_label} vui lòng nêu rõ tên thuốc, phác đồ điều trị hoặc nội dung chuyên môn cụ thể để em hỗ trợ chính xác ạ."
+                "4. **Kho Dược & Tủ trực:** Kiểm tra số lượng tồn kho và hạn dùng FEFO nội viện."
             ),
             answer_type="safe_abstention",
             source_status="unqualified_clinical_query",
