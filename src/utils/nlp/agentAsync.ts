@@ -5,7 +5,7 @@
  */
 
 import { ActionPayload, ChatMessage, UserProfile, AgentActionCard } from '../../types/clinical';
-import { chatCopilotApi, checkPairDdiApi } from '../../services/api';
+import { chatCopilotApi, chatCopilotApiStream, checkPairDdiApi } from '../../services/api';
 import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/geminiService';
 import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../services/gemini/clinicalScenarios';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
@@ -19,7 +19,8 @@ let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).
 export async function processClinicalAgentQueryAsync(
   rawInput: string,
   currentState: AsyncClinicalState,
-  currentUserProfile?: UserProfile
+  currentUserProfile?: UserProfile,
+  onToken?: (token: string, currentFullText: string) => void
 ): Promise<ProcessedQueryResult> {
   const role = currentUserProfile?.role || 'nurse';
   const name = currentUserProfile?.name || 'Điều Dưỡng Trực Ca';
@@ -96,12 +97,15 @@ export async function processClinicalAgentQueryAsync(
   const isMedicationSafetyCard = localResult.replyMessage?.card?.cardType === 'medication_safety';
   const isMedicationLookup = isMedicationSafetyCard || matchMedicationSafetyIntent(lower) || isSpecificMedicationField;
   if ((localResult.replyMessage?.card || localResult.actionPayload) && !isMedicationLookup && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {
+    if (localResult.replyMessage?.text && onToken) {
+      onToken(localResult.replyMessage.text, localResult.replyMessage.text);
+    }
     return localResult;
   }
 
-  // 2. Gọi qua FastAPI Copilot Backend (CSDL 54.885 thuốc DAV & tồn kho thực tế)
+  // 2. Gọi qua FastAPI Copilot Backend (CSDL 54.885 thuốc DAV & tồn kho thực tế) có hỗ trợ Token Streaming
   try {
-    const backendData = await chatCopilotApi(cleanInput, role, name, _clientSessionId);
+    const backendData = await chatCopilotApiStream(cleanInput, role, name, _clientSessionId, onToken);
     if (backendData && backendData.reply_text) {
       let card: AgentActionCard | undefined = undefined;
       let actionPayload: ActionPayload | undefined = undefined;

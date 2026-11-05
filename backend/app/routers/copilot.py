@@ -3,7 +3,11 @@ Router API Trợ Lý Agent Lâm Sàng Thông Minh (Copilot & Clinical RAG) (<=80
 """
 import uuid
 import time
+import json
+import asyncio
+import re
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -61,6 +65,79 @@ async def chat_with_copilot(
         pass
 
     return response
+
+@router.post("/chat/stream")
+async def chat_with_copilot_stream(
+    payload: CopilotQuery,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    user_name, user_role, session_id = resolve_copilot_identity(payload, request)
+    session = get_or_create_session(session_id, user_name, user_role)
+
+    async def event_generator():
+        # 1. Xử lý câu truy vấn qua bộ máy Copilot Orchestrator
+        response = await handle_copilot_chat(
+            payload, request, db,
+            session=session,
+            history=session.render_recent_history()
+        )
+        from app.services.chatbot.conversational_handler import attach_correction_empathy
+        response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
+        session.append_conversation_turn(payload.query, response.reply_text)
+        response.session_id = session.session_id
+
+        # 2. Ghi nhật ký bất đồng bộ
+        try:
+            from app.security.prompt_utility_scorer import compute_prompt_utility
+            util = compute_prompt_utility(payload.query, reply_text=response.reply_text, intent=response.intent)
+            log_entry = CopilotChatLog(
+                id=f"CHAT-{int(time.time()*1000)}-{uuid.uuid4().hex[:6]}",
+                session_id=session.session_id,
+                user_name=user_name,
+                user_role=user_role,
+                query=payload.query,
+                reply_text=response.reply_text,
+                intent=response.intent,
+                answer_type=response.answer_type,
+                utility_score=util.utility_score,
+                is_useful=util.is_useful,
+                quality_category=util.category,
+                grounded_source=util.grounded_source,
+            )
+            db.add(log_entry)
+            await db.commit()
+        except Exception:
+            pass
+
+        full_text = response.reply_text or ""
+
+        # 3. Phân tách thành các token/cụm từ để truyền phát (Server-Sent Events)
+        tokens = re.findall(r'\S+\s*|\s+', full_text)
+        if not tokens:
+            tokens = [full_text]
+
+        chunk_size = 2
+        for i in range(0, len(tokens), chunk_size):
+            chunk = "".join(tokens[i:i + chunk_size])
+            event_payload = json.dumps({"type": "token", "content": chunk}, ensure_ascii=False)
+            yield f"data: {event_payload}\n\n"
+            await asyncio.sleep(0.01)
+
+        # 4. Truyền phát gói dữ liệu hoàn tất chứa toàn bộ metadata, cards, alerts
+        done_dict = response.model_dump()
+        done_payload = json.dumps({"type": "done", "response": done_dict}, ensure_ascii=False)
+        yield f"data: {done_payload}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 @router.get("/history", response_model=list[CopilotChatLogResponse])
 async def get_copilot_chat_history(

@@ -104,6 +104,7 @@ export interface ChatMessage {
   sourceStatus?: string;
   confidence?: number;
   abstentionReason?: string;
+  isStreaming?: boolean;
 }
 
 export interface QuickSuggestionChip {

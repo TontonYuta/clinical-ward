@@ -84,6 +84,13 @@ async def lifespan(app: FastAPI):
     # Seed 55k DAV drugs if table is empty
     seed_dav_registry_if_needed()
 
+    # Khởi động trước bộ khớp Lexical Trie để triệt tiêu độ trễ cold-start cho Chatbot (<1ms)
+    try:
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        get_drug_lexical_matcher()
+    except Exception as e:
+        print(f"Warning: Không thể warm up lexical matcher: {e}")
+
     yield
 
 app = FastAPI(

@@ -1624,7 +1624,17 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       attachments: attachment ? [attachment] : undefined
     };
 
-    setChatMessages(prev => [...prev, userMsg]);
+    // 1. Add user message + Streaming bot message
+    const botMsgId = `msg-agent-${Date.now()}`;
+    const streamingBotMsg: ChatMessage = {
+      id: botMsgId,
+      sender: 'agent',
+      text: '',
+      timestamp: nowStr,
+      isStreaming: true
+    };
+
+    setChatMessages(prev => [...prev, userMsg, streamingBotMsg]);
     setIsProcessing(true);
 
     try {
@@ -1643,7 +1653,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           coldChainState,
           assets
         },
-        effectiveProfile
+        effectiveProfile,
+        (_token, currentFullText) => {
+          setChatMessages(prev =>
+            prev.map(m => m.id === botMsgId ? { ...m, text: currentFullText } : m)
+          );
+        }
       );
 
       // 3. Execute State Updates on Right Pane if actionPayload provided and NOT awaiting card confirmation
@@ -1690,7 +1705,18 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         }
       }
 
-      setChatMessages(prev => [...prev, replyMessage]);
+      const finalBotMsg: ChatMessage = {
+        ...replyMessage,
+        id: botMsgId,
+        isStreaming: false
+      };
+      setChatMessages(prev => {
+        const exists = prev.some(m => m.id === botMsgId);
+        if (exists) {
+          return prev.map(m => m.id === botMsgId ? finalBotMsg : m);
+        }
+        return [...prev, finalBotMsg];
+      });
 
       // Tự động mở form theo phân quyền nếu phản hồi có Action Card mở biểu mẫu CPOE hoặc Email/SMS
       const actionType = replyMessage.card?.primaryActionType;
@@ -1733,12 +1759,19 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     } catch (err) {
       console.error('Lỗi phân tích cú pháp AI Agent:', err);
       const errorMsg: ChatMessage = {
-        id: `msg-err-${Date.now()}`,
+        id: botMsgId,
         sender: 'agent',
         text: 'Đã xảy ra sự cố khi kết nối với máy chủ AI Copilot. Vui lòng kiểm tra lại đường truyền mạng hoặc thử lại bằng các lệnh nhanh.',
-        timestamp: nowStr
+        timestamp: nowStr,
+        isStreaming: false
       };
-      setChatMessages(prev => [...prev, errorMsg]);
+      setChatMessages(prev => {
+        const exists = prev.some(m => m.id === botMsgId);
+        if (exists) {
+          return prev.map(m => m.id === botMsgId ? errorMsg : m);
+        }
+        return [...prev, errorMsg];
+      });
     } finally {
       setIsProcessing(false);
     }

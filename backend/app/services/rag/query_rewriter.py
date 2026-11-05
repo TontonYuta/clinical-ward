@@ -39,6 +39,14 @@ def assess_query_complexity(query: str, history: str = "") -> bool:
     clean_q = query.strip()
     lower_q = clean_q.lower()
 
+    # 0. Bỏ qua ngay các lệnh nghiệp vụ, quản trị tủ trực, form kê đơn (Fast-Bypass 0ms)
+    if any(op in lower_q for op in (
+        "mở form", "mo form", "kê đơn", "ke don", "tạo đơn", "tao don",
+        "báo hỏng", "bao hong", "tủ trực", "tu truc", "giao ban",
+        "kiểm kê", "kiem ke", "kho fefo", "chuỗi lạnh", "chuoi lanh"
+    )):
+        return False
+
     # 1. Phát hiện câu ghép vừa hỏi năng lực vừa hỏi thuốc
     if any(p in lower_q for p in ("làm được gì", "lam duoc gi", "có thể làm gì", "co the lam gi")) and any(p in lower_q for p in ("thuốc", "thuoc", "hỏi về", "hoi ve")):
         return True
@@ -89,6 +97,14 @@ def _fast_heuristic_rewrite(query: str, history: str) -> Optional[ClinicalRewrit
     """
     clean_q = query.strip()
     lower_q = clean_q.lower()
+
+    # 0. Bỏ qua ngay các lệnh nghiệp vụ, quản trị tủ trực, form kê đơn (Fast-Bypass 0ms)
+    if any(op in lower_q for op in (
+        "mở form", "mo form", "kê đơn", "ke don", "tạo đơn", "tao don",
+        "báo hỏng", "bao hong", "tủ trực", "tu truc", "giao ban",
+        "kiểm kê", "kiem ke", "kho fefo", "chuỗi lạnh", "chuoi lanh"
+    )):
+        return False
     recent_drug = _extract_recent_active_drug(history)
 
     # TH1: Câu ghép chào hỏi năng lực + hỏi thuốc cụ thể

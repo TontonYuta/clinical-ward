@@ -131,7 +131,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     ? 'bg-slate-100 border border-slate-200 text-slate-800 rounded-xl'
                     : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'
                 }`}>
-                  {renderFormattedText(removeLegacySourceText(msg.text), false)}
+                  {msg.isStreaming && !msg.text ? (
+                    <div className="flex items-center gap-1.5 py-1 text-slate-500">
+                      <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:150ms]" />
+                      <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:300ms]" />
+                      <span className="text-2xs text-slate-500 font-mono ml-1.5">Trợ lý AI đang tra cứu y văn...</span>
+                    </div>
+                  ) : (
+                    <>
+                      {renderFormattedText(removeLegacySourceText(msg.text), false)}
+                      {msg.isStreaming && <span className="inline-block w-1.5 h-3.5 ml-1 bg-teal-600 animate-pulse align-middle" />}
+                    </>
+                  )}
                   {isAgent && msg.citations?.length ? (
                     <p data-testid="chat-source-introduction" className="mt-3 border-l-2 border-teal-500 pl-2.5 text-xs font-medium text-slate-600">
                       {buildSourceIntroduction(msg.citations)}
@@ -206,7 +218,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           );
         })}
 
-        {isProcessing && (
+        {isProcessing && !messages.some(m => m.isStreaming && m.text) && (
           <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 pl-9 font-medium">
             <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></span>
             <span>Trợ lý đang phân tích ngữ cảnh lâm sàng...</span>
