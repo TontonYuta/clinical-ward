@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, AlertCircle, ShieldCheck, Lightbulb, Pill } from 'lucide-react';
 
 export const sanitizeClinicalText = (text: string): string => {
   if (!text) return '';
@@ -95,10 +95,36 @@ export const renderFormattedText = (rawText: string, isDark: boolean = false): R
     const rawLine = rawLines[i];
     const line = rawLine.trim();
 
-    // 1. Khung cảnh báo (> [!WARNING], > [!IMPORTANT])
+    // 1. Khung cảnh báo (> [!WARNING], > [!IMPORTANT], > [!NOTE], > [!TIP], > [!CAUTION])
     if (line.startsWith('> [!')) {
-      const isWarning = line.includes('[!WARNING]') || line.includes('[!CAUTION]');
-      const alertTitle = isWarning ? 'CẢNH BÁO NGUY HIỂM' : 'LƯU Ý CHUYÊN MÔN';
+      const isDanger = line.includes('[!WARNING]') || line.includes('[!CAUTION]');
+      const isImportant = line.includes('[!IMPORTANT]');
+      const isTip = line.includes('[!TIP]');
+
+      let alertTitle = 'LƯU Ý CHUYÊN MÔN';
+      let icon = <ShieldCheck className="w-4 h-4 text-teal-700 shrink-0" />;
+      let styleClass = 'bg-teal-50/80 border-teal-300 text-teal-950';
+
+      if (isDanger) {
+        alertTitle = line.includes('[!CAUTION]') ? 'CẢNH BÁO NGUY CƠ CAO' : 'CẢNH BÁO AN TOÀN';
+        icon = <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />;
+        styleClass = 'bg-rose-50/80 border-rose-300 text-rose-950';
+      } else if (isImportant) {
+        alertTitle = 'LƯU Ý QUAN TRỌNG';
+        icon = <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />;
+        styleClass = 'bg-amber-50/80 border-amber-300 text-amber-950';
+      } else if (isTip) {
+        alertTitle = 'KHUYẾN CÁO LÂM SÀNG';
+        icon = <Lightbulb className="w-4 h-4 text-emerald-600 shrink-0" />;
+        styleClass = 'bg-emerald-50/80 border-emerald-300 text-emerald-950';
+      }
+
+      // Đọc tiêu đề tùy chỉnh nếu có phía sau [!TYPE]
+      const customTitleMatch = line.match(/>\s*\[!(?:WARNING|CAUTION|IMPORTANT|NOTE|TIP)\]\s*(.*)$/i);
+      if (customTitleMatch && customTitleMatch[1].trim()) {
+        alertTitle = customTitleMatch[1].trim();
+      }
+
       const bodyLines: string[] = [];
       let j = i + 1;
       while (j < rawLines.length && rawLines[j].trim().startsWith('>')) {
@@ -109,41 +135,165 @@ export const renderFormattedText = (rawText: string, isDark: boolean = false): R
       elements.push(
         <div
           key={`alert-${i}`}
-          className={`my-2 p-3 rounded-xl border text-xs space-y-1 ${
-            isWarning ? 'bg-rose-50/80 border-rose-300 text-rose-950' : 'bg-teal-50/80 border-teal-300 text-teal-950'
-          }`}
+          className={`my-2.5 p-3 rounded-xl border text-xs space-y-1.5 shadow-3xs ${styleClass}`}
         >
-          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-xs">
-            {isWarning ? <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" /> : <ShieldCheck className="w-4 h-4 text-teal-700 shrink-0" />}
+          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-2xs">
+            {icon}
             <span>{alertTitle}</span>
           </div>
           {bodyLines.map((bLine, bIdx) => (
-            <div key={bIdx} className="leading-relaxed">{formatInlineMarkdown(bLine, false)}</div>
+            <div key={bIdx} className="leading-relaxed pl-5.5">{formatInlineMarkdown(bLine, false)}</div>
           ))}
         </div>
       );
       continue;
     }
 
-    // 2. Trích dẫn Blockquote & Đường phân cách
+    // 2. Thẻ Thông Số Định Danh Thuốc (Pill Badges Grid)
+    if (
+      line.includes('|') &&
+      (line.includes('**Hoạt chất') ||
+        line.includes('**Số đăng ký') ||
+        line.includes('**SĐK') ||
+        line.includes('**Dạng bào chế') ||
+        line.includes('**Hàm lượng') ||
+        line.includes('**Phân loại'))
+    ) {
+      const rawPills = line.replace(/^[•\-\*]\s*/, '').split('|');
+      const pillItems = rawPills.map((p) => p.trim()).filter(Boolean);
+      elements.push(
+        <div
+          key={`meta-pills-${i}`}
+          className="my-2.5 p-2 rounded-xl bg-teal-50/60 border border-teal-200/70 flex flex-wrap gap-2 text-xs"
+        >
+          {pillItems.map((item, pIdx) => (
+            <div
+              key={pIdx}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-teal-100 shadow-3xs text-slate-800 text-xs"
+            >
+              <Pill className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+              <span>{formatInlineMarkdown(item, isDark)}</span>
+            </div>
+          ))}
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // 3. Khung Bảng Markdown (| Tiêu đề 1 | Tiêu đề 2 |)
+    if (
+      line.startsWith('|') &&
+      line.endsWith('|') &&
+      i + 1 < rawLines.length &&
+      rawLines[i + 1].trim().startsWith('|') &&
+      rawLines[i + 1].includes('---')
+    ) {
+      const headerCells = line
+        .split('|')
+        .slice(1, -1)
+        .map((c) => c.trim());
+      const bodyRows: string[][] = [];
+      let j = i + 2;
+      while (
+        j < rawLines.length &&
+        rawLines[j].trim().startsWith('|') &&
+        rawLines[j].trim().endsWith('|')
+      ) {
+        const cells = rawLines[j]
+          .trim()
+          .split('|')
+          .slice(1, -1)
+          .map((c) => c.trim());
+        bodyRows.push(cells);
+        j++;
+      }
+      i = j;
+      elements.push(
+        <div
+          key={`table-${i}`}
+          className="my-2.5 overflow-x-auto rounded-xl border border-slate-200/90 shadow-3xs"
+        >
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-slate-100/90 text-slate-900 font-bold border-b border-slate-200">
+              <tr>
+                {headerCells.map((h, hIdx) => (
+                  <th
+                    key={hIdx}
+                    className="px-3 py-2 text-2xs uppercase tracking-wider text-slate-700 font-bold"
+                  >
+                    {formatInlineMarkdown(h, isDark)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-800">
+              {bodyRows.map((row, rIdx) => (
+                <tr
+                  key={rIdx}
+                  className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}
+                >
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx} className="px-3 py-2 leading-relaxed text-xs">
+                      {formatInlineMarkdown(cell, isDark)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
+    // 4. Trích dẫn Blockquote & Đường phân cách
     if (line.startsWith('>')) {
       elements.push(<div key={`quote-${i}`} className="my-1.5 pl-3 py-1 border-l-2 border-teal-600 bg-slate-50/80 rounded-r text-xs text-slate-700 italic leading-relaxed">{formatInlineMarkdown(line.replace(/^>\s*/, ''), isDark)}</div>);
       i++; continue;
     }
     if (/^(\-{3,}|\*{3,}|_{3,})$/.test(line)) {
-      elements.push(<hr key={`hr-${i}`} className="my-2 border-slate-200/80" />);
+      elements.push(<hr key={`hr-${i}`} className="my-2.5 border-slate-200/80" />);
       i++; continue;
     }
 
-    // 4. Tiêu đề Markdown (#, ##, ###, ####)
+    // 5. Tiêu đề Markdown (#, ##, ###, ####)
     const h1 = line.match(/^#\s+(.+)$/);
-    if (h1) { elements.push(<h2 key={`h1-${i}`} className="font-bold text-base text-slate-900 mt-3 mb-1.5 border-b border-slate-200/80 pb-1">{formatInlineMarkdown(h1[1], isDark)}</h2>); i++; continue; }
+    if (h1) {
+      elements.push(
+        <h2 key={`h1-${i}`} className="font-bold text-sm sm:text-base text-teal-950 mt-3.5 mb-2 border-b border-slate-200/90 pb-1.5 flex items-center gap-1.5">
+          {formatInlineMarkdown(h1[1], isDark)}
+        </h2>
+      );
+      i++; continue;
+    }
     const h2 = line.match(/^##\s+(.+)$/);
-    if (h2) { elements.push(<h3 key={`h2-${i}`} className="font-bold text-sm text-slate-900 mt-2.5 mb-1">{formatInlineMarkdown(h2[1], isDark)}</h3>); i++; continue; }
+    if (h2) {
+      elements.push(
+        <h3 key={`h2-${i}`} className="font-bold text-xs sm:text-sm text-slate-900 mt-3 mb-1.5 flex items-center gap-1.5">
+          {formatInlineMarkdown(h2[1], isDark)}
+        </h3>
+      );
+      i++; continue;
+    }
     const h3 = line.match(/^###\s+(.+)$/);
-    if (h3) { elements.push(<h4 key={`h3-${i}`} className="font-bold text-xs sm:text-sm text-slate-900 mt-2 mb-1 flex items-center gap-1.5">{formatInlineMarkdown(h3[1], isDark)}</h4>); i++; continue; }
+    if (h3) {
+      elements.push(
+        <h4 key={`h3-${i}`} className="font-bold text-xs text-teal-900 mt-2.5 mb-1 flex items-center gap-1.5 uppercase tracking-wide">
+          {formatInlineMarkdown(h3[1], isDark)}
+        </h4>
+      );
+      i++; continue;
+    }
     const h4 = line.match(/^####\s+(.+)$/);
-    if (h4) { elements.push(<h5 key={`h4-${i}`} className="font-semibold text-xs text-slate-800 mt-1.5 mb-0.5">{formatInlineMarkdown(h4[1], isDark)}</h5>); i++; continue; }
+    if (h4) {
+      elements.push(
+        <h5 key={`h4-${i}`} className="font-semibold text-xs text-slate-800 mt-2 mb-0.5">
+          {formatInlineMarkdown(h4[1], isDark)}
+        </h5>
+      );
+      i++; continue;
+    }
     if (line === '') { elements.push(<div key={`spacer-${i}`} className="h-1.5" />); i++; continue; }
 
     // 6. Danh sách có số (1. , 2. )

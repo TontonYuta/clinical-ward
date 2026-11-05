@@ -172,9 +172,46 @@ def _format_deterministic_synthesis(
         parts.append(f"{id_line.group(1).strip()}\n")
 
     if bluf_text:
-        parts.append(f"💡 **Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf_text}\n")
+        clean_bluf = bluf_text.strip()
+        clean_bluf = re.sub(r'^(?:[^\n:]+?\s+có chỉ định chính:\s*)', '', clean_bluf, flags=re.IGNORECASE)
+        parts.append(f"💡 **Kết luận lâm sàng chính (Core Clinical Guidance):**\n• {clean_bluf}\n")
     if details_text:
-        parts.append(f"### 📋 Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n{details_text.strip()}\n")
+        # Tách cấu trúc liều dùng theo từng đường dùng rõ ràng
+        formatted_details = []
+        for line in details_text.strip().splitlines():
+            s_line = line.strip()
+            if not s_line:
+                continue
+            if "liều dùng người lớn:" in s_line.lower() and ("đặt trực tràng" in s_line.lower() or "truyền tĩnh mạch" in s_line.lower()):
+                raw_c = re.sub(r"^[•\-\*]\s*Liều dùng người lớn:\s*", "", s_line, flags=re.IGNORECASE)
+                formatted_details.append("• **Liều dùng người lớn theo từng đường dùng:**")
+                oral_m = re.search(r"(?:Liều uống thường dùng là|Đường uống:?)\s*([^.]+?\.(?:.*?(?=Đặt trực tràng|Truyền tĩnh mạch|$))?)", raw_c, re.IGNORECASE)
+                iv_m = re.search(r"Truyền tĩnh mạch[^:]*:\s*([\s\S]*?)(?=(?:Không được vượt quá|Liều dùng trẻ em|Đặt trực tràng|$))", raw_c, re.IGNORECASE)
+                rect_m = re.search(r"Đặt trực tràng:?\s*([^.]+?\.(?:.*?(?=Truyền tĩnh mạch|Đường uống|$))?)", raw_c, re.IGNORECASE)
+                if oral_m:
+                    formatted_details.append(f"  - 💊 **Đường uống:** {oral_m.group(1).strip()}")
+                if iv_m:
+                    formatted_details.append(f"  - 💉 **Truyền tĩnh mạch:** {iv_m.group(1).strip()}")
+                if rect_m:
+                    formatted_details.append(f"  - 📦 **Đặt trực tràng:** {rect_m.group(1).strip()}")
+                max_w = re.search(r"(Không được vượt quá liều tối đa[^\n.]+?\.)", raw_c, re.IGNORECASE)
+                if max_w:
+                    formatted_details.append(f"  - ⚠️ *Giới hạn an toàn:* {max_w.group(1).strip()}")
+            elif "liều dùng trẻ em:" in s_line.lower():
+                raw_ped = re.sub(r"^[•\-\*]\s*Liều dùng trẻ em:\s*", "", s_line, flags=re.IGNORECASE)
+                formatted_details.append("• **Liều dùng trẻ em theo nhóm tuổi & đường dùng:**")
+                ped_chunks = re.split(r'(?=(?:Đau, sốt|Đặt trực tràng|Truyền tĩnh mạch|Đau sau phẫu thuật|Sốt sau khi tiêm chủng):\s*)', raw_ped)
+                if len(ped_chunks) > 1:
+                    for pc in ped_chunks:
+                        pc = pc.strip()
+                        if pc:
+                            formatted_details.append(f"  - 👶 {pc}")
+                else:
+                    formatted_details.append(f"  - 👶 {raw_ped}")
+            else:
+                formatted_details.append(s_line)
+
+        parts.append(f"### 📋 Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n" + "\n".join(formatted_details) + "\n")
     elif not bluf_text:
         clean_lines = [l for l in evidence_context.splitlines() if not l.startswith("===") and not l.startswith("###")]
         clean_body = "\n".join(clean_lines[:15]).strip()
@@ -182,7 +219,12 @@ def _format_deterministic_synthesis(
             parts.append(f"{clean_body}\n")
 
     if warnings_text:
-        parts.append(f"⚠️ **Cảnh báo an toàn quan trọng:** {warnings_text}\n")
+        warn_sentences = [w.strip() for w in re.split(r'(?<=[.!?])\s+', warnings_text) if w.strip()]
+        if len(warn_sentences) > 1:
+            warn_bullets = "\n".join(f"> • {w}" for w in warn_sentences)
+            parts.append(f"> [!WARNING] CẢNH BÁO AN TOÀN & CHỐNG CHỈ ĐỊNH\n{warn_bullets}\n")
+        else:
+            parts.append(f"> [!WARNING] CẢNH BÁO AN TOÀN & CHỐNG CHỈ ĐỊNH\n> • {warnings_text.strip()}\n")
 
     parts.append(f"*(Căn cứ pháp lý & Tài liệu đối soát: {source_label})*\n\nĐồng nghiệp cần tra cứu thêm phác đồ xử trí hay hướng dẫn phối hợp thuốc nào liên quan không ạ?")
     return "\n".join(parts)
