@@ -228,7 +228,7 @@ def build_combination_drug_profile(
         citations.append(build_drug_citation(drug, primary_mono, source))
 
         reply = (
-            f"### 💊 HỒ SƠ DƯỢC LÂM SÀNG THUỐC PHỐI HỢP: {drug.brand_name}\n"
+            f"### HỒ SƠ DƯỢC LÂM SÀNG THUỐC PHỐI HỢP: {drug.brand_name}\n"
             f"*(Chuyên luận phối hợp chính danh Dược thư Quốc gia Việt Nam DĐVN V & Cục Quản lý Dược)*\n\n---\n\n"
             f"#### 1. THÔNG TIN ĐỊNH DANH & CƠ CHẾ HIỆP ĐỒNG\n"
             f"• **Tên biệt dược:** **{drug.brand_name}** | **Mã SĐK (DAV):** `{drug.national_code}`\n"
@@ -238,16 +238,16 @@ def build_combination_drug_profile(
             f"• **Chuyên luận Dược thư đối chứng:** **{primary_mono.title}** (Mã ATC: `{primary_mono.atc_code or 'DĐVN V'}`)\n"
             f"• **Phân loại quản lý:** **{drug.group}** ({'Thuốc kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT)' if drug.is_controlled else 'Thuốc thông thường'})\n\n"
             f"#### 2. CHỈ ĐỊNH ĐIỀU TRỊ CHUYÊN BIỆT (INDICATIONS)\n"
-            f"🎯 {format_clinical_text(primary_mono.indications or 'Theo phác đồ điều trị của Bộ Y tế.')}\n\n"
+            f"• **Chỉ định chính:** {format_clinical_text(primary_mono.indications or 'Theo phác đồ điều trị của Bộ Y tế.')}\n\n"
             f"#### 3. LIỀU LƯỢNG & ĐƯỜNG DÙNG (DOSAGE & ADMINISTRATION)\n"
-            f"🛡️ **Liều người lớn:** {format_clinical_text(primary_mono.adult_dosage or 'Tuân thủ liều chỉ định của bác sĩ.')}\n\n"
-            f"👶 **Liều trẻ em:** {format_clinical_text(primary_mono.pediatric_dosage or 'Tính liều theo mg Amoxicilin/kg thể trọng theo hướng dẫn chuyên khoa.')}\n\n"
+            f"• **Liều người lớn:** {format_clinical_text(primary_mono.adult_dosage or 'Tuân thủ liều chỉ định của bác sĩ.')}\n\n"
+            f"• **Liều trẻ em:** {format_clinical_text(primary_mono.pediatric_dosage or 'Tính liều theo mg Amoxicilin/kg thể trọng theo hướng dẫn chuyên khoa.')}\n\n"
             f"#### 4. CHỐNG CHỈ ĐỊNH & THẬN TRỌNG LÂM SÀNG\n"
-            f"⛔ **Chống chỉ định:** {format_clinical_text(primary_mono.contraindications or 'Dị ứng với bất kỳ thành phần nào của thuốc.')}\n\n"
-            f"⚠️ **Hiệu chỉnh liều suy thận:** {format_clinical_text(primary_mono.renal_adjustment or 'Cần hiệu chỉnh khoảng cách liều theo độ thanh thải creatinin (CrCl).')}\n\n"
+            f"• **Chống chỉ định:** {format_clinical_text(primary_mono.contraindications or 'Dị ứng với bất kỳ thành phần nào của thuốc.')}\n\n"
+            f"• **Hiệu chỉnh liều suy thận:** {format_clinical_text(primary_mono.renal_adjustment or 'Cần hiệu chỉnh khoảng cách liều theo độ thanh thải creatinin (CrCl).')}\n\n"
             f"#### 5. TÁC DỤNG KHÔNG MONG MUỐN (ADR) & TƯƠNG TÁC THUỐC\n"
-            f"⚡ **ADR:** {format_clinical_text(primary_mono.adverse_effects or 'Tiêu chảy, buồn nôn, ngoại ban, tăng men gan nhẹ thoáng qua.')}\n\n"
-            f"🔄 **Tương tác thuốc:** {format_clinical_text(primary_mono.drug_interactions or 'Thận trọng khi dùng cùng Probenecid, thuốc chống đông máu dạng uống.')}\n"
+            f"• **Tác dụng không mong muốn (ADR):** {format_clinical_text(primary_mono.adverse_effects or 'Tiêu chảy, buồn nôn, ngoại ban, tăng men gan nhẹ thoáng qua.')}\n\n"
+            f"• **Tương tác thuốc:** {format_clinical_text(primary_mono.drug_interactions or 'Thận trọng khi dùng cùng Probenecid, thuốc chống đông máu dạng uống.')}\n"
         )
         return reply, citations, " • ".join(dict.fromkeys(legal_bases))
 
@@ -267,7 +267,7 @@ def build_combination_drug_profile(
     )
 
     profile_parts = [
-        f"### 💊 HỒ SƠ DƯỢC LÂM SÀNG THUỐC PHỐI HỢP: {drug.brand_name}\n"
+        f"### HỒ SƠ DƯỢC LÂM SÀNG THUỐC PHỐI HỢP: {drug.brand_name}\n"
         f"*(Đối soát đa chuyên luận Dược thư Quốc gia Việt Nam DĐVN V & Cục Quản lý Dược)*\n\n---\n\n"
         f"#### 1. THÀNH PHẦN HOẠT CHẤT & PHÂN LOẠI QUẢN LÝ\n"
         f"• **Tên biệt dược:** **{drug.brand_name}** | **Mã SĐK (DAV):** `{drug.national_code}`\n"
@@ -301,20 +301,20 @@ def build_combination_drug_profile(
     )
     if any("codein" in c["ingredient_name"].lower() for c in components):
         profile_parts.append(
-            "⚠️ **Cảnh báo Opioid (Codein phosphat):**\n"
-            "• Chống chỉ định tuyệt đối cho trẻ em dưới 12 tuổi và phụ nữ đang cho con bú.\n"
-            "• Nguy cơ ức chế hô hấp nghiêm trọng ở người bệnh mang kiểu gen chuyển hóa siêu nhanh qua enzym CYP2D6.\n"
-            "• Không dùng kéo dài để tránh tình trạng lệ thuộc thuốc và nghiện thuốc.\n"
+            "• **Cảnh báo Opioid (Codein phosphat):**\n"
+            "  - Chống chỉ định tuyệt đối cho trẻ em dưới 12 tuổi và phụ nữ đang cho con bú.\n"
+            "  - Nguy cơ ức chế hô hấp nghiêm trọng ở người bệnh mang kiểu gen chuyển hóa siêu nhanh qua enzym CYP2D6.\n"
+            "  - Không dùng kéo dài để tránh tình trạng lệ thuộc thuốc và nghiện thuốc.\n"
         )
     if any("paracetamol" in c["ingredient_name"].lower() for c in components):
         profile_parts.append(
-            "⚠️ **Cảnh báo Liều trần Paracetamol:**\n"
-            "• Tổng liều Paracetamol từ mọi nguồn không được vượt quá **4000 mg (4g)/ngày** ở người lớn để phòng ngừa hoại tử gan cấp.\n"
-            "• Không uống cùng lúc với các chế phẩm chứa paracetamol khác (như cảm cúm, giảm đau đơn thuần).\n"
+            "• **Cảnh báo Liều trần Paracetamol:**\n"
+            "  - Tổng liều Paracetamol từ mọi nguồn không được vượt quá **4000 mg (4g)/ngày** ở người lớn để phòng ngừa hoại tử gan cấp.\n"
+            "  - Không uống cùng lúc với các chế phẩm chứa paracetamol khác (như cảm cúm, giảm đau đơn thuần).\n"
         )
     if any("cafein" in c["ingredient_name"].lower() or "caffeine" in c["ingredient_name"].lower() for c in components):
         profile_parts.append(
-            "☕ **Lưu ý Cafein:** Có tác dụng kích thích hệ thần kinh trung ương; tránh dùng vào buổi tối để phòng ngừa mất ngủ, bồn chồn, tim đập nhanh.\n"
+            "• **Lưu ý Cafein:** Có tác dụng kích thích hệ thần kinh trung ương; tránh dùng vào buổi tối để phòng ngừa mất ngủ, bồn chồn, tim đập nhanh.\n"
         )
 
     legal_basis_str = " • ".join(dict.fromkeys(legal_bases)) if legal_bases else "CSDL Cục Quản lý Dược & Dược Thư Quốc Gia Việt Nam"

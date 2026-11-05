@@ -167,11 +167,23 @@ async def build_drug_profile_response(
         key, _, field, label = requested_fields[0]
         if len(requested_fields) > 1:
             labels, details = [], []
+            from app.services.clinical_reasoning.pediatric_dosage_reasoner import (
+                extract_demographic_slots,
+                reason_pediatric_dosage
+            )
+            demo_slots = extract_demographic_slots(query)
             for field_key, _, req_field, req_label in requested_fields:
                 req_val = value(req_field) if field_key != "stock" else None
+                if req_field == "pediatric_dosage" or field_key == "pediatric_dosage":
+                    reasoned_ped = reason_pediatric_dosage(
+                        clean_name, clean_inn, str(req_val or ""), query, demo_slots
+                    )
+                    if reasoned_ped:
+                        req_val = reasoned_ped
                 req_val = req_val or f"Chưa có dữ liệu {req_label.lower()} được xác thực trong nguồn đang lập chỉ mục."
                 labels.append(req_label)
-                details.append(f"- **{req_label}:** {format_clinical_text(str(req_val).strip())}")
+                formatted_val = req_val if (isinstance(req_val, str) and req_val.startswith("[")) else format_clinical_text(str(req_val).strip())
+                details.append(f"- **{req_label}:** {formatted_val}")
             source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
             reply = "### " + ", ".join(labels) + ": " + clean_name + "\n\n" + "\n".join(details)
             session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
@@ -228,7 +240,7 @@ async def build_drug_profile_response(
 
             ddi_block = ""
             if combined_ddis:
-                ddi_block = "\n\n#### ⚠️ CÁC TƯƠNG TÁC ĐÁNG CHÚ Ý THEO QUYẾT ĐỊNH 5948/QĐ-BYT & HDSD:\n"
+                ddi_block = "\n\n#### CÁC TƯƠNG TÁC ĐÁNG CHÚ Ý THEO QUYẾT ĐỊNH 5948/QĐ-BYT & HDSD:\n"
                 for idx, item in enumerate(combined_ddis, 1):
                     ddi_block += (
                         f"• **{idx}. Phối hợp với {item.get('partner')}:**\n"
@@ -245,6 +257,23 @@ async def build_drug_profile_response(
                 detail = f"Thông tin tương tác đối soát từ Dược thư Quốc gia và Quyết định 5948/QĐ-BYT cho **{clean_name}** ({clean_inn.title()}):\n{ddi_block}"
             else:
                 detail = f"Chưa có dữ liệu tương tác thuốc được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
+        elif field == "pediatric_dosage" or key == "pediatric_dosage" or any(k in lower_query for k in ["trẻ", "tre", "bé", "be", "cháu", "chau", "tuổi", "tuoi", "tháng", "thang"]):
+            from app.services.clinical_reasoning.pediatric_dosage_reasoner import (
+                extract_demographic_slots,
+                reason_pediatric_dosage
+            )
+            demo_slots = extract_demographic_slots(query)
+            reasoned_ped = reason_pediatric_dosage(
+                drug_name=clean_name,
+                clean_inn=clean_inn,
+                raw_pediatric_dosage=str(detail or ""),
+                query=query,
+                slots=demo_slots
+            )
+            if reasoned_ped:
+                detail = reasoned_ped
+            else:
+                detail = format_clinical_text(str(detail).strip()) if detail else f"Chưa có dữ liệu {label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
         else:
             detail = format_clinical_text(str(detail).strip()) if detail else f"Chưa có dữ liệu {label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
@@ -256,11 +285,20 @@ async def build_drug_profile_response(
         if detail:
             try:
                 from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
+                from app.services.clinical_reasoning.pediatric_dosage_reasoner import extract_demographic_slots
+                demo_slots = extract_demographic_slots(query)
+                if demo_slots.get("age_years") is not None:
+                    bluf_intro = f"Hướng dẫn liều dùng cho trẻ {int(demo_slots['age_years'])} tuổi đối soát chuẩn Dược thư Quốc gia Việt Nam (DĐVN V)."
+                elif demo_slots.get("age_months") is not None:
+                    bluf_intro = f"Hướng dẫn liều dùng cho trẻ {int(demo_slots['age_months'])} tháng tuổi đối soát chuẩn Dược thư Quốc gia Việt Nam (DĐVN V)."
+                else:
+                    bluf_intro = f"Hướng dẫn {label.lower()} cho **{clean_name}** ({clean_inn.title()}) đối soát chuẩn Dược thư Quốc gia."
+
                 u_role = getattr(session, "user_role", "doctor") or "doctor"
                 u_name = getattr(session, "user_name", "Bác sĩ") or "Bác sĩ"
                 evidence_ctx = (
                     f"### {label}: {clean_name} ({clean_inn.title()})\n"
-                    f"**Kết luận lâm sàng chính (Core Clinical Guidance):** Hướng dẫn {label.lower()} cho **{clean_name}** ({clean_inn.title()}) đối soát chuẩn Dược thư Quốc gia.\n\n"
+                    f"**Kết luận lâm sàng chính (Core Clinical Guidance):** {bluf_intro}\n\n"
                     f"**Chi tiết thực hành & Hướng dẫn sử dụng:**\n{detail}\n\n"
                     f"**Cảnh báo an toàn & Chống chỉ định:** Bắt buộc tuân thủ đúng liều lượng chỉ định theo tuổi/cân nặng và rà soát các yếu tố an toàn của người bệnh trước khi chỉ định."
                 )
@@ -308,7 +346,7 @@ async def build_drug_profile_response(
         contra_snippet = f"\n• **Chống chỉ định:** {_format_clinical_text(str(val_contra).strip())[:160]}..." if val_contra else ""
         stock_snippet = f"\n• **Tồn kho nội viện:** {in_stock} {matched.standard_unit} ({'Có sẵn tại kho' if in_stock > 0 else 'Chưa nhập kho'})" if is_stock_ask else ""
         reply = (
-            f"### 📋 TÓM TẮT THÔNG TIN THUỐC: {clean_name}\n\n"
+            f"### TÓM TẮT THÔNG TIN THUỐC: {clean_name}\n\n"
             f"• **Hoạt chất:** **{ing}** | **Hàm lượng:** {conc or 'Theo HS công bố'}\n"
             f"• **Dạng bào chế:** {matched.dosage_form or 'Đạt chuẩn DĐVN V'} | **SĐK:** `{matched.national_code}`\n"
             f"• **Phân loại:** {matched.group} ({'Kiểm soát ĐB TT 20' if matched.is_controlled else 'Thuốc thường'})"

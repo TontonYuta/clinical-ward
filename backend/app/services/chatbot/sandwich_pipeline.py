@@ -223,11 +223,11 @@ async def synthesize_persona_optimized_output(
     dosage_text = (mono.adult_dosage if mono and mono.adult_dosage else None) or drug.adult_dosage or "Tuân thủ theo chỉ định"
     contra_text = (mono.contraindications if mono and mono.contraindications else None) or drug.contraindications or "Mẫn cảm với thành phần của thuốc"
     return (
-        f"### 📋 THÔNG TIN THẨM ĐỊNH: {drug.brand_name} ({drug.active_ingredient})\n\n"
+        f"### THÔNG TIN THẨM ĐỊNH: {drug.brand_name} ({drug.active_ingredient})\n\n"
         f"• **Số đăng ký (DAV):** `{drug.national_code}` | **Dạng bào chế:** {drug.dosage_form or 'Theo nhãn'}\n"
         f"• **Chỉ định chính:** {format_clinical_text(indications_text)}\n"
         f"• **Liều dùng & Cách dùng:** {format_clinical_text(dosage_text)}\n"
-        f"• ⚠️ **Chống chỉ định & Thận trọng:** {format_clinical_text(contra_text)}\n"
+        f"• **Chống chỉ định & Thận trọng:** {format_clinical_text(contra_text)}\n"
         f"• **Tồn kho thực tế:** {ground_truth.get('stock', 0)} {drug.standard_unit}\n\n"
         f"*(Dữ liệu được đối soát trực tiếp từ CSDL Cục Quản Lý Dược và Dược Thư Quốc Gia Việt Nam)*"
     )

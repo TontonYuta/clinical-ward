@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, AlertCircle, ShieldCheck, Lightbulb, Pill } from 'lucide-react';
+import { AlertTriangle, AlertCircle, ShieldCheck, Lightbulb } from 'lucide-react';
 
 export const sanitizeClinicalText = (text: string): string => {
   if (!text) return '';
@@ -169,9 +169,8 @@ export const renderFormattedText = (rawText: string, isDark: boolean = false): R
           {pillItems.map((item, pIdx) => (
             <div
               key={pIdx}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-teal-100 shadow-3xs text-slate-800 text-xs"
+              className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-teal-200/80 shadow-3xs text-slate-800 text-xs font-medium"
             >
-              <Pill className="w-3.5 h-3.5 text-teal-700 shrink-0" />
               <span>{formatInlineMarkdown(item, isDark)}</span>
             </div>
           ))}

@@ -100,10 +100,11 @@ async def _call_llm_synthesis(
         "Nhiệm vụ: Trả lời câu hỏi của bác sĩ/nhân viên y tế một cách trực diện, súc tích, chuyên nghiệp và ấm áp.\n\n"
         "Nguyên tắc bắt buộc (Zero Free Claims Policy):\n"
         "1. CHỈ sử dụng các dữ kiện được cung cấp trong [CHỨNG CỨ Y VĂN CSDL] dưới đây. Tuyệt đối KHÔNG suy diễn thêm liều dùng hoặc tương tác ngoài văn bản.\n"
-        "2. Đi thẳng vào câu hỏi của người dùng, không dump lại toàn bộ Fact sheet dài dòng.\n"
-        "3. Nếu có tương tác nguy hiểm hoặc cảnh báo sốc/độc tính, BẮT BUỘC nêu cảnh báo ngay dòng đầu tiên.\n"
-        f"4. Đính kèm thẻ nguồn trích dẫn [{source_label}] ở cuối các câu khẳng định quan trọng.\n"
-        "5. Định dạng Markdown rõ ràng, dùng bullet points, in đậm tên thuốc và số liều cụ thể."
+        "2. Phong cách Y khoa Thụy Sĩ (Swiss Medical / UpToDate): Tuyệt đối KHÔNG sử dụng emoji/icon (💊, 💉, 📦, 👶, ⚠️, 💡, 📋) trong tiêu đề, danh sách hoặc nội dung. Dùng nhãn y khoa ngoặc vuông: [Đường uống], [Truyền tĩnh mạch], [Đặt trực tràng], [Lưu ý an toàn].\n"
+        "3. Đi thẳng vào câu hỏi của người dùng và đúng nhóm tuổi/thể trọng được hỏi, không dump lại toàn bộ thông tin các lứa tuổi khác không liên quan.\n"
+        "4. Nếu có tương tác nguy hiểm hoặc cảnh báo sốc/độc tính, BẮT BUỘC nêu cảnh báo ngay dòng đầu tiên.\n"
+        f"5. Đính kèm thẻ nguồn trích dẫn [{source_label}] ở cuối các câu khẳng định quan trọng.\n"
+        "6. Định dạng Markdown rõ ràng, dùng bullet points, in đậm tên thuốc và số liều cụ thể."
     )
 
     prompt = (
@@ -174,51 +175,71 @@ def _format_deterministic_synthesis(
     if bluf_text:
         clean_bluf = bluf_text.strip()
         clean_bluf = re.sub(r'^(?:[^\n:]+?\s+có chỉ định chính:\s*)', '', clean_bluf, flags=re.IGNORECASE)
-        parts.append(f"💡 **Kết luận lâm sàng chính (Core Clinical Guidance):**\n• {clean_bluf}\n")
+        from app.services.clinical_reasoning.pediatric_dosage_reasoner import extract_demographic_slots
+        d_slots = extract_demographic_slots(query)
+        if d_slots.get("age_years") is not None:
+            clean_bluf = f"Hướng dẫn liều dùng cho trẻ {int(d_slots['age_years'])} tuổi đối soát chuẩn Dược thư Quốc gia Việt Nam (DĐVN V)."
+        elif d_slots.get("age_months") is not None:
+            clean_bluf = f"Hướng dẫn liều dùng cho trẻ {int(d_slots['age_months'])} tháng tuổi đối soát chuẩn Dược thư Quốc gia Việt Nam (DĐVN V)."
+        parts.append(f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n• {clean_bluf}\n")
     if details_text:
-        # Tách cấu trúc liều dùng theo từng đường dùng rõ ràng
-        formatted_details = []
-        for line in details_text.strip().splitlines():
-            s_line = line.strip()
-            if not s_line:
-                continue
-            if "liều dùng người lớn:" in s_line.lower() and ("đặt trực tràng" in s_line.lower() or "truyền tĩnh mạch" in s_line.lower()):
-                raw_c = re.sub(r"^[•\-\*]\s*Liều dùng người lớn:\s*", "", s_line, flags=re.IGNORECASE)
-                formatted_details.append("• **Liều dùng người lớn theo từng đường dùng:**")
-                oral_m = re.search(r"(?:Liều uống thường dùng là|Đường uống:?)\s*([^.]+?\.(?:.*?(?=Đặt trực tràng|Truyền tĩnh mạch|$))?)", raw_c, re.IGNORECASE)
-                iv_m = re.search(r"Truyền tĩnh mạch[^:]*:\s*([\s\S]*?)(?=(?:Không được vượt quá|Liều dùng trẻ em|Đặt trực tràng|$))", raw_c, re.IGNORECASE)
-                rect_m = re.search(r"Đặt trực tràng:?\s*([^.]+?\.(?:.*?(?=Truyền tĩnh mạch|Đường uống|$))?)", raw_c, re.IGNORECASE)
-                if oral_m:
-                    formatted_details.append(f"  - 💊 **Đường uống:** {oral_m.group(1).strip()}")
-                if iv_m:
-                    formatted_details.append(f"  - 💉 **Truyền tĩnh mạch:** {iv_m.group(1).strip()}")
-                if rect_m:
-                    formatted_details.append(f"  - 📦 **Đặt trực tràng:** {rect_m.group(1).strip()}")
-                max_w = re.search(r"(Không được vượt quá liều tối đa[^\n.]+?\.)", raw_c, re.IGNORECASE)
-                if max_w:
-                    formatted_details.append(f"  - ⚠️ *Giới hạn an toàn:* {max_w.group(1).strip()}")
-            elif "liều dùng trẻ em:" in s_line.lower():
-                raw_ped = re.sub(r"^[•\-\*]\s*Liều dùng trẻ em:\s*", "", s_line, flags=re.IGNORECASE)
-                formatted_details.append("• **Liều dùng trẻ em theo nhóm tuổi & đường dùng:**")
-                ped_chunks = re.split(r'(?=(?:Đau, sốt|Đặt trực tràng|Truyền tĩnh mạch|Đau sau phẫu thuật|Sốt sau khi tiêm chủng):\s*)', raw_ped)
-                if len(ped_chunks) > 1:
-                    for pc in ped_chunks:
-                        pc = pc.strip()
-                        if pc:
-                            formatted_details.append(f"  - 👶 {pc}")
+        # Nếu đã có khối suy luận theo slot [Liều dùng...] thì giữ nguyên khối chuẩn không băm nhỏ
+        if "[Liều dùng" in details_text or "[Nguyên tắc" in details_text or "[Thông tin liều dùng" in details_text:
+            parts.append(f"### Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n{details_text.strip()}\n")
+        else:
+            # Tách cấu trúc liều dùng theo từng đường dùng rõ ràng
+            formatted_details = []
+            for line in details_text.strip().splitlines():
+                s_line = line.strip()
+                if not s_line:
+                    continue
+                if "liều dùng người lớn:" in s_line.lower() and ("đặt trực tràng" in s_line.lower() or "truyền tĩnh mạch" in s_line.lower()):
+                    raw_c = re.sub(r"^[•\-\*]\s*Liều dùng người lớn:\s*", "", s_line, flags=re.IGNORECASE)
+                    formatted_details.append("• **Liều dùng người lớn theo từng đường dùng:**")
+                    oral_m = re.search(r"(?:Liều uống thường dùng là|Đường uống:?)\s*([^.]+?\.(?:.*?(?=Đặt trực tràng|Truyền tĩnh mạch|$))?)", raw_c, re.IGNORECASE)
+                    iv_m = re.search(r"Truyền tĩnh mạch[^:]*:\s*([\s\S]*?)(?=(?:Không được vượt quá|Liều dùng trẻ em|Đặt trực tràng|$))", raw_c, re.IGNORECASE)
+                    rect_m = re.search(r"Đặt trực tràng:?\s*([^.]+?\.(?:.*?(?=Truyền tĩnh mạch|Đường uống|$))?)", raw_c, re.IGNORECASE)
+                    if oral_m:
+                        formatted_details.append(f"  - **[Đường uống]:** {oral_m.group(1).strip()}")
+                    if iv_m:
+                        formatted_details.append(f"  - **[Truyền tĩnh mạch]:** {iv_m.group(1).strip()}")
+                    if rect_m:
+                        formatted_details.append(f"  - **[Đặt trực tràng]:** {rect_m.group(1).strip()}")
+                    max_w = re.search(r"(Không được vượt quá liều tối đa[^\n.]+?\.)", raw_c, re.IGNORECASE)
+                    if max_w:
+                        formatted_details.append(f"  - *Giới hạn an toàn:* {max_w.group(1).strip()}")
+                elif "liều dùng trẻ em:" in s_line.lower():
+                    raw_ped = re.sub(r"^[•\-\*]\s*Liều dùng trẻ em:\s*", "", s_line, flags=re.IGNORECASE)
+                    from app.services.clinical_reasoning.pediatric_dosage_reasoner import (
+                        extract_demographic_slots,
+                        reason_pediatric_dosage
+                    )
+                    slots = extract_demographic_slots(query)
+                    if slots["is_pediatric"] or slots["age_years"] is not None or slots["age_months"] is not None:
+                        reasoned = reason_pediatric_dosage(topic_title, topic_title, raw_ped, query, slots)
+                        if reasoned:
+                            formatted_details.append(reasoned)
+                            continue
+                    formatted_details.append("• **Liều dùng trẻ em theo nhóm tuổi & đường dùng:**")
+                    ped_chunks = re.split(r'(?=(?:Đau, sốt|Đặt trực tràng|Truyền tĩnh mạch|Đau sau phẫu thuật|Sốt sau khi tiêm chủng):\s*)', raw_ped)
+                    if len(ped_chunks) > 1:
+                        for pc in ped_chunks:
+                            pc = pc.strip()
+                            if pc:
+                                formatted_details.append(f"  - {pc}")
+                    else:
+                        formatted_details.append(f"  - {raw_ped}")
                 else:
-                    formatted_details.append(f"  - 👶 {raw_ped}")
-            else:
-                formatted_details.append(s_line)
+                    formatted_details.append(s_line)
 
-        parts.append(f"### 📋 Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n" + "\n".join(formatted_details) + "\n")
+            parts.append(f"### Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n" + "\n".join(formatted_details) + "\n")
     elif not bluf_text:
         clean_lines = [l for l in evidence_context.splitlines() if not l.startswith("===") and not l.startswith("###")]
         clean_body = "\n".join(clean_lines[:15]).strip()
         if clean_body:
             parts.append(f"{clean_body}\n")
 
-    if warnings_text:
+    if warnings_text and "> [!WARNING]" not in evidence_context and "> [!WARNING]" not in details_text:
         warn_sentences = [w.strip() for w in re.split(r'(?<=[.!?])\s+', warnings_text) if w.strip()]
         if len(warn_sentences) > 1:
             warn_bullets = "\n".join(f"> • {w}" for w in warn_sentences)

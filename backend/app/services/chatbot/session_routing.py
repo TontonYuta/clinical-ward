@@ -228,7 +228,7 @@ def check_pediatric_guidance_request(lower_query: str, query: str, session_id: s
         return None
 
     reply_md = (
-        "### 👶 NGUYÊN TẮC AN TOÀN DƯỢC NHI KHOA & HƯỚNG DẪN KÊ ĐƠN CHO TRẺ EM\n\n"
+        "### NGUYÊN TẮC AN TOÀN DƯỢC NHI KHOA & HƯỚNG DẪN KÊ ĐƠN CHO TRẺ EM\n\n"
         "*(Căn cứ Dược thư Quốc gia Việt Nam & Hướng dẫn Dược lâm sàng Nhi khoa - Bộ Y tế)*\n\n"
         "---\n\n"
         "#### 1. NGUYÊN TẮC VÀNG TRONG SỬ DỤNG THUỐC CHO TRẺ EM\n"
@@ -244,10 +244,10 @@ def check_pediatric_guidance_request(lower_query: str, query: str, session_id: s
         "  - **Trẻ 2 – 10 tuổi:** Uống $100 - 200\\text{ mL}$ sau mỗi lần đi ngoài.\n"
         "  - **Cách uống:** Cho uống từng thìa nhỏ hoặc ngụm nhỏ, không uống vội để tránh nôn trớ.\n\n"
         "#### 3. CẢNH BÁO NGUY HIỂM & CHỐNG CHỈ ĐỊNH ĐẶC THÙ Ở TRẺ EM\n"
-        "⚠️ **Chống chỉ định tuyệt đối Aspirin & Salicylat:** Trẻ em dưới 16 tuổi sốt do virus cúm hoặc thủy đậu tuyệt đối không dùng Aspirin (nguy cơ mắc **Hội chứng Reye** gây thoái hóa mỡ gan não cấp tử vong cao).\n"
-        "⚠️ **Thận trọng Kháng sinh:** Không dùng **Tetracyclin** cho trẻ dưới 8 tuổi (gây hỏng men răng và chậm phát triển xương); nhóm **Fluoroquinolon** (Ciprofloxacin, Levofloxacin...) chống chỉ định thường quy cho trẻ dưới 18 tuổi (nguy cơ tổn thương sụn khớp).\n\n"
+        "• **Chống chỉ định tuyệt đối Aspirin & Salicylat:** Trẻ em dưới 16 tuổi sốt do virus cúm hoặc thủy đậu tuyệt đối không dùng Aspirin (nguy cơ mắc **Hội chứng Reye** gây thoái hóa mỡ gan não cấp tử vong cao).\n"
+        "• **Thận trọng Kháng sinh:** Không dùng **Tetracyclin** cho trẻ dưới 8 tuổi (gây hỏng men răng và chậm phát triển xương); nhóm **Fluoroquinolon** (Ciprofloxacin, Levofloxacin...) chống chỉ định thường quy cho trẻ dưới 18 tuổi (nguy cơ tổn thương sụn khớp).\n\n"
         "---\n"
-        "👉 **Bác sĩ vui lòng gửi tên thuốc cụ thể kèm độ tuổi và cân nặng (kg) của bé** để em rà soát liều chuẩn và chống chỉ định chi tiết nhất cho bệnh nhi ạ!"
+        "*(Đồng nghiệp vui lòng cung cấp tên thuốc cụ thể kèm độ tuổi và cân nặng (kg) của bệnh nhi để hệ thống suy luận liều chuẩn xác nhất)*"
     )
     return CopilotResponse(
         intent="CLINICAL_PEDIATRIC_GUIDANCE",

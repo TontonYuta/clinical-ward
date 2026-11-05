@@ -117,7 +117,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     }:
         session.set_active_medication(name="", ingredient="", sdk="")
         portal_text = (
-            "### 📖 CỔNG TRA CỨU DƯỢC THƯ QUỐC GIA VIỆT NAM (DĐVN V)\n\n"
+            "### CỔNG TRA CỨU DƯỢC THƯ QUỐC GIA VIỆT NAM (DĐVN V)\n\n"
             "Hệ thống đã nạp sẵn toàn bộ **771 chuyên luận Dược Thư Quốc Gia Việt Nam (QĐ 2033/QĐ-BYT)** "
             "và **54.885 số đăng ký thuốc Cục Quản lý Dược (DAV)**.\n\n"
             "Đồng nghiệp có thể tra cứu nhanh bằng cách:\n"
