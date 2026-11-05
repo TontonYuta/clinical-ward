@@ -215,7 +215,7 @@ async def synthesize_persona_optimized_output(
         f"• **Liều dùng & Cách dùng:** {format_clinical_text(dosage_text)}\n"
         f"• **Chống chỉ định & Thận trọng:** {format_clinical_text(contra_text)}\n"
         f"• **Tồn kho thực tế:** {ground_truth.get('stock', 0)} {drug.standard_unit}\n\n"
-        f"*(Dữ liệu được đối soát trực tiếp từ CSDL Cục Quản Lý Dược và Dược Thư Quốc Gia Việt Nam)*"
+        f"*(Dữ liệu được đối soát trực tiếp từ danh mục Cục Quản Lý Dược và Dược Thư Quốc Gia Việt Nam)*"
     )
 
 async def execute_clinical_sandwich_pipeline(

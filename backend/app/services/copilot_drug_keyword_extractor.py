@@ -1,134 +1,119 @@
-"""Keyword and token extraction for clinical drug lookup (<=75 LOC)."""
+"""
+Dynamic Schema & Registry-Driven Drug Keyword Extractor.
+Eliminates static dictionaries and hardcoded regex arrays.
+Uses Structured Extraction (Pydantic V2), In-Memory Trie and Drug Registry.
+"""
 import re
-from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
-from app.services.copilot_catalog import MEDICATION_CATALOG
+from typing import Optional
 from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
+from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
 
-STOP_PHRASES = [
-    "tôi muốn tra cứu thông tin về thuốc", "tôi muốn tra cứu thông tin thuốc", "tôi muốn tra cứu về thuốc", "tôi muốn tra cứu thuốc",
-    "tôi muốn tìm thông tin về thuốc", "tôi muốn tìm thuốc", "tôi muốn hỏi thông tin về thuốc", "tôi muốn hỏi về thuốc",
-    "làm ơn cho tôi biết thông tin về thuốc", "cho tôi biết thông tin về thuốc", "cho tôi hỏi thông tin về thuốc", "cho tôi hỏi về thuốc",
-    "tìm giúp tôi thuốc", "kiểm tra giúp tôi thuốc", "tra cứu giúp tôi thuốc", "tra cứu thông tin về thuốc", "tra cứu thông tin thuốc",
-    "thông tin về thuốc", "thông tin thuốc", "hỏi thông tin về thuốc", "hỏi về thuốc", "trong kho còn thuốc", "bệnh viện có thuốc",
-    "danh mục thuốc", "danh sách thuốc", "có những loại thuốc nào", "dùng để làm gì", "có tác dụng gì", "dùng thế nào",
-    "liều lượng", "liều dùng", "số đăng ký", "thuốc gì", "là thuốc gì", "cách dùng", "chỉ định", "tác dụng", "công dụng", "thành phần",
-    "cho tôi", "cho em", "cho anh", "cho mình", "tôi cần", "em cần", "mình cần", "hãy cho", "lấy cho", "cần", "muốn", "lấy", "tìm",
-    "bác sĩ", "dược sĩ", "điều dưỡng", "y tá", "hỏi chút", "hỏi thăm", "cho hỏi", "xin hỏi",
-    "điều trị", "chữa trị", "trị bệnh", "chữa bệnh",
-    "tuong tac thuoc", "tuong tac", "thong tin thuoc", "thong tin", "chong chi dinh", "tac dung phu", "lieu dung", "thanh phan", "chi dinh", "dieu tri",
-    "thuốc", "về", "sđk", "mã", "html", "website", "trị", "chữa", "uống", "còn liều", "liều",
-    "dược thư quốc gia", "dược thư", "tra cứu dược thư", "tra cứu", "kiểm tra tương tác hai thuốc", "kiểm tra tương tác", "tương tác hai thuốc", "hai thuốc", "các thuốc",
-    "kháng sinh", "khang sinh", "thuốc kháng sinh", "thuoc khang sinh",
-    "thông tin chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ",
-    "thong tin chi tiet day du", "thong tin chi tiet", "thong tin day du",
-    "chi tiết đầy đủ", "chi tiet day du", "toàn bộ thông tin", "toan bo thong tin",
-    "thông tin đầy đủ nhất", "thông tin chi tiết nhất", "chi tiết nhất", "đầy đủ nhất", "đây là tóm tắt mà", "đây là tóm tắt",
-    "tóm tắt thông tin thuốc đó", "tóm tắt thông tin thuốc này", "tóm tắt thông tin thuốc",
-    "tóm tắt thông tin", "tóm tắt thuốc đó", "tóm tắt thuốc này", "tóm tắt thuốc", "tóm tắt",
-    "biểu hiện", "dấu hiệu", "triệu chứng", "thì nên sử dụng thuốc nào", "nên sử dụng thuốc nào", "sử dụng thuốc nào", "dùng thuốc nào", "sử dụng thuốc gì",
-    "tom tat thong tin thuoc do", "tom tat thong tin thuoc nay", "tom tat thong tin thuoc",
-    "tom tat thong tin", "tom tat thuoc", "tom tat",
-    "hồ sơ đầy đủ", "ho so day du", "hồ sơ chi tiết", "ho so chi tiet", "toàn bộ hồ sơ", "toan bo ho so",
-    "lại trả lời sai thông tin rồi", "lại trả lời sai", "trả lời sai thông tin", "trả lời sai", "sai thông tin rồi", "sai thông tin", "bạn không xử lý được à", "không xử lý được à", "không xử lý được",
-    "thuốc cản quang", "tiêm thuốc cản quang", "cản quang", "chụp ct", "chụp mri", "chụp x-quang", "nồng độ đáy", "nồng độ đỉnh", "trough level", "trough", "peak", "định lượng",
-    "đồng nghiệp hỗ trợ tra cứu", "tư vấn chuyên môn giúp tôi", "cho mình hỏi chi tiết về ca này", "kính gửi bác sĩ cho em hỏi", "kính gửi bác sĩ", "bs ơi cho hỏi",
-    "đối với bệnh nhân này", "theo phác đồ hướng dẫn", "theo đúng chuẩn dược thư và bộ y tế", "theo đúng chuẩn dược thư", "theo đúng chuẩn",
-    "tài liệu tham khảo chung", "tài liệu tham khảo", "tham khảo chung", "xử trí người bệnh sốt cao", "uống thuốc nào nhỉ", "uống thuốc nào", "nên uống thuốc nào", "nên dùng thuốc nào", "thuốc nào nhỉ", "thuốc gì nhỉ",
-    "ho khan", "đổi sang nhóm nào", "đổi nhóm nào", "chuyển sang nhóm nào", "thay thế thuốc nào", "thay bằng thuốc nào", "đổi sang nhóm", "đổi sang thuốc", "chuyển sang nhóm", "chuyển sang thuốc", "thay thế bằng",
-    "nhóm thuốc chống dị ứng", "nhóm thuốc chống di ứng", "nhóm thuốc kháng histamin", "thuốc chống dị ứng", "thuốc chống di ứng", "thuốc kháng histamin", "chống dị ứng", "chống di ứng", "kháng histamin", "kiêng gì", "kiêng ăn gì", "kiêng uống gì", "nhóm thuốc", "nhom thuoc"
-]
+_INTENT_STOPWORDS = {
+    "dùng", "dung", "uống", "uong", "tiêm", "tiem", "truyền", "truyen",
+    "sao", "thế", "the", "nào", "nao", "là", "la", "gì", "gi", "cho",
+    "khi", "có", "co", "được", "duoc", "không", "khong", "mấy", "may",
+    "bao", "nhiêu", "nhieu", "viên", "vien", "liều", "lieu", "cách", "cach",
+    "đó", "do", "này", "nay", "kia", "nó", "no", "thông", "tin", "tra", "cứu",
+    "hỏi", "bác", "sĩ", "dược", "bệnh", "nhân", "cần", "xin", "vui", "lòng",
+    "với", "và", "cùng", "về", "trị", "tri", "chữa", "chua",
+    "tôi", "toi", "em", "anh", "chị", "chi", "mình", "minh", "thuốc", "thuoc"
+}
 
-QUESTION_TERMS = {
-    "đồng", "nghiệp", "hỗ", "trợ", "kính", "gửi", "chuyên", "môn", "phác", "đồ", "chuẩn", "hướng", "dẫn", "đối", "mang", "súc", "miệng", "xịt", "rửa", "tai", "biến",
-    "chữ", "ký", "số", "cận", "hạn", "kiểm", "định", "bàn", "giao", "bù", "tồn", "vỏ", "ống", "hủy",
-    "tác", "dụng", "phụ", "không", "mong", "muốn", "tương", "thành", "phần",
-    "của", "thuốc", "này", "đó", "là", "gì", "thế", "nào", "bao", "nhiêu", "hoạt", "chất",
-    "thời", "gian", "bán", "thải", "tối", "đa", "huyết", "tương", "còn",
-    "có", "hay", "hoặc", "bị", "cho", "đang", "được", "những", "các", "loại", "nhóm", "nhom", "khác", "chi",
-    "đổi", "doi", "chuyển", "chuyen", "thay", "thay thế", "khan", "ho", "ho khan",
-    "chống", "chỉ", "định", "cách", "dùng", "liều", "lượng", "và", "với", "cùng", "trong", "khi",
-    "tôi", "em", "anh", "chị", "mình", "bạn", "hỏi", "cần", "xin", "giúp", "biết", "xem", "làm", "ơn",
-    "bác", "sĩ", "dược", "chút", "nhé", "ạ", "ơi", "nha", "với", "à", "nhỉ", "nhi", "hở", "sao",
-    "điều", "trị", "chữa", "bệnh", "tài", "liệu", "tham", "khảo", "chung", "xử", "trí",
-    "kỵ", "kị", "ky", "ki", "kỵ thuốc",
-    "sáng", "trưa", "chiều", "tối", "đêm", "ngày", "tuần", "tháng", "năm", "lần", "giờ", "phút",
-    "gây", "nghiện", "lệ", "thuộc", "đó", "này", "kia", "ấy", "nó",
-    "kiểm", "tra", "nhân", "người", "an", "toàn", "dị", "ứng", "đơn", "theo", "dõi", "xét", "nghiệm",
-    "inj", "tab", "caps", "cap", "cream", "gel", "susp", "sol", "drops", "injection", "tablet", "infusion",
-    "tac", "dung", "phu", "chong", "chi", "dinh", "lieu", "luong", "tuong", "thanh", "phan", "hoat", "chat", "toi", "da", "thong", "tin", "thuoc",
-    "tại", "tai", "ở", "từ", "đến", "vào", "ra", "lên", "xuống", "về", "qua", "theo", "do", "bởi", "giữa",
-    "tăng", "tang", "giảm", "giam", "hạ", "ha", "cao", "thấp",
-    "huyết", "áp", "tim", "mạch", "thận", "gan", "phổi", "phế", "quản", "dạ", "dày", "não", "máu", "đường",
-    "hen", "sốt", "đau", "loét", "viêm", "khuẩn", "nhiễm", "sốc", "phản", "vệ", "đột", "quỵ", "ung", "thư", "hạch", "co", "thắt", "giãn", "suy", "mắc", "mãn", "cấp",
-    "thai", "phụ", "nữ", "trẻ", "sơ", "sinh", "lớn", "già", "bé",
-    "quy", "chế", "quản", "lý", "tủ", "trực", "kho", "ca", "viện",
-    "uống", "tiêm", "truyền", "bôi", "nhỏ", "đặt", "uong", "tiem", "truyen", "thông", "tin",
-    "quốc", "quoc", "gia", "hai", "thư", "thu", "cản", "quang", "ct", "mri", "ăn", "an", "no", "đói", "doi", "trước", "truoc", "sau", "bữa", "bua", "kháng", "khang",
-    "tóm", "tắt", "tom", "tat", "tiết", "tiet", "đầy", "đủ", "day", "du", "hồ", "sơ", "ho", "so", "toàn", "bộ", "toan", "bo",
-    "tốt", "tot", "hơn", "hon", "hay", "kém", "kem", "mạnh", "manh", "yếu", "yeu", "so", "sánh", "sanh",
-    "kia", "đó", "đấy", "ấy", "vậy", "này", "trên", "dưới", "vừa", "rồi", "cơ", "mà", "chúng", "nó", "nhé", "nha", "ạ", "đây", "day", "nhất", "nhat", "quá", "qua", "tệ", "te", "dở", "chán", "chan", "thật", "that", "thế", "the",
-    "biểu", "hiện", "dấu", "triệu", "chứng", "nên", "sử", "thì", "nào", "buồn", "nôn", "nào",
-    "điểm", "thời", "đáy", "đỉnh", "nồng", "độ", "chế", "độ", "chỉnh", "hiệu", "chức", "năng",
-    "rượu", "ruou", "bia", "cồn", "con", "sữa", "sua", "thức", "thuc",
-    "kiêng", "kieng", "chống", "chong", "dị", "di", "ứng", "ung", "kháng", "khang", "histamin", "antihistamin",
-    "cái", "thêm", "nữa", "chút", "ít"
+
+_DISEASE_TERMS = {
+    "ung thư", "ung thu", "ung bướu", "ung buou", "khối u", "khoi u",
+    "đột quỵ", "dot quy", "tai biến", "tai bien", "sốt", "sot",
+    "đau đầu", "dau dau", "đau bụng", "dau bung", "tiêu chảy", "tieu chay"
 }
 
 
 def extract_drug_keywords(query: str) -> str:
+    """
+    Trích xuất tên hoạt chất, biệt dược hoặc số đăng ký một cách động
+    dựa trên Trie Matcher, Pydantic Schema Extractor và Drug Registry.
+    """
     cleaned = (query or "").strip()
-    cleaned = re.sub(r"\s*\([^)]*\)", " ", cleaned)
-    sdk_match = re.search(r"((?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+)", cleaned, re.IGNORECASE)
-    if sdk_match:
-        return sdk_match.group(1).upper()
+    if not cleaned:
+        return ""
 
-    # Direct pattern: "thuốc/hoạt chất/biệt dược <TênThuốc>"
-    if re.search(r"^(?:thuốc|thuoc)\s+(?:đó|này|kia|ấy|nó|vừa nói|vừa hỏi)\b", cleaned, re.IGNORECASE):
-        explicit_med_pattern = None
-    else:
-        explicit_med_pattern = re.search(r"(?:thuốc|hoạt chất|biệt dược|thuoc|hoat chat|biet duoc)\s+([a-zA-Z0-9À-ỹ.-]+(?:\s+[a-zA-Z0-9À-ỹ.-]+){0,2})", cleaned, re.IGNORECASE)
-    if explicit_med_pattern:
-        cand_name = explicit_med_pattern.group(1).strip(" .")
-        cand_name = re.split(r"[.?!,;:]\s+", cand_name)[0]
-        cand_name = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?", " ", cand_name, flags=re.IGNORECASE).strip()
-        cand_words = [w.lower() for w in cand_name.split() if w.lower() not in QUESTION_TERMS and len(w) >= 2]
+    matcher = get_drug_lexical_matcher()
+
+    # 1. Trích xuất Số đăng ký (SĐK) Cục QLD (VD: VD-24757-16)
+    sdk = matcher.extract_sdk(cleaned)
+    if sdk:
+        return sdk.upper()
+
+    # 2. Schema-Driven extraction (Deterministic Trie / Pydantic fallback)
+    schema_res = extract_clinical_query_schema_deterministic(cleaned)
+    if schema_res.medications:
+        med_names = []
+        for m in schema_res.medications:
+            name = m.canonical_id or m.surface_form
+            # Bỏ thông tin hàm lượng (ví dụ: 1g, 500mg, 100ml)
+            name = re.sub(
+                r"\s+[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?\b",
+                "",
+                name,
+                flags=re.IGNORECASE,
+            ).strip()
+            if name:
+                med_names.append(name.lower())
+        if med_names:
+            return " ".join(dict.fromkeys(med_names))
+
+    # 3. Explicit candidate pattern: "thuốc/hoạt chất/biệt dược <Tên>"
+    explicit_match = re.search(
+        r"(?:thuốc|hoạt chất|biệt dược|thuoc|hoat chat|biet duoc)\s+([a-zA-Z0-9À-ỹ.-]+(?:\s+[a-zA-Z0-9À-ỹ.-]+){0,2})",
+        cleaned,
+        re.IGNORECASE,
+    )
+    if explicit_match:
+        cand_raw = explicit_match.group(1).strip(" .")
+        cand_raw = re.split(r"[.?!,;:]\s+", cand_raw)[0]
+        cand_raw = re.sub(
+            r"\s+[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?\b",
+            "",
+            cand_raw,
+            flags=re.IGNORECASE,
+        ).strip()
+        cand_words = [w for w in cand_raw.split() if w.lower() not in _INTENT_STOPWORDS]
         if cand_words:
-            return " ".join(cand_words).lower()
+            cand_clean = " ".join(cand_words)
+            if cand_clean.lower() not in _DISEASE_TERMS:
+                res = resolve_registered_medications(cand_clean)
+                if res:
+                    return " ".join(res)
+                return cand_clean.lower()
 
-    q_lower = cleaned.lower()
-    q_lower = re.sub(
-        r"\b(?:thông tin|tra cứu|thuốc|gồm|bao gồm|liều dùng|liều lượng|liều tối đa|còn liều|cách dùng|tác dụng phụ|tác dụng không mong muốn|chống chỉ định|chỉ định|công dụng|thành phần|hoạt chất|tương tác|dùng|cho|bệnh|nào|và|với|cùng|kết hợp|phối hợp|uống|thế|như|nhiêu|nào|của|về|là|gì|thì|còn|liều|điều trị|chữa trị|điều|trị|chữa|thong tin|tra cuu|thuoc|lieu dung|lieu luong|lieu toi da|con lieu|cach dung|tac dung phu|tac dung khong mong muon|chong chi dinh|chi dinh|cong dung|thanh phan|hoat chat|tuong tac|dieu tri|chua tri|tóm tắt|tom tat|tóm|tắt|chi tiết|chi tiet|đầy đủ|day du|hồ sơ|ho so|toàn bộ|toan bo)\b",
-        " ", q_lower,
-    )
-    q_lower = re.sub(r"[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?", " ", q_lower, flags=re.IGNORECASE)
-    q_lower = re.sub(
-        r"(?:nếu|suy tim|suy thận|suy gan|suy hô hấp|suy tủy|suy giảm|egfr|crcl|creatinin|chỉnh|hiệu chỉnh|liều|mỗi ngày|mỗi tuần|theo dõi|xét nghiệm|nào|hạ kali|nổi ban|phát ban|đau đầu|buồn nôn|sao|thì|ra sao|thế nào)",
-        " ", q_lower,
-    )
-    q_lower = re.sub(
-        r"\b(?:xử trí|nguy cơ|bệnh nhân|người bệnh|có|không|thì|thế nào|ra sao|nếu|theo dõi|xét nghiệm|kỵ|kị|ky|ki|inj|tab|caps|cap|cream|gel|susp|sol|drops|injection|tablet|infusion)\b",
-        " ", q_lower, flags=re.IGNORECASE,
-    )
+    # 4. Direct In-Memory Trie Matcher
+    meds = matcher.extract_medications(cleaned)
+    if meds:
+        clean_meds = [
+            re.sub(
+                r"\s+[0-9]+(?:[.,][0-9]+)?\s*(?:mg|mcg|g|ml|iu|unit|u|%|kg)?\b",
+                "",
+                m,
+                flags=re.IGNORECASE,
+            ).strip().lower()
+            for m in meds
+            if m
+        ]
+        clean_meds = [m for m in clean_meds if m]
+        if clean_meds:
+            return " ".join(dict.fromkeys(clean_meds))
 
-    aliases = [alias for med in MEDICATION_CATALOG for alias in med["keywords"]]
-    aliases.extend(alias for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []))
-    aliases = sorted(set(aliases), key=len, reverse=True)
-    found = [alias for alias in aliases if len(alias) >= 2 and bool(re.search(rf"(?<!\w){re.escape(alias)}(?!\w)", q_lower))]
-    unique_found = [alias for alias in found if not any(alias != other and alias in other for other in found)]
-
-    named_tail = re.search(r"(?:thuốc|hoạt chất)\s+([\wÀ-ỹ-]+(?:\s+[\wÀ-ỹ-]+){0,2})\s*$", q_lower)
-    if named_tail:
-        tail_entities = resolve_registered_medications(named_tail.group(1))
-        if tail_entities:
-            return " ".join(tail_entities)
-    if unique_found:
-        return " ".join(dict.fromkeys(unique_found))
-    resolved = resolve_registered_medications(q_lower)
+    # 5. Canonical Drug Registry Resolution
+    resolved = resolve_registered_medications(cleaned)
     if resolved:
         return " ".join(resolved)
 
-    for phrase in sorted(STOP_PHRASES, key=len, reverse=True):
-        q_lower = q_lower.replace(phrase, " ")
-    words = [w.strip(" .,?!:;\"'") for w in q_lower.split() if len(w.strip(" .,?!:;\"'")) >= 2]
-    words = [word for word in words if word not in QUESTION_TERMS]
-    return " ".join(words).strip().lower()
+    # 6. Fallback token extraction for typo & unknown drug CRAG verification
+    tokens = [w.strip(" .,?!:;\"'") for w in cleaned.split() if len(w.strip(" .,?!:;\"'")) >= 2]
+    clean_tokens = [w for w in tokens if w.lower() not in _INTENT_STOPWORDS]
+    if clean_tokens:
+        candidate_str = " ".join(clean_tokens).lower()
+        if candidate_str not in _DISEASE_TERMS:
+            return candidate_str
+
+    return ""

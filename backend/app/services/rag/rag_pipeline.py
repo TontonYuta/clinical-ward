@@ -43,7 +43,7 @@ async def execute_clinical_rag(
     evidence_blocks: list[str] = []
     if kg_data.get("graph_context_text"):
         evidence_blocks.append(
-            "=== [ĐỒ THỊ TRI THỨC ĐA TẦNG LIGHTRAG (DUAL-LEVEL GRAPH)] ===\n" +
+            "=== [ĐỒ THỊ TƯƠNG TÁC DƯỢC LÝ & AN TOÀN ĐIỀU TRỊ] ===\n" +
             kg_data["graph_context_text"]
         )
     for idx, r in enumerate(retrieved_chunks):

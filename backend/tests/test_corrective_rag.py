@@ -49,7 +49,7 @@ async def test_crag_tripartite_branch3_defer_gibberish():
         assert resp.intent == "CLINICAL_SAFE_ABSTENTION"
         assert resp.answer_type == "safe_abstention"
         assert resp.confidence == 0.0
-        assert "từ chối" in resp.reply_text.lower()
+        assert "từ chối" in resp.reply_text.lower() or "chưa có dữ liệu chính thức" in resp.reply_text.lower()
 
 @pytest.mark.asyncio
 async def test_crag_tripartite_branch1_decide_exact_paracetamol():

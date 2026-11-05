@@ -103,7 +103,7 @@ async def handle_clinical_drug_comparison(
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE",
             reply_text=validate_output_guardrail("\n".join(reply_parts), query),
-            legal_basis="Dược thư Quốc gia Việt Nam & CSDL Dược phẩm DAV",
+            legal_basis="Dược thư Quốc gia Việt Nam & Danh mục Dược phẩm DAV",
             suggested_chips=[f"Chỉ định {drug_a_name}", f"Chỉ định {drug_b_name}", "Kiểm tra tương tác hai thuốc"],
             session_id=session.session_id,
             answer_type="grounded_reference",

@@ -226,7 +226,7 @@ async def build_fluent_drug_profile_response(
             seen.add(p)
             top_ddi_list.append(f"**{p}** ({d.get('severity')}: {d.get('consequence')})")
 
-    ddi_summary = "; ".join(top_ddi_list[:3]) if top_ddi_list else "Chưa ghi nhận tương tác chống chỉ định nguy hiểm trong CSDL QĐ 5948."
+    ddi_summary = "; ".join(top_ddi_list[:3]) if top_ddi_list else "Chưa ghi nhận tương tác chống chỉ định nguy hiểm theo Quyết định 5948/QĐ-BYT."
 
     source_str = (monograph.source if monograph and monograph.source else matched_drug.clinical_source) or "Dược thư Quốc gia Việt Nam (DĐVN V) & Cục Quản lý Dược (DAV)"
 

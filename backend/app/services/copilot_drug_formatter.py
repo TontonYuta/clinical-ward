@@ -160,7 +160,7 @@ async def build_drug_profile_response(
                     u_role = getattr(session, "user_role", "doctor") or "doctor"
                     synth_res = await synthesize_grounded_clinical_response(
                         query=query,
-                        evidence_context=f"Thông tin phối hợp hoạt chất CSDL y tế: Thuốc {clean_name}. {', '.join(labels)}:\n" + "\n".join(details),
+                        evidence_context=f"Thông tin phối hợp hoạt chất y tế: Thuốc {clean_name}. {', '.join(labels)}:\n" + "\n".join(details),
                         source_label="DĐVN V (QĐ 2033/QĐ-BYT)",
                         user_role=u_role
                     )
@@ -356,7 +356,7 @@ async def build_drug_profile_response(
 
             field_data.append((field_key, req_label, detail))
 
-        source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "CSDL đăng ký thuốc Cục Quản lý Dược"
+        source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "Danh mục đăng ký thuốc Cục Quản lý Dược"
         u_name = getattr(session, "user_name", "Bác sĩ") or "Bác sĩ"
         reply_text = format_flat_field_inquiry(
             drug_name=clean_name,

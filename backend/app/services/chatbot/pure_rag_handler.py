@@ -122,7 +122,7 @@ async def handle_deep_rag_consultation(
     if not top_results:
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",
-            reply_text="Hiện chưa tìm thấy thông tin chuyên môn phù hợp trong nguồn tri thức của hệ thống. Hãy nêu rõ chủ đề, thuốc hoặc văn bản cần tra cứu.",
+            reply_text="Dạ thưa Bác sĩ, hiện tại tôi chưa tìm thấy thông tin chuyên môn phù hợp về nội dung này trong các hướng dẫn chính thức. Bác sĩ vui lòng nêu rõ thêm tên thuốc hoặc chủ đề cần tra cứu ạ.",
             answer_type="safe_abstention", source_status="no_retrieval_results",
             confidence=0.0, abstention_reason="Không có tài liệu truy xuất phù hợp",
         )

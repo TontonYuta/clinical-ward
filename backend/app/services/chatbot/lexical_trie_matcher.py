@@ -160,7 +160,10 @@ class DrugLexicalMatcher:
                             longest = (i, j + 1, node.canonical or "", node.entity_type or "")
                     j += 1
                 if longest and len(longest[2]) >= 3 and longest[2].lower() not in COMMON_EXCLUSIONS:
-                    candidates.append(longest)
+                    if longest[2].lower() in ("nhân trần", "nhan tran") and src[:longest[0]].rstrip().endswith(("bệnh", "benh")):
+                        pass
+                    else:
+                        candidates.append(longest)
 
         candidates.sort(key=lambda x: (x[0], -(x[1] - x[0])))
         results: List[str] = []

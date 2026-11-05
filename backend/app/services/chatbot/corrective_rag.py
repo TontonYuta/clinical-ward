@@ -84,7 +84,7 @@ async def find_crag_candidates(
                 "concentration": conc or "Theo nhãn",
                 "national_code": sdk or "DĐVN V",
                 "score": score,
-                "source": "CSDL Dược Quốc gia (DAV)"
+                "source": "Dược thư Quốc gia & Cục Quản lý Dược"
             })
 
     # 2. Trie indexed fuzzy candidate pool (tra cứu trong 3ms)
@@ -105,7 +105,7 @@ async def find_crag_candidates(
                         "concentration": d.concentration or "Theo nhãn",
                         "national_code": d.national_code,
                         "score": difflib.SequenceMatcher(None, kw_norm, fname).ratio(),
-                        "source": "CSDL Dược Quốc gia (DAV)"
+                        "source": "Dược thư Quốc gia & Cục Quản lý Dược"
                     })
 
     # 3. Tra cứu bổ trợ trong ClinicalDrugMonograph 771 chuyên luận

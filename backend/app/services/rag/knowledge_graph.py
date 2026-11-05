@@ -151,8 +151,8 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
         ents_str = ", ".join(low_level_entities) if low_level_entities else "Chưa định danh thuốc đơn lẻ"
         classes_str = ", ".join([PHARMACOLOGICAL_CLASS_TAXONOMY.get(c, {}).get("name_vi", c) for c in high_level_classes]) if high_level_classes else "Tra cứu chung"
         context_sections.append(
-            f"• **Thực thể Dược phẩm (Low-Level Entities):** {ents_str}\n"
-            f"• **Phân loại Dược lý & Nhóm ATC (High-Level Classes):** {classes_str}"
+            f"• **Thực thể Dược phẩm:** {ents_str}\n"
+            f"• **Phân loại Dược lý & Phân nhóm điều trị:** {classes_str}"
         )
 
     if class_interactions:
@@ -164,7 +164,7 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
                 f"  * Hậu quả lâm sàng: {ci['consequence']}\n"
                 f"  * Hướng xử trí: {ci['management']}"
             )
-        context_sections.append("### ⚡ Tương Tác Nhóm Dược Lý (LightRAG High-Level Traversal):\n" + "\n".join(lines))
+        context_sections.append("### ⚡ Cảnh Báo Tương Tác Nhóm Dược Lý:\n" + "\n".join(lines))
 
     if organ_condition_risks:
         lines = []

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.copilot import CopilotQuery, CopilotResponse
 from app.services.copilot_catalog import find_matched_med
 from app.services.copilot_drug_lookup import lookup_drug_authoritative, extract_drug_keywords
+from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
 from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
 from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 from app.services.copilot_business_overview import CLINICAL_BUSINESS_DIRECTORY
@@ -98,6 +99,32 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if renal_res:
         return renal_res
 
+    is_general_ref = any(term in lower_query for term in (
+        "thông tin về", "thông tin", "tài liệu", "tra cứu", "hướng dẫn", "phác đồ",
+        "thuốc hạ sốt", "thuốc giảm đau", "nhóm thuốc", "danh mục", "chuyên luận",
+        "kiêng gì", "kiêng", "chăm sóc", "ăn uống"
+    ))
+    has_patient_context = any(term in lower_query for term in ("bệnh nhân", "người bệnh", "ca bệnh", "ca này", "hồ sơ", "bn-", "bn ", "trẻ em", "trẻ nhỏ", "trẻ", "bé"))
+    has_known_med = bool(get_drug_lexical_matcher().extract_medications(lower_query) or resolve_registered_medications(lower_query))
+    is_self_symptom = not is_general_ref and not has_patient_context and not has_known_med and bool(
+        re.search(r"\b(tôi|(?<!trẻ\s)em|mình)\b.{0,45}\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b|\b(sốt|đau đầu|đau bụng|khó thở|ho|buồn nôn)\b.{0,45}\b(tôi|(?<!trẻ\s)em|mình)\b", lower_query)
+    )
+    if is_self_symptom:
+        chips = [
+            "Hướng dẫn sử dụng thuốc hạ sốt",
+            "Liều Paracetamol hạ sốt người lớn",
+            "Dấu hiệu cảnh báo sốt xuất huyết"
+        ] if "sốt" in lower_query else [
+            "Tra cứu tài liệu tham khảo chung",
+            "Thông tin chuyên luận Dược Thư"
+        ]
+        return CopilotResponse(
+            intent="CLINICAL_CASE_CLARIFICATION",
+            reply_text="Trợ lý này phục vụ tra cứu và nghiệp vụ chuyên môn. Nếu bác sĩ đang xử trí một ca bệnh, vui lòng nêu thông tin nhận diện ca/người bệnh và dữ liệu lâm sàng liên quan; nếu cần thông tin tham khảo chung, hãy nêu chủ đề hoặc thuốc cần tra cứu.",
+            answer_type="clarification", source_status="missing_case_context", confidence=1.0, abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh",
+            suggested_chips=chips
+        )
+
     is_deep_complex = any(term in lower_query for term in ("thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"))
     query, lower_query, active_in_query, explicit_named, has_candidate_drug, early_resp = await resolve_active_drug_and_terms(
         query, lower_query, db, session=session, session_id=session_id, user_name=user_name,
@@ -127,7 +154,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         return CopilotResponse(
             intent="MEDICATION_LOOKUP_GUIDE",
             reply_text=portal_text,
-            legal_basis="Dược thư Quốc gia Việt Nam Lần II (2015) & CSDL Cục Quản lý Dược (DAV)",
+            legal_basis="Dược thư Quốc gia Việt Nam & Cục Quản lý Dược (DAV)",
             suggested_chips=["Thông tin thuốc Coversyl", "Thông tin thuốc Augmentin", "Thông tin thuốc Zithromax"],
             session_id=session_id,
             answer_type="medication_lookup_guide",
@@ -181,7 +208,6 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         return await synthesize_specialty_response(query, spec_early, user_name=user_name, user_role=user_role, session_id=session_id)
 
     extracted_kw, resolved_meds = extract_drug_keywords(norm_query), resolve_registered_medications(norm_lower)
-    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
     matcher = get_drug_lexical_matcher()
     lex_meds = matcher.extract_medications(norm_query)
 
@@ -289,13 +315,12 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     ):
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "huyết áp", "tăng huyết áp", "hạ huyết áp")) and not has_candidate_drug:
-        from app.services.copilot_gemini_scenarios import detect_and_handle_gemini_clinical_scenario
-        sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
-        if sc_res:
-            from app.security.guardrails import validate_output_guardrail
-            sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
-            return sc_res
+    from app.services.copilot_gemini_scenarios import detect_and_handle_gemini_clinical_scenario
+    sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
+    if sc_res:
+        from app.security.guardrails import validate_output_guardrail
+        sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
+        return sc_res
 
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
     spec_item = find_clinical_specialty_consultation(query)
@@ -381,7 +406,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     greeting = get_clinical_persona_greeting(user_name, user_role)
     fallback_reply = (
         f"{greeting} em đã tiếp nhận câu hỏi chuyên môn của đồng nghiệp.\n\n"
-        f"Để đảm bảo độ chính xác 100% theo CSDL Dược Quốc gia (DAV 54.885 thuốc & DĐVN V), "
+        f"Để đảm bảo an toàn điều trị chính xác theo Dược thư Quốc gia và danh mục Cục Quản lý Dược, "
         f"đồng nghiệp vui lòng cung cấp thêm tên thuốc/hoạt chất hoặc ca bệnh cụ thể:\n"
         f"• **Tra cứu thuốc:** Tên biệt dược, hoạt chất (INN) hoặc số đăng ký (SĐK).\n"
         f"• **Kiểm tra tương tác:** Cặp thuốc phối hợp (ví dụ: *Clopidogrel + Omeprazol*).\n"

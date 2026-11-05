@@ -60,7 +60,7 @@ async def lookup_drug_authoritative(
     if is_unanchored_info and not session.active_medication_name and (not kw or len(kw) < 2):
         return CopilotResponse(
             intent="MEDICATION_LOOKUP_CLARIFICATION",
-            reply_text="Dạ xin lỗi bác sĩ, hiện chưa xác định được thuốc cần tra cứu trong phiên hội thoại này. Bác sĩ vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký để hệ thống hiển thị tóm tắt / thông tin chi tiết ạ.",
+            reply_text="Dạ xin lỗi bác sĩ, hiện chưa xác định được thuốc cần tra cứu trong phiên hội thoại này. Bác sĩ vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký để tôi hỗ trợ tra cứu thông tin chi tiết hoặc tóm tắt ạ.",
             answer_type="clarification", source_status="missing_medication_context", confidence=1.0,
             session_id=session.session_id, suggested_chips=["Tra cứu thuốc Teglutik", "Tra cứu thuốc Paracetamol", "Tra cứu SĐK VD-24757-16"]
         )
@@ -189,7 +189,7 @@ async def lookup_drug_authoritative(
                     return CopilotResponse(
                         intent="CLINICAL_SAFE_ABSTENTION",
                         reply_text=cleaned_reply,
-                        legal_basis="Dược Thư Quốc Gia Việt Nam & CSDL Cục Quản lý Dược",
+                        legal_basis="Dược Thư Quốc Gia Việt Nam & Cục Quản lý Dược",
                         answer_type="safe_abstention",
                         source_status="insufficient_retrieval_evidence",
                         confidence=0.5,

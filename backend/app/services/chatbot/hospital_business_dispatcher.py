@@ -119,6 +119,10 @@ async def dispatch_operational_business(
         return await handle_restock_intent(db)
 
     if any(w in lower_query for w in ["chuỗi lạnh", "cold chain", "kho lạnh", "nhiệt độ tủ lạnh", "datalogger", "mất điện tủ", "arrhenius", "giám sát tủ lạnh", "nhiệt độ bảo quản"]) or re.search(r"\bmkt\b", lower_query):
+        from app.services.scenarios.registry import dispatch_clinical_scenario
+        sc_res = await dispatch_clinical_scenario(query, lower_query, user_name, "nurse", None, db)
+        if sc_res:
+            return sc_res
         return await handle_coldchain_intent(db)
 
     if any(w in lower_query for w in ["kiểm toán", "toàn vẹn", "chuỗi băm", "sha256", "sha-256", "hmac", "nhật ký bảo mật", "sổ bất biến"]):
