@@ -90,6 +90,10 @@ async def build_drug_profile_response(
         "elderly_warning": ("elderly", "precautions", "Cảnh báo & Liều dùng người cao tuổi"),
         "stock_inquiry": ("stock", "", "Tồn kho"),
     }
+    is_comprehensive_request = any(w in lower_query for w in (
+        "chi tiết", "chi tiet", "toàn văn", "toan van", "đầy đủ", "day du",
+        "toàn bộ", "toan bo", "đầy đủ nhất", "chuyên luận"
+    ))
     ranked = rank_clinical_intents(query, min_score=1.5)
     requested_fields = [
         (intent_to_field[k][0], (), intent_to_field[k][1], intent_to_field[k][2])
@@ -99,6 +103,27 @@ async def build_drug_profile_response(
         requested_fields.append(("monitoring", (), "description", "Theo dõi / xét nghiệm"))
     if any(s[0] == "pediatric_dosage" for s in requested_fields):
         requested_fields = [s for s in requested_fields if s[0] != "adult_dosage"]
+
+    # ĐIỀU PHỐI THÍCH ỨNG (ADAPTIVE BLUF & DEEP FACET):
+    # Áp dụng cho câu hỏi tổng quan (OVERVIEW) hoặc khi không có requested_fields tĩnh
+    if not is_comprehensive_request and not is_combination:
+        from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
+        from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
+        from app.services.chatbot.adaptive_clinical_synthesizer import synthesize_adaptive_clinical_response
+        adapt_analysis = extract_clinical_query_schema_deterministic(query, session_context={"active_medication": clean_name})
+        if adapt_analysis.query_depth == "OVERVIEW" or (adapt_analysis.query_depth == "DEEP_FACET" and not requested_fields):
+            evidence, _, status = await slice_clinical_drug_evidence(adapt_analysis, db, session)
+            if status == "ok" and evidence:
+                adaptive_resp = synthesize_adaptive_clinical_response(
+                    evidence,
+                    user_name=getattr(session, "user_name", "Bác sĩ"),
+                    user_role=getattr(session, "user_role", "doctor"),
+                    session_id=session.session_id
+                )
+                adaptive_resp.active_medication_name = session.active_medication_name
+                adaptive_resp.active_medication_stock = session.active_medication_stock
+                adaptive_resp.active_medication_location = session.active_medication_location
+                return adaptive_resp
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None

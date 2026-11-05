@@ -27,6 +27,8 @@ Nhiệm vụ của bạn: Phân tích câu hỏi của Bác sĩ / Nhân viên y 
 JSON phải tuân thủ đúng định dạng:
 {
   "primary_intent": "monograph_field_lookup" | "dosage_adjustment" | "interaction_assessment" | "clinical_consultation" | "disease_guideline" | "conversational" | "out_of_scope",
+  "query_depth": "OVERVIEW" | "DEEP_FACET" | "COMPARISON" | "INTERACTION" | "GENERAL_CONSULTATION",
+  "target_facets": ["timing_and_administration" | "max_dosage" | "pediatric_dosage" | "renal_adjustment" | "hepatic_adjustment" | "pregnancy_lactation" | "alcohol_interaction" | "food_interaction" | "contraindications" | "adverse_effects" | "indications"],
   "medications": [
     {
       "canonical_id": "tên hoạt chất viết thường, không dấu hoặc chuẩn quốc tế (vd: paracetamol, metformin, cefotaxim)",
@@ -48,6 +50,8 @@ JSON phải tuân thủ đúng định dạng:
     "lactation": bool
   } | null,
   "references_previous_entity": bool,
+  "is_followup_question": bool,
+  "specific_user_question": "câu hỏi cụ thể",
   "switches_subject": bool,
   "ambiguities": ["missing_interaction_partner" | "unresolved_medication" | "insufficient_clinical_data"],
   "confidence": float (0.0 to 1.0),
@@ -55,11 +59,11 @@ JSON phải tuân thủ đúng định dạng:
 }
 
 Quy tắc y khoa quan trọng:
-1. "chống chỉ định" -> requested_fields=["contraindications"], KHÔNG gán "indications".
-2. Nếu câu hỏi về thủ thuật (chụp CT, cản quang) phối hợp thuốc -> role="contextual_exposure", primary_intent="clinical_consultation".
-3. Nếu hỏi tương tác nhưng chỉ có 1 thuốc -> ambiguities=["missing_interaction_partner"], primary_intent="interaction_assessment".
-4. Nếu chuyển đề tài ("Đổi sang...", "Chuyển sang...") -> switches_subject=True.
-5. Nếu dùng đại từ thay thế ("nó", "thuốc đó", "thuốc vừa nói") -> references_previous_entity=True.
+1. "chống chỉ định" -> requested_fields=["contraindications"], target_facets=["contraindications"], query_depth="DEEP_FACET".
+2. Nếu câu hỏi về sáng/tối, trước/sau ăn -> target_facets=["timing_and_administration"], query_depth="DEEP_FACET".
+3. Nếu câu hỏi về liều tối đa -> target_facets=["max_dosage"], query_depth="DEEP_FACET".
+4. Nếu câu hỏi chỉ nêu tên thuốc (vd "Paracetamol", "Thông tin thuốc X") -> query_depth="OVERVIEW", target_facets=[].
+5. Nếu câu hỏi ngắn không có tên thuốc nhưng hỏi tiếp ngữ cảnh trước (vd: "uống sáng hay tối?", "kỵ rượu không?") -> is_followup_question=True, references_previous_entity=True, query_depth="DEEP_FACET".
 """
 
 
@@ -127,30 +131,49 @@ def extract_clinical_query_schema_deterministic(
             resolution="database_trie"
         ))
 
-    # 3. Nhận diện các khía cạnh lâm sàng (Fields)
+    # 3. Nhận diện các khía cạnh lâm sàng (Fields & Facets)
+    target_facets: List[str] = []
+
     if "chống chỉ định" in lower or "chong chi dinh" in norm or "cấm dùng" in lower:
         requested_fields.append("contraindications")
+        target_facets.append("contraindications")
     elif "chỉ định" in lower or "chi dinh" in norm or "công dụng" in lower:
         requested_fields.append("indications")
+        target_facets.append("indications")
+
+    has_timing = any(k in lower for k in ("sáng", "buổi sáng", "buổi tối", "ban đêm", "lúc đói", "lúc no", "trước ăn", "sau ăn", "khi nào uống", "uống lúc nào", "thời điểm", "trước hay sau", "uống tối")) or bool(re.search(r"\btối\b(?!\s*đa)(?!\s*thiểu)", lower))
+    if has_timing:
+        target_facets.append("timing_and_administration")
+    if any(k in lower for k in ("liều tối đa", "tối đa", "giới hạn liều", "kịch trần", "quá liều", "tối đa mấy", "bao nhiêu viên 1 ngày", "bao nhiêu gam 1 ngày")):
+        target_facets.append("max_dosage")
+    if any(k in lower for k in ("rượu", "bia", "cồn", "alcohol", "kỵ rượu", "uống rượu")):
+        target_facets.append("alcohol_interaction")
+    if any(k in lower for k in ("sữa", "thức ăn", "canxi", "nước cam", "uống cùng sữa")):
+        target_facets.append("food_interaction")
 
     if any(k in lower for k in ("liều", "lieu", "uống mấy viên", "cách dùng", "ngày mấy lần")):
         requested_fields.append("dosage")
     if any(k in lower for k in ("tác dụng phụ", "tac dung phu", "không mong muốn", "adr", "dị ứng", "nổi ban")):
         requested_fields.append("adverse_effects")
+        target_facets.append("adverse_effects")
     if any(k in lower for k in ("tương tác", "tuong tac", "tương kỵ", "kỵ thuốc", "uống chung", "dùng cùng", "uống cùng")):
         requested_fields.append("interactions")
+        target_facets.append("drug_interactions")
     if any(k in lower for k in ("thành phần", "thanh phan", "hoạt chất", "hoat chat")):
         requested_fields.append("ingredients")
+        target_facets.append("ingredient")
     if any(k in lower for k in ("theo dõi", "theo doi", "xét nghiệm", "giám sát")):
         requested_fields.append("monitoring")
+        target_facets.append("monitoring")
 
     # 4. Trích xuất thông tin bệnh nhân (Patient Context)
     patient_ctx = PatientContextSchema()
     has_patient_info = False
 
-    if any(k in lower for k in ("suy thận", "than", "crcl", "egfr", "chạy thận")):
+    if any(k in lower for k in ("suy thận", "than", "crcl", "egfr", "chạy thận", "lọc máu")):
         patient_ctx.renal_impairment = True
         has_patient_info = True
+        target_facets.append("renal_adjustment")
         # Bóc tách số CrCl nếu có (vd: CrCl 25 ml/phút)
         crcl_match = re.search(r"crcl\s*[:=]?\s*(\d+(?:\.\d+)?)", lower)
         if crcl_match:
@@ -159,48 +182,75 @@ def extract_clinical_query_schema_deterministic(
     if any(k in lower for k in ("suy gan", "men gan", "xơ gan", "viêm gan")):
         patient_ctx.hepatic_impairment = True
         has_patient_info = True
+        target_facets.append("hepatic_adjustment")
 
     if any(k in lower for k in ("mang thai", "có thai", "thai kỳ", "bà bầu", "mẹ bầu")):
         patient_ctx.pregnancy = True
         has_patient_info = True
+        target_facets.append("pregnancy_lactation")
 
     if any(k in lower for k in ("cho con bú", "nuôi con bằng sữa mẹ")):
         patient_ctx.lactation = True
         has_patient_info = True
+        target_facets.append("pregnancy_lactation")
 
-    if any(k in lower for k in ("trẻ em", "tre em", "bé", "sơ sinh", "tháng tuổi", "tuổi")):
+    if any(k in lower for k in ("trẻ em", "tre em", "bé", "sơ sinh", "tháng tuổi", "tuổi", "nhi khoa")):
         patient_ctx.age_group = "pediatric"
         has_patient_info = True
+        target_facets.append("pediatric_dosage")
 
-    # 5. Xác định Ý định lâm sàng chính (Primary Intent)
+    # Khử trùng lặp target_facets
+    target_facets = list(dict.fromkeys(target_facets))
+
+    # Xử lý kế thừa ngữ cảnh hỏi tiếp
+    is_followup = references_prev or (not extracted_names and (bool(target_facets) or any(cue in lower for cue in ("còn", "thế còn", "vậy", "thì sao", "được không", "uống sáng hay tối", "kỵ rượu không", "có kỵ", "liều tối đa"))))
+    if is_followup and active_med and not medications:
+        medications.append(ExtractedMedication(
+            canonical_id=_normalize_str(active_med),
+            surface_form=active_med,
+            role="primary_medication",
+            resolution="session_context"
+        ))
+
+    # 5. Xác định Ý định lâm sàng chính & Độ sâu truy vấn (Query Depth)
     is_interaction_q = "interactions" in requested_fields or any(k in lower for k in ("tương tác", "uống chung", "phối hợp", "dùng cùng"))
     num_drugs = len([m for m in medications if m.role != "contextual_exposure"])
 
     if is_interaction_q:
         primary_intent = "interaction_assessment"
+        query_depth = "INTERACTION"
         if num_drugs < 2 and not active_med:
             ambiguities.append("missing_interaction_partner")
     elif any(m.role == "contextual_exposure" for m in medications) or any(k in lower for k in ("xử trí", "nổi ban", "phát ban", "chụp ct")):
         primary_intent = "clinical_consultation"
+        query_depth = "DEEP_FACET"
     elif "dosage" in requested_fields or patient_ctx.renal_impairment or patient_ctx.hepatic_impairment:
         primary_intent = "dosage_adjustment"
+        query_depth = "DEEP_FACET" if target_facets else "OVERVIEW"
     elif len(medications) > 0:
         primary_intent = "monograph_field_lookup"
+        query_depth = "DEEP_FACET" if target_facets else "OVERVIEW"
     elif any(k in lower for k in ("xin chào", "chào bạn", "hello", "hi", "cảm ơn", "cam on", "thank")):
         primary_intent = "conversational"
+        query_depth = "GENERAL_CONSULTATION"
     else:
         primary_intent = "clinical_consultation"
+        query_depth = "GENERAL_CONSULTATION"
 
-    if not medications and any(k in lower for k in ("thuốc", "thuoc")) and not references_prev:
+    if not medications and any(k in lower for k in ("thuốc", "thuoc")) and not references_prev and not is_followup:
         ambiguities.append("unresolved_medication")
 
     return ClinicalExtractionAnalysis(
         primary_intent=primary_intent,
+        query_depth=query_depth,
+        target_facets=target_facets,
         medications=medications,
         requested_fields=requested_fields,
         diseases_or_symptoms=diseases,
         patient_context=patient_ctx if has_patient_info else None,
         references_previous_entity=references_prev,
+        is_followup_question=is_followup,
+        specific_user_question=text,
         switches_subject=switches_subject,
         ambiguities=ambiguities,
         confidence=0.95,

@@ -51,16 +51,29 @@ def normalize_conversational_query(text: str) -> str:
         cleaned = re.sub(p, "", cleaned, flags=re.IGNORECASE).strip()
     return cleaned if len(cleaned) >= 3 else text
 
-def resolve_copilot_identity(payload: CopilotQuery, request: Request) -> tuple[str, str, str]:
+def resolve_copilot_identity(payload: CopilotQuery, request: Request, session=None) -> tuple[str, str, str]:
     authenticated = getattr(request.state, "authenticated_user", None)
-    user_name = authenticated.username if authenticated else payload.user_name
-    user_role = authenticated.role if authenticated else payload.user_role
+    if authenticated:
+        user_name = authenticated.username
+        user_role = authenticated.role
+        req_session = (payload.session_id or getattr(session, "session_id", "default_session")).strip()
+        session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
+        return user_name, user_role, session_id
+
+    if session and getattr(session, "user_name", None):
+        user_name = session.user_name
+        user_role = getattr(session, "user_role", payload.user_role)
+        session_id = session.session_id
+        return user_name, user_role, session_id
+
+    user_name = payload.user_name
+    user_role = payload.user_role
     req_session = (payload.session_id or "default_session").strip()
     session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
     return user_name, user_role, session_id
 
 async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
-    user_name, user_role, session_id = resolve_copilot_identity(payload, request)
+    user_name, user_role, session_id = resolve_copilot_identity(payload, request, session=session)
     guard_res = validate_input_guardrail(payload.query, user_role=user_role)
     if not guard_res.is_safe:
         return CopilotResponse(
@@ -124,6 +137,27 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
             answer_type="clarification", source_status="missing_case_context", confidence=1.0, abstention_reason="Câu hỏi triệu chứng chưa xác định người bệnh hoặc ca bệnh",
             suggested_chips=chips
         )
+
+    if session.active_medication_name:
+        from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
+        from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
+        from app.services.chatbot.adaptive_clinical_synthesizer import synthesize_adaptive_clinical_response
+
+        adapt_analysis = extract_clinical_query_schema_deterministic(
+            query, session_context={"active_medication": session.active_medication_name}
+        )
+        if (
+            adapt_analysis.is_followup_question
+            and adapt_analysis.query_depth == "DEEP_FACET"
+        ):
+            evidence, _, status = await slice_clinical_drug_evidence(adapt_analysis, db, session)
+            if status == "ok" and evidence:
+                return synthesize_adaptive_clinical_response(
+                    evidence,
+                    user_name=user_name,
+                    user_role=user_role,
+                    session_id=session_id
+                )
 
     is_deep_complex = any(term in lower_query for term in ("thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"))
     query, lower_query, active_in_query, explicit_named, has_candidate_drug, early_resp = await resolve_active_drug_and_terms(

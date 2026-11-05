@@ -41,6 +41,14 @@ class ClinicalExtractionAnalysis(BaseModel):
             "out_of_scope (ngoài y tế hoặc vô nghĩa)"
         )
     )
+    query_depth: str = Field(
+        default="OVERVIEW",
+        description="Độ sâu truy vấn: OVERVIEW (hỏi tổng quan thuốc), DEEP_FACET (hỏi sâu 1 khía cạnh cụ thể), COMPARISON (so sánh), INTERACTION (tương tác)"
+    )
+    target_facets: List[str] = Field(
+        default_factory=list,
+        description="Các khía cạnh lâm sàng được hỏi sâu: timing_and_administration, max_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, pregnancy_lactation, alcohol_interaction, food_interaction, contraindications, adverse_effects, indications"
+    )
     medications: List[ExtractedMedication] = Field(
         default_factory=list,
         description="Danh sách các thuốc/hoạt chất được phát hiện trong câu"
@@ -60,6 +68,14 @@ class ClinicalExtractionAnalysis(BaseModel):
     references_previous_entity: bool = Field(
         default=False,
         description="True nếu câu hỏi dùng đại từ tham chiếu ngữ cảnh trước đó (nó, thuốc đó, thuốc vừa nói...)"
+    )
+    is_followup_question: bool = Field(
+        default=False,
+        description="True nếu câu hỏi là dạng hỏi nối tiếp trong ngữ cảnh phiên hội thoại (vd: uống sáng hay tối?, kỵ rượu không?, liều tối đa?)"
+    )
+    specific_user_question: str = Field(
+        default="",
+        description="Câu hỏi cụ thể của người dùng về một khía cạnh lâm sàng"
     )
     switches_subject: bool = Field(
         default=False,

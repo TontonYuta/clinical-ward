@@ -68,7 +68,8 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "alcohol_interaction": [
         (r"\b(?:kỵ\s+rượu|uống\s+rượu|uống\s+bia|rượu\s+bia|chất\s+cồn|say\s+rượu|khi\s+say|với\s+rượu|với\s+bia|uống\s+rượu\s+được\s+không|uống\s+bia\s+được\s+không|kỵ\s+cồn)\b", 3.5),
         (r"\b(?:nghiện\s+rượu|uống\s+nhiều\s+rượu|uống\s+rượu\s+nhiều)\b", 3.0),
-        (r"\b(?:rượu|bia|cồn)\b", 1.5),
+        (r"\b(?:rượu|bia)\b", 1.5),
+        (r"\bcồn\b", 1.5),
     ],
     "food_interaction": [
         (r"\b(?:uống\s+cùng\s+sữa|với\s+sữa|uống\s+sữa|nước\s+cam|nước\s+bưởi|nước\s+ép\s+bưởi|thức\s+ăn|thức\s+ăn\s+giàu\s+canxi|kiêng\s+ăn\s+gì|kỵ\s+thức\s+ăn|uống\s+chung\s+sữa|dùng\s+cùng\s+sữa)\b", 3.5),
@@ -94,6 +95,11 @@ def score_clinical_intents(query: str) -> Dict[str, float]:
 
     for intent, patterns in INTENT_FEATURE_WEIGHTS.items():
         for pat, weight in patterns:
+            # Ngăn ngừa va chạm unaccent của 'cồn' -> 'con' gây false-positive với 'còn' (còn lại, thế còn)
+            if pat == r"\bcồn\b":
+                if re.search(r"\bcồn\b", q_norm):
+                    scores[intent] += weight
+                continue
             pat_unacc = _unaccent(pat)
             if re.search(pat, q_norm) or re.search(pat_unacc, q_unacc):
                 scores[intent] += weight
