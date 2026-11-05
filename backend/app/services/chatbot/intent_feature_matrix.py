@@ -25,7 +25,12 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "adult_dosage": [
         (r"\bliều\s+(?:dùng|lượng|tối\s+đa|uống|người\s+lớn)\b", 2.5),
         (r"\b(?:uống\s+mấy\s+viên|ngày\s+mấy\s+lần|cách\s+dùng|còn\s+liều)\b", 2.0),
-        (r"\bliều\b", 1.0),
+        (r"\b(?:uống\s+thế\s+nào|dùng\s+thế\s+nào|uống\s+sao|dùng\s+sao|hướng\s+dẫn\s+sử\s+dụng|cách\s+sử\s+dụng)\b", 2.5),
+        (r"\bliều\b", 2.0),
+    ],
+    "overdose_treatment": [
+        (r"\b(?:quá\s+liều|ngộ\s+độc|xử\s+trí\s+quá\s+liều|giải\s+độc|thuốc\s+giải|antidote)\b", 3.5),
+        (r"\b(?:uống\s+nhầm|uống\s+nhiều\s+quá|uống\s+quá\s+nhiều)\b", 2.5),
     ],
     "contraindications": [
         (r"\bchống\s+chỉ\s+định\b", 3.0),
@@ -56,6 +61,22 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
         (r"\b(?:chỉnh\s+liều\s+suy\s+thận|suy\s+thận|chỉnh\s+liều\s+thận)\b", 3.0),
         (r"\b(?:crcl|egfr|creatinin|chạy\s+thận|lọc\s+máu)\b", 2.5),
     ],
+    "hepatic_adjustment": [
+        (r"\b(?:chỉnh\s+liều\s+suy\s+gan|suy\s+gan|chỉnh\s+liều\s+gan|bệnh\s+gan)\b", 3.5),
+        (r"\b(?:xơ\s+gan|viêm\s+gan|men\s+gan|tăng\s+men\s+gan|chức\s+năng\s+gan|child-pugh)\b", 2.5),
+    ],
+    "alcohol_interaction": [
+        (r"\b(?:kỵ\s+rượu|uống\s+rượu|uống\s+bia|rượu\s+bia|chất\s+cồn|say\s+rượu|khi\s+say|với\s+rượu|với\s+bia|uống\s+rượu\s+được\s+không|uống\s+bia\s+được\s+không|kỵ\s+cồn)\b", 3.5),
+        (r"\b(?:nghiện\s+rượu|uống\s+nhiều\s+rượu|uống\s+rượu\s+nhiều)\b", 3.0),
+        (r"\b(?:rượu|bia|cồn)\b", 1.5),
+    ],
+    "food_interaction": [
+        (r"\b(?:uống\s+cùng\s+sữa|với\s+sữa|uống\s+sữa|nước\s+cam|nước\s+bưởi|nước\s+ép\s+bưởi|thức\s+ăn|thức\s+ăn\s+giàu\s+canxi|kiêng\s+ăn\s+gì|kỵ\s+thức\s+ăn|uống\s+chung\s+sữa|dùng\s+cùng\s+sữa)\b", 3.5),
+        (r"\b(?:sữa|nước\s+cam|nước\s+bưởi)\b", 2.0),
+    ],
+    "elderly_warning": [
+        (r"\b(?:người\s+cao\s+tuổi|người\s+già|người\s+lớn\s+tuổi|trên\s+65\s+tuổi|bệnh\s+nhân\s+già)\b", 3.0),
+    ],
     "ingredient": [
         (r"\b(?:thành\s+phần|hoạt\s+chất|chứa\s+chất\s+gì)\b", 3.0),
     ],
@@ -85,6 +106,12 @@ def score_clinical_intents(query: str) -> Dict[str, float]:
     # Nếu có chỉ dấu suy thận rõ rệt, ưu tiên renal_adjustment
     if scores["renal_adjustment"] >= 2.5 and scores["adult_dosage"] <= 1.0:
         scores["adult_dosage"] = 0.5
+
+    # Nếu có chỉ dấu tương tác rượu/thức ăn rõ rệt, triệt tiêu drug_interactions (tránh nhầm đòi 2 thuốc)
+    if scores["alcohol_interaction"] >= 2.0:
+        scores["drug_interactions"] = 0.0
+    if scores["food_interaction"] >= 2.0:
+        scores["drug_interactions"] = 0.0
 
     return scores
 

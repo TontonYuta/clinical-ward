@@ -17,17 +17,11 @@ async def detect_and_handle_gemini_clinical_scenario(
     user_role: str = "nurse",
     session_id: Optional[str] = None
 ) -> Optional[CopilotResponse]:
-    """
-    Entrypoint điều phối kịch bản lâm sàng chuyên sâu.
-    Tạm thời comment các kịch bản lưu sẵn để mọi câu hỏi đi thẳng vào pipeline SOTA RAG.
-    """
-    # Tạm thời comment toàn bộ scenario lưu sẵn theo yêu cầu người dùng
-    # return await dispatch_clinical_scenario(
-    #     query=query,
-    #     lower_query=lower_query,
-    #     user_name=user_name,
-    #     user_role=user_role,
-    #     session_id=session_id,
-    #     db=db
-    # )
-    return None
+    return await dispatch_clinical_scenario(
+        query=query,
+        lower_query=lower_query,
+        user_name=user_name,
+        user_role=user_role,
+        session_id=session_id,
+        db=db
+    )

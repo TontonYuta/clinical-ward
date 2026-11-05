@@ -41,16 +41,22 @@ async def resolve_active_drug_and_terms(
         "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no", "trước ăn", "sau ăn",
         "tiêm nhắc lại", "bao lâu thì tiêm", "tần suất", "mỗi bao lâu",
         "chong chi dinh", "tac dung phu", "lieu dung", "lieu luong", "lieu toi da", "thanh phan", "chi dinh", "cong dung", "tuong tac",
-        "trẻ em", "cho trẻ em", "tre em", "cho tre em", "nhi khoa", "cho bé", "cho be", "trẻ nhỏ", "tre nho"
+        "trẻ em", "cho trẻ em", "tre em", "cho tre em", "nhi khoa", "cho bé", "cho be", "trẻ nhỏ", "tre nho",
+        "kỵ rượu", "uống rượu", "uống bia", "rượu bia", "say rượu", "với rượu", "với bia", "ky ruou", "uong ruou", "uong bia",
+        "uống cùng sữa", "với sữa", "uống sữa", "nước cam", "nước bưởi", "thức ăn", "kiêng ăn gì", "uong cung sua", "voi sua",
+        "suy gan", "xơ gan", "men gan", "viêm gan", "chức năng gan",
+        "người già", "người cao tuổi", "người lớn tuổi", "nguoi gia", "nguoi cao tuoi",
+        "quá liều", "ngộ độc", "uống nhầm", "giải độc", "antidote", "qua lieu", "ngo doc"
     ))
     is_oresol = any(w in lower_query for w in ["oresol", "ors", "hydrite", "bù nước điện giải"])
-    if session.active_medication_name and not is_renal and not is_deep_complex and not is_oresol and not is_specialty_topic and is_field_only:
+    effective_med = session.active_medication_name or getattr(session, "last_active_medication_name", None)
+    if effective_med and not is_renal and not is_deep_complex and not is_oresol and not is_specialty_topic and is_field_only:
         resolved_new_drugs = resolve_registered_medications(lower_query)
         current_has_explicit = (
             find_matched_med(lower_query) is not None
             or bool(resolved_new_drugs)
             or has_candidate_drug
-            or bool(session.active_medication_name.casefold() in lower_query)
+            or bool(effective_med.casefold() in lower_query)
         )
         if current_has_explicit and resolved_new_drugs:
             new_key = resolved_new_drugs[0]
@@ -64,19 +70,19 @@ async def resolve_active_drug_and_terms(
         if current_has_explicit:
             resp = await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
             return query, lower_query, False, True, False, resp
-        if any(term in lower_query for term in ("sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no", "trước ăn", "sau ăn", "tiêm nhắc lại", "bao lâu thì tiêm", "tần suất", "mỗi bao lâu")):
-            return query, lower_query, False, False, False, build_insufficient_formulation_response(session.active_medication_name, session_id)
-        query = f"{query} của thuốc {session.active_medication_name}"
+        
+        session.set_active_medication(name=effective_med)
+        query = f"{query} của thuốc {effective_med}"
         lower_query = query.lower()
         resp = await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
         return query, lower_query, False, False, False, resp
 
-    active_in_query = bool(session.active_medication_name and session.active_medication_name.casefold() in lower_query)
-    if session.active_medication_name and not active_in_query:
+    active_in_query = bool(effective_med and effective_med.casefold() in lower_query)
+    if effective_med and not active_in_query:
         explicit_reg = any(a.casefold() in lower_query for entry in DRUG_REGISTRY.values() for a in entry.get("aliases", []) if len(a) >= 4)
         if find_matched_med(lower_query) is None and not explicit_reg and not has_candidate_drug:
             if not is_complaint and not is_specialty_topic and (any(term in lower_query for term in FIELD_ONLY_TERMS) or lower_query.endswith("của thuốc")):
-                query = f"{query} của thuốc {session.active_medication_name}"
+                query = f"{query} của thuốc {effective_med}"
                 lower_query = query.lower()
                 active_in_query = True
 
@@ -84,10 +90,21 @@ async def resolve_active_drug_and_terms(
         a.casefold() in lower_query for entry in DRUG_REGISTRY.values() for a in entry.get("aliases", []) if len(a) >= 4
     ) or has_candidate_drug or active_in_query
 
-    if session.active_medication_name and not is_renal and not is_specialty_topic and not explicit_named and any(term in lower_query for term in TIMING_TERMS):
-        return query, lower_query, active_in_query, explicit_named, has_candidate_drug, build_insufficient_formulation_response(session.active_medication_name, session_id)
+    field_triggers = (
+        "liều tối đa", "còn liều", "liều dùng", "liều lượng", "tác dụng phụ", "tác dụng không mong muốn",
+        "chống chỉ định", "thành phần", "hoạt chất", "chỉ định", "công dụng", "độc tính",
+        "kỵ rượu", "uống rượu", "uống bia", "rượu bia", "say rượu", "với rượu", "với bia",
+        "uống cùng sữa", "với sữa", "uống sữa", "nước cam", "thức ăn", "kiêng ăn gì",
+        "suy gan", "xơ gan", "men gan", "người già", "người cao tuổi", "quá liều", "ngộ độc"
+    )
 
-    if session.active_medication_name and not is_renal and not is_specialty_topic and not explicit_named and any(term in lower_query for term in ("liều tối đa", "còn liều", "liều dùng", "liều lượng", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần", "hoạt chất", "chỉ định", "công dụng", "độc tính")):
+    if effective_med and not is_renal and not is_specialty_topic and not explicit_named and (
+        any(term in lower_query for term in field_triggers) or any(term in lower_query for term in TIMING_TERMS)
+    ):
+        session.set_active_medication(name=effective_med)
+        if effective_med.casefold() not in lower_query:
+            query = f"{query} của thuốc {effective_med}"
+            lower_query = query.lower()
         resp = await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
         return query, lower_query, active_in_query, explicit_named, has_candidate_drug, resp
 
@@ -101,10 +118,11 @@ async def resolve_active_drug_and_terms(
         active_in_query = False
 
     if active_in_query and any(term in lower_query for term in TIMING_TERMS):
-        return query, lower_query, active_in_query, explicit_named, has_candidate_drug, build_insufficient_formulation_response(session.active_medication_name, session_id)
+        resp = await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+        return query, lower_query, active_in_query, explicit_named, has_candidate_drug, resp
 
     is_anaphylaxis_query = any(w in lower_query for w in ["phản vệ", "sốc phản vệ", "tt 51", "thông tư 51"])
-    if not session.active_medication_name and not is_renal and not explicit_named and not is_anaphylaxis_query:
+    if not effective_med and not is_renal and not explicit_named and not is_anaphylaxis_query:
         from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
         spec_hit = find_clinical_specialty_consultation(query)
         if spec_hit:

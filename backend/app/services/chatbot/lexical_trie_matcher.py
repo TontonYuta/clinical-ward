@@ -29,6 +29,7 @@ COMMON_EXCLUSIONS: Set[str] = {
     "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá", "bạn", "ban", "kém", "kem", "tệ", "te", "dở", "chán", "chan", "thật", "that",
     "trong", "ngoai", "ngoài", "tren", "trên", "duoi", "dưới", "giua", "giữa", "truoc", "trước", "sau", "hoac", "hoặc", "vi", "vì", "neu", "nếu", "thi", "thì", "nhu", "như", "rat", "rất", "lam", "lắm", "cung", "cùng", "kem", "kèm", "theo", "de", "để", "dang", "đang", "da", "đã", "se", "sẽ", "vua", "vừa", "moi", "mới", "tung", "từng", "hieu", "hiểu", "noi", "nói", "viet", "viết", "doc", "đọc", "gui", "gửi", "tra loi", "trả lời", "cau", "câu", "nut", "nút", "bam", "bấm",
     "nang", "năng", "gói", "goi", "ống", "ong", "chai", "lọ", "lo", "tuýp", "tuyp", "vỉ", "vi", "hộp", "hop", "chức", "chuc", "thận", "than", "gan", "tim",
+    "gồm", "gom", "bao gồm", "bao gom", "đơn", "don", "đơn thuốc", "don thuoc", "kê", "ke",
     "huyết", "huyet", "áp", "ap", "đường", "duong", "khuẩn", "khuan", "thanh", "tinh", "chế", "che", "an thần", "an than", "kinh", "thần kinh", "than kinh", "thần",
     "đồng", "dong", "nghiệp", "nghiep", "kính", "kinh", "hỗ", "ho", "trợ", "tro", "chuyên", "chuyen", "môn", "mon", "hướng", "huong", "dẫn", "dan", "phác", "phac", "đồ", "do",
     "chuẩn", "chuan", "chi", "nhân", "nhan", "đối", "doi", "quy", "định", "dinh", "thông", "tư", "tu", "nghị", "nghi", "điều", "dieu", "khoa", "phòng", "phong", "toàn", "văn", "van",
@@ -112,6 +113,20 @@ class DrugLexicalMatcher:
             except Exception:
                 pass
             conn.close()
+
+            # Nạp toàn bộ danh mục thuốc và biệt dược lâm sàng từ DRUG_REGISTRY
+            try:
+                from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
+                for inn, meta in DRUG_REGISTRY.items():
+                    disp = meta.get("display", inn.title())
+                    self.insert(disp, disp, "ingredient")
+                    self.insert(inn, disp, "ingredient")
+                    for alias in meta.get("aliases", []):
+                        if len(alias) >= 3 and alias.lower() not in COMMON_EXCLUSIONS:
+                            self.insert(alias, disp, "brand")
+            except Exception:
+                pass
+
             for c in self.canonical_brands | self.canonical_inns:
                 low = strip_accents(c.lower())
                 if low and len(low) >= 3:

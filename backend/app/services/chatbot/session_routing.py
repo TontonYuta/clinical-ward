@@ -22,7 +22,8 @@ CLINICAL_NON_DRUG_TERMS = {
     "viêm dạ dày", "loét dạ dày", "dị ứng", "sốc phản vệ", "phản vệ", "tiêu chảy", "táo bón",
     "co thắt", "giãn cơ", "kháng sinh", "chống viêm", "giảm đau",
     "tóm tắt", "tom tat", "chi tiết", "chi tiet", "đầy đủ", "day du", "hồ sơ", "ho so",
-    "đây", "day", "nhất", "nhat", "tóm tắt mà", "đầy đủ nhất", "chi tiết nhất"
+    "đây", "day", "nhất", "nhat", "tóm tắt mà", "đầy đủ nhất", "chi tiết nhất",
+    "rượu", "bia", "cồn", "sữa", "thức ăn", "thuc an", "nước cam", "nước bưởi", "đồ uống"
 }
 
 TIMING_TERMS = (
@@ -33,8 +34,8 @@ TIMING_TERMS = (
 
 FIELD_ONLY_TERMS = (
     "chống chỉ định", "tác dụng phụ", "tác dụng không mong muốn",
-    "liều dùng", "liều tối đa", "thành phần", "hoạt chất",
-    "chỉ định", "công dụng", "thông tin thuốc", "liều tối đa",
+    "liều dùng", "liều lượng", "liều tối đa", "thành phần", "hoạt chất",
+    "chỉ định", "công dụng", "thông tin thuốc",
     "còn liều", "sáng hay tối", "uống sáng", "uống tối",
     "lúc đói", "lúc no", "trước ăn", "sau ăn", "bao lâu thì tiêm",
     "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng",
@@ -45,6 +46,11 @@ FIELD_ONLY_TERMS = (
     "tóm tắt thông tin thuốc đó", "tóm tắt thông tin", "tóm tắt",
     "hồ sơ đầy đủ", "hồ sơ chi tiết", "toàn bộ thông tin",
     "trẻ em", "cho trẻ em", "nhi khoa", "cho bé", "trẻ nhỏ",
+    "kỵ rượu", "uống rượu", "uống bia", "rượu bia", "say rượu", "với rượu", "với bia",
+    "uống cùng sữa", "với sữa", "uống sữa", "nước cam", "nước bưởi", "thức ăn", "kiêng ăn gì",
+    "xơ gan", "men gan", "viêm gan", "chức năng gan",
+    "người già", "người cao tuổi", "người lớn tuổi",
+    "quá liều", "ngộ độc", "uống nhầm", "giải độc", "antidote",
 )
 
 def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotResponse | None:
@@ -197,6 +203,7 @@ def check_contextless_clinical_question(lower_query: str) -> CopilotResponse | N
         "hàng ngày hay hàng tuần", "sáng hay tối", "trước ăn bao lâu",
         "tác dụng kéo dài bao lâu", "dấu hiệu ngộ độc", "gây nghiện không",
         "liều bolus", "tiêm nhắc lại", "tốc độ truyền",
+        "kỵ rượu", "uống rượu", "uống cùng sữa", "người cao tuổi", "người già",
     )
     is_contextless_clinical = any(term in lower_query for term in context_required_terms)
     is_contextless_stock = any(term in lower_query for term in ("có trong tủ trực không", "còn trong tủ trực", "còn thuốc không"))
@@ -399,13 +406,18 @@ DDI_CONTRAINDICATION_CATALOG = _DynamicDdiCatalog()
 
 def check_interaction_examples_request(lower_query: str, session_id: str) -> CopilotResponse | None:
     """Trả về các ví dụ kinh điển về cặp tương tác thuốc chống chỉ định theo QĐ 5948/QĐ-BYT với khả năng phân trang linh hoạt."""
+    # Nếu câu hỏi đã nhắc cụ thể từ 2 thuốc trở lên thì rà soát theo đơn cụ thể, không trả về ví dụ tổng quát
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    if len(get_drug_lexical_matcher().extract_medications(lower_query)) >= 2:
+        return None
+
     is_followup = any(w in lower_query for w in (
         "cặp nữa", "cap nua", "thêm cặp", "them cap", "nữa đi", "nua di",
         "tiếp đi", "tiep di", "xem tiếp", "xem tiep", "tiếp nữa", "tiep nua",
         "tiếp theo", "tiep theo", "thêm vài cặp", "them vai cap", "mấy cặp nữa", "may cap nua"
     )) or bool(re.search(r"\b(?:lấy|thêm|cho)\s+\d+\s+cặp\b", lower_query))
 
-    is_example = any(w in lower_query for w in ("ví dụ", "vi du", "mẫu", "liệt kê", "danh sách", "top", "những cặp", "các cặp", "cặp nào", "cap nao"))
+    is_example = any(w in lower_query for w in ("ví dụ", "vi du", "mẫu", "liệt kê", "danh sách", "những cặp", "các cặp", "cặp nào", "cap nao")) or bool(re.search(r"\btop\b", lower_query))
     is_ddi = any(w in lower_query for w in ("tương tác", "tuong tac", "chống chỉ định", "chong chi dinh", "kỵ nhau", "ky nhau"))
     is_initial_req = (is_example and is_ddi) or (is_ddi and any(w in lower_query for w in ("nhiều", "nhieu", "điển hình", "dien hinh", "hay gặp", "hay gap")))
 
@@ -432,7 +444,7 @@ def check_interaction_examples_request(lower_query: str, session_id: str) -> Cop
     title_suffix = "tiếp theo" if is_followup else "điển hình"
 
     lines = [
-        "### ⚠️ DANH MỤC CÁC CẶP TƯƠNG TÁC THUỐC CHỐNG CHỈ ĐỊNH (QĐ 5948/QĐ-BYT)\n",
+        "### DANH MỤC CÁC CẶP TƯƠNG TÁC THUỐC CHỐNG CHỈ ĐỊNH (QĐ 5948/QĐ-BYT)\n",
         f"*(Trích xuất từ Danh mục 633 cặp tương tác chống chỉ định Bảng 3.1 & Bảng 3.2 - Bộ Y tế)*\n",
         "---\n",
         f"Dưới đây là **{actual_count} cặp tương tác thuốc chống chỉ định {title_suffix}** thường gặp trong thực hành lâm sàng nội viện:\n"
@@ -444,7 +456,7 @@ def check_interaction_examples_request(lower_query: str, session_id: str) -> Cop
         lines.append(f"   * **Cơ chế & Hậu quả:** {item['mechanism']}")
         lines.append(f"   * **Xử trí lâm sàng:** {item['management']}\n")
 
-    lines.append("💡 *Bác sĩ hoặc Điều dưỡng có thể gửi 2 tên thuốc cụ thể bất kỳ để hệ thống rà soát tức thì theo cơ sở dữ liệu 633 cặp tương tác QĐ 5948 ạ!*")
+    lines.append("*Bác sĩ hoặc Điều dưỡng có thể gửi 2 tên thuốc cụ thể bất kỳ để hệ thống rà soát tức thì theo cơ sở dữ liệu 633 cặp tương tác QĐ 5948 ạ!*")
     reply_md = "\n".join(lines)
 
     chips = [item["pair"].split(" (")[0] for item in selected_pairs[:3]]

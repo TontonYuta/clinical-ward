@@ -69,7 +69,8 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCit
 
         lines = [line.strip() for line in c.content.split("\n") if line.strip() and not line.startswith("#")]
         excerpt_text = " ".join(lines[:3]).strip() or c.title
-        excerpt = excerpt_text if len(excerpt_text) <= 240 else excerpt_text[:239].rstrip() + "…"
+        from app.services.copilot_drug_citation_helper import truncate_clinical_excerpt
+        excerpt = truncate_clinical_excerpt(excerpt_text, max_length=240)
 
         document_url, document_id, document_page = resolve_citation_document(c.source_doc, c.legal_basis, c.page_or_section)
         citations.append(RagCitation(

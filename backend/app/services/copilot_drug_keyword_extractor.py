@@ -67,7 +67,8 @@ QUESTION_TERMS = {
     "tốt", "tot", "hơn", "hon", "hay", "kém", "kem", "mạnh", "manh", "yếu", "yeu", "so", "sánh", "sanh",
     "kia", "đó", "đấy", "ấy", "vậy", "này", "trên", "dưới", "vừa", "rồi", "cơ", "mà", "chúng", "nó", "nhé", "nha", "ạ", "đây", "day", "nhất", "nhat", "quá", "qua", "tệ", "te", "dở", "chán", "chan", "thật", "that", "thế", "the",
     "biểu", "hiện", "dấu", "triệu", "chứng", "nên", "sử", "thì", "nào", "buồn", "nôn", "nào",
-    "điểm", "thời", "đáy", "đỉnh", "nồng", "độ", "chế", "độ", "chỉnh", "hiệu", "chức", "năng"
+    "điểm", "thời", "đáy", "đỉnh", "nồng", "độ", "chế", "độ", "chỉnh", "hiệu", "chức", "năng",
+    "rượu", "ruou", "bia", "cồn", "con", "sữa", "sua", "thức", "thuc"
 }
 
 

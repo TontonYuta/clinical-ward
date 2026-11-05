@@ -36,6 +36,9 @@ class SessionState:
         self.active_medication_stock: Optional[str] = None
         self.active_medication_location: Optional[str] = None
         self.active_medication_sdk: Optional[str] = None
+        self.last_active_medication_name: Optional[str] = None
+        self.last_active_medication_ingredient: Optional[str] = None
+        self.last_active_medication_sdk: Optional[str] = None
         
         self.last_query: Optional[str] = None
         self.last_intent: Optional[str] = None
@@ -116,8 +119,15 @@ class SessionState:
         self.active_medication_stock = stock
         self.active_medication_location = location
         self.active_medication_sdk = sdk
+        if name:
+            self.last_active_medication_name = name
+            self.last_active_medication_ingredient = ingredient or name
+            self.last_active_medication_sdk = sdk
         self.fsm_state = "DRUG_FOCUSED"
         self.touch()
+
+    def get_effective_medication_name(self) -> Optional[str]:
+        return self.active_medication_name or self.last_active_medication_name
 
     def set_comparison_drugs(self, drugs: list[str]) -> None:
         self.comparison_drugs = drugs

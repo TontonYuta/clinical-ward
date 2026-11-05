@@ -189,21 +189,17 @@ async def _call_llm_rewriter(query: str, history: str, api_key: str, timeout_sec
         f"Câu hỏi người dùng: \"{query}\"\n\n"
         "Câu truy vấn lâm sàng chuẩn hóa:"
     )
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.0, "maxOutputTokens": 100}
-    }
-    async with httpx.AsyncClient(timeout=timeout_sec) as client:
-        res = await client.post(url, json=payload)
-        if res.status_code == 200:
-            data = res.json()
-            candidates = data.get("candidates", [])
-            if candidates:
-                parts = candidates[0].get("content", {}).get("parts", [])
-                if parts and "text" in parts[0]:
-                    return parts[0]["text"].strip().strip('"')
-    raise RuntimeError(f"Gemini API returned status {res.status_code}")
+    from app.services.llm_provider import query_clinical_llm
+    res = await query_clinical_llm(
+        prompt=prompt,
+        api_key=api_key,
+        temperature=0.0,
+        max_output_tokens=100,
+        timeout_sec=timeout_sec
+    )
+    if res:
+        return res.strip().strip('"')
+    raise RuntimeError("Query rewrite LLM unavailable")
 
 async def rewrite_clinical_query(
     query: str,

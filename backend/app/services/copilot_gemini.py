@@ -51,51 +51,18 @@ def _cache_key(prompt: str) -> str:
     return hashlib.sha256(material).hexdigest()
 
 async def query_gemini_models(prompt: str, api_key: str) -> str | None:
-    cache_key = _cache_key(prompt)
-    cached = _RESPONSE_CACHE.get(cache_key)
-    if cached:
-        text, timestamp = cached
-        if time.time() - timestamp < CACHE_TTL_SEC:
-            return text
-        _RESPONSE_CACHE.pop(cache_key, None)
-
-    models = [
-        "gemini-2.5-flash-lite",
-        "gemini-2.0-flash-lite",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-flash-lite-latest",
-        "gemini-3.5-flash-lite",
-    ]
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 800}
-    }
-    deadline = time.monotonic() + TOTAL_GEMINI_DEADLINE_SEC
-    async with httpx.AsyncClient(timeout=httpx.Timeout(4.0, connect=2.0)) as client:
-        for model in models:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                break
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-            try:
-                res = await client.post(url, json=payload, timeout=httpx.Timeout(min(4.0, remaining), connect=min(2.0, remaining)))
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts and "text" in parts[0]:
-                            result_text = parts[0]["text"].strip()
-                            if len(_RESPONSE_CACHE) >= MAX_CACHE_ITEMS:
-                                oldest = min(_RESPONSE_CACHE.keys(), key=lambda k: _RESPONSE_CACHE[k][1])
-                                _RESPONSE_CACHE.pop(oldest, None)
-                            _RESPONSE_CACHE[cache_key] = (result_text, time.time())
-                            return result_text
-            except Exception:
-                continue
-    return None
+    """
+    Truy vấn LLM lâm sàng đa nền tảng (Gemini, OpenAI-Compatible / Ollama / vLLM, hoặc Offline).
+    """
+    from app.services.llm_provider import query_clinical_llm
+    return await query_clinical_llm(
+        prompt=prompt,
+        system_instruction=SYSTEM_PROMPT,
+        api_key=api_key,
+        temperature=0.2,
+        max_output_tokens=800,
+        timeout_sec=TOTAL_GEMINI_DEADLINE_SEC
+    )
 
 async def ask_backend_gemini_copilot(
     query: str,

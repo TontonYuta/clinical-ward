@@ -1982,7 +1982,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           className={`fixed z-50 flex flex-col bg-white shadow-2xl overflow-hidden print:hidden ${
             isCopilotExpanded
               ? 'inset-0 h-dvh w-screen max-w-none rounded-none border-0 shadow-none'
-              : 'w-[calc(100vw-32px)] sm:w-[560px] md:w-[620px] lg:w-[660px] max-w-[calc(100vw-32px)] h-[min(680px,calc(100dvh-100px))] sm:h-[min(680px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] rounded-xl border border-slate-300 ring-1 ring-slate-900/10'
+              : 'w-[calc(100vw-32px)] sm:w-[460px] md:w-[500px] lg:w-[540px] max-w-[calc(100vw-32px)] h-[min(600px,calc(100dvh-80px))] sm:h-[min(620px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] rounded-xl border border-slate-300 ring-1 ring-slate-900/10'
           } ${!isCopilotExpanded && !chatPosition ? 'right-4 bottom-20 sm:bottom-5 sm:right-5' : ''} ${isDraggingChat ? 'cursor-grabbing' : ''}`}
           style={!isCopilotExpanded && chatPosition ? { left: chatPosition.x, top: chatPosition.y, right: 'auto', bottom: 'auto' } : undefined}
         >

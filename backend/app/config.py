@@ -28,6 +28,11 @@ class Settings(BaseModel):
     # Never read browser-prefixed VITE secrets on the backend: VITE values are
     # intended for public frontend bundles and may be exposed to every user.
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
+    # Universal LLM Gateway: "gemini" | "openai_compatible" (Ollama/vLLM/DeepSeek/Groq) | "offline"
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
+    OPENAI_API_BASE: str = os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1").rstrip("/")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "ollama")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "qwen2.5:7b-instruct")
     CORS_ORIGINS: list[str] = [
         origin.strip() for origin in os.getenv(
             "CORS_ORIGINS",

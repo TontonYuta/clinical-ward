@@ -156,7 +156,7 @@ export function saveCopilotOpen(isOpen: boolean): void {
 
 export function getInitialCopilotExpanded(): boolean {
   try {
-    return localStorage.getItem(KEYS.COPILOT_EXPANDED) === 'true';
+    return false; // Default to compact floating window so it never blocks the workstation on reload
   } catch {
     return false;
   }

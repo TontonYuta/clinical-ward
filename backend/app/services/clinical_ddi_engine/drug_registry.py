@@ -67,5 +67,7 @@ DRUG_REGISTRY: dict[str, dict] = {
     "meloxicam": {"display": "Meloxicam", "aliases": ["meloxicam", "mobic", "camrox"], "classes": ["NSAID"], "risk": ["bleeding", "nephrotoxic"]},
     "celecoxib": {"display": "Celecoxib", "aliases": ["celecoxib", "celebrex"], "classes": ["NSAID"], "risk": ["bleeding", "nephrotoxic"]},
     "linagliptin": {"display": "Linagliptin", "aliases": ["linagliptin", "trajenta"], "classes": ["DPP4I"], "risk": []},
-    "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom hydroxyd", "magnesi", "sat sulfat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []}
+    "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom hydroxyd", "magnesi", "sat sulfat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []},
+    "ondansetron": {"display": "Ondansetron", "aliases": ["ondansetron", "zofran", "vomina"], "classes": ["5HT3_ANTAGONIST"], "risk": ["qt_prolonging"]},
+    "amoxicillin": {"display": "Amoxicillin", "aliases": ["amoxicillin", "augmentin", "clavamox", "amoxil", "amoxicilline"], "classes": ["PENICILLIN_AMINOPENICILLIN"], "risk": []}
 }

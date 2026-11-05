@@ -11,6 +11,11 @@ from app.services.rag.knowledge_graph import expand_clinical_graph
 
 RAW_FIELD_SPECS = [
     ("interaction", ["tương tác thuốc", "thuốc tương tác", "tương tác", "tương kỵ", "kỵ thuốc", "tuong tac thuoc", "tuong tac", "tuong ky", "ky thuoc", "kỵ gì"]),
+    ("alcohol", ["kỵ rượu", "uống rượu", "uống bia", "rượu bia", "với rượu", "với bia", "chất cồn", "say rượu", "ky ruou", "uong ruou", "uong bia", "uống rượu có sao không"]),
+    ("food", ["uống cùng sữa", "với sữa", "uống sữa", "nước cam", "nước bưởi", "thức ăn", "kiêng ăn gì", "uong cung sua", "voi sua"]),
+    ("hepatic", ["suy gan", "xơ gan", "men gan", "viêm gan", "chức năng gan", "chỉnh liều suy gan", "chinh lieu suy gan"]),
+    ("elderly", ["người già", "người cao tuổi", "người lớn tuổi", "nguoi gia", "nguoi cao tuoi"]),
+    ("overdose", ["quá liều", "ngộ độc", "uống nhầm", "giải độc", "antidote", "qua lieu", "ngo doc"]),
     ("adverse_effects", ["tác dụng không mong muốn", "tác dụng phụ", "tac dung phu", "tac dung khong mong muon"]),
     ("contraindications", ["chống chỉ định", "cấm dùng", "chong chi dinh", "cam dung", "có dùng được", "dùng được", "có uống được", "uống được"]),
     ("dosage", ["liều tối đa", "liều lượng", "liều dùng", "cách dùng", "còn liều", "liều", "lieu toi da", "lieu dung", "lieu luong", "cach dung", "trẻ em", "cho bé", "nhi khoa", "uống lúc nào", "trước hay sau ăn", "trước ăn", "sau ăn"]),
@@ -115,7 +120,10 @@ async def handle_field_or_drug_inquiry(
         "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "thành phần",
         "hoạt chất", "tương tác", "thong tin thuoc", "thong tin", "tra cuu thuoc",
         "thuoc", "lieu dung", "chong chi dinh", "tac dung phu", "tuong tac",
-        "số lượng", "so luong", "tồn kho", "ton kho", "trong kho"
+        "số lượng", "so luong", "tồn kho", "ton kho", "trong kho",
+        "rượu", "uống rượu", "bia", "uống bia", "sữa", "thức ăn", "trước ăn", "sau ăn",
+        "lúc đói", "lúc no", "suy gan", "xơ gan", "men gan", "người già", "người cao tuổi",
+        "quá liều", "ngộ độc"
     )
     asks_multiple_fields = len(matched_field_keys) > 1
     has_drug_entity = (
@@ -127,13 +135,20 @@ async def handle_field_or_drug_inquiry(
     asks_drug_info = any(cue in lower_query for cue in drug_info_cues)
     extracted_kw = extract_drug_keywords(query)
     resolved_meds = resolve_registered_medications(lower_query)
-    is_two_drug = (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp "))) or len(resolved_meds) > 1
-    is_interaction_question = any(term in lower_query for term in ("tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung"))
+    is_non_ddi_field = any(k in matched_field_keys for k in ("alcohol", "food", "hepatic", "elderly", "overdose", "dosage"))
+    is_two_drug = (
+        (len(extracted_kw.split()) > 1 and any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ")) and not is_non_ddi_field)
+        or len(resolved_meds) > 1
+    )
+    is_interaction_question = any(term in lower_query for term in ("tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung")) and not is_non_ddi_field
     is_two_drug_interaction = is_interaction_question and is_two_drug
     is_deep_complex = any(term in lower_query for term in ("thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"))
 
-    has_multiple_medication_fields = len(matched_field_keys) > 1 or is_two_drug or is_deep_complex or any(c in lower_query for c in (" và ", " cùng ", ","))
-    has_explicit_medication_field = len(matched_field_keys) == 1 and not has_multiple_medication_fields
+    has_multiple_medication_fields = len(matched_field_keys) > 1 or is_two_drug or is_deep_complex
+    has_explicit_medication_field = len(matched_field_keys) >= 1 and not is_two_drug_interaction and not is_deep_complex
+
+    if matched_field_keys and (has_drug_entity or active_name_in_query) and not is_deep_complex and not is_two_drug_interaction:
+        return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
     if asks_multiple_fields and asks_drug_info and (has_drug_entity or active_name_in_query) and not is_deep_complex and not is_two_drug_interaction:
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)

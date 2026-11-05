@@ -212,7 +212,7 @@ def _reason_paracetamol_dosage(query: str, slots: Dict[str, Any], weight_kg: Opt
             f"- **Liều khuyến cáo mỗi lần (10 – 15 mg/kg):** **{single_min} – {single_max} mg/lần**.\n"
             f"- **Khoảng cách dùng:** Mỗi **4 – 6 giờ/lần** khi cần (sốt ≥ 38.5°C hoặc đau), tối đa 4 lần / 24 giờ.\n"
             f"- **Liều tối đa 24 giờ (60 mg/kg/ngày):** **Không quá {daily_max} mg/ngày**.\n\n"
-            f"> [!WARNING] NGUYÊN TẮC AN TOÀN\n"
+            f"> [!WARNING] Cảnh báo an toàn quan trọng\n"
             f"> • Khoảng cách tối thiểu giữa 2 lần dùng là 4 giờ; không dùng quá liều trần 60 mg/kg/ngày."
         )
 
@@ -228,7 +228,7 @@ def _reason_paracetamol_dosage(query: str, slots: Dict[str, Any], weight_kg: Opt
         f"  * Trẻ 4 – 6 tuổi: 240 mg/lần (gói 250mg).\n"
         f"  * Trẻ 6 – 12 tuổi: 250 – 500 mg/lần.\n"
         f"  * Trẻ trên 12 tuổi: 500 mg/lần (tối đa 750 mg/lần tùy thể trạng).\n\n"
-        f"> [!WARNING] NGUYÊN TẮC AN TOÀN\n"
+        f"> [!WARNING] Cảnh báo an toàn quan trọng\n"
         f"> • Khoảng cách tối thiểu giữa 2 lần uống là 4 giờ; rà soát tránh dùng trùng lặp các chế phẩm cảm cúm khác."
     )
 

@@ -56,6 +56,22 @@ def run_cache_integration_test():
     assert data2.get("reply_text") == data1.get("reply_text"), "Nội dung cache không khớp bản gốc!"
     print(f"   ⚡ TỐC ĐỘ CACHE HIT: Nhanh hơn {elapsed_ms_1 / max(0.1, elapsed_ms_2):.1f} lần! ({elapsed_ms_2:.1f}ms vs {elapsed_ms_1:.1f}ms)")
 
+    # 3b. Query 2b: Câu hỏi thay đổi toàn bộ cú pháp ngữ nghĩa (Semantic Cache Hit < 20ms)
+    q_sem = "Cách dùng và liều uống Paracetamol 500mg"
+    print(f"\n2b. Gửi query lần 2b (Semantic Similarity Hit < 20ms): '{q_sem}'")
+    t0 = time.perf_counter()
+    res_sem = client.post(f"{BASE_URL}/chat", json={
+        "query": q_sem,
+        "user_role": "doctor",
+        "user_name": "BS. Nguyễn Văn A"
+    })
+    elapsed_ms_sem = (time.perf_counter() - t0) * 1000
+    assert res_sem.status_code == 200
+    data_sem = res_sem.json()
+    assert data_sem.get("source_status") == "cache_semantic", f"Mong đợi cache_semantic, thực tế: {data_sem.get('source_status')}"
+    print(f"   -> Phản hồi Semantic Cache: {len(data_sem.get('reply_text', ''))} ký tự | Thời gian: {elapsed_ms_sem:.1f}ms | Status: {data_sem.get('source_status')}")
+    print(f"   ⚡ TỐC ĐỘ SEMANTIC HIT: Nhanh hơn {elapsed_ms_1 / max(0.1, elapsed_ms_sem):.1f} lần! ({elapsed_ms_sem:.1f}ms vs {elapsed_ms_1:.1f}ms)")
+
     # 4. Query 3: SSE Streaming Endpoint Cache Hit
     q3 = "Xin hỏi paracetamol 500mg uống thế nào?"
     print(f"\n3. Gửi query qua SSE Streaming (Stream Cache Hit): '{q3}'")

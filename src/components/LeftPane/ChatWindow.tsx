@@ -5,15 +5,17 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, FileText } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
+import { RagCitationItem } from '../../types/chat';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
 import { CdssAlertBanner } from './Cards/CdssAlertBanner';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
+import { PdfViewerDrawer, PdfViewerTarget } from '../Modals/PdfViewerDrawer';
 import { isCloudAIAvailable } from '../../services/geminiService';
-import { buildSourceIntroduction, removeLegacySourceText } from '../../utils/chatAnswerPresentation';
+import { removeLegacySourceText } from '../../utils/chatAnswerPresentation';
 
 interface ChatWindowProps {
   messages: ChatMessage[]; suggestionChips: QuickSuggestionChip[];
@@ -33,17 +35,34 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   isFullScreen = false, onToggleFullScreen,
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const outerContainerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUpRef = useRef(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
+  const [pdfTarget, setPdfTarget] = useState<PdfViewerTarget | null>(null);
+
+  const handleInlineCitationClick = (_msgId: string, citationRef: any) => {
+    setPdfTarget({
+      title: citationRef.title || citationRef.legal_basis || 'Dược Thư Quốc Gia Việt Nam',
+      url: citationRef.url || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
+      page: citationRef.page,
+      excerpt: citationRef.excerpt,
+      legal_basis: citationRef.legal_basis || citationRef.title,
+      section: citationRef.section,
+      inn: citationRef.section || 'paracetamol',
+    });
+  };
 
   const isStreamingAny = messages.some(m => m.isStreaming);
 
   useEffect(() => {
+    if (outerContainerRef.current) {
+      outerContainerRef.current.scrollTop = 0;
+    }
     if (isStreamingAny) {
       // Khi đang stream token: nếu bác sĩ không cuộn ngược lên đọc tài liệu cũ,
-      // tự động bám đáy bằng scrollTop trực tiếp để triệt tiêu 100% rung lắc và layout thrashing
+      // tự động bám đáy bằng scrollTop trực tiếp trên messagesContainerRef
       if (!isUserScrolledUpRef.current) {
         const container = messagesContainerRef.current;
         if (container) {
@@ -51,9 +70,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         }
       }
     } else {
-      // Khi stream xong hoặc có tin nhắn mới hoàn tất: cuộn mượt dịu dàng 1 lần
+      // Khi stream xong hoặc có tin nhắn mới hoàn tất: cuộn mượt dịu dàng trên container tin nhắn
       isUserScrolledUpRef.current = false;
-      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      const container = messagesContainerRef.current;
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      }
     }
   }, [messages, isProcessing, isStreamingAny]);
 
@@ -74,7 +96,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/70 relative overflow-hidden">
+    <div ref={outerContainerRef} className="flex flex-col h-full min-h-0 bg-slate-50/70 relative overflow-hidden">
       {/* 1. Header */}
       <div className="h-14 sm:h-12 px-3.5 sm:px-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
         <div data-testid="chat-window-drag-handle" className="flex items-center gap-2.5 min-w-0 cursor-grab select-none">
@@ -125,7 +147,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       <div
         ref={messagesContainerRef}
         onScroll={handleContainerScroll}
-        className="flex-1 overflow-y-auto p-3.5 sm:p-4"
+        className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4"
       >
         <div className={`space-y-3.5 ${isFullScreen ? 'max-w-4xl mx-auto w-full' : 'w-full'}`}>
           {messages.map((msg) => {
@@ -151,7 +173,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     />
                   </div>
                 )}
-                <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed ${
+                <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed break-words space-y-1 ${
                   isUser
                     ? 'bg-teal-50/90 border border-teal-200 text-slate-900 rounded-tr-xs'
                     : isSystem
@@ -167,15 +189,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </div>
                   ) : (
                     <>
-                      {renderFormattedText(removeLegacySourceText(msg.text), false)}
+                      {renderFormattedText(removeLegacySourceText(msg.text), {
+                        isDark: false,
+                        citations: msg.citations,
+                        onCitationClick: (ref) => handleInlineCitationClick(msg.id, ref),
+                      })}
                       {msg.isStreaming && <span className="inline-block w-1.5 h-3.5 ml-1 bg-teal-600 animate-pulse align-middle" />}
                     </>
                   )}
-                  {isAgent && msg.citations?.length ? (
-                    <p data-testid="chat-source-introduction" className="mt-3 border-l-2 border-teal-500 pl-2.5 text-xs font-medium text-slate-600">
-                      {buildSourceIntroduction(msg.citations)}
-                    </p>
-                  ) : null}
+
                   {/* Tạm thời comment thẻ thông tin Action Card có sẵn theo yêu cầu người dùng để tập trung test SOTA RAG
                   {isAgent && msg.card && msg.card.primaryActionLabel && !['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket', 'medication_safety'].includes((msg.card as any).card_type || (msg.card as any).type || '') && (
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -198,7 +220,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </div>
                   )}
                   */}
-                  {/* Tạm thời comment các thẻ gợi ý (suggested chips) có sẵn theo yêu cầu người dùng
                   {isAgent && msg.suggestedChips && msg.suggestedChips.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
                       <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp:</span>
@@ -214,26 +235,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       ))}
                     </div>
                   )}
-                  */}
-                  {msg.citations && msg.citations.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-1.5 text-2xs text-slate-600">
-                      {Array.from(new Map(msg.citations.map(c => [c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis, c])).values()).slice(0, 3).map((c, i) => (
-                        <details key={i} className="rounded-md border border-slate-200 bg-slate-50 text-slate-700">
-                          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 font-medium hover:bg-teal-50">
-                            <BookOpen className="w-3 h-3 text-slate-500" />
-                            <span className="truncate">{c.legal_basis.toLowerCase().includes('nguồn dẫn trong từng bản ghi') ? c.section || c.source : c.legal_basis}</span>
-                            {c.page && <span className="shrink-0 text-slate-500">tr. {c.page}</span>}
-                            <ChevronDown className="ml-auto h-3 w-3 shrink-0" />
-                          </summary>
-                          <div className="space-y-1 border-t border-slate-200 px-2.5 py-2 text-xs">
-                            <p className="font-semibold text-slate-800">{c.source}{c.page ? ` · trang ${c.page}` : c.section ? ` · ${c.section}` : ''}</p>
-                            {c.excerpt?.trim() && <blockquote className="border-l-2 border-teal-500 pl-2 text-slate-700">{c.excerpt}</blockquote>}
-                            {c.url && <a href={c.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-teal-800 underline">Mở tài liệu gốc <ExternalLink className="h-3 w-3" /></a>}
-                          </div>
-                        </details>
-                      ))}
-                    </div>
-                  )}
+
                   {isAgent && msg.answerType === 'safe_abstention' && (
                     <div role="status" className="mt-2 border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-950">
                       Chưa đủ căn cứ trong nguồn đang tra cứu để kết luận. Hãy đối chiếu tài liệu gốc hoặc nhờ dược sĩ lâm sàng xác minh trước khi áp dụng.
@@ -264,6 +266,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* 4. Settings Modal */}
       <ChatSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {/* 5. In-App Dual-Mode Clinical Reader & PDF Drawer (Tier 3) */}
+      <PdfViewerDrawer
+        isOpen={Boolean(pdfTarget)}
+        target={pdfTarget}
+        onClose={() => setPdfTarget(null)}
+      />
     </div>
   );
 };

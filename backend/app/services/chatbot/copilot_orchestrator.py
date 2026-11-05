@@ -190,8 +190,15 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     )
     has_interaction_term = any(term in lower_query for term in ("tương tác", "tương kỵ", "kỵ thuốc", "kỵ với", "kỵ gì", "tuong tac", "tuong ky", "ky thuoc"))
     is_check_multi = is_two_drug and ("+" in lower_query or any(w in lower_query for w in ("kiểm tra", "kiem tra", "check", "rà soát", "ra soat")))
+    has_feasibility_term = any(term in lower_query for term in (
+        "có uống được", "có dùng được", "uống được không", "dùng được không", "có được không",
+        "đang dùng", "đang uống", "uống cả", "dùng cả", "uống thêm", "dùng thêm",
+        "uống chung", "uống cùng", "dùng cùng", "đi kèm", "kèm theo", "uong duoc", "dung duoc",
+        "an toàn không", "nguy hiểm không"
+    )) or bool(re.search(r'\b(?:được|uống|dùng)\b.*?\bkhông\b', lower_query))
     is_two_drug_inquiry = is_two_drug and (
         any(term in lower_query for term in ("thì sao", "thi sao", "thế nào", "the nao", "được không", "duoc khong", "như thế nào", "sao", "đi với nhau", "uống cả hai", "dùng cả hai"))
+        or has_feasibility_term
         or len(lower_query.split()) <= 6
     )
     is_interaction_q = has_interaction_term or is_check_multi or is_two_drug_inquiry or any(term in lower_query for term in ("phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung", "uong cung", "dung cung"))
@@ -199,7 +206,20 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     has_single_cand = (has_candidate_drug or len(resolved_meds) == 1 or len(extracted_kw) >= 3 or active_in_query) and not is_two_drug and not is_deictic_interaction
     is_single_interaction = has_single_cand and has_interaction_term and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))
 
-    if (is_interaction_q or is_deictic_interaction) and not is_single_interaction and not any(term in lower_query for term in ("tương tác thuốc của thuốc", "tương tác thuốc paracetamol", "tác dụng phụ", "tác dụng không mong muốn", "chống chỉ định", "liều dùng", "liều tối đa", "thành phần", "hoạt chất", "chỉ định", "công dụng", "chong chi dinh", "tac dung phu", "lieu dung")):
+    is_multi_drug_active = is_two_drug or len(resolved_meds) >= 2 or len(lex_meds) >= 2
+    excluded_field_terms = [
+        "tương tác thuốc của thuốc", "tương tác thuốc paracetamol",
+        "tác dụng phụ", "tác dụng không mong muốn", "liều dùng", "liều tối đa",
+        "thành phần", "hoạt chất", "tac dung phu", "lieu dung",
+        "kỵ rượu", "uống rượu", "uống bia", "rượu bia", "say rượu", "với rượu", "với bia",
+        "uống cùng sữa", "với sữa", "uống sữa", "nước cam", "thức ăn", "kiêng ăn gì",
+        "trước ăn", "sau ăn", "lúc đói", "lúc no", "sáng hay tối", "uống sáng", "uống tối",
+        "suy gan", "xơ gan", "men gan", "người già", "người cao tuổi", "quá liều", "ngộ độc"
+    ]
+    if not is_multi_drug_active:
+        excluded_field_terms.extend(["chống chỉ định", "chong chi dinh", "chỉ định", "chi dinh", "công dụng", "cong dung"])
+
+    if (is_interaction_q or is_deictic_interaction) and not is_single_interaction and not any(term in lower_query for term in excluded_field_terms):
         clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)
         if clarification_res:
             return clarification_res
@@ -269,12 +289,13 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     ):
         return await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    # Tạm thời comment detect_and_handle_gemini_clinical_scenario theo yêu cầu người dùng
-    # if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "huyết áp", "tăng huyết áp", "hạ huyết áp")) and not has_candidate_drug:
-    #     sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
-    #     if sc_res:
-    #         sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
-    #         return sc_res
+    if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể", "huyết áp", "tăng huyết áp", "hạ huyết áp")) and not has_candidate_drug:
+        from app.services.copilot_gemini_scenarios import detect_and_handle_gemini_clinical_scenario
+        sc_res = await detect_and_handle_gemini_clinical_scenario(query, lower_query, user_name, db, user_role=user_role, session_id=session_id)
+        if sc_res:
+            from app.security.guardrails import validate_output_guardrail
+            sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
+            return sc_res
 
     from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
     spec_item = find_clinical_specialty_consultation(query)

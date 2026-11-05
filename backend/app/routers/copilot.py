@@ -36,11 +36,28 @@ async def chat_with_copilot(
     from app.services.cache.clinical_cache import get_clinical_cache
     clinical_cache = get_clinical_cache()
 
-    cached_resp = clinical_cache.get(payload.query, user_role=user_role)
+    can_use_cache = True
+    lower_q = payload.query.lower()
+    if any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc")):
+        can_use_cache = False
+    elif session.active_medication_name:
+        has_explicit_drug = bool(session.active_medication_name.casefold() in lower_q)
+        if not has_explicit_drug:
+            try:
+                from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+                has_explicit_drug = bool(get_drug_lexical_matcher().extract_medications(payload.query))
+            except Exception:
+                has_explicit_drug = False
+        if not has_explicit_drug:
+            can_use_cache = False
+
+    cached_resp = clinical_cache.get(payload.query, user_role=user_role) if can_use_cache else None
     if cached_resp:
         response = cached_resp.model_copy(deep=True)
         response.session_id = session.session_id
         session.append_conversation_turn(payload.query, response.reply_text)
+        if response.active_medication_name:
+            session.set_active_medication(name=response.active_medication_name)
     else:
         response = await handle_copilot_chat(
             payload, request, db,
@@ -52,8 +69,13 @@ async def chat_with_copilot(
         session.append_conversation_turn(payload.query, response.reply_text)
         response.session_id = session.session_id
 
-        # Lưu kết quả lâm sàng hợp lệ vào cache
-        clinical_cache.set(payload.query, user_role, response)
+        # Lưu kết quả lâm sàng hợp lệ vào cache (chỉ lưu tri thức độc lập ngữ cảnh)
+        is_context_dependent = (
+            any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc"))
+            or (session.active_medication_name and session.active_medication_name.casefold() not in lower_q)
+        )
+        if not is_context_dependent and response.answer_type not in ("clarification", "safe_abstention"):
+            clinical_cache.set(payload.query, user_role, response)
 
     try:
         from app.security.prompt_utility_scorer import compute_prompt_utility
@@ -93,11 +115,28 @@ async def chat_with_copilot_stream(
         from app.services.cache.clinical_cache import get_clinical_cache
         clinical_cache = get_clinical_cache()
 
-        cached_resp = clinical_cache.get(payload.query, user_role=user_role)
+        can_use_cache = True
+        lower_q = payload.query.lower()
+        if any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc")):
+            can_use_cache = False
+        elif session.active_medication_name:
+            has_explicit_drug = bool(session.active_medication_name.casefold() in lower_q)
+            if not has_explicit_drug:
+                try:
+                    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+                    has_explicit_drug = bool(get_drug_lexical_matcher().extract_medications(payload.query))
+                except Exception:
+                    has_explicit_drug = False
+            if not has_explicit_drug:
+                can_use_cache = False
+
+        cached_resp = clinical_cache.get(payload.query, user_role=user_role) if can_use_cache else None
         if cached_resp:
             response = cached_resp.model_copy(deep=True)
             response.session_id = session.session_id
             session.append_conversation_turn(payload.query, response.reply_text)
+            if response.active_medication_name:
+                session.set_active_medication(name=response.active_medication_name)
         else:
             # Xử lý câu truy vấn qua bộ máy Copilot Orchestrator
             response = await handle_copilot_chat(
@@ -110,8 +149,13 @@ async def chat_with_copilot_stream(
             session.append_conversation_turn(payload.query, response.reply_text)
             response.session_id = session.session_id
 
-            # Lưu vào cache lâm sàng nếu thỏa mãn điều kiện tri thức thuần túy
-            clinical_cache.set(payload.query, user_role, response)
+            # Lưu vào cache lâm sàng nếu độc lập ngữ cảnh và không phải clarification/abstention
+            is_context_dependent = (
+                any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc"))
+                or (session.active_medication_name and session.active_medication_name.casefold() not in lower_q)
+            )
+            if not is_context_dependent and response.answer_type not in ("clarification", "safe_abstention"):
+                clinical_cache.set(payload.query, user_role, response)
 
         # 2. Ghi nhật ký bất đồng bộ
         try:

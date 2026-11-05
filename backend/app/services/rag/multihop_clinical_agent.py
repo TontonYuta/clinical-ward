@@ -52,8 +52,8 @@ def is_multihop_clinical_case(query: str, lower_query: str) -> bool:
     if has_subject and has_condition and (has_prescribe_cue or total_meds >= 2):
         return True
 
-    # Pattern B: Polypharmacy evaluation with 3 or more medications
-    if total_meds >= 3 and (has_condition or has_prescribe_cue):
+    # Pattern B: Polypharmacy evaluation with 3 or more medications in patients with organ conditions
+    if total_meds >= 3 and has_condition:
         return True
 
     return False

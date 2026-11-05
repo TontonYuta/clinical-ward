@@ -43,6 +43,86 @@ function testChatMarkdown() {
   }
   console.log('✅ 3. Callout Alerts parsing passed!');
 
+  // 4. Test Inline Citation Badges & Markdown PDF Links (Tier 1 Grounding)
+  let clickedCitation: any = null;
+  const citationMarkdown = `Liều dùng khuyến cáo là 10 - 15 mg/kg/lần [DTQG tr.1118], khoảng cách liều 4 - 6 giờ [QĐ 5948] hoặc xem [Chuyên Luận](/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118).`;
+  const citationNodes = renderFormattedText(citationMarkdown, {
+    citations: [
+      {
+        source: 'Dược thư Quốc gia Việt Nam',
+        legal_basis: 'DTQG 2015',
+        section: 'Liều dùng',
+        page: 1118,
+        excerpt: 'Trẻ em: 10 - 15 mg/kg/lần',
+      },
+    ],
+    onCitationClick: (cit) => {
+      clickedCitation = cit;
+    },
+  }) as any[];
+
+  if (!Array.isArray(citationNodes) || citationNodes.length === 0) {
+    throw new Error('Citation parsing failed to return nodes');
+  }
+  console.log('✅ 4. Inline Citation Badges parsed successfully!');
+
+  // 5. Test Blockquote Grouping
+  const blockquoteMarkdown = `> Căn cứ Dược thư Quốc gia Việt Nam 2015\n> Liều dùng trẻ em điều chỉnh theo cân nặng`;
+  const quoteNodes = renderFormattedText(blockquoteMarkdown) as any[];
+  const hasBlockquote = quoteNodes.some(node => node && node.type === 'blockquote');
+  if (!hasBlockquote) {
+    throw new Error('Consecutive > lines were not grouped into a semantic blockquote!');
+  }
+  console.log('✅ 5. Blockquote grouping parsed successfully!');
+
+  // 6. Test Excerpt Markdown with Bullets, Bold, and Compact Mode
+  const excerptMarkdown = `• **Trẻ sơ sinh 28 - 32 tuần:** 20 mg/kg một liều duy nhất.\n• **Liều duy trì:** 10 - 15 mg/kg cách 8 - 12 giờ nếu cần thiết.`;
+  const excerptNodes = renderFormattedText(excerptMarkdown, { compact: true }) as any[];
+  if (!Array.isArray(excerptNodes) || excerptNodes.length < 2) {
+    throw new Error('Excerpt bullet lines were not parsed into structured items!');
+  }
+  const hasCompactBullet = excerptNodes.some(node => node && node.key && String(node.key).startsWith('bullet') && String(node.props.className).includes('text-xs'));
+  if (!hasCompactBullet) {
+    throw new Error('Excerpt bullets did not apply compact text-xs layout!');
+  }
+  console.log('✅ 6. Excerpt Markdown with Bullets & Compact Mode passed!');
+
+  // 7. Test Auto-healing of Unclosed Markdown Markers
+  const truncatedWithBrokenTokens = `**Liều dùng khuyến cáo**: Trẻ em 10 - 15 mg/kg. **Thận trọng…`;
+  const healedNodes = renderFormattedText(truncatedWithBrokenTokens) as any[];
+  if (!Array.isArray(healedNodes) || healedNodes.length === 0) {
+    throw new Error('Auto-healed markdown failed to render nodes');
+  }
+  console.log('✅ 7. Auto-healing of unclosed markdown markers passed!');
+
+  // 8. Test Nested Bullet Indentation (2 spaces)
+  const nestedMarkdown = `- **Đường uống:**\n  * **Liều mỗi lần:** 500 mg/lần\n    * **Ghi chú thêm:** Uống sau ăn`;
+  const nestedNodes = renderFormattedText(nestedMarkdown) as any[];
+  const hasSubBullet = nestedNodes.some(node => node && node.props && String(node.props.className).includes('pl-3.5'));
+  const hasDoubleSubBullet = nestedNodes.some(node => node && node.props && String(node.props.className).includes('pl-7'));
+  if (!hasSubBullet || !hasDoubleSubBullet) {
+    throw new Error('Nested bullets with 2 and 4 spaces failed to receive hierarchical indentation!');
+  }
+  console.log('✅ 8. Nested Bullet Indentation passed!');
+
+  // 9. Test Bracket Section Header
+  const bracketHdr = `[Liều dùng khuyến cáo cho trẻ 12 tuổi]:`;
+  const bracketNodes = renderFormattedText(bracketHdr) as any[];
+  const hasBracketHdr = bracketNodes.some(node => node && node.key && String(node.key).startsWith('bracket-hdr'));
+  if (!hasBracketHdr) {
+    throw new Error('Bracket section header failed to render structured badge!');
+  }
+  console.log('✅ 9. Bracket Section Header passed!');
+
+  // 10. Test Paragraph Grouping
+  const multiLinePara = `Dòng 1 của đoạn văn bản lâm sàng.\nDòng 2 tiếp tục ý trên trong cùng một đoạn.`;
+  const paraNodes = renderFormattedText(multiLinePara) as any[];
+  const pCount = paraNodes.filter(node => node && node.type === 'p').length;
+  if (pCount !== 1) {
+    throw new Error(`Consecutive regular lines should form 1 paragraph, got ${pCount}`);
+  }
+  console.log('✅ 10. Paragraph Grouping passed!');
+
   console.log('🎉 ALL CHAT MARKDOWN TESTS PASSED 100%!');
 }
 
