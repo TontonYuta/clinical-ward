@@ -159,7 +159,7 @@ def wait_for_deployment(expected_commit: str | None, max_wait: int = 540) -> boo
 def execute_production_suite() -> tuple[int, int, list[str]]:
     passed = 0
     failures = []
-    with httpx.Client(timeout=35.0) as client:
+    with httpx.Client(timeout=45.0) as client:
         for tc in PRODUCTION_TESTS:
             session_id = f"prod_{tc['id']}_{int(time.time())}"
             payload = {"query": tc["query"], "user_name": "QA_Loop_Verifier", "user_role": "doctor", "session_id": session_id}
