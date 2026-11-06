@@ -189,18 +189,18 @@ def verify_option_a_drug_registry() -> bool:
             print(f"❌ Failed to fetch Paracetamol: HTTP {res.status_code}")
             return False
         item = res.json()
-        pharm = item.get("pharmacology")
-        if not pharm or not pharm.get("pharmacokinetics"):
-            print("❌ Missing pharmacology/pharmacokinetics on Paracetamol")
+        pk = item.get("pharmacokinetics")
+        pd = item.get("pharmacodynamics")
+        if not pk or not pd:
+            print("❌ Missing pharmacodynamics/pharmacokinetics on Paracetamol")
             return False
-        print(f"  ✅ Paracetamol PK Half-life: {pharm.get('pharmacokinetics', {}).get('half_life')}")
+        print(f"  ✅ Paracetamol PK text verified ({len(pk)} chars)")
 
-        # 2. Ceftriaxone VD-20000-13 incompatibilities
-        res2 = client.get(f"{BASE_URL}/api/v1/registry/VD-20000-13", headers={"Cache-Control": "no-cache"})
+        # 2. Ceftriaxone 893110098226 incompatibilities
+        res2 = client.get(f"{BASE_URL}/api/v1/registry/893110098226", headers={"Cache-Control": "no-cache"})
         if res2.status_code == 200:
             item2 = res2.json()
-            safety = item2.get("safety", {})
-            incomp = safety.get("incompatibilities") or item2.get("incompatibilities") or safety.get("tuong_ky")
+            incomp = item2.get("incompatibilities")
             if incomp and "calci" in str(incomp).lower():
                 print(f"  ✅ Ceftriaxone Incompatibilities verified (Calcium warning present)")
 

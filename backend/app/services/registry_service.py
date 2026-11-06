@@ -123,6 +123,7 @@ async def get_cached_group_stats(db: AsyncSession) -> dict[str, int]:
 async def enrich_monograph_for_drug(drug: DavNationalDrug, db: AsyncSession, refresh: bool) -> None:
     need_enrich = (
         refresh or not drug.indications or not drug.adverse_effects
+        or not drug.pharmacodynamics or not drug.pharmacokinetics
         or not drug.clinical_source or "Trang" not in drug.clinical_source
         or "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" not in drug.clinical_source
     )
