@@ -35,8 +35,9 @@ ENV PYTHONUNBUFFERED=1 \
     DATABASE_URL="sqlite+aiosqlite:////app/clinical_hospital.db" \
     CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app"
 
-# Pre-seed hospital database, 54,885 DAV national drugs, and clinical monographs at build time
-RUN python init_db.py
+# Unpack pre-baked hospital database (54,885 DAV drugs, 702 monographs) in <1s
+RUN gzip -dc /app/clinical_prebaked.db.gz > /app/clinical_hospital.db && rm -f /app/clinical_prebaked.db.gz
+
 
 EXPOSE 8000
 

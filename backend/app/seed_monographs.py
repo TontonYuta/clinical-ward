@@ -75,10 +75,12 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_atc ON clinical_drug_monographs(atc_code)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_clinical_monograph_id ON dav_national_drugs(clinical_monograph_id)")
 
-    # Bỏ qua nếu chuyên luận đã được nạp đầy đủ (ngăn ngừa cold-start và OOM trên Render)
+    # Bỏ qua nếu chuyên luận và liên kết đã được nạp đầy đủ (ngăn ngừa cold-start và OOM trên Render)
     cursor.execute("SELECT count(*) FROM clinical_drug_monographs WHERE pharmacodynamics IS NOT NULL AND length(pharmacodynamics) > 20")
     existing_rich_count = cursor.fetchone()[0]
-    if existing_rich_count >= 650:
+    cursor.execute("SELECT count(*) FROM dav_national_drugs WHERE clinical_monograph_id IS NOT NULL")
+    existing_linked = cursor.fetchone()[0]
+    if existing_rich_count >= 650 and existing_linked >= 10000:
         return existing_rich_count
 
     src = find_monographs_source()

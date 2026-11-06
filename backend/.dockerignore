@@ -9,3 +9,5 @@ tests
 *.db-wal
 *.sqlite3
 *.log
+!clinical_prebaked.db.gz
+
