@@ -30,6 +30,36 @@ def extract_matched_field_keys(lower_query: str) -> set[str]:
         )
     }
 
+
+def _interaction_reference(query: str) -> tuple[bool, bool]:
+    from app.services.chatbot.clinical_subject import _normalized
+    text = _normalized(query)
+    interaction = any(term in text for term in (
+        "tuong tac", "tuong ky", "ky voi", "ky thuoc", "phoi hop", "uong cung",
+        "dung cung", "ket hop", "uong chung", "dung chung",
+    ))
+    reference = bool(re.search(r"\b(?:thuoc nay|thuoc do|thuoc kia|thuoc vua noi|thuoc dang hoi)\b", text)
+                     or re.search(r"\bnó\b", query.casefold()))
+    return interaction, reference
+
+
+async def handle_contextual_interaction(query: str, *, session, session_id: str,
+                                        user_name: str, user_role: str) -> CopilotResponse | None:
+    """Resolve pair operands before rewriting or switching the active medicine."""
+    interaction, reference = _interaction_reference(query)
+    if not interaction:
+        return None
+    from app.services.rag.multihop_clinical_agent import is_multihop_clinical_case
+    if is_multihop_clinical_case(query, query.lower()):
+        return None
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    meds = get_drug_lexical_matcher().extract_medications(query)
+    if reference or len(meds) >= 2:
+        return await handle_interaction_clarification(query, query.lower(), session_id,
+                                                      user_name, user_role, session=session)
+    return None
+
+
 async def handle_interaction_clarification(
     query: str, lower_query: str, session_id: str, user_name: str, user_role: str, session: Any = None
 ) -> CopilotResponse | None:
@@ -38,7 +68,32 @@ async def handle_interaction_clarification(
 
     matcher = get_drug_lexical_matcher()
     trie_meds = matcher.extract_medications(query)
+    interaction, reference = _interaction_reference(query)
+    if interaction and reference:
+        active_name = getattr(session, "active_medication_name", None)
+        if active_name and trie_meds:
+            return format_multi_ddi_response([active_name, *trie_meds], query, session_id=session_id)
+        from app.services.chatbot.clinical_subject import _normalized
+        asks_partner_list = any(term in _normalized(query) for term in (
+            "thuoc nao", "tuong tac gi", "ky gi", "tuong ky voi gi",
+        ))
+        if active_name and asks_partner_list:
+            return None  # General interaction list for the active monograph.
+        # Do not replace an absent referent with the one explicit drug or infer
+        # the missing operand from medicines mentioned by the assistant.
+        return CopilotResponse(
+            intent="MEDICATION_INTERACTION_CLARIFICATION",
+            reply_text=(f"Thuốc đang được nhắc tới là **{active_name}**. Vui lòng cung cấp tên thuốc dùng cùng."
+                        if active_name else
+                        "Chưa xác định được thuốc được gọi là ‘thuốc này/thuốc đó’. Vui lòng nêu rõ tên hai thuốc cần kiểm tra tương tác."),
+            answer_type="clarification", source_status="missing_interaction_medications",
+            confidence=1.0, session_id=session_id,
+        )
+
     if len(trie_meds) >= 2:
+        if session:
+            session.clear_active_medication()
+            session.set_comparison_drugs(trie_meds)
         return format_multi_ddi_response(trie_meds, query, session_id=session_id)
 
     is_deictic = any(ref in lower_query for ref in ("2 thuốc", "hai thuốc", "thuốc kia", "thuốc đó", "hai loại", "2 loại", "vừa rồi", "chúng nó", "cơ mà")) and any(t in lower_query for t in ("tương tác", "tương kỵ", "kỵ", "tuong tac", "tuong ky", "phối hợp", "uống cùng", "dùng cùng"))

@@ -82,6 +82,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <button
               type="button"
               data-testid="chat-clear-btn"
+              disabled={isProcessing}
               onClick={onClearMessages}
               className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
               title="Làm mới phiên hội thoại"

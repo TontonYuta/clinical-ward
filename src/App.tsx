@@ -46,7 +46,7 @@ import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
 import { FORM_PRESENTATION } from './components/Modals/PrintableForms/formModel';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
-import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
+import { processClinicalAgentQueryAsync, resetClinicalAgentSession } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
 import { cpoeApi } from './services/api/cpoeApi';
@@ -1900,6 +1900,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             lowStockCount={batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
             onExecuteCardAction={handleExecuteCardAction}
             onClearMessages={() => {
+              resetClinicalAgentSession();
+              lastSentMessageRef.current = { text: '', time: 0 };
               clearStoredChatMessages();
               setChatMessages(INITIAL_CHAT_MESSAGES);
             }}

@@ -16,6 +16,10 @@ import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
+export function resetClinicalAgentSession(): void {
+  _clientSessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+}
+
 export async function processClinicalAgentQueryAsync(
   rawInput: string,
   currentState: AsyncClinicalState,

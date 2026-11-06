@@ -23,6 +23,13 @@ async def resolve_active_drug_and_terms(
     is_renal: bool,
     is_deep_complex: bool,
 ) -> tuple[str, str, bool, bool, bool, CopilotResponse | None]:
+    from app.services.chatbot.field_routing import handle_contextual_interaction
+    pair_response = await handle_contextual_interaction(
+        query, session=session, session_id=session_id, user_name=user_name, user_role=user_role,
+    )
+    if pair_response:
+        return query, lower_query, False, False, False, pair_response
+
     ddi_examples_res = check_interaction_examples_request(lower_query, session_id)
     if ddi_examples_res:
         return query, lower_query, False, False, False, ddi_examples_res

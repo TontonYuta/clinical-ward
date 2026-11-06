@@ -188,6 +188,15 @@ async def build_drug_profile_response(
         bool(clean_inn) and re.search(r"(?<!\w)" + re.escape(normalize_name(clean_inn)) + r"(?!\w)", query_names)
         and not re.search(r"(?<!\w)" + re.escape(normalize_name(clean_name)) + r"(?!\w)", query_names)
     )
+    # DAV may spell the declared ingredient as a salt (e.g. Metformin.HCl).
+    # A generic-named record can use its linked INN reference only when both
+    # ingredient identities resolve to that same existing registry key. Brand
+    # aliases alone never exempt a product from presentation/route checks.
+    from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
+    if monograph and not is_combination and normalize_name(brand_subject) == normalize_name(monograph.inn or ""):
+        ingredient_keys = resolve_registered_medications(first_active)
+        source_keys = resolve_registered_medications(monograph.inn or "")
+        generic_subject = generic_subject or (len(ingredient_keys) == 1 and ingredient_keys == source_keys)
     joint_ingredient_reference = bool(monograph and requested_fields
         and clean_inn in JOINT_MONOGRAPH_IDENTITIES.get((monograph.inn or "").casefold().strip(), set())
         and not any(item[0] in route_sensitive_fields for item in requested_fields))
@@ -205,7 +214,6 @@ async def build_drug_profile_response(
                 rag_grounded=False, confidence=0.0, session_id=session.session_id, citations=[],
                 active_medication_name=session.active_medication_name,
             )
-    from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None
     # contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields}, drug_name=clean_name)

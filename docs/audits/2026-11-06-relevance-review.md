@@ -2,6 +2,8 @@
 
 This is a software information-routing review. It does not certify diagnoses, doses, source content, registry metadata or clinical safety.
 
+Later delta: [the chatbot debug report](2026-11-06-chatbot-debug.md) records the Metformin identity correction, interaction operand handling and real conversation reset. Statements below about the Metformin gap and test totals describe the earlier audit snapshot.
+
 ## Final correction: preserve identity when clinical evidence is insufficient
 
 The seeded full run in `artifacts/logic-audit/backend-commit-final.log` reported **479 passed / 30 failed in 509 cases**. It exposed a genuine context regression: conservative product abstention returned before updating the selected medication, so a Warfarin follow-up lost its subject. The last correction addresses that regression without relaxing the formulation, route or source guards.

@@ -125,6 +125,13 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         )
 
     # 2. SOTA RAG: CRAG Contextual Query Rewriter & Multi-turn Clinical De-contextualization
+    from app.services.chatbot.field_routing import handle_contextual_interaction
+    pair_response = await handle_contextual_interaction(
+        query, session=session, session_id=session_id, user_name=user_name, user_role=user_role,
+    )
+    if pair_response:
+        return pair_response
+
     from app.services.rag.query_rewriter import rewrite_clinical_query
     rewritten_res = await rewrite_clinical_query(query, history=history)
     query = rewritten_res.rewritten_query

@@ -19,21 +19,22 @@ def format_multi_ddi_response(
 
     if not report.pair_alerts and not report.polypharmacy_alerts:
         reply = (
-            f"### ✅ ĐỐI SOÁT TƯƠNG TÁC THUỐC (QĐ 5948/QĐ-BYT)\n\n"
+            f"### KẾT QUẢ TRA CỨU TƯƠNG TÁC THUỐC\n\n"
             f"• **Danh sách rà soát ({report.total_drugs} thuốc):** {drug_names_str}\n"
-            f"• **Số cặp phối hợp đã thẩm định:** {report.analyzed_pairs_count} cặp.\n\n"
-            f"👉 **Kết luận:** **Không ghi nhận tương tác chống chỉ định hoặc cảnh báo mức độ nghiêm trọng** "
-            f"giữa các hoạt chất này trong danh mục 633 cặp tương tác của **Quyết định 5948/QĐ-BYT**.\n\n"
-            f"*(Lưu ý: Luôn theo dõi các phản ứng cá thể hóa và tham khảo thêm chuyên luận DĐVN V khi điều trị)*."
+            f"• **Số cặp đã truy vấn:** {report.analyzed_pairs_count} cặp.\n\n"
+            "Chưa tìm thấy cảnh báo khớp trong dữ liệu tương tác đã nạp. "
+            "Kết quả này **không xác nhận không có tương tác hoặc phối hợp an toàn**; "
+            "dữ liệu có thể chưa bao phủ tên thuốc, hoạt chất hoặc cặp đang hỏi. "
+            "Cần đối chiếu đúng hoạt chất và nguồn chuyên môn trước khi kết luận."
         )
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE",
             reply_text=reply,
             card=None,
             legal_basis="Quyết định 5948/QĐ-BYT & Dược Thư Quốc Gia Việt Nam",
-            answer_type="grounded_reference",
-            source_status="retrieved_evidence",
-            confidence=1.0,
+            answer_type="safe_abstention",
+            source_status="no_matching_interaction_evidence",
+            confidence=0.0,
             session_id=session_id,
             suggested_chips=["Tra cứu liều dùng", "Kiểm tra chống chỉ định", "Tra cứu Dược Thư Quốc Gia"]
         )

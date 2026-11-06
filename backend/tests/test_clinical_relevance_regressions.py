@@ -209,6 +209,25 @@ def test_generic_named_ingredient_monograph_and_its_followup_remain_available(qu
     assert response.answer_type != "safe_abstention"
 
 
+@pytest.mark.parametrize("brand,ingredient,available", [
+    ("Metformin", "Metformin.HCl", True),
+    ("Glucophage", "Metformin.HCl", False),
+    ("Metformin", "OtherIngredient", False),
+])
+def test_generic_identity_uses_linked_inn_and_registry_without_exempting_brand(brand, ingredient, available):
+    source = ClinicalDrugMonograph(id="linked", inn="Metformin", title="Metformin",
+                                  indications="SOURCE-INDICATION", source="Recorded reference")
+    class Db:
+        async def execute(self, stmt): return Rows([source])
+    drug = DavNationalDrug(id="test", national_code="test", brand_name=brand, active_ingredient=ingredient,
+                           clinical_monograph_id="linked")
+    response = asyncio.run(build_drug_profile_response([drug], Db(), SessionState("test", "test", "doctor"),
+                                                     query=f"Chỉ định {brand}"))
+    assert ("SOURCE-INDICATION" in response.reply_text) is available
+    if not available:
+        assert response.answer_type == "safe_abstention"
+
+
 @pytest.mark.parametrize("boundary", ["blank_link", "combination", "brand_presentation"])
 def test_product_abstention_replaces_previous_drug_with_registration_identity_only(boundary):
     source = ClinicalDrugMonograph(id="linked", inn="TestDrug", title="TestDrug")
