@@ -27,7 +27,7 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     rfidCardId: 'RFID-NURSE-8821',
     allowedActions: ['BORROW_EMERGENCY', 'RETURN_AMPOULE', 'SETTLE_DEBT', 'CREATE_INCIDENT'],
     // Tạm thời ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-    allowedTabs: ['overview', 'cpoe', 'fefo'],
+    allowedTabs: ['overview', 'cpoe', 'fefo', 'coldchain'],
     responsibilities: 'Thực hiện đơn thuốc & chỉ định điều trị, kê đơn và kiểm tra kho dược lâm sàng',
     defaultTab: 'cpoe',
     badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-300'

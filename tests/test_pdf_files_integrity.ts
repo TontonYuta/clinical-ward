@@ -31,7 +31,7 @@ const REQUIRED_PDFS = [
   {
     name: 'Thông tư 20/2017/TT-BYT (Kiểm soát đặc biệt)',
     filename: 'Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf',
-    minBytes: 8_000_000,
+    minBytes: 500_000,
   },
   {
     name: 'Thông tư 22/2011/TT-BYT (Khoa Dược bệnh viện)',

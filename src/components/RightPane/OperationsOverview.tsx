@@ -60,23 +60,25 @@ export const OperationsOverview: React.FC<OperationsOverviewProps> = ({
   const canSearchMedicationData = canSearchMedications(currentUserRole);
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50/70 p-3 sm:p-6 thin-scrollbar">
-      <div className="mx-auto max-w-7xl space-y-6 pb-12">
+    <div className="h-full overflow-y-auto bg-slate-50/70 p-3 sm:p-5 md:p-6 thin-scrollbar">
+      <div className="w-full space-y-5 sm:space-y-6 pb-12">
         {/* 1. Header & AI Copilot Banner */}
         <OverviewHeader
           currentUserRole={currentUserRole}
           roleTitle={roleTitle}
           onOpenCopilot={onOpenCopilot}
+          onOpenCpoe={() => onTabChange('cpoe')}
         />
 
         {/* 2. Bản đồ năng lực hệ thống (4 Trụ Cột Nghiệp Vụ) */}
         <OverviewCapabilities
           allowedTabs={allowedTabs}
           onTabChange={onTabChange}
+          onOpenCopilot={onOpenCopilot}
         />
 
         {/* 3. Trung tâm Thông tin Bệnh nhân & Thông tin Dược */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6">
           <OverviewPatientCenter
             canSearch={canSearchPatientData}
             onOpenPatient={onOpenPatient}
@@ -104,6 +106,7 @@ export const OperationsOverview: React.FC<OperationsOverviewProps> = ({
           auditRecords={auditRecords}
           allowedTabs={allowedTabs}
           onTabChange={onTabChange}
+          onOpenCopilot={onOpenCopilot}
         />
       </div>
     </div>
