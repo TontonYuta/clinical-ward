@@ -17,7 +17,8 @@ async def test_oresol_hydration_guidance_not_anaphylaxis():
         resp = await ac.post("/api/v1/copilot/chat", json={
             "query": "Bù nước điện giải Oresol",
             "user_name": "BS. Trần Văn Hùng",
-            "user_role": "doctor"
+            "user_role": "doctor",
+            "session_id": "test_dc4_oresol"
         })
         assert resp.status_code == 200
         data = resp.json()
@@ -33,7 +34,8 @@ async def test_ui_layout_feedback_handling():
         resp = await ac.post("/api/v1/copilot/chat", json={
             "query": 'trong câu trả lời trên thì tài liệu gốc nằm ở trên cùng, nhưng bạn lại để "👉 Bấm nút bên dưới để mở toàn bộ Hồ sơ Dược Thư & Chuyên luận đối chứng gốc." ở dưới cuối, cần điều chỉnh lại',
             "user_name": "BS. Trần Văn Hùng",
-            "user_role": "doctor"
+            "user_role": "doctor",
+            "session_id": "test_dc4_ui_feedback"
         })
         assert resp.status_code == 200
         data = resp.json()
@@ -47,7 +49,8 @@ async def test_complaint_and_drift_correction():
         resp = await ac.post("/api/v1/copilot/chat", json={
             "query": "vẫn còn nhầm lẫn tự đưa ra thông tin thuốc, cần cải thiện tiếp",
             "user_name": "BS. Trần Văn Hùng",
-            "user_role": "doctor"
+            "user_role": "doctor",
+            "session_id": "test_dc4_complaint"
         })
         assert resp.status_code == 200
         data = resp.json()
@@ -61,7 +64,8 @@ async def test_wrong_purpose_conversational_correction():
         resp = await ac.post("/api/v1/copilot/chat", json={
             "query": "vẫn sai mục đích rồi",
             "user_name": "BS. Trần Văn Hùng",
-            "user_role": "doctor"
+            "user_role": "doctor",
+            "session_id": "test_dc4_wrong_purpose"
         })
         assert resp.status_code == 200
         data = resp.json()
@@ -74,7 +78,8 @@ async def test_pediatric_guidance_unanchored():
         resp = await ac.post("/api/v1/copilot/chat", json={
             "query": "tôi cần cho trẻ em",
             "user_name": "BS. Trần Văn Hùng",
-            "user_role": "doctor"
+            "user_role": "doctor",
+            "session_id": "test_dc4_pediatric"
         })
         assert resp.status_code == 200
         data = resp.json()

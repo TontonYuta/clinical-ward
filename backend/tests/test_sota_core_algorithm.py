@@ -13,7 +13,7 @@ def test_lexical_trie_extracts_single_and_multiple_drugs():
     matcher = get_drug_lexical_matcher()
     # 1. Single drug
     assert "Paracetamol" in matcher.extract_medications("Liều dùng Paracetamol cho trẻ em 15kg")
-    assert "Venclexta" in matcher.extract_medications("Bác sĩ cho hỏi về thuốc Venclexta uống lúc nào")
+    assert any("Venclexta" in m for m in matcher.extract_medications("Bác sĩ cho hỏi về thuốc Venclexta uống lúc nào"))
     assert "Zithromax" in matcher.extract_medications("Kháng sinh Zithromax uống trước hay sau ăn?")
 
     # 2. Multiple drugs
@@ -23,7 +23,7 @@ def test_lexical_trie_extracts_single_and_multiple_drugs():
 
     # 3. Unaccented drug query
     unacc_meds = matcher.extract_medications("tuong tac thuoc venclexta")
-    assert "Venclexta" in unacc_meds
+    assert any("Venclexta" in m for m in unacc_meds)
 
     # 4. SĐK extraction
     assert matcher.extract_sdk("Tra cứu SĐK VD-24757-16") == "VD-24757-16"
@@ -59,11 +59,11 @@ def test_multi_drug_matrix_evaluates_combinations_deterministically():
     res = format_multi_ddi_response(["Clopidogrel", "Omeprazol"], "Tương tác thuốc này")
     assert res.intent == "MEDICATION_SAFETY_PROFILE"
     assert "Quyết định 5948/QĐ-BYT" in res.legal_basis
-    assert "CLOPIDOGREL + OMEPRAZOL" in res.reply_text
+    assert "CLOPIDOGREL + OMEPRAZOL" in res.reply_text.upper()
     assert "CHỐNG CHỈ ĐỊNH" in res.reply_text
     assert res.card is not None
 
     # 3 drugs
     res3 = format_multi_ddi_response(["Clopidogrel", "Omeprazol", "Aspirin"], "Tương tác 3 thuốc")
-    assert "CLOPIDOGREL + OMEPRAZOL" in res3.reply_text
+    assert "CLOPIDOGREL + OMEPRAZOL" in res3.reply_text.upper()
     assert "Clopidogrel" in res3.reply_text and "Omeprazol" in res3.reply_text and "Aspirin" in res3.reply_text

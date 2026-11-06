@@ -4,6 +4,7 @@ Generates concise, tiered responses (Overview BLUF < 350 chars vs. Direct Laser-
 with zero technical jargon and natural clinical persona.
 """
 from typing import Optional, List
+import re
 from app.schemas.copilot import CopilotResponse
 from app.services.chatbot.adaptive_drug_slicer import SlicedClinicalEvidence
 from app.services.copilot_drug_formatter import build_drug_citation
@@ -43,18 +44,29 @@ def synthesize_adaptive_clinical_response(
     clean_name = evidence.drug_name
     active_inn = evidence.active_ingredient
 
-    # 1. TẦNG 1: TỔNG QUAN TINH GỌN (OVERVIEW BLUF)
+    # 1. TẦNG 1: TỔNG QUAN TINH GỌN (OVERVIEW BLUF < 500 chars)
     if evidence.query_depth == "OVERVIEW":
         greeting = f"Kính gửi {role_label}," if is_doc else f"Dạ thưa {role_label},"
-        from app.services.copilot_drug_citation_helper import extract_inline_citation_token
-        citation_token = extract_inline_citation_token(evidence.source_label)
+        source_name = evidence.source_label.split("(")[0].strip() or "Dược thư Quốc gia Việt Nam"
+        ind_snippet = evidence.core_indication.split(".")[0].strip()
+        contra_snippet = evidence.core_contraindication.split(".")[0].strip()
+        adult_snippet = re.sub(r"^(?:Người lớn|người lớn)[\s:]*", "", evidence.core_adult_dose.split(".")[0].strip()).strip()
+        ped_snippet = (
+            re.sub(r"^(?:Trẻ em|trẻ em)[\s:]*", "", evidence.core_pediatric_dose.split(".")[0].strip()).strip()
+            if evidence.core_pediatric_dose
+            else "Tính theo mg/kg theo chuyên khoa nhi"
+        )
+
+        dose_lines = [
+            f"  - **Người lớn:** {adult_snippet[:45]}.",
+            f"  - **Trẻ em:** {ped_snippet[:45]}."
+        ]
         lines = [
-            f"{greeting} gửi {role_label} tóm tắt thông tin chuyên môn về **{clean_name}**:",
-            "",
-            f"• **Hoạt chất & Phân nhóm:** **{active_inn}** ({evidence.drug_class}) | SĐK: `{evidence.national_code}`",
-            f"• **Chỉ định chính:** {evidence.core_indication}",
-            f"• **Liều dùng & Cách dùng:**\n  - **Người lớn:** {evidence.core_adult_dose}",
-            f"• **Cảnh báo đỏ / Chống chỉ định:** {evidence.core_contraindication} {citation_token}",
+            f"{greeting} gửi {role_label} tóm tắt về **{clean_name}**:",
+            f"• **Hoạt chất:** **{active_inn}** ({evidence.drug_class[:25]}) | SĐK: `{evidence.national_code}`",
+            f"• **Chỉ định chính:** {ind_snippet[:60]}.",
+            f"• **Liều dùng & Cách dùng:**\n" + "\n".join(dose_lines),
+            f"• **Chống chỉ định:** {contra_snippet[:50]}. [{source_name}]"
         ]
         reply_text = "\n".join(lines)
 
@@ -103,6 +115,7 @@ def synthesize_adaptive_clinical_response(
     reply_text = (
         f"Dạ thưa {role_label}, về **{primary_title.lower()}** của **{clean_name}**:\n\n"
         + "\n\n".join(facet_blocks)
+        + f"\n\n📌 **Nguồn tài liệu:** {evidence.source_label}"
     )
 
     chips = [

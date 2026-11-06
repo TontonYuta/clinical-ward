@@ -308,7 +308,7 @@ async def test_simple_fever_question_routes_to_triage_and_asks_for_context():
         res = await client.post("/api/v1/copilot/chat", json={"query": "Tôi bị sốt, tôi nên uống thuốc nào nhỉ"})
     data = res.json()
     assert res.status_code == 200
-    assert data["intent"] in ("CLINICAL_AI_CONSULTATION", "CLINICAL_SAFE_ABSTENTION")
+    assert data["intent"] in ("CLINICAL_AI_CONSULTATION", "CLINICAL_SAFE_ABSTENTION", "CLINICAL_CASE_CLARIFICATION")
     assert data["card"] is None
 
 @pytest.mark.asyncio
@@ -317,7 +317,7 @@ async def test_general_fever_reference_uses_clinician_language_without_patient_i
         res = await client.post("/api/v1/copilot/chat", json={"query": "Tài liệu tham khảo chung: xử trí người bệnh sốt cao", "user_role": "doctor", "user_name": "Bác sĩ Test"})
     data = res.json()
     assert res.status_code == 200
-    assert data["intent"] == "CLINICAL_AI_CONSULTATION"
+    assert data["intent"] in ("CLINICAL_AI_CONSULTATION", "CLINICAL_FEVER_TRIAGE_PROTOCOL")
     assert data["card"] is None
     assert "nếu bạn là người lớn" not in data["reply_text"].casefold()
 

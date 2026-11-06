@@ -60,7 +60,7 @@ class ClinicalLRUCache:
     - Medical Safety Guardrail: Tuyệt đối không chia sẻ cache nếu sai lệch liều lượng,
       độ tuổi (nhi/người lớn), hoặc sai lệch thuốc/chỉ định.
     """
-    def __init__(self, max_size: int = 1000, default_ttl_sec: int = 86400, similarity_threshold: float = 0.60):
+    def __init__(self, max_size: int = 1000, default_ttl_sec: int = 86400, similarity_threshold: float = 0.85):
         self.max_size = max_size
         self.default_ttl = default_ttl_sec
         self.similarity_threshold = similarity_threshold
@@ -129,15 +129,25 @@ class ClinicalLRUCache:
         # 2. Thông số định lượng y khoa (Medical Quantitative Tokens)
         numbers = set(re.findall(r"\b\d+(?:[\.,]\d+)?\s*(?:mg|g|mcg|ml|l|tuổi|tháng|ngày|lần|egfr)?\b", norm))
 
-        # 3. Tập từ khóa loại bỏ từ đệm
+        # 3. Tập từ khóa loại bỏ từ đệm và khung đệm giao tiếp
         filler = {
             "cho", "tôi", "bác", "sĩ", "dược", "xin", "hỏi", "giúp", "với", "nhé",
             "thế", "nào", "sao", "như", "thông", "tin", "về", "của", "trong",
-            "được", "không", "biết", "ạ", "em", "mình", "cần", "lưu", "ý"
+            "được", "không", "biết", "ạ", "em", "mình", "cần", "lưu", "ý",
+            "bạn", "muốn", "tìm", "kiếm", "thể", "có", "tốt", "nhất", "hiện", "nay",
+            "ở", "trên", "mạng", "internet", "google", "các", "loại", "phổ", "biến"
         }
         tokens = set([w for w in norm.split() if w not in filler and len(w) > 1])
 
-        # 4. Trích xuất thực thể thuốc
+        # 4. Trích xuất thực thể bệnh lý / triệu chứng lâm sàng để ngăn chặn cross-disease cache drift
+        core_conditions = (
+            "hạ sốt", "sốt rét", "sốt xuất huyết", "sốt", "trĩ", "bệnh trĩ", "đau đầu", "đau bụng",
+            "dạ dày", "tiểu đường", "đái tháo đường", "huyết áp", "tăng huyết áp", "tim mạch",
+            "suy thận", "suy gan", "nhiễm khuẩn", "kháng sinh", "phản vệ", "dị ứng", "ho", "hen"
+        )
+        norm_conditions = set(c for c in core_conditions if re.search(r'(?<![a-zA-Z0-9à-ỹÀ-Ỹ])' + re.escape(c) + r'(?![a-zA-Z0-9à-ỹÀ-Ỹ])', norm))
+
+        # 5. Trích xuất thực thể thuốc
         norm_meds = set()
         try:
             from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
@@ -150,7 +160,7 @@ class ClinicalLRUCache:
         except Exception:
             pass
 
-        # 5. Character Trigrams (Dung sai gõ sai chính tả / ngữ pháp)
+        # 6. Character Trigrams (Dung sai gõ sai chính tả / ngữ pháp)
         trigrams = set()
         for w in tokens:
             padded = f" {w} "
@@ -162,6 +172,7 @@ class ClinicalLRUCache:
             "intent": intent,
             "numbers": numbers,
             "tokens": tokens,
+            "conditions": norm_conditions,
             "meds": norm_meds,
             "trigrams": trigrams
         }
@@ -172,6 +183,7 @@ class ClinicalLRUCache:
         - Intent bắt buộc trùng nhau.
         - Số liệu định lượng (liều, tuổi) bắt buộc trùng khớp (ngăn chặn nhầm liều giữa 2 tuổi và 12 tuổi).
         - Thực thể thuốc bắt buộc trùng khớp nếu có nhận diện.
+        - Triệu chứng / Bệnh lý bắt buộc trùng khớp nếu có nhận diện (ngăn chặn nhầm giữa sốt và trĩ).
         """
         # Ràng buộc an toàn 1: Ý định y khoa
         if f1["intent"] != f2["intent"]:
@@ -188,6 +200,11 @@ class ClinicalLRUCache:
             return 0.0
         if bool(f1["meds"]) != bool(f2["meds"]):
             return 0.0
+
+        # Ràng buộc an toàn 4: Triệu chứng / Bệnh lý lâm sàng (Ngăn tuyệt đối nhầm giữa Sốt và Trĩ)
+        if f1.get("conditions") or f2.get("conditions"):
+            if f1.get("conditions") != f2.get("conditions"):
+                return 0.0
 
         # Điểm tương đồng từ vựng & N-gram ký tự (Dice coefficient)
         t1, t2 = f1["tokens"], f2["tokens"]

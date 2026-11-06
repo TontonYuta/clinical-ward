@@ -111,7 +111,7 @@ async def build_drug_profile_response(
         from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
         from app.services.chatbot.adaptive_clinical_synthesizer import synthesize_adaptive_clinical_response
         adapt_analysis = extract_clinical_query_schema_deterministic(query, session_context={"active_medication": clean_name})
-        if adapt_analysis.query_depth == "OVERVIEW" or (adapt_analysis.query_depth == "DEEP_FACET" and not requested_fields):
+        if not requested_fields and (adapt_analysis.query_depth == "OVERVIEW" or adapt_analysis.query_depth == "DEEP_FACET"):
             evidence, _, status = await slice_clinical_drug_evidence(adapt_analysis, db, session)
             if status == "ok" and evidence:
                 adaptive_resp = synthesize_adaptive_clinical_response(

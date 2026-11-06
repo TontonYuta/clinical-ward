@@ -85,21 +85,44 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     query = guard_res.sanitized_query
     lower_query = query.lower()
 
-    # 1. First-line filter: Greetings, Thanks, Dissatisfaction/Corrections, Frivolous/Out-of-scope
-    greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
-    if greeting_res:
-        if greeting_res.intent in {
-            "CONVERSATIONAL_CORRECTION", "FEEDBACK_DATA_ENRICHMENT",
-            "FEEDBACK_UI_ADJUSTMENT", "CONVERSATIONAL_FEEDBACK",
-            "GREETING_WELCOME", "GREETING_WELLBEING"
-        }:
-            session.set_active_medication(name="", ingredient="", sdk="")
-        return greeting_res
+    # Stage 1: Clinical text sanitization & modifier deconstruction
+    from app.services.chatbot.clinical_text_sanitizer import sanitize_clinical_input
+    sanitized_ctx = sanitize_clinical_input(query)
+    query = sanitized_ctx.clean_query
+    lower_query = query.lower()
 
-    out_scope = handle_out_of_scope_or_pricing(lower_query)
-    if out_scope:
-        session.set_active_medication(name="", ingredient="", sdk="")
-        return out_scope
+    # Dynamic Trie entity check from SQLite CSDL (55,000 DAV drugs & DĐVN V monographs)
+    matcher = get_drug_lexical_matcher()
+    has_known_med = bool(matcher.extract_medications(query) or matcher.extract_sdk(query) or resolve_registered_medications(lower_query))
+
+    # 1. First-line filter: Greetings, Thanks, Dissatisfaction/Corrections, Frivolous/Out-of-scope
+    if not has_known_med:
+        greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
+        if greeting_res:
+            if greeting_res.intent in {
+                "CONVERSATIONAL_CORRECTION", "FEEDBACK_DATA_ENRICHMENT",
+                "FEEDBACK_UI_ADJUSTMENT", "CONVERSATIONAL_FEEDBACK",
+                "GREETING_WELCOME", "GREETING_WELLBEING"
+            }:
+                session.set_active_medication(name="", ingredient="", sdk="")
+            return greeting_res
+
+        out_scope = handle_out_of_scope_or_pricing(lower_query)
+        if out_scope:
+            session.set_active_medication(name="", ingredient="", sdk="")
+            return out_scope
+
+    # Phân nhóm bệnh trĩ (Hemorrhoids) - Hướng dẫn điều trị nội khoa & Daflon
+    if any(w in lower_query for w in ("trĩ", "bệnh trĩ", "thuốc trị trĩ", "thuốc cho người bị trĩ")):
+        from app.services.chatbot.conversational_clinical_engine import (
+            find_clinical_specialty_consultation,
+            synthesize_specialty_response
+        )
+        specialty = find_clinical_specialty_consultation("bệnh trĩ")
+        if specialty:
+            return await synthesize_specialty_response(
+                query=query, knowledge=specialty, user_name=user_name, user_role=user_role, session_id=session_id
+            )
 
     # 2. SOTA RAG: CRAG Contextual Query Rewriter & Multi-turn Clinical De-contextualization
     from app.services.rag.query_rewriter import rewrite_clinical_query
@@ -236,10 +259,12 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     if subflow_res:
         return subflow_res
 
-    from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
-    spec_early = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
-    if spec_early:
-        return await synthesize_specialty_response(query, spec_early, user_name=user_name, user_role=user_role, session_id=session_id)
+    has_deictic_followup = bool(session.active_medication_name and any(w in lower_query for w in ("thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc trên", "thuốc có")))
+    if not has_deictic_followup and not has_candidate_drug and not explicit_named:
+        from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+        spec_early = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
+        if spec_early:
+            return await synthesize_specialty_response(query, spec_early, user_name=user_name, user_role=user_role, session_id=session_id)
 
     extracted_kw, resolved_meds = extract_drug_keywords(norm_query), resolve_registered_medications(norm_lower)
     matcher = get_drug_lexical_matcher()
@@ -356,10 +381,15 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         sc_res.reply_text = validate_output_guardrail(sc_res.reply_text, query)
         return sc_res
 
-    from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
-    spec_item = find_clinical_specialty_consultation(query)
-    if spec_item:
-        return await synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
+    is_deep_pharm = any(w in lower_query for w in [
+        "thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng",
+        "dị ứng chéo", "thải trừ", "sinh khả dụng"
+    ])
+    if not is_deep_complex and not is_deep_pharm:
+        from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response
+        spec_item = find_clinical_specialty_consultation(query)
+        if spec_item:
+            return await synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session_id)
 
     drug_cues = (
         "thông tin thuốc", "thông tin", "tra cứu thuốc", "thuốc ", "liều dùng", "liều lượng",
@@ -370,11 +400,6 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         "số lượng", "so luong", "tồn kho", "ton kho", "trong kho"
     )
     has_drug_ent = find_matched_med(lower_query) is not None or find_matched_med(norm_lower) is not None or active_in_query or any(alias in lower_query or alias in norm_lower for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", []) if len(alias) >= 4) or has_candidate_drug or bool(lex_meds)
-    
-    is_deep_pharm = any(w in lower_query for w in [
-        "thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng",
-        "dị ứng chéo", "thải trừ", "sinh khả dụng"
-    ])
 
     is_therapeutic_alternative = any(term in lower_query for term in (
         "đổi sang", "chuyển sang", "thay thế", "thay bằng", "đổi nhóm", "đổi thuốc", "lựa chọn thay thế"
@@ -426,10 +451,11 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
                 return sandwich_res
         return await lookup_drug_authoritative(norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role)
 
-    from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response, get_clinical_persona_greeting
-    spec_direct = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
-    if spec_direct:
-        return await synthesize_specialty_response(query, spec_direct, user_name=user_name, user_role=user_role, session_id=session_id)
+    if not is_deep_pharm and not is_deep_complex:
+        from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response, get_clinical_persona_greeting
+        spec_direct = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_query)
+        if spec_direct:
+            return await synthesize_specialty_response(query, spec_direct, user_name=user_name, user_role=user_role, session_id=session_id)
 
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
     if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:

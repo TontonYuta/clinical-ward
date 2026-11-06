@@ -103,7 +103,7 @@ async def handle_deep_rag_consultation(
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",
             reply_text=(
-                f"Dạ thưa {role_label}, để hỗ trợ chuyên môn chính xác nhất, {role_label} vui lòng nêu rõ tên thuốc (biệt dược hoặc hoạt chất), phác đồ bệnh lý hoặc nội dung chuyên môn cụ thể ạ.\n\n"
+                f"Dạ thưa {role_label}, do câu hỏi chưa xác định rõ thực thể lâm sàng, để hỗ trợ chuyên môn chính xác nhất, {role_label} vui lòng nêu rõ tên thuốc (biệt dược hoặc hoạt chất), phác đồ bệnh lý hoặc nội dung chuyên môn cụ thể ạ.\n\n"
                 "Tôi sẵn sàng hỗ trợ tra cứu về:\n"
                 "1. **Chuyên khảo thuốc:** Chỉ định, liều lượng, chống chỉ định chuẩn Dược thư Quốc gia Việt Nam.\n"
                 "2. **Tương tác thuốc (DDI):** Kiểm tra tương tác chống chỉ định theo QĐ 5948/QĐ-BYT.\n"

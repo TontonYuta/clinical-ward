@@ -134,10 +134,18 @@ def extract_clinical_query_schema_deterministic(
     # 3. Nhận diện các khía cạnh lâm sàng (Fields & Facets)
     target_facets: List[str] = []
 
-    if "chống chỉ định" in lower or "chong chi dinh" in norm or "cấm dùng" in lower:
+    if (
+        "chống chỉ định" in lower or "chong chi dinh" in norm or "cấm dùng" in lower or "không được dùng" in lower
+        or ((any(k in lower for k in ("có dùng được", "có uống được", "dùng được", "uống được")) or any(k in norm for k in ("co dung duoc", "co uong duoc", "dung duoc", "uong duoc"))) and ("không" in lower or "ko" in lower or "khong" in norm))
+    ):
         requested_fields.append("contraindications")
         target_facets.append("contraindications")
-    elif "chỉ định" in lower or "chi dinh" in norm or "công dụng" in lower:
+    elif (
+        any(k in lower for k in ("chỉ định", "công dụng", "dùng cho bệnh", "chữa bệnh", "trị bệnh", "điều trị", "dùng để làm gì", "tác dụng gì", "trị gì", "chữa gì"))
+        or "chi dinh" in norm
+        or "chua benh" in norm
+        or "dieu tri" in norm
+    ):
         requested_fields.append("indications")
         target_facets.append("indications")
 

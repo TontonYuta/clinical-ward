@@ -105,8 +105,9 @@ def score_clinical_intents(query: str) -> Dict[str, float]:
                 scores[intent] += weight
 
     # Xử lý quy tắc triệt tiêu (Priority Suppression):
-    # Nếu có chỉ dấu nhi khoa rõ rệt, hạ điểm adult_dosage nếu adult_dosage chỉ có điểm thấp
-    if scores["pediatric_dosage"] >= 2.0 and scores["adult_dosage"] <= 1.5:
+    # Nếu có chỉ dấu nhi khoa rõ rệt, ưu tiên pediatric_dosage tuyệt đối trước adult_dosage
+    if scores["pediatric_dosage"] >= 2.0:
+        scores["pediatric_dosage"] += scores["adult_dosage"]
         scores["adult_dosage"] = 0.0
 
     # Nếu có chỉ dấu suy thận rõ rệt, ưu tiên renal_adjustment

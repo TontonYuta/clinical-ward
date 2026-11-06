@@ -35,7 +35,9 @@ COMMON_EXCLUSIONS: Set[str] = {
     "chuẩn", "chuan", "chi", "nhân", "nhan", "đối", "doi", "quy", "định", "dinh", "thông", "tư", "tu", "nghị", "nghi", "điều", "dieu", "khoa", "phòng", "phong", "toàn", "văn", "van",
     "mang", "gửi", "gui", "giảm", "giam", "loét", "loet", "nấm", "nam", "miệng", "mieng", "tai", "mũi", "họng", "hong", "khớp", "khop", "trĩ", "tri", "ngủ", "ngu",
     "đồng nghiệp", "dong nghiep", "kính gửi", "kinh gui", "tư vấn", "tu van", "chuyên môn", "chuyen mon", "hỗ trợ", "ho tro",
-    "khan", "ho", "ho khan", "nhom", "nhóm", "đặc", "dac", "loãng", "loang", "bột", "bot", "tinh thể", "dung dịch", "hỗn dịch", "nhũ tương"
+    "khan", "ho", "ho khan", "nhom", "nhóm", "đặc", "dac", "loãng", "loang", "bột", "bot", "tinh thể", "dung dịch", "hỗn dịch", "nhũ tương",
+    "thuốc đó", "thuoc do", "thuốc này", "thuoc nay", "thuốc kia", "thuoc kia", "thuốc trên", "thuoc tren",
+    "thuốc ấy", "thuoc ay", "thuốc đấy", "thuoc day", "thuốc vừa nói", "thuoc vua noi", "thuốc vừa rồi", "thuoc vua roi", "thuốc nọ", "thuoc no"
 }
 
 class TrieNode:
@@ -77,8 +79,9 @@ class DrugLexicalMatcher:
                     node.children[char] = TrieNode()
                 node = node.children[char]
             node.is_end = True
-            node.canonical = canonical
-            node.entity_type = entity_type
+            if not node.canonical or (any(c.isupper() for c in canonical) and not any(c.isupper() for c in node.canonical)):
+                node.canonical = canonical
+                node.entity_type = entity_type
 
     def load_from_db(self, db_path: Optional[str] = None) -> None:
         if self._is_loaded:
@@ -123,7 +126,7 @@ class DrugLexicalMatcher:
                     self.insert(inn, disp, "ingredient")
                     for alias in meta.get("aliases", []):
                         if len(alias) >= 3 and alias.lower() not in COMMON_EXCLUSIONS:
-                            self.insert(alias, disp, "brand")
+                            self.insert(alias, alias, "brand")
             except Exception:
                 pass
 
@@ -160,6 +163,17 @@ class DrugLexicalMatcher:
                             longest = (i, j + 1, node.canonical or "", node.entity_type or "")
                     j += 1
                 if longest and len(longest[2]) >= 3 and longest[2].lower() not in COMMON_EXCLUSIONS:
+                    matched_slice = src[longest[0]:longest[1]].lower()
+                    original_slice = text_norm[longest[0]:longest[1]].lower()
+                    if matched_slice in COMMON_EXCLUSIONS or original_slice in COMMON_EXCLUSIONS:
+                        continue
+                    if (
+                        src is text_unacc
+                        and strip_accents(original_slice) != original_slice
+                        and strip_accents(longest[2]) != longest[2].lower()
+                        and original_slice != longest[2].lower()
+                    ):
+                        continue
                     if longest[2].lower() in ("nhân trần", "nhan tran") and src[:longest[0]].rstrip().endswith(("bệnh", "benh")):
                         pass
                     else:

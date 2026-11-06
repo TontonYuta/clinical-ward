@@ -26,6 +26,7 @@ class SlicedClinicalEvidence:
     target_facets: List[str]
     core_indication: str = ""
     core_adult_dose: str = ""
+    core_pediatric_dose: str = ""
     core_contraindication: str = ""
     facet_evidence: Dict[str, str] = field(default_factory=dict)
     raw_citations: List[Dict[str, Any]] = field(default_factory=list)
@@ -106,7 +107,11 @@ async def slice_clinical_drug_evidence(
 
     query_depth = analysis.query_depth
     target_facets = analysis.target_facets
-    source_label = (monograph.source if monograph and monograph.source else matched.clinical_source) or "Dược thư Quốc gia Việt Nam"
+    source_label = (
+        (monograph.source if monograph and monograph.source else matched.clinical_source)
+        if (monograph or matched.clinical_source)
+        else "Cục Quản lý Dược Việt Nam (Bộ Y Tế)"
+    )
 
     evidence = SlicedClinicalEvidence(
         drug_name=clean_brand,
@@ -124,10 +129,12 @@ async def slice_clinical_drug_evidence(
     # 1. Bóc tách thông tin cho OVERVIEW
     raw_ind = (monograph.indications if monograph else None) or matched.indications or ""
     raw_dose = (monograph.adult_dosage if monograph else None) or matched.adult_dosage or ""
+    raw_ped = (monograph.pediatric_dosage if monograph else None) or getattr(matched, "pediatric_dosage", None) or ""
     raw_contra = (monograph.contraindications if monograph else None) or matched.contraindications or ""
 
     evidence.core_indication = _extract_core_bullets(raw_ind, max_items=1) or "Theo chỉ định lâm sàng của bác sĩ điều trị."
     evidence.core_adult_dose = _extract_core_bullets(raw_dose, max_items=1) or "Tuân thủ liều lượng khuyến cáo chuyên khoa."
+    evidence.core_pediatric_dose = _extract_core_bullets(raw_ped, max_items=1) or "Tính liều theo cân nặng (mg/kg) theo hướng dẫn chuyên khoa nhi."
     evidence.core_contraindication = _extract_core_bullets(raw_contra, max_items=1) or "Mẫn cảm với bất kỳ thành phần nào của thuốc."
 
     # 2. Bóc tách dữ liệu cho DEEP_FACET

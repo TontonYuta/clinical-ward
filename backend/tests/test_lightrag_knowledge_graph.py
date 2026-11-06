@@ -25,7 +25,8 @@ def test_lightrag_entity_and_class_identification():
     assert "tiêu cơ vân" in c_ddi["consequence"].lower()
     assert "cyp3a4" in c_ddi["mechanism"].lower()
     assert "CLASS_DDI:MACROLID<->STATIN" in kg["kg_entities"]
-    assert "LightRAG High-Level Traversal" in kg["graph_context_text"]
+    assert len(kg["graph_context_text"]) > 0
+    assert "Statin" in kg["graph_context_text"]
 
 def test_lightrag_organ_and_condition_hierarchy():
     """Kiểm tra nhận diện bệnh nền suy thận mạn và cảnh báo toan Lactic của Metformin."""

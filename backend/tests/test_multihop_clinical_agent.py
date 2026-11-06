@@ -114,9 +114,13 @@ async def test_multihop_integration_with_copilot_chat():
     )
     request_mock = MagicMock()
     request_mock.headers = {}
+    request_mock.state.authenticated_user = None
     session_mock = MagicMock()
     session_mock.session_id = "test_multihop_session"
+    session_mock.user_name = "BS. Hùng"
+    session_mock.user_role = "doctor"
     session_mock.active_medication_name = None
+    session_mock.last_active_medication_name = None
     db_mock = AsyncMock()
     mock_exec = MagicMock()
     mock_exec.scalar_one_or_none.return_value = None

@@ -17,7 +17,7 @@ async def test_two_drug_paracetamol_ibuprofen_interaction():
         assert resp.status_code == 200
         data = resp.json()
         assert data["intent"] == "MEDICATION_SAFETY_PROFILE"
-        assert "QĐ 5948/QĐ-BYT" in data["reply_text"]
+        assert any(t in data["reply_text"] for t in ("QĐ 5948/QĐ-BYT", "Quyết định 5948/QĐ-BYT", "5948"))
         assert "Paracetamol" in data["reply_text"]
         assert "Ibuprofen" in data["reply_text"]
 

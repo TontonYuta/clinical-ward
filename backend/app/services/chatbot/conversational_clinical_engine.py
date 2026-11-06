@@ -1181,6 +1181,19 @@ SPECIALTY_CLINICAL_KNOWLEDGE = [
         "legal": "Hướng dẫn Điều trị Nhi khoa Bộ Y tế & Hướng dẫn Sử dụng Kháng sinh Sơ sinh Neofax"
     },
     {
+        "keywords": ["trĩ", "bệnh trĩ", "thuốc trị trĩ", "thuốc cho người bị trĩ", "điều trị trĩ", "thuốc trĩ", "búi trĩ", "daflon", "rutin"],
+        "topic": "Hướng dẫn điều trị bệnh trĩ nội khoa & Sử dụng thuốc an toàn",
+        "bluf": "Điều trị nội khoa bệnh trĩ tập trung vào thuốc trợ tĩnh mạch (Daflon, Rutin), thuốc bôi/đặt tại chỗ giảm đau chống viêm, kết hợp thuốc nhuận tràng làm mềm phân và chế độ ăn giàu chất xơ chống táo bón.",
+        "details": [
+            "• **Thuốc uống trợ tĩnh mạch:** Daflon (phân đoạn Flavonoid vi hạt tinh chế: Diosmin 90% + Hesperidin 10% - SĐK DAV: VN-19597-16). Liều đợt trĩ cấp: 6 viên 500mg (hoặc 3 viên 1000mg)/ngày trong 4 ngày đầu, sau đó 4 viên 500mg/ngày trong 3 ngày tiếp theo; liều duy trì 2 viên 500mg/ngày.",
+            "• **Thuốc bôi & viên đặt tại chỗ:** Sử dụng thuốc mỡ hoặc viên đạn đặt hậu môn chứa chất gây tê tại chỗ (Lidocain), chất chống co thắt và bảo vệ niêm mạc (như Titanoreine, Proctolog) dùng 1 - 2 lần/ngày sau khi vệ sinh sạch sẽ để cắt cơn đau rát và ngứa.",
+            "• **Thuốc nhuận tràng làm mềm phân:** Sử dụng thuốc nhuận tràng thẩm thấu (Macrogol 4000/PEG hoặc Lactulose) để phân mềm, ngăn chặn tuyệt đối rặn mạnh gây tổn thương và xung huyết thêm búi trĩ.",
+            "• **Biện pháp hỗ trợ không dùng thuốc:** Ngâm hậu môn nước ấm 10 - 15 phút sau đại tiện, uống tối thiểu 2 - 2.5 lít nước/ngày, bổ sung 25 - 30g chất xơ/ngày, tránh ngồi xổm hoặc ngồi bất động quá lâu."
+        ],
+        "warnings": "Cần đến khám chuyên khoa ngoại tiêu hóa ngay nếu trĩ độ 3 - 4 có sa búi trĩ nghẹt, tắc mạch búi trĩ gây đau dữ dội, hoặc đại tiện ra máu đỏ tươi ồ ạt kéo dài gây thiếu máu.",
+        "legal": "Hướng dẫn Chẩn đoán & Điều trị Bệnh Trĩ - Hội Khoa học Tiêu hóa Việt Nam & DĐVN V"
+    },
+    {
         "keywords": ["trĩ", "phụ nữ mang thai", "thai kỳ", "bà bầu", "daflon", "điều trị trĩ"],
         "topic": "Hướng dẫn điều trị bệnh trĩ an toàn ở phụ nữ mang thai",
         "bluf": "Ở phụ nữ mang thai mắc bệnh trĩ, ưu tiên hàng đầu là các biện pháp không dùng thuốc (tăng cường chất xơ, uống đủ nước, ngâm hậu môn nước ấm); nếu triệu chứng nặng, có thể sử dụng Daflon ngắn hạn hoặc thuốc mỡ/viên đặt tại chỗ làm dịu.",
@@ -1356,7 +1369,7 @@ TOPIC_ANCHORS: Dict[str, List[str]] = {
     'Sốt cao ác tính (Malignant Hyperthermia) do Succinylcholine và Dantrolene': ['sốt cao ác tính', 'dantrolene', 'succinylcholine'],
     'Phác đồ cấp cứu ngộ độc thuốc trừ sâu Phospho hữu cơ (Atropin & PAM)': ['phospho hữu cơ', 'thuốc trừ sâu'],
     'Phác đồ cấp cứu sốc phản vệ theo Thông tư 51/2017/TT-BYT': ['phản vệ', 'thông tư 51', 'tt 51'],
-    'Quy chế quản lý và bảo quản thuốc gây nghiện theo Thông tư 20/2017/TT-BYT': ['thông tư 20', 'tt 20', 'gây nghiện'],
+    'Quy chế quản lý và bảo quản thuốc gây nghiện theo Thông tư 20/2017/TT-BYT': ['thông tư 20', 'tt 20', 'quản lý thuốc gây nghiện', 'bảo quản thuốc gây nghiện', 'quy chế thuốc gây nghiện'],
     'Quy tắc xuất kho FEFO (First Expired, First Out) theo Thông tư 36/2018/TT-BYT GSP': ['fefo', 'thông tư 36', 'tt 36'],
     'Tiêu chuẩn nhiệt độ bảo quản Chuỗi lạnh (Cold Chain) vắc xin theo WHO & GSP': ['chuỗi lạnh', 'cold chain'],
     'Quy trình thẩm định đơn thuốc theo Thông tư 26/2025/TT-BYT và Thông tư 52/2017': ['thông tư 26', 'tt 26', 'thẩm định đơn'],
@@ -1390,7 +1403,8 @@ TOPIC_ANCHORS: Dict[str, List[str]] = {
     'Chỉ định và phác đồ Magie Sulfat (MgSO4) dự phòng và cắt cơn co giật sản giật': ['magie sulfat', 'magnesium sulfate', 'tiền sản giật', 'sản giật'],
     'Lựa chọn siro ho và thuốc hạ sốt an toàn cho trẻ sơ sinh và trẻ nhỏ': ['siro ho', 'thảo dược', 'mật ong'],
     'Nguyên tắc sử dụng kháng sinh Aminoglycosid (Gentamicin, Amikacin) ở trẻ sơ sinh nhiễm khuẩn huyết': ['aminoglycosid', 'gentamicin', 'amikacin', 'trẻ sơ sinh'],
-    'Hướng dẫn điều trị bệnh trĩ an toàn ở phụ nữ mang thai': ['trĩ', 'daflon'],
+    'Hướng dẫn điều trị bệnh trĩ nội khoa & Sử dụng thuốc an toàn': ['trĩ', 'bệnh trĩ', 'tri'],
+    'Hướng dẫn điều trị bệnh trĩ an toàn ở phụ nữ mang thai': ['trĩ', 'daflon', 'mang thai', 'thai kỳ', 'bà bầu'],
     'Nguyên tắc vàng sử dụng thuốc ở người cao tuổi: Bắt đầu liều thấp, tăng chậm rãi (Start low, go slow)': ['người cao tuổi', 'start low', 'người già', 'lão khoa'],
     'Lựa chọn thuốc an thần gây ngủ an toàn và hạn chế tối đa nguy cơ té ngã ở người cao tuổi': ['an thần', 'té ngã', 'melatonin', 'mất ngủ'],
     'Chăm sóc giảm nhẹ và quản lý đau trong ung thư theo WHO': ['giảm nhẹ', 'ung thư', 'giảm đau', 'palliative'],
@@ -1402,12 +1416,16 @@ TOPIC_ANCHORS: Dict[str, List[str]] = {
 }
 
 def find_clinical_specialty_consultation(query: str) -> Optional[Dict[str, Any]]:
-    # Try normalized query as well as raw
+    # Try normalized query as well as raw and unaccented
     from app.services.chatbot.copilot_orchestrator import normalize_conversational_query
+    from app.services.chatbot.clinical_schema_extractor import _normalize_str
     q_candidates = [query.lower()]
     norm = normalize_conversational_query(query).lower()
     if norm != q_candidates[0]:
         q_candidates.append(norm)
+    unacc = _normalize_str(query).lower()
+    if unacc not in q_candidates:
+        q_candidates.append(unacc)
 
     best_item = None
     best_score = 0

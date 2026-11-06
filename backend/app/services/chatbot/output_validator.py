@@ -29,7 +29,35 @@ def validate_grounded_reply(
         )
         return safe_reply, [], False
 
+    # Prevent antimalarial drift when antipyretics are queried without explicit malaria mention
+    is_fever_query = any(k in query_lower for k in ("hạ sốt", "thuốc hạ sốt", "giảm sốt", "trị sốt", "uống thuốc hạ sốt", "sốt cao", "thân nhiệt"))
+    is_malaria_query = any(k in query_lower for k in ("sốt rét", "malaria", "plasmodium", "ký sinh trùng sốt rét"))
+    contains_antimalarial = any(
+        d in ("artemether", "artemisinin", "artesunat", "chloroquine", "hydroxychloroquine", "quinine")
+        for d in reply_drugs
+    ) or any(w in reply_lower for w in ("thuốc chống sốt rét", "diệt thể phân liệt", "plasmodium", "artemether"))
+
+    if is_fever_query and not is_malaria_query and contains_antimalarial:
+        safe_reply = (
+            "Dạ thưa Bác sĩ, nội dung tra cứu liên quan đến **thuốc hạ sốt thông thường (antipyretics)**. "
+            "Tài liệu truy xuất là **thuốc chống sốt rét (antimalarials)**, không phù hợp về mặt chỉ định lâm sàng cho hạ sốt thông thường.\n\n"
+            "Theo **Dược thư Quốc gia Việt Nam (DĐVN V)**, các thuốc hạ sốt an toàn được khuyến cáo bao gồm:\n"
+            "• **Paracetamol (Acetaminophen):** Lựa chọn đầu tay hạ sốt giảm đau an toàn cho người lớn (500 - 1000mg/lần, tối đa 4g/ngày) và trẻ em (10 - 15 mg/kg/lần).\n"
+            "• **Ibuprofen (NSAID):** Lựa chọn thay thế khi cần kháng viêm, nhưng **tuyệt đối không dùng khi nghi ngờ Sốt xuất huyết Dengue (QĐ 2760/QĐ-BYT)** do nguy cơ xuất huyết tiêu hóa ồ ạt.\n\n"
+            "🔗 **Nguồn đối chứng:** Dược thư Quốc gia Việt Nam (DĐVN V) - Chuyên luận Paracetamol & Ibuprofen."
+        )
+        return safe_reply, [], False
+
     if not target_drug_keys:
+        # Prevent ungrounded dumping of a single drug monograph when query intent doesn't match
+        if "### chỉ định & liều dùng:" in reply_lower:
+            core_intent_terms = [w for w in ("hạ sốt", "sốt", "đau đầu", "đau bụng", "dị ứng", "trĩ", "kháng sinh") if w in query_lower]
+            if core_intent_terms and not any(t in reply_lower for t in core_intent_terms):
+                safe_reply = (
+                    "Chưa tìm thấy tài liệu hướng dẫn chuyên môn phù hợp cho nội dung tra cứu này trong nguồn tri thức đang lập chỉ mục.\n"
+                    "Vui lòng tham khảo phác đồ điều trị chuyên khoa của Bộ Y tế hoặc xin ý kiến dược sĩ lâm sàng."
+                )
+                return safe_reply, [], False
         return reply_text, citations, True
 
     valid_citations = []
