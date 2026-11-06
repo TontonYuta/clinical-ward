@@ -180,6 +180,33 @@ def execute_production_suite() -> tuple[int, int, list[str]]:
                 failures.append(f"[{tc['id']}] Exception: {e}")
     return passed, len(PRODUCTION_TESTS), failures
 
+def verify_option_a_drug_registry() -> bool:
+    print("💊 Verifying Option A Drug Registry endpoint on Production...")
+    with httpx.Client(timeout=20.0) as client:
+        # 1. Paracetamol 893100110026
+        res = client.get(f"{BASE_URL}/api/v1/registry/893100110026", headers={"Cache-Control": "no-cache"})
+        if res.status_code != 200:
+            print(f"❌ Failed to fetch Paracetamol: HTTP {res.status_code}")
+            return False
+        item = res.json()
+        pharm = item.get("pharmacology")
+        if not pharm or not pharm.get("pharmacokinetics"):
+            print("❌ Missing pharmacology/pharmacokinetics on Paracetamol")
+            return False
+        print(f"  ✅ Paracetamol PK Half-life: {pharm.get('pharmacokinetics', {}).get('half_life')}")
+
+        # 2. Ceftriaxone VD-20000-13 incompatibilities
+        res2 = client.get(f"{BASE_URL}/api/v1/registry/VD-20000-13", headers={"Cache-Control": "no-cache"})
+        if res2.status_code == 200:
+            item2 = res2.json()
+            safety = item2.get("safety", {})
+            incomp = safety.get("incompatibilities") or item2.get("incompatibilities") or safety.get("tuong_ky")
+            if incomp and "calci" in str(incomp).lower():
+                print(f"  ✅ Ceftriaxone Incompatibilities verified (Calcium warning present)")
+
+        print("🎉 Option A Drug Registry endpoint verified on Production!")
+        return True
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--expected-commit", default=None, help="Target git commit SHA to wait for")
@@ -190,8 +217,9 @@ if __name__ == "__main__":
         print(f"\n❌ [CRITICAL DEPLOY FAILURE] Render did not deploy '{args.expected_commit[:7]}'. Check Render Dashboard.")
         sys.exit(1)
 
+    reg_ok = verify_option_a_drug_registry()
     p, total, errs = execute_production_suite()
     print(f"\n📊 Production Verification Score: {p}/{total} ({(p/total)*100:.1f}%)")
     for e in errs:
         print(f"  ❌ {e}")
-    sys.exit(0 if p == total else 1)
+    sys.exit(0 if (p == total and reg_ok) else 1)
