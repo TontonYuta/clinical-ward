@@ -84,11 +84,11 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
         <div className="overflow-x-auto overflow-y-auto flex-1 w-full">
           <table className="w-full min-w-[1420px] table-fixed text-left text-sm border-collapse">
             <colgroup>
-              <col style={{ width: '55px' }} />
-              <col style={{ width: '230px' }} />
-              <col style={{ width: '250px' }} />
-              <col style={{ width: '230px' }} />
+              <col style={{ width: '50px' }} />
               <col style={{ width: '190px' }} />
+              <col style={{ width: '180px' }} />
+              <col style={{ width: '360px' }} />
+              <col style={{ width: '180px' }} />
               <col style={{ minWidth: '460px' }} />
             </colgroup>
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-700">
