@@ -245,7 +245,12 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           </div>
         </div>
       </div>
-      <DavDrugDetailModal isOpen={!!selectedDrugForDav} onClose={() => setSelectedDrugForDav(null)} drug={selectedDrugForDav} />
+      <DavDrugDetailModal
+        key={selectedDrugForDav?.nationalCode || selectedDrugForDav?.id || 'dav-registry-modal'}
+        isOpen={!!selectedDrugForDav}
+        onClose={() => setSelectedDrugForDav(null)}
+        drug={selectedDrugForDav}
+      />
     </div>
   );
 };

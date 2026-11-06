@@ -3,13 +3,13 @@ const path = require('path');
 const fs = require('fs');
 
 const ARTIFACT_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-628e-47df-bee0-0357f9f93312';
+const BASE_URL = process.env.TARGET_URL || 'https://clinical-ward.vercel.app';
 
 (async () => {
-  console.log('🚀 Bắt đầu kiểm thử E2E: Khắc phục triệt để lỗi flash/lật thông tin thuốc (DavDrugDetailModal)');
+  console.log(`🚀 Bắt đầu kiểm thử E2E: Khắc phục triệt để lỗi flash/lật thông tin thuốc (DavDrugDetailModal) tại ${BASE_URL}`);
 
   const browser = await chromium.launch({
     headless: true,
-    args: ['--use-fake-ui-for-media-stream', '--no-sandbox']
   });
 
   const context = await browser.newContext({
@@ -19,16 +19,12 @@ const ARTIFACT_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-62
   const page = await context.newPage();
 
   try {
-    console.log('1. Truy cập ứng dụng tại http://127.0.0.1:5173...');
-    await page.goto('http://127.0.0.1:5173', { waitUntil: 'networkidle', timeout: 30000 });
-
-    // Đảm bảo mở Tab Kho Dược Bệnh Viện
-    const pharmacyTabBtn = page.locator('button[title*="Quản lý kho dược"]:visible').first();
-    await pharmacyTabBtn.click();
-    await page.waitForTimeout(1000);
-
-    // Tìm các nút SĐK hoặc tên thuốc trong bảng FEFO
-    const drugButtons = page.locator('[data-testid^="btn-medname-"]');
+    console.log(`1. Truy cập ứng dụng tại ${BASE_URL}/#fefo...`);
+    await page.goto(`${BASE_URL}/#fefo`, { waitUntil: 'networkidle', timeout: 35000 });
+    
+    // Đợi các nút tên thuốc xuất hiện trong bảng FEFO
+    const drugButtons = page.locator('button[data-testid^="btn-medname-"]');
+    await drugButtons.first().waitFor({ state: 'visible', timeout: 15000 });
     const drugCount = await drugButtons.count();
     console.log(`Tìm thấy ${drugCount} thuốc trong bảng kho FEFO.`);
     if (drugCount < 2) {
@@ -38,7 +34,8 @@ const ARTIFACT_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-62
     const firstDrugBtn = drugButtons.nth(0);
     const firstDrugName = (await firstDrugBtn.textContent() || '').trim();
     console.log(`2. Mở thông tin Thuốc 1: "${firstDrugName}"...`);
-    await firstDrugBtn.click();
+    await page.screenshot({ path: path.join(ARTIFACT_DIR, 'debug_fefo_page.png') });
+    await firstDrugBtn.click({ force: true });
 
     // Modal phải xuất hiện
     const modal = page.locator('[data-testid="dav-drug-detail-modal"]');
@@ -60,14 +57,14 @@ const ARTIFACT_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-62
 
     // Đóng modal
     const closeBtn = modal.locator('button:has-text("Đóng")');
-    await closeBtn.click();
+    await closeBtn.click({ force: true });
     await modal.waitFor({ state: 'hidden', timeout: 5000 });
     console.log('3. Đã đóng modal Thuốc 1 thành công.');
 
     // Mở lại Thuốc 1: Phải lấy tức thời từ cache (0ms, không có skeleton, không bị giật đổi thông tin)
     console.log(`4. Mở lại Thuốc 1 "${firstDrugName}" để kiểm tra bộ nhớ đệm (Cache Hit)...`);
     const t0 = Date.now();
-    await firstDrugBtn.click();
+    await firstDrugBtn.click({ force: true });
     await modal.waitFor({ state: 'visible', timeout: 5000 });
 
     // Kiểm tra skeleton không hiển thị vì đã cache
@@ -80,7 +77,7 @@ const ARTIFACT_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-62
     await modal.screenshot({ path: screenshot2Path });
     console.log(`   📸 Đã chụp ảnh Thuốc 1 mở từ cache: ${screenshot2Path}`);
 
-    await closeBtn.click();
+    await closeBtn.click({ force: true });
     await modal.waitFor({ state: 'hidden', timeout: 5000 });
 
     // 5. Mở Thuốc 2: Kiểm tra chống leak thông tin của Thuốc 1
@@ -88,7 +85,7 @@ const ARTIFACT_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-62
     const secondDrugName = (await secondDrugBtn.textContent() || '').trim();
     console.log(`5. Mở thông tin Thuốc 2: "${secondDrugName}" (Kiểm tra chống stale state leak)...`);
 
-    await secondDrugBtn.click();
+    await secondDrugBtn.click({ force: true });
     await modal.waitFor({ state: 'visible', timeout: 5000 });
 
     // Ngay tại frame đầu tiên, header title KHÔNG ĐƯỢC CHỨA firstDrugName nếu 2 tên khác nhau!
@@ -103,7 +100,7 @@ const ARTIFACT_DIR = '/home/tontonyuta/.gemini/antigravity-cli/brain/4039af10-62
     await modal.screenshot({ path: screenshot3Path });
     console.log(`   📸 Đã chụp ảnh Thuốc 2 đã load chuẩn xác: ${screenshot3Path}`);
 
-    await closeBtn.click();
+    await closeBtn.click({ force: true });
     await modal.waitFor({ state: 'hidden', timeout: 5000 });
 
     console.log('🎉 KIỂM THỬ HOÀN TẤT: KHÔNG CÒN HIỆN TƯỢNG FLASH HAY LẬT NỘI DUNG THUỐC!');

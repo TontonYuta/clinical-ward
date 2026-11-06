@@ -155,9 +155,14 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     is_controlled: batch.isControlledSubstance,
   } : null;
 
+  const initialHasFull = Boolean(
+    (initialCached && (initialCached.pharmacodynamics || initialCached.indications || initialCached.clinical_monograph_id)) ||
+    (drug && (drug.pharmacodynamics || drug.indications || drug.clinical_monograph_id))
+  );
+
   const [currentSdk, setCurrentSdk] = useState(sdk);
   const [liveDrug, setLiveDrug] = useState<any>(initialCached || drug || fallbackFromBatch);
-  const [loadingDetail, setLoadingDetail] = useState<boolean>(() => !initialCached && !drug?.indications && sdk !== 'Chưa cập nhật' && isOpen);
+  const [loadingDetail, setLoadingDetail] = useState<boolean>(() => !initialHasFull && sdk !== 'Chưa cập nhật' && isOpen);
   const [activeTab, setActiveTab] = useState<DrugDetailTab>('overview');
 
   // Khắc phục triệt để lỗi flash dữ liệu cũ: Khởi tạo ngay lập tức dữ liệu thuốc mới trong render phase (0ms)
@@ -165,8 +170,11 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     setCurrentSdk(sdk);
     const cached = getCachedDrugDetail(sdk);
     setLiveDrug(cached || drug || fallbackFromBatch || null);
-    const hasFull = Boolean(cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id));
-    setLoadingDetail(!hasFull && !drug?.indications && sdk !== 'Chưa cập nhật' && isOpen);
+    const hasFull = Boolean(
+      (cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id)) ||
+      (drug && (drug.pharmacodynamics || drug.indications || drug.clinical_monograph_id))
+    );
+    setLoadingDetail(!hasFull && sdk !== 'Chưa cập nhật' && isOpen);
   }
 
   const loadDetails = (isManual = false) => {
@@ -210,9 +218,22 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
 
   const c = (k: string) => liveDrug?.[k] ?? (batch as any)?.[k] ?? (drug as any)?.[k];
   const profile = getMedicationClinicalProfile(batch?.id || sdk || itemName || activeInn, (drug || batch) as any);
+  const liveSource = liveDrug?.clinical_source || liveDrug?.clinicalSource;
+  const hasLinkedMonograph = Boolean(
+    liveDrug?.clinical_monograph_id ||
+    liveDrug?.clinicalMonographId ||
+    liveDrug?.pharmacodynamics ||
+    liveDrug?.indications
+  );
+  const isVerified = Boolean(hasLinkedMonograph || (liveSource?.includes('Duoc_Thu_Quoc_Gia_Viet_Nam.pdf') && /Trang\s+\d+/.test(liveSource)))
+    || (!loadingDetail && profile.isVerifiedMonograph === true);
+
+  // TRIỆT TIÊU HOÀN TOÀN NHÁY DỮ LIỆU CŨ: Tuyệt đối không nạp fallback mock profile khi đang tải dữ liệu hoặc khi đã có dữ liệu chuyên luận thật từ máy chủ
+  const allowFallback = !loadingDetail && !hasLinkedMonograph && profile.isVerifiedMonograph === true;
+
   let resolvedSource = c('clinical_source') || c('clinicalSource');
   if (!resolvedSource || !resolvedSource.includes('Trang')) {
-    if (profile?.officialSource?.pdfPage) {
+    if (allowFallback && profile?.officialSource?.pdfPage) {
       resolvedSource = `${profile.officialSource.documentName}, Trang ${profile.officialSource.pdfPage} • Tệp: ${profile.officialSource.pdfDocument || 'Duoc_Thu_Quoc_Gia_Viet_Nam.pdf'}`;
     }
   }
@@ -235,36 +256,30 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     approvalDecision: c('approval_decision') || c('approvalDecision'),
   };
 
-  const liveSource = liveDrug?.clinical_source || liveDrug?.clinicalSource;
-  const hasLinkedMonograph = Boolean(liveDrug?.clinical_monograph_id || liveDrug?.clinicalMonographId);
-  const isVerified = Boolean(hasLinkedMonograph || (liveSource?.includes('Duoc_Thu_Quoc_Gia_Viet_Nam.pdf') && /Trang\s+\d+/.test(liveSource)))
-    || profile.isVerifiedMonograph === true;
-
-  const clinical = (key: string, camelKey?: string) => isVerified
-    ? (liveDrug?.[key] ?? (camelKey ? liveDrug?.[camelKey] : undefined) ?? (camelKey ? (drug as any)?.[camelKey] : undefined) ?? (drug as any)?.[key])
-    : undefined;
+  const clinical = (key: string, camelKey?: string) =>
+    (liveDrug?.[key] ?? (camelKey ? liveDrug?.[camelKey] : undefined) ?? (camelKey ? (drug as any)?.[camelKey] : undefined) ?? (drug as any)?.[key]);
 
   const clinicalData = {
-    atcCode: clinical('atc_code', 'atcCode') || (isVerified ? profile?.atcCode : undefined),
-    drugClass: clinical('drug_class', 'drugClass') || (profile.isVerifiedMonograph === true ? profile?.allergyProfile?.allergyClass : undefined),
+    atcCode: clinical('atc_code', 'atcCode') || (isVerified ? (allowFallback ? profile?.atcCode : undefined) : undefined),
+    drugClass: clinical('drug_class', 'drugClass') || (allowFallback ? profile?.allergyProfile?.allergyClass : undefined),
     pharmacodynamics: clinical('pharmacodynamics', 'pharmacodynamics'),
     pharmacokinetics: clinical('pharmacokinetics', 'pharmacokinetics'),
-    indications: clinical('indications') || (profile.isVerifiedMonograph === true ? profile?.indications?.join('\n') : undefined),
-    contraindications: clinical('contraindications') || (profile.isVerifiedMonograph === true ? profile?.contraindications?.join('\n') : undefined),
-    precautions: clinical('precautions') || (profile.isVerifiedMonograph === true ? profile?.patientVerificationChecklist?.join('\n') : undefined),
-    pregnancyWarning: clinical('pregnancy_warning', 'pregnancyWarning') || (profile.isVerifiedMonograph === true ? profile?.pregnancyLactation : undefined),
+    indications: clinical('indications') || (allowFallback ? profile?.indications?.join('\n') : undefined),
+    contraindications: clinical('contraindications') || (allowFallback ? profile?.contraindications?.join('\n') : undefined),
+    precautions: clinical('precautions') || (allowFallback ? profile?.patientVerificationChecklist?.join('\n') : undefined),
+    pregnancyWarning: clinical('pregnancy_warning', 'pregnancyWarning') || (allowFallback ? profile?.pregnancyLactation : undefined),
     lactationWarning: clinical('lactation_warning', 'lactationWarning'),
-    adultDosage: clinical('adult_dosage', 'adultDosage') || (profile.isVerifiedMonograph === true ? profile?.standardDosing : undefined),
+    adultDosage: clinical('adult_dosage', 'adultDosage') || (allowFallback ? profile?.standardDosing : undefined),
     pediatricDosage: clinical('pediatric_dosage', 'pediatricDosage'),
-    renalAdjustment: clinical('renal_adjustment', 'renalAdjustment') || (profile.isVerifiedMonograph === true ? profile?.renalAdjustment : undefined),
-    hepaticAdjustment: clinical('hepatic_adjustment', 'hepaticAdjustment') || (profile.isVerifiedMonograph === true ? profile?.hepaticAdjustment : undefined),
-    adverseEffects: clinical('adverse_effects', 'adverseEffects') || (profile.isVerifiedMonograph === true ? profile?.adverseReactions?.join('\n') : undefined),
+    renalAdjustment: clinical('renal_adjustment', 'renalAdjustment') || (allowFallback ? profile?.renalAdjustment : undefined),
+    hepaticAdjustment: clinical('hepatic_adjustment', 'hepaticAdjustment') || (allowFallback ? profile?.hepaticAdjustment : undefined),
+    adverseEffects: clinical('adverse_effects', 'adverseEffects') || (allowFallback ? profile?.adverseReactions?.join('\n') : undefined),
     adrManagement: clinical('adr_management', 'adrManagement'),
-    drugInteractions: clinical('drug_interactions', 'drugInteractions') || (profile.isVerifiedMonograph === true ? profile?.ddiWarnings?.join('\n') : undefined),
+    drugInteractions: clinical('drug_interactions', 'drugInteractions') || (allowFallback ? profile?.ddiWarnings?.join('\n') : undefined),
     incompatibilities: clinical('incompatibilities', 'incompatibilities'),
     storageStability: clinical('storage_stability', 'storageStability'),
     overdoseTreatment: clinical('overdose_treatment', 'overdoseTreatment'),
-    antidote: clinical('antidote') || (profile.isVerifiedMonograph === true ? profile?.antidote : undefined),
+    antidote: clinical('antidote') || (allowFallback ? profile?.antidote : undefined),
     clinicalSource: isVerified ? resolvedSource : (c('clinical_source') || c('clinicalSource') || `Hồ sơ cấp phép Cục Quản lý Dược (SĐK: ${sdk})`),
   };
 
@@ -364,7 +379,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
         </div>
 
         {/* Nội Dung Theo Từng Tab: Bố Cục Trái - Phải Chuẩn Y Tế (Zero-Box, Phẳng, Không Dấu Chấm) */}
-        {loadingDetail && !liveDrug && !drug && !batch ? (
+        {loadingDetail && !hasLinkedMonograph ? (
           <div data-testid="dav-modal-loading-skeleton" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200 bg-white">
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 space-y-6 animate-pulse">
               <div className="space-y-3 pb-5 border-b border-slate-100">

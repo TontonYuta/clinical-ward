@@ -181,7 +181,15 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
 
       <RestockProposalModal isOpen={isRestockModalOpen} onClose={() => setIsRestockModalOpen(false)} lowStockBatches={lowStockBatches} onConfirmRestock={(ids) => onRestockBatches?.(ids)} onOpenPrintForm={onOpenPrintForm} isAudioMuted={isAudioMuted} />
       <NationalDrugRegistryModal isOpen={isRegistryModalOpen} onClose={() => setIsRegistryModalOpen(false)} onSelectMedication={onOpenSafetyGuide} />
-      {selectedBatch && <DavDrugDetailModal isOpen={selectedBatch !== null} onClose={() => setSelectedBatch(null)} batch={selectedBatch} onQuickDispatch={handleQuickDispatch} />}
+      {selectedBatch && (
+        <DavDrugDetailModal
+          key={selectedBatch.id || selectedBatch.registrationNumber || selectedBatch.nationalCode}
+          isOpen={selectedBatch !== null}
+          onClose={() => setSelectedBatch(null)}
+          batch={selectedBatch}
+          onQuickDispatch={handleQuickDispatch}
+        />
+      )}
     </div>
   );
 };

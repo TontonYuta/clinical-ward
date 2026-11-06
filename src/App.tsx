@@ -41,7 +41,7 @@ import { PatientDetailModal } from './components/Modals/PatientDetailModal';
 import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import { DavDrugDetailModal } from './components/Modals/DavDrugDetailModal';
-import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches } from './services/api';
+import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches, prewarmInventoryMonographs } from './services/api';
 import { ALL_MASTER_MEDICATIONS, removeVietnameseTones } from './data/medicationMasterData';
 import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
@@ -313,6 +313,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
 
     const prewarmTimer = setTimeout(() => {
       prewarmRegistryCatalogCache().catch(() => {});
+      prewarmInventoryMonographs(INITIAL_INVENTORY_BATCHES).catch(() => {});
     }, 50);
 
     Promise.allSettled([
@@ -326,6 +327,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
         setBatches(resBatches.value);
         saveCachedBatches(resBatches.value);
         seedDrugDetailCacheWithBatches(resBatches.value);
+        prewarmInventoryMonographs(resBatches.value).catch(() => {});
       }
     }).catch(() => {});
     return () => {
@@ -2074,6 +2076,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
         {/* Modal Thẻ Thông Tin Thuốc Chuẩn Toàn Cục (DavDrugDetailModal) */}
         <DavDrugDetailModal
+          key={selectedDrugForDavGlobal?.nationalCode || selectedDrugForDavGlobal?.id || 'dav-global-modal'}
           isOpen={!!selectedDrugForDavGlobal}
           onClose={() => setSelectedDrugForDavGlobal(null)}
           drug={selectedDrugForDavGlobal}

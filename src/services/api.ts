@@ -461,6 +461,25 @@ export async function prewarmRegistryCatalogCache(): Promise<void> {
   } catch {}
 }
 
+export async function prewarmInventoryMonographs(batches: any[]): Promise<void> {
+  if (!Array.isArray(batches) || batches.length === 0) return;
+  const codes = Array.from(new Set(
+    batches
+      .map(b => (b.registrationNumber || b.nationalCode || '').trim())
+      .filter(Boolean)
+  ));
+  await Promise.allSettled(
+    codes.map(c => {
+      const norm = c.toLowerCase();
+      const cached = drugDetailCache.get(norm);
+      if (cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id)) {
+        return Promise.resolve(cached);
+      }
+      return getDrugDetailApi(c).catch(() => null);
+    })
+  );
+}
+
 export function seedDrugDetailCacheWithBatches(batches: any[]): void {
   if (!Array.isArray(batches)) return;
   for (const b of batches) {
@@ -527,6 +546,26 @@ export function getCachedDrugDetail(nationalCode?: string | null): any | null {
 export function setCachedDrugDetail(nationalCode: string, data: any): void {
   if (!nationalCode || !data) return;
   const norm = nationalCode.trim().toLowerCase();
+  const existing = drugDetailCache.get(norm);
+  if (existing && (existing.pharmacodynamics || existing.indications || existing.clinical_monograph_id)) {
+    // Không bao giờ ghi đè làm mất dữ liệu chuyên luận lâm sàng giàu có bằng stub hành chính rỗng
+    if (!data.pharmacodynamics && !data.indications && !data.clinical_monograph_id) {
+      drugDetailCache.set(norm, {
+        ...existing,
+        ...data,
+        pharmacodynamics: existing.pharmacodynamics,
+        pharmacokinetics: existing.pharmacokinetics,
+        indications: existing.indications,
+        contraindications: existing.contraindications,
+        clinical_monograph_id: existing.clinical_monograph_id,
+        clinicalMonographId: existing.clinicalMonographId,
+        adr_management: existing.adr_management,
+        incompatibilities: existing.incompatibilities,
+        storage_stability: existing.storage_stability,
+      });
+      return;
+    }
+  }
   drugDetailCache.set(norm, data);
 }
 
@@ -553,7 +592,7 @@ export async function getDrugDetailApi(nationalCode: string, refresh = false) {
     const list = await loadOfflineRegistry();
     const match = list.find((d: any) => [d.national_code,d.nationalCode,d.id,d.registrationNumber].some((value) => typeof value === 'string' && value.trim().toLowerCase() === norm));
     if (match) {
-      drugDetailCache.set(norm, match);
+      setCachedDrugDetail(norm, match);
       return match;
     }
   } catch {}
