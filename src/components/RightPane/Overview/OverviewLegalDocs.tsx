@@ -54,52 +54,47 @@ export const OverviewLegalDocs: React.FC<OverviewLegalDocsProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-5">
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-4">
       {/* 1. Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-        <div>
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-none">
-            Văn bản quy phạm &amp; Tài liệu đính kèm
-          </h3>
-          <span className="text-sm text-slate-500 font-medium mt-1 block">
-            Hệ thống 6 văn bản quy chuẩn chính thức của Bộ Y Tế phục vụ ca trực
-          </span>
-        </div>
+      <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+        <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+          Tài Liệu Đính Kèm
+        </h3>
 
         {onOpenLegalDocs && (
           <button
             type="button"
             onClick={onOpenLegalDocs}
-            className="text-sm sm:text-base font-bold text-teal-800 hover:text-teal-950 hover:underline cursor-pointer"
+            className="text-sm font-semibold text-teal-800 hover:text-teal-950 hover:underline cursor-pointer"
           >
             Cẩm nang quy định &rarr;
           </button>
         )}
       </div>
 
-      {/* 2. Danh mục tài liệu rõ nét với cỡ chữ rộng */}
+      {/* 2. Danh mục tài liệu tinh gọn với cỡ chữ rộng */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {documents.map((doc) => (
           <div
             key={doc.id}
-            className="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white transition flex items-center justify-between gap-4"
+            className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white transition flex items-center justify-between gap-3"
           >
             <div className="min-w-0 flex-1">
-              <h4 className="font-bold text-base sm:text-lg text-slate-900 truncate">
+              <h4 className="font-bold text-sm sm:text-base text-slate-900 truncate">
                 {doc.code}
               </h4>
-              <div className="text-sm text-slate-600 truncate mt-1 font-medium">{doc.tag}</div>
+              <div className="text-xs sm:text-sm text-slate-600 truncate mt-0.5">{doc.tag}</div>
             </div>
 
             <a
               href={doc.pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-bold text-teal-800 hover:text-teal-950 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-teal-400 hover:bg-teal-50/50 shrink-0 transition"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-teal-800 hover:text-teal-950 px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-teal-400 hover:bg-teal-50/50 shrink-0 transition"
               title={`Mở PDF: ${doc.code}`}
             >
               <span>PDF Gốc</span>
-              <ExternalLink className="w-4 h-4 opacity-70" />
+              <ExternalLink className="w-3.5 h-3.5 opacity-60" />
             </a>
           </div>
         ))}
