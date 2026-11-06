@@ -73,7 +73,8 @@ export interface AgentActionCard {
 export interface RagCitationItem {
   source: string;
   legal_basis: string;
-  section: string;
+  section?: string;
+  title?: string;
   excerpt?: string;
   relevance_score?: number;
   chunk_id?: string;

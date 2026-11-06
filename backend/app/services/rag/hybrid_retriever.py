@@ -167,6 +167,18 @@ class HybridRetriever:
                     incompatible_ids.add(cid)
             all_candidate_ids -= incompatible_ids
 
+        # Safeguard: Với câu hỏi triệu chứng sốt thông thường (không phải sốt rét hay sốt vàng)
+        if "sốt" in lower_query and not any(term in lower_query for term in ("rét", "vàng", "xuất huyết")):
+            offtarget_fever_ids = {
+                cid for cid in all_candidate_ids
+                if any(k in chunk_map[cid].title.casefold() for k in ("sốt rét", "sốt vàng"))
+            }
+            all_candidate_ids -= offtarget_fever_ids
+            for c in self.all_chunks:
+                if "paracetamol" in c.title.casefold() and ("hạ sốt" in c.title.casefold() or "giảm đau" in c.title.casefold()):
+                    all_candidate_ids.add(c.chunk_id)
+                    dense_rank_map[c.chunk_id] = min(dense_rank_map.get(c.chunk_id, 999), 1)
+
         if not all_candidate_ids:
             return []
 
@@ -199,6 +211,9 @@ class HybridRetriever:
                 if title_drug_match:
                     rrf_score += 0.25
                     reasons.append("Direct monograph title match for query drug")
+                elif "sốt" in lower_query and not any(term in lower_query for term in ("rét", "vàng", "xuất huyết")) and "paracetamol" in chunk.title.casefold() and ("hạ sốt" in chunk.title.casefold() or "giảm đau" in chunk.title.casefold()):
+                    rrf_score += 0.25
+                    reasons.append("First-line antipyretic monograph match for fever query")
                 else:
                     chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}".casefold()
                     named_drug_match = bool(set(resolved_query_drugs) & set(resolve_registered_medications(chunk_text)))

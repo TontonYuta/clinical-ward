@@ -63,6 +63,13 @@ def slice_monograph(pages, cur, nxt):
         
     title_pos = text.rfind(cur["title"], 0, start_pos) if cur["title"] else -1
     actual_start = title_pos if title_pos != -1 else (start_pos if start_pos != -1 else 0)
+
+    # Nếu trên trang đầu có khối "Dược lý và cơ chế tác dụng" của chính thuốc này (trước tiêu đề do pdftotext xáo trộn cột)
+    pharm_pos = text.find("Dược lý và cơ chế tác dụng")
+    if 0 <= pharm_pos < actual_start:
+        snippet = text[pharm_pos:pharm_pos + 500].lower()
+        if cur["inn"].lower() in snippet or (cur.get("title") and cur["title"].lower() in snippet):
+            actual_start = pharm_pos
     
     if nxt:
         end_token = "Tên chung quốc tế: " + nxt["inn"]
@@ -82,18 +89,21 @@ def extract_sections(raw_text: str) -> dict:
     section_patterns = [
         ("atc_code", r'Mã ATC:\s*([^\n]+)'),
         ("drug_class", r'Loại thuốc:\s*([^\n]+(?:\n(?![A-ZĐ][a-zà-ỹA-Z0-9\s]+:)[^\n]+)*)'),
-        ("dosage_forms", r'Dạng thuốc và hàm lượng\s*\n([\s\S]*?)(?=\nDược lý|\nChỉ định|\nChống chỉ định|\nThận trọng|\Z)'),
-        ("pharmacology", r'Dược lý và cơ chế tác dụng\s*\n([\s\S]*?)(?=\nDược động học|\nChỉ định|\nChống chỉ định|\Z)'),
-        ("pharmacokinetics", r'Dược động học\s*\n([\s\S]*?)(?=\nChỉ định|\nChống chỉ định|\nThận trọng|\Z)'),
-        ("indications", r'Chỉ định\s*\n([\s\S]*?)(?=\nChống chỉ định|\nThận trọng|\nLiều lượng|\Z)'),
-        ("contraindications", r'Chống chỉ định\s*\n([\s\S]*?)(?=\nThận trọng|\nThời kỳ mang thai|\nLiều lượng|\Z)'),
-        ("precautions", r'Thận trọng\s*\n([\s\S]*?)(?=\nThời kỳ mang thai|\nThời kỳ cho con bú|\nTác dụng không mong muốn|\Z)'),
-        ("pregnancy", r'Thời kỳ mang thai\s*\n([\s\S]*?)(?=\nThời kỳ cho con bú|\nTác dụng không mong muốn|\Z)'),
-        ("lactation", r'Thời kỳ cho con bú\s*\n([\s\S]*?)(?=\nTác dụng không mong muốn|\nLiều lượng|\Z)'),
-        ("adverse_effects", r'Tác dụng không mong muốn\s*(?:\(ADR\))?\s*\n([\s\S]*?)(?=\nHướng dẫn cách xử trí|\nLiều lượng và cách dùng|\Z)'),
-        ("dosage_and_administration", r'Liều lượng và cách dùng\s*\n([\s\S]*?)(?=\nTương tác thuốc|\nĐộ ổn định|\nQuá liều|\Z)'),
-        ("drug_interactions", r'Tương tác thuốc\s*\n([\s\S]*?)(?=\nĐộ ổn định|\nQuá liều và xử trí|\nThông tin qui chế|\Z)'),
-        ("overdose_and_treatment", r'Quá liều và xử trí\s*\n([\s\S]*?)(?=\nThông tin qui chế|\nTên thương mại|\Z)')
+        ("dosage_forms", r'Dạng thuốc và hàm lượng\s*:?\s*\n([\s\S]*?)(?=\nDược lý|\nChỉ định|\nChống chỉ định|\nThận trọng|\Z)'),
+        ("pharmacology", r'Dược lý và cơ chế tác dụng\s*:?\s*\n([\s\S]*?)(?=\nDược động học|\nChỉ định|\nChống chỉ định|\Z)'),
+        ("pharmacokinetics", r'Dược động học\s*:?\s*\n([\s\S]*?)(?=\nChỉ định|\nChống chỉ định|\nThận trọng|\Z)'),
+        ("indications", r'Chỉ định\s*:?\s*\n([\s\S]*?)(?=\nChống chỉ định|\nThận trọng|\nLiều lượng|\Z)'),
+        ("contraindications", r'Chống chỉ định\s*:?\s*\n([\s\S]*?)(?=\nThận trọng|\nThời kỳ mang thai|\nLiều lượng|\Z)'),
+        ("precautions", r'Thận trọng\s*:?\s*\n([\s\S]*?)(?=\nThời kỳ mang thai|\nThời kỳ cho con bú|\nTác dụng không mong muốn|\Z)'),
+        ("pregnancy", r'Thời kỳ mang thai\s*:?\s*\n([\s\S]*?)(?=\nThời kỳ cho con bú|\nTác dụng không mong muốn|\Z)'),
+        ("lactation", r'Thời kỳ cho con bú\s*:?\s*\n([\s\S]*?)(?=\nTác dụng không mong muốn|\nLiều lượng|\Z)'),
+        ("adverse_effects", r'Tác dụng không mong muốn\s*(?:\(ADR\))?\s*:?\s*\n([\s\S]*?)(?=\nHướng dẫn cách xử trí|\nLiều lượng và cách dùng|\Z)'),
+        ("adr_management", r'Hướng dẫn cách xử trí(?:\s*ADR|\s*tác dụng không mong muốn)?\s*:?\s*\n([\s\S]*?)(?=\nLiều lượng và cách dùng|\nLiều lượng|\nTương tác thuốc|\Z)'),
+        ("dosage_and_administration", r'Liều lượng và cách dùng\s*:?\s*\n([\s\S]*?)(?=\nTương tác thuốc|\nĐộ ổn định|\nQuá liều|\Z)'),
+        ("drug_interactions", r'Tương tác thuốc\s*:?\s*\n([\s\S]*?)(?=\nĐộ ổn định|\nQuá liều và xử trí|\nThông tin qui chế|\Z)'),
+        ("incompatibilities", r'Tương kỵ\s*:?\s*\n([\s\S]*?)(?=\nĐộ ổn định|\nQuá liều|\nThông tin qui chế|\Z)'),
+        ("storage_stability", r'Độ ổn định và bảo quản\s*:?\s*\n([\s\S]*?)(?=\nTương kỵ|\nQuá liều|\nThông tin qui chế|\Z)'),
+        ("overdose_and_treatment", r'Quá liều và xử trí\s*:?\s*\n([\s\S]*?)(?=\nThông tin qui chế|\nTên thương mại|\Z)')
     ]
     
     data = {}
@@ -103,20 +113,20 @@ def extract_sections(raw_text: str) -> dict:
         
     dosage = data.get("dosage_and_administration") or ""
     
-    # Sub-parsing adult dosage
-    adult_m = re.search(r'(?:Người lớn|Liều người lớn)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Trẻ em|Liều trẻ em)|(?:\n[A-ZĐ][a-zà-ỹ\s]+:|\nNgười cao tuổi|\nSuy thận|\nSuy gan)|\Z)', dosage, re.IGNORECASE)
+    # Sub-parsing adult dosage (phải neo đầu dòng hoặc hai chấm để tránh match 'ở người lớn' trong văn bản chạy)
+    adult_m = re.search(r'(?:^|\n)\s*(?:[-•*]\s*)?(?:Người lớn|Liều người lớn|Liều cho người lớn)\s*[:\n]\s*([\s\S]*?)(?=(?:\n\s*(?:[-•*]\s*)?(?:Trẻ em|Liều trẻ em|Người cao tuổi|Suy thận|Suy gan)\s*[:\n])|\Z)', dosage, re.IGNORECASE)
     data["adult_dosage"] = clean_text(adult_m.group(1)) if adult_m else (clean_text(dosage) if dosage else None)
     
-    # Sub-parsing pediatric dosage
-    ped_m = re.search(r'(?:Trẻ em|Liều trẻ em)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Người lớn|Liều người lớn)|(?:\n[A-ZĐ][a-zà-ỹ\s]+:|\nNgười cao tuổi|\nSuy thận|\nSuy gan)|\Z)', dosage, re.IGNORECASE)
+    # Sub-parsing pediatric dosage (phải neo đầu dòng hoặc hai chấm)
+    ped_m = re.search(r'(?:^|\n)\s*(?:[-•*]\s*)?(?:Trẻ em|Liều trẻ em|Liều cho trẻ em)\s*[:\n]\s*([\s\S]*?)(?=(?:\n\s*(?:[-•*]\s*)?(?:Người lớn|Liều người lớn|Người cao tuổi|Suy thận|Suy gan)\s*[:\n])|\Z)', dosage, re.IGNORECASE)
     data["pediatric_dosage"] = clean_text(ped_m.group(1)) if ped_m else None
     
     # Sub-parsing renal adjustment
-    renal_m = re.search(r'(?:Suy thận|Người bệnh suy thận|Hiệu chỉnh ở người suy thận|Hiệu chỉnh liều ở người suy thận)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Suy gan|Người cao tuổi|Tương tác|Độ ổn định|Quá liều)|\Z)', dosage, re.IGNORECASE)
+    renal_m = re.search(r'(?:^|\n)\s*(?:[-•*]\s*)?(?:Suy thận|Người bệnh suy thận|Hiệu chỉnh ở người suy thận|Hiệu chỉnh liều ở người suy thận)\s*[:\n]\s*([\s\S]*?)(?=(?:\n\s*(?:[-•*]\s*)?(?:Suy gan|Người cao tuổi|Tương tác|Độ ổn định|Quá liều)\s*[:\n])|\Z)', dosage, re.IGNORECASE)
     data["renal_adjustment"] = clean_text(renal_m.group(1)) if renal_m else None
     
     # Sub-parsing hepatic adjustment
-    hepatic_m = re.search(r'(?:Suy gan|Người bệnh suy gan|Hiệu chỉnh ở người suy gan|Hiệu chỉnh liều ở người suy gan)\s*[:\n]?\s*([\s\S]*?)(?=\n(?:Suy thận|Người cao tuổi|Tương tác|Độ ổn định|Quá liều)|\Z)', dosage, re.IGNORECASE)
+    hepatic_m = re.search(r'(?:^|\n)\s*(?:[-•*]\s*)?(?:Suy gan|Người bệnh suy gan|Hiệu chỉnh ở người suy gan|Hiệu chỉnh liều ở người suy gan)\s*[:\n]\s*([\s\S]*?)(?=(?:\n\s*(?:[-•*]\s*)?(?:Suy thận|Người cao tuổi|Tương tác|Độ ổn định|Quá liều)\s*[:\n])|\Z)', dosage, re.IGNORECASE)
     data["hepatic_adjustment"] = clean_text(hepatic_m.group(1)) if hepatic_m else None
     
     # Identify specific antidote if mentioned in overdose treatment
@@ -152,16 +162,22 @@ def main():
             "atc_code": parsed.get("atc_code"),
             "drug_class": parsed.get("drug_class"),
             "dosage_forms": parsed.get("dosage_forms"),
+            "pharmacodynamics": parsed.get("pharmacology"),
+            "pharmacokinetics": parsed.get("pharmacokinetics"),
             "indications": parsed.get("indications"),
             "contraindications": parsed.get("contraindications"),
             "precautions": parsed.get("precautions"),
             "pregnancy_warning": parsed.get("pregnancy_warning"),
+            "lactation_warning": parsed.get("lactation"),
             "adverse_effects": parsed.get("adverse_effects"),
+            "adr_management": parsed.get("adr_management"),
             "adult_dosage": parsed.get("adult_dosage"),
             "pediatric_dosage": parsed.get("pediatric_dosage"),
             "renal_adjustment": parsed.get("renal_adjustment"),
             "hepatic_adjustment": parsed.get("hepatic_adjustment"),
             "drug_interactions": parsed.get("drug_interactions"),
+            "incompatibilities": parsed.get("incompatibilities"),
+            "storage_stability": parsed.get("storage_stability"),
             "overdose_treatment": parsed.get("overdose_and_treatment"),
             "antidote": parsed.get("antidote"),
             "source": f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {cur['start_page']}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if cur.get("start_page") else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"

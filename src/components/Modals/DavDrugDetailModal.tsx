@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, RotateCw, FileText } from 'lucide-react';
+import { X, ExternalLink, RotateCw, FileText, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
 import { getDrugDetailApi, getCachedDrugDetail } from '../../services/api';
@@ -20,7 +20,7 @@ import {
 import { getMedicationClinicalProfile } from '../../data/clinicalProfiles';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
-type DrugDetailTab = 'overview' | 'safety' | 'dosage' | 'interactions' | 'registration' | 'hospital-batch';
+type DrugDetailTab = 'overview' | 'safety' | 'dosage' | 'pharmacology' | 'interactions' | 'registration' | 'hospital-batch';
 
 interface DavDrugDetailModalProps {
   isOpen: boolean;
@@ -41,6 +41,78 @@ function parseSource(src?: string) {
   const legalBasis = src.split('•')[0].replace(/,\s*Trang\s*[\d\s–-]+/i, '').trim();
   return { legalBasis, pdfFile, pageStr, pageNum, pdfUrl };
 }
+
+function extractQuickPkMetrics(pkText?: string | null) {
+  if (!pkText) return null;
+  const tHalfMatch = pkText.match(/(?:nửa đời|thời gian bán thải|t1\/2|t½)[^\d]*?(\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?\s*(?:giờ|phút|ngày|h))/i);
+  const bioavailabilityMatch = pkText.match(/(?:sinh khả dụng|hấp thu)[^\d%]*?(\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?\s*%)/i);
+  const proteinBindingMatch = pkText.match(/(?:liên kết|gắn)[^\d%]*?protein[^\d%]*?(\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?\s*%)/i);
+  const cmaxMatch = pkText.match(/(?:nồng độ đỉnh|cmax)[^\d]*?(\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?\s*(?:microgam|mcg|mg|µg)\/ml)/i);
+  return {
+    tHalf: tHalfMatch ? tHalfMatch[1].trim() : null,
+    bioavailability: bioavailabilityMatch ? bioavailabilityMatch[1].trim() : null,
+    proteinBinding: proteinBindingMatch ? proteinBindingMatch[1].trim() : null,
+    cmax: cmaxMatch ? cmaxMatch[1].trim() : null,
+  };
+}
+
+const ClinicalExpandableBlock: React.FC<{
+  title: string;
+  content?: string | null;
+  emptyText?: string;
+  maxInitialChars?: number;
+  highlightClass?: string;
+  badge?: string;
+}> = ({ title, content, emptyText = 'Chưa ghi nhận trong chuyên luận nguồn.', maxInitialChars = 650, highlightClass = '', badge }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  if (!content) {
+    return (
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">{title}</h3>
+          {badge && <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300">{badge}</span>}
+        </div>
+        <p className="text-sm text-slate-500">{emptyText}</p>
+      </div>
+    );
+  }
+
+  const isLong = content.length > maxInitialChars;
+  const displayContent = isLong && !isExpanded ? content.slice(0, maxInitialChars) + '...' : content;
+  const bullets = parseClinicalBullets(displayContent);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">{title}</h3>
+          {badge && <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300">{badge}</span>}
+        </div>
+        {isLong && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-xs text-indigo-700 hover:text-indigo-900 font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors"
+          >
+            {isExpanded ? (
+              <><span>Thu gọn</span><ChevronUp className="w-3.5 h-3.5" /></>
+            ) : (
+              <><span>Xem toàn văn ({content.length.toLocaleString()} ký tự)</span><ChevronDown className="w-3.5 h-3.5" /></>
+            )}
+          </button>
+        )}
+      </div>
+      <div className={`space-y-1.5 text-sm text-slate-800 leading-relaxed ${highlightClass}`}>
+        {bullets.map((b, idx) => (
+          <div key={idx} className={b.isImportant ? 'text-amber-950 font-medium' : ''}>
+            {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+            <span>{stripLeadingBullets(b.content)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   isOpen, onClose, batch, drug,
@@ -93,7 +165,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     setCurrentSdk(sdk);
     const cached = getCachedDrugDetail(sdk);
     setLiveDrug(cached || drug || fallbackFromBatch || null);
-    setLoadingDetail(!cached && !drug?.indications && sdk !== 'Chưa cập nhật' && isOpen);
+    const hasFull = Boolean(cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id));
+    setLoadingDetail(!hasFull && !drug?.indications && sdk !== 'Chưa cập nhật' && isOpen);
   }
 
   const loadDetails = (isManual = false) => {
@@ -102,8 +175,11 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
       return;
     }
     const cached = !isManual ? getCachedDrugDetail(sdk) : null;
+    const hasFull = Boolean(cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id));
     if (cached) {
       setLiveDrug(cached);
+    }
+    if (hasFull && !isManual) {
       setLoadingDetail(false);
       return;
     }
@@ -171,28 +247,36 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   const clinicalData = {
     atcCode: clinical('atc_code', 'atcCode') || (isVerified ? profile?.atcCode : undefined),
     drugClass: clinical('drug_class', 'drugClass') || (profile.isVerifiedMonograph === true ? profile?.allergyProfile?.allergyClass : undefined),
+    pharmacodynamics: clinical('pharmacodynamics', 'pharmacodynamics'),
+    pharmacokinetics: clinical('pharmacokinetics', 'pharmacokinetics'),
     indications: clinical('indications') || (profile.isVerifiedMonograph === true ? profile?.indications?.join('\n') : undefined),
     contraindications: clinical('contraindications') || (profile.isVerifiedMonograph === true ? profile?.contraindications?.join('\n') : undefined),
     precautions: clinical('precautions') || (profile.isVerifiedMonograph === true ? profile?.patientVerificationChecklist?.join('\n') : undefined),
     pregnancyWarning: clinical('pregnancy_warning', 'pregnancyWarning') || (profile.isVerifiedMonograph === true ? profile?.pregnancyLactation : undefined),
+    lactationWarning: clinical('lactation_warning', 'lactationWarning'),
     adultDosage: clinical('adult_dosage', 'adultDosage') || (profile.isVerifiedMonograph === true ? profile?.standardDosing : undefined),
     pediatricDosage: clinical('pediatric_dosage', 'pediatricDosage'),
     renalAdjustment: clinical('renal_adjustment', 'renalAdjustment') || (profile.isVerifiedMonograph === true ? profile?.renalAdjustment : undefined),
     hepaticAdjustment: clinical('hepatic_adjustment', 'hepaticAdjustment') || (profile.isVerifiedMonograph === true ? profile?.hepaticAdjustment : undefined),
     adverseEffects: clinical('adverse_effects', 'adverseEffects') || (profile.isVerifiedMonograph === true ? profile?.adverseReactions?.join('\n') : undefined),
+    adrManagement: clinical('adr_management', 'adrManagement'),
     drugInteractions: clinical('drug_interactions', 'drugInteractions') || (profile.isVerifiedMonograph === true ? profile?.ddiWarnings?.join('\n') : undefined),
+    incompatibilities: clinical('incompatibilities', 'incompatibilities'),
+    storageStability: clinical('storage_stability', 'storageStability'),
     overdoseTreatment: clinical('overdose_treatment', 'overdoseTreatment'),
     antidote: clinical('antidote') || (profile.isVerifiedMonograph === true ? profile?.antidote : undefined),
     clinicalSource: isVerified ? resolvedSource : (c('clinical_source') || c('clinicalSource') || `Hồ sơ cấp phép Cục Quản lý Dược (SĐK: ${sdk})`),
   };
 
   const dosageMetrics = extractQuickDosageMetrics(clinicalData.adultDosage);
+  const pkMetrics = extractQuickPkMetrics(clinicalData.pharmacokinetics);
   const srcInfo = parseSource(clinicalData.clinicalSource);
 
   const tabs: [DrugDetailTab, string][] = [
     ['overview', 'Tổng quan'],
     ['safety', 'An toàn & Cảnh báo'],
-    ['dosage', 'Liều dùng & Dược lý'],
+    ['dosage', 'Liều & Cách dùng'],
+    ['pharmacology', 'Dược lý & Dược động học'],
     ['interactions', 'Tác dụng phụ & Tương tác'],
     ['registration', 'Hồ sơ Cục QLD'],
     ...(batch ? [['hospital-batch', 'Lô kho bệnh viện'] as [DrugDetailTab, string]] : []),
@@ -401,8 +485,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
                     </div>
                   </div>
                   <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
-                    {parseClinicalBullets(clinicalData.adultDosage).slice(0, 3).map((b, idx) => (
-                      <div key={idx}>
+                    {parseClinicalBullets(clinicalData.adultDosage).map((b, idx) => (
+                      <div key={idx} className={b.isImportant ? 'text-amber-950 font-medium' : ''}>
                         {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
                         <span>{stripLeadingBullets(b.content)}</span>
                       </div>
@@ -577,12 +661,28 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               )}
 
               {clinicalData.pregnancyWarning && (
-                <div className="space-y-2">
+                <div className="space-y-2 pb-5 border-b border-slate-200">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Thời Kỳ Mang Thai &amp; Cho Con Bú
+                    Thời Kỳ Mang Thai
                   </h3>
                   <div className="space-y-1 text-xs sm:text-sm text-slate-800 leading-relaxed">
                     {parseClinicalBullets(clinicalData.pregnancyWarning).map((b, idx) => (
+                      <div key={idx}>
+                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
+                        <span>{stripLeadingBullets(b.content)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(clinicalData.lactationWarning || (clinicalData.pregnancyWarning && clinicalData.pregnancyWarning.toLowerCase().includes('cho con bú'))) && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Thời Kỳ Cho Con Bú
+                  </h3>
+                  <div className="space-y-1 text-xs sm:text-sm text-slate-800 leading-relaxed">
+                    {parseClinicalBullets(clinicalData.lactationWarning || 'Tham khảo kỹ khuyến cáo thận trọng trong mục thời kỳ mang thai và cho con bú.').map((b, idx) => (
                       <div key={idx}>
                         {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
                         <span>{stripLeadingBullets(b.content)}</span>
@@ -595,7 +695,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
           </div>
         )}
 
-        {/* TAB 3: LIỀU DÙNG & DƯỢC LÝ */}
+        {/* TAB 3: LIỀU & CÁCH DÙNG */}
         {activeTab === 'dosage' && (
           <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
@@ -711,71 +811,192 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
           </div>
         )}
 
-        {/* TAB 4: TÁC DỤNG PHỤ & TƯƠNG TÁC */}
-        {activeTab === 'interactions' && (
+        {/* TAB 4: DƯỢC LÝ & DƯỢC ĐỘNG HỌC (TAB MỚI) */}
+        {activeTab === 'pharmacology' && (
           <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
-            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
-              <div className="space-y-3 pb-5 border-b border-slate-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  Tác Dụng Không Mong Muốn (ADR)
-                </h3>
-                {clinicalData.adverseEffects ? (
-                  <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
-                    {parseClinicalBullets(clinicalData.adverseEffects).map((b, idx) => (
-                      <div key={idx}>
-                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
-                        <span>{stripLeadingBullets(b.content)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-500">Chưa ghi nhận ADR phổ biến trong chuyên luận nguồn.</p>
-                )}
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-6 bg-white">
+              <div className="pb-5 border-b border-slate-100">
+                <ClinicalExpandableBlock
+                  title="Dược Lực Học &amp; Cơ Chế Tác Dụng"
+                  content={clinicalData.pharmacodynamics}
+                  emptyText="Chưa ghi nhận nội dung dược lực học chi tiết trong Dược thư. Vui lòng tham khảo Tờ hướng dẫn sử dụng (HDSD) của Cục Quản Lý Dược."
+                  badge={adminData.atcCode ? `ATC: ${adminData.atcCode}` : undefined}
+                />
               </div>
 
-              {clinicalData.overdoseTreatment && (
-                <div className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Xử Trí Quá Liều
-                  </h3>
-                  <div className="space-y-1.5 text-sm text-slate-800 leading-relaxed">
-                    {parseClinicalBullets(clinicalData.overdoseTreatment).map((b, idx) => (
-                      <div key={idx}>
-                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
-                        <span>{stripLeadingBullets(b.content)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div>
+                <ClinicalExpandableBlock
+                  title="Dược Động Học Lâm Sàng (ADME)"
+                  content={clinicalData.pharmacokinetics}
+                  emptyText="Chưa ghi nhận thông số dược động học chi tiết trong chuyên luận Dược thư nguồn."
+                />
+              </div>
             </div>
 
             <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
-              <div className="space-y-2">
+              <div className="space-y-3 pb-5 border-b border-slate-200">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Tương Tác Thuốc Theo Chuyên Luận
+                  Thông Số Dược Động Học Chính
                 </h3>
-                {clinicalData.drugInteractions ? (
-                  <div className="space-y-1.5 text-xs sm:text-sm text-slate-800 leading-relaxed">
-                    {parseClinicalBullets(clinicalData.drugInteractions).map((b, idx) => (
-                      <div key={idx}>
-                        {b.label && <span className="font-semibold text-slate-900 mr-1.5">{b.label}:</span>}
-                        <span>{stripLeadingBullets(b.content)}</span>
-                      </div>
-                    ))}
+                <dl className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <dt className="text-slate-500">Bán thải (t½)</dt>
+                    <dd className="text-sm font-semibold text-slate-900 mt-0.5">
+                      {pkMetrics?.tHalf || 'Theo chuyển hóa'}
+                    </dd>
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-500">Chưa ghi nhận tương tác thuốc nghiêm trọng trong chuyên luận.</p>
+                  <div>
+                    <dt className="text-slate-500">Sinh khả dụng (F)</dt>
+                    <dd className="text-sm font-semibold text-slate-900 mt-0.5">
+                      {pkMetrics?.bioavailability || (dosageMetrics.routes.includes('Tiêm tĩnh mạch') || dosageMetrics.routes.includes('Truyền tĩnh mạch') ? '100% (IV)' : 'Theo đường dùng')}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Gắn Protein</dt>
+                    <dd className="text-sm font-semibold text-slate-900 mt-0.5">
+                      {pkMetrics?.proteinBinding || 'Theo phân bố mô'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Nồng độ đỉnh (Cmax)</dt>
+                    <dd className="text-sm font-semibold text-slate-900 mt-0.5">
+                      {pkMetrics?.cmax || 'Theo liều chỉ định'}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="space-y-2 pb-5 border-b border-slate-200">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Phân Loại Dược Lý &amp; ATC
+                </h3>
+                <dl className="space-y-2 text-xs">
+                  <div>
+                    <dt className="text-slate-500">Nhóm Tác Dụng</dt>
+                    <dd className="text-sm font-medium text-slate-900 mt-0.5">
+                      {clinicalData.drugClass || adminData.category || 'Thuốc điều trị chuyên khoa'}
+                    </dd>
+                  </div>
+                  {adminData.atcCode && (
+                    <div>
+                      <dt className="text-slate-500">Mã ATC Quốc Tế</dt>
+                      <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{adminData.atcCode}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Tài Liệu Gốc Dược Thư &amp; Cục QLD
+                </h3>
+                {srcInfo?.pdfUrl && (
+                  <a
+                    href={srcInfo.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-900 text-xs font-medium transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+                      <span className="truncate">Chuyên luận Dược Thư {srcInfo.pageStr ? `(${srcInfo.pageStr})` : ''}</span>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </a>
                 )}
+                <DavDocumentActionButtons
+                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath}
+                  labelPath={batch?.labelPath || drug?.labelPath}
+                  nationalCode={sdk}
+                  brandName={itemName}
+                />
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 5: HỒ SƠ CỤC QLD */}
+        {/* TAB 5: TÁC DỤNG PHỤ & TƯƠNG TÁC */}
+        {activeTab === 'interactions' && (
+          <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-6 bg-white">
+              <div className="pb-5 border-b border-slate-100">
+                <ClinicalExpandableBlock
+                  title="Tác Dụng Không Mong Muốn (ADR)"
+                  content={clinicalData.adverseEffects}
+                  emptyText="Chưa ghi nhận ADR phổ biến trong chuyên luận nguồn."
+                />
+              </div>
+
+              {clinicalData.adrManagement && (
+                <div className="pb-5 border-b border-slate-100">
+                  <ClinicalExpandableBlock
+                    title="Hướng Dẫn Xử Trí Tác Dụng Phụ (ADR Management)"
+                    content={clinicalData.adrManagement}
+                    emptyText="Khi xảy ra ADR nghiêm trọng: Ngừng thuốc ngay lập tức và tiến hành điều trị hỗ trợ nâng đỡ triệu chứng."
+                    highlightClass="text-slate-900 font-medium"
+                  />
+                </div>
+              )}
+
+              {clinicalData.incompatibilities && (
+                <div className="pb-5 border-b border-slate-100">
+                  <ClinicalExpandableBlock
+                    title="Tương Kỵ &amp; Dung Môi Pha Tiêm Truyền"
+                    content={clinicalData.incompatibilities}
+                    emptyText="Chưa ghi nhận tương kỵ kết tủa nghiêm trọng với dung môi thông thường."
+                  />
+                </div>
+              )}
+
+              {clinicalData.overdoseTreatment && (
+                <div>
+                  <ClinicalExpandableBlock
+                    title="Xử Trí Quá Liều Cấp Cứu"
+                    content={clinicalData.overdoseTreatment}
+                    emptyText="Chưa ghi nhận báo cáo quá liều đặc hiệu."
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="lg:col-span-5 xl:col-span-4 p-5 sm:p-6 bg-slate-50/70 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-y-auto thin-scrollbar space-y-5">
+              <div className="pb-5 border-b border-slate-200">
+                <ClinicalExpandableBlock
+                  title="Tương Tác Thuốc Theo Chuyên Luận (DDI)"
+                  content={clinicalData.drugInteractions}
+                  emptyText="Chưa ghi nhận tương tác thuốc nghiêm trọng trong chuyên luận."
+                />
+              </div>
+
+              {clinicalData.storageStability && (
+                <div>
+                  <ClinicalExpandableBlock
+                    title="Độ Ổn Định &amp; Điều Kiện Bảo Quản"
+                    content={clinicalData.storageStability}
+                    emptyText="Bảo quản ở nhiệt độ phòng 15 - 30°C, tránh ánh sáng trực tiếp và tránh ẩm."
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: HỒ SƠ CỤC QLD */}
         {activeTab === 'registration' && (
           <div role="tabpanel" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
+              {!isVerified && (
+                <div className="p-3.5 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-900 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <Info className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>Thuốc Lưu Hành Theo Hồ Sơ Cục Quản Lý Dược (SĐK: {sdk})</span>
+                  </div>
+                  <p className="text-amber-800 leading-relaxed">
+                    Sản phẩm thuộc nhóm dược liệu, thuốc cổ truyền hoặc thuốc mới chưa có chuyên luận riêng trong Dược Thư Quốc Gia 2015. Toàn văn công dụng, chỉ định và mẫu nhãn đã được số hóa sẵn sàng trong cột tài liệu bên cạnh.
+                  </p>
+                </div>
+              )}
+
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                 Thông Tin Hành Chính &amp; Giấy Phép Lưu Hành
               </h3>

@@ -149,8 +149,9 @@ async def enrich_monograph_for_drug(drug: DavNationalDrug, db: AsyncSession, ref
     if mono:
         fields = (
             "contraindications", "adult_dosage", "indications", "adverse_effects",
-            "precautions", "pregnancy_warning", "pediatric_dosage", "renal_adjustment",
-            "hepatic_adjustment", "drug_interactions", "overdose_treatment", "antidote"
+            "precautions", "pregnancy_warning", "lactation_warning", "pediatric_dosage", "renal_adjustment",
+            "hepatic_adjustment", "drug_interactions", "overdose_treatment", "antidote",
+            "pharmacodynamics", "pharmacokinetics", "adr_management", "incompatibilities", "storage_stability"
         )
         for fld in fields:
             if refresh or not getattr(drug, fld, None):

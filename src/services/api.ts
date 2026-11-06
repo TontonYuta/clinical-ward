@@ -518,7 +518,7 @@ export function getCachedDrugDetail(nationalCode?: string | null): any | null {
   }
   const fromOffline = getOfflineCachedDrug(norm);
   if (fromOffline) {
-    drugDetailCache.set(norm, fromOffline);
+    // Chỉ lưu tạm thời nếu chưa có chi tiết lâm sàng đầy đủ từ backend
     return fromOffline;
   }
   return null;
@@ -533,8 +533,9 @@ export function setCachedDrugDetail(nationalCode: string, data: any): void {
 export async function getDrugDetailApi(nationalCode: string, refresh = false) {
   if (!nationalCode) return null;
   const norm = nationalCode.trim().toLowerCase();
-  if (!refresh && drugDetailCache.has(norm)) {
-    return drugDetailCache.get(norm);
+  const cached = drugDetailCache.get(norm);
+  if (!refresh && cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id)) {
+    return cached;
   }
 
   const url = `${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}${refresh ? '?refresh=true' : ''}`;

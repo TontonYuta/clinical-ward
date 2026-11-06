@@ -16,4 +16,4 @@ services:
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261106-fast-cache-fts-registry-v3"
+        value: "20261106-option-a-6tabs-pharmacology-v1"

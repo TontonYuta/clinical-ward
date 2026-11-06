@@ -145,18 +145,31 @@ export interface MasterMedication {
   // Dữ liệu lâm sàng chuẩn Dược Thư Quốc Gia Việt Nam
   drugClass?: string;
   pharmacologicalClass?: string; // Nhóm Dược Lý / Tác dụng Điều trị chuẩn ATC & Dược Thư
+  pharmacodynamics?: string; // Dược lực học & cơ chế tác dụng
+  pharmacokinetics?: string; // Dược động học (F, Cmax, Vd, t1/2, thải trừ)
   indications?: string;
   contraindications?: string;
   precautions?: string;
   pregnancyWarning?: string;
+  lactationWarning?: string; // Khuyến cáo an toàn thời kỳ cho con bú
   adultDosage?: string;
   pediatricDosage?: string;
   renalAdjustment?: string;
   hepaticAdjustment?: string;
   adverseEffects?: string;
+  adrManagement?: string; // Hướng dẫn cách xử trí tác dụng phụ (ADR)
   drugInteractions?: string;
+  incompatibilities?: string; // Tương kỵ dung môi & tiêm truyền
+  storageStability?: string; // Độ ổn định và điều kiện bảo quản
   overdoseTreatment?: string;
   antidote?: string;
   clinicalSource?: string;
   isVerified?: boolean;
+  // Hỗ trợ cả định dạng snake_case từ backend API
+  pharmacodynamics_raw?: string;
+  pharmacokinetics_raw?: string;
+  adr_management?: string;
+  incompatibilities_raw?: string;
+  storage_stability?: string;
+  lactation_warning?: string;
 }

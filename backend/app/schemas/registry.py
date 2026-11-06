@@ -34,16 +34,22 @@ class DrugItemResponse(BaseModel):
     # Thông tin lâm sàng Dược Thư Quốc Gia
     atc_code: str | None = None
     drug_class: str | None = None
+    pharmacodynamics: str | None = None
+    pharmacokinetics: str | None = None
     indications: str | None = None
     contraindications: str | None = None
     precautions: str | None = None
     pregnancy_warning: str | None = None
+    lactation_warning: str | None = None
     adult_dosage: str | None = None
     pediatric_dosage: str | None = None
     renal_adjustment: str | None = None
     hepatic_adjustment: str | None = None
     adverse_effects: str | None = None
+    adr_management: str | None = None
     drug_interactions: str | None = None
+    incompatibilities: str | None = None
+    storage_stability: str | None = None
     overdose_treatment: str | None = None
     antidote: str | None = None
     clinical_source: str | None = None
