@@ -263,8 +263,9 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
 
     # 6. Hướng dẫn Dược Lâm Sàng & An Toàn Thuốc Chuyên Sâu (Specialty Clinical Guidelines)
     try:
-        from app.services.chatbot.conversational_clinical_engine import SPECIALTY_CLINICAL_KNOWLEDGE
-        for idx, item in enumerate(SPECIALTY_CLINICAL_KNOWLEDGE):
+        from app.services.chatbot.specialty_knowledge_registry import SpecialtyKnowledgeRegistry
+        specialty_items = SpecialtyKnowledgeRegistry.get_instance().get_knowledge_items()
+        for idx, item in enumerate(specialty_items):
             topic = item.get("topic", "Hướng dẫn Lâm sàng")
             bluf = item.get("bluf", "")
             details_list = item.get("details", [])

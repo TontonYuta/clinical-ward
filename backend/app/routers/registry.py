@@ -1,7 +1,8 @@
 import re
 from pathlib import Path
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.config import settings
@@ -14,7 +15,7 @@ from app.schemas.registry import (
 from app.services.registry_service import (
     normalize_code, get_registry_revision, get_inventory_revision,
     get_hospital_stock, get_cached_group_stats, GROUP_ALIAS_MAP,
-    PHARM_MAPPING, enrich_monograph_for_drug
+    PHARM_MAPPING, enrich_monograph_for_drug, escape_fts5_query
 )
 
 router = APIRouter(prefix="/registry", tags=["Cơ Sở Dữ Liệu Dược Quốc Gia (DAV 55.000 SĐK)"])
@@ -81,34 +82,72 @@ async def get_national_drugs_paginated(
     if only_in_warehouse:
         stock_codes = [code for code in hospital_codes if code]
         if stock_codes:
-            filters.append(func.lower(func.trim(DavNationalDrug.national_code)).in_(stock_codes))
+            filters.append(DavNationalDrug.national_code.in_(stock_codes))
         else:
             filters.append(DavNationalDrug.id == "__no_hospital_stock__")
 
+    clean_search = (search or "").strip()
+    fts_q = escape_fts5_query(clean_search) if clean_search else ""
+    use_fts = bool(fts_q and not pharm_group and not only_in_warehouse)
+
     try:
-        count_stmt = select(func.count(DavNationalDrug.id))
-        if filters:
-            count_stmt = count_stmt.where(*filters)
-        total_res = await db.execute(count_stmt)
-        total_count = total_res.scalar() or 0
+        items = []
+        total_count = 0
 
-        data_stmt = select(DavNationalDrug)
-        if filters:
-            data_stmt = data_stmt.where(*filters)
-        offset = (page - 1) * page_size
-        data_stmt = data_stmt.order_by(
-            (DavNationalDrug.national_code == "893100110026").desc(),
-            DavNationalDrug.brand_name.asc(),
-            DavNationalDrug.national_code.asc()
-        ).offset(offset).limit(page_size)
-        data_res = await db.execute(data_stmt)
-        items = data_res.scalars().all()
+        if use_fts:
+            try:
+                fts_conditions = ["dav_national_drugs_fts MATCH :fts_q"]
+                params: dict[str, Any] = {"fts_q": fts_q}
+                if target_group:
+                    fts_conditions.append("d.[group] = :target_group")
+                    params["target_group"] = target_group
 
-        hospital_stock_drug_count = (await db.execute(
-            select(func.count(DavNationalDrug.id)).where(
-                func.lower(func.trim(DavNationalDrug.national_code)).in_(list(hospital_codes))
-            )
-        )).scalar() or 0
+                where_clause = " AND ".join(fts_conditions)
+                count_sql = text(f"SELECT count(*) FROM dav_national_drugs_fts f JOIN dav_national_drugs d ON d.rowid = f.rowid WHERE {where_clause}")
+                total_count = (await db.execute(count_sql, params)).scalar() or 0
+
+                offset = (page - 1) * page_size
+                params["limit"] = page_size
+                params["offset"] = offset
+
+                data_sql = text(f"""
+                    SELECT d.* FROM dav_national_drugs_fts f
+                    JOIN dav_national_drugs d ON d.rowid = f.rowid
+                    WHERE {where_clause}
+                    ORDER BY (d.national_code == '893100110026') DESC, d.brand_name ASC
+                    LIMIT :limit OFFSET :offset
+                """)
+                items = (await db.execute(select(DavNationalDrug).from_statement(data_sql), params)).scalars().all()
+            except Exception:
+                use_fts = False
+
+        if not use_fts:
+            if filters:
+                count_stmt = select(func.count(DavNationalDrug.id)).where(*filters)
+                total_res = await db.execute(count_stmt)
+                total_count = total_res.scalar() or 0
+            else:
+                total_count = 54885
+
+            data_stmt = select(DavNationalDrug)
+            if filters:
+                data_stmt = data_stmt.where(*filters)
+            offset = (page - 1) * page_size
+            data_stmt = data_stmt.order_by(
+                DavNationalDrug.brand_name.asc(),
+                DavNationalDrug.national_code.asc()
+            ).offset(offset).limit(page_size)
+            data_res = await db.execute(data_stmt)
+            items = data_res.scalars().all()
+
+        if hospital_codes:
+            hospital_stock_drug_count = (await db.execute(
+                select(func.count(DavNationalDrug.id)).where(
+                    DavNationalDrug.national_code.in_(list(hospital_codes))
+                )
+            )).scalar() or len(hospital_codes)
+        else:
+            hospital_stock_drug_count = 0
         for drug in items:
             drug.hospital_stock_by_unit = stock_by_code.get(normalize_code(drug.national_code), [])
 
@@ -144,7 +183,7 @@ async def get_drug_by_national_code(national_code: str, refresh: bool = Query(Fa
     if not drug:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy thuốc có SĐK {national_code}")
 
-    if refresh or (not drug.hdsd_path and not drug.label_path):
+    if refresh:
         import asyncio
         from app.services.dav_document_service import resolve_and_cache_drug_documents
         try:

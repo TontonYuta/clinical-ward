@@ -16,8 +16,10 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
     is_pure_greeting = clean_greeting in {
         "hi", "hello", "chao", "chào", "xin chao", "xin chào", "alo", "hey",
         "chao ban", "chào bạn", "chao bot", "chào bot", "chao em", "chào em",
-        "chao bac si", "chào bác sĩ", "hi bot", "hello bot", "halo", "yo"
-    } or (len(greeting_tokens) <= 2 and any(t in greeting_tokens for t in ["hi", "hello", "alo", "hey"])) or wellbeing
+        "xin chao em", "xin chào em", "xin chao ban", "xin chào bạn",
+        "chao bac si", "chào bác sĩ", "xin chao bac si", "xin chào bác sĩ",
+        "chao dong nghiep", "chào đồng nghiệp", "hi bot", "hello bot", "halo", "yo"
+    } or (len(greeting_tokens) <= 3 and any(t in clean_greeting for t in ["xin chào", "xin chao", "chào bạn", "chao ban", "chào em", "chao em"])) or (len(greeting_tokens) <= 2 and any(t in greeting_tokens for t in ["hi", "hello", "alo", "hey"])) or wellbeing
 
     if is_pure_greeting:
         role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"

@@ -123,6 +123,17 @@ function testChatMarkdown() {
   }
   console.log('✅ 10. Paragraph Grouping passed!');
 
+  // 11. Test Suppression of Duplicate Source Line when Citations exist
+  const textWithSource = `Liều dùng: 500mg.\nNguồn: [DTQG tr.1118]`;
+  const nodesWithCitations = renderFormattedText(textWithSource, {
+    citations: [{ source: 'Dược thư Quốc gia', legal_basis: 'DTQG 2015', page: 1118 }]
+  }) as any[];
+  const hasDuplicateSource = nodesWithCitations.some(node => node && node.key && String(node.key).startsWith('source-line'));
+  if (hasDuplicateSource) {
+    throw new Error('Duplicate source line should NOT be rendered when citations are provided!');
+  }
+  console.log('✅ 11. Suppression of duplicate source line with citations passed!');
+
   console.log('🎉 ALL CHAT MARKDOWN TESTS PASSED 100%!');
 }
 

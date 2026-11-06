@@ -72,7 +72,7 @@ def resolve_copilot_identity(payload: CopilotQuery, request: Request, session=No
     session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
     return user_name, user_role, session_id
 
-async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
+async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
     user_name, user_role, session_id = resolve_copilot_identity(payload, request, session=session)
     guard_res = validate_input_guardrail(payload.query, user_role=user_role)
     if not guard_res.is_safe:
@@ -478,3 +478,11 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         legal_basis="Thông tư 26/2025, TT 52/2017, QĐ 5948 & DĐVN V",
         suggested_chips=[]
     )
+
+
+async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
+    """Entrypoint chính của Copilot: Xử lý chat và tự động chuẩn hóa 100% nguồn đối chứng (citations)."""
+    from app.services.chatbot.citation_standardizer import standardize_response_citations
+    resp = await _handle_copilot_chat_core(payload, request, db, session=session, history=history)
+    return standardize_response_citations(resp, payload.query)
+

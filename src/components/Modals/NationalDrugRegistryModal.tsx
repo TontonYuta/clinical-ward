@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Search, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { MasterMedication } from '../../types/medication';
-import { getNationalDrugRegistryApi } from '../../services/api';
+import { getNationalDrugRegistryApi, setCachedDrugDetail } from '../../services/api';
 import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
 import { NationalDrugTabs } from './NationalDrugRegistry/NationalDrugTabs';
 import { queryOfflineRegistry } from './NationalDrugRegistry/offlineRegistry';
@@ -17,6 +17,65 @@ import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { getCachedRegistryPage, saveCachedRegistryPage, RegistryPageKey } from '../../utils/storage/registryPageCache';
 
 interface Props { isOpen: boolean; onClose: () => void; onSelectMedication?: (medName: string) => void; initialSearch?: string; }
+
+function mapMedicationItem(i: any): MasterMedication {
+  const nationalCode = i.national_code || i.nationalCode || '';
+  const brandName = i.brand_name || i.brandName || '';
+  const item: MasterMedication = {
+    ...i,
+    id: i.id || nationalCode,
+    nationalCode,
+    brandName,
+    activeIngredient: i.active_ingredient || i.activeIngredient || '',
+    dosageForm: i.dosage_form || i.dosageForm || '',
+    standardUnit: i.standard_unit || i.standardUnit || 'Viên',
+    group: i.group || 'Thuốc điều trị chuyên khoa',
+    hospitalStockByUnit: (i.hospital_stock_by_unit || []).map((stock: any) => ({
+      unit: stock.unit,
+      quantity: stock.quantity,
+      batchCount: stock.batch_count ?? stock.batchCount ?? 1,
+    })),
+    hospitalStockCount: (i.hospital_stock_by_unit || []).reduce(
+      (sum: number, stock: any) => sum + (stock.unit === (i.standard_unit || i.standardUnit || 'Viên') ? stock.quantity : 0),
+      0
+    ),
+    isControlled: !!(i.is_controlled ?? i.isControlled),
+    isHighAlert: !!(i.is_high_alert ?? i.isHighAlert),
+    isCrashCart: !!(i.is_crash_cart ?? i.isCrashCart),
+    defaultDoseQty: 1,
+    wardStockCount: 0,
+    searchAliases: [brandName.toLowerCase()],
+    packagingSpec: i.packaging_spec || i.packagingSpec,
+    standardPharmacopeia: i.standard_pharmacopeia || i.standardPharmacopeia,
+    shelfLife: i.shelf_life || i.shelfLife,
+    manufacturer: i.manufacturer,
+    country: i.country,
+    applicantName: i.applicant_name || i.applicantName,
+    approvalDecision: i.approval_decision || i.approvalDecision,
+    hdsdPath: i.hdsd_path || i.hdsdPath,
+    labelPath: i.label_path || i.labelPath,
+    atcCode: i.atc_code || i.atcCode,
+    drugClass: i.drug_class || i.drugClass,
+    clinicalSource: i.clinical_source || i.clinicalSource,
+    // Clinical monograph fields
+    indications: i.indications,
+    contraindications: i.contraindications,
+    precautions: i.precautions,
+    pregnancyWarning: i.pregnancy_warning || i.pregnancyWarning,
+    adultDosage: i.adult_dosage || i.adultDosage,
+    pediatricDosage: i.pediatric_dosage || i.pediatricDosage,
+    renalAdjustment: i.renal_adjustment || i.renalAdjustment,
+    hepaticAdjustment: i.hepatic_adjustment || i.hepaticAdjustment,
+    adverseEffects: i.adverse_effects || i.adverseEffects,
+    drugInteractions: i.drug_interactions || i.drugInteractions,
+    overdoseTreatment: i.overdose_treatment || i.overdoseTreatment,
+    antidote: i.antidote,
+    clinicalMonographId: i.clinical_monograph_id || i.clinicalMonographId,
+    isVerified: true,
+  };
+  if (nationalCode) setCachedDrugDetail(nationalCode, item);
+  return item;
+}
 
 const PAGE_SIZE = 12;
 export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, onSelectMedication, initialSearch = '' }) => {
@@ -46,22 +105,14 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
     }
   }, [isOpen, initialSearch]);
 
-  useEffect(() => { const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 250); return () => clearTimeout(t); }, [searchInput]);
+  useEffect(() => { const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 120); return () => clearTimeout(t); }, [searchInput]);
 
   const loadData = useCallback(async (isManualSync = false) => {
     const key: RegistryPageKey = { search, group: selectedGroup, pharmGroup, page, pageSize: PAGE_SIZE, onlyInWarehouse };
     const cached = getCachedRegistryPage(key);
     if (!isManualSync && cached) {
       const cachedResponse = cached.response;
-      const mappedCache = cachedResponse.items.map((i) => ({
-        ...i, id: i.id, nationalCode: i.national_code, brandName: i.brand_name,
-        activeIngredient: i.active_ingredient, dosageForm: i.dosage_form,
-        standardUnit: i.standard_unit || 'Viên', group: i.group || 'Thuốc điều trị chuyên khoa',
-        hospitalStockByUnit: i.hospital_stock_by_unit.map((stock) => ({ unit: stock.unit, quantity: stock.quantity, batchCount: stock.batch_count })),
-        hospitalStockCount: i.hospital_stock_by_unit.reduce((sum, stock) => sum + (stock.unit === (i.standard_unit || 'Viên') ? stock.quantity : 0), 0),
-        isControlled: !!i.is_controlled, isHighAlert: !!i.is_high_alert, isCrashCart: !!i.is_crash_cart,
-        defaultDoseQty: 1, wardStockCount: 0, searchAliases: [i.brand_name.toLowerCase()],
-      })) as MasterMedication[];
+      const mappedCache = cachedResponse.items.map(mapMedicationItem);
       setDrugs(mappedCache); setTotalCount(cachedResponse.total); setTotalPages(cachedResponse.total_pages);
       setGroupStats(cachedResponse.group_stats); setHospitalStockDrugCount(cachedResponse.hospital_stock_drug_count);
       setCacheStatus('checking'); setLoading(false);
@@ -70,21 +121,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
     try {
       const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, pharmGroup, page, pageSize: PAGE_SIZE, onlyInWarehouse });
       if (data && Array.isArray(data.items)) {
-        const mapped: MasterMedication[] = data.items.map((i: any) => ({
-          ...i, id: i.id, nationalCode: i.national_code || i.nationalCode, brandName: i.brand_name || i.brandName,
-          activeIngredient: i.active_ingredient || i.activeIngredient, dosageForm: i.dosage_form || i.dosageForm,
-          standardUnit: i.standard_unit || i.standardUnit || 'Viên', group: i.group || 'Thuốc điều trị chuyên khoa',
-          hospitalStockByUnit: (i.hospital_stock_by_unit || []).map((stock: any) => ({ unit: stock.unit, quantity: stock.quantity, batchCount: stock.batch_count })),
-          hospitalStockCount: (i.hospital_stock_by_unit || []).reduce((total: number, stock: { quantity: number; unit: string }) => total + (stock.unit === (i.standard_unit || i.standardUnit || 'Viên') ? stock.quantity : 0), 0),
-          isControlled: !!(i.is_controlled ?? i.isControlled), isHighAlert: !!(i.is_high_alert ?? i.isHighAlert),
-          isCrashCart: !!(i.is_crash_cart ?? i.isCrashCart), defaultDoseQty: 1, wardStockCount: 0,
-          searchAliases: [((i.brand_name || i.brandName || '') as string).toLowerCase()], packagingSpec: i.packaging_spec || i.packagingSpec,
-          standardPharmacopeia: i.standard_pharmacopeia || i.standardPharmacopeia, shelfLife: i.shelf_life || i.shelfLife,
-          manufacturer: i.manufacturer, country: i.country, applicantName: i.applicant_name || i.applicantName,
-          approvalDecision: i.approval_decision || i.approvalDecision, hdsdPath: i.hdsd_path || i.hdsdPath,
-          labelPath: i.label_path || i.labelPath, atcCode: i.atc_code || i.atcCode, drugClass: i.drug_class || i.drugClass,
-          clinicalSource: i.clinical_source || i.clinicalSource,
-        }));
+        const mapped = data.items.map(mapMedicationItem);
         setDrugs(mapped); setTotalCount(data.total ?? mapped.length); setTotalPages(data.total_pages || 1);
         setHospitalStockDrugCount(data.hospital_stock_drug_count ?? 0);
         if (data.group_stats) setGroupStats(data.group_stats);

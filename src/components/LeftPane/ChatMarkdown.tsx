@@ -130,7 +130,7 @@ export const formatInlineMarkdown = (
                 page: pageNum,
               });
             }}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded text-3xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/80 transition cursor-pointer active:scale-95 align-baseline"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded text-2xs sm:text-xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/80 transition cursor-pointer active:scale-95 align-baseline"
             title={`Tra cứu y văn: ${linkText}`}
           >
             <BookOpen className="w-2.5 h-2.5 text-teal-600" />
@@ -197,7 +197,7 @@ export const formatInlineMarkdown = (
               section: matchedCitation?.section,
             });
           }}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded text-3xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/80 transition cursor-pointer active:scale-95 align-baseline"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded text-2xs sm:text-xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/80 transition cursor-pointer active:scale-95 align-baseline"
           title={`Bấm để tra cứu: ${rawCitationLabel}`}
         >
           <BookOpen className="w-2.5 h-2.5 text-teal-600" />
@@ -283,9 +283,9 @@ export const renderFormattedText = (
       elements.push(
         <div
           key={`alert-${i}`}
-          className={`my-2.5 p-3 rounded-xl border text-xs space-y-1.5 shadow-3xs ${styleClass}`}
+          className={`my-2.5 p-3.5 rounded-xl border text-xs sm:text-sm space-y-1.5 shadow-3xs ${styleClass}`}
         >
-          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-2xs">
+          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-xs">
             {icon}
             <span>{alertTitle}</span>
           </div>
@@ -294,14 +294,14 @@ export const renderFormattedText = (
               const bBullet = bLine.match(/^[\*\-\+•●▪⁃–]\s*(.+)$/);
               if (bBullet) {
                 return (
-                  <div key={bIdx} className="flex items-start gap-2 leading-relaxed text-xs pl-1">
+                  <div key={bIdx} className="flex items-start gap-2 leading-relaxed text-xs sm:text-sm pl-1">
                     <span className={`w-1.5 h-1.5 rounded-full ${isDanger ? 'bg-rose-500' : isImportant ? 'bg-amber-500' : isTip ? 'bg-emerald-500' : 'bg-teal-600'} mt-1.5 shrink-0`} />
                     <div className="flex-1">{formatInlineMarkdown(bBullet[1], options)}</div>
                   </div>
                 );
               }
               return (
-                <div key={bIdx} className="leading-relaxed pl-1 text-xs">
+                <div key={bIdx} className="leading-relaxed pl-1 text-xs sm:text-sm">
                   {formatInlineMarkdown(bLine, options)}
                 </div>
               );
@@ -327,12 +327,12 @@ export const renderFormattedText = (
       elements.push(
         <div
           key={`meta-pills-${i}`}
-          className="my-2.5 p-2 rounded-xl bg-teal-50/60 border border-teal-200/70 flex flex-wrap gap-2 text-xs"
+          className="my-2.5 p-2 rounded-xl bg-teal-50/60 border border-teal-200/70 flex flex-wrap gap-2 text-xs sm:text-sm"
         >
           {pillItems.map((item, pIdx) => (
             <div
               key={pIdx}
-              className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-teal-200/80 shadow-3xs text-slate-800 text-xs font-medium"
+              className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-teal-200/80 shadow-3xs text-slate-800 text-xs sm:text-sm font-medium"
             >
               <span>{formatInlineMarkdown(item, options)}</span>
             </div>
@@ -376,13 +376,13 @@ export const renderFormattedText = (
           key={`table-${i}`}
           className="my-2.5 overflow-x-auto rounded-xl border border-slate-200/90 shadow-3xs"
         >
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse">
             <thead className="bg-slate-100/90 text-slate-900 font-bold border-b border-slate-200">
               <tr>
                 {headerCells.map((h, hIdx) => (
                   <th
                     key={hIdx}
-                    className="px-3 py-2 text-2xs uppercase tracking-wider text-slate-700 font-bold"
+                    className="px-3 py-2 text-xs uppercase tracking-wider text-slate-700 font-bold"
                   >
                     {formatInlineMarkdown(h, options)}
                   </th>
@@ -396,7 +396,7 @@ export const renderFormattedText = (
                   className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}
                 >
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-3 py-2 leading-relaxed text-xs">
+                    <td key={cIdx} className="px-3 py-2 leading-relaxed text-xs sm:text-sm">
                       {formatInlineMarkdown(cell, options)}
                     </td>
                   ))}
@@ -425,7 +425,7 @@ export const renderFormattedText = (
       elements.push(
         <blockquote
           key={`quote-${i}`}
-          className="my-2 pl-3 py-1.5 border-l-3 border-teal-700 bg-slate-50/80 rounded-r-lg text-xs text-slate-800 italic leading-relaxed space-y-1 border-y border-r border-slate-200/50"
+          className="my-2 pl-3.5 py-1.5 border-l-3 border-teal-700 bg-slate-50/80 rounded-r-lg text-xs sm:text-sm text-slate-800 italic leading-relaxed space-y-1 border-y border-r border-slate-200/50"
         >
           {quoteLines.map((qLine, qIdx) => (
             <div key={qIdx}>{formatInlineMarkdown(qLine, options)}</div>
@@ -443,7 +443,7 @@ export const renderFormattedText = (
     const h1 = line.match(/^#\s+(.+)$/);
     if (h1) {
       elements.push(
-        <h2 key={`h1-${i}`} className="font-bold text-sm sm:text-base text-teal-950 mt-3.5 mb-2 border-b border-slate-200/90 pb-1.5 flex items-center gap-1.5">
+        <h2 key={`h1-${i}`} className="font-bold text-base sm:text-lg text-teal-950 mt-3.5 mb-2 border-b border-slate-200/90 pb-1.5 flex items-center gap-1.5">
           {formatInlineMarkdown(h1[1], options)}
         </h2>
       );
@@ -452,7 +452,7 @@ export const renderFormattedText = (
     const h2 = line.match(/^##\s+(.+)$/);
     if (h2) {
       elements.push(
-        <h3 key={`h2-${i}`} className="font-bold text-xs sm:text-sm text-slate-900 mt-3 mb-1.5 flex items-center gap-1.5">
+        <h3 key={`h2-${i}`} className="font-bold text-sm sm:text-base text-slate-900 mt-3 mb-1.5 flex items-center gap-1.5">
           {formatInlineMarkdown(h2[1], options)}
         </h3>
       );
@@ -461,7 +461,7 @@ export const renderFormattedText = (
     const h3 = line.match(/^###\s+(.+)$/);
     if (h3) {
       elements.push(
-        <h4 key={`h3-${i}`} className="font-bold text-xs text-teal-900 mt-2.5 mb-1 flex items-center gap-1.5 uppercase tracking-wide">
+        <h4 key={`h3-${i}`} className="font-bold text-sm sm:text-base text-teal-900 mt-2.5 mb-1 flex items-center gap-1.5 uppercase tracking-wide">
           {formatInlineMarkdown(h3[1], options)}
         </h4>
       );
@@ -470,7 +470,7 @@ export const renderFormattedText = (
     const h4 = line.match(/^####\s+(.+)$/);
     if (h4) {
       elements.push(
-        <h5 key={`h4-${i}`} className="font-semibold text-xs text-slate-800 mt-2 mb-0.5">
+        <h5 key={`h4-${i}`} className="font-semibold text-xs sm:text-sm text-slate-800 mt-2 mb-0.5">
           {formatInlineMarkdown(h4[1], options)}
         </h5>
       );
@@ -490,7 +490,7 @@ export const renderFormattedText = (
     const bracketMatch = line.match(/^\[([^\]]+)\]:?$/);
     if (bracketMatch) {
       elements.push(
-        <div key={`bracket-hdr-${i}`} className="mt-2.5 mb-1 flex items-center gap-1.5 text-xs font-bold text-slate-900 bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/80 w-fit shadow-3xs">
+        <div key={`bracket-hdr-${i}`} className="mt-2.5 mb-1 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900 bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/80 w-fit shadow-3xs">
           <span className="w-1.5 h-1.5 rounded-xs bg-teal-700 shrink-0" />
           <span>{formatInlineMarkdown(bracketMatch[1], options)}</span>
         </div>
@@ -503,7 +503,7 @@ export const renderFormattedText = (
     const boldHdrMatch = line.match(/^\*\*([^*]+)\*\*:?$/);
     if (boldHdrMatch) {
       elements.push(
-        <div key={`bold-hdr-${i}`} className="mt-2.5 mb-1 font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5">
+        <div key={`bold-hdr-${i}`} className="mt-2.5 mb-1 font-bold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
           <span>{formatInlineMarkdown(boldHdrMatch[1], options)}</span>
         </div>
@@ -515,12 +515,17 @@ export const renderFormattedText = (
     // 7.1. Dòng gắn nguồn y văn cuối cụm: Nguồn: [Dược thư tr.1118], Nguồn: [QĐ 5948]
     const sourceMatch = line.match(/^[\*\(_\-]*\s*Nguồn(?:\s*tham\s*chiếu)?:?\s*(.+)$/i);
     if (sourceMatch) {
+      if (options.citations && options.citations.length > 0) {
+        // Đã có badge nguồn đối soát ở chân tin nhắn, loại bỏ hoàn toàn dòng text nguồn trùng lặp
+        i++;
+        continue;
+      }
       const rest = sourceMatch[1].replace(/[\*\)]+$/, '').trim();
       const isNested = rawLine.startsWith('  ') || rawLine.startsWith('\t');
       elements.push(
         <div
           key={`source-line-${i}`}
-          className={`mt-1.5 flex items-center gap-1.5 text-2xs text-slate-500 font-medium ${isNested ? 'pl-4 sm:pl-5' : 'pl-0.5'}`}
+          className={`mt-1.5 flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium ${isNested ? 'pl-4 sm:pl-5' : 'pl-0.5'}`}
         >
           <span className="text-slate-400 font-normal">Nguồn:</span>
           {formatInlineMarkdown(rest, options)}
@@ -533,7 +538,7 @@ export const renderFormattedText = (
     // 8. Câu hỏi gợi ý kết thúc câu trả lời
     if (/^(?:Đồng nghiệp|Bác sĩ|Dược sĩ|Điều dưỡng)\s+cần\s+tra\s+cứu\s+thêm/i.test(line)) {
       elements.push(
-        <div key={`prompt-closing-${i}`} className="mt-3 pt-2 border-t border-slate-100 text-xs text-slate-600 italic flex items-center gap-1.5">
+        <div key={`prompt-closing-${i}`} className="mt-3 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-600 italic flex items-center gap-1.5">
           <Lightbulb className="w-3.5 h-3.5 text-teal-600 shrink-0" />
           <span>{formatInlineMarkdown(line, options)}</span>
         </div>
@@ -547,8 +552,8 @@ export const renderFormattedText = (
     if (numMatch) {
       const isNested = rawLine.startsWith('  ') || rawLine.startsWith('\t');
       elements.push(
-        <div key={`num-${i}`} className={`flex items-start gap-1.5 ${options.compact ? 'my-0.5' : 'my-1'} ${isNested ? 'pl-4 sm:pl-5' : 'pl-0.5'} leading-relaxed ${options.compact ? 'text-xs' : 'text-xs sm:text-sm'} text-slate-800`}>
-          <span className="font-semibold text-slate-600 text-xs shrink-0 mt-0.5 min-w-[16px]">{numMatch[1]}.</span>
+        <div key={`num-${i}`} className={`flex items-start gap-1.5 ${options.compact ? 'my-0.5' : 'my-1'} ${isNested ? 'pl-4 sm:pl-5' : 'pl-0.5'} leading-relaxed ${options.compact ? 'text-xs' : 'text-sm sm:text-base'} text-slate-800`}>
+          <span className="font-semibold text-slate-600 text-xs sm:text-sm shrink-0 mt-0.5 min-w-[16px]">{numMatch[1]}.</span>
           <div className="flex-1">{formatInlineMarkdown(numMatch[2], options)}</div>
         </div>
       );
@@ -573,7 +578,7 @@ export const renderFormattedText = (
       elements.push(
         <div
           key={`bullet-${i}`}
-          className={`flex items-start gap-2 ${options.compact ? 'my-0.5' : 'my-1'} leading-relaxed ${options.compact ? 'text-xs' : 'text-xs sm:text-sm'} text-slate-800 ${
+          className={`flex items-start gap-2 ${options.compact ? 'my-0.5' : 'my-1'} leading-relaxed ${options.compact ? 'text-xs' : 'text-sm sm:text-base'} text-slate-800 ${
             isDoubleNested ? 'pl-7 sm:pl-8' : isNested ? 'pl-3.5 sm:pl-4' : 'pl-0.5'
           }`}
         >
@@ -609,7 +614,7 @@ export const renderFormattedText = (
     elements.push(
       <p
         key={`p-${i}`}
-        className={`${options.compact ? 'my-0.5 text-xs' : 'my-1 text-xs sm:text-sm'} leading-relaxed text-slate-800 break-words`}
+        className={`${options.compact ? 'my-0.5 text-xs' : 'my-1 text-sm sm:text-base'} leading-relaxed text-slate-800 break-words`}
       >
         {paraLines.map((pLine, pIdx) => (
           <React.Fragment key={pIdx}>

@@ -29,6 +29,42 @@ PHARM_MAPPING: dict[str, tuple[list[str], list[str]]] = {
 }
 
 _GROUP_STATS_CACHE: dict[str, int] | None = None
+_REGISTRY_REVISION_CACHE: str | None = None
+
+def invalidate_hospital_stock_cache() -> None:
+    pass
+
+def escape_fts5_query(q: str) -> str:
+    if not q or not q.strip():
+        return ""
+    tokens = re.findall(r'[\w]+', q.strip(), re.UNICODE)
+    if not tokens:
+        return ""
+    return " ".join(f'"{t}"*' for t in tokens)
+
+def warm_up_registry_cache_and_fts() -> None:
+    try:
+        import sqlite3
+        from pathlib import Path
+        from app.config import settings
+        db_path = settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+        if db_path and Path(db_path).is_file():
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            tables = [r[0] for r in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+            if "dav_national_drugs_fts" not in tables and "dav_national_drugs" in tables:
+                cursor.execute("""
+                    CREATE VIRTUAL TABLE dav_national_drugs_fts USING fts5(
+                        national_code, brand_name, active_ingredient,
+                        content=dav_national_drugs, content_rowid=rowid,
+                        tokenize='unicode61 remove_diacritics 2'
+                    );
+                """)
+                cursor.execute('INSERT INTO dav_national_drugs_fts(dav_national_drugs_fts) VALUES("rebuild");')
+                conn.commit()
+            conn.close()
+    except Exception as e:
+        print(f"Warning: Không thể warm up FTS: {e}")
 
 def normalize_code(value: str | None) -> str:
     return unicodedata.normalize("NFKC", value or "").strip().casefold()
@@ -41,11 +77,14 @@ def calculate_revision(rows: list[tuple]) -> str:
     return digest.hexdigest()
 
 async def get_registry_revision(db: AsyncSession) -> str:
-    rows = (await db.execute(select(
-        DavNationalDrug.id, DavNationalDrug.national_code, DavNationalDrug.brand_name,
-        DavNationalDrug.active_ingredient, DavNationalDrug.group, DavNationalDrug.atc_code
-    ).order_by(DavNationalDrug.id))).all()
-    return calculate_revision(rows)
+    global _REGISTRY_REVISION_CACHE
+    if _REGISTRY_REVISION_CACHE is None:
+        rows = (await db.execute(select(
+            DavNationalDrug.id, DavNationalDrug.national_code, DavNationalDrug.brand_name,
+            DavNationalDrug.active_ingredient, DavNationalDrug.group, DavNationalDrug.atc_code
+        ).order_by(DavNationalDrug.id))).all()
+        _REGISTRY_REVISION_CACHE = calculate_revision(rows)
+    return _REGISTRY_REVISION_CACHE
 
 async def get_inventory_revision(db: AsyncSession) -> str:
     rows = (await db.execute(select(
@@ -96,12 +135,16 @@ async def enrich_monograph_for_drug(drug: DavNationalDrug, db: AsyncSession, ref
         mono = m_res.scalar_one_or_none()
 
     if not mono and drug.active_ingredient:
-        normalize = lambda value: re.sub(r"[^a-z0-9]+", "", value.casefold())
-        active_key = normalize(drug.active_ingredient)
-        mono_res = await db.execute(select(ClinicalDrugMonograph))
-        exact_matches = [candidate for candidate in mono_res.scalars() if normalize(candidate.inn) == active_key]
-        if len(exact_matches) == 1:
-            mono = exact_matches[0]
+        clean_ing = drug.active_ingredient.strip().lower()
+        m_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn) == clean_ing).limit(1))
+        mono = m_res.scalar_one_or_none()
+        if not mono:
+            normalize = lambda value: re.sub(r"[^a-z0-9]+", "", value.casefold())
+            active_key = normalize(drug.active_ingredient)
+            mono_res = await db.execute(select(ClinicalDrugMonograph).limit(100))
+            exact_matches = [candidate for candidate in mono_res.scalars() if normalize(candidate.inn) == active_key]
+            if len(exact_matches) == 1:
+                mono = exact_matches[0]
 
     if mono:
         fields = (

@@ -60,8 +60,26 @@ export const DEVICE_CATALOG: DeviceCatalogItem[] = [
   { name: 'Máy điện tim 12 cần Nihon Kohden', model: 'Cardiofax M ECG-1250K', serial: 'NK-ECG12-1089', risk: 'B', aliases: ['ecg', 'điện tim', 'nihon kohden'] }
 ];
 
+const dynamicMeds: MedCatalogItem[] = [];
+const dynamicDevices: DeviceCatalogItem[] = [];
+
+export function registerDynamicMed(item: MedCatalogItem): void {
+  if (!dynamicMeds.some(m => m.name.toLowerCase() === item.name.toLowerCase())) {
+    dynamicMeds.push(item);
+  }
+}
+
+export function registerDynamicMeds(items: MedCatalogItem[]): void {
+  for (const it of items) registerDynamicMed(it);
+}
+
+export function getDynamicMeds(): MedCatalogItem[] {
+  return [...dynamicMeds];
+}
+
 export function findMatchedMed(lowerText: string): MedCatalogItem | undefined {
   const isElectricPump = lowerText.includes('bơm tiêm điện');
+  // 1. Khớp nhanh trong danh mục nòng cốt thiết yếu
   for (const m of MED_CATALOG) {
     if (m.name.includes('Bơm tiêm') && isElectricPump) continue;
     if (m.aliases.some(alias => {
@@ -71,9 +89,48 @@ export function findMatchedMed(lowerText: string): MedCatalogItem | undefined {
       return m;
     }
   }
+
+  // 2. Khớp trong danh mục động đã được đăng ký hoặc nạp
+  for (const m of dynamicMeds) {
+    if (m.aliases.some(alias => lowerText.includes(alias))) {
+      return m;
+    }
+  }
+
   return undefined;
 }
 
 export function findMatchedDevice(lowerText: string): DeviceCatalogItem | undefined {
-  return DEVICE_CATALOG.find(d => d.aliases.some(alias => lowerText.includes(alias)));
+  // 1. Khớp thiết bị nòng cốt
+  const exact = DEVICE_CATALOG.find(d => d.aliases.some(alias => lowerText.includes(alias)));
+  if (exact) return exact;
+
+  // 2. Khớp thiết bị động đã đăng ký
+  const dyn = dynamicDevices.find(d => d.aliases.some(alias => lowerText.includes(alias)));
+  if (dyn) return dyn;
+
+  // 3. Khớp thiết bị y tế theo danh mục chung
+  const commonDevices: Array<{ pattern: RegExp; name: string; model: string; risk: string; aliases: string[] }> = [
+    { pattern: /\bmáy thở\b/, name: 'Máy thở Hồi sức Cấp cứu', model: 'Ventilator Standard', risk: 'D', aliases: ['máy thở'] },
+    { pattern: /\bmáy sốc tim\b|\bphá rung\b/, name: 'Máy sốc tim & Phá rung', model: 'Defibrillator Standard', risk: 'D', aliases: ['máy sốc tim', 'phá rung'] },
+    { pattern: /\bbơm tiêm điện\b|\bperfusor\b/, name: 'Bơm tiêm điện chính xác', model: 'Precision Syringe Pump', risk: 'C', aliases: ['bơm tiêm điện', 'perfusor'] },
+    { pattern: /\bmáy lọc máu\b|\bcrrt\b/, name: 'Hệ thống lọc máu liên tục CRRT', model: 'Continuous Dialysis System', risk: 'D', aliases: ['máy lọc máu', 'crrt'] },
+    { pattern: /\bmonitor\b|\bmáy theo dõi\b/, name: 'Máy theo dõi bệnh nhân đa thông số', model: 'Patient Monitor Standard', risk: 'C', aliases: ['monitor', 'máy theo dõi'] },
+    { pattern: /\bmáy đo khí máu\b|\bkhí máu\b/, name: 'Máy phân tích khí máu', model: 'Blood Gas Analyzer', risk: 'C', aliases: ['máy đo khí máu', 'khí máu'] },
+    { pattern: /\bmáy điện tim\b|\becg\b/, name: 'Máy điện tim ECG', model: 'ECG Multi-channel', risk: 'B', aliases: ['máy điện tim', 'ecg'] },
+    { pattern: /\bmáy hút dịch\b/, name: 'Máy hút dịch áp lực âm', model: 'Suction Unit Standard', risk: 'B', aliases: ['máy hút dịch'] },
+  ];
+  for (const dev of commonDevices) {
+    if (dev.pattern.test(lowerText)) {
+      return {
+        name: dev.name,
+        model: dev.model,
+        serial: 'EQ-GENERIC',
+        risk: dev.risk,
+        aliases: dev.aliases
+      };
+    }
+  }
+
+  return undefined;
 }

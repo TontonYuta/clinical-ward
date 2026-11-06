@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.inventory import InventoryBatch
 from app.schemas.inventory import BatchResponse, BatchDispatch, RestockProposalRequest
 from app.services.audit_service import record_audit_event
+from app.services.registry_service import invalidate_hospital_stock_cache
 
 router = APIRouter(prefix="/inventory", tags=["Kho Dược & Hạn Dùng FEFO (GSP TT 36 & TT 22)"])
 
@@ -13,25 +14,26 @@ async def get_batches(
     near_expiry: bool | None = Query(None, description="Lọc lô cận hạn < 60 ngày"),
     low_stock: bool | None = Query(None, description="Lọc lô dưới định mức Min"),
     search: str | None = Query(None, description="Tìm tên thuốc, số lô, vị trí kệ"),
+    limit: int = Query(200, ge=1, le=1000, description="Giới hạn số bản ghi"),
+    offset: int = Query(0, ge=0, description="Bỏ qua số bản ghi"),
     db: AsyncSession = Depends(get_db)
 ):
-    # FEFO order: expiry_date ASC
-    stmt = select(InventoryBatch).order_by(InventoryBatch.expiry_date.asc())
+    # FEFO order: expiry_date ASC, fully pushed to SQL indexes
+    stmt = select(InventoryBatch)
+    if near_expiry is not None:
+        stmt = stmt.where(InventoryBatch.is_near_expiry == near_expiry)
+    if low_stock is not None:
+        stmt = stmt.where(or_(InventoryBatch.is_low_stock == True, InventoryBatch.current_stock <= InventoryBatch.min_threshold))
+    if search and search.strip():
+        q = f"%{search.strip().lower()}%"
+        stmt = stmt.where(or_(
+            func.lower(InventoryBatch.item_name).like(q),
+            func.lower(InventoryBatch.batch_number).like(q),
+            func.lower(InventoryBatch.warehouse_location).like(q)
+        ))
+    stmt = stmt.order_by(InventoryBatch.expiry_date.asc()).offset(offset).limit(limit)
     res = await db.execute(stmt)
-    batches = res.scalars().all()
-
-    filtered = []
-    for b in batches:
-        if near_expiry is not None and b.is_near_expiry != near_expiry:
-            continue
-        if low_stock is not None and (b.current_stock <= b.min_threshold) != low_stock:
-            continue
-        if search:
-            q = search.lower()
-            if q not in b.item_name.lower() and q not in b.batch_number.lower() and q not in b.warehouse_location.lower():
-                continue
-        filtered.append(b)
-    return filtered
+    return res.scalars().all()
 
 @router.post("/batches/{batch_id}/dispatch", response_model=BatchResponse)
 async def dispatch_fefo_batch(
@@ -55,6 +57,7 @@ async def dispatch_fefo_batch(
     batch.is_low_stock = batch.current_stock <= batch.min_threshold
 
     await db.commit()
+    invalidate_hospital_stock_cache()
     await db.refresh(batch)
 
     # Record Audit Trail

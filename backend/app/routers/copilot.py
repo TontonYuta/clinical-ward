@@ -55,6 +55,8 @@ async def chat_with_copilot(
     if cached_resp:
         response = cached_resp.model_copy(deep=True)
         response.session_id = session.session_id
+        from app.services.chatbot.citation_standardizer import standardize_response_citations
+        response = standardize_response_citations(response, payload.query)
         session.append_conversation_turn(payload.query, response.reply_text)
         if response.active_medication_name:
             session.set_active_medication(name=response.active_medication_name)
@@ -256,3 +258,45 @@ async def query_pure_clinical_rag(payload: RagQuery):
     response = RagResponse(**res.to_response_dict())
     response.answer = validate_output_guardrail(response.answer, guard_res.sanitized_query)
     return response
+
+@router.get("/entities/search")
+async def search_copilot_entities(
+    q: str,
+    limit: int = 20
+):
+    """
+    Nhận diện và tra cứu thực thể thuốc/thiết bị siêu tốc (< 2ms) từ 55.000 thuốc DAV & DĐVN V.
+    Hỗ trợ autocomplete và dynamic entity resolution cho Frontend NLP.
+    """
+    clean_q = (q or "").strip()
+    if not clean_q:
+        return {"query": "", "total": 0, "items": []}
+
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    matcher = get_drug_lexical_matcher()
+    results = []
+    seen = set()
+
+    # 1. Khớp thực thể chính xác
+    exact_meds = matcher.extract_medications(clean_q)
+    for m in exact_meds:
+        low = m.lower()
+        if low not in seen:
+            seen.add(low)
+            results.append({"name": m, "type": "medication", "matched_by": "exact_trie"})
+
+    # 2. Khớp SĐK
+    sdk = matcher.extract_sdk(clean_q)
+    if sdk and sdk.lower() not in seen:
+        seen.add(sdk.lower())
+        results.append({"name": sdk, "type": "registration_code", "matched_by": "sdk_pattern"})
+
+    # 3. Khớp mờ (Fuzzy / Prefix)
+    fuzzy_matches = matcher.fuzzy_candidate_search(clean_q, top_k=limit)
+    for f in fuzzy_matches:
+        low = f.lower()
+        if low not in seen and len(results) < limit:
+            seen.add(low)
+            results.append({"name": f, "type": "medication", "matched_by": "fuzzy_search"})
+
+    return {"query": clean_q, "total": len(results), "items": results}

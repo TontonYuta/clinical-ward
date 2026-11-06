@@ -2,15 +2,17 @@ import type { RagCitationItem } from '../types/chat';
 
 const LEGACY_SOURCE_LINE = /^\s*[\*\(_\-]*\s*(?:(?:\*\*)?(?:nguồn|căn cứ pháp lý|tài liệu đối soát|tài liệu tham khảo|căn cứ y văn|tài liệu đối chứng|tệp pdf|mở tài liệu gốc)|(?:📚|📄|🔍)?\s*\*{0,2}(?:tài liệu đối chứng|căn cứ pháp lý|tài liệu đối soát|tệp pdf|mở tài liệu gốc))/i;
 
-export function removeLegacySourceText(rawText: string): string {
+export function removeLegacySourceText(rawText: string, hasCitations: boolean = true): string {
   if (!rawText) return '';
+  if (!hasCitations) return rawText;
   return rawText
     .split('\n')
     .filter((line) => {
       const trimmed = line.trim();
       if (!trimmed) return true;
-      // Giữ nguyên các dòng gắn nguồn trực tiếp dạng token badge [Dược thư tr.XXX], [QĐ 5948], v.v.
-      if (/\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]/i.test(trimmed)) return true;
+      // Khi đã có citation badge đối soát ở chân câu trả lời, loại bỏ dòng Nguồn / Căn cứ / Tệp / Standalone token
+      if (/^[\*\(_\-]*\s*(?:nguồn(?:\s*tham\s*chiếu)?|căn cứ(?:\s*pháp\s*lý|\s*y\s*văn)?|tài liệu(?:\s*đối\s*soát|\s*đối\s*chứng|\s*tham\s*khảo)?)\s*:/i.test(trimmed)) return false;
+      if (/^\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]\s*$/i.test(trimmed)) return false;
       if (LEGACY_SOURCE_LINE.test(trimmed)) return false;
       if (/tệp:\s*[A-Za-z0-9_.-]+\.pdf/i.test(trimmed)) return false;
       if (/tài liệu đối soát:\s*dược thư/i.test(trimmed)) return false;
@@ -47,12 +49,20 @@ export function formatCitationLabel(citation: RagCitationItem): { title: string;
   } else if (/22\/2011/i.test(rawBasis) || /22\/2011/i.test(rawSource)) {
     title = 'Thông tư 22/2011/TT-BYT';
     subtitle = subtitle || 'Khoa Dược bệnh viện';
+  } else if (/36\/2018/i.test(rawBasis) || /36\/2018/i.test(rawSource)) {
+    title = 'Thông tư 36/2018/TT-BYT';
+    subtitle = subtitle || 'Bảo quản GSP & FEFO';
+  } else if (/98\/2021/i.test(rawBasis) || /98\/2021/i.test(rawSource)) {
+    title = 'Nghị định 98/2021/NĐ-CP';
+    subtitle = subtitle || 'Quản lý TBYT';
   } else if (/dược thư/i.test(rawBasis) || /dược thư/i.test(rawSource) || /dtqg/i.test(rawBasis)) {
     title = 'Dược Thư Quốc Gia (2015)';
     if (!pageTag) {
       const pageMatch = (rawBasis + ' ' + rawSource).match(/trang\s*(\d+)/i);
       if (pageMatch) pageTag = `tr. ${pageMatch[1]}`;
     }
+  } else if (citation.title && citation.title.length <= 35) {
+    title = citation.title;
   } else {
     title = rawBasis.split('•')[0].replace(/\(Lần xuất bản[^)]*\)/i, '').replace(/,\s*Trang\s*\d+/i, '').trim();
     if (title.length > 35) title = title.slice(0, 32) + '...';

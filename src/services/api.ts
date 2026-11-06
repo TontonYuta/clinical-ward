@@ -1,6 +1,7 @@
 import type { RegistryPageResponse } from '../types/registry';
 import { loadOfflineRegistry, getOfflineCachedDrug } from '../components/Modals/NationalDrugRegistry/offlineRegistry';
 import { SmoothStreamBuffer } from '../utils/nlp/streamBuffer';
+import { getCachedRegistryPage, saveCachedRegistryPage } from '../utils/storage/registryPageCache';
 
 import { getApiBaseUrl } from '../config/apiConfig';
 
@@ -430,7 +431,75 @@ export async function getNationalDrugRegistryApi(params?: {
 
   const res = await apiFetch(`${API_BASE_URL}/registry/catalog?${query.toString()}`);
   if (!res.ok) throw new Error('Không thể nạp danh mục dược quốc gia từ máy chủ');
-  return res.json();
+  const data = (await res.json()) as RegistryPageResponse;
+  if (data && Array.isArray(data.items)) {
+    for (const item of data.items) {
+      if (item.national_code) {
+        setCachedDrugDetail(item.national_code, item);
+      }
+      if ((item as any).nationalCode) {
+        setCachedDrugDetail((item as any).nationalCode, item);
+      }
+      if ((item as any).registrationNumber) {
+        setCachedDrugDetail((item as any).registrationNumber, item);
+      }
+    }
+  }
+  return data;
+}
+
+export async function prewarmRegistryCatalogCache(): Promise<void> {
+  try {
+    const key = { search: '', group: 'all', pharmGroup: 'all', page: 1, pageSize: 12, onlyInWarehouse: false };
+    const cached = getCachedRegistryPage(key);
+    if (!cached) {
+      const data = await getNationalDrugRegistryApi({ page: 1, pageSize: 12, group: 'all', pharmGroup: 'all' });
+      if (data && Array.isArray(data.items)) {
+        saveCachedRegistryPage(key, data);
+      }
+    }
+  } catch {}
+}
+
+export function seedDrugDetailCacheWithBatches(batches: any[]): void {
+  if (!Array.isArray(batches)) return;
+  for (const b of batches) {
+    const code = b.registrationNumber || b.nationalCode;
+    if (code) {
+      setCachedDrugDetail(code, {
+        id: b.id,
+        national_code: code,
+        nationalCode: code,
+        brand_name: b.itemName,
+        brandName: b.itemName,
+        active_ingredient: b.activeIngredient,
+        activeIngredient: b.activeIngredient,
+        dosage_form: b.dosageForm,
+        dosageForm: b.dosageForm,
+        concentration: b.concentration,
+        packaging_spec: b.packagingSpec,
+        packagingSpec: b.packagingSpec,
+        standard_pharmacopeia: b.standardPharmacopeia,
+        standardPharmacopeia: b.standardPharmacopeia,
+        shelf_life: b.shelfLife,
+        shelfLife: b.shelfLife,
+        route: b.route,
+        group: b.category,
+        manufacturer: b.manufacturer,
+        country: b.country,
+        applicant_name: b.applicantName,
+        applicantName: b.applicantName,
+        approval_decision: b.approvalDecision,
+        approvalDecision: b.approvalDecision,
+        hdsd_path: b.hdsdPath,
+        hdsdPath: b.hdsdPath,
+        label_path: b.labelPath,
+        labelPath: b.labelPath,
+        is_controlled: b.isControlledSubstance,
+        isControlled: b.isControlledSubstance,
+      });
+    }
+  }
 }
 
 export async function getDrugDocumentsApi(nationalCode: string) {

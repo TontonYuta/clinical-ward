@@ -53,19 +53,47 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   const strength = batch?.concentration || drug?.concentration;
   const davPortalUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}`;
 
-  // Đồng bộ tức thời bộ nhớ đệm: Nếu thuốc đã có trong cache, khởi tạo liveDrug ngay từ render đầu tiên (0ms)
+  // Đồng bộ tức thời: Khởi tạo dữ liệu thuốc ngay từ dòng được bấm (0ms - Triệt tiêu hoàn toàn loading skeleton)
   const initialCached = getCachedDrugDetail(sdk);
+  const fallbackFromBatch = batch ? {
+    id: batch.id,
+    national_code: batch.registrationNumber || batch.nationalCode,
+    nationalCode: batch.registrationNumber || batch.nationalCode,
+    brand_name: batch.itemName,
+    brandName: batch.itemName,
+    active_ingredient: batch.activeIngredient,
+    activeIngredient: batch.activeIngredient,
+    dosage_form: batch.dosageForm,
+    dosageForm: batch.dosageForm,
+    concentration: batch.concentration,
+    packaging_spec: batch.packagingSpec,
+    packagingSpec: batch.packagingSpec,
+    standard_pharmacopeia: batch.standardPharmacopeia,
+    standardPharmacopeia: batch.standardPharmacopeia,
+    shelf_life: batch.shelfLife,
+    shelfLife: batch.shelfLife,
+    route: batch.route,
+    group: batch.category,
+    manufacturer: batch.manufacturer,
+    country: batch.country,
+    applicant_name: batch.applicantName,
+    approval_decision: batch.approvalDecision,
+    hdsd_path: batch.hdsdPath,
+    label_path: batch.labelPath,
+    is_controlled: batch.isControlledSubstance,
+  } : null;
+
   const [currentSdk, setCurrentSdk] = useState(sdk);
-  const [liveDrug, setLiveDrug] = useState<any>(initialCached);
-  const [loadingDetail, setLoadingDetail] = useState<boolean>(() => !initialCached && sdk !== 'Chưa cập nhật' && isOpen);
+  const [liveDrug, setLiveDrug] = useState<any>(initialCached || drug || fallbackFromBatch);
+  const [loadingDetail, setLoadingDetail] = useState<boolean>(() => !initialCached && !drug?.indications && sdk !== 'Chưa cập nhật' && isOpen);
   const [activeTab, setActiveTab] = useState<DrugDetailTab>('overview');
 
-  // Khắc phục triệt để lỗi flash dữ liệu cũ: Đồng bộ xóa stale state ngay trong render phase khi SDK thay đổi
+  // Khắc phục triệt để lỗi flash dữ liệu cũ: Khởi tạo ngay lập tức dữ liệu thuốc mới trong render phase (0ms)
   if (currentSdk !== sdk) {
     setCurrentSdk(sdk);
     const cached = getCachedDrugDetail(sdk);
-    setLiveDrug(cached || null);
-    setLoadingDetail(!cached && sdk !== 'Chưa cập nhật' && isOpen);
+    setLiveDrug(cached || drug || fallbackFromBatch || null);
+    setLoadingDetail(!cached && !drug?.indications && sdk !== 'Chưa cập nhật' && isOpen);
   }
 
   const loadDetails = (isManual = false) => {
@@ -105,7 +133,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   if (!isOpen || (!batch && !drug)) return null;
 
   const c = (k: string) => liveDrug?.[k] ?? (batch as any)?.[k] ?? (drug as any)?.[k];
-  const profile = getMedicationClinicalProfile(itemName || activeInn);
+  const profile = getMedicationClinicalProfile(batch?.id || sdk || itemName || activeInn, (drug || batch) as any);
   let resolvedSource = c('clinical_source') || c('clinicalSource');
   if (!resolvedSource || !resolvedSource.includes('Trang')) {
     if (profile?.officialSource?.pdfPage) {
@@ -137,7 +165,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     || profile.isVerifiedMonograph === true;
 
   const clinical = (key: string, camelKey?: string) => isVerified
-    ? (liveDrug?.[key] ?? (camelKey ? liveDrug?.[camelKey] : undefined))
+    ? (liveDrug?.[key] ?? (camelKey ? liveDrug?.[camelKey] : undefined) ?? (camelKey ? (drug as any)?.[camelKey] : undefined) ?? (drug as any)?.[key])
     : undefined;
 
   const clinicalData = {
@@ -252,7 +280,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
         </div>
 
         {/* Nội Dung Theo Từng Tab: Bố Cục Trái - Phải Chuẩn Y Tế (Zero-Box, Phẳng, Không Dấu Chấm) */}
-        {loadingDetail && !liveDrug ? (
+        {loadingDetail && !liveDrug && !drug && !batch ? (
           <div data-testid="dav-modal-loading-skeleton" className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200 bg-white">
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 space-y-6 animate-pulse">
               <div className="space-y-3 pb-5 border-b border-slate-100">

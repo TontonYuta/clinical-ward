@@ -41,6 +41,7 @@ import { PatientDetailModal } from './components/Modals/PatientDetailModal';
 import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import { DavDrugDetailModal } from './components/Modals/DavDrugDetailModal';
+import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches } from './services/api';
 import { ALL_MASTER_MEDICATIONS, removeVietnameseTones } from './data/medicationMasterData';
 import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
@@ -308,6 +309,12 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   // 4. Đồng bộ dữ liệu ngầm với SQLite WAL backend (Stale-While-Revalidate chống giật layout)
   useEffect(() => {
     let isMounted = true;
+    seedDrugDetailCacheWithBatches(INITIAL_INVENTORY_BATCHES);
+
+    const prewarmTimer = setTimeout(() => {
+      prewarmRegistryCatalogCache().catch(() => {});
+    }, 50);
+
     Promise.allSettled([
       // Tạm thời comment đồng bộ ngầm cho TBYT và Sổ nợ vỏ theo yêu cầu người dùng
       // debtApi.fetchDebts(),
@@ -318,9 +325,13 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
       if (resBatches && resBatches.status === 'fulfilled' && resBatches.value.length > 0) {
         setBatches(resBatches.value);
         saveCachedBatches(resBatches.value);
+        seedDrugDetailCacheWithBatches(resBatches.value);
       }
     }).catch(() => {});
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      clearTimeout(prewarmTimer);
+    };
   }, []);
 
   // Handler: Switch user role (RBAC)
@@ -1980,7 +1991,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           className={`fixed z-50 flex flex-col bg-white shadow-2xl overflow-hidden print:hidden ${
             isCopilotExpanded
               ? 'inset-0 h-dvh w-screen max-w-none rounded-none border-0 shadow-none'
-              : 'w-[calc(100vw-32px)] sm:w-[460px] md:w-[500px] lg:w-[540px] max-w-[calc(100vw-32px)] h-[min(600px,calc(100dvh-80px))] sm:h-[min(620px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] rounded-xl border border-slate-300 ring-1 ring-slate-900/10'
+              : 'w-[calc(100vw-24px)] sm:w-[540px] md:w-[620px] lg:w-[720px] xl:w-[780px] max-w-[calc(100vw-24px)] h-[min(640px,calc(100dvh-70px))] sm:h-[min(680px,calc(100dvh-28px))] max-h-[calc(100dvh-28px)] rounded-xl border border-slate-300 ring-1 ring-slate-900/10'
           } ${!isCopilotExpanded && !chatPosition ? 'right-4 bottom-20 sm:bottom-5 sm:right-5' : ''} ${isDraggingChat ? 'cursor-grabbing' : ''}`}
           style={!isCopilotExpanded && chatPosition ? { left: chatPosition.x, top: chatPosition.y, right: 'auto', bottom: 'auto' } : undefined}
         >

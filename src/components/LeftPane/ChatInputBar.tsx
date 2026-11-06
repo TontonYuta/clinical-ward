@@ -455,7 +455,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
               hasDispatchedRef.current = false;
             }}
             placeholder={isListening ? '🎙️ Đang nghe tiếng Việt... Hãy nói câu hỏi' : 'Nhập câu hỏi hoặc yêu cầu lâm sàng...'}
-            className="w-full pl-3.5 pr-18 sm:pr-22 h-10.5 sm:h-11 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
+            className="w-full pl-4 pr-20 sm:pr-24 h-11 sm:h-12 text-sm sm:text-base bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
             disabled={isProcessing}
           />
           <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
@@ -464,21 +464,21 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
               data-testid="chat-voice-btn"
               onClick={toggleListening}
               title={isListening ? 'Đang thu âm giọng nói (Bấm để dừng)' : 'Nhập bằng giọng nói (Micro tiếng Việt)'}
-              className={`p-1 sm:p-1.5 rounded-md transition cursor-pointer ${
+              className={`p-1.5 rounded-md transition cursor-pointer ${
                 isListening
                   ? 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-300 hover:bg-rose-700'
                   : 'hover:bg-slate-200 text-slate-500 hover:text-slate-800'
               }`}
             >
-              {isListening ? <MicOff className="w-4 h-4 sm:w-4.5 sm:h-4.5" /> : <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />}
+              {isListening ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
             <button
               type="button"
               onClick={() => setIsImageOpen(true)}
               title="Đính kèm ảnh hiện trường sự cố"
-              className="p-1 sm:p-1.5 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
             >
-              <ImageIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
@@ -486,10 +486,10 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         <button
           type="submit"
           disabled={!inputText.trim() || isProcessing}
-          className="h-10.5 w-10.5 sm:h-11 sm:w-11 rounded-lg bg-teal-800 text-white hover:bg-teal-900 disabled:opacity-40 transition shrink-0 flex items-center justify-center shadow-2xs cursor-pointer active:scale-98"
+          className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg bg-teal-800 text-white hover:bg-teal-900 disabled:opacity-40 transition shrink-0 flex items-center justify-center shadow-2xs cursor-pointer active:scale-98"
           title="Gửi yêu cầu"
         >
-          <Send className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+          <Send className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
         </button>
       </form>
 

@@ -15,7 +15,7 @@ import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import { PdfViewerDrawer, PdfViewerTarget } from '../Modals/PdfViewerDrawer';
 import { isCloudAIAvailable } from '../../services/geminiService';
-import { removeLegacySourceText } from '../../utils/chatAnswerPresentation';
+import { removeLegacySourceText, formatCitationLabel } from '../../utils/chatAnswerPresentation';
 
 interface ChatWindowProps {
   messages: ChatMessage[]; suggestionChips: QuickSuggestionChip[];
@@ -104,7 +104,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <Bot className="w-4.5 h-4.5" />
           </div>
           <div className="flex items-center gap-2 min-w-0">
-            <h3 className="text-sm font-bold text-slate-950 whitespace-nowrap">
+            <h3 className="text-base font-bold text-slate-950 whitespace-nowrap">
               Trợ Lý AI Lâm Sàng
             </h3>
             <span
@@ -147,19 +147,33 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       <div
         ref={messagesContainerRef}
         onScroll={handleContainerScroll}
-        className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4"
+        className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5"
       >
-        <div className={`space-y-3.5 ${isFullScreen ? 'max-w-4xl mx-auto w-full' : 'w-full'}`}>
+        <div className={`space-y-4 ${isFullScreen ? 'w-full max-w-6xl mx-auto px-2 sm:px-6' : 'w-full'}`}>
           {messages.map((msg) => {
           const isAgent = msg.sender === 'agent';
           const isSystem = msg.sender === 'system';
           const isUser = msg.sender === 'user';
           const isRightAligned = isUser || isSystem;
+          const activeCitations: RagCitationItem[] = (msg.citations && msg.citations.length > 0)
+            ? msg.citations
+            : (msg.legalReference ? [{
+                source: msg.legalReference.title || msg.legalReference.lawCode,
+                title: msg.legalReference.lawCode,
+                legal_basis: msg.legalReference.title || msg.legalReference.lawCode,
+                section: msg.legalReference.clause,
+                url: msg.legalReference.lawCode.includes('26') ? '/pdf/Thong_Tu_26_2025_TT_BYT_Ke_Don_Thuoc.pdf'
+                   : msg.legalReference.lawCode.includes('20') ? '/pdf/Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf'
+                   : msg.legalReference.lawCode.includes('22') ? '/pdf/Thong_Tu_22_2011_TT_BYT_Khoa_Duoc_Benh_Vien.pdf'
+                   : msg.legalReference.lawCode.includes('51') ? '/pdf/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf'
+                   : msg.legalReference.lawCode.includes('5948') ? '/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf'
+                   : '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf'
+              }] : []);
 
           return (
-            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-2.5 w-full ${isRightAligned ? 'ml-auto flex-row-reverse max-w-[96%] sm:max-w-[88%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
-              <div className={`w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800 text-white' : isSystem ? 'bg-slate-200 text-slate-700' : 'bg-teal-600 text-white'}`}>
-                {isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-3 w-full ${isRightAligned ? 'ml-auto flex-row-reverse max-w-[96%] sm:max-w-[85%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs text-xs font-bold ${isAgent ? 'bg-teal-800 text-white' : isSystem ? 'bg-slate-200 text-slate-700' : 'bg-teal-600 text-white'}`}>
+                {isAgent ? <Bot className="w-4.5 h-4.5" /> : <User className="w-4.5 h-4.5" />}
               </div>
 
               <div className="space-y-2 min-w-0 flex-1 max-w-full">
@@ -173,30 +187,60 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     />
                   </div>
                 )}
-                <div className={`p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-2xs leading-relaxed break-words space-y-1 ${
+                <div className={`p-3.5 sm:p-4.5 rounded-xl text-sm sm:text-base shadow-2xs leading-relaxed break-words space-y-1.5 ${
                   isUser
                     ? 'bg-teal-50/90 border border-teal-200 text-slate-900 rounded-tr-xs'
                     : isSystem
                     ? 'bg-slate-100 border border-slate-200 text-slate-800 rounded-xl'
                     : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'
                 }`}>
-                  {msg.isStreaming && !msg.text ? (
-                    <div className="flex items-center gap-1.5 py-1 text-slate-500">
-                      <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
-                      <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:150ms]" />
-                      <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:300ms]" />
-                      <span className="text-2xs text-slate-500 font-mono ml-1.5">Trợ lý AI đang tra cứu y văn...</span>
-                    </div>
-                  ) : (
-                    <>
-                      {renderFormattedText(removeLegacySourceText(msg.text), {
-                        isDark: false,
-                        citations: msg.citations,
-                        onCitationClick: (ref) => handleInlineCitationClick(msg.id, ref),
-                      })}
-                      {msg.isStreaming && <span className="inline-block w-1.5 h-3.5 ml-1 bg-teal-600 animate-pulse align-middle" />}
-                    </>
-                  )}
+                      {msg.isStreaming && !msg.text ? (
+                        <div className="flex items-center gap-2 py-1 text-slate-500">
+                          <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
+                          <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:150ms]" />
+                          <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:300ms]" />
+                          <span className="text-xs sm:text-sm text-slate-500 font-medium ml-1.5">Trợ lý AI đang tra cứu y văn...</span>
+                        </div>
+                      ) : (
+                        <>
+                          {renderFormattedText(removeLegacySourceText(msg.text, activeCitations.length > 0), {
+                            isDark: false,
+                            citations: activeCitations,
+                            onCitationClick: (ref) => handleInlineCitationClick(msg.id, ref),
+                          })}
+                          {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-teal-600 animate-pulse align-middle" />}
+                        </>
+                      )}
+
+                      {/* Khối Nguồn Đối Soát (Chỉ hiển thị 1 nguồn duy nhất, không hiện nhãn Căn cứ y văn) */}
+                      {isAgent && activeCitations.length > 0 && (() => {
+                        const citation = activeCitations[0];
+                        const { title, subtitle, pageTag } = formatCitationLabel(citation);
+                        return (
+                          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center">
+                            <button
+                              type="button"
+                              onClick={() => handleInlineCitationClick(msg.id, citation)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-teal-50 text-teal-900 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-left group"
+                              title={citation.excerpt ? `Đoạn trích: "${citation.excerpt.slice(0, 150)}..."` : `Bấm để xem bản scan PDF: ${citation.legal_basis || citation.source}`}
+                            >
+                              <BookOpen className="w-3.5 h-3.5 text-teal-700 shrink-0 group-hover:text-teal-900" />
+                              <span className="font-semibold text-slate-900">{title}</span>
+                              {pageTag && (
+                                <span className="px-1.5 py-0.5 rounded bg-teal-200/70 text-teal-950 font-bold text-2xs sm:text-xs">
+                                  {pageTag}
+                                </span>
+                              )}
+                              {subtitle && !pageTag && (
+                                <span className="text-teal-700/80 text-2xs sm:text-xs font-normal">
+                                  ({subtitle.length > 28 ? subtitle.slice(0, 25) + '...' : subtitle})
+                                </span>
+                              )}
+                              <ExternalLink className="w-3 h-3 text-teal-500 group-hover:text-teal-800 ml-0.5 shrink-0" />
+                            </button>
+                          </div>
+                        );
+                      })()}
 
                   {/* Tạm thời comment thẻ thông tin Action Card có sẵn theo yêu cầu người dùng để tập trung test SOTA RAG
                   {isAgent && msg.card && msg.card.primaryActionLabel && !['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket', 'medication_safety'].includes((msg.card as any).card_type || (msg.card as any).type || '') && (
@@ -221,14 +265,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   )}
                   */}
                   {isAgent && msg.suggestedChips && msg.suggestedChips.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
-                      <span className="w-full text-2xs font-semibold text-slate-500">Gợi ý hỏi tiếp:</span>
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-2">
+                      <span className="w-full text-xs font-semibold text-slate-500">Gợi ý hỏi tiếp:</span>
                       {Array.from(new Set(msg.suggestedChips.filter(c => c && c.trim().length >= 4))).map((chip, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => handleChipClick(chip)}
-                          className="px-2.5 py-1 rounded-md text-2xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200 transition cursor-pointer active:scale-95 text-left shadow-2xs"
+                          className="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200 transition cursor-pointer active:scale-95 text-left shadow-2xs"
                         >
                           {chip}
                         </button>
@@ -237,7 +281,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   )}
 
                   {isAgent && msg.answerType === 'safe_abstention' && (
-                    <div role="status" className="mt-2 border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-950">
+                    <div role="status" className="mt-2.5 border border-amber-300 bg-amber-50 px-3 py-2.5 rounded-lg text-xs sm:text-sm text-amber-950 leading-relaxed">
                       Chưa đủ căn cứ trong nguồn đang tra cứu để kết luận. Hãy đối chiếu tài liệu gốc hoặc nhờ dược sĩ lâm sàng xác minh trước khi áp dụng.
                     </div>
                   )}
@@ -248,8 +292,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         })}
 
         {isProcessing && !messages.some(m => m.isStreaming && m.text) && (
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 pl-9 font-medium">
-            <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></span>
+          <div className="flex items-center gap-2.5 text-sm sm:text-base text-slate-500 pl-10 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-600 animate-pulse"></span>
             <span>Trợ lý đang phân tích ngữ cảnh lâm sàng...</span>
           </div>
         )}
@@ -259,7 +303,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* 3. Input Area */}
       <div className="bg-white border-t border-slate-200 shrink-0">
-        <div className={isFullScreen ? 'max-w-4xl mx-auto w-full' : 'w-full'}>
+        <div className={isFullScreen ? 'w-full max-w-6xl mx-auto px-2 sm:px-6' : 'w-full'}>
           <ChatInputBar onSendMessage={handleSend} suggestionChips={suggestionChips} isProcessing={isProcessing} isAudioMuted={isAudioMuted} onChipClick={handleChipClick} />
         </div>
       </div>
