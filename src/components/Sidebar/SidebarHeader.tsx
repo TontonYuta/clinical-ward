@@ -27,8 +27,8 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
           title={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
           aria-label={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white transition-opacity group-hover/brand:opacity-0 group-focus-visible/brand:opacity-0">
-            <Cross className="h-5 w-5" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-sky-500 to-teal-500 text-white shadow-md shadow-sky-500/25 ring-1 ring-sky-300/40 transition-all duration-200 group-hover/brand:scale-105">
+            <Cross className="h-5 w-5 text-white fill-white" />
           </span>
           {isCollapsed && (
             <span className="absolute inset-0 flex items-center justify-center text-slate-700 opacity-0 transition-opacity group-hover/brand:opacity-100 group-focus-visible/brand:opacity-100">
