@@ -73,6 +73,13 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
             cursor.execute(f"ALTER TABLE clinical_drug_monographs ADD COLUMN {col} TEXT")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_inn ON clinical_drug_monographs(inn)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_atc ON clinical_drug_monographs(atc_code)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_clinical_monograph_id ON dav_national_drugs(clinical_monograph_id)")
+
+    # Bỏ qua nếu chuyên luận đã được nạp đầy đủ (ngăn ngừa cold-start và OOM trên Render)
+    cursor.execute("SELECT count(*) FROM clinical_drug_monographs WHERE pharmacodynamics IS NOT NULL AND length(pharmacodynamics) > 20")
+    existing_rich_count = cursor.fetchone()[0]
+    if existing_rich_count >= 650:
+        return existing_rich_count
 
     src = find_monographs_source()
     if not src:
@@ -234,32 +241,16 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
             cursor.executemany("UPDATE dav_national_drugs SET clinical_monograph_id = ? WHERE id = ?", link_updates)
             conn.commit()
 
-        # 2. Cập nhật đồng loạt các trường lâm sàng từ chuyên luận (Batch Update)
+        # 2. Cập nhật nhẹ các trường chỉ mục danh mục (ATC, nhóm dược lý, nguồn trích dẫn)
+        # Các trường văn bản lớn (Dược lực, Dược động, Liều dùng, ADR...) được enrich động tức thì qua clinical_monograph_id
+        # nhằm bảo toàn dung lượng SQLite < 80MB và ngăn chặn OOM / tràn ổ đĩa trên Render Free Tier.
         cursor.execute("""
             UPDATE dav_national_drugs
             SET
                 atc_code = COALESCE(NULLIF(dav_national_drugs.atc_code, ''), (SELECT atc_code FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
                 drug_class = COALESCE(NULLIF(dav_national_drugs.drug_class, ''), (SELECT drug_class FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                pharmacodynamics = COALESCE(NULLIF(dav_national_drugs.pharmacodynamics, ''), (SELECT pharmacodynamics FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                pharmacokinetics = COALESCE(NULLIF(dav_national_drugs.pharmacokinetics, ''), (SELECT pharmacokinetics FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                indications = COALESCE(NULLIF(dav_national_drugs.indications, ''), (SELECT indications FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                contraindications = COALESCE(NULLIF(dav_national_drugs.contraindications, ''), (SELECT contraindications FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                precautions = COALESCE(NULLIF(dav_national_drugs.precautions, ''), (SELECT precautions FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                pregnancy_warning = COALESCE(NULLIF(dav_national_drugs.pregnancy_warning, ''), (SELECT pregnancy_warning FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                lactation_warning = COALESCE(NULLIF(dav_national_drugs.lactation_warning, ''), (SELECT lactation_warning FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                adult_dosage = COALESCE(NULLIF(dav_national_drugs.adult_dosage, ''), (SELECT adult_dosage FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                pediatric_dosage = COALESCE(NULLIF(dav_national_drugs.pediatric_dosage, ''), (SELECT pediatric_dosage FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                renal_adjustment = COALESCE(NULLIF(dav_national_drugs.renal_adjustment, ''), (SELECT renal_adjustment FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                hepatic_adjustment = COALESCE(NULLIF(dav_national_drugs.hepatic_adjustment, ''), (SELECT hepatic_adjustment FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                adverse_effects = COALESCE(NULLIF(dav_national_drugs.adverse_effects, ''), (SELECT adverse_effects FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                adr_management = COALESCE(NULLIF(dav_national_drugs.adr_management, ''), (SELECT adr_management FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                drug_interactions = COALESCE(NULLIF(dav_national_drugs.drug_interactions, ''), (SELECT drug_interactions FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                incompatibilities = COALESCE(NULLIF(dav_national_drugs.incompatibilities, ''), (SELECT incompatibilities FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                storage_stability = COALESCE(NULLIF(dav_national_drugs.storage_stability, ''), (SELECT storage_stability FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                overdose_treatment = COALESCE(NULLIF(dav_national_drugs.overdose_treatment, ''), (SELECT overdose_treatment FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
-                antidote = COALESCE(NULLIF(dav_national_drugs.antidote, ''), (SELECT antidote FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id)),
                 clinical_source = COALESCE(NULLIF(dav_national_drugs.clinical_source, ''), (SELECT source FROM clinical_drug_monographs WHERE id = dav_national_drugs.clinical_monograph_id))
-            WHERE clinical_monograph_id IS NOT NULL
+            WHERE clinical_monograph_id IS NOT NULL AND (atc_code IS NULL OR atc_code = '' OR drug_class IS NULL OR drug_class = '')
         """)
         conn.commit()
         print(f"✅ Đã nạp {len(rows)} chuyên luận Dược Thư 2015 vào clinical_drug_monographs!")

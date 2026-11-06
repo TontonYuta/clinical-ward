@@ -78,21 +78,22 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     cursor = conn.cursor()
 
     init_dav_table(cursor)
-    seed_clinical_monographs(conn)
 
     cursor.execute("SELECT COUNT(*) FROM dav_national_drugs")
     existing_count = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM dav_national_drugs WHERE contraindications IS NOT NULL")
-    enriched_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM dav_national_drugs WHERE clinical_monograph_id IS NOT NULL")
+    linked_count = cursor.fetchone()[0]
 
     curated_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
-    if existing_count >= 1900 and enriched_count > 0:
+    if existing_count >= 1900 and linked_count > 0:
         if os.path.exists(curated_path):
             update_curated_enrichment(cursor, curated_path)
             conn.commit()
         seed_clinical_monographs(conn)
         conn.close()
         return existing_count
+
+    seed_clinical_monographs(conn)
 
     src_path, is_gz = find_data_source()
     if not src_path:
