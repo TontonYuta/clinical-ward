@@ -22,6 +22,26 @@ class AuthenticatedUser:
     role: str
 
 
+def audit_actor_fields(request: Request | None) -> dict[str, str]:
+    """Attribute an operation to a server-authenticated account, never a UI claim.
+
+    Account identity is not a medical practice certificate or a verified PIN /
+    second signature. Local demonstration requests remain explicitly unverified.
+    """
+    user = getattr(request.state, "authenticated_user", None) if request else None
+    if isinstance(user, AuthenticatedUser):
+        return {
+            "signer_name": user.username,
+            "signer_certificate": f"account:{user.username}",
+            "auth_method": "AUTHENTICATED_SESSION",
+        }
+    return {
+        "signer_name": "Chưa xác thực danh tính",
+        "signer_certificate": "UNVERIFIED",
+        "auth_method": "UNVERIFIED_LOCAL",
+    }
+
+
 def _b64(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
 
@@ -130,9 +150,11 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         if method in {"GET", "HEAD", "OPTIONS"}:
             suffix = path.removeprefix("/api/v1")
             if suffix.startswith("/patients") or suffix.startswith("/prescription-advice"):
-                return role in {"doctor", "nurse"}
+                return role in {"doctor", "nurse", "pharmacist", "director"}
             if suffix.startswith("/audit"):
                 return role in {"pharmacist", "director"}
+            if suffix == "/cpoe" or suffix.startswith("/cpoe/") or suffix in {"/sms/logs", "/copilot/history"}:
+                return role in {"nurse", "doctor", "pharmacist", "director"}
             return True
         prefixes = {
             "/debts": {"nurse", "doctor", "pharmacist", "director"},
@@ -155,6 +177,10 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return role in {"nurse", "doctor", "pharmacist", "director"}
         if suffix in {"/copilot/chat", "/copilot/rag"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
+        if suffix in {"/prescriptions/audit", "/mcp", "/mcp/rpc", "/mcp/execute"}:
+            return role in {"nurse", "doctor", "pharmacist", "director"}
+        if suffix.startswith("/assets/") and suffix.endswith("/liquidate"):
+            return role == "director"
         for prefix, allowed_roles in prefixes.items():
             if suffix == prefix or suffix.startswith(prefix + "/"):
                 return role in allowed_roles

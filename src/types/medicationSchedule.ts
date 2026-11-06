@@ -20,11 +20,13 @@ export interface ScheduledMedication {
   dosage: string; // VD: '500mg'
   route: string; // VD: 'Đường uống'
   durationDays: number; // Số ngày điều trị (VD: 5, 7, 14 ngày)
+  frequency?: string;
   timeSlots: MedicationTimeSlot[];
   specialInstructions?: string; // Hướng dẫn đặc biệt từ Dược Thư & Bác sĩ
 }
 
 export interface PatientPrescriptionAdvice {
+  patientId?: string;
   id: string; // ADV-2026-xxxx
   prescriptionId?: string; // RX-2026-xxxx
   patientName: string;

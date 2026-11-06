@@ -1,4 +1,5 @@
 import re
+import math
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.debt import DebtRecord
@@ -239,43 +240,54 @@ async def handle_shift_handover_intent(db: AsyncSession) -> CopilotResponse:
         suggested_chips=["Kiểm tra tương tác thuốc", "Kiểm tra hạn dùng FEFO", "Kiểm tra nhiệt độ chuỗi lạnh"]
     )
 
-async def handle_coldchain_intent(db: AsyncSession) -> CopilotResponse:
-    stmt = select(ColdChainCurrentState).limit(1)
-    res = await db.execute(stmt)
-    state = res.scalar_one_or_none()
-    current_temp = getattr(state, "current_temp", 4.5) if state else 4.5
-    mkt = getattr(state, "mkt_temp", getattr(state, "mkt_value", 4.8)) if state else 4.8
-    is_quarantine = getattr(state, "is_quarantined", False) if state else False
-    is_outage = getattr(state, "is_outage", False) if state else False
-
-    status_text = "BÌNH THƯỜNG (2.0°C - 8.0°C)" if not is_outage and not is_quarantine else "CẢNH BÁO BIỆT TRỮ CÁCH LY"
-    reply_text = (f"### ❄️ BÁO CÁO GIÁM SÁT DÂY CHUYỀN LẠNH (COLD CHAIN - GSP)\n\n"
-                  f"• **Trạng thái buồng lạnh:** **{status_text}**\n"
-                  f"• **Dải nhiệt độ chuẩn bắt buộc:** Từ `+2.0°C đến +8.0°C` theo WHO PQS và Thông tư 36/2018/TT-BYT\n"
-                  f"• **Nhiệt độ hiện tại:** `{current_temp}°C` (Giám sát liên tục bằng cảm biến IoT tự động)\n"
-                  f"• **Chỉ số nhiệt động học Arrhenius (MKT):** `{mkt}°C`\n"
-                  f"• **Nguồn điện:** {'MẤT ĐIỆN LƯỚI' if is_outage else 'Điện lưới 220V ổn định'}\n\n"
-                  f"> [!IMPORTANT]\n"
-                  f"> **Quy trình xử trí khi tủ lạnh bảo quản vắc xin mất điện hoặc vượt ngưỡng:**\n"
-                  f"> 1. Tuyệt đối không mở cửa tủ để duy trì nhiệt độ lạnh.\n"
-                  f"> 2. Nếu mất điện kéo dài quá thời gian an toàn: chuyển ngay vắc xin sang hòm lạnh/phích vắc xin có bình tích lạnh đạt chuẩn.\n"
-                  f"> 3. Ghi biên bản sự cố và kiểm tra chỉ thị nhiệt độ đông băng Shake test trước khi tái sử dụng.")
-
+async def handle_coldchain_intent(db: AsyncSession, query: str = "") -> CopilotResponse:
+    cabinet = re.search(r"(?:tủ|kho|cabinet)\s*(?:lạnh\s*)?#?\s*(\d+)\b", query, re.IGNORECASE)
+    stmt = select(ColdChainCurrentState).order_by(ColdChainCurrentState.id)
+    if cabinet:
+        stmt = stmt.where(ColdChainCurrentState.id == int(cabinet.group(1)))
+    states = (await db.execute(stmt)).scalars().all()
+    if not states:
+        return CopilotResponse(
+            intent="CLINICAL_COLD_CHAIN_TELEMETRY", reply_text="Chưa có bản ghi giám sát cho tủ lạnh được yêu cầu. Chưa thể xác nhận nhiệt độ, nguồn điện hoặc tình trạng bảo quản. Mở bảng chuỗi lạnh để bổ sung dữ liệu.",
+            answer_type="safe_abstention", source_status="no_recorded_telemetry", rag_grounded=False, confidence=0.0,
+        )
+    if len(states) > 1:
+        return CopilotResponse(
+            intent="CLINICAL_COLD_CHAIN_CLARIFICATION", reply_text="Có nhiều tủ lạnh được giám sát. Vui lòng chọn mã tủ cần xem: " + ", ".join(str(state.id) for state in states) + ".",
+            answer_type="clarification", source_status="ambiguous_cabinet", confidence=1.0,
+        )
+    state = states[0]
+    current_temp, mkt = state.current_temp, state.mkt_temp
+    is_quarantine, is_outage = state.is_quarantined, state.is_outage
+    in_range = (isinstance(current_temp, (int, float)) and math.isfinite(current_temp) and 2 <= current_temp <= 8
+                and isinstance(mkt, (int, float)) and math.isfinite(mkt) and 2 <= mkt < 8
+                and state.vvm_level == 1 and not is_quarantine and not is_outage)
+    reported_incident = any(term in query.casefold() for term in ("mất điện", "sự cố", "vượt ngưỡng"))
+    alert = not in_range or reported_incident
+    status_text = "TRONG NGƯỠNG GIÁM SÁT CỦA BẢN GHI" if in_range else "CẦN RÀ SOÁT ĐIỀU KIỆN BẢO QUẢN"
+    recorded_at = str(state.updated_at) if state.updated_at else "Chưa có thời điểm cập nhật"
+    reply_text = (f"### GIÁM SÁT CHUỖI LẠNH - TỦ {state.id}\n\n"
+                  f"• Trạng thái theo dữ liệu đã lưu: **{status_text}**.\n"
+                  f"• Nhiệt độ ghi nhận: {current_temp}°C; MKT: {mkt}°C; VVM: {state.vvm_level}.\n"
+                  f"• Mất điện: {'Có' if is_outage else 'Không'}; biệt trữ: {'Có' if is_quarantine else 'Không'}.\n"
+                  f"• Thời điểm cập nhật bản ghi: {recorded_at}.\n\n"
+                  + ("Đã nhận mô tả sự cố từ câu hỏi. Mô tả này chưa thay đổi trạng thái tủ trong cơ sở dữ liệu. " if reported_incident else "")
+                  + "Đây là dữ liệu giám sát đã lưu; cần đối chiếu với tủ thực tế và hồ sơ lô trước khi xác nhận khả dụng của vắc xin.")
     card = CopilotActionCard(
         card_type="coldchain_status",
         title="Giám Sát Chuỗi Lạnh Vắc Xin (WHO PQS)",
-        summary="Dữ liệu cảm biến thời gian thực buồng lạnh GSP",
-        data={"temperature": current_temp, "mkt": mkt, "is_outage": is_outage, "is_quarantined": is_quarantine},
+        summary="Bản ghi giám sát chuỗi lạnh đã lưu",
+        data={"state_id": state.id, "temperature": current_temp, "mkt": mkt, "is_outage": is_outage, "is_quarantined": is_quarantine, "updated_at": recorded_at},
         primary_action_label="Xem Biểu Đồ Datalogger",
         primary_action_type="NAVIGATE_TAB",
         target_tab="coldchain"
     )
     return CopilotResponse(
-        intent="COLD_CHAIN_MONITORING",
+        intent="CLINICAL_COLD_CHAIN_ALERT" if alert else "CLINICAL_COLD_CHAIN_TELEMETRY",
         reply_text=reply_text,
         card=card,
-        legal_basis="Thông tư 36/2018/TT-BYT (GSP) & WHO PQS Guidelines",
-        suggested_chips=["Kích hoạt máy phát dự phòng", "Biệt trữ cách ly lô vắc xin", "Kiểm tra hạn dùng FEFO"]
+        source_status="recorded_telemetry", answer_type="operational_status", confidence=1.0,
+        suggested_chips=["Xem biểu đồ chuỗi lạnh", "Kiểm tra hạn dùng FEFO"]
     )
 
 async def handle_audit_intent(db: AsyncSession) -> CopilotResponse:

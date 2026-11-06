@@ -17,7 +17,7 @@ async def ensure_cpoe_test_schema():
 
 def payload(items):
     return {
-        "prescriptionType": "outpatient", "patientId": "BN-TEST", "patientName": "Nguyễn Văn Test",
+        "prescriptionType": "outpatient", "patientId": "", "patientName": "Nguyễn Văn Test",
         "patientCccd": "012345678901", "diagnosisIcd10": "I25", "diagnosisText": "Bệnh mạch vành",
         "doctorName": "BS. Test", "daysPrescribed": 3, "status": "draft", "items": items,
     }

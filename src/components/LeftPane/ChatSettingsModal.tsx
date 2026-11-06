@@ -11,7 +11,7 @@ export const ChatSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Cấu hình AI" className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div role="dialog" aria-modal="true" aria-label="Cấu hình AI" className="clinical-modal-overlay fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-md overflow-hidden">
         <div className="px-5 py-3.5 bg-white border-b border-slate-200/80 flex items-center justify-between">
           <div className="flex items-center gap-2">

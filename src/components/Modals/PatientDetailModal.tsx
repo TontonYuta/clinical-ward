@@ -4,11 +4,11 @@
  * Modal Chi Tiết Hồ Sơ Bệnh Nhân Lâm Sàng Chuẩn TT 26/2025/TT-BYT (<=200 LOC)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Send, Printer } from 'lucide-react';
-import { PatientProfile, INITIAL_PATIENTS } from '../../services/patientService';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
+import { PatientProfile } from '../../services/patientService';
 import { SendSmsModal } from './SendSmsModal';
-import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';
 import { getCachedDebts } from '../../utils/storage/appStatePersistence';
 import { PrescriptionOrder } from '../../types/cpoe';
 import { PatientOverviewTab } from './PatientDetail/PatientOverviewTab';
@@ -31,46 +31,61 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   onClose,
   patient: initialPatient,
   patientIdOrName,
-  patients = INITIAL_PATIENTS,
+  patients = [],
   onOpenPrescriptionOrder,
 }) => {
+  useModalDismiss(isOpen,onClose);
   const [activeTab, setActiveTab] = useState<PatientDetailTab>('overview');
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
+  const [prescriptionRevision, setPrescriptionRevision] = useState(0);
+  useEffect(() => {
+    const refresh = () => setPrescriptionRevision(value => value + 1);
+    window.addEventListener('cpoe_order_created', refresh);
+    return () => window.removeEventListener('cpoe_order_created', refresh);
+  }, []);
 
   const patient = useMemo(() => {
     if (initialPatient) return initialPatient;
-    if (!patientIdOrName) return patients[0] || null;
+    if (!patientIdOrName?.trim()) return null;
     const q = patientIdOrName.trim().toLowerCase();
-    return patients.find((p) => p.id.toLowerCase() === q || p.fullName.toLowerCase().includes(q)) || patients[0] || null;
+    return patients.find((p) => p.id.toLowerCase() === q) || (patients.filter(p=>p.fullName.toLowerCase()===q).length===1 ? patients.find(p=>p.fullName.toLowerCase()===q) : null) || null;
   }, [initialPatient, patientIdOrName, patients]);
 
   const relatedPrescriptions = useMemo(() => {
     if (!patient) return [];
     try {
-      const stored = localStorage.getItem('cpoe_prescriptions_cache_v2');
-      const all: PrescriptionOrder[] = stored ? JSON.parse(stored) : INITIAL_PRESCRIPTIONS;
-      return all.filter((o) => o.patientId === patient.id || o.patientName?.toLowerCase() === patient.fullName?.toLowerCase());
-    } catch { return INITIAL_PRESCRIPTIONS.filter((o) => o.patientId === patient.id); }
-  }, [patient]);
+      const stored = localStorage.getItem('clinical_cached_cpoe');
+      const all: PrescriptionOrder[] = stored ? JSON.parse(stored) : [];
+      const name = patient.fullName.trim().toLowerCase();
+      const uniqueName = patients.filter(p => p.fullName.trim().toLowerCase() === name).length === 1;
+      return all.filter((o) => o.patientId?.trim()
+        ? o.patientId === patient.id
+        : uniqueName && o.patientName?.trim().toLowerCase() === name);
+    } catch { return []; }
+  }, [patient, patients, isOpen, prescriptionRevision]);
 
   const relatedDebts = useMemo(() => {
     if (!patient) return [];
     try {
       const all = getCachedDebts();
-      return all.filter((d: any) => d.patientName?.toLowerCase() === patient.fullName?.toLowerCase() || d.patientRoom?.toLowerCase()?.includes(patient.id?.toLowerCase()));
+      const uniqueName = patients.filter(p => p.fullName.trim().toLowerCase() === patient.fullName.trim().toLowerCase()).length === 1;
+      return all.filter((d: any) => d.patientId
+        ? d.patientId === patient.id
+        : d.patientRoom?.toLowerCase()?.includes(patient.id?.toLowerCase()) || (uniqueName && d.patientName?.trim().toLowerCase() === patient.fullName.trim().toLowerCase()));
     } catch { return []; }
-  }, [patient]);
+  }, [patient, patients, isOpen]);
 
-  if (!isOpen || !patient) return null;
+  if (!isOpen) return null;
+  if (!patient) return <div role="dialog" aria-modal="true" aria-label="Hồ sơ người bệnh" data-testid="patient-detail-modal" className="clinical-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50"><div className="bg-white rounded-2xl p-8 max-w-md text-center"><h2 className="text-lg font-semibold">Không tìm thấy hồ sơ</h2><p className="text-sm text-slate-500 mt-3">Không có người bệnh khớp với định danh được chọn. Vui lòng kiểm tra lại mã hồ sơ.</p><button type="button" data-testid="btn-close-patient-detail" className="button-primary mt-5" onClick={onClose}>Đóng</button></div></div>;
 
   const tabs: [PatientDetailTab, string][] = [
-    ['overview', 'Hồ sơ người bệnh'],
-    ['prescriptions', `Đơn thuốc (${relatedPrescriptions.length}) & Sổ nợ (${relatedDebts.length})`],
-    ['administrative', 'Thông tin hành chính & CCCD TT26'],
+    ['overview', 'Hồ sơ'],
+    ['prescriptions', `Điều trị (${relatedPrescriptions.length})`],
+    ['administrative', 'Hành chính'],
   ];
 
   return (
-    <div role="dialog" aria-modal="true" data-testid="patient-detail-modal" className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div role="dialog" aria-modal="true" data-testid="patient-detail-modal" className="clinical-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
       <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
         {/* Header Chuẩn Y Tế */}
         <div className="px-3 sm:px-5 py-2 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 shrink-0">

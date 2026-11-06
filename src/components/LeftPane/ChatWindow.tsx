@@ -51,16 +51,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/70 relative overflow-hidden">
+    <div className="chat-workspace flex flex-col h-full relative overflow-hidden">
       {/* 1. Header */}
-      <div className="h-14 sm:h-12 px-3.5 sm:px-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
+      <div className="chat-workspace-header px-3.5 sm:px-4 flex items-center justify-between gap-3 shrink-0">
         <div data-testid="chat-window-drag-handle" className="flex items-center gap-2.5 min-w-0 cursor-grab select-none">
           <div className="w-8 h-8 rounded-lg bg-teal-800 flex items-center justify-center text-white shrink-0 shadow-2xs">
             <Bot className="w-4.5 h-4.5" />
           </div>
           <div className="flex items-center gap-2 min-w-0">
             <h3 className="text-sm font-bold text-slate-950 whitespace-nowrap">
-              Trợ Lý AI Lâm Sàng
+              Trợ lý lâm sàng
             </h3>
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${cloudActive ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`}

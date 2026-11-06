@@ -57,11 +57,12 @@ def test_legal_format_check_child_under_6_valid(auditor):
     weight_check = next((c for c in result.legal_checks if "Cân nặng trẻ em" in c.rule_name), None)
     assert weight_check is not None
     assert weight_check.passed is True
-    assert result.doctor_signature_verified is True
+    # Caller-provided signature text is not a trusted verification result.
+    assert result.doctor_signature_verified is False
     assert result.safety_score >= 80
 
 def test_dosage_safety_paracetamol_overdose(auditor):
-    # Kê Paracetamol 1000mg x 5 lần/ngày = 5000mg/ngày (> 4000mg/ngày) -> Báo động đỏ
+    # Explicit dose reaches the existing adult ceiling (4000mg/day).
     order_data = {
         "id": "RX-DOSE-01",
         "prescriptionType": "outpatient",
@@ -77,7 +78,8 @@ def test_dosage_safety_paracetamol_overdose(auditor):
             {
                 "medicationName": "Paracetamol 1000mg",
                 "activeIngredient": "Paracetamol",
-                "frequency": "Uống 4 lần/ngày khi sốt cách 4-6h",
+                "dosage": "1 viên",
+                "frequency": "Uống 4 lần/ngày",
                 "quantity": 12,
                 "unit": "Viên"
             }

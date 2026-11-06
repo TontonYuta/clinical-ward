@@ -13,10 +13,15 @@
     "test:kb": "tsx scripts/verify_clinical_knowledge_base.ts",
     "validate:sources": "python3 scripts/validate_clinical_sources.py",
     "test:chatbot": "tsx scripts/test_chatbot_suite.ts",
-    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_clinical_formatter.ts && tsx tests/test_ddi_algorithm.ts && tsx tests/test_disable_devtool_gate.ts && tsx tests/test_operations_overview_navigation.ts && tsx tests/test_operations_overview_model.ts && tsx tests/test_flat_dashboard_model.ts && tsx tests/test_font_scale_model.ts && tsx tests/test_patient_lookup_logic.ts && tsx tests/test_offline_registry_search.ts && tsx tests/test_pdf_files_integrity.ts && tsx tests/test_voice_input_and_clean_ui.ts",
+    "test": "tsx scripts/test_chatbot_suite.ts && tsx scripts/verify_clinical_knowledge_base.ts && tsx tests/test_kb_database_verification.ts && tsx tests/test_clinical_formatter.ts && tsx tests/test_ddi_algorithm.ts && tsx tests/test_disable_devtool_gate.ts && tsx tests/test_operations_overview_navigation.ts && tsx tests/test_operations_overview_model.ts && tsx tests/test_flat_dashboard_model.ts && tsx tests/test_font_scale_model.ts && tsx tests/test_patient_lookup_logic.ts && tsx tests/test_offline_registry_search.ts && tsx tests/test_pdf_files_integrity.ts && tsx tests/test_voice_input_and_clean_ui.ts",
     "dev:full": "python3 scripts/run_dev_stack.py",
     "dev:api": "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
-    "dev:web": "vite --port=3000 --host=0.0.0.0"
+    "dev:web": "vite --port=3000 --host=0.0.0.0",
+    "test:workspace": "tsx tests/test_workspace_status.ts && tsx tests/test_font_scale_model.ts",
+    "test:ui": "node tests/test_workspace_ui.mjs && node tests/test_workspace_integrity.mjs && node tests/test_workspace_records.mjs && node tests/test_workspace_dialogs.mjs",
+    "audit:ui-headers": "node scripts/audit_ui_headers.mjs",
+    "test:ui-structure": "node tests/test_ui_header_audit.mjs && tsx tests/test_printable_forms_model.ts && node tests/test_single_page_header.mjs && node tests/test_semantic_color_ui.mjs && node tests/test_printable_forms_layout.mjs && node tests/test_printable_forms_navigation.mjs && node tests/test_printable_forms_navigation.mjs --landscape && node tests/test_printable_forms_navigation.mjs --catalog",
+    "test:logic": "tsx tests/test_prescription_html_safety.ts && tsx tests/test_prescription_print_truth.ts && tsx tests/prescription_print_document.test.ts && tsx tests/prescription_advice_delivery.test.ts && tsx tests/test_coldchain_snapshot_truth.ts && node tests/test_auth_bootstrap.mjs && node tests/test_session_confirmation.mjs && node tests/test_clinical_auth_logic.mjs && node tests/test_frontend_mutation_regressions.mjs && node tests/test_prescription_detail_relevance.mjs && node tests/test_fefo_operations.mjs && tsx tests/test_cpoe_intent_roles.ts && node tests/test_gas_template_truth.mjs && node tests/test_notification_templates.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

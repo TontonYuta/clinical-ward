@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI):
         from sqlalchemy import inspect, text
         columns = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("cpoe_prescriptions")})
         cpoe_extra_cols = [
+            ("clinical_notes", "TEXT"),
             ("patient_insurance_id", "VARCHAR"),
             ("patient_weight", "FLOAT"),
             ("patient_address", "VARCHAR"),

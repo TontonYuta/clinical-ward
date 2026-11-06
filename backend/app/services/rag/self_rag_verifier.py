@@ -57,6 +57,30 @@ def _extract_numbers_and_units(text: str) -> set[str]:
     matches = re.findall(r"\b(?:\d+(?:[.,]\d+)?)\s*(?:mg|mcg|g|ml|lần/ngày|viên/ngày|%|iu)?\b", text.casefold())
     return {m.replace(" ", "") for m in matches if m.strip() and not m.isdigit()}
 
+
+def _has_literal_polarity_conflict(claim: str, evidence_text: str) -> bool:
+    """Detect an otherwise identical statement with reversed explicit negation.
+
+    Shared vocabulary is not a contradiction: different drugs, conditions and
+    paraphrases must continue through the ordinary support check. Conflicting
+    literal statements across sources require review even if one agrees.
+    """
+    def statement(text: str) -> tuple[tuple[str, ...], int]:
+        tokens = re.findall(r"\w+", _strip_diacritics(text))
+        negatives = {"khong", "chua", "not", "never"}
+        return (tuple(token for token in tokens if token not in negatives),
+                sum(token in negatives for token in tokens) % 2)
+
+    claim_tokens, claim_polarity = statement(claim)
+    if len(claim_tokens) < 3:
+        return False
+    for sentence in re.split(r"[.!?\n]+", evidence_text):
+        source_tokens, source_polarity = statement(sentence)
+        if claim_tokens == source_tokens and claim_polarity != source_polarity:
+            return True
+    return False
+
+
 def _evaluate_claim_support(
     claim: str,
     evidence_text: str,
@@ -65,6 +89,9 @@ def _evaluate_claim_support(
     """Evaluate whether a clinical claim is supported by evidence ([IsSup] reflection token)."""
     claim_lower = claim.casefold()
     claim_unacc = _strip_diacritics(claim)
+
+    if _has_literal_polarity_conflict(claim, evidence_text):
+        return "UNSUPPORTED", 0.0
 
     claim_words = {w for w in re.findall(r"\w{2,}", claim_lower) if w not in _QUERY_STOPWORDS}
     if not claim_words:
@@ -161,6 +188,7 @@ class SelfRagVerifier:
         claims_audit: List[Dict[str, Any]] = []
         supported_count = 0
         contradiction_found = False
+        unsupported_polarity = False
         fatal_reasons: List[str] = []
 
         for c in claims:
@@ -178,6 +206,8 @@ class SelfRagVerifier:
                 continue
 
             status, score = _evaluate_claim_support(c, evidence_text, evidence_unacc)
+            if _has_literal_polarity_conflict(c, evidence_text):
+                unsupported_polarity = True
             if status in ("FULLY_SUPPORTED", "PARTIALLY_SUPPORTED"):
                 supported_count += 1
             claims_audit.append({
@@ -192,7 +222,7 @@ class SelfRagVerifier:
         hallucination_rate = round(1.0 - factuality_score, 2)
 
         # Verdict assignment
-        if contradiction_found:
+        if contradiction_found or unsupported_polarity:
             critique_verdict = "REJECT"
         elif factuality_score >= 0.75:
             critique_verdict = "PASS"
@@ -210,12 +240,16 @@ class SelfRagVerifier:
                 f"- {fatal_reasons[0]}\n\n"
                 f"Hệ thống tự động từ chối thông tin không an toàn này để bảo vệ người bệnh."
             )
+        elif critique_verdict == "REJECT":
+            cleaned_answer = (
+                "Chưa đủ bằng chứng để hỗ trợ câu trả lời này. "
+                "Vui lòng đối chiếu tài liệu gốc hoặc nhờ bác sĩ/dược sĩ rà soát trước khi sử dụng thông tin."
+            )
         elif critique_verdict in ("PASS", "CAUTION"):
             # Append discrete audit line
-            verdict_badge = "✅ ĐÃ XÁC THỰC" if critique_verdict == "PASS" else "⚠️ THẬN TRỌNG"
             audit_note = (
-                f"\n\n> 🛡️ *Kiểm định phản tư Self-RAG (ICLR 2024): {verdict_badge} — "
-                f"Độ trung thực: {int(factuality_score * 100)}% ({supported_count}/{total_claims} mệnh đề đối soát y văn DĐVN V & QĐ 5948).*"
+                f"\n\n> *Kiểm định phản tư Self-RAG: kiểm tra tương đồng từ vựng với nguồn truy xuất "
+                f"({supported_count}/{total_claims} mệnh đề). Đây không phải xác nhận độ chính xác hoặc an toàn lâm sàng.*"
             )
             cleaned_answer = answer + audit_note
 

@@ -14,6 +14,52 @@ from app.services.dav_normalizer import clean_brand_name
 
 _format_clinical_text, _drug_citation = format_clinical_text, build_drug_citation
 
+# This joint source monograph explicitly covers each of these substances.
+# Match parsed active identities, never product-name substrings or text length.
+JOINT_MONOGRAPH_IDENTITIES = {
+    "norethisterone and norethisterone acetate": {
+        "norethisterone", "norethisterone acetate", "norethisteron", "norethisteron acetat",
+    },
+}
+
+_CLINICAL_FIELDS = ("indications", "contraindications", "adult_dosage", "pediatric_dosage",
+                    "adverse_effects", "drug_interactions", "precautions", "renal_adjustment")
+
+
+def _has_clinical_content(monograph) -> bool:
+    return any(str(getattr(monograph, field, None) or "").strip() for field in _CLINICAL_FIELDS)
+
+
+def _compatible_formulation(drug, monograph) -> bool:
+    compact = lambda value: re.sub(r"\s+", "", unicodedata.normalize("NFKC", value or "").casefold())
+    form, strength = compact(drug.dosage_form), compact(drug.concentration)
+    if not form or not strength:
+        return False
+    # A form and strength must describe the same explicit presentation. A
+    # tablet elsewhere in a multi-presentation source cannot validate an IV
+    # concentration; release modifiers and denominators must also match.
+    for presentation in re.split(r"[;\n]+", monograph.dosage_forms or ""):
+        presentation = compact(presentation.strip(" •-\t\r."))
+        if presentation in {form + strength, form + ":" + strength}:
+            return True
+    return False
+
+
+def _compatible_dose_routes(drug, dose_text: str) -> bool:
+    """Reject explicit source routes that the registered product does not name."""
+    from app.services.chatbot.clinical_subject import _normalized
+    route_patterns = (
+        r"\b(?:uong|oral)\b", r"\b(?:truc trang|rectal)\b",
+        r"\b(?:tinh mach|intravenous|iv)\b", r"\b(?:tiem bap|intramuscular|im)\b",
+        r"\b(?:duoi da|subcutaneous)\b", r"\b(?:hit|khi dung|inhalation)\b",
+        r"\b(?:boi|ngoai da|topical)\b", r"\b(?:nho mat|ophthalmic)\b",
+        r"\b(?:nho tai|otic)\b", r"\b(?:am dao|vaginal)\b",
+    )
+    product_route, evidence = _normalized(drug.route or ""), _normalized(dose_text)
+    return all(not re.search(pattern, evidence) or re.search(pattern, product_route)
+               for pattern in route_patterns)
+
+
 async def build_drug_profile_response(
     drugs: List[DavNationalDrug],
     db: AsyncSession,
@@ -32,6 +78,8 @@ async def build_drug_profile_response(
     primary_mono, components = None, []
     if is_combination:
         primary_mono, components = await resolve_combination_monographs(matched, db)
+        if primary_mono and not _has_clinical_content(primary_mono):
+            primary_mono = None
 
     first_active = matched.active_ingredient.split(";")[0].split("+")[0].strip().lower()
     clean_active = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", first_active, flags=re.IGNORECASE).strip().lower()
@@ -39,28 +87,41 @@ async def build_drug_profile_response(
     clean_inn = re.sub(r"\b(?:dưới dạng|tương đương|as|equivalent)\b.*$", "", clean_inn, flags=re.IGNORECASE).strip()
 
     monograph = primary_mono
+    blank_link = False
     if not monograph:
         candidates = []
         if matched.clinical_monograph_id:
             mono_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == matched.clinical_monograph_id))
             m = mono_res.scalar_one_or_none()
-            if m:
-                candidates.append(m)
+            if m and _has_clinical_content(m):
+                monograph = m
+            elif m:
+                blank_link = True
 
         mono_targets = [t for t in [clean_inn, clean_active, first_active, matched.brand_name.lower()] if t and len(t) >= 3]
-        conds = [func.lower(ClinicalDrugMonograph.inn).like(f"%{t}%") for t in mono_targets]
-        conds.extend([func.lower(ClinicalDrugMonograph.title).like(f"%{t}%") for t in mono_targets])
-        if conds:
+        search_targets = mono_targets + [joint for joint, identities in JOINT_MONOGRAPH_IDENTITIES.items() if clean_inn in identities]
+        conds = [func.lower(ClinicalDrugMonograph.inn).like(f"%{t}%") for t in search_targets]
+        conds.extend([func.lower(ClinicalDrugMonograph.title).like(f"%{t}%") for t in search_targets])
+        if conds and not monograph:
             mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*conds)))
             candidates.extend(mono_res.scalars().all())
 
-        if candidates:
-            def _score_mono(m: ClinicalDrugMonograph) -> int:
-                fields = (m.indications, m.adult_dosage, m.pediatric_dosage, m.precautions,
-                          m.adverse_effects, m.drug_interactions, m.overdose_treatment,
-                          m.renal_adjustment, m.pregnancy_warning, m.dosage_forms)
-                return sum(len(f or "") for f in fields)
-            monograph = max(candidates, key=_score_mono)
+        if candidates and not monograph:
+            targets = {target.casefold().strip() for target in mono_targets}
+            ingredient_targets = {target.casefold().strip() for target in (clean_inn, clean_active, first_active) if target}
+            exact = {candidate.id: candidate for candidate in candidates
+                     if _has_clinical_content(candidate)
+                     and ((candidate.inn or "").casefold().strip() in targets
+                          or (candidate.title or "").casefold().strip() in targets)
+                     and (not blank_link or ((candidate.inn or "").casefold().strip() in ingredient_targets
+                                             and _compatible_formulation(matched, candidate)))}
+            if len(exact) == 1:
+                monograph = next(iter(exact.values()))
+            elif not exact and not is_combination and not blank_link:
+                joint = {candidate.id: candidate for candidate in candidates
+                         if clean_inn in JOINT_MONOGRAPH_IDENTITIES.get((candidate.inn or "").casefold().strip(), set())}
+                if len(joint) == 1:
+                    monograph = next(iter(joint.values()))
 
     def value(field: str) -> Optional[str]:
         return (getattr(monograph, field, None) if monograph else None) or getattr(matched, field, None)
@@ -89,15 +150,74 @@ async def build_drug_profile_response(
         requested_fields.append(("monitoring", (), "description", "Theo dõi / xét nghiệm"))
     if any(s[0] == "pediatric_dosage" for s in requested_fields):
         requested_fields = [s for s in requested_fields if s[0] != "adult_dosage"]
+    asks_clinical = not requested_fields or any(field[0] not in {"stock", "ingredient"} for field in requested_fields)
+
+    def retain_product_identity():
+        # Registration identity remains useful even when clinical evidence is
+        # insufficient. Clear the previous product and its operational facts.
+        session.clear_active_medication()
+        if matched.id and matched.national_code:
+            session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient,
+                                          sdk=matched.national_code)
+
+    if blank_link and monograph is None and asks_clinical:
+        retain_product_identity()
+        return CopilotResponse(
+            intent="MEDICATION_LOOKUP_CLARIFICATION",
+            reply_text=f"### Thông tin chế phẩm: {clean_name}\n\nHoạt chất công bố: {matched.active_ingredient}. SĐK: {matched.national_code}. "
+                       "Chuyên luận được liên kết chưa có dữ liệu lâm sàng. Chưa tìm được một nguồn đúng hoạt chất, dạng bào chế và hàm lượng để thay thế duy nhất; chưa xác nhận liều hoặc cách dùng. Vui lòng đối chiếu tờ hướng dẫn của đúng chế phẩm.",
+            answer_type="safe_abstention", source_status="missing_clinical_evidence", rag_grounded=False, confidence=0.0,
+            session_id=session.session_id, citations=[], active_medication_name=session.active_medication_name,
+        )
+    if is_combination and primary_mono is None and asks_clinical:
+        reply, citations, basis = build_combination_drug_profile(matched, None, components, query=query)
+        retain_product_identity()
+        return CopilotResponse(
+            intent="MEDICATION_LOOKUP_CLARIFICATION", reply_text=reply, legal_basis=basis,
+            answer_type="safe_abstention", source_status="missing_product_specific_clinical_evidence",
+            rag_grounded=False, confidence=0.0, session_id=session.session_id, citations=citations,
+            active_medication_name=session.active_medication_name,
+        )
+    route_sensitive_fields = {"adult_dosage", "pediatric_dosage", "timing", "renal_adjustment"}
+    dose_or_indication = not requested_fields or any(item[0] in route_sensitive_fields | {"indications"}
+                                                   for item in requested_fields)
+    normalize_name = lambda text: " ".join(unicodedata.normalize("NFKC", text).casefold().split())
+    brand_subject = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%).*$", "", clean_name, flags=re.IGNORECASE).strip()
+    query_names = normalize_name(query)
+    generic_subject = normalize_name(brand_subject) == normalize_name(clean_inn) or (
+        bool(clean_inn) and re.search(r"(?<!\w)" + re.escape(normalize_name(clean_inn)) + r"(?!\w)", query_names)
+        and not re.search(r"(?<!\w)" + re.escape(normalize_name(clean_name)) + r"(?!\w)", query_names)
+    )
+    joint_ingredient_reference = bool(monograph and requested_fields
+        and clean_inn in JOINT_MONOGRAPH_IDENTITIES.get((monograph.inn or "").casefold().strip(), set())
+        and not any(item[0] in route_sensitive_fields for item in requested_fields))
+    if not is_combination and not generic_subject and not joint_ingredient_reference and dose_or_indication:
+        dose_text = " ".join(str(value(field) or "") for field in ("adult_dosage", "pediatric_dosage"))
+        if not monograph or not _compatible_formulation(matched, monograph) or not _compatible_dose_routes(matched, dose_text):
+            retain_product_identity()
+            return CopilotResponse(
+                intent="MEDICATION_LOOKUP_CLARIFICATION",
+                reply_text=f"### Thông tin chế phẩm: {clean_name}\n\nHoạt chất công bố: {matched.active_ingredient}. SĐK: {matched.national_code}. "
+                           "Nguồn liên kết chưa xác minh được hướng dẫn đúng dạng bào chế, hàm lượng và đường dùng của chế phẩm này. "
+                           "Chưa xác nhận chỉ định, liều hoặc cách dùng cho biệt dược; không áp dụng liều của đường dùng khác. "
+                           "Vui lòng đối chiếu tờ hướng dẫn của đúng chế phẩm hoặc tra cứu riêng chuyên luận hoạt chất.",
+                answer_type="safe_abstention", source_status="unverified_product_specific_clinical_evidence",
+                rag_grounded=False, confidence=0.0, session_id=session.session_id, citations=[],
+                active_medication_name=session.active_medication_name,
+            )
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
     resolved_keys = resolve_registered_medications(first_active)
     active_drug_key = resolved_keys[0] if resolved_keys else None
     # contextual_chips = generate_suggested_chips(active_drug_key, "monograph_field_lookup", {s[0] for s in requested_fields}, drug_name=clean_name)
     contextual_chips = []
 
-    async def get_batches():
-        stmt = select(InventoryBatch).where(or_(func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"), func.lower(InventoryBatch.item_name).like(f"%{first_active}%")))
-        return (await db.execute(stmt)).scalars().all()
+    from app.services.chatbot.product_stock import lookup_product_stock
+    stock_result = None
+    async def get_stock():
+        nonlocal stock_result
+        if stock_result is None:
+            stock_result = await lookup_product_stock(matched, db)
+        return stock_result
 
     if requested_fields:
         if is_combination and not primary_mono and len(components) >= 2:
@@ -106,9 +226,8 @@ async def build_drug_profile_response(
             legal_bases = []
             for field_key, _, req_field, req_label in requested_fields:
                 if field_key == "stock":
-                    stock_batches = await get_batches()
-                    total_stock = sum(batch.current_stock for batch in stock_batches)
-                    details.append(f"- **{req_label}:** {total_stock} {matched.standard_unit}" + (f"; vị trí: {stock_batches[0].warehouse_location}" if stock_batches else ""))
+                    inventory = await get_stock()
+                    details.append(f"- **{req_label}:** {inventory.text}")
                     labels.append(req_label)
                     continue
                 comp_lines = []
@@ -168,7 +287,7 @@ async def build_drug_profile_response(
         if len(requested_fields) > 1:
             labels, details = [], []
             for field_key, _, req_field, req_label in requested_fields:
-                req_val = value(req_field) if field_key != "stock" else None
+                req_val = value(req_field) if field_key != "stock" else (await get_stock()).text
                 req_val = req_val or f"Chưa có dữ liệu {req_label.lower()} được xác thực trong nguồn đang lập chỉ mục."
                 labels.append(req_label)
                 details.append(f"- **{req_label}:** {format_clinical_text(str(req_val).strip())}")
@@ -181,9 +300,14 @@ async def build_drug_profile_response(
                 answer_type="medication_fields", source_status="exact_match", confidence=1.0, citations=[build_drug_citation(matched, monograph, source)]
             )
         if key == "stock":
-            stock_batches = await get_batches()
-            total_stock = sum(batch.current_stock for batch in stock_batches)
-            detail = f"{total_stock} {matched.standard_unit}" + (f"; vị trí: {stock_batches[0].warehouse_location}" if stock_batches else "")
+            inventory = await get_stock()
+            session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient,
+                                          stock=inventory.text, sdk=matched.national_code)
+            return CopilotResponse(
+                intent="MEDICATION_SAFETY_PROFILE", reply_text=f"### Tồn kho: {clean_name}\n\n{inventory.text}",
+                answer_type="medication_field", source_status="verified_product_inventory" if inventory.code else "unverified_product_identity",
+                confidence=1.0 if inventory.code else 0.0, citations=[], session_id=session.session_id,
+            )
         else:
             detail = value(field)
 
@@ -289,9 +413,9 @@ async def build_drug_profile_response(
         "tóm tắt", "tom tat", "ngắn gọn", "ngan gon", "vắn tắt", "van tat",
         "sơ lược", "so luoc", "summary", "brief", "ngắn thôi"
     ))
-    batches = await get_batches()
-    in_stock = sum(b.current_stock for b in batches)
-    loc = batches[0].warehouse_location if batches else "Kho Dược Quốc Gia"
+    inventory = await get_stock()
+    batches = inventory.batches
+    loc = ", ".join(dict.fromkeys(batch.warehouse_location for batch in batches)) if batches else "Chưa xác nhận vị trí tồn kho khả dụng"
     prof_source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "Cục Quản lý Dược (DAV) & Dược Thư Quốc Gia Việt Nam"
 
     ing = matched.active_ingredient
@@ -306,7 +430,7 @@ async def build_drug_profile_response(
         ind_snippet = f"\n• **Chỉ định chính:** {_format_clinical_text(str(val_ind).strip())[:160]}..." if val_ind else ""
         val_contra = value("contraindications")
         contra_snippet = f"\n• **Chống chỉ định:** {_format_clinical_text(str(val_contra).strip())[:160]}..." if val_contra else ""
-        stock_snippet = f"\n• **Tồn kho nội viện:** {in_stock} {matched.standard_unit} ({'Có sẵn tại kho' if in_stock > 0 else 'Chưa nhập kho'})" if is_stock_ask else ""
+        stock_snippet = f"\n• **Tồn kho nội viện:** {inventory.text}" if is_stock_ask else ""
         reply = (
             f"### 📋 TÓM TẮT THÔNG TIN THUỐC: {clean_name}\n\n"
             f"• **Hoạt chất:** **{ing}** | **Hàm lượng:** {conc or 'Theo HS công bố'}\n"
@@ -314,7 +438,7 @@ async def build_drug_profile_response(
             f"• **Phân loại:** {matched.group} ({'Kiểm soát ĐB TT 20' if matched.is_controlled else 'Thuốc thường'})"
             f"{ind_snippet}{contra_snippet}{stock_snippet}"
         )
-        session.set_active_medication(name=clean_name, ingredient=ing, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
+        session.set_active_medication(name=clean_name, ingredient=ing, batch=matched.national_code, stock=inventory.text, location=loc, sdk=matched.national_code)
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=prof_source,
             suggested_chips=contextual_chips, session_id=session.session_id, active_medication_name=session.active_medication_name,
@@ -323,7 +447,7 @@ async def build_drug_profile_response(
 
     if is_combination and (primary_mono or len(components) >= 2):
         reply, combo_citations, legal_str = build_combination_drug_profile(matched, primary_mono, components, query=query)
-        session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho", location=loc, sdk=matched.national_code)
+        session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock=inventory.text, location=loc, sdk=matched.national_code)
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE", reply_text=reply, card=None, legal_basis=legal_str,
             suggested_chips=contextual_chips, session_id=session.session_id,
@@ -335,7 +459,7 @@ async def build_drug_profile_response(
     session.set_active_medication(
         name=clean_name, ingredient=ing,
         batch=batches[0].batch_number if batches else matched.national_code,
-        stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho",
+        stock=inventory.text,
         location=loc, sdk=matched.national_code
     )
 
@@ -343,12 +467,13 @@ async def build_drug_profile_response(
     resp = await build_fluent_drug_profile_response(
         matched_drug=matched,
         monograph=monograph,
-        stock=in_stock,
+        stock=0,
         location=loc,
         query=query,
         user_name=getattr(session, "user_name", "Bác sĩ"),
         user_role=getattr(session, "user_role", "doctor"),
-        session_id=session.session_id
+        session_id=session.session_id,
+        stock_summary=inventory.text,
     )
     resp.active_medication_name = session.active_medication_name
     resp.active_medication_stock = session.active_medication_stock

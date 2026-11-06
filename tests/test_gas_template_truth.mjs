@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+const sent=[];
+const context=vm.createContext({GmailApp:{sendEmail:(...args)=>sent.push(args)},ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})}});
+vm.runInContext(readFileSync('scripts/google_apps_script_reminder.gs','utf8'),context);
+const advice={id:'A',patientId:'P',patientName:'<img src=x onerror=evil()>',patientEmail:'test@example.invalid',medications:[{medicationName:'Source medicine',dosage:'1.5 mL',route:'Hít',frequency:'3 lần/ngày',durationDays:5,specialInstructions:'Chỉ dẫn nguồn <script>evil()</script>',timeSlots:[{id:'morning',label:'Sáng',time:'09:35',dosageText:'1.5 mL',note:'SLOT-NOTE <script>unsafe</script>'}]}],generalDoctorAdvice:'Nội dung thử nghiệm'};
+const result=JSON.parse(context.doPost({postData:{contents:JSON.stringify({advice})}}).text);
+assert.equal(result.success,true);assert.equal(sent.length,1);
+const html=sent[0][3].htmlBody;
+for(const text of ['1.5 mL','Hít','3 lần/ngày','5 ngày','Chỉ dẫn nguồn','SLOT-NOTE', '09:35']) assert.ok(html.includes(text),text);
+for(const text of ['<img','<script>','Bệnh Viện Đa Khoa Lâm Sàng','Sáng (07:00)','1 viên']) assert.ok(!html.includes(text),text);
+assert.ok(html.includes('&lt;img') && html.includes('&lt;script&gt;'));
+assert.equal(JSON.parse(context.doPost({postData:{contents:'{}'}}).text).success,false);
+assert.equal(sent.length,1,'invalid request cannot send');
+console.log('GAS syntax, truthful content and escaped HTML checks passed (fake Gmail only)');

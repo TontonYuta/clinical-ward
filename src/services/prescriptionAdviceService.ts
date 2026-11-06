@@ -31,29 +31,10 @@ export function setStoredGasWebhookUrl(url: string): void {
   } catch {}
 }
 
-export function buildDefaultTimeSlots(frequency: string = ''): MedicationTimeSlot[] {
-  const norm = frequency.toLowerCase();
-  if (norm.includes('3 lần') || norm.includes('sáng, trưa, tối') || norm.includes('sáng trưa tối')) {
-    return [
-      { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-      { id: 'noon', label: 'Trưa', time: '11:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-      { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-    ];
-  }
-  if (norm.includes('1 lần') || (norm.includes('sáng') && !norm.includes('tối'))) {
-    return [
-      { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-    ];
-  }
-  if (norm.includes('tối trước khi ngủ') || norm.includes('trước khi đi ngủ')) {
-    return [
-      { id: 'evening', label: 'Tối', time: '21:00', dosageText: '1 viên', mealRelation: 'Trước khi ngủ 30 phút' },
-    ];
-  }
-  return [
-    { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-    { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-  ];
+export function buildDefaultTimeSlots(_frequency: string = ''): MedicationTimeSlot[] {
+  // Frequency alone does not specify a dose, clock time, or relation to meals.
+  // A reminder schedule must be explicitly supplied and reviewed.
+  return [];
 }
 
 export function saveAdviceLocally(advice: PatientPrescriptionAdvice): void {
@@ -84,10 +65,14 @@ export async function savePrescriptionAdviceToDb(advice: PatientPrescriptionAdvi
 export async function fetchSavedPrescriptionAdvices(): Promise<PatientPrescriptionAdvice[]> {
   try {
     const res = await fetch(`${API_BASE_URL}/prescription-advice`, { credentials: 'include' });
+    if (res.status === 401 || res.status === 403) {
+      try { localStorage.setItem(STORAGE_KEY_SAVED_ADVICES, '[]'); } catch {}
+      return [];
+    }
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        localStorage.setItem(STORAGE_KEY_SAVED_ADVICES, JSON.stringify(data));
+      if (Array.isArray(data)) {
+        try { localStorage.setItem(STORAGE_KEY_SAVED_ADVICES, JSON.stringify(data)); } catch {}
         return data;
       }
     }
@@ -113,7 +98,9 @@ export async function sendMedicationAdviceEmail(
   };
 
   // Lưu lịch dặn dò vào CSDL vĩnh viễn
-  savePrescriptionAdviceToDb(advice);
+  if (!await savePrescriptionAdviceToDb(advice)) {
+    throw new Error('Không lưu được hồ sơ dặn dò; chưa gửi thông báo. Kiểm tra định danh và kết nối.');
+  }
 
   try {
     const res = await fetch(`${API_BASE_URL}/prescription-advice/send-email`, { credentials: 'include',
@@ -123,46 +110,16 @@ export async function sendMedicationAdviceEmail(
     });
     if (res.ok) {
       const data = await res.json();
+      if (data.success !== true) throw new Error(data.message || 'Không xác nhận được việc gửi thông báo');
       saveAdviceLocally({ ...advice, notificationStatus: 'success', emailSentAt: data.timestamp });
       return data;
     }
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.detail || 'Không thể gửi thông báo');
   } catch (err) {
-    if (options.sendSms || !webhookUrl) throw err;
-    console.warn('Backend relay unavailable, trying direct GAS webhook:', err);
-  }
-
-  if (!options.sendSms && webhookUrl && webhookUrl.startsWith('http')) {
-    try {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advice: payload })
-      });
-      const sentTime = new Date().toISOString();
-      saveAdviceLocally({ ...advice, notificationStatus: 'success', emailSentAt: sentTime });
-      return {
-        success: true,
-        message: `Đã gửi thông báo nhắc uống thuốc thành công qua Google Apps Script tới: ${advice.patientEmail}`,
-        timestamp: sentTime,
-        emailSentTo: advice.patientEmail,
-        provider: 'google_apps_script'
-      };
-    } catch (gasErr) {
-      console.error('Lỗi khi gửi trực tiếp tới Google Apps Script:', gasErr);
-    }
-  }
-
-  // SMS is delivered only by a configured provider. Never report a simulated
-  // notification as sent to a patient's phone.
-  if (options.sendSms) {
     saveAdviceLocally({ ...advice, notificationStatus: 'error' });
-    throw new Error('Backend chưa khả dụng; không thể xác nhận gửi SMS. Không gửi email thay thế một cách âm thầm.');
+    throw err;
   }
-
-  throw new Error('Không gửi được email: backend không khả dụng và chưa cấu hình Google Apps Script. Lịch đã được lưu nháp.');
 }
 
 export function printMedicationAdvice(advice: PatientPrescriptionAdvice): void {

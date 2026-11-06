@@ -103,7 +103,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
+    <div className="clinical-modal-overlay fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
       <div className="bg-white sm:rounded-lg rounded-none shadow-xl border sm:border-slate-200 border-none w-full h-full sm:h-[90vh] sm:max-h-[90vh] sm:max-w-5xl flex flex-col overflow-hidden">
         {/* Header - Workstation Dark Bar */}
         <div className="h-14 sm:h-16 px-4 sm:px-6 bg-slate-900 text-white flex items-center justify-between shrink-0 shadow-xs">
@@ -623,7 +623,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
               <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-6 bg-white">
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-                    Trợ Lý AI Lâm Sàng & Quản Lý Dược Bệnh Viện
+                    Tra cứu và đối chiếu nguồn
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Hỗ trợ tra cứu nhanh Dược thư Quốc gia Việt Nam 2015 và CSDL 54.885 biệt dược DAV

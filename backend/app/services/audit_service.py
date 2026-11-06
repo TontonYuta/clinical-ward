@@ -2,9 +2,10 @@ import hmac
 import hashlib
 import json
 from datetime import datetime
-from sqlalchemy import select
+from uuid import uuid4
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.audit import AuditRecord
+from app.models.audit import AuditRecord, AuditAppendLock
 from app.config import settings
 
 def calculate_hash(previous_hash: str, payload: dict) -> str:
@@ -25,19 +26,29 @@ async def record_audit_event(
     auth_method: str = "PIN",
     payload_data: dict | None = None
 ) -> AuditRecord:
+    # The lock is held by the database until this transaction commits/rolls back,
+    # so appending remains serial across processes, not just within one worker.
+    dialect = db.get_bind().dialect.name
+    if dialect == "sqlite":
+        from sqlalchemy.dialects.sqlite import insert
+    elif dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        raise RuntimeError("Audit append locking is not implemented for this database")
+    await db.execute(insert(AuditAppendLock).values(id=1).on_conflict_do_nothing(index_elements=["id"]))
+    await db.execute(update(AuditAppendLock).where(AuditAppendLock.id == 1).values(id=1))
+
     # Get last audit record to chain previous_hash
-    stmt = select(AuditRecord).order_by(AuditRecord.created_at.desc()).limit(1)
+    stmt = select(AuditRecord).order_by(AuditRecord.created_at.desc(), AuditRecord.id.desc()).limit(1)
     result = await db.execute(stmt)
     last_record = result.scalar_one_or_none()
 
     previous_hash = last_record.integrity_hash if last_record else "GENESIS_BLOCK_HOSPITAL_AUDIT_2026"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Generate event ID
-    count_stmt = select(AuditRecord)
-    all_res = await db.execute(count_stmt)
-    total_count = len(all_res.scalars().all())
-    event_id = f"AUD-2026-{total_count + 1:04d}"
+    # Avoid collisions with imported/non-contiguous ledger IDs.
+    event_id = f"AUD-{datetime.now().year}-{uuid4().hex}"
+    payload_data = {**(payload_data or {}), "_audit_schema": 2}
 
     hash_payload = {
         "event_id": event_id,
@@ -50,6 +61,8 @@ async def record_audit_event(
         "data": payload_data or {}
     }
 
+    hash_payload.update(action_title=action_title, legal_basis=legal_basis,
+                        signer_name=signer_name, witness_name=witness_name or "")
     current_hash = calculate_hash(previous_hash, hash_payload)
 
     new_record = AuditRecord(
@@ -66,7 +79,8 @@ async def record_audit_event(
         auth_method=auth_method,
         previous_hash=previous_hash,
         integrity_hash=current_hash,
-        payload_data=payload_data
+        payload_data=payload_data,
+        created_at=datetime.now(),
     )
 
     db.add(new_record)
@@ -75,7 +89,7 @@ async def record_audit_event(
     return new_record
 
 async def verify_ledger_integrity(db: AsyncSession) -> dict:
-    stmt = select(AuditRecord).order_by(AuditRecord.created_at.asc())
+    stmt = select(AuditRecord).order_by(AuditRecord.created_at.asc(), AuditRecord.id.asc())
     result = await db.execute(stmt)
     records = result.scalars().all()
 
@@ -102,6 +116,9 @@ async def verify_ledger_integrity(db: AsyncSession) -> dict:
             "auth_method": r.auth_method,
             "data": r.payload_data or {}
         }
+        if (r.payload_data or {}).get("_audit_schema") == 2:
+            hash_payload.update(action_title=r.action_title, legal_basis=r.legal_basis,
+                                signer_name=r.signer_name, witness_name=r.witness_name or "")
         recomputed = calculate_hash(expected_prev, hash_payload)
         if recomputed != r.integrity_hash:
             return {

@@ -329,28 +329,17 @@ export const INITIAL_PATIENTS: PatientProfile[] = [
 ];
 
 export async function fetchPatients(): Promise<PatientProfile[]> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include' });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        localStorage.setItem(STORAGE_KEY_PATIENTS, JSON.stringify(data));
-        return data;
-      }
+  const res = await fetch(`${API_BASE_URL}/patients`, { credentials: 'include' });
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      try { localStorage.removeItem(STORAGE_KEY_PATIENTS); } catch {}
     }
-  } catch (e) {
-    console.warn('Backend patients API offline, using cached patient data:', e);
+    throw new Error(`Không tải được hồ sơ người bệnh (HTTP ${res.status}).`);
   }
-
-  try {
-    const cached = localStorage.getItem(STORAGE_KEY_PATIENTS);
-    if (cached) {
-      return JSON.parse(cached);
-    }
-  } catch {}
-
-  localStorage.setItem(STORAGE_KEY_PATIENTS, JSON.stringify(INITIAL_PATIENTS));
-  return INITIAL_PATIENTS;
+  const data = await res.json();
+  if (!Array.isArray(data)) throw new Error('Dữ liệu hồ sơ người bệnh không hợp lệ.');
+  try { localStorage.setItem(STORAGE_KEY_PATIENTS, JSON.stringify(data)); } catch {}
+  return data;
 }
 
 export function findPatientByNameOrQuery(query: string, patients: PatientProfile[] = INITIAL_PATIENTS): PatientProfile | undefined {
@@ -378,6 +367,7 @@ export function findPatientsByQuery(query: string, patients: PatientProfile[] = 
 export async function savePatientProfile(patient: PatientProfile): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE_URL}/patients`, {
+      credentials: 'include',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patient)

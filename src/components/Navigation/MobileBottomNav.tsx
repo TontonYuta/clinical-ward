@@ -62,7 +62,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-1 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] flex items-center justify-start overflow-x-auto select-none print:hidden shadow-lg">
+    <nav aria-label="Điều hướng nhanh" className="mobile-bottom-nav print:hidden">
       {displayTabs.map((tab) => {
         const config = TAB_CONFIG[tab];
         if (!config) return null;
@@ -74,9 +74,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`flex min-w-[4.25rem] flex-1 flex-col items-center justify-center py-1 px-1 rounded-lg transition cursor-pointer relative ${
-              isActive ? 'text-teal-950 font-bold' : 'text-slate-500 hover:text-slate-800'
-            }`}
+            aria-current={isActive ? 'page' : undefined}
+            className="relative"
           >
             <div className="relative">
               <Icon className={`w-5 h-5 ${isActive ? 'text-teal-700 stroke-[2.5]' : 'text-slate-500'}`} />
@@ -88,7 +87,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 </span>
               )}
             </div>
-            <span className="text-xs mt-0.5 tracking-tight font-bold">{config.label}</span>
+            <span className="">{config.label}</span>
           </button>
         );
       })}

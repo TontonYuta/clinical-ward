@@ -31,6 +31,15 @@ async def test_registry_returns_hospital_stock_by_registration_number_and_filter
 
 @pytest.mark.asyncio
 async def test_registry_stock_revision_changes_after_inventory_dispatch():
+    # Exercise revision invalidation with an eligible batch, independent of the
+    # seed's fixed historical expiry date. Expired dispatch is tested separately.
+    from datetime import date, timedelta
+    from app.database import AsyncSessionLocal
+    from app.models.inventory import InventoryBatch
+    async with AsyncSessionLocal() as session:
+        batch = await session.get(InventoryBatch, 'b-1')
+        batch.expiry_date = (date.today() + timedelta(days=30)).isoformat()
+        await session.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
         before = (await client.get('/api/v1/registry', params={'search': '893100110026'})).json()
         dispatched = await client.post('/api/v1/inventory/batches/b-1/dispatch', json={'quantity': 1})

@@ -17,24 +17,24 @@ router = APIRouter(prefix="/sms", tags=["Cổng Tin Nhắn SMS Bệnh Nhân (TT 
 CLINICAL_SMS_TEMPLATES: list[SmsTemplateItem] = [
     SmsTemplateItem(
         id="tpl_cpoe_national",
-        title="1. Mã Đơn Thuốc Điện Tử (TT 26/2025/TT-BYT)",
+        title="Thông tin hồ sơ đơn thuốc nội bộ",
         category="cpoe_prescription",
-        template="[BV LAM SANG] BS {doctorName} da ky don thuoc ma {orderId} cho BN {patientName}. Tra cuu don tai: https://donthuocquocgia.vn/?id={orderId}. Hotline: 1900-1234",
-        description="Thông báo mã đơn thuốc điện tử quốc gia cho người bệnh đi mua thuốc theo Thông tư 26."
+        template="Nguoi benh {patientName} ({patientId}). Ma ho so noi bo {orderId}; trang thai nguon: {orderStatus}. Nguoi ke don tren ho so: {doctorName}. Noi dung thuoc: {medicationsSummary}.",
+        description="Dùng mã và trạng thái thực trên hồ sơ; không xác nhận chữ ký hay phát hành trên hệ thống khác."
     ),
     SmsTemplateItem(
         id="tpl_medication_advice",
-        title="2. Nhắc Lịch Uống Thuốc & Cữ Điều Trị (JAMA Int Med)",
+        title="Thông tin dùng thuốc theo hồ sơ",
         category="medication_advice",
-        template="[BV LAM SANG] Nhac uong thuoc BN {patientName}: Sang 07:30 (1 vien sau an), Toi 20:00 (1 vien truoc ngu). Uong dung gio, tai kham ngay neu co dau nguc hoac sot >38.5C.",
-        description="Nhắc nhở cữ uống thuốc sáng - tối giúp nhân đôi tỷ lệ tuân thủ điều trị lâm sàng."
+        template="Thong tin cua {patientName}, ho so noi bo {orderId}, trang thai {orderStatus}: {medicationsSummary}. Kiem tra lai voi nguoi dieu tri truoc khi thuc hien.",
+        description="Chỉ điền liều, tần suất, đường dùng và lời dặn thực được cung cấp."
     ),
     SmsTemplateItem(
         id="tpl_hospital_notice",
-        title="3. Thông Báo Viện Phí & Tái Khám Định Kỳ",
+        title="Thông báo khác cho người bệnh",
         category="hospital_notice",
-        template="[BV LAM SANG] Xac nhan BN {patientName} ({patientId}) da hoan tat doi soat va thanh toan vien phi dot dieu tri. Hen tai kham sau 30 ngay tai Khoa Kham Benh.",
-        description="Xác nhận hoàn tất thủ tục viện phí và nhắc lịch tái khám định kỳ."
+        template="Thong tin cho {patientName} ({patientId}). Noi dung thong bao, vien phi hoac lich hen: chua co du lieu xac nhan; can bo sung tu ho so thuc te.",
+        description="Không tự xác nhận thanh toán, lịch hẹn, cơ sở hoặc thông tin liên hệ."
     )
 ]
 
@@ -63,7 +63,7 @@ async def get_sms_templates():
 async def list_sms_logs(
     patient_id: str | None = Query(None, description="Lọc theo mã hồ sơ bệnh nhân"),
     recipient_phone: str | None = Query(None, description="Lọc theo SĐT"),
-    limit: int = Query(50, le=200),
+    limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(SmsDeliveryLog).order_by(SmsDeliveryLog.created_at.desc())
@@ -90,7 +90,7 @@ async def send_patient_sms(
 
     chars_count, segments_count = calculate_sms_metrics(payload.content)
     now_id = f"SMS-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
-    status_str = "delivered"
+    status_str = "simulated"
     receipt_str = f"DLR-SIM-{uuid.uuid4().hex[:8].upper()}"
     error_msg = None
 
@@ -100,14 +100,17 @@ async def send_patient_sms(
     if provider == SmsProviderType.ESMS:
         esms_api_key = os.getenv("ESMS_API_KEY", "").strip()
         esms_secret = os.getenv("ESMS_SECRET_KEY", "").strip()
-        esms_brand = os.getenv("ESMS_BRANDNAME", "BV_LAMSANG").strip()
+        esms_brand = os.getenv("ESMS_BRANDNAME", "").strip()
         is_sandbox = os.getenv("ESMS_SANDBOX", "1").strip() # 1 là chế độ Sandbox an toàn (0đ) bảo toàn số dư tài khoản
+
+        if not esms_brand:
+            raise HTTPException(status_code=503, detail="Chưa cấu hình Brandname eSMS đã đăng ký; chưa gửi tin")
 
         if esms_api_key and esms_secret:
             try:
                 async with httpx.AsyncClient(timeout=15.0) as client:
                     resp = await client.post(
-                        "http://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json/",
+                        "https://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json/",
                         json={
                             "ApiKey": esms_api_key,
                             "SecretKey": esms_secret,
@@ -123,10 +126,10 @@ async def send_patient_sms(
                     data = resp.json()
                     if str(data.get("CodeResult")) in ("100", "101"):
                         receipt_str = f"ESMS-ID-{data.get('SMSID') or uuid.uuid4().hex[:8]}"
-                        status_str = "delivered"
+                        status_str = "simulated" if is_sandbox == "1" else "sent"
                     elif str(data.get("CodeResult")) == "146":
                         status_str = "failed"
-                        error_msg = "eSMS Lỗi 146: Sai mẫu Brandname CSKH. Brandname Baotrixemay bắt buộc nội dung khớp mẫu: 'Ma xac nhan cua ban la {Mã đơn}'."
+                        error_msg = "eSMS Lỗi 146: Nội dung không khớp mẫu đã đăng ký của tài khoản gửi. Kiểm tra cấu hình nhà cung cấp."
                     else:
                         status_str = "failed"
                         error_msg = f"eSMS Lỗi {data.get('CodeResult')}: {data.get('ErrorMessage') or 'Không gửi được'}"
@@ -134,14 +137,14 @@ async def send_patient_sms(
                 status_str = "failed"
                 error_msg = f"Lỗi kết nối eSMS: {str(e)}"
         else:
-            # Phát tin qua cổng mô phỏng Gateway nội bộ
-            receipt_str = f"DLR-SIM-{uuid.uuid4().hex[:8].upper()}"
-            status_str = "delivered"
+            raise HTTPException(status_code=503, detail="Chưa cấu hình nhà cung cấp eSMS; chưa gửi tin")
 
     # 2. Cổng Gateway viễn thông trực tiếp
     elif provider == SmsProviderType.SANDBOX:
         receipt_str = f"DLR-SIM-{datetime.now().strftime('%H%M%S')}-{uuid.uuid4().hex[:4].upper()}"
-        status_str = "delivered"
+        status_str = "simulated"
+    else:
+        raise HTTPException(status_code=501, detail="Nhà cung cấp SMS này chưa được tích hợp")
 
     # Tạo bản ghi log giao nhận tin nhắn bất biến
     sms_log = SmsDeliveryLog(
@@ -160,8 +163,6 @@ async def send_patient_sms(
         error_detail=error_msg
     )
     db.add(sms_log)
-    await db.commit()
-    await db.refresh(sms_log)
 
     # Ghi nhận vào sổ kiểm toán lâm sàng bất biến (Audit Trail)
     await record_audit_event(
@@ -183,4 +184,5 @@ async def send_patient_sms(
         }
     )
 
+    await db.refresh(sms_log)
     return sms_log

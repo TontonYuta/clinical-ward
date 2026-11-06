@@ -7,6 +7,7 @@ Tuân thủ:
 - Hướng dẫn lâm sàng & Liều dùng: Dược thư Quốc gia Việt Nam (DĐVN V)
 """
 import re
+import math
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
@@ -54,6 +55,35 @@ MAX_DAILY_DOSES = {
     "diazepam": {"max_adult_mg": 40, "unit": "mg", "is_psychotropic": True},
     "morphin": {"max_adult_mg": 120, "unit": "mg", "is_narcotic": True},
 }
+
+
+def _finite_number(value: Any) -> Optional[float]:
+    try:
+        number = float(value)
+        return number if math.isfinite(number) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _paracetamol_daily_mg(item: Dict[str, Any]) -> Optional[float]:
+    """Calculate only explicit, unambiguous solid-unit or mass doses."""
+    dose = str(item.get("dosage") or "").strip().casefold()
+    frequency = str(item.get("frequency") or "").strip().casefold()
+    count = re.fullmatch(r"(?:uống\s+)?(?:ngày\s+(\d+)\s+lần|(\d+)\s+lần\s*/\s*ngày)(?:\s+(?:sau ăn|trước ăn))?", frequency)
+    if not count:
+        return None
+    times = int(count.group(1) or count.group(2))
+    mass = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s*(mg|g)", dose)
+    if mass:
+        amount = float(mass.group(1).replace(",", ".")) * (1000 if mass.group(2) == "g" else 1)
+    else:
+        units = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s*viên", dose)
+        strengths = re.findall(r"(?<![\d.,])(\d+(?:[.,]\d+)?)\s*(mg|g)\b", str(item.get("medicationName") or "").casefold())
+        if not units or len(strengths) != 1 or "/" in str(item.get("medicationName") or ""):
+            return None
+        strength, unit = strengths[0]
+        amount = float(units.group(1).replace(",", ".")) * float(strength.replace(",", ".")) * (1000 if unit == "g" else 1)
+    return amount * times if amount > 0 and times > 0 else None
 
 # Quy chuẩn thời điểm dùng thuốc lâm sàng
 TIMING_GUIDELINES = {
@@ -266,14 +296,19 @@ class ClinicalPrescriptionAuditor:
         # 1.5 Kiểm tra Chữ ký & CCHN Bác sĩ
         doc_name = (order_data.get("doctorName") or "").strip()
         doc_cert = (order_data.get("doctorCertificate") or "").strip()
-        doc_signed = bool(order_data.get("digitalSignature") or order_data.get("status") == "signed")
+        signature_reported = bool(order_data.get("digitalSignature") or order_data.get("status") == "signed")
+        # This stateless audit receives caller data only. There is no trusted
+        # signature record or cryptographic verification in this operation.
+        doc_signed = False
 
         if doc_name and doc_cert:
             legal_checks.append(LegalCheckItem(
                 rule_name="Chữ ký & Chứng chỉ hành nghề Bác sĩ kê đơn",
                 legal_basis="Khoản 4 Điều 6 TT 52/2017/TT-BYT & Luật KBCB 15/2023/QH15",
                 passed=True, severity="info",
-                message=f"Bác sĩ điều trị: {doc_name} (CCHN: {doc_cert}) - Trạng thái: {'Đã ký số ✓' if doc_signed else 'Chờ ký xác nhận'}."
+                message=f"Bác sĩ điều trị theo dữ liệu cung cấp: {doc_name} (CCHN: {doc_cert}). "
+                        + ("Có thông tin ký do bên gửi cung cấp; chưa xác minh chữ ký." if signature_reported
+                           else "Chưa có chữ ký được hệ thống xác minh.")
             ))
         elif doc_name:
             legal_checks.append(LegalCheckItem(
@@ -375,7 +410,15 @@ class ClinicalPrescriptionAuditor:
         # ----------------------------------------------------
         # 3. THẨM ĐỊNH LIỀU DÙNG THEO TUỔI, CÂN NẶNG & CHỨC NĂNG THẬN
         # ----------------------------------------------------
-        patient_egfr = patient_data.get("egfr") or patient_data.get("clcr") or order_data.get("patientEgfr") or order_data.get("egfr") or order_data.get("patientClcr") or order_data.get("clcr")
+        patient_egfr = next((_finite_number(value) for value in (
+            patient_data.get("egfr"), patient_data.get("clcr"), order_data.get("patientEgfr"),
+            order_data.get("egfr"), order_data.get("patientClcr"), order_data.get("clcr")
+        ) if _finite_number(value) is not None), None)
+        paracetamol_items = [item for item in items if "paracetamol" in
+                             f"{item.get('medicationName', '')} {item.get('activeIngredient', '')}".casefold()]
+        daily_doses = [_paracetamol_daily_mg(item) for item in paracetamol_items]
+        total_paracetamol_mg = sum(daily_doses) if daily_doses and all(dose is not None for dose in daily_doses) else None
+        age = _finite_number(patient_age)
         for it in items:
             med_name = (it.get("medicationName") or "").lower()
             act_name = (it.get("activeIngredient") or "").lower()
@@ -383,19 +426,8 @@ class ClinicalPrescriptionAuditor:
 
             # 3.1 Kiểm tra Paracetamol quá liều tối đa hàng ngày
             if "paracetamol" in combined_drug_name:
-                # Trích xuất hàm lượng
-                mg_match = re.search(r"(\d+)\s*mg", combined_drug_name)
-                single_dose_mg = int(mg_match.group(1)) if mg_match else 500
-                freq = it.get("frequency") or ""
-                # Ước tính số lần dùng/ngày
-                times_per_day = 2
-                if any(k in freq.lower() for k in ["4 lần", "4 cữ", "cách 4-6h", "cách 4 giờ", "cách 6 giờ"]):
-                    times_per_day = 4
-                elif any(k in freq.lower() for k in ["3 lần", "3 cữ", "cách 8h", "cách 8 giờ"]):
-                    times_per_day = 3
-
-                daily_dose = single_dose_mg * times_per_day
-                if daily_dose >= 4000:
+                daily_dose = total_paracetamol_mg
+                if daily_dose is not None and daily_dose >= 4000:
                     clinical_checks.append(ClinicalCheckItem(
                         category="dosage_safety",
                         item_name=it.get("medicationName"),
@@ -408,13 +440,17 @@ class ClinicalPrescriptionAuditor:
                     recommendations.append("Giảm liều Paracetamol xuống dưới 4g/ngày để phòng ngừa độc tế bào gan cấp tính.")
                 else:
                     clinical_checks.append(ClinicalCheckItem(
-                        category="dosage_safety",
-                        item_name=it.get("medicationName"),
-                        passed=True, severity="passed",
-                        title="Liều Paracetamol trong giới hạn an toàn",
-                        detail=f"Tổng liều ước tính ~{daily_dose}mg/ngày nằm trong ngưỡng an toàn cho phép (<= 4.000mg/ngày).",
-                        clinical_action="Duy trì cữ uống cách nhau tối thiểu 4 - 6 giờ.",
-                        evidence_source="DĐVN V"
+                        category="dosage_safety", item_name=it.get("medicationName"),
+                        passed=False, severity="warning",
+                        title="Chưa xác nhận an toàn liều Paracetamol",
+                        detail=(f"Tổng liều tính được từ các dòng Paracetamol: {daily_dose:g}mg/ngày; "
+                                if daily_dose is not None else
+                                "Chưa tính được tổng liều/ngày từ liều mỗi lần, hàm lượng và tần suất được cung cấp; ")
+                               + ("cần đối chiếu hướng dẫn nhi khoa theo tuổi và cân nặng."
+                                  if age is not None and age < 18 else
+                                  "cần rà soát các chế phẩm chứa cùng hoạt chất và yếu tố nguy cơ người bệnh trước khi xác nhận."),
+                        clinical_action="Bác sĩ/dược sĩ xác nhận liều mỗi lần, khoảng cách dùng, tổng liều từ mọi chế phẩm và dữ liệu người bệnh.",
+                        evidence_source="Kiểm tra dữ liệu đơn thuốc; chưa xác nhận an toàn lâm sàng"
                     ))
 
             # 3.2 Kiểm tra Metformin ở bệnh nhân suy thận
@@ -458,19 +494,29 @@ class ClinicalPrescriptionAuditor:
         # 4. THẨM ĐỊNH TƯƠNG TÁC THUỐC (QĐ 5948/QĐ-BYT)
         # ----------------------------------------------------
         from app.services.clinical_ddi_engine.detector import ClinicalDdiDetector
+        from app.services.clinical_ddi_engine.schemas import DdiSeverity, PatientClinicalContext
         detector = ClinicalDdiDetector()
         drug_names = [it.get("activeIngredient") or it.get("medicationName") for it in items]
-        ddi_report = detector.audit_prescription(drug_names)
+        ddi_report = detector.audit_prescription(drug_names, PatientClinicalContext(
+            egfr=patient_egfr, age=age,
+            has_hepatic_impairment=patient_data.get("has_hepatic_impairment") is True,
+            serum_potassium=_finite_number(patient_data.get("serum_potassium")),
+            baseline_qtc=_finite_number(patient_data.get("baseline_qtc")),
+            is_pregnant=patient_data.get("is_pregnant") is True,
+        ))
 
         interaction_items = []
         for alert in ddi_report.pair_alerts:
+            if alert.severity == DdiSeverity.SAFE_SYNERGY:
+                continue
             sev_str = alert.severity.value
-            is_contra = (sev_str == "contraindicated")
+            is_contra = alert.severity == DdiSeverity.CONTRAINDICATED
+            severity = {DdiSeverity.CONTRAINDICATED: "contraindicated", DdiSeverity.MAJOR: "major", DdiSeverity.MODERATE: "warning"}[alert.severity]
             clinical_checks.append(ClinicalCheckItem(
                 category="interaction",
                 item_name=f"{alert.drug_a} + {alert.drug_b}",
                 passed=False,
-                severity="contraindicated" if is_contra else "major",
+                severity=severity,
                 title=f"{'⛔ CHỐNG CHỈ ĐỊNH PHỐI HỢP: ' if is_contra else '⚠️ TƯƠNG TÁC NGUY HIỂM: '}{alert.drug_a} + {alert.drug_b}",
                 detail=f"Cơ chế: {alert.mechanism}. Hậu quả lâm sàng: {alert.clinical_consequence}",
                 clinical_action=alert.action_recommendation,
@@ -484,6 +530,18 @@ class ClinicalPrescriptionAuditor:
                 "action": alert.action_recommendation
             })
             recommendations.append(f"Lưu ý tương tác giữa {alert.drug_a} và {alert.drug_b}: {alert.action_recommendation}")
+
+        for alert in ddi_report.polypharmacy_alerts:
+            severity = "contraindicated" if alert.severity == DdiSeverity.CONTRAINDICATED else "major"
+            clinical_checks.append(ClinicalCheckItem(
+                category="interaction", item_name=" + ".join(alert.involved_drugs),
+                passed=False, severity=severity, title=alert.title,
+                detail=f"Cơ chế: {alert.mechanism}. Hậu quả: {alert.clinical_consequence}",
+                clinical_action=alert.action_recommendation, evidence_source=alert.legal_evidence,
+            ))
+            interaction_items.append(dict(pair=" + ".join(alert.involved_drugs), severity=alert.severity.value,
+                                          title=alert.title, consequence=alert.clinical_consequence, action=alert.action_recommendation))
+            recommendations.append(alert.action_recommendation)
 
         # ----------------------------------------------------
         # 5. THẨM ĐỊNH THỜI ĐIỂM DÙNG THUỐC & CÁCH DÙNG
@@ -545,7 +603,7 @@ class ClinicalPrescriptionAuditor:
             summary = f"Đơn thuốc cơ bản hợp lệ nhưng có {major_count + warning_count} lưu ý lâm sàng quan trọng cần bác sĩ rà soát và dặn dò người bệnh."
         else:
             overall_status = "PASSED"
-            summary = "Đơn thuốc đạt 100% chuẩn thể thức pháp lý (TT 52/2017 & TT 26/2025) và an toàn dược lâm sàng theo DĐVN V."
+            summary = "Chưa phát hiện cảnh báo trong các quy tắc đã thực hiện. Kết quả không xác nhận toàn bộ tính hợp lệ hoặc an toàn của đơn thuốc; cần bác sĩ/dược sĩ rà soát trước khi ký duyệt."
 
         return PrescriptionAuditResult(
             overall_status=overall_status,

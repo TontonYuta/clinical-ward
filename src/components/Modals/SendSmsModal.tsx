@@ -33,18 +33,28 @@ import {
   RotateCcw,
   Search,
   Calendar,
-  Layers
+  Layers,
 } from 'lucide-react';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { smsApi } from '../../services/api/smsApi';
-import { SmsDeliveryReceipt, SmsMessageType, SmsProviderType, SmsTemplateItem } from '../../types/sms';
+import {
+  SmsDeliveryReceipt,
+  SmsMessageType,
+  SmsProviderType,
+  SmsTemplateItem,
+} from '../../types/sms';
 import { PatientProfile } from '../../services/patientService';
+import { notificationContent, notificationSourceSummary, notificationStatus, NOTIFICATION_TEMPLATES, type NotificationSource } from './notificationContent';
 import {
   sendMedicationAdviceEmail,
   getStoredGasWebhookUrl,
-  setStoredGasWebhookUrl
+  setStoredGasWebhookUrl,
 } from '../../services/prescriptionAdviceService';
-import { PatientPrescriptionAdvice, ScheduledMedication, SendAdviceEmailResponse } from '../../types/medicationSchedule';
+import {
+  PatientPrescriptionAdvice,
+  ScheduledMedication,
+  SendAdviceEmailResponse,
+} from '../../types/medicationSchedule';
 
 export interface EmailDeliveryReceipt {
   id: string;
@@ -73,6 +83,11 @@ interface SendSmsModalProps {
   patientId?: string;
   orderId?: string;
   doctorName?: string;
+  orderStatus?: string;
+  facilityName?: string;
+  department?: string;
+  prescribedAt?: string;
+  clinicalNotes?: string;
   diagnosis?: string;
   medications?: ScheduledMedication[];
   initialMessageType?: SmsMessageType;
@@ -114,9 +129,9 @@ export function setStoredEsmsSecretKey(val: string): void {
 
 export function getStoredEsmsBrandname(): string {
   try {
-    return localStorage.getItem(STORAGE_KEY_ESMS_BRANDNAME) || 'BV_LAMSANG';
+    return localStorage.getItem(STORAGE_KEY_ESMS_BRANDNAME) || '';
   } catch {
-    return 'BV_LAMSANG';
+    return '';
   }
 }
 
@@ -126,90 +141,26 @@ export function setStoredEsmsBrandname(val: string): void {
   } catch {}
 }
 
-const INITIAL_CANONICAL_SMS_LOGS: SmsDeliveryReceipt[] = [
-  {
-    id: 'SMS-20261030-8817-01',
-    recipientPhone: '0963278149',
-    patientId: 'BN-8817',
-    patientName: 'Trần Huy Hoàng',
-    messageType: 'cpoe_prescription',
-    content: '[BV LAM SANG] BS. Tran Van Hung da ky don thuoc ma RX-2026-604 cho BN Tran Huy Hoang. Tra cuu don tai: https://donthuocquocgia.vn/?id=RX-2026-604. Hotline: 1900-1234',
-    charactersCount: 160,
-    smsSegments: 1,
-    provider: 'esms',
-    status: 'delivered',
-    referenceId: 'RX-2026-604',
-    deliveryReceipt: 'ESMS-DLR-8817-01',
-    createdAt: '2026-10-30T10:15:00Z'
-  },
-  {
-    id: 'SMS-20261030-8817-02',
-    recipientPhone: '0963278149',
-    patientId: 'BN-8817',
-    patientName: 'Trần Huy Hoàng',
-    messageType: 'medication_advice',
-    content: '[BV LAM SANG] Nhac uong thuoc BN Tran Huy Hoang: Sang 07:30 (1 vien sau an), Toi 20:00 (1 vien truoc ngu). Uong dung gio, tai kham ngay neu co trieu chung bat thuong.',
-    charactersCount: 153,
-    smsSegments: 1,
-    provider: 'esms',
-    status: 'delivered',
-    referenceId: 'RX-2026-604',
-    deliveryReceipt: 'ESMS-DLR-8817-02',
-    createdAt: '2026-10-30T14:30:00Z'
-  }
-];
-
-const INITIAL_CANONICAL_EMAIL_LOGS: EmailDeliveryReceipt[] = [
-  {
-    id: 'MAIL-20261030-8817-01',
-    recipientEmail: 'huyhoang6altt@gmail.com',
-    patientId: 'BN-8817',
-    patientName: 'Trần Huy Hoàng',
-    subject: '[BV ĐA KHOA LÂM SÀNG] Đơn thuốc điện tử & Hướng dẫn điều trị - Mã đơn RX-2026-604',
-    adviceContent: 'Kính gửi bệnh nhân Trần Huy Hoàng,\n\nBệnh viện Đa khoa Lâm Sàng thông báo Bác sĩ BS. Trần Văn Hùng đã hoàn tất kê đơn và ký số đơn thuốc điện tử mã RX-2026-604 theo quy chuẩn Thông tư 26/2025/TT-BYT.\n\nHướng dẫn dùng thuốc: PARACETAMOL 500mg uống 1 viên/lần x 2 lần/ngày sau khi ăn no 30 phút (Sáng: 07:30, Tối: 19:30). Uống cùng nhiều nước ấm. Nếu sốt cao kéo dài trên 3 ngày hoặc có biểu hiện dị ứng nổi mẩn, tái khám ngay.\n\nQuý bệnh nhân có thể sử dụng mã đơn này để tra cứu tại Cổng Đơn thuốc Quốc gia (https://donthuocquocgia.vn) hoặc mua thuốc tại các nhà thuốc trên toàn quốc.',
-    medicationsSummary: 'PARACETAMOL 500mg (1 viên x 2 lần/ngày, 5 ngày)',
-    orderId: 'RX-2026-604',
-    provider: 'Google Apps Script Webhook',
-    status: 'delivered',
-    deliveryReceipt: 'GAS-MAIL-20261030-01',
-    createdAt: '2026-10-30T10:16:12Z'
-  },
-  {
-    id: 'MAIL-20261030-8817-02',
-    recipientEmail: 'huyhoang6altt@gmail.com',
-    patientId: 'BN-8817',
-    patientName: 'Trần Huy Hoàng',
-    subject: '[BV ĐA KHOA LÂM SÀNG] Xác nhận viện phí & Lịch hẹn tái khám - BN Trần Huy Hoàng',
-    adviceContent: 'Bệnh viện xác nhận người bệnh Trần Huy Hoàng (BN-8817) đã hoàn tất thủ tục khám và thanh toán viện phí theo quy định. Đề nghị tái khám sau 30 ngày tại Khoa Khám Bệnh - Phòng 204. Vui lòng mang theo đơn thuốc và hồ sơ khi tái khám.',
-    medicationsSummary: 'PARACETAMOL 500mg (1 viên x 2 lần/ngày, 5 ngày)',
-    orderId: 'RX-2026-604',
-    provider: 'Google Apps Script Webhook',
-    status: 'delivered',
-    deliveryReceipt: 'GAS-MAIL-20261030-02',
-    createdAt: '2026-10-30T16:20:00Z'
-  }
-];
-
 function getStoredEmailLogs(patientId?: string): EmailDeliveryReceipt[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_EMAIL_LOGS);
-    if (!raw) return INITIAL_CANONICAL_EMAIL_LOGS;
+    if (!raw) return [];
     const list: EmailDeliveryReceipt[] = JSON.parse(raw);
-    if (list.length === 0) return INITIAL_CANONICAL_EMAIL_LOGS;
+    if (list.length === 0) return [];
     if (patientId && patientId !== 'BN-Chưa có') {
       const filtered = list.filter((l) => l.patientId === patientId);
-      return filtered.length > 0 ? filtered : INITIAL_CANONICAL_EMAIL_LOGS;
+      return filtered.length > 0 ? filtered : [];
     }
     return list;
   } catch {
-    return INITIAL_CANONICAL_EMAIL_LOGS;
+    return [];
   }
 }
 
 function saveStoredEmailLog(log: EmailDeliveryReceipt): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_EMAIL_LOGS);
-    const list: EmailDeliveryReceipt[] = raw ? JSON.parse(raw) : [...INITIAL_CANONICAL_EMAIL_LOGS];
+    const list: EmailDeliveryReceipt[] = raw ? JSON.parse(raw) : [];
     list.unshift(log);
     localStorage.setItem(STORAGE_KEY_EMAIL_LOGS, JSON.stringify(list));
   } catch {}
@@ -223,14 +174,8 @@ function removeVietnameseTones(str: string): string {
     .replace(/Đ/g, 'D');
 }
 
-function cleanDoctorDisplay(doc: string): string {
-  const norm = removeVietnameseTones(doc || '').trim();
-  if (/^bs[\.\s]/i.test(norm)) return norm;
-  return `BS ${norm}`;
-}
-
 function formatLogTimestamp(ts?: string): string {
-  if (!ts) return 'Hôm nay';
+  if (!ts) return 'Chưa ghi nhận thời điểm';
   try {
     const d = new Date(ts);
     return `${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · ${d.toLocaleDateString('vi-VN')}`;
@@ -248,7 +193,12 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
   patientEmail = '',
   patientId = '',
   orderId = '',
-  doctorName = 'BS. Trần Văn Hùng',
+  doctorName = '',
+  orderStatus,
+  facilityName = '',
+  department = '',
+  prescribedAt = '',
+  clinicalNotes = '',
   diagnosis = '',
   medications,
   initialMessageType = 'cpoe_prescription',
@@ -256,11 +206,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
 }) => {
   useModalDismiss(isOpen, onClose);
 
-  const effectiveName = patient?.fullName || patientName || 'Trần Huy Hoàng';
-  const effectiveId = patient?.id || patientId || 'BN-8817';
-  const effectivePhone = patient?.phone || patientPhone || '0963278149';
-  const effectiveEmail = patient?.email || patientEmail || 'huyhoang6altt@gmail.com';
-  const effectiveDiagnosis = diagnosis || patient?.diagnosis || 'Cảm cúm (J11) - Theo dõi điều trị ngoại trú';
+  const effectiveName = patient?.fullName || patientName || '';
+  const effectiveId = patient?.id || patientId || '';
+  const effectivePhone = patient?.phone || patientPhone || '';
+  const effectiveEmail = patient?.email || patientEmail || '';
+  const effectiveDiagnosis = diagnosis || patient?.diagnosis || '';
 
   // Lựa chọn Tab chính của Modal: Soạn SMS, Soạn Email, Lịch sử SMS, Lịch sử Email
   const [activeTab, setActiveTab] = useState<NotificationModalTab>('sms');
@@ -270,13 +220,13 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
   const [messageType, setMessageType] = useState<SmsMessageType>(initialMessageType);
   const [content, setContent] = useState('');
   const [receipt, setReceipt] = useState<SmsDeliveryReceipt | null>(null);
-  const [logs, setLogs] = useState<SmsDeliveryReceipt[]>(INITIAL_CANONICAL_SMS_LOGS);
+  const [logsUnavailable, setLogsUnavailable] = useState(false);
+  const [logs, setLogs] = useState<SmsDeliveryReceipt[]>([]);
   const [templates, setTemplates] = useState<SmsTemplateItem[]>([]);
 
   // Trạng thái Email
   const [email, setEmail] = useState(effectiveEmail);
-  const [emailSubject, setEmailSubject] = useState(`[BV ĐA KHOA LÂM SÀNG] Đơn thuốc điện tử & Hướng dẫn điều trị - Mã đơn ${orderId || 'RX-2026-604'}`);
-  const [emailAdvice, setEmailAdvice] = useState('Uống thuốc đúng cữ theo toa, uống nhiều nước ấm. Nếu có biểu hiện sốt cao kéo dài hoặc dị ứng, tái khám ngay.');
+  const [emailAdvice, setEmailAdvice] = useState('');
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
   const [emailSentReceipt, setEmailSentReceipt] = useState<SendAdviceEmailResponse | null>(null);
   // Trạng thái cấu hình Cổng phát tin
@@ -285,7 +235,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
   const [esmsSecretKey, setEsmsSecretKey] = useState<string>(() => getStoredEsmsSecretKey());
   const [esmsBrandname, setEsmsBrandname] = useState<string>(() => getStoredEsmsBrandname());
   const [settingsNotice, setSettingsNotice] = useState<string | null>(null);
-  const [emailLogs, setEmailLogs] = useState<EmailDeliveryReceipt[]>(() => getStoredEmailLogs(effectiveId));
+  const [emailLogs, setEmailLogs] = useState<EmailDeliveryReceipt[]>(() =>
+    getStoredEmailLogs(effectiveId),
+  );
 
   // Trạng thái chung
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
@@ -295,7 +247,10 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
 
   // Tải templates và logs khi mở modal
   useEffect(() => {
+    let active = true;
     if (isOpen) {
+      setLogs([]);
+      setLogsUnavailable(false);
       setPhone(effectivePhone);
       setEmail(effectiveEmail);
       setStatus('idle');
@@ -306,69 +261,47 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       setGasUrl(getStoredGasWebhookUrl());
       setSearchFilter('');
 
-      smsApi.getTemplates().then(setTemplates).catch(console.warn);
+      smsApi.getTemplates().then(items => {
+        if (active && Array.isArray(items)) setTemplates(items.filter(item => Object.hasOwn(NOTIFICATION_TEMPLATES, item.category)).map(item => ({ ...item, ...NOTIFICATION_TEMPLATES[item.category as SmsMessageType] })));
+      }).catch(console.warn);
 
       if (effectiveId && effectiveId !== 'BN-Chưa có') {
-        smsApi.getLogs(effectiveId).then((data) => {
-          if (data && data.length > 0) {
-            setLogs(data);
-          } else {
-            setLogs(INITIAL_CANONICAL_SMS_LOGS);
-          }
-        }).catch(() => {
-          setLogs(INITIAL_CANONICAL_SMS_LOGS);
-        });
+        smsApi
+          .getLogs(effectiveId)
+          .then((data) => {
+            if (!active) return;
+            if (data && data.length > 0) {
+              setLogs(data.filter((log) => log.patientId === effectiveId));
+            } else {
+              setLogs([]);
+            }
+          })
+          .catch(() => {
+            if (!active) return;
+            setLogsUnavailable(true);
+            setLogs([]);
+          });
 
         setEmailLogs(getStoredEmailLogs(effectiveId));
       } else {
-        setLogs(INITIAL_CANONICAL_SMS_LOGS);
+        setLogs([]);
         setEmailLogs(getStoredEmailLogs());
       }
     }
+    return () => {
+      active = false;
+    };
   }, [isOpen, effectivePhone, effectiveEmail, effectiveId]);
 
-  // Sinh nội dung mặc định theo loại tin nhắn SMS
+  const effectiveMedications = useMemo<ScheduledMedication[]>(() => medications || [], [medications]);
+  const sourceKey = JSON.stringify({ patientName: effectiveName, patientId: effectiveId, orderId, orderStatus, doctorName, facilityName, department, diagnosis: effectiveDiagnosis, prescribedAt, clinicalNotes, medications: effectiveMedications });
+  const notificationSource = useMemo<NotificationSource>(() => JSON.parse(sourceKey), [sourceKey]);
   useEffect(() => {
-    if (initialContent) {
-      setContent(initialContent);
-      return;
-    }
-
-    if (messageType === 'cpoe_prescription') {
-      const rxId = orderId || 'RX-2026-604';
-      setContent(
-        `[BV LAM SANG] ${cleanDoctorDisplay(doctorName)} da ky don thuoc ma ${rxId} cho BN ${removeVietnameseTones(effectiveName)}. Tra cuu don tai: https://donthuocquocgia.vn/?id=${rxId}. Hotline: 1900-1234`
-      );
-    } else if (messageType === 'medication_advice') {
-      setContent(
-        `[BV LAM SANG] Nhac uong thuoc BN ${removeVietnameseTones(effectiveName)}: Sang 07:30 (1 vien sau an), Toi 20:00 (1 vien truoc ngu). Tai kham ngay neu co trieu chung bat thuong.`
-      );
-    } else {
-      setContent(
-        `[BV LAM SANG] Xac nhan BN ${removeVietnameseTones(effectiveName)} (${effectiveId}) da hoan tat thu tuc kham benh tai Khoa Kham Benh. Tran trong cam on Quy khach!`
-      );
-    }
-  }, [messageType, orderId, doctorName, effectiveName, effectiveId, initialContent]);
-
-  // Danh mục thuốc hiệu lực
-  const effectiveMedications = useMemo<ScheduledMedication[]>(() => {
-    if (medications && medications.length > 0) return medications;
-    return [
-      {
-        id: 'sched-0',
-        medicationName: 'PARACETAMOL 500mg',
-        activeIngredient: 'Paracetamol',
-        dosage: '1 viên/lần',
-        route: 'Đường uống',
-        durationDays: 5,
-        specialInstructions: 'Uống sau khi ăn no 30 phút, uống nhiều nước',
-        timeSlots: [
-          { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-          { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' }
-        ]
-      }
-    ];
-  }, [medications]);
+    if (!isOpen) return;
+    setMessageType(initialMessageType);
+    setContent(initialContent || notificationContent(initialMessageType, notificationSource, true));
+    setEmailAdvice(notificationContent(initialMessageType, notificationSource));
+  }, [isOpen, sourceKey, initialMessageType, initialContent]);
 
   // Tính toán số ký tự và số segment SMS
   const { charsCount, isUnicode, segmentsCount, maxPerSegment } = useMemo(() => {
@@ -387,54 +320,22 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       charsCount: chars,
       isUnicode: unicode,
       segmentsCount: Math.max(1, segments),
-      maxPerSegment: limit
+      maxPerSegment: limit,
     };
   }, [content]);
 
-  // Áp dụng mẫu tin chuẩn Thông tư 26 cho cả SMS và Email
   const handleApplyTemplate = (tpl: SmsTemplateItem) => {
-    setMessageType(tpl.category as SmsMessageType);
-    const cleanDoc = cleanDoctorDisplay(doctorName);
-    const rxId = orderId || 'RX-2026-604';
-
-    if (activeTab === 'sms') {
-      let replaced = tpl.template
-        .replace(/{doctorName}/g, cleanDoc)
-        .replace(/{orderId}/g, rxId)
-        .replace(/{patientName}/g, removeVietnameseTones(effectiveName))
-        .replace(/{patientId}/g, effectiveId);
-      setContent(replaced);
-    } else {
-      if (tpl.category === 'cpoe_prescription') {
-        setEmailSubject(`[BV ĐA KHOA LÂM SÀNG] Đơn thuốc điện tử Quốc gia - Mã đơn ${rxId}`);
-        setEmailAdvice(
-          `Kính gửi bệnh nhân ${effectiveName},\n\nBệnh viện Đa khoa Lâm Sàng thông báo Bác sĩ ${cleanDoc} đã hoàn tất kê đơn và ký số đơn thuốc điện tử mã ${rxId} theo quy chuẩn Thông tư 26/2025/TT-BYT.\n\nQuý bệnh nhân có thể sử dụng mã đơn này để tra cứu tại Cổng Đơn thuốc Quốc gia (https://donthuocquocgia.vn) hoặc mua thuốc tại các nhà thuốc trên toàn quốc.`
-        );
-      } else if (tpl.category === 'medication_advice') {
-        setEmailSubject(`[BV ĐA KHOA LÂM SÀNG] Hướng dẫn cữ uống thuốc & Lời dặn Bác sĩ - Mã đơn ${rxId}`);
-        setEmailAdvice(
-          `Uống thuốc đúng cữ theo toa, uống nhiều nước ấm. Tuyệt đối không tự ý ngưng hoặc thay đổi liều lượng thuốc. Khung giờ khuyến nghị: Sáng 07:30 (1 viên sau ăn no 30 phút), Tối 19:30 (1 viên sau ăn). Nếu có biểu hiện sốt cao kéo dài hoặc phát ban dị ứng, tái khám ngay.`
-        );
-      } else {
-        setEmailSubject(`[BV ĐA KHOA LÂM SÀNG] Xác nhận hoàn tất viện phí & Lịch hẹn tái khám - BN ${effectiveName}`);
-        setEmailAdvice(
-          `Bệnh viện xác nhận người bệnh ${effectiveName} (${effectiveId}) đã hoàn tất thủ tục khám và thanh toán viện phí theo quy định. Đề nghị tái khám sau 30 ngày tại Khoa Khám Bệnh - Phòng 204. Vui lòng mang theo đơn thuốc và hồ sơ khi tái khám.`
-        );
-      }
-    }
+    if (!Object.hasOwn(NOTIFICATION_TEMPLATES, tpl.category)) return;
+    const category = tpl.category as SmsMessageType;
+    setMessageType(category);
+    if (activeTab === 'sms') setContent(notificationContent(category, notificationSource, true));
+    else setEmailAdvice(notificationContent(category, notificationSource));
   };
 
-  // Thao tác chèn nhanh tóm tắt đơn thuốc vào vùng soạn thảo
   const handleInsertPrescriptionSnippet = () => {
-    const rxId = orderId || 'RX-2026-604';
-    const cleanDoc = cleanDoctorDisplay(doctorName);
-    if (activeTab === 'sms') {
-      const snippet = `[Don ${rxId}: PARACETAMOL 500mg, uong 1 vien x 2 lan/ngay sau an. BS ${cleanDoc}]`;
-      setContent((prev) => (prev ? `${prev} ${snippet}` : snippet));
-    } else {
-      const snippet = `[Đơn thuốc ${rxId}: PARACETAMOL 500mg (1 viên x 2 lần/ngày sau ăn 30p). Chẩn đoán: ${effectiveDiagnosis}. BS kê đơn: ${cleanDoc}]`;
-      setEmailAdvice((prev) => (prev ? `${prev}\n${snippet}` : snippet));
-    }
+    const snippet = notificationSourceSummary(notificationSource, activeTab === 'sms');
+    if (activeTab === 'sms') setContent(previous => previous.includes(snippet) ? previous : previous ? `${previous}\n${snippet}` : snippet);
+    else setEmailAdvice(previous => previous.includes(snippet) ? previous : previous ? `${previous}\n${snippet}` : snippet);
   };
 
   const handleConvertToUnsigned = () => {
@@ -455,7 +356,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       (l) =>
         l.content.toLowerCase().includes(q) ||
         l.recipientPhone.includes(q) ||
-        (l.deliveryReceipt && l.deliveryReceipt.toLowerCase().includes(q))
+        (l.deliveryReceipt && l.deliveryReceipt.toLowerCase().includes(q)),
     );
   }, [logs, searchFilter]);
 
@@ -467,11 +368,16 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       (l) =>
         l.subject.toLowerCase().includes(q) ||
         l.adviceContent.toLowerCase().includes(q) ||
-        l.recipientEmail.toLowerCase().includes(q)
+        l.recipientEmail.toLowerCase().includes(q),
     );
   }, [emailLogs, searchFilter]);
 
   const handleSend = async (e?: React.FormEvent) => {
+    if (!effectiveId || !effectiveName) {
+      setStatus('error');
+      setErrorMessage('Chưa xác định được người nhận. Kiểm tra hồ sơ trước khi gửi.');
+      return;
+    }
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -500,10 +406,13 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
           messageType,
           content: content.trim(),
           referenceId: orderId || undefined,
-          provider: 'esms'
+          provider: 'esms',
         });
 
         setReceipt(res);
+        if (!['sent', 'delivered', 'simulated'].includes(res.status)) {
+          throw new Error(res.errorDetail || 'Nhà cung cấp chưa xác nhận tiếp nhận SMS');
+        }
         setStatus('success');
         setLogs((prev) => [res, ...prev]);
       } catch (err: any) {
@@ -528,25 +437,29 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         }
 
         const advicePayload: PatientPrescriptionAdvice = {
-          id: `ADV-${(orderId || 'RX-2026-604').replace('RX-', '')}`,
-          prescriptionId: orderId || 'RX-2026-604',
+          id: `ADV-${effectiveId}-${orderId || Date.now()}`,
+          prescriptionId: orderId || undefined,
+          patientId: effectiveId,
           patientName: effectiveName,
           patientEmail: email.trim(),
           patientPhone: phone.trim() || undefined,
           diagnosis: effectiveDiagnosis,
           doctorName,
-          doctorHospital: 'Bệnh Viện Đa Khoa Lâm Sàng',
-          department: 'Khoa Khám Bệnh - Phòng 204',
+          doctorHospital: facilityName?.trim() || undefined,
+          department: department?.trim() || undefined,
           createdAt: new Date().toISOString(),
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+          startDate: '',
+          endDate: '',
           generalDoctorAdvice: emailAdvice.trim(),
           medications: effectiveMedications,
           notificationStatus: 'idle',
-          gasWebhookUrl: storedWebhook || undefined
+          gasWebhookUrl: storedWebhook || undefined,
         };
 
-        const res = await sendMedicationAdviceEmail(advicePayload, { sendEmail: true, sendSms: false });
+        const res = await sendMedicationAdviceEmail(advicePayload, {
+          sendEmail: true,
+          sendSms: false,
+        });
         if (res.success) {
           setEmailSentSuccess(true);
           setEmailSentReceipt(res);
@@ -558,14 +471,14 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
             recipientEmail: email.trim(),
             patientId: effectiveId,
             patientName: effectiveName,
-            subject: emailSubject.trim(),
+            subject: '',
             adviceContent: emailAdvice.trim(),
-            medicationsSummary: 'PARACETAMOL 500mg (1 viên x 2 lần/ngày, 5 ngày)',
-            orderId: orderId || 'RX-2026-604',
-            provider: res.provider === 'google_apps_script' ? 'Google Apps Script Webhook' : 'SMTP Gateway',
-            status: 'delivered',
-            deliveryReceipt: `GAS-MAIL-${Date.now().toString().slice(-6)}`,
-            createdAt: new Date().toISOString()
+            medicationsSummary: effectiveMedications.map(m => m.medicationName).join(', '),
+            orderId: orderId || 'Chưa có mã đơn',
+            provider:
+              res.provider === 'google_apps_script' ? 'Google Apps Script Webhook' : 'Máy chủ chuyển tiếp',
+            status: 'sent',
+            createdAt: new Date().toISOString(),
           };
           saveStoredEmailLog(newLog);
           setEmailLogs((prev) => [newLog, ...prev]);
@@ -577,7 +490,8 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         console.error('Lỗi khi gửi Email:', err);
         setStatus('error');
         setErrorMessage(
-          err.message || 'Chưa cấu hình Google Apps Script Webhook để gửi email. Vui lòng cấu hình Webhook URL bên dưới.'
+          err.message ||
+            'Chưa cấu hình Google Apps Script Webhook để gửi email. Vui lòng cấu hình Webhook URL bên dưới.',
         );
         setActiveTab('settings');
       }
@@ -592,10 +506,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       aria-modal="true"
       aria-labelledby="notification-modal-title"
       data-testid="send-sms-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
+      className="clinical-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div className="relative w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[92vh] flex flex-col bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-200 overflow-hidden">
-        
         {/* 1. Header Thanh Lịch: Tabs Soạn SMS, Soạn Email, Lịch sử SMS, Lịch sử Email */}
         <div className="px-4 sm:px-5 py-3 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
           <div className="flex items-center justify-between w-full sm:w-auto">
@@ -604,11 +517,15 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               </div>
               <div className="min-w-0">
-                <h3 id="notification-modal-title" className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                  GỬI THÔNG TIN CHO BỆNH NHÂN (TT 26/2025/TT-BYT)
+                <h3
+                  id="notification-modal-title"
+                  className="text-xs sm:text-sm font-bold text-slate-900 truncate"
+                >
+                  Gửi thông tin cho người bệnh
                 </h3>
                 <p className="text-2xs text-slate-500 truncate">
-                  Hồ sơ: <strong className="text-slate-800 font-medium">{effectiveName}</strong> · Mã BN: <span className="font-mono text-slate-700">{effectiveId}</span>
+                  Hồ sơ: <strong className="text-slate-800 font-medium">{effectiveName}</strong> ·
+                  Mã BN: <span className="font-mono text-slate-700">{effectiveId}</span>
                 </p>
               </div>
             </div>
@@ -630,7 +547,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               <button
                 type="button"
                 data-testid="tab-sms"
-                onClick={() => { setActiveTab('sms'); setStatus('idle'); setErrorMessage(null); }}
+                onClick={() => {
+                  setActiveTab('sms');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                }}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                   activeTab === 'sms'
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -641,11 +562,15 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 <span className="hidden sm:inline">Tin nhắn SMS</span>
                 <span className="sm:hidden">SMS</span>
               </button>
-              
+
               <button
                 type="button"
                 data-testid="tab-email"
-                onClick={() => { setActiveTab('email'); setStatus('idle'); setErrorMessage(null); }}
+                onClick={() => {
+                  setActiveTab('email');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                }}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                   activeTab === 'email'
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -660,7 +585,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               <button
                 type="button"
                 data-testid="tab-history-sms"
-                onClick={() => { setActiveTab('history-sms'); setStatus('idle'); setErrorMessage(null); }}
+                onClick={() => {
+                  setActiveTab('history-sms');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                }}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                   activeTab === 'history-sms'
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -670,9 +599,13 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span className="hidden sm:inline">Lịch sử SMS</span>
                 <span className="sm:hidden">LS SMS</span>
-                <span className={`px-1 sm:px-1.5 py-0.1 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold ${
-                  activeTab === 'history-sms' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                }`}>
+                <span
+                  className={`px-1 sm:px-1.5 py-0.1 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold ${
+                    activeTab === 'history-sms'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
                   {logs.length}
                 </span>
               </button>
@@ -680,7 +613,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               <button
                 type="button"
                 data-testid="tab-history-email"
-                onClick={() => { setActiveTab('history-email'); setStatus('idle'); setErrorMessage(null); }}
+                onClick={() => {
+                  setActiveTab('history-email');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                }}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                   activeTab === 'history-email'
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -690,9 +627,13 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 <Inbox className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span className="hidden sm:inline">Lịch sử Email</span>
                 <span className="sm:hidden">LS Email</span>
-                <span className={`px-1 sm:px-1.5 py-0.1 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold ${
-                  activeTab === 'history-email' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                }`}>
+                <span
+                  className={`px-1 sm:px-1.5 py-0.1 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold ${
+                    activeTab === 'history-email'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
                   {emailLogs.length}
                 </span>
               </button>
@@ -700,7 +641,12 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               <button
                 type="button"
                 data-testid="tab-settings"
-                onClick={() => { setActiveTab('settings'); setStatus('idle'); setErrorMessage(null); setSettingsNotice(null); }}
+                onClick={() => {
+                  setActiveTab('settings');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                  setSettingsNotice(null);
+                }}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                   activeTab === 'settings'
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -725,19 +671,29 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
           </div>
         </div>
 
+        {logsUnavailable && activeTab === 'history-sms' && (
+          <p role="status" className="px-5 py-3 bg-amber-50 text-amber-900 text-xs">
+            Không tải được lịch sử SMS từ máy chủ. Chưa có dữ liệu để đối chiếu.
+          </p>
+        )}
+
         {/* 2. Thanh Thông Tin Hành Chính (Ribbon phẳng, cực kỳ tinh gọn trên mobile) */}
         <div className="px-3 sm:px-5 py-1.5 sm:py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 text-2xs sm:text-xs shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-3 text-slate-700 min-w-0 truncate">
             <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="truncate">BN: <strong className="text-slate-900">{effectiveName}</strong></span>
+            <span className="truncate">
+              BN: <strong className="text-slate-900">{effectiveName}</strong>
+            </span>
             {orderId && (
               <>
                 <span className="text-slate-300">·</span>
-                <span className="font-mono text-slate-800 shrink-0 font-semibold">{orderId}</span>
+                <span className="font-mono text-slate-800 shrink-0 font-semibold">Mã nội bộ: {orderId} · {notificationStatus(orderStatus)}</span>
               </>
             )}
             <span className="text-slate-300 hidden sm:inline">·</span>
-            <span className="hidden sm:inline text-slate-600">BS: <strong className="text-slate-800">{cleanDoctorDisplay(doctorName)}</strong></span>
+            <span className="hidden sm:inline text-slate-600">
+              Người kê đơn trên hồ sơ: <strong className="text-slate-800">{doctorName || 'Chưa ghi'}</strong>
+            </span>
           </div>
 
           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium bg-white text-slate-700 border border-slate-200 shadow-2xs shrink-0">
@@ -756,11 +712,12 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         {/* PHẦN 3A: TAB SOẠN THẢO (SMS HOẶC EMAIL) - BỐ CỤC 50/50 ZERO-BOX                          */}
         {/* ========================================================================================= */}
         {(activeTab === 'sms' || activeTab === 'email') && (
-          <form onSubmit={handleSend} className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-y-auto lg:overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
-            
+          <form
+            onSubmit={handleSend}
+            className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-y-auto lg:overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200"
+          >
             {/* ==================== CỘT TRÁI (6 CỘT): THÔNG TIN NGƯỜI NHẬN & MẪU CHUẨN ==================== */}
             <div className="lg:col-span-6 p-3 sm:p-6 lg:overflow-y-auto thin-scrollbar space-y-3 sm:space-y-4 bg-white">
-              
               {/* Header Cột Trái (Chỉ hiện trên desktop để giao diện mobile tinh gọn) */}
               <div className="hidden lg:flex items-center justify-between pb-2 border-b border-slate-200">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
@@ -794,7 +751,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0963278149"
+                      placeholder="Số điện thoại người nhận"
                       aria-label="Số điện thoại nhận SMS"
                       className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50 border border-slate-300 rounded-lg font-mono text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
                     />
@@ -809,11 +766,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <input
                         type="text"
                         readOnly
-                        value={esmsBrandname || 'BV_LAMSANG'}
+                        value={esmsBrandname}
                         className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-100/80 border border-slate-300 rounded-lg font-mono text-xs sm:text-sm text-slate-800 font-semibold cursor-default"
                       />
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
-                        TT 26
+                        Cấu hình
                       </span>
                     </div>
                   </div>
@@ -830,24 +787,12 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="huyhoang6altt@gmail.com"
+                      placeholder="Email người nhận"
                       className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition font-mono"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-2xs sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1 flex items-center gap-1">
-                      <FileText className="w-3 h-3 text-slate-500" />
-                      <span>Tiêu đề thư (Subject) *</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={emailSubject}
-                      onChange={(e) => setEmailSubject(e.target.value)}
-                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition font-medium"
-                    />
-                  </div>
+
                 </div>
               )}
 
@@ -856,8 +801,16 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 <div className="flex items-center gap-1.5 text-slate-700 truncate min-w-0">
                   <FileCode className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="truncate">
-                    Đơn CPOE liên kết: <strong className="font-mono text-slate-900">{orderId || 'RX-2026-604'}</strong>
-                    {effectiveDiagnosis && <span className="text-slate-500 hidden sm:inline"> · {effectiveDiagnosis}</span>}
+                    Đơn CPOE liên kết:{' '}
+                    <strong className="font-mono text-slate-900">
+                      {orderId || 'Chưa có mã đơn'}
+                    </strong>
+                    {effectiveDiagnosis && (
+                      <span className="text-slate-500 hidden sm:inline">
+                        {' '}
+                        · {effectiveDiagnosis}
+                      </span>
+                    )}
                   </span>
                 </div>
                 <button
@@ -874,20 +827,22 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               {/* Mobile View: Horizontal touch pills taking only 34px! */}
               <div className="lg:hidden">
                 <div className="flex items-center justify-between mb-1 text-2xs text-slate-600 font-medium">
-                  <span>Mẫu nội dung (TT 26):</span>
+                  <span>Gợi ý nội dung:</span>
                   <span className="text-slate-400">Chạm để chọn mẫu</span>
                 </div>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                   {templates.map((tpl) => {
                     const isSelected = messageType === tpl.category;
-                    const shortLabel = tpl.category === 'cpoe_prescription'
-                      ? '📋 Đơn thuốc'
-                      : tpl.category === 'medication_advice'
-                      ? '💊 Lời dặn thuốc'
-                      : '🏥 Viện phí & Hẹn';
+                    const shortLabel =
+                      tpl.category === 'cpoe_prescription'
+                        ? '📋 Hồ sơ đơn'
+                        : tpl.category === 'medication_advice'
+                          ? '💊 Lời dặn thuốc'
+                          : '🏥 Thông báo khác';
                     return (
                       <button
                         key={tpl.id}
+                        data-testid={`notification-template-${tpl.category}`}
                         type="button"
                         onClick={() => handleApplyTemplate(tpl)}
                         className={`px-2.5 py-1 rounded-full text-2xs font-semibold shrink-0 cursor-pointer transition border flex items-center gap-1 ${
@@ -897,7 +852,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                         }`}
                       >
                         <span>{shortLabel}</span>
-                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                        {isSelected && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        )}
                       </button>
                     );
                   })}
@@ -907,8 +864,12 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               {/* Desktop View: Full Rich Cards - 100% UNCHANGED */}
               <div className="hidden lg:block">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Mẫu nội dung chuẩn Thông tư 26:</label>
-                  <span className="text-[11px] text-slate-500">Bấm để nạp vào ô soạn thảo bên phải</span>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Gợi ý theo dữ liệu nguồn:
+                  </label>
+                  <span className="text-[11px] text-slate-500">
+                    Bấm để nạp vào ô soạn thảo bên phải
+                  </span>
                 </div>
                 <div className="space-y-2">
                   {templates.map((tpl) => {
@@ -916,6 +877,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     return (
                       <button
                         key={tpl.id}
+                        data-testid={`notification-template-${tpl.category}`}
                         type="button"
                         onClick={() => handleApplyTemplate(tpl)}
                         className={`w-full text-left p-2.5 rounded-lg border text-xs transition cursor-pointer flex items-start gap-2.5 ${
@@ -924,7 +886,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                             : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700'
                         }`}
                       >
-                        <FileText className={`w-4 h-4 shrink-0 mt-0.5 ${isSelected ? 'text-slate-900' : 'text-slate-400'}`} />
+                        <FileText
+                          className={`w-4 h-4 shrink-0 mt-0.5 ${isSelected ? 'text-slate-900' : 'text-slate-400'}`}
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="font-semibold text-slate-900 flex items-center justify-between">
                             <span>{tpl.title}</span>
@@ -935,13 +899,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                             )}
                           </div>
                           <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                            {activeTab === 'sms' ? tpl.description : (
-                              tpl.category === 'cpoe_prescription'
-                                ? 'Mẫu thư điện tử thông báo phát hành mã đơn thuốc điện tử quốc gia.'
-                                : tpl.category === 'medication_advice'
-                                ? 'Mẫu thư hướng dẫn cữ uống thuốc và chỉ dẫn an toàn điều trị.'
-                                : 'Mẫu thư xác nhận viện phí và lịch hẹn tái khám định kỳ.'
-                            )}
+                            {tpl.description}
                           </div>
                         </div>
                       </button>
@@ -953,27 +911,35 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               {/* Hàng 4: Trạng thái cổng kết nối & Liên kết sang Cài đặt cổng tin (Không bị trùng lặp ô nhập) */}
               <div className="p-2 sm:p-3 bg-slate-50 rounded-lg border border-slate-200 text-2xs sm:text-xs flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
-                    activeTab === 'sms'
-                      ? (esmsApiKey.trim() ? 'bg-emerald-500' : 'bg-amber-400')
-                      : (gasUrl.trim() ? 'bg-emerald-500' : 'bg-amber-400')
-                  }`} />
+                  <span
+                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
+                      activeTab === 'sms'
+                        ? esmsApiKey.trim()
+                          ? 'bg-emerald-500'
+                          : 'bg-amber-400'
+                        : gasUrl.trim()
+                          ? 'bg-emerald-500'
+                          : 'bg-amber-400'
+                    }`}
+                  />
                   <span className="text-slate-700 font-medium text-[10px] sm:text-[11px] truncate">
-                    {activeTab === 'sms' ? (
-                      esmsApiKey.trim()
-                        ? `Cổng eSMS: Đã lưu API Key (${esmsBrandname || 'BV_LAMSANG'})`
+                    {activeTab === 'sms'
+                      ? esmsApiKey.trim()
+                        ? `Cổng eSMS: Đã lưu API Key (${esmsBrandname || 'Chưa cấu hình'})`
                         : 'Cổng eSMS: Chưa cấu hình'
-                    ) : (
-                      gasUrl.trim()
+                      : gasUrl.trim()
                         ? 'Cổng Email: Webhook sẵn sàng (0đ)'
-                        : 'Cổng Email: Chưa cấu hình Webhook'
-                    )}
+                        : 'Cổng Email: Chưa cấu hình Webhook'}
                   </span>
                 </div>
                 <button
                   type="button"
                   data-testid="link-open-settings-tab"
-                  onClick={() => { setActiveTab('settings'); setStatus('idle'); setErrorMessage(null); }}
+                  onClick={() => {
+                    setActiveTab('settings');
+                    setStatus('idle');
+                    setErrorMessage(null);
+                  }}
                   className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-teal-700 hover:text-teal-900 underline cursor-pointer shrink-0"
                   title="Chuyển sang tab Cài đặt cổng tin để sửa API Key hoặc Webhook URL"
                 >
@@ -986,14 +952,15 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
               {status === 'error' && (
                 <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 rounded-lg text-rose-900 text-2xs sm:text-xs flex items-center gap-2 animate-in fade-in">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{errorMessage || 'Đã xảy ra lỗi khi gửi thông báo, vui lòng kiểm tra lại.'}</span>
+                  <span>
+                    {errorMessage || 'Đã xảy ra lỗi khi gửi thông báo, vui lòng kiểm tra lại.'}
+                  </span>
                 </div>
               )}
             </div>
 
             {/* ==================== CỘT PHẢI (6 CỘT): NHẬP TIN NHẮN RIÊNG CHO BỆNH NHÂN ==================== */}
             <div className="lg:col-span-6 p-3 sm:p-6 lg:overflow-y-auto thin-scrollbar space-y-3 sm:space-y-4 bg-white flex flex-col justify-between">
-              
               <div className="space-y-2.5 sm:space-y-4">
                 {/* Header Cột Phải (Chỉ hiện trên desktop để tránh lặp lại tiêu đề trên mobile) */}
                 <div className="hidden lg:flex items-center justify-between pb-2 border-b border-slate-200">
@@ -1081,25 +1048,46 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     <div className="space-y-2 mt-1.5">
                       <div className="flex items-center justify-between text-2xs sm:text-xs text-slate-500 px-0.5">
                         <div className="flex items-center gap-1.5 sm:gap-2">
-                          <span>Độ dài: <strong className="text-slate-900 font-mono">{charsCount}</strong> ký tự</span>
+                          <span>
+                            Độ dài:{' '}
+                            <strong className="text-slate-900 font-mono">{charsCount}</strong> ký tự
+                          </span>
                           <span>·</span>
-                          <span className="hidden sm:inline">Định dạng: <strong className={isUnicode ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>{isUnicode ? 'Có dấu (UCS-2)' : 'Không dấu (GSM)'}</strong></span>
+                          <span className="hidden sm:inline">
+                            Định dạng:{' '}
+                            <strong
+                              className={
+                                isUnicode
+                                  ? 'text-amber-700 font-semibold'
+                                  : 'text-emerald-700 font-semibold'
+                              }
+                            >
+                              {isUnicode ? 'Có dấu (UCS-2)' : 'Không dấu (GSM)'}
+                            </strong>
+                          </span>
                         </div>
                         <div className="font-semibold text-slate-700 font-mono">
-                          {segmentsCount} tin ({charsCount <= maxPerSegment ? `${charsCount}/${maxPerSegment}` : `${segmentsCount} SMS`})
+                          {segmentsCount} tin (
+                          {charsCount <= maxPerSegment
+                            ? `${charsCount}/${maxPerSegment}`
+                            : `${segmentsCount} SMS`}
+                          )
                         </div>
                       </div>
 
                       {/* Khung mô phỏng hiển thị tin nhắn trên điện thoại người bệnh (Live Mobile Screen) */}
                       <div className="bg-slate-100 p-2.5 sm:p-3 rounded-xl border border-slate-300">
                         <div className="text-3xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                          <span>Xem trước trên điện thoại người bệnh ({phone || '0963278149'}):</span>
+                          <span>
+                            Xem trước trên điện thoại người bệnh ({phone || 'Chưa có số điện thoại'}):
+                          </span>
                           <span className="font-mono text-emerald-800 font-bold bg-white px-1.5 py-0.2 rounded border border-slate-200">
-                            {esmsBrandname || 'BV_LAMSANG'}
+                            {esmsBrandname || 'Chưa cấu hình'}
                           </span>
                         </div>
                         <div className="bg-teal-800 text-white p-2.5 sm:p-3 rounded-2xl rounded-tr-xs text-xs font-sans leading-relaxed shadow-xs max-w-md ml-auto">
-                          {content || 'Chưa có nội dung tin nhắn... Vui lòng nhập nội dung hoặc chọn mẫu chuẩn bên trái.'}
+                          {content ||
+                            'Chưa có nội dung tin nhắn... Vui lòng nhập nội dung hoặc chọn mẫu chuẩn bên trái.'}
                         </div>
                         <div className="text-right text-3xs text-slate-400 mt-1 font-mono">
                           Vừa xong · Cổng phát tin SMS Brandname Y Tế
@@ -1108,7 +1096,8 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     </div>
                   ) : (
                     <p className="text-[10px] sm:text-2xs text-slate-500 mt-1">
-                      ℹ️ Lời dặn dò sẽ được chèn trang trọng vào mục <strong>[LỜI DẶN BÁC SĨ]</strong> kèm đơn thuốc gửi tới {email}.
+                      ℹ️ Lời dặn dò sẽ được chèn trang trọng vào mục{' '}
+                      <strong>nội dung dặn dò</strong> kèm đơn thuốc gửi tới {email}.
                     </p>
                   )}
                 </div>
@@ -1120,18 +1109,26 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>
                         {activeTab === 'sms'
-                          ? `Phát tin thành công tới SIM di động ${receipt?.recipientPhone || phone}!`
-                          : `Đã gửi thành công Email tới ${email}!`}
+                          ? receipt?.status === 'simulated'
+                            ? 'Đã mô phỏng gửi SMS; chưa gửi đến điện thoại'
+                            : `Nhà cung cấp đã tiếp nhận SMS tới ${receipt?.recipientPhone || phone}`
+                          : `Dịch vụ gửi đã tiếp nhận Email cho ${email}`}
                       </span>
                     </div>
                     <div className="font-mono text-[10px] sm:text-[11px] text-emerald-800 pl-5.5">
                       {activeTab === 'sms' ? (
                         <>
-                          Biên nhận DLR: <span className="font-bold">{receipt?.deliveryReceipt || receipt?.id}</span> · Cổng: eSMS Brandname · Ký tự: {receipt?.charactersCount} ({receipt?.smsSegments} tin)
+                          Biên nhận DLR:{' '}
+                          <span className="font-bold">
+                            {receipt?.deliveryReceipt || receipt?.id}
+                          </span>{' '}
+                          · Cổng: eSMS Brandname · Ký tự: {receipt?.charactersCount} (
+                          {receipt?.smsSegments} tin)
                         </>
                       ) : (
                         <>
-                          {emailSentReceipt?.message || 'Bản sao đơn thuốc điện tử và hướng dẫn điều trị đã được chuyển vào hộp thư người bệnh an toàn.'}
+                          {emailSentReceipt?.message ||
+                            'Bản sao đơn thuốc điện tử và hướng dẫn điều trị đã được chuyển vào hộp thư người bệnh an toàn.'}
                         </>
                       )}
                     </div>
@@ -1144,15 +1141,21 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 <span className="flex items-center gap-1 sm:gap-1.5">
                   <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
                   {activeTab === 'sms' ? (
-                    <span>Người bệnh đã nhận <strong>{logs.length}</strong> SMS</span>
+                    <span>
+                      Lịch sử <strong>{logs.length}</strong> yêu cầu SMS
+                    </span>
                   ) : (
-                    <span>Người bệnh đã nhận <strong>{emailLogs.length}</strong> Email</span>
+                    <span>
+                      Lịch sử <strong>{emailLogs.length}</strong> yêu cầu Email
+                    </span>
                   )}
                 </span>
                 <button
                   type="button"
                   data-testid="link-view-all-history"
-                  onClick={() => setActiveTab(activeTab === 'sms' ? 'history-sms' : 'history-email')}
+                  onClick={() =>
+                    setActiveTab(activeTab === 'sms' ? 'history-sms' : 'history-email')
+                  }
                   className="text-teal-700 hover:text-teal-900 font-semibold underline cursor-pointer flex items-center gap-1 transition"
                 >
                   <span>
@@ -1163,7 +1166,6 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                   <span>&rarr;</span>
                 </button>
               </div>
-
             </div>
           </form>
         )}
@@ -1173,7 +1175,6 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         {/* ========================================================================================= */}
         {activeTab === 'history-sms' && (
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-slate-50/50 space-y-4">
-            
             {/* Thanh công cụ quản lý lịch sử SMS */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200">
               <div className="flex items-center gap-2">
@@ -1185,7 +1186,8 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     Nhật Ký Phát Tin Nhắn SMS ({filteredSmsLogs.length} bản ghi)
                   </h4>
                   <p className="text-2xs text-slate-500">
-                    Toàn bộ tin nhắn SMS Brandname đã gửi tới số di động: <strong className="text-slate-800 font-mono">{phone}</strong>
+                    Toàn bộ tin nhắn SMS Brandname đã gửi tới số di động:{' '}
+                    <strong className="text-slate-800 font-mono">{phone}</strong>
                   </p>
                 </div>
               </div>
@@ -1237,7 +1239,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                           <span>{formatLogTimestamp(log.createdAt)}</span>
                         </span>
                         <span className="text-slate-300">·</span>
-                        <span className="text-slate-500 font-medium">Cổng: eSMS Brandname (BV_LAMSANG)</span>
+                        <span className="text-slate-500 font-medium">
+                          Cổng ghi trên biên nhận: {log.provider || 'Chưa ghi'}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -1256,7 +1260,8 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
                         <span>Toàn văn nội dung tin nhắn SMS:</span>
                         <span className="font-mono text-slate-400 font-normal">
-                          {log.charactersCount || log.content.length} ký tự ({log.smsSegments || 1} tin)
+                          {log.charactersCount || log.content.length} ký tự ({log.smsSegments || 1}{' '}
+                          tin)
                         </span>
                       </div>
 
@@ -1266,7 +1271,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
 
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-[11px] text-slate-400 font-mono">
-                          Mã tham chiếu: {log.referenceId || orderId || 'RX-2026-604'}
+                          Mã tham chiếu: {log.referenceId || orderId || 'Chưa có mã đơn'}
                         </span>
                         <div className="flex items-center gap-2">
                           <button
@@ -1274,7 +1279,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                             onClick={() => handleCopyText(log.content, log.id)}
                             className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded flex items-center gap-1 cursor-pointer transition"
                           >
-                            {copiedId === log.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
+                            {copiedId === log.id ? (
+                              <Check className="w-3 h-3 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-slate-500" />
+                            )}
                             <span>{copiedId === log.id ? 'Đã sao chép!' : 'Sao chép tin'}</span>
                           </button>
                           <button
@@ -1303,7 +1312,6 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         {/* ========================================================================================= */}
         {activeTab === 'history-email' && (
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-slate-50/50 space-y-4">
-            
             {/* Thanh công cụ quản lý lịch sử Email */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200">
               <div className="flex items-center gap-2">
@@ -1315,7 +1323,8 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     Nhật Ký Thư Điện Tử Y Tế ({filteredEmailLogs.length} bản ghi)
                   </h4>
                   <p className="text-2xs text-slate-500">
-                    Toàn bộ thư điện tử và bản sao đơn thuốc đã gửi tới hòm thư: <strong className="text-slate-800 font-mono">{email}</strong>
+                    Toàn bộ thư điện tử và bản sao đơn thuốc đã gửi tới hòm thư:{' '}
+                    <strong className="text-slate-800 font-mono">{email}</strong>
                   </p>
                 </div>
               </div>
@@ -1385,7 +1394,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     <div className="p-4 space-y-3">
                       {/* Tiêu đề thư */}
                       <div className="p-2.5 bg-slate-100/70 rounded-lg border border-slate-200 text-xs">
-                        <span className="font-semibold text-slate-600">Tiêu đề thư (Subject): </span>
+                        <span className="font-semibold text-slate-600">
+                          Tiêu đề thư (Subject):{' '}
+                        </span>
                         <strong className="text-slate-900 font-medium">{log.subject}</strong>
                       </div>
 
@@ -1393,7 +1404,10 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       {log.medicationsSummary && (
                         <div className="p-2.5 bg-teal-50/50 rounded-lg border border-teal-200/60 text-xs text-teal-900 flex items-center gap-2">
                           <FileCode className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-                          <span>Đơn thuốc đính kèm: <strong>{log.medicationsSummary}</strong> (Mã đơn: {log.orderId || orderId || 'RX-2026-604'})</span>
+                          <span>
+                            Đơn thuốc đính kèm: <strong>{log.medicationsSummary}</strong> (Mã đơn:{' '}
+                            {log.orderId || orderId || 'Chưa có mã đơn'})
+                          </span>
                         </div>
                       )}
 
@@ -1401,7 +1415,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <div className="space-y-1.5">
                         <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
                           <span>Toàn bộ nội dung thư &amp; Lời dặn Bác sĩ:</span>
-                          <span className="font-mono text-slate-400 font-normal">{log.adviceContent.length} ký tự</span>
+                          <span className="font-mono text-slate-400 font-normal">
+                            {log.adviceContent.length} ký tự
+                          </span>
                         </div>
 
                         <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 font-sans text-sm text-slate-900 leading-relaxed whitespace-pre-wrap break-words select-text">
@@ -1416,14 +1432,17 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                           onClick={() => handleCopyText(log.adviceContent, log.id)}
                           className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded flex items-center gap-1 cursor-pointer transition"
                         >
-                          {copiedId === log.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
+                          {copiedId === log.id ? (
+                            <Check className="w-3 h-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-slate-500" />
+                          )}
                           <span>{copiedId === log.id ? 'Đã sao chép!' : 'Sao chép nội dung'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setEmailAdvice(log.adviceContent);
-                            setEmailSubject(log.subject);
                             setActiveTab('email');
                           }}
                           className="px-2.5 py-1 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded flex items-center gap-1 cursor-pointer transition"
@@ -1445,14 +1464,14 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         {/* ========================================================================================= */}
         {activeTab === 'settings' && (
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-slate-50/50 space-y-5">
-            
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-1">
               <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
                 <Settings className="w-4 h-4 text-teal-700" />
                 <span>Cài Đặt Cổng Phát Tin &amp; Hạ Tầng Thông Báo Y Tế</span>
               </h4>
               <p className="text-xs text-slate-500">
-                Quản lý các khóa kết nối (API Key, Webhook URL) tới các nhà cung cấp hạ tầng viễn thông và thư điện tử y tế.
+                Quản lý các khóa kết nối (API Key, Webhook URL) tới các nhà cung cấp hạ tầng viễn
+                thông và thư điện tử y tế.
               </p>
             </div>
 
@@ -1464,7 +1483,6 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              
               {/* KHỐI 1: CỔNG EMAIL GOOGLE APPS SCRIPT WEBHOOK */}
               <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3.5 flex flex-col justify-between">
                 <div className="space-y-3">
@@ -1520,16 +1538,39 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <span>Các bước lấy link Web App từ Google Apps Script:</span>
                     </div>
                     <ol className="list-decimal list-inside space-y-1 text-slate-600 pl-1 text-[11px]">
-                      <li>Truy cập <a href="https://script.google.com" target="_blank" rel="noreferrer" className="text-teal-700 underline font-semibold">script.google.com</a> và tạo <strong>New Project</strong>.</li>
-                      <li>Dán mã nguồn từ tệp <code className="bg-slate-200 px-1 py-0.2 rounded font-mono text-[10px]">scripts/google_apps_script_reminder.gs</code>.</li>
-                      <li>Bấm <strong>Deploy</strong> &gt; <strong>New deployment</strong> &gt; Chọn <strong>Web app</strong> (Execute as: <strong>Me</strong>, Access: <strong>Anyone</strong>).</li>
+                      <li>
+                        Truy cập{' '}
+                        <a
+                          href="https://script.google.com"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-teal-700 underline font-semibold"
+                        >
+                          script.google.com
+                        </a>{' '}
+                        và tạo <strong>New Project</strong>.
+                      </li>
+                      <li>
+                        Dán mã nguồn từ tệp{' '}
+                        <code className="bg-slate-200 px-1 py-0.2 rounded font-mono text-[10px]">
+                          scripts/google_apps_script_reminder.gs
+                        </code>
+                        .
+                      </li>
+                      <li>
+                        Bấm <strong>Deploy</strong> &gt; <strong>New deployment</strong> &gt; Chọn{' '}
+                        <strong>Web app</strong> (Execute as: <strong>Me</strong>, Access:{' '}
+                        <strong>Anyone</strong>).
+                      </li>
                       <li>Sao chép URL Web App và dán vào ô bên trên.</li>
                     </ol>
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Cước phí: 0đ (Sử dụng hạn ngạch Gmail miễn phí)</span>
+                  <span className="text-[11px] text-slate-500">
+                    Cước phí: 0đ (Sử dụng hạn ngạch Gmail miễn phí)
+                  </span>
                   <a
                     href="https://script.google.com"
                     target="_blank"
@@ -1552,15 +1593,13 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     </div>
                     <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                       <Check className="w-3 h-3" />
-                      <span>Sẵn sàng phát sóng</span>
+                      <span>Chưa kiểm tra kết nối</span>
                     </span>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-slate-700">
-                        eSMS API Key:
-                      </label>
+                      <label className="text-xs font-semibold text-slate-700">eSMS API Key:</label>
                       <a
                         href="https://esms.vn/Manage/ApiKey"
                         target="_blank"
@@ -1613,14 +1652,16 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                         setEsmsBrandname(val);
                         setStoredEsmsBrandname(val);
                       }}
-                      placeholder="BV_LAMSANG"
+                      placeholder="Tên thương hiệu đã đăng ký"
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-semibold"
                     />
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Chuẩn: Thông tư 26/2025/TT-BYT &amp; NĐ 91/2020</span>
+                  <span className="text-[11px] text-slate-500">
+                    Cần cấu hình tài khoản và thương hiệu thực tế của đơn vị gửi.
+                  </span>
                   <a
                     href="https://esms.vn/Manage/ApiKey"
                     target="_blank"
@@ -1632,31 +1673,42 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                   </a>
                 </div>
               </div>
-
             </div>
-
           </div>
         )}
 
         {/* 4. Footer Nút Hành Động Chuẩn Workstation */}
-        <div className="px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
+        <div className="modal-action-footer px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
           <div className="text-xs text-slate-600 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>
               {activeTab === 'sms' && (
-                <>Kênh phát tin: <strong className="text-slate-900">Tin nhắn SMS Brandname</strong></>
+                <>
+                  Kênh phát tin: <strong className="text-slate-900">Tin nhắn SMS Brandname</strong>
+                </>
               )}
               {activeTab === 'email' && (
-                <>Kênh phát tin: <strong className="text-slate-900">Thư điện tử (Email)</strong></>
+                <>
+                  Kênh phát tin: <strong className="text-slate-900">Thư điện tử (Email)</strong>
+                </>
               )}
               {activeTab === 'history-sms' && (
-                <>Đang xem: <strong className="text-slate-900">Lịch sử tin nhắn SMS</strong> ({logs.length} bản ghi)</>
+                <>
+                  Đang xem: <strong className="text-slate-900">Lịch sử tin nhắn SMS</strong> (
+                  {logs.length} bản ghi)
+                </>
               )}
               {activeTab === 'history-email' && (
-                <>Đang xem: <strong className="text-slate-900">Lịch sử thư điện tử Email</strong> ({emailLogs.length} bản ghi)</>
+                <>
+                  Đang xem: <strong className="text-slate-900">Lịch sử thư điện tử Email</strong> (
+                  {emailLogs.length} bản ghi)
+                </>
               )}
               {activeTab === 'settings' && (
-                <>Đang xem: <strong className="text-slate-900">Cài đặt Cổng Tin Nhắn &amp; Email Y Tế</strong></>
+                <>
+                  Đang xem:{' '}
+                  <strong className="text-slate-900">Cài đặt Cổng Tin Nhắn &amp; Email Y Tế</strong>
+                </>
               )}
             </span>
           </div>
@@ -1687,7 +1739,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                 ) : (
                   <>
                     <Send className="w-4 h-4 text-slate-300" />
-                    <span>{activeTab === 'sms' ? 'Gửi Tin Nhắn SMS' : 'Gửi Email Cho Bệnh Nhân'}</span>
+                    <span>{activeTab === 'sms' ? 'Gửi SMS' : 'Gửi email'}</span>
                   </>
                 )}
               </button>
@@ -1713,7 +1765,6 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

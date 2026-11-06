@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, DateTime, func, JSON
+from sqlalchemy import String, Integer, DateTime, func, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -21,3 +21,9 @@ class AuditRecord(Base):
     previous_hash: Mapped[str] = mapped_column(String, nullable=False)
     payload_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class AuditAppendLock(Base):
+    """Mutable singleton used to serialize ledger append transactions in the DB."""
+    __tablename__ = "audit_append_lock"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)

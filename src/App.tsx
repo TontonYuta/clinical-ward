@@ -38,22 +38,26 @@ import { TelegramToast } from './components/Modals/TelegramToast';
 import { ClinicalAuthModal } from './components/Modals/ClinicalAuthModal';
 import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { PatientDetailModal } from './components/Modals/PatientDetailModal';
-import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
+import { fetchPatients, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import { DavDrugDetailModal } from './components/Modals/DavDrugDetailModal';
 import { ALL_MASTER_MEDICATIONS, removeVietnameseTones } from './data/medicationMasterData';
 import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
+import { FORM_PRESENTATION } from './components/Modals/PrintableForms/formModel';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
 import { cpoeApi } from './services/api/cpoeApi';
+import { coldchainApi } from './services/api/coldchainApi';
+import { validatePrescriptionDraft } from './services/prescriptionValidation';
 import { clinicalAudio } from './utils/audio';
 
 const LegalDocsModal = lazy(() => import('./components/Modals/LegalDocsModal').then(m => ({ default: m.LegalDocsModal })));
 const UserGuideModal = lazy(() => import('./components/Modals/UserGuideModal').then(m => ({ default: m.UserGuideModal })));
 const PrintableFormModal = lazy(() => import('./components/Modals/PrintableFormModal').then(m => ({ default: m.PrintableFormModal })));
+import { expiryState, temperatureAlarm } from './components/ui/workspaceStatus';
 import { fontScaleToPixels } from './components/Settings/fontScaleModel';
 import {
   getInitialTab,
@@ -88,10 +92,22 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   // State khôi phục bền vững từ URL Hash & LocalStorage Cache (SWR chống giật layout khi reload)
   const [debts, setDebts] = useState<DebtRecord[]>(getCachedDebts);
   const [tickets, setTickets] = useState<EquipmentTicket[]>(getCachedTickets);
-  const [batches, setBatches] = useState<InventoryBatch[]>(getCachedBatches);
-  const [coldChainState, setColdChainState] = useState<ColdChainMonitorState>(INITIAL_COLD_CHAIN_STATE);
+  const [batches, setBatches] = useState<InventoryBatch[]>([]);
+  const [inventoryLoadError, setInventoryLoadError] = useState('');
+  const [coldChainState, setColdChainState] = useState<ColdChainMonitorState>({
+    ...INITIAL_COLD_CHAIN_STATE,
+    storageName: 'Chưa xác nhận định danh tủ',
+    currentTemp: Number.NaN,
+    currentHumidity: Number.NaN,
+    totalVaccineDoses: 0,
+    logs: [],
+    quarantineStatus: undefined,
+    vvmStage: undefined,
+    mktTemperature: undefined,
+  });
+  const [coldChainReady, setColdChainReady] = useState(false);
   const [assets, setAssets] = useState<AssetAuditRecord[]>(INITIAL_ASSET_AUDIT_RECORDS);
-  const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>(getCachedAuditRecords);
+  const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(getInitialChatMessages);
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(authenticatedRole || getInitialUserRole);
@@ -122,8 +138,12 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [drugRegistrySearch, setDrugRegistrySearch] = useState('');
   const [selectedDrugForDavGlobal, setSelectedDrugForDavGlobal] = useState<MasterMedication | null>(null);
   const [selectedPatientForGlobalModal, setSelectedPatientForGlobalModal] = useState<string | null>(null);
-  const [patients, setPatients] = useState<PatientProfile[]>(INITIAL_PATIENTS);
+  const [patients, setPatients] = useState<PatientProfile[]>([]);
+  const [patientLoadError, setPatientLoadError] = useState('');
   const [fontScale, setFontScale] = useState(getInitialFontScale);
+  const pendingCpoeOrders = useRef(new Set<string>());
+  const pendingBatchDispatches = useRef(new Set<string>());
+  const coldChainRevision = useRef(0);
   useEffect(() => {
     document.documentElement.style.fontSize = `${fontScaleToPixels(fontScale)}px`;
     saveFontScale(fontScale);
@@ -141,7 +161,11 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
 
   useEffect(() => {
     let active = true;
-    void fetchPatients().then((records) => { if (active && records.length) setPatients(records); });
+    void fetchPatients().then((records) => {
+      if (active) { setPatients(records); setPatientLoadError(''); }
+    }).catch(error => {
+      if (active) { setPatients([]); setPatientLoadError(error instanceof Error ? error.message : 'Không tải được hồ sơ người bệnh.'); }
+    });
     return () => { active = false; };
   }, []);
 
@@ -311,12 +335,35 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
       inventoryApi.fetchInventoryBatches(),
     ]).then(([resBatches]) => {
       if (!isMounted) return;
-      if (resBatches && resBatches.status === 'fulfilled' && resBatches.value.length > 0) {
+      if (resBatches && resBatches.status === 'fulfilled') {
         setBatches(resBatches.value);
         saveCachedBatches(resBatches.value);
+        setInventoryLoadError('');
+      } else {
+        setBatches([]);
+        setInventoryLoadError('Tồn kho chưa khả dụng. Không dùng dữ liệu mẫu hoặc bộ nhớ đệm thay thế tồn kho hiện tại.');
       }
     }).catch(() => {});
     return () => { isMounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const revision = coldChainRevision.current;
+    void coldchainApi.fetchStatus().then(state => {
+      if (active && revision === coldChainRevision.current) {
+        setColdChainState(state);
+        setColdChainReady(true);
+      }
+    }).catch(() => {
+      if (active) setChatMessages(prev => [...prev, {
+        id: `msg-coldchain-unavailable-${Date.now()}`,
+        sender: 'system',
+        text: 'Chưa tải được trạng thái chuỗi lạnh từ máy chủ. Các số liệu đang hiển thị là dữ liệu minh họa, chưa thể xác nhận an toàn lô.',
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      }]);
+    });
+    return () => { active = false; };
   }, []);
 
   // Handler: Switch user role (RBAC)
@@ -335,18 +382,15 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     formType: PrintableFormType = 'TT20_AMPOULE_DESTRUCTION',
     item?: any
   ) => {
+    if (!Object.hasOwn(FORM_PRESENTATION, formType)) return;
     setPrintableInitialType(formType);
-    if (formType === 'TT20_AMPOULE_DESTRUCTION' || formType === 'EMERGENCY_BORROW_TICKET') {
-      setSelectedDebtForPrint((item as DebtRecord) || debts[0] || null);
-    } else if (formType === 'EQUIPMENT_HANDOVER_INSPECT') {
-      setSelectedTicketForPrint((item as EquipmentTicket) || tickets[0] || null);
-    } else if (formType === 'TSC_HANDOVER_TRANSFER' || formType === 'TSC_ANNUAL_AUDIT') {
-      setSelectedAssetForPrint((item as AssetAuditRecord) || assets[0] || null);
-    }
+    setSelectedDebtForPrint((formType === 'TT20_AMPOULE_DESTRUCTION' || formType === 'EMERGENCY_BORROW_TICKET') && item ? item as DebtRecord : null);
+    setSelectedTicketForPrint(formType === 'EQUIPMENT_HANDOVER_INSPECT' && item ? item as EquipmentTicket : null);
+    setSelectedAssetForPrint((formType === 'TSC_HANDOVER_TRANSFER' || formType === 'TSC_ANNUAL_AUDIT') && item ? item as AssetAuditRecord : null);
     setIsPrintableFormOpen(true);
   };
 
-  // Helper: Append immutable audit record & notify AI Copilot
+  // Local session activity is not server audit or verified signature evidence.
   const appendAuditRecord = (
     actionType: ClinicalActionType,
     actionTitle: string,
@@ -354,7 +398,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     legalBasis: string,
     signer: UserProfile,
     witness?: UserProfile,
-    authMethod: 'PIN' | 'RFID_NFC' = 'PIN'
+    authMethod: 'PIN' | 'RFID_NFC' | 'SESSION' = 'PIN'
   ) => {
     const nowStr = new Date().toLocaleString('vi-VN', {
       year: 'numeric',
@@ -364,9 +408,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
       minute: '2-digit',
       second: '2-digit'
     });
-    const recordId = `AUD-2026-${String(auditRecords.length + 41).padStart(4, '0')}`;
-    const randomHash = Math.random().toString(36).substring(2, 8);
-    const integrityHash = `SHA256:${randomHash}a1...${randomHash}f9`;
+    const recordId = `SESSION-${crypto.randomUUID()}`;
 
     const newRecord: AuditTrailRecord = {
       id: recordId,
@@ -382,27 +424,25 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
       witnessName: witness?.name,
       witnessCertificate: witness?.practiceCertificate,
       authMethod,
-      integrityHash,
-      status: 'verified'
+      status: 'session_simulated'
     };
 
     setAuditRecords(prev => [newRecord, ...prev]);
 
-    // Also push verifiable confirmation message to AI Copilot
     const auditMsg: ChatMessage = {
       id: `msg-audit-${Date.now()}`,
       sender: 'system',
-      text: `🔒 **Ký xác thực lâm sàng thành công (${recordId})**:
+      text: `**Nhật ký phiên (${recordId})** — ghi nhận mô phỏng trong giao diện, chưa xác minh chữ ký hay tính toàn vẹn:
 • **Nghiệp vụ**: ${actionTitle}
 • **Đối tượng**: ${targetItem}
 • **Người ký duyệt**: ${signer.name} (${signer.roleName}) - CCHN: \`${signer.practiceCertificate}\`
-${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}) - CCHN: \`${witness.practiceCertificate}\`\n` : ''}• **Phương thức xác nhận**: ${authMethod === 'RFID_NFC' ? 'Thẻ định danh nhân viên' : 'Mã PIN chuyên môn'}
+${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}) - CCHN: \`${witness.practiceCertificate}\`\n` : ''}• **Phương thức xác nhận**: ${authMethod === 'SESSION' ? 'Tài khoản đang đăng nhập (không phải chữ ký số)' : authMethod === 'RFID_NFC' ? 'Mô phỏng thẻ định danh nhân viên' : 'Mô phỏng mã PIN'}
 • **Căn cứ pháp lý**: ${legalBasis}`,
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       legalReference: {
         lawCode: legalBasis.split(' - ')[0] || legalBasis,
         title: actionTitle,
-        clause: 'Ký số y tế (NĐ 130)'
+        clause: 'Ghi nhận phiên; chưa xác minh chữ ký'
       }
     };
     setChatMessages(prev => [...prev, auditMsg]);
@@ -417,7 +457,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     setBatches(INITIAL_INVENTORY_BATCHES);
     setColdChainState(INITIAL_COLD_CHAIN_STATE);
     setAssets(INITIAL_ASSET_AUDIT_RECORDS);
-    setAuditRecords(INITIAL_AUDIT_TRAIL_RECORDS);
+    setAuditRecords([]);
     setChatMessages(INITIAL_CHAT_MESSAGES);
     setCurrentUserRole('nurse');
     setCurrentTab('debt');
@@ -687,7 +727,21 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   // Handler: Dispatch batch in Tab 3 (FEFO) (Requires pharmacist/director auth)
   const handleDispatchBatch = (batchId: string, quantity: number) => {
     const batch = batches.find(b => b.id === batchId);
+    const reportFailure = (message: string) => setChatMessages(prev => [...prev, {
+      id: `msg-dispatch-error-${Date.now()}`,
+      sender: 'system',
+      text: `Không thể xuất kho: ${message}`,
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    }]);
     if (!batch) return;
+    if (!Number.isSafeInteger(quantity) || quantity <= 0 || quantity > batch.currentStock) {
+      reportFailure('Số lượng phải là số nguyên dương và không vượt quá tồn kho.');
+      return;
+    }
+    if (batch.isDispatchable === false || batch.isQuarantined || ['expired', 'unknown'].includes(expiryState(batch.expiryDate))) {
+      reportFailure('Lô đang biệt trữ, hết hạn hoặc chưa xác định hạn dùng.');
+      return;
+    }
 
     setAuthRequest({
       actionType: 'DISPATCH_FEFO',
@@ -696,19 +750,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       targetItem: `${batch.itemName} (Lô: ${batch.batchNumber}, EXP: ${batch.expiryDate})`,
       legalBasis: 'Khoản 2 Điều 12 Thông tư 36/2018/TT-BYT (GSP)',
       requiredRoles: ['pharmacist', 'director'],
-      onConfirm: (signer, witness, method) => {
-        setBatches(prev =>
-          prev.map(b => {
-            if (b.id === batchId) {
-              const updatedStock = Math.max(0, b.currentStock - quantity);
-              return {
-                ...b,
-                currentStock: updatedStock
-              };
-            }
-            return b;
-          })
-        );
+      onConfirm: async (signer, witness, method) => {
+        if (pendingBatchDispatches.current.has(batchId)) return;
+        pendingBatchDispatches.current.add(batchId);
+        try {
+          const saved = await inventoryApi.dispatchBatch(batchId, quantity, 'Tủ trực cấp cứu');
+          setBatches(prev => {
+            const next = prev.map(b => b.id === batchId ? saved : b);
+            saveCachedBatches(next);
+            return next;
+          });
         appendAuditRecord(
           'DISPATCH_FEFO',
           'Xuất kho dược phẩm cấp phát',
@@ -718,6 +769,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           witness,
           method
         );
+        } catch (error) {
+          reportFailure(error instanceof Error ? error.message : 'Máy chủ chưa chấp nhận lệnh xuất.');
+          throw error;
+        } finally {
+          pendingBatchDispatches.current.delete(batchId);
+        }
       }
     });
   };
@@ -760,26 +817,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
   // Handler: Request restocking for low-stock inventory batches (TT 22/2011/TT-BYT)
   const handleRestockBatches = (batchIds: string[]) => {
+    if (!batchIds.length || batchIds.some(id => !batches.some(batch => batch.id === id))) return;
     setAuthRequest({
       actionType: 'RESTOCK_MEDICATION',
       title: 'Ký duyệt Phiếu Dự trù Bổ sung Cơ số Thuốc',
-      description: `Phê duyệt nhập khẩn cho ${batchIds.length} mặt hàng thuốc/vật tư đang chạm ngưỡng tối thiểu để phục hồi về định mức an toàn.`,
+      description: `Lập đề nghị bổ sung cho ${batchIds.length} mặt hàng thuốc/vật tư. Tồn kho chỉ thay đổi sau khi tiếp nhận hàng thực tế.`,
       targetItem: `${batchIds.length} mặt hàng cạn cơ số an toàn`,
       legalBasis: 'Điều 7 Thông tư 22/2011/TT-BYT',
       requiredRoles: ['pharmacist', 'director'],
-      onConfirm: (signer, witness, method) => {
-        setBatches(prev =>
-          prev.map(b => {
-            if (batchIds.includes(b.id)) {
-              return {
-                ...b,
-                currentStock: b.maxThreshold,
-                isLowStock: false
-              };
-            }
-            return b;
-          })
-        );
+      onConfirm: async (signer, witness, method) => {
+        await inventoryApi.createRestockProposal(batchIds, signer.name);
         appendAuditRecord(
           'RESTOCK_MEDICATION',
           'Phê duyệt Phiếu Dự trù Bổ sung Cơ số Thuốc',
@@ -825,224 +872,98 @@ Hiện có **${activeDebtList.length} khoản nợ tủ trực** chưa hoàn bù
     setCurrentTab('debt');
   };
 
-  // Handler: Trigger Cold Chain Outage (Requested in prompt: Jump to 11°C, red alarm, sound, message to left pane)
-  const handleTriggerOutage = () => {
-    // 1. Update cold chain state to 11.0°C and alarm active
-    const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    const newLog = {
-      timestamp: nowStr,
-      temperature: 11.0,
-      humidity: 68,
-      status: 'critical' as const
-    };
-
-    setColdChainState(prev => ({
-      ...prev,
-      currentTemp: 11.0,
-      currentHumidity: 68,
-      powerStatus: 'outage_critical',
-      compressorStatus: 'fault',
-      alarmActive: true,
-      alarmMessage: 'MẤT ĐIỆN LƯỚI - NHIỆT ĐỘ 11.0°C',
-      logs: [...prev.logs, newLog]
-    }));
-
-    // Cross-module: Automatically open urgent maintenance ticket for BME in Tab 2
-    const newOutageTicket: EquipmentTicket = {
-      id: 'eq-outage-vax01',
-      code: 'SC-2026-045',
-      deviceName: 'Tủ chuyên dụng bảo quản Vắc xin số 1 (Dometic HC-302)',
-      deviceModel: 'Dometic HC-302 Cold Chain GSP',
-      serialNumber: 'DOM-HC302-VAX01',
-      riskClass: 'B',
-      accessoryIssue: 'Mất điện lưới 220V, máy nén dừng, nhiệt độ buồng vọt lên 11.0°C (Vượt dải 2-8°C GSP)',
-      location: 'Kho Lạnh Dược - Phòng Chuỗi Lạnh',
-      urgency: 'urgent',
-      assignedEngineer: 'KS. Đặng Văn Nam (Phòng Vật tư - TBYT)',
-      status: 'in_progress',
-      reportTime: `${nowStr} - Cảnh báo tự động IoT`,
-      lastInspectionDate: '10/05/2026',
-      nextInspectionDue: '10/05/2027',
-      inspectionUnit: 'Quatest 1',
-      legalBasis: 'Điều 34 Nghị định 98/2021/NĐ-CP & TT 36/2018/TT-BYT GSP',
-      actionLog: [
-        `${nowStr}: Cảm biến IoT phát hiện mất điện lưới 220V, nhiệt độ đạt đỉnh 11.0°C`,
-        `${nowStr}: Hệ thống tự động mở Ticket khẩn cho KS. Đặng Văn Nam kiểm tra nguồn điện & máy phát dự phòng`
-      ]
-    };
-    setTickets(prev => [newOutageTicket, ...prev.filter(t => t.id !== 'eq-outage-vax01')]);
-
-    // 2. Play medical emergency alarm
-    if (!isAudioMuted) {
-      clinicalAudio.playEmergencyAlarm();
+  const canManageColdChain = currentUserRole === 'pharmacist' || currentUserRole === 'director';
+  const reportColdChainError = (error: unknown) => setChatMessages(prev => [...prev, {
+    id: `msg-coldchain-error-${Date.now()}`,
+    sender: 'system',
+    text: `Chưa cập nhật chuỗi lạnh: ${error instanceof Error ? error.message : 'Máy chủ chưa chấp nhận thao tác.'}`,
+    timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+  }]);
+  const refreshColdChainInventory = async (revision: number) => {
+    try {
+      const live = await inventoryApi.fetchInventoryBatches();
+      if (revision !== coldChainRevision.current) return;
+      setBatches(live);
+      saveCachedBatches(live);
+    } catch {
+      if (revision !== coldChainRevision.current) return;
+      setBatches(prev => prev.map(batch => batch.coldStorageRequired || batch.coldChainStateId != null
+        ? { ...batch, isDispatchable: false, dispatchHoldReason: 'Chưa tải lại trạng thái tồn kho sau thay đổi chuỗi lạnh; giữ để kiểm tra.' }
+        : batch));
     }
-
-    // 3. Dispatch urgent AI agent message to the Left Pane
-    const alertMsg: ChatMessage = {
-      id: `msg-outage-${Date.now()}`,
-      sender: 'agent',
-      text: `🚨 Cảnh báo mất điện Tủ vaccine số 1 (Nhiệt độ: **11.0°C**):
-Vượt dải an toàn 2.0°C - 8.0°C theo chuẩn GSP.
-Quy trình ứng phó SOP-GSP-09:
-1. Không mở cửa tủ.
-2. Hệ thống đã tự động tạo Ticket sửa chữa khẩn **#SC-2026-045** cho KS. Đặng Văn Nam.
-3. Nếu quá 15 phút chưa có điện: Kích hoạt hòm đá tích lạnh bảo quản khẩn 1.250 liều sinh phẩm.`,
-      timestamp: nowStr,
-      legalReference: {
-        lawCode: 'TT 36/2018/TT-BYT GSP & NĐ 98',
-        title: 'Dây chuyền lạnh & Thiết bị',
-        clause: 'Bảo quản vắc xin'
-      },
-      actionPayload: {
-        type: 'OUTAGE_SIMULATION',
-        targetTab: 'coldchain'
-      }
-    };
-
-    setChatMessages(prev => [...prev, alertMsg]);
-    setCurrentTab('coldchain');
   };
 
-  // Handler: Restore power in Tab 4 (Requires pharmacist/BME authentication and activates Quarantine)
+  const handleTriggerOutage = async () => {
+    if (!canManageColdChain) {
+      reportColdChainError(new Error('Vai trò hiện tại không có quyền mô phỏng sự cố chuỗi lạnh.'));
+      return;
+    }
+    const revision = ++coldChainRevision.current;
+    try {
+      const saved = await coldchainApi.simulateOutage();
+      if (revision !== coldChainRevision.current) return;
+      setColdChainState(saved);
+      setColdChainReady(true);
+      await refreshColdChainInventory(revision);
+      if (!isAudioMuted) clinicalAudio.playEmergencyAlarm();
+      setCurrentTab('coldchain');
+      setChatMessages(prev => [...prev, {
+        id: `msg-outage-${Date.now()}`,
+        sender: 'system',
+        text: `Đã lưu mô phỏng mất điện chuỗi lạnh trên máy chủ. Nhiệt độ: ${saved.currentTemp}°C. Các lô được liên kết đang biệt trữ chờ thẩm định.`,
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      }]);
+    } catch (error) { reportColdChainError(error); }
+  };
+
   const handleRestorePower = () => {
-    clinicalAudio.stopAlarm();
+    if (!canManageColdChain || coldChainState.powerStatus !== 'outage_critical') {
+      reportColdChainError(new Error('Chỉ dược sĩ hoặc giám đốc được khôi phục sự cố mất điện đang mở.'));
+      return;
+    }
     setAuthRequest({
       actionType: 'RESTORE_POWER',
-      title: 'Xác nhận Khôi phục Dây chuyền lạnh GSP & Kích hoạt Biệt trữ',
-      description: 'Xác nhận nguồn điện AC 220V hoạt động bình thường, máy nén làm lạnh đã phục hồi nhiệt độ về 4.5°C. Kích hoạt trạng thái Biệt trữ (Quarantine) cho 1.250 liều vắc xin theo Điều 12 TT 36/2018 GSP.',
-      targetItem: 'Tủ bảo quản vắc xin số 1 - Kho Lạnh Dược',
-      legalBasis: 'Thông tư 36/2018/TT-BYT (GSP) - Điều 12 Quy chế Biệt trữ',
-      requiredRoles: ['pharmacist', 'biomedical_engineer', 'director'],
-      onConfirm: (signer, witness, method) => {
-        const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-        const restoreLog = {
-          timestamp: nowStr,
-          temperature: 4.5,
-          humidity: 54,
-          status: 'normal' as const
-        };
-
-        setColdChainState(prev => ({
-          ...prev,
-          currentTemp: 4.5,
-          currentHumidity: 54,
-          powerStatus: 'main_power',
-          compressorStatus: 'running',
-          alarmActive: false,
-          alarmMessage: undefined,
-          quarantineStatus: 'quarantined',
-          quarantineReason: 'Nhiệt độ buồng đạt 11.0°C. Biệt trữ chờ Hội đồng Dược thẩm định chỉ thị VVM & MKT.',
-          vvmStage: 1,
-          mktTemperature: 5.6,
-          logs: [...prev.logs, restoreLog]
-        }));
-
-        // Cross-module: Update ticket in Tab 2 to inspected
-        setTickets(prev =>
-          prev.map(t =>
-            t.code === 'SC-2026-045'
-              ? {
-                  ...t,
-                  status: 'inspected',
-                  actionLog: [
-                    ...(t.actionLog || []),
-                    `${nowStr}: ${signer.name} đã phục hồi nguồn điện, nhiệt độ hạ về 4.5°C. Đã niêm phong biệt trữ 1.250 liều vắc xin chờ Hội đồng Dược kiểm định VVM`
-                  ]
-                }
-              : t
-          )
-        );
-
-        appendAuditRecord(
-          'RESTORE_POWER',
-          'Khôi phục điện chuỗi lạnh & Kích hoạt Biệt trữ GSP',
-          'Tủ vắc xin số 1 (4.5°C) - 1.250 liều chuyển vào Biệt trữ',
-          'Thông tư 36/2018/TT-BYT (GSP)',
-          signer,
-          witness,
-          method
-        );
-
-        const restoreMsg: ChatMessage = {
-          id: `msg-restore-${Date.now()}`,
-          sender: 'agent',
-          text: `Khôi phục nguồn điện tủ vắc xin thành công (Nhiệt độ: **4.5°C**):
-• ${signer.name} (${signer.roleName}) đã nghiệm thu nguồn điện lưới ổn định.
-• **Quy chế Biệt trữ GSP kích hoạt:** Do phơi nhiễm 11.0°C, toàn bộ **1.250 liều vắc xin** đang ở trạng thái **Biệt trữ (Quarantine)**.
-• Hội đồng Dược & ĐT cần kiểm tra chỉ thị màu VVM và ký duyệt *Lệnh Giải Phóng Lô* trước khi đưa vắc xin vào sử dụng.`,
-          timestamp: nowStr,
-          legalReference: {
-            lawCode: 'TT 36/2018/TT-BYT (GSP)',
-            title: 'Biệt trữ thuốc/vắc xin sự cố',
-            clause: 'Điều 12'
-          }
-        };
-        setChatMessages(prev => [...prev, restoreMsg]);
-      }
+      title: 'Xác nhận khôi phục nguồn điện chuỗi lạnh',
+      description: 'Ghi nhận khôi phục điện trên máy chủ. Lô vẫn biệt trữ cho đến khi được thẩm định và giải phóng.',
+      targetItem: `${coldChainState.storageName} - các lô được liên kết`,
+      legalBasis: 'Quy trình theo dõi và xử lý sự cố chuỗi lạnh',
+      requiredRoles: ['pharmacist', 'director'],
+      onConfirm: async (signer, witness, method) => {
+        const revision = ++coldChainRevision.current;
+        const saved = await coldchainApi.restorePower();
+        if (revision !== coldChainRevision.current) return;
+        setColdChainState(saved);
+        setColdChainReady(true);
+        await refreshColdChainInventory(revision);
+        clinicalAudio.stopAlarm();
+        appendAuditRecord('RESTORE_POWER', 'Khôi phục điện chuỗi lạnh', `${saved.storageName}: ${saved.currentTemp}°C; trạng thái ${saved.quarantineStatus}`, 'Quy trình theo dõi chuỗi lạnh', signer, witness, method);
+      },
     });
   };
 
-  // Handler: Release vaccine quarantine after VVM inspection (TT 36/2018 GSP & WHO PQS - DUAL WITNESS)
   const handleReleaseVaccineQuarantine = () => {
+    if (!canManageColdChain || coldChainState.quarantineStatus !== 'quarantined' || temperatureAlarm(coldChainState) || coldChainState.vvmStage !== 1 || !Number.isFinite(coldChainState.mktTemperature) || coldChainState.mktTemperature! < 2 || coldChainState.mktTemperature! >= 8) {
+      reportColdChainError(new Error('Trạng thái hiện tại chưa đủ điều kiện thẩm định giải phóng biệt trữ.'));
+      return;
+    }
     setAuthRequest({
       actionType: 'RELEASE_VACCINE_QUARANTINE',
-      title: 'Hội đồng Dược & ĐT: Ký Lệnh Giải Phóng Lô Vắc Xin sau Sự cố Nhiệt độ',
-      description: 'Xác nhận chỉ thị VVM Stage 1 (An toàn), nhiệt độ MKT 5.6°C và thời gian phơi nhiễm 12 phút đạt chuẩn an toàn sinh học theo WHO. Giải phóng 1.250 liều vắc xin từ khu vực biệt trữ về kho sử dụng.',
-      targetItem: '1.250 liều vắc xin (Verorab, SAT 1500, Viêm gan B) - Tủ bảo quản số 1',
-      legalBasis: 'Điều 12 Thông tư 36/2018/TT-BYT (GSP) & Hướng dẫn WHO/IVB/06.10',
+      title: 'Thẩm định giải phóng lô sau sự cố chuỗi lạnh',
+      description: `Đối chiếu chỉ thị VVM ${coldChainState.vvmStage}, MKT ${coldChainState.mktTemperature}°C cho các lô được liên kết. Máy chủ sẽ kiểm tra lại trạng thái trước khi giải phóng.`,
+      targetItem: `${coldChainState.storageName} - các lô được liên kết`,
+      legalBasis: 'Quy trình thẩm định lô biệt trữ sau sự cố',
       requiredRoles: ['pharmacist', 'director'],
       requiresDualWitness: true,
-      dualWitnessRoles: ['doctor', 'nurse'],
-      onConfirm: (signer, witness, method) => {
-        const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-        setColdChainState(prev => ({
-          ...prev,
-          quarantineStatus: 'released',
-          quarantineReason: undefined
-        }));
-
-        // Cross-module: Update ticket in Tab 2 to resolved
-        setTickets(prev =>
-          prev.map(t =>
-            t.code === 'SC-2026-045'
-              ? {
-                  ...t,
-                  status: 'resolved',
-                  actionLog: [
-                    ...(t.actionLog || []),
-                    `${nowStr}: ${signer.name} (Kho Dược) và ${witness?.name} đã ký biên bản giải phóng lô tiêm chủng theo chuẩn GSP`
-                  ]
-                }
-              : t
-          )
-        );
-
-        appendAuditRecord(
-          'RELEASE_VACCINE_QUARANTINE',
-          'Ký Lệnh Giải Phóng Lô Vắc Xin sau Sự cố Chuỗi lạnh',
-          '1.250 liều vắc xin (VVM Stage 1, MKT 5.6°C) - Kho Lạnh Dược GSP',
-          'Điều 12 Thông tư 36/2018/TT-BYT (GSP)',
-          signer,
-          witness,
-          method
-        );
-
-        const releaseMsg: ChatMessage = {
-          id: `msg-release-vax-${Date.now()}`,
-          sender: 'agent',
-          text: `Giải phóng lô vắc xin thành công (Chuẩn GSP & WHO):
-• ${signer.name} (${signer.roleName}) và ${witness?.name} đã nghiệm thu chỉ thị VVM Stage 1 & MKT 5.6°C.
-• Toàn bộ **1.250 liều vắc xin** đã được chuyển từ trạng thái Biệt trữ về Kho tiêm chủng an toàn.
-• Ticket sửa chữa thiết bị **SC-2026-045** đã được hoàn tất và đóng sổ.`,
-          timestamp: nowStr,
-          legalReference: {
-            lawCode: 'TT 36/2018/TT-BYT (GSP)',
-            title: 'Giải phóng lô vắc xin',
-            clause: 'Điều 12'
-          }
-        };
-        setChatMessages(prev => [...prev, releaseMsg]);
-      }
+      dualWitnessRoles: ['doctor', 'nurse', 'pharmacist'],
+      onConfirm: async (signer, witness, method) => {
+        const revision = ++coldChainRevision.current;
+        const saved = await coldchainApi.releaseQuarantine(signer.name, witness?.name || '', coldChainState.vvmStage!, coldChainState.mktTemperature!);
+        if (revision !== coldChainRevision.current) return;
+        setColdChainState(saved);
+        setColdChainReady(true);
+        await refreshColdChainInventory(revision);
+        appendAuditRecord('RELEASE_VACCINE_QUARANTINE', 'Giải phóng lô sau sự cố chuỗi lạnh', `Các lô được liên kết - VVM ${saved.vvmStage}, MKT ${saved.mktTemperature}°C`, 'Quy trình thẩm định lô biệt trữ', signer, witness, method);
+      },
     });
   };
 
@@ -1205,7 +1126,7 @@ Quy trình ứng phó SOP-GSP-09:
   };
 
   // Handler: Execute interactive clinical action card dispatched by AI Copilot
-  const handleExecuteCardAction = (messageId: string, actionType: string, cardData: any) => {
+  const handleExecuteCardAction = async (messageId: string, actionType: string, cardData: any) => {
     const markExecuted = () => {
       setChatMessages(prev =>
         prev.map(m =>
@@ -1424,7 +1345,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         }
       }
       if (cardData?.openModal === 'cpoe_prescription') {
-        const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
+        const canPrescribe = currentUserRole === 'doctor';
         if (canPrescribe) {
           sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
           setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
@@ -1435,7 +1356,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       }
       markExecuted();
     } else if (actionType === 'OPEN_CPOE_PRESCRIPTION') {
-      const canPrescribe = currentUserRole === 'doctor' || currentUserRole === 'director';
+      const canPrescribe = currentUserRole === 'doctor';
       if (!canPrescribe) {
         setChatMessages(prev => [
           ...prev,
@@ -1476,8 +1397,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       markExecuted();
     } else if (actionType === 'OPEN_PRINTABLE_FORM') {
       const formType = cardData?.formType || cardData?.form_type || 'EMERGENCY_BORROW_TICKET';
-      setPrintableInitialType(formType as any);
-      setIsPrintableFormOpen(true);
+      if (!Object.hasOwn(FORM_PRESENTATION, formType)) return;
+      handleOpenPrintForm(formType as PrintableFormType);
       markExecuted();
     } else if (actionType === 'IMPORT_OCR_INVOICE') {
       const items = cardData?.items || [];
@@ -1516,11 +1437,34 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       setChatMessages(prev => [...prev, confirmMsg]);
     } else if (actionType === 'EXECUTE_CREATE_CPOE_ORDER') {
       const order = cardData;
-      if (order && order.id) {
-        cpoeApi.createCpoeOrder(order).catch(console.warn);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('cpoe_order_created', { detail: order }));
-        }
+      const reportFailure = (message: string) => setChatMessages(prev => [...prev, {
+        id: `msg-cpoe-error-${Date.now()}`,
+        sender: 'system',
+        text: `Chưa lưu đơn thuốc: ${message}`,
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      }]);
+      if (currentUserRole !== 'doctor') {
+        reportFailure('Chỉ bác sĩ có quyền tạo bản nháp đơn thuốc.');
+        return;
+      }
+      if (!order || typeof order.id !== 'string' || !Array.isArray(order.items)) {
+        reportFailure('Dữ liệu bản nháp không hợp lệ.');
+        return;
+      }
+      const errors = validatePrescriptionDraft({
+        patientName: order.patientName,
+        diagnosisText: order.diagnosisText,
+        items: order.items.map((item: any) => ({ ...item, durationDays: order.daysPrescribed })),
+      });
+      if (errors.length) {
+        reportFailure(errors.join(' '));
+        return;
+      }
+      if (pendingCpoeOrders.current.has(order.id)) return;
+      pendingCpoeOrders.current.add(order.id);
+      try {
+        const saved = await cpoeApi.createCpoeOrder({ ...order, status: 'draft', digitalSignature: undefined });
+        window.dispatchEvent(new CustomEvent('cpoe_order_created', { detail: saved }));
         markExecuted();
         if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
           setCurrentTab('cpoe');
@@ -1529,10 +1473,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         const confirmMsg: ChatMessage = {
           id: `msg-cpoe-confirm-${Date.now()}`,
           sender: 'system',
-          text: `✅ **Đã ký duyệt & tạo đơn thuốc thành công (${order.id})**:\n• **Bệnh nhân**: ${order.patientName}\n• **Chẩn đoán**: ${order.diagnosisIcd10} - ${order.diagnosisText}\n• **Số khoản thuốc**: ${order.items?.length || 0} mục • Thời gian: ${order.daysPrescribed} ngày\n• **Quy chế**: Điều 4 Thông tư 26/2025/TT-BYT.`,
+          text: `Đã lưu bản nháp đơn thuốc (${saved.id}).\n• **Bệnh nhân**: ${saved.patientName}\n• **Chẩn đoán**: ${saved.diagnosisIcd10} - ${saved.diagnosisText}\n• **Số khoản thuốc**: ${saved.items?.length || 0} mục • Thời gian: ${saved.daysPrescribed} ngày`,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         };
         setChatMessages(prev => [...prev, confirmMsg]);
+      } catch (error) {
+        reportFailure(error instanceof Error ? error.message : 'Máy chủ chưa chấp nhận đơn thuốc.');
+      } finally {
+        pendingCpoeOrders.current.delete(order.id);
       }
     } else if (actionType === 'EXECUTE_RETURN_AMPOULE') {
       const debtId = cardData?.debtId;
@@ -1719,7 +1667,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   };
 
   return (
-    <div className="flex flex-row h-[100dvh] min-h-0 w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block relative">
+    <div className="clinical-app flex flex-row h-[100dvh] min-h-0 w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block relative">
       {/* 1. Mobile Drawer Backdrop Overlay */}
       {isMobileSidebarOpen && (
         <div
@@ -1732,10 +1680,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       {/* 2. Mobile Drawer Navigation Sidebar */}
       <div
         id="mobile-navigation-drawer"
-        role="dialog"
-        aria-modal="true"
+        role={isMobileSidebarOpen ? "dialog" : undefined}
+        aria-modal={isMobileSidebarOpen ? true : undefined}
+        aria-hidden={!isMobileSidebarOpen}
+        inert={!isMobileSidebarOpen}
         aria-label="Điều hướng chính"
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl md:hidden transition-transform duration-300 ease-in-out transform ${
+        className={`mobile-nav-drawer fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl md:hidden transition-transform duration-300 ease-in-out transform ${
           isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } print:hidden`}
       >
@@ -1760,9 +1710,9 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           debtCount={debts.filter(d => d.status === 'debt').length}
           urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
-          nearExpiryAndLowStockCount={batches.filter(b => b.isNearExpiry || b.isLowStock || b.currentStock <= b.minThreshold).length}
+          nearExpiryAndLowStockCount={batches.filter(b => ['near', 'expired', 'unknown'].includes(expiryState(b.expiryDate)) || b.isLowStock || b.currentStock <= b.minThreshold).length}
           coldChainTemp={coldChainState.currentTemp}
-          isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
+          isColdAlarm={temperatureAlarm(coldChainState)}
           misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
           onOpenLegalDocs={() => {
             setIsLegalDocsOpen(true);
@@ -1777,7 +1727,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             setIsMobileSidebarOpen(false);
           }}
           onOpenPrintableForms={() => {
-            handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION');
+            handleOpenPrintForm(currentUserRole === 'doctor' || currentUserRole === 'nurse' ? 'EMERGENCY_BORROW_TICKET' : 'TT22_RESTOCK_PROPOSAL');
             setIsMobileSidebarOpen(false);
           }}
           onOpenMedicationSafety={() => {
@@ -1803,42 +1753,42 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           debtCount={debts.filter(d => d.status === 'debt').length}
           urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
-          nearExpiryAndLowStockCount={batches.filter(b => b.isNearExpiry || b.isLowStock || b.currentStock <= b.minThreshold).length}
+          nearExpiryAndLowStockCount={batches.filter(b => ['near', 'expired', 'unknown'].includes(expiryState(b.expiryDate)) || b.isLowStock || b.currentStock <= b.minThreshold).length}
           coldChainTemp={coldChainState.currentTemp}
-          isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
+          isColdAlarm={temperatureAlarm(coldChainState)}
           misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
           onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
           onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
           onOpenUserGuide={() => setIsUserGuideOpen(true)}
-          onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
+          onOpenPrintableForms={() => handleOpenPrintForm(currentUserRole === 'doctor' || currentUserRole === 'nurse' ? 'EMERGENCY_BORROW_TICKET' : 'TT22_RESTOCK_PROPOSAL')}
           onOpenMedicationSafety={() => handleOpenMedicationSafety()}
         />
       </div>
 
       {/* 4. Main Workspace: Sleek Top Header + Central Clinical Dashboard */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70 print:hidden w-full">
-        <div className="flex shrink-0 items-center gap-3 border-b border-slate-300 bg-white px-3 py-2 md:hidden">
-          <button
-            type="button"
-            aria-label="Mở điều hướng"
-            aria-controls="mobile-navigation-drawer"
-            aria-expanded={isMobileSidebarOpen}
-            onClick={() => setIsMobileSidebarOpen(true)}
-            className="border border-slate-300 p-2 text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Kho Y Tế Lâm Sàng</p>
-            <p className="truncate text-sm font-semibold text-slate-900">{currentTab === 'overview' ? 'Tổng quan' : 'Không gian làm việc'}</p>
+      <div className="workspace-shell flex-1 flex flex-col h-full overflow-hidden min-w-0 print:hidden w-full">
+        <header className="workspace-topbar workspace-page-header">
+          <div className="workspace-page-identity">
+            <button type="button" className="mobile-menu-trigger md:hidden" aria-label="Mở điều hướng" aria-controls="mobile-navigation-drawer" aria-expanded={isMobileSidebarOpen} onClick={() => setIsMobileSidebarOpen(true)}><Menu size={20}/></button>
+            <h1 id="workspace-page-title">{{overview:'Tổng quan',cpoe:'Đơn thuốc',fefo:'Kho dược',coldchain:'Chuỗi lạnh'}[currentTab] || 'Không gian làm việc'}</h1>
           </div>
-        </div>
-        <main className="flex-1 flex flex-col overflow-hidden relative pt-0 md:pt-0">
+          <div className="workspace-page-utilities">
+            <span className="workspace-page-date">{new Date().toLocaleDateString('vi-VN', {day:'2-digit',month:'2-digit',year:'numeric'})}</span>
+            {!authenticatedRole && <span className="header-demo-indicator" title="Vai trò và dữ liệu mô phỏng">Mô phỏng</span>}
+            <div id="workspace-page-actions" className="workspace-page-actions" />
+          </div>
+        </header>
+        <main id="workspace-main" aria-labelledby="workspace-page-title" className="flex-1 flex flex-col overflow-hidden relative pt-0 md:pt-0">
           <section className="w-full h-full flex flex-col overflow-hidden">
+            {inventoryLoadError && (currentTab === 'overview' || currentTab === 'fefo' || currentTab === 'coldchain') && <p role="status" className="px-5 py-3 border-b border-amber-300 bg-amber-50 text-amber-950 text-sm">{inventoryLoadError}</p>}
+            {patientLoadError && (currentTab === 'overview' || currentTab === 'cpoe') && <p role="status" className="px-5 py-3 border-b border-amber-300 bg-amber-50 text-amber-950 text-sm">{patientLoadError} Danh sách người bệnh chưa khả dụng.</p>}
+            {currentTab === 'coldchain' && !coldChainReady && <p role="status" className="px-5 py-3 border-b border-amber-300 bg-amber-50 text-amber-950 text-sm">Chưa xác nhận trạng thái chuỗi lạnh từ máy chủ. Số liệu minh họa đang hiển thị chưa xác nhận lô đủ điều kiện sử dụng.</p>}
             <Dashboard
+              patients={patients}
               currentTab={currentTab}
               onTabChange={(tab) => setCurrentTab(tab)}
               currentUserRole={currentUserRole}
+              operatorName={authenticatedUsername}
               debts={debts}
               onSettleDebt={handleSettleDebt}
               onSimulateMorningReminder={handleSimulateMorningReminder}
@@ -1881,7 +1831,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
         lowStockCount={batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length}
         coldChainTemp={coldChainState.currentTemp}
-        isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
+        isColdAlarm={temperatureAlarm(coldChainState)}
         misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
       />
       {/* Mobile navigation is opened from the sidebar dock below. */}
@@ -1890,7 +1840,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         onClick={() => setIsCopilotOpen((prev) => !prev)}
         aria-label="Trợ lý AI lâm sàng"
         title="Trợ lý AI lâm sàng (⌘K / Ctrl+K)"
-        className={`fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-13 items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 px-4 py-2 text-white shadow-xl hover:shadow-2xl border-2 border-teal-500/50 hover:border-teal-400 ring-4 ring-teal-500/20 transition-all duration-200 hover:scale-105 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
+        className={`copilot-launcher fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-13 items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 px-4 py-2 text-white shadow-xl hover:shadow-2xl border-2 border-teal-500/50 hover:border-teal-400 ring-4 ring-teal-500/20 transition-all duration-200 hover:scale-105 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
       >
         <span className="relative flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
@@ -1917,7 +1867,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             pendingChatPosition.current = null;
             setIsDraggingChat(false);
           }}
-          className={`fixed z-50 flex flex-col bg-white shadow-2xl overflow-hidden print:hidden ${
+          className={`copilot-panel fixed z-50 flex flex-col bg-white shadow-2xl overflow-hidden print:hidden ${
             isCopilotExpanded
               ? 'inset-0 h-dvh w-screen max-w-none rounded-none border-0 shadow-none'
               : 'w-[calc(100vw-32px)] sm:w-[560px] md:w-[620px] lg:w-[660px] max-w-[calc(100vw-32px)] h-[min(680px,calc(100dvh-100px))] sm:h-[min(680px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] rounded-xl border border-slate-300 ring-1 ring-slate-900/10'
@@ -1980,10 +1930,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         />
 
         <ClinicalAuthModal
+          authenticatedUsername={authenticatedUsername}
           isOpen={Boolean(authRequest)}
           request={authRequest}
           currentUserRole={currentUserRole}
-          onSwitchRole={handleSelectUserRole}
+          onSwitchRole={authenticatedRole ? undefined : handleSelectUserRole}
           onClose={() => setAuthRequest(null)}
           isAudioMuted={isAudioMuted}
         />

@@ -56,6 +56,7 @@ def map_prescription_to_response(prescription: CpoePrescription, items) -> CpoeO
         doctorCertificate=prescription.doctor_certificate,
         prescribedAt=prescription.prescribed_at,
         digitalSignature=prescription.digital_signature,
+        clinicalNotes=prescription.clinical_notes or "",
         status=prescription.status,
         tt26FormType=prescription.tt26_form_type,
         receiverCccd=prescription.receiver_cccd,

@@ -62,7 +62,7 @@ export interface ClinicalAuthRequest {
   requiredRoles: UserRole[];
   requiresDualWitness?: boolean; // Yêu cầu 02 người ký (Hội đồng tiêu hủy Morphin TT 18/2026)
   dualWitnessRoles?: UserRole[];
-  onConfirm: (signer: UserProfile, witness?: UserProfile, authMethod?: 'PIN' | 'RFID_NFC') => void;
+  onConfirm: (signer: UserProfile, witness?: UserProfile, authMethod?: 'PIN' | 'RFID_NFC' | 'SESSION') => void | Promise<void>;
   onCancel?: () => void;
 }
 
@@ -79,7 +79,7 @@ export interface AuditTrailRecord {
   witnessRole?: UserRole;
   witnessName?: string;
   witnessCertificate?: string;
-  authMethod: 'PIN' | 'RFID_NFC';
-  integrityHash: string;
-  status: 'verified';
+  authMethod: 'PIN' | 'RFID_NFC' | 'SESSION';
+  integrityHash?: string;
+  status: 'verified' | 'session_simulated';
 }

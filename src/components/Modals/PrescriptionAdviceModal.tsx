@@ -17,25 +17,25 @@ import {
   buildDefaultTimeSlots
 } from '../../services/prescriptionAdviceService';
 import { AdviceMedTable } from './PrescriptionAdvice/AdviceMedTable';
-import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../services/patientService';
+import { findPatientByNameOrQuery, type PatientProfile } from '../../services/patientService';
 
 interface PrescriptionAdviceModalProps {
+  patients?: PatientProfile[];
   isOpen: boolean;
   onClose: () => void;
   order: PrescriptionOrder | null;
 }
 
-export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = ({
-  isOpen,
-  onClose,
-  order
-}) => {
-  if (!isOpen || !order) return null;
+export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (props) => {
+  if (!props.isOpen || !props.order) return null;
+  return <PrescriptionAdviceContent key={props.order.id} order={props.order} onClose={props.onClose} patients={props.patients || []}/>;
+};
 
-  const matchedPatient = findPatientByNameOrQuery(order.patientName.toLowerCase(), INITIAL_PATIENTS);
+const PrescriptionAdviceContent: React.FC<{order:PrescriptionOrder;onClose:()=>void;patients:PatientProfile[]}> = ({order,onClose,patients}) => {
+  const matchedPatient = findPatientByNameOrQuery(order.patientId || order.patientName, patients);
   const [patientEmail, setPatientEmail] = useState(order.patientEmail || matchedPatient?.email || '');
   const [patientPhone, setPatientPhone] = useState(order.patientPhone || matchedPatient?.phone || '');
-  const [generalAdvice, setGeneralAdvice] = useState('');
+  const [generalAdvice, setGeneralAdvice] = useState(order.clinicalNotes || '');
   const [gasUrl, setGasUrl] = useState(getStoredGasWebhookUrl());
   const [showConfig, setShowConfig] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
@@ -46,16 +46,17 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
 
   const initialMeds: ScheduledMedication[] = (order.items || []).map((it, i) => ({
     id: `sched-${i}`, medicationName: it.medicationName, activeIngredient: it.activeIngredient,
-    dosage: it.dosage, route: it.route || 'Đường uống', durationDays: order.daysPrescribed || 7,
+    dosage: it.dosage, frequency: it.frequency, route: it.route || '', durationDays: it.durationDays || order.daysPrescribed || 0,
     specialInstructions: it.instructions || undefined, timeSlots: buildDefaultTimeSlots(it.frequency)
   }));
 
   const advicePayload: PatientPrescriptionAdvice = {
     id: `ADV-${order.id.replace('RX-', '')}`, prescriptionId: order.id,
+    patientId: order.patientId,
     patientName: order.patientName, patientEmail, patientPhone: patientPhone || undefined, diagnosis: `${order.diagnosisIcd10} - ${order.diagnosisText}`,
-    doctorName: order.doctorName, doctorHospital: 'Bệnh Viện Đa Khoa Lâm Sàng', department: order.department,
-    createdAt: new Date().toISOString(), startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + (order.daysPrescribed || 7) * 86400000).toISOString().split('T')[0],
+    doctorName: order.doctorName, doctorHospital: order.facilityName || '', department: order.department,
+    createdAt: new Date().toISOString(), startDate: '',
+    endDate: '',
     generalDoctorAdvice: generalAdvice, medications: initialMeds, notificationStatus: 'idle', gasWebhookUrl: gasUrl
   };
 
@@ -75,7 +76,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div className="clinical-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden text-xs">
         {/* Header */}
         <div className="px-4 py-3 bg-teal-900 text-white flex items-center justify-between shrink-0">
@@ -97,7 +98,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
               <p className="text-slate-500">Mã: {order.patientId} • Bệnh: {order.diagnosisText}</p>
             </div>
             <div className="text-right">
-              <strong className="text-slate-900 text-xs">{order.doctorName?.startsWith('BS') ? order.doctorName : `BS. ${order.doctorName}`}</strong>
+              <strong className="text-slate-900 text-xs">{order.doctorName || 'Chưa ghi người kê trên nguồn'}</strong>
               <p className="text-slate-500">Khoa: {order.department} • Đơn: {order.id}</p>
             </div>
           </div>
@@ -140,7 +141,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
               placeholder="Ví dụ: 09xxxxxxxx"
               className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 text-sm focus:ring-1 focus:ring-slate-500 focus:outline-hidden"
             />
-            {smsEnabled && <p className="text-xs text-slate-700 bg-slate-50 p-2 rounded">SMS được gửi trực tiếp tới SIM điện thoại bệnh nhân (Hỗ trợ Brandname viễn thông eSMS &amp; Sandbox lâm sàng theo TT 26/2025/TT-BYT).</p>}
+            {smsEnabled && <p className="text-xs text-slate-700 bg-slate-50 p-2 rounded">SMS cần nhà cung cấp được cấu hình; phản hồi tiếp nhận chưa xác nhận tin đã đến thiết bị.</p>}
             {showConfig && (
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1 mt-1 text-[11px]">
                 <span className="font-semibold text-slate-800 block">Google Apps Script Web App URL:</span>
@@ -156,7 +157,7 @@ export const PrescriptionAdviceModal: React.FC<PrescriptionAdviceModalProps> = (
           </div>
 
           <div>
-            <h4 className="font-bold text-slate-900 mb-1.5">Lịch cữ uống thuốc trong ngày (Tự động thiết lập):</h4>
+            <h4 className="font-bold text-slate-900 mb-1.5">Chỉ định dùng thuốc và giờ dùng đã xác nhận:</h4>
             <AdviceMedTable meds={initialMeds} />
           </div>
 

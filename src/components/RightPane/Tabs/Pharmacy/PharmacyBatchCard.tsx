@@ -1,108 +1,73 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * Hàng danh mục thuốc Mobile phẳng theo chuẩn hành chính Cục QLD (<=200 LOC)
- */
-
 import React from 'react';
+import { ArrowUpRight } from 'lucide-react';
 import { InventoryBatch } from '../../../../types/pharmacy';
-import { resolvePharmacologicalGroup } from '../../../../utils/clinical/pharmacologicalClassification';
-
+import { expiryState } from '../../../ui/workspaceStatus';
+import { dispatchHoldReason } from './dispatchModel';
 interface PharmacyBatchCardProps {
   index: number;
   batch: InventoryBatch;
-  onQuickDispatch: (batch: InventoryBatch) => void;
+  onQuickDispatch?: (b: InventoryBatch) => void;
   onOpenRestock?: () => void;
-  onOpenSafetyGuide?: (medName: string) => void;
-  onSelectBatch?: (batch: InventoryBatch) => void;
+  onOpenSafetyGuide?: (name: string) => void;
+  onSelectBatch?: (b: InventoryBatch) => void;
 }
-
-export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
-  index, batch, onQuickDispatch, onOpenSafetyGuide, onSelectBatch,
-}) => {
-  const isUnderMin = batch.currentStock <= batch.minThreshold;
-  const sdk = batch.registrationNumber || batch.nationalCode || '—';
-  const pharmGroup = resolvePharmacologicalGroup(
-    batch.atcCode,
-    `${batch.itemName} ${batch.activeIngredient}`,
-    batch.pharmacologicalClass || batch.category
-  );
-
+export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({ batch, onSelectBatch, onQuickDispatch }) => {
+  const expiry = expiryState(batch.expiryDate),
+    low = batch.isLowStock || batch.currentStock <= batch.minThreshold;
+  const hold = dispatchHoldReason(batch);
   return (
-    <article className="bg-white border-b border-slate-200 px-1 py-3 space-y-2 text-sm">
-      {/* Hàng 1: STT, SĐK & Phân loại */}
-      <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
+    <article className="mobile-record" data-workspace-record>
+      <div className="mobile-record-heading">
+        <div>
           <button
             type="button"
+            data-testid={`btn-medname-${batch.id}`}
+            className="record-link"
             onClick={() => onSelectBatch?.(batch)}
-            className="font-mono text-sm font-medium text-slate-600 hover:text-slate-950 underline-offset-2 hover:underline cursor-pointer"
-            title="Xem Giấy công bố Cục QLD"
           >
-            SĐK: {sdk}
+            {batch.itemName}
           </button>
-          <span className="text-sm text-slate-500 select-none" title={`Nhóm tác dụng trị liệu: ${pharmGroup.label}`}>
-            {pharmGroup.shortLabel}
+          <span className="record-sub">
+            {batch.activeIngredient} {batch.concentration} · {batch.dosageForm}
           </span>
           {batch.isControlledSubstance && (
-            <span className="text-sm font-medium text-rose-700">
-              KSĐB
-            </span>
+            <span className="status-pill warning mt-2">Kiểm soát đặc biệt</span>
           )}
         </div>
-
-        <div className="flex items-center gap-2 font-mono text-xs">
-          <span className="font-medium text-slate-600 text-sm">
-            Lô: {batch.batchNumber}
-          </span>
-          <span className={batch.daysLeft <= 60 ? 'text-rose-600 font-bold' : 'text-slate-600 font-medium'}>
-            HSD: {batch.expiryDate} ({batch.daysLeft}d)
-          </span>
-        </div>
-      </div>
-
-      {/* Hàng 2: Tên thuốc & Hoạt chất */}
-      <div>
         <button
           type="button"
+          className="icon-action shrink-0"
+          aria-label={`Xem ${batch.itemName}`}
           onClick={() => onSelectBatch?.(batch)}
-          className="font-semibold text-lg text-slate-900 leading-snug hover:text-slate-700 hover:underline cursor-pointer text-left block underline-offset-2"
         >
-          {batch.itemName}
+          <ArrowUpRight size={16} />
         </button>
-        <p className="text-slate-600 text-sm mt-1">
-          <span className="font-semibold text-slate-500">Hoạt chất:</span> {batch.activeIngredient || '—'}
-          {batch.concentration && <span className="font-bold text-slate-800 ml-1">({batch.concentration})</span>}
-        </p>
       </div>
-
-      <div className="text-sm text-slate-600 py-2 border-y border-slate-100">{batch.dosageForm || '—'}</div>
-
-      {/* Hàng 4: Tồn kho & Thao tác */}
-      <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-100">
-        <div className="space-y-1">
-          <div className="font-mono">
-          <span className={`text-base font-semibold ${isUnderMin ? 'text-rose-700' : 'text-slate-900'}`}>
-            Tồn: {batch.currentStock} {batch.unit}
+      <div className="mobile-record-meta">
+        <div>
+          <span className="record-mono">{batch.batchNumber}</span>
+          <span className="record-sub">
+            HD: {batch.expiryDate} · {batch.warehouseLocation}
           </span>
-          <span className="text-slate-500 text-xs ml-1 font-medium">(Min: {batch.minThreshold})</span>
-          </div>
-          <div className="text-xs text-slate-500">Vị trí: <span className="text-slate-700">{batch.warehouseLocation || '—'}</span></div>
         </div>
-
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => onSelectBatch?.(batch)}
-            data-testid={`btn-doi-chung-card-${batch.id}`}
-            className="inline-flex items-center gap-1 h-8 px-2 text-slate-700 hover:text-slate-950 font-medium text-xs cursor-pointer hover:underline underline-offset-2"
-            title="Xem hồ sơ đối chứng thông tin gốc (Dược Thư 2015 & Cục QLD)"
-          >
-            <span>Chi tiết</span>
-          </button>
+        <div className="text-right shrink-0">
+          <strong className="text-sm">
+            {batch.currentStock} {batch.unit}
+          </strong>
+          <div className="mt-1">
+            {expiry === 'expired' ? (
+              <span className="status-pill danger">Hết hạn</span>
+            ) : expiry === 'near' ? (
+              <span className="status-pill warning">Cận hạn</span>
+            ) : expiry === 'unknown' ? (
+              <span className="status-pill warning">Kiểm tra hạn</span>
+            ) : null}
+            {low && <span className="status-pill warning ml-1">Tồn thấp</span>}
+          </div>
         </div>
       </div>
+      {hold && <p className="record-sub mt-3"><span className="status-pill danger mr-2">Chặn xuất</span>{hold}</p>}
+      {onQuickDispatch && <button type="button" className="button-secondary mt-3" aria-label={`Xuất lô ${batch.batchNumber}`} disabled={Boolean(hold)} onClick={() => onQuickDispatch(batch)}>Xuất kho</button>}
     </article>
   );
 };

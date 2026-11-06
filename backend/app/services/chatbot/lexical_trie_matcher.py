@@ -126,11 +126,13 @@ class DrugLexicalMatcher:
         if not self._is_loaded:
             self.load_from_db()
 
-        text_norm = text.lower()
-        text_unacc = strip_accents(text)
+        from app.services.chatbot.clinical_subject import medication_subject_text
+        subject_text = medication_subject_text(text)
+        text_norm = subject_text.lower()
+        text_unacc = strip_accents(subject_text)
         candidates: List[Tuple[int, int, str, str]] = []
 
-        for src in (text_norm, text_unacc):
+        for src, accent_folded in ((text_norm, False), (text_unacc, True)):
             n = len(src)
             for i in range(n):
                 if i > 0 and src[i-1].isalnum():
@@ -145,6 +147,14 @@ class DrugLexicalMatcher:
                             longest = (i, j + 1, node.canonical or "", node.entity_type or "")
                     j += 1
                 if longest and len(longest[2]) >= 3 and longest[2].lower() not in COMMON_EXCLUSIONS:
+                    if accent_folded:
+                        surface = unicodedata.normalize("NFC", text_norm[longest[0]:longest[1]])
+                        canonical = unicodedata.normalize("NFC", longest[2].lower())
+                        # Missing accents can be resolved; explicitly different
+                        # Vietnamese words must not be reinterpreted as drugs
+                        # (for example `cao là` is not the herbal `Cao lá`).
+                        if strip_accents(surface) != surface and surface != canonical:
+                            continue
                     candidates.append(longest)
 
         candidates.sort(key=lambda x: (x[0], -(x[1] - x[0])))

@@ -22,6 +22,8 @@ CANONICAL_COMBINED_MONOGRAPHS: dict[frozenset[str], str] = {
     frozenset(["amoxicilin", "clavulanic"]): "DTQG-0048-Amoxicillinandpotass",
     frozenset(["amoxicillin", "acid clavulanic"]): "DTQG-0048-Amoxicillinandpotass",
     frozenset(["amoxicilin", "acid clavulanic"]): "DTQG-0048-Amoxicillinandpotass",
+    frozenset(["amoxicillin", "clavulanic acid"]): "DTQG-0048-Amoxicillinandpotass",
+    frozenset(["amoxicilin", "clavulanic acid"]): "DTQG-0048-Amoxicillinandpotass",
     frozenset(["ampicillin", "sulbactam"]): "DTQG-0051-Ampicillinandsulbact",
     frozenset(["ampicilin", "sulbactam"]): "DTQG-0051-Ampicillinandsulbact",
     frozenset(["sulfamethoxazole", "trimethoprim"]): "DTQG-0170-SulfamethoxazoleTrim",
@@ -140,7 +142,7 @@ async def resolve_combination_monographs(
     canonical_mono_id = None
     for combo_set, mono_id in CANONICAL_COMBINED_MONOGRAPHS.items():
         combo_norm = frozenset(_normalize_substance(k) for k in combo_set)
-        if combo_norm.issubset(norm_set) or any(k in " ".join(norm_set) for k in combo_norm):
+        if combo_norm == norm_set:
             canonical_mono_id = mono_id
             break
 
@@ -161,25 +163,11 @@ async def resolve_combination_monographs(
 
         # Khớp chính xác INN hoặc Title
         for m in all_monos:
-            if _normalize_substance(m.inn) == ing_norm or _normalize_substance(m.title) == ing_norm:
+            source_names = {name for name in (m.inn, m.title) if name}
+            source_names.update(clean_substance_name(name) for name in tuple(source_names))
+            if ing_norm in {_normalize_substance(name) for name in source_names}:
                 matched_mono = m
                 break
-
-        # Khớp tiền tố hoặc dạng rút gọn: ưu tiên monograph dài nhất và startswith
-        if not matched_mono:
-            candidates = []
-            for m in all_monos:
-                m_norm = _normalize_substance(m.inn)
-                if len(m_norm) >= 4:
-                    if ing_norm.startswith(m_norm):
-                        candidates.append((len(m_norm), 2, m))
-                    elif m_norm.startswith(ing_norm):
-                        candidates.append((len(m_norm), 1, m))
-                    elif len(m_norm) >= 6 and m_norm in ing_norm:
-                        candidates.append((len(m_norm), 0, m))
-            if candidates:
-                candidates.sort(key=lambda x: (x[1], x[0]), reverse=True)
-                matched_mono = candidates[0][2]
 
         if matched_mono:
             component_details.append({
@@ -222,6 +210,9 @@ def build_combination_drug_profile(
     legal_bases: List[str] = []
 
     # 1. Trường hợp có Chuyên luận phối hợp chính danh (ví dụ Amoxicilin + Kali clavulanat)
+    if primary_mono and not any(str(getattr(primary_mono, field, None) or "").strip()
+                                for field in ("indications", "adult_dosage", "pediatric_dosage", "drug_interactions", "contraindications")):
+        primary_mono = None
     if primary_mono:
         source = primary_mono.source or drug.clinical_source or "Dược thư Quốc gia Việt Nam (DĐVN V)"
         legal_bases.append(source)
@@ -238,84 +229,29 @@ def build_combination_drug_profile(
             f"• **Chuyên luận Dược thư đối chứng:** **{primary_mono.title}** (Mã ATC: `{primary_mono.atc_code or 'DĐVN V'}`)\n"
             f"• **Phân loại quản lý:** **{drug.group}** ({'Thuốc kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT)' if drug.is_controlled else 'Thuốc thông thường'})\n\n"
             f"#### 2. CHỈ ĐỊNH ĐIỀU TRỊ CHUYÊN BIỆT (INDICATIONS)\n"
-            f"🎯 {format_clinical_text(primary_mono.indications or 'Theo phác đồ điều trị của Bộ Y tế.')}\n\n"
+            f"🎯 {format_clinical_text(primary_mono.indications or 'Chưa có dữ liệu chỉ định trong nguồn liên kết.')}\n\n"
             f"#### 3. LIỀU LƯỢNG & ĐƯỜNG DÙNG (DOSAGE & ADMINISTRATION)\n"
-            f"🛡️ **Liều người lớn:** {format_clinical_text(primary_mono.adult_dosage or 'Tuân thủ liều chỉ định của bác sĩ.')}\n\n"
-            f"👶 **Liều trẻ em:** {format_clinical_text(primary_mono.pediatric_dosage or 'Tính liều theo mg Amoxicilin/kg thể trọng theo hướng dẫn chuyên khoa.')}\n\n"
+            f"🛡️ **Liều người lớn:** {format_clinical_text(primary_mono.adult_dosage or 'Chưa có dữ liệu liều người lớn trong nguồn liên kết.')}\n\n"
+            f"👶 **Liều trẻ em:** {format_clinical_text(primary_mono.pediatric_dosage or 'Chưa có dữ liệu liều trẻ em trong nguồn liên kết.')}\n\n"
             f"#### 4. CHỐNG CHỈ ĐỊNH & THẬN TRỌNG LÂM SÀNG\n"
-            f"⛔ **Chống chỉ định:** {format_clinical_text(primary_mono.contraindications or 'Dị ứng với bất kỳ thành phần nào của thuốc.')}\n\n"
-            f"⚠️ **Hiệu chỉnh liều suy thận:** {format_clinical_text(primary_mono.renal_adjustment or 'Cần hiệu chỉnh khoảng cách liều theo độ thanh thải creatinin (CrCl).')}\n\n"
+            f"⛔ **Chống chỉ định:** {format_clinical_text(primary_mono.contraindications or 'Chưa có dữ liệu chống chỉ định trong nguồn liên kết.')}\n\n"
+            f"⚠️ **Hiệu chỉnh liều suy thận:** {format_clinical_text(primary_mono.renal_adjustment or 'Chưa có dữ liệu hiệu chỉnh liều trong nguồn liên kết.')}\n\n"
             f"#### 5. TÁC DỤNG KHÔNG MONG MUỐN (ADR) & TƯƠNG TÁC THUỐC\n"
-            f"⚡ **ADR:** {format_clinical_text(primary_mono.adverse_effects or 'Tiêu chảy, buồn nôn, ngoại ban, tăng men gan nhẹ thoáng qua.')}\n\n"
-            f"🔄 **Tương tác thuốc:** {format_clinical_text(primary_mono.drug_interactions or 'Thận trọng khi dùng cùng Probenecid, thuốc chống đông máu dạng uống.')}\n"
+            f"⚡ **ADR:** {format_clinical_text(primary_mono.adverse_effects or 'Chưa có dữ liệu tác dụng không mong muốn trong nguồn liên kết.')}\n\n"
+            f"🔄 **Tương tác thuốc:** {format_clinical_text(primary_mono.drug_interactions or 'Chưa có dữ liệu tương tác trong nguồn liên kết.')}\n"
         )
         return reply, citations, " • ".join(dict.fromkeys(legal_bases))
 
-    # 2. Trường hợp thuốc phối hợp nhiều hoạt chất có chuyên luận độc lập (ví dụ Paracetamol + Codein, Paracetamol + Cafein)
-    verified_components = [c for c in components if c["status"] == "verified_dtqg"]
-    unverified_components = [c for c in components if c["status"] == "unverified_in_dtqg"]
-
-    for c in verified_components:
-        mono = c["monograph"]
-        src = mono.source or drug.clinical_source or "Dược thư Quốc gia Việt Nam (DĐVN V)"
-        legal_bases.append(src)
-        citations.append(build_drug_citation(drug, mono, src))
-
-    has_controlled_ingredient = drug.is_controlled or any(
-        "codein" in c["ingredient_name"].lower() or "tramadol" in c["ingredient_name"].lower() or "morphin" in c["ingredient_name"].lower()
-        for c in components
+    # Component monographs may describe different routes and formulations.
+    # They do not establish dosing or indications for this combined product.
+    source = "CSDL đăng ký thuốc Cục Quản lý Dược"
+    reply = (
+        f"### Thông tin đăng ký chế phẩm phối hợp: {drug.brand_name}\n\n"
+        f"• SĐK: {drug.national_code}.\n"
+        f"• Thành phần công bố: {drug.active_ingredient}.\n"
+        f"• Dạng bào chế: {drug.dosage_form or 'Chưa có dữ liệu'}; đường dùng công bố: {drug.route or 'Chưa có dữ liệu'}.\n\n"
+        "Chưa có nguồn lâm sàng đúng chế phẩm phối hợp để xác nhận chỉ định, liều hoặc cách dùng. "
+        "Không áp dụng liều/cách dùng của một thành phần đơn chất, dạng tiêm hoặc dạng bào chế khác cho chế phẩm này. "
+        "Vui lòng cung cấp tờ hướng dẫn của đúng SĐK/hàm lượng để đối chiếu."
     )
-
-    profile_parts = [
-        f"### 💊 HỒ SƠ DƯỢC LÂM SÀNG THUỐC PHỐI HỢP: {drug.brand_name}\n"
-        f"*(Đối soát đa chuyên luận Dược thư Quốc gia Việt Nam DĐVN V & Cục Quản lý Dược)*\n\n---\n\n"
-        f"#### 1. THÀNH PHẦN HOẠT CHẤT & PHÂN LOẠI QUẢN LÝ\n"
-        f"• **Tên biệt dược:** **{drug.brand_name}** | **Mã SĐK (DAV):** `{drug.national_code}`\n"
-        f"• **Thành phần công bố:** **{drug.active_ingredient}**\n"
-        f"• **Hàm lượng:** {drug.concentration or 'Theo hồ sơ công bố'} | **Dạng bào chế:** {drug.dosage_form or 'Đạt chuẩn DĐVN V'}\n"
-        f"• **Phân loại quản lý:** **{'Thuốc kiểm soát đặc biệt (Opioid giảm đau gây nghiện - Thông tư 20/2017/TT-BYT)' if has_controlled_ingredient else drug.group}**\n"
-    ]
-
-    # Phân tích từng thành phần
-    profile_parts.append("\n#### 2. ĐỐI SOÁT CHUYÊN LUẬN TỪNG HOẠT CHẤT (DĐVN V)\n")
-    for idx, c in enumerate(components, 1):
-        ing_name = c["ingredient_name"]
-        if c["status"] == "verified_dtqg":
-            mono = c["monograph"]
-            profile_parts.append(
-                f"**{idx}. Hoạt chất {ing_name}** (Chuyên luận DĐVN V: *{mono.title}* - Mã ATC: `{mono.atc_code or 'DĐVN V'}`):\n"
-                f"  * **Nhóm dược lý:** {extract_concise_drug_class(mono.drug_class)}\n"
-                f"  * **Chỉ định cốt lõi:** {clean_monograph_field(mono.indications, max_chars=200)}\n"
-                f"  * **Liều chuẩn:** {clean_monograph_field(mono.adult_dosage, max_chars=200)}\n"
-                f"  * **Cảnh báo an toàn chính:** {clean_monograph_field(mono.contraindications, max_chars=180)}\n"
-            )
-        else:
-            profile_parts.append(
-                f"**{idx}. Hoạt chất {ing_name}:**\n"
-                f"  * ℹ️ {c['note']}\n"
-            )
-
-    # Khuyến cáo an toàn kép và phối hợp
-    profile_parts.append(
-        "#### 3. NGUYÊN TẮC AN TOÀN LÂM SÀNG & KHUYẾN CÁO PHỐI HỢP\n"
-    )
-    if any("codein" in c["ingredient_name"].lower() for c in components):
-        profile_parts.append(
-            "⚠️ **Cảnh báo Opioid (Codein phosphat):**\n"
-            "• Chống chỉ định tuyệt đối cho trẻ em dưới 12 tuổi và phụ nữ đang cho con bú.\n"
-            "• Nguy cơ ức chế hô hấp nghiêm trọng ở người bệnh mang kiểu gen chuyển hóa siêu nhanh qua enzym CYP2D6.\n"
-            "• Không dùng kéo dài để tránh tình trạng lệ thuộc thuốc và nghiện thuốc.\n"
-        )
-    if any("paracetamol" in c["ingredient_name"].lower() for c in components):
-        profile_parts.append(
-            "⚠️ **Cảnh báo Liều trần Paracetamol:**\n"
-            "• Tổng liều Paracetamol từ mọi nguồn không được vượt quá **4000 mg (4g)/ngày** ở người lớn để phòng ngừa hoại tử gan cấp.\n"
-            "• Không uống cùng lúc với các chế phẩm chứa paracetamol khác (như cảm cúm, giảm đau đơn thuần).\n"
-        )
-    if any("cafein" in c["ingredient_name"].lower() or "caffeine" in c["ingredient_name"].lower() for c in components):
-        profile_parts.append(
-            "☕ **Lưu ý Cafein:** Có tác dụng kích thích hệ thần kinh trung ương; tránh dùng vào buổi tối để phòng ngừa mất ngủ, bồn chồn, tim đập nhanh.\n"
-        )
-
-    legal_basis_str = " • ".join(dict.fromkeys(legal_bases)) if legal_bases else "CSDL Cục Quản lý Dược & Dược Thư Quốc Gia Việt Nam"
-    return "".join(profile_parts), citations, legal_basis_str
+    return reply, [build_drug_citation(drug, None, source)], source

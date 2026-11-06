@@ -46,6 +46,13 @@ def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
 
 def _filter_supported_chunks(query: str, retrieved_chunks: list[RetrievedChunk], citations: list[RagCitation]) -> tuple[list[RetrievedChunk], list[RagCitation]]:
     supported = [chunk for chunk in retrieved_chunks if _has_evidence_overlap(query, chunk)]
+    from app.services.chatbot.clinical_subject import is_symptom_consultation, supports_symptom_subject, is_general_disease_consultation, supports_disease_subject
+    if is_symptom_consultation(query):
+        supported = [item for item in supported if supports_symptom_subject(
+            query, item.chunk.title, item.chunk.source_doc, item.chunk.entity_type)]
+    if is_general_disease_consultation(query):
+        supported = [item for item in supported if supports_disease_subject(
+            query, item.chunk.title, item.chunk.source_doc, item.chunk.content, item.chunk.entity_type)]
     supported_sections = {f"{item.chunk.legal_basis}_{item.chunk.page_or_section}" for item in supported}
     supported_citations = [citation for citation in citations if f"{citation.legal_basis}_{citation.section}" in supported_sections]
     return supported, supported_citations
@@ -93,14 +100,6 @@ def format_grounded_answer(
     llm_generated_text: str | None = None
 ) -> RagResult:
     retrieved_chunks, citations = _filter_supported_chunks(query, retrieved_chunks, citations)
-    if not retrieved_chunks:
-        return RagResult(
-            query=query,
-            answer="Chưa tìm thấy tài liệu đủ phù hợp để trả lời chính xác câu hỏi này. Vui lòng nêu rõ tên thuốc, nội dung cần tra cứu hoặc văn bản liên quan.",
-            citations=[], retrieved_chunks=[], kg_entities=[],
-            confidence_score=0.1, legal_basis="", rag_grounded=False,
-        )
-
     if retrieved_chunks and all(r.chunk.entity_type == "ddi" for r in retrieved_chunks):
         asks_about_interactions = any(term in query.casefold() for term in (
             "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
@@ -109,6 +108,14 @@ def format_grounded_answer(
         if not asks_about_interactions:
             retrieved_chunks = []
             citations = []
+
+    if not retrieved_chunks:
+        return RagResult(
+            query=query,
+            answer="Chưa tìm thấy tài liệu đủ phù hợp để trả lời chính xác câu hỏi này. Vui lòng nêu rõ tên thuốc, nội dung cần tra cứu hoặc văn bản liên quan.",
+            citations=[], retrieved_chunks=[], kg_entities=[],
+            confidence_score=0.1, legal_basis="", rag_grounded=False,
+        )
 
     if llm_generated_text and len(llm_generated_text.strip()) > 30:
         clean_text = llm_generated_text.strip()

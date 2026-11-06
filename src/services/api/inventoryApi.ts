@@ -6,7 +6,6 @@
 
 import { apiRequest } from './client';
 import { InventoryBatch } from '../../types/clinical';
-import { INITIAL_INVENTORY_BATCHES } from '../../data/pharmacy/allBatches';
 
 interface BackendBatch {
   id: string;
@@ -23,6 +22,12 @@ interface BackendBatch {
   is_near_expiry: boolean;
   is_low_stock: boolean;
   is_quarantined?: boolean;
+  cold_chain_state_id?: number | null;
+  cold_storage_link_verified?: boolean;
+  cold_storage_required?: boolean;
+  cold_storage_unknown_reason?: string | null;
+  is_dispatchable?: boolean;
+  dispatch_hold_reason?: string | null;
   national_code?: string;
   registration_number?: string;
   active_ingredient?: string;
@@ -42,40 +47,30 @@ interface BackendBatch {
 }
 
 function mapBackendToBatch(b: BackendBatch): InventoryBatch {
-  const master = INITIAL_INVENTORY_BATCHES.find(
-    (m) =>
-      m.batchNumber === b.batch_number ||
-      m.id === b.id ||
-      m.itemName.toLowerCase().includes(b.item_name.toLowerCase().slice(0, 15))
-  );
-
   return {
     id: b.id,
-    itemCode: master?.itemCode || b.batch_number,
+    itemCode: b.batch_number,
     itemName: b.item_name,
-    nationalCode: b.national_code || master?.nationalCode,
-    registrationNumber: b.registration_number || master?.registrationNumber,
-    activeIngredient: b.active_ingredient || master?.activeIngredient,
-    concentration: b.concentration || master?.concentration,
-    dosageForm: b.dosage_form || master?.dosageForm,
-    manufacturer: b.manufacturer || master?.manufacturer,
-    country: b.country || master?.country,
-    packagingSpec: b.packaging_spec || master?.packagingSpec,
-    standardPharmacopeia: b.standard_pharmacopeia || master?.standardPharmacopeia,
-    shelfLife: b.shelf_life || master?.shelfLife,
-    manufacturerAddress: b.manufacturer_address || master?.manufacturerAddress,
-    applicantName: b.applicant_name || master?.applicantName,
-    applicantAddress: b.applicant_address || master?.applicantAddress,
-    applicantCountry: b.applicant_country || master?.applicantCountry,
-    approvalDecision: b.approval_decision || master?.approvalDecision,
-    route: b.route || master?.route,
-    hdsdPath: master?.hdsdPath,
-    labelPath: master?.labelPath,
-    isControlledSubstance: master?.isControlledSubstance ?? b.category.includes('nghiện'),
+    nationalCode: b.national_code,
+    registrationNumber: b.registration_number,
+    activeIngredient: b.active_ingredient,
+    concentration: b.concentration,
+    dosageForm: b.dosage_form,
+    manufacturer: b.manufacturer,
+    country: b.country,
+    packagingSpec: b.packaging_spec,
+    standardPharmacopeia: b.standard_pharmacopeia,
+    shelfLife: b.shelf_life,
+    manufacturerAddress: b.manufacturer_address,
+    applicantName: b.applicant_name,
+    applicantAddress: b.applicant_address,
+    applicantCountry: b.applicant_country,
+    approvalDecision: b.approval_decision,
+    route: b.route,
+    isControlledSubstance: b.category.includes('nghiện'),
     category: b.category as InventoryBatch['category'],
-    commodityType: master?.commodityType || (b.category.includes('Vật tư') ? 'medical_supply' : 'medication'),
+    commodityType: (b.category.includes('Vật tư') ? 'medical_supply' : 'medication'),
     warehouseType:
-      master?.warehouseType ||
       (b.warehouse_location.includes('Ngoại Trú')
         ? 'outpatient_pharmacy'
         : b.warehouse_location.includes('Cấp Cứu') || b.warehouse_location.includes('Kho Lạnh') || b.warehouse_location.includes('Tủ')
@@ -89,20 +84,30 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
     minThreshold: b.min_threshold,
     maxThreshold: b.max_threshold,
     isLowStock: b.is_low_stock,
+    isQuarantined: b.is_quarantined ?? false,
+    coldChainStateId: b.cold_chain_state_id,
+    coldStorageLinkVerified: b.cold_storage_link_verified,
+    coldStorageRequired: b.cold_storage_required,
+    coldStorageUnknownReason: b.cold_storage_unknown_reason,
+    isDispatchable: b.is_dispatchable,
+    dispatchHoldReason: b.dispatch_hold_reason,
     unit: b.unit,
     warehouseLocation: b.warehouse_location,
-    storageCondition: master?.storageCondition || 'Tiêu chuẩn bảo quản GSP',
+    storageCondition: 'Chưa có dữ liệu điều kiện bảo quản',
     priorityOrder: b.is_near_expiry ? 1 : 2,
   };
 }
 
 export const inventoryApi = {
+  async createRestockProposal(batchIds: string[], pharmacistName: string): Promise<{ message: string; proposed_count: number }> {
+    return apiRequest('/inventory/restock-proposal', {
+      method: 'POST',
+      body: JSON.stringify({ batch_ids: batchIds, pharmacist_name: pharmacistName }),
+    });
+  },
   async fetchInventoryBatches(): Promise<InventoryBatch[]> {
     const raw = await apiRequest<BackendBatch[]>('/inventory/batches');
-    const mapped = raw.map(mapBackendToBatch);
-    const mappedIds = new Set(mapped.map((b) => b.id));
-    const extra = INITIAL_INVENTORY_BATCHES.filter((b) => !mappedIds.has(b.id));
-    return [...mapped, ...extra];
+    return raw.map(mapBackendToBatch);
   },
 
   async dispatchBatch(batchId: string, quantity: number, targetWard: string): Promise<InventoryBatch> {
@@ -110,9 +115,6 @@ export const inventoryApi = {
       method: 'POST',
       body: JSON.stringify({
         quantity,
-        target_ward: targetWard,
-        dispatcher_name: 'DS. Nguyễn Hoàng Anh',
-        auth_method: 'PASSWORD',
       }),
     });
     return mapBackendToBatch(res);

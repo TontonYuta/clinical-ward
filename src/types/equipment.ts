@@ -78,6 +78,8 @@ export interface VaccineBatchItem {
 }
 
 export interface ColdChainMonitorState {
+  storageId?: number;
+  outageMinutes?: number;
   storageName: string;
   currentTemp: number;
   currentHumidity: number;

@@ -34,6 +34,9 @@ export default defineConfig(() => {
       },
     },
     server: {
+      host: '0.0.0.0',
+      port: 3000,
+      strictPort: true,
       proxy: {
         '/api-dav': {
           target: 'https://dichvucong.dav.gov.vn',
@@ -55,6 +58,7 @@ export default defineConfig(() => {
       },
     },
     preview: {
+      host: '0.0.0.0',
       proxy: {
         '/api': {
           target: 'http://localhost:8000',

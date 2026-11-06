@@ -5,7 +5,7 @@ Router Quản lý Hồ Sơ Bệnh Nhân (Patient Profiles & Clinical EHR) (<=200
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.patient import PatientProfile, PrescriptionAdviceRecord
@@ -43,8 +43,13 @@ async def get_patient_detail(patient_id: str, db: AsyncSession = Depends(get_db)
     patient = res.scalar_one_or_none()
     if not patient:
         # Tìm thử theo tên không phân biệt hoa thường
-        res_name = await db.execute(select(PatientProfile).where(PatientProfile.full_name.ilike(f"%{patient_id}%")))
-        patient = res_name.scalars().first()
+        res_name = await db.execute(select(PatientProfile).where(
+            func.lower(PatientProfile.full_name) == patient_id.strip().lower()
+        ).limit(2))
+        matches = res_name.scalars().all()
+        if len(matches) > 1:
+            raise HTTPException(status_code=409, detail="Tên trùng nhiều hồ sơ; chọn đúng mã bệnh nhân")
+        patient = matches[0] if matches else None
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Không tìm thấy bệnh nhân mã {patient_id}")
 
@@ -69,7 +74,7 @@ async def create_or_update_patient(payload: PatientProfileModel, db: AsyncSessio
     res = await db.execute(select(PatientProfile).where(PatientProfile.id == payload.id))
     existing = res.scalar_one_or_none()
     if existing:
-        for k, v in payload.model_dump().items():
+        for k, v in payload.model_dump(exclude_unset=True).items():
             setattr(existing, k, v)
         await db.commit()
         await db.refresh(existing)

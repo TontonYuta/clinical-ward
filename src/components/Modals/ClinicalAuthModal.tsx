@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -24,6 +24,7 @@ import {
 import { UserRole, UserProfile, ClinicalAuthRequest } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
 import { clinicalAudio } from '../../utils/audio';
+import { SessionActionConfirmation } from './SessionActionConfirmation';
 
 interface ClinicalAuthModalProps {
   isOpen: boolean;
@@ -32,9 +33,14 @@ interface ClinicalAuthModalProps {
   onSwitchRole?: (role: UserRole) => void;
   onClose: () => void;
   isAudioMuted?: boolean;
+  authenticatedUsername?: string;
 }
 
-export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
+export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = (props) => props.authenticatedUsername
+  ? <SessionActionConfirmation isOpen={props.isOpen} request={props.request} currentUserRole={props.currentUserRole} username={props.authenticatedUsername} onClose={props.onClose}/>
+  : <DemoClinicalAuthModal {...props}/>;
+
+const DemoClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
   isOpen,
   request,
   currentUserRole,
@@ -52,8 +58,14 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
   const [rfidSuccess, setRfidSuccess] = useState<boolean>(false);
   const [showDemoPin, setShowDemoPin] = useState<boolean>(false);
 
+  const pendingTimer = useRef<number | null>(null);
+  const operationVersion = useRef(0);
+  const verifyingRef = useRef(false);
+
   // Sync state when opened or request changes
   useEffect(() => {
+    operationVersion.current++;
+    verifyingRef.current = false;
     if (isOpen && request) {
       // Always start with the active logged-in role to evaluate RBAC compliance
       setSelectedSignerRole(currentUserRole);
@@ -71,6 +83,12 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
       setIsVerifying(false);
       setRfidSuccess(false);
     }
+    return () => {
+      operationVersion.current++;
+      verifyingRef.current = false;
+      if (pendingTimer.current !== null) window.clearTimeout(pendingTimer.current);
+      pendingTimer.current = null;
+    };
   }, [isOpen, request, currentUserRole]);
 
   if (!isOpen || !request) return null;
@@ -88,32 +106,64 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
     setErrorMessage(null);
   };
 
-  // RFID tap simulation handler
-  const handleSimulateRfidTap = () => {
-    if (!isSignerAuthorized) {
-      setErrorMessage(`Vai trò ${currentSigner.roleName} không có thẩm quyền ký duyệt thao tác này theo quy định.`);
-      if (!isAudioMuted) clinicalAudio.playAuthDeniedBeep();
-      return;
-    }
-
-    if (!isAudioMuted) {
-      clinicalAudio.playBadgeTapBeep();
-    }
-    setRfidSuccess(true);
+  const executeAfterConfirmation = (method: 'PIN' | 'RFID_NFC') => {
+    if (verifyingRef.current) return;
+    verifyingRef.current = true;
     setIsVerifying(true);
     setErrorMessage(null);
+    const version = operationVersion.current;
+    pendingTimer.current = window.setTimeout(async () => {
+      pendingTimer.current = null;
+      if (version !== operationVersion.current) return;
+      try {
+        await request.onConfirm(currentSigner, request.requiresDualWitness ? currentWitness : undefined, method);
+        if (version !== operationVersion.current) return;
+        if (!isAudioMuted) clinicalAudio.playSuccessChime();
+        onClose();
+      } catch (error) {
+        if (version === operationVersion.current) {
+          setErrorMessage(error instanceof Error ? error.message : 'Không thực hiện được thao tác. Vui lòng thử lại.');
+        }
+      } finally {
+        if (version === operationVersion.current) {
+          verifyingRef.current = false;
+          setIsVerifying(false);
+        }
+      }
+    }, method === 'PIN' ? 500 : 700);
+  };
 
-    window.setTimeout(() => {
-      setIsVerifying(false);
-      if (!isAudioMuted) clinicalAudio.playSuccessChime();
-      request.onConfirm(currentSigner, request.requiresDualWitness ? currentWitness : undefined, 'RFID_NFC');
-      onClose();
-    }, 700);
+  const validateWitness = () => {
+    if (!request.requiresDualWitness) return true;
+    if (!currentWitness || selectedWitnessRole === selectedSignerRole ||
+        (request.dualWitnessRoles && !request.dualWitnessRoles.includes(selectedWitnessRole))) {
+      setErrorMessage('Chọn người chứng kiến độc lập thuộc vai trò được yêu cầu.');
+      return false;
+    }
+    if (witnessPinInput.trim() !== currentWitness.pinCode) {
+      setErrorMessage(`Mã PIN của người chứng kiến (${currentWitness.name}) không chính xác. Vui lòng kiểm tra lại.`);
+      return false;
+    }
+    return true;
+  };
+
+  // RFID is a local demonstration; the second witness still confirms independently.
+  const handleSimulateRfidTap = () => {
+    if (verifyingRef.current) return;
+    if (!isSignerAuthorized) {
+      setErrorMessage(`Vai trò ${currentSigner.roleName} không có thẩm quyền cho thao tác này.`);
+      return;
+    }
+    if (!validateWitness()) return;
+    if (!isAudioMuted) clinicalAudio.playBadgeTapBeep();
+    setRfidSuccess(true);
+    executeAfterConfirmation('RFID_NFC');
   };
 
   // Submit PIN verification handler
   const handleVerifyAndExecute = (e: React.FormEvent) => {
     e.preventDefault();
+    if (verifyingRef.current) return;
 
     if (!isSignerAuthorized) {
       setErrorMessage(`Vai trò ${currentSigner.roleName} không đủ thẩm quyền theo quy định.`);
@@ -128,33 +178,12 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
       return;
     }
 
-    // Validate dual-witness PIN if required
-    if (request.requiresDualWitness) {
-      if (selectedWitnessRole === selectedSignerRole) {
-        setErrorMessage('Người chứng kiến thứ hai phải là nhân sự y tế độc lập khác với người ký chính (TT 20/2017).');
-        if (!isAudioMuted) clinicalAudio.playAuthDeniedBeep();
-        return;
-      }
-      if (witnessPinInput.trim() !== currentWitness.pinCode) {
-        setErrorMessage(`Mã PIN của người chứng kiến (${currentWitness.name}) không chính xác. Vui lòng kiểm tra lại.`);
-        if (!isAudioMuted) clinicalAudio.playAuthDeniedBeep();
-        return;
-      }
-    }
-
-    setIsVerifying(true);
-    setErrorMessage(null);
-
-    window.setTimeout(() => {
-      setIsVerifying(false);
-      if (!isAudioMuted) clinicalAudio.playSuccessChime();
-      request.onConfirm(currentSigner, request.requiresDualWitness ? currentWitness : undefined, 'PIN');
-      onClose();
-    }, 500);
+    if (!validateWitness()) return;
+    executeAfterConfirmation('PIN');
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Xác thực chữ ký số lâm sàng" className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div role="dialog" aria-modal="true" aria-label="Xác thực chữ ký số lâm sàng" className="clinical-modal-overlay fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-lg shadow-xl border border-slate-200 max-w-xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[92vh]">
         {/* Header */}
         <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
@@ -303,7 +332,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                     className="bg-white border border-purple-300 rounded px-2 py-0.5 text-xs font-bold text-slate-800 cursor-pointer shadow-2xs"
                   >
                     {Object.values(USER_PROFILES)
-                      .filter(p => p.role !== selectedSignerRole)
+                      .filter(p => p.role !== selectedSignerRole && (!request.dualWitnessRoles || request.dualWitnessRoles.includes(p.role)))
                       .map((prof) => (
                         <option key={prof.role} value={prof.role}>
                           {prof.name} ({prof.roleName})
@@ -325,7 +354,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                     CCHN: {currentWitness.practiceCertificate} · PIN xác thực: <strong className="text-purple-700">{showDemoPin ? currentWitness.pinCode : '••••'}</strong>
                   </p>
                 </div>
-                {authMethod === 'PIN' && (
+                {(
                   <div className="w-full sm:w-28">
                     <input
                       type="password"
@@ -518,7 +547,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
           <div className="border-t border-slate-200 pt-3 flex items-start gap-2 text-[10px] text-slate-500">
             <Lock className="w-3.5 h-3.5 text-teal-700 shrink-0 mt-0.5" />
             <span>
-              Chữ ký điện tử y tế có giá trị pháp lý theo Nghị định 130/2018/NĐ-CP. Thao tác được tự động lưu trữ vào hồ sơ theo dõi lâm sàng của bệnh viện để bảo đảm an toàn người bệnh.
+              PIN và chạm thẻ trong giao diện này là mô phỏng xác nhận thao tác. Chưa tích hợp dịch vụ xác thực nhân sự hoặc chữ ký số.
             </span>
           </div>
         </div>

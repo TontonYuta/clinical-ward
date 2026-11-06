@@ -32,10 +32,10 @@ class PrescriptionAdviceRecord(Base):
     patient_name: Mapped[str] = mapped_column(String, nullable=False)
     patient_email: Mapped[str] = mapped_column(String, nullable=False)
     patient_phone: Mapped[str] = mapped_column(String, nullable=True)
-    diagnosis: Mapped[str] = mapped_column(String, default="Điều trị ngoại trú")
-    doctor_name: Mapped[str] = mapped_column(String, default="BS.CKII Trần Văn Hùng")
-    doctor_hospital: Mapped[str] = mapped_column(String, default="Bệnh Viện Đa Khoa Lâm Sàng")
-    department: Mapped[str] = mapped_column(String, default="Khoa Khám Bệnh")
+    diagnosis: Mapped[str] = mapped_column(String, default="")
+    doctor_name: Mapped[str] = mapped_column(String, default="")
+    doctor_hospital: Mapped[str] = mapped_column(String, default="")
+    department: Mapped[str] = mapped_column(String, default="")
     start_date: Mapped[str] = mapped_column(String, nullable=True)
     end_date: Mapped[str] = mapped_column(String, nullable=True)
     general_doctor_advice: Mapped[str] = mapped_column(Text, nullable=False)
@@ -43,4 +43,15 @@ class PrescriptionAdviceRecord(Base):
     notification_status: Mapped[str] = mapped_column(String, default="idle")
     gas_webhook_url: Mapped[str] = mapped_column(String, nullable=True)
     email_sent_at: Mapped[str] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class AdviceDeliveryAttempt(Base):
+    __tablename__ = "advice_delivery_attempts"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    advice_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    channel: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    provider: Mapped[str | None] = mapped_column(String, nullable=True)
+    error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

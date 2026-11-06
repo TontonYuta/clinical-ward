@@ -66,6 +66,13 @@ export interface InventoryBatch {
   minThreshold: number; // Định mức an toàn tối thiểu (VBHN 07/VBHN-BYT)
   maxThreshold: number;
   isLowStock: boolean;
+  isQuarantined?: boolean;
+  coldChainStateId?: number | null;
+  coldStorageLinkVerified?: boolean;
+  coldStorageRequired?: boolean;
+  coldStorageUnknownReason?: string | null;
+  isDispatchable?: boolean;
+  dispatchHoldReason?: string | null;
   isControlledSubstance?: boolean; // Thuốc kiểm soát đặc biệt (TT 18/2026/TT-BYT)
   nationalCode?: string; // Mã định danh Quốc gia / SĐK Dược Cục QLD (VD: VD-31291-18)
   registrationNumber?: string; // Số đăng ký lưu hành

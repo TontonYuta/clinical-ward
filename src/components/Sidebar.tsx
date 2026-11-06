@@ -66,15 +66,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`h-full flex flex-col shrink-0 bg-white border-r border-slate-200/90 z-30 transition-all duration-200 select-none ${
-        isCollapsed ? 'w-16' : 'w-72 max-w-[85vw] md:w-70'
+      className={`clinical-sidebar h-full flex flex-col shrink-0 z-30 transition-all duration-200 select-none ${
+        isCollapsed ? 'is-collapsed' : ''
       }`}
     >
       <SidebarHeader isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} onCloseMobile={onCloseMobile} />
 
       <div
         data-testid="clinical-nav-tabs"
-        className="flex-1 overflow-y-auto px-2.5 py-3.5 space-y-4 scrollbar-none"
+        className="flex-1 overflow-y-auto pb-3 thin-scrollbar"
       >
         <SidebarNavLinks
           currentTab={currentTab}
@@ -99,6 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onOpenPrintableForms={onOpenPrintableForms}
           onOpenMedicationSafety={onOpenMedicationSafety}
         />
+        {!isCollapsed && <p className="sidebar-note">Thông tin đúng lúc.<br/>Tập trung vào điều cần làm.</p>}
       </div>
 
       <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} isAuthenticated={isAuthenticated} username={username} fontScale={fontScale} onFontScaleChange={onFontScaleChange} onCloseMobile={onCloseMobile} />

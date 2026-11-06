@@ -6,10 +6,12 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.patient import PrescriptionAdviceRecord
-from app.services.advice_notifier import dispatch_email_notification, dispatch_sms_notification
+from app.services.advice_delivery import deliver_once
+from app.services.advice_notifier import dispatch_email_notification, dispatch_sms_notification, normalize_advice_phone
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/prescription-advice", tags=["Dặn Dò Bác Sĩ & Nhắc Uống Thuốc"])
@@ -18,9 +20,9 @@ class MedicationTimeSlotModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     id: str = "morning"
     label: str = "Sáng"
-    time: str = "07:00"
-    dosage_text: str = Field(default="1 viên", alias="dosageText")
-    meal_relation: str = Field(default="Sau khi ăn 15-30 phút", alias="mealRelation")
+    time: str = ""
+    dosage_text: str = Field(default="", alias="dosageText")
+    meal_relation: str = Field(default="", alias="mealRelation")
     note: Optional[str] = None
 
 class ScheduledMedicationModel(BaseModel):
@@ -28,9 +30,10 @@ class ScheduledMedicationModel(BaseModel):
     id: Optional[str] = "med-1"
     medication_name: str = Field(..., alias="medicationName")
     active_ingredient: Optional[str] = Field(None, alias="activeIngredient")
-    dosage: str = "500mg"
-    route: str = "Đường uống"
-    duration_days: int = Field(default=7, alias="durationDays")
+    dosage: str = ""
+    route: str = ""
+    duration_days: int = Field(default=0, ge=0, alias="durationDays")
+    frequency: Optional[str] = None
     time_slots: List[MedicationTimeSlotModel] = Field(default_factory=list, alias="timeSlots")
     special_instructions: Optional[str] = Field(None, alias="specialInstructions")
 
@@ -38,14 +41,14 @@ class PatientPrescriptionAdviceModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     id: str
     prescription_id: Optional[str] = Field(None, alias="prescriptionId")
-    patient_id: Optional[str] = Field("BN-8820", alias="patientId")
+    patient_id: str = Field(..., alias="patientId", min_length=1)
     patient_name: str = Field(..., alias="patientName")
     patient_email: str = Field(..., alias="patientEmail")
     patient_phone: Optional[str] = Field(None, alias="patientPhone")
-    diagnosis: Optional[str] = "Theo dõi điều trị ngoại trú"
-    doctor_name: str = Field(default="Bác sĩ điều trị", alias="doctorName")
-    doctor_hospital: Optional[str] = Field(default="Bệnh Viện Đa Khoa Lâm Sàng", alias="doctorHospital")
-    department: Optional[str] = "Khoa Khám Bệnh"
+    diagnosis: Optional[str] = ""
+    doctor_name: str = Field(default="", alias="doctorName")
+    doctor_hospital: Optional[str] = Field(default="", alias="doctorHospital")
+    department: Optional[str] = ""
     start_date: Optional[str] = Field(None, alias="startDate")
     end_date: Optional[str] = Field(None, alias="endDate")
     general_doctor_advice: str = Field(
@@ -95,63 +98,87 @@ async def save_prescription_advice(payload: PatientPrescriptionAdviceModel, db: 
     existing = res.scalar_one_or_none()
     meds_json = json.dumps([m.model_dump(by_alias=True) for m in payload.medications], ensure_ascii=False)
     if existing:
+        if existing.patient_id != payload.patient_id:
+            raise HTTPException(status_code=409, detail="Mã dặn dò đã thuộc hồ sơ khác; tạo mã dặn dò mới")
+        existing.prescription_id = payload.prescription_id
+        existing.doctor_hospital = payload.doctor_hospital or ""
+        existing.department = payload.department or ""
+        existing.start_date = payload.start_date
+        existing.end_date = payload.end_date
         existing.patient_name = payload.patient_name
         existing.patient_email = payload.patient_email
         existing.patient_phone = payload.patient_phone
-        existing.diagnosis = payload.diagnosis
+        existing.diagnosis = payload.diagnosis or ""
         existing.doctor_name = payload.doctor_name
         existing.general_doctor_advice = payload.general_doctor_advice
         existing.medications_json = meds_json
         existing.gas_webhook_url = payload.gas_webhook_url
-        existing.notification_status = payload.notification_status or existing.notification_status
+        # Notification outcomes are server-owned; saving a draft cannot reset or assert delivery.
         await db.commit()
         await db.refresh(existing)
         return payload
 
     record = PrescriptionAdviceRecord(
         id=payload.id, prescription_id=payload.prescription_id,
-        patient_id=payload.patient_id or "BN-8820", patient_name=payload.patient_name,
+        patient_id=payload.patient_id, patient_name=payload.patient_name,
         patient_email=payload.patient_email, patient_phone=payload.patient_phone,
-        diagnosis=payload.diagnosis or "Theo dõi điều trị ngoại trú",
-        doctor_name=payload.doctor_name or "BS.CKII Trần Văn Hùng",
-        doctor_hospital=payload.doctor_hospital or "Bệnh Viện Đa Khoa Lâm Sàng",
-        department=payload.department or "Khoa Khám Bệnh", start_date=payload.start_date,
+        diagnosis=payload.diagnosis or "",
+        doctor_name=payload.doctor_name or "",
+        doctor_hospital=payload.doctor_hospital or "",
+        department=payload.department or "", start_date=payload.start_date,
         end_date=payload.end_date, general_doctor_advice=payload.general_doctor_advice,
-        medications_json=meds_json, notification_status=payload.notification_status or "idle",
+        medications_json=meds_json, notification_status="idle",
         gas_webhook_url=payload.gas_webhook_url
     )
     db.add(record)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Hồ sơ dặn dò vừa được tạo ở yêu cầu khác; tải lại trước khi gửi")
     return payload
 
 @router.post("/send-email", response_model=SendAdviceResponse)
 async def send_medication_advice_email(payload: PatientPrescriptionAdviceModel, db: AsyncSession = Depends(get_db)):
     if payload.send_email and (not payload.patient_email or "@" not in payload.patient_email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Địa chỉ email không hợp lệ")
-    if payload.send_sms and not payload.patient_phone:
-        raise HTTPException(status_code=400, detail="Cần số điện thoại hợp lệ để gửi SMS")
+    if payload.send_sms:
+        normalize_advice_phone(payload.patient_phone)
+
+    # Validate ownership before any external side effect, even for direct API calls.
+    stored = await db.get(PrescriptionAdviceRecord, payload.id)
+    if stored is not None and stored.patient_id != payload.patient_id:
+        raise HTTPException(status_code=409, detail="Mã dặn dò thuộc hồ sơ bệnh nhân khác; chưa gửi thông báo")
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     channels: list[str] = []
 
-    if payload.send_email:
-        await dispatch_email_notification(payload, channels, httpx_cls=httpx.AsyncClient)
-    if payload.send_sms:
-        await dispatch_sms_notification(payload, db, channels)
-
-    if not channels:
+    if not payload.send_email and not payload.send_sms:
         raise HTTPException(status_code=400, detail="Chọn ít nhất một kênh gửi email hoặc SMS")
+    if stored is None:
+        await save_prescription_advice(payload, db)
+    record = await db.get(PrescriptionAdviceRecord, payload.id)
 
-    res = await db.execute(select(PrescriptionAdviceRecord).where(PrescriptionAdviceRecord.id == payload.id))
-    record = res.scalar_one_or_none()
-    if record:
+    if payload.send_email:
+        async def email(providers):
+            await dispatch_email_notification(payload, providers, httpx_cls=httpx.AsyncClient)
+        provider, dispatched = await deliver_once(payload, "email", db, email)
+        channels.append(provider)
+        record.notification_status = "partial" if payload.send_sms else "sent"
+        if dispatched:
+            record.email_sent_at = now_iso
+        await db.commit()
+    if payload.send_sms:
+        async def sms(providers):
+            await dispatch_sms_notification(payload, db, providers)
+        provider, _ = await deliver_once(payload, "sms", db, sms)
+        channels.append(provider)
         record.notification_status = "sent"
-        record.email_sent_at = now_iso
         await db.commit()
 
     targets = [payload.patient_email if payload.send_email else None, payload.patient_phone if payload.send_sms else None]
     return SendAdviceResponse(
         success=True,
-        message=f"Đã gửi dặn dò qua {' và '.join(channels)} thành công tới {' / '.join(x for x in targets if x)}",
-        timestamp=now_iso, email_sent_to=payload.patient_email, provider="+".join(channels)
+        message=f"Dịch vụ gửi đã tiếp nhận thành công yêu cầu dặn dò cho {' / '.join(x for x in targets if x)}. Chưa xác nhận thông báo đã đến người nhận.",
+        timestamp=now_iso, email_sent_to=payload.patient_email if payload.send_email else "", provider="+".join(channels)
     )

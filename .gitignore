@@ -55,10 +55,16 @@ data/vietnam_drug_registry/dav_master_registry.json
 # Archive folder for filtered junk, mock & unverified files
 TEMP/
 
-# Heavy PDF documents (Keep strictly in local workspace only)
+# PDF downloads remain local except the exact, verified application source set.
 *.pdf
 **/*.pdf
 !public/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf
+!public/pdf/Thong_Tu_26_2025_TT_BYT_Ke_Don_Thuoc.pdf
+!public/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf
+!public/pdf/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf
+!public/pdf/Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf
+!public/pdf/Thong_Tu_22_2011_TT_BYT_Khoa_Duoc_Benh_Vien.pdf
+!public/pdf/Thong_Tu_23_2011_TT_BYT_Huong_Dan_Su_Dung_Thuoc.pdf
 !docs/references/tt26_2025/*.pdf
 
 # Local database snapshots and generated audit artifacts

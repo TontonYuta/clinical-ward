@@ -1,390 +1,168 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import {
-  ShieldCheck,
-  Search,
-  Filter,
-  Download,
-  X,
-  Lock,
-  FileText,
-  KeyRound,
-  CreditCard,
-  Users,
-  CheckCircle2,
-  Calendar,
-  Hash
-} from 'lucide-react';
+import { X, Download, ChevronDown } from 'lucide-react';
 import { AuditTrailRecord } from '../../types/clinical';
-
+import { useModalDismiss } from '../../hooks/useModalDismiss';
+import { SearchField, EmptyState } from '../ui/Workspace';
 interface AuditTrailModalProps {
   isOpen: boolean;
   onClose: () => void;
   records: AuditTrailRecord[];
 }
-
-export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
-  isOpen,
-  onClose,
-  records
-}) => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [exportSuccess, setExportSuccess] = useState<boolean>(false);
-
-  const handleExportCsv = () => {
-    const headers = [
-      'Mã kiểm toán',
-      'Thời gian',
-      'Nghiệp vụ lâm sàng',
-      'Căn cứ pháp lý',
-      'Đối tượng tác động',
-      'Người ký xác thực',
-      'Chứng chỉ hành nghề (CCHN)',
-      'Người làm chứng',
-      'CCHN người làm chứng',
-      'Phương thức xác thực',
-      'Mã băm toàn vẹn SHA-256',
-      'Tình trạng xác nhận'
+export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({ isOpen, onClose, records }) => {
+  useModalDismiss(isOpen, onClose);
+  const [query, setQuery] = useState('');
+  const [action, setAction] = useState('all');
+  const filtered = records.filter(
+    (r) =>
+      (action === 'all' || r.actionType === action) &&
+      [r.id, r.actionTitle, r.targetItem, r.signerName, r.signerCertificate, r.witnessName]
+        .join(' ')
+        .toLocaleLowerCase('vi')
+        .includes(query.toLocaleLowerCase('vi')),
+  );
+  const exportCsv = () => {
+    const cell = (s: unknown) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const rows = [
+      [
+        'Mã',
+        'Thời gian',
+        'Nghiệp vụ',
+        'Đối tượng',
+        'Người thực hiện',
+        'Người chứng kiến',
+        'Căn cứ trong hồ sơ',
+        'Phương thức',
+        'Mã kiểm tra trong hồ sơ',
+        'Trạng thái trong hồ sơ',
+      ],
+      ...filtered.map((r) => [
+        r.id,
+        r.timestamp,
+        r.actionTitle,
+        r.targetItem,
+        r.signerName,
+        r.witnessName,
+        r.legalBasis,
+        r.authMethod,
+        r.integrityHash,
+        r.status,
+      ]),
     ];
-
-    const rows = filteredRecords.map(r => [
-      `"${r.id}"`,
-      `"${r.timestamp}"`,
-      `"${(r.actionTitle || '').replace(/"/g, '""')}"`,
-      `"${(r.legalBasis || '').replace(/"/g, '""')}"`,
-      `"${(r.targetItem || '').replace(/"/g, '""')}"`,
-      `"${r.signerName || ''}"`,
-      `"${r.signerCertificate || ''}"`,
-      `"${r.witnessName || '-'}"`,
-      `"${r.witnessCertificate || '-'}"`,
-      `"${r.authMethod === 'RFID_NFC' ? 'Thẻ định danh RFID/NFC' : 'Mã PIN chuyên môn'}"`,
-      `"${r.integrityHash || ''}"`,
-      `"${r.status === 'verified' ? 'Hợp lệ 100%' : 'Bị chỉnh sửa'}"`
-    ]);
-
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Nhat_Ky_Kiem_Toan_Lam_Sang_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const url = URL.createObjectURL(
+      new Blob(['\uFEFF' + rows.map((row) => row.map(cell).join(',')).join('\r\n')], {
+        type: 'text/csv;charset=utf-8',
+      }),
+    );
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Nhat_ky_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
-
-    setExportSuccess(true);
-    setTimeout(() => setExportSuccess(false), 3000);
   };
-
   if (!isOpen) return null;
-
-  const filteredRecords = records.filter(r => {
-    const matchesSearch =
-      r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.actionTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.targetItem.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.signerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.signerCertificate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.witnessName && r.witnessName.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesFilter = filterType === 'all' || r.actionType === filterType;
-
-    return matchesSearch && matchesFilter;
-  });
-
-  const dualWitnessCount = records.filter(r => Boolean(r.witnessName)).length;
-  const rfidAuthCount = records.filter(r => r.authMethod === 'RFID_NFC').length;
-  const pinAuthCount = records.filter(r => r.authMethod === 'PIN').length;
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-6xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 h-[88vh]">
-        {/* Header */}
-        <div className="h-14 px-4 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-300 shrink-0">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <h2 className="text-sm sm:text-base font-bold tracking-tight text-white truncate">
-                Nhật Ký Kiểm Toán
-              </h2>
-              <span className="text-[11px] font-mono text-slate-400 border border-slate-700/80 bg-slate-800/80 px-2 py-0.5 rounded-md shrink-0">
-                {records.length} bản ghi
-              </span>
-            </div>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Nhật ký hoạt động"
+      className="clinical-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5"
+    >
+      <div className="bg-white w-full max-w-5xl h-[100dvh] sm:h-[88vh] flex flex-col overflow-hidden">
+        <header className="library-header">
+          <div>
+            <h2>
+              Nhật ký hoạt động{' '}
+              <span className="record-sub inline">/ {records.length} bản ghi</span>
+            </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer flex items-center justify-center shrink-0"
-            title="Đóng (Esc)"
-          >
-            <X className="w-4 h-4" />
+          <button type="button" className="icon-action" aria-label="Đóng nhật ký" onClick={onClose}>
+            <X size={18} />
           </button>
-        </div>
-
-        {/* Executive Summary Metrics (Sleek 1-Line Metric Strip) */}
-        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-5 py-2 flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none shrink-0 text-xs">
-          <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-bold text-slate-500 uppercase">Tổng:</span>
-            <span className="text-sm font-black text-slate-900 font-mono">{records.length}</span>
-            <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              100% nguyên vẹn
-            </span>
-          </div>
-
-          <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-bold text-purple-700 uppercase">Có chứng kiến:</span>
-            <span className="text-sm font-black text-purple-900 font-mono">{dualWitnessCount}</span>
-            <span className="text-[11px] text-slate-500 hidden sm:inline">(TT 20/2017)</span>
-          </div>
-
-          <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
-            <CreditCard className="w-3.5 h-3.5 text-teal-700" />
-            <span className="text-[11px] font-bold text-teal-800 uppercase">Thẻ RFID:</span>
-            <span className="text-sm font-black text-teal-900 font-mono">{rfidAuthCount}</span>
-          </div>
-
-          <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
-            <KeyRound className="w-3.5 h-3.5 text-slate-600" />
-            <span className="text-[11px] font-bold text-slate-700 uppercase">Mã PIN:</span>
-            <span className="text-sm font-black text-slate-900 font-mono">{pinAuthCount}</span>
-          </div>
-        </div>
-
-        {/* Filter and Search Bar */}
-        <div className="px-4 sm:px-5 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0 bg-white">
-          <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-sm">
-            <div className="relative w-full">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm mã kiểm toán, người ký, CCHN, đối tượng..."
-                className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-slate-800"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs">
-              <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 cursor-pointer"
-              >
-                <option value="all">Tất cả nghiệp vụ</option>
-                <option value="SETTLE_DEBT">Duyệt hoàn bù (TT 22)</option>
-                <option value="RETURN_AMPOULE">Thu hồi vỏ ống (TT 20)</option>
-                <option value="DESTROY_AMPOULES">Tiêu hủy vỏ Morphin (TT 20)</option>
-                <option value="HANDOVER_EQUIPMENT">Kiểm định &amp; Bàn giao (NĐ 98)</option>
-                <option value="DISPATCH_FEFO">Xuất kho FEFO (TT 36)</option>
-                <option value="RESTOCK_MEDICATION">Dự trù bổ sung (TT 22)</option>
-                <option value="TRANSFER_ASSET">Điều chuyển tài sản (NĐ 151)</option>
-                <option value="LIQUIDATE_ASSET">Thanh lý tài sản (NĐ 151)</option>
-              </select>
-            </div>
-
-            <button
-              onClick={handleExportCsv}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer shadow-2xs transition active:scale-98 ${
-                exportSuccess
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                  : 'border-slate-300 hover:bg-slate-50 text-slate-700'
-              }`}
-              title="Trích xuất toàn bộ bản ghi kiểm toán ra tệp CSV (mở được bằng Excel)"
+        </header>
+        <div className="p-4 sm:p-6 shrink-0">
+          <div className="workspace-toolbar">
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              label="Tìm nhật ký"
+              placeholder="Nghiệp vụ, người thực hiện, đối tượng…"
+            />
+            <select
+              className="workspace-select"
+              aria-label="Nghiệp vụ nhật ký"
+              value={action}
+              onChange={(e) => setAction(e.target.value)}
             >
-              <Download className={`w-3.5 h-3.5 ${exportSuccess ? 'text-emerald-600' : 'text-slate-600'}`} />
-              <span className="hidden sm:inline">{exportSuccess ? 'Đã xuất file Excel/CSV!' : 'Xuất CSV / Excel'}</span>
-              <span className="sm:hidden">{exportSuccess ? 'Đã xuất!' : 'Xuất CSV'}</span>
+              <option value="all">Tất cả nghiệp vụ</option>
+              {[...new Set(records.map((r) => r.actionType))].map((type) => (
+                <option key={type} value={type}>
+                  {records.find((r) => r.actionType === type)?.actionTitle || type}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="button-secondary" onClick={exportCsv}>
+              <Download size={16} />
+              Xuất CSV
             </button>
           </div>
+          <p className="record-sub mt-3">
+            Nhật ký mô phỏng trong phiên làm việc hiện tại; không thay thế nhật ký máy chủ. Chưa xác minh chữ ký hoặc tính toàn vẹn của bản ghi.
+          </p>
         </div>
-
-        {/* 4A. Mobile Card-Based Audit View (md:hidden) - Touch friendly, zero side-scrolling */}
-        <div className="md:hidden flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 bg-slate-50">
-          {filteredRecords.length === 0 ? (
-            <div className="p-6 text-center text-slate-500 text-xs bg-white rounded-xl border border-slate-200">
-              Không tìm thấy bản ghi kiểm toán phù hợp.
-            </div>
-          ) : (
-            filteredRecords.map((record) => (
-              <div key={record.id} className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                    {record.id}
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-slate-400" />
-                    {record.timestamp}
-                  </span>
-                </div>
-
+        <div className="audit-records">
+          {!filtered.length && <EmptyState title="Chưa có bản ghi phù hợp" />}
+          {filtered.map((record) => (
+            <article key={record.id} className="audit-record">
+              <div className="audit-record-heading">
                 <div>
-                  <h4 className="font-bold text-xs text-slate-900">{record.actionTitle}</h4>
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <span className="text-[10px] font-mono text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
-                      {record.legalBasis}
-                    </span>
-                    <span className="text-[11px] text-slate-700 font-medium">
-                      🎯 {record.targetItem}
-                    </span>
-                  </div>
+                  <span className="record-sub record-mono">
+                    {record.timestamp} · {record.id}
+                  </span>
+                  <h3>{record.actionTitle}</h3>
+                  <p className="record-sub">{record.targetItem}</p>
                 </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                  <div className="text-slate-600">
-                    ✍️ <strong className="text-slate-900">{record.signerName}</strong>
-                    <span className="text-slate-400 font-mono ml-1">({record.signerRole})</span>
-                    {record.witnessName && (
-                      <div className="text-purple-700 font-medium">
-                        👥 Chứng kiến: {record.witnessName}
-                      </div>
-                    )}
+                <span className="status-pill neutral">{record.status === 'session_simulated' ? 'Mô phỏng trong phiên' : 'Chưa xác minh'}</span>
+              </div>
+              <div className="audit-record-person">
+                <span>
+                  Người thực hiện: <strong>{record.signerName || 'Chưa ghi nhận'}</strong>
+                </span>
+                {record.witnessName && (
+                  <span>
+                    Chứng kiến: <strong>{record.witnessName}</strong>
+                  </span>
+                )}
+              </div>
+              <details>
+                <summary>
+                  Thông tin hồ sơ
+                  <ChevronDown size={13} />
+                </summary>
+                <dl className="detail-facts">
+                  <div>
+                    <dt>Căn cứ được lưu</dt>
+                    <dd>{record.legalBasis || '—'}</dd>
                   </div>
                   <div>
-                    {record.authMethod === 'RFID_NFC' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-50 text-teal-800 border border-teal-200">
-                        <CreditCard className="w-3 h-3" />
-                        RFID
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                        <KeyRound className="w-3 h-3" />
-                        PIN
-                      </span>
-                    )}
+                    <dt>Chứng chỉ được lưu</dt>
+                    <dd>{record.signerCertificate || '—'}</dd>
                   </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* 4B. Desktop Full Audit Log Table (hidden md:block) */}
-        <div className="hidden md:block flex-1 min-h-0 overflow-auto bg-white border border-slate-300 rounded-xl m-3 shadow-xs">
-          <table className="w-full text-left text-sm min-w-[1300px] border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase tracking-wider text-xs">
-              <tr>
-                <th className="py-3 px-4 whitespace-nowrap border-r border-slate-200">Thời gian &amp; Số hồ sơ</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Nghiệp vụ &amp; Căn cứ pháp lý</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Đối tượng tác động</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Người ký xác thực (CCHN)</th>
-                <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200">Người làm chứng</th>
-                <th className="py-3 px-3.5 text-center whitespace-nowrap border-r border-slate-200">Phương thức</th>
-                <th className="py-3 px-4 text-right whitespace-nowrap">Tình trạng xác nhận</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRecords.map((record) => (
-                <tr key={record.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-teal-50/40 transition-colors border-b border-slate-200/80">
-                  {/* Timestamp & Code */}
-                  <td className="py-3 px-4 whitespace-nowrap border-r border-slate-200/70">
-                    <span className="font-mono font-bold text-slate-900 block text-xs sm:text-sm">{record.id}</span>
-                    <span className="text-xs font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      {record.timestamp}
-                    </span>
-                  </td>
-
-                  {/* Action & Legal */}
-                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
-                    <span className="font-bold text-slate-900 block text-xs sm:text-sm">{record.actionTitle}</span>
-                    <span className="inline-block mt-0.5 text-xs font-mono text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
-                      {record.legalBasis}
-                    </span>
-                  </td>
-
-                  {/* Target Item */}
-                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
-                    <span className="font-semibold text-slate-800 block text-xs sm:text-sm">{record.targetItem}</span>
-                    <span className="text-xs font-mono text-slate-400 mt-0.5 block">Hành động: {record.actionType}</span>
-                  </td>
-
-                  {/* Signer */}
-                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
-                        {record.signerName.charAt(0)}
-                      </div>
-                      <div>
-                        <span className="font-bold text-slate-900 block text-xs sm:text-sm">{record.signerName}</span>
-                        <span className="text-xs font-mono text-slate-500">
-                          CCHN: <strong className="text-slate-800">{record.signerCertificate}</strong>
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Witness */}
-                  <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
-                    {record.witnessName ? (
-                      <div className="flex items-center gap-2 text-purple-900 bg-purple-50 px-2.5 py-1.5 rounded-lg border border-purple-200">
-                        <Users className="w-4 h-4 text-purple-700 shrink-0" />
-                        <div>
-                          <span className="font-bold block text-xs sm:text-sm">{record.witnessName}</span>
-                          <span className="text-xs font-mono text-purple-700">
-                            {record.witnessCertificate}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400 text-xs italic">Chữ ký đơn</span>
-                    )}
-                  </td>
-
-                  {/* Auth Method */}
-                  <td className="py-3 px-3.5 text-center whitespace-nowrap border-r border-slate-200/70">
-                    {record.authMethod === 'RFID_NFC' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-300">
-                        <CreditCard className="w-3.5 h-3.5 text-teal-600" />
-                        <span>Thẻ RFID</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
-                        <KeyRound className="w-3.5 h-3.5 text-slate-600" />
-                        <span>Mã PIN</span>
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Status & Medical Verification */}
-                  <td className="py-3 px-4 text-right whitespace-nowrap">
-                    <span
-                      title={`Mã bảo mật hệ thống: ${record.integrityHash}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-default"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Đã xác nhận &amp; Khóa sổ</span>
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 sm:px-5 py-2.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 text-xs text-slate-500">
-          <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-            <ShieldCheck className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-            <span>Bảo mật bất biến SHA-256 · NĐ 130/2018</span>
-          </div>
-          <button
-            onClick={onClose}
-            className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition cursor-pointer"
-          >
-            Đóng
-          </button>
+                  <div>
+                    <dt>Phương thức được lưu</dt>
+                    <dd>{record.authMethod || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>Mã kiểm tra trong hồ sơ</dt>
+                    <dd className="break-all record-mono">{record.integrityHash || 'Chưa có'}</dd>
+                  </div>
+                  <div>
+                    <dt>Trạng thái được lưu</dt>
+                    <dd>{record.status || '—'}</dd>
+                  </div>
+                </dl>
+              </details>
+            </article>
+          ))}
         </div>
       </div>
     </div>

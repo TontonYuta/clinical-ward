@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {ColdChainTelemetryCards} from '../src/components/RightPane/Tabs/ColdChain/ColdChainTelemetryCards';
+import type {ColdChainMonitorState} from '../src/types/clinical';
+const state:ColdChainMonitorState={storageName:'Test cabinet',currentTemp:4.5,currentHumidity:NaN,targetTempRange:'2–8°C',powerStatus:'main_power',compressorStatus:'running',alarmActive:false,totalVaccineDoses:0,logs:[{timestamp:'00:00',temperature:4.2,humidity:NaN,status:'normal'},{timestamp:'20:00',temperature:4.5,humidity:NaN,status:'normal'}]};
+const html=renderToStaticMarkup(React.createElement(ColdChainTelemetryCards,{coldChainState:state,isAlarm:false,isQuarantined:false}));
+assert.ok(html.includes('20:00') && !html.includes('00:00'),'latest chronological sample is shown, not the oldest');
+assert.ok(html.includes('Nhiệt độ ghi nhận'),'snapshot does not promise live monitoring');
+assert.ok(html.replace(/<[^>]*>/g,'').includes('—% RH'),'missing humidity is rendered as unknown');
+console.log('Coldchain snapshot display checks passed');

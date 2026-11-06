@@ -1,11 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { ClipboardList, Scale, BookOpen, Printer, Stethoscope } from 'lucide-react';
-
+import { ClipboardList, Scale, BookOpen, Printer, Pill } from 'lucide-react';
 interface SidebarLegalLinksProps {
   isCollapsed: boolean;
   onCloseMobile?: () => void;
@@ -15,84 +9,34 @@ interface SidebarLegalLinksProps {
   onOpenPrintableForms?: () => void;
   onOpenMedicationSafety?: () => void;
 }
-
-export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = ({
-  isCollapsed,
-  onCloseMobile,
-  onOpenAuditTrail,
-  onOpenLegalDocs,
-  onOpenUserGuide,
-  onOpenPrintableForms,
-  onOpenMedicationSafety,
-}) => {
-  const handleClick = (action: () => void) => {
-    action();
-    onCloseMobile?.();
-  };
-
+export const SidebarLegalLinks: React.FC<SidebarLegalLinksProps> = (props) => {
+  const links = [
+    { label: 'Tra cứu thuốc', icon: Pill, action: props.onOpenMedicationSafety },
+    { label: 'Nhật ký hoạt động', icon: ClipboardList, action: props.onOpenAuditTrail },
+    { label: 'Văn bản & tài liệu', icon: Scale, action: props.onOpenLegalDocs },
+    { label: 'Biểu mẫu', icon: Printer, action: props.onOpenPrintableForms },
+    { label: 'Hướng dẫn', icon: BookOpen, action: props.onOpenUserGuide },
+  ];
   return (
-    <div>
-      {!isCollapsed && (
-        <div className="px-2.5 pb-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
-          Tiện ích &amp; Pháp lý
-        </div>
-      )}
-      <div className="space-y-1">
-        <button
-          onClick={() => handleClick(onOpenAuditTrail)}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
-            isCollapsed ? 'justify-center px-0' : ''
-          }`}
-          title="Nhật ký kiểm toán lâm sàng và vết băm bảo mật"
-        >
-          <ClipboardList className="w-5 h-5 text-blue-600 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Nhật ký kiểm toán</span>}
-        </button>
-
-        <button
-          onClick={() => handleClick(onOpenLegalDocs)}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
-            isCollapsed ? 'justify-center px-0' : ''
-          }`}
-          title="Căn cứ pháp lý y tế & quy chế chuyên môn Bộ Y Tế"
-        >
-          <Scale className="w-5 h-5 text-blue-600 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Căn cứ pháp lý</span>}
-        </button>
-
-        <button
-          onClick={() => handleClick(onOpenUserGuide)}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
-            isCollapsed ? 'justify-center px-0' : ''
-          }`}
-          title="Hướng dẫn sử dụng và quy trình vận hành ca trực"
-        >
-          <BookOpen className="w-5 h-5 text-blue-600 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Hướng dẫn sử dụng</span>}
-        </button>
-
-        <button
-          onClick={() => handleClick(() => onOpenPrintableForms?.())}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
-            isCollapsed ? 'justify-center px-0' : ''
-          }`}
-          title="Xuất và in biểu mẫu hành chính y tế"
-        >
-          <Printer className="w-5 h-5 text-blue-600 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Biểu mẫu in ấn</span>}
-        </button>
-
-        <button
-          onClick={() => handleClick(() => onOpenMedicationSafety?.())}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] sm:text-[15px] font-medium text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 transition cursor-pointer ${
-            isCollapsed ? 'justify-center px-0' : ''
-          }`}
-          title="Tra cứu Dược thư Lâm sàng & Thông tin thuốc"
-        >
-          <Stethoscope className="w-5 h-5 text-blue-600 shrink-0" />
-          {!isCollapsed && <span className="flex-1 text-left truncate">Thông tin thuốc</span>}
-        </button>
-      </div>
-    </div>
+    <nav aria-label="Tra cứu và tiện ích">
+      {!props.isCollapsed && <p className="sidebar-section-label">Thư viện & tiện ích</p>}
+      {links
+        .filter((l) => l.action)
+        .map(({ label, icon: Icon, action }) => (
+          <button
+            type="button"
+            key={label}
+            title={label}
+            className={`sidebar-nav-item utility ${props.isCollapsed ? 'justify-center px-0' : ''}`}
+            onClick={() => {
+              action?.();
+              props.onCloseMobile?.();
+            }}
+          >
+            <Icon size={16} strokeWidth={1.6} />
+            {!props.isCollapsed && label}
+          </button>
+        ))}
+    </nav>
   );
 };

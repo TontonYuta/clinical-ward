@@ -10,6 +10,6 @@ test('preserves ordinary quantity without padding', () => {
   assert.equal(formatPrescriptionQuantity(12), '12');
 });
 
-test('marks controlled medicine quantity with numeric wording', () => {
-  assert.equal(formatPrescriptionQuantity(5, true), '05 (5 bằng số)');
+test('writes controlled medicine quantity in Vietnamese words', () => {
+  assert.equal(formatPrescriptionQuantity(5, true), '05 (năm)');
 });

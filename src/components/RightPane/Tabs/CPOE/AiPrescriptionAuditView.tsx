@@ -5,6 +5,7 @@
  * Đánh giá 5 Trụ Cột: Thể thức TT52/TT26, Phù hợp chẩn đoán, Liều dùng theo thể trạng, Tương tác QĐ 5948, Thời điểm & Cách dùng
  */
 
+import { ClinicalNote } from '../../../ui/ClinicalNote';
 import React, { useState, useEffect } from 'react';
 import {
   ShieldAlert,
@@ -17,9 +18,10 @@ import {
   Stethoscope,
   Pill,
   Sparkles,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
+import { apiRequest } from '../../../../services/api/client';
 import { PatientProfile } from '../../../../services/patientService';
 
 interface AiPrescriptionAuditViewProps {
@@ -31,14 +33,18 @@ interface AiPrescriptionAuditViewProps {
 export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = ({
   order,
   patient,
-  onOpenSmsModal
+  onOpenSmsModal,
 }) => {
   const [auditData, setAuditData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setUnavailable(false);
+    setAuditData(null);
 
     const safeItems = (order.items || []).map((it) => ({
       medicationName: it.medicationName,
@@ -50,16 +56,16 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
       unit: it.unit,
       instructions: it.instructions,
       isNarcotic: it.isNarcotic,
-      durationDays: it.durationDays || order.daysPrescribed || 7
+      durationDays: it.durationDays ?? order.daysPrescribed,
     }));
 
     const payload = {
       order: {
         id: order.id,
         prescriptionType: order.prescriptionType || 'outpatient',
-        facilityName: order.facilityName || 'Bệnh Viện Đa Khoa Lâm Sàng',
+        facilityName: order.facilityName,
         patientName: order.patientName,
-        patientAge: order.patientAge || (patient?.age ? Number(patient.age) : 45),
+        patientAge: order.patientAge ?? (patient?.age ? Number(patient.age) : undefined),
         patientWeight: order.patientWeight,
         patientCccd: order.patientCccd,
         patientInsuranceId: order.patientInsuranceId,
@@ -69,58 +75,35 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
         doctorName: order.doctorName,
         doctorCertificate: order.doctorCertificate,
         digitalSignature: order.digitalSignature,
-        daysPrescribed: order.daysPrescribed || 7,
+        daysPrescribed: order.daysPrescribed,
         status: order.status,
         isChronicDisease: order.isChronicDisease,
-        items: safeItems
+        items: safeItems,
       },
       patient: {
-        age: order.patientAge || (patient?.age ? Number(patient.age) : 45),
+        age: order.patientAge ?? (patient?.age ? Number(patient.age) : undefined),
         weight: order.patientWeight,
-        egfr: (patient as any)?.egfr || 85.0
-      }
+        egfr: (patient as any)?.egfr,
+      },
     };
 
-    fetch('/api/v1/prescriptions/audit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Network error');
-        return res.json();
-      })
+    apiRequest<any>('/prescriptions/audit', { method: 'POST', body: JSON.stringify(payload) })
       .then((data) => {
         if (isMounted) {
+          if (
+            !data ||
+            !['PASSED', 'WARNING', 'FAILED', 'BLOCKED'].includes(data.overall_status) ||
+            !Number.isFinite(data.safety_score)
+          )
+            throw new Error('Invalid audit result');
           setAuditData(data);
           setLoading(false);
         }
       })
       .catch(() => {
-        // Fallback tính toán tại client nếu offline
         if (isMounted) {
-          setAuditData({
-            overall_status: 'PASSED',
-            safety_score: 95,
-            prescription_type: order.prescriptionType || 'outpatient',
-            summary: 'Đơn thuốc đạt 100% chuẩn thể thức pháp lý (TT 52/2017 & TT 26/2025) và an toàn dược lâm sàng theo DĐVN V.',
-            legal_checks: [
-              { rule_name: 'Tên cơ sở khám chữa bệnh', passed: true, message: 'Đã có tên cơ sở KBCB hợp lệ.' },
-              { rule_name: 'Họ tên và định danh người bệnh', passed: true, message: 'Họ tên người bệnh đầy đủ theo CCCD/BHYT.' },
-              { rule_name: 'Chữ ký & CCHN Bác sĩ kê đơn', passed: true, message: `Bác sĩ điều trị: ${order.doctorName} (Đã ký số ✓).` },
-              { rule_name: 'Thời hạn kê đơn hợp lệ', passed: true, message: `Kê đơn ${order.daysPrescribed || 7} ngày (Phù hợp giới hạn <= 30 ngày).` }
-            ],
-            clinical_checks: [
-              { category: 'diagnosis_match', title: 'Phù hợp chẩn đoán', passed: true, detail: 'Thuốc chỉ định phù hợp mã bệnh ICD-10.' },
-              { category: 'dosage_safety', title: 'Liều lượng an toàn', passed: true, detail: 'Liều thuốc nằm trong giới hạn tối đa cho phép của Dược Thư DĐVN V.' },
-              { category: 'timing_administration', title: 'Thời điểm & Cách dùng', passed: true, detail: 'Uống thuốc sau bữa ăn no 15 - 30 phút cùng nhiều nước ấm.' }
-            ],
-            drug_interactions: [],
-            recommendations: ['Tuân thủ đúng cữ thuốc hàng ngày, tái khám ngay nếu có dấu hiệu sốt cao hoặc phát ban dị ứng.'],
-            doctor_signature_verified: Boolean(order.digitalSignature || order.status === 'signed'),
-            doctor_name: order.doctorName,
-            doctor_certificate: order.doctorCertificate || '012345/BYT-CCHN'
-          });
+          setAuditData(null);
+          setUnavailable(true);
           setLoading(false);
         }
       });
@@ -128,13 +111,34 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
     return () => {
       isMounted = false;
     };
-  }, [order, patient]);
+  }, [order, patient, attempt]);
+
+  if (unavailable)
+    return (
+      <div className="p-5">
+        <ClinicalNote
+          severity="warning"
+          title="Chưa có kết quả thẩm định"
+          action={
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => setAttempt((v) => v + 1)}
+            >
+              Thử kết nối lại
+            </button>
+          }
+        >
+          Không kết nối được dịch vụ thẩm định. Cần rà soát chuyên môn trước khi sử dụng kết quả.
+        </ClinicalNote>
+      </div>
+    );
 
   if (loading || !auditData) {
     return (
       <div className="p-8 text-center text-slate-500 space-y-3">
         <Sparkles className="w-6 h-6 text-teal-600 animate-spin mx-auto" />
-        <p className="text-xs font-semibold">Đang thẩm định tự động đơn thuốc trên 5 trụ cột tiêu chuẩn Bộ Y tế...</p>
+        <p className="text-xs font-semibold">Đang yêu cầu kết quả thẩm định…</p>
       </div>
     );
   }
@@ -149,40 +153,52 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
       <div className="p-4 sm:p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/70 border-slate-200">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-xs font-bold px-2.5 py-0.5 rounded border uppercase ${
-              isPassed
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+            <span
+              className={`text-xs font-bold px-2.5 py-0.5 rounded border uppercase ${
+                isPassed
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : isWarning
+                    ? 'bg-amber-50 text-amber-800 border-amber-300'
+                    : 'bg-rose-50 text-rose-800 border-rose-300'
+              }`}
+            >
+              {auditData.overall_status === 'PASSED'
+                ? '✓ ĐẠT CHUẨN LÂM SÀNG'
                 : isWarning
-                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                : 'bg-rose-50 text-rose-800 border-rose-300'
-            }`}>
-              {auditData.overall_status === 'PASSED' ? '✓ ĐẠT CHUẨN LÂM SÀNG' : (isWarning ? '⚠️ CẢNH BÁO LÂM SÀNG' : '⛔ TỪ CHỐI PHÁT HÀNH')}
+                  ? '⚠️ CẢNH BÁO LÂM SÀNG'
+                  : '⛔ TỪ CHỐI PHÁT HÀNH'}
             </span>
             <span className="text-2xs font-mono font-bold text-slate-600 bg-white border border-slate-300 px-2 py-0.5 rounded">
-              {auditData.prescription_type === 'outpatient' ? 'ĐƠN NGOẠI TRÚ (TT 52/2017)' : 'Y LỆNH NỘI TRÚ (TT 23/2011)'}
+              {auditData.prescription_type === 'outpatient'
+                ? 'ĐƠN NGOẠI TRÚ (TT 52/2017)'
+                : 'Y LỆNH NỘI TRÚ (TT 23/2011)'}
             </span>
           </div>
           <h3 className="text-sm sm:text-base font-bold text-slate-950">
             Kết Quả Thẩm Định Đơn Thuốc Tự Động (AI Clinical Prescription Auditor)
           </h3>
-          <p className="text-xs text-slate-600 leading-relaxed max-w-2xl">
-            {auditData.summary}
-          </p>
+          <p className="text-xs text-slate-600 leading-relaxed max-w-2xl">{auditData.summary}</p>
         </div>
 
         {/* Đồng hồ điểm an toàn */}
         <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
           <div className="text-center">
             <div className="text-2xs text-slate-500 font-semibold uppercase">Điểm An Toàn</div>
-            <div className={`text-2xl font-bold font-mono ${
-              score >= 85 ? 'text-emerald-700' : (score >= 65 ? 'text-amber-700' : 'text-rose-700')
-            }`}>
-              {score}<span className="text-xs font-normal text-slate-400">/100</span>
+            <div
+              className={`text-2xl font-bold font-mono ${
+                score >= 85 ? 'text-emerald-700' : score >= 65 ? 'text-amber-700' : 'text-rose-700'
+              }`}
+            >
+              {score}
+              <span className="text-xs font-normal text-slate-400">/100</span>
             </div>
           </div>
-          <div className="w-12 h-12 rounded-full border-4 flex items-center justify-center font-bold text-xs" style={{
-            borderColor: score >= 85 ? '#10b981' : (score >= 65 ? '#f59e0b' : '#ef4444')
-          }}>
+          <div
+            className="w-12 h-12 rounded-full border-4 flex items-center justify-center font-bold text-xs"
+            style={{
+              borderColor: score >= 85 ? '#10b981' : score >= 65 ? '#f59e0b' : '#ef4444',
+            }}
+          >
             {score}%
           </div>
         </div>
@@ -196,11 +212,14 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
             <div className="font-bold text-slate-900">
               Bác sĩ kê đơn: <span className="text-slate-950">{auditData.doctor_name}</span>
               {auditData.doctor_certificate && (
-                <span className="font-mono text-slate-500 font-normal ml-1.5">(CCHN: {auditData.doctor_certificate})</span>
+                <span className="font-mono text-slate-500 font-normal ml-1.5">
+                  (CCHN: {auditData.doctor_certificate})
+                </span>
               )}
             </div>
             <div className="text-2xs text-slate-500 mt-0.5">
-              Căn cứ pháp lý: Khoản 4 Điều 6 Thông tư 52/2017/TT-BYT &amp; Nghị định 130/2018/NĐ-CP về Ký số Y tế
+              Căn cứ pháp lý: Khoản 4 Điều 6 Thông tư 52/2017/TT-BYT &amp; Nghị định 130/2018/NĐ-CP
+              về Ký số Y tế
             </div>
           </div>
         </div>
@@ -214,7 +233,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
           ) : (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 font-mono font-bold text-2xs border border-amber-300">
               <Clock className="w-3.5 h-3.5 text-amber-700" />
-              <span>CHỜ BÁC SĨ KÝ TÊN</span>
+              <span>Chưa xác minh chữ ký</span>
             </span>
           )}
         </div>
@@ -229,7 +248,9 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <FileText className="w-4 h-4 text-teal-700" />
               <span>1. Thể Thức Pháp Luật (TT 52/2017 &amp; TT 26/2025)</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">Bộ Y Tế</span>
+            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+              Bộ Y Tế
+            </span>
           </div>
 
           <div className="space-y-2">
@@ -242,7 +263,9 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
                 )}
                 <div className="leading-relaxed">
                   <span className="font-bold text-slate-800">{c.rule_name}: </span>
-                  <span className={c.passed ? 'text-slate-600' : 'text-rose-700 font-semibold'}>{c.message}</span>
+                  <span className={c.passed ? 'text-slate-600' : 'text-rose-700 font-semibold'}>
+                    {c.message}
+                  </span>
                 </div>
               </div>
             ))}
@@ -256,25 +279,36 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <Stethoscope className="w-4 h-4 text-teal-700" />
               <span>2. Phù Hợp Chẩn Đoán (ICD-10 vs DĐVN V)</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">ICD-10</span>
+            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+              ICD-10
+            </span>
           </div>
 
           <div className="space-y-2 text-2xs">
             <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-              <div className="font-bold text-slate-800">Chẩn đoán: [{order.diagnosisIcd10}] {order.diagnosisText}</div>
+              <div className="font-bold text-slate-800">
+                Chẩn đoán: [{order.diagnosisIcd10}] {order.diagnosisText}
+              </div>
             </div>
             {auditData.clinical_checks
               .filter((c: any) => c.category === 'diagnosis_match')
               .map((c: any, idx: number) => (
-                <div key={idx} className={`p-2.5 rounded-lg border ${c.passed ? 'bg-emerald-50/50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                <div
+                  key={idx}
+                  className={`p-2.5 rounded-lg border ${c.passed ? 'bg-emerald-50/50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}
+                >
                   <div className="font-bold text-slate-900">{c.title}</div>
                   <div className="text-slate-600 mt-1">{c.detail}</div>
                 </div>
               ))}
-            {auditData.clinical_checks.filter((c: any) => c.category === 'diagnosis_match').length === 0 && (
+            {auditData.clinical_checks.filter((c: any) => c.category === 'diagnosis_match')
+              .length === 0 && (
               <div className="flex items-center gap-2 text-emerald-800 font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Toàn bộ thuốc chỉ định khớp đúng mã chẩn đoán ICD-10 và hướng dẫn điều trị Bộ Y tế.</span>
+                <span>
+                  Toàn bộ thuốc chỉ định khớp đúng mã chẩn đoán ICD-10 và hướng dẫn điều trị Bộ Y
+                  tế.
+                </span>
               </div>
             )}
           </div>
@@ -287,23 +321,31 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <Pill className="w-4 h-4 text-teal-700" />
               <span>3. Liều Dùng Theo Thể Trạng &amp; Chức Năng Thận</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">DĐVN V</span>
+            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+              DĐVN V
+            </span>
           </div>
 
           <div className="space-y-2 text-2xs">
             {auditData.clinical_checks
               .filter((c: any) => c.category === 'dosage_safety')
               .map((c: any, idx: number) => (
-                <div key={idx} className={`p-2.5 rounded-lg border ${
-                  c.severity === 'contraindicated'
-                    ? 'bg-rose-50 border-rose-300 text-rose-950'
-                    : (c.passed ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-amber-50 border-amber-200 text-amber-950')
-                }`}>
+                <div
+                  key={idx}
+                  className={`p-2.5 rounded-lg border ${
+                    c.severity === 'contraindicated'
+                      ? 'bg-rose-50 border-rose-300 text-rose-950'
+                      : c.passed
+                        ? 'bg-slate-50 border-slate-200 text-slate-700'
+                        : 'bg-amber-50 border-amber-200 text-amber-950'
+                  }`}
+                >
                   <div className="font-bold">{c.title}</div>
                   <div className="mt-1 leading-relaxed">{c.detail}</div>
                 </div>
               ))}
-            {auditData.clinical_checks.filter((c: any) => c.category === 'dosage_safety').length === 0 && (
+            {auditData.clinical_checks.filter((c: any) => c.category === 'dosage_safety').length ===
+              0 && (
               <div className="flex items-center gap-2 text-emerald-800 font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Không phát hiện vượt liều tối đa hàng ngày; liều dùng an toàn.</span>
@@ -319,14 +361,21 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <ShieldAlert className="w-4 h-4 text-teal-700" />
               <span>4. Tương Tác Thuốc Chống Chỉ Định (QĐ 5948)</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">38.275 DDI</span>
+            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+              38.275 DDI
+            </span>
           </div>
 
           <div className="space-y-2 text-2xs">
             {auditData.drug_interactions.length > 0 ? (
               auditData.drug_interactions.map((d: any, idx: number) => (
-                <div key={idx} className="p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-950 space-y-1">
-                  <div className="font-bold">{d.pair} ({d.severity})</div>
+                <div
+                  key={idx}
+                  className="p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-950 space-y-1"
+                >
+                  <div className="font-bold">
+                    {d.pair} ({d.severity})
+                  </div>
                   <div>{d.consequence}</div>
                   <div className="font-semibold text-rose-800">Xử trí: {d.action}</div>
                 </div>
@@ -334,7 +383,10 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
             ) : (
               <div className="flex items-center gap-2 text-emerald-800 font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Không có tương tác thuốc chống chỉ định trong danh mục 38.275 tương tác QĐ 5948/QĐ-BYT.</span>
+                <span>
+                  Không có tương tác thuốc chống chỉ định trong danh mục 38.275 tương tác QĐ
+                  5948/QĐ-BYT.
+                </span>
               </div>
             )}
           </div>
@@ -346,22 +398,32 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">
           <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-teal-700" />
-            <span>5. Hướng Dẫn Thời Điểm Dùng Thuốc &amp; Cách Dùng (Dược Thư Quốc Gia DĐVN V)</span>
+            <span>
+              5. Hướng Dẫn Thời Điểm Dùng Thuốc &amp; Cách Dùng (Dược Thư Quốc Gia DĐVN V)
+            </span>
           </h4>
-          <span className="text-3xs font-mono font-bold bg-teal-100 text-teal-900 px-2 py-0.5 rounded">Dặn dò BN</span>
+          <span className="text-3xs font-mono font-bold bg-teal-100 text-teal-900 px-2 py-0.5 rounded">
+            Dặn dò BN
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-2xs">
           {auditData.clinical_checks
             .filter((c: any) => c.category === 'timing_administration')
             .map((c: any, idx: number) => (
-              <div key={idx} className="p-3 bg-white rounded-lg border border-slate-200 space-y-1.5 shadow-2xs">
+              <div
+                key={idx}
+                className="p-3 bg-white rounded-lg border border-slate-200 space-y-1.5 shadow-2xs"
+              >
                 <div className="font-bold text-teal-950">{c.title}</div>
                 <div className="text-slate-700 whitespace-pre-line leading-relaxed">{c.detail}</div>
-                <div className="text-slate-500 italic text-3xs border-t border-slate-100 pt-1">Căn cứ: {c.evidence_source}</div>
+                <div className="text-slate-500 italic text-3xs border-t border-slate-100 pt-1">
+                  Căn cứ: {c.evidence_source}
+                </div>
               </div>
             ))}
-          {auditData.clinical_checks.filter((c: any) => c.category === 'timing_administration').length === 0 && (
+          {auditData.clinical_checks.filter((c: any) => c.category === 'timing_administration')
+            .length === 0 && (
             <div className="col-span-2 text-slate-600">
               Uống thuốc đúng cữ theo toa, uống cùng 150 - 200ml nước ấm sau khi ăn no 15 - 30 phút.
             </div>
@@ -377,11 +439,9 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
             <span>Khuyến nghị lâm sàng cho Bác sĩ &amp; Điều dưỡng:</span>
           </div>
           <div className="text-teal-900 text-2xs leading-relaxed">
-            {auditData.recommendations.length > 0 ? (
-              auditData.recommendations.join(' • ')
-            ) : (
-              'Đơn thuốc an toàn tuyệt đối. Bác sĩ có thể tiến hành ký số phát hành và gửi tin nhắn dặn dò cho người bệnh.'
-            )}
+            {auditData.recommendations.length > 0
+              ? auditData.recommendations.join(' • ')
+              : 'Đơn thuốc an toàn tuyệt đối. Bác sĩ có thể tiến hành ký số phát hành và gửi tin nhắn dặn dò cho người bệnh.'}
           </div>
         </div>
 

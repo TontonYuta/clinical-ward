@@ -87,6 +87,43 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         session.set_active_medication(name="", ingredient="", sdk="")
         return out_scope
 
+    if any(term in lower_query for term in ("cái này", "cái đó", "cai nay", "cai do")):
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        if not get_drug_lexical_matcher().extract_medications(query):
+            return CopilotResponse(
+                intent="CLINICAL_SAFE_ABSTENTION",
+                reply_text="Từ chối suy đoán thuốc từ một đối tượng chưa xác định. Vui lòng nêu tên thuốc, hoạt chất hoặc tài liệu đang được hỏi để hệ thống tra cứu đúng đối tượng.",
+                answer_type="safe_abstention", source_status="missing_subject_context", rag_grounded=False,
+                confidence=1.0, session_id=session_id,
+            )
+
+    from app.services.chatbot.patient_allergy_reference import handle_patient_allergy_reference
+    allergy_reference = await handle_patient_allergy_reference(query, db, session)
+    if allergy_reference:
+        return allergy_reference
+
+    from app.services.chatbot.clinical_subject import is_symptom_consultation, is_general_disease_consultation
+    symptom_case = is_symptom_consultation(query)
+    if symptom_case or is_general_disease_consultation(query):
+        # A new symptom case does not inherit an unrelated medication from a
+        # previous turn, and symptoms are not drug-name search keywords.
+        session.clear_active_medication()
+        consultation = await handle_deep_rag_consultation(
+            query, lower_query, user_role, "", session_id, user_name, False)
+        if consultation and consultation.rag_grounded:
+            return consultation
+        return CopilotResponse(
+            intent="CLINICAL_CASE_CLARIFICATION",
+            reply_text=(("Đây là câu hỏi về triệu chứng của người bệnh; chưa đủ dữ liệu để xác định nguyên nhân hoặc chọn thuốc. " if symptom_case else
+                         "Đây là yêu cầu hướng dẫn theo bệnh/nhóm điều trị, chưa phải tên một thuốc cụ thể. ") +
+                        "Nguồn hiện có chưa cung cấp hướng dẫn lâm sàng phù hợp cho ca bệnh này. "
+                        "Vui lòng bổ sung tuổi, thời điểm khởi phát, diễn biến triệu chứng, bệnh nền và các thuốc đang dùng để tiếp tục rà soát. "
+                        "Không suy ra chẩn đoán từ danh sách tác dụng phụ của một thuốc chưa được nêu."),
+            answer_type="clarification", source_status="missing_clinical_case_evidence",
+            confidence=1.0, rag_grounded=False, session_id=session_id,
+            suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Kiểm tra tương tác thuốc"],
+        )
+
     # 2. SOTA RAG: CRAG Contextual Query Rewriter & Multi-turn Clinical De-contextualization
     from app.services.rag.query_rewriter import rewrite_clinical_query
     rewritten_res = await rewrite_clinical_query(query, history=history)

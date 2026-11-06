@@ -10,7 +10,7 @@ router = APIRouter(prefix="/audit", tags=["Sổ Nhật Ký Kiểm Toán Lâm Sà
 
 @router.get("/ledger", response_model=list[AuditRecordResponse])
 async def get_audit_ledger(db: AsyncSession = Depends(get_db)):
-    stmt = select(AuditRecord).order_by(AuditRecord.created_at.desc())
+    stmt = select(AuditRecord).order_by(AuditRecord.created_at.desc(), AuditRecord.id.desc())
     res = await db.execute(stmt)
     records = res.scalars().all()
     return records

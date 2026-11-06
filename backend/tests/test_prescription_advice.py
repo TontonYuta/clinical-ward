@@ -15,6 +15,7 @@ async def test_send_prescription_advice_email_success():
         payload = {
             "id": "ADV-2026-0001",
             "prescriptionId": "RX-2026-8801",
+            "patientId": "TEST-PATIENT-1",
             "patientName": "Nguyễn Văn An",
             "patientEmail": "nguyenvanan.patient@example.com",
             "patientPhone": "0912345678",
@@ -82,6 +83,8 @@ async def test_send_prescription_advice_email_success():
         class MockResponse:
             status_code = 200
 
+            def json(self): return {"success": True}
+
         class MockClient:
             async def __aenter__(self): return self
             async def __aexit__(self, *args): return False
@@ -103,6 +106,7 @@ async def test_send_prescription_advice_invalid_email():
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         payload = {
             "id": "ADV-2026-0002",
+            "patientId": "TEST-PATIENT-2",
             "patientName": "Trần Thị Mai",
             "patientEmail": "invalid-email-address",
             "doctorName": "BS. Hùng",

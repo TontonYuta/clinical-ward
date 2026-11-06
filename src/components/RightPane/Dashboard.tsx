@@ -1,4 +1,5 @@
 import React from 'react';
+import type { PatientProfile } from '../../services/patientService';
 import { Lock } from 'lucide-react';
 import {
   DebtRecord,
@@ -24,9 +25,11 @@ import { PrintableFormType } from '../Modals/PrintableFormModal';
 export type { DashboardTab };
 
 interface DashboardProps {
+  patients: PatientProfile[];
   currentTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
   currentUserRole: UserRole;
+  operatorName?: string;
   debts: DebtRecord[];
   onSettleDebt: (id: string) => void;
   onSimulateMorningReminder: () => void;
@@ -60,9 +63,11 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
+  patients,
   currentTab,
   onTabChange,
   currentUserRole = 'nurse',
+  operatorName,
   debts,
   onSettleDebt,
   onSimulateMorningReminder,
@@ -98,9 +103,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/70 overflow-hidden">
+    <div className="workspace-viewport flex flex-col h-full overflow-hidden">
       {/* Main Tab Viewport (Pinned Controls & Isolated Scroll Table with Mobile Bottom Nav Clearance) */}
-      <div className="flex-1 overflow-hidden p-1.5 sm:p-2.5 min-h-0 flex flex-col pb-18 md:pb-2.5">
+      <div className="workspace-content flex-1 overflow-hidden min-h-0 flex flex-col">
         {!allowedTabs.includes(currentTab) ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200 rounded-xl m-2">
             <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mb-4">
@@ -123,6 +128,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <>
             {currentTab === 'overview' && (
               <OperationsOverview
+                patients={patients}
                 currentUserRole={currentUserRole}
                 debts={debts}
                 tickets={tickets}
@@ -140,7 +146,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
             {currentTab === 'cpoe' && (
               <CpoePrescriptionTab
-                doctorName={currentUserRole === 'doctor' ? USER_PROFILES.doctor.name : 'BS. Trần Văn Hùng'}
+                patients={patients}
+                doctorName={operatorName || (currentUserRole === 'doctor' ? USER_PROFILES.doctor.name : '')}
                 currentUserRole={currentUserRole}
                 onOpenSafetyGuide={onOpenMedicationSafety}
               />
@@ -174,6 +181,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             {currentTab === 'fefo' && (
               <FefoInventoryTab
+                currentUserRole={currentUserRole}
+                operatorName={operatorName}
                 batches={batches}
                 onDispatchBatch={onDispatchBatch}
                 onRestockBatches={onRestockBatches}
@@ -185,6 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             {currentTab === 'coldchain' && (
               <ColdChainTab
+                batches={batches}
                 coldChainState={coldChainState}
                 onTriggerOutage={onTriggerOutage}
                 onRestorePower={onRestorePower}

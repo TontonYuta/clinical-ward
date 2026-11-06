@@ -147,7 +147,8 @@ async def test_inventory_fefo_and_restock():
         assert dates == sorted(dates), "Batches must be strictly sorted by FEFO (expiry_date ascending)"
 
         # 2. Dispatch FEFO batch
-        target_batch = batches[0]
+        from datetime import date
+        target_batch = next(b for b in batches if not b['is_quarantined'] and b['expiry_date'] >= date.today().isoformat() and b['current_stock'] >= 5)
         initial_stock = target_batch["current_stock"]
         dispatch_qty = 5
 
@@ -178,7 +179,8 @@ async def test_inventory_fefo_and_restock():
                 }
             )
             assert res_restock.status_code == 200
-            assert res_restock.json()["restocked_count"] == len(low_stock_ids)
+            assert res_restock.json()["proposed_count"] == len(low_stock_ids)
+            assert res_restock.json()["total_units_replenished"] == 0
 
 @pytest.mark.asyncio
 async def test_cold_chain_outage_and_quarantine():
@@ -216,7 +218,7 @@ async def test_cold_chain_outage_and_quarantine():
             "signer_name": "TS.BS. Nguyễn Văn An",
             "pharmacist_name": "DS. Nguyễn Bích Ngọc",
             "vvm_level_confirmed": 1,
-            "mkt_confirmed": 6.2,
+            "mkt_confirmed": res_restored.json()["mkt_temp"],
             "clinical_notes": "Chỉ số MKT đạt chuẩn ổn định nhiệt học, vắc xin còn nguyên hoạt tính sinh học."
         }
         res_release = await client.post("/api/v1/coldchain/release-quarantine", json=release_payload)

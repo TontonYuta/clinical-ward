@@ -5,8 +5,11 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { InventoryBatch } from '../../../types/clinical';
-import { clinicalAudio } from '../../../utils/audio';
+import { InventoryBatch, UserRole } from '../../../types/clinical';
+import { expiryState } from '../../ui/workspaceStatus';
+import { EmptyState } from '../../ui/Workspace';
+import { BatchDispatchModal } from '../../Modals/BatchDispatchModal';
+import { dispatchHoldReason } from './Pharmacy/dispatchModel';
 import { RestockProposalModal } from '../../Modals/RestockProposalModal';
 import { NationalDrugRegistryModal } from '../../Modals/NationalDrugRegistryModal';
 import { DavDrugDetailModal } from '../../Modals/DavDrugDetailModal';
@@ -18,9 +21,14 @@ import {
 } from './Pharmacy/PharmacyHeaderRibbon';
 import { PharmacyBatchRow } from './Pharmacy/PharmacyBatchRow';
 import { PharmacyBatchCard } from './Pharmacy/PharmacyBatchCard';
-import { resolvePharmacologicalGroup, PharmacologicalGroupKey } from '../../../utils/clinical/pharmacologicalClassification';
+import {
+  resolvePharmacologicalGroup,
+  PharmacologicalGroupKey,
+} from '../../../utils/clinical/pharmacologicalClassification';
 
 interface FefoInventoryTabProps {
+  currentUserRole?: UserRole;
+  operatorName?: string;
   batches: InventoryBatch[];
   onDispatchBatch: (batchId: string, quantity: number) => void;
   onRestockBatches?: (batchIds: string[]) => void;
@@ -30,17 +38,50 @@ interface FefoInventoryTabProps {
 }
 
 export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
-  batches, onDispatchBatch, onRestockBatches, onOpenPrintForm, isAudioMuted, onOpenSafetyGuide,
+  currentUserRole = 'nurse',
+  operatorName,
+  batches,
+  onDispatchBatch,
+  onRestockBatches,
+  onOpenPrintForm,
+  isAudioMuted,
+  onOpenSafetyGuide,
 }) => {
-  const [warehouse, setWarehouse] = useState<WarehouseFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_warehouse') as WarehouseFilter) || 'all' : 'all'));
-  const [status, setStatus] = useState<StatusFilter>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_status') as StatusFilter) || 'all' : 'all'));
-  const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>(() => (typeof window !== 'undefined' ? (sessionStorage.getItem('fefo_pharm_group') as PharmacologicalGroupKey) || 'all' : 'all'));
-  const [location, setLocation] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('fefo_location') || 'all' : 'all'));
-  const locations = useMemo(() => [...new Set(batches.map((b) => b.warehouseLocation.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi')), [batches]);
-  const [searchQuery, setSearchQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('fefo_search') || '' : ''));
+  const [warehouse, setWarehouse] = useState<WarehouseFilter>(() =>
+    typeof window !== 'undefined'
+      ? (sessionStorage.getItem('fefo_warehouse') as WarehouseFilter) || 'all'
+      : 'all',
+  );
+  const [status, setStatus] = useState<StatusFilter>(() =>
+    typeof window !== 'undefined'
+      ? (sessionStorage.getItem('fefo_status') as StatusFilter) || 'all'
+      : 'all',
+  );
+  const [pharmGroup, setPharmGroup] = useState<PharmacologicalGroupKey>(() =>
+    typeof window !== 'undefined'
+      ? (sessionStorage.getItem('fefo_pharm_group') as PharmacologicalGroupKey) || 'all'
+      : 'all',
+  );
+  const [location, setLocation] = useState(() =>
+    typeof window !== 'undefined' ? sessionStorage.getItem('fefo_location') || 'all' : 'all',
+  );
+  const locations = useMemo(
+    () =>
+      [...new Set(batches.map((b) => b.warehouseLocation.trim()).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b, 'vi'),
+      ),
+    [batches],
+  );
+  const [searchQuery, setSearchQuery] = useState(() =>
+    typeof window !== 'undefined' ? sessionStorage.getItem('fefo_search') || '' : '',
+  );
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [isRegistryModalOpen, setIsRegistryModalOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<InventoryBatch | null>(null);
+  const [dispatchBatchId, setDispatchBatchId] = useState<string | null>(null);
+  const dispatchBatch = batches.find(batch => batch.id === dispatchBatchId);
+  const canManageInventory = currentUserRole === 'pharmacist' || currentUserRole === 'director';
+  useEffect(() => { if (!canManageInventory) { setDispatchBatchId(null); setIsRestockModalOpen(false); } }, [canManageInventory]);
 
   useEffect(() => {
     try {
@@ -56,7 +97,8 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
     return batches.filter((batch) => {
       // 1. Phân loại Kho
       if (warehouse === 'inpatient') {
-        const isIp = batch.warehouseType === 'inpatient_central' || batch.warehouseType === 'ward_emergency';
+        const isIp =
+          batch.warehouseType === 'inpatient_central' || batch.warehouseType === 'ward_emergency';
         if (!isIp && batch.warehouseType) return false;
       } else if (warehouse === 'outpatient') {
         if (batch.warehouseType !== 'outpatient_pharmacy') return false;
@@ -65,15 +107,17 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
       if (location !== 'all' && batch.warehouseLocation.trim() !== location) return false;
 
       // 2. Trạng thái FEFO / Mức Min
-      if (status === 'near_expiry' && !batch.isNearExpiry) return false;
-      if (status === 'low_stock' && !(batch.isLowStock || batch.currentStock <= batch.minThreshold)) return false;
+      if (status === 'expired' && expiryState(batch.expiryDate) !== 'expired') return false;
+      if (status === 'near_expiry' && expiryState(batch.expiryDate) !== 'near') return false;
+      if (status === 'low_stock' && !(batch.isLowStock || batch.currentStock <= batch.minThreshold))
+        return false;
 
       // 3. Phân nhóm tác dụng dược lý lâm sàng (ATC WHO & DTQG)
       if (pharmGroup !== 'all') {
         const grp = resolvePharmacologicalGroup(
           batch.atcCode,
           `${batch.itemName} ${batch.activeIngredient}`,
-          batch.pharmacologicalClass || batch.category
+          batch.pharmacologicalClass || batch.category,
         );
         if (grp.key !== pharmGroup) return false;
       }
@@ -97,91 +141,121 @@ export const FefoInventoryTab: React.FC<FefoInventoryTabProps> = ({
     });
   }, [batches, warehouse, location, status, pharmGroup, searchQuery]);
 
-  const nearExpiryBatches = useMemo(() => batches.filter((b) => b.isNearExpiry), [batches]);
+  const nearExpiryBatches = useMemo(
+    () => batches.filter((b) => expiryState(b.expiryDate) === 'near'),
+    [batches],
+  );
   const lowStockBatches = useMemo(
     () => batches.filter((b) => b.isLowStock || b.currentStock <= b.minThreshold),
-    [batches]
+    [batches],
   );
 
   const handleQuickDispatch = (batch: InventoryBatch) => {
-    const dispatchQty = Math.min(10, batch.currentStock);
-    if (dispatchQty <= 0) return;
-    if (!isAudioMuted) clinicalAudio.playSuccessChime();
-    onDispatchBatch(batch.id, dispatchQty);
+    if (canManageInventory && !dispatchHoldReason(batch)) setDispatchBatchId(batch.id);
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden gap-1.5 w-full">
+    <div className="workspace-page">
       <PharmacyHeaderRibbon
-        warehouse={warehouse} setWarehouse={setWarehouse}
-        status={status} setStatus={setStatus}
-        pharmacologicalGroup={pharmGroup} setPharmacologicalGroup={setPharmGroup}
-        searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-        nearExpiryCount={nearExpiryBatches.length} locations={locations} location={location} setLocation={setLocation}
+        warehouse={warehouse}
+        setWarehouse={setWarehouse}
+        status={status}
+        setStatus={setStatus}
+        pharmacologicalGroup={pharmGroup}
+        setPharmacologicalGroup={setPharmGroup}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        nearExpiryCount={nearExpiryBatches.length}
+        locations={locations}
+        location={location}
+        setLocation={setLocation}
         onOpenNationalRegistry={() => setIsRegistryModalOpen(true)}
+        onOpenRestock={canManageInventory && onRestockBatches ? () => setIsRestockModalOpen(true) : undefined}
       />
 
-      {/* Mobile View: Danh sách phẳng hành chính */}
-      <div className="md:hidden flex-1 overflow-y-auto px-1 pb-8">
-        {filteredBatches.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500 text-xs">
-            Không tìm thấy thuốc hoặc vật tư y tế phù hợp với bộ lọc hiện tại.
-          </div>
-        ) : (
-          filteredBatches.map((batch, idx) => (
+      <div className="mobile-records">
+        {filteredBatches.length ? (
+          filteredBatches.map((batch, index) => (
             <PharmacyBatchCard
-              key={batch.id} index={idx} batch={batch}
-              onQuickDispatch={handleQuickDispatch} onOpenRestock={() => setIsRestockModalOpen(true)}
-              onOpenSafetyGuide={onOpenSafetyGuide} onSelectBatch={(b) => setSelectedBatch(b)}
+              key={batch.id}
+              index={index}
+              batch={batch}
+              onSelectBatch={setSelectedBatch}
+              onQuickDispatch={canManageInventory ? handleQuickDispatch : undefined}
             />
           ))
+        ) : (
+          <EmptyState title="Không tìm thấy lô thuốc" />
         )}
       </div>
-
-      {/* Desktop View: Bảng công bố dược phẩm hành chính (Chuẩn DAV dichvucong.dav.gov.vn) */}
-      <div className="hidden md:flex flex-1 min-h-0 bg-white border-y border-slate-200 overflow-hidden flex-col">
-        <div className="overflow-x-auto overflow-y-auto flex-1 w-full">
-          <table className="w-full min-w-[1520px] table-fixed text-left text-sm border-collapse">
+      <div className="workspace-list desktop-records">
+        <div className="list-caption">
+          <strong>
+            Danh mục lô thuốc <span className="record-mono">/ {filteredBatches.length}</span>
+          </strong>
+          <span>Mở tên thuốc để xem hồ sơ đầy đủ</span>
+        </div>
+        <div className="workspace-table-scroll">
+          <table className="workspace-table">
             <colgroup>
-              <col style={{ width: '70px' }} /><col style={{ width: '190px' }} />
-              <col className="w-[30%]" style={{ minWidth: '360px' }} /><col style={{ width: '220px' }} />
-              <col style={{ width: '270px' }} /><col style={{ width: '200px' }} /><col style={{ width: '240px' }} />
+              <col style={{ width: '26%' }} />
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '17%' }} />
+              <col style={{ width: '22%' }} />
             </colgroup>
-            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-600">
-              <tr className="font-semibold text-sm tracking-normal">
-                <th className="py-3 px-3 text-center border-r border-slate-200">STT</th>
-                <th className="py-3 px-3.5 border-r border-slate-200">SĐK</th>
-                <th className="py-3 px-3.5 border-r border-slate-200">Tên thuốc &amp; hoạt chất</th>
-                <th className="py-3 px-3.5 border-r border-slate-200">Dạng bào chế</th>
-                <th className="py-3 px-3.5 border-r border-slate-200">Số lô &amp; hạn dùng</th>
-                <th className="py-3 px-3.5 text-center border-r border-slate-200">Tồn kho</th>
-                <th className="py-3 px-3.5 border-r border-slate-200">Vị trí</th>
+            <thead>
+              <tr>
+                <th>Thuốc & hàm lượng</th>
+                <th>Lô / Hạn dùng</th>
+                <th>Tồn kho</th>
+                <th>Vị trí</th>
+                <th>Chú ý</th>
               </tr>
             </thead>
             <tbody>
-              {filteredBatches.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 font-medium text-sm">
-                    Không tìm thấy thuốc khớp với tiêu chí tra cứu.
-                  </td>
-                </tr>
-              ) : (
-                filteredBatches.map((batch, idx) => (
-                  <PharmacyBatchRow
-                    key={batch.id} index={idx} batch={batch}
-                    onQuickDispatch={handleQuickDispatch} onOpenRestock={() => setIsRestockModalOpen(true)}
-                    onOpenSafetyGuide={onOpenSafetyGuide} onSelectBatch={(b) => setSelectedBatch(b)}
-                  />
-                ))
-              )}
+              {filteredBatches.map((batch, index) => (
+                <PharmacyBatchRow
+                  key={batch.id}
+                  index={index}
+                  batch={batch}
+                  onSelectBatch={setSelectedBatch}
+                  onQuickDispatch={canManageInventory ? handleQuickDispatch : undefined}
+                />
+              ))}
             </tbody>
           </table>
+          {filteredBatches.length === 0 && (
+            <EmptyState
+              title="Không tìm thấy lô thuốc"
+              description="Thử từ khóa khác hoặc đặt lại bộ lọc."
+            />
+          )}
         </div>
       </div>
 
-      <RestockProposalModal isOpen={isRestockModalOpen} onClose={() => setIsRestockModalOpen(false)} lowStockBatches={lowStockBatches} onConfirmRestock={(ids) => onRestockBatches?.(ids)} onOpenPrintForm={onOpenPrintForm} isAudioMuted={isAudioMuted} />
-      <NationalDrugRegistryModal isOpen={isRegistryModalOpen} onClose={() => setIsRegistryModalOpen(false)} onSelectMedication={onOpenSafetyGuide} />
-      {selectedBatch && <DavDrugDetailModal isOpen={selectedBatch !== null} onClose={() => setSelectedBatch(null)} batch={selectedBatch} onQuickDispatch={handleQuickDispatch} />}
+      <RestockProposalModal
+        isOpen={isRestockModalOpen}
+        onClose={() => setIsRestockModalOpen(false)}
+        lowStockBatches={lowStockBatches}
+        onConfirmRestock={(ids) => onRestockBatches?.(ids)}
+        operatorName={operatorName}
+        onOpenPrintForm={onOpenPrintForm}
+        isAudioMuted={isAudioMuted}
+      />
+      <NationalDrugRegistryModal
+        isOpen={isRegistryModalOpen}
+        onClose={() => setIsRegistryModalOpen(false)}
+        onSelectMedication={onOpenSafetyGuide}
+      />
+      {selectedBatch && (
+        <DavDrugDetailModal
+          isOpen={selectedBatch !== null}
+          onClose={() => setSelectedBatch(null)}
+          batch={selectedBatch}
+        />
+      )}
+      {canManageInventory && dispatchBatch && <BatchDispatchModal key={dispatchBatch.id} batch={dispatchBatch} onClose={() => setDispatchBatchId(null)} onContinue={onDispatchBatch} />}
     </div>
   );
 };

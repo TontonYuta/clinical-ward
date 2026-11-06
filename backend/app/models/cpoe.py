@@ -38,5 +38,6 @@ class CpoePrescription(Base):
     facility_name: Mapped[str] = mapped_column(String, nullable=True)
     facility_address: Mapped[str] = mapped_column(String, nullable=True)
     facility_phone: Mapped[str] = mapped_column(String, nullable=True)
+    clinical_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     items_json: Mapped[str] = mapped_column(Text, nullable=False) # JSON array of items
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

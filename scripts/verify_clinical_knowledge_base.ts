@@ -1,13 +1,27 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const KB_DIR = path.resolve(__dirname, '../backend/data/knowledge_base');
-const DB_PATH = path.resolve(__dirname, '../backend/clinical_hospital.db');
+const DB_PATH = process.env.CLINICAL_KB_DB_PATH
+  ? path.resolve(process.env.CLINICAL_KB_DB_PATH)
+  : path.resolve(__dirname, '../backend/clinical_hospital.db');
+const PYTHON = process.env.CLINICAL_KB_PYTHON || 'python3';
+const READ_ONLY_INN_QUERY = `
+import pathlib, sqlite3, sys
+uri = pathlib.Path(sys.argv[1]).resolve().as_uri() + '?mode=ro'
+with sqlite3.connect(uri, uri=True) as db:
+    db.execute('PRAGMA query_only = ON')
+    row = db.execute(
+        'SELECT count(*) FROM dav_national_drugs WHERE active_ingredient LIKE ?',
+        ('%' + sys.argv[2] + '%',),
+    ).fetchone()
+    print(row[0])
+`;
 
 const REQUIRED_FILES = [
   'README.md',
@@ -60,6 +74,7 @@ const LEGAL_ANCHORS = [
 console.log('\n--- Kiểm tra căn cứ pháp lý (Legal Grounds) ---');
 for (const anchor of LEGAL_ANCHORS) {
   const fullPath = path.join(KB_DIR, anchor.file);
+  if (!fs.existsSync(fullPath)) continue; // Already reported by the required-files check.
   const text = fs.readFileSync(fullPath, 'utf8');
   if (text.includes(anchor.term)) {
     console.log(`✅ [PHÁP LÝ HỢP LỆ] ${anchor.term} được trích xuất chính thức trong ${anchor.file}`);
@@ -76,17 +91,28 @@ if (fs.existsSync(DB_PATH)) {
   
   for (const inn of checkINNs) {
     try {
-      const cmd = `sqlite3 "${DB_PATH}" "SELECT count(*) FROM dav_national_drugs WHERE active_ingredient LIKE '%${inn}%';"`;
-      const cnt = parseInt(execSync(cmd, { encoding: 'utf8' }).trim(), 10);
+      const result = execFileSync(PYTHON, ['-c', READ_ONLY_INN_QUERY, DB_PATH, inn], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }).trim();
+      if (!/^\d+$/.test(result)) throw new Error('Database query did not return a valid count');
+      const cnt = Number(result);
       if (cnt > 0) {
         console.log(`✅ Hoạt chất "${inn}": Khớp với ${cnt} số đăng ký biệt dược trong dav_national_drugs`);
       } else {
-        console.warn(`⚠️ Hoạt chất "${inn}": Không tìm thấy trong CSDL DAV`);
+        console.error(`❌ Hoạt chất "${inn}": Không tìm thấy trong CSDL DAV`);
+        allPassed = false;
       }
     } catch (e) {
-      console.error(`Lỗi khi query sqlite3: ${e}`);
+      console.error(`❌ Không thể kiểm tra CSDL DAV cho "${inn}": ${e}`);
+      allPassed = false;
     }
   }
+} else if (process.env.CLINICAL_KB_DB_PATH) {
+  console.error(`❌ Không tìm thấy CSDL DAV được chỉ định: ${DB_PATH}`);
+  allPassed = false;
+} else {
+  console.warn('⚠️ Không có CSDL cục bộ: chỉ kiểm tra tài liệu; chưa kiểm tra mapping DAV.');
 }
 
 console.log('\n======================================================================');

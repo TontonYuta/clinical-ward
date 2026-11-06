@@ -13,7 +13,7 @@ from app.seed_registry_helpers import (
 )
 
 def resolve_db_path(db_file: str | None = None) -> str:
-    if db_file and (os.path.exists(db_file) or "/tmp/" in db_file):
+    if db_file:
         return db_file
     for env_key in ("DATABASE_URL", "SQLITE_DB_PATH"):
         val = os.environ.get(env_key, "")

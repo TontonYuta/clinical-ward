@@ -23,19 +23,19 @@ export function handleCpoeIntent(
   nowStr: string,
   userRole: string = 'doctor'
 ): ProcessedQueryResult {
-  const canPrescribe = userRole !== 'nurse';
+  const canPrescribe = userRole === 'doctor';
   const isOpenForm = anyKeyword(lower, [
     'mở form', 'mo form', 'mở biểu mẫu', 'mo bieu mau', 'mở giao diện', 'mở cpoe', 'vào form',
     'mở form kê đơn', 'mở form cpoe'
   ]);
 
   // Enforce strict RBAC: Nurses cannot prescribe
-  if (!canPrescribe && (isOpenForm || lower.includes('kê đơn') || lower.includes('kê toa'))) {
+  if (!canPrescribe) {
     return {
       replyMessage: {
         id: `msg-agent-cpoe-rbac-${Date.now()}`,
         sender: 'agent',
-        text: '⚠️ **Từ chối quyền kê đơn (RBAC):** Theo Thông tư 26/2025/TT-BYT và Luật Khám bệnh, chữa bệnh, chức năng kê đơn thuốc chỉ dành riêng cho Bác sĩ điều trị có chứng chỉ hành nghề. Chatbot chỉ hỗ trợ mở form theo đúng phân quyền; Điều dưỡng không có thẩm quyền kê đơn mà chỉ có quyền xem đơn và lập lịch dặn dò.',
+        text: '⚠️ **Từ chối quyền kê đơn (RBAC):** Tài khoản hiện tại không có quyền kê đơn trong ứng dụng. Chỉ vai trò bác sĩ được mở form kê đơn; các vai trò khác có thể tra cứu đơn theo quyền được cấp.',
         timestamp: nowStr,
         legalReference: { lawCode: 'Thông tư 26/2025/TT-BYT', title: 'Quy chế kê đơn thuốc', clause: 'Điều 4' },
         suggestedChips: ['Mở form gửi email/sms', 'Tra cứu Dược Thư Quốc Gia', 'Xem danh mục thuốc Cục QLD']

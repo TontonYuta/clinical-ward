@@ -175,7 +175,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       data-testid="dav-drug-detail-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs"
+      className="clinical-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-xs"
     >
       <div className="bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-300 w-full sm:max-w-6xl xl:max-w-7xl h-[100dvh] sm:h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
         

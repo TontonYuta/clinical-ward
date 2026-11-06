@@ -1,0 +1,434 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/debts",
+    "file": "backend/app/routers/debts.py",
+    "line": 18,
+    "handler": "get_debts",
+    "registered": false
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/debts/borrow",
+    "file": "backend/app/routers/debts.py",
+    "line": 37,
+    "handler": "borrow_emergency_item",
+    "registered": false
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/debts/{debt_id}/return-ampoule",
+    "file": "backend/app/routers/debts.py",
+    "line": 92,
+    "handler": "return_ampoule",
+    "registered": false
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/debts/destroy-ampoules",
+    "file": "backend/app/routers/debts.py",
+    "line": 122,
+    "handler": "destroy_ampoules",
+    "registered": false
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/debts/{debt_id}/settle",
+    "file": "backend/app/routers/debts.py",
+    "line": 160,
+    "handler": "settle_debt",
+    "registered": false
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/copilot/chat",
+    "file": "backend/app/routers/copilot.py",
+    "line": 24,
+    "handler": "chat_with_copilot",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/copilot/history",
+    "file": "backend/app/routers/copilot.py",
+    "line": 66,
+    "handler": "get_copilot_chat_history",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/copilot/rag",
+    "file": "backend/app/routers/copilot.py",
+    "line": 82,
+    "handler": "query_pure_clinical_rag",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/registry/catalog",
+    "file": "backend/app/routers/registry.py",
+    "line": 36,
+    "handler": "get_canonical_catalog",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/registry",
+    "file": "backend/app/routers/registry.py",
+    "line": 53,
+    "handler": "get_national_drugs_paginated",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/registry/stats",
+    "file": "backend/app/routers/registry.py",
+    "line": 131,
+    "handler": "get_registry_stats",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/registry/{national_code}",
+    "file": "backend/app/routers/registry.py",
+    "line": 140,
+    "handler": "get_drug_by_national_code",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/registry/{national_code}/documents",
+    "file": "backend/app/routers/registry.py",
+    "line": 159,
+    "handler": "get_drug_documents",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/registry/monograph/{inn_or_id}",
+    "file": "backend/app/routers/registry.py",
+    "line": 177,
+    "handler": "get_clinical_monograph",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/cpoe",
+    "file": "backend/app/routers/cpoe.py",
+    "line": 20,
+    "handler": "get_cpoe_orders",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/cpoe",
+    "file": "backend/app/routers/cpoe.py",
+    "line": 47,
+    "handler": "create_cpoe_order",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/equipment",
+    "file": "backend/app/routers/equipment.py",
+    "line": 13,
+    "handler": "get_equipment_tickets",
+    "registered": false
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/equipment/incidents",
+    "file": "backend/app/routers/equipment.py",
+    "line": 37,
+    "handler": "report_incident",
+    "registered": false
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/equipment/{ticket_id}/handover",
+    "file": "backend/app/routers/equipment.py",
+    "line": 91,
+    "handler": "handover_equipment",
+    "registered": false
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mcp/tools",
+    "file": "backend/app/routers/mcp.py",
+    "line": 22,
+    "handler": "list_mcp_tools",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/mcp/execute",
+    "file": "backend/app/routers/mcp.py",
+    "line": 27,
+    "handler": "execute_mcp_tool_rest",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/mcp/rpc",
+    "file": "backend/app/routers/mcp.py",
+    "line": 33,
+    "handler": "handle_mcp_json_rpc",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/mcp",
+    "file": "backend/app/routers/mcp.py",
+    "line": 33,
+    "handler": "handle_mcp_json_rpc",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/mcp/info",
+    "file": "backend/app/routers/mcp.py",
+    "line": 74,
+    "handler": "get_mcp_server_info",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/patients",
+    "file": "backend/app/routers/patients.py",
+    "line": 36,
+    "handler": "list_patients",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/patients/{patient_id}",
+    "file": "backend/app/routers/patients.py",
+    "line": 41,
+    "handler": "get_patient_detail",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/patients",
+    "file": "backend/app/routers/patients.py",
+    "line": 73,
+    "handler": "create_or_update_patient",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/assets",
+    "file": "backend/app/routers/assets.py",
+    "line": 13,
+    "handler": "get_assets",
+    "registered": false
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/assets/{asset_id}/scan-qr",
+    "file": "backend/app/routers/assets.py",
+    "line": 37,
+    "handler": "scan_qr_asset",
+    "registered": false
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/assets/{asset_id}/transfer",
+    "file": "backend/app/routers/assets.py",
+    "line": 54,
+    "handler": "transfer_asset",
+    "registered": false
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/assets/{asset_id}/liquidate",
+    "file": "backend/app/routers/assets.py",
+    "line": 97,
+    "handler": "liquidate_asset",
+    "registered": false
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/prescriptions/audit",
+    "file": "backend/app/routers/prescription_audit.py",
+    "line": 19,
+    "handler": "audit_prescription_endpoint",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inventory/batches",
+    "file": "backend/app/routers/inventory.py",
+    "line": 23,
+    "handler": "get_batches",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inventory/batches/{batch_id}/dispatch",
+    "file": "backend/app/routers/inventory.py",
+    "line": 49,
+    "handler": "dispatch_fefo_batch",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inventory/restock-proposal",
+    "file": "backend/app/routers/inventory.py",
+    "line": 114,
+    "handler": "create_restock_proposal",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/clinical-ddi/audit",
+    "file": "backend/app/routers/clinical_ddi.py",
+    "line": 36,
+    "handler": "audit_prescription_endpoint",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/clinical-ddi/check-pair",
+    "file": "backend/app/routers/clinical_ddi.py",
+    "line": 98,
+    "handler": "check_pair_endpoint",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/clinical-ddi/normalize",
+    "file": "backend/app/routers/clinical_ddi.py",
+    "line": 146,
+    "handler": "normalize_endpoint",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/clinical-ddi/register-rule",
+    "file": "backend/app/routers/clinical_ddi.py",
+    "line": 170,
+    "handler": "register_rule_endpoint",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/clinical-ddi/catalog-stats",
+    "file": "backend/app/routers/clinical_ddi.py",
+    "line": 183,
+    "handler": "catalog_stats_endpoint",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/audit/ledger",
+    "file": "backend/app/routers/audit.py",
+    "line": 12,
+    "handler": "get_audit_ledger",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/audit/verify-integrity",
+    "file": "backend/app/routers/audit.py",
+    "line": 19,
+    "handler": "verify_integrity",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/prescription-advice",
+    "file": "backend/app/routers/prescription_advice.py",
+    "line": 71,
+    "handler": "list_prescription_advices",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/prescription-advice/",
+    "file": "backend/app/routers/prescription_advice.py",
+    "line": 71,
+    "handler": "list_prescription_advices",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/prescription-advice",
+    "file": "backend/app/routers/prescription_advice.py",
+    "line": 93,
+    "handler": "save_prescription_advice",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/prescription-advice/",
+    "file": "backend/app/routers/prescription_advice.py",
+    "line": 93,
+    "handler": "save_prescription_advice",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/prescription-advice/send-email",
+    "file": "backend/app/routers/prescription_advice.py",
+    "line": 135,
+    "handler": "send_medication_advice_email",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/coldchain/status",
+    "file": "backend/app/routers/coldchain.py",
+    "line": 24,
+    "handler": "get_cold_chain_status",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/coldchain/simulate-outage",
+    "file": "backend/app/routers/coldchain.py",
+    "line": 73,
+    "handler": "simulate_outage",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/coldchain/restore-power",
+    "file": "backend/app/routers/coldchain.py",
+    "line": 105,
+    "handler": "restore_power",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/coldchain/release-quarantine",
+    "file": "backend/app/routers/coldchain.py",
+    "line": 130,
+    "handler": "release_quarantine",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/sms/templates",
+    "file": "backend/app/routers/sms.py",
+    "line": 59,
+    "handler": "get_sms_templates",
+    "registered": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/sms/logs",
+    "file": "backend/app/routers/sms.py",
+    "line": 63,
+    "handler": "list_sms_logs",
+    "registered": true
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/sms/send",
+    "file": "backend/app/routers/sms.py",
+    "line": 80,
+    "handler": "send_patient_sms",
+    "registered": true
+  }
+]

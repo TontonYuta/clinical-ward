@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 class CpoeItemSchema(BaseModel):
@@ -11,11 +12,12 @@ class CpoeItemSchema(BaseModel):
     quantity: int
     unit: str
     instructions: str
-    durationDays: int | None = None
+    isNarcotic: bool = False
+    durationDays: int | None = Field(default=None, ge=1)
 
 class CpoeOrderCreate(BaseModel):
     id: str | None = None
-    prescriptionType: str = Field(..., description="outpatient hoặc inpatient_daily")
+    prescriptionType: Literal["outpatient", "inpatient_daily"] = Field(..., description="outpatient hoặc inpatient_daily")
     patientId: str
     patientName: str
     patientCccd: str
@@ -31,11 +33,12 @@ class CpoeOrderCreate(BaseModel):
     diagnosisIcd10: str
     diagnosisText: str
     isChronicDisease: bool = False
-    daysPrescribed: int = 0
+    daysPrescribed: int = Field(default=0, ge=0)
     doctorName: str
     doctorCertificate: str = ""
     prescribedAt: str | None = None
     digitalSignature: str | None = None
+    clinicalNotes: str = ""
     status: str = "draft"
     tt26FormType: str | None = None
     receiverCccd: str | None = None
@@ -90,6 +93,7 @@ class CpoeOrderResponse(BaseModel):
     doctorCertificate: str
     prescribedAt: str
     digitalSignature: str | None = None
+    clinicalNotes: str = ""
     status: str
     tt26FormType: str | None = None
     receiverCccd: str | None = None

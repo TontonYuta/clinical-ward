@@ -29,7 +29,8 @@ async def build_fluent_drug_profile_response(
     query: str,
     user_name: str = "Bác sĩ",
     user_role: str = "doctor",
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
+    stock_summary: Optional[str] = None,
 ) -> CopilotResponse:
     """Xây dựng phản hồi tra cứu thuốc liền mạch, súc tích chuẩn PaperQA2 Evidence Synthesis."""
     greeting = get_clinical_persona_greeting(user_name, user_role)
@@ -94,7 +95,8 @@ async def build_fluent_drug_profile_response(
         f"**Cảnh báo an toàn & Chống chỉ định:** {format_clinical_text(contra)}. Hiệu chỉnh liều suy thận: {format_clinical_text(renal)}. Cảnh báo phụ nữ mang thai / cho con bú: {format_clinical_text(preg)}."
     ]
     if any(w in q_lower for w in ["tồn kho", "còn thuốc", "số lượng", "trong kho", "ở đâu", "còn bao nhiêu"]):
-        evidence_blocks.append(f"• Tồn kho bệnh viện: {stock} {matched_drug.standard_unit} (Vị trí: `{location}`).")
+        quantities = stock_summary if stock_summary is not None else f"{stock} {matched_drug.standard_unit}"
+        evidence_blocks.append(f"• Tồn kho bệnh viện: {quantities} (Vị trí: `{location}`).")
 
     for r in relevant_chunks:
         evidence_blocks.append(f"[{r.chunk.title}]: {r.chunk.content}")

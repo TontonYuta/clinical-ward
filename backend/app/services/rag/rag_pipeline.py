@@ -35,6 +35,17 @@ async def execute_clinical_rag(
         kg_entities=kg_data.get("kg_entities", []),
         top_k=4
     )
+    # Filter by the requested clinical subject before unrelated evidence can
+    # enter a synthesis prompt, as well as when formatting the final answer.
+    from app.services.chatbot.clinical_subject import is_symptom_consultation, is_general_disease_consultation
+    general_disease = is_general_disease_consultation(query)
+    if is_symptom_consultation(query) or general_disease:
+        from app.services.rag.citation_grounder import _filter_supported_chunks
+        retrieved_chunks, _ = _filter_supported_chunks(query, retrieved_chunks, [])
+    if general_disease:
+        # Class-level questions require matching guidance, not a dump of every
+        # drug/organ rule associated with one of the words in the query.
+        kg_data = {}
 
     # 3. Xây dựng danh mục trích dẫn chứng cứ y văn (PaperQA2 Attribution)
     citations = build_claim_citations(retrieved_chunks)
@@ -63,7 +74,7 @@ async def execute_clinical_rag(
     gemini_key = api_key or settings.GEMINI_API_KEY
     llm_answer: Optional[str] = None
 
-    if gemini_key and gemini_key != "MY_GEMINI_API_KEY" and len(gemini_key.strip()) >= 10:
+    if retrieved_chunks and gemini_key and gemini_key != "MY_GEMINI_API_KEY" and len(gemini_key.strip()) >= 10:
         try:
             from app.services.copilot_gemini import query_gemini_models
 

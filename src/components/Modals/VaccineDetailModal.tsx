@@ -7,6 +7,7 @@
 import React from 'react';
 import { X, ShieldCheck, Thermometer, AlertTriangle, Snowflake, SunMedium, Building2, Calendar, FileText } from 'lucide-react';
 import { VaccineBatchItem } from '../../types/clinical';
+import { vaccineState } from '../ui/workspaceStatus';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 interface VaccineDetailModalProps {
@@ -29,13 +30,14 @@ export const VaccineDetailModal: React.FC<VaccineDetailModalProps> = ({
   if (!isOpen || !vaccine) return null;
 
   const effectivelyQuarantined = isQuarantined || vaccine.status === 'quarantined';
+  const displayState = vaccineState(vaccine, isQuarantined);
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       data-testid="vaccine-detail-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="clinical-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
     >
       <div className="bg-white w-full max-w-2xl rounded-xl border border-slate-200 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
@@ -50,13 +52,9 @@ export const VaccineDetailModal: React.FC<VaccineDetailModalProps> = ({
                   {vaccine.name}
                 </h3>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-2xs font-bold border shrink-0 ${
-                    effectivelyQuarantined
-                      ? 'bg-amber-50 text-amber-900 border-amber-300'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  }`}
+                  className={`status-pill ${displayState.tone}`}
                 >
-                  {effectivelyQuarantined ? 'Đang Biệt Trữ' : 'Sẵn Sàng Tiêm'}
+                  {displayState.label}
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-mono mt-0.5">
@@ -88,13 +86,13 @@ export const VaccineDetailModal: React.FC<VaccineDetailModalProps> = ({
               <span className="text-2xs font-semibold text-slate-500 block">Chỉ thị VVM</span>
               <span className="font-bold text-emerald-700 text-sm mt-0.5 flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block border border-emerald-600" />
-                Cấp 1 (Đạt)
+                Cấp {vaccine.vvmStage} (dữ liệu hồ sơ)
               </span>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-2xs font-semibold text-slate-500 block">Nhiệt độ GSP</span>
+              <span className="text-2xs font-semibold text-slate-500 block">Điều kiện bảo quản</span>
               <span className="font-mono font-bold text-teal-800 text-sm mt-0.5 block">
-                2°C – 8°C
+                {vaccine.storageCondition}
               </span>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">

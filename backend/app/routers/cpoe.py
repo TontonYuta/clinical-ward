@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from sqlalchemy.exc import IntegrityError
+from app.models.patient import PatientProfile
 from datetime import datetime
 import json
 import uuid
@@ -51,6 +53,16 @@ async def create_cpoe_order(
 
     validate_cpoe_ddi(payload.items)
 
+    if payload.patientId:
+        patient = await db.get(PatientProfile, payload.patientId)
+        if patient is None:
+            raise HTTPException(status_code=404, detail="Không tìm thấy mã bệnh nhân; chọn lại hồ sơ hoặc để trống mã khi lưu nháp chưa liên kết")
+        if patient.full_name.strip().casefold() != payload.patientName.strip().casefold():
+            raise HTTPException(status_code=409, detail="Họ tên không khớp mã bệnh nhân đã chọn")
+        for supplied, stored in ((payload.patientCccd, patient.cccd), (payload.patientDob, patient.dob)):
+            if supplied and stored and supplied.strip() != stored.strip():
+                raise HTTPException(status_code=409, detail="Thông tin định danh không khớp hồ sơ bệnh nhân")
+
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     order_id = payload.id or f"RX-2026-{uuid.uuid4().hex[:6].upper()}"
     signature = payload.digitalSignature if payload.status == "signed" else None
@@ -91,10 +103,15 @@ async def create_cpoe_order(
         facility_name=payload.facilityName,
         facility_address=payload.facilityAddress,
         facility_phone=payload.facilityPhone,
+        clinical_notes=payload.clinicalNotes,
         items_json=items_json
     )
     db.add(prescription)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Mã đơn đã tồn tại; tải lại danh sách trước khi lưu tiếp")
     await db.refresh(prescription)
 
     if payload.status == "signed":
