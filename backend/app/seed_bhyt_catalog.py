@@ -238,7 +238,7 @@ def seed_bhyt_catalog_if_needed() -> int:
             if row_d and row_d[0] > 0 and count_c > 0:
                 cursor.execute("SELECT count(*) FROM bhyt_drug_catalog")
                 count_d = cursor.fetchone()[0]
-                if count_d > 0:
+                if count_d >= 114:
                     conn.close()
                     return count_d
         conn.close()

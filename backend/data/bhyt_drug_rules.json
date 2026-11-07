@@ -1025,6 +1025,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Bắt buộc Biên bản Hội chẩn duyệt thuốc kháng sinh dự trữ và kết quả vi sinh/kháng sinh đồ. Tuyến huyện (Hạng III/IV) không được thanh toán.",
     "approvedIcd10Prefixes": [
       "A41",
@@ -1053,6 +1055,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Bắt buộc Biên bản Hội chẩn duyệt thuốc kháng sinh dự trữ theo Quyết định 5631/QĐ-BYT.",
     "approvedIcd10Prefixes": [
       "A41",
@@ -1077,6 +1081,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Chỉ thanh toán tại Tuyến Trung ương (Hạng ĐB & Hạng I) có hội chẩn.",
     "approvedIcd10Prefixes": [
       "A41",
@@ -1103,6 +1109,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Bắt buộc hội chẩn chuyên khoa nhiễm khuẩn hoặc hồi sức. Chỉ định khi nhiễm khuẩn Gram dương nặng (MRSA) hoặc viêm ruột do C.difficile.",
     "approvedIcd10Prefixes": [
       "A41",
@@ -1130,6 +1138,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Bắt buộc Biên bản Hội chẩn thuốc kháng sinh kiểm soát đặc biệt.",
     "approvedIcd10Prefixes": [
       "A41",
@@ -1155,6 +1165,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Chỉ thanh toán khi có hội chẩn xác nhận vi khuẩn đề kháng Vancomycin (VRE) hoặc MRSA không đáp ứng.",
     "approvedIcd10Prefixes": [
       "A41",
@@ -1181,6 +1193,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Bắt buộc hội chẩn vi sinh. Dùng cho nhiễm khuẩn vi khuẩn Gram âm đa kháng (A.baumannii, P.aeruginosa, K.pneumoniae).",
     "approvedIcd10Prefixes": [
       "A41",
@@ -1205,6 +1219,8 @@
     "paymentRatio": 1,
     "requiresConsultation": true,
     "isRestricted": true,
+    "routeCategory": "INJECTION",
+    "isOutpatientRestricted": true,
     "specialConditions": "Chỉ thanh toán tại Tuyến Trung ương (Hạng ĐB & Hạng I) có hội chẩn duyệt kháng sinh dự trữ.",
     "approvedIcd10Prefixes": [
       "A41",
@@ -2279,6 +2295,62 @@
     "pdfPage": 55
   },
   {
+    "activeIngredient": "Sucralfat",
+    "drugNames": [
+      "Sucralfate 1g",
+      "Ulcar",
+      "Carafate",
+      "Sucrate"
+    ],
+    "atcGroup": "A02BX02",
+    "atcGroupName": "Thuốc bảo vệ niêm mạc dạ dày tá tràng (Sucralfate)",
+    "allowedRanks": [
+      "HANG_DAC_BIET",
+      "HANG_I",
+      "HANG_II",
+      "HANG_III",
+      "HANG_IV"
+    ],
+    "paymentRatio": 1,
+    "requiresConsultation": false,
+    "isRestricted": false,
+    "approvedIcd10Prefixes": [
+      "K21",
+      "K25",
+      "K26",
+      "K27",
+      "K29"
+    ],
+    "pdfPage": 55
+  },
+  {
+    "activeIngredient": "Nhom phosphat",
+    "drugNames": [
+      "Phosphalugel",
+      "Aluminium Phosphate",
+      "Phosphalugel gói"
+    ],
+    "atcGroup": "A02AB03",
+    "atcGroupName": "Thuốc kháng acid dạ dày chứa nhôm (Antacid)",
+    "allowedRanks": [
+      "HANG_DAC_BIET",
+      "HANG_I",
+      "HANG_II",
+      "HANG_III",
+      "HANG_IV"
+    ],
+    "paymentRatio": 1,
+    "requiresConsultation": false,
+    "isRestricted": false,
+    "approvedIcd10Prefixes": [
+      "K21",
+      "K25",
+      "K26",
+      "K29"
+    ],
+    "pdfPage": 55
+  },
+  {
     "activeIngredient": "Ondansetron",
     "drugNames": [
       "Zofran",
@@ -2939,21 +3011,95 @@
     "pdfPage": 13
   },
   {
+    "activeIngredient": "Tobramycin",
+    "drugNames": [
+      "Tobrex",
+      "Tobramycin 0.3%",
+      "Tobrex nhỏ mắt",
+      "Tobradex"
+    ],
+    "atcGroup": "S01AA12",
+    "atcGroupName": "Kháng sinh Aminoglycosid dùng tại chỗ (Nhãn khoa/Tai)",
+    "allowedRanks": [
+      "HANG_DAC_BIET",
+      "HANG_I",
+      "HANG_II",
+      "HANG_III",
+      "HANG_IV"
+    ],
+    "paymentRatio": 1,
+    "requiresConsultation": false,
+    "isRestricted": false,
+    "routeCategory": "OPHTHALMIC_OTIC",
+    "approvedIcd10Prefixes": [
+      "H10",
+      "H16",
+      "H01",
+      "H04",
+      "H60"
+    ],
+    "specialConditions": "Thuốc nhỏ mắt/tai dùng tại chỗ được thanh toán cho các nhiễm khuẩn mắt/tai theo phân tuyến kỹ thuật.",
+    "pdfPage": 23
+  },
+  {
+    "activeIngredient": "Diclofenac gel",
+    "drugNames": [
+      "Voltaren Emulgel",
+      "Diclofenac gel 1%",
+      "Diclofenac bôi",
+      "Voltaren gel"
+    ],
+    "atcGroup": "M02AA15",
+    "atcGroupName": "Thuốc chống viêm không steroid dùng tại chỗ (Gel bôi ngoài)",
+    "allowedRanks": [
+      "HANG_DAC_BIET",
+      "HANG_I",
+      "HANG_II",
+      "HANG_III",
+      "HANG_IV"
+    ],
+    "paymentRatio": 1,
+    "requiresConsultation": false,
+    "isRestricted": false,
+    "routeCategory": "TOPICAL",
+    "approvedIcd10Prefixes": [
+      "M15",
+      "M16",
+      "M17",
+      "M19",
+      "M54",
+      "S00",
+      "T14"
+    ],
+    "specialConditions": "Dạng gel dùng ngoài điều trị giảm đau kháng viêm tại chỗ.",
+    "pdfPage": 13
+  },
+  {
     "activeIngredient": "Glucosamin",
     "drugNames": [
       "Viartril-S",
       "Glucosamin 500mg",
       "Glucosamine sulfate",
-      "Glucosamin Chondroitin"
+      "Glucosamin Chondroitin",
+      "Glucosamin 250mg"
     ],
     "atcGroup": "M01AX05",
-    "atcGroupName": "Thuốc chống thoái hóa khớp / Chế phẩm bảo vệ sức khỏe khớp",
-    "allowedRanks": [],
-    "paymentRatio": 0,
+    "atcGroupName": "Thuốc chống thoái hóa khớp (Glucosamin)",
+    "allowedRanks": [
+      "HANG_DAC_BIET",
+      "HANG_I",
+      "HANG_II",
+      "HANG_III"
+    ],
+    "paymentRatio": 1,
     "requiresConsultation": false,
     "isRestricted": true,
-    "specialConditions": "Không thuộc danh mục thuốc thanh toán của quỹ BHYT theo Thông tư 20/2022/TT-BYT (dạng TPCN hoặc không đáp ứng tiêu chí BHYT ngoại trú). Người bệnh tự chi trả 100%.",
-    "pdfPage": 0
+    "routeCategory": "ORAL",
+    "approvedIcd10Prefixes": [
+      "M17"
+    ],
+    "specialConditions": "Căn cứ Thông tư 20/2022/TT-BYT Cột 8: Quỹ BHYT chỉ thanh toán điều trị thoái hóa khớp gối (M17) mức độ nhẹ và trung bình. Không thanh toán cho thoái hóa khớp khác hoặc viêm khớp khác.",
+    "pdfPage": 16
   },
   {
     "activeIngredient": "Thực phẩm chức năng",
