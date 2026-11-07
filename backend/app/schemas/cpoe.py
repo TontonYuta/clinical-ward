@@ -59,7 +59,9 @@ class CpoeOrderCreate(BaseModel):
         for item in self.items:
             if not item.medicationName.strip() or not item.dosage.strip() or not item.frequency.strip() or not item.route.strip() or item.quantity <= 0:
                 raise ValueError("Mỗi thuốc phải có tên, liều, số lần dùng, đường dùng và số lượng hợp lệ")
-        if self.prescriptionType == "outpatient" and self.daysPrescribed > 0:
+        if self.prescriptionType == "outpatient":
+            if self.daysPrescribed == 0:
+                self.daysPrescribed = 30
             maximum = 90 if self.isChronicDisease else 30
             if not 1 <= self.daysPrescribed <= maximum:
                 raise ValueError(f"Số ngày ngoại trú phải từ 1 đến {maximum} ngày theo Thông tư 26/2025/TT-BYT")

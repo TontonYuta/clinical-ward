@@ -39,12 +39,14 @@ export const OverviewOperationsKpi: React.FC<OverviewOperationsKpiProps> = ({
   const coldAlert = coldChainState.alarmActive || coldChainState.currentTemp < 2 || coldChainState.currentTemp > 8 || coldChainState.powerStatus === 'outage_critical';
 
   const kpis = [
-    // Tạm thời comment thẻ KPI Nợ Tủ Trực & Thiết Bị Khẩn theo yêu cầu người dùng
+    // Tạm thời comment thẻ KPI Nợ Tủ Trực, Thiết Bị Khẩn, Chuỗi Lạnh & Cận Hạn/Chạm Min theo yêu cầu người dùng
     // { label: 'Nợ Tủ Trực', value: pendingDebts.length, tab: 'debt' as DashboardTab, alert: pendingDebts.length > 0 },
-    { label: 'Cận Hạn & Chạm Min', value: stockAlerts.length, tab: 'fefo' as DashboardTab, alert: stockAlerts.length > 0 },
+    // { label: 'Cận Hạn & Chạm Min', value: stockAlerts.length, tab: 'fefo' as DashboardTab, alert: stockAlerts.length > 0 },
     // { label: 'Sự Cố Thiết Bị Khẩn', value: urgentTickets.length, tab: 'equipment' as DashboardTab, alert: urgentTickets.length > 0 },
-    { label: 'Chuỗi Lạnh Vắc Xin', value: coldAlert ? 'CẢNH BÁO' : `${coldChainState.currentTemp.toFixed(1)}°C`, tab: 'coldchain' as DashboardTab, alert: coldAlert },
+    // { label: 'Chuỗi Lạnh Vắc Xin', value: coldAlert ? 'CẢNH BÁO' : `${coldChainState.currentTemp.toFixed(1)}°C`, tab: 'coldchain' as DashboardTab, alert: coldAlert },
   ].filter((item) => allowedTabs.includes(item.tab));
+
+  if (kpis.length === 0) return null;
 
   return (
     <div className="space-y-3">

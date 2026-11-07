@@ -33,23 +33,31 @@ export const OverviewCapabilities: React.FC<OverviewCapabilitiesProps> = ({
       tag: 'Dược thư'
     },
     {
-      id: 'debt',
-      tab: 'debt' as DashboardTab,
-      title: 'Tủ trực & Thuốc gây nghiện',
-      summary: 'Cơ số cấp cứu & quản lý nợ vỏ thuốc',
-      tag: 'Tủ trực'
+      id: 'bhyt_audit',
+      tab: 'bhyt_audit' as DashboardTab,
+      title: 'Giám định hồ sơ BHYT',
+      summary: 'Kiểm tra quy tắc xuất toán & gợi ý thuốc thay thế',
+      tag: 'Giám định BHYT'
     },
-    {
-      id: 'coldchain',
-      tab: 'coldchain' as DashboardTab,
-      title: 'Kho dược & Chuỗi lạnh',
-      summary: 'Hạn dùng thuốc & nhiệt độ 2°C - 8°C',
-      tag: 'Kho & nhiệt độ'
-    }
+    // Tạm thời comment thẻ Tủ trực & Chuỗi lạnh theo yêu cầu người dùng
+    // {
+    //   id: 'debt',
+    //   tab: 'debt' as DashboardTab,
+    //   title: 'Tủ trực & Thuốc gây nghiện',
+    //   summary: 'Cơ số cấp cứu & quản lý nợ vỏ thuốc',
+    //   tag: 'Tủ trực'
+    // },
+    // {
+    //   id: 'coldchain',
+    //   tab: 'coldchain' as DashboardTab,
+    //   title: 'Kho dược & Chuỗi lạnh',
+    //   summary: 'Hạn dùng thuốc & nhiệt độ 2°C - 8°C',
+    //   tag: 'Kho & nhiệt độ'
+    // }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
       {capabilities.map((cap) => {
         const isAllowed = allowedTabs.includes(cap.tab);
         return (

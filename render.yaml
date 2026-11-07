@@ -12,8 +12,8 @@ services:
       - key: PORT
         value: "8000"
       - key: CORS_ORIGINS
-        value: https://clinical-ward.vercel.app,http://localhost:3000,http://localhost:3001
+        value: https://clinical-ward.vercel.app,http://localhost:3000,http://localhost:3001,https://clinical-ai-monitor.vercel.app
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261107-pdf-ocr-tesseract-v5"
+        value: "20261108-clinical-ai-monitor-v1"

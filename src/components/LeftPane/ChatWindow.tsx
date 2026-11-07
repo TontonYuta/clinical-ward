@@ -5,8 +5,11 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Settings2, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, ChevronRight, FileText, History, Plus, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
+import { ChatSession } from '../../types/chatSession';
+import { ChatSessionsDrawer } from './ChatSessionsDrawer';
+import { ChatSessionsSidebar } from './ChatSessionsSidebar';
 import { RagCitationItem } from '../../types/chat';
 import { clinicalAudio } from '../../utils/audio';
 import { renderFormattedText } from './ChatMarkdown';
@@ -26,6 +29,9 @@ interface ChatWindowProps {
   onExecuteCardAction?: (messageId: string, actionType: string, cardData: any) => void;
   onClearMessages?: () => void; onOpenAuditTrail?: () => void; onOpenLegalDocs?: () => void;
   onOpenUserGuide?: () => void; isFullScreen?: boolean; onToggleFullScreen?: () => void;
+  sessions?: ChatSession[]; activeSessionId?: string; activeSessionTitle?: string;
+  onSelectSession?: (sessionId: string) => void; onNewSession?: () => void;
+  onDeleteSession?: (sessionId: string) => void; onRenameSession?: (sessionId: string, newTitle: string) => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -33,14 +39,32 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
   lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs, onOpenUserGuide,
   isFullScreen = false, onToggleFullScreen,
+  sessions, activeSessionId, activeSessionTitle, onSelectSession, onNewSession, onDeleteSession, onRenameSession
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const outerContainerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUpRef = useRef(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSessionsDrawerOpen, setIsSessionsDrawerOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('clinical_chat_sidebar_open') !== 'false';
+    }
+    return true;
+  });
   const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
   const [pdfTarget, setPdfTarget] = useState<PdfViewerTarget | null>(null);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('clinical_chat_sidebar_open', next ? 'true' : 'false');
+      }
+      return next;
+    });
+  };
 
   const handleInlineCitationClick = (_msgId: string, citationRef: any) => {
     setPdfTarget({
@@ -96,58 +120,157 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div ref={outerContainerRef} className="flex flex-col h-full min-h-0 bg-slate-50/70 relative overflow-hidden">
-      {/* 1. Header */}
-      <div className="h-14 sm:h-12 px-3.5 sm:px-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
-        <div data-testid="chat-window-drag-handle" className="flex items-center gap-2.5 min-w-0 cursor-grab select-none">
-          <div className="w-8 h-8 rounded-lg bg-teal-800 flex items-center justify-center text-white shrink-0 shadow-2xs">
-            <Bot className="w-4.5 h-4.5" />
-          </div>
-          <div className="flex items-center gap-2 min-w-0">
-            <h3 className="text-base font-bold text-slate-950 whitespace-nowrap">
-              Trợ Lý AI Lâm Sàng
-            </h3>
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${cloudActive ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`}
-              title={cloudActive ? 'Mô hình: Gemini Flash-Lite' : 'Mô hình: Nội bộ Offline'}
-            />
-          </div>
-        </div>
+    <div className="flex h-full w-full overflow-hidden bg-slate-50/70 relative">
+      {/* 0. ChatGPT-Style Left Sidebar when Fullscreen */}
+      {isFullScreen && (
+        <ChatSessionsSidebar
+          isOpen={isSidebarOpen}
+          onToggle={toggleSidebar}
+          sessions={sessions || []}
+          activeSessionId={activeSessionId || ''}
+          onSelectSession={(id) => onSelectSession?.(id)}
+          onNewSession={() => onNewSession?.()}
+          onDeleteSession={(id) => onDeleteSession?.(id)}
+          onRenameSession={(id, title) => onRenameSession?.(id, title)}
+        />
+      )}
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => setIsSettingsOpen(true)} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Cấu hình mô hình AI">
-            <Settings2 className="w-4 h-4" />
-          </button>
-          {onToggleFullScreen && (
-            <button type="button" onClick={onToggleFullScreen} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title={isFullScreen ? 'Thu nhỏ' : 'Toàn màn hình'} aria-label={isFullScreen ? 'Thu nhỏ' : 'Toàn màn hình'}>
-              {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-          )}
-          {onClearMessages && (
-            <button
-              type="button"
-              data-testid="chat-clear-btn"
-              onClick={onClearMessages}
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
-              title="Làm mới phiên hội thoại"
-              aria-label="Làm mới phiên hội thoại"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          )}
-          {onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Đóng Trợ lý AI">
-              <X className="w-4.5 h-4.5" />
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Main Chat Viewport */}
+      <div ref={outerContainerRef} className="flex-1 flex flex-col h-full min-h-0 bg-slate-50/70 relative overflow-hidden">
+        {/* 1. Header: Chỉ hiển thị thanh Header thanh lịch khi ở chế độ cửa sổ thu nhỏ / floating popup */}
+        {!isFullScreen ? (
+          <div className="h-14 sm:h-12 px-3.5 sm:px-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
+            <div data-testid="chat-window-drag-handle" className="flex items-center gap-2.5 min-w-0 cursor-grab select-none">
+              <div className="w-8 h-8 rounded-lg bg-teal-800 flex items-center justify-center text-white shrink-0 shadow-2xs">
+                <Bot className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="text-base font-bold text-slate-950 whitespace-nowrap">
+                  Trợ Lý AI Lâm Sàng
+                </h3>
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${cloudActive ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`}
+                  title={cloudActive ? 'Mô hình: Gemini Flash-Lite' : 'Mô hình: Nội bộ Offline'}
+                />
+                {activeSessionTitle && (
+                  <span className="hidden sm:inline-block max-w-[130px] truncate text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200" title={activeSessionTitle}>
+                    {activeSessionTitle}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              {onNewSession && (
+                <button
+                  type="button"
+                  onClick={onNewSession}
+                  className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+                  title="Cuộc trò chuyện mới"
+                  aria-label="Cuộc trò chuyện mới"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              )}
+              {sessions && sessions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsSessionsDrawerOpen(true)}
+                  className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0 relative"
+                  title="Lịch sử các phiên hội thoại"
+                  aria-label="Lịch sử các phiên hội thoại"
+                >
+                  <History className="w-4 h-4" />
+                  {sessions.length > 1 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-teal-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                      {sessions.length}
+                    </span>
+                  )}
+                </button>
+              )}
+              {onToggleFullScreen && (
+                <button type="button" onClick={onToggleFullScreen} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Toàn màn hình" aria-label="Toàn màn hình">
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              )}
+              {onClearMessages && (
+                <button
+                  type="button"
+                  data-testid="chat-clear-btn"
+                  onClick={onClearMessages}
+                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+                  title="Làm mới phiên hội thoại"
+                  aria-label="Làm mới phiên hội thoại"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
+              {onClose && (
+                <button onClick={onClose} className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Đóng Trợ lý AI">
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Khi Mở rộng toàn màn hình: BỎ HẲN thanh Header trong đoạn hội thoại để không gian hội thoại rộng tối đa! */
+          <>
+            {!isSidebarOpen && (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="absolute top-3 left-3 z-20 p-2 bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 rounded-xl border border-slate-200 shadow-xs backdrop-blur-xs transition cursor-pointer"
+                title="Mở thanh bên"
+                aria-label="Mở thanh bên"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            )}
+
+            <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/90 backdrop-blur-xs p-1 rounded-xl border border-slate-200/90 shadow-2xs">
+              {onToggleFullScreen && (
+                <button
+                  type="button"
+                  onClick={onToggleFullScreen}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer"
+                  title="Thu nhỏ cửa sổ"
+                  aria-label="Thu nhỏ cửa sổ"
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+              )}
+              {onClearMessages && (
+                <button
+                  type="button"
+                  data-testid="chat-clear-btn"
+                  onClick={onClearMessages}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  title="Làm mới cuộc trò chuyện"
+                  aria-label="Làm mới cuộc trò chuyện"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  title="Đóng Trợ lý AI"
+                  aria-label="Đóng Trợ lý AI"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </>
+        )}
 
       {/* 2. Messages Stream */}
       <div
         ref={messagesContainerRef}
         onScroll={handleContainerScroll}
-        className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5"
+        className={`flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 ${isFullScreen ? 'pt-14 sm:pt-16' : ''}`}
       >
         <div className={`space-y-4 ${isFullScreen ? 'w-full max-w-6xl mx-auto px-2 sm:px-6' : 'w-full'}`}>
           {messages.map((msg) => {
@@ -291,12 +414,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           );
         })}
 
-        {isProcessing && !messages.some(m => m.isStreaming && m.text) && (
-          <div className="flex items-center gap-2.5 text-sm sm:text-base text-slate-500 pl-10 font-medium">
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-600 animate-pulse"></span>
-            <span>Trợ lý đang phân tích ngữ cảnh lâm sàng...</span>
-          </div>
-        )}
         <div ref={chatBottomRef} />
         </div>
       </div>
@@ -317,6 +434,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         target={pdfTarget}
         onClose={() => setPdfTarget(null)}
       />
+
+      {/* 6. Multi-Session History Drawer for compact popup mode */}
+      {!isFullScreen && (
+        <ChatSessionsDrawer
+          isOpen={isSessionsDrawerOpen}
+          onClose={() => setIsSessionsDrawerOpen(false)}
+          sessions={sessions || []}
+          activeSessionId={activeSessionId || ''}
+          onSelectSession={(id) => onSelectSession?.(id)}
+          onNewSession={() => onNewSession?.()}
+          onDeleteSession={(id) => onDeleteSession?.(id)}
+          onRenameSession={(id, title) => onRenameSession?.(id, title)}
+        />
+      )}
     </div>
-  );
+  </div>
+);
 };

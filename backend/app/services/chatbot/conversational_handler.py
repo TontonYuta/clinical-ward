@@ -243,44 +243,8 @@ def handle_out_of_scope_or_pricing(lower_query: str) -> CopilotResponse | None:
             abstention_reason="Ngoài phạm vi hoặc thiếu dữ liệu đơn thuốc",
         )
 
-    clean_q = re.sub(r"[^\w\s]", " ", lower_query).strip()
-    ascii_q = " ".join("".join(ch for ch in unicodedata.normalize("NFKD", clean_q) if not unicodedata.combining(ch)).replace("đ", "d").split())
-
-    frivolous_patterns = (
-        r"\b(?:xo so|so xo|ve so|lo de|danh de|danh lo|vietlott|kqxs|quay so)\b",
-        r"\b(?:thoi tiet|du bao thoi tiet|gia vang|ty gia|bitcoin|chung khoan|bong da|showbiz)\b",
-        r"\b(?:chuyen cuoi|chuyen ma|ke chuyen|lam tho|bai tho|tho tinh|hat di|hat mot bai)\b",
-        r"\b(?:choi game|game gi|hom nay an gi|an mon gi|nau mon gi|cong thuc nau)\b",
-        r"\b(?:nguoi yeu|ban gai|ban trai|tan gai|thich ai|yeu ai|may tuoi|sinh nam bao nhieu)\b",
-        r"\b(?:que o dau|nha o dau|xem boi|tu vi|phong thuy|cung hoang dao)\b",
-        r"\b(?:giai toan|hoc toan|day toan|bai toan|hoc van|hoc tieng anh|hoc hoa|hoc ly|viet code)\b",
-        r"\b(?:chem gio|buon chuyen|noi chuyen linh tinh|chuyen linh tinh|linh tinh|vo van|tao lao)\b",
-    )
-    is_frivolous = any(bool(re.search(pat, ascii_q)) for pat in frivolous_patterns)
-    has_med_anchor = any(k in lower_query for k in (
-        "thuốc", "liều", "dược", "bệnh", "chữa", "điều trị", "kháng sinh", "sốt", "đau", "viêm",
-        "phác đồ", "tồn kho", "tủ trực", "bệnh nhân", "huyết áp", "truyền dịch", "paracetamol", "morphin",
-        "tác dụng", "chống chỉ định", "thất điều", "độc tính", "ngộ độc", "quá liều", "men gan",
-        "thai kỳ", "cho con bú", "suy thận", "suy gan", "suy tim", "phenytoin", "aspirin", "insulin",
-        "amiodaron", "loét", "co giật", "kháng histamin", "antacid", "dị ứng", "phản vệ"
-    ))
-    if is_frivolous and not has_med_anchor:
-        return CopilotResponse(
-            intent="CLINICAL_SAFE_ABSTENTION",
-            reply_text=(
-                "### 🛡️ TỪ CHỐI TIẾP NHẬN: CÂU HỎI NGOÀI PHẠM VI CHUYÊN MÔN\n\n"
-                "Hệ thống là **Trợ lý Dược lâm sàng & Nghiệp vụ Bệnh viện chuyên dụng**, tuân thủ nghiêm ngặt các quy định Bộ Y tế.\n\n"
-                "Hệ thống **chỉ hỗ trợ** các nội dung chuyên môn và nghiệp vụ y tế sau:\n"
-                "1. **Tra cứu thuốc & Dược thư:** 54.885 thuốc cấp phép DAV, chỉ định, liều dùng, chống chỉ định, hoạt chất DĐVN V.\n"
-                "2. **Rà soát tương tác thuốc (DDI):** Cảnh báo tương tác chống chỉ định theo QĐ 5948/QĐ-BYT.\n"
-                "3. **Phác đồ điều trị & cấp cứu:** Phản vệ (TT 51/2017), quản lý thuốc gây nghiện (TT 20/2017), phác đồ WHO/BYT.\n"
-                "4. **Nghiệp vụ kho Dược & tủ trực:** Tồn kho FEFO, giao ban ca trực, lập dự trù cơ số (TT 22/2011).\n\n"
-                "👉 **Em xin phép từ chối trả lời các câu hỏi giải trí, đời sống hoặc nằm ngoài nghiệp vụ y tế.** Vui lòng gửi câu hỏi chuyên môn hoặc tên thuốc cần tra cứu ạ!"
-            ),
-            answer_type="safe_abstention",
-            source_status="out_of_scope",
-            confidence=1.0,
-            abstention_reason="Câu hỏi ngoài phạm vi trợ lý lâm sàng",
-            suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác hai thuốc", "Hướng dẫn sử dụng hệ thống"]
-        )
+    from app.services.chatbot.semantic_boundary import evaluate_semantic_boundary, generate_safe_abstention_copilot_response
+    boundary = evaluate_semantic_boundary(lower_query)
+    if boundary.is_out_of_domain:
+        return generate_safe_abstention_copilot_response()
     return None

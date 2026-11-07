@@ -17,11 +17,20 @@ import { SmoothStreamBuffer } from './streamBuffer';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
+export function setClientSessionId(sessionId: string): void {
+  if (sessionId) _clientSessionId = sessionId;
+}
+
+export function getClientSessionId(): string {
+  return _clientSessionId;
+}
+
 export async function processClinicalAgentQueryAsync(
   rawInput: string,
   currentState: AsyncClinicalState,
   currentUserProfile?: UserProfile,
-  onToken?: (token: string, currentFullText: string) => void
+  onToken?: (token: string, currentFullText: string) => void,
+  sessionId?: string
 ): Promise<ProcessedQueryResult> {
   const role = currentUserProfile?.role || 'nurse';
   const name = currentUserProfile?.name || 'Điều Dưỡng Trực Ca';
@@ -108,7 +117,8 @@ export async function processClinicalAgentQueryAsync(
 
   // 2. Gọi qua FastAPI Copilot Backend (CSDL 54.885 thuốc DAV & tồn kho thực tế) có hỗ trợ Token Streaming
   try {
-    const backendData = await chatCopilotApiStream(cleanInput, role, name, _clientSessionId, onToken);
+    const activeSessionId = sessionId || _clientSessionId;
+    const backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken);
     if (backendData && backendData.reply_text) {
       let card: AgentActionCard | undefined = undefined;
       let actionPayload: ActionPayload | undefined = undefined;

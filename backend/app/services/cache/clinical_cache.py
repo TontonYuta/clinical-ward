@@ -60,7 +60,7 @@ class ClinicalLRUCache:
     - Medical Safety Guardrail: Tuyệt đối không chia sẻ cache nếu sai lệch liều lượng,
       độ tuổi (nhi/người lớn), hoặc sai lệch thuốc/chỉ định.
     """
-    def __init__(self, max_size: int = 1000, default_ttl_sec: int = 86400, similarity_threshold: float = 0.85):
+    def __init__(self, max_size: int = 1000, default_ttl_sec: int = 86400, similarity_threshold: float = 0.85, db_path: Optional[str] = None):
         self.max_size = max_size
         self.default_ttl = default_ttl_sec
         self.similarity_threshold = similarity_threshold
@@ -70,6 +70,15 @@ class ClinicalLRUCache:
         self.semantic_hits = 0
         self.misses = 0
         self.evictions = 0
+        self.storage = None
+        if db_path is not False:
+            try:
+                from app.services.cache.cache_storage_sqlite import CacheStorageSqlite
+                self.storage = CacheStorageSqlite(db_path if isinstance(db_path, str) else None)
+                for entry in self.storage.load_active_entries(limit=self.max_size):
+                    self._cache[entry["key"]] = entry
+            except Exception:
+                pass
 
     def normalize_query(self, query: str) -> str:
         """
@@ -135,7 +144,8 @@ class ClinicalLRUCache:
             "thế", "nào", "sao", "như", "thông", "tin", "về", "của", "trong",
             "được", "không", "biết", "ạ", "em", "mình", "cần", "lưu", "ý",
             "bạn", "muốn", "tìm", "kiếm", "thể", "có", "tốt", "nhất", "hiện", "nay",
-            "ở", "trên", "mạng", "internet", "google", "các", "loại", "phổ", "biến"
+            "ở", "trên", "mạng", "internet", "google", "các", "loại", "phổ", "biến",
+            "bao", "nhiêu", "mấy"
         }
         tokens = set([w for w in norm.split() if w not in filler and len(w) > 1])
 
@@ -335,7 +345,7 @@ class ClinicalLRUCache:
             self.evictions += 1
 
         features = self.extract_clinical_features(query)
-        self._cache[key] = {
+        entry_val = {
             "data": response.model_dump(),
             "expire_at": now + ttl,
             "created_at": now,
@@ -343,6 +353,9 @@ class ClinicalLRUCache:
             "role": user_role,
             "features": features
         }
+        self._cache[key] = entry_val
+        if self.storage:
+            self.storage.save_entry(key, entry_val)
         return True
 
     def get_stats(self) -> Dict[str, Any]:
@@ -364,6 +377,8 @@ class ClinicalLRUCache:
 
     def clear(self) -> None:
         self._cache.clear()
+        if self.storage:
+            self.storage.clear_all()
         self.hits = 0
         self.exact_hits = 0
         self.semantic_hits = 0

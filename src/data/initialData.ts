@@ -26,8 +26,8 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     pinCode: '1111',
     rfidCardId: 'RFID-NURSE-8821',
     allowedActions: ['BORROW_EMERGENCY', 'RETURN_AMPOULE', 'SETTLE_DEBT', 'CREATE_INCIDENT'],
-    // Tạm thời ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo', 'coldchain'],
+    // Tạm thời ẩn các tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
+    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo'],
     responsibilities: 'Thực hiện đơn thuốc & chỉ định điều trị, kê đơn và kiểm tra kho dược lâm sàng',
     defaultTab: 'cpoe',
     badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-300'
@@ -66,8 +66,8 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
       'RESTORE_POWER',
       'RELEASE_VACCINE_QUARANTINE'
     ],
-    // Tạm thời ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo', 'coldchain'],
+    // Tạm thời ẩn các tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
+    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo'],
     responsibilities: 'Duyệt đơn CPOE, cấp bù tủ trực (TT 22), điều phối xuất thuốc FEFO, giám sát chuỗi lạnh 2-8°C (TT 36 GSP), hủy vỏ Morphin (TT 20)',
     defaultTab: 'fefo',
     badgeColor: 'bg-purple-50 text-purple-800 border-purple-300'
@@ -81,8 +81,8 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
     pinCode: '4444',
     rfidCardId: 'RFID-DOC-1109',
     allowedActions: ['PRESCRIBE_MEDICATION', 'BORROW_EMERGENCY', 'SETTLE_DEBT', 'DESTROY_AMPOULES', 'HANDOVER_EQUIPMENT', 'CREATE_INCIDENT'],
-    // Tạm thời ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo', 'coldchain'],
+    // Tạm thời ẩn các tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
+    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo'],
     responsibilities: 'Kê đơn điện tử CPOE (TT 26/2025), kê đơn thuốc nội trú hằng ngày, tra cứu thuốc tủ trực và thiết bị buồng bệnh',
     defaultTab: 'cpoe',
     badgeColor: 'bg-teal-50 text-teal-800 border-teal-300'
@@ -112,8 +112,8 @@ export const USER_PROFILES: Record<UserRole, UserProfile> = {
       'RELEASE_VACCINE_QUARANTINE',
       'SWITCH_ROLE'
     ],
-    // Tạm thời ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo', 'coldchain'],
+    // Tạm thời ẩn các tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
+    allowedTabs: ['overview', 'cpoe', 'bhyt_audit', 'fefo'],
     responsibilities: 'Toàn quyền lãnh đạo cao nhất: Phê duyệt dự trù thuốc Mẫu 01, quyết định thanh lý tài sản (NĐ 151), giải phóng vắc xin, kiểm toán SHA-256',
     defaultTab: 'cpoe',
     badgeColor: 'bg-amber-50 text-amber-800 border-amber-300'

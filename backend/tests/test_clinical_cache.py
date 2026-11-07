@@ -37,7 +37,7 @@ def test_mutation_queries_rejected():
     print("✅ Mutation query rejection test passed!")
 
 def test_lru_and_retrieval():
-    cache = ClinicalLRUCache(max_size=2)
+    cache = ClinicalLRUCache(max_size=2, db_path=False)
 
     resp1 = CopilotResponse(
         intent="DRUG_INFO",
@@ -79,7 +79,7 @@ def test_lru_and_retrieval():
     print(f"✅ Cache stats test passed: {stats}")
 
 def test_semantic_caching_and_medical_safety():
-    cache = ClinicalLRUCache(max_size=10, similarity_threshold=0.60)
+    cache = ClinicalLRUCache(max_size=10, similarity_threshold=0.60, db_path=False)
 
     para_resp = CopilotResponse(
         intent="DRUG_INFO",
