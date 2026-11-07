@@ -85,6 +85,13 @@ async def lifespan(app: FastAPI):
     # Seed 55k DAV drugs if table is empty
     seed_dav_registry_if_needed()
 
+    # Seed BHYT drug catalog & therapeutic classes if table is empty
+    try:
+        from app.seed_bhyt_catalog import seed_bhyt_catalog_if_needed
+        seed_bhyt_catalog_if_needed()
+    except Exception as e:
+        print(f"Warning: Không thể seed BHYT catalog: {e}")
+
     # Khởi tạo chỉ mục FTS5 tìm kiếm siêu tốc cho 55.000 thuốc DAV
     try:
         from app.services.registry_service import warm_up_registry_cache_and_fts

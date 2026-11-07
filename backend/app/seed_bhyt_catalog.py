@@ -14,11 +14,27 @@ def remove_vietnamese_accents(text: str) -> str:
     text = text.replace('đ', 'd').replace('Đ', 'D')
     return text.lower().strip()
 
-def resolve_db_path() -> str:
+def resolve_db_path(db_file: str | None = None) -> str:
+    if db_file and (os.path.exists(db_file) or "/tmp/" in db_file):
+        return db_file
+    for env_key in ("DATABASE_URL", "SQLITE_DB_PATH"):
+        val = os.environ.get(env_key, "")
+        if "sqlite:///" in val:
+            p = val.split("sqlite:///")[-1]
+            if p:
+                return p
+        if "sqlite+aiosqlite:///" in val:
+            p = val.split("sqlite+aiosqlite:///")[-1]
+            if p:
+                return p
+    if os.path.exists("/tmp/clinical_hospital.db"):
+        return "/tmp/clinical_hospital.db"
     candidates = (
+        "/app/clinical_hospital.db",
         "clinical_hospital.db",
         "backend/clinical_hospital.db",
         "../clinical_hospital.db",
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "clinical_hospital.db")),
         "/home/tontonyuta/Downloads/DoAn2/backend/clinical_hospital.db"
     )
     for c in candidates:
@@ -144,6 +160,8 @@ def seed_bhyt_catalog() -> int:
 
     # 2. Tìm file data JSON
     json_candidates = (
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "bhyt_drug_rules.json")),
+        "/app/data/bhyt_drug_rules.json",
         "data/bhyt_drug_rules.json",
         "backend/data/bhyt_drug_rules.json",
         "../backend/data/bhyt_drug_rules.json",
@@ -201,6 +219,32 @@ def seed_bhyt_catalog() -> int:
     conn.close()
     print(f"Successfully seeded {inserted} BHYT drug rules into SQLite!")
     return inserted
+
+def seed_bhyt_catalog_if_needed() -> int:
+    """Kiểm tra và tự động khởi tạo bảng & danh mục BHYT nếu CSDL chưa có"""
+    db_path = resolve_db_path()
+    try:
+        if not os.path.exists(db_path):
+            return seed_bhyt_catalog()
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='bhyt_therapeutic_classes'")
+        row = cursor.fetchone()
+        if row and row[0] > 0:
+            cursor.execute("SELECT count(*) FROM bhyt_therapeutic_classes")
+            count_c = cursor.fetchone()[0]
+            cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='bhyt_drug_catalog'")
+            row_d = cursor.fetchone()
+            if row_d and row_d[0] > 0 and count_c > 0:
+                cursor.execute("SELECT count(*) FROM bhyt_drug_catalog")
+                count_d = cursor.fetchone()[0]
+                if count_d > 0:
+                    conn.close()
+                    return count_d
+        conn.close()
+    except Exception as e:
+        print(f"BHYT check tables notice: {e}")
+    return seed_bhyt_catalog()
 
 if __name__ == "__main__":
     seed_bhyt_catalog()

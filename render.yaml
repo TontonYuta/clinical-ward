@@ -16,4 +16,4 @@ services:
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261107-fix-pypdf-v2"
+        value: "20261107-seed-bhyt-tables-v3"
