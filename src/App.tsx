@@ -31,6 +31,17 @@ import {
   INITIAL_ASSET_AUDIT_RECORDS,
   INITIAL_AUDIT_TRAIL_RECORDS
 } from './data/initialData';
+import { ChatSession } from './types/chatSession';
+import {
+  loadChatSessions,
+  saveChatSessions,
+  getActiveSessionId,
+  saveActiveSessionId,
+  createNewSession,
+  generateSessionTitle,
+  deleteChatSession,
+  renameChatSession
+} from './utils/storage/chatSessionStorage';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/LeftPane/ChatWindow';
 import { Dashboard, DashboardTab } from './components/RightPane/Dashboard';
@@ -94,7 +105,49 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [coldChainState, setColdChainState] = useState<ColdChainMonitorState>(INITIAL_COLD_CHAIN_STATE);
   const [assets, setAssets] = useState<AssetAuditRecord[]>(INITIAL_ASSET_AUDIT_RECORDS);
   const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>(getCachedAuditRecords);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(getInitialChatMessages);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>(loadChatSessions);
+  const [activeChatSessionId, setActiveChatSessionId] = useState<string>(() => getActiveSessionId(chatSessions));
+
+  const activeSession = chatSessions.find(s => s.id === activeChatSessionId) || chatSessions[0] || createNewSession();
+  const chatMessages = activeSession.messages;
+
+  const setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>> = (action) => {
+    setChatSessions(prevSessions => {
+      const targetId = activeChatSessionId;
+      return prevSessions.map(sess => {
+        if (sess.id !== targetId) return sess;
+        const newMessages = typeof action === 'function' ? (action as any)(sess.messages) : action;
+        return {
+          ...sess,
+          messages: newMessages,
+          updatedAt: Date.now()
+        };
+      });
+    });
+  };
+
+  const handleNewSession = () => {
+    const fresh = createNewSession();
+    setChatSessions(prev => [fresh, ...prev]);
+    setActiveChatSessionId(fresh.id);
+    saveActiveSessionId(fresh.id);
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    setActiveChatSessionId(sessionId);
+    saveActiveSessionId(sessionId);
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    const res = deleteChatSession(sessionId, chatSessions);
+    setChatSessions(res.sessions);
+    setActiveChatSessionId(res.nextActiveId);
+  };
+
+  const handleRenameSession = (sessionId: string, newTitle: string) => {
+    const updated = renameChatSession(sessionId, newTitle, chatSessions);
+    setChatSessions(updated);
+  };
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(authenticatedRole || getInitialUserRole);
   const [authRequest, setAuthRequest] = useState<ClinicalAuthRequest | null>(null);
@@ -287,8 +340,8 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').toLowerCase() as DashboardTab;
-      // Tạm thời comment điều hướng tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-      if (['overview', 'cpoe', 'fefo', 'coldchain'].includes(hash)) {
+      // Tạm thời comment điều hướng tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
+      if (['overview', 'cpoe', 'bhyt_audit', 'fefo'].includes(hash)) {
         setCurrentTab(hash);
       }
     };
@@ -298,9 +351,10 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
 
   // 3. Tự động lưu bền vững các tùy chọn giao diện khi thay đổi (chặn ghi I/O localStorage khi đang stream)
   useEffect(() => {
-    if (chatMessages.some(m => m.isStreaming)) return;
+    if (chatSessions.some(s => s.messages.some(m => m.isStreaming))) return;
+    saveChatSessions(chatSessions);
     saveChatMessages(chatMessages);
-  }, [chatMessages]);
+  }, [chatSessions, chatMessages]);
   useEffect(() => { saveSidebarCollapsed(isSidebarCollapsed); }, [isSidebarCollapsed]);
   useEffect(() => { saveCopilotOpen(isCopilotOpen); }, [isCopilotOpen]);
   useEffect(() => { saveCopilotExpanded(isCopilotExpanded); }, [isCopilotExpanded]);
@@ -1653,6 +1707,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     setChatMessages(prev => [...prev, userMsg, streamingBotMsg]);
     setIsProcessing(true);
 
+    // Tự động đặt tên thông minh cho phiên hội thoại từ câu hỏi đầu tiên
+    if (activeSession.title === 'Cuộc trò chuyện mới' || activeSession.messages.filter(m => m.sender === 'user').length === 0) {
+      const generatedTitle = generateSessionTitle(trimmed);
+      setChatSessions(prev => prev.map(s => s.id === activeChatSessionId ? { ...s, title: generatedTitle } : s));
+    }
+
     try {
       // 2. Process query with clinical agent engine (FastAPI Copilot REST API + Local Clinical fallback)
       const effectiveRole = isOpeningPrescription && (currentUserRole !== 'doctor' && currentUserRole !== 'director')
@@ -1674,7 +1734,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           setChatMessages(prev =>
             prev.map(m => m.id === botMsgId ? { ...m, text: currentFullText } : m)
           );
-        }
+        },
+        activeChatSessionId
       );
 
       // 3. Execute State Updates on Right Pane if actionPayload provided and NOT awaiting card confirmation
@@ -2029,6 +2090,13 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
             onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
             onOpenUserGuide={() => setIsUserGuideOpen(true)}
+            sessions={chatSessions}
+            activeSessionId={activeChatSessionId}
+            activeSessionTitle={activeSession.title}
+            onSelectSession={handleSelectSession}
+            onNewSession={handleNewSession}
+            onDeleteSession={handleDeleteSession}
+            onRenameSession={handleRenameSession}
           />
         </div>
       )}

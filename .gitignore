@@ -20,7 +20,16 @@ ENV/
 *.db
 *.db-shm
 *.db-wal
+*.sqlite
 *.sqlite3
+
+# Runtime Data, Telemetry Ledger & Secret API Key Vault
+data/api_key_vault.json
+data/token_budget_config.json
+data/*.db
+data/*.sqlite
+backend/data/*.sqlite
+!data/*.example.json
 
 # Logs & Environment variables
 *.log

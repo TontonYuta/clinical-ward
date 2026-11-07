@@ -22,6 +22,7 @@ if canonical_db.is_file():
 processes = [
     subprocess.Popen([str(python), '-m', 'uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', '8000', '--reload'], cwd=root / 'backend', env=env),
     subprocess.Popen(['npm', 'run', 'dev:web'], cwd=root, env=env),
+    subprocess.Popen(['npm', 'run', 'dev:admin'], cwd=root, env=env),
 ]
 try:
     while all(p.poll() is None for p in processes):

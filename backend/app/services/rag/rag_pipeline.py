@@ -8,6 +8,7 @@ from app.services.rag.types import RagResult
 from app.services.rag.knowledge_graph import expand_clinical_graph
 from app.services.rag.hybrid_retriever import HybridRetriever
 from app.services.rag.citation_grounder import build_claim_citations, format_grounded_answer
+from app.services.rag.adaptive_retriever import classify_query_complexity
 
 _GLOBAL_RETRIEVER: Optional[HybridRetriever] = None
 
@@ -25,23 +26,24 @@ async def execute_clinical_rag(
     conversation_context: str = ""
 ) -> RagResult:
     retriever = get_rag_retriever()
+    budget_cfg = classify_query_complexity(query)
 
-    # 1. Mở rộng đồ thị tri thức lâm sàng (LightRAG / MedGraphRAG Layer)
-    kg_data = expand_clinical_graph(query, patient_info=patient_info)
+    # 1. Mở rộng đồ thị tri thức lâm sàng nếu cần (LightRAG / MedGraphRAG Layer)
+    kg_data = expand_clinical_graph(query, patient_info=patient_info) if budget_cfg.include_graph else {}
 
-    # 2. Truy xuất lai Hybrid Retrieval (Sparse BM25 + Dense Semantic via RRF k=60)
+    # 2. Truy xuất lai Hybrid Retrieval có cấp phát ngân sách (Adaptive Top-K RRF k=60)
     retrieved_chunks = retriever.retrieve(
         query=query,
-        kg_entities=kg_data.get("kg_entities", []),
-        top_k=4
+        kg_entities=kg_data.get("kg_entities", []) if kg_data else [],
+        top_k=budget_cfg.top_k
     )
 
     # 3. Xây dựng danh mục trích dẫn chứng cứ y văn (PaperQA2 Attribution)
     citations = build_claim_citations(retrieved_chunks)
 
-    # 4. Tạo bối cảnh chứng cứ thực tế (Evidence Context)
+    # 4. Tạo bối cảnh chứng cứ thực tế có kiểm soát ngân sách token (Evidence Context Budgeting)
     evidence_blocks: list[str] = []
-    if kg_data.get("graph_context_text"):
+    if budget_cfg.include_graph and kg_data.get("graph_context_text"):
         evidence_blocks.append(
             "=== [ĐỒ THỊ TƯƠNG TÁC DƯỢC LÝ & AN TOÀN ĐIỀU TRỊ] ===\n" +
             kg_data["graph_context_text"]
@@ -52,15 +54,18 @@ async def execute_clinical_rag(
             f"{r.chunk.content}"
         )
     evidence_context = "\n\n".join(evidence_blocks)
+    if len(evidence_context) > budget_cfg.max_context_chars:
+        evidence_context = evidence_context[:budget_cfg.max_context_chars] + "…\n[Đã tinh gọn văn bản theo ngân sách token]"
 
     # Thêm cảnh báo đồ thị tương tác DDI nếu có
     ddi_alert_context = ""
-    if kg_data.get("active_ddi_alerts"):
+    if budget_cfg.include_graph and kg_data.get("active_ddi_alerts"):
         alerts = [f"- {a['drug_a']} + {a['drug_b']}: {a['severity']}. Cơ chế: {a['mechanism']}. Hậu quả: {a['consequence']}" for a in kg_data["active_ddi_alerts"]]
         ddi_alert_context = "\n\n[CẢNH BÁO TƯƠNG TÁC THUỐC TỪ ĐỒ THỊ TRI THỨC]:\n" + "\n".join(alerts)
 
     # 5. Sinh phản hồi Grounded qua Gemini LLM (nếu có API Key khả dụng)
-    gemini_key = api_key or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key
+    gemini_key = api_key or get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
     llm_answer: Optional[str] = None
 
     if gemini_key and gemini_key != "MY_GEMINI_API_KEY" and len(gemini_key.strip()) >= 10:

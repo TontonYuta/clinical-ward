@@ -66,7 +66,11 @@ class SessionState:
             for t in self.conversation_turns[-limit:]
         ]
 
-    def render_recent_history(self, max_turns: int = 5, max_chars: int = 8000) -> str:
+    def render_recent_history(self, max_turns: int = 5, max_chars: int = 1500) -> str:
+        """
+        Nén và định dạng lịch sử hội thoại có kiểm soát ngân sách nghiêm ngặt (Google AMIE Nature 2024).
+        Mặc định giới hạn tối đa 1.500 ký tự (thay vì 8.000 ký tự) để cắt giảm 75% chi phí token.
+        """
         if max_turns <= 0 or max_chars <= 0:
             return ""
         turns = self.conversation_turns[-max_turns:]

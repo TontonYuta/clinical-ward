@@ -68,25 +68,27 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
       label: 'Kho dược',
       icon: Boxes,
       title: 'Quản lý kho dược nội trú & ngoại trú',
-      badge: nearExpiryAndLowStockCount > 0 ? (
-        <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200/80 tabular-nums">
-          {nearExpiryAndLowStockCount}
-        </span>
-      ) : null
+      // Tạm thời comment badge Cận hạn & Chạm min theo yêu cầu người dùng
+      // badge: nearExpiryAndLowStockCount > 0 ? (
+      //   <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200/80 tabular-nums">
+      //     {nearExpiryAndLowStockCount}
+      //   </span>
+      // ) : null
     },
-    {
-      tab: 'coldchain',
-      label: 'Chuỗi lạnh',
-      icon: Thermometer,
-      title: 'Giám sát nhiệt độ tủ vắc xin',
-      badge: (
-        <span className={`px-2 py-0.5 rounded-md text-xs font-mono font-bold border tabular-nums ${
-          isColdAlarm ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-cyan-50 text-cyan-800 border-cyan-200'
-        }`}>
-          {coldChainTemp.toFixed(1)}°C
-        </span>
-      )
-    }
+    // Tạm thời comment tab Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
+    // {
+    //   tab: 'coldchain',
+    //   label: 'Chuỗi lạnh',
+    //   icon: Thermometer,
+    //   title: 'Giám sát nhiệt độ tủ vắc xin',
+    //   badge: (
+    //     <span className={`px-2 py-0.5 rounded-md text-xs font-mono font-bold border tabular-nums ${
+    //       isColdAlarm ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-cyan-50 text-cyan-800 border-cyan-200'
+    //     }`}>
+    //       {coldChainTemp.toFixed(1)}°C
+    //     </span>
+    //   )
+    // }
   ];
 
   // Tạm thời comment tính năng TBYT và Kiểm kê tài sản theo yêu cầu người dùng

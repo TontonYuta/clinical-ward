@@ -82,3 +82,29 @@ async def test_failsafe_fallback_on_network_or_timeout(monkeypatch):
     assert res.rewritten_query == original
     assert res.fallback_used is True
     assert res.confidence <= 0.60
+
+@pytest.mark.asyncio
+async def test_dynamic_entity_extraction_arbitrary_drug():
+    """TC-07: Kiểm tra trích xuất động với thuốc bất kỳ không có trong danh sách hardcode cũ."""
+    history = (
+        "Bác sĩ: Tra cứu chuyên luận thuốc Venclexta\n"
+        "Trợ lý: Venclexta (Venetoclax) là thuốc ức chế BCL-2 chỉ định trong bệnh bạch cầu mạn dòng lympho"
+    )
+    res = await rewrite_clinical_query("suy thận có uống được không", history=history)
+    assert res.is_continuation is True
+    lower = res.rewritten_query.lower()
+    assert "venclexta" in lower or "venetoclax" in lower
+    assert any(k in lower for k in ("suy thận", "thận", "chỉnh liều"))
+
+@pytest.mark.asyncio
+async def test_pronoun_resolution_arbitrary_inn():
+    """TC-08: Đại từ 'nó' với thuốc bất kỳ không có trong mảng hardcode."""
+    history = (
+        "Bác sĩ: Liều dùng thuốc Remdesivir thế nào\n"
+        "Trợ lý: Remdesivir là thuốc kháng virus dùng đường tiêm truyền"
+    )
+    res = await rewrite_clinical_query("nó có dùng cho trẻ em được không", history=history)
+    assert res.is_continuation is True
+    lower = res.rewritten_query.lower()
+    assert "remdesivir" in lower
+    assert "trẻ em" in lower

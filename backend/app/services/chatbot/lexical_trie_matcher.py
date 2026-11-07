@@ -1,52 +1,15 @@
 """
 Aho-Corasick Lexical Trie Matcher cho 55,000 thuốc DAV & Chuyên luận DĐVN V.
-Đảm bảo trích xuất thực thể thuốc chuẩn xác < 0.1ms, kháng lỗi chính tả và gõ không dấu (<= 195 LOC).
+Đảm bảo trích xuất thực thể thuốc chuẩn xác < 0.1ms, kháng lỗi chính tả và gõ không dấu (<= 150 LOC).
 """
-import difflib
 import re
 import sqlite3
-import unicodedata
 from typing import List, Optional, Tuple, Dict, Set
 from app.seed_registry import resolve_db_path
+from app.services.chatbot.trie_dictionary import strip_accents, COMMON_EXCLUSIONS, TrieNode
+from app.services.chatbot.fuzzy_drug_resolver import FuzzyDrugResolver
 
-def strip_accents(s: str) -> str:
-    """Loại bỏ dấu tiếng Việt và chuẩn hóa chữ đ/Đ."""
-    s = s.replace("đ", "d").replace("Đ", "D")
-    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c)).lower()
-
-COMMON_EXCLUSIONS: Set[str] = {
-    "tôi", "toi", "em", "anh", "chị", "chi", "mình", "minh", "bác", "bac", "sĩ", "si", "dược", "duoc",
-    "muốn", "muon", "cần", "can", "xin", "cho", "hỏi", "hoi", "biết", "biet", "xem", "tra", "cứu", "cuu",
-    "liều", "lieu", "viên", "vien", "an", "ăn", "va", "và", "với", "voi", "uống", "uong",
-    "ngày", "ngay", "đau", "dau", "sốt", "sot", "bé", "be", "trẻ", "tre", "kho", "ca",
-    "viện", "vien", "bệnh", "benh", "thuốc", "thuoc", "chống", "chong", "chỉ", "chi", "định", "dinh",
-    "tác", "tac", "dụng", "dung", "phụ", "phu", "tương", "tuong", "một", "mot", "hai", "ba", "bốn", "năm",
-    "khi", "no", "đói", "doi", "sáng", "sang", "tối", "toi", "trưa", "trua", "nước", "nuoc",
-    "pha", "tiêm", "tiem", "truyền", "truyen", "nhỏ", "nho", "bôi", "boi", "dán", "dan", "đặt", "dat",
-    "cách", "cach", "dùng", "dung", "thông", "tin", "thong", "tỏi", "nghệ", "cao", "lá", "củ",
-    "nhất", "nhat", "nhát", "nhiều", "nhieu", "ít", "it", "nguy", "hiểm", "hiem", "tốt", "tot", "xấu", "xau",
-    "tóm", "tom", "tắt", "tat", "tiết", "tiet", "đầy", "day", "đủ", "du", "hồ", "ho", "sơ", "so", "bản", "ban", "ghi", "toàn", "toan", "bộ", "bo",
-    "ma", "mà", "đây", "day", "đó", "do", "kia", "co", "cơ", "la", "là", "nhung", "nhưng", "roi", "rồi", "the", "thế", "nao", "nào", "sao", "ay", "ấy", "nhi", "nhỉ", "ha", "hả", "chua", "chưa", "có", "khong", "không", "gi", "gì", "dau", "đâu", "lai", "lại", "qua", "quá", "bạn", "ban", "kém", "kem", "tệ", "te", "dở", "chán", "chan", "thật", "that",
-    "trong", "ngoai", "ngoài", "tren", "trên", "duoi", "dưới", "giua", "giữa", "truoc", "trước", "sau", "hoac", "hoặc", "vi", "vì", "neu", "nếu", "thi", "thì", "nhu", "như", "rat", "rất", "lam", "lắm", "cung", "cùng", "kem", "kèm", "theo", "de", "để", "dang", "đang", "da", "đã", "se", "sẽ", "vua", "vừa", "moi", "mới", "tung", "từng", "hieu", "hiểu", "noi", "nói", "viet", "viết", "doc", "đọc", "gui", "gửi", "tra loi", "trả lời", "cau", "câu", "nut", "nút", "bam", "bấm",
-    "nang", "năng", "gói", "goi", "ống", "ong", "chai", "lọ", "lo", "tuýp", "tuyp", "vỉ", "vi", "hộp", "hop", "chức", "chuc", "thận", "than", "gan", "tim",
-    "gồm", "gom", "bao gồm", "bao gom", "đơn", "don", "đơn thuốc", "don thuoc", "kê", "ke",
-    "huyết", "huyet", "áp", "ap", "đường", "duong", "khuẩn", "khuan", "thanh", "tinh", "chế", "che", "an thần", "an than", "kinh", "thần kinh", "than kinh", "thần",
-    "đồng", "dong", "nghiệp", "nghiep", "kính", "kinh", "hỗ", "ho", "trợ", "tro", "chuyên", "chuyen", "môn", "mon", "hướng", "huong", "dẫn", "dan", "phác", "phac", "đồ", "do",
-    "chuẩn", "chuan", "chi", "nhân", "nhan", "đối", "doi", "quy", "định", "dinh", "thông", "tư", "tu", "nghị", "nghi", "điều", "dieu", "khoa", "phòng", "phong", "toàn", "văn", "van",
-    "mang", "gửi", "gui", "giảm", "giam", "loét", "loet", "nấm", "nam", "miệng", "mieng", "tai", "mũi", "họng", "hong", "khớp", "khop", "trĩ", "tri", "ngủ", "ngu",
-    "đồng nghiệp", "dong nghiep", "kính gửi", "kinh gui", "tư vấn", "tu van", "chuyên môn", "chuyen mon", "hỗ trợ", "ho tro",
-    "khan", "ho", "ho khan", "nhom", "nhóm", "đặc", "dac", "loãng", "loang", "bột", "bot", "tinh thể", "dung dịch", "hỗn dịch", "nhũ tương",
-    "thuốc đó", "thuoc do", "thuốc này", "thuoc nay", "thuốc kia", "thuoc kia", "thuốc trên", "thuoc tren",
-    "thuốc ấy", "thuoc ay", "thuốc đấy", "thuoc day", "thuốc vừa nói", "thuoc vua noi", "thuốc vừa rồi", "thuoc vua roi", "thuốc nọ", "thuoc no"
-}
-
-class TrieNode:
-    __slots__ = ("children", "is_end", "canonical", "entity_type")
-    def __init__(self):
-        self.children: Dict[str, "TrieNode"] = {}
-        self.is_end: bool = False
-        self.canonical: Optional[str] = None
-        self.entity_type: Optional[str] = None
+__all__ = ["strip_accents", "COMMON_EXCLUSIONS", "TrieNode", "DrugLexicalMatcher", "get_drug_lexical_matcher"]
 
 class DrugLexicalMatcher:
     """Trie đối khớp từ khóa thực thể dược phẩm siêu tốc độ O(L)."""
@@ -117,7 +80,6 @@ class DrugLexicalMatcher:
                 pass
             conn.close()
 
-            # Nạp toàn bộ danh mục thuốc và biệt dược lâm sàng từ DRUG_REGISTRY
             try:
                 from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
                 for inn, meta in DRUG_REGISTRY.items():
@@ -174,10 +136,7 @@ class DrugLexicalMatcher:
                         and original_slice != longest[2].lower()
                     ):
                         continue
-                    if longest[2].lower() in ("nhân trần", "nhan tran") and src[:longest[0]].rstrip().endswith(("bệnh", "benh")):
-                        pass
-                    else:
-                        candidates.append(longest)
+                    candidates.append(longest)
 
         candidates.sort(key=lambda x: (x[0], -(x[1] - x[0])))
         results: List[str] = []
@@ -188,7 +147,6 @@ class DrugLexicalMatcher:
                 seen.add(canon.lower())
                 results.append(canon)
                 last_end = end
-
         return results
 
     def extract_sdk(self, text: str) -> Optional[str]:
@@ -196,31 +154,14 @@ class DrugLexicalMatcher:
         return sdk_m.group(1).upper() if sdk_m else None
 
     def fuzzy_candidate_search(self, token: str, top_k: int = 3) -> List[str]:
-        """Tìm kiếm mờ khi người dùng gõ sai hoặc viết tắt (CRAG Framework)."""
-        token_clean = strip_accents(token.strip().lower())
-        if len(token_clean) < 3 or token_clean in COMMON_EXCLUSIONS:
-            return []
-        matches = []
-        seen = set()
-        for brand in self.canonical_brands:
-            b_norm = strip_accents(brand.lower())
-            if b_norm.startswith(token_clean) or (len(token_clean) >= 5 and token_clean in b_norm):
-                if b_norm not in seen:
-                    seen.add(b_norm)
-                    matches.append(brand)
-                    if len(matches) >= top_k:
-                        break
-        if len(matches) < top_k and token_clean:
-            pool = self._candidates_by_first.get(token_clean[0], [])
-            close = difflib.get_close_matches(token_clean, pool, n=top_k, cutoff=0.6)
-            for c in close:
-                orig = self._name_map.get(c, c.title())
-                if orig.lower() not in seen:
-                    seen.add(orig.lower())
-                    matches.append(orig)
-                    if len(matches) >= top_k:
-                        break
-        return matches
+        """Tìm kiếm mờ khi người dùng gõ sai hoặc viết tắt qua FuzzyDrugResolver."""
+        return FuzzyDrugResolver.resolve_token(
+            token=token,
+            canonical_brands=self.canonical_brands,
+            name_map=self._name_map,
+            candidates_by_first=self._candidates_by_first,
+            top_k=top_k
+        )
 
 _MATCHER_INSTANCE: Optional[DrugLexicalMatcher] = None
 

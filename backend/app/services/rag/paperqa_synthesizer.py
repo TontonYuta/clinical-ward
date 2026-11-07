@@ -7,84 +7,12 @@ import re
 import time
 import httpx
 from typing import Optional, List, Tuple
-from pydantic import BaseModel, Field
 from app.config import settings
-
-class ClaimCitation(BaseModel):
-    """Mỗi luận điểm y khoa khẳng định bắt buộc phải có nguồn chứng thực (PaperQA2 Provenance)."""
-    claim_text: str = Field(description="Nội dung khẳng định lâm sàng")
-    source_document: str = Field(description="Tài liệu nguồn: Dược thư DĐVN V hoặc QĐ 5948")
-    page_or_section: str = Field(default="", description="Trang số hoặc Mục/Bảng quy định cụ thể")
-    is_verified: bool = Field(default=True, description="Đã được đối soát chéo thành công với CSDL")
-
-class PaperQASynthesisResult(BaseModel):
-    """Đầu ra của bộ tổng hợp y văn có chứng cứ lâm sàng."""
-    conversational_answer: str = Field(description="Nội dung phản hồi tự nhiên, gãy gọn, đúng trọng tâm")
-    citations: List[ClaimCitation] = Field(default_factory=list, description="Danh sách chứng cứ bảo chứng")
-    grounded_confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Độ tin cậy chứng thực (0.0 - 1.0)")
-    has_unverified_claims: bool = Field(default=False, description="Có phát hiện câu nói bịa đặt ngoài CSDL bị cắt bỏ không")
-    latency_ms: float = Field(default=0.0, description="Thời gian tổng hợp (milliseconds)")
-    source_status: str = Field(default="exact_match", description="Trạng thái nguồn gốc dữ liệu")
-
-VIETNAMESE_STOPWORDS = {
-    "và", "là", "thì", "mà", "ở", "với", "cho", "của", "trong", "được", "có", "các",
-    "những", "này", "đó", "một", "vào", "lúc", "khi", "để", "như", "theo", "sau", "trước",
-    "hoặc", "nếu", "bởi", "vì", "từ", "ra", "lại", "rất", "quá", "nên", "phải", "đã"
-}
-
-def verify_and_purge_unsupported_claims(llm_text: str, evidence_context: str) -> Tuple[str, List[ClaimCitation]]:
-    """
-    Bộ lọc PaperQA2 Claim Verifier:
-    Phân tách từng câu khẳng định, đối soát chéo từ vựng ngữ nghĩa với evidence_context.
-    Tự động gạch bỏ các câu khẳng định bịa đặt (Hallucination) không có trong dữ liệu CSDL.
-    """
-    evidence_lower = evidence_context.lower()
-    evidence_words = set(w for w in re.findall(r'\b[a-zA-Z0-9à-ỹÀ-ỸĐđ]+\b', evidence_lower) if len(w) >= 3 and w not in VIETNAMESE_STOPWORDS)
-
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', llm_text) if len(s.strip()) >= 5]
-    verified_sentences: List[str] = []
-    citations: List[ClaimCitation] = []
-    has_purged = False
-
-    for sent in sentences:
-        sent_lower = sent.lower()
-        # Trích xuất nguồn trong ngoặc vuông [DĐVN V, Trang xxx] hoặc [QĐ 5948]
-        cite_match = re.search(r'\[(.*?)\]', sent)
-        source_label = cite_match.group(1).strip() if cite_match else "Dược Thư Quốc Gia Việt Nam & QĐ 5948"
-
-        # Tách các từ quan trọng trong câu
-        sent_words = set(w for w in re.findall(r'\b[a-zA-Z0-9à-ỹÀ-ỸĐđ]+\b', sent_lower) if len(w) >= 3 and w not in VIETNAMESE_STOPWORDS)
-        if not sent_words:
-            verified_sentences.append(sent)
-            continue
-
-        overlap = sent_words.intersection(evidence_words)
-        overlap_ratio = len(overlap) / len(sent_words)
-
-        # Phát hiện từ khóa y khoa mới xuất hiện nhưng không có trong evidence
-        critical_unsupported_words = [
-            w for w in sent_words if w not in evidence_words and w in (
-                "hoại tử", "bưởi chùm", "tử vong", "suy tủy", "ngưng tim", "mù lòa",
-                "ung thư", "chết", "ngộ độc cấp", "hôn mê"
-            )
-        ]
-
-        # Nếu tỷ lệ overlap quá thấp (< 0.25) và có từ khóa lạ ngoài CSDL -> coi là hallucination
-        is_hallucination = bool(critical_unsupported_words) or (overlap_ratio < 0.20 and len(sent_words) >= 6)
-
-        if is_hallucination:
-            has_purged = True
-            continue  # Cắt bỏ câu bịa đặt khỏi kết quả
-
-        verified_sentences.append(sent)
-        citations.append(ClaimCitation(
-            claim_text=sent,
-            source_document=source_label,
-            is_verified=True
-        ))
-
-    cleaned_text = "\n\n".join(verified_sentences) if "\n" in llm_text else " ".join(verified_sentences)
-    return cleaned_text, citations
+from app.services.rag.claim_attributor import (
+    ClaimCitation,
+    PaperQASynthesisResult,
+    verify_and_purge_unsupported_claims
+)
 
 async def _call_llm_synthesis(
     query: str,
@@ -295,7 +223,8 @@ async def synthesize_grounded_clinical_response(
     Tổng hợp ngôn ngữ tự nhiên mềm mại từ CSDL -> Lọc khử ảo giác -> Đảm bảo an toàn 100%.
     """
     start_time = time.time()
-    key = api_key or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key
+    key = api_key or get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
 
     # 1. Nếu có API Key khả dụng: Gọi LLM tổng hợp ngôn ngữ tự nhiên
     if key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10:

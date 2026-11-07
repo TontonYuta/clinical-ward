@@ -32,16 +32,19 @@ async def _call_gemini_api(
     max_output_tokens: int = 800,
     timeout_sec: float = 8.0,
 ) -> Optional[str]:
-    key = api_key or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key, rotate_to_next_key
+    key = api_key
+    if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
+        key = get_active_api_key(provider="gemini")
+    if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
+        key = settings.GEMINI_API_KEY
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         return None
 
     models = [
-        "gemini-3.8-flash",
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
-        "gemini-2.5-flash-lite",
-        "gemini-2.0-flash-lite",
+        "gemini-3.8-flash",
         "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-1.5-flash",
@@ -73,7 +76,48 @@ async def _call_gemini_api(
                     if candidates:
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts and "text" in parts[0]:
-                            return parts[0]["text"].strip()
+                            reply = parts[0]["text"].strip()
+                            usage = data.get("usageMetadata", {})
+                            p_tok = usage.get("promptTokenCount") or (len(prompt) // 4)
+                            c_tok = usage.get("candidatesTokenCount") or (len(reply) // 4)
+                            try:
+                                from app.services.telemetry_store import record_llm_token_usage
+                                from app.services.admin_key_vault import record_key_consumption
+                                record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                record_key_consumption(key, p_tok + c_tok)
+                            except Exception:
+                                pass
+                            return reply
+                elif res.status_code == 429 or "RESOURCE_EXHAUSTED" in getattr(res, "text", ""):
+                    logger.warning("Gemini 429 Quota Exceeded on %s. Auto-rotating key.", model)
+                    try:
+                        from app.services.admin_key_vault import record_key_consumption
+                        record_key_consumption(key, 0, is_error_429=True)
+                    except Exception:
+                        pass
+                    next_key = rotate_to_next_key(key, "Chạm hạn ngạch 429")
+                    if next_key and next_key != key:
+                        key = next_key
+                        retry_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+                        retry_res = await client.post(retry_url, json=payload, timeout=httpx.Timeout(min(4.0, remaining), connect=min(2.0, remaining)))
+                        if retry_res.status_code == 200:
+                            data = retry_res.json()
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                parts = candidates[0].get("content", {}).get("parts", [])
+                                if parts and "text" in parts[0]:
+                                    reply = parts[0]["text"].strip()
+                                    usage = data.get("usageMetadata", {})
+                                    p_tok = usage.get("promptTokenCount") or (len(prompt) // 4)
+                                    c_tok = usage.get("candidatesTokenCount") or (len(reply) // 4)
+                                    try:
+                                        from app.services.telemetry_store import record_llm_token_usage
+                                        from app.services.admin_key_vault import record_key_consumption
+                                        record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                        record_key_consumption(key, p_tok + c_tok)
+                                    except Exception:
+                                        pass
+                                    return reply
             except Exception as e:
                 logger.debug("Gemini model %s attempt failed: %s", model, e)
                 continue
@@ -122,7 +166,12 @@ async def _call_gemini_vision_ocr(
     Gọi Gemini Multimodal API trích xuất đơn thuốc với mô hình thị giác và cascading fallback.
     Ưu tiên gemini-2.5-flash / gemini-3-flash, tự động trượt xuống gemini-3.5-flash-lite khi hết hạn ngạch.
     """
-    key = api_key or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key, rotate_to_next_key
+    key = api_key
+    if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
+        key = get_active_api_key(provider="gemini")
+    if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
+        key = settings.GEMINI_API_KEY
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         return None
 
@@ -337,7 +386,16 @@ async def _call_openai_compatible_api(
                     msg = choices[0].get("message", {})
                     content = msg.get("content", "")
                     if content:
-                        return content.strip()
+                        reply = content.strip()
+                        usage = data.get("usage", {})
+                        p_tok = usage.get("prompt_tokens") or (len(prompt) // 4)
+                        c_tok = usage.get("completion_tokens") or (len(reply) // 4)
+                        try:
+                            from app.services.telemetry_store import record_llm_token_usage
+                            record_llm_token_usage(p_tok, c_tok, model=settings.OPENAI_MODEL or "qwen2.5:7b-instruct", provider="openai_compatible")
+                        except Exception:
+                            pass
+                        return reply
             else:
                 logger.warning(
                     "OpenAI-compatible endpoint %s returned status %d: %s",
@@ -367,6 +425,13 @@ async def query_clinical_llm(
 
     # 1. Chế độ Ngoại tuyến 100% (Offline Grounded Mode)
     if provider in {"offline", "none", "disable", "disabled"}:
+        return None
+
+    # 1.1 Kiểm tra Token Budget Cap (Chặn vượt trần chi phí & tự động trượt sang Offline Mode)
+    from app.services.admin_monitoring_service import check_token_budget_gate
+    budget_allowed, budget_msg = check_token_budget_gate()
+    if not budget_allowed:
+        logger.warning("Token budget gate closed: %s. Falling back to local offline RAG.", budget_msg)
         return None
 
     # 2. Kiểm tra bộ nhớ đệm LLM

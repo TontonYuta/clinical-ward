@@ -188,6 +188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             )}
 
+            {/* Tạm thời comment tab Chuỗi lạnh theo yêu cầu người dùng
             {currentTab === 'coldchain' && (
               <ColdChainTab
                 coldChainState={coldChainState}
@@ -197,7 +198,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onOpenPrintForm={onOpenPrintForm}
                 isAudioMuted={isAudioMuted}
               />
-            )}
+            )} */}
 
             {/* {currentTab === 'asset_audit' && (
               <AssetAuditTab

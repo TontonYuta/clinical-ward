@@ -1,0 +1,17 @@
+[
+  {
+    "key_id": "default-gemini-key",
+    "name": "Khóa Hệ Thống Mặc Định (Từ Env)",
+    "raw_key": "AIzaSy_YOUR_GEMINI_API_KEY_HERE",
+    "provider": "gemini",
+    "status": "active",
+    "quota_status": "15 RPM / Normal",
+    "is_active": true,
+    "created_at": 1700000000.0,
+    "tokens_used_today": 0,
+    "requests_count": 0,
+    "error_429_count": 0,
+    "latency_ms": 0.0,
+    "last_used_at": null
+  }
+]

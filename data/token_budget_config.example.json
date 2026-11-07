@@ -1,0 +1,6 @@
+{
+  "daily_token_limit": 500000,
+  "monthly_token_limit": 10000000,
+  "auto_offline_fallback": true,
+  "alert_on_threshold_pct": 80
+}

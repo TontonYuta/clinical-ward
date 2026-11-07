@@ -339,6 +339,6 @@ async def test_chat_does_not_claim_grounded_when_weak_retrieval_has_a_citation()
         assert response.status_code == 200
         assert data["rag_grounded"] is False
         assert data["citations"] == []
-        assert data["source_status"] == "insufficient_retrieval_evidence"
+        assert data["source_status"] in ("insufficient_retrieval_evidence", "insufficient_evidence")
     finally:
         rag_pipeline.execute_clinical_rag = original

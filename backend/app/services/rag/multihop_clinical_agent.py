@@ -58,62 +58,11 @@ def is_multihop_clinical_case(query: str, lower_query: str) -> bool:
 
     return False
 
-def _extract_clcr_or_egfr(text: str) -> Optional[float]:
-    """Extract quantitative ClCr or eGFR value if present."""
-    m = re.search(r"\b(?:clcr|egfr|crcl)\s*(?:dưới|<|<=|=|là|khoảng|:)?\s*([0-9]+(?:\.[0-9]+)?)\b", text, re.IGNORECASE)
-    if m:
-        try:
-            return float(m.group(1))
-        except ValueError:
-            return None
-    if any(term in text.casefold() for term in ("clcr dưới 30", "clcr < 30", "egfr < 30", "suy thận nặng")):
-        return 25.0
-    return None
-
-def _canonicalize_meds(med_list: List[str]) -> List[str]:
-    """Map raw or brand tokens to canonical INN registered keys."""
-    canonical = []
-    for item in med_list:
-        resolved = resolve_registered_medications(item)
-        if resolved:
-            canonical.extend(resolved)
-        else:
-            for k, v in DRUG_REGISTRY.items():
-                if k in item or any(a in item for a in v.get("aliases", [])):
-                    canonical.append(k)
-                    break
-    return list(dict.fromkeys(canonical))
-
-def _partition_current_and_proposed_meds(query: str) -> Tuple[List[str], List[str]]:
-    """Partition query drugs into current regimen vs. proposed new additions."""
-    q_low = query.lower()
-    split_markers = ["kê thêm", "cho thêm", "định cho", "định kê", "thêm", "bổ sung", "kết hợp thêm"]
-
-    current_text = q_low
-    proposed_text = ""
-
-    for marker in split_markers:
-        if marker in q_low:
-            parts = q_low.split(marker, 1)
-            current_text = parts[0]
-            proposed_text = parts[1]
-            break
-
-    matcher = get_drug_lexical_matcher()
-
-    raw_curr = resolve_registered_medications(current_text) + [m.lower() for m in matcher.extract_medications(current_text)]
-    current_meds = _canonicalize_meds(raw_curr)
-
-    if proposed_text:
-        raw_prop = resolve_registered_medications(proposed_text) + [m.lower() for m in matcher.extract_medications(proposed_text)]
-        proposed_meds = _canonicalize_meds(raw_prop)
-    else:
-        proposed_meds = []
-
-    # Clean duplicates across lists
-    current_meds = [m for m in current_meds if m not in proposed_meds]
-
-    return current_meds, proposed_meds
+from app.services.rag.metric_extractor import (
+    extract_clcr_or_egfr as _extract_clcr_or_egfr,
+    partition_current_and_proposed_meds as _partition_current_and_proposed_meds,
+    _canonicalize_meds
+)
 
 async def execute_multihop_clinical_evaluation(
     query: str,

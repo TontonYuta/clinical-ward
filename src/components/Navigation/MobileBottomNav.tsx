@@ -45,8 +45,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const allowedTabs = profile.allowedTabs || ['overview'];
   
   const displayTabs = React.useMemo(() => {
-    // Tạm thời comment / ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-    const hiddenTabs: DashboardTab[] = ['debt', 'equipment', 'asset_audit'];
+    // Tạm thời comment / ẩn các tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng
+    const hiddenTabs: DashboardTab[] = ['debt', 'equipment', 'asset_audit', 'coldchain'];
     const filtered = (Object.keys(TAB_CONFIG) as DashboardTab[])
       .filter(t => !hiddenTabs.includes(t) && allowedTabs.includes(t));
     return filtered.length > 0 ? filtered : (['overview', 'cpoe'] as DashboardTab[]);
@@ -55,7 +55,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const getBadge = (tab: DashboardTab) => {
     if (tab === 'debt' && debtCount > 0) return { count: debtCount, color: 'bg-amber-500' };
     if (tab === 'equipment' && urgentTicketsCount > 0) return { count: urgentTicketsCount, color: 'bg-rose-500' };
-    if (tab === 'fefo' && lowStockCount > 0) return { count: lowStockCount, color: 'bg-amber-500' };
+    // Tạm thời comment badge Cận hạn & Chạm min theo yêu cầu người dùng
+    // if (tab === 'fefo' && lowStockCount > 0) return { count: lowStockCount, color: 'bg-amber-500' };
     if (tab === 'coldchain' && isColdAlarm) return { count: '!', color: 'bg-rose-500' };
     if (tab === 'asset_audit' && misallocatedAssetsCount > 0) return { count: misallocatedAssetsCount, color: 'bg-blue-500' };
     return null;

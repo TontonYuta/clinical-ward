@@ -55,3 +55,43 @@ def test_prompt_hashing():
     h3 = _compute_prompt_hash("openai_compatible", "qwen2.5", "prompt A", "sys")
     assert h1 == h2
     assert h1 != h3
+
+@pytest.mark.asyncio
+async def test_gemini_auto_failover_on_429():
+    """Kiểm tra tự động chuyển đổi sang API key khác khi gặp HTTP 429 (hết token/quota)."""
+    from app.services.llm_provider import _call_gemini_api
+    from app.services.admin_key_vault import add_api_key, delete_api_key
+
+    raw_fail = "AIzaSyMockFailKey429Testing111111"
+    raw_succ = "AIzaSyMockSuccKey200Testing222222"
+    k_fail = add_api_key("Fail Key 429", raw_fail)
+    k_succ = add_api_key("Backup Key 200", raw_succ)
+
+    resp_429 = MagicMock()
+    resp_429.status_code = 429
+    resp_429.text = '{"error": {"code": 429, "message": "RESOURCE_EXHAUSTED"}}'
+
+    resp_200 = MagicMock()
+    resp_200.status_code = 200
+    resp_200.json.return_value = {
+        "candidates": [{"content": {"parts": [{"text": "Phản hồi thành công từ key dự phòng."}]}}],
+        "usageMetadata": {"promptTokenCount": 20, "candidatesTokenCount": 35}
+    }
+
+    # Giả lập: Lần gọi đầu dính 429, lần gọi tiếp theo bằng key dự phòng thành công 200
+    call_count = 0
+    async def mock_post(url, *args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if raw_fail in str(url):
+            return resp_429
+        return resp_200
+
+    try:
+        with patch("httpx.AsyncClient.post", side_effect=mock_post):
+            answer = await _call_gemini_api("Xin chào", api_key=raw_fail, timeout_sec=5.0)
+            assert answer == "Phản hồi thành công từ key dự phòng."
+            assert call_count >= 2
+    finally:
+        delete_api_key(k_fail["key_id"])
+        delete_api_key(k_succ["key_id"])
