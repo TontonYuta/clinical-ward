@@ -2,8 +2,8 @@ import os
 import secrets
 from pydantic import BaseModel
 
-# Automatically discover and load .env.local if present
-for cand in [".env.local", "../.env.local", "../../.env.local"]:
+# Automatically discover and load .env.local or .env if present
+for cand in [".env.local", ".env", "../.env.local", "../.env", "../../.env.local", "../../.env"]:
     cand_path = os.path.abspath(os.path.join(os.path.dirname(__file__), cand))
     if os.path.exists(cand_path):
         with open(cand_path, "r", encoding="utf-8") as f:

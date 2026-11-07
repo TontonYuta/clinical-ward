@@ -132,10 +132,11 @@ async def _call_gemini_vision_ocr(
 
     ocr_prompt = prompt or DEFAULT_PRESCRIPTION_OCR_PROMPT
     models = [
+        "gemini-3.5-flash-lite",
+        "gemini-3.8-flash",
+        "gemini-3.1-flash-lite",
         "gemini-2.5-flash",
         "gemini-3-flash-preview",
-        "gemini-3.5-flash-lite",
-        "gemini-3.1-flash-lite",
         "gemini-3.1-pro-preview",
     ]
 
