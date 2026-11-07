@@ -11,6 +11,7 @@ from app.models.asset import AssetRecord
 from app.models.audit import AuditRecord
 from app.models.patient import PatientProfile, PrescriptionAdviceRecord
 from app.seed_registry import seed_dav_registry_if_needed
+from app.seed_bhyt_catalog import seed_bhyt_catalog
 
 USERS_DATA = [
     {
@@ -163,6 +164,7 @@ async def seed():
 
         await session.commit()
         seed_dav_registry_if_needed()
+        seed_bhyt_catalog()
         print("Successfully seeded all hospital clinical datasets into database!")
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ import { EquipmentIncidentTab } from './Tabs/EquipmentIncidentTab';
 import { FefoInventoryTab } from './Tabs/FefoInventoryTab';
 import { ColdChainTab } from './Tabs/ColdChainTab';
 import { AssetAuditTab } from './Tabs/AssetAuditTab';
+import { BhytAuditTab } from './Tabs/BhytAuditTab';
 import { OperationsOverview } from './OperationsOverview';
 import { PrintableFormType } from '../Modals/PrintableFormModal';
 
@@ -144,6 +145,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 currentUserRole={currentUserRole}
                 onOpenSafetyGuide={onOpenMedicationSafety}
               />
+            )}
+
+            {currentTab === 'bhyt_audit' && (
+              <BhytAuditTab />
             )}
 
             {/* Tạm thời comment tính năng Sổ nợ vỏ và TBYT theo yêu cầu người dùng */}

@@ -4,7 +4,7 @@
  * Unified HTTP API Client with Error Guarding & Timeouts
  */
 
-import { API_BASE_URL } from '../../config/apiConfig';
+import { getApiBaseUrl } from '../../config/apiConfig';
 
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
@@ -12,7 +12,8 @@ export interface RequestOptions extends RequestInit {
 
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { timeoutMs = 8000, ...fetchOptions } = options;
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

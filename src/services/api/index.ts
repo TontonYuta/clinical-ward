@@ -9,3 +9,4 @@ export * from './debtApi';
 export * from './cpoeApi';
 export * from './equipmentApi';
 export * from './inventoryApi';
+export * from './bhytApi';

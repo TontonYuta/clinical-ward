@@ -7,6 +7,7 @@
 import React from 'react';
 import { InventoryBatch } from '../../../../types/pharmacy';
 import { resolvePharmacologicalGroup } from '../../../../utils/clinical/pharmacologicalClassification';
+import { findBhytRule } from '../../../../data/bhytDrugRules';
 
 interface PharmacyBatchRowProps {
   index: number;
@@ -27,6 +28,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
     `${batch.itemName} ${batch.activeIngredient}`,
     batch.pharmacologicalClass || batch.category
   );
+  const bhytRule = findBhytRule(batch.activeIngredient || batch.itemName);
 
   return (
     <tr className="hover:bg-slate-50 transition-colors border-b border-slate-200 text-slate-800 text-sm">
@@ -66,6 +68,25 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
           {batch.isControlledSubstance && (
             <span className="text-xs font-medium text-rose-700" title="Thuốc kiểm soát đặc biệt">
               KSĐB
+            </span>
+          )}
+          {bhytRule ? (
+            <span
+              className={`text-xs px-1.5 py-0.5 rounded font-semibold border ${
+                bhytRule.paymentRatio === 1.0
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}
+              title={`BHYT ${bhytRule.paymentRatio * 100}% (TT 20/2022/TT-BYT Trang ${bhytRule.pdfPage}) - Hạng: ${bhytRule.allowedRanks.map(r => r.replace('HANG_', '')).join(', ')}`}
+            >
+              BHYT {bhytRule.paymentRatio * 100}%
+            </span>
+          ) : (
+            <span
+              className="text-xs px-1.5 py-0.5 rounded font-normal text-slate-500 border border-slate-200 bg-slate-50"
+              title="Ngoài danh mục thanh toán BHYT TT 20/2022"
+            >
+              Tự túc
             </span>
           )}
         </div>

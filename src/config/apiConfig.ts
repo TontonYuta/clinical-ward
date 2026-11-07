@@ -5,6 +5,10 @@
  * - Fallback for Web/Vercel: /api/v1 (reverse-proxied to Render backend)
  */
 export function getApiBaseUrl(): string {
+  if (typeof process !== 'undefined' && process.env?.VITE_API_BASE_URL) {
+    return process.env.VITE_API_BASE_URL.replace(/\/+$/, '');
+  }
+
   if (typeof import.meta !== 'undefined') {
     const envUrl = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL;
     if (envUrl && typeof envUrl === 'string') {

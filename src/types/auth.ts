@@ -18,7 +18,8 @@ export type DashboardTab =
   | 'equipment'
   | 'fefo'
   | 'coldchain'
-  | 'asset_audit';
+  | 'asset_audit'
+  | 'bhyt_audit';
 
 export type ClinicalActionType =
   | 'PRESCRIBE_MEDICATION'

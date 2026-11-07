@@ -38,7 +38,7 @@ const KEYS = {
 };
 
 // Tạm thời ẩn các tab TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-const VALID_TABS: DashboardTab[] = ['overview', 'cpoe', 'fefo', 'coldchain'];
+const VALID_TABS: DashboardTab[] = ['overview', 'cpoe', 'bhyt_audit', 'fefo', 'coldchain'];
 const VALID_ROLES: UserRole[] = ['nurse', 'doctor', 'pharmacist', 'biomedical_engineer', 'director'];
 
 /**

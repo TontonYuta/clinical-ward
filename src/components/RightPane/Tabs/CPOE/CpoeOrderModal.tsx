@@ -5,9 +5,9 @@
  * Giao diện Workstation Mở Rộng 2 Cột, Đồng Bộ Kho Dược (Flat, Neutral Slate, Zero-Box)
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer } from 'lucide-react';
+import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer, Scale } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType, Tt26FormType, getTt26FormMetadata } from '../../../../types/cpoe';
 import { MasterMedication } from '../../../../types/medication';
 import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
@@ -16,6 +16,8 @@ import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services
 import { validatePrescriptionDraft } from '../../../../services/prescriptionValidation';
 import { auditPrescriptionDdiApi } from '../../../../services/api';
 import { PrescriptionPrintDocument } from './PrescriptionPrintDocument';
+import { findBhytRule } from '../../../../data/bhytDrugRules';
+import { auditBhytPrescription } from '../../../../services/bhytAuditEngine';
 
 interface CpoeOrderModalProps {
   isOpen: boolean;
@@ -79,6 +81,34 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const auditRevision = useRef(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [clinicalNotes, setClinicalNotes] = useState('');
+
+  // Giám định tuân thủ quy tắc BHYT thời gian thực (Thông tư 20/2022/TT-BYT)
+  const bhytAuditReport = useMemo(() => {
+    const validItems = medications.filter(m => (m.medicationName && m.medicationName.trim()) || (m.activeIngredient && m.activeIngredient.trim()));
+    if (validItems.length === 0) return null;
+
+    return auditBhytPrescription({
+      prescriptionId: 'CPOE-LIVE',
+      patientName: patientName || 'Bệnh nhân',
+      patientAge: 45,
+      insuranceCardNumber: 'DN4010123456789',
+      hospitalRank: 'HANG_3',
+      treatmentType: 'NGOAI_TRU',
+      primaryIcd10: diagnosisIcd10.trim() || 'R69',
+      primaryDiagnosis: diagnosisText.trim() || 'Khám bệnh',
+      secondaryIcd10s: [],
+      items: validItems.map(m => ({
+        drugName: m.medicationName,
+        activeIngredient: m.activeIngredient || m.medicationName,
+        quantity: Number(m.quantity) || 1,
+        unitPrice: 25000,
+        dosage: m.dosage || '',
+        daysOfSupply: Number(daysPrescribed) || 7,
+        route: m.route || 'Uống',
+        instructions: m.instructions || ''
+      }))
+    });
+  }, [medications, diagnosisIcd10, diagnosisText, daysPrescribed, patientName]);
   const handlePrintDraft = () => {
     const documentNode = document.getElementById('prescription-print-document');
     if (!documentNode) {
@@ -738,13 +768,47 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                       className="p-4 sm:p-5 border border-slate-200 rounded-xl bg-white shadow-xs space-y-4 transition hover:border-slate-300"
                     >
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-mono text-xs font-semibold rounded">
                             #{String(index + 1).padStart(2, '0')}
                           </span>
                           <span className="text-xs font-semibold text-slate-800">
                             {medication.medicationName || 'Thuốc mới'}
                           </span>
+                          {(() => {
+                            const query = medication.activeIngredient || medication.medicationName;
+                            if (!query) return null;
+                            const rule = findBhytRule(query);
+                            if (!rule) {
+                              return (
+                                <span className="text-3xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200" title="Ngoài danh mục BHYT TT 20/2022">
+                                  Tự túc
+                                </span>
+                              );
+                            }
+                            const isRankAllowed = rule.allowedRanks.includes('HANG_3');
+                            return (
+                              <div className="flex items-center gap-1">
+                                <span className={`text-3xs font-semibold px-1.5 py-0.5 rounded border ${
+                                  rule.paymentRatio === 1.0 
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`} title={`Tỷ lệ thanh toán BHYT: ${rule.paymentRatio * 100}%`}>
+                                  BHYT {rule.paymentRatio * 100}%
+                                </span>
+                                {!isRankAllowed && (
+                                  <span className="text-3xs font-semibold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200" title={`Chỉ được thanh toán tại BV hạng ${rule.allowedRanks.map(r => r.replace('HANG_', '')).join(', ')}`}>
+                                    Vượt tuyến BV
+                                  </span>
+                                )}
+                                {rule.requiresConsultation && (
+                                  <span className="text-3xs font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200" title="Cần Biên bản Hội chẩn BHYT">
+                                    Hội chẩn
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         {medications.length > 1 && (
                           <button
@@ -900,6 +964,43 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         • <strong>{a.title}</strong> ({a.severity}) — {a.consequence}; Xử trí: {a.action}; Nguồn: {a.source}
                       </p>
                     ))}
+                  </div>
+                )}
+
+                {/* Cảnh báo Giám định BHYT thời gian thực (Thông tư 20/2022/TT-BYT) */}
+                {bhytAuditReport && bhytAuditReport.violations.length > 0 && (
+                  <div
+                    role="alert"
+                    className="p-4 border rounded-xl text-xs space-y-2.5 bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <b className="flex items-center gap-1.5 font-bold text-amber-950">
+                        <Scale className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Cảnh báo Giám định BHYT (Thông tư 20/2022/TT-BYT)</span>
+                      </b>
+                      {bhytAuditReport.atRiskCostVnd > 0 && (
+                        <span className="text-2xs font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                          Nguy cơ xuất toán: -{bhytAuditReport.atRiskCostVnd.toLocaleString('vi-VN')} đ
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2 pl-5">
+                      {bhytAuditReport.violations.map((v, i) => (
+                        <div key={i} className="text-2xs leading-relaxed border-l-2 border-amber-400 pl-2.5 py-0.5">
+                          <div className="flex items-center gap-1.5 font-semibold text-slate-900">
+                            <span>• {v.drugName}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-3xs uppercase font-bold ${
+                              v.severity === 'XUAT_TOAN' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {v.severity === 'XUAT_TOAN' ? 'Xuất toán' : 'Lưu ý'}
+                            </span>
+                            <span className="text-slate-500 font-normal">({v.ruleTitle})</span>
+                          </div>
+                          <p className="text-slate-700 mt-0.5">{v.description}</p>
+                          <p className="text-slate-500 italic mt-0.5">💡 Khuyến nghị: {v.legalAdvice}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

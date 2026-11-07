@@ -29,6 +29,20 @@ export default defineConfig(() => {
               }
               return 'vendor-libs';
             }
+            if (id.includes('src/components/RightPane/Tabs/')) {
+              if (id.includes('BhytAuditTab') || id.includes('BhytAuditReportModal') || id.includes('BhytSubstitutionModal')) {
+                return 'tab-bhyt';
+              }
+              if (id.includes('CPOE') || id.includes('CpoePrescriptionTab')) {
+                return 'tab-cpoe';
+              }
+              if (id.includes('ColdChain')) {
+                return 'tab-coldchain';
+              }
+            }
+            if (id.includes('src/data/clinicalProfiles/')) {
+              return 'clinical-profiles';
+            }
           },
         },
       },

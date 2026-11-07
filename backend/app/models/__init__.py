@@ -10,6 +10,7 @@ from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
 from app.models.patient import PatientProfile, PrescriptionAdviceRecord
 from app.models.sms import SmsDeliveryLog
 from app.models.copilot_log import CopilotChatLog
+from app.models.bhyt import BhytDrugCatalog, BhytAuditLog
 
 __all__ = [
     "User",
@@ -27,4 +28,6 @@ __all__ = [
     "PrescriptionAdviceRecord",
     "SmsDeliveryLog",
     "CopilotChatLog",
+    "BhytDrugCatalog",
+    "BhytAuditLog",
 ]
