@@ -9,7 +9,10 @@ import io
 import os
 import tempfile
 import subprocess
-import pypdf
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
 
 logger = logging.getLogger(__name__)
 
@@ -113,17 +116,18 @@ def extract_text_from_prescription_bytes(raw_bytes: bytes, mime_type: str = "") 
     is_pdf = (mime_type == "application/pdf") or raw_bytes.startswith(b"%PDF")
 
     if is_pdf:
-        # Bước 1: Trích xuất text layer điện tử từ PDF qua pypdf
-        try:
-            reader = pypdf.PdfReader(io.BytesIO(raw_bytes))
-            pages = []
-            for p in reader.pages:
-                t = p.extract_text()
-                if t:
-                    pages.append(t)
-            extracted_text = "\n".join(pages).strip()
-        except Exception as e:
-            logger.debug(f"pypdf extraction skipped: {e}")
+        # Bước 1: Trích xuất text layer điện tử từ PDF qua pypdf nếu có
+        if pypdf is not None:
+            try:
+                reader = pypdf.PdfReader(io.BytesIO(raw_bytes))
+                pages = []
+                for p in reader.pages:
+                    t = p.extract_text()
+                    if t:
+                        pages.append(t)
+                extracted_text = "\n".join(pages).strip()
+            except Exception as e:
+                logger.debug(f"pypdf extraction skipped: {e}")
 
         # Bước 2: Nếu PDF scan dạng ảnh không có text layer (len < 40), dùng pdftoppm + tesseract
         if len(extracted_text) < 40:
