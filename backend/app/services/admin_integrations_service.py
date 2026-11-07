@@ -17,6 +17,14 @@ from app.schemas.admin_integrations_schema import (
 
 _INTEGRATIONS_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data/integrations_config.json"))
 
+_ESMS_CACHE: Dict[str, Any] = {
+    "balance": None,
+    "user_id": None,
+    "status": "unconfigured",
+    "cached_at": 0.0,
+}
+_ESMS_CACHE_TTL: float = 60.0  # Giữ bộ nhớ đệm số dư 60s tránh nghẽn khi polling 10s
+
 def _mask_val(v: Optional[str]) -> str:
     cleaned = (v or "").strip()
     if not cleaned:
@@ -77,6 +85,10 @@ async def ping_esms(api_key: Optional[str] = None, secret_key: Optional[str] = N
             if code == "100":
                 bal = float(data.get("Balance", 0))
                 uid = int(data.get("UserID", 0)) if data.get("UserID") else None
+                _ESMS_CACHE["balance"] = bal
+                _ESMS_CACHE["user_id"] = uid
+                _ESMS_CACHE["status"] = "connected"
+                _ESMS_CACHE["cached_at"] = time.time()
                 return EsmsPingResponse(
                     success=True, balance_vnd=bal, user_id=uid, code_response=code, latency_ms=lat,
                     message=f"Kết nối eSMS thành công! Số dư tài khoản: {bal:,.0f} đ (User #{uid})"
@@ -125,13 +137,19 @@ async def get_esms_status(db: AsyncSession) -> EsmsStatusResponse:
             delivery_receipt=r[10], error_detail=r[11], created_at=str(r[12])
         ))
 
-    # Kiểm tra số dư eSMS thật
+    # Kiểm tra số dư eSMS thật (ưu tiên đọc TTL Cache 60s để không nghẽn luồng polling)
     balance, user_id, status_str = None, None, "unconfigured"
     if configured:
-        ping = await ping_esms(k, s)
-        status_str = "connected" if ping.success else "error"
-        balance = ping.balance_vnd
-        user_id = ping.user_id
+        now = time.time()
+        if (now - _ESMS_CACHE["cached_at"] < _ESMS_CACHE_TTL) and (_ESMS_CACHE["balance"] is not None):
+            balance = _ESMS_CACHE["balance"]
+            user_id = _ESMS_CACHE["user_id"]
+            status_str = _ESMS_CACHE["status"]
+        else:
+            ping = await ping_esms(k, s)
+            status_str = "connected" if ping.success else "error"
+            balance = ping.balance_vnd
+            user_id = ping.user_id
 
     return EsmsStatusResponse(
         configured=configured, api_key_masked=_mask_val(k), secret_key_masked=_mask_val(s),

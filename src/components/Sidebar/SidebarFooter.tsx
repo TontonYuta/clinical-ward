@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, UserRound, Settings2, Activity, ExternalLink } from 'lucide-react';
+import { ChevronDown, UserRound, Settings2 } from 'lucide-react';
 import { UserRole } from '../../types/clinical';
 import type { AppFontScale } from '../../utils/storage/appStatePersistence';
 import { SettingsModal } from '../Settings/SettingsModal';
@@ -30,10 +30,6 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
-  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const adminPortalUrl = (import.meta.env.VITE_ADMIN_PORTAL_URL as string) || (isLocal
-    ? `${window.location.protocol}//${window.location.hostname}:3001`
-    : 'https://clinical-ai-monitor.vercel.app');
   return (
     <div className="relative border-t border-slate-200 p-2 shrink-0">
       {isOpen && onSelectUserRole && (
@@ -48,17 +44,6 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700"><UserRound className="h-4 w-4" /></span>
         {!isCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{profile.name}</span><span className="block truncate text-xs text-slate-500">{profile.roleName}</span></span><ChevronDown className="h-4 w-4 text-slate-500" /></>}
       </button>
-      <a
-        href={adminPortalUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        title="Mở Trung Tâm Theo Dõi & Giám Sát AI Lâm Sàng (Clinical AI Monitor - Port 3001)"
-        className={'mt-1 flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-teal-800 hover:bg-teal-50 transition border border-teal-200/60 ' + (isCollapsed ? 'justify-center' : '')}
-      >
-        <Activity className="h-4 w-4 text-teal-700 shrink-0" />
-        {!isCollapsed && <span className="flex-1 truncate">Clinical AI Monitor</span>}
-        {!isCollapsed && <ExternalLink className="h-3 w-3 text-teal-600 shrink-0" />}
-      </a>
       <button type="button" onClick={() => setIsSettingsOpen(true)} aria-label="Cài đặt" title="Cài đặt" className={'mt-1 flex min-h-9 w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs font-medium text-slate-600 hover:bg-slate-100 ' + (isCollapsed ? 'justify-center' : '')}><Settings2 className="h-4 w-4" />{!isCollapsed && 'Cài đặt'}</button>
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} fontScale={fontScale} onFontScaleChange={onFontScaleChange} isAuthenticated={isAuthenticated} username={username} roleLabel={profile.roleName} onLogout={onLogout} />
     </div>

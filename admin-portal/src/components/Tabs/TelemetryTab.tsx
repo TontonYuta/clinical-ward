@@ -16,9 +16,30 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({ data, loading }) => 
 
   if (loading && !data) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center text-slate-400 gap-2">
-        <Zap className="w-6 h-6 animate-spin text-teal-600" />
-        <span className="text-sm">Đang tổng hợp dữ liệu Telemetry thời gian thực...</span>
+      <div className="space-y-6 lg:space-y-8 animate-pulse">
+        <div className="flex items-center gap-2 p-3 bg-teal-50/80 border border-teal-200 rounded-xl text-teal-800 text-xs sm:text-sm">
+          <Zap className="w-4 h-4 animate-spin text-teal-600 shrink-0" />
+          <span>Đang đồng bộ dữ liệu Telemetry thời gian thực từ máy chủ API...</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 bg-white rounded-2xl border border-slate-200/90 p-5 space-y-3">
+              <div className="h-4 bg-slate-200 rounded w-1/2" />
+              <div className="h-8 bg-slate-200 rounded w-3/4" />
+              <div className="h-3 bg-slate-100 rounded w-full" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="h-72 bg-white rounded-2xl border border-slate-200/90 lg:col-span-2 p-5 space-y-4">
+            <div className="h-4 bg-slate-200 rounded w-1/3" />
+            <div className="h-48 bg-slate-100 rounded" />
+          </div>
+          <div className="h-72 bg-white rounded-2xl border border-slate-200/90 p-5 space-y-4">
+            <div className="h-4 bg-slate-200 rounded w-1/2" />
+            <div className="h-44 bg-slate-100 rounded-full mx-auto w-44" />
+          </div>
+        </div>
       </div>
     );
   }

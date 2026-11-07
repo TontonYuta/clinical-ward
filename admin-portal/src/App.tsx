@@ -9,37 +9,64 @@ import { AuditTab } from './components/Tabs/AuditTab';
 import { AdminTab, TelemetryOverviewResponse, ApiKeyItem, BudgetCapResponse } from './types/admin';
 import { fetchTelemetryOverview, fetchApiKeys, fetchBudgetStatus, fetchEsmsStatus } from './services/adminApi';
 
+const CACHE_KEY_TELEMETRY = 'clinical_ai_monitor_telemetry_cache';
+const CACHE_KEY_BUDGET = 'clinical_ai_monitor_budget_cache';
+
+function getCachedItem<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) as T : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
   const [currentTab, setCurrentTab] = useState<AdminTab>('telemetry');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [telemetry, setTelemetry] = useState<TelemetryOverviewResponse | null>(null);
+  // Khởi tạo ngay lập tức từ Local Cache để giao diện xuất hiện trong 0ms (Zero-Delay UX)
+  const [telemetry, setTelemetry] = useState<TelemetryOverviewResponse | null>(() => getCachedItem<TelemetryOverviewResponse>(CACHE_KEY_TELEMETRY));
   const [keys, setKeys] = useState<ApiKeyItem[]>([]);
-  const [budget, setBudget] = useState<BudgetCapResponse | null>(null);
+  const [budget, setBudget] = useState<BudgetCapResponse | null>(() => getCachedItem<BudgetCapResponse>(CACHE_KEY_BUDGET));
   const [esmsBalance, setEsmsBalance] = useState<number | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
   const loadAllData = useCallback(async () => {
     setIsRefreshing(true);
+    // Tách biệt luồng fetch Telemetry: không bị chặn bởi eSMS hay Key Vault
+    const pTelemetry = fetchTelemetryOverview()
+      .then((data) => {
+        setTelemetry(data);
+        try { localStorage.setItem(CACHE_KEY_TELEMETRY, JSON.stringify(data)); } catch {}
+      })
+      .catch((err) => console.warn('Telemetry poll warn:', err));
+
+    const pKeys = fetchApiKeys()
+      .then(setKeys)
+      .catch((err) => console.warn('Keys poll warn:', err));
+
+    const pBudget = fetchBudgetStatus()
+      .then((b) => {
+        setBudget(b);
+        try { localStorage.setItem(CACHE_KEY_BUDGET, JSON.stringify(b)); } catch {}
+      })
+      .catch((err) => console.warn('Budget poll warn:', err));
+
+    const pEsms = fetchEsmsStatus()
+      .then((e) => {
+        if (typeof e?.balance_vnd === 'number') {
+          setEsmsBalance(e.balance_vnd);
+        } else {
+          setEsmsBalance(undefined);
+        }
+      })
+      .catch(() => setEsmsBalance(undefined));
+
     try {
-      const [tData, kData, bData, eData] = await Promise.allSettled([
-        fetchTelemetryOverview(),
-        fetchApiKeys(),
-        fetchBudgetStatus(),
-        fetchEsmsStatus(),
-      ]);
-      if (tData.status === 'fulfilled') setTelemetry(tData.value);
-      if (kData.status === 'fulfilled') setKeys(kData.value);
-      if (bData.status === 'fulfilled') setBudget(bData.value);
-      if (eData.status === 'fulfilled' && typeof eData.value?.balance_vnd === 'number') {
-        setEsmsBalance(eData.value.balance_vnd);
-      } else {
-        setEsmsBalance(undefined);
-      }
+      await Promise.allSettled([pTelemetry, pKeys, pBudget, pEsms]);
       setLastUpdated(new Date().toLocaleTimeString('vi-VN'));
-    } catch {
-      // Ignored for polling
     } finally {
       setIsRefreshing(false);
     }

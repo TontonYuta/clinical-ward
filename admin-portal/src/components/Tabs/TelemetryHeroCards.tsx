@@ -35,7 +35,7 @@ export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d 
           </div>
         </div>
         <div className="text-3xl lg:text-4xl font-extrabold text-emerald-700 tracking-tight font-mono">
-          {d.bhyt_rejection_saved_vnd.toLocaleString('vi-VN')} đ
+          {Number(d.bhyt_rejection_saved_vnd || 0).toLocaleString('vi-VN')} đ
         </div>
         <div className="text-xs lg:text-sm text-slate-500 font-medium pt-1">
           Từ {d.bhyt_audited} ca thẩm định CPOE & thay thế thuốc
@@ -54,7 +54,7 @@ export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d 
           {(d.tokens_saved / 1000).toFixed(1)}k <span className="text-sm font-normal text-slate-400">tokens</span>
         </div>
         <div className="text-xs lg:text-sm text-blue-700 font-medium pt-1">
-          ~{d.cost_saved_vnd.toLocaleString('vi-VN')} đ quy đổi API Google
+          ~{Number(d.cost_saved_vnd || 0).toLocaleString('vi-VN')} đ quy đổi API Google
         </div>
       </div>
 
