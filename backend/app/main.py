@@ -30,7 +30,8 @@ from app.routers import (
     mcp,
     prescription_audit,
     bhyt,
-    admin_monitoring
+    admin_monitoring,
+    admin_integrations
 )
 
 @asynccontextmanager
@@ -160,6 +161,7 @@ app.include_router(prescription_audit.router, prefix=settings.API_V1_STR)
 app.include_router(bhyt.router, prefix=settings.API_V1_STR)
 app.include_router(mcp.router, prefix=settings.API_V1_STR)
 app.include_router(admin_monitoring.router, prefix=settings.API_V1_STR)
+app.include_router(admin_integrations.router, prefix=settings.API_V1_STR)
 
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=100)

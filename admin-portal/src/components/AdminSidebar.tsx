@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, KeyRound, Coins, ShieldAlert, Sparkles, Server } from 'lucide-react';
+import { BarChart3, KeyRound, Radio, Coins, ShieldAlert, Server } from 'lucide-react';
 import { AdminTab } from '../types/admin';
 
 interface AdminSidebarProps {
@@ -7,13 +7,15 @@ interface AdminSidebarProps {
   onTabChange: (tab: AdminTab) => void;
   activeKeyCount: number;
   todayUsagePct: number;
+  esmsBalance?: number;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   currentTab,
   onTabChange,
   activeKeyCount,
-  todayUsagePct
+  todayUsagePct,
+  esmsBalance
 }) => {
   const tabs = [
     {
@@ -28,6 +30,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       desc: 'Multi-Key Pool & Failover',
       icon: KeyRound,
       badge: `${activeKeyCount} Keys`,
+    },
+    {
+      id: 'integrations' as AdminTab,
+      label: 'Cổng Viễn Thông & GAS',
+      desc: 'eSMS Brandname & Google Script',
+      icon: Radio,
+      badge: esmsBalance !== undefined ? `${esmsBalance.toLocaleString()} đ` : 'eSMS',
     },
     {
       id: 'budget_cap' as AdminTab,

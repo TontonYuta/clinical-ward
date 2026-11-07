@@ -1,4 +1,4 @@
-export type AdminTab = 'telemetry' | 'key_vault' | 'budget_cap' | 'safety_audit';
+export type AdminTab = 'telemetry' | 'key_vault' | 'integrations' | 'budget_cap' | 'safety_audit';
 
 export interface ApiKeyItem {
   key_id: string;
@@ -84,4 +84,60 @@ export interface TestKeyResponse {
   message: string;
   latency_ms: number;
   available_models: string[];
+}
+
+export interface EsmsLogItem {
+  id: string;
+  patient_id?: string;
+  patient_name: string;
+  recipient_phone: string;
+  message_type: string;
+  content: string;
+  characters_count: number;
+  sms_segments: number;
+  provider: string;
+  status: string;
+  delivery_receipt?: string;
+  error_detail?: string;
+  created_at: string;
+}
+
+export interface EsmsStatusResponse {
+  configured: boolean;
+  api_key_masked: string;
+  secret_key_masked: string;
+  brandname: string;
+  is_sandbox: boolean;
+  balance_vnd?: number;
+  user_id?: number;
+  status: 'connected' | 'error' | 'unconfigured';
+  total_sms: number;
+  delivered_count: number;
+  failed_count: number;
+  last_sent_at?: string;
+  recent_logs: EsmsLogItem[];
+}
+
+export interface GasLogItem {
+  id: string;
+  prescription_id?: string;
+  patient_name: string;
+  patient_email: string;
+  patient_phone?: string;
+  diagnosis?: string;
+  doctor_name?: string;
+  notification_status: string;
+  email_sent_at?: string;
+  created_at: string;
+}
+
+export interface GasStatusResponse {
+  configured: boolean;
+  webhook_url_masked: string;
+  raw_webhook_url?: string;
+  status: 'ready' | 'unconfigured';
+  total_advices: number;
+  sent_count: number;
+  last_sent_at?: string;
+  recent_logs: GasLogItem[];
 }

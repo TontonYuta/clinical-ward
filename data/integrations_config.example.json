@@ -1,0 +1,7 @@
+{
+  "esms_api_key": "YOUR_ESMS_API_KEY_HERE",
+  "esms_secret_key": "YOUR_ESMS_SECRET_KEY_HERE",
+  "esms_brandname": "BV_LAMSANG",
+  "esms_sandbox": true,
+  "gas_webhook_url": "https://script.google.com/macros/s/YOUR_APPS_SCRIPT_ID/exec"
+}

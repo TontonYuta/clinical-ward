@@ -26,6 +26,7 @@ ENV/
 # Runtime Data, Telemetry Ledger & Secret API Key Vault
 data/api_key_vault.json
 data/token_budget_config.json
+data/integrations_config.json
 data/*.db
 data/*.sqlite
 backend/data/*.sqlite
