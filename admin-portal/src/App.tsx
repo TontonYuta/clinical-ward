@@ -18,6 +18,7 @@ export default function App() {
   const [keys, setKeys] = useState<ApiKeyItem[]>([]);
   const [budget, setBudget] = useState<BudgetCapResponse | null>(null);
   const [esmsBalance, setEsmsBalance] = useState<number | undefined>(undefined);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   const loadAllData = useCallback(async () => {
     setIsRefreshing(true);
@@ -31,9 +32,12 @@ export default function App() {
       if (tData.status === 'fulfilled') setTelemetry(tData.value);
       if (kData.status === 'fulfilled') setKeys(kData.value);
       if (bData.status === 'fulfilled') setBudget(bData.value);
-      if (eData.status === 'fulfilled' && eData.value?.balance_vnd !== undefined) {
+      if (eData.status === 'fulfilled' && typeof eData.value?.balance_vnd === 'number') {
         setEsmsBalance(eData.value.balance_vnd);
+      } else {
+        setEsmsBalance(undefined);
       }
+      setLastUpdated(new Date().toLocaleTimeString('vi-VN'));
     } catch {
       // Ignored for polling
     } finally {
@@ -69,6 +73,7 @@ export default function App() {
         onManualRefresh={loadAllData}
         isRefreshing={isRefreshing}
         clinicalAppUrl={clinicalAppUrl}
+        lastUpdated={lastUpdated}
       />
 
       <div className="flex flex-1 overflow-hidden">

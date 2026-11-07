@@ -8,7 +8,7 @@ interface IntegrationsHeroCardsProps {
 }
 
 export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ esms, gas }) => {
-  const balance = esms?.balance_vnd ?? 0;
+  const balance = Number(esms?.balance_vnd) || 0;
   const isEsmsOnline = esms?.status === 'connected';
   const isGasOnline = gas?.status === 'ready';
 

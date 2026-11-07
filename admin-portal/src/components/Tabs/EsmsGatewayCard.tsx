@@ -58,7 +58,7 @@ export const EsmsGatewayCard: React.FC<EsmsGatewayCardProps> = ({ esms, onRefres
           </div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm sm:text-base">Cổng Viễn Thông eSMS.vn Brandname</h3>
-            <p className="text-2xs text-slate-500">API Viễn thông thật • Số dư: <strong className="text-slate-800 font-mono font-bold">{(esms?.balance_vnd ?? 0).toLocaleString()} VNĐ</strong></p>
+            <p className="text-2xs text-slate-500">API Viễn thông thật • Số dư: <strong className="text-slate-800 font-mono font-bold">{(Number(esms?.balance_vnd) || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
           </div>
         </div>
         <div className="flex items-center gap-2">

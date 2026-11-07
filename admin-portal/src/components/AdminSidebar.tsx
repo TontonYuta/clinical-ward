@@ -36,7 +36,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'Cổng Viễn Thông & GAS',
       desc: 'eSMS Brandname & Google Script',
       icon: Radio,
-      badge: esmsBalance !== undefined ? `${esmsBalance.toLocaleString()} đ` : 'eSMS',
+      badge: (typeof esmsBalance === 'number' && !isNaN(esmsBalance)) ? `${esmsBalance.toLocaleString('vi-VN')} đ` : 'eSMS',
     },
     {
       id: 'budget_cap' as AdminTab,

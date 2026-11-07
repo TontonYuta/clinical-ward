@@ -7,6 +7,7 @@ interface AdminHeaderProps {
   onManualRefresh: () => void;
   isRefreshing: boolean;
   clinicalAppUrl?: string;
+  lastUpdated?: string;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({
@@ -14,7 +15,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onToggleAutoRefresh,
   onManualRefresh,
   isRefreshing,
-  clinicalAppUrl = 'http://localhost:3000'
+  clinicalAppUrl = 'http://localhost:3000',
+  lastUpdated
 }) => {
   return (
     <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-2xs z-20">
@@ -43,6 +45,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-3">
+        {lastUpdated && (
+          <span className="text-2xs font-mono text-slate-400 hidden xl:inline">
+            Cập nhật: {lastUpdated}
+          </span>
+        )}
         {/* Toggle Auto Refresh */}
         <button
           type="button"
