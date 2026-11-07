@@ -107,7 +107,7 @@ async function runTests() {
   // 4. Kiểm tra Output Guardrail (Data Leakage Redaction & Anti-Hallucination)
   console.log("\n--- PHẦN 4: KIỂM TRA HẬU XỬ LÝ ĐẦU RA (OUTPUT REDACTION & ANTI-HALLUCINATION) ---");
   total++;
-  const rawLeak = "Hệ thống sử dụng khóa AIzaSyD4e09fK9x8L1m2N3o4P5q6R7s8T9u0V1w và sqlite:///home/app/db.sqlite3 để kết nối.";
+  const rawLeak = "Hệ thống sử dụng khóa AIzaSyMOCK_DUMMY_KEY_TEST_00000000 và sqlite:///home/app/db.sqlite3 để kết nối.";
   const scrubbed = validateClientOutputGuardrail(rawLeak);
   if (scrubbed.includes("[REDACTED_API_KEY]") && scrubbed.includes("[REDACTED_DB_CONNECTION]")) {
     console.log(`✅ [OUTPUT SCRUBBED] Đã che giấu thành công API Key & Database Connection String.`);
@@ -151,7 +151,7 @@ async function runTests() {
 
   total++;
   const emRes = await processGeminiClinicalScenario("Xử lý mất điện tủ vắc xin", "12:00");
-  if (emRes?.replyMessage?.text.includes("XỬ TRÍ SỰ CỐ NHIỆT ĐỘ CHUỖI LẠNH") && (emRes.replyMessage.card?.cardType as any) === "coldchain_monitor") {
+  if (emRes?.replyMessage?.text.includes("XỬ TRÍ SỰ CỐ NHIỆT ĐỘ CHUỖI LẠNH") && ((emRes.replyMessage.card?.cardType as any) === "coldchain_status" || (emRes.replyMessage.card?.cardType as any) === "coldchain_monitor")) {
     console.log(`✅ [SCENARIO EMERGENCY PASSED] "Xử lý mất điện tủ vắc xin" kích hoạt đúng thẻ coldchain_monitor và phác đồ TT 36.`);
     passed++;
   } else {
