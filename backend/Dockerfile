@@ -21,6 +21,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     curl \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-vie \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install /usr/local

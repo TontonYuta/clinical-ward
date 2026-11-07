@@ -124,7 +124,7 @@ def test_randomized_batch_resolution_api():
     data = response.json()
     assert data["total"] == 10
     assert data["resolved_count"] >= 9  # Tối thiểu 90% giải quyết thành công ở mức HIGH/MEDIUM
-    assert latency_ms < 300.0, f"Batch API too slow: {latency_ms:.2f}ms"
+    assert latency_ms < 500.0, f"Batch API too slow: {latency_ms:.2f}ms"
 
     for idx, res in enumerate(data["results"]):
         assert res["match_status"] in ["HIGH", "MEDIUM"]

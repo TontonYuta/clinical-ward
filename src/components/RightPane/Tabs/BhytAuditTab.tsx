@@ -35,6 +35,7 @@ import {
 import { compressImageForOcr } from '../../../utils/imageOptimization';
 import { BhytAuditReportModal } from './BhytAuditReportModal';
 import { BhytSubstitutionModal } from './BhytSubstitutionModal';
+import { PdfViewerDrawer, PdfViewerTarget } from '../../Modals/PdfViewerDrawer';
 import { findDrugSubstitutes } from '../../../services/drugSubstitutionService';
 import { DrugSubstituteCandidate } from '../../../types/bhytSubstitution';
 
@@ -65,6 +66,7 @@ export const BhytAuditTab: React.FC = () => {
   const [isEditAdminModalOpen, setIsEditAdminModalOpen] = useState<boolean>(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [activePdfViewerTarget, setActivePdfViewerTarget] = useState<PdfViewerTarget | null>(null);
 
   // Form tạm để sửa hành chính
   const [adminFormDraft, setAdminFormDraft] = useState({
@@ -792,15 +794,24 @@ export const BhytAuditTab: React.FC = () => {
     setActiveAnalysisTab('pure_breakdown');
   };
 
-  // Mở tài liệu PDF căn cứ pháp lý
-  const handleOpenLegalPdf = (docCode: string, pageNumber: number) => {
+  // Mở tài liệu PDF căn cứ pháp lý trong In-App Drawer chuyên dụng
+  const handleOpenLegalPdf = (docCode: string, pageNumber: number, title?: string, excerpt?: string) => {
     let pdfUrl = '/pdf/bhyt/Thong_Tu_20_2022_TT_BYT_Danh_Muc_Thanh_Toan_Thuoc_BHYT.pdf';
+    let docTitle = 'Thông tư 20/2022/TT-BYT - Danh mục Thuốc BHYT';
     if (docCode.includes('3618')) {
       pdfUrl = '/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf';
+      docTitle = 'Quyết định 3618/QĐ-BHXH - Quy trình Giám định BHYT';
     } else if (docCode.includes('130')) {
       pdfUrl = '/pdf/bhyt/Quyet_Dinh_130_QD_BYT_2023_Chuan_Du_Lieu_Dau_Ra_BHYT.pdf';
+      docTitle = 'Quyết định 130/QĐ-BYT - Chuẩn dữ liệu đầu ra BHYT';
     }
-    window.open(`${pdfUrl}#page=${pageNumber}`, '_blank');
+    setActivePdfViewerTarget({
+      title: title || `${docTitle} (Trang ${pageNumber})`,
+      url: `${pdfUrl}#page=${pageNumber}`,
+      page: pageNumber,
+      legal_basis: docCode,
+      excerpt: excerpt
+    });
   };
 
   // Lấy vi phạm của từng dòng thuốc
@@ -1104,6 +1115,35 @@ export const BhytAuditTab: React.FC = () => {
               >
                 <span>{isOcrProcessing ? '⏳ Đang phân tích...' : '⚡ Phân tích đơn'}</span>
               </button>
+
+              {documentFile && documentFile.type === 'pdf' && (
+                <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActivePdfViewerTarget({
+                        title: `Tệp PDF Đơn thuốc: ${documentFile.name}`,
+                        url: documentFile.url,
+                        page: 1,
+                        legal_basis: 'Tài liệu tải lên'
+                      });
+                    }}
+                    className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-xs font-semibold cursor-pointer transition flex items-center gap-1 border border-slate-300 shadow-2xs"
+                    title="Mở toàn màn hình xem rõ tài liệu"
+                  >
+                    <span>⛶ Toàn màn hình</span>
+                  </button>
+                  <a
+                    href={documentFile.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="h-8 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold transition flex items-center justify-center border border-slate-300 shadow-2xs"
+                    title="Mở tài liệu trong tab mới"
+                  >
+                    ↗
+                  </a>
+                </div>
+              )}
 
               {documentFile && documentFile.type === 'image' && (
                 <div className="flex items-center gap-1 pl-1.5 border-l border-slate-300">
@@ -1860,10 +1900,15 @@ export const BhytAuditTab: React.FC = () => {
                           </span>
                           <button
                             type="button"
-                            onClick={() => handleOpenLegalPdf(violation.legalRef.docCode, violation.legalRef.pageNumber)}
-                            className="text-blue-700 font-semibold hover:underline cursor-pointer"
+                            onClick={() => handleOpenLegalPdf(
+                              violation.legalRef.docCode,
+                              violation.legalRef.pageNumber,
+                              `${violation.legalRef.docTitle} (Trang ${violation.legalRef.pageNumber})`,
+                              violation.detail
+                            )}
+                            className="text-blue-700 font-semibold hover:underline cursor-pointer flex items-center gap-1"
                           >
-                            Xem trang {violation.legalRef.pageNumber} văn bản gốc ↗
+                            <span>Xem trang {violation.legalRef.pageNumber} văn bản gốc ↗</span>
                           </button>
                         </div>
                       </div>
@@ -1953,7 +1998,12 @@ export const BhytAuditTab: React.FC = () => {
                           <td className="py-2.5 px-3 text-center">
                             <button
                               type="button"
-                              onClick={() => handleOpenLegalPdf('20/2022/TT-BYT', rule.pdfPage)}
+                              onClick={() => handleOpenLegalPdf(
+                                '20/2022/TT-BYT',
+                                rule.pdfPage,
+                                `Thông tư 20/2022/TT-BYT - STT ${rule.stt}: ${rule.activeIngredient}`,
+                                rule.specialConditions || undefined
+                              )}
                               className="text-xs font-semibold text-blue-700 hover:underline cursor-pointer"
                             >
                               Trang {rule.pdfPage}
@@ -2157,6 +2207,13 @@ export const BhytAuditTab: React.FC = () => {
         candidates={substitutionModalState.candidates}
         hospitalRank={hospitalRank}
         onApplySubstitute={handleApplySubstitute}
+      />
+
+      {/* DRAWER XEM TRỰC TIẾP BẢN SCAN PDF VĂN BẢN GỐC & TÀI LIỆU */}
+      <PdfViewerDrawer
+        isOpen={Boolean(activePdfViewerTarget)}
+        target={activePdfViewerTarget}
+        onClose={() => setActivePdfViewerTarget(null)}
       />
 
     </div>

@@ -1,7 +1,7 @@
 const { chromium } = require('/home/tontonyuta/Downloads/DoAn2/node_modules/playwright');
 
 (async () => {
-  console.log('=== TRIGGERING RENDER MANUAL DEPLOY FOR COMMIT e94534d (FIX PYPDF) ===');
+  console.log('=== TRIGGERING RENDER MANUAL DEPLOY FOR COMMIT c1590ed (AUTO-SEED BHYT) ===');
   let context;
   try {
     context = await chromium.launchPersistentContext('/tmp/chrome_playwright_profile', {

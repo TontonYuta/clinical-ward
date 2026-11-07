@@ -19,8 +19,8 @@ import {
   HOSPITAL_RANK_LABELS
 } from '../data/bhytDrugRules';
 
-const TT20_PDF_PATH = '/home/tontonyuta/Downloads/DoAn2/public/pdf/bhyt/Thong_Tu_20_2022_TT_BYT_Danh_Muc_Thanh_Toan_Thuoc_BHYT.pdf';
-const QD3618_PDF_PATH = '/home/tontonyuta/Downloads/DoAn2/public/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf';
+const TT20_PDF_PATH = '/pdf/bhyt/Thong_Tu_20_2022_TT_BYT_Danh_Muc_Thanh_Toan_Thuoc_BHYT.pdf';
+const QD3618_PDF_PATH = '/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf';
 
 /**
  * So khớp mã ICD-10 chuẩn hóa không phân biệt dấu chấm

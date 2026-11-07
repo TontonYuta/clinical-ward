@@ -232,13 +232,20 @@ def parse_vietnamese_prescription_text(extracted_text: str) -> dict:
     lines = [l.strip() for l in extracted_text.split("\n") if l.strip()]
     current_item = None
     for l in lines:
-        m = re.match(r'^(\d+)[\.\)]\s*(.+)', l)
-        if m:
-            drug_str = m.group(2).strip()
-            # Bỏ qua các dòng không phải thuốc
-            if any(k in drug_str.lower() for k in ["chẩn đoán", "lời dặn", "người bệnh", "bác sĩ", "hẹn khám", "icd", "bệnh kèm", "bệnh chính", "viêm da dây", "viêm dạ dày"]):
-                continue
-            if drug_str.startswith(("—", "-", "•")):
+        # Nhận diện đầu dòng thuốc linh hoạt: 1., 1), 1/, 1-, I., II., -, *, •, +
+        m = re.match(r'^(?:(?:\d+|[IVXLCDM]+)[\.\)\/\-:]|[-*•+])\s*(.+)', l)
+        drug_str = m.group(1).strip() if m else None
+
+        # Nếu không có số thứ tự nhưng dòng chứa hàm lượng/số lượng đơn vị thuốc rõ ràng
+        if not drug_str and len(l) > 5:
+            has_unit = bool(re.search(r'\b(?:\d+(?:\.\d+)?)\s*(?:viên|gói|ống|lọ|chai|vỉ|hộp|nang|tuýp|mg|g|ml)\b', l, re.I))
+            is_header = any(k in l.lower() for k in ["bệnh viện", "khoa khám", "họ và tên", "ngày sinh", "chẩn đoán", "lời dặn", "người bệnh", "bác sĩ", "hẹn khám", "icd", "bảo hiểm"])
+            if has_unit and not is_header:
+                drug_str = l.strip()
+
+        if drug_str:
+            # Bỏ qua các dòng chú thích hành chính
+            if any(k in drug_str.lower() for k in ["chẩn đoán", "lời dặn", "người bệnh", "bác sĩ", "hẹn khám", "icd", "bệnh kèm", "bệnh chính"]):
                 continue
 
             # Tách số lượng cấp phát
@@ -253,6 +260,9 @@ def parse_vietnamese_prescription_text(extracted_text: str) -> dict:
             # Hàm lượng nếu có
             dos_m = re.search(r'\b(\d+(?:\.\d+)?\s*(?:mg|g|mcg|ml|IU|UI|%))\b', drug_clean, re.I)
             dosage = dos_m.group(1) if dos_m else ""
+
+            # Dọn sạch ký tự phân cách ở đuôi tên thuốc
+            drug_clean = re.sub(r'[\s:;,-]+$', '', drug_clean).strip()
 
             current_item = {
                 "drug_name": drug_clean,
