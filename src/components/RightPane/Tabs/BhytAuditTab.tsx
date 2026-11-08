@@ -951,7 +951,7 @@ export const BhytAuditTab: React.FC = () => {
               aria-label="Tuyến bệnh viện"
               value={hospitalRank}
               onChange={(e) => setHospitalRank(e.target.value as HospitalRank)}
-              className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-semibold cursor-pointer focus:border-blue-500 focus:outline-none shadow-2xs"
+              className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-semibold cursor-pointer focus:border-teal-600 focus:outline-none shadow-2xs"
             >
               <option value="HANG_DAC_BIET">Hạng ĐB (Trung ương)</option>
               <option value="HANG_I">Hạng I (Tỉnh/TW)</option>
@@ -967,7 +967,7 @@ export const BhytAuditTab: React.FC = () => {
               aria-label="Hình thức điều trị"
               value={treatmentType}
               onChange={(e) => setTreatmentType(e.target.value as TreatmentType)}
-              className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-semibold cursor-pointer focus:border-blue-500 focus:outline-none shadow-2xs"
+              className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-semibold cursor-pointer focus:border-teal-600 focus:outline-none shadow-2xs"
             >
               <option value="NGOAI_TRU">Ngoại trú</option>
               <option value="NOI_TRU">Nội trú</option>
@@ -979,31 +979,27 @@ export const BhytAuditTab: React.FC = () => {
         <div className="flex items-center gap-3 flex-wrap">
           {/* Huy hiệu trạng thái */}
           {auditReport.itemsCount === 0 ? (
-            <span className="text-sm text-slate-500 font-medium italic px-3 py-1 bg-slate-100 border border-slate-200 rounded-md">
-              Chưa nạp đơn thuốc
+            <span className="text-sm text-slate-500 font-medium px-3 py-1 bg-slate-100 border border-slate-200 rounded-md">
+              Chưa nạp đơn
             </span>
           ) : auditReport.status === 'REJECT' ? (
-            <span className="font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-1.5 shadow-2xs">
-              <span>⛔</span>
-              <span>Xuất toán: -{auditReport.atRiskCostVnd.toLocaleString('vi-VN')} đ ({auditReport.rejectCount} vi phạm)</span>
+            <span className="font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-md text-sm flex items-center shadow-2xs font-sans tabular-nums">
+              <span>Nguy cơ xuất toán: {auditReport.atRiskCostVnd.toLocaleString('vi-VN')} đ ({auditReport.rejectCount} vi phạm)</span>
             </span>
           ) : auditReport.status === 'WARNING' ? (
-            <span className="font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-1.5 shadow-2xs">
-              <span>⚠️</span>
-              <span>Lưu ý: {auditReport.warningCount} thuốc cần giải trình</span>
+            <span className="font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md text-sm flex items-center shadow-2xs font-sans tabular-nums">
+              <span>Cần lưu ý: {auditReport.warningCount} thuốc</span>
             </span>
           ) : (
-            <span className="font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-1.5 shadow-2xs">
-              <span>✅</span>
-              <span>Hợp lệ 100% ({auditReport.itemsCount} thuốc)</span>
+            <span className="font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-md text-sm flex items-center shadow-2xs font-sans tabular-nums">
+              <span>Hợp lệ ({auditReport.itemsCount} thuốc)</span>
             </span>
           )}
 
           {/* Huy hiệu đồng chi trả BHYT theo luật */}
           {auditReport.patientCoPayCostVnd > 0 && (
-            <span className="font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-1.5 shadow-2xs" title="Khoản người bệnh cùng chi trả cho thuốc theo quy định Thông tư 20/2022/TT-BYT (hợp pháp, không xuất toán)">
-              <span>⚖️</span>
-              <span>Đồng chi trả BHYT: {auditReport.patientCoPayCostVnd.toLocaleString('vi-VN')} đ</span>
+            <span className="font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-md text-sm flex items-center shadow-2xs font-sans tabular-nums" title="Khoản người bệnh cùng chi trả cho thuốc theo quy định Thông tư 20/2022/TT-BYT (hợp pháp, không xuất toán)">
+              <span>Đồng chi trả: {auditReport.patientCoPayCostVnd.toLocaleString('vi-VN')} đ</span>
             </span>
           )}
 
@@ -1016,10 +1012,9 @@ export const BhytAuditTab: React.FC = () => {
               type="button"
               onClick={handleExportExcel}
               disabled={activePayload.items.length === 0}
-              className="h-9 px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md text-sm font-semibold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-9 px-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-md text-sm font-semibold shadow-2xs transition flex items-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               title="Xuất bảng kê chi tiết giám định thuốc ra file Excel (.csv UTF-8)"
             >
-              <span>📊</span>
               <span>Xuất Excel</span>
             </button>
 
@@ -1027,10 +1022,9 @@ export const BhytAuditTab: React.FC = () => {
               type="button"
               onClick={() => setIsPrintModalOpen(true)}
               disabled={activePayload.items.length === 0}
-              className="h-9 px-3.5 bg-teal-700 hover:bg-teal-800 text-white rounded-md text-sm font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
+              className="h-9 px-3.5 bg-teal-700 hover:bg-teal-800 text-white rounded-md text-sm font-bold shadow-xs transition flex items-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
               title="In biên bản thẩm định BHYT hoặc xuất file PDF chuẩn mẫu"
             >
-              <span>📄</span>
               <span>In / Xuất PDF</span>
             </button>
           </div>
@@ -1041,7 +1035,7 @@ export const BhytAuditTab: React.FC = () => {
       {substitutionToast && (
         <div className="shrink-0 mx-4 mt-2.5 p-3 bg-emerald-50 border border-emerald-300 rounded-lg flex items-center justify-between gap-3 text-emerald-950 animate-in fade-in slide-in-from-top-2 shadow-2xs">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <span className="text-lg">⚡</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block mr-1" />
             <span>{substitutionToast.message}</span>
           </div>
           <button
@@ -1067,14 +1061,8 @@ export const BhytAuditTab: React.FC = () => {
             
             {/* Tên file & định dạng */}
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider shrink-0 ${
-                documentFile?.type === 'pdf'
-                  ? 'bg-rose-100 text-rose-800 border border-rose-300'
-                  : documentFile?.type === 'image'
-                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                  : 'bg-slate-100 text-slate-600 border border-slate-300'
-              }`}>
-                {documentFile?.type === 'pdf' ? 'Tệp PDF' : documentFile?.type === 'image' ? 'Ảnh đơn' : 'Chưa có file'}
+              <span className="px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wider shrink-0 bg-slate-100 text-slate-700 border border-slate-200">
+                {documentFile?.type === 'pdf' ? 'Tệp PDF' : documentFile?.type === 'image' ? 'Ảnh đơn' : 'Chưa có tệp'}
               </span>
 
               <span className="font-bold text-slate-900 truncate text-sm max-w-[180px] sm:max-w-[220px]" title={documentFile?.name || 'Tài liệu'}>
@@ -1082,8 +1070,8 @@ export const BhytAuditTab: React.FC = () => {
               </span>
 
               {isOcrProcessing && (
-                <span className="text-xs text-blue-600 font-semibold flex items-center gap-1 animate-pulse">
-                  <span>⏳ Đang phân tích...</span>
+                <span className="text-xs text-teal-700 font-semibold animate-pulse">
+                  Đang phân tích...
                 </span>
               )}
             </div>
@@ -1101,9 +1089,9 @@ export const BhytAuditTab: React.FC = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8 px-3 bg-teal-700 hover:bg-teal-800 text-white rounded text-sm font-bold cursor-pointer transition flex items-center gap-1.5 active:scale-98"
+                className="h-8 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded text-sm font-semibold transition cursor-pointer"
               >
-                <span>{documentFile ? '📁 Đổi file' : '📁 Chọn file từ máy'}</span>
+                <span>{documentFile ? 'Đổi tệp' : 'Chọn tệp'}</span>
               </button>
 
               {/* Nút phân tích đơn duy nhất tại toolbar tài liệu */}
@@ -1111,9 +1099,9 @@ export const BhytAuditTab: React.FC = () => {
                 type="button"
                 onClick={() => handleAnalyzePrescription()}
                 disabled={isOcrProcessing}
-                className="h-8 px-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="h-8 px-3.5 bg-teal-700 hover:bg-teal-800 text-white rounded text-sm font-bold shadow-xs transition cursor-pointer disabled:opacity-50"
               >
-                <span>{isOcrProcessing ? '⏳ Đang phân tích...' : '⚡ Phân tích đơn'}</span>
+                <span>{isOcrProcessing ? 'Đang phân tích...' : 'Phân tích'}</span>
               </button>
 
               {documentFile && documentFile.type === 'pdf' && (
@@ -1128,10 +1116,10 @@ export const BhytAuditTab: React.FC = () => {
                         legal_basis: 'Tài liệu tải lên'
                       });
                     }}
-                    className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-xs font-semibold cursor-pointer transition flex items-center gap-1 border border-slate-300 shadow-2xs"
+                    className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium cursor-pointer transition border border-slate-300 shadow-2xs"
                     title="Mở toàn màn hình xem rõ tài liệu"
                   >
-                    <span>⛶ Toàn màn hình</span>
+                    <span>Toàn màn hình</span>
                   </button>
                   <a
                     href={documentFile.url}
@@ -1156,7 +1144,7 @@ export const BhytAuditTab: React.FC = () => {
                     -
                   </button>
 
-                  <span className="font-mono text-xs text-slate-700 px-0.5 select-none">
+                  <span className="font-sans tabular-nums text-xs text-slate-700 px-1 select-none">
                     {zoomLevel}%
                   </span>
 
@@ -1198,7 +1186,7 @@ export const BhytAuditTab: React.FC = () => {
               }
             }}
             className={`w-full flex-1 min-h-0 overflow-auto bg-slate-100 flex items-center justify-center p-2.5 relative ${
-              isDragging ? 'ring-2 ring-blue-600 bg-blue-50/50' : ''
+              isDragging ? 'ring-2 ring-teal-600 bg-teal-50/20' : ''
             }`}
           >
             {documentFile ? (
@@ -1223,23 +1211,25 @@ export const BhytAuditTab: React.FC = () => {
                 </div>
               )
             ) : (
-              <div className="text-center p-6 space-y-3.5 my-auto">
-                <div className="w-16 h-16 mx-auto rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-3xl text-blue-600 shadow-2xs">
-                  📄
+              <div className="text-center p-6 space-y-3 my-auto">
+                <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
                 <div className="text-base font-bold text-slate-900">
                   Kéo và thả file ảnh hoặc PDF đơn thuốc vào đây
                 </div>
-                <div className="text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
-                  Hỗ trợ định dạng PDF, PNG, JPG, JPEG (tối đa 10MB) hoặc dán trực tiếp từ clipboard (Ctrl + V)
+                <div className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                  Hỗ trợ định dạng PDF, PNG, JPG (tối đa 10MB) hoặc dán từ clipboard (Ctrl + V)
                 </div>
-                <div className="pt-2">
+                <div className="pt-1">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-bold cursor-pointer shadow-xs transition flex items-center gap-2 mx-auto"
+                    className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-md text-sm font-bold cursor-pointer shadow-xs transition mx-auto"
                   >
-                    <span>📁 Chọn tệp PDF hoặc ảnh đơn thuốc</span>
+                    <span>Chọn tệp từ máy tính</span>
                   </button>
                 </div>
               </div>
@@ -1261,12 +1251,12 @@ export const BhytAuditTab: React.FC = () => {
               onClick={() => setActiveAnalysisTab('pure_breakdown')}
               className={`h-full px-3.5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeAnalysisTab === 'pure_breakdown'
-                  ? 'border-blue-600 text-blue-950 bg-white rounded-t-md shadow-2xs'
+                  ? 'border-teal-700 text-teal-950 bg-white rounded-t-md font-bold'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>📋 1. Dữ liệu thuần</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold font-mono">
+              <span>1. Dữ liệu đơn</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold font-sans tabular-nums">
                 {activePayload.items.length}
               </span>
             </button>
@@ -1277,18 +1267,18 @@ export const BhytAuditTab: React.FC = () => {
               onClick={() => setActiveAnalysisTab('clinical_7')}
               className={`h-full px-3.5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeAnalysisTab === 'clinical_7'
-                  ? 'border-blue-600 text-blue-950 bg-white rounded-t-md shadow-2xs'
+                  ? 'border-teal-700 text-teal-950 bg-white rounded-t-md font-bold'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>🛡️ 2. Đánh giá lâm sàng</span>
+              <span>2. An toàn lâm sàng</span>
               {clinicalSevenCategories.some(c => c.status === 'ALERT') ? (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold">
                   Cảnh báo
                 </span>
               ) : (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-                  An toàn
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                  Đạt
                 </span>
               )}
             </button>
@@ -1299,21 +1289,21 @@ export const BhytAuditTab: React.FC = () => {
               onClick={() => setActiveAnalysisTab('violations')}
               className={`h-full px-3.5 text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeAnalysisTab === 'violations'
-                  ? 'border-blue-600 text-blue-950 bg-white rounded-t-md shadow-2xs'
+                  ? 'border-teal-700 text-teal-950 bg-white rounded-t-md font-bold'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>⚖️ 3. Thẩm định xuất toán BHYT</span>
+              <span>3. Giám định BHYT</span>
               {auditReport.rejectCount > 0 ? (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold font-mono">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold font-sans tabular-nums">
                   {auditReport.rejectCount} vi phạm
                 </span>
               ) : auditReport.warningCount > 0 ? (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold font-mono">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold font-sans tabular-nums">
                   {auditReport.warningCount} lưu ý
                 </span>
               ) : auditReport.itemsCount > 0 ? (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
                   Hợp lệ
                 </span>
               ) : null}
@@ -1327,11 +1317,11 @@ export const BhytAuditTab: React.FC = () => {
               onClick={() => setActiveAnalysisTab('catalog')}
               className={`h-full px-3 text-sm font-semibold border-b-2 transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                 activeAnalysisTab === 'catalog'
-                  ? 'border-slate-800 text-slate-950 bg-white rounded-t-md font-bold'
+                  ? 'border-teal-700 text-teal-950 bg-white rounded-t-md font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>📚 Tra cứu TT 20</span>
+              <span>Tra cứu TT 20</span>
             </button>
 
             <button
@@ -1339,11 +1329,11 @@ export const BhytAuditTab: React.FC = () => {
               onClick={() => setActiveAnalysisTab('xml')}
               className={`h-full px-3 text-sm font-semibold border-b-2 transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                 activeAnalysisTab === 'xml'
-                  ? 'border-slate-800 text-slate-950 bg-white rounded-t-md font-bold'
+                  ? 'border-teal-700 text-teal-950 bg-white rounded-t-md font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>📑 Nhập XML 130</span>
+              <span>Nhập XML 130</span>
             </button>
           </div>
 
@@ -1359,24 +1349,21 @@ export const BhytAuditTab: React.FC = () => {
                 {/* KHỐI A: HỒ SƠ HÀNH CHÍNH & CHẨN ĐOÁN LÂM SÀNG */}
                 <div className="bg-slate-50/80 border border-slate-200 rounded-lg p-3.5 space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                    <div className="flex items-center gap-2">
-                      <span className="text-blue-600 font-bold text-lg">📋</span>
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900">
-                          Hồ sơ hành chính &amp; Chẩn đoán đơn thuốc
-                        </h3>
-                        <p className="text-sm text-slate-500">
-                          Thông tin bóc tách từ đơn gốc / XML 130 phục vụ giám định
-                        </p>
-                      </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        Hồ sơ hành chính &amp; Chẩn đoán
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        Thông tin bóc tách từ đơn thuốc hoặc tệp XML 130
+                      </p>
                     </div>
                     <button
                       type="button"
                       data-testid="btn-edit-admin-icd10"
                       onClick={handleOpenEditAdminModal}
-                      className="h-8 px-3 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      className="h-8 px-3 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition cursor-pointer flex items-center shadow-2xs"
                     >
-                      <span>✏️ Sửa hành chính &amp; ICD-10</span>
+                      <span>Chỉnh sửa</span>
                     </button>
                   </div>
 
@@ -1389,7 +1376,7 @@ export const BhytAuditTab: React.FC = () => {
 
                     <div className="bg-white p-3 rounded-md border border-slate-200/80 shadow-2xs">
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Mã thẻ BHYT</span>
-                      <strong className="text-base font-mono text-slate-950 block mt-0.5">{activePayload.insuranceCardNumber || 'Chưa có'}</strong>
+                      <strong className="text-base font-sans tabular-nums text-slate-950 block mt-0.5">{activePayload.insuranceCardNumber || 'Chưa có'}</strong>
                       <span className="text-slate-500 text-xs block mt-0.5 font-medium">Mã đơn: {activePayload.prescriptionId || 'Chưa tạo'}</span>
                     </div>
 
@@ -1404,7 +1391,7 @@ export const BhytAuditTab: React.FC = () => {
                       <div className="mt-0.5">
                         {activePayload.primaryIcd10 ? (
                           <>
-                            <strong className="font-mono text-emerald-800 font-bold text-base">{activePayload.primaryIcd10}</strong>
+                            <strong className="font-sans tabular-nums text-teal-900 font-bold text-base">{activePayload.primaryIcd10}</strong>
                             <span className="text-slate-900 ml-1 font-semibold text-sm">{activePayload.primaryDiagnosis}</span>
                           </>
                         ) : (
@@ -1422,54 +1409,44 @@ export const BhytAuditTab: React.FC = () => {
 
                 {/* KHỐI B: TÓM TẮT ĐỊNH LƯỢNG LÂM SÀNG THUẦN (METRICS CARDS) */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-bold text-blue-800 uppercase tracking-wider block">Tổng khoản thuốc</span>
-                    <div className="text-2xl font-black text-blue-950 mt-1">
-                      {pureMetrics.totalItems} <span className="text-sm font-semibold text-blue-700">mặt hàng</span>
+                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Tổng khoản thuốc</span>
+                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
+                      {pureMetrics.totalItems} <span className="text-xs font-medium text-slate-500">khoản</span>
                     </div>
                   </div>
 
-                  <div className="bg-indigo-50/70 border border-indigo-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-bold text-indigo-800 uppercase tracking-wider block">Nhóm dược lý (ATC)</span>
-                    <div className="text-2xl font-black text-indigo-950 mt-1">
-                      {pureMetrics.uniqueGroupsCount} <span className="text-sm font-semibold text-indigo-700">phân nhóm</span>
+                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Nhóm dược lý ATC</span>
+                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
+                      {pureMetrics.uniqueGroupsCount} <span className="text-xs font-medium text-slate-500">nhóm</span>
                     </div>
                   </div>
 
-                  <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block">Đợt dùng cao nhất</span>
-                    <div className="text-2xl font-black text-amber-950 mt-1">
-                      {pureMetrics.maxDaysSupply > 0 ? pureMetrics.maxDaysSupply : '—'} <span className="text-sm font-semibold text-amber-700">ngày</span>
+                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Đợt dùng cao nhất</span>
+                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
+                      {pureMetrics.maxDaysSupply > 0 ? pureMetrics.maxDaysSupply : '—'} <span className="text-xs font-medium text-slate-500">ngày</span>
                     </div>
                   </div>
 
-                  <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Tổng tiền thuốc dự kiến</span>
-                    <div className="text-2xl font-black text-emerald-950 mt-1">
-                      {pureMetrics.grossCost.toLocaleString('vi-VN')} <span className="text-sm font-semibold text-emerald-700">đ</span>
+                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Tổng tiền dự kiến</span>
+                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
+                      {pureMetrics.grossCost.toLocaleString('vi-VN')} <span className="text-xs font-medium text-slate-500">đ</span>
                     </div>
                   </div>
                 </div>
 
                 {/* KHỐI C: BẢNG GIẢI PHẪU DỮ LIỆU ĐƠN THUỐC THUẦN TÚY (FACT-SHEET TABLE & HITL) */}
                 <div className="space-y-3">
-                  <div className="bg-amber-50 border border-amber-300/80 rounded-md p-3 text-amber-950 text-sm flex items-start gap-2.5 shadow-2xs">
-                    <span className="text-amber-600 font-bold text-base shrink-0">💡</span>
-                    <div className="flex-1 leading-relaxed">
-                      <strong className="font-bold text-amber-900">Bản phân tích dữ liệu thuần:</strong>
-                      <span className="ml-1 text-slate-700">
-                        Hiển thị danh mục hoạt chất, hàm lượng, đường dùng và đơn giá được trích xuất từ đơn. Quý bác sĩ/dược sĩ có thể trực tiếp hiệu chỉnh từng ô hoặc bấm <strong>"Khớp CSDL DAV"</strong> để đối chiếu danh mục 54.885 thuốc trước khi chuyển sang bước thẩm định.
-                      </span>
-                    </div>
-                  </div>
-
                   {/* Thanh công cụ hành động */}
                   <div className="flex items-center justify-between flex-wrap gap-2.5 pt-1">
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <button
                         type="button"
                         onClick={handleAddMedicineRow}
-                        className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-bold shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                        className="h-8 px-3.5 bg-teal-700 hover:bg-teal-800 text-white rounded text-sm font-bold shadow-xs transition cursor-pointer flex items-center"
                       >
                         <span>+ Thêm thuốc</span>
                       </button>
@@ -1478,13 +1455,13 @@ export const BhytAuditTab: React.FC = () => {
                         type="button"
                         onClick={handleAutoResolveFromDav}
                         disabled={isResolvingDav || activePayload.items.length === 0}
-                        className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-sm font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        className="h-8 px-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded text-sm font-semibold shadow-2xs transition flex items-center cursor-pointer disabled:opacity-50"
                       >
-                        <span>{isResolvingDav ? '⏳ Đang đối soát...' : '🔄 Khớp CSDL DAV (54.885 thuốc)'}</span>
+                        <span>{isResolvingDav ? 'Đang đối soát...' : 'Đối soát DAV'}</span>
                       </button>
                     </div>
 
-                    <div className="text-sm text-slate-600 font-medium">
+                    <div className="text-sm text-slate-600 font-medium font-sans tabular-nums">
                       {activePayload.items.length > 0 ? (
                         <>Hiển thị <strong>{activePayload.items.length}</strong> khoản thuốc</>
                       ) : (
@@ -1509,20 +1486,19 @@ export const BhytAuditTab: React.FC = () => {
                           <th className="py-2.5 px-2.5 text-right border-r border-slate-200 w-24">Đơn giá (đ)</th>
                           <th className="py-2.5 px-2.5 text-right border-r border-slate-200 w-28">Thành tiền (đ)</th>
                           <th className="py-2.5 px-2 text-center border-r border-slate-200 w-16">Hội chẩn</th>
-                          <th className="py-2.5 px-2 text-center w-14">Xóa</th>
+                          <th className="py-2.5 px-2 text-center w-14">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
                         {activePayload.items.length === 0 ? (
                           <tr>
-                            <td colSpan={12} className="py-12 px-4 text-center text-slate-500 bg-slate-50/50">
-                              <div className="max-w-md mx-auto space-y-2.5">
-                                <div className="text-3xl">📋</div>
+                            <td colSpan={12} className="py-10 px-4 text-center text-slate-500 bg-slate-50/50">
+                              <div className="max-w-md mx-auto space-y-2">
                                 <div className="text-base font-bold text-slate-800">
                                   Chưa có danh mục thuốc trong đơn
                                 </div>
                                 <p className="text-sm text-slate-500 leading-relaxed">
-                                  Tải lên file ảnh/PDF đơn thuốc ở khung bên trái rồi bấm nút <strong>"Phân tích đơn"</strong>, hoặc bấm nút <strong>"+ Thêm thuốc"</strong> ở thanh công cụ phía trên để nhập trực tiếp.
+                                  Tải lên file ảnh hoặc PDF đơn thuốc ở khung bên trái rồi bấm nút <strong>"Phân tích"</strong>, hoặc bấm <strong>"+ Thêm thuốc"</strong> để nhập trực tiếp.
                                 </p>
                               </div>
                             </td>
@@ -1536,7 +1512,7 @@ export const BhytAuditTab: React.FC = () => {
 
                             return (
                               <tr key={item.id || idx} className="hover:bg-slate-50/80 transition-colors">
-                                <td className="py-2.5 px-2 text-center font-mono text-slate-600 font-bold border-r border-slate-200">
+                                <td className="py-2.5 px-2 text-center font-sans tabular-nums text-slate-600 font-semibold border-r border-slate-200">
                                   {idx + 1}
                                 </td>
 
@@ -1545,29 +1521,29 @@ export const BhytAuditTab: React.FC = () => {
                                     type="text"
                                     value={item.drugName}
                                     onChange={(e) => handleItemChange(idx, 'drugName', e.target.value)}
-                                    className="w-full h-8 px-2.5 bg-white border border-slate-300 rounded text-sm font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+                                    className="w-full h-8 px-2.5 bg-white border border-slate-300 rounded text-sm font-bold text-slate-900 focus:border-teal-600 focus:outline-none"
                                     placeholder="Tên biệt dược"
                                   />
                                   <input
                                     type="text"
                                     value={item.activeIngredient}
                                     onChange={(e) => handleItemChange(idx, 'activeIngredient', e.target.value)}
-                                    className="w-full h-7 px-2.5 mt-1 bg-slate-50 border border-slate-200 rounded text-xs font-semibold text-slate-700 font-mono focus:border-blue-600 focus:outline-none"
+                                    className="w-full h-7 px-2.5 mt-1 bg-slate-50 border border-slate-200 rounded text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none"
                                     placeholder="Hoạt chất INN"
                                   />
                                   {resInfo && (
                                     <div className="mt-1 flex items-center gap-1 flex-wrap">
                                       {resInfo.match_status === 'HIGH' ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                          ✓ Khớp DAV ({resInfo.matched_dav?.brand_name || resInfo.matched_dav?.active_ingredient})
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-teal-800 border border-slate-200">
+                                          Khớp DAV ({resInfo.matched_dav?.brand_name || resInfo.matched_dav?.active_ingredient})
                                         </span>
                                       ) : resInfo.match_status === 'MEDIUM' ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-                                          ~ Gợi ý ({Math.round(resInfo.confidence_score * 100)}%)
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 font-sans tabular-nums">
+                                          Gợi ý ({Math.round(resInfo.confidence_score * 100)}%)
                                         </span>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                          ? Chưa khớp DAV
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                          Chưa khớp DAV
                                         </span>
                                       )}
                                     </div>
@@ -1575,7 +1551,7 @@ export const BhytAuditTab: React.FC = () => {
                                 </td>
 
                                 <td className="py-2.5 px-2.5 border-r border-slate-200 text-slate-700">
-                                  <span className="inline-block px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs font-semibold leading-tight">
+                                  <span className="inline-block px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs font-medium leading-tight">
                                     {atcGroup}
                                   </span>
                                 </td>
@@ -1585,7 +1561,7 @@ export const BhytAuditTab: React.FC = () => {
                                     type="text"
                                     value={item.dosage}
                                     onChange={(e) => handleItemChange(idx, 'dosage', e.target.value)}
-                                    className="w-full h-8 px-2 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-800 text-center focus:border-blue-600 focus:outline-none"
+                                    className="w-full h-8 px-2 bg-white border border-slate-300 rounded text-xs font-medium text-slate-800 text-center focus:border-teal-600 focus:outline-none"
                                     placeholder="Hàm lượng"
                                   />
                                 </td>
@@ -1594,7 +1570,7 @@ export const BhytAuditTab: React.FC = () => {
                                   <select
                                     value={item.route}
                                     onChange={(e) => handleItemChange(idx, 'route', e.target.value)}
-                                    className="w-full h-8 px-1.5 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-800 cursor-pointer"
+                                    className="w-full h-8 px-1.5 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-800 cursor-pointer focus:border-teal-600 focus:outline-none"
                                   >
                                     <option value="Uống">Uống</option>
                                     <option value="Tiêm truyền TM">Tiêm TM</option>
@@ -1610,7 +1586,7 @@ export const BhytAuditTab: React.FC = () => {
                                     type="text"
                                     value={item.instructions || ''}
                                     onChange={(e) => handleItemChange(idx, 'instructions', e.target.value)}
-                                    className="w-full h-8 px-2 bg-white border border-slate-300 rounded text-xs text-slate-700 focus:border-blue-600 focus:outline-none"
+                                    className="w-full h-8 px-2 bg-white border border-slate-300 rounded text-xs text-slate-700 focus:border-teal-600 focus:outline-none"
                                     placeholder="Cách dùng"
                                   />
                                 </td>
@@ -1621,7 +1597,7 @@ export const BhytAuditTab: React.FC = () => {
                                     min={1}
                                     value={item.daysSupply || 1}
                                     onChange={(e) => handleItemChange(idx, 'daysSupply', parseInt(e.target.value) || 1)}
-                                    className="w-12 h-8 text-center px-1 bg-white border border-slate-300 rounded text-sm font-mono font-semibold text-slate-800 focus:border-blue-600 focus:outline-none"
+                                    className="w-12 h-8 text-center px-1 bg-white border border-slate-300 rounded text-sm font-sans tabular-nums font-semibold text-slate-800 focus:border-teal-600 focus:outline-none"
                                   />
                                 </td>
 
@@ -1631,7 +1607,7 @@ export const BhytAuditTab: React.FC = () => {
                                     min={1}
                                     value={item.quantity}
                                     onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value) || 1)}
-                                    className="w-12 h-8 text-center px-1 bg-white border border-slate-300 rounded text-sm font-mono font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+                                    className="w-12 h-8 text-center px-1 bg-white border border-slate-300 rounded text-sm font-sans tabular-nums font-bold text-slate-900 focus:border-teal-600 focus:outline-none"
                                   />
                                 </td>
 
@@ -1642,11 +1618,11 @@ export const BhytAuditTab: React.FC = () => {
                                     step={100}
                                     value={item.unitPrice || 0}
                                     onChange={(e) => handleItemChange(idx, 'unitPrice', parseInt(e.target.value) || 0)}
-                                    className="w-24 h-8 text-right px-2 bg-white border border-slate-300 rounded text-sm font-mono text-slate-800 focus:border-blue-600 focus:outline-none"
+                                    className="w-24 h-8 text-right px-2 bg-white border border-slate-300 rounded text-sm font-sans tabular-nums text-slate-800 focus:border-teal-600 focus:outline-none"
                                   />
                                 </td>
 
-                                <td className="py-2.5 px-2.5 text-right font-mono font-bold text-sm text-blue-950 border-r border-slate-200">
+                                <td className="py-2.5 px-2.5 text-right font-sans tabular-nums font-bold text-sm text-slate-900 border-r border-slate-200">
                                   {lineTotal.toLocaleString('vi-VN')} đ
                                 </td>
 
@@ -1656,7 +1632,7 @@ export const BhytAuditTab: React.FC = () => {
                                     checked={Boolean(item.hasConsultationForm)}
                                     onChange={(e) => handleItemChange(idx, 'hasConsultationForm', e.target.checked)}
                                     title="Đã có biên bản hội chẩn"
-                                    className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+                                    className="w-4 h-4 text-teal-700 rounded cursor-pointer focus:ring-teal-600"
                                   />
                                 </td>
 
@@ -1686,20 +1662,19 @@ export const BhytAuditTab: React.FC = () => {
                                         };
                                         handleOpenSubstitutionModal(violationToUse, item);
                                       }}
-                                      className={`text-xs px-2 py-1 rounded font-bold transition flex items-center gap-1 cursor-pointer ${
+                                      className={`text-xs px-2 py-1 rounded font-semibold transition cursor-pointer ${
                                         getItemViolations(item).length > 0
-                                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
-                                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                                          ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+                                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                                       }`}
-                                      title={getItemViolations(item).length > 0 ? 'Có nguy cơ xuất toán! Bấm để xem gợi ý thay thế 1-Click' : 'Gợi ý thuốc thay thế BHYT'}
+                                      title={getItemViolations(item).length > 0 ? 'Có nguy cơ xuất toán! Bấm để xem gợi ý thay thế' : 'Gợi ý thuốc thay thế BHYT'}
                                     >
-                                      <span>⚡</span>
                                       <span>Đổi thuốc</span>
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteMedicineRow(idx)}
-                                      className="text-xs text-rose-600 hover:text-rose-900 font-bold hover:underline cursor-pointer"
+                                      className="text-xs text-rose-600 hover:text-rose-800 font-medium cursor-pointer"
                                       title="Xóa thuốc này"
                                     >
                                       Xóa
@@ -1714,23 +1689,6 @@ export const BhytAuditTab: React.FC = () => {
                     </table>
                   </div>
                 </div>
-
-                {/* KHỐI D: HƯỚNG DẪN TIẾP TỤC */}
-                {activePayload.items.length > 0 && (
-                  <div className="bg-blue-50/80 border border-blue-200 rounded-lg p-3.5 flex items-center justify-between gap-3 flex-wrap shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xl">✅</span>
-                      <div>
-                        <div className="text-sm font-bold text-slate-900">
-                          Dữ liệu đơn thuốc đã được cấu trúc và đối soát ({activePayload.items.length} mặt hàng)
-                        </div>
-                        <p className="text-xs text-slate-600 mt-0.5">
-                          Chọn các tab <strong>"2. An toàn lâm sàng"</strong> hoặc <strong>"3. Thẩm định BHYT"</strong> ở phía trên để xem kết quả đánh giá chi tiết.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1742,25 +1700,24 @@ export const BhytAuditTab: React.FC = () => {
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">
-                      Đánh giá an toàn sử dụng thuốc theo 7 nhóm tiêu chuẩn lâm sàng
+                      Kiểm tra an toàn lâm sàng
                     </h3>
                     <p className="text-sm text-slate-500 mt-0.5">
-                      Đối soát độc lập: Chỉ định, Chống chỉ định, Liều dùng, Đường dùng, Thời điểm, Tương tác DDI (701 luật) &amp; Trùng lặp
+                      7 tiêu chuẩn đối soát: Chỉ định, chống chỉ định, liều dùng, đường dùng, tương tác thuốc và trùng lặp hoạt chất
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                      Tổng số: 7 nhóm kiểm tra
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                      7 nhóm tiêu chuẩn
                     </span>
                   </div>
                 </div>
 
                 {activePayload.items.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2.5">
-                    <div className="text-3xl">🛡️</div>
+                  <div className="p-8 text-center text-slate-500 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2">
                     <div className="text-base font-bold text-slate-800">Chưa có dữ liệu thuốc để đánh giá an toàn lâm sàng</div>
                     <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                      Vui lòng tải lên đơn thuốc ở khung bên trái hoặc nạp thuốc ở Bước 1 để đối soát 7 tiêu chuẩn an toàn lâm sàng.
+                      Vui lòng tải lên đơn thuốc ở khung bên trái hoặc thêm thuốc ở Bước 1 để đối soát các tiêu chuẩn an toàn.
                     </p>
                   </div>
                 ) : (
@@ -1774,35 +1731,34 @@ export const BhytAuditTab: React.FC = () => {
                           key={cat.id}
                           className={`p-4 rounded-lg border transition-all shadow-2xs ${
                             isAlert
-                              ? 'bg-rose-50/70 border-rose-300'
+                              ? 'bg-rose-50/60 border-rose-200'
                               : isWarning
-                              ? 'bg-amber-50/70 border-amber-300'
-                              : 'bg-emerald-50/50 border-emerald-200'
+                              ? 'bg-amber-50/60 border-amber-200'
+                              : 'bg-white border-slate-200'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-2.5 mb-2.5">
                             <div>
-                              <h4 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                                <span>{isAlert ? '⛔' : isWarning ? '⚠️' : '✅'}</span>
-                                <span>{cat.title}</span>
+                              <h4 className="font-bold text-sm text-slate-900">
+                                {cat.title}
                               </h4>
-                              <p className="text-sm text-slate-500 mt-0.5">{cat.subtitle}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">{cat.subtitle}</p>
                             </div>
-                            <span className={`text-xs px-2.5 py-1 rounded-md font-bold shrink-0 ${
+                            <span className={`text-xs px-2 py-0.5 rounded font-semibold shrink-0 border ${
                               isAlert
-                                ? 'bg-rose-200 text-rose-900'
+                                ? 'bg-rose-100 text-rose-800 border-rose-200'
                                 : isWarning
-                                ? 'bg-amber-200 text-amber-900'
-                                : 'bg-emerald-200 text-emerald-900'
+                                ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
                             }`}>
                               {cat.statusLabel}
                             </span>
                           </div>
 
-                          <ul className="text-sm space-y-1.5 text-slate-700 bg-white/80 p-3 rounded-md border border-slate-200/60 leading-relaxed">
+                          <ul className="text-xs space-y-1 text-slate-700 bg-slate-50/70 p-2.5 rounded border border-slate-200/60 leading-relaxed">
                             {cat.details.map((d, dIdx) => (
-                              <li key={dIdx} className="flex items-start gap-2">
-                                <span className="text-slate-400 shrink-0 mt-0.5">•</span>
+                              <li key={dIdx} className="flex items-start gap-1.5">
+                                <span className="text-slate-400 shrink-0">•</span>
                                 <span>{d}</span>
                               </li>
                             ))}
@@ -1823,35 +1779,34 @@ export const BhytAuditTab: React.FC = () => {
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">
-                      Kết quả giám định theo Thông tư 20/2022/TT-BYT &amp; Quyết định 3618/QĐ-BHXH
+                      Thẩm định xuất toán BHYT
                     </h3>
-                    <p className="text-sm text-slate-600 mt-0.5">
-                      Đánh giá phân tuyến kỹ thuật, trùng lặp hoạt chất, chỉ định ICD-10 và tỷ lệ thanh toán
+                    <p className="text-sm text-slate-500 mt-0.5">
+                      Căn cứ Thông tư 20/2022/TT-BYT và Quyết định 3618/QĐ-BHXH
                     </p>
                   </div>
 
                   {auditReport.atRiskCostVnd > 0 && (
                     <div className="text-right">
-                      <span className="text-xs text-slate-500 uppercase block font-bold">Tổng nguy cơ xuất toán</span>
-                      <span className="text-xl font-bold text-rose-700">
-                        -{auditReport.atRiskCostVnd.toLocaleString('vi-VN')} đ
+                      <span className="text-xs text-slate-500 uppercase block font-semibold">Tổng nguy cơ xuất toán</span>
+                      <span className="text-lg font-bold text-rose-700 font-sans tabular-nums">
+                        {auditReport.atRiskCostVnd.toLocaleString('vi-VN')} đ
                       </span>
                     </div>
                   )}
                 </div>
 
                 {activePayload.items.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2.5">
-                    <div className="text-3xl">⚖️</div>
+                  <div className="p-8 text-center text-slate-500 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2">
                     <div className="text-base font-bold text-slate-800">Chưa có dữ liệu thuốc để thẩm định xuất toán BHYT</div>
                     <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                      Vui lòng tải lên đơn thuốc ở khung bên trái hoặc thêm thuốc ở Bước 1 để đối soát tuyến kỹ thuật, tỷ lệ thanh toán và TT 20/2022/TT-BYT.
+                      Vui lòng tải lên đơn thuốc ở khung bên trái hoặc thêm thuốc ở Bước 1 để đối soát tuyến kỹ thuật và tỷ lệ thanh toán.
                     </p>
                   </div>
                 ) : auditReport.violations.length === 0 ? (
-                  <div className="p-6 text-center text-emerald-800 bg-emerald-50/60 rounded-md border border-emerald-200">
-                    <div className="text-base font-bold">Đơn thuốc hợp lệ 100%!</div>
-                    <div className="text-sm mt-1">Không phát hiện nguy cơ xuất toán hoặc trùng lặp chỉ định theo quy định.</div>
+                  <div className="p-6 text-center text-slate-800 bg-slate-50 rounded-md border border-slate-200">
+                    <div className="text-base font-bold text-slate-900">Đơn thuốc hợp lệ</div>
+                    <div className="text-sm text-slate-600 mt-0.5">Không phát hiện nguy cơ xuất toán hoặc trùng lặp chỉ định theo quy định.</div>
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-200 border-t border-b border-slate-200">
@@ -1860,25 +1815,25 @@ export const BhytAuditTab: React.FC = () => {
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                           <div className="font-bold text-slate-950 text-base flex items-center gap-2">
                             <span>{vIndex + 1}. {violation.drugName}</span>
-                            <span className="font-mono text-sm text-slate-600 font-normal">({violation.activeIngredient})</span>
+                            <span className="font-sans text-sm text-slate-500 font-normal">({violation.activeIngredient})</span>
                           </div>
                           <div className="flex items-center gap-3">
                             {violation.rejectionRiskVnd > 0 ? (
-                              <span className="font-bold text-rose-700 text-base whitespace-nowrap">
-                                Xuất toán: -{violation.rejectionRiskVnd.toLocaleString('vi-VN')} đ
+                              <span className="font-bold text-rose-700 text-base whitespace-nowrap font-sans tabular-nums">
+                                Nguy cơ: {violation.rejectionRiskVnd.toLocaleString('vi-VN')} đ
                               </span>
                             ) : violation.patientCoPayVnd ? (
-                              <span className="font-bold text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md text-sm whitespace-nowrap">
-                                Đồng chi trả BHYT: {violation.patientCoPayVnd.toLocaleString('vi-VN')} đ
+                              <span className="font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded text-sm whitespace-nowrap font-sans tabular-nums">
+                                Đồng chi trả: {violation.patientCoPayVnd.toLocaleString('vi-VN')} đ
                               </span>
                             ) : null}
                             <button
                               type="button"
                               data-testid={`btn-substitute-violation-${vIndex}`}
                               onClick={() => handleOpenSubstitutionModal(violation)}
-                              className="h-8 px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition cursor-pointer"
+                              className="h-8 px-3.5 bg-teal-700 hover:bg-teal-800 text-white rounded text-xs font-semibold flex items-center shadow-2xs hover:shadow-xs transition cursor-pointer"
                             >
-                              <span>⚡ Gợi ý thuốc thay thế BHYT (1-Click)</span>
+                              <span>Gợi ý thay thế BHYT</span>
                             </button>
                           </div>
                         </div>
@@ -1906,7 +1861,7 @@ export const BhytAuditTab: React.FC = () => {
                               `${violation.legalRef.docTitle} (Trang ${violation.legalRef.pageNumber})`,
                               violation.detail
                             )}
-                            className="text-blue-700 font-semibold hover:underline cursor-pointer flex items-center gap-1"
+                            className="text-teal-700 font-semibold hover:underline cursor-pointer flex items-center gap-1"
                           >
                             <span>Xem trang {violation.legalRef.pageNumber} văn bản gốc ↗</span>
                           </button>
@@ -1929,14 +1884,14 @@ export const BhytAuditTab: React.FC = () => {
                     value={catalogQuery}
                     onChange={(e) => setCatalogQuery(e.target.value)}
                     placeholder="Tìm theo tên thuốc, hoạt chất hoặc mã ATC..."
-                    className="w-80 h-9 px-3 text-sm bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:border-slate-500"
+                    className="w-80 h-9 px-3 text-sm bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:border-teal-600"
                   />
 
                   <select
                     aria-label="Lọc theo tuyến kỹ thuật"
                     value={catalogRankFilter}
                     onChange={(e) => setCatalogRankFilter(e.target.value)}
-                    className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-medium"
+                    className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-medium focus:outline-none focus:border-teal-600"
                   >
                     <option value="ALL">Tất cả tuyến kỹ thuật</option>
                     <option value="HANG_DAC_BIET">Hạng Đặc Biệt (TW)</option>
@@ -1946,17 +1901,17 @@ export const BhytAuditTab: React.FC = () => {
                     <option value="HANG_IV">Hạng IV (Trạm Y Tế Xã)</option>
                   </select>
 
-                  <span className="text-sm text-slate-600 ml-auto">
+                  <span className="text-sm text-slate-600 ml-auto font-sans tabular-nums">
                     Tổng số: <strong>{filteredCatalogRules.length}</strong> hoạt chất BHYT
                   </span>
                 </div>
 
-                <div className="border border-slate-200 rounded-md overflow-x-auto">
+                <div className="border border-slate-200 rounded-md overflow-x-auto shadow-2xs">
                   <table className="w-full text-left border-collapse text-sm">
-                    <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-700">
+                    <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-700 text-xs uppercase tracking-wider">
                       <tr>
                         <th className="py-2.5 px-3 text-center w-14 border-r border-slate-200">STT</th>
-                        <th className="py-2.5 px-3 font-mono border-r border-slate-200 w-28">Mã ATC</th>
+                        <th className="py-2.5 px-3 border-r border-slate-200 w-28">Mã ATC</th>
                         <th className="py-2.5 px-4 border-r border-slate-200 w-72">Tên Thuốc &amp; Hoạt Chất</th>
                         <th className="py-2.5 px-4 border-r border-slate-200 w-52">Tuyến Sử Dụng</th>
                         <th className="py-2.5 px-3 text-center border-r border-slate-200 w-28">Tỷ Lệ BHYT</th>
@@ -1964,13 +1919,13 @@ export const BhytAuditTab: React.FC = () => {
                         <th className="py-2.5 px-3 text-center w-28">Văn Bản</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 text-sm text-slate-800">
+                    <tbody className="divide-y divide-slate-200 text-sm text-slate-800 bg-white">
                       {filteredCatalogRules.map((rule, idx) => (
-                        <tr key={rule.atcGroup + idx} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-2.5 px-3 text-center font-mono text-slate-500 border-r border-slate-200">
+                        <tr key={rule.atcGroup + idx} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-2.5 px-3 text-center font-sans tabular-nums text-slate-500 border-r border-slate-200">
                             {idx + 1}
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-slate-700 border-r border-slate-200">
+                          <td className="py-2.5 px-3 font-sans tabular-nums font-medium text-slate-700 border-r border-slate-200">
                             {rule.atcGroup}
                           </td>
                           <td className="py-2.5 px-4 border-r border-slate-200">
@@ -1979,12 +1934,12 @@ export const BhytAuditTab: React.FC = () => {
                           </td>
                           <td className="py-2.5 px-4 border-r border-slate-200 text-xs">
                             {rule.allowedRanks.length === 5 ? (
-                              <span className="font-semibold text-emerald-800">ĐB, I, II, III, IV</span>
+                              <span className="font-semibold text-teal-800">ĐB, I, II, III, IV</span>
                             ) : (
                               rule.allowedRanks.map(r => r.replace('HANG_', '')).join(', ')
                             )}
                           </td>
-                          <td className="py-2.5 px-3 text-center border-r border-slate-200 font-bold">
+                          <td className="py-2.5 px-3 text-center border-r border-slate-200 font-bold font-sans tabular-nums">
                             {(rule.paymentRatio * 100).toFixed(0)}%
                           </td>
                           <td className="py-2.5 px-4 border-r border-slate-200 text-xs text-slate-700 leading-relaxed">
@@ -2004,7 +1959,7 @@ export const BhytAuditTab: React.FC = () => {
                                 `Thông tư 20/2022/TT-BYT - STT ${rule.stt}: ${rule.activeIngredient}`,
                                 rule.specialConditions || undefined
                               )}
-                              className="text-xs font-semibold text-blue-700 hover:underline cursor-pointer"
+                              className="text-xs font-semibold text-teal-700 hover:underline cursor-pointer"
                             >
                               Trang {rule.pdfPage}
                             </button>
@@ -2041,7 +1996,7 @@ export const BhytAuditTab: React.FC = () => {
                   onChange={(e) => setXmlInputText(e.target.value)}
                   placeholder="<BANG_CHI_TIET_THUOC_QD130>...</BANG_CHI_TIET_THUOC_QD130>"
                   rows={10}
-                  className="w-full text-sm font-mono p-3 rounded-md bg-slate-50 border border-slate-300 resize-none focus:outline-none focus:bg-white focus:border-slate-500"
+                  className="w-full text-sm font-sans tabular-nums p-3 rounded-md bg-slate-50 border border-slate-300 resize-none focus:outline-none focus:bg-white focus:border-teal-600"
                 />
 
                 <div className="flex justify-end gap-3">
@@ -2050,7 +2005,7 @@ export const BhytAuditTab: React.FC = () => {
                     onClick={handleParseXml}
                     className="px-4 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold cursor-pointer transition active:scale-98"
                   >
-                    Phân tích XML &amp; Xem kết quả
+                    Phân tích XML
                   </button>
                 </div>
               </div>
@@ -2087,7 +2042,7 @@ export const BhytAuditTab: React.FC = () => {
                   data-testid="input-admin-prescription-id"
                   value={adminFormDraft.prescriptionId}
                   onChange={(e) => setAdminFormDraft(prev => ({ ...prev, prescriptionId: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-slate-600 font-mono text-sm"
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-teal-600 font-sans tabular-nums text-sm"
                 />
               </div>
 
@@ -2099,7 +2054,7 @@ export const BhytAuditTab: React.FC = () => {
                     data-testid="input-admin-patient-name"
                     value={adminFormDraft.patientName}
                     onChange={(e) => setAdminFormDraft(prev => ({ ...prev, patientName: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-slate-600 font-medium text-sm"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-teal-600 font-medium text-sm"
                   />
                 </div>
                 <div>
@@ -2109,7 +2064,7 @@ export const BhytAuditTab: React.FC = () => {
                     data-testid="input-admin-patient-age"
                     value={adminFormDraft.patientAge}
                     onChange={(e) => setAdminFormDraft(prev => ({ ...prev, patientAge: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-slate-600 text-sm"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-teal-600 font-sans tabular-nums text-sm"
                   />
                 </div>
               </div>
@@ -2121,7 +2076,7 @@ export const BhytAuditTab: React.FC = () => {
                   data-testid="input-admin-card-number"
                   value={adminFormDraft.insuranceCardNumber}
                   onChange={(e) => setAdminFormDraft(prev => ({ ...prev, insuranceCardNumber: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-slate-600 font-mono text-sm"
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-teal-600 font-sans tabular-nums text-sm"
                 />
               </div>
 
@@ -2133,7 +2088,7 @@ export const BhytAuditTab: React.FC = () => {
                     data-testid="input-admin-primary-icd"
                     value={adminFormDraft.primaryIcd10}
                     onChange={(e) => setAdminFormDraft(prev => ({ ...prev, primaryIcd10: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-slate-600 font-mono font-bold text-sm"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-teal-600 font-sans tabular-nums font-bold text-sm"
                   />
                 </div>
                 <div className="col-span-2">
@@ -2143,7 +2098,7 @@ export const BhytAuditTab: React.FC = () => {
                     data-testid="input-admin-primary-diag"
                     value={adminFormDraft.primaryDiagnosis}
                     onChange={(e) => setAdminFormDraft(prev => ({ ...prev, primaryDiagnosis: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-slate-600 text-sm"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-teal-600 text-sm"
                   />
                 </div>
               </div>
@@ -2156,7 +2111,7 @@ export const BhytAuditTab: React.FC = () => {
                   value={adminFormDraft.secondaryIcd10s}
                   onChange={(e) => setAdminFormDraft(prev => ({ ...prev, secondaryIcd10s: e.target.value }))}
                   placeholder="Ví dụ: E11.9, I50, K21 (phân cách bằng dấu phẩy)"
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-slate-600 font-mono text-sm"
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-md focus:outline-none focus:border-teal-600 font-sans tabular-nums text-sm"
                 />
                 <span className="text-xs text-slate-500 mt-1 block">
                   Cơ sở BHYT duyệt thanh toán các thuốc điều trị bệnh đồng mắc khi có mã ICD-10 phụ tương ứng.

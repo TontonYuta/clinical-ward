@@ -54,20 +54,20 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
         className="bg-white w-full max-w-4xl max-h-[92vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-slate-300"
       >
         {/* HEADER MODAL */}
-        <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-teal-800 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-2xs shrink-0">
-              <Sparkles className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-md bg-teal-700 flex items-center justify-center text-teal-100 shrink-0">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-base leading-tight truncate flex items-center gap-2">
-                <span>GỢI Ý THUỐC THAY THẾ HỢP LỆ BHYT</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-400/30">
-                  1-Click Apply
+                <span>Gợi ý thuốc thay thế BHYT</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-teal-700 text-teal-100 font-medium border border-teal-600">
+                  1-Click
                 </span>
               </h3>
-              <p className="text-xs text-slate-300 truncate mt-0.5">
-                Đối soát tương đương điều trị theo Thông tư 20/2022/TT-BYT &amp; Quyết định 3618/QĐ-BHXH
+              <p className="text-xs text-teal-200 truncate mt-0.5">
+                Căn cứ Thông tư 20/2022/TT-BYT &amp; Quyết định 3618/QĐ-BHXH
               </p>
             </div>
           </div>
@@ -75,7 +75,7 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer flex items-center justify-center"
+            className="w-8 h-8 rounded-md hover:bg-teal-700 text-teal-200 hover:text-white transition cursor-pointer flex items-center justify-center"
             title="Đóng (Esc)"
           >
             <X className="w-5 h-5" />
@@ -86,17 +86,16 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50">
           
           {/* PHẦN 1: THÔNG TIN THUỐC ĐANG BỊ XUẤT TOÁN */}
-          <div className="bg-rose-50/80 border border-rose-300 rounded-lg p-4 shadow-2xs">
-            <div className="flex items-start justify-between gap-3 flex-wrap pb-2 border-b border-rose-200">
+          <div className="bg-rose-50/70 border border-rose-200 rounded-lg p-4 shadow-2xs">
+            <div className="flex items-start justify-between gap-3 flex-wrap pb-2 border-b border-rose-200/80">
               <div className="flex items-center gap-2">
-                <span className="text-xl">⛔</span>
                 <div>
                   <span className="text-xs font-bold text-rose-800 uppercase tracking-wider block">
-                    Thuốc đang bị cơ quan BHXH từ chối chi trả
+                    Thuốc có nguy cơ xuất toán BHYT
                   </span>
                   <div className="text-base font-bold text-slate-950 mt-0.5 flex items-center gap-2">
                     <span>{originalItem.drugName}</span>
-                    <span className="font-mono text-sm text-slate-600 font-normal">
+                    <span className="font-sans text-sm text-slate-600 font-normal">
                       ({originalItem.activeIngredient || originalItem.drugName})
                     </span>
                   </div>
@@ -104,25 +103,25 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
               </div>
 
               <div className="text-right">
-                <span className="text-xs text-rose-700 font-semibold uppercase block">Tiền có nguy cơ xuất toán</span>
-                <span className="text-lg font-bold text-rose-700 font-mono">
+                <span className="text-xs text-rose-700 font-semibold uppercase block">Nguy cơ xuất toán</span>
+                <span className="text-base font-bold text-rose-700 font-sans tabular-nums">
                   -{violation.rejectionRiskVnd.toLocaleString('vi-VN')} đ
                 </span>
               </div>
             </div>
 
             <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-slate-700">
-              <div className="bg-white/80 p-2.5 rounded border border-rose-200">
+              <div className="bg-white p-2.5 rounded border border-rose-200/80">
                 <strong className="text-slate-900 block font-semibold">Lý do vi phạm:</strong>
                 <span className="text-rose-900 mt-0.5 block leading-snug">{violation.detail}</span>
               </div>
 
-              <div className="bg-white/80 p-2.5 rounded border border-rose-200">
-                <strong className="text-slate-900 block font-semibold">Tuyến KCB hiện tại:</strong>
+              <div className="bg-white p-2.5 rounded border border-rose-200/80">
+                <strong className="text-slate-900 block font-semibold">Tuyến KCB:</strong>
                 <span className="text-slate-800 mt-0.5 block font-medium">{HOSPITAL_RANK_LABELS[hospitalRank]}</span>
               </div>
 
-              <div className="bg-white/80 p-2.5 rounded border border-rose-200">
+              <div className="bg-white p-2.5 rounded border border-rose-200/80">
                 <strong className="text-slate-900 block font-semibold">Căn cứ pháp lý:</strong>
                 <span className="text-slate-800 mt-0.5 block font-medium">
                   {violation.legalRef.docTitle} ({violation.legalRef.section})
@@ -134,20 +133,19 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
           {/* DẢI TIÊU ĐỀ HƯỚNG DẪN */}
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 text-teal-700" />
               <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                Các phương án thay thế tối ưu (100% hợp lệ BHYT &amp; Cùng đích điều trị)
+                Phương án thay thế tương đương
               </h4>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-sans tabular-nums">
               {candidates.length} phương án khả thi
             </span>
           </div>
 
           {/* PHẦN 2: DANH SÁCH ỨNG VIÊN THAY THẾ */}
           {candidates.length === 0 ? (
-            <div className="p-8 text-center bg-white rounded-lg border border-slate-300 space-y-2">
-              <div className="text-3xl">⚠️</div>
+            <div className="p-8 text-center bg-white rounded-lg border border-slate-200 space-y-2">
               <div className="text-base font-bold text-slate-800">
                 Chưa tìm thấy thuốc thay thế tương đương tại {HOSPITAL_RANK_LABELS[hospitalRank]}
               </div>
@@ -156,26 +154,26 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
               </p>
             </div>
           ) : (
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {candidates.map((cand, idx) => (
                 <div
                   key={cand.id || idx}
-                  className="bg-white border-2 border-emerald-300/80 rounded-xl p-4 shadow-sm hover:shadow-md transition-all space-y-3"
+                  className="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs hover:shadow-xs transition space-y-3"
                 >
                   {/* Hàng trên: Huy hiệu thứ tự, Tỷ lệ BHYT & Số tiền BHYT cứu được */}
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                      <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase bg-slate-100 text-slate-800 border border-slate-200 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-teal-700" />
                         <span>Phương án #{idx + 1}</span>
                       </span>
 
-                      <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200 font-sans tabular-nums">
                         BHYT: {(cand.paymentRatio * 100).toFixed(0)}%
                       </span>
 
                       {!cand.requiresConsultation ? (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">
+                        <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                           Không cần hội chẩn
                         </span>
                       ) : (
@@ -184,17 +182,17 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
                         </span>
                       )}
 
-                      <span className="text-xs text-slate-500 font-mono">
+                      <span className="text-xs text-slate-500 font-sans tabular-nums">
                         Mã ATC: {cand.atcCode}
                       </span>
                     </div>
 
                     {/* Tiền BHYT cứu được */}
                     <div className="text-right">
-                      <span className="text-xs text-emerald-800 font-semibold uppercase block">
-                        Tiền BHYT cứu được
+                      <span className="text-xs text-slate-500 font-semibold uppercase block">
+                        Chi phí bảo toàn
                       </span>
-                      <span className="text-lg font-bold text-emerald-700 font-mono">
+                      <span className="text-base font-bold text-teal-800 font-sans tabular-nums">
                         +{cand.savedRejectionVnd.toLocaleString('vi-VN')} đ
                       </span>
                     </div>
@@ -204,13 +202,13 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
                   <div className="space-y-1.5">
                     <div className="text-base font-bold text-slate-950 flex items-center gap-2">
                       <span>{cand.drugName}</span>
-                      <span className="text-sm font-mono text-slate-600 font-semibold">
+                      <span className="text-sm font-sans text-slate-600 font-medium">
                         ({cand.activeIngredient})
                       </span>
                     </div>
 
-                    <p className="text-sm text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">
-                      <strong className="text-emerald-900 font-semibold">Đánh giá dược lý: </strong>
+                    <p className="text-sm text-slate-800 leading-relaxed bg-slate-50/80 p-3 rounded-lg border border-slate-200/80">
+                      <strong className="text-slate-900 font-semibold">Đánh giá dược lý: </strong>
                       <span>{cand.substitutionReason}</span>
                     </p>
 
@@ -218,7 +216,7 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
                       <span>
                         Tương đương lâm sàng: <em>{cand.clinicalRationale}</em>
                       </span>
-                      <span className="text-blue-700 font-semibold font-mono">
+                      <span className="text-teal-800 font-semibold font-sans">
                         Căn cứ: {cand.legalRef}
                       </span>
                     </div>
@@ -227,15 +225,15 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
                   {/* Hàng dưới: Nút áp dụng 1-Click */}
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
                     <div className="text-xs text-slate-500">
-                      Đơn giá tham chiếu DAV: <strong className="font-mono text-slate-800">{cand.unitPrice.toLocaleString('vi-VN')} đ</strong> / đơn vị
+                      Đơn giá tham chiếu DAV: <strong className="font-sans tabular-nums text-slate-800">{cand.unitPrice.toLocaleString('vi-VN')} đ</strong> / đơn vị
                     </div>
 
                     <button
                       type="button"
                       onClick={() => onApplySubstitute(cand)}
-                      className="h-9 px-5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md text-sm font-bold shadow-xs hover:shadow-sm transition cursor-pointer flex items-center gap-2"
+                      className="h-9 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-md text-sm font-bold shadow-xs transition cursor-pointer flex items-center gap-1.5"
                     >
-                      <span>⚡ Áp dụng thay thế thuốc này</span>
+                      <span>Áp dụng thay thế</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>

@@ -129,17 +129,17 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
         className="bg-white w-full max-w-5xl h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden border border-slate-200 print:h-auto print:max-w-none print:w-full print:border-none print:shadow-none print:overflow-visible print:rounded-none"
       >
         {/* Thanh công cụ trên cùng (Ẩn khi in ấn) */}
-        <div className="px-5 py-3 bg-slate-900 text-white flex items-center justify-between shrink-0 print:hidden gap-3">
+        <div className="px-5 py-3 bg-teal-800 text-white flex items-center justify-between shrink-0 print:hidden gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-2xs shrink-0">
-              <FileText className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-md bg-teal-700 flex items-center justify-center text-teal-100 shrink-0">
+              <FileText className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-base leading-tight truncate">
-                BIÊN BẢN GIÁM ĐỊNH ĐƠN THUỐC BHYT &amp; AN TOÀN LÂM SÀNG
+                BIÊN BẢN GIÁM ĐỊNH ĐƠN THUỐC BHYT
               </h3>
-              <p className="text-xs text-slate-300 truncate mt-0.5">
-                Hợp chuẩn Thông tư 20/2022/TT-BYT, QĐ 130/QĐ-BYT &amp; QĐ 3618/QĐ-BHXH • In A4 / Xuất PDF
+              <p className="text-xs text-teal-200 truncate mt-0.5">
+                Căn cứ TT 20/2022/TT-BYT, QĐ 130/QĐ-BYT &amp; QĐ 3618/QĐ-BHXH
               </p>
             </div>
           </div>
@@ -148,10 +148,10 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
             <button
               type="button"
               onClick={handleDownloadHtml}
-              className="h-9 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-md text-sm font-semibold cursor-pointer transition flex items-center gap-1.5"
+              className="h-8 px-3 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-semibold cursor-pointer transition flex items-center gap-1.5"
               title="Tải văn bản HTML lưu trữ"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5" />
               <span>Lưu HTML</span>
             </button>
 
@@ -228,7 +228,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                   </tr>
                   <tr>
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Mã số thẻ BHYT:</td>
-                    <td className="font-mono font-bold border border-black px-2.5 py-1.5">{prescription.insuranceCardNumber || 'DN4010123456789'}</td>
+                    <td className="font-sans tabular-nums font-bold border border-black px-2.5 py-1.5">{prescription.insuranceCardNumber || 'DN4010123456789'}</td>
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Hình thức điều trị:</td>
                     <td className="border border-black px-2.5 py-1.5">{treatmentType === 'NGOAI_TRU' ? 'KCB Ngoại trú' : 'Điều trị Nội trú'}</td>
                   </tr>
@@ -236,12 +236,12 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Tuyến kỹ thuật KCB:</td>
                     <td className="border border-black px-2.5 py-1.5 font-semibold">{HOSPITAL_RANK_LABELS[hospitalRank]}</td>
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Mã đơn thuốc:</td>
-                    <td className="font-mono border border-black px-2.5 py-1.5">{prescription.prescriptionId || 'RX-20261107-001'}</td>
+                    <td className="font-sans tabular-nums border border-black px-2.5 py-1.5">{prescription.prescriptionId || 'RX-20261107-001'}</td>
                   </tr>
                   <tr>
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Chẩn đoán chính (ICD-10):</td>
                     <td colSpan={3} className="border border-black px-2.5 py-1.5">
-                      <strong className="font-mono text-blue-900">{prescription.primaryIcd10 || 'J20.9'}</strong> — {prescription.primaryDiagnosis || 'Viêm phế quản cấp'}
+                      <strong className="font-sans tabular-nums text-teal-900 font-bold">{prescription.primaryIcd10 || 'J20.9'}</strong> — {prescription.primaryDiagnosis || 'Viêm phế quản cấp'}
                       {prescription.secondaryIcd10s && prescription.secondaryIcd10s.length > 0 && (
                         <span className="ml-2 text-slate-600 italic">
                           (Kèm theo: {prescription.secondaryIcd10s.join(', ')})
@@ -280,26 +280,26 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
 
                     return (
                       <tr key={it.id || idx}>
-                        <td className="border border-black text-center font-mono py-1.5">{idx + 1}</td>
+                        <td className="border border-black text-center font-sans tabular-nums py-1.5">{idx + 1}</td>
                         <td className="border border-black px-2.5 py-1.5">
                           <div className="font-bold">{it.drugName}</div>
                           <div className="text-[11px] text-slate-600 italic">
                             INN: {it.activeIngredient || res?.matched_dav?.active_ingredient || 'Chưa phân giải'}
                           </div>
                         </td>
-                        <td className="border border-black px-2 py-1.5 text-center font-mono text-[11px]">
+                        <td className="border border-black px-2 py-1.5 text-center font-sans tabular-nums text-[11px]">
                           {it.drugCode || res?.matched_dav?.national_code || 'DAV-KCB'}
                         </td>
-                        <td className="border border-black px-2 py-1.5 text-center font-mono">
+                        <td className="border border-black px-2 py-1.5 text-center font-sans tabular-nums">
                           {it.dosage || res?.detected_concentration || '—'}
                         </td>
                         <td className="border border-black px-2 py-1.5 text-center">{it.route || 'Uống'}</td>
-                        <td className="border border-black px-1.5 py-1.5 text-center font-mono">{it.daysSupply || 7}</td>
-                        <td className="border border-black px-1.5 py-1.5 text-center font-bold font-mono">{it.quantity}</td>
-                        <td className="border border-black px-2 py-1.5 text-right font-mono">
+                        <td className="border border-black px-1.5 py-1.5 text-center font-sans tabular-nums">{it.daysSupply || 7}</td>
+                        <td className="border border-black px-1.5 py-1.5 text-center font-bold font-sans tabular-nums">{it.quantity}</td>
+                        <td className="border border-black px-2 py-1.5 text-right font-sans tabular-nums">
                           {(it.unitPrice || 0).toLocaleString('vi-VN')} đ
                         </td>
-                        <td className="border border-black px-2 py-1.5 text-right font-bold font-mono">
+                        <td className="border border-black px-2 py-1.5 text-right font-bold font-sans tabular-nums">
                           {lineTotal.toLocaleString('vi-VN')} đ
                         </td>
                       </tr>
@@ -311,7 +311,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                     <td colSpan={8} className="border border-black px-2.5 py-1.5 text-right uppercase">
                       Tổng giá trị đơn thuốc:
                     </td>
-                    <td className="border border-black px-2 py-1.5 text-right font-mono text-sm">
+                    <td className="border border-black px-2 py-1.5 text-right font-sans tabular-nums text-sm">
                       {totalPrescriptionCost.toLocaleString('vi-VN')} đ
                     </td>
                   </tr>
@@ -340,15 +340,15 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
 
                     return (
                       <tr key={cat.id || idx}>
-                        <td className="border border-black text-center font-mono py-1.5">{idx + 1}</td>
+                        <td className="border border-black text-center font-sans tabular-nums py-1.5">{idx + 1}</td>
                         <td className="border border-black px-2.5 py-1.5 font-semibold">{cat.title}</td>
                         <td className="border border-black px-2.5 py-1.5 text-center font-bold">
                           {isAlert ? (
-                            <span className="text-red-700">⛔ CẢNH BÁO</span>
+                            <span className="text-red-700">CẢNH BÁO</span>
                           ) : isWarning ? (
-                            <span className="text-amber-700">⚠️ LƯU Ý</span>
+                            <span className="text-amber-700">LƯU Ý</span>
                           ) : (
-                            <span className="text-emerald-800">✓ ĐẠT CHUẨN</span>
+                            <span className="text-emerald-800">ĐẠT CHUẨN</span>
                           )}
                         </td>
                         <td className="border border-black px-2.5 py-1.5 text-[11px] leading-relaxed">
@@ -370,21 +370,21 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
               <div className="grid grid-cols-3 gap-2.5 mb-2.5 text-center text-xs sm:text-[13px]">
                 <div className="p-2.5 border border-black bg-slate-50">
                   <div className="text-[11px] text-slate-600 uppercase font-semibold">Tổng tiền đơn thuốc</div>
-                  <div className="font-bold text-sm sm:text-base font-mono mt-0.5">{totalPrescriptionCost.toLocaleString('vi-VN')} đ</div>
+                  <div className="font-bold text-sm sm:text-base font-sans tabular-nums mt-0.5">{totalPrescriptionCost.toLocaleString('vi-VN')} đ</div>
                 </div>
                 <div className="p-2.5 border border-black bg-emerald-50/60">
                   <div className="text-[11px] text-emerald-900 uppercase font-semibold">BHYT thanh toán hợp lệ</div>
-                  <div className="font-bold text-sm sm:text-base text-emerald-800 font-mono mt-0.5">{approvedCost.toLocaleString('vi-VN')} đ</div>
+                  <div className="font-bold text-sm sm:text-base text-emerald-800 font-sans tabular-nums mt-0.5">{approvedCost.toLocaleString('vi-VN')} đ</div>
                 </div>
                 <div className="p-2.5 border border-black bg-rose-50/70">
                   <div className="text-[11px] text-rose-900 uppercase font-semibold">Nguy cơ xuất toán</div>
-                  <div className="font-bold text-sm sm:text-base text-rose-700 font-mono mt-0.5">-{totalRejectionRisk.toLocaleString('vi-VN')} đ</div>
+                  <div className="font-bold text-sm sm:text-base text-rose-700 font-sans tabular-nums mt-0.5">-{totalRejectionRisk.toLocaleString('vi-VN')} đ</div>
                 </div>
               </div>
 
               {auditReport.violations.length === 0 ? (
                 <div className="p-2.5 border border-black bg-emerald-50 text-center font-bold text-emerald-800 text-xs sm:text-sm">
-                  ✓ Đơn thuốc hợp lệ 100%. Không phát hiện vi phạm quy định thanh toán BHYT.
+                  Đơn thuốc hợp lệ 100%. Không phát hiện vi phạm quy định thanh toán BHYT.
                 </div>
               ) : (
                 <table className="w-full border-collapse border border-black text-xs sm:text-[12px]">
@@ -400,7 +400,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                   <tbody>
                     {auditReport.violations.map((v, vIdx) => (
                       <tr key={v.id || vIdx}>
-                        <td className="border border-black text-center font-mono py-1.5">{vIdx + 1}</td>
+                        <td className="border border-black text-center font-sans tabular-nums py-1.5">{vIdx + 1}</td>
                         <td className="border border-black px-2.5 py-1.5 font-bold">
                           {v.drugName} ({v.activeIngredient})
                         </td>
@@ -410,7 +410,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                             Căn cứ: {v.legalRef.docTitle} ({v.legalRef.section})
                           </div>
                         </td>
-                        <td className="border border-black px-2.5 py-1.5 text-right font-mono font-bold text-rose-700">
+                        <td className="border border-black px-2.5 py-1.5 text-right font-sans tabular-nums font-bold text-rose-700">
                           -{v.rejectionRiskVnd.toLocaleString('vi-VN')} đ
                         </td>
                         <td className="border border-black px-2.5 py-1.5 italic text-[11px]">{v.action}</td>
