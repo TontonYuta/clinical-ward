@@ -167,7 +167,7 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
               type="button"
               onClick={handleConfirm}
               disabled={lowStockBatches.length === 0 || isSubmitted}
-              className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer active:scale-98 shadow-xs transition"
+              className="px-4 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer active:scale-98 shadow-xs transition"
             >
               {isSubmitted ? (
                 <>

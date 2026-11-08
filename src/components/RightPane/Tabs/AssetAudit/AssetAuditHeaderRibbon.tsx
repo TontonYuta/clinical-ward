@@ -83,10 +83,10 @@ export const AssetAuditHeaderRibbon: React.FC<AssetAuditHeaderRibbonProps> = ({
       <div className="flex items-center gap-2 shrink-0 justify-end">
         <button
           onClick={onScanClick}
-          className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shrink-0 cursor-pointer active:scale-98 shadow-xs"
+          className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs sm:text-sm transition shrink-0 cursor-pointer active:scale-98 shadow-xs"
           title="Mô phỏng máy đọc mã vạch QR kiểm đếm thiết bị"
         >
-          <QrCode className="w-3.5 h-3.5 text-teal-400" />
+          <QrCode className="w-3.5 h-3.5 text-teal-200" />
           <span>Quét QR</span>
         </button>
       </div>

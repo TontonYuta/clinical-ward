@@ -64,7 +64,7 @@ export const EquipmentHeaderRibbon: React.FC<EquipmentHeaderRibbonProps> = ({
         <button
           type="button"
           onClick={onOpenIncidentModal}
-          className="inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold cursor-pointer transition whitespace-nowrap shadow-xs"
+          className="inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold cursor-pointer transition whitespace-nowrap shadow-xs active:scale-98"
           title="Lập phiếu báo hỏng sự cố trang thiết bị y tế"
         >
           <PlusCircle className="w-4 h-4" />

@@ -75,7 +75,7 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
         {onReleaseQuarantine && (
           <button
             onClick={onReleaseQuarantine}
-            className="inline-flex items-center gap-2 h-8.5 px-3.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition shadow-xs cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-2 h-8.5 px-3.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs sm:text-sm transition shadow-xs cursor-pointer active:scale-98"
           >
             <FileCheck2 className="w-4 h-4 text-emerald-400" />
             <span>Ký lệnh giải phóng lô vắc xin</span>

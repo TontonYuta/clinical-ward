@@ -445,7 +445,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                   <button
                     type="submit"
                     disabled={isVerifying || !pinInput}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-xs transition shadow-2xs cursor-pointer active:scale-98"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 disabled:bg-slate-300 text-white font-bold text-xs transition shadow-2xs cursor-pointer active:scale-98"
                   >
                     {isVerifying ? (
                       <>

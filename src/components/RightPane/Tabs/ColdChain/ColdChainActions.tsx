@@ -34,7 +34,7 @@ export const ColdChainActions: React.FC<ColdChainActionsProps> = ({
       {isAlarm ? (
         <button
           onClick={onRestore}
-          className={`inline-flex items-center gap-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-bold transition active:scale-98 shadow-xs cursor-pointer ${
+          className={`inline-flex items-center gap-1 rounded-md bg-teal-700 hover:bg-teal-800 text-white font-bold transition active:scale-98 shadow-xs cursor-pointer ${
             isSm ? 'h-7 px-2 text-2xs' : 'h-8.5 px-3 text-xs sm:text-sm'
           }`}
           title="Khôi phục nguồn điện máy phát"

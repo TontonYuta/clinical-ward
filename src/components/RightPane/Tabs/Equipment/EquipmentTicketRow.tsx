@@ -101,7 +101,7 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
             onClick={() => onOpenHandover(ticket)}
             className={`inline-flex items-center gap-1 min-h-8 px-2.5 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-98 shadow-xs ${
               currentUserRole === 'biomedical_engineer' || currentUserRole === 'director'
-                ? 'bg-slate-900 hover:bg-slate-800 text-white'
+                ? 'bg-teal-700 hover:bg-teal-800 text-white font-bold'
                 : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
             }`}
             title="Biên bản nghiệm thu kỹ thuật và bàn giao khoa lâm sàng"

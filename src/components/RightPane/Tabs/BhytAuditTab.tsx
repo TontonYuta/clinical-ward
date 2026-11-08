@@ -1027,7 +1027,7 @@ export const BhytAuditTab: React.FC = () => {
               type="button"
               onClick={() => setIsPrintModalOpen(true)}
               disabled={activePayload.items.length === 0}
-              className="h-9 px-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-sm font-semibold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-9 px-3.5 bg-teal-700 hover:bg-teal-800 text-white rounded-md text-sm font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
               title="In biên bản thẩm định BHYT hoặc xuất file PDF chuẩn mẫu"
             >
               <span>📄</span>
@@ -1101,7 +1101,7 @@ export const BhytAuditTab: React.FC = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded text-sm font-semibold cursor-pointer transition flex items-center gap-1.5"
+                className="h-8 px-3 bg-teal-700 hover:bg-teal-800 text-white rounded text-sm font-bold cursor-pointer transition flex items-center gap-1.5 active:scale-98"
               >
                 <span>{documentFile ? '📁 Đổi file' : '📁 Chọn file từ máy'}</span>
               </button>
@@ -2048,7 +2048,7 @@ export const BhytAuditTab: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleParseXml}
-                    className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold cursor-pointer"
+                    className="px-4 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold cursor-pointer transition active:scale-98"
                   >
                     Phân tích XML &amp; Xem kết quả
                   </button>
@@ -2177,7 +2177,7 @@ export const BhytAuditTab: React.FC = () => {
                 type="button"
                 data-testid="btn-admin-save"
                 onClick={handleSaveAdminForm}
-                className="px-4 py-1.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md transition cursor-pointer"
+                className="px-4 py-1.5 text-sm font-bold text-white bg-teal-700 hover:bg-teal-800 rounded-md transition cursor-pointer active:scale-98"
               >
                 Lưu thay đổi
               </button>

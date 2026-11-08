@@ -73,7 +73,7 @@ export const CpoeHeaderRibbon: React.FC<CpoeHeaderRibbonProps> = ({
             <button
               type="button"
               onClick={onOpenNewPrescription}
-              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-slate-900 text-white text-2xs font-semibold shrink-0 cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-2xs font-semibold shrink-0 cursor-pointer shadow-xs transition active:scale-98"
             >
               <Plus className="w-3 h-3" />
               <span>Kê đơn</span>
@@ -125,7 +125,7 @@ export const CpoeHeaderRibbon: React.FC<CpoeHeaderRibbonProps> = ({
             <button
               type="button"
               onClick={onOpenNewPrescription}
-              className="inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold cursor-pointer transition whitespace-nowrap shadow-xs"
+              className="inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold cursor-pointer transition whitespace-nowrap shadow-xs active:scale-98"
               title="Kê đơn thuốc điện tử mới (TT 26/2025/TT-BYT)"
             >
               <Plus className="w-4 h-4" />

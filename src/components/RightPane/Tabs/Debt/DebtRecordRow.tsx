@@ -134,7 +134,7 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
             <button
               type="button"
               onClick={() => onSettle(item.id)}
-              className="inline-flex items-center gap-1 min-h-8 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-xs cursor-pointer active:scale-98 whitespace-nowrap"
+              className="inline-flex items-center gap-1 min-h-8 px-2.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-98 whitespace-nowrap"
               title="Xác nhận hoàn trả cơ số bù tủ trực (VBHN 07)"
             >
               <Check className="w-3.5 h-3.5" />

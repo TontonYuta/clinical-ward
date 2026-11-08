@@ -115,7 +115,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </p>
             <button
               onClick={() => onTabChange(currentProfile.defaultTab || allowedTabs[0] || 'debt')}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer active:scale-98"
+              className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer active:scale-98 shadow-xs"
             >
               Quay lại ({currentProfile.defaultTab || allowedTabs[0]})
             </button>

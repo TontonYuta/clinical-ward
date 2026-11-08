@@ -788,7 +788,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-initial h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold transition cursor-pointer active:scale-98 flex items-center justify-center"
+              className="flex-1 sm:flex-initial h-9 px-4 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-bold transition cursor-pointer active:scale-98 flex items-center justify-center"
             >
               Đã Hiểu & Đóng
             </button>

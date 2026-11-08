@@ -116,7 +116,7 @@ export const LegalDocsModal: React.FC<LegalDocsModalProps> = ({ isOpen, onClose 
           <span>Hệ thống quản lý dược &amp; thiết bị lâm sàng</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-900 text-white font-medium hover:bg-slate-800 transition cursor-pointer"
+            className="px-4 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-bold transition cursor-pointer active:scale-98"
           >
             Đóng
           </button>

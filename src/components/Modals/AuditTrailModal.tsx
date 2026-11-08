@@ -381,7 +381,7 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition cursor-pointer"
+            className="px-3.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs transition cursor-pointer active:scale-98"
           >
             Đóng
           </button>

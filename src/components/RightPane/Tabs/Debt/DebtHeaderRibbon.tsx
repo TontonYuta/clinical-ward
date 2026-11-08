@@ -85,7 +85,7 @@ export const DebtHeaderRibbon: React.FC<DebtHeaderRibbonProps> = ({
         <button
           type="button"
           onClick={onOpenBorrowModal}
-          className="inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold cursor-pointer transition whitespace-nowrap shadow-xs"
+          className="inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold cursor-pointer transition whitespace-nowrap shadow-xs active:scale-98"
           title="Lập phiếu mượn khẩn thuốc / vật tư tủ trực cấp cứu"
         >
           <PlusCircle className="w-4 h-4" />

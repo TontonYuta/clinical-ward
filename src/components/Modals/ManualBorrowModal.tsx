@@ -219,7 +219,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 font-medium text-xs sm:text-sm cursor-pointer transition">
               Hủy
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition">
+            <button type="submit" className="px-4 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition">
               <PlusCircle className="w-3.5 h-3.5" /> Ký lập phiếu mượn
             </button>
           </div>

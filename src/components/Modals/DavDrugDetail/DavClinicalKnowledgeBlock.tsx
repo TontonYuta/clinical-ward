@@ -97,7 +97,7 @@ export const DavClinicalKnowledgeBlock: React.FC<{ data: ClinicalDataProps; isLo
                     href={srcInfo.pdfUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs sm:text-sm shadow-xs transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs sm:text-sm shadow-xs transition cursor-pointer active:scale-98"
                     title={`Mở trực tiếp tệp ${srcInfo.pdfFile}${srcInfo.pageNum ? ` tại Trang ${srcInfo.pageNum}` : ''}`}
                   >
                     <span>Mở PDF Dược Thư {srcInfo.pageNum ? `(Trang ${srcInfo.pageNum})` : ''}</span>
