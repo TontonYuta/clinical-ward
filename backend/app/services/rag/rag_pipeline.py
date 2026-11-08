@@ -39,7 +39,7 @@ async def execute_clinical_rag(
     )
 
     # 3. Xây dựng danh mục trích dẫn chứng cứ y văn (PaperQA2 Attribution)
-    citations = build_claim_citations(retrieved_chunks)
+    citations = build_claim_citations(retrieved_chunks, query=query)
 
     # 4. Tạo bối cảnh chứng cứ thực tế có kiểm soát ngân sách token (Evidence Context Budgeting)
     evidence_blocks: list[str] = []

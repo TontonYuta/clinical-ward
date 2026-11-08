@@ -51,6 +51,13 @@ async def chat_with_copilot(
         if not has_explicit_drug:
             can_use_cache = False
 
+    is_regulatory_q = any(w in lower_q for w in (
+        "thông tư", "tt 26", "tt 20", "tt 51", "tt 36", "tt 22", "tt 52",
+        "nghị định", "luật dược", "quy chế", "quản lý", "chuỗi lạnh", "fefo", "kê đơn", "đơn thuốc", "bảo hiểm", "bhyt"
+    ))
+    if is_regulatory_q:
+        session.set_active_medication(name="", ingredient="", sdk="")
+
     cached_resp = clinical_cache.get(payload.query, user_role=user_role) if can_use_cache else None
     if cached_resp:
         response = cached_resp.model_copy(deep=True)
@@ -58,7 +65,7 @@ async def chat_with_copilot(
         from app.services.chatbot.citation_standardizer import standardize_response_citations
         response = standardize_response_citations(response, payload.query)
         session.append_conversation_turn(payload.query, response.reply_text)
-        if response.active_medication_name:
+        if response.active_medication_name and not is_regulatory_q:
             session.set_active_medication(name=response.active_medication_name)
     else:
         response = await handle_copilot_chat(
@@ -70,6 +77,8 @@ async def chat_with_copilot(
         response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
         session.append_conversation_turn(payload.query, response.reply_text)
         response.session_id = session.session_id
+        if response.active_medication_name and not is_regulatory_q:
+            session.set_active_medication(name=response.active_medication_name)
 
         # Lưu kết quả lâm sàng hợp lệ vào cache (chỉ lưu tri thức độc lập ngữ cảnh)
         is_context_dependent = (

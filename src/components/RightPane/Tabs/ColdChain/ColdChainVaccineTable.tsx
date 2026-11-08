@@ -56,14 +56,14 @@ export const ColdChainVaccineTable: React.FC<ColdChainVaccineTableProps> = ({
                   className="hover:bg-slate-50/80 transition-colors border-b border-slate-100"
                 >
                   {/* 1. STT */}
-                  <td className="py-2.5 px-3 text-center font-mono text-slate-500 text-2xs border-r border-slate-100">
+                  <td className="py-2.5 px-3 text-center font-sans tabular-nums text-slate-500 text-xs border-r border-slate-100">
                     {idx + 1}
                   </td>
 
                   {/* 2. Số Lô & Hạn Dùng */}
                   <td className="py-2.5 px-3 border-r border-slate-100 whitespace-nowrap">
-                    <span className="font-mono font-bold text-slate-900 block">{item.batchNumber}</span>
-                    <span className="text-2xs text-slate-500 font-mono">HD: {item.expiryDate}</span>
+                    <span className="font-sans tabular-nums font-bold text-slate-900 block">{item.batchNumber}</span>
+                    <span className="text-xs text-slate-500 font-sans tabular-nums">HD: {item.expiryDate}</span>
                   </td>
 
                   {/* 3. Tên Vắc Xin & Hoạt Chất */}
@@ -75,17 +75,17 @@ export const ColdChainVaccineTable: React.FC<ColdChainVaccineTableProps> = ({
                     >
                       {item.name}
                     </button>
-                    <span className="text-2xs text-slate-500 block truncate max-w-xs mt-0.5">
+                    <span className="text-xs text-slate-500 block truncate max-w-xs mt-0.5">
                       {item.genericName} · {item.manufacturer}
                     </span>
                   </td>
 
                   {/* 4. Cơ Số Tồn */}
                   <td className="py-2.5 px-3 text-center border-r border-slate-100 whitespace-nowrap">
-                    <span className="font-mono font-bold text-slate-900 text-xs block">
+                    <span className="font-sans tabular-nums font-bold text-slate-900 text-xs block">
                       {item.quantity.toLocaleString()}
                     </span>
-                    <span className="text-2xs text-slate-500">{item.unit}</span>
+                    <span className="text-xs text-slate-500">{item.unit}</span>
                   </td>
 
                   {/* 5. Bảo Quản GSP */}

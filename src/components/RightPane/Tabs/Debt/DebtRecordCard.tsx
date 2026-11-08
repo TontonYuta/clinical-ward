@@ -34,11 +34,11 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
       {/* Hàng 1: STT, Mã phiếu & Thời gian */}
       <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
-          <span className="font-mono text-sm font-semibold text-slate-700">
+          <span className="font-sans tabular-nums text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
+          <span className="font-sans tabular-nums text-sm font-semibold text-slate-700">
             {item.code}
           </span>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-slate-500 font-sans tabular-nums">
             {item.borrowTime}
           </span>
           {isNarcotic && (
@@ -70,7 +70,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
             {findPatientByNameOrQuery(item.patientName, INITIAL_PATIENTS)?.phone && (
               <>
                 <span className="text-slate-300">·</span>
-                <span className="font-mono text-slate-700 font-medium">
+                <span className="font-sans tabular-nums text-slate-700 font-medium">
                   SĐT: {findPatientByNameOrQuery(item.patientName, INITIAL_PATIENTS)?.phone}
                 </span>
               </>
@@ -78,7 +78,7 @@ export const DebtRecordCard: React.FC<DebtRecordCardProps> = ({
           </div>
         </div>
         <div className="text-right shrink-0">
-          <span className="font-mono text-base font-bold text-slate-900 tabular-nums">
+          <span className="font-sans text-base font-bold text-slate-900 tabular-nums">
             {item.quantity}
           </span>
         </div>

@@ -50,21 +50,21 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4">
       <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
+        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-md bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30 shrink-0">
+            <div className="w-8 h-8 rounded-md bg-teal-50 text-teal-700 flex items-center justify-center border border-teal-200 shrink-0">
               <Wrench className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Kiểm định &amp; bàn giao thiết bị</h2>
-              <span className="text-[11px] text-slate-400 font-mono truncate block">
+              <h2 className="text-xs sm:text-base font-bold text-slate-900 truncate">Kiểm định &amp; bàn giao thiết bị</h2>
+              <span className="text-xs text-slate-500 font-sans truncate block">
                 Nghị định 98/2021/NĐ-CP · IEC 60601-1
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -75,14 +75,14 @@ export const EquipmentHandoverModal: React.FC<EquipmentHandoverModalProps> = ({
           {/* Device Profile */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-mono font-bold text-slate-900 text-sm sm:text-base">{ticket.code}</span>
+              <span className="font-sans tabular-nums font-bold text-slate-900 text-sm sm:text-base">{ticket.code}</span>
               <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
                 Thiết bị y tế Loại {ticket.riskClass} (Xâm lấn khẩn cấp)
               </span>
             </div>
             <div className="text-sm sm:text-base font-bold text-slate-900">{ticket.deviceName}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm pt-1.5 border-t border-slate-200 text-slate-600">
-              <div>Số serial: <strong className="text-slate-800 font-mono">{ticket.serialNumber}</strong></div>
+              <div>Số serial: <strong className="text-slate-800 font-sans tabular-nums">{ticket.serialNumber}</strong></div>
               <div>Model: <strong className="text-slate-800">{ticket.deviceModel}</strong></div>
               <div>Vị trí khoa phòng: <strong className="text-slate-800">{ticket.location}</strong></div>
               <div>Hạn dán tem kiểm định: <strong className="text-slate-800">{ticket.nextInspectionDue}</strong></div>

@@ -66,6 +66,62 @@
       "sha256": "cab611be9dd14312a2bc66e465c77c1fdf7ed499af89fb6afb457c72cffbd93a",
       "bytes": 3008354,
       "representation": "source_pdf"
+    },
+    {
+      "id": "tt-26-2025",
+      "title": "Quy định về kê đơn thuốc ngoại trú",
+      "edition_year": 2025,
+      "legal_basis": "Thông tư 26/2025/TT-BYT",
+      "public_path": "public/pdf/Thong_Tu_26_2025_TT_BYT_Ke_Don_Thuoc.pdf",
+      "representation": "source_pdf"
+    },
+    {
+      "id": "tt-20-2022",
+      "title": "Danh mục thuốc thanh toán BHYT",
+      "edition_year": 2022,
+      "legal_basis": "Thông tư 20/2022/TT-BYT",
+      "public_path": "public/pdf/bhyt/Thong_Tu_20_2022_TT_BYT_Danh_Muc_Thanh_Toan_Thuoc_BHYT.pdf",
+      "representation": "source_pdf"
+    },
+    {
+      "id": "nd-146-2018",
+      "title": "Quy định chi tiết và hướng dẫn biện pháp thi hành một số điều của Luật BHYT",
+      "edition_year": 2018,
+      "legal_basis": "Nghị định 146/2018/NĐ-CP",
+      "public_path": "public/pdf/bhyt/Nghi_Dinh_146_2018_ND_CP_Huong_Dan_Luat_BHYT.pdf",
+      "representation": "source_pdf"
+    },
+    {
+      "id": "nd-188-2025",
+      "title": "Quy định chi tiết thi hành Luật BHYT sửa đổi",
+      "edition_year": 2025,
+      "legal_basis": "Nghị định 188/2025/NĐ-CP",
+      "public_path": "public/pdf/bhyt/Nghi_Dinh_188_2025_ND_CP_Chi_Tiet_Luat_BHYT.pdf",
+      "representation": "source_pdf"
+    },
+    {
+      "id": "nd-75-2023",
+      "title": "Sửa đổi, bổ sung một số điều của Nghị định 146/2018/NĐ-CP BHYT",
+      "edition_year": 2023,
+      "legal_basis": "Nghị định 75/2023/NĐ-CP",
+      "public_path": "public/pdf/bhyt/Nghi_Dinh_75_2023_ND_CP_Sua_Doi_ND146_BHYT.pdf",
+      "representation": "source_pdf"
+    },
+    {
+      "id": "qd-130-2023",
+      "title": "Quy định chuẩn và định dạng dữ liệu đầu ra phục vụ quản lý, giám định BHYT",
+      "edition_year": 2023,
+      "legal_basis": "Quyết định 130/QĐ-BYT",
+      "public_path": "public/pdf/bhyt/Quyet_Dinh_130_QD_BYT_2023_Chuan_Du_Lieu_Dau_Ra_BHYT.pdf",
+      "representation": "source_pdf"
+    },
+    {
+      "id": "qd-3618-2022",
+      "title": "Quy trình giám định bảo hiểm y tế",
+      "edition_year": 2022,
+      "legal_basis": "Quyết định 3618/QĐ-BHXH",
+      "public_path": "public/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf",
+      "representation": "source_pdf"
     }
   ]
 }

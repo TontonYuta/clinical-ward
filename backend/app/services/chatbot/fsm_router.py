@@ -41,6 +41,16 @@ def has_explicit_new_medication(lower_query: str, current_active_drug: Optional[
     matched_name = matched.get("name", "") if isinstance(matched, dict) else (matched or "")
     if matched_name and current_active_drug and matched_name.casefold() not in current_active_drug.casefold():
         return True
+
+    try:
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        extracted = get_drug_lexical_matcher().extract_medications(lower_query)
+        for med in extracted:
+            if current_active_drug and med.casefold() not in current_active_drug.casefold() and current_active_drug.casefold() not in med.casefold():
+                return True
+    except Exception:
+        pass
+
     return False
 
 async def route_fsm_context(

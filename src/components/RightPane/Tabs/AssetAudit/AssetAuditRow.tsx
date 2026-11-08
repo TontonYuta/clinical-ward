@@ -25,7 +25,7 @@ export const AssetAuditRow: React.FC<AssetAuditRowProps> = ({
 }) => {
   return (
     <tr className="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/60 transition-colors border-b border-slate-200">
-      <td className="py-3.5 px-4 font-mono text-slate-800 whitespace-nowrap border-r border-slate-200">
+      <td className="py-3.5 px-4 font-sans tabular-nums text-slate-800 whitespace-nowrap border-r border-slate-200">
         <span className="font-bold text-xs sm:text-sm bg-slate-100 px-2.5 py-1 rounded-md border border-slate-300 block w-fit">
           {asset.code}
         </span>
@@ -59,7 +59,7 @@ export const AssetAuditRow: React.FC<AssetAuditRowProps> = ({
       <td className="py-3.5 px-3.5 whitespace-nowrap border-r border-slate-200">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
-            <span className="font-mono text-sm sm:text-base text-slate-900 font-black">{asset.depreciationRatePercent}%</span>
+            <span className="font-sans tabular-nums text-sm sm:text-base text-slate-900 font-black">{asset.depreciationRatePercent}%</span>
             <span className="text-xs sm:text-sm text-slate-500 font-semibold">({asset.operatingYears} năm)</span>
           </div>
           {asset.pendingLiquidation ? (

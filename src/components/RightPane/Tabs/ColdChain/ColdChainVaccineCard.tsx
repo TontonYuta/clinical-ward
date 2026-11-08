@@ -31,7 +31,7 @@ export const ColdChainVaccineCard: React.FC<ColdChainVaccineCardProps> = ({
       {/* Row 1: STT, Tên Vắc xin & Trạng thái */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex items-start gap-1.5">
-          <span className="font-mono text-2xs text-slate-400 font-semibold shrink-0 mt-0.5">
+          <span className="font-sans tabular-nums text-xs text-slate-400 font-semibold shrink-0 mt-0.5">
             #{index + 1}
           </span>
           <button
@@ -43,7 +43,7 @@ export const ColdChainVaccineCard: React.FC<ColdChainVaccineCardProps> = ({
           </button>
         </div>
         <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold border shrink-0 ${
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border shrink-0 ${
             effectivelyQuarantined
               ? 'bg-amber-50 text-amber-900 border-amber-300'
               : 'bg-emerald-50 text-emerald-800 border-emerald-300'
@@ -59,18 +59,18 @@ export const ColdChainVaccineCard: React.FC<ColdChainVaccineCardProps> = ({
       </div>
 
       {/* Row 2: Lot, Expiry, Quantity */}
-      <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-md border border-slate-100 text-2xs">
+      <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-md border border-slate-100 text-xs">
         <div>
           <span className="text-slate-400 block">Số Lô:</span>
-          <span className="font-mono font-bold text-slate-900 truncate block">{item.batchNumber}</span>
+          <span className="font-sans tabular-nums font-bold text-slate-900 truncate block">{item.batchNumber}</span>
         </div>
         <div>
           <span className="text-slate-400 block">Hạn Dùng:</span>
-          <span className="font-mono font-medium text-slate-700 block">{item.expiryDate}</span>
+          <span className="font-sans tabular-nums font-medium text-slate-700 block">{item.expiryDate}</span>
         </div>
         <div>
           <span className="text-slate-400 block">Cơ Số Tồn:</span>
-          <span className="font-mono font-bold text-teal-800 block">
+          <span className="font-sans tabular-nums font-bold text-teal-800 block">
             {item.quantity.toLocaleString()} {item.unit}
           </span>
         </div>

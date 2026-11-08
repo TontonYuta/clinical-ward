@@ -77,6 +77,25 @@ async def resolve_drug_entity_deterministic(
     dav_drug = dav_res.scalar_one_or_none()
 
     if dav_drug:
+        if not monograph and dav_drug.clinical_monograph_id:
+            m_res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == dav_drug.clinical_monograph_id))
+            monograph = m_res.scalar_one_or_none()
+        if not monograph and dav_drug.active_ingredient:
+            first_ing = re.split(r"[\+;,]", dav_drug.active_ingredient)[0].strip()
+            first_ing_clean = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", first_ing, flags=re.IGNORECASE).strip()
+            first_ing_clean = re.sub(r"\(.*?\)", "", first_ing_clean).strip()
+            first_ing_clean = re.sub(r"\b(?:dưới dạng|tương đương|as|equivalent)\b.*$", "", first_ing_clean, flags=re.IGNORECASE).strip()
+            if len(first_ing_clean) >= 3:
+                m_res = await db.execute(
+                    select(ClinicalDrugMonograph).where(
+                        or_(
+                            func.lower(ClinicalDrugMonograph.inn) == first_ing_clean.lower(),
+                            func.lower(ClinicalDrugMonograph.title) == first_ing_clean.lower(),
+                            func.lower(ClinicalDrugMonograph.inn).like(f"{first_ing_clean.lower()}%")
+                        )
+                    ).limit(1)
+                )
+                monograph = m_res.scalar_one_or_none()
         return ResolvedDrugRecord(drug=dav_drug, monograph=monograph, is_exact_match=True), []
 
     if monograph:

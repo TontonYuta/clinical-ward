@@ -10,7 +10,8 @@ CLINICAL_STOPWORDS = {
     "bác sĩ", "bác", "sĩ", "trợ lý", "trợ", "lý", "chào", "xin chào", "thông tin", "liều dùng", "tác dụng",
     "bệnh nhân", "người bệnh", "khoa", "phòng", "viện", "dược", "điều trị", "chuyên luận", "dưới đây",
     "chống chỉ định", "tương tác", "quản lý", "hướng dẫn", "ngày", "phối hợp", "kết hợp", "chỉ định",
-    "người lớn", "trẻ em", "giảm đau", "hạ sốt", "kháng sinh", "chống viêm", "an toàn", "cặp", "đơn"
+    "người lớn", "trẻ em", "giảm đau", "hạ sốt", "kháng sinh", "chống viêm", "an toàn", "cặp", "đơn",
+    "bạch", "bạch cầu", "cầu", "dòng", "lympho", "mạn", "xét nghiệm", "chỉ số"
 }
 
 DEICTIC_CONTINUATION_MARKERS = (
@@ -27,6 +28,9 @@ class AMIEContextBuffer:
         """Trích xuất thực thể thuốc hoạt động gần nhất từ dòng hội thoại dựa trên phân tích ngôn ngữ."""
         if not history or not history.strip():
             return None
+
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        matcher = get_drug_lexical_matcher()
 
         lines = history.strip().split("\n")
         # Quét ngược từ lượt gần nhất
@@ -45,11 +49,14 @@ class AMIEContextBuffer:
                 if cand.lower() not in CLINICAL_STOPWORDS and len(cand) >= 3 and cand[0].isupper():
                     return cand
 
-            # 2. Nhận diện danh từ riêng y dược viết hoa (Brand / INN candidates)
-            tokens = re.findall(r"\b\w+\b", clean_line)
-            for tok in tokens:
-                if len(tok) >= 3 and tok[0].isupper() and tok.lower() not in CLINICAL_STOPWORDS:
-                    return tok
+            # 2. Nhận diện qua Trie Matcher 55.000 thuốc chuẩn Cục QLD & DĐVN V
+            try:
+                raw_meds = matcher.extract_medications(clean_line)
+                meds = [m for m in raw_meds if m.lower() not in CLINICAL_STOPWORDS and len(m) >= 3]
+                if meds:
+                    return meds[0]
+            except Exception:
+                pass
 
         return None
 
@@ -67,13 +74,26 @@ class AMIEContextBuffer:
         if any(p in lower_q for p in ("bệnh nhân", "người bệnh", "bn ")) and not any(term in lower_q for term in ("nó", "thuốc đó", "thuốc này")):
             return False
 
+        # Kiểm tra xem câu hỏi có chứa thực thể thuốc cụ thể độc lập không
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        try:
+            has_explicit_med = bool(get_drug_lexical_matcher().extract_medications(clean_q) or get_drug_lexical_matcher().extract_sdk(clean_q))
+        except Exception:
+            has_explicit_med = False
+
+        has_explicit_pronoun = any(term in lower_q for term in ("nó", "thuốc đó", "thuốc này", "thuốc kia", "vừa rồi", "vừa nói", "thuốc trên", "cặp nữa"))
+
+        # Nếu câu hỏi đã nêu rõ tên thuốc cụ thể và không có đại từ chỉ định thay thế, đây là câu hỏi mới độc lập
+        if has_explicit_med and not has_explicit_pronoun:
+            return False
+
         if history.strip():
             if any(marker in lower_q for marker in DEICTIC_CONTINUATION_MARKERS):
                 return True
-            if len(clean_q.split()) <= 4:
+            if len(clean_q.split()) <= 4 and not has_explicit_med:
                 return True
 
-        if any(term in lower_q for term in ("nó có", "thuốc đó", "thuốc này", "vừa hỏi", "vừa nói", "cặp nữa")):
+        if has_explicit_pronoun:
             return True
 
         return False

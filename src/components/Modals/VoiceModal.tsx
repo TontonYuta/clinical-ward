@@ -171,24 +171,24 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2.5 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-lg shadow-xl border border-slate-200 max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
+        <div className="px-3.5 sm:px-5 py-3 sm:py-4 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="p-2 bg-slate-800 rounded-lg shrink-0">
-              <Mic className="w-5 h-5 text-teal-400" />
+            <div className="p-2 bg-teal-50 border border-teal-200 rounded-lg shrink-0">
+              <Mic className="w-5 h-5 text-teal-700" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm sm:text-base truncate">Ra Lệnh Giọng Nói Y Tế</h3>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 shrink-0">
+                <h3 className="font-bold text-sm sm:text-base text-slate-900 truncate">Ra Lệnh Giọng Nói Y Tế</h3>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                   vi-VN Live
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 truncate">Nhận diện giọng nói tiếng Việt rảnh tay cho kíp trực</p>
+              <p className="text-xs text-slate-500 truncate">Nhận diện giọng nói tiếng Việt rảnh tay cho kíp trực</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition cursor-pointer shrink-0"
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>

@@ -106,23 +106,23 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-6xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 h-[88vh]">
         {/* Header */}
-        <div className="h-14 px-4 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
+        <div className="h-14 px-4 sm:px-5 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-300 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 shrink-0">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div className="flex items-center gap-2 min-w-0">
-              <h2 className="text-sm sm:text-base font-bold tracking-tight text-white truncate">
+              <h2 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 truncate">
                 Nhật Ký Kiểm Toán
               </h2>
-              <span className="text-[11px] font-mono text-slate-400 border border-slate-700/80 bg-slate-800/80 px-2 py-0.5 rounded-md shrink-0">
+              <span className="text-xs font-sans tabular-nums font-bold text-slate-600 border border-slate-200 bg-slate-100 px-2.5 py-0.5 rounded-full shrink-0">
                 {records.length} bản ghi
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer flex items-center justify-center shrink-0"
+            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer flex items-center justify-center shrink-0"
             title="Đóng (Esc)"
           >
             <X className="w-4 h-4" />
@@ -132,30 +132,30 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
         {/* Executive Summary Metrics (Sleek 1-Line Metric Strip) */}
         <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-5 py-2 flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none shrink-0 text-xs">
           <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-bold text-slate-500 uppercase">Tổng:</span>
-            <span className="text-sm font-black text-slate-900 font-mono">{records.length}</span>
-            <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+            <span className="text-xs font-bold text-slate-500 uppercase">Tổng:</span>
+            <span className="text-sm font-black text-slate-900 font-sans tabular-nums">{records.length}</span>
+            <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               100% nguyên vẹn
             </span>
           </div>
 
           <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-bold text-purple-700 uppercase">Có chứng kiến:</span>
-            <span className="text-sm font-black text-purple-900 font-mono">{dualWitnessCount}</span>
-            <span className="text-[11px] text-slate-500 hidden sm:inline">(TT 20/2017)</span>
+            <span className="text-xs font-bold text-purple-700 uppercase">Có chứng kiến:</span>
+            <span className="text-sm font-black text-purple-900 font-sans tabular-nums">{dualWitnessCount}</span>
+            <span className="text-xs text-slate-500 hidden sm:inline">(TT 20/2017)</span>
           </div>
 
           <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
             <CreditCard className="w-3.5 h-3.5 text-teal-700" />
-            <span className="text-[11px] font-bold text-teal-800 uppercase">Thẻ RFID:</span>
-            <span className="text-sm font-black text-teal-900 font-mono">{rfidAuthCount}</span>
+            <span className="text-xs font-bold text-teal-800 uppercase">Thẻ RFID:</span>
+            <span className="text-sm font-black text-teal-900 font-sans tabular-nums">{rfidAuthCount}</span>
           </div>
 
           <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
             <KeyRound className="w-3.5 h-3.5 text-slate-600" />
-            <span className="text-[11px] font-bold text-slate-700 uppercase">Mã PIN:</span>
-            <span className="text-sm font-black text-slate-900 font-mono">{pinAuthCount}</span>
+            <span className="text-xs font-bold text-slate-700 uppercase">Mã PIN:</span>
+            <span className="text-sm font-black text-slate-900 font-sans tabular-nums">{pinAuthCount}</span>
           </div>
         </div>
 
@@ -220,10 +220,10 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
             filteredRecords.map((record) => (
               <div key={record.id} className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  <span className="font-sans tabular-nums font-bold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                     {record.id}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
+                  <span className="text-xs font-sans tabular-nums text-slate-500 flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-slate-400" />
                     {record.timestamp}
                   </span>
@@ -232,19 +232,19 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                 <div>
                   <h4 className="font-bold text-xs text-slate-900">{record.actionTitle}</h4>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <span className="text-[10px] font-mono text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                    <span className="text-xs font-sans text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 font-semibold">
                       {record.legalBasis}
                     </span>
-                    <span className="text-[11px] text-slate-700 font-medium">
+                    <span className="text-xs text-slate-700 font-medium">
                       🎯 {record.targetItem}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                   <div className="text-slate-600">
                     ✍️ <strong className="text-slate-900">{record.signerName}</strong>
-                    <span className="text-slate-400 font-mono ml-1">({record.signerRole})</span>
+                    <span className="text-slate-500 font-sans ml-1">({record.signerRole})</span>
                     {record.witnessName && (
                       <div className="text-purple-700 font-medium">
                         👥 Chứng kiến: {record.witnessName}
@@ -289,8 +289,8 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                 <tr key={record.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-teal-50/40 transition-colors border-b border-slate-200/80">
                   {/* Timestamp & Code */}
                   <td className="py-3 px-4 whitespace-nowrap border-r border-slate-200/70">
-                    <span className="font-mono font-bold text-slate-900 block text-xs sm:text-sm">{record.id}</span>
-                    <span className="text-xs font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
+                    <span className="font-sans tabular-nums font-bold text-slate-900 block text-xs sm:text-sm">{record.id}</span>
+                    <span className="text-xs font-sans tabular-nums text-slate-500 flex items-center gap-1.5 mt-0.5">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
                       {record.timestamp}
                     </span>
@@ -299,7 +299,7 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   {/* Action & Legal */}
                   <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                     <span className="font-bold text-slate-900 block text-xs sm:text-sm">{record.actionTitle}</span>
-                    <span className="inline-block mt-0.5 text-xs font-mono text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                    <span className="inline-block mt-0.5 text-xs font-sans text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200 font-semibold">
                       {record.legalBasis}
                     </span>
                   </td>
@@ -307,18 +307,18 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                   {/* Target Item */}
                   <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                     <span className="font-semibold text-slate-800 block text-xs sm:text-sm">{record.targetItem}</span>
-                    <span className="text-xs font-mono text-slate-400 mt-0.5 block">Hành động: {record.actionType}</span>
+                    <span className="text-xs font-sans text-slate-500 mt-0.5 block">Hành động: {record.actionType}</span>
                   </td>
 
                   {/* Signer */}
                   <td className="py-3 px-3.5 whitespace-nowrap border-r border-slate-200/70">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
+                      <div className="w-7 h-7 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs">
                         {record.signerName.charAt(0)}
                       </div>
                       <div>
                         <span className="font-bold text-slate-900 block text-xs sm:text-sm">{record.signerName}</span>
-                        <span className="text-xs font-mono text-slate-500">
+                        <span className="text-xs font-sans tabular-nums text-slate-500">
                           CCHN: <strong className="text-slate-800">{record.signerCertificate}</strong>
                         </span>
                       </div>
@@ -332,7 +332,7 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                         <Users className="w-4 h-4 text-purple-700 shrink-0" />
                         <div>
                           <span className="font-bold block text-xs sm:text-sm">{record.witnessName}</span>
-                          <span className="text-xs font-mono text-purple-700">
+                          <span className="text-xs font-sans tabular-nums text-purple-700 font-semibold">
                             {record.witnessCertificate}
                           </span>
                         </div>

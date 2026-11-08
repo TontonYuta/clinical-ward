@@ -32,12 +32,12 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
   return (
     <tr className="hover:bg-slate-50 transition-colors border-b border-slate-200 text-slate-800 text-sm">
       {/* 1. STT */}
-      <td className="py-3 px-3 text-center font-mono text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
+      <td className="py-3 px-3 text-center font-sans tabular-nums text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
         {index + 1}
       </td>
 
       {/* 2. Mã phiếu */}
-      <td className="py-3 px-3.5 whitespace-nowrap font-mono text-slate-700 font-medium border-r border-slate-100">
+      <td className="py-3 px-3.5 whitespace-nowrap font-sans tabular-nums text-slate-700 font-semibold border-r border-slate-100">
         {item.code}
       </td>
 
@@ -52,7 +52,7 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
       </td>
 
       {/* 4. Số lượng mượn */}
-      <td className="py-3 px-3 text-center font-mono font-semibold text-slate-900 text-sm whitespace-nowrap border-r border-slate-100 tabular-nums">
+      <td className="py-3 px-3 text-center font-sans font-semibold text-slate-900 text-sm whitespace-nowrap border-r border-slate-100 tabular-nums">
         {item.quantity}
       </td>
 
@@ -74,14 +74,14 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
           {findPatientByNameOrQuery(item.patientName, INITIAL_PATIENTS)?.phone && (
             <>
               <span className="text-slate-300">·</span>
-              <span className="font-mono text-slate-700">SĐT: {findPatientByNameOrQuery(item.patientName, INITIAL_PATIENTS)?.phone}</span>
+              <span className="font-sans tabular-nums text-slate-700">SĐT: {findPatientByNameOrQuery(item.patientName, INITIAL_PATIENTS)?.phone}</span>
             </>
           )}
         </div>
       </td>
 
       {/* 6. Thời gian mượn */}
-      <td className="py-3 px-3.5 text-center text-slate-600 font-mono text-xs sm:text-sm whitespace-nowrap border-r border-slate-100">
+      <td className="py-3 px-3.5 text-center text-slate-600 font-sans tabular-nums text-xs sm:text-sm whitespace-nowrap border-r border-slate-100">
         {item.borrowTime}
       </td>
 
@@ -102,7 +102,7 @@ export const DebtRecordRow: React.FC<DebtRecordRowProps> = ({
             </span>
           )
         ) : (
-          <span className="text-slate-300 font-mono select-none">—</span>
+          <span className="text-slate-300 select-none">—</span>
         )}
       </td>
 

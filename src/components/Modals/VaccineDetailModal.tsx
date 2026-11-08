@@ -50,7 +50,7 @@ export const VaccineDetailModal: React.FC<VaccineDetailModalProps> = ({
                   {vaccine.name}
                 </h3>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-2xs font-bold border shrink-0 ${
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shrink-0 ${
                     effectivelyQuarantined
                       ? 'bg-amber-50 text-amber-900 border-amber-300'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-300'
@@ -59,7 +59,7 @@ export const VaccineDetailModal: React.FC<VaccineDetailModalProps> = ({
                   {effectivelyQuarantined ? 'Đang Biệt Trữ' : 'Sẵn Sàng Tiêm'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">
+              <p className="text-xs text-slate-500 font-sans tabular-nums mt-0.5">
                 Lô: {vaccine.batchNumber} · Hạn dùng: {vaccine.expiryDate}
               </p>
             </div>
@@ -79,27 +79,27 @@ export const VaccineDetailModal: React.FC<VaccineDetailModalProps> = ({
           {/* Quick Metrics Strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-2xs font-semibold text-slate-500 block">Cơ số tồn kho</span>
-              <span className="font-mono font-bold text-slate-900 text-sm mt-0.5 block">
+              <span className="text-xs font-semibold text-slate-500 block">Cơ số tồn kho</span>
+              <span className="font-sans tabular-nums font-bold text-slate-900 text-sm mt-0.5 block">
                 {vaccine.quantity.toLocaleString()} {vaccine.unit}
               </span>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-2xs font-semibold text-slate-500 block">Chỉ thị VVM</span>
+              <span className="text-xs font-semibold text-slate-500 block">Chỉ thị VVM</span>
               <span className="font-bold text-emerald-700 text-sm mt-0.5 flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block border border-emerald-600" />
                 Cấp 1 (Đạt)
               </span>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-2xs font-semibold text-slate-500 block">Nhiệt độ GSP</span>
-              <span className="font-mono font-bold text-teal-800 text-sm mt-0.5 block">
+              <span className="text-xs font-semibold text-slate-500 block">Nhiệt độ GSP</span>
+              <span className="font-sans tabular-nums font-bold text-teal-800 text-sm mt-0.5 block">
                 2°C – 8°C
               </span>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-2xs font-semibold text-slate-500 block">Số đăng ký DAV</span>
-              <span className="font-mono font-semibold text-slate-800 text-xs mt-0.5 block truncate">
+              <span className="text-xs font-semibold text-slate-500 block">Số đăng ký DAV</span>
+              <span className="font-sans tabular-nums font-semibold text-slate-800 text-xs mt-0.5 block truncate">
                 {vaccine.registrationNumber}
               </span>
             </div>
@@ -113,16 +113,16 @@ export const VaccineDetailModal: React.FC<VaccineDetailModalProps> = ({
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-600">
               <div>
-                <span className="text-slate-400 block text-2xs">Tên hoạt chất / Thành phần:</span>
+                <span className="text-slate-400 block text-xs">Tên hoạt chất / Thành phần:</span>
                 <span className="font-medium text-slate-800">{vaccine.genericName}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-2xs">Nhà sản xuất / Quốc gia:</span>
+                <span className="text-slate-400 block text-xs">Nhà sản xuất / Quốc gia:</span>
                 <span className="font-medium text-slate-800">{vaccine.manufacturer} ({vaccine.country})</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-2xs">Mã định danh Quốc gia:</span>
-                <span className="font-mono text-slate-800">{vaccine.nationalCode}</span>
+                <span className="text-slate-400 block text-xs">Mã định danh Quốc gia:</span>
+                <span className="font-sans tabular-nums font-semibold text-slate-800">{vaccine.nationalCode}</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-2xs">Quy chế bảo quản:</span>

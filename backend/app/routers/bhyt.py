@@ -138,20 +138,20 @@ def extract_text_from_prescription_bytes(raw_bytes: bytes, mime_type: str = "") 
                         f.write(raw_bytes)
                     prefix = os.path.join(tmpdir, "page")
                     subprocess.run(
-                        ["pdftoppm", "-png", "-r", "150", "-f", "1", "-l", "2", pdf_path, prefix],
+                        ["pdftoppm", "-png", "-r", "200", "-f", "1", "-l", "3", pdf_path, prefix],
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
-                        timeout=10
+                        timeout=12
                     )
                     ocr_pages = []
                     for f_name in sorted(os.listdir(tmpdir)):
                         if f_name.startswith("page") and f_name.endswith(".png"):
                             proc = subprocess.run(
-                                ["tesseract", os.path.join(tmpdir, f_name), "stdout", "-l", "vie+eng"],
+                                ["tesseract", os.path.join(tmpdir, f_name), "stdout", "-l", "vie+eng", "--psm", "3"],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL,
                                 text=True,
-                                timeout=10
+                                timeout=12
                             )
                             if proc.returncode == 0 and proc.stdout:
                                 ocr_pages.append(proc.stdout)
@@ -160,17 +160,17 @@ def extract_text_from_prescription_bytes(raw_bytes: bytes, mime_type: str = "") 
             except Exception as e:
                 logger.warning(f"PDF OCR rasterization failed: {e}")
     else:
-        # Định dạng ảnh: chạy tesseract trực tiếp
+        # Định dạng ảnh: chạy tesseract trực tiếp với độ phân giải cao
         try:
             with tempfile.NamedTemporaryFile(suffix=".png", delete=True) as tmp:
                 tmp.write(raw_bytes)
                 tmp.flush()
                 proc = subprocess.run(
-                    ["tesseract", tmp.name, "stdout", "-l", "vie+eng"],
+                    ["tesseract", tmp.name, "stdout", "-l", "vie+eng", "--psm", "3"],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.DEVNULL,
                     text=True,
-                    timeout=10
+                    timeout=12
                 )
                 if proc.returncode == 0 and proc.stdout:
                     extracted_text = proc.stdout.strip()
@@ -182,8 +182,40 @@ def extract_text_from_prescription_bytes(raw_bytes: bytes, mime_type: str = "") 
 
 def parse_vietnamese_prescription_text(extracted_text: str) -> dict:
     """
-    Phân tích cấu trúc đơn thuốc Việt Nam (Họ tên, mã BHYT, ICD-10, thuốc, số lượng, liều dùng).
+    Phân tích cấu trúc chứng từ y tế - dược phẩm Việt Nam thích ứng đa dạng bố cục (Multi-Layout):
+    - Đơn thuốc ngoại trú/nội trú (BHYT & Phòng khám tư)
+    - Hóa đơn điện tử VAT (e-Invoice)
+    - Phiếu xuất kho kiêm vận chuyển nội bộ / Bảng kê dược (CPC1, DHG, Sanofi)
+    - Hóa đơn bán lẻ / Bill nhiệt POS (K80/K57)
     """
+    doc_type = "DON_THUOC"
+    low_text = extracted_text.lower()
+    if any(k in low_text for k in ["hóa đơn giá trị gia tăng", "hóa đơn điện tử", "e-invoice", "tiền thuế gtgt", "thuế suất"]):
+        doc_type = "HOA_DON_VAT"
+    elif any(k in low_text for k in ["phiếu xuất kho", "kiêm vận chuyển nội bộ", "phiếu nhập kho", "bảng kê chi tiết"]):
+        doc_type = "PHIEU_XUAT_KHO"
+    elif any(k in low_text for k in ["hóa đơn bán lẻ", "phiếu thanh toán", "k80", "k57"]):
+        doc_type = "HOA_DON_BAN_LE"
+
+    seller_name = ""
+    seller_m = re.search(r'(?:công ty|bệnh viện|trung tâm y tế|nhà thuốc|chi nhánh|ctcp|tnhh)[:\s]+([^\n,–\(\)]+)', extracted_text, re.I)
+    if seller_m:
+        seller_name = seller_m.group(0).strip()
+
+    seller_tax_id = ""
+    tax_m = re.search(r'(?:mst|mã số thuế)[:\s]*([0-9]{10}(?:-[0-9]{3})?)', extracted_text, re.I)
+    if tax_m:
+        seller_tax_id = tax_m.group(1).strip()
+
+    invoice_no = ""
+    inv_m = re.search(r'(?:số\s*hđ|số\s*hóa\s*đơn|số\s*phiếu|hóa\s*đơn\s*số)[:\s]*([A-Z0-9\-\/]+)', extracted_text, re.I)
+    if not inv_m:
+        inv_m = re.search(r'\b(?:số|no)[:\s]+([A-Z0-9\-\/]+)', extracted_text, re.I)
+    if inv_m:
+        val = inv_m.group(1).strip()
+        if not val.lower().startswith(('lượng', 'ngày', 'thứ', 'tiền')):
+            invoice_no = val
+
     patient_name = "Bệnh nhân BHYT"
     patient_age = 50
     card_no = "GD4790000000000"
@@ -197,13 +229,11 @@ def parse_vietnamese_prescription_text(extracted_text: str) -> dict:
     if card_m:
         card_no = card_m.group(1).upper()
 
-    # 2. Tên bệnh nhân
-    name_m = re.search(r'họ\s*(?:và\s*)?tên(?:\s*người\s*bệnh)?[:\s]+([^\n,–\(\)]+)', extracted_text, re.I)
-    if not name_m:
-        name_m = re.search(r'(?:người\s*bệnh|bệnh\s*nhân)[:\s]+([^\n,–\(\)]+)', extracted_text, re.I)
+    # 2. Tên bệnh nhân hoặc Khách hàng
+    name_m = re.search(r'(?:họ\s*(?:và\s*)?tên(?:\s*người\s*bệnh)?|người\s*bệnh|bệnh\s*nhân|khách\s*hàng|người\s*mua)[:\s]+([^\n,–\(\)]+)', extracted_text, re.I)
     if name_m:
         raw_name = name_m.group(1).strip()
-        cleaned_name = re.split(r'(?:ngày sinh|giới tính|sinh năm|năm sinh|địa chỉ|mã|số|tuổi)', raw_name, flags=re.I)[0].strip()
+        cleaned_name = re.split(r'(?:ngày sinh|giới tính|sinh năm|năm sinh|địa chỉ|mã|số|tuổi|mst)', raw_name, flags=re.I)[0].strip()
         if not cleaned_name.upper().startswith("BN-") and len(cleaned_name) >= 2:
             patient_name = cleaned_name
 
@@ -215,7 +245,7 @@ def parse_vietnamese_prescription_text(extracted_text: str) -> dict:
 
     # 4. Mã ICD-10 & Chẩn đoán
     all_codes = re.findall(r'\b([A-Z][0-9]{2}(?:\.[0-9]+)?)\b', extracted_text)
-    icd_codes = [c for c in all_codes if not c.startswith(('BN', 'BA', 'DN', 'GD', 'CC', 'DT'))]
+    icd_codes = [c for c in all_codes if not c.startswith(('BN', 'BA', 'DN', 'GD', 'CC', 'DT', 'RX'))]
     if icd_codes:
         icd10 = icd_codes[0]
         sec_icds = icd_codes[1:4]
@@ -228,56 +258,177 @@ def parse_vietnamese_prescription_text(extracted_text: str) -> dict:
         if cleaned_diag:
             diag = cleaned_diag
 
-    # 5. Các dòng thuốc điều trị
+    # 5. Phân tích các dòng thuốc & bố cục bảng linh hoạt
     lines = [l.strip() for l in extracted_text.split("\n") if l.strip()]
     current_item = None
-    for l in lines:
-        # Nhận diện đầu dòng thuốc linh hoạt: 1., 1), 1/, 1-, I., II., -, *, •, +
-        m = re.match(r'^(?:(?:\d+|[IVXLCDM]+)[\.\)\/\-:]|[-*•+])\s*(.+)', l)
-        drug_str = m.group(1).strip() if m else None
 
-        # Nếu không có số thứ tự nhưng dòng chứa hàm lượng/số lượng đơn vị thuốc rõ ràng
-        if not drug_str and len(l) > 5:
-            has_unit = bool(re.search(r'\b(?:\d+(?:\.\d+)?)\s*(?:viên|gói|ống|lọ|chai|vỉ|hộp|nang|tuýp|mg|g|ml)\b', l, re.I))
-            is_header = any(k in l.lower() for k in ["bệnh viện", "khoa khám", "họ và tên", "ngày sinh", "chẩn đoán", "lời dặn", "người bệnh", "bác sĩ", "hẹn khám", "icd", "bảo hiểm"])
-            if has_unit and not is_header:
+    for l in lines:
+        l_low = l.lower()
+
+        # Bỏ qua các dòng tiêu đề hành chính không phải thuốc
+        if any(k in l_low for k in ["bệnh viện", "khoa khám", "họ và tên", "ngày sinh", "chẩn đoán", "lời dặn", "người bệnh", "bác sĩ", "hẹn khám", "bảo hiểm", "cộng tiền", "tổng cộng", "thuế suất", "tiền thuế"]):
+            continue
+
+        # 1. Nhận diện dòng thuốc mới (STT 1., 1), -, *, •, + hoặc bảng có pipe |)
+        drug_str = None
+        is_table_pipe = '|' in l
+        m = re.match(r'^(?:(?:\d+|[IVXLCDM]+)[\.\)\/\-:]|[-*•+])\s*(.+)', l)
+
+        if m:
+            drug_str = m.group(1).strip()
+        elif is_table_pipe:
+            # Dòng phân cách dạng bảng |
+            parts = [p.strip() for p in l.split('|') if p.strip()]
+            # Nếu là dòng tiêu đề bảng thì bỏ qua
+            if any(k in l_low for k in ["tên hàng", "đơn giá", "thành tiền", "số lượng", "stt"]):
+                continue
+            if len(parts) >= 2:
+                drug_str = l.strip()
+        elif current_item is None:
+            # Kiểm tra nếu dòng chứa thuốc có đơn vị tính
+            has_unit = bool(re.search(r'\b(?:\d+(?:\.\d+)?)\s*(?:viên|gói|ống|lọ|chai|vỉ|hộp|nang|tuýp|bút|mg|g|ml)\b', l, re.I))
+            if has_unit:
                 drug_str = l.strip()
 
-        if drug_str:
-            # Bỏ qua các dòng chú thích hành chính
-            if any(k in drug_str.lower() for k in ["chẩn đoán", "lời dặn", "người bệnh", "bác sĩ", "hẹn khám", "icd", "bệnh kèm", "bệnh chính"]):
+        # 2. Nếu không phải dòng thuốc mới, kiểm tra dòng phụ (Lô/HSD hoặc Hướng dẫn) của thuốc hiện tại
+        if not drug_str:
+            if current_item and any(k in l_low for k in ["lô:", "lô ", "batch", "lot", "hsd:", "hsd ", "exp:", "exp ", "hạn dùng", "giá:", "đơn giá:"]):
+                batch_m = re.search(r'(?:lô|batch|lot)[:\s#]*([A-Z0-9\-\/]+)', l, re.I)
+                if batch_m and not current_item.get("batch_number"):
+                    current_item["batch_number"] = batch_m.group(1).strip()
+                exp_m = re.search(r'(?:hsd|exp|hạn dùng|hạn sử dụng)[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{2}\/\d{4})', l, re.I)
+                if exp_m and not current_item.get("expiry_date"):
+                    current_item["expiry_date"] = exp_m.group(1).strip()
+                p_m = re.search(r'(?:đơn giá|giá)[:\s]*(\d{1,3}(?:[.,]\d{3})+|\d{4,8})', l, re.I)
+                if p_m and current_item.get("unit_price", 0.0) <= 0.0:
+                    val_p = float(p_m.group(1).replace('.', '').replace(',', ''))
+                    current_item["unit_price"] = val_p
+                    if current_item.get("quantity", 0) > 0:
+                        current_item["total_price"] = round(current_item["quantity"] * val_p, 2)
                 continue
 
-            # Tách số lượng cấp phát
+            if current_item and any(k in l_low for k in ["cách dùng", "uống", "tiêm", "ngậm", "bôi", "dùng", "ngày 2 lần", "ngày 1 lần", "sau ăn", "trước ăn"]):
+                if not current_item["instructions"] or current_item["instructions"] == "Theo chỉ định bác sĩ":
+                    current_item["instructions"] = l.strip()
+                continue
+
+        # 3. Phân tích chi tiết dòng thuốc
+        if drug_str:
+            unit = "Viên"
             qty = 10.0
-            qty_m = re.search(r'\b(\d+(?:\.\d+)?)\s*(?:viên|gói|ống|lọ|chai|vỉ|hộp|bình|nang|tuýp)\b', drug_str, re.I)
-            if qty_m:
-                qty = float(qty_m.group(1))
-                drug_clean = drug_str[:qty_m.start()].strip()
+            dosage = ""
+            batch_no = ""
+            exp_date = ""
+            unit_price = 0.0
+            total_price = 0.0
+            instructions = "Theo chỉ định bác sĩ"
+
+            # Xử lý riêng cho định dạng bảng phân cách bằng | (Pipe-delimited table)
+            if '|' in drug_str:
+                parts = [p.strip() for p in drug_str.split('|') if p.strip()]
+                # Loại bỏ STT ở đầu nếu có
+                if parts and re.match(r'^\d+$', parts[0]):
+                    parts = parts[1:]
+                if parts:
+                    drug_clean = parts[0]
+                    if len(parts) >= 2 and re.search(r'\b(hộp|viên|vỉ|gói|lọ|chai|ống|tuýp)\b', parts[1], re.I):
+                        unit = parts[1].capitalize()
+                    # Cột số lượng
+                    for col in parts[1:]:
+                        if re.match(r'^\d+(?:\.\d+)?$', col):
+                            val = float(col)
+                            if 0 < val <= 5000 and qty == 10.0:
+                                qty = val
+                                break
+                    # Cột đơn giá & thành tiền
+                    numeric_cols = [float(re.sub(r'[.,]', '', col)) for col in parts[1:] if re.match(r'^\d{1,3}(?:[.,]\d{3})+$|^\d{4,9}$', col)]
+                    if len(numeric_cols) >= 2:
+                        unit_price = min(numeric_cols)
+                        total_price = max(numeric_cols)
+                    elif len(numeric_cols) == 1:
+                        unit_price = numeric_cols[0]
+                        total_price = round(qty * unit_price, 2)
             else:
+                # Dạng danh sách text hoặc câu
                 drug_clean = drug_str
 
-            # Hàm lượng nếu có
-            dos_m = re.search(r'\b(\d+(?:\.\d+)?\s*(?:mg|g|mcg|ml|IU|UI|%))\b', drug_clean, re.I)
-            dosage = dos_m.group(1) if dos_m else ""
+                # Tách số lượng ưu tiên dạng: x 30 hộp / SL: 20
+                x_qty_m = re.search(r'(?:x|sl[:\s]*|\*)\s*(\d+(?:\.\d+)?)\s*(?:viên|gói|ống|lọ|chai|vỉ|hộp|bình|nang|tuýp|bút|túi|liều)?\b', drug_clean, re.I)
+                if x_qty_m and float(x_qty_m.group(1)) > 0:
+                    qty = float(x_qty_m.group(1))
+                    drug_clean = drug_clean[:x_qty_m.start()].strip()
+                else:
+                    qty_m = re.search(r'\b(\d+(?:\.\d+)?)\s*(?:viên|gói|ống|lọ|chai|vỉ|hộp|bình|nang|tuýp|bút|túi|liều)\b', drug_clean, re.I)
+                    if qty_m and float(qty_m.group(1)) > 0:
+                        qty = float(qty_m.group(1))
+                        drug_clean = drug_clean[:qty_m.start()].strip()
 
-            # Dọn sạch ký tự phân cách ở đuôi tên thuốc
+                # Tách đơn vị tính
+                unit_m = re.search(r'\b(viên|gói|ống|lọ|chai|vỉ|hộp|bình|nang|tuýp|bút|túi|liều)\b', drug_str, re.I)
+                if unit_m:
+                    unit = unit_m.group(1).capitalize()
+
+                # Tách số lô & hạn dùng
+                batch_m = re.search(r'(?:lô|batch|lot)[:\s#]*([A-Z0-9\-\/]+)', drug_str, re.I)
+                if batch_m:
+                    batch_no = batch_m.group(1).strip()
+                exp_m = re.search(r'(?:hsd|exp|hạn dùng)[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{2}\/\d{4})', drug_str, re.I)
+                if exp_m:
+                    exp_date = exp_m.group(1).strip()
+
+                # Tách giá nếu có
+                price_m = re.search(r'(?:giá|đơn giá)[:\s]*(\d{1,3}(?:[.,]\d{3})+|\d{4,8})', drug_str, re.I)
+                if price_m:
+                    try:
+                        clean_p = price_m.group(1).replace('.', '').replace(',', '')
+                        unit_price = float(clean_p)
+                    except Exception:
+                        pass
+
+                # Tách chỉ dẫn trong ngoặc đơn nếu có
+                instr_m = re.search(r'\(([^)]+)\)', drug_str)
+                if instr_m and any(k in instr_m.group(1).lower() for k in ["uống", "tiêm", "ngày", "lần", "sáng", "tối", "ăn"]):
+                    instructions = instr_m.group(1).strip()
+                    drug_clean = re.sub(r'\([^)]+\)', '', drug_clean).strip()
+
+            # Tách hàm lượng (mg, g, mcg, ml, UI...)
+            dos_m = re.search(r'\b(\d+(?:\.\d+)?\s*(?:mg|g|mcg|ml|IU|UI|%|µg))\b', drug_clean, re.I)
+            if dos_m:
+                dosage = dos_m.group(1)
+
+            # Tính toán logic số học 100%: Total = Qty * Price
+            if total_price <= 0.0 and unit_price > 0.0:
+                total_price = round(qty * unit_price, 2)
+            elif unit_price <= 0.0 and total_price > 0.0 and qty > 0.0:
+                unit_price = round(total_price / qty, 2)
+
+            # Làm sạch chuỗi tên thuốc
+            drug_clean = re.sub(r'^(?:(?:\d+|[IVXLCDM]+)[\.\)\/\-:]|[-*•+])\s*', '', drug_clean).strip()
+            drug_clean = re.sub(r'\b(?:lô|batch|lot|hsd|exp|hạn dùng)[:\s#]*[A-Z0-9\-\/.]+', '', drug_clean, flags=re.I).strip()
             drug_clean = re.sub(r'[\s:;,-]+$', '', drug_clean).strip()
+            if not drug_clean:
+                drug_clean = drug_str[:30].strip()
 
             current_item = {
                 "drug_name": drug_clean,
                 "dosage": dosage,
+                "unit": unit,
                 "quantity": qty,
+                "unit_price": unit_price,
+                "total_price": total_price,
+                "batch_number": batch_no,
+                "expiry_date": exp_date,
                 "days_supply": 7,
                 "route": "Uống",
-                "instructions": "Theo chỉ định bác sĩ"
+                "instructions": instructions
             }
             ocr_items.append(current_item)
-        elif current_item and any(k in l.lower() for k in ["cách dùng", "uống", "tiêm", "ngậm", "bôi", "dùng"]):
-            if not current_item["instructions"] or current_item["instructions"] == "Theo chỉ định bác sĩ":
-                current_item["instructions"] = l.strip()
 
     return {
+        "document_type": doc_type,
+        "seller_name": seller_name,
+        "seller_tax_id": seller_tax_id,
+        "invoice_number": invoice_no,
         "patient_name": patient_name,
         "patient_age": patient_age,
         "insurance_card_number": card_no,
@@ -308,9 +459,18 @@ async def ocr_prescription_endpoint(req: BhytOcrPrescriptionRequest):
                 mime_type=req.mime_type or "image/jpeg"
             )
 
+        doc_type = "DON_THUOC"
+        seller_name = ""
+        seller_tax_id = ""
+        invoice_no = ""
+
         if raw_ocr_data and isinstance(raw_ocr_data, dict) and raw_ocr_data.get("items"):
             provider = raw_ocr_data.get("_provider", "gemini")
             model_used = raw_ocr_data.get("_model_used", "gemini-vision")
+            doc_type = raw_ocr_data.get("document_type") or "DON_THUOC"
+            seller_name = raw_ocr_data.get("seller_name") or ""
+            seller_tax_id = raw_ocr_data.get("seller_tax_id") or ""
+            invoice_no = raw_ocr_data.get("invoice_number") or ""
             patient_name = raw_ocr_data.get("patient_name") or "Bệnh nhân"
             patient_age = int(raw_ocr_data.get("patient_age") or 50)
             card_no = raw_ocr_data.get("insurance_card_number") or "GD4790000000000"
@@ -335,6 +495,10 @@ async def ocr_prescription_endpoint(req: BhytOcrPrescriptionRequest):
                     logger.warning(f"Local file extraction failed: {ex}")
 
             parsed = parse_vietnamese_prescription_text(extracted_text)
+            doc_type = parsed.get("document_type", "DON_THUOC")
+            seller_name = parsed.get("seller_name", "")
+            seller_tax_id = parsed.get("seller_tax_id", "")
+            invoice_no = parsed.get("invoice_number", "")
             patient_name = parsed["patient_name"]
             patient_age = parsed["patient_age"]
             card_no = parsed["insurance_card_number"]
@@ -356,6 +520,19 @@ async def ocr_prescription_endpoint(req: BhytOcrPrescriptionRequest):
             dosage = it.get("dosage") or ""
             route = it.get("route") or "Uống"
             unit_price = float(it.get("unit_price") or 0.0)
+            quantity = float(it.get("quantity") or 10.0)
+            total_price = float(it.get("total_price") or 0.0)
+
+            # Đảm bảo logic tính toán 100%: Total = Qty * Price
+            if total_price <= 0.0 and unit_price > 0.0 and quantity > 0.0:
+                total_price = round(quantity * unit_price, 2)
+            elif unit_price <= 0.0 and total_price > 0.0 and quantity > 0.0:
+                unit_price = round(total_price / quantity, 2)
+
+            batch_no = str(it.get("batch_number") or it.get("batch_no") or it.get("lot_no") or it.get("lot") or "").strip()
+            exp_date = str(it.get("expiry_date") or it.get("exp_date") or it.get("hsd") or "").strip()
+            unit = str(it.get("unit") or it.get("dvt") or "Viên").strip()
+            vat_rate = float(it.get("vat_rate") or it.get("vat") or 0.0)
 
             if res.match_status in ("HIGH", "MEDIUM", "LOW"):
                 resolved_count += 1
@@ -380,15 +557,24 @@ async def ocr_prescription_endpoint(req: BhytOcrPrescriptionRequest):
                     active_ingredient=active_ing,
                     dosage=dosage,
                     route=route,
-                    quantity=float(it.get("quantity") or 10.0),
+                    quantity=quantity,
                     days_supply=int(it.get("days_supply") or 7),
                     unit_price=unit_price,
+                    total_price=total_price,
+                    unit=unit,
+                    batch_number=batch_no,
+                    expiry_date=exp_date,
+                    vat_rate=vat_rate,
                     instructions=str(it.get("instructions") or "")
                 )
             )
 
         prescription = BhytPrescriptionPayload(
             prescription_id="RX-OCR-LIVE",
+            document_type=doc_type,
+            seller_name=seller_name,
+            seller_tax_id=seller_tax_id,
+            invoice_number=invoice_no,
             patient_name=patient_name,
             patient_age=patient_age,
             insurance_card_number=card_no,

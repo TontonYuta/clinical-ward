@@ -62,7 +62,7 @@ export const RestockProposalModal: React.FC<RestockProposalModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-2xs font-semibold text-slate-700 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+                <span className="font-sans text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-md">
                   Mẫu 01 · VBHN 07
                 </span>
                 <h2 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight truncate">

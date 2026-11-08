@@ -50,21 +50,21 @@ export const AmpouleDestructionModal: React.FC<AmpouleDestructionModalProps> = (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
       <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-slate-900 text-white flex items-center justify-between shrink-0 gap-2">
+        <div className="min-h-14 py-3 px-3.5 sm:px-5 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30 shrink-0">
+            <div className="w-8 h-8 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200 shrink-0">
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-base font-bold truncate">Tiêu hủy vỏ ống thuốc gây nghiện</h2>
-              <span className="text-[11px] text-slate-400 font-mono truncate block">
+              <h2 className="text-xs sm:text-base font-bold text-slate-900 truncate">Tiêu hủy vỏ ống thuốc gây nghiện</h2>
+              <span className="text-xs text-rose-700 font-sans font-bold truncate block">
                 Mẫu 16 · Thông tư 20/2017/TT-BYT
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
             title="Đóng modal"
           >
             <X className="w-5 h-5" />

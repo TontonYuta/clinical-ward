@@ -37,7 +37,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
         <button
           type="button"
           onClick={() => onOpenDavDetail ? onOpenDavDetail(d) : null}
-          className="font-mono font-medium text-slate-700 hover:text-slate-950 text-sm inline-flex items-center transition cursor-pointer hover:underline underline-offset-2"
+          className="font-sans tabular-nums font-semibold text-slate-700 hover:text-slate-950 text-sm inline-flex items-center transition cursor-pointer hover:underline underline-offset-2"
           title="Bấm để xem Giấy công bố thuốc Cục Quản lý Dược"
         >
           <span>{d.nationalCode}</span>
@@ -84,7 +84,7 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
         <div className="text-slate-800 font-medium text-sm leading-snug">{d.activeIngredient}</div>
         <div className="flex flex-col items-start gap-2 mt-2">
           {d.concentration && d.concentration.trim() !== d.activeIngredient.trim() && (
-            <span className="text-sm font-medium text-slate-600 font-mono">
+            <span className="text-sm font-medium text-slate-600 font-sans tabular-nums">
               {d.concentration}
             </span>
           )}

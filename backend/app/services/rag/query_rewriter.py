@@ -61,7 +61,14 @@ def _fast_heuristic_rewrite(query: str, history: str) -> Optional[ClinicalRewrit
 
     # TH3 & TH4: Hỏi đối tượng đặc thù hoặc thay thế đại từ kế thừa thuốc trước
     has_patient_named = any(w in lower_q for w in ("bệnh nhân", "người bệnh", "bn "))
-    if recent_drug and not has_patient_named:
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    try:
+        matcher = get_drug_lexical_matcher()
+        has_query_drug = bool(matcher.extract_medications(clean_q) or matcher.extract_sdk(clean_q))
+    except Exception:
+        has_query_drug = False
+
+    if recent_drug and not has_patient_named and not has_query_drug:
         if any(w in lower_q for w in ("trẻ em", "cho bé", "nhi khoa")):
             return ClinicalRewriteResult(
                 original_query=clean_q,

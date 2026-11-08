@@ -709,9 +709,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
             <div className="flex items-center gap-2.5 text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
               <span className="font-bold text-slate-900">{effectiveName}</span>
               <span className="text-slate-400">·</span>
-              <span className="font-mono text-slate-800">{effectiveId}</span>
+              <span className="font-sans tabular-nums font-semibold text-slate-800">{effectiveId}</span>
               <span className="text-slate-400">·</span>
-              <span>Đơn CPOE: <strong className="font-mono text-slate-900">{orderId || 'RX-2026-604'}</strong></span>
+              <span>Đơn CPOE: <strong className="font-sans tabular-nums font-semibold text-slate-900">{orderId || 'RX-2026-604'}</strong></span>
               <span className="text-slate-400">·</span>
               <span className="text-slate-600">{cleanDoctorDisplay(doctorName)}</span>
             </div>
@@ -810,7 +810,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <label className="text-sm font-bold text-slate-800">
                         Số điện thoại người nhận *
                       </label>
-                      <span className="font-mono text-xs font-bold text-teal-900 bg-teal-50 px-2.5 py-0.5 rounded border border-teal-200">
+                      <span className="font-sans text-xs font-bold text-teal-900 bg-teal-50 px-2.5 py-0.5 rounded border border-teal-200">
                         Brandname: BV_LAMSANG
                       </span>
                     </div>
@@ -821,7 +821,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="0963278149"
                       aria-label="Số điện thoại nhận SMS"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg font-mono text-base text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 transition"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg font-sans tabular-nums font-semibold text-base text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 transition"
                     />
                   </div>
                 ) : (
@@ -837,7 +837,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="huyhoang6altt@gmail.com"
-                          className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg font-mono text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 transition"
+                          className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg font-sans text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 transition"
                         />
                       </div>
                       <div>
@@ -1056,7 +1056,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                           type="datetime-local"
                           value={customDatetime}
                           onChange={(e) => setCustomDatetime(e.target.value)}
-                          className="px-3 py-1.5 bg-white border border-slate-300 rounded font-mono text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-teal-600"
+                          className="px-3 py-1.5 bg-white border border-slate-300 rounded font-sans tabular-nums text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-teal-600"
                         />
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap text-xs">
@@ -1101,7 +1101,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                         ? `[THÀNH CÔNG] Đã phát sóng SMS tới số ${receipt?.recipientPhone || phone}!`
                         : `[THÀNH CÔNG] Đã chuyển phát Email tới ${email}!`}
                     </div>
-                    <div className="font-mono text-xs text-emerald-900">
+                    <div className="font-sans text-xs text-emerald-900">
                       Mã biên nhận: {receipt?.deliveryReceipt || receipt?.id || emailSentReceipt?.message || 'OK'}
                     </div>
                   </div>
@@ -1139,7 +1139,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <div className="text-base font-bold text-slate-900">
                         ĐƠN THUỐC ĐIỆN TỬ VÀ DẶN DÒ ĐIỀU TRỊ
                       </div>
-                      <div className="text-xs font-mono text-teal-800">
+                      <div className="text-xs font-sans tabular-nums text-teal-800 font-semibold">
                         Mã đơn quốc gia: {orderId || 'RX-2026-604'}
                       </div>
                     </div>
@@ -1148,7 +1148,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
                       <div className="flex justify-between">
                         <span>Họ và tên: <strong className="text-slate-900">{effectiveName}</strong></span>
-                        <span>Mã BN: <strong className="font-mono text-slate-900">{effectiveId}</strong></span>
+                        <span>Mã BN: <strong className="font-sans tabular-nums text-slate-900">{effectiveId}</strong></span>
                       </div>
                       <div className="flex justify-between">
                         <span>Bác sĩ kê đơn: <strong className="text-slate-900">{cleanDoctorDisplay(doctorName)}</strong></span>
@@ -1205,7 +1205,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       <span className="font-bold text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                         Brandname: BV_LAMSANG
                       </span>
-                      <span className="font-mono text-slate-600">Đích đến: {phone}</span>
+                      <span className="font-sans tabular-nums font-semibold text-slate-600">Đích đến: {phone}</span>
                     </div>
 
                     <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-sm font-sans leading-relaxed text-slate-900 whitespace-pre-wrap">
@@ -1324,7 +1324,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                   >
                     <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
                       <div className="flex items-center gap-2 text-slate-700 flex-wrap">
-                        <span className="font-bold font-mono text-slate-900">
+                        <span className="font-bold font-sans tabular-nums text-slate-900">
                           [{item.channel.toUpperCase()}] {item.recipient}
                         </span>
                         <span className="text-slate-300">|</span>
@@ -1334,7 +1334,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        <span className="font-sans tabular-nums text-xs text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                           {item.receiptCode}
                         </span>
 
@@ -1372,7 +1372,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                     </div>
 
                     {item.timingRule && item.timingRule !== 'immediate' && (
-                      <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 font-mono">
+                      <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 font-sans">
                         Quy tắc lịch trình: {item.timingRule}
                       </div>
                     )}

@@ -162,25 +162,33 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         )
 
     if session.active_medication_name:
-        from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
-        from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
-        from app.services.chatbot.adaptive_clinical_synthesizer import synthesize_adaptive_clinical_response
+        is_legal_or_regulatory = any(w in lower_query for w in (
+            "thông tư", "tt 26", "tt 20", "tt 51", "tt 36", "tt 22", "tt 52",
+            "nghị định", "luật dược", "quy chế", "quản lý", "chuỗi lạnh", "fefo", "kê đơn", "đơn thuốc", "bảo hiểm", "bhyt"
+        ))
+        from app.services.chatbot.fsm_router import has_explicit_new_medication
+        has_new_med = has_explicit_new_medication(lower_query, session.active_medication_name)
 
-        adapt_analysis = extract_clinical_query_schema_deterministic(
-            query, session_context={"active_medication": session.active_medication_name}
-        )
-        if (
-            adapt_analysis.is_followup_question
-            and adapt_analysis.query_depth == "DEEP_FACET"
-        ):
-            evidence, _, status = await slice_clinical_drug_evidence(adapt_analysis, db, session)
-            if status == "ok" and evidence:
-                return synthesize_adaptive_clinical_response(
-                    evidence,
-                    user_name=user_name,
-                    user_role=user_role,
-                    session_id=session_id
-                )
+        if not is_legal_or_regulatory and not has_new_med:
+            from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
+            from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
+            from app.services.chatbot.adaptive_clinical_synthesizer import synthesize_adaptive_clinical_response
+
+            adapt_analysis = extract_clinical_query_schema_deterministic(
+                query, session_context={"active_medication": session.active_medication_name}
+            )
+            if (
+                adapt_analysis.is_followup_question
+                and adapt_analysis.query_depth == "DEEP_FACET"
+            ):
+                evidence, _, status = await slice_clinical_drug_evidence(adapt_analysis, db, session)
+                if status == "ok" and evidence:
+                    return synthesize_adaptive_clinical_response(
+                        evidence,
+                        user_name=user_name,
+                        user_role=user_role,
+                        session_id=session_id
+                    )
 
     is_deep_complex = any(term in lower_query for term in ("thời gian bán thải", "huyết tương", "dược động học", "cơ chế tác dụng"))
     query, lower_query, active_in_query, explicit_named, has_candidate_drug, early_resp = await resolve_active_drug_and_terms(

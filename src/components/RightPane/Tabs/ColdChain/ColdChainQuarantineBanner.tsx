@@ -53,7 +53,7 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
           <span className="text-xs text-slate-500 font-semibold block">2. Nhiệt độ động học trung bình (MKT)</span>
           <div className="flex items-center gap-2 mt-1.5">
             <FlaskConical className="w-4 h-4 text-slate-600" />
-            <span className="font-bold text-slate-900 font-mono text-sm sm:text-base">5.6°C (Đạt chuẩn)</span>
+            <span className="font-bold text-slate-900 font-sans tabular-nums text-sm sm:text-base">5.6°C (Đạt chuẩn)</span>
           </div>
           <span className="text-xs text-teal-700 font-medium block mt-1">Nằm trong giới hạn bảo toàn kháng nguyên &lt; 8.0°C</span>
         </div>
@@ -62,7 +62,7 @@ export const ColdChainQuarantineBanner: React.FC<ColdChainQuarantineBannerProps>
           <span className="text-xs text-slate-500 font-semibold block">3. Thời gian phơi nhiễm sự cố</span>
           <div className="flex items-center gap-2 mt-1.5">
             <Clock className="w-4 h-4 text-slate-600" />
-            <span className="font-bold text-slate-900 font-mono text-sm sm:text-base">12 phút</span>
+            <span className="font-bold text-slate-900 font-sans tabular-nums text-sm sm:text-base">12 phút</span>
           </div>
           <span className="text-xs text-slate-600 font-medium block mt-1">Nằm trong ngưỡng cho phép (&lt; 30 phút theo WHO PQS)</span>
         </div>

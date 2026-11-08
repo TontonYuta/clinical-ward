@@ -30,8 +30,8 @@ export const EquipmentTicketCard: React.FC<EquipmentTicketCardProps> = ({
       {/* Hàng 1: STT, Mã sự cố & Phân loại rủi ro */}
       <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
-          <span className="font-mono text-sm font-semibold text-slate-800">
+          <span className="font-sans tabular-nums text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
+          <span className="font-sans tabular-nums text-sm font-semibold text-slate-800">
             {ticket.code}
           </span>
           <span className="text-xs font-medium text-slate-500 font-sans">
@@ -62,7 +62,7 @@ export const EquipmentTicketCard: React.FC<EquipmentTicketCardProps> = ({
 
       {/* Hàng 3: Hạn kiểm định & Thao tác */}
       <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-        <div className="text-slate-500 font-mono">
+        <div className="text-slate-500 font-sans tabular-nums">
           Hạn KĐ: <span className="text-slate-800 font-medium">{ticket.nextInspectionDue}</span>
         </div>
 

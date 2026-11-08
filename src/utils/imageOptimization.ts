@@ -23,16 +23,21 @@ export interface ImageOptimizationResult {
 export interface ImageOptimizationOptions {
   maxSide?: number;
   quality?: number;
+  enhanceContrast?: boolean;
 }
 
 /**
- * Tối ưu hóa và nén ảnh đơn thuốc phía Client bằng HTML5 Canvas
+ * Tối ưu hóa và nén ảnh đơn thuốc phía Client bằng HTML5 Canvas:
+ * - Tự động mở rộng độ phân giải lên 2048px bảo toàn chi tiết bảng và số lô/hạn dùng
+ * - Tăng cường độ tương phản văn bản (Contrast Boosting) làm rõ nét chữ mờ, hóa đơn in kim
+ * - Đổ nền trắng #FFFFFF chống đen nền ảnh PNG trong suốt
+ * - Xuất định dạng JPEG chất lượng cao 0.85 loại bỏ hiện tượng vỡ hạt
  */
 export async function compressImageForOcr(
   file: File | Blob,
   options: ImageOptimizationOptions = {}
 ): Promise<ImageOptimizationResult> {
-  const { maxSide = 1800, quality = 0.78 } = options;
+  const { maxSide = 2048, quality = 0.85, enhanceContrast = true } = options;
   const originalSize = file.size;
 
   // Nếu là môi trường không có DOM (như SSR hoặc Node.js test), trả về fallback an toàn
@@ -95,6 +100,23 @@ export async function compressImageForOcr(
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, w, h);
+
+        // Tăng cường độ tương phản văn bản cho Vision OCR nhận diện chính xác
+        if (enhanceContrast) {
+          try {
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const d = imgData.data;
+            const factor = 1.15; // Tăng 15% tương phản làm rõ nét chữ mờ / in kim
+            for (let i = 0; i < d.length; i += 4) {
+              d[i] = Math.min(255, Math.max(0, ((d[i] - 128) * factor) + 128));
+              d[i + 1] = Math.min(255, Math.max(0, ((d[i + 1] - 128) * factor) + 128));
+              d[i + 2] = Math.min(255, Math.max(0, ((d[i + 2] - 128) * factor) + 128));
+            }
+            ctx.putImageData(imgData, 0, 0);
+          } catch {
+            // Bỏ qua nếu có hạn chế security canvas context
+          }
+        }
 
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
 

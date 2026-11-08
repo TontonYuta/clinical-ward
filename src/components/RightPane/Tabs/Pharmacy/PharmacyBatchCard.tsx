@@ -35,11 +35,11 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
       {/* Hàng 1: STT, SĐK & Phân loại */}
       <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
+          <span className="font-sans tabular-nums text-xs text-slate-500 font-bold w-6">#{index + 1}</span>
           <button
             type="button"
             onClick={() => onSelectBatch?.(batch)}
-            className="font-mono text-sm font-medium text-slate-600 hover:text-slate-950 underline-offset-2 hover:underline cursor-pointer"
+            className="font-sans tabular-nums text-sm font-semibold text-slate-700 hover:text-slate-950 underline-offset-2 hover:underline cursor-pointer"
             title="Xem Giấy công bố Cục QLD"
           >
             SĐK: {sdk}
@@ -73,7 +73,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-xs">
+        <div className="flex items-center gap-2 font-sans tabular-nums text-xs">
           <span className="font-medium text-slate-600 text-sm">
             Lô: {batch.batchNumber}
           </span>
@@ -103,7 +103,7 @@ export const PharmacyBatchCard: React.FC<PharmacyBatchCardProps> = ({
       {/* Hàng 4: Tồn kho & Thao tác */}
       <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-100">
         <div className="space-y-1">
-          <div className="font-mono">
+          <div className="font-sans tabular-nums">
           <span className={`text-base font-semibold ${isUnderMin ? 'text-rose-700' : 'text-slate-900'}`}>
             Tồn: {batch.currentStock} {batch.unit}
           </span>

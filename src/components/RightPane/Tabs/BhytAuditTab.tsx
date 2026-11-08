@@ -418,27 +418,41 @@ export const BhytAuditTab: React.FC = () => {
           const p = ocrRes.prescription as any;
           extracted = {
             prescriptionId: p.prescription_id || p.prescriptionId || `RX-${Date.now()}`,
-            patientName: p.patient_name || p.patientName || '',
-            patientAge: p.patient_age ?? p.patientAge ?? 0,
+            documentType: p.document_type || p.documentType || 'DON_THUOC',
+            sellerName: p.seller_name || p.sellerName || '',
+            sellerTaxId: p.seller_tax_id || p.sellerTaxId || '',
+            invoiceNumber: p.invoice_number || p.invoiceNumber || '',
+            patientName: p.patient_name || p.patientName || (p.document_type === 'HOA_DON_VAT' ? (p.seller_name || 'Khách hàng') : 'Bệnh nhân BHYT'),
+            patientAge: p.patient_age ?? p.patientAge ?? 50,
             insuranceCardNumber: p.insurance_card_number || p.insuranceCardNumber || '',
             hospitalRank: (p.hospital_rank || p.hospitalRank || hospitalRank) as HospitalRank,
             treatmentType: (p.treatment_type || p.treatmentType || treatmentType) as TreatmentType,
             primaryIcd10: p.primary_icd10 || p.primaryIcd10 || '',
             primaryDiagnosis: p.primary_diagnosis || p.primaryDiagnosis || '',
             secondaryIcd10s: p.secondary_icd10s || p.secondaryIcd10s || [],
-            items: (p.items || []).map((it: any, idx: number) => ({
-              id: it.id || `ITEM-${idx + 1}`,
-              drugCode: it.drug_code || it.drugCode || '',
-              drugName: it.drug_name || it.drugName || `Thuốc ${idx + 1}`,
-              activeIngredient: it.active_ingredient || it.activeIngredient || '',
-              dosage: it.dosage || '',
-              route: it.route || 'Uống',
-              quantity: Number(it.quantity || 1),
-              daysSupply: Number(it.days_supply ?? it.daysSupply ?? 1),
-              unitPrice: Number(it.unit_price ?? it.unitPrice ?? 0),
-              instructions: it.instructions || '',
-              hasConsultationForm: Boolean(it.has_consultation_form ?? it.hasConsultationForm ?? false)
-            }))
+            items: (p.items || []).map((it: any, idx: number) => {
+              const q = Number(it.quantity || 1);
+              const u = Number(it.unit_price ?? it.unitPrice ?? 0);
+              const tot = Number(it.total_price ?? it.totalPrice ?? (q * u));
+              return {
+                id: it.id || `ITEM-${idx + 1}`,
+                drugCode: it.drug_code || it.drugCode || '',
+                drugName: it.drug_name || it.drugName || `Thuốc ${idx + 1}`,
+                activeIngredient: it.active_ingredient || it.activeIngredient || '',
+                dosage: it.dosage || '',
+                unit: it.unit || 'Viên',
+                batchNumber: it.batch_number || it.batchNumber || '',
+                expiryDate: it.expiry_date || it.expiryDate || '',
+                route: it.route || 'Uống',
+                quantity: q,
+                daysSupply: Number(it.days_supply ?? it.daysSupply ?? 1),
+                unitPrice: u,
+                totalPrice: tot,
+                vatRate: Number(it.vat_rate ?? it.vatRate ?? 0),
+                instructions: it.instructions || '',
+                hasConsultationForm: Boolean(it.has_consultation_form ?? it.hasConsultationForm ?? false)
+              };
+            })
           };
         }
       }
@@ -1405,6 +1419,23 @@ export const BhytAuditTab: React.FC = () => {
                       )}
                     </div>
                   </div>
+
+                  {(activePayload.sellerName || activePayload.invoiceNumber) && (
+                    <div className="bg-white p-2.5 rounded-md border border-slate-200 flex items-center justify-between text-xs text-slate-700">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-teal-800">Đơn vị phát hành / Hóa đơn:</span>
+                        <span className="font-semibold text-slate-900">{activePayload.sellerName || 'Hóa đơn / Phiếu xuất kho'}</span>
+                        {activePayload.sellerTaxId && (
+                          <span className="text-slate-500 font-sans tabular-nums font-medium">(MST: {activePayload.sellerTaxId})</span>
+                        )}
+                      </div>
+                      {activePayload.invoiceNumber && (
+                        <div className="font-sans tabular-nums font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                          Số: {activePayload.invoiceNumber}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* KHỐI B: TÓM TẮT ĐỊNH LƯỢNG LÂM SÀNG THUẦN (METRICS CARDS) */}
@@ -1544,6 +1575,25 @@ export const BhytAuditTab: React.FC = () => {
                                       ) : (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                                           Chưa khớp DAV
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {(item.batchNumber || item.expiryDate) && (
+                                    <div className="mt-1 flex items-center gap-1.5 flex-wrap text-2xs text-slate-600 font-sans tabular-nums">
+                                      {item.batchNumber && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium border border-slate-200">
+                                          Lô: <strong className="ml-1 text-slate-900 font-bold">{item.batchNumber}</strong>
+                                        </span>
+                                      )}
+                                      {item.expiryDate && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium border border-slate-200">
+                                          HSD: <strong className="ml-1 text-slate-900 font-bold">{item.expiryDate}</strong>
+                                        </span>
+                                      )}
+                                      {item.unit && item.unit !== 'Viên' && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
+                                          ĐVT: {item.unit}
                                         </span>
                                       )}
                                     </div>

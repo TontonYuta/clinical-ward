@@ -59,12 +59,21 @@ export interface BhytPrescriptionItem {
   quantity: number;
   daysSupply: number;
   unitPrice: number;
+  totalPrice?: number;
+  unit?: string;
+  batchNumber?: string;
+  expiryDate?: string;
+  vatRate?: number;
   instructions?: string;
   hasConsultationForm?: boolean;
 }
 
 export interface BhytPrescriptionPayload {
   prescriptionId?: string;
+  documentType?: 'DON_THUOC' | 'HOA_DON_VAT' | 'PHIEU_XUAT_KHO' | 'HOA_DON_BAN_LE' | string;
+  sellerName?: string;
+  sellerTaxId?: string;
+  invoiceNumber?: string;
   patientName: string;
   patientAge: number;
   insuranceCardNumber: string;

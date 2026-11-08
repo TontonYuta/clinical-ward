@@ -51,6 +51,14 @@ async def resolve_active_drug_and_terms(
     is_oresol = any(w in lower_query for w in ["oresol", "ors", "hydrite", "bù nước điện giải"])
     effective_med = session.active_medication_name or getattr(session, "last_active_medication_name", None)
     if effective_med and not is_renal and not is_deep_complex and not is_oresol and not is_specialty_topic and is_field_only:
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        lex_meds = get_drug_lexical_matcher().extract_medications(lower_query)
+        if lex_meds and all(m.casefold() not in effective_med.casefold() for m in lex_meds):
+            new_med_name = lex_meds[0]
+            session.set_active_medication(name=new_med_name, ingredient=new_med_name)
+            resp = await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+            return query, lower_query, False, True, False, resp
+
         resolved_new_drugs = resolve_registered_medications(lower_query)
         current_has_explicit = (
             find_matched_med(lower_query) is not None

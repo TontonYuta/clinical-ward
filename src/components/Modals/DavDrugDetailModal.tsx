@@ -310,7 +310,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
         <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between gap-4 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
+              <span className="font-sans tabular-nums text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-md">
                 SĐK: {sdk}
               </span>
               <h2 className="text-lg sm:text-xl font-bold text-slate-950 tracking-tight truncate">
@@ -1087,24 +1087,24 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
             <div className="lg:col-span-7 xl:col-span-8 p-5 sm:p-6 overflow-y-auto thin-scrollbar space-y-5 bg-white">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Thông Tin Lô Thuốc Bệnh Viện</h3>
-                <span className="font-mono text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
+                <span className="font-sans tabular-nums text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded">
                   Lô: {batch.batchNumber}
                 </span>
               </div>
               <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
                 <div>
                   <dt className="text-slate-500">Tồn kho hiện tại</dt>
-                  <dd className="text-base font-bold text-slate-900 font-mono tabular-nums mt-0.5">{batch.currentStock} {batch.unit}</dd>
+                  <dd className="text-base font-bold text-slate-900 font-sans tabular-nums mt-0.5">{batch.currentStock} {batch.unit}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Hạn dùng FEFO</dt>
-                  <dd className={`text-base font-bold font-mono mt-0.5 ${batch.daysLeft <= 60 ? 'text-rose-700' : 'text-slate-900'}`}>
+                  <dd className={`text-base font-bold font-sans tabular-nums mt-0.5 ${batch.daysLeft <= 60 ? 'text-rose-700' : 'text-slate-900'}`}>
                     {batch.expiryDate} <span className="text-xs font-normal text-slate-500">({batch.daysLeft}d)</span>
                   </dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Ngưỡng cơ số Min</dt>
-                  <dd className="text-base font-semibold text-slate-800 font-mono mt-0.5">{batch.minThreshold} {batch.unit}</dd>
+                  <dd className="text-base font-semibold text-slate-800 font-sans tabular-nums mt-0.5">{batch.minThreshold} {batch.unit}</dd>
                 </div>
               </dl>
             </div>

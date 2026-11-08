@@ -33,17 +33,17 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
   return (
     <tr className="hover:bg-slate-50 transition-colors border-b border-slate-200 text-slate-800 text-sm">
       {/* 1. STT */}
-      <td className="py-3 px-3 text-center font-mono text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
+      <td className="py-3 px-3 text-center font-sans tabular-nums text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
         {index + 1}
       </td>
 
       {/* 2. Số Đăng Ký (SĐK) - Bấm tra cứu hồ sơ công bố Cục QLD */}
-      <td className="py-3 px-3.5 whitespace-nowrap font-mono border-r border-slate-100">
+      <td className="py-3 px-3.5 whitespace-nowrap font-sans tabular-nums border-r border-slate-100">
         <button
           type="button"
           onClick={() => onSelectBatch?.(batch)}
           data-testid={`btn-sdk-${batch.id}`}
-          className="font-medium text-slate-700 hover:text-slate-950 hover:underline cursor-pointer text-sm transition underline-offset-2"
+          className="font-semibold text-slate-700 hover:text-slate-950 hover:underline cursor-pointer text-sm transition underline-offset-2"
           title="Bấm để xem Giấy công bố thuốc Cục Quản Lý Dược"
         >
           {sdk}
@@ -102,8 +102,8 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
       </td>
 
       {/* 5. Số Lô & Hạn Dùng */}
-      <td className="py-3 px-3.5 whitespace-nowrap font-mono border-r border-slate-100">
-        <span className="font-medium text-slate-700 text-xs sm:text-sm">
+      <td className="py-3 px-3.5 whitespace-nowrap font-sans tabular-nums border-r border-slate-100">
+        <span className="font-semibold text-slate-700 text-xs sm:text-sm">
           {batch.batchNumber}
         </span>
         <div className="mt-1">
@@ -116,7 +116,7 @@ export const PharmacyBatchRow: React.FC<PharmacyBatchRowProps> = ({
 
       {/* 6. Tồn Kho Bệnh Viện */}
       <td className="py-3 px-3.5 text-center whitespace-nowrap border-r border-slate-100">
-        <div className="font-mono">
+        <div className="font-sans tabular-nums">
           <span className={`text-base font-semibold ${isUnderMin ? 'text-rose-700' : 'text-slate-900'}`}>
             {batch.currentStock} {batch.unit}
           </span>

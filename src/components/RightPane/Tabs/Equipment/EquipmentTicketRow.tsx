@@ -28,12 +28,12 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
   return (
     <tr className="hover:bg-slate-50 transition-colors border-b border-slate-200 text-slate-800 text-sm">
       {/* 1. STT */}
-      <td className="py-3 px-3 text-center font-mono text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
+      <td className="py-3 px-3 text-center font-sans tabular-nums text-slate-600 font-medium whitespace-nowrap text-sm border-r border-slate-100">
         {index + 1}
       </td>
 
       {/* 2. Mã sự cố & Phân loại rủi ro thiết bị */}
-      <td className="py-3 px-3.5 whitespace-nowrap font-mono border-r border-slate-100">
+      <td className="py-3 px-3.5 whitespace-nowrap font-sans tabular-nums border-r border-slate-100">
         <div className="font-semibold text-slate-800">{ticket.code}</div>
         <div className="text-xs text-slate-500 font-sans mt-0.5">
           Rủi ro Loại <span className={`font-bold ${ticket.riskClass === 'D' ? 'text-rose-700' : 'text-slate-800'}`}>{ticket.riskClass}</span>
@@ -43,7 +43,7 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
       {/* 3. Tên Thiết Bị & Serial / Model */}
       <td className="py-3 px-3.5 border-r border-slate-100">
         <div className="font-semibold text-slate-900 leading-snug">{ticket.deviceName}</div>
-        <div className="text-xs text-slate-500 font-mono mt-0.5">
+        <div className="text-xs text-slate-500 font-sans tabular-nums mt-0.5">
           SN: <span className="text-slate-700 font-medium">{ticket.serialNumber}</span> · {ticket.deviceModel}
         </div>
       </td>
@@ -64,7 +64,7 @@ export const EquipmentTicketRow: React.FC<EquipmentTicketRowProps> = ({
       </td>
 
       {/* 6. Hạn kiểm định (NĐ 04/2025/NĐ-CP) */}
-      <td className="py-3 px-3.5 text-center font-mono text-xs sm:text-sm border-r border-slate-100">
+      <td className="py-3 px-3.5 text-center font-sans tabular-nums text-xs sm:text-sm border-r border-slate-100">
         {ticket.nextInspectionDue.includes('(') ? (
           <div>
             <div className="font-semibold text-slate-900">{ticket.nextInspectionDue.split('(')[0].trim()}</div>

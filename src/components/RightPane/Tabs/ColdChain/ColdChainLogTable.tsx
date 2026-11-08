@@ -23,7 +23,7 @@ export const ColdChainLogTable: React.FC<ColdChainLogTableProps> = ({ logs }) =>
             Nhật ký nhiệt độ Datalogger tự động 24 giờ qua (Đo đạc mỗi 15 phút)
           </span>
         </div>
-        <div className="flex items-center gap-2 text-2xs sm:text-xs text-slate-500 font-mono">
+        <div className="flex items-center gap-2 text-xs text-slate-500 font-sans">
           <span>Datalogger: <strong className="text-slate-800">VAX-LOG-04</strong></span>
           <span>·</span>
           <span>Cảm biến: <strong className="text-slate-800">Sensirion SHT35</strong></span>
@@ -33,7 +33,7 @@ export const ColdChainLogTable: React.FC<ColdChainLogTableProps> = ({ logs }) =>
       {/* Desktop Table View (hidden sm:block) */}
       <div className="overflow-x-auto thin-scrollbar flex-1 min-h-0 hidden sm:block">
         <table className="w-full text-left border-collapse">
-          <thead className="bg-slate-50/70 border-b border-slate-200 sticky top-0 z-10 text-2xs font-semibold text-slate-600 uppercase tracking-wider">
+          <thead className="bg-slate-50/70 border-b border-slate-200 sticky top-0 z-10 text-xs font-semibold text-slate-600 uppercase tracking-wider">
             <tr>
               <th className="py-2 px-3 text-center w-12 border-r border-slate-100">STT</th>
               <th className="py-2 px-3.5 border-r border-slate-100">Thời Điểm Ghi Nhận</th>
@@ -54,30 +54,30 @@ export const ColdChainLogTable: React.FC<ColdChainLogTableProps> = ({ logs }) =>
                     isWarning ? 'bg-rose-50/40' : ''
                   }`}
                 >
-                  <td className="py-2.5 px-3 text-center font-mono text-slate-400 text-2xs border-r border-slate-100">
+                  <td className="py-2.5 px-3 text-center font-sans tabular-nums text-slate-400 text-xs border-r border-slate-100">
                     {index + 1}
                   </td>
-                  <td className="py-2.5 px-3.5 font-mono font-medium text-slate-800 border-r border-slate-100">
+                  <td className="py-2.5 px-3.5 font-sans tabular-nums font-medium text-slate-800 border-r border-slate-100">
                     {log.timestamp}
                   </td>
                   <td className="py-2.5 px-3.5 border-r border-slate-100">
                     <span
-                      className={`font-mono font-bold text-sm tabular-nums ${
+                      className={`font-sans font-bold text-sm tabular-nums ${
                         isWarning ? 'text-rose-700' : 'text-slate-900'
                       }`}
                     >
                       {log.temperature.toFixed(1)}°C
                     </span>
                   </td>
-                  <td className="py-2.5 px-3.5 font-mono text-slate-600 border-r border-slate-100">
+                  <td className="py-2.5 px-3.5 font-sans tabular-nums text-slate-600 border-r border-slate-100">
                     {log.humidity}% RH
                   </td>
-                  <td className="py-2.5 px-3.5 text-2xs font-mono text-slate-500 border-r border-slate-100">
+                  <td className="py-2.5 px-3.5 text-xs font-sans tabular-nums text-slate-500 border-r border-slate-100">
                     2.0°C – 8.0°C
                   </td>
                   <td className="py-2.5 px-3.5">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold border ${
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border ${
                         isWarning
                           ? 'bg-rose-50 text-rose-800 border-rose-300'
                           : 'bg-emerald-50 text-emerald-800 border-emerald-300'
@@ -118,13 +118,13 @@ export const ColdChainLogTable: React.FC<ColdChainLogTableProps> = ({ logs }) =>
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="font-mono text-2xs text-slate-400">#{index + 1}</span>
-                <span className="font-mono font-medium text-slate-800">{log.timestamp}</span>
+                <span className="font-sans tabular-nums text-xs text-slate-400">#{index + 1}</span>
+                <span className="font-sans tabular-nums font-medium text-slate-800">{log.timestamp}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-2xs text-slate-500">{log.humidity}% RH</span>
+                <span className="font-sans tabular-nums text-xs text-slate-500">{log.humidity}% RH</span>
                 <span
-                  className={`font-mono font-bold text-sm tabular-nums ${
+                  className={`font-sans font-bold text-sm tabular-nums ${
                     isWarning ? 'text-rose-700' : 'text-slate-900'
                   }`}
                 >

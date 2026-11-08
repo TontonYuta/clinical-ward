@@ -157,26 +157,26 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
     <div role="dialog" aria-modal="true" aria-label="Xác thực chữ ký số lâm sàng" className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-lg shadow-xl border border-slate-200 max-w-xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[92vh]">
         {/* Header */}
-        <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div className="bg-white border-b border-slate-200 text-slate-900 px-5 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-teal-600/30 border border-teal-400/40 flex items-center justify-center text-teal-300">
+            <div className="w-8 h-8 rounded-md bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700">
               <Lock className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+              <h2 className="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-2">
                 <span>Xác Thực Ký Duyệt Lâm Sàng</span>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-500/30">
+                <span className="text-xs font-bold font-sans px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
                   Nghị định 130/2018/NĐ-CP
                 </span>
               </h2>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-xs text-slate-500">
                 Xác nhận danh tính chuyên môn trước khi thực thi nghiệp vụ dược và thiết bị y tế
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+            className="w-7 h-7 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -260,22 +260,22 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
             {/* Signer credentials card */}
             <div className="bg-white/80 rounded p-2.5 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs">
                   {currentSigner.name.charAt(0)}
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-slate-900">{currentSigner.name}</span>
-                    <span className="text-[10px] font-semibold text-slate-500">· {currentSigner.roleName}</span>
+                    <span className="text-xs font-semibold text-slate-500">· {currentSigner.roleName}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono mt-0.5 flex-wrap">
+                  <div className="flex items-center gap-3 text-xs text-slate-600 font-sans tabular-nums mt-0.5 flex-wrap">
                     <span>CCHN: <strong className="text-slate-800">{currentSigner.practiceCertificate}</strong></span>
                     <span>Thẻ RFID: <strong className="text-slate-800">{currentSigner.rfidCardId}</strong></span>
                   </div>
                 </div>
               </div>
 
-              <span className="text-[10px] text-slate-400 font-mono">
+              <span className="text-xs text-slate-500 font-sans">
                 {currentSigner.department}
               </span>
             </div>
@@ -496,7 +496,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
                     <span>Chạm thẻ: {currentSigner.name} ({currentSigner.rfidCardId})</span>
                   </button>
 
-                  <p className="text-[10px] font-mono text-slate-400">
+                  <p className="text-xs font-sans text-slate-500">
                     Âm thanh bíp đầu đọc RFID bệnh viện được phát tự động khi chạm thẻ
                   </p>
                 </div>
@@ -515,7 +515,7 @@ export const ClinicalAuthModal: React.FC<ClinicalAuthModalProps> = ({
           </div>
 
           {/* Medical Legal Guarantee Notice */}
-          <div className="border-t border-slate-200 pt-3 flex items-start gap-2 text-[10px] text-slate-500">
+          <div className="border-t border-slate-200 pt-3 flex items-start gap-2 text-xs text-slate-500">
             <Lock className="w-3.5 h-3.5 text-teal-700 shrink-0 mt-0.5" />
             <span>
               Chữ ký điện tử y tế có giá trị pháp lý theo Nghị định 130/2018/NĐ-CP. Thao tác được tự động lưu trữ vào hồ sơ theo dõi lâm sàng của bệnh viện để bảo đảm an toàn người bệnh.

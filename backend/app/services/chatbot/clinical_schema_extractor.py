@@ -100,11 +100,17 @@ def extract_clinical_query_schema_deterministic(
     if session_context:
         active_med = session_context.get("active_medication") or session_context.get("active_medication_name") or ""
 
+    is_legal_duration = any(k in lower for k in ("kê đơn tối đa", "đơn thuốc tối đa", "tối đa mấy ngày", "bao nhiêu ngày", "số ngày kê", "thời hạn đơn", "thông tư 26", "tt 26", "thông tư", "nghị định"))
+    is_legal_or_regulatory = is_legal_duration or any(w in lower for w in (
+        "thông tư", "tt 26", "tt 20", "tt 51", "tt 36", "tt 22", "tt 52",
+        "nghị định", "luật dược", "quy chế", "kê đơn", "đơn thuốc", "bảo hiểm", "bhyt"
+    ))
+
     switches_subject = any(cue in lower for cue in ("đổi sang", "chuyển sang", "chuyển qua", "nếu dùng", "thế còn", "sang thuốc"))
     references_prev = any(cue in lower for cue in ("thuốc đó", "thuốc này", "nó có", "nó", "thuốc vừa nói", "của thuốc"))
 
     # Nếu câu hỏi ngắn gọn không nêu tên thuốc nhưng có session context
-    if not extracted_names and active_med and (references_prev or any(f in lower for f in ("liều", "chỉ định", "tác dụng", "chống chỉ định"))):
+    if not extracted_names and active_med and not is_legal_or_regulatory and (references_prev or any(f in lower for f in ("liều", "chỉ định", "tác dụng", "chống chỉ định"))):
         medications.append(ExtractedMedication(
             canonical_id=_normalize_str(active_med),
             surface_form=active_med,
@@ -152,14 +158,14 @@ def extract_clinical_query_schema_deterministic(
     has_timing = any(k in lower for k in ("sáng", "buổi sáng", "buổi tối", "ban đêm", "lúc đói", "lúc no", "trước ăn", "sau ăn", "khi nào uống", "uống lúc nào", "thời điểm", "trước hay sau", "uống tối")) or bool(re.search(r"\btối\b(?!\s*đa)(?!\s*thiểu)", lower))
     if has_timing:
         target_facets.append("timing_and_administration")
-    if any(k in lower for k in ("liều tối đa", "tối đa", "giới hạn liều", "kịch trần", "quá liều", "tối đa mấy", "bao nhiêu viên 1 ngày", "bao nhiêu gam 1 ngày")):
+    if not is_legal_duration and any(k in lower for k in ("liều tối đa", "giới hạn liều", "kịch trần", "quá liều", "bao nhiêu viên 1 ngày", "bao nhiêu gam 1 ngày", "tối đa bao nhiêu mg", "tối đa bao nhiêu viên")):
         target_facets.append("max_dosage")
     if any(k in lower for k in ("rượu", "bia", "cồn", "alcohol", "kỵ rượu", "uống rượu")):
         target_facets.append("alcohol_interaction")
     if any(k in lower for k in ("sữa", "thức ăn", "canxi", "nước cam", "uống cùng sữa")):
         target_facets.append("food_interaction")
 
-    if any(k in lower for k in ("liều", "lieu", "uống mấy viên", "cách dùng", "ngày mấy lần")):
+    if not is_legal_duration and any(k in lower for k in ("liều", "lieu", "uống mấy viên", "cách dùng", "ngày mấy lần")):
         requested_fields.append("dosage")
     if any(k in lower for k in ("tác dụng phụ", "tac dung phu", "không mong muốn", "adr", "dị ứng", "nổi ban")):
         requested_fields.append("adverse_effects")
@@ -211,20 +217,31 @@ def extract_clinical_query_schema_deterministic(
     target_facets = list(dict.fromkeys(target_facets))
 
     # Xử lý kế thừa ngữ cảnh hỏi tiếp
-    is_followup = references_prev or (not extracted_names and (bool(target_facets) or any(cue in lower for cue in ("còn", "thế còn", "vậy", "thì sao", "được không", "uống sáng hay tối", "kỵ rượu không", "có kỵ", "liều tối đa"))))
-    if is_followup and active_med and not medications:
-        medications.append(ExtractedMedication(
-            canonical_id=_normalize_str(active_med),
-            surface_form=active_med,
-            role="primary_medication",
-            resolution="session_context"
-        ))
+    if is_legal_or_regulatory:
+        is_followup = False
+        references_prev = False
+        medications = [m for m in medications if m.resolution != "session_context"]
+    else:
+        is_followup = references_prev or (not extracted_names and (bool(target_facets) or any(cue in lower for cue in ("còn", "thế còn", "vậy", "thì sao", "được không", "uống sáng hay tối", "kỵ rượu không", "có kỵ", "liều tối đa"))))
+        if is_followup and active_med and not medications:
+            medications.append(ExtractedMedication(
+                canonical_id=_normalize_str(active_med),
+                surface_form=active_med,
+                role="primary_medication",
+                resolution="session_context"
+            ))
 
     # 5. Xác định Ý định lâm sàng chính & Độ sâu truy vấn (Query Depth)
     is_interaction_q = "interactions" in requested_fields or any(k in lower for k in ("tương tác", "uống chung", "phối hợp", "dùng cùng"))
     num_drugs = len([m for m in medications if m.role != "contextual_exposure"])
 
-    if is_interaction_q:
+    if is_legal_or_regulatory:
+        primary_intent = "regulatory_guideline"
+        query_depth = "OVERVIEW"
+        target_facets = []
+        requested_fields = []
+        medications = []
+    elif is_interaction_q:
         primary_intent = "interaction_assessment"
         query_depth = "INTERACTION"
         if num_drugs < 2 and not active_med:

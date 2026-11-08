@@ -127,7 +127,12 @@ class SessionState:
             self.last_active_medication_name = name
             self.last_active_medication_ingredient = ingredient or name
             self.last_active_medication_sdk = sdk
-        self.fsm_state = "DRUG_FOCUSED"
+            self.fsm_state = "DRUG_FOCUSED"
+        else:
+            self.last_active_medication_name = None
+            self.last_active_medication_ingredient = None
+            self.last_active_medication_sdk = None
+            self.fsm_state = "IDLE"
         self.touch()
 
     def get_effective_medication_name(self) -> Optional[str]:
@@ -145,6 +150,9 @@ class SessionState:
         self.active_medication_stock = None
         self.active_medication_location = None
         self.active_medication_sdk = None
+        self.last_active_medication_name = None
+        self.last_active_medication_ingredient = None
+        self.last_active_medication_sdk = None
         self.fsm_state = "IDLE"
         self.comparison_drugs = []
         self.touch()

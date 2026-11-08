@@ -61,10 +61,17 @@ def validate_grounded_reply(
         return reply_text, citations, True
 
     valid_citations = []
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    matcher = get_drug_lexical_matcher()
+    target_keys_lower = {k.lower() for k in target_drug_keys}
+
     for c in citations:
         source_text = f"{c.get('source', '')} {c.get('section', '')} {c.get('excerpt', '')}".casefold()
         resolved_citation_drugs = resolve_registered_medications(source_text)
-        if any(key in resolved_citation_drugs for key in target_drug_keys) or not resolved_citation_drugs:
+        lex_citation_drugs = [d.lower() for d in matcher.extract_medications(source_text)]
+        all_citation_drugs = set(resolved_citation_drugs + lex_citation_drugs)
+
+        if any(key in all_citation_drugs for key in target_keys_lower) or not all_citation_drugs:
             valid_citations.append(c)
 
     leak_drugs = [d for d in reply_drugs if d not in target_drug_keys and DRUG_REGISTRY.get(d, {}).get("entity_role") != "contextual_exposure"]

@@ -601,13 +601,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         <ShieldAlert className="w-4 h-4 text-rose-600" />
                         <span>Đơn thuốc “N” (Gây nghiện - TT 26)</span>
                       </span>
-                      <span className="text-2xs font-sans tabular-nums bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mã: -N</span>
+                      <span className="text-xs font-sans tabular-nums bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mã: -N</span>
                     </div>
-                    <p className="text-2xs text-rose-800 leading-relaxed">
+                    <p className="text-xs text-rose-800 leading-relaxed">
                       Kê tối đa 07 ngày cho bệnh cấp tính; tối đa 30 ngày chia làm 03 đợt điều trị cho bệnh nhân ung thư.
                     </p>
                     <div className="space-y-1.5">
-                      <label className="block text-2xs font-bold text-slate-700">Phân bổ 3 đợt điều trị (nếu kê 30 ngày):</label>
+                      <label className="block text-xs font-bold text-slate-700">Phân bổ 3 đợt điều trị (nếu kê 30 ngày):</label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <input
                           type="text"
@@ -633,7 +633,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                       </div>
                     </div>
                     <div>
-                      <label className="block text-2xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
                         CCCD người nhận thuốc (nếu khác người bệnh):
                       </label>
                       <input
@@ -654,10 +654,10 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         <Pill className="w-4 h-4 text-purple-600" />
                         <span>Đơn thuốc “H” (Hướng thần, tiền chất - TT 26)</span>
                       </span>
-                      <span className="text-2xs font-sans tabular-nums bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">Mã: -H</span>
+                      <span className="text-xs font-sans tabular-nums bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">Mã: -H</span>
                     </div>
                     <div>
-                      <label className="block text-2xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
                         CCCD người nhận thuốc (nếu khác người bệnh):
                       </label>
                       <input
@@ -966,7 +966,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                       </span>
                     </b>
                     {ddiAudit?.pair_alerts?.map((a, i) => (
-                      <p key={i} className="text-2xs leading-relaxed pl-5">
+                      <p key={i} className="text-xs leading-relaxed pl-5">
                         • <strong>{a.title}</strong> ({a.severity}) — {a.consequence}; Xử trí: {a.action}; Nguồn: {a.source}
                       </p>
                     ))}
@@ -985,14 +985,14 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                         <span>Cảnh báo Giám định BHYT (Thông tư 20/2022/TT-BYT)</span>
                       </b>
                       {bhytAuditReport.atRiskCostVnd > 0 && (
-                        <span className="text-2xs font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200">
                           Nguy cơ xuất toán: -{bhytAuditReport.atRiskCostVnd.toLocaleString('vi-VN')} đ
                         </span>
                       )}
                     </div>
                     <div className="space-y-2 pl-5">
                       {bhytAuditReport.violations.map((v, i) => (
-                        <div key={i} className="text-2xs leading-relaxed border-l-2 border-amber-400 pl-2.5 py-0.5">
+                        <div key={i} className="text-xs leading-relaxed border-l-2 border-amber-400 pl-2.5 py-0.5">
                           <div className="flex items-center gap-1.5 font-semibold text-slate-900">
                             <span>• {v.drugName}</span>
                             <span className={`px-1.5 py-0.2 rounded text-3xs uppercase font-bold ${

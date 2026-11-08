@@ -132,24 +132,53 @@ def _clean_base64_data(image_base64: str, default_mime: str = "image/jpeg") -> t
         mime_type = prefix.replace("data:", "").strip() or default_mime
     return clean_data.strip(), mime_type
 
-DEFAULT_PRESCRIPTION_OCR_PROMPT = """Bạn là trợ lý OCR y tế lâm sàng chuyên nghiệp đọc đơn thuốc và tài liệu viện phí BHYT Việt Nam.
-Hãy đọc ảnh và trích xuất chính xác thông tin cấu trúc đơn thuốc theo JSON hợp lệ (không chứa markdown fences hay text giải thích thừa):
+DEFAULT_PRESCRIPTION_OCR_PROMPT = """Bạn là trợ lý AI Vision OCR y tế & dược phẩm lâm sàng chuyên nghiệp tại Việt Nam.
+Nhiệm vụ: Phân tích hình ảnh tài liệu y tế (Đơn thuốc lâm sàng, Hóa đơn điện tử VAT, Phiếu xuất kho kiêm vận chuyển nội bộ, Bảng kê phân phối dược CPC1/Sanofi/DHG, hoặc Bill bán lẻ).
+
+HƯỚNG DẪN BÓC TÁCH CHI TIẾT THEO BỐ CỤC:
+1. PHÂN LOẠI TÀI LIỆU (document_type):
+   - "PRESCRIPTION": Đơn thuốc điều trị ngoại trú / nội trú (có tên bệnh nhân, chẩn đoán, thuốc, liều dùng).
+   - "INVOICE": Hóa đơn GTGT điện tử (e-Invoice VAT) hoặc Bảng kê viện phí (có MST, Số HĐ, Đơn giá, Thành tiền).
+   - "DELIVERY_NOTE": Phiếu xuất kho / Phiếu giao nhận dược phẩm (có Số lô, HSD, SĐK).
+   - "RECEIPT": Hóa đơn bán lẻ / Bill in nhiệt K80/K57.
+
+2. QUY TẮC BÓC TÁCH BẢNG & DÒNG PHỤ (Sub-row Reconstruction):
+   - Gom cụm thông tin: Nếu Số lô (Lot/Batch) và Hạn dùng (Exp/HSD) nằm ở dòng phụ thụt lề dưới tên thuốc (phổ biến ở CPC1/Sanofi), hãy gom vào cùng một mặt hàng.
+   - Tách sạch Tên thuốc (drug_name): Chỉ chứa tên thương mại hoặc hoạt chất (ví dụ 'Augmentin', 'Nexium', 'Panadol Extra'), KHÔNG gộp số lô hay hạn dùng vào tên thuốc.
+   - Hàm lượng (dosage): Tách riêng nồng độ/hàm lượng (ví dụ '500mg', '1g', '20mg', '100ml').
+   - Đơn vị tính (unit): Viên, Hộp, Vỉ, Gói, Lọ, Chai, Ống, Tuýp, Nang...
+   - Số lượng (quantity): Số lượng thực xuất/cấp phát dạng số (float/int).
+   - Đơn giá & Thành tiền: Trích xuất đơn giá và thành tiền chính xác. Logic: total_price = quantity * unit_price (trừ đi chiết khấu nếu có).
+   - Số lô (batch_number) & Hạn dùng (expiry_date): Trích xuất chính xác chuỗi số lô và ngày hết hạn.
+
+3. ĐỊNH DẠNG KẾT QUẢ:
+Trả về DUY NHẤT một đối tượng JSON hợp lệ (không chứa markdown fences hay text giải thích ngoài):
 {
-  "patient_name": "Họ và tên bệnh nhân (viết hoa chuẩn)",
+  "document_type": "PRESCRIPTION",
+  "seller_name": "Tên đơn vị phát hành / Bệnh viện / Công ty dược nếu có",
+  "seller_tax_id": "Mã số thuế bên bán nếu có",
+  "invoice_number": "Số hóa đơn hoặc mã phiếu nếu có",
+  "patient_name": "Họ và tên bệnh nhân hoặc khách hàng (chữ hoa chuẩn)",
   "patient_age": 50,
-  "insurance_card_number": "Mã thẻ BHYT (ví dụ GD4790000000000, 15 ký tự)",
-  "primary_icd10": "Mã ICD-10 bệnh chính (ví dụ I10, E11, M16)",
-  "primary_diagnosis": "Chẩn đoán bệnh chính",
+  "insurance_card_number": "Mã thẻ BHYT (ví dụ GD4790000000000, 15 ký tự nếu có)",
+  "primary_icd10": "Mã ICD-10 bệnh chính nếu có (ví dụ I10, E11, M16)",
+  "primary_diagnosis": "Chẩn đoán bệnh chính nếu có",
   "secondary_icd10s": ["Mã ICD phụ nếu có"],
   "items": [
     {
-      "drug_name": "Tên biệt dược hoặc hoạt chất (ví dụ Paracetamol, Diclofenac, Amlodipin)",
-      "dosage": "Hàm lượng thuốc nếu đọc được (ví dụ 500mg, 50mg, 10mg)",
+      "drug_name": "Tên biệt dược hoặc hoạt chất sạch",
+      "active_ingredient": "Hoạt chất nếu ghi rõ trên tài liệu",
+      "dosage": "500mg",
+      "unit": "Viên",
       "quantity": 10.0,
       "days_supply": 7,
-      "route": "Đường dùng (Uống, Tiêm, Bôi, Đặt...)",
-      "instructions": "Cách dùng cụ thể (ví dụ Uống 1 viên x 2 lần/ngày sau ăn)",
-      "unit_price": 0.0
+      "unit_price": 15000.0,
+      "total_price": 150000.0,
+      "batch_number": "B24098",
+      "expiry_date": "30/12/2027",
+      "vat_rate": 5.0,
+      "route": "Uống",
+      "instructions": "Uống 1 viên x 2 lần/ngày sau ăn"
     }
   ]
 }

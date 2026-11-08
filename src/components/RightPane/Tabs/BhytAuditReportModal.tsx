@@ -158,7 +158,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="h-9 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-bold shadow-xs cursor-pointer transition flex items-center gap-2"
+              className="h-9 px-4 bg-teal-600 hover:bg-teal-500 text-white rounded-md text-sm font-bold shadow-xs cursor-pointer transition flex items-center gap-2"
               title="In trực tiếp hoặc Lưu dưới dạng PDF qua trình duyệt"
             >
               <Printer className="w-4 h-4" />
@@ -168,7 +168,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer flex items-center justify-center ml-1"
+              className="w-9 h-9 rounded-md hover:bg-teal-700/60 text-teal-200 hover:text-white transition cursor-pointer flex items-center justify-center ml-1"
               title="Đóng (Esc)"
             >
               <X className="w-5 h-5" />

@@ -26,10 +26,10 @@ export const AssetAuditCard: React.FC<AssetAuditCardProps> = ({
       {/* Card Top: Code + Risk Class */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs sm:text-sm font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/70">
+          <span className="font-sans tabular-nums text-xs sm:text-sm font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/70">
             {asset.code}
           </span>
-          <span className="text-xs sm:text-sm text-slate-500 font-mono font-semibold">SN: {asset.serialNumber}</span>
+          <span className="text-xs sm:text-sm text-slate-500 font-sans tabular-nums font-semibold">SN: {asset.serialNumber}</span>
         </div>
         <div>
           <span
@@ -76,7 +76,7 @@ export const AssetAuditCard: React.FC<AssetAuditCardProps> = ({
         </div>
         <div className="flex items-center justify-between text-xs sm:text-sm pt-2 border-t border-slate-200 text-slate-600">
           <span>
-            Hao mòn: <strong className="text-slate-900 font-mono font-bold text-sm sm:text-base">{asset.depreciationRatePercent}%</strong> ({asset.operatingYears} năm)
+            Hao mòn: <strong className="text-slate-900 font-sans tabular-nums font-bold text-sm sm:text-base">{asset.depreciationRatePercent}%</strong> ({asset.operatingYears} năm)
           </span>
           {asset.pendingLiquidation ? (
             <span className="text-rose-600 font-bold">Chờ thanh lý</span>

@@ -94,16 +94,16 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
         }`}
       >
         {/* Header Bar */}
-        <div className="h-14 px-4 bg-slate-900 text-white flex items-center justify-between gap-3 shrink-0 select-none border-b border-slate-800">
+        <div className="h-14 px-4 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between gap-3 shrink-0 select-none">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4 text-teal-300" />
+            <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 border border-teal-200 flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4 text-teal-700" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-100 truncate">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                 {target.title || 'Bản Scan PDF Văn Bản Gốc'}
               </h3>
-              <p className="text-3xs text-teal-300 truncate font-mono">
+              <p className="text-xs text-slate-500 truncate font-sans">
                 {target.legal_basis ? `${target.legal_basis} · ` : ''}Trang {currentPage}
               </p>
             </div>
@@ -112,20 +112,20 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
           {/* Controls */}
           <div className="flex items-center gap-2 shrink-0">
             {/* Page navigation */}
-            <div className="flex items-center gap-1 bg-slate-800 rounded-md border border-slate-700 px-1.5 py-0.5 text-2xs text-slate-200">
+            <div className="flex items-center gap-1 bg-slate-100 rounded-md border border-slate-200 px-1.5 py-0.5 text-xs text-slate-700">
               <button
                 type="button"
                 onClick={() => handlePageChange(-1)}
-                className="p-1 rounded hover:bg-slate-700 transition cursor-pointer text-slate-300 hover:text-white"
+                className="p-1 rounded hover:bg-slate-200 transition cursor-pointer text-slate-600 hover:text-slate-900"
                 title="Trang trước"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-              <span className="font-mono px-1 font-semibold text-teal-300">Tr. {currentPage}</span>
+              <span className="font-sans tabular-nums px-1 font-semibold text-teal-700">Tr. {currentPage}</span>
               <button
                 type="button"
                 onClick={() => handlePageChange(1)}
-                className="p-1 rounded hover:bg-slate-700 transition cursor-pointer text-slate-300 hover:text-white"
+                className="p-1 rounded hover:bg-slate-200 transition cursor-pointer text-slate-600 hover:text-slate-900"
                 title="Trang tiếp"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -135,7 +135,7 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
             <a
               href={baseUrl}
               download
-              className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
               title="Tải tệp PDF về máy"
             >
               <Download className="w-4 h-4" />
@@ -145,7 +145,7 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
               href={activeUrl}
               target="_blank"
               rel="noreferrer"
-              className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
               title="Mở toàn trang tab mới"
             >
               <ExternalLink className="w-4 h-4" />
@@ -154,7 +154,7 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer hidden md:inline-flex"
+              className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer hidden md:inline-flex"
               title={isExpanded ? 'Thu nhỏ' : 'Toàn màn hình'}
             >
               {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -163,7 +163,7 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-md text-slate-300 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer ml-1"
+              className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer ml-1"
               title="Đóng (Esc)"
               aria-label="Đóng (Esc)"
             >

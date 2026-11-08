@@ -105,24 +105,24 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
       <div className="bg-white sm:rounded-lg rounded-none shadow-xl border sm:border-slate-200 border-none w-full h-full sm:h-[90vh] sm:max-h-[90vh] sm:max-w-5xl flex flex-col overflow-hidden">
-        {/* Header - Workstation Dark Bar */}
-        <div className="h-14 sm:h-16 px-4 sm:px-6 bg-slate-900 text-white flex items-center justify-between shrink-0 shadow-xs">
+        {/* Header - Workstation Bar */}
+        <div className="h-14 sm:h-16 px-4 sm:px-6 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0 shadow-xs">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-teal-50 text-teal-700 border border-teal-200 flex items-center justify-center shrink-0">
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-bold truncate">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 truncate">
                 Hướng Dẫn Vận Hành Lâm Sàng
               </h2>
-              <p className="text-xs text-slate-400 font-mono truncate">
+              <p className="text-xs text-slate-500 font-sans truncate">
                 Quy chuẩn Ca trực · CPOE · Kho Dược · Thiết bị · AI CDSS
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
             title="Đóng cửa sổ"
           >
             <X className="w-5 h-5" />
@@ -145,7 +145,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                 onClick={() => setActiveTab(tab.id)}
                 className={`inline-flex items-center gap-2 px-3.5 py-2.5 border-b-2 shrink-0 font-medium cursor-pointer transition-colors text-sm whitespace-nowrap ${
                   isSelected
-                    ? 'border-slate-900 text-slate-950 font-semibold'
+                    ? 'border-teal-700 text-teal-950 font-semibold'
                     : 'border-transparent text-slate-600 hover:text-slate-950'
                 }`}
               >
@@ -176,7 +176,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Bước 1 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">1</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">1</span>
                       <h4>Bàn giao & Tiếp nhận ca trực (07:00 / 19:00)</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -187,7 +187,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Bước 2 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">2</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">2</span>
                       <h4>Mượn khẩn thuốc / vật tư ca đêm</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -198,7 +198,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Bước 3 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">3</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">3</span>
                       <h4>Hoàn bù cơ số & Tự động trừ kho Dược FEFO</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -209,7 +209,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Bước 4 */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">4</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">4</span>
                       <h4>Ký số chuyên môn & Sổ nhật ký kiểm toán bất biến</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -243,7 +243,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="space-y-1 pb-3 border-b border-slate-200/80">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900">1. Điều Dưỡng Ca Trực</span>
-                      <span className="font-mono font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
+                      <span className="font-sans tabular-nums font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
                         PIN: {showPinCodes ? '1111' : '••••'}
                       </span>
                     </div>
@@ -255,7 +255,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="space-y-1 pb-3 border-b border-slate-200/80">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900">2. Bác Sĩ Điều Trị</span>
-                      <span className="font-mono font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
+                      <span className="font-sans tabular-nums font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
                         PIN: {showPinCodes ? '4444' : '••••'}
                       </span>
                     </div>
@@ -267,7 +267,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="space-y-1 pb-3 border-b border-slate-200/80">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900">3. Dược Sĩ Kho Dược</span>
-                      <span className="font-mono font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
+                      <span className="font-sans tabular-nums font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
                         PIN: {showPinCodes ? '2222' : '••••'}
                       </span>
                     </div>
@@ -279,7 +279,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="space-y-1 pb-3 border-b border-slate-200/80">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900">4. Kỹ Sư TBYT</span>
-                      <span className="font-mono font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
+                      <span className="font-sans tabular-nums font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
                         PIN: {showPinCodes ? '3333' : '••••'}
                       </span>
                     </div>
@@ -291,7 +291,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900">5. Ban Giám Đốc</span>
-                      <span className="font-mono font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
+                      <span className="font-sans tabular-nums font-bold bg-white px-2 py-0.5 border border-slate-200 rounded text-slate-800">
                         PIN: {showPinCodes ? '9999' : '••••'}
                       </span>
                     </div>
@@ -321,7 +321,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 1 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">1</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">1</span>
                       <h4>Lập đơn thuốc CPOE điện tử theo Thông tư 26/2025</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -332,7 +332,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 2 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-rose-800 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-rose-700 text-white flex items-center justify-center text-xs shrink-0 font-mono">2</span>
+                      <span className="w-5 h-5 rounded-full bg-rose-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">2</span>
                       <h4>Rà soát tiền sử dị ứng theo Thông tư 51/2017</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -343,7 +343,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 3 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-amber-800 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-amber-700 text-white flex items-center justify-center text-xs shrink-0 font-mono">3</span>
+                      <span className="w-5 h-5 rounded-full bg-amber-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">3</span>
                       <h4>Cảnh báo tương tác thuốc DDI nghiêm trọng (Quyết định 5948)</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -354,7 +354,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 4 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-blue-800 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs shrink-0 font-mono">4</span>
+                      <span className="w-5 h-5 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">4</span>
                       <h4>Hiệu chỉnh liều theo chức năng thận (KDIGO 2024)</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -365,7 +365,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 5 */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-xs shrink-0 font-mono">5</span>
+                      <span className="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">5</span>
                       <h4>Bệnh viện gửi thông tin về điện thoại người bệnh</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -435,7 +435,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 1 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">1</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">1</span>
                       <h4>Xuất kho theo nguyên tắc FEFO (Hạn ngắn xuất trước)</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -446,7 +446,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 2 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">2</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">2</span>
                       <h4>Cảnh báo chạm ngưỡng tồn kho tối thiểu (Min Threshold)</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -457,7 +457,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 3 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">3</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">3</span>
                       <h4>Thu hồi vỏ ống Morphin & Khóa niêm phong (TT 20/2017)</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -468,7 +468,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 4 */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">4</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">4</span>
                       <h4>Hội đồng tiêu hủy vỏ ống thuốc gây nghiện</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -531,7 +531,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 1 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-rose-800 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-rose-700 text-white flex items-center justify-center text-xs shrink-0 font-mono">1</span>
+                      <span className="w-5 h-5 rounded-full bg-rose-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">1</span>
                       <h4>Báo hỏng khẩn cấp thiết bị từ buồng bệnh</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -542,7 +542,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 2 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">2</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">2</span>
                       <h4>Tiếp nhận sửa chữa & Thay thế linh kiện chính hãng</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -553,7 +553,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 3 */}
                   <div className="space-y-1.5 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">3</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">3</span>
                       <h4>Đo kiểm định an toàn điện lực y tế (IEC 60601-1)</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">
@@ -564,7 +564,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   {/* Mục 4 */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-slate-950 font-bold">
-                      <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-mono">4</span>
+                      <span className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-xs shrink-0 font-sans font-bold">4</span>
                       <h4>Ký biên bản nghiệm thu bàn giao 02 bên</h4>
                     </div>
                     <p className="text-slate-600 leading-relaxed pl-7">

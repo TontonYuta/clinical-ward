@@ -76,9 +76,9 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
         <div className="px-3 sm:px-5 py-2 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
-              <span className="font-sans tabular-nums text-2xs sm:text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-md">MÃ BN: {patient.id}</span>
+              <span className="font-sans tabular-nums text-xs sm:text-sm font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-md">MÃ BN: {patient.id}</span>
               <h2 className="text-sm sm:text-xl font-bold text-slate-950 tracking-tight truncate">
-                {patient.fullName} <span className="text-2xs sm:text-sm font-normal text-slate-500">({patient.gender}, {patient.age} tuổi)</span>
+                {patient.fullName} <span className="text-xs sm:text-sm font-normal text-slate-500">({patient.gender}, {patient.age} tuổi)</span>
               </h2>
             </div>
           </div>

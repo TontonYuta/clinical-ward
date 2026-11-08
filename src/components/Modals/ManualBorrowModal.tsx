@@ -76,7 +76,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-2xs font-semibold text-slate-700 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+                <span className="font-sans text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-md">
                   TT 18/2026 &amp; VBHN 07
                 </span>
                 <h2 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight truncate">
@@ -129,7 +129,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               </div>
               <div>
                 <label className="font-semibold text-slate-800 block mb-1">Số lượng *:</label>
-                <input type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)} required placeholder="Ví dụ: 1 ống" className="w-full px-3 py-1.5 border rounded-lg font-mono font-bold text-teal-900" />
+                <input type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)} required placeholder="Ví dụ: 1 ống" className="w-full px-3 py-1.5 border rounded-lg font-sans tabular-nums font-bold text-teal-900" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -168,7 +168,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
                     }
                   }}
                   placeholder="BN-..."
-                  className="w-full px-2.5 py-1.5 border rounded-lg font-mono"
+                  className="w-full px-2.5 py-1.5 border rounded-lg font-sans tabular-nums font-semibold"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -199,7 +199,7 @@ export const ManualBorrowModal: React.FC<ManualBorrowModalProps> = ({
               </div>
               <div>
                 <label className="text-slate-700 block mb-1">SĐT nhận tin BV:</label>
-                <input type="tel" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} placeholder="09xxxxxxxx" className="w-full px-3 py-1.5 border rounded-lg font-mono" />
+                <input type="tel" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} placeholder="09xxxxxxxx" className="w-full px-3 py-1.5 border rounded-lg font-sans tabular-nums" />
               </div>
             </div>
           </div>

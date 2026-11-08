@@ -28,9 +28,16 @@ def _normalize_terms(text: str) -> set[str]:
 def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
     # Bắt buộc khớp thực thể dược phẩm nếu câu hỏi nêu đích danh thuốc
     from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
-    resolved_query_drugs = resolve_registered_medications(query)
-    if resolved_query_drugs and chunk.chunk.entity_type in {"monograph", "medication", "drug_profile"}:
-        chunk_text = f"{chunk.chunk.title} {chunk.chunk.content}".casefold()
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+
+    matcher = get_drug_lexical_matcher()
+    lex_drugs = matcher.extract_medications(query)
+    resolved_query_drugs = list(dict.fromkeys(
+        [d.lower() for d in resolve_registered_medications(query)] + [m.lower() for m in lex_drugs]
+    ))
+
+    if resolved_query_drugs:
+        chunk_text = f"{chunk.chunk.title} {chunk.chunk.content} {chunk.chunk.page_or_section}".casefold()
         if not any(d in chunk_text for d in resolved_query_drugs):
             return False
 
@@ -65,7 +72,7 @@ def _display_source(citation: RagCitation) -> str:
         return basis
     return citation.section or citation.source
 
-def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCitation]:
+def build_claim_citations(retrieved_chunks: list[RetrievedChunk], query: str = "") -> list[RagCitation]:
     citations: list[RagCitation] = []
     seen_sections = set()
 
@@ -81,7 +88,9 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk]) -> list[RagCit
         from app.services.copilot_drug_citation_helper import truncate_clinical_excerpt
         excerpt = truncate_clinical_excerpt(excerpt_text, max_length=240)
 
-        document_url, document_id, document_page = resolve_citation_document(c.source_doc, c.legal_basis, c.page_or_section)
+        document_url, document_id, document_page = resolve_citation_document(
+            c.source_doc, c.legal_basis, c.page_or_section, query=query
+        )
         citations.append(RagCitation(
             source=c.source_doc,
             legal_basis=c.legal_basis,

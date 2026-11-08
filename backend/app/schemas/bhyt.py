@@ -27,11 +27,20 @@ class BhytPrescriptionItemPayload(BaseModel):
     quantity: float = 1.0
     days_supply: int = 7
     unit_price: float = 0.0
+    total_price: Optional[float] = 0.0
+    unit: Optional[str] = "Viên"
+    batch_number: Optional[str] = ""
+    expiry_date: Optional[str] = ""
+    vat_rate: Optional[float] = 0.0
     instructions: Optional[str] = ""
     has_consultation_form: Optional[bool] = False
 
 class BhytPrescriptionPayload(BaseModel):
     prescription_id: Optional[str] = "RX-BHYT-NEW"
+    document_type: Optional[str] = "DON_THUOC"
+    seller_name: Optional[str] = ""
+    seller_tax_id: Optional[str] = ""
+    invoice_number: Optional[str] = ""
     patient_name: str = "Bệnh nhân"
     patient_age: int = 50
     insurance_card_number: str = "GD4790000000000"

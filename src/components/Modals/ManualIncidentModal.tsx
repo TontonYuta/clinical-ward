@@ -83,7 +83,7 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-2xs font-semibold text-slate-700 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+                <span className="font-sans text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-md">
                   NĐ 04/2025 &amp; NĐ 98/2021
                 </span>
                 <h2 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight truncate">
@@ -150,7 +150,7 @@ export const ManualIncidentModal: React.FC<ManualIncidentModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
               <label className="font-bold text-slate-900 block mb-1">Số Serial / Mã tài sản *:</label>
-              <input type="text" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} required className="w-full px-3 py-1.5 border rounded-md font-mono" />
+              <input type="text" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} required className="w-full px-3 py-1.5 border rounded-md font-sans tabular-nums font-semibold" />
             </div>
             <div>
               <label className="font-bold text-slate-900 block mb-1">Phân loại rủi ro (NĐ 04/2025):</label>

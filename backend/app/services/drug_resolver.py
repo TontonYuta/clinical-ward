@@ -13,6 +13,18 @@ from app.schemas.bhyt import (
 )
 from app.seed_bhyt_catalog import resolve_db_path, remove_vietnamese_accents
 
+RE_CONC = re.compile(r'(\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml|%|iu|ui))\b', re.IGNORECASE)
+RE_STT = re.compile(r'^\s*\[?\d+[.)\]]\s*')
+RE_QTY = re.compile(r'(?:x|sl:?|số lượng:?|\*)\s*\d+\s*(?:viên|ống|gói|lọ|chai|vỉ|hộp|nang|bột|ml|gam|tuýp)\b.*$', re.IGNORECASE)
+RE_BATCH_EXP = re.compile(r'\b(?:lô|batch|lot|hsd|exp|hạn dùng)[:\s#]*[A-Z0-9\-\/.]+', re.IGNORECASE)
+RE_FINANCIAL = re.compile(r'\b(?:đvt|đơn vị|đơn giá|thành tiền|vat|thuế)\b.*$', re.IGNORECASE)
+RE_PARENS = re.compile(r'\(([^)]+)\)')
+RE_PARENS_SUB = re.compile(r'\([^)]+\)')
+RE_DOSAGE_TAIL = re.compile(r'\b(?:ngày|uống|tiêm|truyền|sáng|trưa|chiều|tối|lần|mỗi|sau|trước|viên)\b.*$', re.IGNORECASE)
+RE_TOKENS = re.compile(r'[a-zA-Z0-9àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]+')
+RE_NUMERIC_TOKEN = re.compile(r'^\d+$')
+RE_DOSAGE_TOKEN = re.compile(r'^\d+(?:[.,]\d+)?(mg|g|mcg|ml|%|iu|ui)$', re.IGNORECASE)
+
 class DrugEntityResolver:
     """
     Hệ thống Hybrid Entity Resolution cho thuốc BHYT & Dược Quốc Gia:
@@ -25,6 +37,7 @@ class DrugEntityResolver:
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or resolve_db_path()
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.execute("PRAGMA case_sensitive_like = 1;")
         self._conn.execute("PRAGMA cache_size = -1000;")
         self._conn.execute("PRAGMA mmap_size = 0;")
         self._conn.row_factory = sqlite3.Row
@@ -63,40 +76,32 @@ class DrugEntityResolver:
         clean = raw_text.strip()
 
         # 1. Trích xuất hàm lượng
-        conc_match = re.search(r'(\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml|%|iu|ui))\b', clean, re.IGNORECASE)
+        conc_match = RE_CONC.search(clean)
         conc = conc_match.group(1).lower().replace(' ', '').replace(',', '.') if conc_match else None
 
         # 2. Loại bỏ STT đầu dòng
-        clean = re.sub(r'^\s*\[?\d+[.)\]]\s*', '', clean)
+        clean = RE_STT.sub('', clean)
 
-        # 3. Loại bỏ số lượng & đơn vị tính
-        clean = re.sub(
-            r'(?:x|sl:?|số lượng:?|\*)\s*\d+\s*(?:viên|ống|gói|lọ|chai|vỉ|hộp|nang|bột|ml|gam|tuýp)\b.*$',
-            '',
-            clean,
-            flags=re.IGNORECASE
-        )
+        # 3. Loại bỏ số lượng & đơn vị tính, số lô, hạn dùng
+        clean = RE_QTY.sub('', clean)
+        clean = RE_BATCH_EXP.sub('', clean)
+        clean = RE_FINANCIAL.sub('', clean)
 
         # 4. Trích xuất ngoặc đơn
-        paren_terms = re.findall(r'\(([^)]+)\)', clean)
-        clean_no_parens = re.sub(r'\([^)]+\)', '', clean).strip()
+        paren_terms = RE_PARENS.findall(clean)
+        clean_no_parens = RE_PARENS_SUB.sub('', clean).strip()
 
         # 5. Loại bỏ chỉ dẫn liều dùng phổ biến ở đuôi
-        clean_no_parens = re.sub(
-            r'\b(?:ngày|uống|tiêm|truyền|sáng|trưa|chiều|tối|lần|mỗi|sau|trước|viên)\b.*$',
-            '',
-            clean_no_parens,
-            flags=re.IGNORECASE
-        ).strip()
+        clean_no_parens = RE_DOSAGE_TAIL.sub('', clean_no_parens).strip()
 
         # 6. Tách từ khóa tên thuốc
-        tokens = re.findall(r'[a-zA-Z0-9àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]+', clean_no_parens)
+        tokens = RE_TOKENS.findall(clean_no_parens)
         # Bỏ các token thuần số hoặc hàm lượng hoặc từ phụ
         filtered_keywords = [
             t for t in tokens
             if len(t) >= 2
-            and not re.match(r'^\d+$', t)
-            and not re.match(r'^\d+(?:[.,]\d+)?(mg|g|mcg|ml|%|iu|ui)$', t, re.IGNORECASE)
+            and not RE_NUMERIC_TOKEN.match(t)
+            and not RE_DOSAGE_TOKEN.match(t)
             and t.lower() not in ['mg', 'ml', 'mcg', 'sl', 'vien', 'uong', 'thuoc', 'stt']
         ]
 
@@ -109,33 +114,45 @@ class DrugEntityResolver:
         }
 
     def _match_bhyt_catalog_fuzzy(self, token: str) -> List[Tuple[float, Dict[str, Any]]]:
-        """Khớp mờ bộ nhớ đệm 110 hoạt chất & biệt dược Thông tư 20."""
+        """Khớp mờ bộ nhớ đệm 110 hoạt chất & biệt dược Thông tư 20 siêu tốc."""
         token_l = token.lower()
-        if re.match(r'^\d+(?:[.,]\d+)?(mg|g|mcg|ml|%|iu|ui)$', token_l, re.IGNORECASE) or len(token_l) < 3:
+        if RE_DOSAGE_TOKEN.match(token_l) or len(token_l) < 3:
             return []
 
         token_norm = remove_vietnamese_accents(token_l)
         matches = []
 
         for item in self._bhyt_cache:
-            ai_ratio = difflib.SequenceMatcher(None, token_norm, item["active_ingredient_normalized"]).ratio()
-            b_ratios = [
-                difflib.SequenceMatcher(None, token_l, b.lower()).ratio()
-                for b in item.get("brand_names_list", [])
-            ]
-            max_b = max(b_ratios) if b_ratios else 0.0
-            score = max(ai_ratio, max_b)
+            score = 0.0
 
-            # Nếu tên biệt dược hoặc hoạt chất chứa trọn vẹn từ khóa (với điều kiện từ khóa >= 4 ký tự)
-            if len(token_l) >= 4:
-                for b in item.get("brand_names_list", []):
-                    b_l = b.lower()
-                    if token_l == b_l:
-                        score = max(score, 0.98)
-                    elif token_l in b_l.split():
-                        score = max(score, 0.92)
+            # 1. Kiểm tra nhanh trùng khớp chính xác hoặc từ vựng (O(1) / nano-giây)
+            exact_match = False
+            for b in item.get("brand_names_list", []):
+                b_l = b.lower()
+                if token_l == b_l:
+                    score = 0.98
+                    exact_match = True
+                    break
+                elif len(token_l) >= 4 and token_l in b_l.split():
+                    score = max(score, 0.92)
+
+            if not exact_match and len(token_l) >= 4:
                 if token_norm in item["active_ingredient_normalized"].split():
                     score = max(score, 0.90)
+
+            # 2. Nếu chưa có điểm cao, chỉ chạy SequenceMatcher khi độ dài tương đồng
+            if score < 0.90:
+                if abs(len(token_norm) - len(item["active_ingredient_normalized"])) <= 4:
+                    ai_ratio = difflib.SequenceMatcher(None, token_norm, item["active_ingredient_normalized"]).ratio()
+                    score = max(score, ai_ratio)
+
+                if score < 0.85:
+                    for b in item.get("brand_names_list", []):
+                        b_l = b.lower()
+                        if abs(len(token_l) - len(b_l)) <= 4:
+                            b_ratio = difflib.SequenceMatcher(None, token_l, b_l).ratio()
+                            if b_ratio > score:
+                                score = b_ratio
 
             if score >= 0.65:
                 matches.append((score, item))
@@ -246,7 +263,7 @@ class DrugEntityResolver:
         atc_filter = best_bhyt_rule["atc_code"] if (best_bhyt_rule and best_bhyt_score >= 0.70) else None
 
         # Bước 2: Truy vấn CSDL Dược Quốc Gia
-        search_terms = list(keywords) + list(paren_terms)
+        search_terms = list(keywords[:2]) + list(paren_terms[:1])
         if keywords:
             dedup_kw = re.sub(r'(.)\1+', r'\1', keywords[0])
             if dedup_kw not in search_terms:
@@ -265,12 +282,15 @@ class DrugEntityResolver:
             a_name = cand["active_ingredient"].lower()
             a_norm = remove_vietnamese_accents(a_name)
 
-            # Độ tương đồng tên
-            sim_b = difflib.SequenceMatcher(None, target_norm, b_name).ratio()
-            sim_a = difflib.SequenceMatcher(None, target_norm, a_name).ratio()
-            sim_b_no_acc = difflib.SequenceMatcher(None, target_no_accent, b_norm).ratio()
-            sim_a_no_acc = difflib.SequenceMatcher(None, target_no_accent, a_norm).ratio()
-            base_sim = max(sim_b, sim_a, sim_b_no_acc, sim_a_no_acc)
+            # Độ tương đồng tên siêu tốc
+            if target_norm == b_name or target_no_accent == b_norm:
+                base_sim = 1.0
+            elif target_norm == a_name or target_no_accent == a_norm:
+                base_sim = 0.95
+            else:
+                sim_b = difflib.SequenceMatcher(None, target_no_accent, b_norm).ratio() if abs(len(target_no_accent) - len(b_norm)) <= 10 else 0.0
+                sim_a = difflib.SequenceMatcher(None, target_no_accent, a_norm).ratio() if abs(len(target_no_accent) - len(a_norm)) <= 10 else 0.0
+                base_sim = max(sim_b, sim_a)
 
             # Thưởng thương hiệu chính xác: Nếu từ đầu tiên của tên biệt dược trùng khớp với từ khóa
             brand_first_word = b_norm.split()[0] if b_norm.split() else ""

@@ -14,9 +14,10 @@ import { CpoeHeaderRibbon } from './CPOE/CpoeHeaderRibbon';
 import { CpoeOrderList } from './CPOE/CpoeOrderList';
 import { CpoeOrderModal } from './CPOE/CpoeOrderModal';
 import { CpoeOrderDetailModal } from './CPOE/CpoeOrderDetailModal';
-import { PrescriptionAdviceModal } from '../../Modals/PrescriptionAdviceModal';
+import { SendSmsModal } from '../../Modals/SendSmsModal';
 import { PatientDetailModal } from '../../Modals/PatientDetailModal';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../services/patientService';
+import { buildDefaultTimeSlots } from '../../../services/prescriptionAdviceService';
 
 interface CpoePrescriptionTabProps {
   doctorName?: string;
@@ -262,12 +263,30 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
         }}
       />
 
-      {/* Modal Hướng Dẫn Dặn Dò Bệnh Nhân */}
-      <PrescriptionAdviceModal
-        isOpen={!!adviceOrder}
-        onClose={() => setAdviceOrder(null)}
-        order={adviceOrder}
-      />
+      {/* Modal Phát Tin Thông Báo & Dặn Dò Bệnh Nhân Chuẩn Workstation TT 26/2025/TT-BYT (Dual-Zone) */}
+      {adviceOrder && (
+        <SendSmsModal
+          isOpen={!!adviceOrder}
+          onClose={() => setAdviceOrder(null)}
+          patientName={adviceOrder.patientName}
+          patientPhone={adviceOrder.patientPhone || findPatientByNameOrQuery(adviceOrder.patientName.toLowerCase(), INITIAL_PATIENTS)?.phone}
+          patientEmail={adviceOrder.patientEmail || findPatientByNameOrQuery(adviceOrder.patientName.toLowerCase(), INITIAL_PATIENTS)?.email}
+          patientId={adviceOrder.patientId}
+          orderId={adviceOrder.id}
+          doctorName={adviceOrder.doctorName}
+          diagnosis={adviceOrder.diagnosisText}
+          medications={(adviceOrder.items || []).map((it, i) => ({
+            id: `sched-${i}`,
+            medicationName: it.medicationName,
+            activeIngredient: it.activeIngredient,
+            dosage: it.dosage,
+            route: it.route || 'Đường uống',
+            durationDays: adviceOrder.daysPrescribed || 7,
+            specialInstructions: it.instructions || undefined,
+            timeSlots: buildDefaultTimeSlots(it.frequency)
+          }))}
+        />
+      )}
 
       {/* Modal Chi Tiết Bệnh Nhân & An Toàn Lâm Sàng Chuẩn Kho Dược */}
       <PatientDetailModal

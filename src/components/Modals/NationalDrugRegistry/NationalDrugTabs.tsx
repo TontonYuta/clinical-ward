@@ -55,14 +55,14 @@ export const NationalDrugTabs: React.FC<NationalDrugTabsProps> = ({
             aria-pressed={isSelected}
             className={`px-3 py-2 border-b-2 shrink-0 font-medium cursor-pointer transition-colors flex items-center gap-1.5 whitespace-nowrap ${
               isSelected
-                ? 'border-slate-900 text-slate-950 font-semibold'
+                ? 'border-teal-700 text-teal-950 font-semibold'
                 : 'border-transparent text-slate-600 hover:text-slate-950'
             }`}
           >
             <span>{tab.label}</span>
             {count !== undefined && count > 0 && (
               <span
-                className="text-xs font-mono tabular-nums text-slate-500"
+                className="text-xs font-sans tabular-nums text-slate-500 font-semibold"
               >
                 {count > 999 ? `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}k` : count}
               </span>

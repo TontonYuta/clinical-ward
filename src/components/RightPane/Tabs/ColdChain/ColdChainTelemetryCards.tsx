@@ -54,14 +54,14 @@ export const ColdChainTelemetryCards: React.FC<ColdChainTelemetryCardsProps> = (
 
         <div className="flex items-baseline gap-1.5">
           <span
-            className={`text-2xl sm:text-3xl font-bold font-mono tabular-nums leading-none ${
+            className={`text-2xl sm:text-3xl font-bold font-sans tabular-nums leading-none ${
               isAlarm ? 'text-rose-600' : 'text-slate-900'
             }`}
           >
             {currentTemp.toFixed(1)}
           </span>
           <span className={`text-xs font-bold ${isAlarm ? 'text-rose-600' : 'text-slate-500'}`}>°C</span>
-          <span className="text-2xs text-slate-400 font-mono ml-auto">Ngưỡng: 2°C – 8°C</span>
+          <span className="text-xs text-slate-500 font-sans ml-auto">Ngưỡng: 2°C – 8°C</span>
         </div>
 
         {/* Visual Mini Safe-Zone Gauge */}
@@ -79,7 +79,7 @@ export const ColdChainTelemetryCards: React.FC<ColdChainTelemetryCardsProps> = (
               style={{ left: `${Math.min(100, Math.max(0, (currentTemp / 15) * 100))}%` }}
             />
           </div>
-          <div className="flex justify-between text-2xs text-slate-400 font-mono mt-1">
+          <div className="flex justify-between text-xs text-slate-500 font-sans tabular-nums mt-1">
             <span>0°C</span>
             <span className="text-emerald-700 font-semibold">2°C – 8°C GSP</span>
             <span>15°C</span>
@@ -90,21 +90,21 @@ export const ColdChainTelemetryCards: React.FC<ColdChainTelemetryCardsProps> = (
       {/* 2. Humidity & Datalogger Sensor */}
       <div className="p-3 sm:p-3.5 rounded-lg border border-slate-200 bg-white shadow-2xs">
         <div className="flex items-center justify-between gap-1 mb-1.5">
-          <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
             <Droplets className="w-3.5 h-3.5 text-blue-600" />
             Độ ẩm & Cảm biến
           </span>
-          <span className="text-2xs font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+          <span className="text-xs font-sans tabular-nums font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
             VAX-LOG-04
           </span>
         </div>
 
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums leading-none text-slate-900">
+          <span className="text-2xl sm:text-3xl font-bold font-sans tabular-nums leading-none text-slate-900">
             {coldChainState.currentHumidity}
           </span>
           <span className="text-xs font-bold text-slate-500">% RH</span>
-          <span className="text-2xs text-emerald-700 font-medium ml-auto">Chuẩn: 35–70%</span>
+          <span className="text-xs text-emerald-700 font-medium ml-auto">Chuẩn: 35–70%</span>
         </div>
 
         <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
@@ -156,7 +156,7 @@ export const ColdChainTelemetryCards: React.FC<ColdChainTelemetryCardsProps> = (
         </div>
 
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums leading-none text-slate-900">
+          <span className="text-2xl sm:text-3xl font-bold font-sans tabular-nums leading-none text-slate-900">
             {coldChainState.totalVaccineDoses.toLocaleString()}
           </span>
           <span className="text-xs font-bold text-slate-500">liều sinh phẩm</span>

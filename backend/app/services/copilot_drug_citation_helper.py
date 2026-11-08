@@ -68,6 +68,15 @@ def build_drug_citation(
     legal = source or getattr(monograph, "source", None) or getattr(matched, "clinical_source", None) or ""
     page_match = re.search(r"Trang\s*(\d+)", legal, re.IGNORECASE)
     page = int(page_match.group(1)) if page_match else None
+    if not page:
+        try:
+            from app.services.rag.source_resolver import resolve_citation_document
+            hint = getattr(monograph, "inn", None) or getattr(monograph, "title", None) or matched.brand_name or ""
+            _, _, resolved_page = resolve_citation_document(legal, legal, "", query=hint, active_drug=matched.brand_name)
+            if resolved_page:
+                page = resolved_page
+        except Exception:
+            page = None
     manifest_path = Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "clinical_source_manifest.json"
     try:
         sources = json.loads(manifest_path.read_text(encoding="utf-8")).get("sources", [])
