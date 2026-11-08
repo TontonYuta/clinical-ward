@@ -152,7 +152,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
         <div className="px-3 sm:px-5 py-2 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
-              <span className="font-mono text-2xs sm:text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+              <span className="font-sans tabular-nums text-2xs sm:text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-md tracking-tight">
                 MÃ ĐƠN: {activeOrder.id}
               </span>
               <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded border ${meta.colorBadge}`}>
@@ -183,7 +183,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 {activeOrder.patientName}
               </button> ({activeOrder.patientId})</span>
               <span className="text-slate-300">·</span>
-              <span className="truncate max-w-[280px] sm:max-w-none">Chẩn đoán: <strong className="font-mono text-slate-900 font-bold">[{activeOrder.diagnosisIcd10}]</strong> <span className="text-slate-800">{activeOrder.diagnosisText}</span></span>
+              <span className="truncate max-w-[280px] sm:max-w-none">Chẩn đoán: <strong className="font-sans tabular-nums text-slate-900 font-bold">[{activeOrder.diagnosisIcd10}]</strong> <span className="text-slate-800">{activeOrder.diagnosisText}</span></span>
             </div>
           </div>
 
@@ -227,7 +227,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 onClick={() => setActiveTab(tab)}
                 className={`px-3.5 py-2.5 border-b-2 shrink-0 font-medium cursor-pointer transition-colors text-sm whitespace-nowrap ${
                   isSelected
-                    ? 'border-slate-900 text-slate-950 font-semibold'
+                    ? 'border-teal-700 text-teal-950 font-bold'
                     : 'border-transparent text-slate-600 hover:text-slate-950'
                 }`}
               >
@@ -248,7 +248,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                     Chẩn Đoán Y Khoa Xác Định (ICD-10)
                   </h3>
-                  <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+                  <span className="font-sans tabular-nums text-xs font-bold text-slate-900 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-md">
                     {order.diagnosisIcd10}
                   </span>
                 </div>
@@ -276,7 +276,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                     <div key={it.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
                       <div className="space-y-0.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-xs text-slate-500 font-bold">{idx + 1}.</span>
+                          <span className="font-sans tabular-nums text-xs text-slate-500 font-bold">{idx + 1}.</span>
                           <span className="text-sm sm:text-base font-bold text-slate-950">{it.medicationName}</span>
                           {it.isNarcotic && (
                             <span className="text-2xs font-bold text-rose-800 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
@@ -294,7 +294,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-mono text-sm sm:text-base font-bold text-slate-950">
+                        <span className="font-sans tabular-nums text-sm sm:text-base font-bold text-slate-950">
                           {it.quantity} {it.unit}
                         </span>
                       </div>
@@ -311,7 +311,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                       <AlertTriangle className="w-4 h-4 text-rose-600" />
                       <span>Lịch Cấp Phát Thuốc 3 Đợt (Điều 8 TT 26/2025 - Tối Đa 30 Ngày)</span>
                     </span>
-                    <span className="font-mono text-2xs bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mẫu Đơn N</span>
+                    <span className="font-sans tabular-nums text-2xs bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">Mẫu Đơn N</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-1">
                     <div className="bg-white p-2.5 rounded-lg border border-rose-200 shadow-2xs">
@@ -354,7 +354,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               <div className="space-y-2.5 pb-5 border-b border-slate-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Định Danh Người Bệnh</h3>
-                  <span className="font-mono text-xs font-semibold text-slate-800 bg-white border border-slate-300 px-2 py-0.5 rounded">
+                  <span className="font-sans text-xs font-bold text-teal-900 bg-teal-50 border border-teal-200/80 px-2.5 py-0.5 rounded-md shadow-2xs">
                     TT 26/2025/TT-BYT
                   </span>
                 </div>
@@ -374,11 +374,11 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   </div>
                   <div>
                     <dt className="text-slate-500">Mã Bệnh Nhân</dt>
-                    <dd className="text-sm font-bold text-slate-900 font-mono mt-0.5">{order.patientId}</dd>
+                    <dd className="text-sm font-bold text-slate-900 font-sans tabular-nums mt-0.5">{order.patientId}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-500">Số CCCD (12 số)</dt>
-                    <dd className="text-sm font-bold text-slate-900 font-mono mt-0.5">{order.patientCccd}</dd>
+                    <dd className="text-sm font-bold text-slate-900 font-sans tabular-nums mt-0.5">{order.patientCccd}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-500">Giới tính &amp; Ngày sinh</dt>
@@ -394,7 +394,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                     <div className="col-span-2 pt-2 border-t border-slate-200">
                       <dt className="text-slate-500 font-medium">Người nhận thuốc (nếu khác NB theo TT 26):</dt>
                       <dd className="text-sm font-bold text-slate-900 mt-0.5">
-                        {order.receiverName ? `${order.receiverName} · ` : ''}CCCD: <span className="font-mono text-indigo-700">{order.receiverCccd}</span>
+                        {order.receiverName ? `${order.receiverName} · ` : ''}CCCD: <span className="font-sans tabular-nums font-bold text-indigo-700">{order.receiverCccd}</span>
                       </dd>
                     </div>
                   )}
@@ -407,7 +407,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                     Bác Sĩ Kê Đơn &amp; Chữ Ký Chuyên Môn
                   </h3>
-                  <span className="text-3xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
+                  <span className="text-3xs font-sans font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
                     Luật KBCB 15/2023
                   </span>
                 </div>
@@ -415,19 +415,19 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 <div className="p-3 rounded-lg border border-emerald-300 bg-emerald-50/70 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-2xs text-slate-500 font-semibold uppercase">Chủ thể kê đơn:</span>
-                    <span className="text-3xs font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                    <span className="text-3xs font-sans font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
                       {order.status === 'signed' ? '✓ ĐÃ XÁC THỰC KÝ SỐ' : 'BẢN NHÁP'}
                     </span>
                   </div>
                   <div className="text-sm font-bold text-slate-950">
                     {order.doctorName || 'BS. Trần Văn Hùng'}
                   </div>
-                  <div className="text-xs text-slate-700 font-mono">
+                  <div className="text-xs text-slate-700 font-sans tabular-nums">
                     Chứng chỉ hành nghề: <b>{order.doctorCertificate || '012345/BYT-CCHN'}</b>
                   </div>
                   <div className="text-2xs text-slate-500 border-t border-emerald-200/60 pt-1.5 flex justify-between">
                     <span>Thời điểm ký:</span>
-                    <span className="font-mono text-slate-800">{order.prescribedAt}</span>
+                    <span className="font-sans tabular-nums text-slate-800">{order.prescribedAt}</span>
                   </div>
                   {order.digitalSignature && (
                     <div className="text-3xs font-mono text-slate-600 bg-white p-1.5 rounded border border-emerald-200 break-all">
@@ -485,15 +485,15 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                     <div key={it.id || idx} className="py-4 first:pt-0 last:pb-0 space-y-2">
                       <div className="flex items-baseline justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-sm font-bold text-slate-500">#{idx + 1}</span>
+                          <span className="font-sans tabular-nums text-sm font-bold text-slate-500">#{idx + 1}</span>
                           <h4 className="text-base font-bold text-slate-950">{it.medicationName}</h4>
                           {it.isNarcotic && (
-                            <span className="text-2xs font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                            <span className="text-2xs font-bold text-rose-800 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
                               Thuốc gây nghiện / KSĐB
                             </span>
                           )}
                         </div>
-                        <span className="font-mono text-base font-bold text-slate-950">
+                        <span className="font-sans tabular-nums text-base font-bold text-slate-950">
                           {it.quantity} {it.unit}
                         </span>
                       </div>
@@ -625,7 +625,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                     Phân Bổ Lịch Dùng Thuốc Trong Ngày
                   </h3>
-                  <span className="text-xs font-mono font-medium text-slate-500">
+                  <span className="text-xs font-sans font-medium text-slate-500">
                     {safeItems.length} cữ thuốc chỉ định
                   </span>
                 </div>
@@ -644,7 +644,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-slate-800">Số điện thoại bệnh nhân:</span>
-                      <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      <span className="font-sans tabular-nums font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
                         {activeOrder.patientPhone || patient?.phone || 'Chưa cập nhật SĐT'}
                       </span>
                     </div>
@@ -659,7 +659,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                     <div key={it.id || idx} className="p-3 bg-slate-50 rounded border border-slate-200 space-y-1">
                       <div className="flex items-center justify-between">
                         <strong className="text-sm font-bold text-slate-900">{it.medicationName}</strong>
-                        <span className="font-mono font-bold text-slate-900">{it.quantity} {it.unit}</span>
+                        <span className="font-sans tabular-nums font-bold text-slate-900">{it.quantity} {it.unit}</span>
                       </div>
                       <p className="text-slate-700">
                         {it.instructions || `Uống ${it.frequency || 'theo chỉ định của bác sĩ'}. Uống với nhiều nước sau bữa ăn.`}
@@ -706,7 +706,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   </div>
                   <div>
                     <dt className="text-slate-500">Chứng chỉ hành nghề khám bệnh, chữa bệnh</dt>
-                    <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{order.doctorCertificate || '—'}</dd>
+                    <dd className="text-sm font-sans tabular-nums font-bold text-slate-900 mt-0.5">{order.doctorCertificate || '—'}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-500">Trạng thái đơn</dt>
@@ -714,7 +714,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   </div>
                   <div>
                     <dt className="text-slate-500">Thời điểm ký số (TSA Timestamp)</dt>
-                    <dd className="text-sm font-mono text-slate-800 mt-0.5">{order.prescribedAt}</dd>
+                    <dd className="text-sm font-sans tabular-nums text-slate-800 mt-0.5">{order.prescribedAt}</dd>
                   </div>
                   <div className="col-span-2">
                     <dt className="text-slate-500">Chuỗi giá trị băm (SHA-256 Digest)</dt>
@@ -763,7 +763,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   Đơn đã ký (Auto-SMS &amp; Email ✓)
                 </span>
-              )} · Mã: <span className="font-mono font-bold text-slate-800">{activeOrder.id}</span>
+              )} · Mã: <span className="font-sans tabular-nums font-bold text-slate-800">{activeOrder.id}</span>
           </div>
           <div className="flex items-center gap-2">
             {isDraft && (
@@ -771,7 +771,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                 type="button"
                 onClick={handleSignOrder}
                 disabled={isSigning}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-teal-800 hover:bg-teal-900 text-white transition cursor-pointer shadow-xs disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer shadow-xs disabled:opacity-50 active:scale-98"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{isSigning ? 'Đang ký số...' : 'Ký số & Gửi tự động'}</span>
@@ -789,7 +789,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectPatient(activeOrder.patientName)}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white transition cursor-pointer shadow-xs"
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer shadow-xs active:scale-98"
               >
                 Hồ sơ bệnh nhân
               </button>

@@ -112,10 +112,10 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                   return (
                     <tr key={order.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-200 text-slate-800 text-sm">
                       {/* 1. STT */}
-                      <td className="py-3.5 px-3 text-center font-mono text-slate-500 font-medium whitespace-nowrap text-sm border-r border-slate-100">{idx + 1}</td>
+                      <td className="py-3.5 px-3 text-center font-sans tabular-nums text-slate-500 font-bold whitespace-nowrap text-sm border-r border-slate-100">{idx + 1}</td>
 
                       {/* 2. Mã đơn & Thời gian */}
-                      <td className="py-3.5 px-4 whitespace-nowrap font-mono border-r border-slate-100">
+                      <td className="py-3.5 px-4 whitespace-nowrap font-sans tabular-nums border-r border-slate-100">
                         <button type="button" data-testid="cpoe-order-id-btn" onClick={() => onSelectOrder?.(order)}
                           className="font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer text-sm transition underline-offset-2 block" title="Bấm xem chi tiết đơn thuốc">
                           {order.id}
@@ -129,7 +129,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                           className="font-bold text-slate-900 text-base leading-snug hover:text-teal-700 hover:underline cursor-pointer text-left transition underline-offset-2 block" title="Xem hồ sơ bệnh án">
                           {order.patientName}
                         </button>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">
+                        <div className="text-xs text-slate-500 font-sans tabular-nums mt-0.5">
                           <span className="text-slate-600 font-medium">{order.patientId}</span>
                         </div>
                       </td>
@@ -137,7 +137,7 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                       {/* 4. Chẩn đoán ICD-10 */}
                       <td className="py-3.5 px-4 border-r border-slate-100">
                         <div className="font-medium text-slate-900 leading-relaxed" title={order.diagnosisText}>
-                          <span className="font-mono text-slate-700 font-bold mr-1.5">[{order.diagnosisIcd10}]</span>
+                          <span className="font-sans tabular-nums text-slate-700 font-bold mr-1.5">[{order.diagnosisIcd10}]</span>
                           {order.diagnosisText}
                         </div>
                         <div className="text-xs text-slate-500 mt-0.5 font-medium">{fmtDoc(order.doctorName)}</div>
@@ -163,12 +163,12 @@ export const CpoeOrderList: React.FC<CpoeOrderListProps> = ({
                                 <span className="font-bold text-slate-900 text-sm leading-snug">
                                   {iIdx + 1}. {it.medicationName}
                                 </span>
-                                <span className="text-xs font-semibold text-slate-600 font-mono shrink-0">
+                                <span className="text-xs font-bold text-slate-700 font-sans tabular-nums shrink-0">
                                   {it.quantity} {it.unit}
                                 </span>
                               </div>
                               <div className="text-xs text-slate-600 pl-3.5 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                <span className="text-slate-400 select-none font-mono">↳</span>
+                                <span className="text-slate-400 select-none font-sans">↳</span>
                                 {it.route && <span className="text-slate-700 font-medium">[{it.route}]</span>}
                                 <span className="italic text-slate-600 font-normal">
                                   {it.instructions || it.frequency || 'Dùng theo chỉ định của bác sĩ'}

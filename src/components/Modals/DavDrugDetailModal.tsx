@@ -1018,7 +1018,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <dt className="text-slate-500">Số Đăng Ký (SĐK)</dt>
-                  <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{sdk}</dd>
+                  <dd className="text-sm font-sans tabular-nums font-bold text-slate-900 mt-0.5">{sdk}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Quyết định cấp phép</dt>

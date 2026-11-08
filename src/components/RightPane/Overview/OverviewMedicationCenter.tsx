@@ -47,7 +47,7 @@ export const OverviewMedicationCenter: React.FC<OverviewMedicationCenterProps> =
           <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
             Thông tin thuốc
           </h3>
-          <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-sans tabular-nums font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
             54.885 số đăng ký
           </span>
         </div>

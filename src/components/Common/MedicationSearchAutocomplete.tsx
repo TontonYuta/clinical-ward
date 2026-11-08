@@ -123,7 +123,7 @@ export const MedicationSearchAutocomplete: React.FC<MedicationSearchAutocomplete
             Toàn bệnh viện
           </button>
         </div>
-        <span className="text-[10px] text-slate-400 font-mono">Chuẩn QĐ 2147/BYT</span>
+        <span className="text-[10px] text-slate-500 font-sans font-medium">Chuẩn QĐ 2147/BYT</span>
       </div>
 
       {/* Dropdown Results */}
@@ -164,7 +164,7 @@ export const MedicationSearchAutocomplete: React.FC<MedicationSearchAutocomplete
                         </span>
                       )}
                     </span>
-                    <span className="text-[10px] font-mono font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
+                    <span className="text-[10px] font-sans tabular-nums font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
                       Tủ: {med.wardStockCount} {med.standardUnit}
                     </span>
                   </div>
@@ -173,7 +173,7 @@ export const MedicationSearchAutocomplete: React.FC<MedicationSearchAutocomplete
                     <span className="truncate">
                       Hoạt chất: <strong className="text-slate-700">{med.activeIngredient}</strong> ({med.concentration}) • {med.route}
                     </span>
-                    <span className="font-mono text-slate-400 shrink-0 ml-2">Kho: {med.hospitalStockCount}</span>
+                    <span className="font-sans tabular-nums text-slate-500 font-medium shrink-0 ml-2">Kho: {med.hospitalStockCount}</span>
                   </div>
 
                   {med.note && (

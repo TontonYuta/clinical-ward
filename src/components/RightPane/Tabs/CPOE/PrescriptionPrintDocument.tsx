@@ -35,7 +35,7 @@ export const PrescriptionPrintDocument: React.FC<{ order: PrescriptionOrder }> =
             <div>Địa chỉ: {defaultFacility.address}</div>
             <div>Điện thoại: {defaultFacility.phone}</div>
           </div>
-          <div className="text-right space-y-0.5 font-mono">
+          <div className="text-right space-y-0.5 font-sans tabular-nums">
             <div className="text-xs font-bold">MÃ ĐƠN: {order.id}</div>
             <div className="text-2xs text-slate-700">
               {order.status === 'signed' && order.digitalSignature ? '✓ ĐÃ KÝ SỐ ĐIỆN TỬ' : 'BẢN NHÁP - CHƯA KÝ'}
@@ -62,13 +62,13 @@ export const PrescriptionPrintDocument: React.FC<{ order: PrescriptionOrder }> =
             <b>Họ tên người bệnh:</b> <span className="uppercase font-bold text-sm">{order.patientName}</span>
           </div>
           <div className="col-span-4">
-            <b>Mã người bệnh:</b> <span className="font-mono">{order.patientId}</span>
+            <b>Mã người bệnh:</b> <span className="font-sans tabular-nums font-semibold">{order.patientId}</span>
           </div>
         </div>
 
         <div>
           <b>Số định danh cá nhân/số CCCD/hộ chiếu (nếu có):</b>{' '}
-          <span className="font-mono font-semibold">{order.patientCccd || '—'}</span>
+          <span className="font-sans tabular-nums font-semibold">{order.patientCccd || '—'}</span>
         </div>
 
         <div className="grid grid-cols-12 gap-2">
@@ -84,7 +84,7 @@ export const PrescriptionPrintDocument: React.FC<{ order: PrescriptionOrder }> =
         </div>
 
         <div>
-          <b>Mã số bảo hiểm y tế (nếu có):</b> <span className="font-mono">{order.patientInsuranceId || '—'}</span>
+          <b>Mã số bảo hiểm y tế (nếu có):</b> <span className="font-sans tabular-nums font-semibold">{order.patientInsuranceId || '—'}</span>
         </div>
 
         <div>
@@ -123,7 +123,7 @@ export const PrescriptionPrintDocument: React.FC<{ order: PrescriptionOrder }> =
                   {item.medicationName}
                   {item.activeIngredient ? ` (${item.activeIngredient})` : ''}
                 </span>
-                <span className="font-bold text-xs shrink-0 ml-2 font-mono">
+                <span className="font-bold text-xs shrink-0 ml-2 font-sans tabular-nums">
                   Số lượng: {formatPrescriptionQuantity(item.quantity, item.isNarcotic || isNarcoticForm)} {item.unit || ''}
                 </span>
               </div>
@@ -157,7 +157,7 @@ export const PrescriptionPrintDocument: React.FC<{ order: PrescriptionOrder }> =
             {(isNarcoticForm || isPsychotropicForm) && (
               <div className="border-t border-dashed border-slate-400 pt-1 mt-1">
                 <b>Số định danh cá nhân/số CCCD/hộ chiếu người nhận thuốc (Đơn {meta.code}):</b>
-                <div className="font-mono mt-0.5">{order.receiverCccd || order.patientCccd || '...................................................'}</div>
+                <div className="font-sans tabular-nums mt-0.5">{order.receiverCccd || order.patientCccd || '...................................................'}</div>
               </div>
             )}
           </div>
@@ -171,16 +171,16 @@ export const PrescriptionPrintDocument: React.FC<{ order: PrescriptionOrder }> =
             <div className="text-2xs italic text-slate-600">(Ký, ghi rõ họ tên)</div>
             <div className="min-h-14 flex items-center justify-center py-2">
               {order.status === 'signed' && order.digitalSignature ? (
-                <div className="border border-emerald-600 bg-emerald-50 text-emerald-900 px-2 py-1 text-3xs font-mono rounded">
+                <div className="border border-emerald-600 bg-emerald-50 text-emerald-900 px-2 py-1 text-3xs font-sans font-bold rounded">
                   ✓ KÝ SỐ TT 26 BỞI: {order.doctorName}
                 </div>
               ) : (
-                <div className="text-3xs text-slate-400 italic font-mono">[Chữ ký chuyên môn]</div>
+                <div className="text-3xs text-slate-400 italic font-sans">[Chữ ký chuyên môn]</div>
               )}
             </div>
             <div className="font-bold text-xs">{order.doctorName || 'BS. Trần Văn Hùng'}</div>
             {order.doctorCertificate && (
-              <div className="text-3xs text-slate-600 font-mono">CCHN: {order.doctorCertificate}</div>
+              <div className="text-3xs text-slate-600 font-sans tabular-nums font-semibold">CCHN: {order.doctorCertificate}</div>
             )}
           </div>
         </div>

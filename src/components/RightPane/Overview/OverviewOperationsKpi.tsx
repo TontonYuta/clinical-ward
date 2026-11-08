@@ -65,7 +65,7 @@ export const OverviewOperationsKpi: React.FC<OverviewOperationsKpiProps> = ({
               <span className="text-sm text-slate-600 font-semibold block">
                 {kpi.label}
               </span>
-              <span className={`text-2xl sm:text-3xl font-mono font-bold mt-1.5 block ${kpi.alert ? 'text-amber-900' : 'text-slate-900'}`}>
+              <span className={`text-2xl sm:text-3xl font-sans tabular-nums font-bold mt-1.5 block ${kpi.alert ? 'text-amber-900' : 'text-slate-900'}`}>
                 {kpi.value}
               </span>
             </div>

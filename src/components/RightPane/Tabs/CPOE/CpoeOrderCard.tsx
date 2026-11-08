@@ -33,7 +33,7 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
       {/* Hàng 1: STT, Mã đơn & Phân loại đơn */}
       <div className="flex items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-2xs text-slate-500 font-bold w-5">#{index + 1}</span>
+          <span className="font-sans tabular-nums text-2xs text-slate-500 font-bold w-5">#{index + 1}</span>
           <button
             type="button"
             data-testid="cpoe-order-id-btn"
@@ -41,15 +41,15 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
               e.stopPropagation();
               onSelectOrder?.(order);
             }}
-            className="font-mono text-xs font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer"
+            className="font-sans tabular-nums text-xs font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer"
           >
             {order.id}
           </button>
-          <span className="text-2xs text-slate-400 font-mono">
+          <span className="text-2xs text-slate-500 font-sans tabular-nums">
             {order.prescribedAt}
           </span>
           {order.isChronicDisease && (
-            <span className="text-2xs text-slate-500 font-mono">
+            <span className="text-2xs text-slate-500 font-sans tabular-nums">
               · Mạn ({order.daysPrescribed}d)
             </span>
           )}
@@ -73,12 +73,12 @@ export const CpoeOrderCard: React.FC<CpoeOrderCardProps> = ({
           >
             {order.patientName}
           </button>
-          <span className="text-2xs text-slate-500 font-mono shrink-0">
+          <span className="text-2xs text-slate-500 font-sans tabular-nums shrink-0">
             {order.patientId}
           </span>
         </div>
         <div className="text-2xs sm:text-xs text-slate-600 mt-0.5 truncate">
-          <span className="font-mono font-bold text-slate-700">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
+          <span className="font-sans tabular-nums font-bold text-slate-700">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
         </div>
       </div>
 

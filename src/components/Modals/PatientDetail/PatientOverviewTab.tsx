@@ -60,7 +60,7 @@ export const PatientOverviewTab: React.FC<PatientOverviewTabProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenPrescriptionOrder(patient)}
-                className="text-xs font-semibold text-slate-900 hover:text-slate-700 hover:underline cursor-pointer"
+                className="text-xs font-bold text-teal-800 hover:text-teal-950 hover:underline cursor-pointer"
               >
                 Kê đơn mới cho BN
               </button>
@@ -74,7 +74,7 @@ export const PatientOverviewTab: React.FC<PatientOverviewTabProps> = ({
                 <div key={order.id} className="space-y-1.5 pb-2.5 border-b border-slate-50 last:border-b-0">
                   <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-slate-900">{order.id}</span>
+                      <span className="font-sans tabular-nums font-bold text-slate-900">{order.id}</span>
                       <span className="text-slate-500">{order.prescribedAt}</span>
                     </div>
                     <span className="font-semibold text-slate-700">[{order.diagnosisIcd10}] {order.diagnosisText}</span>
@@ -100,18 +100,18 @@ export const PatientOverviewTab: React.FC<PatientOverviewTabProps> = ({
         <div className="space-y-2.5 pb-5 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Định Danh Công Dân</h3>
-            <span className="font-mono text-xs font-semibold text-slate-800 bg-white border border-slate-300 px-2 py-0.5 rounded">
+            <span className="font-sans text-xs font-bold text-teal-900 bg-teal-50 border border-teal-200/80 px-2.5 py-0.5 rounded-md shadow-2xs">
               TT 26/2025/TT-BYT
             </span>
           </div>
           <dl className="grid grid-cols-2 gap-3 text-xs">
             <div>
               <dt className="text-slate-500">Mã Bệnh Nhân</dt>
-              <dd className="text-sm font-bold text-slate-900 font-mono mt-0.5">{patient.id}</dd>
+              <dd className="text-sm font-bold text-slate-900 font-sans tabular-nums mt-0.5">{patient.id}</dd>
             </div>
             <div>
               <dt className="text-slate-500">Số CCCD / Mã ĐDCN</dt>
-              <dd className="text-sm font-bold text-slate-900 font-mono mt-0.5">{patient.cccd || '—'}</dd>
+              <dd className="text-sm font-bold text-slate-900 font-sans tabular-nums mt-0.5">{patient.cccd || '—'}</dd>
             </div>
             <div>
               <dt className="text-slate-500">Ngày sinh</dt>
@@ -123,7 +123,7 @@ export const PatientOverviewTab: React.FC<PatientOverviewTabProps> = ({
             </div>
             <div>
               <dt className="text-slate-500">Số điện thoại</dt>
-              <dd className="text-sm font-medium text-slate-800 mt-0.5 font-mono">{patient.phone || '—'}</dd>
+              <dd className="text-sm font-medium text-slate-800 mt-0.5 font-sans tabular-nums">{patient.phone || '—'}</dd>
             </div>
             <div>
               <dt className="text-slate-500">Email</dt>
@@ -145,7 +145,7 @@ export const PatientOverviewTab: React.FC<PatientOverviewTabProps> = ({
               {relatedDebts.map((debt) => (
                 <div key={debt.id} className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 last:border-b-0">
                   <div>
-                    <span className="font-mono font-bold text-slate-900">{debt.code}</span>
+                    <span className="font-sans tabular-nums font-bold text-slate-900">{debt.code}</span>
                     <span className="text-slate-700 ml-1.5">{debt.itemName} ({debt.quantity})</span>
                   </div>
                   <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${debt.status === 'debt' ? 'text-amber-800 bg-amber-50' : 'text-slate-600 bg-slate-100'}`}>

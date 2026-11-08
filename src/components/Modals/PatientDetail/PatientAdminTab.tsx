@@ -21,7 +21,7 @@ export const PatientAdminTab: React.FC<PatientAdminTabProps> = ({ patient }) => 
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
             <dt className="text-slate-500">Mã Bệnh Nhân (Patient ID)</dt>
-            <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{patient.id}</dd>
+            <dd className="text-sm font-sans tabular-nums font-bold text-slate-900 mt-0.5">{patient.id}</dd>
           </div>
           <div>
             <dt className="text-slate-500">Họ và tên đầy đủ</dt>
@@ -29,7 +29,7 @@ export const PatientAdminTab: React.FC<PatientAdminTabProps> = ({ patient }) => 
           </div>
           <div>
             <dt className="text-slate-500">Số Căn Cước Công Dân (CCCD 12 số)</dt>
-            <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5">{patient.cccd || '—'}</dd>
+            <dd className="text-sm font-sans tabular-nums font-bold text-slate-900 mt-0.5">{patient.cccd || '—'}</dd>
           </div>
           <div>
             <dt className="text-slate-500">Ngày sinh &amp; Tuổi</dt>
@@ -49,7 +49,7 @@ export const PatientAdminTab: React.FC<PatientAdminTabProps> = ({ patient }) => 
           </div>
           <div>
             <dt className="text-slate-500">Số điện thoại di động (Bệnh viện gửi thông tin)</dt>
-            <dd className="text-sm font-mono font-bold text-slate-900 mt-0.5 flex items-center gap-2">
+            <dd className="text-sm font-sans tabular-nums font-bold text-slate-900 mt-0.5 flex items-center gap-2">
               <span>{patient.phone || 'Chưa cập nhật SĐT'}</span>
               {patient.phone && (
                 <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -64,7 +64,7 @@ export const PatientAdminTab: React.FC<PatientAdminTabProps> = ({ patient }) => 
           </div>
           <div>
             <dt className="text-slate-500">Thời điểm nhập viện</dt>
-            <dd className="text-sm font-mono text-slate-800 mt-0.5">{patient.admissionDate || '2026-10-24 01:15'}</dd>
+            <dd className="text-sm font-sans tabular-nums text-slate-800 mt-0.5">{patient.admissionDate || '2026-10-24 01:15'}</dd>
           </div>
         </dl>
       </div>

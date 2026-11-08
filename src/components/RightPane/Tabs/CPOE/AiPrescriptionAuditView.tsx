@@ -157,7 +157,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
             }`}>
               {auditData.overall_status === 'PASSED' ? '✓ ĐẠT CHUẨN LÂM SÀNG' : (isWarning ? '⚠️ CẢNH BÁO LÂM SÀNG' : '⛔ TỪ CHỐI PHÁT HÀNH')}
             </span>
-            <span className="text-2xs font-mono font-bold text-slate-600 bg-white border border-slate-300 px-2 py-0.5 rounded">
+            <span className="text-2xs font-sans tabular-nums font-bold text-slate-600 bg-white border border-slate-300 px-2 py-0.5 rounded">
               {auditData.prescription_type === 'outpatient' ? 'ĐƠN NGOẠI TRÚ (TT 52/2017)' : 'Y LỆNH NỘI TRÚ (TT 23/2011)'}
             </span>
           </div>
@@ -173,7 +173,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
         <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
           <div className="text-center">
             <div className="text-2xs text-slate-500 font-semibold uppercase">Điểm An Toàn</div>
-            <div className={`text-2xl font-bold font-mono ${
+            <div className={`text-2xl font-bold font-sans tabular-nums ${
               score >= 85 ? 'text-emerald-700' : (score >= 65 ? 'text-amber-700' : 'text-rose-700')
             }`}>
               {score}<span className="text-xs font-normal text-slate-400">/100</span>
@@ -195,7 +195,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
             <div className="font-bold text-slate-900">
               Bác sĩ kê đơn: <span className="text-slate-950">{auditData.doctor_name}</span>
               {auditData.doctor_certificate && (
-                <span className="font-mono text-slate-500 font-normal ml-1.5">(CCHN: {auditData.doctor_certificate})</span>
+                <span className="font-sans tabular-nums text-slate-500 font-normal ml-1.5">(CCHN: {auditData.doctor_certificate})</span>
               )}
             </div>
             <div className="text-2xs text-slate-500 mt-0.5">
@@ -206,12 +206,12 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
 
         <div className="shrink-0">
           {auditData.doctor_signature_verified ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-900 font-mono font-bold text-2xs border border-emerald-300">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-900 font-sans font-bold text-2xs border border-emerald-300">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
               <span>✓ ĐÃ KÝ SỐ XÁC THỰC</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 font-mono font-bold text-2xs border border-amber-300">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 font-sans font-bold text-2xs border border-amber-300">
               <Clock className="w-3.5 h-3.5 text-amber-700" />
               <span>CHỜ BÁC SĨ KÝ TÊN</span>
             </span>
@@ -228,7 +228,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <FileText className="w-4 h-4 text-teal-700" />
               <span>1. Thể Thức Pháp Luật (TT 52/2017 &amp; TT 26/2025)</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">Bộ Y Tế</span>
+            <span className="text-3xs font-sans font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">Bộ Y Tế</span>
           </div>
 
           <div className="space-y-2">
@@ -255,7 +255,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <Stethoscope className="w-4 h-4 text-teal-700" />
               <span>2. Phù Hợp Chẩn Đoán (ICD-10 vs DĐVN V)</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">ICD-10</span>
+            <span className="text-3xs font-sans font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">ICD-10</span>
           </div>
 
           <div className="space-y-2 text-2xs">
@@ -286,7 +286,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <Pill className="w-4 h-4 text-teal-700" />
               <span>3. Liều Dùng Theo Thể Trạng &amp; Chức Năng Thận</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">DĐVN V</span>
+            <span className="text-3xs font-sans font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">DĐVN V</span>
           </div>
 
           <div className="space-y-2 text-2xs">
@@ -318,7 +318,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
               <ShieldAlert className="w-4 h-4 text-teal-700" />
               <span>4. Tương Tác Thuốc Chống Chỉ Định (QĐ 5948)</span>
             </h4>
-            <span className="text-3xs font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">38.275 DDI</span>
+            <span className="text-3xs font-sans font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">38.275 DDI</span>
           </div>
 
           <div className="space-y-2 text-2xs">
@@ -347,7 +347,7 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
             <Clock className="w-4 h-4 text-teal-700" />
             <span>5. Hướng Dẫn Thời Điểm Dùng Thuốc &amp; Cách Dùng (Dược Thư Quốc Gia DĐVN V)</span>
           </h4>
-          <span className="text-3xs font-mono font-bold bg-teal-100 text-teal-900 px-2 py-0.5 rounded">Dặn dò BN</span>
+          <span className="text-3xs font-sans font-bold bg-teal-100 text-teal-900 px-2 py-0.5 rounded">Dặn dò BN</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-2xs">

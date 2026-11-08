@@ -48,7 +48,7 @@ export const OverviewPatientCenter: React.FC<OverviewPatientCenterProps> = ({
           <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
             Thông tin bệnh nhân
           </h3>
-          <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-sans tabular-nums font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
             {INITIAL_PATIENTS.length} hồ sơ
           </span>
         </div>
@@ -110,14 +110,14 @@ export const OverviewPatientCenter: React.FC<OverviewPatientCenterProps> = ({
                       >
                         {p.fullName}
                       </button>
-                      <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                      <span className="font-sans tabular-nums text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                         {p.id}
                       </span>
                       <span className="text-slate-500 text-xs font-medium">· {p.room}</span>
                     </div>
-                    <div className="text-xs sm:text-sm text-slate-500 flex items-center gap-2 mt-1 flex-wrap">
-                      {p.cccd && <span className="font-mono">CCCD: {p.cccd}</span>}
-                      {p.phone && <span className="font-mono">· SĐT: {p.phone}</span>}
+                    <div className="text-xs sm:text-sm text-slate-500 flex items-center gap-2 mt-1 flex-wrap font-sans tabular-nums">
+                      {p.cccd && <span>CCCD: {p.cccd}</span>}
+                      {p.phone && <span>· SĐT: {p.phone}</span>}
                       {p.department && <span>· {p.department}</span>}
                     </div>
                   </div>

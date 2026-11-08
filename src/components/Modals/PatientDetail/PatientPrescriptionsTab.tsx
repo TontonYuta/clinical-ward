@@ -30,17 +30,17 @@ export const PatientPrescriptionsTab: React.FC<PatientPrescriptionsTabProps> = (
               {relatedPrescriptions.map((order) => (
                 <div key={order.id} className="space-y-2 pb-4 border-b border-slate-100 last:border-b-0">
                   <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
-                    <span className="font-mono font-bold text-slate-900 text-sm">{order.id}</span>
+                    <span className="font-sans tabular-nums font-bold text-slate-900 text-sm">{order.id}</span>
                     <span className="font-medium text-slate-600">{order.doctorName} · {order.prescribedAt}</span>
                   </div>
                   <p className="text-xs font-medium text-slate-800">
-                    Chẩn đoán: <span className="font-mono font-bold text-slate-900">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
+                    Chẩn đoán: <span className="font-sans tabular-nums font-bold text-slate-900">[{order.diagnosisIcd10}]</span> {order.diagnosisText}
                   </p>
                   <div className="space-y-1 text-xs text-slate-700">
                     {order.items.map((it, idx) => (
                       <div key={it.id || idx} className="flex items-center justify-between">
                         <span>{idx + 1}. {it.medicationName}</span>
-                        <span className="font-mono font-bold text-slate-900">{it.quantity} {it.unit}</span>
+                        <span className="font-sans tabular-nums font-bold text-slate-900">{it.quantity} {it.unit}</span>
                       </div>
                     ))}
                   </div>
@@ -60,7 +60,7 @@ export const PatientPrescriptionsTab: React.FC<PatientPrescriptionsTabProps> = (
             {relatedDebts.map((debt) => (
               <div key={debt.id} className="space-y-0.5 pb-2 border-b border-slate-100 last:border-b-0">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-slate-900">{debt.code}</span>
+                  <span className="font-sans tabular-nums font-bold text-slate-900">{debt.code}</span>
                   <span className="text-slate-500">{debt.borrowTime}</span>
                 </div>
                 <p className="font-semibold text-slate-800">{debt.itemName} ({debt.quantity})</p>

@@ -76,7 +76,7 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
         <div className="px-3 sm:px-5 py-2 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
-              <span className="font-mono text-2xs sm:text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">MÃ BN: {patient.id}</span>
+              <span className="font-sans tabular-nums text-2xs sm:text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-md">MÃ BN: {patient.id}</span>
               <h2 className="text-sm sm:text-xl font-bold text-slate-950 tracking-tight truncate">
                 {patient.fullName} <span className="text-2xs sm:text-sm font-normal text-slate-500">({patient.gender}, {patient.age} tuổi)</span>
               </h2>
@@ -108,7 +108,7 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
                 onClick={() => setActiveTab(tab)}
                 className={`px-3.5 py-2.5 border-b-2 shrink-0 font-medium cursor-pointer transition-colors text-sm whitespace-nowrap ${
                   isSelected
-                    ? 'border-slate-900 text-slate-950 font-semibold'
+                    ? 'border-teal-700 text-teal-950 font-bold'
                     : 'border-transparent text-slate-600 hover:text-slate-950'
                 }`}
               >
@@ -142,14 +142,14 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
         {/* Footer */}
         <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-500">
-            Hồ sơ người bệnh nội trú bệnh viện · Mã đối soát: <span className="font-mono font-bold text-slate-800">{patient.id}</span>
+            Hồ sơ người bệnh nội trú bệnh viện · Mã đối soát: <span className="font-sans tabular-nums font-bold text-slate-800">{patient.id}</span>
           </div>
           <div className="flex items-center gap-2">
             {onOpenPrescriptionOrder && (
               <button
                 type="button"
                 onClick={() => { onClose(); onOpenPrescriptionOrder(patient); }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white transition cursor-pointer shadow-xs"
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white transition cursor-pointer shadow-xs active:scale-98"
               >
                 Kê đơn thuốc mới
               </button>

@@ -59,8 +59,8 @@ export const OverviewHeader: React.FC<OverviewHeaderProps> = ({
         <div className="text-sm sm:text-base text-slate-600 mt-1 flex flex-wrap items-center gap-2">
           <span className="capitalize">{dateStr}</span>
           <span className="text-slate-300">·</span>
-          <span data-testid="live-clock" className="inline-flex items-center gap-1.5 font-mono font-semibold text-teal-800 bg-teal-50/90 px-2.5 py-0.5 rounded-md border border-teal-200/60 text-xs sm:text-sm shadow-2xs">
-            <Clock className="w-3.5 h-3.5 text-teal-600 animate-pulse" />
+          <span data-testid="live-clock" className="inline-flex items-center gap-1.5 font-sans tabular-nums font-bold text-teal-900 bg-teal-50/90 px-2.5 py-0.5 rounded-md border border-teal-200/60 text-xs sm:text-sm shadow-2xs tracking-tight">
+            <Clock className="w-3.5 h-3.5 text-teal-700 animate-pulse" />
             {currentTime}
           </span>
         </div>

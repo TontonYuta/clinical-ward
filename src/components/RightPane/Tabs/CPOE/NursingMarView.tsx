@@ -125,7 +125,7 @@ export const NursingMarView: React.FC<NursingMarViewProps> = ({
             <h3 className="text-sm font-bold text-emerald-950 uppercase tracking-wide">
               Phiếu Thực Hiện Y Lệnh Thuốc Của Điều Dưỡng (Nursing MAR)
             </h3>
-            <span className="text-3xs font-mono font-bold bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded">
+            <span className="text-3xs font-sans font-bold bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded">
               TT 23/2011/TT-BYT &amp; TT 07/2011/TT-BYT
             </span>
           </div>
@@ -136,7 +136,7 @@ export const NursingMarView: React.FC<NursingMarViewProps> = ({
 
         <div className="bg-white px-3.5 py-2 rounded-lg border border-emerald-300 shadow-2xs shrink-0 text-right">
           <div className="text-2xs text-slate-500">Tiến độ thực hiện y lệnh trong ngày:</div>
-          <div className="text-base font-bold text-emerald-900 font-mono">
+          <div className="text-base font-bold text-emerald-900 font-sans tabular-nums">
             {completedDoses}/{totalDoses} cữ ({progressPercent}%)
           </div>
         </div>
@@ -152,7 +152,7 @@ export const NursingMarView: React.FC<NursingMarViewProps> = ({
           <div className="text-slate-800 font-semibold pl-5">
             {order.doctorName || 'BS. Trần Văn Hùng'}
             {order.doctorCertificate && (
-              <span className="font-mono text-slate-500 font-normal ml-1">
+              <span className="font-sans tabular-nums text-slate-500 font-normal ml-1">
                 (CCHN: {order.doctorCertificate})
               </span>
             )}
@@ -168,7 +168,7 @@ export const NursingMarView: React.FC<NursingMarViewProps> = ({
             <span>Điều dưỡng trực tiếp thực hiện:</span>
           </div>
           <div className="text-slate-800 font-semibold pl-5">
-            {currentNurseName} <span className="font-mono text-2xs text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">Ca trực ngày</span>
+            {currentNurseName} <span className="font-sans text-2xs text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">Ca trực ngày</span>
           </div>
           <div className="text-2xs text-slate-500 pl-5">
             Khoa: {order.department || 'Khoa Nội'} · Phòng/Giường: {order.roomBed || 'P204 - G08'}
@@ -228,7 +228,7 @@ export const NursingMarView: React.FC<NursingMarViewProps> = ({
                           }`}
                         >
                           <div className="flex items-center justify-between text-2xs font-bold">
-                            <span className="font-mono">{slot.scheduledTime}</span>
+                            <span className="font-sans tabular-nums">{slot.scheduledTime}</span>
                             {isCompleted && (
                               <span className="flex items-center gap-0.5 text-emerald-700">
                                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
@@ -256,7 +256,7 @@ export const NursingMarView: React.FC<NursingMarViewProps> = ({
                           {slot.administeredBy && (
                             <div className="text-3xs font-semibold text-slate-800 mt-1 border-t border-slate-200/60 pt-0.5 flex justify-between">
                               <span className="truncate">{slot.administeredBy}</span>
-                              <span className="font-mono text-slate-500">{slot.administeredAt}</span>
+                              <span className="font-sans tabular-nums text-slate-500">{slot.administeredAt}</span>
                             </div>
                           )}
                         </button>
