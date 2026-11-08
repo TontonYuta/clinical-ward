@@ -26,4 +26,10 @@ export const smsApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  async cancelScheduledSms(smsId: string): Promise<SmsDeliveryReceipt> {
+    return apiRequest<SmsDeliveryReceipt>(`/sms/cancel/${encodeURIComponent(smsId)}`, {
+      method: 'POST',
+    });
+  },
 };

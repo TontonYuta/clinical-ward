@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, User, Calendar, Pill, MessageSquare, Send, Zap } from 'lucide-react';
+import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, User, Calendar, Pill, MessageSquare, Zap } from 'lucide-react';
 import { PrescriptionOrder, resolveTt26FormType, getTt26FormMetadata } from '../../../../types/cpoe';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
 import { stripLeadingBullets } from '../../../../utils/clinicalFormatter';
@@ -192,9 +192,8 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               onClick={() => setIsSmsModalOpen(true)}
               data-testid="btn-open-sms-from-order"
               title="Gửi thông báo mã đơn thuốc & dặn dò cho bệnh nhân (SMS / Email)"
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-2xs sm:text-xs font-semibold transition cursor-pointer shadow-2xs"
+              className="inline-flex items-center px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-2xs sm:text-xs font-semibold transition cursor-pointer shadow-2xs"
             >
-              <Send className="w-3.5 h-3.5 text-slate-600" />
               <span>Gửi thông báo cho BN</span>
             </button>
             <button

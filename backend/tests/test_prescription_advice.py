@@ -161,3 +161,57 @@ async def test_copilot_clinical_scenarios():
         assert d2["intent"] == "CLINICAL_CASE_CLARIFICATION"
         assert d2["answer_type"] == "clarification"
         assert "Đặng Thị Lan" not in d2["reply_text"]
+
+
+@pytest.mark.asyncio
+async def test_send_scheduled_sms_and_cancel():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "recipientPhone": "0963278149",
+            "patientId": "BN-TEST-SCHED",
+            "patientName": "Trần Văn Hẹn",
+            "messageType": "cpoe_prescription",
+            "content": "[BV LAM SANG] Don thuoc RX-SCHED-01 da duoc len lich tu dong.",
+            "provider": "sandbox",
+            "dispatchMode": "scheduled",
+            "scheduledAt": "2026-11-09T08:00:00",
+            "timingRule": "specific:2026-11-09T08:00:00"
+        }
+        res = await ac.post("/api/v1/sms/send", json=payload)
+        assert res.status_code == 201
+        data = res.json()
+        assert data["status"] == "scheduled"
+        assert data["dispatchMode"] == "scheduled"
+        assert "SCHED" in data["deliveryReceipt"]
+        sms_id = data["id"]
+
+        # Hủy lịch hẹn
+        cancel_res = await ac.post(f"/api/v1/sms/cancel/{sms_id}")
+        assert cancel_res.status_code == 200
+        cancel_data = cancel_res.json()
+        assert cancel_data["status"] == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_send_scheduled_email_advice():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "id": "ADV-SCHED-001",
+            "prescriptionId": "RX-SCHED-001",
+            "patientName": "Lê Văn Hẹn",
+            "patientEmail": "hen.le@example.com",
+            "diagnosis": "Theo dõi điều trị",
+            "doctorName": "BS. Hùng",
+            "medications": [],
+            "dispatchMode": "scheduled",
+            "scheduledAt": "2026-11-09T08:00:00",
+            "timingRule": "routine:morning,evening"
+        }
+        res = await ac.post("/api/v1/prescription-advice/send-email", json=payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["provider"] == "scheduled_queue"
+        assert "lên lịch tự động" in data["message"]

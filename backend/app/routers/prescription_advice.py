@@ -58,6 +58,9 @@ class PatientPrescriptionAdviceModel(BaseModel):
     email_sent_at: Optional[str] = Field(None, alias="emailSentAt")
     send_email: bool = Field(True, alias="sendEmail")
     send_sms: bool = Field(False, alias="sendSms")
+    dispatch_mode: Optional[str] = Field("immediate", alias="dispatchMode")
+    scheduled_at: Optional[str] = Field(None, alias="scheduledAt")
+    timing_rule: Optional[str] = Field(None, alias="timingRule")
 
 class SendAdviceResponse(BaseModel):
     success: bool
@@ -133,6 +136,23 @@ async def send_medication_advice_email(payload: PatientPrescriptionAdviceModel, 
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     channels: list[str] = []
+
+    if (payload.dispatch_mode or "immediate").lower() == "scheduled":
+        channels.append("scheduled_queue")
+        res = await db.execute(select(PrescriptionAdviceRecord).where(PrescriptionAdviceRecord.id == payload.id))
+        record = res.scalar_one_or_none()
+        if record:
+            record.notification_status = "scheduled"
+            await db.commit()
+
+        targets = [payload.patient_email if payload.send_email else None, payload.patient_phone if payload.send_sms else None]
+        return SendAdviceResponse(
+            success=True,
+            message=f"Đã lên lịch tự động gửi dặn dò tới {' / '.join(x for x in targets if x)} vào lúc {payload.scheduled_at or 'thời điểm đã chọn'}",
+            timestamp=now_iso,
+            email_sent_to=payload.patient_email or "",
+            provider="scheduled_queue"
+        )
 
     if payload.send_email:
         await dispatch_email_notification(payload, channels, httpx_cls=httpx.AsyncClient)

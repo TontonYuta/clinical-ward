@@ -41,11 +41,14 @@ export interface PatientPrescriptionAdvice {
   endDate: string; // YYYY-MM-DD
   generalDoctorAdvice: string; // Lời dặn dò chung của bác sĩ
   medications: ScheduledMedication[];
-  notificationStatus: 'idle' | 'loading' | 'success' | 'error';
+  notificationStatus: 'idle' | 'loading' | 'success' | 'error' | 'scheduled' | 'cancelled';
   gasWebhookUrl?: string; // Google Apps Script Webhook URL
   emailSentAt?: string;
-  channel?: 'email_gas' | 'zalo' | 'sms';
+  channel?: 'email_gas' | 'zalo' | 'sms' | 'scheduled_queue';
   feedbackMessage?: string;
+  dispatchMode?: 'immediate' | 'scheduled';
+  scheduledAt?: string;
+  timingRule?: string;
 }
 
 export interface SendAdviceEmailPayload {

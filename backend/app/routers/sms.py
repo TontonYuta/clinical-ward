@@ -95,9 +95,14 @@ async def send_patient_sms(
     error_msg = None
 
     provider = payload.provider or SmsProviderType.SANDBOX
+    dispatch_mode = (payload.dispatch_mode or "immediate").lower()
 
-    # 1. Chế độ Viễn thông Thật eSMS.vn Brandname (Nếu cấu hình)
-    if provider == SmsProviderType.ESMS:
+    if dispatch_mode == "scheduled":
+        # Chế độ đặt lịch tự động gửi: Ghi nhận vào hàng đợi phát sóng theo giờ hẹn
+        status_str = "scheduled"
+        receipt_str = f"SCHED-QUEUE-{uuid.uuid4().hex[:8].upper()}"
+    elif provider == SmsProviderType.ESMS:
+        # 1. Chế độ Viễn thông Thật eSMS.vn Brandname (Nếu cấu hình)
         from app.services.admin_integrations_service import load_integrations_config
         cfg = load_integrations_config()
         esms_api_key = (cfg.get("esms_api_key") or os.getenv("ESMS_API_KEY", "")).strip()
@@ -159,18 +164,27 @@ async def send_patient_sms(
         status=status_str,
         reference_id=payload.reference_id,
         delivery_receipt=receipt_str,
-        error_detail=error_msg
+        error_detail=error_msg,
+        dispatch_mode=dispatch_mode,
+        scheduled_at=payload.scheduled_at,
+        timing_rule=payload.timing_rule
     )
     db.add(sms_log)
     await db.commit()
     await db.refresh(sms_log)
 
     # Ghi nhận vào sổ kiểm toán lâm sàng bất biến (Audit Trail)
+    action_type = "PATIENT_SMS_SCHEDULED" if dispatch_mode == "scheduled" else "PATIENT_SMS_DISPATCHED"
+    action_title = (
+        f"Lên lịch tự động gửi SMS tới bệnh nhân {payload.patient_name} ({norm_phone})"
+        if dispatch_mode == "scheduled"
+        else f"Phát tin nhắn SMS tới bệnh nhân {payload.patient_name} ({norm_phone})"
+    )
     await record_audit_event(
         db=db,
-        action_type="PATIENT_SMS_DISPATCHED",
-        action_title=f"Phát tin nhắn SMS tới bệnh nhân {payload.patient_name} ({norm_phone})",
-        target_item=f"Mã: {now_id} · Loại: {payload.message_type.value} · {chars_count} ký tự ({segments_count} tin) - Provider: {provider.value}",
+        action_type=action_type,
+        action_title=action_title,
+        target_item=f"Mã: {now_id} · Loại: {payload.message_type.value} · Chế độ: {dispatch_mode} · {chars_count} ký tự ({segments_count} tin) - Provider: {provider.value}",
         legal_basis="Thông tư 26/2025/TT-BYT & Nghị định 91/2020/NĐ-CP",
         signer_name="Hệ Thống SMS Viễn Thông Bệnh Viện",
         signer_certificate="SMS-GATEWAY-2026",
@@ -178,11 +192,33 @@ async def send_patient_sms(
         payload_data={
             "sms_id": now_id,
             "patient_id": payload.patient_id,
-            "phone": norm_phone,
-            "provider": provider.value,
-            "receipt": receipt_str,
-            "segments": segments_count
+            "recipient_phone": norm_phone,
+            "dispatch_mode": dispatch_mode,
+            "scheduled_at": payload.scheduled_at.isoformat() if payload.scheduled_at else None,
+            "timing_rule": payload.timing_rule,
+            "status": status_str,
+            "delivery_receipt": receipt_str
         }
     )
 
     return sms_log
+
+@router.post("/cancel/{sms_id}", response_model=SmsDeliveryLogResponse)
+async def cancel_scheduled_sms(
+    sms_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(SmsDeliveryLog).where(SmsDeliveryLog.id == sms_id)
+    res = await db.execute(stmt)
+    item = res.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bản ghi tin nhắn")
+    if item.status != "scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chỉ có thể hủy tin nhắn đang hẹn giờ (Trạng thái hiện tại: {item.status})"
+        )
+    item.status = "cancelled"
+    await db.commit()
+    await db.refresh(item)
+    return item

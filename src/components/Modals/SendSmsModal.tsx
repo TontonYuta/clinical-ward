@@ -2,49 +2,29 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Modal Gửi Thông Báo Bệnh Nhân Chuẩn Workstation Kho Dược / CPOE (TT 26/2025/TT-BYT)
- * Tách Biệt Tab Riêng Biệt Giữa Soạn Tin & Xem Toàn Bộ Lịch Sử SMS / Email (Rõ Nét, Không Cắt, Không Che)
+ * Tự chọn lịch tự động gửi đa kênh (Gửi ngay vs Hẹn lịch thông minh)
+ * Loại bỏ toàn bộ cài đặt API Key/Webhook (chuyển giao 100% cho Monitor quản lý)
+ * Loại bỏ khung giả lập điện thoại, dọn dẹp tinh giản chuẩn y tế - TUYỆT ĐỐI KHÔNG DÙNG ICON.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  X,
-  Send,
-  MessageSquare,
-  CheckCircle2,
-  AlertTriangle,
-  FileText,
-  Clock,
-  Sparkles,
-  Radio,
-  User,
-  Phone,
-  Mail,
-  FileCode,
-  Check,
-  Loader2,
-  Settings,
-  HelpCircle,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  Building2,
-  Inbox,
-  Copy,
-  RotateCcw,
-  Search,
-  Calendar,
-  Layers
-} from 'lucide-react';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { smsApi } from '../../services/api/smsApi';
-import { SmsDeliveryReceipt, SmsMessageType, SmsProviderType, SmsTemplateItem } from '../../types/sms';
-import { PatientProfile } from '../../services/patientService';
 import {
-  sendMedicationAdviceEmail,
-  getStoredGasWebhookUrl,
-  setStoredGasWebhookUrl
-} from '../../services/prescriptionAdviceService';
-import { PatientPrescriptionAdvice, ScheduledMedication, SendAdviceEmailResponse } from '../../types/medicationSchedule';
+  SmsDeliveryReceipt,
+  SmsMessageType,
+  SmsProviderType,
+  SmsTemplateItem,
+  DispatchMode,
+  ScheduleTimingType
+} from '../../types/sms';
+import { PatientProfile } from '../../services/patientService';
+import { sendMedicationAdviceEmail } from '../../services/prescriptionAdviceService';
+import {
+  PatientPrescriptionAdvice,
+  ScheduledMedication,
+  SendAdviceEmailResponse
+} from '../../types/medicationSchedule';
 
 export interface EmailDeliveryReceipt {
   id: string;
@@ -56,12 +36,15 @@ export interface EmailDeliveryReceipt {
   medicationsSummary?: string;
   orderId?: string;
   provider: string;
-  status: string;
+  status: string; // 'delivered' | 'scheduled' | 'cancelled' | 'failed'
   deliveryReceipt?: string;
   createdAt: string;
+  dispatchMode?: DispatchMode;
+  scheduledAt?: string;
+  timingRule?: string;
 }
 
-export type NotificationModalTab = 'sms' | 'email' | 'history-sms' | 'history-email' | 'settings';
+export type NotificationModalTab = 'sms' | 'email' | 'history' | 'history-sms' | 'history-email';
 
 interface SendSmsModalProps {
   isOpen: boolean;
@@ -80,51 +63,6 @@ interface SendSmsModalProps {
 }
 
 const STORAGE_KEY_EMAIL_LOGS = 'clinical_patient_email_logs_v1';
-const STORAGE_KEY_ESMS_API_KEY = 'clinical_esms_api_key';
-const STORAGE_KEY_ESMS_SECRET_KEY = 'clinical_esms_secret_key';
-const STORAGE_KEY_ESMS_BRANDNAME = 'clinical_esms_brandname';
-
-export function getStoredEsmsApiKey(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY_ESMS_API_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-export function setStoredEsmsApiKey(val: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_ESMS_API_KEY, val.trim());
-  } catch {}
-}
-
-export function getStoredEsmsSecretKey(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY_ESMS_SECRET_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-export function setStoredEsmsSecretKey(val: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_ESMS_SECRET_KEY, val.trim());
-  } catch {}
-}
-
-export function getStoredEsmsBrandname(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY_ESMS_BRANDNAME) || 'BV_LAMSANG';
-  } catch {
-    return 'BV_LAMSANG';
-  }
-}
-
-export function setStoredEsmsBrandname(val: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_ESMS_BRANDNAME, val.trim());
-  } catch {}
-}
 
 const INITIAL_CANONICAL_SMS_LOGS: SmsDeliveryReceipt[] = [
   {
@@ -133,14 +71,15 @@ const INITIAL_CANONICAL_SMS_LOGS: SmsDeliveryReceipt[] = [
     patientId: 'BN-8817',
     patientName: 'Trần Huy Hoàng',
     messageType: 'cpoe_prescription',
-    content: '[BV LAM SANG] BS. Tran Van Hung da ky don thuoc ma RX-2026-604 cho BN Tran Huy Hoang. Tra cuu don tai: https://donthuocquocgia.vn/?id=RX-2026-604. Hotline: 1900-1234',
-    charactersCount: 160,
-    smsSegments: 1,
+    content: '[BV LAM SANG] BS Tran Van Hung da ky don thuoc ma RX-2026-604 cho BN Tran Huy Hoang. Tra cuu don tai: https://donthuocquocgia.vn/?id=RX-2026-604. Hotline: 1900-1234',
+    charactersCount: 168,
+    smsSegments: 2,
     provider: 'esms',
     status: 'delivered',
     referenceId: 'RX-2026-604',
-    deliveryReceipt: 'ESMS-DLR-8817-01',
-    createdAt: '2026-10-30T10:15:00Z'
+    deliveryReceipt: 'DLR-SIM-20261030-01',
+    createdAt: '2026-10-30T10:15:22Z',
+    dispatchMode: 'immediate'
   },
   {
     id: 'SMS-20261030-8817-02',
@@ -148,14 +87,15 @@ const INITIAL_CANONICAL_SMS_LOGS: SmsDeliveryReceipt[] = [
     patientId: 'BN-8817',
     patientName: 'Trần Huy Hoàng',
     messageType: 'medication_advice',
-    content: '[BV LAM SANG] Nhac uong thuoc BN Tran Huy Hoang: Sang 07:30 (1 vien sau an), Toi 20:00 (1 vien truoc ngu). Uong dung gio, tai kham ngay neu co trieu chung bat thuong.',
-    charactersCount: 153,
+    content: '[BV LAM SANG] Nhac uong thuoc BN Tran Huy Hoang: Sang 07:30 (1 vien sau an), Toi 20:00 (1 vien truoc ngu). Tai kham ngay neu co trieu chung bat thuong.',
+    charactersCount: 154,
     smsSegments: 1,
     provider: 'esms',
     status: 'delivered',
     referenceId: 'RX-2026-604',
-    deliveryReceipt: 'ESMS-DLR-8817-02',
-    createdAt: '2026-10-30T14:30:00Z'
+    deliveryReceipt: 'DLR-SIM-20261030-02',
+    createdAt: '2026-10-30T10:16:05Z',
+    dispatchMode: 'immediate'
   }
 ];
 
@@ -166,27 +106,14 @@ const INITIAL_CANONICAL_EMAIL_LOGS: EmailDeliveryReceipt[] = [
     patientId: 'BN-8817',
     patientName: 'Trần Huy Hoàng',
     subject: '[BV ĐA KHOA LÂM SÀNG] Đơn thuốc điện tử & Hướng dẫn điều trị - Mã đơn RX-2026-604',
-    adviceContent: 'Kính gửi bệnh nhân Trần Huy Hoàng,\n\nBệnh viện Đa khoa Lâm Sàng thông báo Bác sĩ BS. Trần Văn Hùng đã hoàn tất kê đơn và ký số đơn thuốc điện tử mã RX-2026-604 theo quy chuẩn Thông tư 26/2025/TT-BYT.\n\nHướng dẫn dùng thuốc: PARACETAMOL 500mg uống 1 viên/lần x 2 lần/ngày sau khi ăn no 30 phút (Sáng: 07:30, Tối: 19:30). Uống cùng nhiều nước ấm. Nếu sốt cao kéo dài trên 3 ngày hoặc có biểu hiện dị ứng nổi mẩn, tái khám ngay.\n\nQuý bệnh nhân có thể sử dụng mã đơn này để tra cứu tại Cổng Đơn thuốc Quốc gia (https://donthuocquocgia.vn) hoặc mua thuốc tại các nhà thuốc trên toàn quốc.',
+    adviceContent: 'Uống thuốc đúng cữ theo toa, uống nhiều nước ấm. Nếu có biểu hiện sốt cao kéo dài hoặc dị ứng, tái khám ngay.',
     medicationsSummary: 'PARACETAMOL 500mg (1 viên x 2 lần/ngày, 5 ngày)',
     orderId: 'RX-2026-604',
     provider: 'Google Apps Script Webhook',
     status: 'delivered',
     deliveryReceipt: 'GAS-MAIL-20261030-01',
-    createdAt: '2026-10-30T10:16:12Z'
-  },
-  {
-    id: 'MAIL-20261030-8817-02',
-    recipientEmail: 'huyhoang6altt@gmail.com',
-    patientId: 'BN-8817',
-    patientName: 'Trần Huy Hoàng',
-    subject: '[BV ĐA KHOA LÂM SÀNG] Xác nhận viện phí & Lịch hẹn tái khám - BN Trần Huy Hoàng',
-    adviceContent: 'Bệnh viện xác nhận người bệnh Trần Huy Hoàng (BN-8817) đã hoàn tất thủ tục khám và thanh toán viện phí theo quy định. Đề nghị tái khám sau 30 ngày tại Khoa Khám Bệnh - Phòng 204. Vui lòng mang theo đơn thuốc và hồ sơ khi tái khám.',
-    medicationsSummary: 'PARACETAMOL 500mg (1 viên x 2 lần/ngày, 5 ngày)',
-    orderId: 'RX-2026-604',
-    provider: 'Google Apps Script Webhook',
-    status: 'delivered',
-    deliveryReceipt: 'GAS-MAIL-20261030-02',
-    createdAt: '2026-10-30T16:20:00Z'
+    createdAt: '2026-10-30T10:16:12Z',
+    dispatchMode: 'immediate'
   }
 ];
 
@@ -233,7 +160,7 @@ function formatLogTimestamp(ts?: string): string {
   if (!ts) return 'Hôm nay';
   try {
     const d = new Date(ts);
-    return `${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · ${d.toLocaleDateString('vi-VN')}`;
+    return `${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} · ${d.toLocaleDateString('vi-VN')}`;
   } catch {
     return ts;
   }
@@ -262,10 +189,10 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
   const effectiveEmail = patient?.email || patientEmail || 'huyhoang6altt@gmail.com';
   const effectiveDiagnosis = diagnosis || patient?.diagnosis || 'Cảm cúm (J11) - Theo dõi điều trị ngoại trú';
 
-  // Lựa chọn Tab chính của Modal: Soạn SMS, Soạn Email, Lịch sử SMS, Lịch sử Email
+  // 3 Tab nghiệp vụ thuần túy: sms | email | history
   const [activeTab, setActiveTab] = useState<NotificationModalTab>('sms');
 
-  // Trạng thái SMS (Cổng SMS Brandname)
+  // Trạng thái SMS
   const [phone, setPhone] = useState(effectivePhone);
   const [messageType, setMessageType] = useState<SmsMessageType>(initialMessageType);
   const [content, setContent] = useState('');
@@ -275,25 +202,42 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
 
   // Trạng thái Email
   const [email, setEmail] = useState(effectiveEmail);
-  const [emailSubject, setEmailSubject] = useState(`[BV ĐA KHOA LÂM SÀNG] Đơn thuốc điện tử & Hướng dẫn điều trị - Mã đơn ${orderId || 'RX-2026-604'}`);
-  const [emailAdvice, setEmailAdvice] = useState('Uống thuốc đúng cữ theo toa, uống nhiều nước ấm. Nếu có biểu hiện sốt cao kéo dài hoặc dị ứng, tái khám ngay.');
+  const [emailSubject, setEmailSubject] = useState(
+    `[BV ĐA KHOA LÂM SÀNG] Đơn thuốc điện tử & Hướng dẫn điều trị - Mã đơn ${orderId || 'RX-2026-604'}`
+  );
+  const [emailAdvice, setEmailAdvice] = useState(
+    'Uống thuốc đúng cữ theo toa, uống nhiều nước ấm. Nếu có biểu hiện sốt cao kéo dài hoặc dị ứng, tái khám ngay.'
+  );
+  const [emailLogs, setEmailLogs] = useState<EmailDeliveryReceipt[]>(() => getStoredEmailLogs(effectiveId));
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
   const [emailSentReceipt, setEmailSentReceipt] = useState<SendAdviceEmailResponse | null>(null);
-  // Trạng thái cấu hình Cổng phát tin
-  const [gasUrl, setGasUrl] = useState<string>(() => getStoredGasWebhookUrl());
-  const [esmsApiKey, setEsmsApiKey] = useState<string>(() => getStoredEsmsApiKey());
-  const [esmsSecretKey, setEsmsSecretKey] = useState<string>(() => getStoredEsmsSecretKey());
-  const [esmsBrandname, setEsmsBrandname] = useState<string>(() => getStoredEsmsBrandname());
-  const [settingsNotice, setSettingsNotice] = useState<string | null>(null);
-  const [emailLogs, setEmailLogs] = useState<EmailDeliveryReceipt[]>(() => getStoredEmailLogs(effectiveId));
+
+  // Trạng thái Lịch Tự Động Gửi (Scheduled Auto-Send)
+  const [dispatchMode, setDispatchMode] = useState<DispatchMode>('immediate');
+  const [scheduleTimingType, setScheduleTimingType] = useState<ScheduleTimingType>('specific_time');
+  
+  // Mặc định ngày mai 08:00
+  const defaultTomorrowIso = useMemo(() => {
+    const tm = new Date(Date.now() + 86400000);
+    tm.setHours(8, 0, 0, 0);
+    return tm.toISOString().slice(0, 16);
+  }, []);
+  const [scheduledDatetime, setScheduledDatetime] = useState<string>(defaultTomorrowIso);
+  const [selectedMedSlots, setSelectedMedSlots] = useState<{ morning: boolean; noon: boolean; evening: boolean; bedtime: boolean }>({
+    morning: true,
+    noon: true,
+    evening: true,
+    bedtime: false,
+  });
+  const [recurringDays, setRecurringDays] = useState<number>(7);
 
   // Trạng thái chung
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const [historyChannelFilter, setHistoryChannelFilter] = useState<'all' | 'sms' | 'email' | 'scheduled'>('all');
 
-  // Tải templates và logs khi mở modal
+  // Tải dữ liệu khi mở modal
   useEffect(() => {
     if (isOpen) {
       setPhone(effectivePhone);
@@ -303,21 +247,25 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       setEmailSentSuccess(false);
       setEmailSentReceipt(null);
       setErrorMessage(null);
-      setGasUrl(getStoredGasWebhookUrl());
+      setDispatchMode('immediate');
       setSearchFilter('');
+      setHistoryChannelFilter('all');
 
       smsApi.getTemplates().then(setTemplates).catch(console.warn);
 
       if (effectiveId && effectiveId !== 'BN-Chưa có') {
-        smsApi.getLogs(effectiveId).then((data) => {
-          if (data && data.length > 0) {
-            setLogs(data);
-          } else {
+        smsApi
+          .getLogs(effectiveId)
+          .then((data) => {
+            if (data && data.length > 0) {
+              setLogs(data);
+            } else {
+              setLogs(INITIAL_CANONICAL_SMS_LOGS);
+            }
+          })
+          .catch(() => {
             setLogs(INITIAL_CANONICAL_SMS_LOGS);
-          }
-        }).catch(() => {
-          setLogs(INITIAL_CANONICAL_SMS_LOGS);
-        });
+          });
 
         setEmailLogs(getStoredEmailLogs(effectiveId));
       } else {
@@ -337,145 +285,118 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
     if (messageType === 'cpoe_prescription') {
       const rxId = orderId || 'RX-2026-604';
       setContent(
-        `[BV LAM SANG] ${cleanDoctorDisplay(doctorName)} da ky don thuoc ma ${rxId} cho BN ${removeVietnameseTones(effectiveName)}. Tra cuu don tai: https://donthuocquocgia.vn/?id=${rxId}. Hotline: 1900-1234`
+        `[BV LAM SANG] ${cleanDoctorDisplay(doctorName)} da ky don thuoc ma ${rxId} cho BN ${removeVietnameseTones(
+          effectiveName
+        )}. Tra cuu don tai: https://donthuocquocgia.vn/?id=${rxId}. Hotline: 1900-1234`
       );
     } else if (messageType === 'medication_advice') {
       setContent(
-        `[BV LAM SANG] Nhac uong thuoc BN ${removeVietnameseTones(effectiveName)}: Sang 07:30 (1 vien sau an), Toi 20:00 (1 vien truoc ngu). Tai kham ngay neu co trieu chung bat thuong.`
+        `[BV LAM SANG] Nhac uong thuoc BN ${removeVietnameseTones(
+          effectiveName
+        )}: Sang 07:30 (1 vien sau an), Toi 20:00 (1 vien truoc ngu). Tai kham ngay neu co trieu chung bat thuong.`
       );
     } else {
       setContent(
-        `[BV LAM SANG] Xac nhan BN ${removeVietnameseTones(effectiveName)} (${effectiveId}) da hoan tat thu tuc kham benh tai Khoa Kham Benh. Tran trong cam on Quy khach!`
+        `[BV LAM SANG] Xac nhan BN ${removeVietnameseTones(
+          effectiveName
+        )} (${effectiveId}) da hoan tat thu tuc kham benh tai Khoa Kham Benh. Tran trong cam on Quy khach!`
       );
     }
-  }, [messageType, orderId, doctorName, effectiveName, effectiveId, initialContent]);
+  }, [messageType, orderId, effectiveName, doctorName, effectiveId, initialContent]);
 
-  // Danh mục thuốc hiệu lực
-  const effectiveMedications = useMemo<ScheduledMedication[]>(() => {
-    if (medications && medications.length > 0) return medications;
-    return [
-      {
-        id: 'sched-0',
-        medicationName: 'PARACETAMOL 500mg',
-        activeIngredient: 'Paracetamol',
-        dosage: '1 viên/lần',
-        route: 'Đường uống',
-        durationDays: 5,
-        specialInstructions: 'Uống sau khi ăn no 30 phút, uống nhiều nước',
-        timeSlots: [
-          { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
-          { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' }
-        ]
-      }
-    ];
-  }, [medications]);
+  // Tính toán số ký tự và phân đoạn tin SMS
+  const { charsCount, segmentsCount, isUnicode, maxPerSegment } = useMemo(() => {
+    const len = content.length;
+    const hasUnicode = /[^\u0000-\u00ff]/.test(content);
+    let seg = 1;
+    let maxSeg = hasUnicode ? 70 : 160;
 
-  // Tính toán số ký tự và số segment SMS
-  const { charsCount, isUnicode, segmentsCount, maxPerSegment } = useMemo(() => {
-    const chars = content.length;
-    let unicode = false;
-    for (let i = 0; i < content.length; i++) {
-      if (content.charCodeAt(i) > 127) {
-        unicode = true;
-        break;
-      }
+    if (hasUnicode) {
+      seg = len <= 70 ? 1 : Math.ceil(len / 67);
+    } else {
+      seg = len <= 160 ? 1 : Math.ceil(len / 153);
     }
-    const limit = unicode ? 70 : 160;
-    const concatLimit = unicode ? 67 : 153;
-    const segments = chars <= limit ? 1 : Math.ceil(chars / concatLimit);
     return {
-      charsCount: chars,
-      isUnicode: unicode,
-      segmentsCount: Math.max(1, segments),
-      maxPerSegment: limit
+      charsCount: len,
+      segmentsCount: Math.max(1, seg),
+      isUnicode: hasUnicode,
+      maxPerSegment: maxSeg
     };
   }, [content]);
 
-  // Áp dụng mẫu tin chuẩn Thông tư 26 cho cả SMS và Email
-  const handleApplyTemplate = (tpl: SmsTemplateItem) => {
-    setMessageType(tpl.category as SmsMessageType);
-    const cleanDoc = cleanDoctorDisplay(doctorName);
-    const rxId = orderId || 'RX-2026-604';
-
-    if (activeTab === 'sms') {
-      let replaced = tpl.template
-        .replace(/{doctorName}/g, cleanDoc)
-        .replace(/{orderId}/g, rxId)
-        .replace(/{patientName}/g, removeVietnameseTones(effectiveName))
-        .replace(/{patientId}/g, effectiveId);
-      setContent(replaced);
-    } else {
-      if (tpl.category === 'cpoe_prescription') {
-        setEmailSubject(`[BV ĐA KHOA LÂM SÀNG] Đơn thuốc điện tử Quốc gia - Mã đơn ${rxId}`);
-        setEmailAdvice(
-          `Kính gửi bệnh nhân ${effectiveName},\n\nBệnh viện Đa khoa Lâm Sàng thông báo Bác sĩ ${cleanDoc} đã hoàn tất kê đơn và ký số đơn thuốc điện tử mã ${rxId} theo quy chuẩn Thông tư 26/2025/TT-BYT.\n\nQuý bệnh nhân có thể sử dụng mã đơn này để tra cứu tại Cổng Đơn thuốc Quốc gia (https://donthuocquocgia.vn) hoặc mua thuốc tại các nhà thuốc trên toàn quốc.`
-        );
-      } else if (tpl.category === 'medication_advice') {
-        setEmailSubject(`[BV ĐA KHOA LÂM SÀNG] Hướng dẫn cữ uống thuốc & Lời dặn Bác sĩ - Mã đơn ${rxId}`);
-        setEmailAdvice(
-          `Uống thuốc đúng cữ theo toa, uống nhiều nước ấm. Tuyệt đối không tự ý ngưng hoặc thay đổi liều lượng thuốc. Khung giờ khuyến nghị: Sáng 07:30 (1 viên sau ăn no 30 phút), Tối 19:30 (1 viên sau ăn). Nếu có biểu hiện sốt cao kéo dài hoặc phát ban dị ứng, tái khám ngay.`
-        );
-      } else {
-        setEmailSubject(`[BV ĐA KHOA LÂM SÀNG] Xác nhận hoàn tất viện phí & Lịch hẹn tái khám - BN ${effectiveName}`);
-        setEmailAdvice(
-          `Bệnh viện xác nhận người bệnh ${effectiveName} (${effectiveId}) đã hoàn tất thủ tục khám và thanh toán viện phí theo quy định. Đề nghị tái khám sau 30 ngày tại Khoa Khám Bệnh - Phòng 204. Vui lòng mang theo đơn thuốc và hồ sơ khi tái khám.`
-        );
-      }
-    }
-  };
-
-  // Thao tác chèn nhanh tóm tắt đơn thuốc vào vùng soạn thảo
-  const handleInsertPrescriptionSnippet = () => {
-    const rxId = orderId || 'RX-2026-604';
-    const cleanDoc = cleanDoctorDisplay(doctorName);
-    if (activeTab === 'sms') {
-      const snippet = `[Don ${rxId}: PARACETAMOL 500mg, uong 1 vien x 2 lan/ngay sau an. BS ${cleanDoc}]`;
-      setContent((prev) => (prev ? `${prev} ${snippet}` : snippet));
-    } else {
-      const snippet = `[Đơn thuốc ${rxId}: PARACETAMOL 500mg (1 viên x 2 lần/ngày sau ăn 30p). Chẩn đoán: ${effectiveDiagnosis}. BS kê đơn: ${cleanDoc}]`;
-      setEmailAdvice((prev) => (prev ? `${prev}\n${snippet}` : snippet));
-    }
-  };
-
+  // Chuyển sang không dấu để tối ưu số ký tự
   const handleConvertToUnsigned = () => {
     setContent(removeVietnameseTones(content));
   };
 
-  const handleCopyText = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  // Chọn nhanh ngày giờ cụ thể
+  const handleQuickAddDays = (days: number) => {
+    const target = new Date(Date.now() + days * 86400000);
+    target.setHours(8, 0, 0, 0);
+    setScheduledDatetime(target.toISOString().slice(0, 16));
   };
 
-  // Lọc danh sách nhật ký SMS
-  const filteredSmsLogs = useMemo(() => {
-    if (!searchFilter.trim()) return logs;
-    const q = searchFilter.toLowerCase();
-    return logs.filter(
-      (l) =>
-        l.content.toLowerCase().includes(q) ||
-        l.recipientPhone.includes(q) ||
-        (l.deliveryReceipt && l.deliveryReceipt.toLowerCase().includes(q))
-    );
-  }, [logs, searchFilter]);
+  // Áp dụng mẫu tin nhắn chuẩn
+  const handleApplyTemplate = (tpl: SmsTemplateItem) => {
+    setMessageType(tpl.category as SmsMessageType);
+    let body = tpl.template;
+    body = body.replace(/{patientName}/g, removeVietnameseTones(effectiveName));
+    body = body.replace(/{doctorName}/g, cleanDoctorDisplay(doctorName));
+    body = body.replace(/{orderId}/g, orderId || 'RX-2026-604');
+    body = body.replace(/{patientId}/g, effectiveId);
+    setContent(body);
+  };
 
-  // Lọc danh sách nhật ký Email
-  const filteredEmailLogs = useMemo(() => {
-    if (!searchFilter.trim()) return emailLogs;
-    const q = searchFilter.toLowerCase();
-    return emailLogs.filter(
-      (l) =>
-        l.subject.toLowerCase().includes(q) ||
-        l.adviceContent.toLowerCase().includes(q) ||
-        l.recipientEmail.toLowerCase().includes(q)
-    );
-  }, [emailLogs, searchFilter]);
+  // Chèn tóm tắt đơn thuốc CPOE vào nội dung
+  const handleInsertPrescriptionSnippet = () => {
+    const snippet = ` Don thuoc ${orderId || 'RX-2026-604'}: PARACETAMOL 500mg (1v x 2 lan/ngay).`;
+    if (activeTab === 'sms') {
+      setContent((prev) => prev.trim() + snippet);
+    } else {
+      setEmailAdvice((prev) => prev.trim() + snippet);
+    }
+  };
 
+  // Hủy lịch hẹn gửi
+  const handleCancelSchedule = async (id: string, channel: 'sms' | 'email') => {
+    if (!window.confirm(`Xác nhận hủy lịch hẹn phát tin [${id}]?`)) return;
+
+    if (channel === 'sms') {
+      try {
+        await smsApi.cancelScheduledSms(id);
+      } catch {}
+      setLogs((prev) =>
+        prev.map((it) => (it.id === id ? { ...it, status: 'cancelled' } : it))
+      );
+    } else {
+      setEmailLogs((prev) => {
+        const next = prev.map((it) => (it.id === id ? { ...it, status: 'cancelled' } : it));
+        try {
+          localStorage.setItem(STORAGE_KEY_EMAIL_LOGS, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    }
+  };
+
+  // Xử lý gửi tin nhắn hoặc lên lịch
   const handleSend = async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
+
+    const timingRuleStr =
+      dispatchMode === 'scheduled'
+        ? scheduleTimingType === 'specific_time'
+          ? `specific:${scheduledDatetime}`
+          : scheduleTimingType === 'medication_routine'
+          ? `routine:${Object.entries(selectedMedSlots)
+              .filter(([_, v]) => v)
+              .map(([k]) => k)
+              .join(',')}`
+          : `daily:${recurringDays}days`
+        : 'immediate';
 
     if (activeTab === 'sms') {
       if (!phone.trim()) {
@@ -500,7 +421,10 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
           messageType,
           content: content.trim(),
           referenceId: orderId || undefined,
-          provider: 'esms'
+          provider: 'esms',
+          dispatchMode,
+          scheduledAt: dispatchMode === 'scheduled' ? new Date(scheduledDatetime).toISOString() : undefined,
+          timingRule: timingRuleStr
         });
 
         setReceipt(res);
@@ -522,11 +446,6 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       setErrorMessage(null);
 
       try {
-        const storedWebhook = gasUrl.trim() || getStoredGasWebhookUrl();
-        if (gasUrl.trim()) {
-          setStoredGasWebhookUrl(gasUrl.trim());
-        }
-
         const advicePayload: PatientPrescriptionAdvice = {
           id: `ADV-${(orderId || 'RX-2026-604').replace('RX-', '')}`,
           prescriptionId: orderId || 'RX-2026-604',
@@ -539,11 +458,13 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
           department: 'Khoa Khám Bệnh - Phòng 204',
           createdAt: new Date().toISOString(),
           startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+          endDate: new Date(Date.now() + recurringDays * 86400000).toISOString().split('T')[0],
           generalDoctorAdvice: emailAdvice.trim(),
-          medications: effectiveMedications,
-          notificationStatus: 'idle',
-          gasWebhookUrl: storedWebhook || undefined
+          medications: medications || [],
+          notificationStatus: dispatchMode === 'scheduled' ? 'scheduled' : 'idle',
+          dispatchMode,
+          scheduledAt: dispatchMode === 'scheduled' ? new Date(scheduledDatetime).toISOString() : undefined,
+          timingRule: timingRuleStr
         };
 
         const res = await sendMedicationAdviceEmail(advicePayload, { sendEmail: true, sendSms: false });
@@ -552,9 +473,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
           setEmailSentReceipt(res);
           setStatus('success');
 
-          // Lưu bản ghi lịch sử Email mới
           const newLog: EmailDeliveryReceipt = {
-            id: `MAIL-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+            id: `MAIL-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random()
+              .toString(36)
+              .substring(2, 8)
+              .toUpperCase()}`,
             recipientEmail: email.trim(),
             patientId: effectiveId,
             patientName: effectiveName,
@@ -562,10 +485,16 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
             adviceContent: emailAdvice.trim(),
             medicationsSummary: 'PARACETAMOL 500mg (1 viên x 2 lần/ngày, 5 ngày)',
             orderId: orderId || 'RX-2026-604',
-            provider: res.provider === 'google_apps_script' ? 'Google Apps Script Webhook' : 'SMTP Gateway',
-            status: 'delivered',
-            deliveryReceipt: `GAS-MAIL-${Date.now().toString().slice(-6)}`,
-            createdAt: new Date().toISOString()
+            provider: res.provider || 'Google Apps Script Webhook',
+            status: dispatchMode === 'scheduled' ? 'scheduled' : 'delivered',
+            deliveryReceipt:
+              dispatchMode === 'scheduled'
+                ? `SCHED-MAIL-${Date.now().toString().slice(-6)}`
+                : `GAS-MAIL-${Date.now().toString().slice(-6)}`,
+            createdAt: new Date().toISOString(),
+            dispatchMode,
+            scheduledAt: dispatchMode === 'scheduled' ? scheduledDatetime : undefined,
+            timingRule: timingRuleStr
           };
           saveStoredEmailLog(newLog);
           setEmailLogs((prev) => [newLog, ...prev]);
@@ -574,15 +503,84 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
           setErrorMessage(res.message || 'Không thể gửi email dặn dò');
         }
       } catch (err: any) {
-        console.error('Lỗi khi gửi Email:', err);
+        console.error('Lỗi gửi email:', err);
         setStatus('error');
-        setErrorMessage(
-          err.message || 'Chưa cấu hình Google Apps Script Webhook để gửi email. Vui lòng cấu hình Webhook URL bên dưới.'
-        );
-        setActiveTab('settings');
+        setErrorMessage(err.message || 'Lỗi khi chuyển phát thư điện tử');
       }
     }
   };
+
+  // Danh sách lịch sử hỗn hợp gộp chung (SMS + Email)
+  const combinedHistory = useMemo(() => {
+    const list: Array<{
+      id: string;
+      channel: 'sms' | 'email';
+      recipient: string;
+      title: string;
+      content: string;
+      status: string;
+      receiptCode: string;
+      createdAt: string;
+      dispatchMode?: string;
+      scheduledAt?: string;
+      timingRule?: string;
+    }> = [];
+
+    logs.forEach((s) => {
+      list.push({
+        id: s.id,
+        channel: 'sms',
+        recipient: s.recipientPhone,
+        title: s.messageType === 'cpoe_prescription' ? 'Mã đơn thuốc CPOE' : 'Dặn dò điều trị',
+        content: s.content,
+        status: s.status,
+        receiptCode: s.deliveryReceipt || s.id,
+        createdAt: s.createdAt || '',
+        dispatchMode: s.dispatchMode || 'immediate',
+        scheduledAt: s.scheduledAt,
+        timingRule: s.timingRule
+      });
+    });
+
+    emailLogs.forEach((m) => {
+      list.push({
+        id: m.id,
+        channel: 'email',
+        recipient: m.recipientEmail,
+        title: m.subject,
+        content: m.adviceContent,
+        status: m.status,
+        receiptCode: m.deliveryReceipt || m.id,
+        createdAt: m.createdAt || '',
+        dispatchMode: m.dispatchMode || 'immediate',
+        scheduledAt: m.scheduledAt,
+        timingRule: m.timingRule
+      });
+    });
+
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return list.filter((item) => {
+      if (historyChannelFilter === 'sms' && item.channel !== 'sms') return false;
+      if (historyChannelFilter === 'email' && item.channel !== 'email') return false;
+      if (historyChannelFilter === 'scheduled' && item.status !== 'scheduled') return false;
+
+      if (!searchFilter.trim()) return true;
+      const q = searchFilter.toLowerCase();
+      return (
+        item.content.toLowerCase().includes(q) ||
+        item.recipient.toLowerCase().includes(q) ||
+        item.receiptCode.toLowerCase().includes(q)
+      );
+    });
+  }, [logs, emailLogs, historyChannelFilter, searchFilter]);
+
+  const scheduledCount = useMemo(() => {
+    return (
+      logs.filter((l) => l.status === 'scheduled').length +
+      emailLogs.filter((l) => l.status === 'scheduled').length
+    );
+  }, [logs, emailLogs]);
 
   if (!isOpen) return null;
 
@@ -590,240 +588,161 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby="notification-modal-title"
+      aria-labelledby="sms-modal-title"
       data-testid="send-sms-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
     >
-      <div className="relative w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[92vh] flex flex-col bg-white rounded-none sm:rounded-xl shadow-2xl border-0 sm:border border-slate-200 overflow-hidden">
-        
-        {/* 1. Header Thanh Lịch: Tabs Soạn SMS, Soạn Email, Lịch sử SMS, Lịch sử Email */}
-        <div className="px-4 sm:px-5 py-3 sm:py-3.5 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
-          <div className="flex items-center justify-between w-full sm:w-auto">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-              </div>
-              <div className="min-w-0">
-                <h3 id="notification-modal-title" className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                  GỬI THÔNG TIN CHO BỆNH NHÂN (TT 26/2025/TT-BYT)
-                </h3>
-                <p className="text-2xs text-slate-500 truncate">
-                  Hồ sơ: <strong className="text-slate-800 font-medium">{effectiveName}</strong> · Mã BN: <span className="font-mono text-slate-700">{effectiveId}</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Mobile Close Button */}
-            <button
-              onClick={onClose}
-              data-testid="btn-close-sms-modal-mobile"
-              aria-label="Đóng cửa sổ thông báo"
-              className="sm:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800"
+      >
+        {/* ========================================================================================= */}
+        {/* 1. Header: 3 Tab Nghiệp Vụ Chuẩn Mực - TUYỆT ĐỐI KHÔNG DÙNG ICON                          */}
+        {/* ========================================================================================= */}
+        <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div>
+            <h3 id="sms-modal-title" className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+              Gửi Thông Báo Bệnh Nhân (Thông tư 26/2025/TT-BYT)
+            </h3>
+            <p className="text-2xs sm:text-xs text-slate-500">
+              Hệ thống kết nối tự động tới Cổng SMS Brandname &amp; Thư điện tử Y Tế do Bệnh viện quản lý
+            </p>
           </div>
 
-          {/* Lựa chọn Tab: Soạn SMS / Soạn Email / Lịch sử SMS / Lịch sử Email / Cài đặt */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="flex rounded-lg p-0.5 bg-slate-100 border border-slate-200 text-2xs sm:text-xs font-medium overflow-x-auto thin-scrollbar w-full sm:w-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {/* 3 Tab Navigation - Không icon */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
               <button
                 type="button"
-                data-testid="tab-sms"
-                onClick={() => { setActiveTab('sms'); setStatus('idle'); setErrorMessage(null); }}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
+                data-testid="tab-compose-sms"
+                onClick={() => {
+                  setActiveTab('sms');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                }}
+                className={`px-3 py-1.5 rounded-md cursor-pointer transition ${
                   activeTab === 'sms'
-                    ? 'bg-slate-900 text-white shadow-xs'
+                    ? 'bg-slate-900 text-white shadow-xs font-bold'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
                 }`}
               >
-                <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden sm:inline">Tin nhắn SMS</span>
-                <span className="sm:hidden">SMS</span>
+                Soạn SMS
               </button>
-              
+
               <button
                 type="button"
-                data-testid="tab-email"
-                onClick={() => { setActiveTab('email'); setStatus('idle'); setErrorMessage(null); }}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
+                data-testid="tab-compose-email"
+                onClick={() => {
+                  setActiveTab('email');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                }}
+                className={`px-3 py-1.5 rounded-md cursor-pointer transition ${
                   activeTab === 'email'
-                    ? 'bg-slate-900 text-white shadow-xs'
+                    ? 'bg-slate-900 text-white shadow-xs font-bold'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
                 }`}
               >
-                <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden sm:inline">Thư điện tử (Email)</span>
-                <span className="sm:hidden">Email</span>
+                Soạn Email
               </button>
 
               <button
                 type="button"
                 data-testid="tab-history-sms"
-                onClick={() => { setActiveTab('history-sms'); setStatus('idle'); setErrorMessage(null); }}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
-                  activeTab === 'history-sms'
-                    ? 'bg-slate-900 text-white shadow-xs'
+                onClick={() => {
+                  setActiveTab('history');
+                  setStatus('idle');
+                  setErrorMessage(null);
+                }}
+                className={`px-3 py-1.5 rounded-md cursor-pointer transition flex items-center gap-1.5 ${
+                  activeTab === 'history' || activeTab === 'history-sms' || activeTab === 'history-email'
+                    ? 'bg-slate-900 text-white shadow-xs font-bold'
                     : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
                 }`}
               >
-                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden sm:inline">Lịch sử SMS</span>
-                <span className="sm:hidden">LS SMS</span>
-                <span className={`px-1 sm:px-1.5 py-0.1 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold ${
-                  activeTab === 'history-sms' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                }`}>
-                  {logs.length}
+                <span>Nhật ký &amp; Lịch hẹn</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    activeTab === 'history' || activeTab === 'history-sms' || activeTab === 'history-email'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200 text-slate-800'
+                  }`}
+                >
+                  {logs.length + emailLogs.length}
                 </span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="tab-history-email"
-                onClick={() => { setActiveTab('history-email'); setStatus('idle'); setErrorMessage(null); }}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
-                  activeTab === 'history-email'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
-                }`}
-              >
-                <Inbox className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden sm:inline">Lịch sử Email</span>
-                <span className="sm:hidden">LS Email</span>
-                <span className={`px-1 sm:px-1.5 py-0.1 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold ${
-                  activeTab === 'history-email' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                }`}>
-                  {emailLogs.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="tab-settings"
-                onClick={() => { setActiveTab('settings'); setStatus('idle'); setErrorMessage(null); setSettingsNotice(null); }}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-2xs sm:text-xs font-semibold cursor-pointer transition shrink-0 flex items-center gap-1 sm:gap-1.5 ${
-                  activeTab === 'settings'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
-                }`}
-              >
-                <Settings className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden sm:inline">Cài đặt cổng tin</span>
-                <span className="sm:hidden">Cài đặt</span>
+                {scheduledCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950">
+                    {scheduledCount} hẹn
+                  </span>
+                )}
               </button>
             </div>
 
-            {/* Desktop Close Button */}
+            {/* Nút đóng modal - Không icon */}
             <button
               onClick={onClose}
               data-testid="btn-close-sms-modal"
               aria-label="Đóng cửa sổ thông báo"
-              className="hidden sm:flex p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+              className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              Đóng [ESC]
             </button>
           </div>
         </div>
 
-        {/* 2. Thanh Thông Tin Hành Chính (Ribbon phẳng, cực kỳ tinh gọn trên mobile) */}
-        <div className="px-3 sm:px-5 py-1.5 sm:py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 text-2xs sm:text-xs shrink-0">
-          <div className="flex items-center gap-1.5 sm:gap-3 text-slate-700 min-w-0 truncate">
-            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="truncate">BN: <strong className="text-slate-900">{effectiveName}</strong></span>
-            {orderId && (
-              <>
-                <span className="text-slate-300">·</span>
-                <span className="font-mono text-slate-800 shrink-0 font-semibold">{orderId}</span>
-              </>
-            )}
-            <span className="text-slate-300 hidden sm:inline">·</span>
-            <span className="hidden sm:inline text-slate-600">BS: <strong className="text-slate-800">{cleanDoctorDisplay(doctorName)}</strong></span>
+        {/* ========================================================================================= */}
+        {/* 2. Ribbon thông tin hành chính tinh gọn                                                   */}
+        {/* ========================================================================================= */}
+        <div className="px-4 sm:px-6 py-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-2xs sm:text-xs shrink-0">
+          <div className="flex items-center gap-2 text-slate-700 flex-wrap">
+            <span>Bệnh nhân: <strong className="text-slate-900 font-bold">{effectiveName}</strong> ({effectiveId})</span>
+            <span className="text-slate-300">|</span>
+            <span>Đơn thuốc CPOE: <strong className="font-mono text-slate-900 font-semibold">{orderId || 'RX-2026-604'}</strong></span>
+            <span className="text-slate-300">|</span>
+            <span>Bác sĩ kê đơn: <strong className="text-slate-800">{cleanDoctorDisplay(doctorName)}</strong></span>
           </div>
 
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium bg-white text-slate-700 border border-slate-200 shadow-2xs shrink-0">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-            <span>
-              {activeTab === 'sms' && 'SMS Brandname'}
-              {activeTab === 'email' && 'Email Y Tế'}
-              {activeTab === 'history-sms' && `${logs.length} SMS`}
-              {activeTab === 'history-email' && `${emailLogs.length} Email`}
-              {activeTab === 'settings' && 'Cài đặt cổng'}
-            </span>
+          <div className="text-[11px] font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+            Hạ tầng viễn thông do Clinical AI Monitor quản trị tập trung
           </div>
         </div>
 
         {/* ========================================================================================= */}
-        {/* PHẦN 3A: TAB SOẠN THẢO (SMS HOẶC EMAIL) - BỐ CỤC 50/50 ZERO-BOX                          */}
+        {/* 3. Phần Soạn Thảo (SMS HOẶC EMAIL) - BỐ CỤC 5 CỘT / 7 CỘT KHÔNG ICON                     */}
         {/* ========================================================================================= */}
         {(activeTab === 'sms' || activeTab === 'email') && (
-          <form onSubmit={handleSend} className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-y-auto lg:overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
-            
-            {/* ==================== CỘT TRÁI (6 CỘT): THÔNG TIN NGƯỜI NHẬN & MẪU CHUẨN ==================== */}
-            <div className="lg:col-span-6 p-3 sm:p-6 lg:overflow-y-auto thin-scrollbar space-y-3 sm:space-y-4 bg-white">
-              
-              {/* Header Cột Trái (Chỉ hiện trên desktop để giao diện mobile tinh gọn) */}
-              <div className="hidden lg:flex items-center justify-between pb-2 border-b border-slate-200">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  {activeTab === 'sms' ? (
-                    <>
-                      <Phone className="w-3.5 h-3.5 text-slate-600" />
-                      <span>1. Thiết lập người nhận &amp; Mẫu thông tin SMS</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="w-3.5 h-3.5 text-slate-600" />
-                      <span>1. Thiết lập người nhận &amp; Mẫu thư Email</span>
-                    </>
-                  )}
-                </h4>
-                <span className="text-2xs text-slate-500 font-medium">
-                  {activeTab === 'sms' ? 'Cổng SMS Brandname' : 'Cổng Email Y Tế'}
-                </span>
-              </div>
-
-              {/* Hàng 1: Thông tin người nhận */}
+          <form
+            onSubmit={handleSend}
+            className="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-y-auto divide-y lg:divide-y-0 lg:divide-x divide-slate-200"
+          >
+            {/* CỘT TRÁI (5 CỘT): NGƯỜI NHẬN & MẪU CHUẨN */}
+            <div className="lg:col-span-5 p-4 sm:p-5 space-y-4 bg-white overflow-y-auto thin-scrollbar">
+              {/* Thông tin người nhận */}
               {activeTab === 'sms' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3.5">
-                  <div>
-                    <label className="block text-2xs sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1 flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-slate-500" />
-                      <span>Số điện thoại người nhận *</span>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      Số điện thoại người nhận *
                     </label>
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0963278149"
-                      aria-label="Số điện thoại nhận SMS"
-                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50 border border-slate-300 rounded-lg font-mono text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
-                    />
+                    <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                      Brandname: BV_LAMSANG
+                    </span>
                   </div>
-
-                  <div>
-                    <label className="block text-2xs sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1 flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-slate-500" />
-                      <span>Đơn vị gửi (SMS Brandname)</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        readOnly
-                        value={esmsBrandname || 'BV_LAMSANG'}
-                        className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-100/80 border border-slate-300 rounded-lg font-mono text-xs sm:text-sm text-slate-800 font-semibold cursor-default"
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
-                        TT 26
-                      </span>
-                    </div>
-                  </div>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0963278149"
+                    aria-label="Số điện thoại nhận SMS"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-mono text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
+                  />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3.5">
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-2xs sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1 flex items-center gap-1">
-                      <Mail className="w-3 h-3 text-slate-500" />
-                      <span>Email người nhận *</span>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Email người nhận *
                     </label>
                     <input
                       type="email"
@@ -831,211 +750,100 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="huyhoang6altt@gmail.com"
-                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition font-mono"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-mono text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-2xs sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1 flex items-center gap-1">
-                      <FileText className="w-3 h-3 text-slate-500" />
-                      <span>Tiêu đề thư (Subject) *</span>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Tiêu đề thư (Subject) *
                     </label>
                     <input
                       type="text"
                       required
                       value={emailSubject}
                       onChange={(e) => setEmailSubject(e.target.value)}
-                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition font-medium"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 transition font-medium"
                     />
                   </div>
                 </div>
               )}
 
-              {/* Hàng 2: Thông tin đơn thuốc liên kết CPOE (Gọn gàng, không lặp lại thông tin) */}
-              <div className="p-2 sm:p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-2xs sm:text-xs flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-slate-700 truncate min-w-0">
-                  <FileCode className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="truncate">
-                    Đơn CPOE liên kết: <strong className="font-mono text-slate-900">{orderId || 'RX-2026-604'}</strong>
-                    {effectiveDiagnosis && <span className="text-slate-500 hidden sm:inline"> · {effectiveDiagnosis}</span>}
-                  </span>
+              {/* Thông tin đơn thuốc CPOE liên kết */}
+              <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-xs flex items-center justify-between gap-2">
+                <div className="truncate min-w-0">
+                  <div className="font-semibold text-slate-800">
+                    Đơn CPOE: <span className="font-mono">{orderId || 'RX-2026-604'}</span>
+                  </div>
+                  <div className="text-2xs text-slate-500 truncate">{effectiveDiagnosis}</div>
                 </div>
                 <button
                   type="button"
                   onClick={handleInsertPrescriptionSnippet}
-                  className="text-2xs sm:text-[11px] font-semibold text-slate-800 bg-white px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-100 shrink-0 cursor-pointer shadow-2xs transition"
-                  title="Chèn nội dung tóm tắt đơn thuốc vào ô soạn thảo"
+                  className="text-2xs font-bold text-slate-800 bg-white px-2 py-1 rounded border border-slate-300 hover:bg-slate-100 shrink-0 cursor-pointer shadow-2xs transition"
                 >
                   + Chèn đơn
                 </button>
               </div>
 
-              {/* Hàng 3: Mẫu nội dung chuẩn Thông tư 26 */}
-              {/* Mobile View: Horizontal touch pills taking only 34px! */}
-              <div className="lg:hidden">
-                <div className="flex items-center justify-between mb-1 text-2xs text-slate-600 font-medium">
-                  <span>Mẫu nội dung (TT 26):</span>
-                  <span className="text-slate-400">Chạm để chọn mẫu</span>
+              {/* Mẫu nội dung chuẩn Thông tư 26 */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-slate-800">Mẫu nội dung chuẩn (TT 26):</label>
+                  <span className="text-[11px] text-slate-400">Chọn để tự điền</span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <div className="space-y-1.5">
                   {templates.map((tpl) => {
                     const isSelected = messageType === tpl.category;
-                    const shortLabel = tpl.category === 'cpoe_prescription'
-                      ? '📋 Đơn thuốc'
-                      : tpl.category === 'medication_advice'
-                      ? '💊 Lời dặn thuốc'
-                      : '🏥 Viện phí & Hẹn';
                     return (
                       <button
                         key={tpl.id}
                         type="button"
                         onClick={() => handleApplyTemplate(tpl)}
-                        className={`px-2.5 py-1 rounded-full text-2xs font-semibold shrink-0 cursor-pointer transition border flex items-center gap-1 ${
+                        className={`w-full p-2.5 text-left rounded-lg border transition cursor-pointer text-xs ${
                           isSelected
                             ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
-                        <span>{shortLabel}</span>
-                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Desktop View: Full Rich Cards - 100% UNCHANGED */}
-              <div className="hidden lg:block">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Mẫu nội dung chuẩn Thông tư 26:</label>
-                  <span className="text-[11px] text-slate-500">Bấm để nạp vào ô soạn thảo bên phải</span>
-                </div>
-                <div className="space-y-2">
-                  {templates.map((tpl) => {
-                    const isSelected = messageType === tpl.category;
-                    return (
-                      <button
-                        key={tpl.id}
-                        type="button"
-                        onClick={() => handleApplyTemplate(tpl)}
-                        className={`w-full text-left p-2.5 rounded-lg border text-xs transition cursor-pointer flex items-start gap-2.5 ${
-                          isSelected
-                            ? 'border-slate-900 bg-slate-50 text-slate-900 ring-1 ring-slate-900 shadow-2xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <FileText className={`w-4 h-4 shrink-0 mt-0.5 ${isSelected ? 'text-slate-900' : 'text-slate-400'}`} />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-slate-900 flex items-center justify-between">
-                            <span>{tpl.title}</span>
-                            {isSelected && (
-                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                                Đang áp dụng
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                            {activeTab === 'sms' ? tpl.description : (
-                              tpl.category === 'cpoe_prescription'
-                                ? 'Mẫu thư điện tử thông báo phát hành mã đơn thuốc điện tử quốc gia.'
-                                : tpl.category === 'medication_advice'
-                                ? 'Mẫu thư hướng dẫn cữ uống thuốc và chỉ dẫn an toàn điều trị.'
-                                : 'Mẫu thư xác nhận viện phí và lịch hẹn tái khám định kỳ.'
-                            )}
-                          </div>
+                        <div className="font-bold flex items-center justify-between">
+                          <span>{tpl.title}</span>
+                          {isSelected && <span className="text-[10px] uppercase font-bold text-emerald-400">[Đang chọn]</span>}
                         </div>
+                        <p className={`text-[11px] mt-0.5 line-clamp-2 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                          {tpl.template}
+                        </p>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Hàng 4: Trạng thái cổng kết nối & Liên kết sang Cài đặt cổng tin (Không bị trùng lặp ô nhập) */}
-              <div className="p-2 sm:p-3 bg-slate-50 rounded-lg border border-slate-200 text-2xs sm:text-xs flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
-                    activeTab === 'sms'
-                      ? (esmsApiKey.trim() ? 'bg-emerald-500' : 'bg-amber-400')
-                      : (gasUrl.trim() ? 'bg-emerald-500' : 'bg-amber-400')
-                  }`} />
-                  <span className="text-slate-700 font-medium text-[10px] sm:text-[11px] truncate">
-                    {activeTab === 'sms' ? (
-                      esmsApiKey.trim()
-                        ? `Cổng eSMS: Đã lưu API Key (${esmsBrandname || 'BV_LAMSANG'})`
-                        : 'Cổng eSMS: Chưa cấu hình'
-                    ) : (
-                      gasUrl.trim()
-                        ? 'Cổng Email: Webhook sẵn sàng (0đ)'
-                        : 'Cổng Email: Chưa cấu hình Webhook'
-                    )}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  data-testid="link-open-settings-tab"
-                  onClick={() => { setActiveTab('settings'); setStatus('idle'); setErrorMessage(null); }}
-                  className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-teal-700 hover:text-teal-900 underline cursor-pointer shrink-0"
-                  title="Chuyển sang tab Cài đặt cổng tin để sửa API Key hoặc Webhook URL"
-                >
-                  <Settings className="w-3 h-3" />
-                  <span>Cài đặt cổng</span>
-                </button>
-              </div>
-
-              {/* Cảnh báo lỗi chung nếu có */}
+              {/* Cảnh báo lỗi nếu có */}
               {status === 'error' && (
-                <div className="p-2.5 sm:p-3 bg-rose-50 border border-rose-300 rounded-lg text-rose-900 text-2xs sm:text-xs flex items-center gap-2 animate-in fade-in">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <div className="p-3 bg-rose-50 border border-rose-300 rounded-lg text-rose-900 text-xs">
+                  <span className="font-bold">[LỖI]: </span>
                   <span>{errorMessage || 'Đã xảy ra lỗi khi gửi thông báo, vui lòng kiểm tra lại.'}</span>
                 </div>
               )}
             </div>
 
-            {/* ==================== CỘT PHẢI (6 CỘT): NHẬP TIN NHẮN RIÊNG CHO BỆNH NHÂN ==================== */}
-            <div className="lg:col-span-6 p-3 sm:p-6 lg:overflow-y-auto thin-scrollbar space-y-3 sm:space-y-4 bg-white flex flex-col justify-between">
-              
-              <div className="space-y-2.5 sm:space-y-4">
-                {/* Header Cột Phải (Chỉ hiện trên desktop để tránh lặp lại tiêu đề trên mobile) */}
-                <div className="hidden lg:flex items-center justify-between pb-2 border-b border-slate-200">
-                  <div className="flex items-center gap-1.5">
-                    {activeTab === 'sms' ? (
-                      <>
-                        <MessageSquare className="w-4 h-4 text-slate-800" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                          2. Nhập tin nhắn riêng cho Bệnh nhân
-                        </h4>
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-4 h-4 text-slate-800" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                          2. Nhập nội dung thư riêng &amp; Lời dặn Bác sĩ
-                        </h4>
-                      </>
-                    )}
+            {/* CỘT PHẢI (7 CỘT): SOẠN THẢO VÀ LỊCH GỬI TỰ ĐỘNG */}
+            <div className="lg:col-span-7 p-4 sm:p-5 space-y-4 bg-white overflow-y-auto thin-scrollbar flex flex-col justify-between">
+              <div className="space-y-4">
+                {/* Header soạn thảo */}
+                <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    {activeTab === 'sms' ? 'Soạn nội dung tin nhắn SMS' : 'Soạn nội dung thư dặn dò Email'}
                   </div>
-                  <span className="text-2xs text-slate-500 font-mono">
-                    {activeTab === 'sms' ? 'Soạn thảo SMS' : 'Soạn thảo Email'}
-                  </span>
-                </div>
-
-                {/* Thanh công cụ thao tác nhanh */}
-                <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                  <label className="text-2xs sm:text-xs font-semibold text-slate-700">
-                    {activeTab === 'sms'
-                      ? `Nội dung tin nhắn gửi tới ${effectiveName}:`
-                      : `Nội dung thư & Dặn dò gửi tới ${effectiveName}:`}
-                  </label>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {activeTab === 'sms' && isUnicode && (
                       <button
                         type="button"
                         onClick={handleConvertToUnsigned}
-                        className="text-[10px] sm:text-2xs font-semibold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 sm:px-2 rounded border border-amber-200 flex items-center gap-1 cursor-pointer transition"
-                        title="Chuyển sang tiếng Việt không dấu để tối ưu 160 ký tự/tin nhắn"
+                        className="text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-300 cursor-pointer transition"
                       >
-                        <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        <span>Không dấu (160 kt)</span>
+                        Chuyển không dấu (160 kt)
                       </button>
                     )}
                     <button
@@ -1044,15 +852,14 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                         if (activeTab === 'sms') setContent('');
                         else setEmailAdvice('');
                       }}
-                      className="text-[10px] sm:text-2xs font-semibold text-slate-600 hover:text-rose-700 bg-slate-100 hover:bg-rose-50 px-1.5 py-0.5 sm:px-2 rounded border border-slate-200 hover:border-rose-200 cursor-pointer transition"
-                      title="Xóa trắng để tự gõ nội dung riêng biệt"
+                      className="text-[11px] font-semibold text-slate-600 hover:text-rose-700 bg-slate-100 hover:bg-rose-50 px-2 py-0.5 rounded border border-slate-300 cursor-pointer transition"
                     >
                       Xóa trắng
                     </button>
                   </div>
                 </div>
 
-                {/* Khung soạn thảo tin nhắn riêng (Gọn gàng trên mobile, rộng mở trên desktop) */}
+                {/* Khung nhập liệu (Không còn xem trước điện thoại chiếm chỗ) */}
                 <div>
                   {activeTab === 'sms' ? (
                     <textarea
@@ -1060,9 +867,9 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       required
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      placeholder="Nhập nội dung tin nhắn riêng cho bệnh nhân (hoặc chọn mẫu từ cột bên trái)..."
+                      placeholder="Nhập nội dung tin nhắn gửi tới bệnh nhân..."
                       aria-label="Nội dung tin nhắn SMS"
-                      className="w-full p-2.5 sm:p-3.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-sans leading-relaxed transition resize-y min-h-[110px] sm:min-h-[160px] lg:min-h-[210px]"
+                      className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-sans leading-relaxed transition resize-y min-h-[120px]"
                     />
                   ) : (
                     <textarea
@@ -1070,650 +877,467 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       required
                       value={emailAdvice}
                       onChange={(e) => setEmailAdvice(e.target.value)}
-                      placeholder="Nhập lời dặn dò riêng, hướng dẫn kiêng khem, ăn uống hoặc hẹn tái khám riêng cho người bệnh..."
+                      placeholder="Nhập lời dặn dò riêng, hướng dẫn kiêng khem, ăn uống hoặc hẹn tái khám..."
                       aria-label="Nội dung thư gửi bệnh nhân"
-                      className="w-full p-2.5 sm:p-3.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-sans leading-relaxed transition resize-y min-h-[110px] sm:min-h-[160px] lg:min-h-[210px]"
+                      className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-500 font-sans leading-relaxed transition resize-y min-h-[120px]"
                     />
                   )}
 
-                  {/* Thanh phụ: Đo lường SMS hoặc Chỉ dẫn Email */}
-                  {activeTab === 'sms' ? (
-                    <div className="space-y-2 mt-1.5">
-                      <div className="flex items-center justify-between text-2xs sm:text-xs text-slate-500 px-0.5">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <span>Độ dài: <strong className="text-slate-900 font-mono">{charsCount}</strong> ký tự</span>
-                          <span>·</span>
-                          <span className="hidden sm:inline">Định dạng: <strong className={isUnicode ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>{isUnicode ? 'Có dấu (UCS-2)' : 'Không dấu (GSM)'}</strong></span>
-                        </div>
-                        <div className="font-semibold text-slate-700 font-mono">
-                          {segmentsCount} tin ({charsCount <= maxPerSegment ? `${charsCount}/${maxPerSegment}` : `${segmentsCount} SMS`})
-                        </div>
+                  {/* Thanh đo ký tự tinh giản bằng text (Không icon) */}
+                  {activeTab === 'sms' && (
+                    <div className="flex items-center justify-between text-2xs sm:text-xs text-slate-500 mt-1 px-1">
+                      <div>
+                        Độ dài: <strong className="text-slate-900 font-mono">{charsCount}</strong> ký tự | Định dạng:{' '}
+                        <strong className={isUnicode ? 'text-amber-800' : 'text-emerald-800'}>
+                          {isUnicode ? 'Có dấu (UCS-2)' : 'Không dấu (GSM)'}
+                        </strong>
                       </div>
-
-                      {/* Khung mô phỏng hiển thị tin nhắn trên điện thoại người bệnh (Live Mobile Screen) */}
-                      <div className="bg-slate-100 p-2.5 sm:p-3 rounded-xl border border-slate-300">
-                        <div className="text-3xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                          <span>Xem trước trên điện thoại người bệnh ({phone || '0963278149'}):</span>
-                          <span className="font-mono text-emerald-800 font-bold bg-white px-1.5 py-0.2 rounded border border-slate-200">
-                            {esmsBrandname || 'BV_LAMSANG'}
-                          </span>
-                        </div>
-                        <div className="bg-teal-800 text-white p-2.5 sm:p-3 rounded-2xl rounded-tr-xs text-xs font-sans leading-relaxed shadow-xs max-w-md ml-auto">
-                          {content || 'Chưa có nội dung tin nhắn... Vui lòng nhập nội dung hoặc chọn mẫu chuẩn bên trái.'}
-                        </div>
-                        <div className="text-right text-3xs text-slate-400 mt-1 font-mono">
-                          Vừa xong · Cổng phát tin SMS Brandname Y Tế
-                        </div>
+                      <div className="font-mono font-bold text-slate-800">
+                        {segmentsCount} tin ({charsCount <= maxPerSegment ? `${charsCount}/${maxPerSegment}` : `${segmentsCount} SMS`})
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-[10px] sm:text-2xs text-slate-500 mt-1">
-                      ℹ️ Lời dặn dò sẽ được chèn trang trọng vào mục <strong>[LỜI DẶN BÁC SĨ]</strong> kèm đơn thuốc gửi tới {email}.
-                    </p>
                   )}
                 </div>
 
-                {/* Thông báo kết quả phát tin thành công */}
-                {status === 'success' && (
-                  <div className="p-2.5 sm:p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-900 text-2xs sm:text-xs space-y-1 animate-in fade-in">
-                    <div className="flex items-center gap-1.5 font-bold">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>
-                        {activeTab === 'sms'
-                          ? `Phát tin thành công tới SIM di động ${receipt?.recipientPhone || phone}!`
-                          : `Đã gửi thành công Email tới ${email}!`}
-                      </span>
-                    </div>
-                    <div className="font-mono text-[10px] sm:text-[11px] text-emerald-800 pl-5.5">
-                      {activeTab === 'sms' ? (
-                        <>
-                          Biên nhận DLR: <span className="font-bold">{receipt?.deliveryReceipt || receipt?.id}</span> · Cổng: eSMS Brandname · Ký tự: {receipt?.charactersCount} ({receipt?.smsSegments} tin)
-                        </>
-                      ) : (
-                        <>
-                          {emailSentReceipt?.message || 'Bản sao đơn thuốc điện tử và hướng dẫn điều trị đã được chuyển vào hộp thư người bệnh an toàn.'}
-                        </>
+                {/* =================================================================================== */}
+                {/* BẢNG THIẾT LẬP CHẾ ĐỘ PHÁT TIN & LỊCH TỰ ĐỘNG GỬI (KHÔNG DÙNG ICON)                 */}
+                {/* =================================================================================== */}
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-300 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                      Chế độ phát tin &amp; Lịch tự động gửi:
+                    </span>
+                    <span className="text-2xs text-slate-500 font-medium">
+                      {dispatchMode === 'immediate' ? 'Phát sóng tức thì' : 'Hẹn giờ phát sóng'}
+                    </span>
+                  </div>
+
+                  {/* Bộ chuyển đổi chế độ phát tin: Gửi ngay vs Đặt lịch tự động */}
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setDispatchMode('immediate')}
+                      className={`py-2 px-3 rounded-lg border text-center transition cursor-pointer ${
+                        dispatchMode === 'immediate'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      [1] Gửi ngay lập tức (Send Now)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDispatchMode('scheduled')}
+                      className={`py-2 px-3 rounded-lg border text-center transition cursor-pointer ${
+                        dispatchMode === 'scheduled'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      [2] Đặt lịch tự động gửi (Schedule)
+                    </button>
+                  </div>
+
+                  {/* Khi chọn Đặt lịch tự động gửi: Hiển thị bộ công cụ lịch trình chi tiết */}
+                  {dispatchMode === 'scheduled' && (
+                    <div className="p-3 bg-white rounded-lg border border-slate-300 space-y-3 text-xs">
+                      {/* Chọn phương thức hẹn lịch */}
+                      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 text-[11px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setScheduleTimingType('specific_time')}
+                          className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                            scheduleTimingType === 'specific_time'
+                              ? 'bg-teal-800 text-white font-bold'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          Theo ngày giờ cụ thể
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleTimingType('medication_routine')}
+                          className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                            scheduleTimingType === 'medication_routine'
+                              ? 'bg-teal-800 text-white font-bold'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          Theo cữ uống thuốc
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleTimingType('daily_recurring')}
+                          className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                            scheduleTimingType === 'daily_recurring'
+                              ? 'bg-teal-800 text-white font-bold'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          Định kỳ hàng ngày
+                        </button>
+                      </div>
+
+                      {/* Tùy chọn 1: Ngày giờ cụ thể */}
+                      {scheduleTimingType === 'specific_time' && (
+                        <div className="space-y-2">
+                          <label className="block text-2xs font-bold text-slate-700">
+                            Chọn ngày và giờ phát tin nhắn tự động:
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={scheduledDatetime}
+                            onChange={(e) => setScheduledDatetime(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded font-mono text-xs text-slate-900 focus:bg-white"
+                          />
+                          <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
+                            <span className="text-slate-500 font-medium">Chọn nhanh:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAddDays(1)}
+                              className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded border border-slate-300 font-semibold cursor-pointer"
+                            >
+                              +1 ngày (Mai)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAddDays(3)}
+                              className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded border border-slate-300 font-semibold cursor-pointer"
+                            >
+                              +3 ngày
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAddDays(7)}
+                              className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded border border-slate-300 font-semibold cursor-pointer"
+                            >
+                              +7 ngày (Tái khám)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAddDays(14)}
+                              className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded border border-slate-300 font-semibold cursor-pointer"
+                            >
+                              +14 ngày
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAddDays(30)}
+                              className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded border border-slate-300 font-semibold cursor-pointer"
+                            >
+                              +30 ngày
+                            </button>
+                          </div>
+                        </div>
                       )}
+
+                      {/* Tùy chọn 2: Theo cữ uống thuốc trong ngày */}
+                      {scheduleTimingType === 'medication_routine' && (
+                        <div className="space-y-2">
+                          <label className="block text-2xs font-bold text-slate-700">
+                            Các cữ phát tin nhắc uống thuốc tự động trong ngày:
+                          </label>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <label className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedMedSlots.morning}
+                                onChange={(e) =>
+                                  setSelectedMedSlots((prev) => ({ ...prev, morning: e.target.checked }))
+                                }
+                              />
+                              <span>Cữ Sáng (07:30)</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedMedSlots.noon}
+                                onChange={(e) =>
+                                  setSelectedMedSlots((prev) => ({ ...prev, noon: e.target.checked }))
+                                }
+                              />
+                              <span>Cữ Trưa (11:30)</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedMedSlots.evening}
+                                onChange={(e) =>
+                                  setSelectedMedSlots((prev) => ({ ...prev, evening: e.target.checked }))
+                                }
+                              />
+                              <span>Cữ Chiều (17:30)</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedMedSlots.bedtime}
+                                onChange={(e) =>
+                                  setSelectedMedSlots((prev) => ({ ...prev, bedtime: e.target.checked }))
+                                }
+                              />
+                              <span>Cữ Tối (20:30)</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tùy chọn 3: Định kỳ hàng ngày */}
+                      {scheduleTimingType === 'daily_recurring' && (
+                        <div className="space-y-2">
+                          <label className="block text-2xs font-bold text-slate-700">
+                            Số ngày tự động phát tin liên tiếp theo đợt điều trị:
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1}
+                              max={60}
+                              value={recurringDays}
+                              onChange={(e) => setRecurringDays(Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-24 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded font-mono text-xs font-bold text-slate-900"
+                            />
+                            <span className="text-xs text-slate-600">ngày (Đồng bộ theo số ngày dùng thuốc của đơn CPOE)</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Thông báo kết quả gửi thành công */}
+                {status === 'success' && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-950 text-xs space-y-1">
+                    <div className="font-bold">
+                      {dispatchMode === 'scheduled'
+                        ? '[THÀNH CÔNG] Đã lưu lịch tự động phát tin vào hàng đợi của Bệnh Viện!'
+                        : activeTab === 'sms'
+                        ? `[THÀNH CÔNG] Đã phát sóng SMS tới SIM ${receipt?.recipientPhone || phone}!`
+                        : `[THÀNH CÔNG] Đã chuyển phát Email tới ${email}!`}
+                    </div>
+                    <div className="font-mono text-[11px] text-emerald-900">
+                      Mã biên nhận: {receipt?.deliveryReceipt || receipt?.id || emailSentReceipt?.message || 'OK'}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Liên kết chuyển nhanh sang Tab Lịch Sử Riêng Biệt */}
-              <div className="pt-2 sm:pt-3 border-t border-slate-200 flex items-center justify-between text-2xs sm:text-xs text-slate-500">
-                <span className="flex items-center gap-1 sm:gap-1.5">
-                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
-                  {activeTab === 'sms' ? (
-                    <span>Người bệnh đã nhận <strong>{logs.length}</strong> SMS</span>
-                  ) : (
-                    <span>Người bệnh đã nhận <strong>{emailLogs.length}</strong> Email</span>
-                  )}
+              {/* Chuyển nhanh sang tab lịch sử */}
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span>
+                  Bệnh nhân đã nhận <strong>{logs.length}</strong> SMS và <strong>{emailLogs.length}</strong> Email
                 </span>
                 <button
                   type="button"
                   data-testid="link-view-all-history"
-                  onClick={() => setActiveTab(activeTab === 'sms' ? 'history-sms' : 'history-email')}
-                  className="text-teal-700 hover:text-teal-900 font-semibold underline cursor-pointer flex items-center gap-1 transition"
+                  onClick={() => setActiveTab('history')}
+                  className="font-bold text-slate-900 underline hover:text-teal-900 cursor-pointer"
                 >
-                  <span>
-                    {activeTab === 'sms'
-                      ? `Xem toàn bộ LS (${logs.length})`
-                      : `Xem toàn bộ LS (${emailLogs.length})`}
-                  </span>
-                  <span>&rarr;</span>
+                  Xem toàn bộ nhật ký &amp; lịch hẹn ({logs.length + emailLogs.length}) -&gt;
                 </button>
               </div>
-
             </div>
           </form>
         )}
 
         {/* ========================================================================================= */}
-        {/* PHẦN 3B: TAB LỊCH SỬ SMS RIÊNG BIỆT (TOÀN VĂN, RÕ NÉT, KHÔNG CẮT, KHÔNG CHE)              */}
+        {/* 4. Tab Nhật Ký & Lịch Hẹn Hợp Nhất (KHÔNG DÙNG ICON)                                      */}
         {/* ========================================================================================= */}
-        {activeTab === 'history-sms' && (
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-slate-50/50 space-y-4">
-            
-            {/* Thanh công cụ quản lý lịch sử SMS */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded bg-teal-50 text-teal-800 flex items-center justify-center font-bold">
-                  <Phone className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                    Nhật Ký Phát Tin Nhắn SMS ({filteredSmsLogs.length} bản ghi)
-                  </h4>
-                  <p className="text-2xs text-slate-500">
-                    Toàn bộ tin nhắn SMS Brandname đã gửi tới số di động: <strong className="text-slate-800 font-mono">{phone}</strong>
-                  </p>
-                </div>
+        {(activeTab === 'history' || activeTab === 'history-sms' || activeTab === 'history-email') && (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-slate-50/60 space-y-3">
+            {/* Thanh công cụ lọc nhật ký */}
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-white p-3 rounded-lg border border-slate-200 text-xs">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-slate-700">Bộ lọc:</span>
+                <button
+                  type="button"
+                  onClick={() => setHistoryChannelFilter('all')}
+                  className={`px-2.5 py-1 rounded text-2xs font-bold transition cursor-pointer ${
+                    historyChannelFilter === 'all'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Tất cả ({logs.length + emailLogs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryChannelFilter('sms')}
+                  className={`px-2.5 py-1 rounded text-2xs font-bold transition cursor-pointer ${
+                    historyChannelFilter === 'sms'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Tin nhắn SMS ({logs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryChannelFilter('email')}
+                  className={`px-2.5 py-1 rounded text-2xs font-bold transition cursor-pointer ${
+                    historyChannelFilter === 'email'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Thư Email ({emailLogs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryChannelFilter('scheduled')}
+                  className={`px-2.5 py-1 rounded text-2xs font-bold transition cursor-pointer ${
+                    historyChannelFilter === 'scheduled'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
+                  }`}
+                >
+                  Đang hẹn gửi ({scheduledCount})
+                </button>
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    placeholder="Tìm nội dung, mã DLR..."
-                    className="w-full pl-8 pr-3 py-1.5 sm:py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  placeholder="Tìm nội dung, mã biên nhận..."
+                  className="w-full sm:w-60 px-3 py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white"
+                />
                 <button
                   type="button"
                   onClick={() => setActiveTab('sms')}
-                  className="px-3 py-1.5 sm:py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition shrink-0 whitespace-nowrap"
+                  className="px-3 py-1 bg-slate-900 text-white font-bold rounded text-xs hover:bg-slate-800 transition cursor-pointer whitespace-nowrap"
                 >
-                  <Send className="w-3 h-3 text-slate-300" />
-                  <span>+ Soạn SMS</span>
+                  + Soạn Tin Mới
                 </button>
               </div>
             </div>
 
-            {/* Danh sách tin nhắn SMS (Toàn bộ nội dung hiển thị rõ nét) */}
-            {filteredSmsLogs.length === 0 ? (
+            {/* Danh sách bản ghi */}
+            {combinedHistory.length === 0 ? (
               <div className="p-8 text-center bg-white rounded-lg border border-slate-200 text-slate-500 text-xs">
-                Chưa có lịch sử tin nhắn SMS nào phù hợp với bộ lọc.
+                Không tìm thấy bản ghi thông báo nào phù hợp với bộ lọc hiện tại.
               </div>
             ) : (
-              <div className="space-y-3.5">
-                {filteredSmsLogs.map((log) => (
+              <div className="space-y-2.5">
+                {combinedHistory.map((item) => (
                   <div
-                    key={log.id}
-                    className="bg-white rounded-xl border border-slate-200 shadow-2xs hover:border-slate-300 transition overflow-hidden"
+                    key={item.id}
+                    className="bg-white rounded-lg border border-slate-200 shadow-2xs hover:border-slate-300 transition overflow-hidden text-xs"
                   >
                     {/* Header Strip */}
-                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-3 text-slate-700 flex-wrap">
-                        <span className="font-mono font-bold text-slate-900 flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-teal-700" />
-                          <span>{log.recipientPhone}</span>
+                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-slate-700 flex-wrap">
+                        <span className="font-bold font-mono text-slate-900">
+                          [{item.channel.toUpperCase()}] {item.recipient}
                         </span>
-                        <span className="text-slate-300">·</span>
-                        <span className="flex items-center gap-1 text-slate-500">
-                          <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>{formatLogTimestamp(log.createdAt)}</span>
-                        </span>
-                        <span className="text-slate-300">·</span>
-                        <span className="text-slate-500 font-medium">Cổng: eSMS Brandname (BV_LAMSANG)</span>
+                        <span className="text-slate-300">|</span>
+                        <span className="text-slate-500">{formatLogTimestamp(item.createdAt)}</span>
+                        <span className="text-slate-300">|</span>
+                        <span className="text-slate-600">{item.title}</span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-[11px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                          {log.deliveryReceipt || log.id}
+                        <span className="font-mono text-[11px] text-slate-600 bg-white px-2 py-0.2 rounded border border-slate-200">
+                          {item.receiptCode}
                         </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>ĐÃ GỬI TỚI SIM</span>
-                        </span>
+
+                        {item.status === 'scheduled' ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-950 border border-amber-300">
+                              ĐÃ LÊN LỊCH: {item.scheduledAt ? formatLogTimestamp(item.scheduledAt) : 'Theo cữ thuốc'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelSchedule(item.id, item.channel)}
+                              className="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-rose-700 border border-rose-300 hover:bg-rose-50 cursor-pointer"
+                            >
+                              [Hủy lịch]
+                            </button>
+                          </div>
+                        ) : item.status === 'cancelled' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                            ĐÃ HỦY LỊCH
+                          </span>
+                        ) : item.status === 'failed' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                            LỖI GỬI
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            ĐÃ PHÁT SÓNG
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    {/* Body: Toàn bộ nội dung tin nhắn không che không cắt */}
-                    <div className="p-4 space-y-2.5">
-                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span>Toàn văn nội dung tin nhắn SMS:</span>
-                        <span className="font-mono text-slate-400 font-normal">
-                          {log.charactersCount || log.content.length} ký tự ({log.smsSegments || 1} tin)
-                        </span>
-                      </div>
-
-                      <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 font-sans text-sm text-slate-900 leading-relaxed whitespace-pre-wrap break-words select-text">
-                        {log.content}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-[11px] text-slate-400 font-mono">
-                          Mã tham chiếu: {log.referenceId || orderId || 'RX-2026-604'}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleCopyText(log.content, log.id)}
-                            className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded flex items-center gap-1 cursor-pointer transition"
-                          >
-                            {copiedId === log.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
-                            <span>{copiedId === log.id ? 'Đã sao chép!' : 'Sao chép tin'}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setContent(log.content);
-                              setActiveTab('sms');
-                            }}
-                            className="px-2.5 py-1 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded flex items-center gap-1 cursor-pointer transition"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                            <span>Nạp vào ô soạn SMS</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================================================================= */}
-        {/* PHẦN 3C: TAB LỊCH SỬ EMAIL RIÊNG BIỆT (TOÀN VĂN, RÕ NÉT, KHÔNG CẮT, KHÔNG CHE)            */}
-        {/* ========================================================================================= */}
-        {activeTab === 'history-email' && (
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-slate-50/50 space-y-4">
-            
-            {/* Thanh công cụ quản lý lịch sử Email */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded bg-teal-50 text-teal-800 flex items-center justify-center font-bold">
-                  <Inbox className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                    Nhật Ký Thư Điện Tử Y Tế ({filteredEmailLogs.length} bản ghi)
-                  </h4>
-                  <p className="text-2xs text-slate-500">
-                    Toàn bộ thư điện tử và bản sao đơn thuốc đã gửi tới hòm thư: <strong className="text-slate-800 font-mono">{email}</strong>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    placeholder="Tìm tiêu đề, nội dung..."
-                    className="w-full pl-8 pr-3 py-1.5 sm:py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('email')}
-                  className="px-3 py-1.5 sm:py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition shrink-0 whitespace-nowrap"
-                >
-                  <Send className="w-3 h-3 text-slate-300" />
-                  <span>+ Soạn Email</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Danh sách Email (Toàn bộ nội dung hiển thị rõ nét) */}
-            {filteredEmailLogs.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-lg border border-slate-200 text-slate-500 text-xs">
-                Chưa có lịch sử thư điện tử nào phù hợp với bộ lọc.
-              </div>
-            ) : (
-              <div className="space-y-3.5">
-                {filteredEmailLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="bg-white rounded-xl border border-slate-200 shadow-2xs hover:border-slate-300 transition overflow-hidden"
-                  >
-                    {/* Header Strip */}
-                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-3 text-slate-700 flex-wrap">
-                        <span className="font-mono font-bold text-slate-900 flex items-center gap-1">
-                          <Mail className="w-3 h-3 text-teal-700" />
-                          <span>{log.recipientEmail}</span>
-                        </span>
-                        <span className="text-slate-300">·</span>
-                        <span className="flex items-center gap-1 text-slate-500">
-                          <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>{formatLogTimestamp(log.createdAt)}</span>
-                        </span>
-                        <span className="text-slate-300">·</span>
-                        <span className="text-slate-500 font-medium">Cổng: {log.provider}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[11px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                          {log.deliveryReceipt || log.id}
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>ĐÃ GỬI VÀO HÒM THƯ</span>
-                        </span>
-                      </div>
+                    {/* Nội dung tin nhắn / email */}
+                    <div className="p-3 text-slate-800 font-sans leading-relaxed whitespace-pre-wrap select-text">
+                      {item.content}
                     </div>
 
-                    {/* Body: Tiêu đề thư + Lời dặn Bác sĩ toàn văn không che cắt */}
-                    <div className="p-4 space-y-3">
-                      {/* Tiêu đề thư */}
-                      <div className="p-2.5 bg-slate-100/70 rounded-lg border border-slate-200 text-xs">
-                        <span className="font-semibold text-slate-600">Tiêu đề thư (Subject): </span>
-                        <strong className="text-slate-900 font-medium">{log.subject}</strong>
+                    {item.timingRule && item.timingRule !== 'immediate' && (
+                      <div className="px-3 py-1.5 bg-slate-50/50 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
+                        Quy tắc lịch trình: {item.timingRule}
                       </div>
-
-                      {/* Đơn thuốc tóm tắt */}
-                      {log.medicationsSummary && (
-                        <div className="p-2.5 bg-teal-50/50 rounded-lg border border-teal-200/60 text-xs text-teal-900 flex items-center gap-2">
-                          <FileCode className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-                          <span>Đơn thuốc đính kèm: <strong>{log.medicationsSummary}</strong> (Mã đơn: {log.orderId || orderId || 'RX-2026-604'})</span>
-                        </div>
-                      )}
-
-                      {/* Toàn bộ nội dung thư & Lời dặn */}
-                      <div className="space-y-1.5">
-                        <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                          <span>Toàn bộ nội dung thư &amp; Lời dặn Bác sĩ:</span>
-                          <span className="font-mono text-slate-400 font-normal">{log.adviceContent.length} ký tự</span>
-                        </div>
-
-                        <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 font-sans text-sm text-slate-900 leading-relaxed whitespace-pre-wrap break-words select-text">
-                          {log.adviceContent}
-                        </div>
-                      </div>
-
-                      {/* Footer card */}
-                      <div className="flex items-center justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyText(log.adviceContent, log.id)}
-                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded flex items-center gap-1 cursor-pointer transition"
-                        >
-                          {copiedId === log.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
-                          <span>{copiedId === log.id ? 'Đã sao chép!' : 'Sao chép nội dung'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEmailAdvice(log.adviceContent);
-                            setEmailSubject(log.subject);
-                            setActiveTab('email');
-                          }}
-                          className="px-2.5 py-1 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded flex items-center gap-1 cursor-pointer transition"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                          <span>Nạp vào ô gửi Email</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================================================================= */}
-        {/* PHẦN 3D: TAB CÀI ĐẶT CỔNG PHÁT TIN (GOOGLE APPS SCRIPT WEBHOOK & eSMS API KEY)            */}
-        {/* ========================================================================================= */}
-        {activeTab === 'settings' && (
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-slate-50/50 space-y-5">
-            
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-1">
-              <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
-                <Settings className="w-4 h-4 text-teal-700" />
-                <span>Cài Đặt Cổng Phát Tin &amp; Hạ Tầng Thông Báo Y Tế</span>
-              </h4>
-              <p className="text-xs text-slate-500">
-                Quản lý các khóa kết nối (API Key, Webhook URL) tới các nhà cung cấp hạ tầng viễn thông và thư điện tử y tế.
-              </p>
-            </div>
-
-            {settingsNotice && (
-              <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-900 text-xs flex items-center gap-2 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{settingsNotice}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              
-              {/* KHỐI 1: CỔNG EMAIL GOOGLE APPS SCRIPT WEBHOOK */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3.5 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <div className="flex items-center gap-2 font-bold text-xs text-slate-900">
-                      <Mail className="w-4 h-4 text-teal-700" />
-                      <span>1. Cổng Email: Google Apps Script Webhook (0đ)</span>
-                    </div>
-                    {gasUrl ? (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                        <Check className="w-3 h-3" />
-                        <span>Đã cấu hình</span>
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        <span>Chưa có link</span>
-                      </span>
                     )}
                   </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-slate-700">
-                        URL Web App Google Apps Script:
-                      </label>
-                      <a
-                        href="https://script.google.com"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[11px] font-semibold text-teal-700 hover:text-teal-900 inline-flex items-center gap-1 underline cursor-pointer"
-                      >
-                        <span>Mở script.google.com lấy link</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                    <input
-                      type="url"
-                      value={gasUrl}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setGasUrl(val);
-                        setStoredGasWebhookUrl(val);
-                      }}
-                      placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                    />
-                  </div>
-
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1.5 leading-relaxed">
-                    <div className="font-semibold text-slate-800 flex items-center gap-1">
-                      <HelpCircle className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Các bước lấy link Web App từ Google Apps Script:</span>
-                    </div>
-                    <ol className="list-decimal list-inside space-y-1 text-slate-600 pl-1 text-[11px]">
-                      <li>Truy cập <a href="https://script.google.com" target="_blank" rel="noreferrer" className="text-teal-700 underline font-semibold">script.google.com</a> và tạo <strong>New Project</strong>.</li>
-                      <li>Dán mã nguồn từ tệp <code className="bg-slate-200 px-1 py-0.2 rounded font-mono text-[10px]">scripts/google_apps_script_reminder.gs</code>.</li>
-                      <li>Bấm <strong>Deploy</strong> &gt; <strong>New deployment</strong> &gt; Chọn <strong>Web app</strong> (Execute as: <strong>Me</strong>, Access: <strong>Anyone</strong>).</li>
-                      <li>Sao chép URL Web App và dán vào ô bên trên.</li>
-                    </ol>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Cước phí: 0đ (Sử dụng hạn ngạch Gmail miễn phí)</span>
-                  <a
-                    href="https://script.google.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg text-xs flex items-center gap-1.5 transition"
-                  >
-                    <span>Truy cập script.google.com</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
+                ))}
               </div>
-
-              {/* KHỐI 2: CỔNG SMS VIỄN THÔNG eSMS BRANDNAME */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3.5 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <div className="flex items-center gap-2 font-bold text-xs text-slate-900">
-                      <Radio className="w-4 h-4 text-teal-700" />
-                      <span>2. Cổng SMS: eSMS.vn Brandname</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                      <Check className="w-3 h-3" />
-                      <span>Sẵn sàng phát sóng</span>
-                    </span>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-slate-700">
-                        eSMS API Key:
-                      </label>
-                      <a
-                        href="https://esms.vn/Manage/ApiKey"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[11px] font-semibold text-teal-700 hover:text-teal-900 inline-flex items-center gap-1 underline cursor-pointer"
-                      >
-                        <span>Mở esms.vn/Manage/ApiKey lấy Key</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                    <input
-                      type="text"
-                      value={esmsApiKey}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEsmsApiKey(val);
-                        setStoredEsmsApiKey(val);
-                      }}
-                      placeholder="Nhập API Key eSMS..."
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      eSMS Secret Key:
-                    </label>
-                    <input
-                      type="password"
-                      value={esmsSecretKey}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEsmsSecretKey(val);
-                        setStoredEsmsSecretKey(val);
-                      }}
-                      placeholder="••••••••••••••••"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      SMS Brandname (Tên thương hiệu bệnh viện):
-                    </label>
-                    <input
-                      type="text"
-                      value={esmsBrandname}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEsmsBrandname(val);
-                        setStoredEsmsBrandname(val);
-                      }}
-                      placeholder="BV_LAMSANG"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-semibold"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Chuẩn: Thông tư 26/2025/TT-BYT &amp; NĐ 91/2020</span>
-                  <a
-                    href="https://esms.vn/Manage/ApiKey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg text-xs flex items-center gap-1.5 transition"
-                  >
-                    <span>Truy cập esms.vn</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </div>
-
-            </div>
-
+            )}
           </div>
         )}
 
-        {/* 4. Footer Nút Hành Động Chuẩn Workstation */}
-        <div className="px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
-          <div className="text-xs text-slate-600 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>
-              {activeTab === 'sms' && (
-                <>Kênh phát tin: <strong className="text-slate-900">Tin nhắn SMS Brandname</strong></>
-              )}
-              {activeTab === 'email' && (
-                <>Kênh phát tin: <strong className="text-slate-900">Thư điện tử (Email)</strong></>
-              )}
-              {activeTab === 'history-sms' && (
-                <>Đang xem: <strong className="text-slate-900">Lịch sử tin nhắn SMS</strong> ({logs.length} bản ghi)</>
-              )}
-              {activeTab === 'history-email' && (
-                <>Đang xem: <strong className="text-slate-900">Lịch sử thư điện tử Email</strong> ({emailLogs.length} bản ghi)</>
-              )}
-              {activeTab === 'settings' && (
-                <>Đang xem: <strong className="text-slate-900">Cài đặt Cổng Tin Nhắn &amp; Email Y Tế</strong></>
-              )}
-            </span>
+        {/* ========================================================================================= */}
+        {/* 5. Footer: Nút Hành Động Rõ Ràng - KHÔNG DÙNG ICON                                        */}
+        {/* ========================================================================================= */}
+        <div className="px-4 sm:px-6 py-3 bg-white border-t border-slate-200 flex items-center justify-between shrink-0 text-xs">
+          <div className="text-slate-600 font-medium">
+            Kênh phát tin:{' '}
+            <strong className="text-slate-900">
+              {activeTab === 'sms'
+                ? 'Tin nhắn SMS Brandname'
+                : activeTab === 'email'
+                ? 'Thư điện tử Email Y Tế'
+                : 'Nhật ký & Lịch hẹn'}
+            </strong>{' '}
+            | Chế độ: <strong className="text-slate-900">{dispatchMode === 'immediate' ? 'Gửi ngay' : 'Hẹn giờ tự động'}</strong>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-slate-300 hover:bg-slate-100 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 cursor-pointer transition"
+              className="px-4 py-2 border border-slate-300 hover:bg-slate-100 rounded-lg font-bold text-slate-700 cursor-pointer transition"
             >
               Đóng
             </button>
 
-            {/* Nút gửi ở các tab Soạn thảo */}
             {(activeTab === 'sms' || activeTab === 'email') && (
               <button
                 type="button"
                 onClick={() => handleSend()}
                 disabled={status === 'sending'}
                 data-testid="btn-submit-send-sms"
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-60 transition active:scale-98"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold cursor-pointer shadow-xs disabled:opacity-60 transition active:scale-98"
               >
-                {status === 'sending' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
-                    <span>{activeTab === 'sms' ? 'Đang phát sóng...' : 'Đang gửi email...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 text-slate-300" />
-                    <span>{activeTab === 'sms' ? 'Gửi Tin Nhắn SMS' : 'Gửi Email Cho Bệnh Nhân'}</span>
-                  </>
-                )}
-              </button>
-            )}
-
-            {/* Nút lưu cấu hình khi ở tab Cài đặt */}
-            {activeTab === 'settings' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setStoredGasWebhookUrl(gasUrl);
-                  setStoredEsmsApiKey(esmsApiKey);
-                  setStoredEsmsSecretKey(esmsSecretKey);
-                  setStoredEsmsBrandname(esmsBrandname);
-                  setSettingsNotice('Đã lưu cấu hình cổng Google Apps Script và eSMS thành công!');
-                  setTimeout(() => setSettingsNotice(null), 3000);
-                }}
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-pointer shadow-xs transition active:scale-98"
-              >
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Lưu Cấu Hình Cổng</span>
+                {status === 'sending'
+                  ? 'Đang xử lý...'
+                  : dispatchMode === 'scheduled'
+                  ? activeTab === 'sms'
+                    ? 'Lên Lịch Tự Động Gửi SMS'
+                    : 'Lên Lịch Tự Động Gửi Email'
+                  : activeTab === 'sms'
+                  ? 'Gửi Tin Nhắn SMS Ngay'
+                  : 'Gửi Email Cho Bệnh Nhân Ngay'}
               </button>
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

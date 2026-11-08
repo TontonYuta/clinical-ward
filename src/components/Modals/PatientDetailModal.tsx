@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { X, Send, Printer } from 'lucide-react';
+import { X, Printer } from 'lucide-react';
 import { PatientProfile, INITIAL_PATIENTS } from '../../services/patientService';
 import { SendSmsModal } from './SendSmsModal';
 import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';
@@ -83,8 +83,8 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-1.5 self-end sm:self-auto shrink-0">
-            <button type="button" onClick={() => setIsSmsModalOpen(true)} data-testid="btn-open-sms-from-patient" title="Gửi thông báo y tế cho bệnh nhân (SMS / Email)" className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-2xs sm:text-xs font-semibold transition cursor-pointer shadow-2xs">
-              <Send className="w-3.5 h-3.5 text-slate-600" /><span>Gửi thông báo cho BN</span>
+            <button type="button" onClick={() => setIsSmsModalOpen(true)} data-testid="btn-open-sms-from-patient" title="Gửi thông báo y tế cho bệnh nhân (SMS / Email)" className="inline-flex items-center px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-2xs sm:text-xs font-semibold transition cursor-pointer shadow-2xs">
+              <span>Gửi thông báo cho BN</span>
             </button>
             <button onClick={() => window.print()} title="In tóm tắt hồ sơ bệnh án" aria-label="In tóm tắt hồ sơ" className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">
               <Printer className="w-4 h-4" />

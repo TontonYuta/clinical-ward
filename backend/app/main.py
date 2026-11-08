@@ -76,6 +76,16 @@ async def lifespan(app: FastAPI):
             if col_name not in chat_log_cols:
                 await conn.execute(text(f"ALTER TABLE copilot_chat_logs ADD COLUMN {col_name} {col_type}"))
 
+        sms_log_cols = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("sms_delivery_logs")})
+        sms_extra_cols = [
+            ("dispatch_mode", "VARCHAR(32) DEFAULT 'immediate'"),
+            ("scheduled_at", "DATETIME"),
+            ("timing_rule", "VARCHAR(256)"),
+        ]
+        for col_name, col_type in sms_extra_cols:
+            if col_name not in sms_log_cols:
+                await conn.execute(text(f"ALTER TABLE sms_delivery_logs ADD COLUMN {col_name} {col_type}"))
+
     # Check if DB has data, if not seed it automatically
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(User).limit(1))

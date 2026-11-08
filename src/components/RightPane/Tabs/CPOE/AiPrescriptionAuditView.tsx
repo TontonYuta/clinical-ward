@@ -16,8 +16,7 @@ import {
   UserCheck,
   Stethoscope,
   Pill,
-  Sparkles,
-  ArrowRight
+  Sparkles
 } from 'lucide-react';
 import { PrescriptionOrder } from '../../../../types/cpoe';
 import { PatientProfile } from '../../../../services/patientService';
@@ -389,10 +388,9 @@ export const AiPrescriptionAuditView: React.FC<AiPrescriptionAuditViewProps> = (
           <button
             type="button"
             onClick={onOpenSmsModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-semibold text-2xs shadow-xs transition cursor-pointer shrink-0"
+            className="inline-flex items-center px-3.5 py-2 rounded-lg bg-teal-800 hover:bg-teal-900 text-white font-semibold text-2xs shadow-xs transition cursor-pointer shrink-0"
           >
-            <span>Gửi SMS/Email dặn dò BN</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Gửi SMS/Email dặn dò BN -&gt;</span>
           </button>
         )}
       </div>

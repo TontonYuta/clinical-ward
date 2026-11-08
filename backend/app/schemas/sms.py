@@ -22,6 +22,9 @@ class SendSmsRequest(BaseModel):
     content: str = Field(..., max_length=480, description="Nội dung tin nhắn")
     reference_id: Optional[str] = Field(None, alias="referenceId", description="Mã đơn thuốc hoặc hồ sơ liên quan")
     provider: SmsProviderType = Field(default=SmsProviderType.SANDBOX, description="Nhà cung cấp SMS (sandbox, esms, speedsms, twilio)")
+    dispatch_mode: Optional[str] = Field("immediate", alias="dispatchMode", description="immediate | scheduled")
+    scheduled_at: Optional[datetime] = Field(None, alias="scheduledAt", description="Thời gian hẹn gửi")
+    timing_rule: Optional[str] = Field(None, alias="timingRule", description="Quy tắc cữ thuốc hoặc chu kỳ")
 
     model_config = {
         "populate_by_name": True
@@ -42,6 +45,9 @@ class SmsDeliveryLogResponse(BaseModel):
     delivery_receipt: Optional[str] = Field(None, alias="deliveryReceipt")
     error_detail: Optional[str] = Field(None, alias="errorDetail")
     created_at: Optional[datetime] = Field(None, alias="createdAt")
+    dispatch_mode: Optional[str] = Field("immediate", alias="dispatchMode")
+    scheduled_at: Optional[datetime] = Field(None, alias="scheduledAt")
+    timing_rule: Optional[str] = Field(None, alias="timingRule")
 
     model_config = {
         "populate_by_name": True,

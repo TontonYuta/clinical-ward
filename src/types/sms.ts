@@ -6,7 +6,20 @@
 
 export type SmsProviderType = 'sandbox' | 'esms' | 'speedsms' | 'twilio';
 export type SmsMessageType = 'cpoe_prescription' | 'medication_advice' | 'hospital_notice';
-export type SmsDeliveryStatus = 'idle' | 'sending' | 'delivered' | 'failed';
+export type SmsDeliveryStatus = 'idle' | 'sending' | 'delivered' | 'failed' | 'scheduled' | 'cancelled';
+
+export type DispatchMode = 'immediate' | 'scheduled';
+export type ScheduleTimingType = 'specific_time' | 'medication_routine' | 'daily_recurring';
+
+export interface NotificationScheduleConfig {
+  mode: DispatchMode;
+  timingType?: ScheduleTimingType;
+  scheduledDatetime?: string;
+  selectedSlots?: string[];
+  recurringDays?: number;
+  startDate?: string;
+  endDate?: string;
+}
 
 export interface SmsTemplateItem {
   id: string;
@@ -24,6 +37,9 @@ export interface SendSmsPayload {
   content: string;
   referenceId?: string;
   provider?: SmsProviderType;
+  dispatchMode?: DispatchMode;
+  scheduledAt?: string;
+  timingRule?: string;
 }
 
 export interface SmsDeliveryReceipt {
@@ -41,4 +57,7 @@ export interface SmsDeliveryReceipt {
   deliveryReceipt?: string;
   errorDetail?: string;
   createdAt?: string;
+  dispatchMode?: DispatchMode;
+  scheduledAt?: string;
+  timingRule?: string;
 }

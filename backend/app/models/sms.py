@@ -19,4 +19,7 @@ class SmsDeliveryLog(Base):
     reference_id: Mapped[str] = mapped_column(String, nullable=True)  # RX-2026-xxx
     delivery_receipt: Mapped[str] = mapped_column(String, nullable=True)  # DLR-xxxx
     error_detail: Mapped[str] = mapped_column(String, nullable=True)
+    dispatch_mode: Mapped[str] = mapped_column(String, default="immediate")  # immediate, scheduled
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    timing_rule: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
