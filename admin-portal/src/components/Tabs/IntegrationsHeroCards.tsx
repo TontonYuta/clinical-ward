@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, MessageSquare, Send, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Radio, MessageSquare, Send, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { EsmsStatusResponse, GasStatusResponse } from '../../types/admin';
 
 interface IntegrationsHeroCardsProps {
@@ -36,15 +36,18 @@ export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ es
       {/* 2. Brandname & Chế độ */}
       <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-2xs space-y-2">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span>Brandname Khai Báo</span>
+          <span>Brandname &amp; Tự Động</span>
           <ShieldCheck className="w-4 h-4 text-teal-700" />
         </div>
         <div className="text-xl font-bold font-mono text-teal-900 truncate">
           {esms?.brandname || 'BV_LAMSANG'}
         </div>
-        <div className="flex items-center gap-2 text-2xs">
+        <div className="flex items-center gap-1.5 flex-wrap text-2xs">
           <span className={`px-2 py-0.5 rounded-md font-semibold ${esms?.is_sandbox ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-            {esms?.is_sandbox ? 'Chế độ Sandbox (0đ)' : 'Thương mại (Live)'}
+            {esms?.is_sandbox ? 'Sandbox (0đ)' : 'Live'}
+          </span>
+          <span className="px-2 py-0.5 rounded-md font-semibold bg-teal-50 text-teal-800 flex items-center gap-0.5">
+            <Zap className="w-3 h-3 text-teal-600" /> Auto-SMS
           </span>
         </div>
       </div>
@@ -81,7 +84,7 @@ export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ es
         <div className="flex items-center gap-1.5 text-2xs">
           {isGasOnline ? (
             <span className="text-emerald-800 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Webhook Sẵn Sàng
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Auto-Email Sẵn Sàng
             </span>
           ) : (
             <span className="text-amber-800 font-semibold">Chưa Cấu Hình Webhook</span>

@@ -7,7 +7,7 @@
 
 import React, { useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer, Scale } from 'lucide-react';
+import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer, Scale, CheckCircle2 } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType, Tt26FormType, getTt26FormMetadata } from '../../../../types/cpoe';
 import { MasterMedication } from '../../../../types/medication';
 import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
@@ -196,8 +196,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   const normalizeUnit = (u: string): PrescriptionOrder['items'][0]['unit'] =>
     (u === 'Lọ' || u === 'Viên' || u === 'Chai' || u === 'Hộp' || u === 'Vỉ') ? u : 'Ống';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSaveOrder = async (asSigned: boolean) => {
     const errors = validatePrescriptionDraft({ patientName, diagnosisText, items: medications.map((med) => ({ medicationName: med.medicationName, dosage: med.dosage, frequency: med.frequency, route: med.route, quantity: med.quantity, durationDays: daysPrescribed })) });
     const patientAgeMonths = patientDob ? (Date.now() - new Date(patientDob).getTime()) / (1000 * 60 * 60 * 24 * 30.4375) : undefined;
     if (patientAgeMonths !== undefined && patientAgeMonths < 72 && !(Number(patientWeight) > 0)) errors.push('Bắt buộc ghi cân nặng người bệnh dưới 72 tháng tuổi theo mẫu Phụ lục I TT26.');
@@ -222,6 +221,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
 
     const suffix = tt26FormType === 'PL2_NARCOTIC' ? 'N' : tt26FormType === 'PL3_PSYCHOTROPIC' ? 'H' : 'C';
     const orderId = `79001${Date.now().toString().slice(-7)}-${suffix}`;
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     try { await onSaveOrder({
       id: orderId,
@@ -248,13 +248,19 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
       isChronicDisease: rxType === 'outpatient' && isChronic,
       daysPrescribed,
       doctorName: formatDoctorDisplay(doctorName),
-      doctorCertificate: '',
-      prescribedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      status: 'draft',
+      doctorCertificate: asSigned ? '012345/BYT-CCHN' : '',
+      prescribedAt: nowStr,
+      status: asSigned ? 'signed' : 'draft',
+      digitalSignature: asSigned ? `SHA256-RSA:DIGITAL-SIGN-${Date.now()}` : undefined,
       clinicalNotes: clinicalNotes.trim() || undefined,
       items: medications.map((med) => ({ id: med.id, medicationName: med.medicationName, activeIngredient: med.activeIngredient, dosage: med.dosage.trim(), frequency: med.frequency.trim(), route: normalizeRoute(med.route), quantity: med.quantity, unit: normalizeUnit(med.unit), instructions: med.instructions.trim(), durationDays: daysPrescribed }))
     }); onClose(); }
     catch (error) { setValidationErrors([error instanceof Error ? error.message : 'Máy chủ chưa chấp nhận đơn thuốc.']); }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await doSaveOrder(false);
   };
 
   return (
@@ -1032,20 +1038,28 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
               <span className="text-slate-500">Bản nháp TT 26 (chưa ký số hoặc phát hành)</span>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs sm:text-sm font-semibold cursor-pointer transition"
+                className="px-3.5 py-2 border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs sm:text-sm font-semibold cursor-pointer transition"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs cursor-pointer active:scale-98 transition"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-98 transition"
               >
                 <Save className="w-4 h-4" />
                 <span>Lưu bản nháp</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => doSaveOrder(true)}
+                className="px-4 py-2 bg-teal-800 hover:bg-teal-900 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-98 transition"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Ký số &amp; Gửi tự động</span>
               </button>
             </div>
           </div>

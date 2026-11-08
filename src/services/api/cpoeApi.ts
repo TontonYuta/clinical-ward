@@ -50,4 +50,10 @@ export const cpoeApi = {
       }),
     });
   },
+
+  async signCpoeOrder(orderId: string): Promise<PrescriptionOrder> {
+    return apiRequest<PrescriptionOrder>(`/cpoe/${encodeURIComponent(orderId)}/sign`, {
+      method: 'POST',
+    });
+  },
 };

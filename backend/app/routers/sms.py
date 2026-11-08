@@ -98,10 +98,12 @@ async def send_patient_sms(
 
     # 1. Chế độ Viễn thông Thật eSMS.vn Brandname (Nếu cấu hình)
     if provider == SmsProviderType.ESMS:
-        esms_api_key = os.getenv("ESMS_API_KEY", "").strip()
-        esms_secret = os.getenv("ESMS_SECRET_KEY", "").strip()
-        esms_brand = os.getenv("ESMS_BRANDNAME", "BV_LAMSANG").strip()
-        is_sandbox = os.getenv("ESMS_SANDBOX", "1").strip() # 1 là chế độ Sandbox an toàn (0đ) bảo toàn số dư tài khoản
+        from app.services.admin_integrations_service import load_integrations_config
+        cfg = load_integrations_config()
+        esms_api_key = (cfg.get("esms_api_key") or os.getenv("ESMS_API_KEY", "")).strip()
+        esms_secret = (cfg.get("esms_secret_key") or os.getenv("ESMS_SECRET_KEY", "")).strip()
+        esms_brand = (cfg.get("esms_brandname") or os.getenv("ESMS_BRANDNAME", "BV_LAMSANG")).strip()
+        is_sandbox = "1" if cfg.get("esms_sandbox", True) else "0"
 
         if esms_api_key and esms_secret:
             try:

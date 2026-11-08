@@ -252,6 +252,14 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
           setAdviceOrder(order);
         }}
         onSelectPatient={(name) => setSelectedPatientForDetail(name)}
+        onOrderUpdated={(updated) => {
+          setOrders((prev) => {
+            const next = prev.map((o) => (o.id === updated.id ? updated : o));
+            try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
+            return next;
+          });
+          setSelectedOrder(updated);
+        }}
       />
 
       {/* Modal Hướng Dẫn Dặn Dò Bệnh Nhân */}

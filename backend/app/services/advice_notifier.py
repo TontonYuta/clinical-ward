@@ -13,7 +13,9 @@ logger = logging.getLogger("clinical_ward.advice_notifier")
 async def dispatch_email_notification(payload, channels: list[str], httpx_cls=None):
     if httpx_cls is None:
         httpx_cls = httpx.AsyncClient
-    webhook_url = (payload.gas_webhook_url or os.getenv("GAS_WEBHOOK_URL", "")).strip() or None
+    from app.services.admin_integrations_service import load_integrations_config
+    cfg = load_integrations_config()
+    webhook_url = (payload.gas_webhook_url or cfg.get("gas_webhook_url") or os.getenv("GAS_WEBHOOK_URL", "")).strip() or None
     if webhook_url and webhook_url.startswith("http"):
         try:
             async with httpx_cls(timeout=15.0, follow_redirects=True) as client:
@@ -87,8 +89,12 @@ async def dispatch_sms_notification(payload, db: AsyncSession, channels: list[st
     sender = os.getenv("TWILIO_FROM_NUMBER", "").strip()
     messaging_service_sid = os.getenv("TWILIO_MESSAGING_SERVICE_SID", "").strip()
 
-    esms_key = os.getenv("ESMS_API_KEY", "").strip()
-    esms_secret = os.getenv("ESMS_SECRET_KEY", "").strip()
+    from app.services.admin_integrations_service import load_integrations_config
+    cfg = load_integrations_config()
+    esms_key = (cfg.get("esms_api_key") or os.getenv("ESMS_API_KEY", "")).strip()
+    esms_secret = (cfg.get("esms_secret_key") or os.getenv("ESMS_SECRET_KEY", "")).strip()
+    brandname = (cfg.get("esms_brandname") or os.getenv("ESMS_BRANDNAME", "BV_LAMSANG")).strip()
+    sandbox_flag = "1" if cfg.get("esms_sandbox", True) else "0"
 
     provider_used = "sandbox"
     receipt_val = f"DLR-SANDBOX-{now_dt.strftime('%H%M%S')}-{os.urandom(2).hex().upper()}"
@@ -117,8 +123,6 @@ async def dispatch_sms_notification(payload, db: AsyncSession, channels: list[st
             err_msg = str(e)
     elif esms_key and esms_secret:
         provider_used = "esms"
-        brandname = os.getenv("ESMS_BRANDNAME", "BV_LAMSANG").strip()
-        sandbox_flag = os.getenv("ESMS_SANDBOX", "1").strip()
         esms_payload = {
             "ApiKey": esms_key, "SecretKey": esms_secret, "Content": sms_content,
             "Phone": norm_digits, "Brandname": brandname, "SmsType": "2",

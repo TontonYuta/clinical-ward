@@ -6,13 +6,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, User, Calendar, Pill, MessageSquare, Send } from 'lucide-react';
+import { X, Printer, ShieldAlert, HeartPulse, Stethoscope, Clock, CheckCircle2, AlertTriangle, FileText, User, Calendar, Pill, MessageSquare, Send, Zap } from 'lucide-react';
 import { PrescriptionOrder, resolveTt26FormType, getTt26FormMetadata } from '../../../../types/cpoe';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../../services/patientService';
 import { stripLeadingBullets } from '../../../../utils/clinicalFormatter';
 import { SendSmsModal } from '../../../Modals/SendSmsModal';
 import { buildDefaultTimeSlots } from '../../../../services/prescriptionAdviceService';
 import { auditPrescriptionDdiApi } from '../../../../services/api';
+import { cpoeApi } from '../../../../services/api/cpoeApi';
 import { PrescriptionPrintDocument } from './PrescriptionPrintDocument';
 import { NursingMarView } from './NursingMarView';
 import { AiPrescriptionAuditView } from './AiPrescriptionAuditView';
@@ -26,6 +27,7 @@ interface CpoeOrderDetailModalProps {
   onOpenSafetyGuide?: (medName: string) => void;
   onOpenAdvice?: (order: PrescriptionOrder) => void;
   onSelectPatient?: (patientName: string) => void;
+  onOrderUpdated?: (updatedOrder: PrescriptionOrder) => void;
 }
 
 export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
@@ -35,11 +37,22 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
   onOpenSafetyGuide,
   onOpenAdvice,
   onSelectPatient,
+  onOrderUpdated,
 }) => {
+  const [currentOrder, setCurrentOrder] = useState<PrescriptionOrder | null>(order);
+  const [isSigning, setIsSigning] = useState(false);
+  const [signSuccessNotice, setSignSuccessNotice] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<CpoeDetailTab>('overview');
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
   const [ddiAudit, setDdiAudit] = useState<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean } | null>(null);
   const [ddiAuditError, setDdiAuditError] = useState(false);
+
+  useEffect(() => {
+    setCurrentOrder(order);
+    setSignSuccessNotice(null);
+  }, [order]);
+
+  const activeOrder = currentOrder || order;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -63,9 +76,24 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
       .catch(() => setDdiAuditError(true));
   }, [isOpen, order]);
 
-  if (!isOpen || !order) return null;
+  if (!isOpen || !activeOrder) return null;
 
-  const safeItems = Array.isArray(order.items) ? order.items : [];
+  const handleSignOrder = async () => {
+    if (!activeOrder) return;
+    setIsSigning(true);
+    try {
+      const signed = await cpoeApi.signCpoeOrder(activeOrder.id);
+      setCurrentOrder(signed);
+      setSignSuccessNotice('✓ Đã ký số thành công! Hệ thống tự động kích hoạt gửi SMS Brandname và Email lịch dùng thuốc theo thời gian thực.');
+      onOrderUpdated?.(signed);
+    } catch (e: any) {
+      alert(e.message || 'Lỗi khi ký số đơn thuốc');
+    } finally {
+      setIsSigning(false);
+    }
+  };
+
+  const safeItems = Array.isArray(activeOrder.items) ? activeOrder.items : [];
 
   const handlePrint = () => {
     const docNode = document.getElementById('prescription-print-document');
@@ -88,13 +116,13 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
     }
   };
 
-  const isOutpatient = order.prescriptionType === 'outpatient';
-  const formType = resolveTt26FormType(order);
+  const isOutpatient = activeOrder.prescriptionType === 'outpatient';
+  const formType = resolveTt26FormType(activeOrder);
   const meta = getTt26FormMetadata(formType);
 
   // Resolve matching patient profile for clinical CDSS grounding
-  const patient = findPatientByNameOrQuery(order.patientId || order.patientName, INITIAL_PATIENTS);
-  const isDraft = order.status === 'draft' || !order.digitalSignature;
+  const patient = findPatientByNameOrQuery(activeOrder.patientId || activeOrder.patientName, INITIAL_PATIENTS);
+  const isDraft = activeOrder.status === 'draft' || !activeOrder.digitalSignature;
 
   const hasNarcotics = safeItems.some((it) => it?.isNarcotic);
 
@@ -125,7 +153,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
               <span className="font-mono text-2xs sm:text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
-                MÃ ĐƠN: {order.id}
+                MÃ ĐƠN: {activeOrder.id}
               </span>
               <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded border ${meta.colorBadge}`}>
                 {meta.title} ({meta.appendix})
@@ -133,9 +161,9 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
               <h2 className="text-sm sm:text-xl font-bold text-slate-950 tracking-tight truncate">
                 Đơn Thuốc Điện Tử <span className="text-2xs sm:text-sm font-normal text-slate-600">({isOutpatient ? 'Ngoại Trú' : 'Nội Trú Theo Ngày'})</span>
               </h2>
-              {order.isChronicDisease && (
+              {activeOrder.isChronicDisease && (
                 <span className="text-[10px] sm:text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                  MÃN TÍNH ({order.daysPrescribed}d)
+                  MÃN TÍNH ({activeOrder.daysPrescribed}d)
                 </span>
               )}
               {hasNarcotics && (
@@ -148,14 +176,14 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
             <div className="text-2xs sm:text-xs text-slate-600 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>BN: <button
                 type="button"
-                onClick={() => onSelectPatient?.(order.patientName)}
+                onClick={() => onSelectPatient?.(activeOrder.patientName)}
                 className="font-bold text-slate-900 hover:text-teal-700 hover:underline cursor-pointer"
                 title="Bấm để xem hồ sơ bệnh nhân"
               >
-                {order.patientName}
-              </button> ({order.patientId})</span>
+                {activeOrder.patientName}
+              </button> ({activeOrder.patientId})</span>
               <span className="text-slate-300">·</span>
-              <span className="truncate max-w-[280px] sm:max-w-none">Chẩn đoán: <strong className="font-mono text-slate-900 font-bold">[{order.diagnosisIcd10}]</strong> <span className="text-slate-800">{order.diagnosisText}</span></span>
+              <span className="truncate max-w-[280px] sm:max-w-none">Chẩn đoán: <strong className="font-mono text-slate-900 font-bold">[{activeOrder.diagnosisIcd10}]</strong> <span className="text-slate-800">{activeOrder.diagnosisText}</span></span>
             </div>
           </div>
 
@@ -179,6 +207,13 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
             </button>
           </div>
         </div>
+
+        {signSuccessNotice && (
+          <div className="px-5 py-2.5 bg-emerald-50 border-b border-emerald-200 text-xs text-emerald-900 font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <span>{signSuccessNotice}</span>
+          </div>
+        )}
 
         {/* Thanh Tab gạch chân chuẩn Kho Dược */}
         <div role="tablist" aria-label="Nhóm thông tin đơn thuốc" className="flex items-center gap-1 overflow-x-auto text-sm scrollbar-none border-b border-slate-200 px-5 bg-white shrink-0">
@@ -596,13 +631,22 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
                   </span>
                 </div>
 
+                {/* Banner Tự Động Real-Time */}
+                <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg flex items-center gap-2.5 text-xs text-teal-900">
+                  <Zap className="w-4 h-4 text-teal-700 shrink-0" />
+                  <div>
+                    <span className="font-bold">⚡ Tự Động Gửi Real-Time Theo Đơn Ký: </span>
+                    <span>Khi đơn thuốc được ký số phát hành, hệ thống tự động phát SMS Brandname (eSMS) và gửi Email dặn dò (Google Apps Script) ngay lập tức tới người bệnh.</span>
+                  </div>
+                </div>
+
                 {/* Thông tin số điện thoại nhận thông báo dặn dò */}
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3 text-xs">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-slate-800">Số điện thoại bệnh nhân:</span>
                       <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
-                        {order.patientPhone || patient?.phone || 'Chưa cập nhật SĐT'}
+                        {activeOrder.patientPhone || patient?.phone || 'Chưa cập nhật SĐT'}
                       </span>
                     </div>
                     <p className="text-slate-500 text-2xs">
@@ -709,11 +753,31 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
         )}
 
         {/* Footer Chuẩn Workstation */}
-        <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-500">
-              {isDraft ? 'Bản nháp - chưa ký' : 'Đơn đã ký'} · Mã nội bộ: <span className="font-mono font-bold text-slate-800">{order.id}</span>
+              {isDraft ? (
+                <span className="text-amber-800 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                  Bản nháp - chưa ký số
+                </span>
+              ) : (
+                <span className="text-emerald-800 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1 inline-flex">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Đơn đã ký (Auto-SMS &amp; Email ✓)
+                </span>
+              )} · Mã: <span className="font-mono font-bold text-slate-800">{activeOrder.id}</span>
           </div>
           <div className="flex items-center gap-2">
+            {isDraft && (
+              <button
+                type="button"
+                onClick={handleSignOrder}
+                disabled={isSigning}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-teal-800 hover:bg-teal-900 text-white transition cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isSigning ? 'Đang ký số...' : 'Ký số & Gửi tự động'}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={handlePrint}
@@ -725,7 +789,7 @@ export const CpoeOrderDetailModal: React.FC<CpoeOrderDetailModalProps> = ({
             {onSelectPatient && (
               <button
                 type="button"
-                onClick={() => onSelectPatient(order.patientName)}
+                onClick={() => onSelectPatient(activeOrder.patientName)}
                 className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white transition cursor-pointer shadow-xs"
               >
                 Hồ sơ bệnh nhân
