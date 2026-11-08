@@ -1,10 +1,10 @@
 import datetime
 import json
 import logging
-from typing import List, Optional
+from typing import List, Optional, Any, Dict, Union
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -33,6 +33,24 @@ class ScheduledMedicationModel(BaseModel):
     duration_days: int = Field(default=7, alias="durationDays")
     time_slots: List[MedicationTimeSlotModel] = Field(default_factory=list, alias="timeSlots")
     special_instructions: Optional[str] = Field(None, alias="specialInstructions")
+
+    @field_validator("time_slots", mode="before")
+    @classmethod
+    def normalize_time_slots(cls, v):
+        if isinstance(v, dict):
+            converted = []
+            label_map = {"morning": "Sáng", "noon": "Trưa", "afternoon": "Chiều", "evening": "Tối", "bedtime": "Trước ngủ"}
+            time_map = {"morning": "07:30", "noon": "11:30", "afternoon": "17:30", "evening": "19:30", "bedtime": "21:00"}
+            for slot_key, dosage_val in v.items():
+                converted.append({
+                    "id": str(slot_key),
+                    "label": label_map.get(str(slot_key).lower(), str(slot_key).capitalize()),
+                    "time": time_map.get(str(slot_key).lower(), "08:00"),
+                    "dosageText": str(dosage_val) if dosage_val else "1 viên",
+                    "mealRelation": "Sau khi ăn 15-30 phút"
+                })
+            return converted
+        return v or []
 
 class PatientPrescriptionAdviceModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)

@@ -230,7 +230,10 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         route: 'Đường uống (Sau ăn)',
         durationDays: 5,
         specialInstructions: 'Uống nhiều nước ấm, cách nhau tối thiểu 4-6 giờ',
-        timeSlots: { morning: '1 viên (07:30)', evening: '1 viên (19:30)' }
+        timeSlots: [
+          { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
+          { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' }
+        ]
       },
       {
         id: 'med-02',
@@ -240,7 +243,10 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
         route: 'Đường uống (Sau ăn)',
         durationDays: 5,
         specialInstructions: 'Uống nguyên viên, uống đúng và đủ liều trong 5 ngày',
-        timeSlots: { morning: '1 viên (07:30)', evening: '1 viên (19:30)' }
+        timeSlots: [
+          { id: 'morning', label: 'Sáng', time: '07:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' },
+          { id: 'evening', label: 'Tối', time: '19:30', dosageText: '1 viên', mealRelation: 'Sau khi ăn 15-30 phút' }
+        ]
       }
     ];
   }, [medications]);
@@ -540,7 +546,22 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date(Date.now() + prescriptionDurationDays * 86400000).toISOString().split('T')[0],
           generalDoctorAdvice: emailAdvice.trim(),
-          medications: effectiveMedications,
+          medications: effectiveMedications.map((m) => {
+            let slots = m.timeSlots;
+            if (!Array.isArray(slots) && typeof slots === 'object' && slots !== null) {
+              slots = Object.entries(slots).map(([k, v]) => ({
+                id: k,
+                label: k === 'morning' ? 'Sáng' : k === 'noon' ? 'Trưa' : k === 'evening' ? 'Tối' : k,
+                time: k === 'morning' ? '07:30' : k === 'noon' ? '11:30' : k === 'evening' ? '19:30' : '08:00',
+                dosageText: typeof v === 'string' ? v : '1 viên',
+                mealRelation: 'Sau khi ăn 15-30 phút'
+              }));
+            }
+            return {
+              ...m,
+              timeSlots: Array.isArray(slots) ? slots : []
+            };
+          }),
           notificationStatus: effectiveDispatchMode === 'scheduled' ? 'scheduled' : 'idle',
           dispatchMode: effectiveDispatchMode,
           scheduledAt: effectiveScheduledAt,
@@ -585,7 +606,8 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
       } catch (err: any) {
         console.error('Lỗi gửi email:', err);
         setStatus('error');
-        setErrorMessage(err.message || 'Lỗi khi chuyển phát thư điện tử');
+        const rawErr = err?.message || 'Lỗi khi chuyển phát thư điện tử';
+        setErrorMessage(typeof rawErr === 'string' ? rawErr : JSON.stringify(rawErr));
       }
     }
   };

@@ -127,7 +127,17 @@ export async function sendMedicationAdviceEmail(
       return data;
     }
     const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.detail || 'Không thể gửi thông báo');
+    let errorMsg = 'Không thể gửi thông báo';
+    if (typeof errData.detail === 'string') {
+      errorMsg = errData.detail;
+    } else if (Array.isArray(errData.detail)) {
+      errorMsg = errData.detail
+        .map((d: any) => (d.msg ? `${d.loc ? d.loc.slice(1).join(' -> ') + ': ' : ''}${d.msg}` : JSON.stringify(d)))
+        .join('; ');
+    } else if (errData.detail && typeof errData.detail === 'object') {
+      errorMsg = JSON.stringify(errData.detail);
+    }
+    throw new Error(errorMsg);
   } catch (err) {
     if (options.sendSms || !webhookUrl) throw err;
     console.warn('Backend relay unavailable, trying direct GAS webhook:', err);
