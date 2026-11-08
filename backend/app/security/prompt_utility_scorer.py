@@ -66,8 +66,10 @@ def get_dynamic_clinical_lexicon() -> set[str]:
     target_db = next((p for p in db_candidates if os.path.exists(p)), None)
 
     if target_db:
+        conn = None
         try:
             conn = sqlite3.connect(target_db, timeout=5.0)
+            conn.execute("PRAGMA cache_size = -1000;")
             c = conn.cursor()
 
             # 1. Nạp toàn bộ hoạt chất chuẩn quốc tế (INN / Title) từ 771 chuyên luận Dược điển V
@@ -78,8 +80,8 @@ def get_dynamic_clinical_lexicon() -> set[str]:
                 if r[1] and len(r[1].strip()) >= 3:
                     lexicon.add(r[1].strip())
 
-            # 2. Nạp toàn bộ tên biệt dược và gốc từ từ 54.885 thuốc Cục Quản lý Dược (DAV)
-            c.execute("SELECT lower(brand_name) FROM dav_national_drugs WHERE brand_name IS NOT NULL;")
+            # 2. Nạp toàn bộ tên biệt dược và gốc từ từ danh mục thuốc Cục Quản lý Dược (DAV) theo chunk
+            c.execute("SELECT DISTINCT lower(brand_name) FROM dav_national_drugs WHERE brand_name IS NOT NULL;")
             stop_words = {
                 'thông', 'tin', 'cho', 'tôi', 'hỏi', 'về', 'của', 'các', 'những', 'làm', 'được', 'gì',
                 'nào', 'sao', 'ở', 'tại', 'với', 'và', 'hoặc', 'có', 'không', 'thì', 'là', 'bạn',
@@ -89,23 +91,32 @@ def get_dynamic_clinical_lexicon() -> set[str]:
                 'dung', 'dịch', 'hỗn', 'bột', 'kem', 'gel', 'mg', 'ml', 'g', 'mcg', 'iu', 'ui',
                 'plus', 'forte', 'retard', 'xr', 'mr', 'cr', 'sr', 'nhũ', 'tương'
             }
-            for (brand_raw,) in c.fetchall():
-                if not brand_raw:
-                    continue
-                clean_b = re.sub(r'[^a-zA-Z0-9à-ỹÀ-Ỹ\s]', ' ', brand_raw).strip()
-                tokens = clean_b.split()
-                if tokens:
-                    w1 = tokens[0]
-                    if len(w1) >= 3 and w1 not in stop_words and not w1.isdigit():
-                        lexicon.add(w1)
-                    if len(tokens) >= 2:
-                        w12 = f"{tokens[0]} {tokens[1]}"
-                        if len(w12) >= 5 and tokens[0] not in stop_words and tokens[1] not in stop_words:
-                            lexicon.add(w12)
-            conn.close()
+            while True:
+                rows = c.fetchmany(5000)
+                if not rows:
+                    break
+                for (brand_raw,) in rows:
+                    if not brand_raw:
+                        continue
+                    clean_b = re.sub(r'[^a-zA-Z0-9à-ỹÀ-Ỹ\s]', ' ', brand_raw).strip()
+                    tokens = clean_b.split()
+                    if tokens:
+                        w1 = tokens[0]
+                        if len(w1) >= 3 and w1 not in stop_words and not w1.isdigit():
+                            lexicon.add(w1)
+                        if len(tokens) >= 2:
+                            w12 = f"{tokens[0]} {tokens[1]}"
+                            if len(w12) >= 5 and tokens[0] not in stop_words and tokens[1] not in stop_words:
+                                lexicon.add(w12)
         except Exception:
             # Fallback an toàn nếu SQLite đang bận
             pass
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     _DYNAMIC_DRUG_LEXICON_CACHE = lexicon
     return _DYNAMIC_DRUG_LEXICON_CACHE

@@ -79,11 +79,10 @@ def calculate_revision(rows: list[tuple]) -> str:
 async def get_registry_revision(db: AsyncSession) -> str:
     global _REGISTRY_REVISION_CACHE
     if _REGISTRY_REVISION_CACHE is None:
-        rows = (await db.execute(select(
-            DavNationalDrug.id, DavNationalDrug.national_code, DavNationalDrug.brand_name,
-            DavNationalDrug.active_ingredient, DavNationalDrug.group, DavNationalDrug.atc_code
-        ).order_by(DavNationalDrug.id))).all()
-        _REGISTRY_REVISION_CACHE = calculate_revision(rows)
+        res = (await db.execute(select(func.count(DavNationalDrug.id), func.max(DavNationalDrug.id)))).first()
+        cnt = res[0] if res and res[0] is not None else 0
+        max_id = res[1] if res and res[1] is not None else 0
+        _REGISTRY_REVISION_CACHE = hashlib.sha256(f"dav_drugs_{cnt}_{max_id}".encode("utf-8")).hexdigest()
     return _REGISTRY_REVISION_CACHE
 
 async def get_inventory_revision(db: AsyncSession) -> str:

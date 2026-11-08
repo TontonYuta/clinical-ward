@@ -7,6 +7,7 @@ import json
 import time
 import sqlite3
 import logging
+from contextlib import contextmanager
 from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger("clinical_cache_sqlite")
@@ -44,8 +45,14 @@ class CacheStorageSqlite:
         except Exception as e:
             logger.warning("Không thể khởi tạo SQLite Cache tại %s: %s", self.db_path, e)
 
-    def _get_conn(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.db_path, timeout=5.0)
+    @contextmanager
+    def _get_conn(self):
+        conn = sqlite3.connect(self.db_path, timeout=5.0)
+        try:
+            conn.execute("PRAGMA cache_size = -500;")
+            yield conn
+        finally:
+            conn.close()
 
     def _init_db(self) -> None:
         with self._get_conn() as conn:

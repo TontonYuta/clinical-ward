@@ -49,22 +49,20 @@ def _sanitize_fts_query(query: str) -> str:
 class SqliteFtsIndex:
     def __init__(self, db_path: Path | str | None = None):
         self.db_path = str(db_path) if db_path else get_fts_db_path()
-        self._mem_conn: sqlite3.Connection | None = None
+        self._conn: sqlite3.Connection | None = None
         self._init_fts_table()
 
     def _get_connection(self) -> sqlite3.Connection:
-        if self.db_path == ":memory:":
-            if self._mem_conn is None:
-                self._mem_conn = sqlite3.connect(":memory:")
-                self._mem_conn.row_factory = sqlite3.Row
-            return self._mem_conn
-        try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            return conn
-        except sqlite3.OperationalError:
-            self.db_path = ":memory:"
-            return self._get_connection()
+        if self._conn is None:
+            try:
+                self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+                self._conn.row_factory = sqlite3.Row
+                self._conn.execute("PRAGMA cache_size = -1000;")
+            except sqlite3.OperationalError:
+                self.db_path = ":memory:"
+                self._conn = sqlite3.connect(":memory:", check_same_thread=False)
+                self._conn.row_factory = sqlite3.Row
+        return self._conn
 
     def _init_fts_table(self):
         try:

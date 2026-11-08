@@ -40,34 +40,41 @@ class BhytAuditService:
 
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, timeout=30.0)
+        conn.execute("PRAGMA cache_size = -1000;")
         conn.row_factory = sqlite3.Row
         return conn
 
     def get_declarative_therapeutic_classes(self) -> List[sqlite3.Row]:
         if self._therapeutic_classes is None:
             conn = self._get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM bhyt_therapeutic_classes")
-            self._therapeutic_classes = cursor.fetchall()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM bhyt_therapeutic_classes")
+                self._therapeutic_classes = cursor.fetchall()
+            finally:
+                conn.close()
         return self._therapeutic_classes
 
     def get_declarative_incompatible_classes(self) -> List[sqlite3.Row]:
         if self._incompatible_classes is None:
             conn = self._get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM bhyt_incompatible_classes")
-            self._incompatible_classes = cursor.fetchall()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM bhyt_incompatible_classes")
+                self._incompatible_classes = cursor.fetchall()
+            finally:
+                conn.close()
         return self._incompatible_classes
 
     def _get_catalog_rules(self) -> List[sqlite3.Row]:
         if self._catalog_cache is None:
             conn = self._get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM bhyt_drug_catalog")
-            self._catalog_cache = cursor.fetchall()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM bhyt_drug_catalog")
+                self._catalog_cache = cursor.fetchall()
+            finally:
+                conn.close()
         return self._catalog_cache
 
     def search_catalog(
@@ -78,51 +85,52 @@ class BhytAuditService:
         offset: int = 0
     ) -> BhytCatalogQueryResponse:
         conn = self._get_connection()
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        sql = "SELECT * FROM bhyt_drug_catalog WHERE 1=1"
-        params: list = []
+            sql = "SELECT * FROM bhyt_drug_catalog WHERE 1=1"
+            params: list = []
 
-        if query.strip():
-            norm_q = f"%{remove_vietnamese_accents(query)}%"
-            sql += " AND (active_ingredient_normalized LIKE ? OR atc_code LIKE ? OR brand_names_json LIKE ?)"
-            params.extend([norm_q, f"%{query.upper()}%", f"%{query}%"])
+            if query.strip():
+                norm_q = f"%{remove_vietnamese_accents(query)}%"
+                sql += " AND (active_ingredient_normalized LIKE ? OR atc_code LIKE ? OR brand_names_json LIKE ?)"
+                params.extend([norm_q, f"%{query.upper()}%", f"%{query}%"])
 
-        cursor.execute(sql, params)
-        all_rows = cursor.fetchall()
+            cursor.execute(sql, params)
+            all_rows = cursor.fetchall()
 
-        # Lọc rank trong Python vì lưu dưới dạng JSON
-        filtered_rows = []
-        for r in all_rows:
-            ranks = json.loads(r["allowed_ranks_json"]) if r["allowed_ranks_json"] else []
-            if rank != "ALL" and rank not in ranks:
-                continue
-            filtered_rows.append(r)
+            # Lọc rank trong Python vì lưu dưới dạng JSON
+            filtered_rows = []
+            for r in all_rows:
+                ranks = json.loads(r["allowed_ranks_json"]) if r["allowed_ranks_json"] else []
+                if rank != "ALL" and rank not in ranks:
+                    continue
+                filtered_rows.append(r)
 
-        total = len(filtered_rows)
-        paged_rows = filtered_rows[offset : offset + limit]
+            total = len(filtered_rows)
+            paged_rows = filtered_rows[offset : offset + limit]
 
-        items = []
-        for r in paged_rows:
-            items.append(BhytDrugRuleResponse(
-                id=r["id"],
-                stt_thong_tu_20=r["stt_thong_tu_20"],
-                atc_code=r["atc_code"],
-                active_ingredient=r["active_ingredient"],
-                brand_names=json.loads(r["brand_names_json"]) if r["brand_names_json"] else [],
-                route=r["route"] or "Uống",
-                allowed_ranks=json.loads(r["allowed_ranks_json"]) if r["allowed_ranks_json"] else [],
-                payment_ratio=r["payment_ratio"] or 1.0,
-                requires_consultation=bool(r["requires_consultation"]),
-                max_outpatient_days=r["max_outpatient_days"] or 30,
-                approved_icd10_prefixes=json.loads(r["allowed_icd10_json"]) if r["allowed_icd10_json"] else None,
-                forbidden_icd10_prefixes=json.loads(r["forbidden_icd10_json"]) if r["forbidden_icd10_json"] else None,
-                special_conditions=r["special_conditions"],
-                pdf_page=r["pdf_page"] or 1
-            ))
-
-        conn.close()
-        return BhytCatalogQueryResponse(total=total, items=items)
+            items = []
+            for r in paged_rows:
+                items.append(BhytDrugRuleResponse(
+                    id=r["id"],
+                    stt_thong_tu_20=r["stt_thong_tu_20"],
+                    atc_code=r["atc_code"],
+                    active_ingredient=r["active_ingredient"],
+                    brand_names=json.loads(r["brand_names_json"]) if r["brand_names_json"] else [],
+                    route=r["route"] or "Uống",
+                    allowed_ranks=json.loads(r["allowed_ranks_json"]) if r["allowed_ranks_json"] else [],
+                    payment_ratio=r["payment_ratio"] or 1.0,
+                    requires_consultation=bool(r["requires_consultation"]),
+                    max_outpatient_days=r["max_outpatient_days"] or 30,
+                    approved_icd10_prefixes=json.loads(r["allowed_icd10_json"]) if r["allowed_icd10_json"] else None,
+                    forbidden_icd10_prefixes=json.loads(r["forbidden_icd10_json"]) if r["forbidden_icd10_json"] else None,
+                    special_conditions=r["special_conditions"],
+                    pdf_page=r["pdf_page"] or 1
+                ))
+            return BhytCatalogQueryResponse(total=total, items=items)
+        finally:
+            conn.close()
 
     def find_rule_for_drug(self, drug_name: str, active_ingredient: str) -> Optional[sqlite3.Row]:
         all_rules = self._get_catalog_rules()

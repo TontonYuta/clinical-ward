@@ -25,6 +25,8 @@ class DrugEntityResolver:
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or resolve_db_path()
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._conn.execute("PRAGMA cache_size = -1000;")
+        self._conn.execute("PRAGMA mmap_size = 0;")
         self._conn.row_factory = sqlite3.Row
         self._bhyt_cache: List[Dict[str, Any]] = []
         self._load_bhyt_cache()

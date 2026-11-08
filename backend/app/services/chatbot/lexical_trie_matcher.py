@@ -23,7 +23,7 @@ class DrugLexicalMatcher:
 
     def insert(self, term: str, canonical: str, entity_type: str = "brand") -> None:
         term_clean = term.strip().lower()
-        if len(term_clean) < 2 or term_clean in COMMON_EXCLUSIONS:
+        if len(term_clean) < 2 or len(term_clean) > 35 or term_clean in COMMON_EXCLUSIONS:
             return
         if entity_type == "brand":
             self.canonical_brands.add(canonical)
@@ -52,29 +52,42 @@ class DrugLexicalMatcher:
         actual_path = resolve_db_path(db_path)
         try:
             conn = sqlite3.connect(actual_path)
+            conn.execute("PRAGMA cache_size = -2000;")
             cursor = conn.cursor()
-            cursor.execute("SELECT brand_name, active_ingredient, national_code FROM dav_national_drugs")
             salt_pattern = r"\b(?:hydroclorid|hydrochloride|hcl|natri|sodium|kali|potassium|maleat|maleate|succinat|succinate|sulfat|sulfate|citrat|citrate|acetat|acetate|tartrat|tartrate)\b"
-            for brand, ingredient, code in cursor.fetchall():
-                if brand:
-                    self.insert(brand, brand, "brand")
-                    clean_brand = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", brand, flags=re.I).strip()
-                    if len(clean_brand) >= 3 and clean_brand.lower() not in COMMON_EXCLUSIONS and clean_brand != brand:
-                        self.insert(clean_brand, clean_brand, "brand")
-                if ingredient:
-                    for part in ingredient.replace("+", ";").replace("/", ";").split(";"):
-                        clean_part = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị).*$", "", part.strip(), flags=re.I).strip()
-                        if len(clean_part) >= 3 and clean_part.lower() not in COMMON_EXCLUSIONS:
-                            self.insert(clean_part, clean_part, "ingredient")
-                            salt_sub = re.sub(salt_pattern, "", clean_part, flags=re.I).strip()
-                            if len(salt_sub) >= 3 and salt_sub.lower() not in COMMON_EXCLUSIONS:
-                                self.insert(salt_sub, salt_sub, "ingredient")
+            prefix_pattern = r"^(?:thuốc\s+|viên\s+nén\s+|viên\s+nang\s+|viên\s+|dung\s+dịch\s+|hỗn\s+dịch\s+|bột\s+|cốm\s+|thuốc\s+tiêm\s+|kem\s+|gel\s+)"
+
+            cursor.execute("SELECT DISTINCT brand_name, active_ingredient FROM dav_national_drugs")
+            while True:
+                rows = cursor.fetchmany(5000)
+                if not rows:
+                    break
+                for brand, ingredient in rows:
+                    if brand:
+                        if len(brand) <= 35:
+                            self.insert(brand, brand, "brand")
+                        clean_brand = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị|mmol).*$", "", brand, flags=re.I).strip()
+                        if 3 <= len(clean_brand) <= 35 and clean_brand.lower() not in COMMON_EXCLUSIONS and clean_brand != brand:
+                            self.insert(clean_brand, clean_brand, "brand")
+                        clean_noprefix = re.sub(prefix_pattern, "", clean_brand, flags=re.I).strip()
+                        if 3 <= len(clean_noprefix) <= 35 and clean_noprefix.lower() not in COMMON_EXCLUSIONS and clean_noprefix != clean_brand:
+                            self.insert(clean_noprefix, clean_noprefix, "brand")
+
+                    if ingredient:
+                        for part in ingredient.replace("+", ";").replace("/", ";").split(";"):
+                            clean_part = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị|mmol).*$", "", part.strip(), flags=re.I).strip()
+                            clean_part = re.sub(prefix_pattern, "", clean_part, flags=re.I).strip()
+                            if 3 <= len(clean_part) <= 35 and clean_part.lower() not in COMMON_EXCLUSIONS:
+                                self.insert(clean_part, clean_part, "ingredient")
+                                salt_sub = re.sub(salt_pattern, "", clean_part, flags=re.I).strip()
+                                if 3 <= len(salt_sub) <= 35 and salt_sub.lower() not in COMMON_EXCLUSIONS:
+                                    self.insert(salt_sub, salt_sub, "ingredient")
             try:
                 cursor.execute("SELECT title, inn FROM clinical_drug_monographs")
                 for title, inn in cursor.fetchall():
-                    if title and len(title) >= 3:
+                    if title and 3 <= len(title) <= 40:
                         self.insert(title, title, "monograph")
-                    if inn and len(inn) >= 3:
+                    if inn and 3 <= len(inn) <= 40:
                         self.insert(inn, inn, "monograph")
             except Exception:
                 pass
@@ -87,14 +100,14 @@ class DrugLexicalMatcher:
                     self.insert(disp, disp, "ingredient")
                     self.insert(inn, disp, "ingredient")
                     for alias in meta.get("aliases", []):
-                        if len(alias) >= 3 and alias.lower() not in COMMON_EXCLUSIONS:
+                        if 3 <= len(alias) <= 35 and alias.lower() not in COMMON_EXCLUSIONS:
                             self.insert(alias, alias, "brand")
             except Exception:
                 pass
 
             for c in self.canonical_brands | self.canonical_inns:
                 low = strip_accents(c.lower())
-                if low and len(low) >= 3:
+                if low and 3 <= len(low) <= 25:
                     self._name_map[low] = c
                     self._candidates_by_first.setdefault(low[0], []).append(low)
             self._is_loaded = True

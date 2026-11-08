@@ -5,16 +5,22 @@ Records genuine token consumption from LLM usageMetadata and calculates exact co
 import os
 import sqlite3
 import time
+from contextlib import contextmanager
 from typing import Optional, Tuple
 from datetime import datetime
 
 _DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data/telemetry_ledger.db"))
 
-def _get_connection() -> sqlite3.Connection:
+@contextmanager
+def _get_connection():
     os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
     conn = sqlite3.connect(_DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn.execute("PRAGMA cache_size = -500;")
+        yield conn
+    finally:
+        conn.close()
 
 def init_telemetry_db() -> None:
     """Khởi tạo bảng lưu trữ vết token thực tế."""
