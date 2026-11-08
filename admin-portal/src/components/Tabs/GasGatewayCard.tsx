@@ -19,7 +19,7 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
     setIsPinging(true);
     setPingResult(null);
     try {
-      const res = await pingGas();
+      const res = await pingGas(gas?.raw_webhook_url || webhookUrl || undefined);
       setPingResult(res.message);
       onRefresh();
     } catch (e: any) {

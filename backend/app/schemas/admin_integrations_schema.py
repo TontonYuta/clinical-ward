@@ -77,4 +77,4 @@ class GasPingResponse(BaseModel):
     message: str
 
 class GasConfigPayload(BaseModel):
-    webhook_url: str = Field(min_length=15, max_length=500)
+    webhook_url: Optional[str] = Field(default=None, max_length=500)

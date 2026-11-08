@@ -2,7 +2,8 @@
 Admin External Integrations Router (eSMS & Google Apps Script).
 Endpoints kiểm tra số dư thật, ping gateway và cấu hình viễn thông.
 """
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.admin_integrations_schema import (
@@ -49,14 +50,19 @@ async def fetch_gas_status(db: AsyncSession = Depends(get_db)):
     return await get_gas_status(db)
 
 @router.post("/gas/ping", response_model=GasPingResponse)
-async def test_gas_connection(payload: GasConfigPayload = None):
+async def test_gas_connection(payload: Optional[GasConfigPayload] = None):
     """Ping kiểm tra tính sẵn sàng của Google Apps Script Web App Webhook."""
-    url = payload.webhook_url if payload else None
+    url = payload.webhook_url.strip() if (payload and payload.webhook_url) else None
     return await ping_gas(webhook_url=url)
 
 @router.post("/gas/config", response_model=GasStatusResponse)
 async def update_gas_config(payload: GasConfigPayload, db: AsyncSession = Depends(get_db)):
     """Cập nhật Google Apps Script Webhook URL cho hệ thống."""
+    if not payload.webhook_url or len(payload.webhook_url.strip()) < 15:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Webhook URL không hợp lệ (tối thiểu 15 ký tự)"
+        )
     cfg = load_integrations_config()
     cfg["gas_webhook_url"] = payload.webhook_url.strip()
     save_integrations_config(cfg)

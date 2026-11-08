@@ -118,12 +118,20 @@ export async function fetchGasStatus(): Promise<GasStatusResponse> {
 }
 
 export async function pingGas(webhookUrl?: string) {
+  const payload = webhookUrl ? { webhook_url: webhookUrl } : {};
   const res = await fetchWithTimeout(`${BASE_URL}/integrations/gas/ping`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ webhook_url: webhookUrl }),
+    body: JSON.stringify(payload),
   }, 10000);
-  if (!res.ok) throw new Error(`Lỗi ping GAS: HTTP ${res.status}`);
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const errJson = await res.json();
+      if (errJson.detail) detail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+    } catch {}
+    throw new Error(`Lỗi ping GAS: ${detail}`);
+  }
   return res.json();
 }
 
