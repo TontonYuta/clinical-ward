@@ -10,7 +10,7 @@ interface GasGatewayCardProps {
 
 export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }) => {
   const [isPinging, setIsPinging] = useState(false);
-  const [pingResult, setPingResult] = useState<string | null>(null);
+  const [pingResult, setPingResult] = useState<{ isSuccess: boolean; message: string } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(gas?.raw_webhook_url || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -20,10 +20,11 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
     setPingResult(null);
     try {
       const res = await pingGas(gas?.raw_webhook_url || webhookUrl || undefined);
-      setPingResult(res.message);
+      const isSuccess = res.status === 'healthy' || res.status_code === 200;
+      setPingResult({ isSuccess, message: res.message });
       onRefresh();
     } catch (e: any) {
-      setPingResult(e.message || 'Lỗi ping Webhook');
+      setPingResult({ isSuccess: false, message: e.message || 'Lỗi ping Webhook' });
     } finally {
       setIsPinging(false);
     }
@@ -76,9 +77,15 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
       </div>
 
       {pingResult && (
-        <div className="px-5 py-2.5 bg-teal-50 border-b border-teal-100 text-xs text-teal-900 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-teal-700 shrink-0" />
-          <span>{pingResult}</span>
+        <div className={`px-5 py-2.5 border-b text-xs flex items-center gap-2 ${
+          pingResult.isSuccess ? 'bg-teal-50 border-teal-100 text-teal-900' : 'bg-rose-50 border-rose-100 text-rose-900'
+        }`}>
+          {pingResult.isSuccess ? (
+            <CheckCircle2 className="w-4 h-4 text-teal-700 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          <span>{pingResult.message}</span>
         </div>
       )}
 
