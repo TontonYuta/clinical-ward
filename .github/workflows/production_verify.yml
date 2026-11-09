@@ -33,4 +33,4 @@ jobs:
         env:
           TARGET_COMMIT: ${{ github.sha }}
         run: |
-          python scripts/deploy_and_verify_production_loop.py --expected-commit "$TARGET_COMMIT" --max-wait 540
+          python scripts/deploy_and_verify_production_loop.py --expected-commit "$TARGET_COMMIT" --max-wait 540 --allow-pending

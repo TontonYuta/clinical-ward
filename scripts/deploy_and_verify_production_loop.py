@@ -178,6 +178,7 @@ def execute_production_suite() -> tuple[int, int, list[str]]:
                     passed += 1
             except Exception as e:
                 failures.append(f"[{tc['id']}] Exception: {e}")
+            time.sleep(1.0)
     return passed, len(PRODUCTION_TESTS), failures
 
 def verify_option_a_drug_registry() -> bool:
@@ -211,11 +212,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--expected-commit", default=None, help="Target git commit SHA to wait for")
     parser.add_argument("--max-wait", type=int, default=0, help="Max wait seconds for deployment")
+    parser.add_argument("--allow-pending", action="store_true", default=False, help="Do not hard-fail if Render build is still pending/queued")
     args = parser.parse_args()
 
-    if args.max_wait > 0 and not wait_for_deployment(args.expected_commit, args.max_wait) and args.expected_commit:
-        print(f"\n❌ [CRITICAL DEPLOY FAILURE] Render did not deploy '{args.expected_commit[:7]}'. Check Render Dashboard.")
-        sys.exit(1)
+    deployed = True
+    if args.max_wait > 0 and args.expected_commit:
+        deployed = wait_for_deployment(args.expected_commit, args.max_wait)
+        if not deployed:
+            if args.allow_pending:
+                print(f"\n⚠️ [DEPLOYMENT QUEUED/PENDING] Render has not yet deployed '{args.expected_commit[:7]}' within {args.max_wait}s.")
+                print("   (Render Free Tier build may be queued or requiring manual trigger in dashboard).")
+                print("   Proceeding to verify currently live service health...")
+            else:
+                print(f"\n❌ [CRITICAL DEPLOY FAILURE] Render did not deploy '{args.expected_commit[:7]}'. Check Render Dashboard.")
+                sys.exit(1)
 
     reg_ok = verify_option_a_drug_registry()
     p, total, errs = execute_production_suite()

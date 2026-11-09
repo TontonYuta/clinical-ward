@@ -1,1 +1,1 @@
-/home/tontonyuta/Downloads/DoAn2/backend/app/scripts/index_clinical_vectors.py
+../backend/app/scripts/index_clinical_vectors.py
