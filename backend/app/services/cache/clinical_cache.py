@@ -6,9 +6,13 @@ tương tác thuốc QĐ 5948/QĐ-BYT và văn bản pháp quy y tế.
 """
 import re
 import time
+import logging
 from collections import OrderedDict
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
+import numpy as np
 from app.schemas.copilot import CopilotResponse
+
+logger = logging.getLogger("clinical_cache")
 
 # Các từ ngữ/hành động làm biến đổi trạng thái kho hoặc tủ trực (CẤM CACHE)
 MUTATION_KEYWORDS = (
@@ -55,15 +59,29 @@ class ClinicalLRUCache:
     """
     Bộ nhớ đệm LRU lâm sàng đa tầng với cơ chế chuẩn hóa ngữ nghĩa và Semantic Caching.
     Paper: GPTCache (Bang et al., 2023 / arXiv:2303.17580).
-    Kết hợp O(1) Exact Key Match và Vector/Entity-constrained Semantic Retrieval:
+    Kết hợp O(1) Exact Key Match và Vector Dense Cosine + Entity-constrained Semantic Retrieval:
     - Triệt tiêu độ trễ từ ~1,200ms xuống < 0.1ms cho Exact Hit và < 0.5ms cho Semantic Hit.
     - Medical Safety Guardrail: Tuyệt đối không chia sẻ cache nếu sai lệch liều lượng,
       độ tuổi (nhi/người lớn), hoặc sai lệch thuốc/chỉ định.
+    - Vector Semantic Search: Sử dụng GeminiEmbeddingProvider (768-dim float32 L2-normalized)
+      với tính toán tích vô hướng cosine dot product cực nhanh trên RAM.
     """
-    def __init__(self, max_size: int = 1000, default_ttl_sec: int = 86400, similarity_threshold: float = 0.85, db_path: Optional[str] = None):
+    def __init__(
+        self,
+        max_size: int = 1000,
+        default_ttl_sec: int = 86400,
+        similarity_threshold: float = 0.85,
+        vector_similarity_threshold: Optional[float] = None,
+        db_path: Optional[str] = None,
+        embedding_provider: Optional[Any] = None
+    ):
         self.max_size = max_size
         self.default_ttl = default_ttl_sec
         self.similarity_threshold = similarity_threshold
+        self.vector_similarity_threshold = (
+            vector_similarity_threshold if vector_similarity_threshold is not None else similarity_threshold
+        )
+        self.embedding_provider = embedding_provider
         self._cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         self.hits = 0
         self.exact_hits = 0
@@ -79,6 +97,55 @@ class ClinicalLRUCache:
                     self._cache[entry["key"]] = entry
             except Exception:
                 pass
+
+    def _get_embedding_provider(self) -> Optional[Any]:
+        """Trả về Embedding Provider dùng chung (Singleton Gemini MRL 768-dim hoặc Mock)."""
+        if self.embedding_provider is None:
+            try:
+                from app.services.rag.embeddings.provider import get_embedding_provider
+                self.embedding_provider = get_embedding_provider()
+            except Exception:
+                pass
+        return self.embedding_provider
+
+    def embed_text(self, text: str) -> Optional[np.ndarray]:
+        """
+        Tạo vector L2-normalized float32 cho text sử dụng embedding provider đã đăng ký.
+        Chỉ thực hiện khi self.embedding_provider được cung cấp.
+        """
+        cleaned = text.strip() if text else ""
+        if not cleaned:
+            return None
+        provider = self._get_embedding_provider()
+        if not provider:
+            return None
+        try:
+            if hasattr(provider, "embed_query_sync"):
+                vec = provider.embed_query_sync(cleaned)
+            elif hasattr(provider, "embed_query"):
+                import asyncio
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        import concurrent.futures
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                            vec = pool.submit(lambda: asyncio.run(provider.embed_query(cleaned))).result()
+                    else:
+                        vec = loop.run_until_complete(provider.embed_query(cleaned))
+                except RuntimeError:
+                    vec = asyncio.run(provider.embed_query(cleaned))
+            else:
+                return None
+
+            if vec is not None:
+                arr = np.asarray(vec, dtype=np.float32)
+                norm = np.linalg.norm(arr)
+                if norm > 0:
+                    arr = arr / norm
+                return arr
+        except Exception as e:
+            logger.debug("Lỗi embed text trong clinical cache: %s", e)
+        return None
 
     def normalize_query(self, query: str) -> str:
         """
@@ -111,13 +178,20 @@ class ClinicalLRUCache:
         role = (user_role or "doctor").strip().lower()
         return f"{role}:{canonical}"
 
-    def extract_clinical_features(self, query: str) -> Dict[str, Any]:
+    def extract_clinical_features(
+        self,
+        query: str,
+        vector: Optional[Union[np.ndarray, List[float]]] = None,
+        auto_embed: bool = False
+    ) -> Dict[str, Any]:
         """
         Trích xuất đặc trưng lâm sàng để phục vụ đối soát ngữ nghĩa (Semantic Caching):
         - Nhóm ý định lâm sàng (dosage, interaction, contraindication, side_effect, general)
         - Thông số định lượng y khoa (liều lượng, tuổi, khoảng cách liều, eGFR)
         - Thực thể thuốc chuẩn hóa (qua Lexical Trie Matcher)
+        - Thực thể triệu chứng / bệnh lý lâm sàng
         - Tập từ khóa thực thể và N-gram ký tự
+        - Vector dense embedding (768 chiều float32 L2-normalized)
         """
         norm = self.normalize_query(query)
 
@@ -177,6 +251,16 @@ class ClinicalLRUCache:
             for i in range(len(padded) - 2):
                 trigrams.add(padded[i:i+3])
 
+        # 7. Dense Vector (768 chiều float32 L2-normalized)
+        norm_vec = None
+        if vector is not None:
+            norm_vec = np.asarray(vector, dtype=np.float32)
+            n = np.linalg.norm(norm_vec)
+            if n > 0:
+                norm_vec = norm_vec / n
+        elif auto_embed:
+            norm_vec = self.embed_text(query)
+
         return {
             "norm": norm,
             "intent": intent,
@@ -184,7 +268,8 @@ class ClinicalLRUCache:
             "tokens": tokens,
             "conditions": norm_conditions,
             "meds": norm_meds,
-            "trigrams": trigrams
+            "trigrams": trigrams,
+            "vector": norm_vec
         }
 
     def compute_clinical_similarity(self, f1: Dict[str, Any], f2: Dict[str, Any]) -> float:
@@ -194,6 +279,8 @@ class ClinicalLRUCache:
         - Số liệu định lượng (liều, tuổi) bắt buộc trùng khớp (ngăn chặn nhầm liều giữa 2 tuổi và 12 tuổi).
         - Thực thể thuốc bắt buộc trùng khớp nếu có nhận diện.
         - Triệu chứng / Bệnh lý bắt buộc trùng khớp nếu có nhận diện (ngăn chặn nhầm giữa sốt và trĩ).
+        - Ưu tiên tính Cosine Similarity nếu cả hai bên đều có Vector Embedding.
+        - Graceful Fallback sang Token Dice + Character Trigrams nếu thiếu Vector.
         """
         # Ràng buộc an toàn 1: Ý định y khoa
         if f1["intent"] != f2["intent"]:
@@ -216,7 +303,19 @@ class ClinicalLRUCache:
             if f1.get("conditions") != f2.get("conditions"):
                 return 0.0
 
-        # Điểm tương đồng từ vựng & N-gram ký tự (Dice coefficient)
+        # Ưu tiên Vector Cosine Similarity nếu cả hai bên có vector
+        v1 = f1.get("vector")
+        v2 = f2.get("vector")
+        if v1 is not None and v2 is not None:
+            a = np.asarray(v1, dtype=np.float32)
+            b = np.asarray(v2, dtype=np.float32)
+            norm_a = np.linalg.norm(a)
+            norm_b = np.linalg.norm(b)
+            if norm_a > 0 and norm_b > 0:
+                cos_sim = float(np.dot(a, b) / (norm_a * norm_b))
+                return round(max(0.0, cos_sim), 3)
+
+        # Fallback từ vựng & N-gram ký tự (Dice coefficient) khi thiếu vector
         t1, t2 = f1["tokens"], f2["tokens"]
         t_dice = (2.0 * len(t1 & t2)) / (len(t1) + len(t2)) if (len(t1) + len(t2)) > 0 else 0.0
 
@@ -258,11 +357,18 @@ class ClinicalLRUCache:
                 return False
         return True
 
-    def get(self, query: str, user_role: str = "doctor") -> Optional[CopilotResponse]:
+    def get(
+        self,
+        query: str,
+        user_role: str = "doctor",
+        vector: Optional[Union[np.ndarray, List[float]]] = None
+    ) -> Optional[CopilotResponse]:
         """
         Lấy kết quả từ cache nếu tồn tại và còn hạn:
         1. Bước 1: Exact Key Match O(1) (< 0.05ms)
         2. Bước 2: Semantic Similarity Search (< 0.5ms) nếu Exact Match trượt
+           - Sử dụng Vector Cosine Similarity nếu có vector
+           - Tự động fallback sang Lexical Dice nếu chưa có vector
         """
         if not self.is_cacheable_query(query):
             return None
@@ -286,7 +392,9 @@ class ClinicalLRUCache:
 
         # 2. Semantic Match đối soát trên các tri thức đã lưu của cùng user_role
         target_role = (user_role or "doctor").strip().lower()
-        query_features = self.extract_clinical_features(query)
+        if vector is None and self.embedding_provider is not None:
+            vector = self.embed_text(query)
+        query_features = self.extract_clinical_features(query, vector=vector)
 
         best_score = 0.0
         best_entry = None
@@ -301,12 +409,20 @@ class ClinicalLRUCache:
             if not cached_feat:
                 continue
             score = self.compute_clinical_similarity(query_features, cached_feat)
-            if score > best_score:
+
+            # Chọn ngưỡng tương ứng: vector_similarity_threshold nếu cả 2 có vector, ngược lại similarity_threshold
+            has_both_vectors = (
+                query_features.get("vector") is not None
+                and cached_feat.get("vector") is not None
+            )
+            threshold = self.vector_similarity_threshold if has_both_vectors else self.similarity_threshold
+
+            if score >= threshold and score > best_score:
                 best_score = score
                 best_entry = entry
                 best_key = k
 
-        if best_entry and best_score >= self.similarity_threshold:
+        if best_entry:
             self._cache.move_to_end(best_key)
             self.semantic_hits += 1
             self.hits += 1
@@ -323,10 +439,11 @@ class ClinicalLRUCache:
         query: str,
         user_role: str,
         response: CopilotResponse,
-        ttl_sec: Optional[int] = None
+        ttl_sec: Optional[int] = None,
+        vector: Optional[Union[np.ndarray, List[float]]] = None
     ) -> bool:
         """
-        Lưu kết quả phân tích lâm sàng vào bộ nhớ đệm kèm đặc trưng ngữ nghĩa.
+        Lưu kết quả phân tích lâm sàng vào bộ nhớ đệm kèm đặc trưng ngữ nghĩa và vector embedding.
         """
         if not self.is_cacheable_query(query):
             return False
@@ -344,7 +461,9 @@ class ClinicalLRUCache:
             self._cache.popitem(last=False)
             self.evictions += 1
 
-        features = self.extract_clinical_features(query)
+        if vector is None and self.embedding_provider is not None:
+            vector = self.embed_text(query)
+        features = self.extract_clinical_features(query, vector=vector)
         entry_val = {
             "data": response.model_dump(),
             "expire_at": now + ttl,
@@ -372,7 +491,9 @@ class ClinicalLRUCache:
             "evictions": self.evictions,
             "hit_ratio_percent": hit_ratio,
             "semantic_ratio_percent": semantic_ratio,
-            "similarity_threshold": self.similarity_threshold
+            "similarity_threshold": self.similarity_threshold,
+            "vector_similarity_threshold": self.vector_similarity_threshold,
+            "vector_enabled": self._get_embedding_provider() is not None
         }
 
     def clear(self) -> None:

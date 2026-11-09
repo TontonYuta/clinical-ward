@@ -267,6 +267,40 @@ def compute_prompt_utility(
 
     # 6. Phân Loại Đầu Ra
     if not found_entities:
+        is_opening = (
+            (intent and "CAPABILITY" in intent)
+            or (intent and "BUSINESS" in intent)
+            or any(p in lower_query for p in (
+                "tôi có thể hỏi", "tôi muốn hỏi", "hỗ trợ tôi", "bạn có thể làm gì",
+                "hướng dẫn", "bạn là ai", "chào", "xin chào", "cảm ơn"
+            ))
+        )
+        if is_opening:
+            return PromptUtilityResult(
+                utility_score=0.80,
+                is_useful=True,
+                category="conversational_engagement",
+                reason="Prompt tương tác mở đầu / tìm hiểu năng lực hệ thống tích cực",
+                entities_found=[],
+                intent_detected=intent,
+                grounded_source="Trợ lý Dược Lâm Sàng"
+            )
+
+        is_steered = (
+            intent == "OUT_OF_SCOPE"
+            or any(w in lower_query for w in ("học toán", "dạy toán", "toán", "đúng không", "bằng mấy", "kể chuyện"))
+            or bool(re.search(r'\b\d+\s*[\+\-\*\/=]\s*\d+', lower_query))
+        )
+        if is_steered:
+            return PromptUtilityResult(
+                utility_score=0.60,
+                is_useful=False,
+                category="steered_chitchat",
+                reason="Prompt ngoài chuyên môn đã được điều hướng nhã nhặn về Dược lâm sàng",
+                entities_found=[],
+                intent_detected=intent
+            )
+
         return PromptUtilityResult(
             utility_score=min(0.35, pui),
             is_useful=False,

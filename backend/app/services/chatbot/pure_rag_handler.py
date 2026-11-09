@@ -110,7 +110,7 @@ async def handle_deep_rag_consultation(
                 "3. **Phác đồ cấp cứu & Thông tư:** Xử trí phản vệ (TT 51/2017), quản lý thuốc kiểm soát đặc biệt (TT 20/2017).\n"
                 "4. **Kho Dược & Tủ trực:** Kiểm tra số lượng tồn kho và hạn dùng FEFO nội viện."
             ),
-            answer_type="safe_abstention",
+            answer_type="clarification",
             source_status="unqualified_clinical_query",
             confidence=1.0,
             session_id=session.session_id,
@@ -118,7 +118,7 @@ async def handle_deep_rag_consultation(
             legal_basis="Thông tư 22/2011/TT-BYT & Quyết định 5948/QĐ-BYT"
         )
 
-    top_results = HybridRetriever().retrieve(query, top_k=1)
+    top_results = await HybridRetriever().retrieve_async(query, top_k=1)
     if not top_results:
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",

@@ -23,6 +23,12 @@ export function getApiBaseUrl(): string {
       (window.location.protocol === 'https:' && window.location.hostname === 'tauri.localhost');
 
     if (isTauri) {
+      try {
+        const customTauriUrl = localStorage.getItem('clinical_tauri_api_url');
+        if (customTauriUrl && customTauriUrl.trim()) {
+          return customTauriUrl.trim().replace(/\/+$/, '');
+        }
+      } catch {}
       return 'https://clinical-ward-api.onrender.com/api/v1';
     }
   }

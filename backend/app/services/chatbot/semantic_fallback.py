@@ -34,8 +34,12 @@ TOOL_SEMANTIC_PROFILES: Dict[ClinicalIntent, Dict[str, Any]] = {
         "negatives": {"dặn dò", "nhắc thuốc"}
     },
     ClinicalIntent.DISPENSE_MEDICATION: {
-        "anchors": {"cho", "cần", "tiêm", "truyền", "kê", "mượn", "xuất", "rút", "lấy", "cấp phát", "tiêm gấp", "truyền gấp", "stat"},
-        "negatives": {"nhắc thuốc", "lịch uống", "dặn dò", "thông tin", "kê đơn điện tử", "cpoe", "hỏi số lượng"}
+        "anchors": {"mượn", "mượn thuốc", "lập phiếu mượn", "mượn tủ trực", "xuất mượn", "xuất khẩn", "xuất khẩn cấp", "rút khẩn", "kê nợ", "phiếu nợ", "cho", "lấy", "xuất", "cần", "kê", "tiêm"},
+        "negatives": {
+            "nhắc thuốc", "lịch uống", "dặn dò", "thông tin", "kê đơn điện tử", "cpoe", "hỏi số lượng",
+            "mang thai", "có thai", "thai kỳ", "bà bầu", "sốt", "được không", "uống được không",
+            "dùng được không", "thế nào", "là gì", "tác dụng", "liều", "chỉ định", "chống chỉ định", "tương tác"
+        }
     }
 }
 
@@ -70,6 +74,27 @@ def fallback_semantic_classification(query: str) -> IntentExtractionResult:
     if any(lower.startswith(w) for w in ["chào", "xin chào", "hello", "hi", "cảm ơn", "tks"]):
         return IntentExtractionResult(intent=ClinicalIntent.CONVERSATIONAL_GREETING)
 
+    # 0. Nếu là câu hỏi chuyên môn lâm sàng, tra cứu hoặc câu hỏi nghi vấn -> 100% CLINICAL_CONSULTATION
+    # Tuy nhiên loại trừ các tác vụ vận hành kho/tủ lạnh/xuất thuốc cấp cứu
+    is_coldchain_op = any(w in lower for w in ["tủ lạnh", "kho lạnh", "vắc xin", "chuỗi lạnh", "bảo quản lạnh"])
+    is_dispense_op = bool(re.search(r"\d+\s*(lọ|ống|viên|bộ|hộp|chai|liều|cái|adre|morphin)", lower) or re.search(r"(?:tiêm|cho|lấy|cần|kê|xuất)\s+\d+", lower))
+
+    is_clinical_inquiry = (not is_coldchain_op and not is_dispense_op) and (
+        "?" in clean_q
+        or any(w in lower for w in [
+            "thế nào", "như thế nào", "được không", "được ko", "có dùng được", "có uống được", "có tiêm được",
+            "có nên", "uống được không", "dùng được không", "tiêm được không", "là gì", "là thuốc gì",
+            "tác dụng", "công dụng", "chỉ định", "chống chỉ định", "tương tác", "tương kỵ", "thành phần",
+            "dị ứng", "dược động học", "thời gian bán thải", "thải trừ", "sinh khả dụng", "liều lượng",
+            "liều dùng", "cách dùng", "uống lúc nào", "khi nào", "bao nhiêu", "an toàn", "nguy cơ", "lưu ý",
+            "thận trọng", "mang thai", "có thai", "thai kỳ", "bà bầu", "phụ nữ", "cho con bú", "sơ sinh",
+            "trẻ em", "người già", "cao tuổi", "suy gan", "suy thận", "bị sốt", "hạ sốt", "đau đầu",
+            "giải thích", "tư vấn", "hướng dẫn", "thông tin về", "tra cứu"
+        ])
+    )
+    if is_clinical_inquiry:
+        return IntentExtractionResult(intent=ClinicalIntent.CLINICAL_CONSULTATION, confidence=0.95)
+
     # Đánh giá độ cộng hưởng ngữ nghĩa với từng Tool Profile
     best_intent = ClinicalIntent.CLINICAL_CONSULTATION
     best_score = 0.0
@@ -85,7 +110,7 @@ def fallback_semantic_classification(query: str) -> IntentExtractionResult:
                 score *= 0.2  # Giảm điểm nếu không có chỉ dấu thiết bị
 
         if intent == ClinicalIntent.DISPENSE_MEDICATION:
-            has_qty = bool(re.search(r"\d+\s*(lọ|ống|viên|bộ|hộp|chai|liều)?", lower))
+            has_qty = bool(re.search(r"\d+\s*(lọ|ống|viên|bộ|hộp|chai|liều|cái|adre|morphin)?", lower)) or bool(re.search(r"(?:tiêm|cho|lấy|cần|kê|xuất)\s+\d+", lower))
             if not has_qty and not any(w in lower for w in ["mượn", "xuất khẩn", "rút khẩn"]):
                 score = 0.0
 

@@ -11,7 +11,8 @@ CLINICAL_STOPWORDS = {
     "bệnh nhân", "người bệnh", "khoa", "phòng", "viện", "dược", "điều trị", "chuyên luận", "dưới đây",
     "chống chỉ định", "tương tác", "quản lý", "hướng dẫn", "ngày", "phối hợp", "kết hợp", "chỉ định",
     "người lớn", "trẻ em", "giảm đau", "hạ sốt", "kháng sinh", "chống viêm", "an toàn", "cặp", "đơn",
-    "bạch", "bạch cầu", "cầu", "dòng", "lympho", "mạn", "xét nghiệm", "chỉ số"
+    "bạch", "bạch cầu", "cầu", "dòng", "lympho", "mạn", "xét nghiệm", "chỉ số",
+    "mỗi", "moi", "cứng", "cung", "cứng nhắc", "tóm tắt", "tom tat", "tháng", "năm", "tuần", "giờ", "lần"
 }
 
 DEICTIC_CONTINUATION_MARKERS = (

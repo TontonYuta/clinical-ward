@@ -23,9 +23,27 @@ from app.services.copilot_intents_prescription import (
     handle_prescription_audit_intent,
 )
 
+def is_inquiry_or_clinical_question(query: str, lower_query: str) -> bool:
+    """Kiểm tra câu hỏi có tính chất tra cứu thông tin y khoa / thắc mắc lâm sàng."""
+    if "?" in query or "?" in lower_query:
+        if not any(k in lower_query for k in ("tồn kho bao nhiêu", "còn bao nhiêu", "còn mấy")):
+            return True
+    inquiry_cues = (
+        "có dùng được", "có uống được", "có tiêm được", "có nên", "dùng được không", "uống được không",
+        "được không", "được ko", "hay không", "an toàn", "nguy cơ", "nguy hiểm", "lưu ý", "thận trọng",
+        "mang thai", "có thai", "thai kỳ", "bà bầu", "cho con bú", "suy gan", "suy thận", "trẻ em",
+        "nhi khoa", "sốt", "đau đầu", "thay thế", "thay bằng", "đổi thuốc", "tác dụng phụ",
+        "chỉ định", "chống chỉ định", "liều dùng", "liều tối đa", "uống lúc nào", "uống thế nào",
+        "tại sao", "vì sao", "làm sao", "mấy tiếng", "bao lâu", "hạn dùng bao lâu", "ngộ độc", "quá liều"
+    )
+    return any(cue in lower_query for cue in inquiry_cues)
+
 async def dispatch_clinical_subflows(
     query: str, lower_query: str, user_name: str, db: AsyncSession, user_role: str = "doctor"
 ) -> CopilotResponse | None:
+    # Nếu là câu hỏi y khoa / nghi vấn, không được nuốt thành form dặn dò hay CPOE rỗng
+    if is_inquiry_or_clinical_question(query, lower_query) and not any(w in lower_query for w in ("mở form", "mo form", "gửi email", "gửi mail", "gửi sms")):
+        return None
     is_advice = (
         any(w in lower_query for w in [
             "dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc",
@@ -75,6 +93,10 @@ async def dispatch_clinical_subflows(
 async def dispatch_operational_business(
     query: str, lower_query: str, user_name: str, db: AsyncSession
 ) -> CopilotResponse | None:
+    # Nếu là câu hỏi y khoa / nghi vấn, tuyệt đối không chặn bắt thành FEFO, giao ban, dự trù
+    if is_inquiry_or_clinical_question(query, lower_query) and not any(k in lower_query for k in ("tồn kho bao nhiêu", "còn bao nhiêu", "còn mấy")):
+        return None
+
     has_clinical_context = any(w in lower_query for w in [
         "chức năng thận", "chức năng gan", "chức năng tim", "chỉnh liều", "suy thận", "suy gan",
         "liều lượng", "uống", "tiêm", "thuốc", "mg", "mcg"

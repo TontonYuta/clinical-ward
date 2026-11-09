@@ -19,18 +19,7 @@ def _mask_api_key(key: str) -> str:
 
 def _load_vault_data() -> List[Dict[str, Any]]:
     if not os.path.exists(_VAULT_FILE):
-        default_keys = []
-        if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "MY_GEMINI_API_KEY":
-            default_keys.append({
-                "key_id": "default-gemini-key",
-                "name": "Khóa Hệ Thống Mặc Định (Từ Env)",
-                "raw_key": settings.GEMINI_API_KEY,
-                "provider": "gemini",
-                "status": "active",
-                "quota_status": "15 RPM / Normal",
-                "is_active": True,
-                "created_at": time.time()
-            })
+        default_keys: List[Dict[str, Any]] = []
         _save_vault_data(default_keys)
         return default_keys
     try:
@@ -142,15 +131,14 @@ def delete_api_key(key_id: str) -> bool:
     return False
 
 def get_active_api_key(provider: str = "gemini") -> Optional[str]:
-    """Lấy khóa API đang kích hoạt đầu tiên từ Key Vault, fallback về settings.GEMINI_API_KEY."""
+    """Lấy khóa API đang kích hoạt đầu tiên từ Key Vault (Quản lý độc quyền qua Clinical AI Monitor)."""
     keys = _load_vault_data()
     for k in keys:
         if k.get("provider") == provider and k.get("is_active") and k.get("status") == "active":
             raw = k.get("raw_key")
             if raw and len(raw.strip()) >= 10:
                 return raw.strip()
-    key = settings.GEMINI_API_KEY
-    return key.strip() if key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10 else None
+    return None
 
 def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited") -> Optional[str]:
     """Tự động đánh dấu khóa bị lỗi hạn ngạch 429/cạn token và xoay vòng kích hoạt khóa dự phòng tiếp theo."""

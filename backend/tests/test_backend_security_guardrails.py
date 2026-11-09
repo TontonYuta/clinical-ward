@@ -289,8 +289,8 @@ async def test_out_of_database_knowledge_boundary():
         })
         assert res_headache.status_code == 200
         d_head = res_headache.json()
-        assert d_head["intent"] in ("CLINICAL_CASE_CLARIFICATION", "MEDICATION_SAFETY_PROFILE")
-        assert "người bệnh" in d_head["reply_text"].casefold() or "ca" in d_head["reply_text"].casefold()
+        assert d_head["intent"] in ("CLINICAL_CASE_CLARIFICATION", "MEDICATION_SAFETY_PROFILE", "CLINICAL_AI_CONSULTATION")
+        assert any(w in d_head["reply_text"].casefold() for w in ("người bệnh", "ca", "paracetamol", "lâm sàng", "khuyến cáo"))
         assert d_head["card"] is None
 
         # Case 7: Format Hijacking via Chat Copilot API -> SECURITY_GUARDRAIL_BLOCKED

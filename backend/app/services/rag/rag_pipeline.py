@@ -31,8 +31,8 @@ async def execute_clinical_rag(
     # 1. Mở rộng đồ thị tri thức lâm sàng nếu cần (LightRAG / MedGraphRAG Layer)
     kg_data = expand_clinical_graph(query, patient_info=patient_info) if budget_cfg.include_graph else {}
 
-    # 2. Truy xuất lai Hybrid Retrieval có cấp phát ngân sách (Adaptive Top-K RRF k=60)
-    retrieved_chunks = retriever.retrieve(
+    # 2. Truy xuất lai Hybrid Retrieval có cấp phát ngân sách (Adaptive Top-K RRF k=60, Async Parallel)
+    retrieved_chunks = await retriever.retrieve_async(
         query=query,
         kg_entities=kg_data.get("kg_entities", []) if kg_data else [],
         top_k=budget_cfg.top_k

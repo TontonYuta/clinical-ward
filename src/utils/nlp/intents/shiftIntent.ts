@@ -7,10 +7,12 @@ import { AgentActionCard, ChatMessage } from '../../../types/clinical';
 import { anyKeyword, ClinicalQueryState, ProcessedQueryResult } from '../types';
 
 export function matchShiftIntent(lower: string): boolean {
+  if (lower.includes('?') && !lower.includes('đối soát') && !lower.includes('giao ban')) {
+    return false;
+  }
   return anyKeyword(lower, [
-    'đối soát', 'giao ban', 'ca trực', 'ca đêm', 'báo cáo ca', 'chốt ca', 'bàn giao ca', '07:00',
-    'lệch sổ', 'tổng hợp nợ', 'nợ vỏ', 'kiểm tra nợ', 'sổ nợ', 'phiếu nợ', 'vỏ morphin', 'vỏ ống',
-    'chưa nộp vỏ', 'thu hồi vỏ'
+    'đối soát ca trực', 'giao ban ca trực', 'báo cáo ca trực', 'chốt ca trực', 'bàn giao ca trực',
+    'đối soát 07:00', 'giao ban 07:00', 'tổng hợp nợ ca trực', 'lệch sổ ca trực', 'đối soát sổ nợ'
   ]);
 }
 

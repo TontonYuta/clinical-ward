@@ -131,12 +131,13 @@ def resolve_citation_document(
     legal_basis: str,
     section: str,
     query: str = "",
-    active_drug: str = ""
+    active_drug: str = "",
+    requested_field: str = ""
 ) -> tuple[str | None, str | None, int | None]:
     """
     Chuẩn hóa URL PDF, Document ID và Số Trang chính xác cho Badge trích dẫn.
     Đảm bảo 100% trỏ đúng số trang chuyên luận của thuốc hoặc văn bản pháp luật,
-    loại bỏ hoàn toàn lỗi rơi về Trang 1 vô nghĩa.
+    loại bỏ hoàn toàn lỗi rơi về Trang 1 vô nghĩa bằng Dynamic Grounding.
     """
     sources, by_inn, token_map = load_source_documents()
     pool_text = f"{source} {legal_basis} {section} {query} {active_drug}".casefold()
@@ -170,9 +171,21 @@ def resolve_citation_document(
     elif "3618" in pool_text or "quy trinh giam dinh bhyt" in unacc_pool:
         match = next((s for s in sources if s.get("id") == "qd-3618-2022"), None)
     elif "98/2021" in pool_text or "nghi dinh 98" in unacc_pool or "thiet bi y te" in unacc_pool or "may tho" in unacc_pool:
-        return "/pdf/Nghi_Dinh_98_2021_ND_CP_Trang_Thiet_Bi_Y_Te.pdf#page=1", "nd-98-2021", 1
+        match = next((s for s in sources if s.get("id") == "nd-98-2021"), None)
+        if match is None:
+            match = {
+                "id": "nd-98-2021",
+                "public_path": "public/pdf/Nghi_Dinh_98_2021_ND_CP_Trang_Thiet_Bi_Y_Te.pdf",
+                "title": "Nghị định 98/2021/NĐ-CP (Quản Lý Trang Thiết Bị Y Tế)"
+            }
     elif "36/2018" in pool_text or "thong tu 36" in unacc_pool or "gsp" in unacc_pool:
-        return "/pdf/Thong_Tu_36_2018_TT_BYT_GSP.pdf#page=1", "tt-36-2018", 1
+        match = next((s for s in sources if s.get("id") == "tt-36-2018"), None)
+        if match is None:
+            match = {
+                "id": "tt-36-2018",
+                "public_path": "public/pdf/Thong_Tu_36_2018_TT_BYT_GSP.pdf",
+                "title": "Thông tư 36/2018/TT-BYT (Thực Hành Tốt Bảo Quản Thuốc GSP)"
+            }
 
     # Nếu không phải văn bản đặc thù, kiểm tra xem có phải Dược thư Quốc gia không
     if match is None:
@@ -202,7 +215,7 @@ def resolve_citation_document(
     if page_match:
         page = int(page_match.group(1))
 
-    # b) Nếu là Dược thư Quốc gia và chưa có số trang, tra cứu chuyên luận
+    # b) Nếu là Dược thư Quốc gia và chưa có số trang, tra cứu chuyên luận và tiểu mục
     if page is None and match.get("id") == "dtqg-v2-2015":
         search_targets = [
             active_drug,
@@ -217,11 +230,61 @@ def resolve_citation_document(
                 if record:
                     break
 
-        if record and record.get("start_page"):
-            try:
-                page = int(record["start_page"])
-            except (ValueError, TypeError):
-                page = None
+        if record:
+            from app.services.chatbot.dynamic_inn_bridge import get_monograph_section_page
+            resolved_page, _ = get_monograph_section_page(record, requested_field=requested_field, query=f"{query} {section}")
+            if resolved_page:
+                page = resolved_page
+            elif record.get("start_page"):
+                try:
+                    page = int(record["start_page"])
+                except (ValueError, TypeError):
+                    page = None
+
+    # c) Nếu là văn bản quy phạm pháp luật, xác định số trang theo Điều / Khoản
+    if page is None and match:
+        doc_id = match.get("id")
+        if doc_id == "tt-20-2017":
+            if any(w in unacc_pool for w in ("15", "vo ong", "thu hoi", "tieu huy")):
+                page = 8
+            elif any(w in unacc_pool for w in ("4", "5", "danh muc")):
+                page = 2
+            else:
+                page = 1
+        elif doc_id == "tt-22-2011":
+            if any(w in unacc_pool for w in ("10", "tu truc", "co so", "mau 01")):
+                page = 4
+            elif any(w in unacc_pool for w in ("5", "nhiem vu")):
+                page = 2
+            else:
+                page = 1
+        elif doc_id == "tt-51-2017":
+            if any(w in unacc_pool for w in ("iv", "so do", "cap cuu")):
+                page = 5
+            elif any(w in unacc_pool for w in ("iii", "phac do", "lieu", "adrenalin", "tiem bap")):
+                page = 4
+            else:
+                page = 2
+        elif doc_id == "tt-26-2025":
+            if any(w in unacc_pool for w in ("4", "6", "cpoe", "dien tu")):
+                page = 2
+            else:
+                page = 1
+        elif doc_id == "tt-23-2011":
+            if any(w in unacc_pool for w in ("6", "bao quan", "han dung")):
+                page = 3
+            else:
+                page = 1
+        elif doc_id == "nd-98-2021":
+            if any(w in unacc_pool for w in ("34", "su co", "bao hong", "may tho")):
+                page = 14
+            else:
+                page = 1
+        elif doc_id == "tt-36-2018":
+            if any(w in unacc_pool for w in ("day chuyen lanh", "kho lanh", "nhiet do", "gsp")):
+                page = 15
+            else:
+                page = 1
 
     public_path = match.get("public_path")
     url = f"/{public_path.removeprefix('public/')}" if public_path else None

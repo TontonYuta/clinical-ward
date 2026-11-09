@@ -62,6 +62,16 @@ SCENARIOS: List[BaseScenario] = [
     AdrReportingScenario(),
 ]
 
+# Các kịch bản tĩnh chuyên biệt chỉ phục vụ hồ sơ ca bệnh hoặc đơn thuốc định danh cụ thể:
+# Khi người dùng đặt câu hỏi chuyên môn/dược lý lâm sàng tổng quát, nhường quyền cho SOTA LightRAG & Gemini Grounding.
+PATIENT_OR_RX_SPECIFIC_SCENARIOS = {
+    "statin_food", "red_man", "headache_pain",
+    "gastroenteritis_dehydration", "gerd_reflux", "oncology_specialty",
+    "hypertension_specialty", "salbutamol_asthma", "esomeprazole_ulcer",
+    "amiodarone_qt", "diazepam_seizure", "noradrenalin_shock",
+    "high_alert_kcl", "opioid_mme", "ceftriaxone_calcium"
+}
+
 async def dispatch_clinical_scenario(
     query: str,
     lower_query: str,
@@ -72,6 +82,14 @@ async def dispatch_clinical_scenario(
 ) -> Optional[CopilotResponse]:
     ctx, session = await build_scenario_context(query, lower_query, user_name, user_role, session_id, db)
 
+    has_explicit_patient_or_rx = bool(ctx.patient) or any(
+        t in lower_query for t in (
+            "bn-", "bn ", "bệnh nhân", "người bệnh này", "hồ sơ",
+            "rx-", "đơn thuốc", "đơn này",
+            "võ minh trí", "đặng thị lan", "nguyễn quốc bảo"
+        )
+    )
+
     if any(term in lower_query for term in ("sốt", "hạ sốt", "thân nhiệt", "nhiệt độ cơ thể")):
         fever_scenario = next(s for s in SCENARIOS if s.scenario_id == "fever_triage")
         if fever_scenario.can_handle(query, lower_query, ctx):
@@ -81,6 +99,10 @@ async def dispatch_clinical_scenario(
                 return resp
 
     for scenario in SCENARIOS:
+        # Nếu là kịch bản mẫu tĩnh và câu hỏi không có người bệnh/đơn thuốc đích danh, nhường quyền cho SOTA RAG
+        if scenario.scenario_id in PATIENT_OR_RX_SPECIFIC_SCENARIOS and not has_explicit_patient_or_rx:
+            continue
+
         if scenario.scenario_id == "medication_deictic_followup" and session.active_medication_name:
             explicit_drug = any(
                 len(alias) >= 4 and alias.casefold() in lower_query

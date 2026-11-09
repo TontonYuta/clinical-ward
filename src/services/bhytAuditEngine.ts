@@ -236,64 +236,105 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
     }
 
     // 3. Kiểm tra chẩn đoán ICD-10 (QĐ 3618 Điều 14 & Điều kiện thanh toán riêng Cột 8 TT 20)
-    if (rule.approvedIcd10Prefixes && rule.approvedIcd10Prefixes.length > 0) {
-      const matchesIcd = allIcd10s.some(icd => 
-        rule.approvedIcd10Prefixes!.some(prefix => isIcd10Matching(icd, prefix))
-      );
-      if (!matchesIcd) {
-        const risk = itemCost;
-        atRiskCostVnd += risk;
-        const conditionDetail = rule.specialConditions || `Quỹ BHYT chỉ thanh toán cho nhóm bệnh lý [${rule.approvedIcd10Prefixes.join(', ')}]`;
-        violations.push({
-          id: `v-icd-${item.id || index}`,
-          drugCode: item.drugCode,
-          drugName: item.drugName,
-          activeIngredient: rule.activeIngredient,
-          severity: 'REJECT',
-          category: 'ICD10_UNSUPPORTED',
-          title: `Chẩn đoán không khớp điều kiện BHYT (${rule.activeIngredient})`,
-          detail: `Mã chẩn đoán hiện tại [${allIcd10s.join(', ') || 'Chưa có chẩn đoán'}] không khớp với điều kiện thanh toán BHYT của ${rule.activeIngredient} (${conditionDetail}).`,
-          legalRef: {
-            docCode: '3618/QĐ-BHXH',
-            docTitle: 'Quyết định 3618/QĐ-BHXH',
-            section: 'Điều 14 (Giám định chỉ định điều trị và thuốc)',
-            pageNumber: 18,
-            localPdfPath: QD3618_PDF_PATH
-          },
-          rejectionRiskVnd: risk,
-          action: `Bổ sung mã chẩn đoán ICD-10 phù hợp (${rule.approvedIcd10Prefixes.join(', ')}) nếu bệnh nhân có bệnh lý kèm theo, hoặc thay thế bằng thuốc tương đương.`
-        });
+    // Nếu là Hóa đơn mua hàng / Phiếu xuất kho không gắn ca bệnh cụ thể -> Bỏ qua kiểm tra ICD-10 để tránh phạt sai
+    const isInvoiceDoc = ['HOA_DON_VAT', 'PHIEU_XUAT_KHO', 'HOA_DON_BAN_LE'].includes(payload.documentType || '');
+    if (!isInvoiceDoc || allIcd10s.length > 0) {
+      if (rule.approvedIcd10Prefixes && rule.approvedIcd10Prefixes.length > 0) {
+        const matchesIcd = allIcd10s.some(icd => 
+          rule.approvedIcd10Prefixes!.some(prefix => isIcd10Matching(icd, prefix))
+        );
+        if (!matchesIcd) {
+          const risk = itemCost;
+          atRiskCostVnd += risk;
+          const conditionDetail = rule.specialConditions || `Quỹ BHYT chỉ thanh toán cho nhóm bệnh lý [${rule.approvedIcd10Prefixes.join(', ')}]`;
+          violations.push({
+            id: `v-icd-${item.id || index}`,
+            drugCode: item.drugCode,
+            drugName: item.drugName,
+            activeIngredient: rule.activeIngredient,
+            severity: 'REJECT',
+            category: 'ICD10_UNSUPPORTED',
+            title: `Chẩn đoán không khớp điều kiện BHYT (${rule.activeIngredient})`,
+            detail: `Mã chẩn đoán hiện tại [${allIcd10s.join(', ') || 'Chưa có chẩn đoán'}] không khớp với điều kiện thanh toán BHYT của ${rule.activeIngredient} (${conditionDetail}).`,
+            legalRef: {
+              docCode: '3618/QĐ-BHXH',
+              docTitle: 'Quyết định 3618/QĐ-BHXH',
+              section: 'Điều 14 (Giám định chỉ định điều trị và thuốc)',
+              pageNumber: 18,
+              localPdfPath: QD3618_PDF_PATH
+            },
+            rejectionRiskVnd: risk,
+            action: `Bổ sung mã chẩn đoán ICD-10 phù hợp (${rule.approvedIcd10Prefixes.join(', ')}) nếu bệnh nhân có bệnh lý kèm theo, hoặc thay thế bằng thuốc tương đương.`
+          });
+        }
+      }
+
+      // Kiểm tra chống chỉ định mã bệnh nếu có
+      if (rule.contraindicatedIcd10Prefixes && rule.contraindicatedIcd10Prefixes.length > 0) {
+        const isContraindicated = allIcd10s.some(icd =>
+          rule.contraindicatedIcd10Prefixes!.some(prefix => isIcd10Matching(icd, prefix))
+        );
+        if (isContraindicated) {
+          const risk = itemCost;
+          atRiskCostVnd += risk;
+          violations.push({
+            id: `v-contra-icd-${item.id || index}`,
+            drugCode: item.drugCode,
+            drugName: item.drugName,
+            activeIngredient: rule.activeIngredient,
+            severity: 'REJECT',
+            category: 'ICD10_UNSUPPORTED',
+            title: 'Chống chỉ định theo mã ICD-10',
+            detail: `Chẩn đoán [${allIcd10s.join(', ')}] thuộc nhóm chống chỉ định quỹ BHYT không thanh toán cho hoạt chất này.`,
+            legalRef: {
+              docCode: '3618/QĐ-BHXH',
+              docTitle: 'Quyết định 3618/QĐ-BHXH',
+              section: 'Điều 14 (Giám định chỉ định điều trị và thuốc)',
+              pageNumber: 18,
+              localPdfPath: QD3618_PDF_PATH
+            },
+            rejectionRiskVnd: risk,
+            action: 'Ngưng chỉ định thuốc này đối với nhóm bệnh chống chỉ định.'
+          });
+        }
       }
     }
 
-    // Kiểm tra chống chỉ định mã bệnh nếu có
-    if (rule.contraindicatedIcd10Prefixes && rule.contraindicatedIcd10Prefixes.length > 0) {
-      const isContraindicated = allIcd10s.some(icd =>
-        rule.contraindicatedIcd10Prefixes!.some(prefix => isIcd10Matching(icd, prefix))
-      );
-      if (isContraindicated) {
-        const risk = itemCost;
-        atRiskCostVnd += risk;
-        violations.push({
-          id: `v-contra-icd-${item.id || index}`,
-          drugCode: item.drugCode,
-          drugName: item.drugName,
-          activeIngredient: rule.activeIngredient,
-          severity: 'REJECT',
-          category: 'ICD10_UNSUPPORTED',
-          title: 'Chống chỉ định theo mã ICD-10',
-          detail: `Chẩn đoán [${allIcd10s.join(', ')}] thuộc nhóm chống chỉ định quỹ BHYT không thanh toán cho hoạt chất này.`,
-          legalRef: {
-            docCode: '3618/QĐ-BHXH',
-            docTitle: 'Quyết định 3618/QĐ-BHXH',
-            section: 'Điều 14 (Giám định chỉ định điều trị và thuốc)',
-            pageNumber: 18,
-            localPdfPath: QD3618_PDF_PATH
-          },
-          rejectionRiskVnd: risk,
-          action: 'Ngưng chỉ định thuốc này đối với nhóm bệnh chống chỉ định.'
-        });
-      }
+    // 3b. Kiểm tra thuốc cận hạn (< 6 tháng) đối với Hóa đơn / Bảng kê nhập xuất dược phẩm
+    if (isInvoiceDoc && item.expiryDate) {
+      try {
+        let expDate: Date | null = null;
+        if (item.expiryDate.includes('/')) {
+          const parts = item.expiryDate.split('/');
+          if (parts.length === 3) expDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        } else if (item.expiryDate.includes('-')) {
+          expDate = new Date(item.expiryDate);
+        }
+        if (expDate && !isNaN(expDate.getTime())) {
+          const daysDiff = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          if (daysDiff >= 0 && daysDiff < 180) {
+            violations.push({
+              id: `v-expiry-${item.id || index}`,
+              drugCode: item.drugCode,
+              drugName: item.drugName,
+              activeIngredient: item.activeIngredient || item.drugName,
+              severity: 'WARNING',
+              category: 'PARTIAL_PAYMENT_ALERT',
+              title: 'Cảnh báo thuốc cận hạn dùng (< 6 tháng)',
+              detail: `Lô thuốc "${item.batchNumber || 'N/A'}" có hạn dùng (${item.expiryDate}) còn ${daysDiff} ngày. Cần giám sát và ưu tiên xuất kho FEFO theo Thông tư 36/2018/TT-BYT GSP.`,
+              legalRef: {
+                docCode: '36/2018/TT-BYT',
+                docTitle: 'Thông tư 36/2018/TT-BYT (GSP)',
+                section: 'Mục 12 Phụ lục I (Quản lý hạn dùng FEFO)',
+                pageNumber: 14,
+                localPdfPath: '/pdf/Thong_Tu_36_2018_TT_BYT_GSP.pdf'
+              },
+              rejectionRiskVnd: 0,
+              action: 'Gắn nhãn cận hạn, bảo quản khu vực riêng và ưu tiên cấp phát trước.'
+            });
+          }
+        }
+      } catch {}
     }
 
     // 4. Kiểm tra trùng lặp nhóm điều trị (QĐ 3618 Mục 3.2)

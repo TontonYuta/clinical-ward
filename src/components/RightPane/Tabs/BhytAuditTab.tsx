@@ -30,6 +30,7 @@ import { bhytApi } from '../../../services/api/bhytApi';
 import {
   parseQd130Xml,
   generateSampleQd130Xml,
+  generateQd130XmlFromPayload,
   extractPrescriptionFromDocument
 } from '../../../services/bhytIngestion';
 import { compressImageForOcr } from '../../../utils/imageOptimization';
@@ -131,23 +132,65 @@ export const BhytAuditTab: React.FC = () => {
     });
   }, [activePayload, hospitalRank, treatmentType]);
 
-  // Tính toán các chỉ số định lượng thuần túy của đơn thuốc (Fact Sheet Metrics)
+  // Tính toán các chỉ số định lượng thuần túy & tài chính BHYT (Fact Sheet Metrics)
   const pureMetrics = useMemo(() => {
     let grossCost = 0;
+    let vatCost = 0;
     let maxDaysSupply = 0;
+    let nearExpiryCount = 0;
+    let bhytShareCost = 0;
     const groupCount: Record<string, number> = {};
+    const now = Date.now();
 
     activePayload.items.forEach((item) => {
-      grossCost += (item.quantity || 0) * (item.unitPrice || 0);
+      const q = item.quantity || 0;
+      const p = item.unitPrice || 0;
+      const lineCost = q * p;
+      grossCost += lineCost;
+
+      const vat = item.vatRate || 0;
+      vatCost += Math.round(lineCost * (vat / 100));
+
       maxDaysSupply = Math.max(maxDaysSupply, item.daysSupply || 0);
-      const rule = findBhytRule(item.activeIngredient || item.drugName);
+
+      const rule = findBhytRule(item.activeIngredient || item.drugName, item.route);
       const groupName = rule?.atcGroupName || 'Thuốc điều trị khác';
       groupCount[groupName] = (groupCount[groupName] || 0) + 1;
+
+      // Tính BHYT chi trả dự kiến theo tỷ lệ thanh toán của Thông tư 20 và mức hưởng 80%
+      const ratio = rule?.paymentRatio ?? 1.0;
+      const copayRate = 0.8;
+      bhytShareCost += Math.round(lineCost * ratio * copayRate);
+
+      // Đếm số lô cận hạn < 180 ngày theo Thông tư 36/2018/TT-BYT GSP
+      if (item.expiryDate) {
+        try {
+          let expDate: Date | null = null;
+          if (item.expiryDate.includes('/')) {
+            const parts = item.expiryDate.split('/');
+            if (parts.length === 3) expDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+          } else if (item.expiryDate.includes('-')) {
+            expDate = new Date(item.expiryDate);
+          }
+          if (expDate && !isNaN(expDate.getTime())) {
+            const daysDiff = Math.ceil((expDate.getTime() - now) / (1000 * 60 * 60 * 24));
+            if (daysDiff >= 0 && daysDiff < 180) nearExpiryCount++;
+          }
+        } catch {}
+      }
     });
+
+    const netCost = grossCost + vatCost;
+    const patientShareCost = Math.max(0, netCost - bhytShareCost);
 
     return {
       totalItems: activePayload.items.length,
       grossCost,
+      vatCost,
+      netCost,
+      bhytShareCost,
+      patientShareCost,
+      nearExpiryCount,
       maxDaysSupply,
       groupCount,
       uniqueGroupsCount: Object.keys(groupCount).length
@@ -685,6 +728,16 @@ export const BhytAuditTab: React.FC = () => {
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
 
+  // Tự động sinh XML 130 từ activePayload khi chuyển sang tab XML nếu ô nhập đang trống hoặc là XML mẫu cũ
+  useEffect(() => {
+    if (activeAnalysisTab === 'xml' && activePayload.items.length > 0) {
+      if (!xmlInputText.trim() || xmlInputText.includes('Nguyễn Văn Bình')) {
+        const xml = generateQd130XmlFromPayload(activePayload);
+        setXmlInputText(xml);
+      }
+    }
+  }, [activeAnalysisTab, activePayload]);
+
   // Xử lý nạp và ghi nhận log
   const handleRunOcrProcess = (
     overridePayload?: BhytPrescriptionPayload,
@@ -703,14 +756,20 @@ export const BhytAuditTab: React.FC = () => {
     }, 250);
   };
 
-  // Chỉnh sửa từng ô input trong bảng thuốc
+  // Chỉnh sửa từng ô input trong bảng thuốc (Tự động tính toán số học 100% Logic)
   const handleItemChange = (index: number, field: keyof BhytPrescriptionItem, value: any) => {
     setActivePayload(prev => {
       const nextItems = [...prev.items];
-      nextItems[index] = {
+      const updated = {
         ...nextItems[index],
         [field]: value
       };
+      if (field === 'quantity' || field === 'unitPrice') {
+        const q = field === 'quantity' ? Number(value || 0) : Number(updated.quantity || 0);
+        const p = field === 'unitPrice' ? Number(value || 0) : Number(updated.unitPrice || 0);
+        updated.totalPrice = Math.round(q * p);
+      }
+      nextItems[index] = updated;
       return {
         ...prev,
         items: nextItems
@@ -794,6 +853,44 @@ export const BhytAuditTab: React.FC = () => {
     } catch {
       window.alert('Định dạng XML không hợp lệ.');
     }
+  };
+
+  // Tự động đồng bộ hóa XML 130 thời gian thực từ đơn thuốc / hóa đơn hiện tại
+  const handleSyncCurrentPrescriptionToXml = () => {
+    if (activePayload.items.length === 0) {
+      window.alert('Chưa có danh mục thuốc để sinh XML. Vui lòng tải lên đơn thuốc/hóa đơn hoặc bấm "+ Thêm thuốc".');
+      return;
+    }
+    const xml = generateQd130XmlFromPayload(activePayload);
+    setXmlInputText(xml);
+    setSubstitutionToast({
+      message: `Đã đồng bộ ${activePayload.items.length} mặt hàng thuốc vào XML Bảng 2 (QĐ 130)!`,
+      type: 'success'
+    });
+    setTimeout(() => setSubstitutionToast(null), 3000);
+  };
+
+  const handleCopyXml = () => {
+    if (!xmlInputText.trim()) return;
+    navigator.clipboard.writeText(xmlInputText);
+    setSubstitutionToast({
+      message: 'Đã sao chép nội dung XML Bảng 2 (QĐ 130) vào bộ nhớ tạm!',
+      type: 'success'
+    });
+    setTimeout(() => setSubstitutionToast(null), 3000);
+  };
+
+  const handleDownloadXml = () => {
+    if (!xmlInputText.trim()) return;
+    const blob = new Blob([xmlInputText], { type: 'application/xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `QD130_BANG2_${activePayload.prescriptionId || 'EXPORT'}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleLoadSampleXml = () => {
@@ -1438,35 +1535,59 @@ export const BhytAuditTab: React.FC = () => {
                   )}
                 </div>
 
-                {/* KHỐI B: TÓM TẮT ĐỊNH LƯỢNG LÂM SÀNG THUẦN (METRICS CARDS) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Tổng khoản thuốc</span>
-                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
-                      {pureMetrics.totalItems} <span className="text-xs font-medium text-slate-500">khoản</span>
+                {/* KHỐI B: TỔNG QUAN SỐ LIỆU & PHÂN BỔ TÀI CHÍNH BHYT */}
+                <div className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs space-y-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-2.5">
+                      <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Khoản thuốc</span>
+                      <div className="text-lg font-bold text-slate-900 mt-0.5 font-sans tabular-nums">
+                        {pureMetrics.totalItems} <span className="text-xs font-normal text-slate-500">khoản</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-2.5">
+                      <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Nhóm ATC</span>
+                      <div className="text-lg font-bold text-slate-900 mt-0.5 font-sans tabular-nums">
+                        {pureMetrics.uniqueGroupsCount} <span className="text-xs font-normal text-slate-500">nhóm</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-teal-50/70 border border-teal-200/70 rounded-lg p-2.5">
+                      <span className="text-2xs font-semibold text-teal-800 uppercase tracking-wider block">Quỹ BHYT chi trả</span>
+                      <div className="text-lg font-bold text-teal-900 mt-0.5 font-sans tabular-nums">
+                        {pureMetrics.bhytShareCost.toLocaleString('vi-VN')} <span className="text-xs font-normal text-teal-700">đ</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-2.5">
+                      <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Tổng thanh toán</span>
+                      <div className="text-lg font-bold text-slate-900 mt-0.5 font-sans tabular-nums">
+                        {pureMetrics.netCost.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-500">đ</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Nhóm dược lý ATC</span>
-                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
-                      {pureMetrics.uniqueGroupsCount} <span className="text-xs font-medium text-slate-500">nhóm</span>
-                    </div>
-                  </div>
+                  {/* Thanh chi tiết phân bổ tài chính thu gọn */}
+                  {pureMetrics.totalItems > 0 && (
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs">
+                      <div className="flex items-center gap-3.5 flex-wrap text-slate-600 font-sans tabular-nums">
+                        <span>Tiền hàng: <strong className="text-slate-800">{pureMetrics.grossCost.toLocaleString('vi-VN')} đ</strong></span>
+                        {pureMetrics.vatCost > 0 && (
+                          <span>Thuế VAT: <strong className="text-slate-700">+{pureMetrics.vatCost.toLocaleString('vi-VN')} đ</strong></span>
+                        )}
+                        <span>BN đồng chi trả: <strong className="text-amber-800">{pureMetrics.patientShareCost.toLocaleString('vi-VN')} đ</strong></span>
+                        {pureMetrics.maxDaysSupply > 0 && (
+                          <span className="text-slate-400">· Đợt dùng: {pureMetrics.maxDaysSupply} ngày</span>
+                        )}
+                      </div>
 
-                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Đợt dùng cao nhất</span>
-                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
-                      {pureMetrics.maxDaysSupply > 0 ? pureMetrics.maxDaysSupply : '—'} <span className="text-xs font-medium text-slate-500">ngày</span>
+                      {pureMetrics.nearExpiryCount > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-2xs font-medium">
+                          ⚠️ {pureMetrics.nearExpiryCount} thuốc cận hạn (&lt; 6 tháng)
+                        </span>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block">Tổng tiền dự kiến</span>
-                    <div className="text-xl font-bold text-slate-900 mt-1 font-sans tabular-nums">
-                      {pureMetrics.grossCost.toLocaleString('vi-VN')} <span className="text-xs font-medium text-slate-500">đ</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* KHỐI C: BẢNG GIẢI PHẪU DỮ LIỆU ĐƠN THUỐC THUẦN TÚY (FACT-SHEET TABLE & HITL) */}
@@ -1579,25 +1700,51 @@ export const BhytAuditTab: React.FC = () => {
                                       )}
                                     </div>
                                   )}
-                                  {(item.batchNumber || item.expiryDate) && (
-                                    <div className="mt-1 flex items-center gap-1.5 flex-wrap text-2xs text-slate-600 font-sans tabular-nums">
-                                      {item.batchNumber && (
-                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium border border-slate-200">
-                                          Lô: <strong className="ml-1 text-slate-900 font-bold">{item.batchNumber}</strong>
-                                        </span>
-                                      )}
-                                      {item.expiryDate && (
-                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium border border-slate-200">
-                                          HSD: <strong className="ml-1 text-slate-900 font-bold">{item.expiryDate}</strong>
-                                        </span>
-                                      )}
-                                      {item.unit && item.unit !== 'Viên' && (
-                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-                                          ĐVT: {item.unit}
-                                        </span>
-                                      )}
+                                  <div className="mt-1.5 pt-1 border-t border-slate-100 flex items-center gap-1.5 text-2xs flex-wrap">
+                                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/80 rounded px-1.5 py-0.5">
+                                      <span className="text-slate-400 font-medium">Lô:</span>
+                                      <input
+                                        type="text"
+                                        value={item.batchNumber || ''}
+                                        onChange={(e) => handleItemChange(idx, 'batchNumber', e.target.value)}
+                                        placeholder="Số lô"
+                                        className="w-16 h-5 bg-transparent font-mono text-slate-800 focus:outline-none text-2xs"
+                                      />
                                     </div>
-                                  )}
+                                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/80 rounded px-1.5 py-0.5">
+                                      <span className="text-slate-400 font-medium">HSD:</span>
+                                      <input
+                                        type="text"
+                                        value={item.expiryDate || ''}
+                                        onChange={(e) => handleItemChange(idx, 'expiryDate', e.target.value)}
+                                        placeholder="Hạn dùng"
+                                        className="w-20 h-5 bg-transparent font-mono text-slate-800 focus:outline-none text-2xs"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/80 rounded px-1.5 py-0.5">
+                                      <span className="text-slate-400 font-medium">ĐVT:</span>
+                                      <input
+                                        type="text"
+                                        value={item.unit || 'Viên'}
+                                        onChange={(e) => handleItemChange(idx, 'unit', e.target.value)}
+                                        placeholder="ĐVT"
+                                        className="w-12 h-5 bg-transparent text-slate-800 focus:outline-none text-2xs"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/80 rounded px-1.5 py-0.5">
+                                      <span className="text-slate-400 font-medium">VAT:</span>
+                                      <select
+                                        value={item.vatRate ?? 0}
+                                        onChange={(e) => handleItemChange(idx, 'vatRate', Number(e.target.value))}
+                                        className="bg-transparent text-slate-800 focus:outline-none text-2xs cursor-pointer"
+                                      >
+                                        <option value={0}>0%</option>
+                                        <option value={5}>5%</option>
+                                        <option value={8}>8%</option>
+                                        <option value={10}>10%</option>
+                                      </select>
+                                    </div>
+                                  </div>
                                 </td>
 
                                 <td className="py-2.5 px-2.5 border-r border-slate-200 text-slate-700">
@@ -2027,35 +2174,64 @@ export const BhytAuditTab: React.FC = () => {
                ------------------------------------------------------------- */}
             {activeAnalysisTab === 'xml' && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Phân tích XML Bảng 2 (Quyết định 130/QĐ-BYT)</h3>
-                    <p className="text-sm text-slate-600">Dán dữ liệu XML trích xuất từ HIS để tự động giám định vi phạm</p>
+                    <h3 className="text-base font-bold text-slate-900">Phân tích &amp; Xuất XML Bảng 2 (Quyết định 130/QĐ-BYT)</h3>
+                    <p className="text-sm text-slate-600">Đồng bộ hai chiều với dữ liệu đơn thuốc/hóa đơn theo chuẩn giám định BHYT Quốc gia</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleLoadSampleXml}
-                    className="px-3.5 py-1.5 rounded-md border border-slate-300 text-sm font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer"
-                  >
-                    Dán XML Mẫu
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleSyncCurrentPrescriptionToXml}
+                      className="px-3 py-1.5 rounded-md bg-teal-50 border border-teal-300 text-sm font-semibold text-teal-800 hover:bg-teal-100 cursor-pointer transition flex items-center gap-1 shadow-2xs"
+                      title="Đồng bộ danh mục thuốc từ đơn/hóa đơn hiện tại sang XML 130"
+                    >
+                      <span>🔄 Đồng bộ từ đơn hiện tại</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyXml}
+                      disabled={!xmlInputText.trim()}
+                      className="px-3 py-1.5 rounded-md border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-40 transition shadow-2xs"
+                    >
+                      📋 Sao chép XML
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadXml}
+                      disabled={!xmlInputText.trim()}
+                      className="px-3 py-1.5 rounded-md border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-40 transition shadow-2xs"
+                    >
+                      💾 Tải file XML
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLoadSampleXml}
+                      className="px-2.5 py-1.5 rounded-md border border-slate-200 text-xs font-medium text-slate-500 hover:bg-slate-100 cursor-pointer"
+                    >
+                      Dán XML Mẫu
+                    </button>
+                  </div>
                 </div>
 
                 <textarea
                   value={xmlInputText}
                   onChange={(e) => setXmlInputText(e.target.value)}
                   placeholder="<BANG_CHI_TIET_THUOC_QD130>...</BANG_CHI_TIET_THUOC_QD130>"
-                  rows={10}
-                  className="w-full text-sm font-sans tabular-nums p-3 rounded-md bg-slate-50 border border-slate-300 resize-none focus:outline-none focus:bg-white focus:border-teal-600"
+                  rows={12}
+                  className="w-full text-xs font-mono tabular-nums p-3 rounded-md bg-slate-900 text-teal-300 border border-slate-700 resize-y focus:outline-none focus:border-teal-500"
                 />
 
-                <div className="flex justify-end gap-3">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <span className="text-xs text-slate-500 font-sans">
+                    Cấu trúc tuân thủ chuẩn QĐ 130/QĐ-BYT Bảng 2 (Chi tiết chi phí thuốc thanh toán BHYT)
+                  </span>
                   <button
                     type="button"
                     onClick={handleParseXml}
-                    className="px-4 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold cursor-pointer transition active:scale-98"
+                    className="px-4 py-2 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-sm font-bold cursor-pointer transition active:scale-98 shadow-2xs"
                   >
-                    Phân tích XML
+                    Nạp XML vào Bảng phân tích
                   </button>
                 </div>
               </div>

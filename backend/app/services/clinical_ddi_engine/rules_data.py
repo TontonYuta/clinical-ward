@@ -26,6 +26,13 @@ CLASS_DDI_RULES: list[dict] = [
         "action": "Chống chỉ định phối hợp. Tạm ngừng Statin trong suốt đợt điều trị kháng sinh.", "source": "QĐ 5948/QĐ-BYT (Mục 3.2)"
     },
     {
+        "id": "RULE_CARBAMAZEPINE_MACROLIDE", "class_a": "ANTIEPILEPTIC", "class_b": "MACROLIDE_CYP3A4",
+        "severity": "CONTRAINDICATED", "title": "KHÁNG ĐỘNG KINH (CARBAMAZEPIN) + MACROLID: TĂNG VỌT NỒNG ĐỘ & NGỘ ĐỘC THẦN KINH",
+        "mech": "Kháng sinh Macrolid (Clarithromycin, Erythromycin) ức chế mạnh CYP3A4, làm giảm chuyển hóa Carbamazepin dẫn đến tăng vọt nồng độ thuốc trong huyết tương.",
+        "conseq": "Ngộ độc cấp Carbamazepin: chóng mặt, mất điều hòa vận động, ngủ gà, nhìn đôi, rung giật nhãn cầu, ức chế hô hấp và co giật.",
+        "action": "Chống chỉ định phối hợp hoặc tránh sử dụng đồng thời. Nếu cần kháng sinh, chuyển sang Azithromycin hoặc nhóm Betalactam.", "source": "Dược Thư Quốc Gia Việt Nam & QĐ 5948/QĐ-BYT"
+    },
+    {
         "id": "RULE_STATIN_AZOLE", "class_a": "STATIN_CYP3A4", "class_b": "AZOLE_CYP",
         "severity": "CONTRAINDICATED", "title": "STATIN + KHÁNG NẤM AZOLE: NGUY CƠ TIÊU CƠ VÂN CẤP",
         "mech": "Kháng nấm Azole ức chế chuyển hóa Statin qua CYP3A4.",

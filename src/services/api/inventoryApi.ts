@@ -98,20 +98,27 @@ function mapBackendToBatch(b: BackendBatch): InventoryBatch {
 
 export const inventoryApi = {
   async fetchInventoryBatches(): Promise<InventoryBatch[]> {
-    const raw = await apiRequest<BackendBatch[]>('/inventory/batches');
-    const mapped = raw.map(mapBackendToBatch);
-    const mappedIds = new Set(mapped.map((b) => b.id));
-    const extra = INITIAL_INVENTORY_BATCHES.filter((b) => !mappedIds.has(b.id));
-    return [...mapped, ...extra];
+    try {
+      const raw = await apiRequest<BackendBatch[]>('/inventory/batches');
+      if (Array.isArray(raw) && raw.length > 0) {
+        return raw.map(mapBackendToBatch);
+      }
+    } catch (err) {
+      console.warn('Backend inventory API offline, falling back to local initial batches:', err);
+    }
+    return INITIAL_INVENTORY_BATCHES;
   },
 
-  async dispatchBatch(batchId: string, quantity: number, targetWard: string): Promise<InventoryBatch> {
+  async dispatchBatch(batchId: string, quantity: number, targetWard: string, dispatcherName?: string): Promise<InventoryBatch> {
+    const effectiveDispatcher = dispatcherName ||
+      (typeof window !== 'undefined' ? (localStorage.getItem('clinical_current_user_name') || 'Dược sĩ trực kho') : 'Dược sĩ trực kho');
+
     const res = await apiRequest<BackendBatch>(`/inventory/batches/${batchId}/dispatch`, {
       method: 'POST',
       body: JSON.stringify({
         quantity,
         target_ward: targetWard,
-        dispatcher_name: 'DS. Nguyễn Hoàng Anh',
+        dispatcher_name: effectiveDispatcher,
         auth_method: 'PASSWORD',
       }),
     });

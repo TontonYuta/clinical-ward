@@ -38,7 +38,10 @@ async def chat_with_copilot(
 
     can_use_cache = True
     lower_q = payload.query.lower()
-    if any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc")):
+    if any(w in lower_q for w in (
+        "này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc",
+        "tuổi", "kg", "creatinin", "crcl", "egfr", "bệnh nhân", "người bệnh", "suy thận", "chỉnh liều"
+    )):
         can_use_cache = False
     elif session.active_medication_name:
         has_explicit_drug = bool(session.active_medication_name.casefold() in lower_q)
@@ -67,6 +70,8 @@ async def chat_with_copilot(
         session.append_conversation_turn(payload.query, response.reply_text)
         if response.active_medication_name and not is_regulatory_q:
             session.set_active_medication(name=response.active_medication_name)
+        elif session.active_medication_name and not is_regulatory_q:
+            response.active_medication_name = session.active_medication_name
     else:
         response = await handle_copilot_chat(
             payload, request, db,
@@ -79,6 +84,8 @@ async def chat_with_copilot(
         response.session_id = session.session_id
         if response.active_medication_name and not is_regulatory_q:
             session.set_active_medication(name=response.active_medication_name)
+        elif session.active_medication_name and not is_regulatory_q:
+            response.active_medication_name = session.active_medication_name
 
         # Lưu kết quả lâm sàng hợp lệ vào cache (chỉ lưu tri thức độc lập ngữ cảnh)
         is_context_dependent = (
@@ -193,23 +200,25 @@ async def chat_with_copilot_stream(
 
         full_text = response.reply_text or ""
 
-        # 3. Phân tách thành các token/cụm từ để truyền phát (Server-Sent Events)
+        # 3. Phân tách thành các cụm từ để truyền phát tốc độ cao (High-Throughput Smooth SSE Stream)
         tokens = re.findall(r'\S+\s*|\s+', full_text)
         if not tokens:
             tokens = [full_text]
 
-        # Gửi ngay chunk đầu tiên không trễ để lập tức kích hoạt typewriter trên UI (TTFT < 5ms)
-        chunk_size = 3
+        # Gửi ngay cụm BLUF đầu tiên (10-12 từ) để UI lập tức hiện tiêu đề mà không trễ (TTFT < 1ms)
+        first_burst_size = min(12, len(tokens))
         if tokens:
-            first_chunk = "".join(tokens[0:chunk_size])
+            first_chunk = "".join(tokens[0:first_burst_size])
             event_payload = json.dumps({"type": "token", "content": first_chunk}, ensure_ascii=False)
             yield f"data: {event_payload}\n\n"
 
-        for i in range(chunk_size, len(tokens), chunk_size):
-            chunk = "".join(tokens[i:i + chunk_size])
+        # Các cụm tiếp theo nhả đều 8 từ/nhịp với micro-delay 3ms để duy trì 60 FPS mượt mà
+        step_size = 8
+        for i in range(first_burst_size, len(tokens), step_size):
+            chunk = "".join(tokens[i:i + step_size])
             event_payload = json.dumps({"type": "token", "content": chunk}, ensure_ascii=False)
             yield f"data: {event_payload}\n\n"
-            await asyncio.sleep(0.012)
+            await asyncio.sleep(0.003)
 
         # 4. Truyền phát gói dữ liệu hoàn tất chứa toàn bộ metadata, cards, alerts
         done_dict = response.model_dump()

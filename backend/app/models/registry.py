@@ -82,5 +82,6 @@ class ClinicalDrugMonograph(Base):
     overdose_treatment: Mapped[str | None] = mapped_column(Text, nullable=True)
     antidote: Mapped[str | None] = mapped_column(Text, nullable=True)
     source: Mapped[str | None] = mapped_column(String, nullable=True)
+    section_pages: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now(), nullable=True)
 

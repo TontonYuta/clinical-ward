@@ -92,30 +92,7 @@ export async function processClinicalAgentQueryAsync(
   //   }
   // }
 
-  // 1. Phân tích kịch bản nghiệp vụ có Action Card (Mượn thuốc, Báo hỏng, Giao ban, Kho FEFO...)
-  const localResult = processClinicalUserQuery(cleanInput, {
-    debts: currentState.debts, tickets: currentState.tickets, batches: currentState.batches,
-    coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
-  }, role);
-
-  const isSpecificMedicationField = Boolean(
-    /(?:chỉ định|chi dinh|thành phần|thanh phan|liều dùng|liều lượng|chống chỉ định|tác dụng phụ|cơ chế|đường dùng|tần suất|tương tác)/i.test(lower) &&
-    /paracetamol|acetaminophen|thuốc|thuoc|hoạt chất|hoat chat/i.test(lower)
-  );
-  const isDdi = matchDrugInteractionIntent(lower);
-  const isDeepPharmacology = isDdi || /thời gian bán thải|huyết tương|dược động học|cơ chế tác dụng|tương tác|chống chỉ định|liều tối đa/i.test(lower);
-  const isMedicationSafetyCard = localResult.replyMessage?.card?.cardType === 'medication_safety';
-  const isMedicationLookup = isMedicationSafetyCard || matchMedicationSafetyIntent(lower) || isSpecificMedicationField;
-  if ((localResult.replyMessage?.card || localResult.actionPayload) && !isMedicationLookup && !isClinicalScenarioQuery(lower) && !isDeepPharmacology) {
-    if (localResult.replyMessage?.text && onToken) {
-      const buffer = new SmoothStreamBuffer(onToken);
-      buffer.push(localResult.replyMessage.text);
-      await buffer.finish();
-    }
-    return localResult;
-  }
-
-  // 2. Gọi qua FastAPI Copilot Backend (CSDL 54.885 thuốc DAV & tồn kho thực tế) có hỗ trợ Token Streaming
+  // 1. Luồng chính: Chuyển 100% câu hỏi trực tiếp lên FastAPI Copilot Backend (SOTA Vector RAG + Gemini NLU)
   try {
     const activeSessionId = sessionId || _clientSessionId;
     const backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken);
@@ -124,11 +101,14 @@ export async function processClinicalAgentQueryAsync(
       let actionPayload: ActionPayload | undefined = undefined;
       if (backendData.card) {
         card = {
-          cardType: backendData.card.card_type as any, title: backendData.card.title,
-          summary: backendData.card.summary, data: backendData.card.data,
+          cardType: backendData.card.card_type as any,
+          title: backendData.card.title,
+          summary: backendData.card.summary,
+          data: backendData.card.data,
           primaryActionLabel: backendData.card.primary_action_label,
           primaryActionType: backendData.card.primary_action_type,
-          targetTab: backendData.card.target_tab as any, status: 'pending'
+          targetTab: backendData.card.target_tab as any,
+          status: 'pending'
         };
         if (card.targetTab && (card.cardType === 'borrow_confirm' || card.cardType === 'incident_confirm')) {
           actionPayload = { type: card.cardType === 'borrow_confirm' ? 'DEBT_ADDED' : 'TICKET_CREATED', targetTab: card.targetTab };
@@ -136,13 +116,17 @@ export async function processClinicalAgentQueryAsync(
       }
       return {
         replyMessage: {
-          id: `msg-agent-${Date.now()}`, sender: 'agent',
+          id: `msg-agent-${Date.now()}`,
+          sender: 'agent',
           text: validateClientOutputGuardrail(backendData.reply_text, cleanInput),
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           legalReference: backendData.legal_basis ? {
-            lawCode: backendData.legal_basis.split('-')[0].trim(), title: backendData.legal_basis, clause: 'Căn cứ áp dụng'
+            lawCode: backendData.legal_basis.split('-')[0].trim(),
+            title: backendData.legal_basis,
+            clause: 'Căn cứ áp dụng'
           } : undefined,
-          actionPayload, card,
+          actionPayload,
+          card,
           suggestedChips: backendData.suggested_chips || [],
           citations: backendData.citations || [],
           ragGrounded: backendData.rag_grounded,
@@ -159,19 +143,28 @@ export async function processClinicalAgentQueryAsync(
             substituteDrug: backendData.cdss_alert.substituteDrug,
           } : undefined
         },
-        actionPayload, card
+        actionPayload,
+        card
       };
     }
-  } catch {}
-
-  if (isSpecificMedicationField) {
-    return { replyMessage: {
-      id: `msg-agent-medication-field-unavailable-${Date.now()}`, sender: 'agent',
-      text: 'Hiện chưa truy cập được nguồn tra cứu để xác minh trường thông tin thuốc này. Vui lòng thử lại khi kết nối backend hoạt động.',
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      answerType: 'abstention', sourceStatus: 'backend_unavailable'
-    } };
+  } catch (err) {
+    console.warn('[AgentAsync] Backend stream call failed, falling back to local handlers:', err);
   }
+
+  // 2. Dự phòng ngoại tuyến (Offline Fallback): Chỉ kích hoạt khi Backend hoàn toàn mất kết nối
+  const localResult = processClinicalUserQuery(cleanInput, {
+    debts: currentState.debts,
+    tickets: currentState.tickets,
+    batches: currentState.batches,
+    coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
+  }, role);
+
+  if (localResult.replyMessage?.text && onToken) {
+    const buffer = new SmoothStreamBuffer(onToken);
+    buffer.push(localResult.replyMessage.text);
+    await buffer.finish();
+  }
+  return localResult;
 
   // 3. Xử lý 8 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & Hồ Sơ Bệnh Nhân
   const scenarioResult = await processGeminiClinicalScenario(
@@ -200,7 +193,7 @@ export async function processClinicalAgentQueryAsync(
           id: `msg-agent-gemini-${Date.now()}`, sender: 'agent',
           text: validateClientOutputGuardrail(geminiAnswer, cleanInput),
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          suggestedChips: ['Đối soát ca trực 07:00 AM', 'Lập phiếu dự trù Mẫu 01', 'Kiểm tra tồn kho FEFO']
+          suggestedChips: ['Tra cứu Dược Thư Quốc Gia', 'Hướng dẫn liều dùng & chỉ định', 'Kiểm tra tương tác thuốc']
         } };
       }
     } catch (e) {

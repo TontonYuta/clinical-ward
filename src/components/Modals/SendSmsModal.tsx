@@ -28,6 +28,7 @@ import {
   ScheduledMedication,
   SendAdviceEmailResponse
 } from '../../types/medicationSchedule';
+import { FACILITY_CONFIG } from '../../config/facilityConfig';
 
 export interface EmailDeliveryReceipt {
   id: string;
@@ -212,11 +213,11 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
 }) => {
   useModalDismiss(isOpen, onClose);
 
-  const effectiveName = patient?.fullName || patientName || 'Trần Huy Hoàng';
-  const effectiveId = patient?.id || patientId || 'BN-8817';
-  const effectivePhone = patient?.phone || patientPhone || '0963278149';
-  const effectiveEmail = patient?.email || patientEmail || 'huyhoang6altt@gmail.com';
-  const effectiveDiagnosis = diagnosis || patient?.diagnosis || 'Cảm cúm (J11) - Theo dõi điều trị ngoại trú';
+  const effectiveName = patient?.fullName || patientName || 'Người Bệnh';
+  const effectiveId = patient?.id || patientId || 'BN-CHUA-DINH-DANH';
+  const effectivePhone = patient?.phone || patientPhone || '';
+  const effectiveEmail = patient?.email || patientEmail || '';
+  const effectiveDiagnosis = diagnosis || patient?.diagnosis || 'Khám chữa bệnh ngoại trú';
 
   // Danh mục thuốc trong đơn (lấy từ props hoặc tạo chuẩn mock CPOE)
   const effectiveMedications = useMemo<ScheduledMedication[]>(() => {
@@ -819,7 +820,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0963278149"
+                      placeholder="VD: 0912345678"
                       aria-label="Số điện thoại nhận SMS"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg font-sans tabular-nums font-semibold text-base text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 transition"
                     />
@@ -836,7 +837,7 @@ export const SendSmsModal: React.FC<SendSmsModalProps> = ({
                           required
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="huyhoang6altt@gmail.com"
+                          placeholder="VD: benhnhan@email.vn"
                           className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg font-sans text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 transition"
                         />
                       </div>

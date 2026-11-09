@@ -7,7 +7,13 @@ import { AgentActionCard, ChatMessage } from '../../../types/clinical';
 import { anyKeyword, ClinicalQueryState, ProcessedQueryResult } from '../types';
 
 export function matchFefoIntent(lower: string): boolean {
-  return anyKeyword(lower, ['hết hạn', 'cận hạn', 'fefo', 'date', 'hạn dùng', 'sắp hết hạn']);
+  if (lower.includes('?') && !lower.includes('fefo')) {
+    return false;
+  }
+  return anyKeyword(lower, [
+    'kiểm tra fefo', 'báo cáo fefo', 'quét cận hạn', 'lô cận hạn', 'xuất kho fefo',
+    'bảng kho fefo', 'thuốc nào cận hạn', 'danh sách cận hạn', 'hạn dùng fefo'
+  ]);
 }
 
 export function handleFefoIntent(
@@ -62,9 +68,12 @@ export function handleFefoIntent(
 }
 
 export function matchRestockIntent(lower: string): boolean {
+  if (lower.includes('?') && !lower.includes('mẫu 01') && !lower.includes('dự trù')) {
+    return false;
+  }
   return anyKeyword(lower, [
-    'cạn kho', 'thiếu thuốc', 'dự trù', 'mẫu 01', 'bù cơ số', 'hết hàng', 'sắp hết',
-    'chạm ngưỡng', 'ngưỡng min', 'dưới min', 'bù thuốc', 'cần bù', 'hết thuốc', 'cạn tồn', 'tồn kho thấp', 'tồn min'
+    'lập phiếu dự trù', 'dự trù mẫu 01', 'phiếu dự trù', 'dự trù bù', 'bù cơ số tủ trực',
+    'bù tồn kho', 'dự trù cơ số', 'mẫu 01/tt22', 'dự trù khoa dược'
   ]);
 }
 

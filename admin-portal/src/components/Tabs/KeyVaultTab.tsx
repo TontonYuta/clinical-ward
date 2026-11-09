@@ -69,34 +69,34 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
   return (
     <div className="space-y-6">
       {/* Header khu vực */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 bg-white rounded-xl border border-slate-200/90 shadow-2xs">
         <div>
-          <h2 className="text-lg lg:text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <KeyRound className="w-6 h-6 text-teal-700 shrink-0" />
-            Bể Khóa API Key Đa Tầng (Multi-Key Pool & Failover)
+          <h2 className="text-base lg:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <KeyRound className="w-5 h-5 text-teal-700 shrink-0" />
+            Bể khóa API đa tầng
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Tự động chia tải và trượt xoay vòng (Failover) sang khóa dự phòng khi có key chạm Rate-Limit (429)
+          <p className="text-xs text-slate-500 mt-0.5">
+            Tự động chia tải và chuyển đổi dự phòng (failover) khi có key chạm rate-limit (429)
           </p>
         </div>
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
             onClick={handleAutoHeartbeat}
             disabled={isHeartbeating}
-            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-semibold flex items-center gap-2 transition cursor-pointer disabled:opacity-50 border border-slate-200 shadow-2xs whitespace-nowrap"
+            className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-slate-200 shadow-2xs whitespace-nowrap"
             title="Tự động kiểm tra latency và khả dụng của toàn bộ danh sách key"
           >
-            <RefreshCw className={`w-4 h-4 text-teal-700 ${isHeartbeating ? 'animate-spin' : ''}`} />
-            <span>{isHeartbeating ? 'Đang Tự Quét...' : 'Tự Động Quét Sức Khỏe'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-teal-700 ${isHeartbeating ? 'animate-spin' : ''}`} />
+            <span>{isHeartbeating ? 'Đang quét...' : 'Quét trạng thái key'}</span>
           </button>
           <button
             type="button"
             onClick={() => setIsAdding(!isAdding)}
-            className="px-4 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-900 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-2xs transition cursor-pointer whitespace-nowrap"
+            className="px-3.5 py-2 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition cursor-pointer whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            <span>{isAdding ? 'Đóng Form' : 'Thêm Khóa Mới'}</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>{isAdding ? 'Đóng form' : 'Thêm khóa mới'}</span>
           </button>
         </div>
       </div>

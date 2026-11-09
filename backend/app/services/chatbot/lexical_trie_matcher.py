@@ -55,7 +55,8 @@ class DrugLexicalMatcher:
             conn.execute("PRAGMA cache_size = -2000;")
             cursor = conn.cursor()
             salt_pattern = r"\b(?:hydroclorid|hydrochloride|hcl|natri|sodium|kali|potassium|maleat|maleate|succinat|succinate|sulfat|sulfate|citrat|citrate|acetat|acetate|tartrat|tartrate)\b"
-            prefix_pattern = r"^(?:thuốc\s+|viên\s+nén\s+|viên\s+nang\s+|viên\s+|dung\s+dịch\s+|hỗn\s+dịch\s+|bột\s+|cốm\s+|thuốc\s+tiêm\s+|kem\s+|gel\s+)"
+            prefix_pattern = r"^(?:thuốc\s+|viên\s+nén\s+|viên\s+nang\s+cứng\s+|viên\s+nang\s+mềm\s+|viên\s+nang\s+|viên\s+hoàn\s+cứng\s+|viên\s+|dung\s+dịch\s+|hỗn\s+dịch\s+|bột\s+|cốm\s+|thuốc\s+tiêm\s+|kem\s+|gel\s+|mỗi\s+[\w\s\d.,%/-]+?\s+chứa:?\s*|trong\s+mỗi\s+[\w\s\d.,%/-]+?\s+có\s+chứa:?\s*)"
+            dosage_form_filter = re.compile(r"^(?:viên\s+nang\s+cứng|viên\s+nang\s+mềm|viên\s+nén|viên\s+hoàn\s+cứng|ống\s+tiêm|bào\s+tử|dung\s+dịch|hỗn\s+dịch|gói|chai|lọ|tuýp)$", re.I)
 
             cursor.execute("SELECT DISTINCT brand_name, active_ingredient FROM dav_national_drugs")
             while True:
@@ -75,12 +76,15 @@ class DrugLexicalMatcher:
 
                     if ingredient:
                         for part in ingredient.replace("+", ";").replace("/", ";").split(";"):
-                            clean_part = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị|mmol).*$", "", part.strip(), flags=re.I).strip()
+                            if dosage_form_filter.match(part.strip()):
+                                continue
+                            clean_part = re.sub(r"^mỗi\s+[\w\s\d.,%/-]+?\s+chứa:?\s*", "", part.strip(), flags=re.I).strip()
+                            clean_part = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị|mmol).*$", "", clean_part, flags=re.I).strip()
                             clean_part = re.sub(prefix_pattern, "", clean_part, flags=re.I).strip()
-                            if 3 <= len(clean_part) <= 35 and clean_part.lower() not in COMMON_EXCLUSIONS:
+                            if 3 <= len(clean_part) <= 35 and clean_part.lower() not in COMMON_EXCLUSIONS and not dosage_form_filter.match(clean_part):
                                 self.insert(clean_part, clean_part, "ingredient")
                                 salt_sub = re.sub(salt_pattern, "", clean_part, flags=re.I).strip()
-                                if 3 <= len(salt_sub) <= 35 and salt_sub.lower() not in COMMON_EXCLUSIONS:
+                                if 3 <= len(salt_sub) <= 35 and salt_sub.lower() not in COMMON_EXCLUSIONS and not dosage_form_filter.match(salt_sub):
                                     self.insert(salt_sub, salt_sub, "ingredient")
             try:
                 cursor.execute("SELECT title, inn FROM clinical_drug_monographs")

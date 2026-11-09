@@ -85,3 +85,4 @@ TEMP/
 
 .worktrees/
 tests/screenshots/
+*.bak

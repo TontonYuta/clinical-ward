@@ -35,8 +35,10 @@ async def evaluate_chatbot() -> dict:
     await _ensure_schema()
     cases = json.loads(CASES_PATH.read_text(encoding="utf-8"))
     rows: list[dict] = []
+    from app.services.session_context import clear_session
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://chatbot-eval") as client:
         for case in cases:
+            clear_session(f"chatbot-eval-{case['id']}")
             response = await client.post("/api/v1/copilot/chat", json={
                 "query": case["query"], "user_role": "doctor", "user_name": "Eval",
                 "session_id": f"chatbot-eval-{case['id']}",

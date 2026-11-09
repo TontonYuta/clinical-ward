@@ -9,17 +9,15 @@ import { anyKeyword, ProcessedQueryResult } from '../types';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../../../services/patientService';
 
 export function matchPrescriptionAdviceIntent(lower: string): boolean {
+  if (lower.includes('?') || /(?:mấy tiếng|bao lâu|khi nào|uống lúc nào|dùng lúc nào|khoảng cách|liều|thế nào)/i.test(lower)) {
+    return false;
+  }
   const trimmed = lower.trim();
   if (['gửi mail', 'gửi gmail', 'gửi email', 'gmail', 'email', 'xem email', 'in phiếu dặn dò', 'gửi sms', 'sms'].includes(trimmed)) return true;
-  const hasDirect = anyKeyword(lower, [
-    'dặn dò', 'dặn bệnh nhân', 'dặn uống', 'nhắc uống', 'nhắc thuốc', 'lịch uống', 'lên lịch nhắc',
-    'uống thuốc hàng ngày', 'thông báo uống', 'gửi mail cho bệnh nhân', 'gửi email cho bệnh nhân',
-    'gửi gmail', 'thông báo qua mail', 'dặn dò đơn thuốc', 'lịch nhắc thuốc', 'nhắc nhở uống thuốc',
-    'gửi sms', 'nhắn tin', 'mở form gửi', 'mở form email', 'mở form sms', 'email/sms', 'mở form dặn dò'
+  return anyKeyword(lower, [
+    'mở form gửi email', 'mở form gửi sms', 'mở form dặn dò', 'lập phiếu dặn dò',
+    'gửi email cho bệnh nhân', 'gửi sms cho bệnh nhân', 'lên lịch nhắc thuốc cho bệnh nhân'
   ]);
-  if (hasDirect) return true;
-  return anyKeyword(lower, ['thông báo', 'nhắc', 'dặn', 'gửi', 'báo']) &&
-         anyKeyword(lower, ['uống thuốc', 'lịch thuốc', 'cữ thuốc', 'giờ uống', 'email', 'sms']);
 }
 
 export function handlePrescriptionAdviceIntent(

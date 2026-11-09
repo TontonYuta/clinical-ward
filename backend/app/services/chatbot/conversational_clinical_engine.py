@@ -208,13 +208,35 @@ async def build_fluent_drug_profile_response(
     q_lower = query.lower()
 
     # Bóc tách dữ liệu chuẩn DĐVN V
-    ind = (monograph.indications if monograph and monograph.indications else None) or matched_drug.indications or "Theo đơn chỉ định chuyên khoa"
-    adult_d = (monograph.adult_dosage if monograph and monograph.adult_dosage else None) or matched_drug.adult_dosage or "Tuân thủ chỉ định điều trị"
-    ped_d = (monograph.pediatric_dosage if monograph and monograph.pediatric_dosage else None) or matched_drug.pediatric_dosage or "Tính liều theo cân nặng (mg/kg) hoặc diện tích da"
-    contra = (monograph.contraindications if monograph and monograph.contraindications else None) or matched_drug.contraindications or "Mẫn cảm với bất kỳ thành phần nào của thuốc"
-    renal = (monograph.renal_adjustment if monograph and monograph.renal_adjustment else None) or matched_drug.renal_adjustment or "Chưa có khuyến cáo hiệu chỉnh đặc thù; theo dõi ClCr"
-    preg = (monograph.pregnancy_warning if monograph and monograph.pregnancy_warning else None) or matched_drug.pregnancy_warning or "Chỉ dùng khi lợi ích điều trị vượt trội nguy cơ đối với thai nhi"
-    adr = (monograph.adverse_effects if monograph and monograph.adverse_effects else None) or matched_drug.adverse_effects or "Theo dõi các phản ứng dị ứng hoặc quá mẫn"
+    ind = (monograph.indications if monograph and monograph.indications else None) or matched_drug.indications or ""
+    adult_d = (monograph.adult_dosage if monograph and monograph.adult_dosage else None) or matched_drug.adult_dosage or ""
+    ped_d = (monograph.pediatric_dosage if monograph and monograph.pediatric_dosage else None) or matched_drug.pediatric_dosage or ""
+    contra = (monograph.contraindications if monograph and monograph.contraindications else None) or matched_drug.contraindications or ""
+    renal = (monograph.renal_adjustment if monograph and monograph.renal_adjustment else None) or matched_drug.renal_adjustment or ""
+    preg = (monograph.pregnancy_warning if monograph and monograph.pregnancy_warning else None) or matched_drug.pregnancy_warning or ""
+    adr = (monograph.adverse_effects if monograph and monograph.adverse_effects else None) or matched_drug.adverse_effects or ""
+
+    has_real_clinical_data = bool(monograph and (ind or adult_d or contra)) or bool(ind or adult_d or contra)
+    if not has_real_clinical_data:
+        # Monograph Quality Gate: Chuyển tiếp ngay xuống Hybrid RAG khi không có chuyên luận CSDL
+        from app.services.rag import execute_clinical_rag
+        rag_res = await execute_clinical_rag(f"Thông tin thuốc {clean_name} {active_ing} chỉ định liều dùng", user_role=user_role)
+        if rag_res and rag_res.answer and rag_res.confidence_score > 0.4:
+            from app.security.guardrails import validate_output_guardrail
+            return CopilotResponse(
+                intent="MEDICATION_SAFETY_PROFILE",
+                reply_text=validate_output_guardrail(rag_res.answer, query),
+                card=None,
+                legal_basis=rag_res.legal_basis or "Dược Thư Quốc Gia Việt Nam",
+                suggested_chips=[f"Chỉ định {clean_name}", f"Liều dùng {clean_name}", f"Tác dụng phụ {clean_name}", "Kiểm tra tương tác thuốc"],
+                session_id=session_id or "",
+                active_medication_name=clean_name,
+                answer_type="grounded_reference",
+                source_status="retrieved_evidence",
+                confidence=rag_res.confidence_score,
+                rag_grounded=True,
+                citations=[c.to_dict() for c in rag_res.citations]
+            )
 
     # Tra cứu tương tác QĐ 5948
     ddis = find_all_interactions_for_drug(clean_name)
@@ -237,7 +259,7 @@ async def build_fluent_drug_profile_response(
 
     retriever = HybridRetriever()
     search_q = f"{clean_name} {active_ing}"
-    retrieved_chunks = retriever.retrieve(search_q, top_k=3)
+    retrieved_chunks = await retriever.retrieve_async(search_q, top_k=3)
 
     relevant_chunks = [
         r for r in retrieved_chunks
@@ -287,15 +309,13 @@ async def build_fluent_drug_profile_response(
         sections.append("• **Liều dùng & Cách dùng:**\n" + "\n".join(dose_lines))
 
     # 4. Chống chỉ định
-    clean_contra = str(contra).strip()
-    if clean_contra and clean_contra != "Mẫn cảm với bất kỳ thành phần nào của thuốc":
+    clean_contra = str(contra or "").strip()
+    if clean_contra:
         contra_chunks = split_clinical_chunks(clean_contra)
         contra_bullets = contra_chunks if is_detailed else contra_chunks[:2]
         if contra_bullets:
             sub = "\n".join(f"  - {b}" for b in contra_bullets)
             sections.append(f"• **Chống chỉ định:**\n{sub}")
-    else:
-        sections.append("• **Chống chỉ định:**\n  - Mẫn cảm với bất kỳ thành phần nào của thuốc.")
 
     # 5. Thận trọng & Đối tượng đặc biệt
     special_lines = format_hierarchical_special_populations(renal, hepatic, preg, is_detailed=is_detailed)
@@ -412,8 +432,11 @@ async def synthesize_specialty_response(
     is_legal_topic = any(k in topic.lower() for k in ["thông tư", "quy chế", "quy định", "nghị định", "luật dược"])
     is_onco_topic = any(k in topic.lower() for k in ["ung thư", "u bướu", "oncology"])
     is_consultation = any(k in query.lower() for k in ["biểu hiện", "triệu chứng", "của gì", "là gì", "thế nào", "như thế nào", "kiêng gì", "dùng thuốc nào", "nên dùng", "sinh hoạt"])
+    reply_text = synth_res.conversational_answer
     if is_onco_topic:
         chosen_intent = "ONCOLOGY_SPECIALTY_GUIDANCE"
+        if "TƯ VẤN CHUYÊN KHOA UNG BƯỚU" not in reply_text:
+            reply_text = f"### 🎗️ TƯ VẤN CHUYÊN KHOA UNG BƯỚU (Hội đồng Ung bướu & Giảm đau WHO)\n\n" + reply_text
     elif is_legal_topic:
         chosen_intent = "LEGAL_GUIDANCE"
     elif is_consultation:
@@ -423,7 +446,7 @@ async def synthesize_specialty_response(
 
     return CopilotResponse(
         intent=chosen_intent,
-        reply_text=synth_res.conversational_answer,
+        reply_text=reply_text,
         legal_basis=legal,
         suggested_chips=chips,
         session_id=session_id,

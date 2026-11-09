@@ -118,7 +118,7 @@ async def resolve_active_drug_and_terms(
 
     if not is_renal and not explicit_named and not active_in_query and any(term in lower_query for term in ("liều dùng", "liều tối đa", "thông tin thuốc", "thuốc là gì")):
         cand = extract_drug_keywords(lower_query)
-        if cand and len(cand) >= 4:
+        if cand and len(cand) >= 4 and cand.lower() not in ("tóm tắt", "tom tat", "thông tin", "thong tin", "chi tiết"):
             resp = await lookup_drug_authoritative(query, db, session_id=session_id, user_name=user_name, user_role=user_role)
             return query, lower_query, active_in_query, explicit_named, has_candidate_drug, resp
 

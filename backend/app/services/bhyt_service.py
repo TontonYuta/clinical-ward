@@ -373,50 +373,93 @@ class BhytAuditService:
                     ))
 
         # Kiểm tra 6: Ràng buộc mã bệnh ICD-10 (ICD10_UNSUPPORTED)
+        is_invoice_doc = getattr(payload, "document_type", "DON_THUOC") in ("HOA_DON_VAT", "PHIEU_XUAT_KHO", "HOA_DON_BAN_LE")
         all_icd10s = [payload.primary_icd10] + (payload.secondary_icd10s or [])
         all_icd10s = [c.strip().upper() for c in all_icd10s if c and c.strip()]
 
-        for item in payload.items:
-            rule = matched_rules.get(item.id)
-            if rule:
-                forbidden = json.loads(rule["forbidden_icd10_json"]) if rule["forbidden_icd10_json"] else []
-                approved = json.loads(rule["allowed_icd10_json"]) if rule["allowed_icd10_json"] else []
+        # Nếu là Hóa đơn mua sắm / Bảng kê xuất kho không gắn mã ca bệnh -> Bỏ qua ràng buộc ICD-10 để tránh phạt sai
+        if not (is_invoice_doc and not all_icd10s):
+            for item in payload.items:
+                rule = matched_rules.get(item.id)
+                if rule:
+                    forbidden = json.loads(rule["forbidden_icd10_json"]) if rule["forbidden_icd10_json"] else []
+                    approved = json.loads(rule["allowed_icd10_json"]) if rule["allowed_icd10_json"] else []
 
-                # Kiểm tra mã bị cấm
-                is_forbidden = any(
-                    any(is_icd10_matching(icd, f) for f in forbidden)
-                    for icd in all_icd10s
-                ) if forbidden else False
+                    # Kiểm tra mã bị cấm
+                    is_forbidden = any(
+                        any(is_icd10_matching(icd, f) for f in forbidden)
+                        for icd in all_icd10s
+                    ) if forbidden else False
 
-                # Kiểm tra mã được duyệt
-                is_approved = any(
-                    any(is_icd10_matching(icd, a) for a in approved)
-                    for icd in all_icd10s
-                ) if approved else True
+                    # Kiểm tra mã được duyệt
+                    is_approved = any(
+                        any(is_icd10_matching(icd, a) for a in approved)
+                        for icd in all_icd10s
+                    ) if approved else True
 
-                if is_forbidden or not is_approved:
-                    rejection_vnd = item.quantity * item.unit_price
-                    at_risk_cost += rejection_vnd
-                    reject_count += 1
-                    violations.append(BhytViolationItemSchema(
-                        id=f"VIO-ICD-{item.id}",
-                        drug_code=item.drug_code or rule["atc_code"],
-                        drug_name=item.drug_name,
-                        active_ingredient=rule["active_ingredient"],
-                        severity="REJECT",
-                        category="ICD10_UNSUPPORTED",
-                        title=f"Chỉ định không đúng điều kiện BHYT ({rule['active_ingredient']})",
-                        detail=f"BHYT không thanh toán cho chẩn đoán [{', '.join(all_icd10s)}]. Thuốc chỉ được thanh toán theo điều kiện chấn thương, phẫu thuật hoặc nhóm bệnh quy định.",
-                        legal_ref=BhytLegalRefSchema(
-                            doc_code="3618/QĐ-BHXH",
-                            doc_title="Quy trình giám định BHYT",
-                            section="Điều 14 (Kiểm tra điều kiện chỉ định thuốc)",
-                            page_number=18,
-                            local_pdf_path="/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf"
-                        ),
-                        rejection_risk_vnd=rejection_vnd,
-                        action="Chỉ kê khi có chẩn đoán chấn thương hoặc phẫu thuật, nếu kê cho viêm đường hô hấp bệnh nhân phải tự túc."
-                    ))
+                    if is_forbidden or not is_approved:
+                        rejection_vnd = item.quantity * item.unit_price
+                        at_risk_cost += rejection_vnd
+                        reject_count += 1
+                        violations.append(BhytViolationItemSchema(
+                            id=f"VIO-ICD-{item.id}",
+                            drug_code=item.drug_code or rule["atc_code"],
+                            drug_name=item.drug_name,
+                            active_ingredient=rule["active_ingredient"],
+                            severity="REJECT",
+                            category="ICD10_UNSUPPORTED",
+                            title=f"Chỉ định không đúng điều kiện BHYT ({rule['active_ingredient']})",
+                            detail=f"BHYT không thanh toán cho chẩn đoán [{', '.join(all_icd10s)}]. Thuốc chỉ được thanh toán theo điều kiện chấn thương, phẫu thuật hoặc nhóm bệnh quy định.",
+                            legal_ref=BhytLegalRefSchema(
+                                doc_code="3618/QĐ-BHXH",
+                                doc_title="Quy trình giám định BHYT",
+                                section="Điều 14 (Kiểm tra điều kiện chỉ định thuốc)",
+                                page_number=18,
+                                local_pdf_path="/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf"
+                            ),
+                            rejection_risk_vnd=rejection_vnd,
+                            action="Chỉ kê khi có chẩn đoán chấn thương hoặc phẫu thuật, nếu kê cho viêm đường hô hấp bệnh nhân phải tự túc."
+                        ))
+
+        # Kiểm tra Hạn dùng cận hạn (< 6 tháng) đối với Hóa đơn / Bảng kê nhập xuất dược phẩm
+        if is_invoice_doc:
+            for item in payload.items:
+                exp = getattr(item, "expiry_date", None)
+                if exp and len(exp.strip()) >= 7:
+                    try:
+                        clean_exp = exp.strip()
+                        if "/" in clean_exp:
+                            parts = clean_exp.split("/")
+                            if len(parts) == 3:
+                                exp_dt = datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+                            elif len(parts) == 2:
+                                exp_dt = datetime(int(parts[1]), int(parts[0]), 28)
+                        else:
+                            exp_dt = datetime.fromisoformat(clean_exp)
+                        days_diff = (exp_dt - datetime.now()).days
+                        if 0 <= days_diff < 180:
+                            warning_count += 1
+                            violations.append(BhytViolationItemSchema(
+                                id=f"VIO-EXPIRY-{item.id}",
+                                drug_code=item.drug_code or "",
+                                drug_name=item.drug_name,
+                                active_ingredient=item.active_ingredient or item.drug_name,
+                                severity="WARNING",
+                                category="PARTIAL_PAYMENT_ALERT",
+                                title="Thuốc cận hạn dùng (< 6 tháng)",
+                                detail=f"Mặt hàng có hạn dùng ({exp}) còn {days_diff} ngày, cần ưu tiên xuất kho FEFO và giám sát chặt chẽ theo Thông tư 36/2018/TT-BYT GSP.",
+                                legal_ref=BhytLegalRefSchema(
+                                    doc_code="36/2018/TT-BYT",
+                                    doc_title="Thực hành tốt bảo quản thuốc GSP",
+                                    section="Mục 12 Phụ lục I (Nguyên tắc FEFO)",
+                                    page_number=14,
+                                    local_pdf_path="/pdf/Thong_Tu_36_2018_TT_BYT_GSP.pdf"
+                                ),
+                                rejection_risk_vnd=0.0,
+                                action="Gắn nhãn cận hạn, bố trí khu vực bảo quản riêng biệt và luân chuyển cấp phát trước theo nguyên tắc FEFO."
+                            ))
+                    except Exception:
+                        pass
 
         # Thuốc không vi phạm nào
         violated_item_ids = {v.id.split('-')[-1] for v in violations if v.severity == 'REJECT'}

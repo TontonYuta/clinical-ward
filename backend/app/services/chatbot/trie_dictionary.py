@@ -41,6 +41,7 @@ COMMON_EXCLUSIONS: Set[str] = {
     "mang", "gửi", "gui", "giảm", "giam", "loét", "loet", "nấm", "nam", "miệng", "mieng", "tai", "mũi", "họng", "hong", "khớp", "khop", "trĩ", "tri", "ngủ", "ngu",
     "đồng nghiệp", "dong nghiep", "kính gửi", "kinh gui", "tư vấn", "tu van", "chuyên môn", "chuyen mon", "hỗ trợ", "ho tro",
     "khan", "ho", "ho khan", "nhom", "nhóm", "đặc", "dac", "loãng", "loang", "bột", "bot", "tinh thể", "dung dịch", "hỗn dịch", "nhũ tương",
+    "cứng", "cung", "cứng nhắc", "cung nhac", "mỗi", "moi", "mọi", "mai", "tương tác", "tuong tac", "tóm tắt", "tom tat",
     "thuốc đó", "thuoc do", "thuốc này", "thuoc nay", "thuốc kia", "thuoc kia", "thuốc trên", "thuoc tren",
     "thuốc ấy", "thuoc ay", "thuốc đấy", "thuoc day", "thuốc vừa nói", "thuoc vua noi", "thuốc vừa rồi", "thuoc vua roi", "thuốc nọ", "thuoc no"
 }

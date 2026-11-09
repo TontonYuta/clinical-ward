@@ -8,9 +8,8 @@ import { anyKeyword, ProcessedQueryResult } from '../types';
 
 export function matchLegalIntent(lower: string): boolean {
   const isLegalInquiry = anyKeyword(lower, [
-    'phác đồ', 'quy định', 'thông tư', 'nghị định', 'tiêu chuẩn', 'luật', 'điều khoản', 'pháp lý',
-    'hướng dẫn', 'tại sao', 'làm sao', 'xử lý thế nào', 'nguyên tắc', 'quy trình', 'căn cứ', 'tiêu hủy',
-    'kiểm định máy', 'chu kỳ kiểm định', 'nghi ngờ rò điện'
+    'thông tư', 'nghị định', 'văn bản pháp lý', 'luật dược', 'điều khoản luật',
+    'quy định theo thông tư', 'chu kỳ kiểm định', 'nghi ngờ rò điện', 'tiêu hủy vỏ ống'
   ]) || ((lower.includes('vỡ') || lower.includes('làm mất')) && (lower.includes('vỏ') || lower.includes('ống')));
 
   const hasExplicitActionCommand = anyKeyword(lower, [
@@ -25,7 +24,7 @@ export function handleLegalIntent(lower: string, nowStr: string): ProcessedQuery
   let explanation = 'Hệ thống vận hành đồng bộ theo 6 trụ cột pháp lý: TT 22/2011 (Tủ trực), TT 20/2017 (Gây nghiện & Vỏ ống), TT 51/2017 (Cấp cứu phản vệ), TT 36/2018 (FEFO & GSP), NĐ 98/2021 (Thiết bị y tế loại D), và NĐ 151/2017 (Tài sản công).';
   let legalDoc = 'Văn bản quy phạm pháp luật Y tế Việt Nam';
 
-  if (lower.includes('phản vệ') || lower.includes('51') || lower.includes('adrenalin') || lower.includes('sốc')) {
+  if (lower.includes('phản vệ') || lower.includes('51') || lower.includes('adrenalin') || lower.includes('sốc phản vệ')) {
     topic = 'Thông tư 51/2017/TT-BYT - Phác đồ Cấp cứu Sốc Phản Vệ';
     explanation = 'Thông tư 51 quy định **Adrenalin 1mg/1ml** là thuốc thiết yếu cấp cứu sốc phản vệ hàng đầu, phải có sẵn tại tất cả các buồng tiêm và tủ trực cấp cứu. Tiêm bắp ngay lập tức khi xuất hiện triệu chứng phản vệ từ độ II trở lên (khó thở, tụt huyết áp, nổi mề đay toàn thân, phù Quincke). Liều người lớn: 1/2 - 1 ống (0.5 - 1mg); trẻ em: 1/5 - 1/2 ống tùy cân nặng. Tiêm bắp mặt trước ngoài đùi, nhắc lại sau mỗi 3 - 5 phút nếu huyết áp chưa cải thiện. Tuyệt đối không chờ hội chẩn làm lỡ thời gian vàng cứu sống người bệnh.';
     legalDoc = 'Thông tư 51/2017/TT-BYT';

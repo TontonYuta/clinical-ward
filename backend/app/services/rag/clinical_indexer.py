@@ -299,4 +299,12 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
     except Exception:
         pass
 
+    # 7. Đồ Thị Tri Thức Đa Tầng LightRAG (Dual-Level Knowledge Graph Chunks)
+    try:
+        from app.services.rag.lightrag_graph_builder import build_lightrag_graph_chunks
+        graph_chunks = build_lightrag_graph_chunks()
+        all_chunks.extend(graph_chunks)
+    except Exception as e:
+        pass
+
     return all_chunks

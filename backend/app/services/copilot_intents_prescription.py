@@ -196,7 +196,7 @@ async def handle_prescription_audit_intent(query: str, lower_query: str, user_na
             "id": "RX-2026-604",
             "prescriptionType": "outpatient",
             "facilityName": "Bệnh Viện Đa Khoa Lâm Sàng",
-            "patientName": "Trần Huy Hoàng",
+            "patientName": "Nguyễn Văn An",
             "patientAge": 45,
             "patientCccd": "001095012345",
             "diagnosisIcd10": "J11.0",

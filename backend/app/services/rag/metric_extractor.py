@@ -16,7 +16,7 @@ class LabMetrics(BaseModel):
     inr: Optional[float] = Field(default=None, description="Chỉ số đông máu INR")
 
 def extract_clcr_or_egfr(text: str) -> Optional[float]:
-    """Trích xuất giá trị định lượng ClCr hoặc eGFR từ văn bản ca bệnh."""
+    """Trích xuất giá trị định lượng ClCr hoặc eGFR từ văn bản ca bệnh (trực tiếp hoặc tính toán từ Cockcroft-Gault)."""
     m = re.search(r"\b(?:clcr|egfr|crcl)\s*(?:dưới|<|<=|=|là|khoảng|:)?\s*([0-9]+(?:\.[0-9]+)?)\b", text, re.IGNORECASE)
     if m:
         try:
@@ -25,6 +25,24 @@ def extract_clcr_or_egfr(text: str) -> Optional[float]:
             return None
     if any(term in text.casefold() for term in ("clcr dưới 30", "clcr < 30", "egfr < 30", "suy thận nặng")):
         return 25.0
+
+    # Tính toán chính xác theo công thức Cockcroft-Gault nếu có đủ thông số tuổi, cân nặng, creatinin
+    try:
+        from app.services.clinical_reasoning.patient_dose_reasoner import extract_patient_clinical_slots
+        from app.services.clinical_reasoning.clinical_math_engine import calculate_cockcroft_gault
+        slots = extract_patient_clinical_slots(text)
+        if slots.get("age") is not None and slots.get("weight_kg") is not None and slots.get("creatinine_val") is not None:
+            assessment = calculate_cockcroft_gault(
+                age=slots["age"],
+                weight_kg=slots["weight_kg"],
+                serum_creatinine=slots["creatinine_val"],
+                is_female=slots.get("is_female", False),
+                creatinine_unit=slots.get("creatinine_unit", "umol/L")
+            )
+            return assessment.crcr_ml_min if hasattr(assessment, "crcr_ml_min") else assessment.crcl_ml_min
+    except Exception:
+        pass
+
     return None
 
 def extract_clinical_metrics(text: str) -> LabMetrics:

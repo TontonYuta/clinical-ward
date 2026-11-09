@@ -21,19 +21,19 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
   });
 
   return (
-    <div className="p-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
+    <div className="p-5 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-3.5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h2 className="text-base lg:text-lg font-bold text-slate-900">Nhật Ký Tương Tác Trực Tiếp (Live Stream)</h2>
-          <p className="text-xs lg:text-sm text-slate-500">Giám sát từng truy vấn của nhân viên y tế theo thời gian thực</p>
+          <h2 className="text-sm lg:text-base font-bold text-slate-900">Nhật ký tương tác trực tiếp</h2>
+          <p className="text-xs text-slate-500">Theo dõi truy vấn và cơ chế phản hồi theo thời gian thực</p>
         </div>
-        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
+        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
           {events.length} sự kiện mới nhất
         </span>
       </div>
 
       {/* Thanh Bộ Lọc Thời Gian Thực */}
-      <div className="flex flex-wrap items-center gap-2.5 pt-1 border-t border-slate-100">
+      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
           <Filter className="w-3.5 h-3.5 text-teal-700" />
           <span>Lọc:</span>
@@ -42,9 +42,10 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
         {/* Filter Type */}
         <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
           {[
-            { id: 'all', label: 'Tất Cả Cơ Chế' },
+            { id: 'all', label: 'Tất cả' },
             { id: 'ADAPTIVE_RAG', label: 'Adaptive RAG' },
-            { id: 'CACHE_HIT', label: 'Cache L1/L2' },
+            { id: 'CACHE_HIT', label: 'Cache & Vector' },
+            { id: 'BHYT_SUBSTITUTION', label: 'BHYT QĐ 130' },
             { id: 'DDI_BLOCKED', label: 'Chặn DDI' },
             { id: 'GUARDRAIL_BLOCKED', label: 'Guardrails' }
           ].map((btn) => (

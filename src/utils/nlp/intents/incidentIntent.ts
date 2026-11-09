@@ -8,14 +8,13 @@ import { anyKeyword, ProcessedQueryResult } from '../types';
 import { DEVICE_CATALOG, findMatchedDevice } from '../entityCatalog';
 
 export function matchEquipmentIntent(lower: string): boolean {
-  const hasEquipmentKeyword = anyKeyword(lower, [
-    'hỏng', 'báo hỏng', 'sự cố', 'báo lỗi', 'lỗi máy', 'xì khí', 'nứt bẫy', 'rách', 'chập', 'hư',
-    'mất tín hiệu', 'mất nguồn', 'không nạp', 'không lên', 'hết pin', 'pin chai', 'chai pin', 'chai',
-    'kẹt', 'chập chờn', 'rò điện', 'đơ', 'treo', 'kêu', 'hỏng máy', 'sửa máy', 'lỗi kẹt', 'nứt', 'trục trặc'
-  ]);
+  // Loại trừ tuyệt đối mọi câu hỏi nghi vấn, triệu chứng hoặc dùng thuốc
+  if (lower.includes('?') || /(?:có|được không|không|thế nào|như thế nào|tại sao|uống|dùng|thuốc|liều|thận|gan|tim|phổi|bệnh)/i.test(lower)) {
+    return false;
+  }
+  const hasAction = anyKeyword(lower, ['báo hỏng', 'sự cố máy', 'báo lỗi', 'hỏng máy', 'sửa máy', 'lập phiếu báo hỏng', 'lỗi thiết bị']);
   const matchedDevice = findMatchedDevice(lower);
-  return (hasEquipmentKeyword && (matchedDevice !== undefined || anyKeyword(lower, ['máy', 'thiết bị', 'bơm tiêm điện', 'monitor', 'sensor', 'dây thở']))) ||
-    (lower.includes('hỏng') && anyKeyword(lower, ['máy', 'thiết bị']));
+  return hasAction || (anyKeyword(lower, ['hỏng', 'hư', 'chập', 'xì khí', 'mất nguồn', 'chai pin']) && matchedDevice !== undefined);
 }
 
 export function handleEquipmentIntent(text: string, lower: string, nowStr: string): ProcessedQueryResult {

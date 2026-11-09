@@ -53,8 +53,8 @@ FIELD_ONLY_TERMS = (
     "quá liều", "ngộ độc", "uống nhầm", "giải độc", "antidote",
 )
 
-def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotResponse | None:
-    is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "chỉnh liều"))
+def check_renal_adjustment_request(query: str, lower_query: str, nlu_drug: str | None = None) -> CopilotResponse | None:
+    is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "crystalin", "creatin", "chỉnh liều"))
     if not is_renal:
         return None
 
@@ -68,12 +68,12 @@ def check_renal_adjustment_request(query: str, lower_query: str) -> CopilotRespo
     is_cand_just_name = bool(pat_name_lower and (cand_kw == pat_name_lower or cand_kw in pat_name_lower or pat_name_lower in cand_kw))
     valid_cand = cand_kw and cand_kw not in CLINICAL_NON_DRUG_TERMS and not is_cand_just_name
 
-    has_current_drug = bool(extracted_meds) or bool(valid_cand) or find_matched_med(lower_query) is not None or any(
+    has_current_drug = bool(nlu_drug) or bool(extracted_meds) or bool(valid_cand) or find_matched_med(lower_query) is not None or any(
         len(alias) >= 4 and alias.casefold() in lower_query
         for entry in DRUG_REGISTRY.values() for alias in entry.get("aliases", [])
     )
 
-    # Nếu câu hỏi đã nêu rõ thuốc (như Enoxaparin, Ceftriaxon, Clarithromycin, Meropenem...): Không chặn đòi tên bệnh nhân
+    # Nếu câu hỏi đã nêu rõ thuốc (như Ciprofloxacin, Enoxaparin, Ceftriaxon, Clarithromycin, Meropenem...): Không chặn đòi tên bệnh nhân
     if has_current_drug:
         return None
 
@@ -222,6 +222,15 @@ def check_contextless_clinical_question(lower_query: str) -> CopilotResponse | N
     return None
 
 def check_pediatric_guidance_request(lower_query: str, query: str, session_id: str) -> CopilotResponse | None:
+    # Nếu câu hỏi đã có tên thuốc cụ thể (ví dụ Cefixim cho bé, Augmentin cho trẻ...), không chặn trả văn mẫu chung
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    matcher = get_drug_lexical_matcher()
+    if matcher.extract_medications(query):
+        return None
+    cand = extract_drug_keywords(lower_query)
+    if cand and cand not in CLINICAL_NON_DRUG_TERMS and len(cand) >= 4:
+        return None
+
     ped_cues = (
         "tôi cần cho trẻ em", "cần cho trẻ em", "dành cho trẻ em", "cho trẻ em", "dùng cho trẻ em",
         "trẻ em thì sao", "nhi khoa thì sao", "liều trẻ em", "liều cho trẻ em", "thuốc cho trẻ em",

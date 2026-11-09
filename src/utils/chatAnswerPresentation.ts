@@ -12,7 +12,7 @@ export function removeLegacySourceText(rawText: string, hasCitations: boolean = 
       if (!trimmed) return true;
       // Khi đã có citation badge đối soát ở chân câu trả lời, loại bỏ dòng Nguồn / Căn cứ / Tệp / Standalone token
       if (/^[\*\(_\-]*\s*(?:nguồn(?:\s*tham\s*chiếu)?|căn cứ(?:\s*pháp\s*lý|\s*y\s*văn)?|tài liệu(?:\s*đối\s*soát|\s*đối\s*chứng|\s*tham\s*khảo)?)\s*:/i.test(trimmed)) return false;
-      if (/^\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]\s*$/i.test(trimmed)) return false;
+      if (/^\s*\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]\s*$/i.test(trimmed)) return false;
       if (LEGACY_SOURCE_LINE.test(trimmed)) return false;
       if (/tệp:\s*[A-Za-z0-9_.-]+\.pdf/i.test(trimmed)) return false;
       if (/tài liệu đối soát:\s*dược thư/i.test(trimmed)) return false;

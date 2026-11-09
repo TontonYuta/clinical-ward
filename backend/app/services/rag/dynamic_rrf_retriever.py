@@ -80,3 +80,28 @@ class DynamicHybridRetriever:
             min_k=min_k,
             max_k=max_k
         )
+
+    async def retrieve_async(
+        self,
+        query: str,
+        kg_entities: Optional[List[str]] = None,
+        min_k: int = 1,
+        max_k: int = 8,
+        top_k: Optional[int] = None
+    ) -> List[RetrievedChunk]:
+        """Truy xuất bất đồng bộ song song với cơ chế cắt tỉa động."""
+        fetch_limit = top_k if top_k is not None else max_k
+        raw_candidates = await self.base_retriever.retrieve_async(
+            query=query,
+            kg_entities=kg_entities,
+            top_k=max(fetch_limit, max_k)
+        )
+
+        if top_k is not None:
+            return raw_candidates[:top_k]
+
+        return calculate_dynamic_cutoff(
+            scored_chunks=raw_candidates,
+            min_k=min_k,
+            max_k=max_k
+        )

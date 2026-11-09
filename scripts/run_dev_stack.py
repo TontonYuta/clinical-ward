@@ -5,7 +5,9 @@ import sys
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-python = Path.home() / '.venv/bin/python'
+python = root / '.venv/bin/python'
+if not python.exists():
+    python = Path.home() / '.venv/bin/python'
 if not python.exists():
     python = Path(sys.executable)
 env = None

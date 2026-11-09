@@ -35,27 +35,24 @@ function normalizeSearch(value: unknown): string {
 
 export async function loadOfflineRegistry(): Promise<any[]> {
   if (cachedRegistry && cachedRegistry.length > 0) return cachedRegistry;
+  // Fallback an toàn cho client: Ưu tiên nạp danh mục thiết yếu gọn nhẹ (~5MB) thay vì tải file nén 83MB gây cạn kiệt RAM
   try {
-    const canonicalResponse = await fetch('/data/canonical-drug-catalog.json.gz', { cache: 'force-cache' });
-    if (canonicalResponse.ok && canonicalResponse.body && typeof DecompressionStream !== 'undefined') {
-      const encoding = canonicalResponse.headers.get('content-encoding')?.toLowerCase() || '';
-      const text = encoding.includes('gzip')
-        ? await canonicalResponse.text()
-        : await new Response(canonicalResponse.body.pipeThrough(new DecompressionStream('gzip'))).text();
-      const catalog = JSON.parse(text);
-      if (Array.isArray(catalog) && catalog.length > 0) {
-        cachedRegistry = catalog;
-        cachedGroupStats = computeGroupStats(catalog);
-        return catalog;
+    const res = await fetch('/data/vietnam_drug_registry/dav_essential_formulary.json');
+    if (res.ok) {
+      const local = await res.json();
+      if (Array.isArray(local) && local.length > 0) {
+        cachedRegistry = local;
+        cachedGroupStats = computeGroupStats(cachedRegistry);
+        return cachedRegistry;
       }
     }
   } catch {}
+
+  // Dự phòng trường hợp có sẵn file master cục bộ
   try {
     if (typeof DecompressionStream !== 'undefined') {
       const res = await fetch('/data/vietnam_drug_registry/dav_master_registry.json.gz');
       if (res.ok && res.body) {
-        // Browsers may already decompress .gz responses from servers that set
-        // Content-Encoding: gzip. Avoid trying to decompress those bytes twice.
         const contentEncoding = res.headers.get('content-encoding')?.toLowerCase() || '';
         const text = contentEncoding.includes('gzip')
           ? await res.text()
@@ -69,10 +66,9 @@ export async function loadOfflineRegistry(): Promise<any[]> {
       }
     }
   } catch {}
-  const res = await fetch('/data/vietnam_drug_registry/dav_essential_formulary.json');
-  const local = await res.json();
-  cachedRegistry = Array.isArray(local) ? local : [];
-  cachedGroupStats = computeGroupStats(cachedRegistry);
+
+  cachedRegistry = [];
+  cachedGroupStats = {};
   return cachedRegistry;
 }
 

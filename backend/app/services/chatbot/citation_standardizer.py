@@ -193,6 +193,11 @@ def standardize_response_citations(resp: CopilotResponse, query: str = "") -> Co
             basis = item.get("legal_basis") or item.get("source") or "Văn bản y văn"
             item["title"] = basis.split("•")[0].strip()
 
+        if item.get("page") and item.get("url") and "#page=" not in item["url"]:
+            item["url"] = f"{item['url'].split('#')[0]}#page={item['page']}"
+        if not item.get("inn"):
+            item["inn"] = drug_hint or sec_str or None
+
         cleaned_citations.append(item)
 
     # 2. Nếu citations vẫn rỗng, tự động suy diễn từ legal_basis hoặc query/intent

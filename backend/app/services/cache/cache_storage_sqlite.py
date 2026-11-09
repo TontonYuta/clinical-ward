@@ -20,6 +20,8 @@ def _serialize_features(features: Dict[str, Any]) -> str:
     for k, v in features.items():
         if isinstance(v, (set, frozenset)):
             serialized[k] = sorted(list(v))
+        elif hasattr(v, "tolist"):
+            serialized[k] = v.tolist()
         else:
             serialized[k] = v
     return json.dumps(serialized, ensure_ascii=False)
@@ -32,6 +34,9 @@ def _deserialize_features(raw_json: str) -> Dict[str, Any]:
             deserialized[k] = frozenset(v)
         elif k in {"numbers", "tokens", "conditions", "meds", "trigrams"} and isinstance(v, list):
             deserialized[k] = set(v)
+        elif k == "vector" and isinstance(v, list) and v:
+            import numpy as np
+            deserialized[k] = np.array(v, dtype=np.float32)
         else:
             deserialized[k] = v
     return deserialized

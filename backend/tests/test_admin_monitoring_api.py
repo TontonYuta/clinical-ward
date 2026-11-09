@@ -92,6 +92,12 @@ async def test_key_vault_rotation_and_budget_gate():
 
         # 2. Test budget gate
         old_cfg = load_budget_config()
+        safe_old_cfg = BudgetCapConfig(
+            daily_token_limit=50_000_000,
+            monthly_token_limit=500_000_000,
+            auto_offline_fallback=old_cfg.auto_offline_fallback,
+            alert_on_threshold_pct=old_cfg.alert_on_threshold_pct
+        )
         save_budget_config(BudgetCapConfig(
             daily_token_limit=10000,
             monthly_token_limit=100000,
@@ -104,8 +110,8 @@ async def test_key_vault_rotation_and_budget_gate():
         assert isinstance(allowed, bool)
         assert isinstance(reason, str)
 
-        # Reset lại config cũ
-        save_budget_config(old_cfg)
+        # Reset lại config an toàn
+        save_budget_config(safe_old_cfg)
         allowed_after, _ = check_token_budget_gate()
         assert allowed_after is True
     finally:

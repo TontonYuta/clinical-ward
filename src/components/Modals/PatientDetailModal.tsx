@@ -9,6 +9,7 @@ import { X, Printer } from 'lucide-react';
 import { PatientProfile, INITIAL_PATIENTS } from '../../services/patientService';
 import { SendSmsModal } from './SendSmsModal';
 import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { getCachedDebts } from '../../utils/storage/appStatePersistence';
 import { PrescriptionOrder } from '../../types/cpoe';
 import { PatientOverviewTab } from './PatientDetail/PatientOverviewTab';
@@ -47,7 +48,8 @@ export const PatientDetailModal: React.FC<PatientDetailModalProps> = ({
   const relatedPrescriptions = useMemo(() => {
     if (!patient) return [];
     try {
-      const stored = localStorage.getItem('cpoe_prescriptions_cache_v2');
+      const stored = localStorage.getItem(STORAGE_KEYS.CLINICAL_CACHED_CPOE) ||
+                     localStorage.getItem(STORAGE_KEYS.LEGACY_CPOE_PRESCRIPTIONS_V2);
       const all: PrescriptionOrder[] = stored ? JSON.parse(stored) : INITIAL_PRESCRIPTIONS;
       return all.filter((o) => o.patientId === patient.id || o.patientName?.toLowerCase() === patient.fullName?.toLowerCase());
     } catch { return INITIAL_PRESCRIPTIONS.filter((o) => o.patientId === patient.id); }

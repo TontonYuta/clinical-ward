@@ -65,31 +65,74 @@ def build_drug_citation(
     source: str,
     target_field: str | None = None
 ) -> dict:
+    from app.services.chatbot.dynamic_inn_bridge import (
+        resolve_drug_to_monograph,
+        get_monograph_section_page,
+        build_w3c_text_fragment_url,
+    )
+
     legal = source or getattr(monograph, "source", None) or getattr(matched, "clinical_source", None) or ""
-    page_match = re.search(r"Trang\s*(\d+)", legal, re.IGNORECASE)
-    page = int(page_match.group(1)) if page_match else None
-    if not page:
-        try:
-            from app.services.rag.source_resolver import resolve_citation_document
-            hint = getattr(monograph, "inn", None) or getattr(monograph, "title", None) or matched.brand_name or ""
-            _, _, resolved_page = resolve_citation_document(legal, legal, "", query=hint, active_drug=matched.brand_name)
-            if resolved_page:
-                page = resolved_page
-        except Exception:
-            page = None
+
+    # 1. Kiểm tra tài liệu nguồn Dược Thư
     manifest_path = Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "clinical_source_manifest.json"
     try:
         sources = json.loads(manifest_path.read_text(encoding="utf-8")).get("sources", [])
     except (OSError, ValueError, TypeError):
         sources = []
     dtqg = next((item for item in sources if item.get("id") == "dtqg-v2-2015"), None)
-    has_dtqg_provenance = bool(legal and "dược thư" in legal.casefold() and dtqg)
-    title = "Dược thư Quốc gia Việt Nam, lần xuất bản II" if has_dtqg_provenance else "Cơ sở dữ liệu đăng ký thuốc Cục Quản lý Dược"
-    url = f"/{dtqg['public_path'].removeprefix('public/')}" if has_dtqg_provenance else "https://dichvucong.dav.gov.vn/congbothuoc/index"
-    document_id = "dtqg-v2-2015" if has_dtqg_provenance else "dav-registry"
-    if has_dtqg_provenance and page:
-        url += f"#page={page}"
 
+    is_explicit_unverified_dav = bool(
+        legal and any(term in legal.casefold() for term in ("csdl đăng ký", "hồ sơ công bố dav"))
+        and not ("dược thư" in legal.casefold() or "dtqg" in legal.casefold() or "2033" in legal.casefold())
+    )
+
+    if is_explicit_unverified_dav:
+        has_dtqg_provenance = False
+        monograph = None
+    else:
+        # Nếu chưa có monograph hoặc monograph rỗng, tự động kết nối động qua Dynamic INN Bridge
+        if monograph is None:
+            monograph = resolve_drug_to_monograph(matched)
+        has_mono_page = bool(
+            monograph is not None and (
+                (hasattr(monograph, "start_page") and getattr(monograph, "start_page"))
+                or (isinstance(monograph, dict) and monograph.get("start_page"))
+            )
+        )
+        has_dtqg_provenance = bool(has_mono_page or (legal and "dược thư" in legal.casefold()))
+
+    if has_dtqg_provenance and not legal:
+        legal = "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT)"
+
+    # 2. Phân giải số trang chính xác cấp tiểu mục (Deep Fragment Grounding)
+    page = None
+    if monograph and has_dtqg_provenance:
+        sec_page, _ = get_monograph_section_page(monograph, requested_field=target_field)
+        if sec_page:
+            page = sec_page
+        elif hasattr(monograph, "start_page") and getattr(monograph, "start_page"):
+            page = int(getattr(monograph, "start_page"))
+        elif isinstance(monograph, dict) and monograph.get("start_page"):
+            page = int(monograph["start_page"])
+
+    if not page and legal and has_dtqg_provenance:
+        page_match = re.search(r"Trang\s*(\d+)", legal, re.IGNORECASE)
+        page = int(page_match.group(1)) if page_match else None
+
+    if not page and has_dtqg_provenance:
+        try:
+            from app.services.rag.source_resolver import resolve_citation_document
+            hint = getattr(monograph, "inn", None) if monograph else (getattr(matched, "active_ingredient", None) or matched.brand_name)
+            _, _, resolved_page = resolve_citation_document(legal, legal, "", query=hint, active_drug=matched.brand_name, requested_field=target_field or "")
+            if resolved_page:
+                page = resolved_page
+        except Exception:
+            page = None
+
+    title = "Dược thư Quốc gia Việt Nam, lần xuất bản II" if has_dtqg_provenance else "Cơ sở dữ liệu đăng ký thuốc Cục Quản lý Dược"
+    document_id = "dtqg-v2-2015" if has_dtqg_provenance else "dav-registry"
+
+    # 3. Trích xuất đoạn trích dẫn bằng chứng (Excerpt)
     excerpt = ""
     candidate_fields = []
     if target_field:
@@ -104,7 +147,7 @@ def build_drug_citation(
         if field in seen_fields:
             continue
         seen_fields.add(field)
-        val = (getattr(monograph, field, None) if monograph is not None else None) or getattr(matched, field, None)
+        val = (getattr(monograph, field, None) if monograph is not None else (monograph.get(field) if isinstance(monograph, dict) else None)) or getattr(matched, field, None)
         if val and str(val).strip():
             excerpt = format_clinical_text(str(val)).strip()
             break
@@ -112,11 +155,26 @@ def build_drug_citation(
     if not excerpt:
         excerpt = str(getattr(matched, "indications", "") or "").strip()
     excerpt = truncate_clinical_excerpt(excerpt, max_length=240)
-    clean_section = getattr(monograph, "inn", None) or matched.active_ingredient or getattr(monograph, "title", None) or matched.brand_name
+    clean_section = (getattr(monograph, "inn", None) if monograph else None) or (monograph.get("inn") if isinstance(monograph, dict) else None) or matched.active_ingredient or getattr(monograph, "title", None) or matched.brand_name
+
+    # 4. Sinh URL chuẩn (#page=X tương thích 100% viewer hiện tại và W3C Text Fragment)
+    if has_dtqg_provenance and dtqg:
+        base_path = f"/{dtqg['public_path'].removeprefix('public/')}"
+        url = f"{base_path}#page={page}" if page else base_path
+        text_fragment_url = build_w3c_text_fragment_url(base_path, page, excerpt)
+    else:
+        url = "https://dichvucong.dav.gov.vn/congbothuoc/index"
+        text_fragment_url = url
+
     return {
-        "source": title, "legal_basis": legal or "Cục Quản lý Dược (DAV)",
+        "source": title,
+        "legal_basis": legal or "Cục Quản lý Dược (DAV)",
         "section": clean_section,
-        "excerpt": excerpt, "document_id": document_id, "url": url, "page": page if has_dtqg_provenance else None,
+        "excerpt": excerpt,
+        "document_id": document_id,
+        "url": url,
+        "text_fragment_url": text_fragment_url,
+        "page": page if has_dtqg_provenance else None,
     }
 
 

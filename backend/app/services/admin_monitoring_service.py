@@ -184,10 +184,14 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
         "MEDICATION_SAFETY_PROFILE": ("Chuyên Khảo Dược Thư DĐVN V", "#0d9488"),
         "MEDICATION_INTERACTION": ("Kiểm Tra Tương Tác Thuốc DDI", "#0284c7"),
         "CLINICAL_RENAL_DOSING": ("Hiệu Chỉnh Liều Suy Thận", "#16a34a"),
+        "CLINICAL_PED_DOSING": ("Hiệu Chỉnh Liều Nhi Khoa", "#8b5cf6"),
+        "CLINICAL_FOOD_INTERACTION": ("Tương Tác Thức Ăn & Rượu Bia", "#f59e0b"),
         "CLINICAL_FEVER_TRIAGE_PROTOCOL": ("Phác Đồ Xử Trí Lâm Sàng", "#eab308"),
         "CLINICAL_SAFE_ABSTENTION": ("Cơ Chế Phân Tử / RAG An Toàn", "#6366f1"),
         "BHYT_CHECK": ("Giám Định & Xuất Toán BHYT", "#f97316"),
+        "BHYT_OCR": ("OCR Hóa Đơn & Đơn Thuốc BHYT", "#ec4899"),
         "FEFO_INVENTORY": ("Kê Đơn CPOE & Tồn Kho FEFO", "#ec4899"),
+        "DISPENSE": ("Cấp Phát Thuốc & Xuất Kho", "#14b8a6"),
     }
     
     intent_stmt = select(CopilotChatLog.intent, func.count(CopilotChatLog.id)).where(

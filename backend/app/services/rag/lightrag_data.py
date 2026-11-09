@@ -131,6 +131,16 @@ PHARMACOLOGICAL_CLASS_TAXONOMY: Dict[str, Dict[str, Any]] = {
         "members": ["warfarin", "aspirin", "clopidogrel", "rivaroxaban", "apixaban", "dabigatran", "enoxaparin", "heparin"],
         "mechanism": "Ức chế các yếu tố đông máu hoặc ngăn chặn kết tập tiểu cầu, ngăn ngừa hình thành huyết khối.",
         "adverse_effects": "Nguy cơ xuất huyết nghiêm trọng (tiêu hóa, sọ não); theo dõi chặt chẽ INR hoặc chức năng thận."
+    },
+    "ANTIEPILEPTIC": {
+        "name_vi": "Thuốc chống co giật & Kháng động kinh (Antiepileptics / AEDs)",
+        "atc_prefix": "N03A",
+        "keywords": ["antiepileptic", "chống động kinh", "kháng động kinh", "chống co giật", "carbamazepin", "carbamazepine", "tegretol", "valproate", "depakine", "phenytoin", "lamotrigine", "oxcarbazepine", "carbadac"],
+        "members": ["carbamazepine", "valproic acid", "phenytoin", "lamotrigine", "oxcarbazepine", "levetiracetam"],
+        "mechanism": "Chẹn chọn lọc các kênh natri phụ thuộc điện thế tại màng nơ-ron hoặc tăng cường hoạt tính GABA ức chế, ngăn ngừa phóng điện kịch phát và lan truyền cơn động kinh.",
+        "primary_metabolism": "Chuyển hóa qua gan CYP3A4, CYP2C9; Carbamazepine có đặc tính tự cảm ứng enzym (auto-induction) và cảm ứng mạnh mẽ CYP3A4.",
+        "cautions": "Cảnh báo nghiêm trọng gen HLA-B*1502 gây Hội chứng Stevens-Johnson (SJS) và Hoại tử thượng bì nhiễm độc (TEN) ở người châu Á/Việt Nam. Nguy cơ mất bạch cầu hạt, dị tật thai nhi bẩm sinh.",
+        "contraindications": "Block nhĩ - thất (AV block), tiền sử suy tủy xương, rối loạn chuyển hóa porphyrin, phối hợp với thuốc ức chế MAO."
     }
 }
 
@@ -139,6 +149,14 @@ PHARMACOLOGICAL_CLASS_TAXONOMY: Dict[str, Dict[str, Any]] = {
 # ==============================================================================
 
 CLASS_INTERACTION_GRAPH: List[Dict[str, Any]] = [
+    {
+        "class_a": "ANTIEPILEPTIC",
+        "class_b": "MACROLID",
+        "severity": "Chống chỉ định & Cảnh báo ngộ độc nồng độ (QĐ 5948/QĐ-BYT)",
+        "mechanism": "Kháng sinh Macrolid (Clarithromycin, Erythromycin) ức chế mạnh CYP3A4, làm giảm chuyển hóa và tăng vọt nồng độ Carbamazepine.",
+        "consequence": "Ngộ độc cấp Carbamazepine: mất điều hòa vận động, ngủ gà, rung giật nhãn cầu, suy hô hấp.",
+        "management": "Tránh dùng đồng thời Clarithromycin/Erythromycin với Carbamazepine; thay thế bằng Azithromycin hoặc nhóm Beta-lactam, hoặc giảm liều Carbamazepine và theo dõi nồng độ huyết tương."
+    },
     {
         "class_a": "MACROLID",
         "class_b": "STATIN",

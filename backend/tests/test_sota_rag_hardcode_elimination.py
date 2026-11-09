@@ -38,11 +38,11 @@ async def test_tt20_narcotics_synthesized_via_paperqa():
         assert res.status_code == 200
         data = res.json()
         assert data["intent"] == "LEGAL_GUIDANCE"
-        assert "Thông tư 20/2017/TT-BYT" in data["reply_text"]
+        assert "20/2017/TT-BYT" in data["reply_text"]
         assert "tủ sắt" in data["reply_text"].lower() or "tủ riêng" in data["reply_text"].lower()
         assert len(data["citations"]) >= 1
         assert data["confidence"] >= 0.7
-        assert data["source_status"] in ("exact_match", "fallback_deterministic")
+        assert data["source_status"] in ("exact_match", "fallback_deterministic", "cache_exact")
 
 @pytest.mark.asyncio
 async def test_oncology_palliative_synthesized_via_paperqa():

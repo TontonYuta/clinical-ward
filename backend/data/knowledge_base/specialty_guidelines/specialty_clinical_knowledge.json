@@ -534,7 +534,12 @@
       "gây nghiện",
       "thuốc gây nghiện",
       "morphin",
+      "vỏ ống",
       "hủy vỏ",
+      "thu hồi",
+      "tiêu hủy",
+      "nộp lại",
+      "trả vỏ",
       "bảo quản",
       "quy chế"
     ],
@@ -1278,7 +1283,10 @@
       "thang giảm đau who",
       "palliative care",
       "morphin ung thư",
-      "đau ung thư"
+      "đau ung thư",
+      "thuốc trị ung thư",
+      "thuốc ung thư",
+      "u bướu"
     ],
     "topic": "Chăm sóc giảm nhẹ và quản lý đau trong ung thư theo WHO",
     "bluf": "Quản lý đau trong chăm sóc giảm nhẹ ung thư tuân thủ Thang giảm đau 3 bậc của WHO (Bậc 1: Không opioid; Bậc 2: Opioid yếu như Codein/Tramadol; Bậc 3: Opioid mạnh như Morphin, Fentanyl) kết hợp thuốc bổ trợ và tôn trọng nguyên tắc kê đơn theo giờ, theo đường uống.",

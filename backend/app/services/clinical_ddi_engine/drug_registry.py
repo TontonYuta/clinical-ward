@@ -69,5 +69,6 @@ DRUG_REGISTRY: dict[str, dict] = {
     "linagliptin": {"display": "Linagliptin", "aliases": ["linagliptin", "trajenta"], "classes": ["DPP4I"], "risk": []},
     "antacid": {"display": "Antacid (Nhôm, Magnesi, Sắt, Canxi)", "aliases": ["antacid", "nhom hydroxyd", "magnesi", "sat sulfat", "gastropulgite", "maalox", "phosphalugel"], "classes": ["MULTIVALENT_CATION"], "risk": []},
     "ondansetron": {"display": "Ondansetron", "aliases": ["ondansetron", "zofran", "vomina"], "classes": ["5HT3_ANTAGONIST"], "risk": ["qt_prolonging"]},
-    "amoxicillin": {"display": "Amoxicillin", "aliases": ["amoxicillin", "augmentin", "clavamox", "amoxil", "amoxicilline"], "classes": ["PENICILLIN_AMINOPENICILLIN"], "risk": []}
+    "amoxicillin": {"display": "Amoxicillin", "aliases": ["amoxicillin", "augmentin", "clavamox", "amoxil", "amoxicilline"], "classes": ["PENICILLIN_AMINOPENICILLIN"], "risk": []},
+    "carbamazepin": {"display": "Carbamazepin", "aliases": ["carbamazepin", "carbamazepine", "tegretol"], "classes": ["ANTIEPILEPTIC", "CYP3A4_SUBSTRATE"], "cyp_sub": ["CYP3A4"], "risk": ["cns_depressant"]}
 }

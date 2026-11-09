@@ -7,8 +7,12 @@ import { AgentActionCard, ChatMessage } from '../../../types/clinical';
 import { anyKeyword, ClinicalQueryState, ProcessedQueryResult } from '../types';
 
 export function matchColdChainIntent(lower: string): boolean {
+  if (lower.includes('?') && !lower.includes('chuỗi lạnh') && !lower.includes('datalogger')) {
+    return false;
+  }
   return anyKeyword(lower, [
-    'chuỗi lạnh', 'nhiệt độ', 'vắc xin', 'datalogger', 'buồng lạnh', 'mkt', 'tủ lạnh', 'mất điện tủ', 'arrhenius'
+    'chuỗi lạnh', 'giám sát chuỗi lạnh', 'datalogger', 'buồng lạnh vắc xin',
+    'nhiệt độ tủ lạnh vắc xin', 'nhiệt độ chuỗi lạnh', 'mkt chuỗi lạnh', 'mất điện tủ vắc xin', 'arrhenius chuỗi lạnh'
   ]);
 }
 

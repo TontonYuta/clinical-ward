@@ -24,11 +24,11 @@ def assess_query_complexity(query: str, history: str = "") -> bool:
 
     return AMIEContextBuffer.is_deictic_continuation(clean_q, history)
 
-def _fast_heuristic_rewrite(query: str, history: str) -> Optional[ClinicalRewriteResult]:
+def _fast_heuristic_rewrite(query: str, history: str, active_med: Optional[str] = None) -> Optional[ClinicalRewriteResult]:
     """Bộ phân giải ngữ cảnh cục bộ siêu tốc (< 1ms, Zero Hardcoded Drug List)."""
     clean_q = query.strip()
     lower_q = clean_q.lower()
-    recent_drug = AMIEContextBuffer.extract_recent_active_drug(history)
+    recent_drug = (active_med.strip() if active_med and len(active_med.strip()) >= 3 else None) or AMIEContextBuffer.extract_recent_active_drug(history)
 
     # TH1: Câu ghép chào hỏi năng lực + hỏi thuốc cụ thể
     m_compound = re.search(
@@ -131,6 +131,7 @@ async def rewrite_clinical_query(
     query: str,
     history: str = "",
     *,
+    active_med: Optional[str] = None,
     api_key: Optional[str] = None,
     timeout_sec: float = 1.2
 ) -> ClinicalRewriteResult:
@@ -147,7 +148,7 @@ async def rewrite_clinical_query(
             latency_ms=round((time.time() - start_time) * 1000, 2)
         )
 
-    fast_res = _fast_heuristic_rewrite(clean_q, history)
+    fast_res = _fast_heuristic_rewrite(clean_q, history, active_med=active_med)
     if fast_res:
         fast_res.latency_ms = round((time.time() - start_time) * 1000, 2)
         return fast_res

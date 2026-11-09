@@ -20,44 +20,44 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const tabs = [
     {
       id: 'telemetry' as AdminTab,
-      label: 'Giám Sát Vận Hành',
-      desc: 'Telemetry, Cache & BHYT',
+      label: 'Giám sát vận hành',
+      desc: 'Telemetry, Cache & Token',
       icon: BarChart3,
     },
     {
       id: 'key_vault' as AdminTab,
-      label: 'Bể Khóa API Key',
-      desc: 'Multi-Key Pool & Failover',
+      label: 'Bể khóa API',
+      desc: 'Quản lý key & Failover',
       icon: KeyRound,
       badge: `${activeKeyCount} Keys`,
     },
     {
       id: 'integrations' as AdminTab,
-      label: 'Cổng Viễn Thông & GAS',
-      desc: 'eSMS Brandname & Google Script',
+      label: 'Cổng viễn thông',
+      desc: 'eSMS & Google Script',
       icon: Radio,
       badge: (typeof esmsBalance === 'number' && !isNaN(esmsBalance)) ? `${esmsBalance.toLocaleString('vi-VN')} đ` : 'eSMS',
     },
     {
       id: 'budget_cap' as AdminTab,
-      label: 'Ngân Sách Token',
-      desc: 'Hạn mức ngày & Tự chuyển 0đ',
+      label: 'Ngân sách Token',
+      desc: 'Hạn mức & Tự chuyển 0đ',
       icon: Coins,
       badge: `${todayUsagePct}%`,
     },
     {
       id: 'safety_audit' as AdminTab,
-      label: 'Nhật Ký An Toàn',
-      desc: 'DDI Block & Guardrails',
+      label: 'Nhật ký an toàn',
+      desc: 'Chặn DDI & Guardrails',
       icon: ShieldAlert,
     },
   ];
 
   return (
-    <aside className="w-64 lg:w-72 bg-white border-r border-slate-200/80 p-4 flex flex-col justify-between shrink-0 h-full select-none">
-      <div className="space-y-1.5">
-        <div className="px-2 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">
-          Phân Hệ Theo Dõi
+    <aside className="w-60 lg:w-68 bg-white border-r border-slate-200/80 p-3.5 flex flex-col justify-between shrink-0 h-full select-none">
+      <div className="space-y-1">
+        <div className="px-2 py-1 text-2xs font-bold text-slate-400 uppercase tracking-wider">
+          Phân hệ giám sát
         </div>
 
         {tabs.map((t) => {

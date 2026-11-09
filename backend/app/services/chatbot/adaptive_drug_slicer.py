@@ -45,14 +45,49 @@ def _clean_text(val: Optional[str]) -> str:
 def _extract_core_bullets(text: Optional[str], max_items: int = 1) -> str:
     if not text:
         return ""
-    # Tách đoạn theo dấu chấm, chấm phẩy hoặc gạch đầu dòng
-    chunks = [c.strip() for c in re.split(r"[;\n•\-\+]|\.\s+", str(text)) if len(c.strip()) > 8]
-    if not chunks:
-        chunks = [text.strip()[:120]]
-    res = " • ".join(chunks[:max_items]).strip()
-    if res and not res.endswith("."):
-        res += "."
-    return res
+    # Chuẩn hóa ngắt dòng: Nối các dòng ngắt giữa câu (wrapped lines từ bản scan PDF)
+    lines = [l.strip().lstrip("•*-+ ") for l in str(text).splitlines() if l.strip()]
+    if not lines:
+        return ""
+
+    merged_blocks = []
+    current_block = []
+    for line in lines:
+        if current_block and (current_block[-1].endswith(':') or line.startswith(('•', '-', '*'))):
+            merged_blocks.append(" ".join(current_block))
+            current_block = []
+        current_block.append(line)
+        if line.endswith('.'):
+            merged_blocks.append(" ".join(current_block))
+            current_block = []
+    if current_block:
+        merged_blocks.append(" ".join(current_block))
+
+    all_sentences = []
+    for block in merged_blocks:
+        # Bỏ qua nếu block chỉ là tiêu đề ngắn phân mục kết thúc bằng :
+        if block.endswith(':') and len(block) < 30 and not any(c.isdigit() for c in block):
+            continue
+        parts = [p.strip() for p in re.split(r"(?<=[a-zA-ZÀ-ỹ\)])\.\s+(?=[A-ZÀ-Ỹ0-9•\-])", block) if len(p.strip()) > 8]
+        if parts:
+            all_sentences.extend(parts)
+        elif len(block) > 8:
+            all_sentences.append(block)
+
+    # Ưu tiên các câu chứa dữ kiện định lượng hoặc hành động lâm sàng thực tế
+    dosing_sentences = [s for s in all_sentences if re.search(r'\b(?:mg|g|ml|kg|lần|ngày|liều|tuổi|uống|tiêm|truyền)\b', s, re.I)]
+    candidates = dosing_sentences if dosing_sentences else all_sentences
+
+    cleaned = []
+    for cand in candidates:
+        clean_s = re.sub(r'^(?:[A-ZÀ-Ỹa-zà-ỹ\s,]+:\s*)+', '', cand).strip()
+        if not clean_s or len(clean_s) < 10:
+            clean_s = cand
+        if clean_s and not clean_s.endswith('.'):
+            clean_s += '.'
+        cleaned.append(clean_s)
+
+    return " • ".join(cleaned[:max_items]).strip()
 
 
 async def slice_clinical_drug_evidence(
@@ -132,10 +167,14 @@ async def slice_clinical_drug_evidence(
     raw_ped = (monograph.pediatric_dosage if monograph else None) or getattr(matched, "pediatric_dosage", None) or ""
     raw_contra = (monograph.contraindications if monograph else None) or matched.contraindications or ""
 
-    evidence.core_indication = _extract_core_bullets(raw_ind, max_items=1) or "Theo chỉ định lâm sàng của bác sĩ điều trị."
-    evidence.core_adult_dose = _extract_core_bullets(raw_dose, max_items=1) or "Tuân thủ liều lượng khuyến cáo chuyên khoa."
-    evidence.core_pediatric_dose = _extract_core_bullets(raw_ped, max_items=1) or "Tính liều theo cân nặng (mg/kg) theo hướng dẫn chuyên khoa nhi."
-    evidence.core_contraindication = _extract_core_bullets(raw_contra, max_items=1) or "Mẫn cảm với bất kỳ thành phần nào của thuốc."
+    evidence.core_indication = _extract_core_bullets(raw_ind, max_items=1)
+    evidence.core_adult_dose = _extract_core_bullets(raw_dose, max_items=1)
+    evidence.core_pediatric_dose = _extract_core_bullets(raw_ped, max_items=1)
+    evidence.core_contraindication = _extract_core_bullets(raw_contra, max_items=1)
+
+    # Nếu thuốc không có thông tin lâm sàng cốt lõi (chỉ có dòng đăng ký hành chính) -> Không sinh placeholder rác
+    if not (evidence.core_indication or evidence.core_adult_dose or evidence.core_contraindication):
+        return None, None, "insufficient_evidence"
 
     # 2. Bóc tách dữ liệu cho DEEP_FACET
     facet_data: Dict[str, str] = {}
@@ -144,31 +183,41 @@ async def slice_clinical_drug_evidence(
     # a) Thời điểm uống & Cách dùng (Trước/Sau ăn, Sáng/Tối)
     if "timing_and_administration" in target_facets:
         timing_info = []
+        from app.services.clinical_prescription_auditor import TIMING_GUIDELINES
+        matched_guide = None
+        for guide in TIMING_GUIDELINES.values():
+            if any(kw in lower_comb for kw in guide["keywords"]):
+                matched_guide = guide
+                break
+
         if any(k in lower_comb for k in ("paracetamol", "acetaminophen", "panadol", "efferalgan", "hapacol")):
             timing_info.append(
                 "• **Thời điểm:** Uống sáng hay tối đều được, không phụ thuộc vào chu kỳ ngày/đêm và không gây mất ngủ hay kích ứng thần kinh.\n"
                 "• **Cách dùng:** Uống sau bữa ăn no 15 - 30 phút cùng 1 cốc nước đầy (150 - 200ml) để giảm kích ứng dạ dày. Các lần uống cách nhau tối thiểu 4 - 6 giờ."
             )
-        elif any(k in lower_comb for k in ("zithromax", "azithromycin")):
+        elif matched_guide:
             timing_info.append(
-                "• **Dạng viên nén bao phim:** Uống trước hoặc sau bữa ăn đều được.\n"
-                "• **Dạng viên nang hoặc hỗn dịch uống:** Bắt buộc uống lúc đói (ít nhất 1 giờ trước ăn hoặc 2 giờ sau ăn) vì thức ăn làm giảm 50% hấp thu."
-            )
-        elif any(k in lower_comb for k in ("ibuprofen", "diclofenac", "meloxicam", "celecoxib", "nsaid", "aspirin")):
-            timing_info.append(
-                "• **Thời điểm & Cách dùng:** Bắt buộc uống ngay sau bữa ăn no hoặc trong bữa ăn với nhiều nước để giảm thiểu nguy cơ kích ứng và loét niêm mạc dạ dày."
-            )
-        elif any(k in lower_comb for k in ("omeprazol", "esomeprazol", "pantoprazol", "rabeprazol", "ppi")):
-            timing_info.append(
-                "• **Thời điểm & Cách dùng:** Uống vào buổi sáng trước bữa ăn 30 - 60 phút khi dạ dày rỗng để đạt hiệu quả ức chế bơm proton tối ưu."
+                f"• **Thời điểm khuyến cáo:** {matched_guide['timing']}.\n"
+                f"• **Cách dùng:** {matched_guide['instruction']}.\n"
+                f"• **Cơ sở dược lý:** {matched_guide['rationale']}"
             )
         else:
             raw_prec = (monograph.precautions if monograph else None) or ""
-            timing_info.append(
-                f"• **Khuyến cáo chung:** Uống sau bữa ăn no 15 - 30 phút cùng 1 cốc nước đầy để hạn chế kích ứng tiêu hóa.\n"
-                f"*(Căn cứ Dược thư: {_clean_text(raw_prec)[:200]}...)*" if raw_prec else
-                "• **Khuyến cáo chung:** Uống sau bữa ăn no với nước đun sôi để nguội, tuân thủ khoảng cách giữa các liều."
-            )
+            raw_adm = (monograph.adult_dosage if monograph else None) or ""
+            timing_sentences = [
+                line.strip() for line in f"{raw_prec}\n{raw_adm}".splitlines()
+                if any(w in line.lower() for w in ("trước ăn", "sau ăn", "lúc đói", "lúc no", "uống cùng", "thời điểm", "bữa ăn", "sáng", "tối"))
+            ]
+            if timing_sentences:
+                timing_info.append(
+                    "• **Thời điểm & Cách dùng theo Dược thư:**\n" + "\n".join(f"  * {s}" for s in timing_sentences[:3])
+                )
+            else:
+                timing_info.append(
+                    f"• **Hướng dẫn chung:** Tuân thủ thời điểm và liều dùng theo chỉ định của bác sĩ điều trị.\n"
+                    f"*(Căn cứ Dược thư: {_clean_text(raw_prec)[:200]}...)*" if raw_prec else
+                    "• **Hướng dẫn chung:** Uống thuốc đúng khoảng cách giữa các liều với nước đun sôi để nguội."
+                )
         facet_data["timing_and_administration"] = "\n".join(timing_info)
 
     # b) Liều tối đa (Max Dosage)

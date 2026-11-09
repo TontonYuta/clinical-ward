@@ -66,41 +66,88 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     });
   };
 
-  const handleInlineCitationClick = (_msgId: string, citationRef: any) => {
+  const handleInlineCitationClick = (msgId: string, citationRef: any) => {
+    const msg = messages.find((m) => m.id === msgId);
+    const activeCits = msg?.citations || [];
+    const firstCit = activeCits.length > 0 ? activeCits[0] : undefined;
+
+    const finalPage = citationRef.page || firstCit?.page || undefined;
+
+    const inn = (citationRef.inn || firstCit?.inn || msg?.active_medication_name || '').trim();
+    const section = (citationRef.section || firstCit?.section || '').trim();
+    const explicitSearch = (citationRef.searchTerm || '').trim();
+
+    // Tự động bóc tách từ khóa hoạt chất / biệt dược chính từ tiêu đề chuyên luận
+    let cleanDrugKeyword = inn;
+    if (!cleanDrugKeyword) {
+      const matchDrug = (citationRef.title || citationRef.section || citationRef.legal_basis || '').match(
+        /\b(Perindopril|Metformin|Meloxicam|Spironolacton|Colchicin|Ciprofloxacin|Levofloxacin|Enoxaparin|Allopurinol|Paracetamol|Ibuprofen|Augmentin|Amoxicillin|Coversyl|Aldactone|Glucophage)\b/i
+      );
+      if (matchDrug) cleanDrugKeyword = matchDrug[1];
+    }
+
+    // Thu thập danh sách từ khóa lâm sàng đa dạng (ưu tiên hoạt chất chính để PDF.js tìm tức thì)
+    const keywordsList: string[] = [];
+    if (explicitSearch) keywordsList.push(explicitSearch);
+    if (cleanDrugKeyword) keywordsList.push(cleanDrugKeyword);
+    if (inn && section) keywordsList.push(`${inn} ${section}`);
+    if (inn && inn !== cleanDrugKeyword) keywordsList.push(inn);
+    if (section) keywordsList.push(section);
+    if (citationRef.keywords && Array.isArray(citationRef.keywords)) {
+      citationRef.keywords.forEach((k: string) => {
+        if (k && !keywordsList.includes(k)) keywordsList.push(k);
+      });
+    }
+
+    let targetUrl = citationRef.url || firstCit?.url || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
+    if (finalPage && !targetUrl.includes('#page=')) {
+      targetUrl = `${targetUrl.split('#')[0]}#page=${finalPage}`;
+    }
+
     setPdfTarget({
-      title: citationRef.title || citationRef.legal_basis || 'Dược Thư Quốc Gia Việt Nam',
-      url: citationRef.url || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf',
-      page: citationRef.page,
-      excerpt: citationRef.excerpt,
-      legal_basis: citationRef.legal_basis || citationRef.title,
-      section: citationRef.section,
-      inn: citationRef.section || 'paracetamol',
+      title: citationRef.title || citationRef.legal_basis || firstCit?.title || firstCit?.legal_basis || 'Dược Thư Quốc Gia Việt Nam',
+      url: targetUrl,
+      page: finalPage,
+      excerpt: citationRef.excerpt || firstCit?.excerpt,
+      legal_basis: citationRef.legal_basis || citationRef.title || firstCit?.legal_basis,
+      section: section || undefined,
+      inn: inn || undefined,
+      searchTerm: explicitSearch || (inn && section ? `${inn} ${section}` : inn || section || undefined),
+      keywords: keywordsList,
+      textFragmentUrl: citationRef.text_fragment_url || citationRef.textFragmentUrl || firstCit?.text_fragment_url,
     });
   };
 
   const isStreamingAny = messages.some(m => m.isStreaming);
 
   useEffect(() => {
+    let animId: number;
     if (outerContainerRef.current) {
       outerContainerRef.current.scrollTop = 0;
     }
     if (isStreamingAny) {
-      // Khi đang stream token: nếu bác sĩ không cuộn ngược lên đọc tài liệu cũ,
-      // tự động bám đáy bằng scrollTop trực tiếp trên messagesContainerRef
+      // Khi đang stream token: gom việc cuộn vào requestAnimationFrame để tránh Layout Thrashing 60fps
       if (!isUserScrolledUpRef.current) {
-        const container = messagesContainerRef.current;
-        if (container) {
-          container.scrollTop = container.scrollHeight;
-        }
+        animId = requestAnimationFrame(() => {
+          const container = messagesContainerRef.current;
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        });
       }
     } else {
       // Khi stream xong hoặc có tin nhắn mới hoàn tất: cuộn mượt dịu dàng trên container tin nhắn
       isUserScrolledUpRef.current = false;
-      const container = messagesContainerRef.current;
-      if (container) {
-        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-      }
+      animId = requestAnimationFrame(() => {
+        const container = messagesContainerRef.current;
+        if (container) {
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        }
+      });
     }
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
   }, [messages, isProcessing, isStreamingAny]);
 
   const handleContainerScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -335,32 +382,55 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         </>
                       )}
 
-                      {/* Khối Nguồn Đối Soát (Chỉ hiển thị 1 nguồn duy nhất, không hiện nhãn Căn cứ y văn) */}
+                      {/* Khối Nguồn Đối Soát (Hiển thị tất cả các nguồn bảo chứng, highlight đối chứng nổi bật) */}
                       {isAgent && activeCitations.length > 0 && (() => {
-                        const citation = activeCitations[0];
-                        const { title, subtitle, pageTag } = formatCitationLabel(citation);
+                        // Khử trùng lặp theo url + page hoặc title
+                        const uniqueCitations: RagCitationItem[] = [];
+                        const seenKeys = new Set<string>();
+                        for (const c of activeCitations) {
+                          const key = `${c.url || ''}#p${c.page || 0}_${c.title || c.legal_basis || ''}`;
+                          if (!seenKeys.has(key)) {
+                            seenKeys.add(key);
+                            uniqueCitations.push(c);
+                          }
+                        }
+                        const displayList = uniqueCitations.slice(0, 4);
+
                         return (
-                          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center">
-                            <button
-                              type="button"
-                              onClick={() => handleInlineCitationClick(msg.id, citation)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-teal-50 text-teal-900 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-left group"
-                              title={citation.excerpt ? `Đoạn trích: "${citation.excerpt.slice(0, 150)}..."` : `Bấm để xem bản scan PDF: ${citation.legal_basis || citation.source}`}
-                            >
-                              <BookOpen className="w-3.5 h-3.5 text-teal-700 shrink-0 group-hover:text-teal-900" />
-                              <span className="font-semibold text-slate-900">{title}</span>
-                              {pageTag && (
-                                <span className="px-1.5 py-0.5 rounded bg-teal-200/70 text-teal-950 font-bold text-2xs sm:text-xs">
-                                  {pageTag}
-                                </span>
-                              )}
-                              {subtitle && !pageTag && (
-                                <span className="text-teal-700/80 text-2xs sm:text-xs font-normal">
-                                  ({subtitle.length > 28 ? subtitle.slice(0, 25) + '...' : subtitle})
-                                </span>
-                              )}
-                              <ExternalLink className="w-3 h-3 text-teal-500 group-hover:text-teal-800 ml-0.5 shrink-0" />
-                            </button>
+                          <div className="mt-2.5 pt-2 border-t border-slate-100">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                              <span className="text-2xs font-semibold text-slate-600 uppercase tracking-wider">
+                                {displayList.length > 1 ? `Tài liệu đối chứng y văn (${displayList.length}):` : 'Tài liệu đối chứng:'}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {displayList.map((citation, cIdx) => {
+                                const { title, subtitle, pageTag } = formatCitationLabel(citation);
+                                return (
+                                  <button
+                                    key={`cit_${msg.id}_${cIdx}`}
+                                    type="button"
+                                    onClick={() => handleInlineCitationClick(msg.id, citation)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-950 hover:bg-amber-100 border border-amber-300 shadow-2xs transition-all cursor-pointer active:scale-95 text-left group ring-1 ring-amber-400/40"
+                                    title={citation.excerpt ? `Đoạn trích: "${citation.excerpt.slice(0, 150)}..."` : `Bấm để xem bản scan PDF: ${citation.legal_basis || citation.source}`}
+                                  >
+                                    <span className="font-bold text-slate-900 truncate max-w-[240px]">{title}</span>
+                                    {pageTag && (
+                                      <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 font-extrabold text-2xs shadow-2xs border border-amber-300/80 shrink-0">
+                                        {pageTag}
+                                      </span>
+                                    )}
+                                    {subtitle && !pageTag && (
+                                      <span className="text-amber-800/80 text-2xs font-normal truncate max-w-[140px]">
+                                        ({subtitle})
+                                      </span>
+                                    )}
+                                    <ExternalLink className="w-3 h-3 text-amber-600 group-hover:text-amber-900 shrink-0" />
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })()}

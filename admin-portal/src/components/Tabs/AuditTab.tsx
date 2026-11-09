@@ -18,66 +18,66 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Thẻ Tổng Quan An Toàn */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 lg:gap-4">
+        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500">
-              Tương Tác DDI Chặn
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Tương tác DDI chặn
             </span>
             <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
-              <AlertOctagon className="w-5 h-5" />
+              <AlertOctagon className="w-4.5 h-4.5" />
             </div>
           </div>
-          <div className="text-3xl lg:text-4xl font-extrabold font-mono text-rose-700">{ddiCount} ca</div>
-          <div className="text-xs sm:text-sm text-slate-500 font-medium">
+          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-rose-700">{ddiCount} ca</div>
+          <div className="text-xs text-slate-500 font-medium">
             Phối hợp thuốc nguy cơ cao bị chặn tự động trước khi ký toa
           </div>
         </div>
 
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500">
-              Guardrails Kích Hoạt
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Guardrails kích hoạt
             </span>
             <div className="p-2 bg-teal-50 rounded-lg text-teal-700">
-              <ShieldCheck className="w-5 h-5" />
+              <ShieldCheck className="w-4.5 h-4.5" />
             </div>
           </div>
-          <div className="text-3xl lg:text-4xl font-extrabold font-mono text-teal-800">{guardCount} lần</div>
-          <div className="text-xs sm:text-sm text-slate-500 font-medium">
+          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-teal-800">{guardCount} lần</div>
+          <div className="text-xs text-slate-500 font-medium">
             Bảo vệ ranh giới an toàn chuyên môn lâm sàng Bộ Y Tế
           </div>
         </div>
 
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500">
-              BHYT Xuất Toán Cứu Được
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              BHYT bảo toàn
             </span>
             <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-              <FileCheck className="w-5 h-5" />
+              <FileCheck className="w-4.5 h-4.5" />
             </div>
           </div>
-          <div className="text-3xl lg:text-4xl font-extrabold font-mono text-emerald-700">
+          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-emerald-700">
             {bhytSaved.toLocaleString('vi-VN')} đ
           </div>
-          <div className="text-xs sm:text-sm text-slate-500 font-medium">
-            Từ {auditedCount} ca kiểm toán tự động theo TT 26/2025
+          <div className="text-xs text-slate-500 font-medium">
+            Từ {auditedCount} ca kiểm toán theo TT 20/2022 &amp; QĐ 130
           </div>
         </div>
       </div>
 
       {/* Bảng Nhật Ký Kiểm Toán An Toàn */}
-      <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+      <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3.5">
         <div>
-          <h2 className="text-lg lg:text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <ShieldAlert className="w-6 h-6 text-teal-700" />
-            Nhật Ký Can Thiệp An Toàn Lâm Sàng & Guardrails
+          <h2 className="text-base lg:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-teal-700" />
+            Nhật ký can thiệp an toàn
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Ghi nhận kiểm toán tự động theo Thông tư 26/2025/TT-BYT và Quyết định 5948/QĐ-BYT
+          <p className="text-xs text-slate-500 mt-0.5">
+            Ghi nhận kiểm toán tự động theo Thông tư 20/2022/TT-BYT và Quyết định 130/QĐ-BYT
           </p>
         </div>
 

@@ -8,14 +8,11 @@ import { AgentActionCard, ChatMessage, DebtRecord } from '../../../types/clinica
 import { anyKeyword, ProcessedQueryResult } from '../types';
 
 export function matchDebtSettleIntent(lower: string): boolean {
-  if (lower.includes('quy định') || lower.includes('thông tư') || lower.includes('nghị định') || lower.includes('luật')) {
+  if (lower.includes('?') || lower.includes('tại sao') || lower.includes('quy định') || lower.includes('thông tư') || lower.includes('nghị định') || lower.includes('luật')) {
     return false;
   }
   return anyKeyword(lower, [
-    'trả vỏ', 'tra vo', 'hoàn trả vỏ', 'hoan tra vo',
-    'trả vỏ morphin', 'trả vỏ fentanyl', 'trả vỏ thuốc', 'thu hồi vỏ', 'thu hoi vo',
-    'thanh toán nợ', 'thanh toan no', 'thanh toán sổ nợ', 'trả nợ thuốc', 'xóa nợ thuốc',
-    'thu hồi vỏ rỗng', 'đối soát vỏ morphin', 'xác nhận trả vỏ'
+    'xác nhận trả vỏ', 'thực hiện trả vỏ', 'xóa nợ phiếu', 'thanh toán phiếu nợ', 'nộp vỏ morphin', 'thu hồi vỏ ống'
   ]);
 }
 

@@ -9,6 +9,7 @@ import { PrescriptionOrder } from '../../../types/cpoe';
 import { UserRole } from '../../../types/clinical';
 import { USER_PROFILES } from '../../../data/initialData';
 import { INITIAL_PRESCRIPTIONS } from '../../../data/mockCpoeData';
+import { STORAGE_KEYS } from '../../../constants/storageKeys';
 import { cpoeApi } from '../../../services/api/cpoeApi';
 import { CpoeHeaderRibbon } from './CPOE/CpoeHeaderRibbon';
 import { CpoeOrderList } from './CPOE/CpoeOrderList';
@@ -72,42 +73,42 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
 }) => {
   const [orders, setOrders] = useState<PrescriptionOrder[]>(() => {
     try {
-      const cached = localStorage.getItem('clinical_cached_cpoe');
+      const cached = localStorage.getItem(STORAGE_KEYS.CLINICAL_CACHED_CPOE);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const sanitized = parsed
             .map(sanitizeCpoeOrder)
-            .filter((o): o is PrescriptionOrder => o !== null && (o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604'));
+            .filter((o): o is PrescriptionOrder => o !== null);
           if (sanitized.length > 0) {
             return sanitized;
           }
         }
       }
     } catch {
-      try { localStorage.removeItem('clinical_cached_cpoe'); } catch {}
+      try { localStorage.removeItem(STORAGE_KEYS.CLINICAL_CACHED_CPOE); } catch {}
     }
     return INITIAL_PRESCRIPTIONS;
   });
 
   const [filterType, setFilterType] = useState<'all' | 'outpatient' | 'inpatient_daily'>(() => {
     if (typeof window !== 'undefined') {
-      return (sessionStorage.getItem('cpoe_filter_type') as any) || 'all';
+      return (sessionStorage.getItem(STORAGE_KEYS.CPOE_FILTER_TYPE) as any) || 'all';
     }
     return 'all';
   });
 
   const [searchQuery, setSearchQuery] = useState(() => {
     if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('cpoe_search_query') || '';
+      return sessionStorage.getItem(STORAGE_KEYS.CPOE_SEARCH_QUERY) || '';
     }
     return '';
   });
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('cpoe_filter_type', filterType);
-      sessionStorage.setItem('cpoe_search_query', searchQuery);
+      sessionStorage.setItem(STORAGE_KEYS.CPOE_FILTER_TYPE, filterType);
+      sessionStorage.setItem(STORAGE_KEYS.CPOE_SEARCH_QUERY, searchQuery);
     } catch {}
   }, [filterType, searchQuery]);
 
@@ -137,14 +138,13 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
               return o;
             });
             const localOnly = (prev || []).filter(
-              (o) => !liveIds.has(o.id) && (o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604')
+              (o) => !liveIds.has(o.id)
             );
             const merged = [...localOnly, ...enrichedLive]
               .map(sanitizeCpoeOrder)
               .filter((o): o is PrescriptionOrder => o !== null)
-              .filter((o, idx, arr) => arr.findIndex((item) => item.id === o.id) === idx)
-              .filter((o) => o.patientName !== 'Trần Huy Hoàng' || o.id === 'RX-2026-604');
-            try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(merged)); } catch {}
+              .filter((o, idx, arr) => arr.findIndex((item) => item.id === o.id) === idx);
+            try { localStorage.setItem(STORAGE_KEYS.CLINICAL_CACHED_CPOE, JSON.stringify(merged)); } catch {}
             return merged;
           });
         }
@@ -156,7 +156,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
       if (sanitized) {
         setOrders((prev) => {
           const next = [sanitized, ...(prev || []).filter((o) => o.id !== sanitized.id)];
-          try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
+          try { localStorage.setItem(STORAGE_KEYS.CLINICAL_CACHED_CPOE, JSON.stringify(next)); } catch {}
           return next;
         });
       }
@@ -196,7 +196,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
     const saved = await cpoeApi.createCpoeOrder(newOrder);
     setOrders((prev) => {
       const next = [saved, ...prev.filter((o) => o.id !== saved.id)];
-      try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(STORAGE_KEYS.CLINICAL_CACHED_CPOE, JSON.stringify(next)); } catch {}
       return next;
     });
     setFilterType('all');
@@ -256,7 +256,7 @@ export const CpoePrescriptionTab: React.FC<CpoePrescriptionTabProps> = ({
         onOrderUpdated={(updated) => {
           setOrders((prev) => {
             const next = prev.map((o) => (o.id === updated.id ? updated : o));
-            try { localStorage.setItem('clinical_cached_cpoe', JSON.stringify(next)); } catch {}
+            try { localStorage.setItem(STORAGE_KEYS.CLINICAL_CACHED_CPOE, JSON.stringify(next)); } catch {}
             return next;
           });
           setSelectedOrder(updated);

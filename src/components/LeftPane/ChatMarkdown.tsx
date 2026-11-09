@@ -77,7 +77,7 @@ export const formatInlineMarkdown = (
 
   const text = sanitizeClinicalText(rawText);
   const tokens = text.split(
-    /(\*\*\*[\s\S]+?\*\*\*|\*\*[\s\S]+?\*\*|`[^`\n]+`|\[[^\]]+\]\([^\)]+\)|\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*51|TT\s*26|TT\s*20|TT\s*22)[\s\w.:,/–-]*\]|\*[^*\n]+?\*|_[^_\n]+?_)/g
+    /(\*\*\*[\s\S]+?\*\*\*|\*\*[\s\S]+?\*\*|`[^`\n]+`|\[[^\]]+\]\([^\)]+\)|\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]|\*[^*\n]+?\*|_[^_\n]+?_)/g
   );
 
   return tokens.map((part, i) => {
@@ -152,9 +152,9 @@ export const formatInlineMarkdown = (
       );
     }
 
-    // B. Token Trích Dẫn Y Khoa Tự Nhiên [DTQG tr.1118], [QĐ 5948], v.v.
+    // B. Token Trích Dẫn Y Khoa Tự Nhiên [DTQG tr.1118], [Dược thư tr.1118], [DĐVN tr.50], [QĐ 5948], v.v.
     const citationTokenMatch = part.match(
-      /^\[((?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*51|TT\s*26|TT\s*20|TT\s*22)[\s\w.:,/–-]*)\]$/i
+      /^\[((?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+)\]$/i
     );
     if (citationTokenMatch) {
       const rawCitationLabel = citationTokenMatch[1];
@@ -175,12 +175,18 @@ export const formatInlineMarkdown = (
       }
       if (pageNum) pdfUrl += `#page=${pageNum}`;
 
-      const matchedCitation = citations?.find(
-        (c) =>
-          (pageNum && c.page === pageNum) ||
-          c.legal_basis.toLowerCase().includes(rawCitationLabel.toLowerCase()) ||
-          c.source.toLowerCase().includes(rawCitationLabel.toLowerCase())
-      );
+      const matchedCitation =
+        citations?.find(
+          (c) =>
+            (pageNum && c.page === pageNum) ||
+            c.legal_basis.toLowerCase().includes(rawCitationLabel.toLowerCase()) ||
+            c.source.toLowerCase().includes(rawCitationLabel.toLowerCase())
+        ) || (citations && citations.length > 0 ? citations[0] : undefined);
+
+      const effectivePage = matchedCitation?.page || pageNum;
+      if (effectivePage && !pdfUrl.includes('#page=')) {
+        pdfUrl = `${pdfUrl.split('#')[0]}#page=${effectivePage}`;
+      }
 
       return (
         <button
@@ -188,27 +194,39 @@ export const formatInlineMarkdown = (
           type="button"
           onClick={(e) => {
             e.preventDefault();
+            const citInn = (matchedCitation as any)?.inn || undefined;
+            const citSec = matchedCitation?.section || undefined;
+            const combinedSearch = citInn && citSec ? `${citInn} ${citSec}` : (citSec || citInn || undefined);
+            const kwList: string[] = [];
+            if (combinedSearch) kwList.push(combinedSearch);
+            if (citInn && !kwList.includes(citInn)) kwList.push(citInn);
+            if (citSec && !kwList.includes(citSec)) kwList.push(citSec);
+
             onCitationClick?.({
               title: matchedCitation?.legal_basis || matchedCitation?.source || rawCitationLabel,
               url: matchedCitation?.url || pdfUrl,
-              page: matchedCitation?.page || pageNum,
+              page: effectivePage,
               excerpt: matchedCitation?.excerpt,
               legal_basis: matchedCitation?.legal_basis,
-              section: matchedCitation?.section,
+              section: citSec,
+              inn: citInn,
+              searchTerm: combinedSearch,
+              keywords: kwList,
+              textFragmentUrl: (matchedCitation as any)?.text_fragment_url,
             });
           }}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded text-2xs sm:text-xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/80 transition cursor-pointer active:scale-95 align-baseline"
-          title={`Bấm để tra cứu: ${rawCitationLabel}`}
+          className="inline-flex items-center gap-1 px-2 py-0.5 mx-1 rounded-md text-xs font-bold bg-amber-50 text-amber-900 hover:bg-amber-100 hover:text-amber-950 border border-amber-300 shadow-2xs transition-all cursor-pointer active:scale-95 align-baseline ring-1 ring-amber-400/40"
+          title={`Bấm để mở bản scan PDF đối chứng: ${rawCitationLabel}`}
         >
-          <BookOpen className="w-2.5 h-2.5 text-teal-600" />
-          <span>{rawCitationLabel}</span>
+          <BookOpen className="w-3 h-3 text-amber-700" />
+          <span className="underline decoration-amber-400/80 underline-offset-2">{rawCitationLabel}</span>
         </button>
       );
     }
 
     if (((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) && part.length >= 2 && !part.startsWith('**')) {
       const inner = part.slice(1, -1);
-      if (/\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*51|TT\s*26|TT\s*20|TT\s*22)[\s\w.:,/–-]*\]/i.test(inner)) {
+      if (/\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]/i.test(inner)) {
         return (
           <em key={i} className={`italic ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
             {formatInlineMarkdown(inner, options)}

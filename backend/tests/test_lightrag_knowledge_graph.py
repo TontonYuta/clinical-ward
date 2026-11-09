@@ -63,3 +63,44 @@ async def test_lightrag_dual_level_pipeline_integration():
     assert rag_res.rag_grounded is True
     assert any(term in rag_res.answer.lower() for term in ("tiêu cơ vân", "cyp3a4", "statin", "macrolid"))
     assert any(term in rag_res.answer for term in ("Tương Tác Nhóm Dược Lý", "Chống chỉ định", "CYP3A4"))
+
+
+def test_dual_level_query_analyzer_extraction():
+    """Kiểm tra bóc tách 2 tầng Low-Level & High-Level Keywords chuẩn LightRAG Section 3.2."""
+    from app.services.rag.lightrag_query_analyzer import analyze_dual_level_query
+    q = "Bệnh nhân suy thận ClCr 28 mL/phút đang uống Coversyl bị ho khan kéo dài thì đổi sang thuốc gì?"
+    dual = analyze_dual_level_query(q)
+
+    # 1. Low-Level: Phải có tên thuốc/hoạt chất và thông số cụ thể
+    assert "Coversyl" in dual.low_level_keywords or "perindopril" in dual.low_level_keywords
+    assert any("28" in kw for kw in dual.low_level_keywords)
+    assert dual.patient_metrics.get("egfr") == 28.0
+
+    # 2. High-Level: Phải có nhóm dược lý ATC và khuyến cáo thay thế
+    assert "ACEI" in dual.identified_classes
+    assert any("ARB" in kw for kw in dual.high_level_keywords)
+    assert "therapeutic_substitution" in dual.clinical_domains
+    assert "renal_impairment" in dual.clinical_domains
+
+
+def test_clinical_subgraph_traversal_and_metabolic_exception():
+    """Kiểm tra duyệt đồ thị 1-hop BFS và bắt ngoại lệ chuyển hóa gan CYP (Pravastatin)."""
+    from app.services.rag.sqlite_graph_service import ClinicalGraphTraversalService
+    subgraph = ClinicalGraphTraversalService.traverse_clinical_subgraph(["pravastatin", "clarithromycin"])
+
+    # 1. Phải nhận diện được 2 nhóm dược lý ATC
+    assert "STATIN" in subgraph["discovered_classes"]
+    assert "MACROLID" in subgraph["discovered_classes"]
+
+    # 2. Phải phát hiện cạnh tương tác nhóm vĩ mô
+    assert len(subgraph["active_class_ddis"]) >= 1
+    ddi = subgraph["active_class_ddis"][0]
+    assert ddi["class_a"] in ("MACROLID", "STATIN") and ddi["class_b"] in ("MACROLID", "STATIN")
+
+    # 3. Phải phát hiện ngoại lệ chuyển hóa Pravastatin không phụ thuộc CYP3A4
+    assert len(subgraph["metabolic_notes"]) >= 1
+    m_note = subgraph["metabolic_notes"][0]
+    assert m_note["drug"] == "pravastatin"
+    assert "sulfat hóa" in m_note["exception"]["mechanism"]
+    assert "CYP3A4" in m_note["exception"]["mechanism"]
+

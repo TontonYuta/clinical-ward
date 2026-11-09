@@ -8,6 +8,10 @@ import { ChatMessage } from '../../../types/clinical';
 import { anyKeyword, ProcessedQueryResult } from '../types';
 
 export function matchBusinessIntent(lower: string): boolean {
+  // Không bao giờ bắt các câu hỏi tra cứu thuốc, liều lượng, bệnh lý
+  if (/(?:thuốc|liều|bệnh nhân|suy thận|suy gan|uống|tiêm|paracetamol|kháng sinh|tương tác)/i.test(lower)) {
+    return false;
+  }
   const clean = lower.replace(/[^\p{L}\p{N}\s]/gu, '').trim();
   const isGreeting = clean === 'hi' || clean === 'hello' || clean === 'alo' || clean === 'hey' ||
     clean === 'chào' || clean === 'xin chào' || clean === 'chào bạn' || clean === 'chào bot' ||
@@ -15,10 +19,9 @@ export function matchBusinessIntent(lower: string): boolean {
   return isGreeting || anyKeyword(lower, [
     'nghiệp vụ', 'nghiep vu', 'các nghiệp vụ', 'cac nghiep vu',
     'quy trình lâm sàng', 'quy trinh lam sang', 'bản đồ nghiệp vụ', 'ban do nghiep vu',
-    'chức năng', 'chuc nang', 'tính năng', 'tinh nang',
-    'hệ thống làm được gì', 'chatbot làm được gì', 'bạn làm được gì', 'bạn có thể làm',
-    'bạn giúp được', 'bạn là ai', 'làm được gì', 'giúp được gì', 'hỗ trợ được gì', 'hỗ trợ những gì',
-    'hướng dẫn sử dụng', 'danh mục nghiệp vụ', '10 nghiệp vụ', '10 đại nghiệp vụ'
+    'chức năng hệ thống', 'tính năng hệ thống',
+    'hệ thống làm được gì', 'chatbot làm được gì', 'bạn làm được gì', 'bạn là ai',
+    'hướng dẫn sử dụng hệ thống', 'danh mục nghiệp vụ', '10 nghiệp vụ', '10 đại nghiệp vụ'
   ]);
 }
 

@@ -86,8 +86,8 @@ class SessionState:
                         user_budget = max(0, remaining // 2)
                         assistant_budget = max(0, remaining - user_budget)
                         selected = [ConversationTurn(
-                            turn.user_text[-user_budget:] if user_budget else "",
-                            turn.assistant_text[-assistant_budget:] if assistant_budget else "",
+                            turn.user_text[:user_budget] if user_budget else "",
+                            turn.assistant_text[:assistant_budget] if assistant_budget else "",
                         )]
                 break
             selected.insert(0, turn)

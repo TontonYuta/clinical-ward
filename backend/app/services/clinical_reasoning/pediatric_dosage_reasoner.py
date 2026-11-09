@@ -36,17 +36,25 @@ def extract_demographic_slots(query: str) -> Dict[str, Any]:
         slots["is_neonate"] = True
         slots["is_pediatric"] = True
 
-    # 2. Bóc tách tuổi theo tháng
-    m_month = re.search(r'(?:bé|trẻ|cháu|em bé|bệnh nhi)?\s*(\d+)\s*(?:tháng|tháng tuổi|thang|thang tuoi|mo\b)', q_lower)
-    if m_month:
-        try:
-            months = int(m_month.group(1))
-            slots["age_months"] = months
-            slots["is_pediatric"] = True
-            if months >= 12:
-                slots["age_years"] = round(months / 12, 1)
-        except ValueError:
-            pass
+    # Kiểm tra loại trừ: Nếu câu hỏi về thai kỳ (mang thai 3 tháng, 3 tháng đầu, tuổi thai...)
+    is_pregnancy_context = bool(
+        re.search(r'(?:thai|mang thai|có thai|bà bầu|mẹ bầu).{0,20}\d+\s*tháng|\d+\s*tháng\s*(?:đầu|giữa|cuối|tuổi thai|thai kỳ)', q_lower)
+    )
+
+    # 2. Bóc tách tuổi theo tháng (chỉ bóc tách khi có tiền tố trẻ em hoặc hậu tố "tháng tuổi", không bẫy thai kỳ)
+    if not is_pregnancy_context:
+        m_month = re.search(r'(?:(?:bé|trẻ|cháu|em bé|bệnh nhi|con)\s*(\d+)\s*(?:tháng|tháng tuổi|thang|thang tuoi|mo\b))|(?:(\d+)\s*(?:tháng tuổi|thang tuoi))', q_lower)
+        if m_month:
+            try:
+                m_str = m_month.group(1) or m_month.group(2)
+                if m_str:
+                    months = int(m_str)
+                    slots["age_months"] = months
+                    slots["is_pediatric"] = True
+                    if months >= 12:
+                        slots["age_years"] = round(months / 12, 1)
+            except ValueError:
+                pass
 
     # 3. Bóc tách tuổi theo năm
     m_year = re.search(r'(?:bé|trẻ|cháu|em bé|bệnh nhi|trẻ em)?\s*(\d+(?:[.,]\d+)?)\s*(?:tuổi|tuoi|yo\b|t\b)', q_lower)
@@ -320,6 +328,11 @@ def reason_pediatric_dosage(
     """Suy luận chuyên biệt liều dùng nhi khoa, loại bỏ việc đổ toàn bộ dữ liệu sơ sinh/các lứa tuổi khác."""
     if slots is None:
         slots = extract_demographic_slots(query)
+
+    # Chặn cứng an toàn: Nếu bệnh nhân từ 18 tuổi trở lên, tuyệt đối KHÔNG áp dụng liều nhi khoa
+    age_years = slots.get("age_years")
+    if age_years is not None and age_years >= 18.0:
+        return None
 
     norm_inn = _remove_accents(clean_inn.casefold())
     norm_drug = _remove_accents(drug_name.casefold())

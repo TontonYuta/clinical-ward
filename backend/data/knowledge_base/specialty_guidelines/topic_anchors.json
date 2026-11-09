@@ -130,7 +130,11 @@
     "tt 20",
     "quản lý thuốc gây nghiện",
     "bảo quản thuốc gây nghiện",
-    "quy chế thuốc gây nghiện"
+    "quy chế thuốc gây nghiện",
+    "vỏ ống",
+    "hủy vỏ",
+    "thu hồi vỏ",
+    "trả vỏ"
   ],
   "Quy tắc xuất kho FEFO (First Expired, First Out) theo Thông tư 36/2018/TT-BYT GSP": [
     "fefo",

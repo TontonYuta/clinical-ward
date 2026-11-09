@@ -17,6 +17,9 @@ import {
   Check,
   FileText,
   Download,
+  Search,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
 
 export interface PdfViewerTarget {
@@ -27,6 +30,9 @@ export interface PdfViewerTarget {
   legal_basis?: string;
   section?: string;
   inn?: string;
+  searchTerm?: string;
+  keywords?: string[];
+  textFragmentUrl?: string;
 }
 
 interface PdfViewerDrawerProps {
@@ -40,15 +46,42 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
   const [isCopied, setIsCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Trạng thái tìm kiếm đa từ khóa & cụm từ
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isPhraseMatch, setIsPhraseMatch] = useState<boolean>(true);
+  const [appliedQuery, setAppliedQuery] = useState<string>('');
+  const [appliedIsPhrase, setAppliedIsPhrase] = useState<boolean>(true);
+
+  // Đồng bộ trang & từ khóa mặc định khi target thay đổi
   useEffect(() => {
-    if (target?.page) {
+    if (!target) return;
+
+    if (target.page) {
       setCurrentPage(target.page);
-    } else if (target?.url) {
+    } else if (target.url) {
       const match = target.url.match(/#page=(\d+)/);
       setCurrentPage(match ? parseInt(match[1], 10) : 1);
     } else {
       setCurrentPage(1);
     }
+
+    // Chọn từ khóa mặc định khởi đầu (ưu tiên searchTerm, rồi đến cụm thuốc + mục, hoặc tên thuốc)
+    const initialQuery = (
+      target.searchTerm ||
+      (target.inn && target.section ? `${target.inn} ${target.section}` : '') ||
+      target.section ||
+      target.inn ||
+      ''
+    ).trim();
+
+    // Làm sạch từ khóa (không lấy các nhãn văn bản tài liệu)
+    const isDocLabel = /^(?:Dược thư|DTQG|DĐVN|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)/i.test(initialQuery);
+    const cleanInitial = isDocLabel ? (target.inn || '') : initialQuery;
+
+    setSearchQuery(cleanInitial);
+    setAppliedQuery(cleanInitial);
+    setIsPhraseMatch(true);
+    setAppliedIsPhrase(true);
   }, [target]);
 
   // Handle ESC key to close
@@ -63,7 +96,47 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
   if (!isOpen || !target) return null;
 
   const baseUrl = target.url.split('#')[0];
-  const activeUrl = `${baseUrl}#page=${currentPage}`;
+
+  // Chuẩn bị URL cho Mozilla PDF.js với Multi-word / Phrase search
+  const cleanSearch = appliedQuery.trim().replace(/["']/g, '');
+  const searchFragment = cleanSearch
+    ? `&search=${encodeURIComponent(cleanSearch)}&phrase=${appliedIsPhrase ? 'true' : 'false'}`
+    : '';
+  const activeUrl = `/pdfjs/web/viewer.html?file=${encodeURIComponent(baseUrl)}#page=${currentPage}${searchFragment}`;
+
+  const handleApplySearch = (queryToApply?: string, phraseMode?: boolean) => {
+    const q = (queryToApply !== undefined ? queryToApply : searchQuery).trim();
+    const p = phraseMode !== undefined ? phraseMode : isPhraseMatch;
+    setSearchQuery(q);
+    setAppliedQuery(q);
+    setAppliedIsPhrase(p);
+  };
+
+  // Hàm bôi vàng đa từ khóa & cụm từ trong trích đoạn Excerpt
+  const renderHighlightedText = (text: string, query: string): React.ReactNode => {
+    if (!text) return '';
+    const cleanKw = (query || '').trim();
+    if (!cleanKw || cleanKw.length < 2) return text;
+
+    try {
+      // Phân tách query thành mảng các từ khóa độc lập (nếu dài hơn 1 từ) + cả cụm từ
+      const terms = Array.from(new Set([cleanKw, ...cleanKw.split(/\s+/).filter((w) => w.length >= 2)]));
+      const escapedTerms = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      const regex = new RegExp(`(${escapedTerms})`, 'gi');
+      const parts = text.split(regex);
+      return parts.map((part, idx) =>
+        regex.test(part) ? (
+          <mark key={idx} className="bg-amber-300 text-amber-950 font-bold px-1 rounded shadow-2xs">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      );
+    } catch {
+      return text;
+    }
+  };
 
   const handleCopyExcerpt = (text?: string) => {
     const copyText = text || target.excerpt;
@@ -146,7 +219,7 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
               target="_blank"
               rel="noreferrer"
               className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
-              title="Mở toàn trang tab mới"
+              title="Mở toàn trang tab mới (PDF.js Highlight)"
             >
               <ExternalLink className="w-4 h-4" />
             </a>
@@ -172,25 +245,104 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
           </div>
         </div>
 
-        {/* Excerpt Alert Banner (nếu có đoạn trích dẫn cụ thể) */}
+        {/* Multi-Keyword & Interactive Search Bar */}
+        <div className="px-4 py-2 bg-slate-50/90 border-b border-slate-200 flex flex-col gap-1.5 shrink-0 select-none">
+          {/* Search Input Row */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleApplySearch();
+            }}
+            className="flex items-center gap-2"
+          >
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm cụm từ hoặc nhiều từ khóa trong PDF (hỗ trợ tiếng Việt)..."
+                className="w-full bg-white border border-slate-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-md pl-8 pr-7 py-1 text-xs text-slate-800 placeholder-slate-400 font-sans shadow-2xs transition"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    handleApplySearch('');
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                  title="Xóa ô tìm kiếm"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Match Mode Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextMode = !isPhraseMatch;
+                setIsPhraseMatch(nextMode);
+                handleApplySearch(searchQuery, nextMode);
+              }}
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-2xs font-semibold border transition cursor-pointer shrink-0 ${
+                isPhraseMatch
+                  ? 'bg-teal-50 text-teal-800 border-teal-300 hover:bg-teal-100'
+                  : 'bg-indigo-50 text-indigo-800 border-indigo-300 hover:bg-indigo-100'
+              }`}
+              title={
+                isPhraseMatch
+                  ? 'Chế độ Cụm từ chính xác: Bôi vàng đúng cả cụm từ'
+                  : 'Chế độ Đa từ khóa: Bôi vàng đồng thời TẤT CẢ các từ riêng lẻ'
+              }
+            >
+              {isPhraseMatch ? (
+                <>
+                  <Sparkles className="w-3 h-3 text-teal-600" />
+                  <span>Cụm từ</span>
+                </>
+              ) : (
+                <>
+                  <Layers className="w-3 h-3 text-indigo-600" />
+                  <span>Tất cả từ</span>
+                </>
+              )}
+            </button>
+
+            {/* Apply Button */}
+            <button
+              type="submit"
+              className="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-medium text-xs rounded shadow-2xs transition cursor-pointer shrink-0"
+              title="Tìm kiếm và bôi vàng trên PDF"
+            >
+              Tìm
+            </button>
+          </form>
+        </div>
+
+        {/* Excerpt Alert Banner (Highlight từ khóa bằng thẻ mark vàng rực) */}
         {target.excerpt && (
-          <div className="px-4 py-2 bg-teal-50/90 border-b border-teal-200/90 flex items-center justify-between gap-2 shrink-0 text-xs text-slate-800">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <FileText className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-              <span className="font-semibold text-teal-950 text-2xs shrink-0">
-                Đoạn trích đối chứng (Trang {currentPage}):
-              </span>
-              <span className="text-slate-700 text-2xs truncate font-mono">
-                "{target.excerpt.slice(0, 100)}..."
-              </span>
+          <div className="px-4 py-2.5 bg-teal-50/95 border-b border-teal-200 flex items-start justify-between gap-3 shrink-0 text-xs text-slate-800">
+            <div className="flex items-start gap-2 min-w-0">
+              <FileText className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <span className="font-bold text-teal-950 text-2xs block">
+                  Đoạn trích đối chứng y văn (Trang {currentPage}):
+                </span>
+                <p className="text-slate-800 text-xs line-clamp-2 mt-0.5 leading-relaxed font-sans">
+                  "{renderHighlightedText(target.excerpt, appliedQuery || target.inn || '')}"
+                </p>
+              </div>
             </div>
             <button
               type="button"
               onClick={() => handleCopyExcerpt()}
-              className="p-1 rounded text-teal-800 hover:bg-teal-200/80 transition cursor-pointer shrink-0"
+              className="p-1.5 rounded-md text-teal-800 hover:bg-teal-200/80 transition cursor-pointer shrink-0 border border-teal-200/80 bg-white/80"
               title="Sao chép đoạn trích"
             >
-              {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
+              {isCopied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4 text-teal-700" />}
             </button>
           </div>
         )}

@@ -101,7 +101,13 @@ async def build_drug_profile_response(
     ]
     if any(term in lower_query for term in ("theo dõi", "xét nghiệm", "giám sát")):
         requested_fields.append(("monitoring", (), "description", "Theo dõi / xét nghiệm"))
-    if any(s[0] == "pediatric_dosage" for s in requested_fields):
+
+    from app.services.clinical_reasoning.pediatric_dosage_reasoner import extract_demographic_slots
+    _pre_demo = extract_demographic_slots(query)
+    _is_adult = (_pre_demo.get("age_years") is not None and _pre_demo["age_years"] >= 18)
+    if _is_adult:
+        requested_fields = [s for s in requested_fields if s[0] != "pediatric_dosage"]
+    elif any(s[0] == "pediatric_dosage" for s in requested_fields):
         requested_fields = [s for s in requested_fields if s[0] != "adult_dosage"]
 
     # ĐIỀU PHỐI THÍCH ỨNG (ADAPTIVE BLUF & DEEP FACET):
@@ -210,6 +216,13 @@ async def build_drug_profile_response(
                 citations=unique_citations
             )
 
+        from app.services.clinical_reasoning.pediatric_dosage_reasoner import (
+            extract_demographic_slots,
+            reason_pediatric_dosage
+        )
+        demo_slots = extract_demographic_slots(query)
+        is_adult_patient = (demo_slots.get("age_years") is not None and demo_slots["age_years"] >= 18)
+
         field_data = []
         for field_key, _, req_field, req_label in requested_fields:
             if field_key == "stock":
@@ -275,13 +288,11 @@ async def build_drug_profile_response(
                     detail = f"Thông tin tương tác đối soát từ Dược thư Quốc gia và Quyết định 5948/QĐ-BYT cho **{clean_name}** ({clean_inn.title()}):\n{ddi_block}"
                 else:
                     detail = f"Chưa có dữ liệu tương tác thuốc được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
-            elif req_field == "pediatric_dosage" or field_key == "pediatric_dosage" or any(k in lower_query for k in ["trẻ", "tre", "bé", "be", "cháu", "chau", "tuổi", "tuoi", "tháng", "thang"]):
-                from app.services.clinical_reasoning.pediatric_dosage_reasoner import (
-                    extract_demographic_slots,
-                    reason_pediatric_dosage
-                )
+            elif (
+                (req_field == "pediatric_dosage" or field_key == "pediatric_dosage" or any(k in lower_query for k in ["trẻ", "tre", "bé", "be", "cháu", "chau", "sơ sinh", "bệnh nhi"]))
+                and not is_adult_patient
+            ):
                 raw_val = value(req_field) or value("pediatric_dosage")
-                demo_slots = extract_demographic_slots(query)
                 reasoned_ped = reason_pediatric_dosage(
                     drug_name=clean_name,
                     clean_inn=clean_inn,

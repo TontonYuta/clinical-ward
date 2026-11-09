@@ -12,10 +12,10 @@ def _unaccent(s: str) -> str:
 
 INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "pediatric_dosage": [
-        (r"\bliều\s+(?:cho\s+)?(?:trẻ|bé|con|sơ\s+sinh)\b", 3.0),
-        (r"\b(?:trẻ\s+em|nhi\s+khoa|trẻ\s+nhỏ|bé|sơ\s+sinh)\b", 2.0),
-        (r"\b\d+\s*(?:tháng|tuổi)(?!\s*(?:đầu|giữa|cuối))\b", 1.5),
-        (r"\b\d+\s*kg\b", 2.0),
+        (r"\bliều\s+(?:cho\s+)?(?:trẻ|bé|con|sơ\s+sinh|bệnh\s+nhi)\b", 3.0),
+        (r"\b(?:trẻ\s+em|nhi\s+khoa|trẻ\s+nhỏ|bé|sơ\s+sinh|bệnh\s+nhi)\b", 2.0),
+        (r"\b(?:trẻ|bé|cháu|em bé|bệnh nhi)\s*\d+\s*tháng\b|\b\d+\s*tháng\s*tuổi\b", 2.0),
+        (r"\b(?:[1-9]|1[0-7])\s*(?:tuổi|t\b)(?!\s*(?:đầu|giữa|cuối))\b", 2.0),
         (r"\bmg/kg\b", 2.5),
     ],
     "administration_timing": [
@@ -105,12 +105,25 @@ def score_clinical_intents(query: str) -> Dict[str, float]:
                 scores[intent] += weight
 
     # Xử lý quy tắc triệt tiêu (Priority Suppression):
-    # Nếu có chỉ dấu nhi khoa rõ rệt, ưu tiên pediatric_dosage tuyệt đối trước adult_dosage
-    if scores["pediatric_dosage"] >= 2.0:
+    # 1. Chống bẫy nhi khoa: Nếu có chỉ dấu người lớn (tuổi >= 18 hoặc adult cues), cưỡng bức pediatric_dosage = 0.0
+    is_adult_cue = bool(
+        re.search(r"\b(1[8-9]|[2-9]\d|1\d\d)\s*tuổi\b", q_norm)
+        or re.search(r"\b(1[8-9]|[2-9]\d|1\d\d)\s*tuoi\b", q_unacc)
+        or any(w in q_norm for w in ("người lớn", "trưởng thành", "cụ bà", "cụ ông", "bác gái", "bác trai"))
+    )
+    if is_adult_cue:
+        scores["pediatric_dosage"] = 0.0
+
+    # 2. Nếu có chỉ dấu nhi khoa thực thụ (age < 18 hoặc pediatric cues) và KHÔNG PHẢI người lớn
+    if scores["pediatric_dosage"] >= 2.0 and not is_adult_cue:
         scores["pediatric_dosage"] += scores["adult_dosage"]
         scores["adult_dosage"] = 0.0
 
-    # Nếu có chỉ dấu suy thận rõ rệt, ưu tiên renal_adjustment
+    # 3. Nếu có chỉ dấu suy thận rõ rệt, ưu tiên renal_adjustment
+    has_cr_cue = any(k in q_norm for k in ("creatinin", "crystalin", "creatin", "crcl", "egfr", "suy thận"))
+    if has_cr_cue:
+        scores["renal_adjustment"] = max(scores["renal_adjustment"], 3.0)
+
     if scores["renal_adjustment"] >= 2.5 and scores["adult_dosage"] <= 1.0:
         scores["adult_dosage"] = 0.5
 

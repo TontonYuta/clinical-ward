@@ -91,47 +91,184 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     query = sanitized_ctx.clean_query
     lower_query = query.lower()
 
-    # Dynamic Trie entity check from SQLite CSDL (55,000 DAV drugs & DĐVN V monographs)
+    # Gemini NLU Router (Structured Intent & Entity Resolution - Zero Hardcode)
+    from app.services.chatbot.gemini_nlu_router import parse_clinical_nlu
+    nlu_res = await parse_clinical_nlu(query, history=history, active_med=session.active_medication_name)
+    if nlu_res:
+        # Nhận diện đơn thuốc thô nhiều dòng -> kích hoạt Prescription Block Audit Mode
+        if getattr(nlu_res, "is_prescription_block", False):
+            from app.services.chatbot.prescription_block_handler import handle_prescription_block_audit
+            return await handle_prescription_block_audit(
+                query, nlu_res.prescription_lines, user_name, user_role, session_id, db
+            )
+
+        # Xử lý câu hỏi kép / đa ý định -> phân rã sub_queries song song
+        if len(getattr(nlu_res, "sub_queries", [])) >= 2:
+            from app.services.chatbot.multi_intent_handler import handle_multi_intent_chat
+            return await handle_multi_intent_chat(
+                nlu_res.sub_queries, payload, request, db, session=session, history=history, core_handler_fn=_handle_copilot_chat_core
+            )
+
+        # Quản lý chuyển chủ đề tự động (Topic Shift) ngay từ đầu để đảm bảo tính liên tục của session
+        if getattr(nlu_res, "is_topic_shift", False):
+            if nlu_res.primary_drug:
+                session.set_active_medication(name=nlu_res.primary_drug)
+            else:
+                session.set_active_medication(name="", ingredient="", sdk="")
+
+        # =========================================================================
+        # MULTI-HOP CLINICAL AGENT & COT REASONING (IRCoT ACL 2023 / Med-PaLM 2)
+        # Intercept complex multi-condition & polypharmacy cases before simple 1-drug or pairwise checks
+        # =========================================================================
+        from app.services.rag.multihop_clinical_agent import is_multihop_clinical_case, execute_multihop_clinical_evaluation
+        if is_multihop_clinical_case(query, lower_query):
+            multihop_rag = await execute_multihop_clinical_evaluation(query, user_role=user_role)
+            citations_data = [
+                c.to_dict() if hasattr(c, "to_dict") else (c.model_dump() if hasattr(c, "model_dump") else dict(c))
+                for c in multihop_rag.citations
+            ] if multihop_rag.citations else []
+            from app.schemas.copilot import CopilotCdssAlert
+            cdss_alert_obj = CopilotCdssAlert(**multihop_rag.cdss_alert) if multihop_rag.cdss_alert else None
+            return CopilotResponse(
+                intent="CLINICAL_AI_CONSULTATION",
+                reply_text=multihop_rag.answer,
+                legal_basis=multihop_rag.legal_basis,
+                citations=citations_data,
+                suggested_chips=[
+                    "Hiệu chỉnh liều theo ClCr",
+                    "Phác đồ thay thế an toàn cho thận",
+                    "Theo dõi điện giải đồ K+ và Creatinin"
+                ],
+                confidence=multihop_rag.confidence_score,
+                rag_grounded=multihop_rag.rag_grounded,
+                answer_type="multihop_case_consultation",
+                source_status="rag_grounded_verified" if multihop_rag.critique_verdict == "PASS" else "rag_grounded_caution",
+                critique_verdict=multihop_rag.critique_verdict,
+                factuality_score=multihop_rag.factuality_score,
+                session_id=session_id,
+                cdss_alert=cdss_alert_obj
+            )
+
+        if nlu_res.intent == "MEDICATION_LOOKUP_GUIDE":
+            session.set_active_medication(name="", ingredient="", sdk="")
+            portal_text = (
+                "### CỔNG TRA CỨU DƯỢC THƯ QUỐC GIA VIỆT NAM (DĐVN V)\n\n"
+                "Hệ thống đã nạp sẵn toàn bộ **771 chuyên luận Dược Thư Quốc Gia Việt Nam (QĐ 2033/QĐ-BYT)** "
+                "và **54.885 số đăng ký thuốc Cục Quản lý Dược (DAV)**.\n\n"
+                "Đồng nghiệp có thể tra cứu nhanh bằng cách:\n"
+                "• Gõ trực tiếp tên biệt dược hoặc hoạt chất vào ô chat (ví dụ: *Coversyl, Augmentin, Zithromax, Ciprofloxacin...*).\n"
+                "• Hoặc bấm vào nút **'Thông tin thuốc' / 'Tra cứu Dược thư'** trên thanh công cụ để mở giao diện tìm kiếm nâng cao."
+            )
+            return CopilotResponse(
+                intent="MEDICATION_LOOKUP_GUIDE",
+                reply_text=portal_text,
+                legal_basis="Dược thư Quốc gia Việt Nam & Cục Quản lý Dược (DAV)",
+                suggested_chips=["Thông tin thuốc Coversyl", "Thông tin thuốc Augmentin", "Thông tin thuốc Zithromax"],
+                session_id=session_id,
+                answer_type="medication_lookup_guide",
+                source_status="exact_match",
+                confidence=1.0
+            )
+        elif nlu_res.intent == "CAPABILITY_OPENING":
+            from app.services.chatbot.conversational_steering import handle_capability_opening
+            session.set_active_medication(name="", ingredient="", sdk="")
+            return handle_capability_opening(user_role=user_role, user_name=user_name, session_id=session_id)
+        elif nlu_res.intent == "CONVERSATIONAL_FEEDBACK":
+            greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
+            if greeting_res:
+                session.set_active_medication(name="", ingredient="", sdk="")
+                return greeting_res
+        elif nlu_res.intent == "GREETING_WELLBEING":
+            greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
+            if greeting_res:
+                session.set_active_medication(name="", ingredient="", sdk="")
+                return greeting_res
+        elif nlu_res.intent == "OUT_OF_SCOPE":
+            from app.services.chatbot.conversational_steering import handle_gentle_chitchat_steering
+            session.set_active_medication(name="", ingredient="", sdk="")
+            out_scope_type = getattr(nlu_res, "out_of_scope_type", None)
+            if out_scope_type in ("MATH_LOGIC", "GENERAL_CHITCHAT"):
+                return handle_gentle_chitchat_steering(query, out_of_scope_type=out_scope_type, user_name=user_name, user_role=user_role, session_id=session_id)
+            out_scope = handle_out_of_scope_or_pricing(lower_query)
+            if out_scope:
+                return out_scope
+            return handle_gentle_chitchat_steering(query, out_of_scope_type=out_scope_type, user_name=user_name, user_role=user_role, session_id=session_id)
+        elif nlu_res.intent == "MEDICATION_INTERACTION_CLARIFICATION" and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+")):
+            from app.services.chatbot.session_routing import check_interaction_examples_request
+            ddi_ex = check_interaction_examples_request(lower_query, session_id)
+            if ddi_ex:
+                return ddi_ex
+            clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)
+            if clarification_res:
+                return clarification_res
+        elif nlu_res.intent == "MEDICATION_INTERACTION_CHECK" and nlu_res.primary_drug and nlu_res.secondary_drug:
+            from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
+            all_ddi_meds = [nlu_res.primary_drug, nlu_res.secondary_drug] + (nlu_res.additional_drugs or [])
+            session.set_comparison_drugs(all_ddi_meds)
+            if nlu_res.primary_drug:
+                session.set_active_medication(name=nlu_res.primary_drug)
+            ddi_res = format_multi_ddi_response(all_ddi_meds, query, session_id=session_id)
+            if ddi_res:
+                ddi_res.active_medication_name = session.active_medication_name
+                return ddi_res
+            clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)
+            if clarification_res:
+                return clarification_res
+        elif nlu_res.intent == "MEDICATION_LOOKUP" and nlu_res.primary_drug and nlu_res.is_deictic_referent:
+            session.set_active_medication(name=nlu_res.primary_drug)
+        elif nlu_res.intent == "PATIENT_MEDICATION_COUNSELING":
+            target_med = nlu_res.primary_drug or session.active_medication_name
+            if target_med:
+                sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
+                if sandwich_res:
+                    return sandwich_res
+        elif nlu_res.intent == "SPECIALTY_CLINICAL_PROTOCOL":
+            from app.services.chatbot.conversational_clinical_engine import (
+                find_clinical_specialty_consultation,
+                synthesize_specialty_response,
+            )
+            norm_q = normalize_conversational_query(query)
+            subflow_res = await dispatch_clinical_subflows(norm_q, norm_q.lower(), user_name, db, user_role=user_role)
+            if subflow_res:
+                return subflow_res
+            spec_res = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_q)
+            if spec_res:
+                return await synthesize_specialty_response(query, spec_res, user_name=user_name, user_role=user_role, session_id=session_id)
+
+
+
     matcher = get_drug_lexical_matcher()
     has_known_med = bool(matcher.extract_medications(query) or matcher.extract_sdk(query) or resolve_registered_medications(lower_query))
-
-    # 1. First-line filter: Greetings, Thanks, Dissatisfaction/Corrections, Frivolous/Out-of-scope
     if not has_known_med:
-        greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
-        if greeting_res:
-            if greeting_res.intent in {
-                "CONVERSATIONAL_CORRECTION", "FEEDBACK_DATA_ENRICHMENT",
-                "FEEDBACK_UI_ADJUSTMENT", "CONVERSATIONAL_FEEDBACK",
-                "GREETING_WELCOME", "GREETING_WELLBEING"
-            }:
-                session.set_active_medication(name="", ingredient="", sdk="")
-            return greeting_res
-
         out_scope = handle_out_of_scope_or_pricing(lower_query)
         if out_scope:
             session.set_active_medication(name="", ingredient="", sdk="")
             return out_scope
 
-    # Phân nhóm bệnh trĩ (Hemorrhoids) - Hướng dẫn điều trị nội khoa & Daflon
-    if any(w in lower_query for w in ("trĩ", "bệnh trĩ", "thuốc trị trĩ", "thuốc cho người bị trĩ")):
-        from app.services.chatbot.conversational_clinical_engine import (
-            find_clinical_specialty_consultation,
-            synthesize_specialty_response
-        )
-        specialty = find_clinical_specialty_consultation("bệnh trĩ")
-        if specialty:
-            return await synthesize_specialty_response(
-                query=query, knowledge=specialty, user_name=user_name, user_role=user_role, session_id=session_id
-            )
-
     # 2. SOTA RAG: CRAG Contextual Query Rewriter & Multi-turn Clinical De-contextualization
     from app.services.rag.query_rewriter import rewrite_clinical_query
-    rewritten_res = await rewrite_clinical_query(query, history=history)
+    rewritten_res = await rewrite_clinical_query(query, history=history, active_med=session.active_medication_name)
     query = rewritten_res.rewritten_query
     lower_query = query.lower()
 
-    is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "chỉnh liều"))
-    renal_res = check_renal_adjustment_request(query, lower_query)
+    # 2.1. Neuro-Symbolic Patient Dose Reasoning (Cockcroft-Gault CrCl & Dược Thư Grounding)
+    is_advice_or_schedule = any(w in lower_query for w in ["dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc", "thông báo uống"])
+    if not is_advice_or_schedule:
+        from app.services.clinical_reasoning.patient_dose_reasoner import evaluate_patient_dose_reasoning
+        patient_dose_res = await evaluate_patient_dose_reasoning(
+            query=query,
+            session=session,
+            db=db,
+            user_name=user_name,
+            user_role=user_role,
+            nlu_extraction=nlu_res
+        )
+        if patient_dose_res:
+            return patient_dose_res
+
+    is_renal = any(t in lower_query for t in ("suy thận", "chức năng thận", "egfr", "crcl", "creatinine", "crystalin", "creatin", "chỉnh liều"))
+    nlu_drug_name = nlu_res.primary_drug if nlu_res else None
+    renal_res = check_renal_adjustment_request(query, lower_query, nlu_drug=nlu_drug_name)
     if renal_res:
         return renal_res
 
@@ -178,7 +315,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 query, session_context={"active_medication": session.active_medication_name}
             )
             if (
-                adapt_analysis.is_followup_question
+                (adapt_analysis.is_followup_question or (adapt_analysis.medications and session.active_medication_name and any(getattr(m, "canonical_id", str(m)).lower() == session.active_medication_name.lower() or getattr(m, "surface_form", str(m)).lower() == session.active_medication_name.lower() for m in adapt_analysis.medications)))
                 and adapt_analysis.query_depth == "DEEP_FACET"
             ):
                 evidence, _, status = await slice_clinical_drug_evidence(adapt_analysis, db, session)
@@ -296,7 +433,8 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     )
     is_interaction_q = has_interaction_term or is_check_multi or is_two_drug_inquiry or any(term in lower_query for term in ("phối hợp", "uống cùng", "dùng cùng", "kết hợp", "uống chung", "dùng chung", "uong cung", "dung cung"))
     is_deictic_interaction = has_interaction_term and any(ref in lower_query for ref in ("2 thuốc", "hai thuốc", "thuốc kia", "thuốc đó", "vừa rồi", "hai loại", "2 loại", "chúng nó", "cơ mà"))
-    has_single_cand = (has_candidate_drug or len(resolved_meds) == 1 or len(extracted_kw) >= 3 or active_in_query) and not is_two_drug and not is_deictic_interaction
+    is_non_drug_kw = extracted_kw.lower() in ("tương tác", "tuong tac", "tương kỵ", "tuong ky", "thuốc", "thuoc", "thông tin", "tóm tắt", "tom tat")
+    has_single_cand = (has_candidate_drug or len(resolved_meds) == 1 or (len(extracted_kw) >= 3 and not is_non_drug_kw) or active_in_query) and not is_two_drug and not is_deictic_interaction
     is_single_interaction = has_single_cand and has_interaction_term and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))
 
     is_multi_drug_active = is_two_drug or len(resolved_meds) >= 2 or len(lex_meds) >= 2
@@ -418,7 +556,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             return deep_rag
 
     if not is_renal and not is_therapeutic_alternative and has_drug_ent and any(cue in lower_query or cue in norm_lower for cue in drug_cues) and not is_two_drug and not is_deep_complex:
-        is_personalized_request = any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
+        is_personalized_request = (nlu_res and nlu_res.intent == "PATIENT_MEDICATION_COUNSELING") or any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:
@@ -452,7 +590,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     cand_kw_present = bool(extract_drug_keywords(lower_query))
     is_short_drug_candidate = len(lower_query.split()) <= 3 and cand_kw_present and not any(w in lower_query for w in ["chào", "hello", "hi", "tủ trực", "báo hỏng", "hư hỏng", "máy thở", "monitor", "kiểm kê", "giao ban"])
     if (has_sdk or ((has_drug_ask or is_short_drug_candidate) and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex and not is_therapeutic_alternative:
-        is_personalized_request = any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
+        is_personalized_request = (nlu_res and nlu_res.intent == "PATIENT_MEDICATION_COUNSELING") or any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:

@@ -33,6 +33,14 @@ class FeverTriageScenario(BaseScenario):
             "uống gì", "thuốc gì", "dùng gì", "loại nào", "nên uống", "cách hạ", "hạ thân nhiệt", "nguy hiểm không", "các loại thuốc", "thông tin", "1 loại", "cảnh báo"
         ])
         is_vaccine_coldchain = any(w in lower_query for w in ["chuỗi lạnh", "vaxigrip", "tủ lạnh", "kho lạnh", "datalogger", "mkt"])
+        # Nhường quyền cho SOTA Vector RAG nếu hỏi an toàn thuốc cho phụ nữ mang thai, suy gan, suy thận hoặc tương tác
+        is_special_pop_or_drug_safety = any(w in lower_query for w in [
+            "mang thai", "có thai", "thai kỳ", "bà bầu", "cho con bú", "suy gan", "suy thận",
+            "dị ứng", "tương tác", "chống chỉ định"
+        ])
+        if is_special_pop_or_drug_safety:
+            return False
+
         return (has_dengue_warning or has_antipyretic or (has_fever_word and has_action_or_temp)) and not is_vaccine_coldchain
 
     async def handle(

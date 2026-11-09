@@ -42,14 +42,18 @@ def is_multihop_clinical_case(query: str, lower_query: str) -> bool:
         "đang dùng", "đang uống", "kê thêm", "cho thêm", "định cho", "uống cùng", "dùng cùng",
         "đơn thuốc", "điều chỉnh đơn", "rà soát", "có an toàn không", "phối hợp này", "hội chẩn"
     ))
+    # Symptom / Adverse reaction cues
+    has_symptom_cue = any(s in q_low for s in (
+        "ho khan", "bị ho", "ho", "phù", "đau cơ", "tiêu cơ", "mệt", "khó thở", "chóng mặt", "tác dụng phụ", "dị ứng"
+    ))
 
     matcher = get_drug_lexical_matcher()
     meds = matcher.extract_medications(query)
     resolved = resolve_registered_medications(q_low)
     total_meds = len(_canonicalize_meds(meds + resolved))
 
-    # Pattern A: Formal clinical case with subject, organ condition, and prescription cue
-    if has_subject and has_condition and (has_prescribe_cue or total_meds >= 2):
+    # Pattern A: Formal clinical case with subject, organ condition/symptom, and prescription cue or >= 2 meds
+    if has_subject and (has_condition or has_symptom_cue) and (has_prescribe_cue or total_meds >= 2):
         return True
 
     # Pattern B: Polypharmacy evaluation with 3 or more medications in patients with organ conditions
@@ -84,18 +88,29 @@ async def execute_multihop_clinical_evaluation(
     # =========================================================================
     # HOP 1: Baseline Regimen vs. Organ Function Audit
     # =========================================================================
+    assessment = None
+    if clcr is not None:
+        from app.services.clinical_reasoning.clinical_math_engine import assess_renal_function_from_crcl
+        try:
+            assessment = assess_renal_function_from_crcl(clcr)
+        except Exception:
+            assessment = None
+
+    from app.services.clinical_reasoning.renal_dosage_rules import match_renal_dosage
     hop1_findings: List[str] = []
     has_severe_ckd = clcr is not None and clcr < 30.0
 
     for med in current_meds:
         disp = DRUG_REGISTRY.get(med, {}).get("display", med.capitalize())
+        rec = match_renal_dosage(med, assessment) if assessment else None
+
         if med == "metformin":
             if has_severe_ckd:
                 hop1_findings.append(
-                    f"🛑 **CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI — {disp}:** Bệnh nhân có ClCr = {clcr} mL/phút (< 30 mL/phút). "
+                    f"🛑 **CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI — {disp}:** Bệnh nhân có ClCr = {clcr:.1f} mL/phút (< 30 mL/phút). "
                     f"Bắt buộc ngừng thuốc ngay do nguy cơ tích lũy dẫn đến Nhiễm toan Lactic (tỷ lệ tử vong tới 50%)."
                 )
-        elif med == "perindopril" or med == "enalapril":
+        elif med == "perindopril" or med == "enalapril" or "coversyl" in med:
             if has_severe_ckd:
                 hop1_findings.append(
                     f"⚠️ **BẮT BUỘC HIỆU CHỈNH LIỀU — {disp}:** Khi ClCr 15 - 30 mL/phút, Dược thư Quốc gia (DĐVN V trang 1131) "
@@ -107,6 +122,27 @@ async def execute_multihop_clinical_evaluation(
                     f"⚠️ **CẢNH BÁO NGUY HIỂM — {disp}:** Thuốc lợi tiểu giữ Kali dùng trên bệnh nhân suy thận mạn ClCr < 30 "
                     f"có nguy cơ rất cao gây Tăng Kali máu nặng dẫn tới rối loạn nhịp tim nguy kịch."
                 )
+        elif rec:
+            if rec.is_contraindicated:
+                hop1_findings.append(
+                    f"🛑 **CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI — {rec.drug_name}:** Bệnh nhân có ClCr = {clcr:.1f} mL/phút ({rec.kdigo_stage}). "
+                    f"{rec.clinical_rationale} {rec.safety_warning}"
+                )
+            elif rec.is_dose_adjusted:
+                hop1_findings.append(
+                    f"⚠️ **BẮT BUỘC HIỆU CHỈNH LIỀU — {rec.drug_name}:** Khi ClCr = {clcr:.1f} mL/phút ({rec.kdigo_stage}), "
+                    f"{rec.clinical_rationale}. Liều khuyến cáo: **{rec.recommended_dose}** ({rec.dosing_interval})."
+                )
+
+    # Symptom / ADR screening (Zero-Hardcode logic)
+    has_cough = any(k in q_low for k in ("ho khan", "bị ho", "ho kéo dài", "ngứa họng"))
+    acei_in_case = [m for m in all_involved_inns if m in ("perindopril", "enalapril", "captopril", "lisinopril") or "coversyl" in m]
+    if has_cough and acei_in_case:
+        disp_acei = DRUG_REGISTRY.get(acei_in_case[0], {}).get("display", acei_in_case[0].capitalize())
+        hop1_findings.append(
+            f"⚠️ **TÁC DỤNG KHÔNG MONG MUỐN (ADR HO KHAN) — {disp_acei}:** Triệu chứng ho khan là tác dụng phụ điển hình "
+            f"của nhóm ức chế men chuyển (ACEI) do ức chế enzym chuyển angiotensin dẫn tới tích lũy bradykinin và chất P ở đường hô hấp trên."
+        )
 
     if not hop1_findings and current_meds:
         hop1_findings.append("Các thuốc trong đơn hiện tại cơ bản dung nạp được với chức năng cơ quan ghi nhận.")
@@ -134,7 +170,7 @@ async def execute_multihop_clinical_evaluation(
                 f"Khuyến cáo xử trí: {alert.action_recommendation}"
             )
 
-    if not hop2_findings and "spironolacton" in current_meds and any(m in current_meds for m in ("perindopril", "enalapril", "losartan")):
+    if not hop2_findings and "spironolacton" in current_meds and any(m in current_meds for m in ("perindopril", "enalapril", "losartan", "coversyl")):
         hop2_findings.append(
             "⚡ **TƯƠNG TÁC TĂNG KALI MÁU CỘNG HƯỞNG (QĐ 5948/QĐ-BYT):** Phối hợp thuốc ức chế hệ RAAS (Coversyl/Enalapril) "
             "với thuốc lợi tiểu giữ Kali (Spironolacton) làm tăng giữ Kali máu tại ống thận gấp 3 - 5 lần. "
@@ -148,6 +184,7 @@ async def execute_multihop_clinical_evaluation(
     for med in proposed_meds:
         disp = DRUG_REGISTRY.get(med, {}).get("display", med.capitalize())
         classes = DRUG_REGISTRY.get(med, {}).get("classes", [])
+        rec = match_renal_dosage(med, assessment) if assessment else None
 
         if "NSAID" in classes or med in ("meloxicam", "celecoxib", "diclofenac", "ibuprofen"):
             reasons = []
@@ -155,7 +192,7 @@ async def execute_multihop_clinical_evaluation(
                 reasons.append("làm co thắt tiểu động mạch đến của cầu thận, gây suy sụp mức lọc cầu thận cấp và hoại tử ống thận")
             if any(term in q_low for term in ("suy tim", "nyha")):
                 reasons.append("ức chế prostaglandin gây ứ trệ muối nước, thúc đẩy đợt cấp suy tim mất bù và phù phổi cấp")
-            if any(m in current_meds for m in ("perindopril", "enalapril", "losartan")):
+            if any(m in current_meds for m in ("perindopril", "enalapril", "losartan", "coversyl")):
                 reasons.append("đối kháng trực tiếp tác dụng hạ áp và bảo vệ thận của nhóm ACEI/ARB")
 
             reason_str = "; ".join(reasons) if reasons else "nguy cơ loét tiêu hóa và độc tính thận"
@@ -170,64 +207,140 @@ async def execute_multihop_clinical_evaluation(
                     f"nguy cơ tích lũy gây độc tính thần kinh - cơ (bệnh cơ vân, ly giải cơ) và ức chế tủy xương. "
                     f"Nếu bắt buộc dùng cho đợt cấp gout, phải **giảm liều xuống 0.5 mg/ngày hoặc 0.5 mg cách ngày**, không được dùng liều chuẩn 1 - 1.5 mg/ngày."
                 )
+        elif rec:
+            if rec.is_contraindicated:
+                hop3_findings.append(
+                    f"🛑 **BÁO ĐỘNG ĐỎ / TỪ CHỐI KÊ ĐƠN — {rec.drug_name}:** Chống chỉ định trên bệnh nhân này vì {rec.clinical_rationale}. "
+                    f"**Tuyệt đối không kê thêm {rec.drug_name}.**"
+                )
+            elif rec.is_dose_adjusted:
+                hop3_findings.append(
+                    f"⚠️ **HIỆU CHỈNH LIỀU THẬN TRỌNG — {rec.drug_name}:** {rec.clinical_rationale}. "
+                    f"Liều khuyến cáo: **{rec.recommended_dose}** ({rec.dosing_interval})."
+                )
 
     # =========================================================================
-    # HOP 4: Integrated Therapeutic Action Plan Synthesis
+    # HOP 4: Integrated Therapeutic Action Plan Synthesis (Adaptive by user_role)
     # =========================================================================
-    hop4_lines: List[str] = [
-        "### 🏥 HỘI CHẨN DƯỢC LÂM SÀNG: CA BỆNH ĐA THUỐC & ĐA BỆNH LÝ (IRCoT Framework)\n",
-        "#### 1. ĐÁNH GIÁ ĐƠN HIỆN TẠI TRÊN BỆNH NỀN (Hop 1 & Hop 2):"
-    ]
-    for f in hop1_findings:
-        hop4_lines.append(f"- {f}")
-    for f in hop2_findings:
-        hop4_lines.append(f"- {f}")
-
-    hop4_lines.append("\n#### 2. ĐÁNH GIÁ THUỐC ĐỊNH KÊ THÊM (Hop 3):")
-    if hop3_findings:
-        for f in hop3_findings:
-            hop4_lines.append(f"- {f}")
-    else:
-        hop4_lines.append("- Chưa phát hiện xung đột nghiêm trọng với các thuốc bổ sung.")
-
-    hop4_lines.append("\n#### 3. KHUYẾN CÁO PHÁC ĐỒ TOÀN DIỆN & THAY THẾ AN TOÀN (Hop 4):")
     # Discontinuations
     discont = []
     for alert in detected_alerts:
         discont.append(f"- **{alert.title}:** {alert.action_recommendation}")
     if "metformin" in current_meds and has_severe_ckd:
         discont.append("- **Ngừng Metformin:** Thay thế bằng **Linagliptin 5 mg/ngày** (uống 1 viên/ngày, thải trừ 95% qua mật/phân, KHÔNG CẦN chỉnh liều ở mọi mức độ suy thận) hoặc Insulin phác đồ cá thể hóa.")
+    if has_cough and acei_in_case:
+        disp_acei = DRUG_REGISTRY.get(acei_in_case[0], {}).get("display", acei_in_case[0].capitalize())
+        discont.append(
+            f"- **Ngừng {disp_acei} do tác dụng phụ ho khan:** Thay thế bằng nhóm Chẹn thụ thể Angiotensin II "
+            f"(ARB: **Losartan 50 mg/ngày** hoặc **Telmisartan 40 mg/ngày**) hoặc Chẹn kênh Canxi (**Amlodipine 5 mg/ngày**), "
+            f"không gây tích lũy bradykinin, loại bỏ hoàn toàn triệu chứng ho khan mà vẫn kiểm soát huyết áp tối ưu."
+        )
     if any(m in proposed_meds for m in ("meloxicam", "celecoxib", "diclofenac", "ibuprofen")) and (has_severe_ckd or "suy tim" in q_low):
         discont.append("- **Không kê NSAID (Meloxicam/Celecoxib):** Tránh hoàn toàn nguy cơ suy thận cấp và đợt cấp suy tim mất bù.")
-    if discont:
-        hop4_lines.append("• **1. THUỐC CẦN NGỪNG HOẶC ĐIỀU CHỈNH CAN THIỆP NGAY:**\n" + "\n".join(f"  {d}" for d in discont))
 
     # Adjustments
     adjust = []
-    if any(m in current_meds for m in ("perindopril", "enalapril")) and has_severe_ckd:
+    if any(m in current_meds for m in ("perindopril", "enalapril", "coversyl")) and has_severe_ckd:
         adjust.append("- **Coversyl (Perindopril):** Giảm liều còn **2 mg mỗi 2 ngày** (hoặc 2.5 mg muối arginin mỗi 2 ngày) theo DĐVN V trang 1131.")
     if "colchicin" in proposed_meds and has_severe_ckd:
         adjust.append("- **Colchicin (nếu dùng điều trị đợt gout cấp):** Liều tối đa **0.5 mg/ngày** hoặc cách nhật, theo dõi sát triệu chứng yếu cơ hoặc tiêu chảy.")
-    if adjust:
-        hop4_lines.append("• **2. THUỐC CẦN HIỆU CHỈNH LIỀU:**\n" + "\n".join(f"  {a}" for a in adjust))
-
-    # Alternatives
-    if any(m in proposed_meds for m in ("meloxicam", "celecoxib", "diclofenac", "ibuprofen", "colchicin")):
-        hop4_lines.append(
-            "• **3. LỰA CHỌN THAY THẾ GIẢM ĐAU AN TOÀN CHO ĐỢT CẤP GOUT:**\n"
-            "  - Có thể cân nhắc **Corticoid đường uống ngắn ngày** (Prednisolon 20 - 30 mg/ngày trong 3 - 5 ngày rồi ngừng hẳn) là giải pháp thay thế hàng đầu cho NSAID khi suy thận kèm suy tim; kết hợp chườm lạnh tại khớp gối viêm."
-        )
 
     # Monitoring
     monitoring = []
-    if "spironolacton" in current_meds and any(m in current_meds for m in ("perindopril", "enalapril")):
+    if "spironolacton" in current_meds and any(m in current_meds for m in ("perindopril", "enalapril", "coversyl")):
         monitoring.append("- **Điện giải đồ (Kali máu K+):** Bắt buộc làm sau 3 - 5 ngày điều chỉnh do dùng đồng thời Coversyl và Spironolacton.")
+    elif "spironolacton" in current_meds:
+        monitoring.append("- **Điện giải đồ (Kali máu K+):** Theo dõi định kỳ để phòng ngừa tăng kali máu.")
     if clcr is not None:
         monitoring.append("- **Creatinin huyết tương & eGFR/ClCr:** Đánh giá lại sau 7 - 14 ngày.")
     if "suy tim" in q_low or "phù" in q_low:
         monitoring.append("- **Dấu hiệu quá tải dịch:** Cân nặng hàng ngày, tình trạng phù hai chi dưới và khó thở khi nằm.")
-    if monitoring:
-        hop4_lines.append("• **4. THÔNG SỐ CẬN LÂM SÀNG CẦN THEO DÕI SÁT (Monitoring):**\n" + "\n".join(f"  {m}" for m in monitoring))
+
+    # Format output adaptive to user_role
+    role_lower = (user_role or "").lower()
+    is_nurse = any(k in role_lower for k in ("nurse", "dieu_duong", "dd"))
+    is_pharmacist = any(k in role_lower for k in ("pharmacist", "duoc_si", "ds"))
+
+    if is_nurse:
+        hop4_lines = [
+            "### 📋 HƯỚNG DẪN THỰC HÀNH ĐIỀU DƯỠNG & THEO DÕI AN TOÀN CA BỆNH (IRCoT Framework)\n",
+            "#### 1. DẤU HIỆU CẢNH BÁO NGUY HIỂM CẦN BÁO BÁC SĨ NGAY (Red Flags):"
+        ]
+        for f in hop1_findings:
+            hop4_lines.append(f"- {f}")
+        for f in hop2_findings:
+            hop4_lines.append(f"- {f}")
+        if hop3_findings:
+            hop4_lines.append("\n#### 2. CẢNH BÁO THUỐC BỔ SUNG:")
+            for f in hop3_findings:
+                hop4_lines.append(f"- {f}")
+        hop4_lines.append("\n#### 3. THỰC HÀNH DÙNG THUỐC & THEO DÕI SINH HIỆU (Nursing Care Plan):")
+        if discont:
+            hop4_lines.append("• **Thuốc cần tạm dừng / không cho bệnh nhân uống:**\n" + "\n".join(f"  {d}" for d in discont))
+        if adjust:
+            hop4_lines.append("• **Thuốc cần dùng theo khoảng cách hiệu chỉnh:**\n" + "\n".join(f"  {a}" for a in adjust))
+        if monitoring:
+            hop4_lines.append("• **Theo dõi sinh hiệu & xét nghiệm hàng ngày:**\n" + "\n".join(f"  {m}" for m in monitoring))
+
+    elif is_pharmacist:
+        hop4_lines = [
+            "### 🔬 HỘI CHẨN DƯỢC LÂM SÀNG & DƯỢC ĐỘNG HỌC (PK/PD - IRCoT Framework)\n",
+            f"#### 1. ĐÁNH GIÁ CHỨC NĂNG THẬN & DƯỢC ĐỘNG HỌC THANH THẢI (CrCl = {clcr or 'N/A'} mL/phút):"
+        ]
+        for f in hop1_findings:
+            hop4_lines.append(f"- {f}")
+        hop4_lines.append("\n#### 2. PHÂN TÍCH TƯƠNG TÁC THUỐC DƯỢC LỰC & DƯỢC ĐỘNG HỌC (QĐ 5948):")
+        for f in hop2_findings:
+            hop4_lines.append(f"- {f}")
+        hop4_lines.append("\n#### 3. ĐÁNH GIÁ THUỐC DỰ KIẾN KÊ THÊM (Hop 3):")
+        if hop3_findings:
+            for f in hop3_findings:
+                hop4_lines.append(f"- {f}")
+        else:
+            hop4_lines.append("- Chưa phát hiện xung đột dược lực học nghiêm trọng.")
+        hop4_lines.append("\n#### 4. PHÁC ĐỒ ĐIỀU CHỈNH & THAY THẾ CHUẨN DĐVN V & KDIGO 2024:")
+        if discont:
+            hop4_lines.append("• **1. THUỐC CẦN NGỪNG HOẶC ĐIỀU CHỈNH CAN THIỆP NGAY:**\n" + "\n".join(f"  {d}" for d in discont))
+        if adjust:
+            hop4_lines.append("• **2. THUỐC CẦN HIỆU CHỈNH LIỀU:**\n" + "\n".join(f"  {a}" for a in adjust))
+        if any(m in proposed_meds for m in ("meloxicam", "celecoxib", "diclofenac", "ibuprofen", "colchicin")):
+            hop4_lines.append(
+                "• **3. LỰA CHỌN THAY THẾ GIẢM ĐAU AN TOÀN CHO ĐỢT CẤP GOUT:**\n"
+                "  - Có thể cân nhắc **Corticoid đường uống ngắn ngày** (Prednisolon 20 - 30 mg/ngày trong 3 - 5 ngày rồi ngừng hẳn) là giải pháp thay thế hàng đầu cho NSAID khi suy thận kèm suy tim; kết hợp chườm lạnh tại khớp gối viêm."
+            )
+        if monitoring:
+            hop4_lines.append("• **4. THÔNG SỐ CẬN LÂM SÀNG CẦN THEO DÕI SÁT (Monitoring):**\n" + "\n".join(f"  {m}" for m in monitoring))
+
+    else:
+        # Doctor / Physician SOAP format (Default)
+        hop4_lines = [
+            "### 🏥 HỘI CHẨN DƯỢC LÂM SÀNG: CA BỆNH ĐA THUỐC & ĐA BỆNH LÝ (IRCoT Framework)\n",
+            "#### 1. ĐÁNH GIÁ ĐƠN HIỆN TẠI TRÊN BỆNH NỀN (Hop 1 & Hop 2):"
+        ]
+        for f in hop1_findings:
+            hop4_lines.append(f"- {f}")
+        for f in hop2_findings:
+            hop4_lines.append(f"- {f}")
+
+        hop4_lines.append("\n#### 2. ĐÁNH GIÁ THUỐC ĐỊNH KÊ THÊM (Hop 3):")
+        if hop3_findings:
+            for f in hop3_findings:
+                hop4_lines.append(f"- {f}")
+        else:
+            hop4_lines.append("- Chưa phát hiện xung đột nghiêm trọng với các thuốc bổ sung.")
+
+        hop4_lines.append("\n#### 3. KHUYẾN CÁO PHÁC ĐỒ TOÀN DIỆN & THAY THẾ AN TOÀN (Hop 4):")
+        if discont:
+            hop4_lines.append("• **1. THUỐC CẦN NGỪNG HOẶC ĐIỀU CHỈNH CAN THIỆP NGAY:**\n" + "\n".join(f"  {d}" for d in discont))
+        if adjust:
+            hop4_lines.append("• **2. THUỐC CẦN HIỆU CHỈNH LIỀU:**\n" + "\n".join(f"  {a}" for a in adjust))
+        if any(m in proposed_meds for m in ("meloxicam", "celecoxib", "diclofenac", "ibuprofen", "colchicin")):
+            hop4_lines.append(
+                "• **3. LỰA CHỌN THAY THẾ GIẢM ĐAU AN TOÀN CHO ĐỢT CẤP GOUT:**\n"
+                "  - Có thể cân nhắc **Corticoid đường uống ngắn ngày** (Prednisolon 20 - 30 mg/ngày trong 3 - 5 ngày rồi ngừng hẳn) là giải pháp thay thế hàng đầu cho NSAID khi suy thận kèm suy tim; kết hợp chườm lạnh tại khớp gối viêm."
+            )
+        if monitoring:
+            hop4_lines.append("• **4. THÔNG SỐ CẬN LÂM SÀNG CẦN THEO DÕI SÁT (Monitoring):**\n" + "\n".join(f"  {m}" for m in monitoring))
 
     full_answer_draft = "\n".join(hop4_lines)
 
@@ -246,25 +359,25 @@ async def execute_multihop_clinical_evaluation(
         ),
         RagCitation(
             source="Dược thư Quốc gia Việt Nam, lần xuất bản II",
-            legal_basis="Dược thư Quốc gia Việt Nam (QĐ 2033/QĐ-BYT, Trang 982)",
+            legal_basis="Dược thư Quốc gia Việt Nam (QĐ 2033/QĐ-BYT, Trang 955)",
             section="METFORMIN - Chống chỉ định",
             excerpt="Chống chỉ định ở người bệnh có Clcr < 30 ml/phút hoặc suy thận nặng do nguy cơ nhiễm toan lactic tử vong.",
             relevance_score=1.0,
             chunk_id="dtqg_metformin_contra",
-            url="/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=982",
+            url="/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=955",
             document_id="dtqg-v2-2015",
-            page=982
+            page=955
         ),
         RagCitation(
             source="Dược thư Quốc gia Việt Nam, lần xuất bản II",
-            legal_basis="Dược thư Quốc gia Việt Nam (QĐ 2033/QĐ-BYT, Trang 954)",
+            legal_basis="Dược thư Quốc gia Việt Nam (QĐ 2033/QĐ-BYT, Trang 940)",
             section="MELOXICAM - Chống chỉ định suy tim suy thận",
             excerpt="Chống chỉ định ở suy tim nặng không kiểm soát, suy thận nặng (Clcr < 30 ml/phút) không lọc máu.",
             relevance_score=1.0,
             chunk_id="dtqg_meloxicam_contra",
-            url="/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=954",
+            url="/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=940",
             document_id="dtqg-v2-2015",
-            page=954
+            page=940
         ),
         RagCitation(
             source="Quyết định 5948/QĐ-BYT",
@@ -273,9 +386,9 @@ async def execute_multihop_clinical_evaluation(
             excerpt="Phối hợp thuốc ức chế men chuyển và lợi tiểu kháng aldosteron gây tăng kali huyết nghiêm trọng.",
             relevance_score=1.0,
             chunk_id="qd5948_raas_spirono",
-            url=None,
+            url="/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf#page=1",
             document_id="qd-5948-byt",
-            page=None
+            page=1
         )
     ]
 
@@ -288,9 +401,9 @@ async def execute_multihop_clinical_evaluation(
                 excerpt=f"{alert.mechanism} Hậu quả: {alert.clinical_consequence}. Xử trí: {alert.action_recommendation}",
                 relevance_score=1.0,
                 chunk_id=f"ddi_{alert.rule_id}",
-                url=None,
+                url="/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf#page=1",
                 document_id="qd-5948-byt",
-                page=None
+                page=1
             )
         )
 

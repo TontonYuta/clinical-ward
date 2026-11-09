@@ -42,7 +42,7 @@ export class SmoothStreamBuffer {
 
   private startTicking() {
     if (this.timer) return;
-    this.timer = setInterval(() => this.tick(), 18); // ~55 FPS
+    this.timer = setInterval(() => this.tick(), 16); // 60 FPS chuẩn
   }
 
   private cleanup() {
@@ -65,20 +65,20 @@ export class SmoothStreamBuffer {
       return;
     }
 
-    // Tự thích ứng nhịp hiển thị (Adaptive cadence)
+    // Tự thích ứng nhịp hiển thị tốc độ cao (High-Velocity Adaptive Cadence 60-120 từ/giây)
     let step: number;
     if (this.isFinished) {
-      // Khi backend đã gửi xong: tăng tốc xả mượt trong ~120ms
-      step = Math.max(3, Math.ceil(diff / 4));
+      // Khi backend đã gửi xong: xả mượt đều nhịp trong ~50-80ms
+      step = Math.max(8, Math.ceil(diff / 3));
     } else if (diff > 120) {
-      // Bị trễ nhiều do network burst: bắt kịp mượt mà
-      step = Math.ceil(diff / 6);
+      // Bị dồn đệm mạng: xả nhanh để bắt kịp
+      step = Math.ceil(diff / 3);
     } else if (diff > 50) {
-      step = 4;
-    } else if (diff > 20) {
-      step = 2;
+      step = Math.max(16, Math.ceil(diff / 4));
+    } else if (diff > 15) {
+      step = Math.max(8, Math.ceil(diff / 2));
     } else {
-      step = 1;
+      step = Math.min(diff, 6);
     }
 
     const nextChars = this.targetText.slice(

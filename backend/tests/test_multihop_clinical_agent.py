@@ -141,3 +141,47 @@ async def test_multihop_integration_with_copilot_chat():
     assert response.rag_grounded is True
     assert len(response.citations) >= 4
     assert "HỘI CHẨN DƯỢC LÂM SÀNG" in response.reply_text
+
+
+@pytest.mark.asyncio
+async def test_multihop_dynamic_cockcroft_gault_and_cough_adr():
+    """Kiểm tra ca lâm sàng đa bệnh tính toán CrCl động bằng Cockcroft-Gault và bắt được ADR ho khan."""
+    case_query = (
+        "Bệnh nhân nam 68 tuổi, 55kg, Creatinin máu 180 umol/L, đang dùng Metformin 1000mg và Coversyl 5mg, có ho khan"
+    )
+
+    res = await execute_multihop_clinical_evaluation(case_query, user_role="doctor")
+
+    # 1. Cockcroft-Gault CrCl động: (140-68)*55 / (0.814*180) = 27.0 mL/phút (< 30)
+    assert "CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI — Metformin" in res.answer
+    assert "Nhiễm toan Lactic" in res.answer or "acid lactic" in res.answer.lower()
+
+    # 2. Phát hiện tác dụng phụ ho khan do ACEI (Perindopril/Coversyl)
+    assert "ADR HO KHAN" in res.answer or "ho khan" in res.answer.lower()
+    assert "bradykinin" in res.answer.lower() or "chất P" in res.answer
+
+    # 3. Phác đồ thay thế an toàn
+    assert "Linagliptin 5 mg/ngày" in res.answer
+    assert "Losartan" in res.answer or "Telmisartan" in res.answer or "Amlodipine" in res.answer
+
+    # 4. Bảo chứng và Critique Pass
+    assert res.critique_verdict == "PASS"
+    assert res.factuality_score >= 0.85
+
+
+@pytest.mark.asyncio
+async def test_multihop_role_adaptation_nurse_and_pharmacist():
+    """Kiểm tra khả năng thích ứng văn phong lâm sàng theo vai trò Điều dưỡng và Dược sĩ."""
+    case_query = (
+        "Bệnh nhân nam 68 tuổi, 55kg, Creatinin máu 180 umol/L, đang dùng Metformin 1000mg và Coversyl 5mg, có ho khan"
+    )
+
+    # Vai trò Điều dưỡng (Nurse)
+    res_nurse = await execute_multihop_clinical_evaluation(case_query, user_role="nurse")
+    assert "ĐIỀU DƯỠNG" in res_nurse.answer or "Nursing" in res_nurse.answer
+    assert "CẢNH BÁO NGUY HIỂM" in res_nurse.answer or "Red Flags" in res_nurse.answer
+
+    # Vai trò Dược sĩ (Pharmacist)
+    res_pharm = await execute_multihop_clinical_evaluation(case_query, user_role="pharmacist")
+    assert "DƯỢC ĐỘNG HỌC" in res_pharm.answer or "PK/PD" in res_pharm.answer
+    assert "THANH THẢI" in res_pharm.answer or "ClCr" in res_pharm.answer

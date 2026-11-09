@@ -6,7 +6,8 @@ Quy chuẩn: Không sử dụng icon/emoji trang trí, 100% dữ liệu đối s
 from typing import List, Optional, Dict, Tuple
 from app.schemas.copilot import CopilotResponse, CopilotActionCard, CopilotCdssAlert
 from app.services.clinical_ddi_engine.detector import ClinicalDdiDetector
-from app.services.clinical_ddi_engine.schemas import DdiSeverity
+from app.services.clinical_ddi_engine.schemas import DdiSeverity, DdiAlert
+from app.services.rag.sqlite_graph_service import ClinicalGraphTraversalService
 
 _DETECTOR = ClinicalDdiDetector()
 
@@ -41,6 +42,38 @@ def format_multi_ddi_response(
     display_names = [d.display_name for d in report.normalized_entities]
     drug_names_str = ", ".join(f"**{name}**" for name in display_names)
 
+    # LightRAG Knowledge Graph Subgraph Traversal (Class-to-Class DDI)
+    subgraph = ClinicalGraphTraversalService.traverse_clinical_subgraph(raw_drugs)
+    if subgraph.get("active_class_ddis"):
+        for c_ddi in subgraph["active_class_ddis"]:
+            ca = c_ddi["class_a"]
+            cb = c_ddi["class_b"]
+            is_contra = "chống chỉ định" in c_ddi["severity"].lower()
+            rec = c_ddi["management"]
+            if subgraph.get("metabolic_notes"):
+                for note in subgraph["metabolic_notes"]:
+                    rec += f" Ngoại lệ: {note['drug'].capitalize()} ({note['exception']['mechanism']})."
+
+            report.pair_alerts.append(DdiAlert(
+                rule_id=f"GRAPH_CLASS_{ca}_{cb}",
+                severity=DdiSeverity.CONTRAINDICATED if is_contra else DdiSeverity.MAJOR,
+                title=f"Tương tác Nhóm Dược lý: {ca} + {cb}",
+                drug_a=ca.capitalize(),
+                drug_b=cb.capitalize(),
+                inn_a=ca.lower(),
+                inn_b=cb.lower(),
+                mechanism=c_ddi["mechanism"],
+                clinical_consequence=c_ddi["consequence"],
+                action_recommendation=rec,
+                legal_evidence="Quyết định 5948/QĐ-BYT & DĐVN V (LightRAG Knowledge Graph)"
+            ))
+
+        if len(display_names) < 2:
+            display_names = [d.capitalize() for d in raw_drugs]
+            drug_names_str = ", ".join(f"**{name}**" for name in display_names)
+            report.total_drugs = len(display_names)
+            report.analyzed_pairs_count = max(1, len(display_names) * (len(display_names) - 1) // 2)
+
     # Lập bản đồ tra cứu tương tác giữa từng cặp thuốc
     pair_map: Dict[Tuple[str, str], str] = {}
     for alert in report.pair_alerts:
@@ -58,6 +91,14 @@ def format_multi_ddi_response(
             label = "CẢNH BÁO"
         pair_map[(d1, d2)] = label
         pair_map[(d2, d1)] = label
+
+    for c_ddi in subgraph.get("active_class_ddis", []):
+        lbl = "CHỐNG CHỈ ĐỊNH" if "chống chỉ định" in c_ddi["severity"].lower() else "CẢNH BÁO"
+        for d1 in raw_drugs:
+            for d2 in raw_drugs:
+                if d1.lower() != d2.lower():
+                    pair_map[(d1.lower(), d2.lower())] = lbl
+                    pair_map[(d2.lower(), d1.lower())] = lbl
 
     # Bổ sung các cặp thuộc hội chứng tích lũy đa thuốc nếu chưa có tương tác cặp riêng
     for poly in report.polypharmacy_alerts:

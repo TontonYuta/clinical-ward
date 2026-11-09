@@ -74,6 +74,83 @@ export function parseQd130Xml(xmlContent: string): Partial<BhytPrescriptionPaylo
   }
 }
 
+function escapeXml(unsafe: string): string {
+  return (unsafe || '').replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
+
+/**
+ * Sinh file XML Bảng 2 (Chi tiết thuốc) chuẩn Quyết định 130/QĐ-BYT thời gian thực từ dữ liệu đơn/hóa đơn thật
+ */
+export function generateQd130XmlFromPayload(payload: BhytPrescriptionPayload): string {
+  const isInvoice = ['HOA_DON_VAT', 'PHIEU_XUAT_KHO', 'HOA_DON_BAN_LE'].includes(payload.documentType || '');
+  const maLk = payload.invoiceNumber || payload.prescriptionId || `LK-${Date.now().toString().slice(-6)}`;
+  const maThe = payload.insuranceCardNumber || 'TE1790000000000';
+  const hoTen = payload.patientName || (isInvoice ? (payload.sellerName || 'Đơn vị mua hàng') : 'Bệnh nhân BHYT');
+  const maBenh = payload.primaryIcd10 || (isInvoice ? 'Z00' : 'I10');
+  const tenBenh = payload.primaryDiagnosis || (isInvoice ? 'Bảng kê thuốc / Hóa đơn dược phẩm' : 'Khám chữa bệnh');
+
+  const xmlItems = (payload.items || []).map((it, idx) => {
+    const rule = findBhytRule(it.activeIngredient || it.drugName, it.route);
+    const maThuoc = it.drugCode || rule?.atcCode || `THUOC.${String(idx + 1).padStart(3, '0')}`;
+    const tenThuoc = it.drugName;
+    const hamLuong = it.dosage || rule?.concentration || '';
+    const duongDung = it.route || 'Đường uống';
+    const soLuong = it.quantity || 1;
+    const donGia = it.unitPrice || 0;
+    const thanhTien = it.totalPrice || (soLuong * donGia);
+    const tyleTt = Math.round((rule?.paymentRatio ?? 1.0) * 100);
+    const mucHuong = 80;
+    const tienBhyt = Math.round(thanhTien * (tyleTt / 100) * (mucHuong / 100));
+    const tienBntt = thanhTien - tienBhyt;
+    const soLo = it.batchNumber || '';
+    const hanDung = it.expiryDate ? it.expiryDate.replace(/[-/]/g, '') : '';
+    const lieuDung = it.instructions || 'Theo chỉ định của bác sĩ';
+
+    return `    <CHI_TIET_THUOC>
+      <STT>${idx + 1}</STT>
+      <MA_THUOC>${escapeXml(maThuoc)}</MA_THUOC>
+      <TEN_THUOC>${escapeXml(tenThuoc)}</TEN_THUOC>
+      <HAM_LUONG>${escapeXml(hamLuong)}</HAM_LUONG>
+      <DUONG_DUNG>${escapeXml(duongDung)}</DUONG_DUNG>
+      <SO_LUONG>${soLuong}</SO_LUONG>
+      <DON_GIA>${donGia}</DON_GIA>
+      <TYLE_TT>${tyleTt}</TYLE_TT>
+      <THANH_TIEN>${thanhTien}</THANH_TIEN>
+      <MUC_HUONG>${mucHuong}</MUC_HUONG>
+      <TIEN_BHYT>${tienBhyt}</TIEN_BHYT>
+      <TIEN_BNTT>${tienBntt}</TIEN_BNTT>
+      <SO_LO>${escapeXml(soLo)}</SO_LO>
+      <HAN_DUNG>${escapeXml(hanDung)}</HAN_DUNG>
+      <LIEU_DUNG>${escapeXml(lieuDung)}</LIEU_DUNG>
+    </CHI_TIET_THUOC>`;
+  }).join('\n');
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<BANG_CHI_TIET_THUOC_QD130>
+  <THONG_TIN_CHUNG>
+    <MA_LK>${escapeXml(maLk)}</MA_LK>
+    <MA_THE_BHYT>${escapeXml(maThe)}</MA_THE_BHYT>
+    <HO_TEN>${escapeXml(hoTen)}</HO_TEN>
+    <MA_BENH>${escapeXml(maBenh)}</MA_BENH>
+    <TEN_BENH>${escapeXml(tenBenh)}</TEN_BENH>
+    <NGAY_VAO>${new Date().toISOString().slice(0, 10).replace(/-/g, '')}</NGAY_VAO>
+    <NGAY_RA>${new Date().toISOString().slice(0, 10).replace(/-/g, '')}</NGAY_RA>
+  </THONG_TIN_CHUNG>
+  <DANH_SACH_THUOC>
+${xmlItems}
+  </DANH_SACH_THUOC>
+</BANG_CHI_TIET_THUOC_QD130>`;
+}
+
 /**
  * Tạo XML mẫu theo chuẩn Quyết định 130/QĐ-BYT để người dùng trải nghiệm
  */

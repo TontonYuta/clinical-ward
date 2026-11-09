@@ -9,12 +9,17 @@ import { MED_CATALOG, findMatchedMed } from '../entityCatalog';
 import { evaluateLocalCDSS } from '../cdssEngine';
 
 export function matchBorrowIntent(lower: string): boolean {
-  // 1. Loại trừ nếu là câu hỏi lâm sàng, chỉ định, tác dụng, liều dùng hoặc tra cứu
-  const isQuestionOrInquiry = anyKeyword(lower, [
+  // 1. Loại trừ nếu là câu hỏi lâm sàng, chỉ định, tác dụng, liều dùng, an toàn, hoặc tra cứu
+  const isQuestionOrInquiry = lower.includes('?') || anyKeyword(lower, [
     'thế nào', 'như thế nào', 'làm gì', 'để làm gì', 'là gì', 'là thuốc gì',
     'tác dụng', 'công dụng', 'chỉ định', 'chống chỉ định', 'tương tác',
     'thành phần', 'dị ứng', 'thời gian bán thải', 'dược động học', 'cơ chế',
-    'thông tin', 'hướng dẫn', 'hỏi', 'bao nhiêu', 'uống lúc nào', 'khi nào', 'giải độc'
+    'thông tin', 'hướng dẫn', 'hỏi', 'bao nhiêu', 'uống lúc nào', 'khi nào', 'giải độc',
+    'có dùng được', 'có uống được', 'có tiêm được', 'có nên', 'dùng được không',
+    'uống được không', 'tiêm được không', 'được không', 'được ko', 'hay không',
+    'không?', 'sao không', 'an toàn', 'nguy cơ', 'nguy hiểm', 'lưu ý', 'thận trọng',
+    'mang thai', 'có thai', 'thai kỳ', 'bà bầu', 'phụ nữ', 'cho con bú', 'suy gan', 'suy thận',
+    'trẻ em', 'sơ sinh', 'người già', 'cao tuổi', 'bị sốt', 'đau đầu'
   ]);
   if (isQuestionOrInquiry) return false;
 
@@ -28,14 +33,17 @@ export function matchBorrowIntent(lower: string): boolean {
   const matchedMed = findMatchedMed(lower);
   if (!matchedMed) return false;
 
-  // 4. Có hành động xuất / rút / mượn / tiêm / dùng
+  // 4. Có hành động xuất / rút / mượn rõ ràng từ tủ trực
   const hasDispenseAction = anyKeyword(lower, [
-    'mượn', 'lấy', 'rút', 'xuất', 'cần', 'xin', 'tiêm', 'truyền', 'cấp phát', 'kê', 'dùng', 'lập phiếu nợ', 'kê nợ'
-  ]) || (lower.includes('cho') && (anyKeyword(lower, ['lọ', 'ống', 'chai', 'viên', 'liều']) || /\d+/.test(lower)));
+    'mượn', 'lập phiếu nợ', 'kê nợ', 'mượn tủ trực', 'mượn khẩn', 'phiếu nợ'
+  ]) || (
+    anyKeyword(lower, ['lấy', 'rút', 'xuất', 'cấp phát']) &&
+    (anyKeyword(lower, ['lọ', 'ống', 'chai', 'viên', 'tủ trực', 'gấp', 'khẩn', 'stat', 'cấp cứu']) || /\d+/.test(lower))
+  ) || (lower.includes('cho') && anyKeyword(lower, ['lọ', 'ống', 'chai', 'viên', 'liều']) && /\d+/.test(lower));
 
   const hasUrgencyOrMed = anyKeyword(lower, [
-    'gấp', 'khẩn', 'ngay', 'cấp cứu', 'stat', 'liều', 'lọ', 'ống', 'buồng', 'bệnh nhân', 'bn', 'phòng mổ', 'giường'
-  ]) || /\d+/.test(lower);
+    'gấp', 'khẩn', 'ngay', 'cấp cứu', 'stat', 'liều', 'lọ', 'ống', 'buồng', 'phòng mổ', 'giường', 'tủ trực'
+  ]);
 
   return hasDispenseAction && hasUrgencyOrMed;
 }
@@ -183,11 +191,9 @@ export function handleBorrowIntent(text: string, lower: string, nowStr: string):
     card,
     cdssAlert,
     pipelineStage: 'offline_engine',
-    suggestedChips: [
-      'Thu hồi vỏ ống Morphin',
-      'Đối soát ca trực 07:00 AM',
-      'Báo hỏng máy thở PB840'
-    ]
+    suggestedChips: medToUse.isNarcotic
+      ? ['Thu hồi vỏ ống Morphin', 'Xem sổ nợ thuốc tủ trực']
+      : [`Thông tin thuốc ${medToUse.name}`, 'Xem tồn kho tủ trực', 'Đối soát ca trực']
   };
 
   return { replyMessage };
