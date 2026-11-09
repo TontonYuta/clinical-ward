@@ -54,9 +54,22 @@ def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict
     Returns: (sources_list, by_inn_map, token_map)
     """
     try:
-        manifest = json.loads(_SOURCE_MANIFEST_PATH.read_text(encoding="utf-8"))
-        records = json.loads(_MONOGRAPHS_PATH.read_text(encoding="utf-8"))
-        sources = manifest.get("sources", [])
+        manifest = json.loads(_SOURCE_MANIFEST_PATH.read_text(encoding="utf-8")) if _SOURCE_MANIFEST_PATH.exists() else {}
+        if _MONOGRAPHS_PATH.exists():
+            records = json.loads(_MONOGRAPHS_PATH.read_text(encoding="utf-8"))
+        else:
+            # Fallback siêu nhẹ: Nạp trực tiếp từ SQLite FTS5 (Không cần ôm theo file JSON 67MB)
+            import sqlite3
+            from app.config import settings
+            db_path = settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, inn, title, atc_code, drug_class FROM clinical_drug_monographs")
+            records = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+
+        sources = manifest.get("sources", []) if isinstance(manifest, dict) else []
 
         by_inn = {}
         token_map = {}

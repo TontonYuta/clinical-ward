@@ -11,14 +11,17 @@ engine = create_async_engine(
     connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
 )
 
-# Set memory-saving SQLite PRAGMAs for Render container environment (512MB RAM cap)
+# Set high-concurrency WAL mode & memory-saving SQLite PRAGMAs (512MB RAM cap on Render)
 if "sqlite" in settings.DATABASE_URL:
     @event.listens_for(engine.sync_engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA cache_size = -2000;")  # Limit page cache to 2MB per connection
-        cursor.execute("PRAGMA mmap_size = 0;")       # Disable memory-mapped I/O ballooning
-        cursor.execute("PRAGMA temp_store = FILE;")   # Store temp tables/indexes on disk
+        cursor.execute("PRAGMA journal_mode = WAL;")  # Concurrent non-blocking reads during writes
+        cursor.execute("PRAGMA synchronous = NORMAL;") # 5x faster reliable disk commits
+        cursor.execute("PRAGMA busy_timeout = 5000;")  # Wait up to 5s instead of immediate database locked
+        cursor.execute("PRAGMA cache_size = -4000;")   # Limit page cache to 4MB per connection
+        cursor.execute("PRAGMA mmap_size = 0;")        # Disable memory-mapped I/O ballooning
+        cursor.execute("PRAGMA temp_store = FILE;")    # Store temp tables/indexes on disk
         cursor.close()
 
 # Session maker

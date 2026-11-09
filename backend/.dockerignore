@@ -9,5 +9,8 @@ tests
 *.db-wal
 *.sqlite3
 *.log
+*.bak
+data/vietnam_drug_registry/
+data/knowledge_base/evaluation/
 !clinical_prebaked.db.gz
 

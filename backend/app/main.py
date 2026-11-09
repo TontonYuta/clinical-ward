@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy import select
 from app.config import settings
 from app.security.http_headers import SecurityHeadersMiddleware
@@ -151,6 +152,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-DDI-Admin-Token"],
 )
+
+# GZip Response Compression (Tiết kiệm 70-80% băng thông mạng cho payload lớn)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Register Domain Routers
 # Tạm thời comment router TBYT & Sổ nợ vỏ theo yêu cầu người dùng
