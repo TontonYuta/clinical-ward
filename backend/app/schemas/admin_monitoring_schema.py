@@ -66,6 +66,21 @@ class TelemetryEventItem(BaseModel):
     grounded_source: Optional[str] = None
     quality_category: Optional[str] = None
 
+class BhytAuditLogItem(BaseModel):
+    id: str
+    prescription_id: str
+    patient_name: str
+    insurance_card_number: str
+    hospital_rank: str
+    treatment_type: str
+    primary_icd10: str
+    status: str
+    total_cost_vnd: float
+    at_risk_cost_vnd: float
+    violations_count: int
+    violations_json: Optional[str] = "[]"
+    created_at: Optional[str] = None
+
 class TelemetryOverviewResponse(BaseModel):
     total_queries: int
     cache_hit_rate_pct: float
@@ -82,3 +97,4 @@ class TelemetryOverviewResponse(BaseModel):
     recent_events: List[TelemetryEventItem]
     intent_distribution: List[Dict[str, Any]]
     timeline_trend: List[Dict[str, Any]]
+    bhyt_logs: List[BhytAuditLogItem] = Field(default_factory=list)

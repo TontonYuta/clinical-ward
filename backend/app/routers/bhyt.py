@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional, List, Dict, Any
+from pydantic import BaseModel
 import sqlite3
 import json
 import logging
 import base64
+import time
 import re
 import io
 import os
@@ -52,6 +54,20 @@ def get_bhyt_catalog(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi tra cứu danh mục BHYT: {str(e)}")
 
+class BhytCustomLogPayload(BaseModel):
+    prescription_id: Optional[str] = "RX"
+    patient_name: Optional[str] = "Bệnh nhân"
+    insurance_card_number: Optional[str] = ""
+    hospital_rank: Optional[str] = "HANG_I"
+    treatment_type: Optional[str] = "NGOAI_TRU"
+    primary_icd10: Optional[str] = ""
+    status: str = "PASS"
+    total_cost_vnd: float = 0.0
+    at_risk_cost_vnd: float = 0.0
+    violations_count: int = 0
+    violations_json: Optional[str] = "[]"
+    error_detail: Optional[str] = None
+
 @router.post("/audit", response_model=BhytAuditReportSchema)
 def audit_bhyt_prescription_api(payload: BhytPrescriptionPayload):
     """
@@ -61,29 +77,82 @@ def audit_bhyt_prescription_api(payload: BhytPrescriptionPayload):
     try:
         return bhyt_service.audit_prescription(payload)
     except Exception as e:
+        bhyt_service.save_audit_error_log(payload, str(e))
         raise HTTPException(status_code=500, detail=f"Lỗi giám định BHYT: {str(e)}")
 
 @router.get("/logs")
-def get_bhyt_audit_logs(limit: int = Query(20, ge=1, le=100)):
+def get_bhyt_audit_logs(
+    limit: int = Query(50, ge=1, le=200),
+    status: Optional[str] = Query(None),
+    q: Optional[str] = Query(None)
+):
     """
-    Lấy lịch sử các ca giám định BHYT đã thực hiện
+    Lấy lịch sử các ca giám định BHYT đã thực hiện để kiểm tra lỗi và rà soát xuất toán
     """
     try:
         conn = sqlite3.connect(resolve_db_path())
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("""
+        sql = """
         SELECT id, prescription_id, patient_name, insurance_card_number,
                hospital_rank, treatment_type, primary_icd10, status,
-               total_cost_vnd, at_risk_cost_vnd, violations_count, created_at
+               total_cost_vnd, at_risk_cost_vnd, violations_count, violations_json, created_at
         FROM bhyt_audit_logs
-        ORDER BY created_at DESC LIMIT ?
-        """, (limit,))
+        WHERE 1=1
+        """
+        params = []
+        if status and status.upper() != "ALL":
+            sql += " AND status = ?"
+            params.append(status.upper())
+        if q and q.strip():
+            sql += " AND (patient_name LIKE ? OR prescription_id LIKE ? OR insurance_card_number LIKE ? OR primary_icd10 LIKE ?)"
+            term = f"%{q.strip()}%"
+            params.extend([term, term, term, term])
+        sql += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+        cursor.execute(sql, tuple(params))
         rows = cursor.fetchall()
         conn.close()
         return [dict(r) for r in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi lấy lịch sử giám định: {str(e)}")
+
+@router.post("/log")
+def record_bhyt_audit_log(payload: BhytCustomLogPayload):
+    """Ghi nhận log giám định hoặc log lỗi từ client vào sổ kiểm toán BHYT."""
+    try:
+        violations_data = payload.violations_json or "[]"
+        if payload.error_detail:
+            err_item = [{
+                "id": f"CLIENT-ERR-{int(time.time())}",
+                "severity": "ERROR",
+                "category": "CLIENT_AUDIT_ERROR",
+                "title": "Lỗi client khi giám định BHYT",
+                "detail": payload.error_detail,
+                "rejection_risk_vnd": payload.at_risk_cost_vnd,
+                "action": "Kiểm tra log chi tiết trong Monitor."
+            }]
+            violations_data = json.dumps(err_item, ensure_ascii=False)
+            status = "ERROR"
+        else:
+            status = payload.status
+
+        log_id = bhyt_service.record_custom_log(
+            prescription_id=payload.prescription_id or "RX",
+            patient_name=payload.patient_name or "Bệnh nhân",
+            insurance_card_number=payload.insurance_card_number or "",
+            hospital_rank=payload.hospital_rank or "HANG_I",
+            treatment_type=payload.treatment_type or "NGOAI_TRU",
+            primary_icd10=payload.primary_icd10 or "",
+            status=status,
+            total_cost=payload.total_cost_vnd,
+            at_risk_cost=payload.at_risk_cost_vnd,
+            violations_count=max(payload.violations_count, 1 if payload.error_detail else 0),
+            violations_json=violations_data
+        )
+        return {"status": "success", "log_id": log_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi ghi log giám định: {str(e)}")
 
 @router.post("/resolve-drug", response_model=DrugResolutionResult)
 def resolve_drug_entity(req: DrugResolutionRequest):

@@ -5,7 +5,8 @@ import {
   BudgetCapConfig,
   TestKeyResponse,
   EsmsStatusResponse,
-  GasStatusResponse
+  GasStatusResponse,
+  BhytAuditLogItem
 } from '../types/admin';
 
 const BASE_URL = '/api/v1/admin';
@@ -27,6 +28,16 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
 export async function fetchTelemetryOverview(): Promise<TelemetryOverviewResponse> {
   const res = await fetchWithTimeout(`${BASE_URL}/monitoring/overview`, {}, 8000);
   if (!res.ok) throw new Error(`Lỗi tải dữ liệu giám sát: HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchBhytAuditLogs(limit: number = 50, status?: string, q?: string): Promise<BhytAuditLogItem[]> {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  if (status && status !== 'ALL') params.set('status', status);
+  if (q && q.trim()) params.set('q', q.trim());
+  const res = await fetchWithTimeout(`${BASE_URL}/monitoring/bhyt-logs?${params.toString()}`, {}, 8000);
+  if (!res.ok) throw new Error(`Lỗi tải nhật ký giám định BHYT: HTTP ${res.status}`);
   return res.json();
 }
 

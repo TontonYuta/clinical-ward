@@ -497,22 +497,100 @@ class BhytAuditService:
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
-            log_id = f"LOG-{datetime.now().strftime('%Y%m%d%H%M%S')}-{payload.prescription_id or 'RX'}"
+            now = datetime.now()
+            log_id = f"LOG-{now.strftime('%Y%m%d%H%M%S')}-{payload.prescription_id or 'RX'}"
             violations_data = json.dumps([v.model_dump() for v in violations], ensure_ascii=False)
+            now_str = now.strftime('%Y-%m-%d %H:%M:%S')
 
             cursor.execute("""
             INSERT INTO bhyt_audit_logs (
                 id, prescription_id, patient_name, insurance_card_number,
                 hospital_rank, treatment_type, primary_icd10, status,
-                total_cost_vnd, at_risk_cost_vnd, violations_count, violations_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                total_cost_vnd, at_risk_cost_vnd, violations_count, violations_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 log_id, payload.prescription_id or "RX", payload.patient_name,
                 payload.insurance_card_number, payload.hospital_rank,
                 payload.treatment_type, payload.primary_icd10, status,
-                total_cost, at_risk_cost, len(violations), violations_data
+                total_cost, at_risk_cost, len(violations), violations_data, now_str
             ))
             conn.commit()
             conn.close()
         except Exception as e:
             print(f"Warning: Failed to save audit log: {e}")
+
+    def save_audit_error_log(
+        self,
+        payload: BhytPrescriptionPayload,
+        error_detail: str
+    ) -> None:
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            now = datetime.now()
+            log_id = f"ERR-{now.strftime('%Y%m%d%H%M%S')}-{payload.prescription_id or 'RX'}"
+            now_str = now.strftime('%Y-%m-%d %H:%M:%S')
+            error_violation = [{
+                "id": f"ERR-{payload.prescription_id or 'RX'}",
+                "severity": "ERROR",
+                "category": "SYSTEM_AUDIT_EXCEPTION",
+                "title": "Lỗi hệ thống khi giám định BHYT",
+                "detail": error_detail,
+                "rejection_risk_vnd": 0.0,
+                "action": "Kiểm tra log hệ thống hoặc thử lại với dữ liệu chuẩn."
+            }]
+            cursor.execute("""
+            INSERT INTO bhyt_audit_logs (
+                id, prescription_id, patient_name, insurance_card_number,
+                hospital_rank, treatment_type, primary_icd10, status,
+                total_cost_vnd, at_risk_cost_vnd, violations_count, violations_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                log_id, payload.prescription_id or "RX", payload.patient_name,
+                payload.insurance_card_number, payload.hospital_rank,
+                payload.treatment_type, payload.primary_icd10, "ERROR",
+                0.0, 0.0, 1, json.dumps(error_violation, ensure_ascii=False), now_str
+            ))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Warning: Failed to save audit error log: {e}")
+
+    def record_custom_log(
+        self,
+        prescription_id: str,
+        patient_name: str,
+        insurance_card_number: str,
+        hospital_rank: str,
+        treatment_type: str,
+        primary_icd10: str,
+        status: str,
+        total_cost: float,
+        at_risk_cost: float,
+        violations_count: int,
+        violations_json: str
+    ) -> str:
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            now = datetime.now()
+            log_id = f"LOG-{now.strftime('%Y%m%d%H%M%S')}-{prescription_id or 'RX'}"
+            now_str = now.strftime('%Y-%m-%d %H:%M:%S')
+            cursor.execute("""
+            INSERT INTO bhyt_audit_logs (
+                id, prescription_id, patient_name, insurance_card_number,
+                hospital_rank, treatment_type, primary_icd10, status,
+                total_cost_vnd, at_risk_cost_vnd, violations_count, violations_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                log_id, prescription_id or "RX", patient_name,
+                insurance_card_number, hospital_rank,
+                treatment_type, primary_icd10, status,
+                total_cost, at_risk_cost, violations_count, violations_json, now_str
+            ))
+            conn.commit()
+            conn.close()
+            return log_id
+        except Exception as e:
+            print(f"Warning: Failed to record custom audit log: {e}")
+            return ""

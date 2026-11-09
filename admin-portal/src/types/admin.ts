@@ -51,6 +51,42 @@ export interface TelemetryEventItem {
   quality_category?: string;
 }
 
+export interface BhytViolationDetail {
+  id: string;
+  drug_code?: string;
+  drug_name?: string;
+  active_ingredient?: string;
+  severity: string;
+  category: string;
+  title: string;
+  detail: string;
+  rejection_risk_vnd?: number;
+  action?: string;
+  legal_ref?: {
+    doc_code?: string;
+    doc_title?: string;
+    section?: string;
+    page_number?: number;
+  };
+}
+
+export interface BhytAuditLogItem {
+  id: string;
+  prescription_id: string;
+  patient_name: string;
+  insurance_card_number: string;
+  hospital_rank: string;
+  treatment_type: string;
+  primary_icd10: string;
+  status: 'PASS' | 'WARNING' | 'REJECT' | 'ERROR' | string;
+  total_cost_vnd: number;
+  at_risk_cost_vnd: number;
+  violations_count: number;
+  violations_json?: string;
+  violations?: BhytViolationDetail[];
+  created_at?: string;
+}
+
 export interface TelemetryOverviewResponse {
   total_queries: number;
   cache_hit_rate_pct: number;
@@ -65,6 +101,7 @@ export interface TelemetryOverviewResponse {
   ddi_blocks_count: number;
   guardrail_blocks_count: number;
   recent_events: TelemetryEventItem[];
+  bhyt_logs?: BhytAuditLogItem[];
   intent_distribution: Array<{
     intent: string;
     count: number;

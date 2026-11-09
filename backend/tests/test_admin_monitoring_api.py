@@ -16,6 +16,8 @@ async def test_admin_telemetry_overview():
         assert "tokens_consumed" in data
         assert "tokens_saved" in data
         assert "bhyt_rejection_saved_vnd" in data
+        assert "bhyt_logs" in data
+        assert isinstance(data["bhyt_logs"], list)
         assert len(data.get("intent_distribution", [])) >= 3
         assert len(data.get("timeline_trend", [])) >= 5
 
@@ -175,3 +177,52 @@ async def test_per_key_consumption_telemetry():
         assert "429" in target2["quota_status"]
     finally:
         delete_api_key(key_id)
+
+@pytest.mark.asyncio
+async def test_admin_bhyt_monitoring_logs():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # 1. Ghi nhận log giám định BHYT tùy chỉnh (kèm lỗi)
+        log_res = await client.post("/api/v1/bhyt/log", json={
+            "prescription_id": "RX-MONITOR-TEST-01",
+            "patient_name": "Bệnh Nhân Test Monitor",
+            "insurance_card_number": "DN4799988877766",
+            "hospital_rank": "HANG_I",
+            "treatment_type": "NGOAI_TRU",
+            "primary_icd10": "I10",
+            "status": "REJECT",
+            "total_cost_vnd": 450000.0,
+            "at_risk_cost_vnd": 150000.0,
+            "violations_count": 1,
+            "violations_json": '[{"id":"VIO-01","severity":"REJECT","category":"RANK","title":"Vượt tuyến","detail":"Chi tiết lỗi test"}]'
+        })
+        assert log_res.status_code == 200
+        assert log_res.json()["status"] == "success"
+
+        # 2. Ghi nhận log lỗi ngoại lệ
+        err_res = await client.post("/api/v1/bhyt/log", json={
+            "prescription_id": "RX-ERR-02",
+            "patient_name": "Bệnh Nhân Lỗi OCR",
+            "error_detail": "Lỗi phân tích cú pháp đơn thuốc OCR: Thiếu mã hoạt chất"
+        })
+        assert err_res.status_code == 200
+        assert err_res.json()["status"] == "success"
+
+        # 3. Tra cứu danh sách log qua endpoint monitoring chuyên dụng
+        mon_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?limit=10")
+        assert mon_res.status_code == 200
+        logs = mon_res.json()
+        assert len(logs) >= 2
+        assert any(l["prescription_id"] == "RX-MONITOR-TEST-01" for l in logs)
+
+        # 4. Lọc theo trạng thái REJECT
+        reject_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?status=REJECT")
+        assert reject_res.status_code == 200
+        reject_logs = reject_res.json()
+        assert all(l["status"] == "REJECT" for l in reject_logs)
+
+        # 5. Lọc theo tìm kiếm từ khóa
+        search_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?q=Test%20Monitor")
+        assert search_res.status_code == 200
+        search_logs = search_res.json()
+        assert len(search_logs) >= 1
+        assert "Test Monitor" in search_logs[0]["patient_name"]

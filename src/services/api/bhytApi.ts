@@ -172,7 +172,22 @@ export const bhytApi = {
           }
         }))
       };
-    } catch {
+    } catch (err: any) {
+      // Ghi nhận log cảnh báo offline fallback lên backend để monitor theo dõi
+      apiRequest('/bhyt/log', {
+        method: 'POST',
+        body: JSON.stringify({
+          prescription_id: payload.prescriptionId || 'RX-BHYT',
+          patient_name: payload.patientName,
+          insurance_card_number: payload.insuranceCardNumber,
+          hospital_rank: payload.hospitalRank,
+          treatment_type: payload.treatmentType,
+          primary_icd10: payload.primaryIcd10,
+          status: 'WARNING',
+          error_detail: `Offline fallback: ${err?.message || 'Yêu cầu mạng không phản hồi, đã tự động chuyển sang động cơ offline'}`
+        })
+      }).catch(() => {});
+
       // Offline fallback: Động cơ offline <5ms
       return auditBhytPrescription(payload);
     }

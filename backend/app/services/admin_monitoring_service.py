@@ -11,8 +11,10 @@ from app.models.copilot_log import CopilotChatLog
 from app.services.cache.clinical_cache import get_clinical_cache
 from app.schemas.admin_monitoring_schema import (
     BudgetCapConfig, BudgetCapResponse,
-    TelemetryOverviewResponse, TelemetryEventItem
+    TelemetryOverviewResponse, TelemetryEventItem,
+    BhytAuditLogItem
 )
+from app.models.bhyt import BhytAuditLog
 
 _BUDGET_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data/token_budget_config.json"))
 
@@ -160,19 +162,40 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     gr_res = await db.execute(gr_stmt)
     guardrail_blocks_count = gr_res.scalar() or 0
 
-    # 5. Dữ liệu thật từ phân hệ Kê đơn CPOE & Hồ sơ BHYT
-    real_cpoe_count = 0
+    # 5. Dữ liệu thật từ phân hệ Giám định BHYT & Sổ nhật ký xuất toán
+    real_bhyt_count = 0
     bhyt_saved_vnd = 0.0
+    bhyt_logs_list: List[BhytAuditLogItem] = []
     try:
-        c_count_res = await db.execute(select(func.count(CpoePrescription.id)))
-        real_cpoe_count = c_count_res.scalar() or 0
-        
-        c_sum_res = await db.execute(
-            select(func.sum(CpoePrescription.total_amount)).where(CpoePrescription.has_ddi_warning == True)
-        )
-        bhyt_saved_vnd = float(c_sum_res.scalar() or 0.0)
-    except Exception:
-        pass
+        # Số ca đã giám định thực tế trong CSDL
+        bhyt_cnt_res = await db.execute(select(func.count(BhytAuditLog.id)))
+        real_bhyt_count = bhyt_cnt_res.scalar() or 0
+
+        # Tổng số tiền nguy cơ xuất toán được phát hiện và cảnh báo
+        bhyt_sum_res = await db.execute(select(func.sum(BhytAuditLog.at_risk_cost_vnd)))
+        bhyt_saved_vnd = float(bhyt_sum_res.scalar() or 0.0)
+
+        # 30 ca giám định BHYT mới nhất
+        bhyt_stmt = select(BhytAuditLog).order_by(BhytAuditLog.created_at.desc()).limit(30)
+        bhyt_rows = (await db.execute(bhyt_stmt)).scalars().all()
+        for r in bhyt_rows:
+            bhyt_logs_list.append(BhytAuditLogItem(
+                id=r.id,
+                prescription_id=r.prescription_id,
+                patient_name=r.patient_name or "Bệnh nhân",
+                insurance_card_number=r.insurance_card_number or "",
+                hospital_rank=r.hospital_rank or "HANG_I",
+                treatment_type=r.treatment_type or "NGOAI_TRU",
+                primary_icd10=r.primary_icd10 or "",
+                status=r.status or "PASS",
+                total_cost_vnd=float(r.total_cost_vnd or 0.0),
+                at_risk_cost_vnd=float(r.at_risk_cost_vnd or 0.0),
+                violations_count=int(r.violations_count or 0),
+                violations_json=r.violations_json or "[]",
+                created_at=r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else None
+            ))
+    except Exception as e:
+        print(f"Warning: Failed to fetch bhyt logs in telemetry: {e}")
 
     # 6. Độ trễ thực tế từ Bể Khóa API Key
     vault_keys = _load_vault_data()
@@ -223,11 +246,12 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
         tokens_saved=tokens_saved,
         cost_saved_vnd=cost_saved_vnd,
         p95_latency_ms=p95_latency,
-        bhyt_audited=real_cpoe_count,
+        bhyt_audited=real_bhyt_count,
         bhyt_rejection_saved_vnd=bhyt_saved_vnd,
         ddi_blocks_count=ddi_blocks_count,
         guardrail_blocks_count=guardrail_blocks_count,
         recent_events=recent_events[:10],
         intent_distribution=intent_distribution,
-        timeline_trend=timeline_trend
+        timeline_trend=timeline_trend,
+        bhyt_logs=bhyt_logs_list
     )

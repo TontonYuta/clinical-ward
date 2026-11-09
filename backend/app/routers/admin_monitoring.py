@@ -2,13 +2,16 @@
 Admin Monitoring & API Key Gateway Router.
 Cung cấp endpoints quản trị Telemetry, Bể khóa API Key và Ngân sách Token.
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.models.bhyt import BhytAuditLog
 from app.schemas.admin_monitoring_schema import (
     ApiKeyItem, AddApiKeyRequest, TestKeyRequest, TestKeyResponse,
-    BudgetCapConfig, BudgetCapResponse, TelemetryOverviewResponse
+    BudgetCapConfig, BudgetCapResponse, TelemetryOverviewResponse,
+    BhytAuditLogItem
 )
 from app.services.admin_key_vault import (
     get_all_masked_keys, add_api_key, delete_api_key, ping_test_gemini_key, _load_vault_data
@@ -23,6 +26,47 @@ router = APIRouter(prefix="/admin", tags=["Cổng Quản Trị & Giám Sát AI"]
 async def get_telemetry_overview(db: AsyncSession = Depends(get_db)):
     """Lấy số liệu giám sát vận hành AI, BHYT và an toàn lâm sàng."""
     return await aggregate_telemetry_overview(db)
+
+@router.get("/monitoring/bhyt-logs", response_model=List[BhytAuditLogItem])
+async def get_monitoring_bhyt_logs(
+    limit: int = Query(50, ge=1, le=200),
+    status: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """Lấy danh sách nhật ký giám định BHYT để kiểm tra lỗi và rà soát xuất toán."""
+    stmt = select(BhytAuditLog).order_by(BhytAuditLog.created_at.desc(), BhytAuditLog.id.desc())
+    if status and status.upper() != "ALL":
+        stmt = stmt.where(BhytAuditLog.status == status.upper())
+    if q and q.strip():
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(
+            (BhytAuditLog.patient_name.ilike(term)) |
+            (BhytAuditLog.prescription_id.ilike(term)) |
+            (BhytAuditLog.insurance_card_number.ilike(term)) |
+            (BhytAuditLog.primary_icd10.ilike(term))
+        )
+    stmt = stmt.limit(limit)
+    rows = (await db.execute(stmt)).scalars().all()
+    
+    return [
+        BhytAuditLogItem(
+            id=r.id,
+            prescription_id=r.prescription_id,
+            patient_name=r.patient_name or "Bệnh nhân",
+            insurance_card_number=r.insurance_card_number or "",
+            hospital_rank=r.hospital_rank or "HANG_I",
+            treatment_type=r.treatment_type or "NGOAI_TRU",
+            primary_icd10=r.primary_icd10 or "",
+            status=r.status or "PASS",
+            total_cost_vnd=float(r.total_cost_vnd or 0.0),
+            at_risk_cost_vnd=float(r.at_risk_cost_vnd or 0.0),
+            violations_count=int(r.violations_count or 0),
+            violations_json=r.violations_json or "[]",
+            created_at=r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else None
+        )
+        for r in rows
+    ]
 
 @router.get("/keys", response_model=List[ApiKeyItem])
 async def list_api_keys():
