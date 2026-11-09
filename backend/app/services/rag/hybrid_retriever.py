@@ -7,7 +7,7 @@ and Knowledge Graph Entity Gating according to Medical SOTA Standards
 import asyncio
 import logging
 import re
-from typing import Optional, List, Dict, Set, Tuple
+from typing import Optional, List, Dict, Set, Tuple, Any
 
 from app.services.rag.types import RagChunk, RetrievedChunk
 from app.services.rag.sqlite_fts import SqliteFtsIndex
