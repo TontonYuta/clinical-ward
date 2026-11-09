@@ -6,8 +6,6 @@ node_modules/
 # Production build
 /dist/
 /build/
-!public/pdfjs/build/
-public/pdfjs/**/*.map
 
 # Python & Virtual Environments
 __pycache__/

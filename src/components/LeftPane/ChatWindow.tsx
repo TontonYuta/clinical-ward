@@ -16,7 +16,6 @@ import { renderFormattedText } from './ChatMarkdown';
 import { CdssAlertBanner } from './Cards/CdssAlertBanner';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
-import { PdfViewerDrawer, PdfViewerTarget } from '../Modals/PdfViewerDrawer';
 import { isCloudAIAvailable } from '../../services/geminiService';
 import { removeLegacySourceText, formatCitationLabel } from '../../utils/chatAnswerPresentation';
 
@@ -54,7 +53,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     return true;
   });
   const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
-  const [pdfTarget, setPdfTarget] = useState<PdfViewerTarget | null>(null);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => {
@@ -72,50 +70,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const firstCit = activeCits.length > 0 ? activeCits[0] : undefined;
 
     const finalPage = citationRef.page || firstCit?.page || undefined;
-
-    const inn = (citationRef.inn || firstCit?.inn || msg?.active_medication_name || '').trim();
-    const section = (citationRef.section || firstCit?.section || '').trim();
-    const explicitSearch = (citationRef.searchTerm || '').trim();
-
-    // Tự động bóc tách từ khóa hoạt chất / biệt dược chính từ tiêu đề chuyên luận
-    let cleanDrugKeyword = inn;
-    if (!cleanDrugKeyword) {
-      const matchDrug = (citationRef.title || citationRef.section || citationRef.legal_basis || '').match(
-        /\b(Perindopril|Metformin|Meloxicam|Spironolacton|Colchicin|Ciprofloxacin|Levofloxacin|Enoxaparin|Allopurinol|Paracetamol|Ibuprofen|Augmentin|Amoxicillin|Coversyl|Aldactone|Glucophage)\b/i
-      );
-      if (matchDrug) cleanDrugKeyword = matchDrug[1];
-    }
-
-    // Thu thập danh sách từ khóa lâm sàng đa dạng (ưu tiên hoạt chất chính để PDF.js tìm tức thì)
-    const keywordsList: string[] = [];
-    if (explicitSearch) keywordsList.push(explicitSearch);
-    if (cleanDrugKeyword) keywordsList.push(cleanDrugKeyword);
-    if (inn && section) keywordsList.push(`${inn} ${section}`);
-    if (inn && inn !== cleanDrugKeyword) keywordsList.push(inn);
-    if (section) keywordsList.push(section);
-    if (citationRef.keywords && Array.isArray(citationRef.keywords)) {
-      citationRef.keywords.forEach((k: string) => {
-        if (k && !keywordsList.includes(k)) keywordsList.push(k);
-      });
-    }
-
     let targetUrl = citationRef.url || firstCit?.url || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
     if (finalPage && !targetUrl.includes('#page=')) {
       targetUrl = `${targetUrl.split('#')[0]}#page=${finalPage}`;
     }
 
-    setPdfTarget({
-      title: citationRef.title || citationRef.legal_basis || firstCit?.title || firstCit?.legal_basis || 'Dược Thư Quốc Gia Việt Nam',
-      url: targetUrl,
-      page: finalPage,
-      excerpt: citationRef.excerpt || firstCit?.excerpt,
-      legal_basis: citationRef.legal_basis || citationRef.title || firstCit?.legal_basis,
-      section: section || undefined,
-      inn: inn || undefined,
-      searchTerm: explicitSearch || (inn && section ? `${inn} ${section}` : inn || section || undefined),
-      keywords: keywordsList,
-      textFragmentUrl: citationRef.text_fragment_url || citationRef.textFragmentUrl || firstCit?.text_fragment_url,
-    });
+    if (typeof window !== 'undefined') {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const isStreamingAny = messages.some(m => m.isStreaming);
@@ -498,14 +460,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* 4. Settings Modal */}
       <ChatSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
-      {/* 5. In-App Dual-Mode Clinical Reader & PDF Drawer (Tier 3) */}
-      <PdfViewerDrawer
-        isOpen={Boolean(pdfTarget)}
-        target={pdfTarget}
-        onClose={() => setPdfTarget(null)}
-      />
-
-      {/* 6. Multi-Session History Drawer for compact popup mode */}
+      {/* 5. Multi-Session History Drawer for compact popup mode */}
       {!isFullScreen && (
         <ChatSessionsDrawer
           isOpen={isSessionsDrawerOpen}
