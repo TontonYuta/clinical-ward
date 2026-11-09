@@ -10,8 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Use Python virtualenv to ensure 100% clean package isolation and eliminate Debian dist-packages path bugs
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Final Runtime Image
 FROM python:3.12-slim AS runner
@@ -26,10 +30,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr-vie \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /install /usr/local
-
-# Copy application source, data, and initial database
-COPY . /app/
+# Copy virtualenv from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Environment Configuration
 ENV PYTHONUNBUFFERED=1 \
@@ -38,9 +41,15 @@ ENV PYTHONUNBUFFERED=1 \
     DATABASE_URL="sqlite+aiosqlite:////app/clinical_hospital.db" \
     CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app,https://clinical-ai-monitor.vercel.app"
 
-# Unpack pre-baked hospital database (54,885 DAV drugs, 702 monographs) in <1s
-RUN gzip -dc /app/clinical_prebaked.db.gz > /app/clinical_hospital.db && rm -f /app/clinical_prebaked.db.gz
+# Copy prebaked database first to leverage Docker layer caching
+COPY clinical_prebaked.db.gz* backend/clinical_prebaked.db.gz* /app/
+RUN if [ -f /app/backend/clinical_prebaked.db.gz ]; then mv /app/backend/clinical_prebaked.db.gz /app/clinical_prebaked.db.gz; fi \
+    && gzip -dc /app/clinical_prebaked.db.gz > /app/clinical_hospital.db \
+    && rm -f /app/clinical_prebaked.db.gz
 
+# Copy application source and data
+COPY . /app/
+RUN if [ -d /app/backend/app ]; then cp -r /app/backend/* /app/ && rm -rf /app/backend; fi
 
 EXPOSE 8000
 
