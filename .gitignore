@@ -4,8 +4,10 @@ node_modules/
 .pnp.js
 
 # Production build
-dist/
-build/
+/dist/
+/build/
+!public/pdfjs/build/
+public/pdfjs/**/*.map
 
 # Python & Virtual Environments
 __pycache__/
@@ -68,9 +70,9 @@ TEMP/
 # Heavy PDF documents (Keep strictly in local workspace only)
 *.pdf
 **/*.pdf
-!public/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf
+!public/pdf/*.pdf
+!public/pdf/**/*.pdf
 !docs/references/tt26_2025/*.pdf
-!public/pdf/bhyt/*.pdf
 !public/samples/*.pdf
 
 # Local database snapshots and generated audit artifacts

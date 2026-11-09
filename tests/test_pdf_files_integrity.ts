@@ -55,4 +55,17 @@ for (const item of REQUIRED_PDFS) {
   assert.equal(buffer.toString('utf-8'), '%PDF-', `File ${item.filename} has invalid PDF magic bytes`);
 }
 
+// PDF.js Runtime Verification
+const PDFJS_BUILD_DIR = path.resolve(__dirname, '../public/pdfjs/build');
+const REQUIRED_PDFJS_FILES = ['pdf.mjs', 'pdf.worker.mjs', 'pdf.sandbox.mjs'];
+for (const file of REQUIRED_PDFJS_FILES) {
+  const filePath = path.join(PDFJS_BUILD_DIR, file);
+  assert.ok(fs.existsSync(filePath), `Missing PDF.js build artifact: ${file}`);
+  const stat = fs.statSync(filePath);
+  assert.ok(stat.size > 100_000, `PDF.js build artifact ${file} is unexpectedly small: ${stat.size} bytes`);
+}
+
+const VIEWER_HTML = path.resolve(__dirname, '../public/pdfjs/web/viewer.html');
+assert.ok(fs.existsSync(VIEWER_HTML), 'Missing PDF.js viewer.html');
+
 console.log('pdf files integrity checks passed');
