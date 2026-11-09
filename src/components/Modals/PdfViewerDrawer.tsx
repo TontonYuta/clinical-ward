@@ -20,6 +20,7 @@ import {
   Search,
   Sparkles,
   Layers,
+  Zap,
 } from 'lucide-react';
 
 export interface PdfViewerTarget {
@@ -46,11 +47,15 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
   const [isCopied, setIsCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Chế độ engine: 'native' (trình duyệt gốc, siêu tốc <0.1s) vs 'pdfjs' (tìm kiếm bôi vàng)
+  const [engineMode, setEngineMode] = useState<'native' | 'pdfjs'>('native');
+
   // Trạng thái tìm kiếm đa từ khóa & cụm từ
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isPhraseMatch, setIsPhraseMatch] = useState<boolean>(true);
   const [appliedQuery, setAppliedQuery] = useState<string>('');
   const [appliedIsPhrase, setAppliedIsPhrase] = useState<boolean>(true);
+  const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
 
   // Đồng bộ trang & từ khóa mặc định khi target thay đổi
   useEffect(() => {
@@ -80,6 +85,8 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
 
     setSearchQuery(cleanInitial);
     setAppliedQuery(cleanInitial);
+    // MẶC ĐỊNH KHÔNG tự động kích hoạt tìm kiếm PDF.js để tránh quét 1600 trang gây đơ/chậm
+    setIsSearchActive(false);
     setIsPhraseMatch(true);
     setAppliedIsPhrase(true);
   }, [target]);
@@ -97,12 +104,15 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
 
   const baseUrl = target.url.split('#')[0];
 
-  // Chuẩn bị URL cho Mozilla PDF.js với Multi-word / Phrase search
-  const cleanSearch = appliedQuery.trim().replace(/["']/g, '');
+  // Chỉ gắn &search khi người dùng chủ động bấm "Tìm", tránh PDF.js tự động quét toàn bộ 1600 trang
+  const cleanSearch = isSearchActive ? appliedQuery.trim().replace(/["']/g, '') : '';
   const searchFragment = cleanSearch
     ? `&search=${encodeURIComponent(cleanSearch)}&phrase=${appliedIsPhrase ? 'true' : 'false'}`
     : '';
-  const activeUrl = `/pdfjs/web/viewer.html?file=${encodeURIComponent(baseUrl)}#page=${currentPage}${searchFragment}`;
+
+  const activeUrl = engineMode === 'native'
+    ? `${baseUrl}#page=${currentPage}`
+    : `/pdfjs/web/viewer.html?file=${encodeURIComponent(baseUrl)}#page=${currentPage}${searchFragment}`;
 
   const handleApplySearch = (queryToApply?: string, phraseMode?: boolean) => {
     const q = (queryToApply !== undefined ? queryToApply : searchQuery).trim();
@@ -110,6 +120,12 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
     setSearchQuery(q);
     setAppliedQuery(q);
     setAppliedIsPhrase(p);
+    if (q) {
+      setIsSearchActive(true);
+      setEngineMode('pdfjs'); // Tự động kích hoạt PDF.js để bôi vàng
+    } else {
+      setIsSearchActive(false);
+    }
   };
 
   // Hàm bôi vàng đa từ khóa & cụm từ trong trích đoạn Excerpt
@@ -184,6 +200,39 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
 
           {/* Controls */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Engine Switcher */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-md border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setEngineMode('native');
+                  setIsSearchActive(false);
+                }}
+                className={`px-2 py-0.5 rounded text-2xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  engineMode === 'native'
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Chế độ Siêu tốc (Trình duyệt gốc): Tải tức thì <0.1s, mượt mà và tiết kiệm băng thông"
+              >
+                <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                <span>Siêu tốc</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEngineMode('pdfjs')}
+                className={`px-2 py-0.5 rounded text-2xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  engineMode === 'pdfjs'
+                    ? 'bg-white text-teal-800 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Chế độ PDF.js: Hỗ trợ tìm kiếm từ khóa và công cụ PDF"
+              >
+                <Search className="w-3 h-3 text-teal-600" />
+                <span>PDF.js</span>
+              </button>
+            </div>
+
             {/* Page navigation */}
             <div className="flex items-center gap-1 bg-slate-100 rounded-md border border-slate-200 px-1.5 py-0.5 text-xs text-slate-700">
               <button
@@ -219,7 +268,7 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
               target="_blank"
               rel="noreferrer"
               className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
-              title="Mở toàn trang tab mới (PDF.js Highlight)"
+              title={engineMode === 'native' ? 'Mở toàn trang tab mới' : 'Mở toàn trang tab mới (PDF.js)'}
             >
               <ExternalLink className="w-4 h-4" />
             </a>
@@ -350,7 +399,7 @@ export const PdfViewerDrawer: React.FC<PdfViewerDrawerProps> = ({ isOpen, target
         {/* Full-Height Scan PDF Viewer Iframe */}
         <div className="flex-1 w-full h-full bg-slate-100 relative overflow-hidden">
           <iframe
-            key={activeUrl}
+            key={`${activeUrl}-${engineMode}`}
             src={activeUrl}
             data-testid="in-app-pdf-iframe"
             className="w-full h-full border-0 bg-white"
