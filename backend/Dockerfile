@@ -42,14 +42,12 @@ ENV PYTHONUNBUFFERED=1 \
     CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app,https://clinical-ai-monitor.vercel.app"
 
 # Copy prebaked database first to leverage Docker layer caching
-COPY clinical_prebaked.db.gz* backend/clinical_prebaked.db.gz* /app/
-RUN if [ -f /app/backend/clinical_prebaked.db.gz ]; then mv /app/backend/clinical_prebaked.db.gz /app/clinical_prebaked.db.gz; fi \
-    && gzip -dc /app/clinical_prebaked.db.gz > /app/clinical_hospital.db \
+COPY clinical_prebaked.db.gz /app/
+RUN gzip -dc /app/clinical_prebaked.db.gz > /app/clinical_hospital.db \
     && rm -f /app/clinical_prebaked.db.gz
 
 # Copy application source and data
 COPY . /app/
-RUN if [ -d /app/backend/app ]; then cp -r /app/backend/* /app/ && rm -rf /app/backend; fi
 
 EXPOSE 8000
 
