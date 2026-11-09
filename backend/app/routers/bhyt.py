@@ -105,9 +105,9 @@ def get_bhyt_audit_logs(
             sql += " AND status = ?"
             params.append(status.upper())
         if q and q.strip():
-            sql += " AND (patient_name LIKE ? OR prescription_id LIKE ? OR insurance_card_number LIKE ? OR primary_icd10 LIKE ?)"
+            sql += " AND (patient_name LIKE ? OR prescription_id LIKE ? OR insurance_card_number LIKE ? OR primary_icd10 LIKE ? OR violations_json LIKE ?)"
             term = f"%{q.strip()}%"
-            params.extend([term, term, term, term])
+            params.extend([term, term, term, term, term])
         sql += " ORDER BY created_at DESC LIMIT ?"
         params.append(limit)
         cursor.execute(sql, tuple(params))

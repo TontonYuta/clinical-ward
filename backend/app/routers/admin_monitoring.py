@@ -44,7 +44,8 @@ async def get_monitoring_bhyt_logs(
             (BhytAuditLog.patient_name.ilike(term)) |
             (BhytAuditLog.prescription_id.ilike(term)) |
             (BhytAuditLog.insurance_card_number.ilike(term)) |
-            (BhytAuditLog.primary_icd10.ilike(term))
+            (BhytAuditLog.primary_icd10.ilike(term)) |
+            (BhytAuditLog.violations_json.ilike(term))
         )
     stmt = stmt.limit(limit)
     rows = (await db.execute(stmt)).scalars().all()
