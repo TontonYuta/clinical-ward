@@ -87,6 +87,10 @@ async def lifespan(app: FastAPI):
             if col_name not in sms_log_cols:
                 await conn.execute(text(f"ALTER TABLE sms_delivery_logs ADD COLUMN {col_name} {col_type}"))
 
+        monograph_cols = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("clinical_drug_monographs")})
+        if "section_pages" not in monograph_cols:
+            await conn.execute(text("ALTER TABLE clinical_drug_monographs ADD COLUMN section_pages TEXT"))
+
     # Check if DB has data, if not seed it automatically
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(User).limit(1))
