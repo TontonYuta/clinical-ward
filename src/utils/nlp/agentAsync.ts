@@ -30,7 +30,8 @@ export async function processClinicalAgentQueryAsync(
   currentState: AsyncClinicalState,
   currentUserProfile?: UserProfile,
   onToken?: (token: string, currentFullText: string) => void,
-  sessionId?: string
+  sessionId?: string,
+  attachment?: any
 ): Promise<ProcessedQueryResult> {
   const role = currentUserProfile?.role || 'nurse';
   const name = currentUserProfile?.name || 'Điều Dưỡng Trực Ca';
@@ -95,7 +96,9 @@ export async function processClinicalAgentQueryAsync(
   // 1. Luồng chính: Chuyển 100% câu hỏi trực tiếp lên FastAPI Copilot Backend (SOTA Vector RAG + Gemini NLU)
   try {
     const activeSessionId = sessionId || _clientSessionId;
-    const backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken);
+    const imageBase64 = attachment?.imageBase64;
+    const imageMimeType = attachment?.mimeType || 'image/jpeg';
+    const backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken, imageBase64, imageMimeType);
     if (backendData && backendData.reply_text) {
       let card: AgentActionCard | undefined = undefined;
       let actionPayload: ActionPayload | undefined = undefined;

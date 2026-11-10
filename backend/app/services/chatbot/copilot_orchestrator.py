@@ -82,6 +82,41 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Quy chế thuốc gây nghiện TT 20", "Hướng dẫn sử dụng hệ thống"]
         )
 
+    # NẾU CÓ ẢNH ĐÍNH KÈM: Chuyển thẳng sang luồng Multimodal Vision Analysis chuyên sâu
+    if payload.image_base64:
+        from app.services.llm_provider import query_clinical_multimodal_chat
+        vision_res = await query_clinical_multimodal_chat(
+            image_base64=payload.image_base64,
+            mime_type=payload.image_mime_type or "image/jpeg",
+            user_query=payload.query,
+            user_role=user_role
+        )
+        if vision_res and isinstance(vision_res, dict):
+            reply_text = vision_res.get("reply_markdown") or "Đã phân tích hình ảnh đính kèm thành công."
+            legal_basis = vision_res.get("legal_basis") or "Nghị định 98/2021/NĐ-CP & Thông tư Bộ Y Tế"
+            suggested_chips = vision_res.get("suggested_chips") or ["Báo hỏng thiết bị", "Tra cứu Dược Thư", "Đối chiếu quy chế"]
+            card_obj = None
+            if vision_res.get("card") and isinstance(vision_res.get("card"), dict):
+                from app.schemas.copilot import CopilotActionCard
+                c = vision_res["card"]
+                card_obj = CopilotActionCard(
+                    card_type=c.get("card_type", "incident_confirm"),
+                    title=c.get("title", "Phiếu Báo Hỏng Thiết Bị Y Tế"),
+                    summary=c.get("summary", "Đề xuất lập phiếu báo hỏng thiết bị"),
+                    data=c.get("data", {}),
+                    primary_action_label=c.get("primary_action_label", "Tạo Phiếu"),
+                    primary_action_type=c.get("primary_action_type", "CREATE_TICKET"),
+                    target_tab=c.get("target_tab", "asset_audit")
+                )
+            return CopilotResponse(
+                intent="MULTIMODAL_CLINICAL_VISION",
+                reply_text=reply_text,
+                legal_basis=legal_basis,
+                suggested_chips=suggested_chips,
+                card=card_obj,
+                rag_grounded=True
+            )
+
     query = guard_res.sanitized_query
     lower_query = query.lower()
 

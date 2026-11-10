@@ -11,6 +11,8 @@ export interface ChatAttachment {
   url?: string;
   title: string;
   description?: string;
+  imageBase64?: string;
+  mimeType?: string;
 }
 
 export interface ActionPayload {

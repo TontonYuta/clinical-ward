@@ -6,6 +6,8 @@ class CopilotQuery(BaseModel):
     user_role: str = "nurse"
     user_name: str = "ĐD. Lê Thị Thu"
     session_id: str | None = None
+    image_base64: str | None = None
+    image_mime_type: str | None = "image/jpeg"
 
 class CopilotActionCard(BaseModel):
     card_type: str

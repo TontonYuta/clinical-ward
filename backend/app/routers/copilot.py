@@ -37,6 +37,8 @@ async def chat_with_copilot(
     clinical_cache = get_clinical_cache()
 
     can_use_cache = True
+    if payload.image_base64:
+        can_use_cache = False
     lower_q = payload.query.lower()
     if any(w in lower_q for w in (
         "này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc",
@@ -134,6 +136,8 @@ async def chat_with_copilot_stream(
         clinical_cache = get_clinical_cache()
 
         can_use_cache = True
+        if payload.image_base64:
+            can_use_cache = False
         lower_q = payload.query.lower()
         if any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc")):
             can_use_cache = False

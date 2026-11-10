@@ -1735,7 +1735,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             prev.map(m => m.id === botMsgId ? { ...m, text: currentFullText } : m)
           );
         },
-        activeChatSessionId
+        activeChatSessionId,
+        attachment
       );
 
       // 3. Execute State Updates on Right Pane if actionPayload provided and NOT awaiting card confirmation

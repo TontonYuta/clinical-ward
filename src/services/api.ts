@@ -276,12 +276,24 @@ export async function verifyAuditIntegrityApi(): Promise<{
   return res.json();
 }
 
-// 7. Copilot AI Assistant (Hỗ trợ AMIE Multi-turn Context Session & Pure RAG)
-export async function chatCopilotApi(query: string, userRole: string, userName: string, sessionId?: string) {
+// 7. Copilot AI Assistant (Hỗ trợ AMIE Multi-turn Context Session & Pure RAG & Multimodal Vision)
+export async function chatCopilotApi(
+  query: string,
+  userRole: string,
+  userName: string,
+  sessionId?: string,
+  imageBase64?: string,
+  imageMimeType?: string
+) {
+  const payload: any = { query, user_role: userRole, user_name: userName, session_id: sessionId };
+  if (imageBase64) {
+    payload.image_base64 = imageBase64;
+    payload.image_mime_type = imageMimeType || 'image/jpeg';
+  }
   const res = await apiFetch(`${API_BASE_URL}/copilot/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, user_role: userRole, user_name: userName, session_id: sessionId })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('Lỗi gửi tin nhắn đến Trợ lý AI');
   return res.json();
@@ -296,22 +308,30 @@ export async function chatCopilotApiStream(
   userRole: string,
   userName: string,
   sessionId?: string,
-  onToken?: (token: string, currentFullText: string) => void
+  onToken?: (token: string, currentFullText: string) => void,
+  imageBase64?: string,
+  imageMimeType?: string
 ): Promise<any> {
+  const payload: any = { query, user_role: userRole, user_name: userName, session_id: sessionId };
+  if (imageBase64) {
+    payload.image_base64 = imageBase64;
+    payload.image_mime_type = imageMimeType || 'image/jpeg';
+  }
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}/copilot/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, user_role: userRole, user_name: userName, session_id: sessionId })
+      body: JSON.stringify(payload)
     });
   } catch {
     // Fallback nếu mạng hoặc server không hỗ trợ SSE stream
-    return chatCopilotApi(query, userRole, userName, sessionId);
+    return chatCopilotApi(query, userRole, userName, sessionId, imageBase64, imageMimeType);
   }
 
   if (!response.ok || !response.body) {
-    return chatCopilotApi(query, userRole, userName, sessionId);
+    return chatCopilotApi(query, userRole, userName, sessionId, imageBase64, imageMimeType);
   }
 
   const reader = response.body.getReader();

@@ -326,6 +326,42 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     ? 'bg-slate-100 border border-slate-200 text-slate-800 rounded-xl'
                     : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs'
                 }`}>
+                      {/* Hiển thị ảnh đính kèm nếu có trong tin nhắn */}
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {msg.attachments.map((att, attIdx) => {
+                            if (att.type === 'image' && (att.url || att.imageBase64)) {
+                              const imgSrc = att.url || att.imageBase64;
+                              return (
+                                <div
+                                  key={`att-${msg.id}-${attIdx}`}
+                                  className="rounded-lg overflow-hidden border border-teal-300 bg-white/80 max-w-[220px] shadow-2xs"
+                                >
+                                  <a
+                                    href={imgSrc}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Bấm để xem ảnh kích thước đầy đủ"
+                                    className="block"
+                                  >
+                                    <img
+                                      src={imgSrc}
+                                      alt={att.title || 'Ảnh đính kèm'}
+                                      className="max-h-36 w-auto object-contain rounded-t hover:opacity-95 transition"
+                                    />
+                                  </a>
+                                  <div className="px-2 py-1 text-3xs font-semibold text-slate-700 bg-teal-50/50 border-t border-teal-200 truncate flex items-center gap-1">
+                                    <span>📷</span>
+                                    <span className="truncate">{att.title || 'Ảnh hiện trường'}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      )}
+
                       {msg.isStreaming && !msg.text ? (
                         <div className="flex items-center gap-2 py-1 text-slate-500">
                           <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />

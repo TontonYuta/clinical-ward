@@ -496,8 +496,15 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       <ImageModal
         isOpen={isImageOpen}
         onClose={() => setIsImageOpen(false)}
-        onSendImageWithText={(title, prompt) => {
-          onSendMessage(prompt, { type: 'image', title, description: 'Ảnh đính kèm' });
+        onSendImage={(payload) => {
+          onSendMessage(payload.prompt, {
+            type: 'image',
+            title: payload.title,
+            description: `Ảnh đính kèm: ${payload.title} (${payload.fileSizeKb} KB)`,
+            url: payload.previewUrl,
+            imageBase64: payload.imageBase64,
+            mimeType: payload.imageMimeType
+          });
         }}
       />
     </div>
