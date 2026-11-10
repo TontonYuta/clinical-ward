@@ -11,13 +11,14 @@ from app.models.bhyt import BhytAuditLog
 from app.schemas.admin_monitoring_schema import (
     ApiKeyItem, AddApiKeyRequest, TestKeyRequest, TestKeyResponse,
     BudgetCapConfig, BudgetCapResponse, TelemetryOverviewResponse,
-    BhytAuditLogItem
+    BhytAuditLogItem, PaginatedTelemetryResponse
 )
 from app.services.admin_key_vault import (
     get_all_masked_keys, add_api_key, delete_api_key, ping_test_gemini_key, _load_vault_data
 )
 from app.services.admin_monitoring_service import (
-    aggregate_telemetry_overview, get_budget_status, save_budget_config
+    aggregate_telemetry_overview, get_budget_status, save_budget_config,
+    get_paginated_telemetry_logs
 )
 
 router = APIRouter(prefix="/admin", tags=["Cổng Quản Trị & Giám Sát AI"])
@@ -26,6 +27,27 @@ router = APIRouter(prefix="/admin", tags=["Cổng Quản Trị & Giám Sát AI"]
 async def get_telemetry_overview(db: AsyncSession = Depends(get_db)):
     """Lấy số liệu giám sát vận hành AI, BHYT và an toàn lâm sàng."""
     return await aggregate_telemetry_overview(db)
+
+@router.get("/monitoring/telemetry-logs", response_model=PaginatedTelemetryResponse)
+async def get_monitoring_telemetry_logs(
+    page: int = Query(1, ge=1, description="Số thứ tự trang hiện tại"),
+    page_size: int = Query(25, ge=5, le=200, description="Số bản ghi trên một trang"),
+    event_type: Optional[str] = Query(None, description="Lọc theo loại sự kiện"),
+    model_name: Optional[str] = Query(None, description="Lọc theo model AI"),
+    user_role: Optional[str] = Query(None, description="Lọc theo vai trò người dùng"),
+    q: Optional[str] = Query(None, description="Tìm kiếm theo từ khóa câu hỏi, ID hoặc nội dung"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Lấy danh sách nhật ký tương tác AI & Telemetry có phân trang, bộ lọc và tìm kiếm toàn văn."""
+    return await get_paginated_telemetry_logs(
+        db=db,
+        page=page,
+        page_size=page_size,
+        event_type=event_type,
+        model_name=model_name,
+        user_role=user_role,
+        q=q
+    )
 
 @router.get("/monitoring/bhyt-logs", response_model=List[BhytAuditLogItem])
 async def get_monitoring_bhyt_logs(

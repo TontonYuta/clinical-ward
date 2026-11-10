@@ -88,6 +88,13 @@ class BhytAuditLogItem(BaseModel):
     violations_json: Optional[str] = "[]"
     created_at: Optional[str] = None
 
+class PaginatedTelemetryResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    current_page: int
+    page_size: int
+    items: List[TelemetryEventItem]
+
 class TelemetryOverviewResponse(BaseModel):
     total_queries: int
     cache_hit_rate_pct: float

@@ -4,15 +4,16 @@ Admin Telemetry Aggregator & Token Budget Service.
 import os
 import json
 import time
-from typing import Dict, Any, List
-from sqlalchemy import select
+import math
+from typing import Dict, Any, List, Optional
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.copilot_log import CopilotChatLog
 from app.services.cache.clinical_cache import get_clinical_cache
 from app.schemas.admin_monitoring_schema import (
     BudgetCapConfig, BudgetCapResponse,
     TelemetryOverviewResponse, TelemetryEventItem,
-    BhytAuditLogItem
+    BhytAuditLogItem, PaginatedTelemetryResponse
 )
 from app.models.bhyt import BhytAuditLog
 
@@ -88,6 +89,148 @@ async def get_budget_status() -> BudgetCapResponse:
         throttling_status=throttling_status
     )
 
+def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
+    ev_type = "ADAPTIVE_RAG"
+    status = "success"
+
+    intent_val = getattr(l, "intent", "") or ""
+    if intent_val in ("MEDICATION_INTERACTION_BLOCKED", "CLINICAL_CONTRAINDICATION_BLOCKED"):
+        ev_type = "DDI_BLOCKED"
+        status = "blocked"
+    elif intent_val in ("SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED"):
+        ev_type = "GUARDRAIL_BLOCKED"
+        status = "blocked"
+    elif intent_val == "BHYT_VISION_OCR" or "OCR" in getattr(l, "id", ""):
+        ev_type = "VISION_OCR_BHYT"
+        status = "success"
+    elif getattr(l, "has_image", False) or "MULTIMODAL" in intent_val:
+        ev_type = "MULTIMODAL_CLINICAL_VISION"
+        status = "success"
+
+    has_img = bool(getattr(l, "has_image", False) or ev_type in ("VISION_OCR_BHYT", "MULTIMODAL_CLINICAL_VISION"))
+    img_tok = getattr(l, "image_tokens", 0) or (258 if has_img else 0)
+    
+    # Lấy token thực tế, nếu bản ghi cũ thiếu thì nội suy chính xác từ độ dài prompt & completion
+    p_tok = getattr(l, "prompt_tokens", 0) or 0
+    if p_tok <= 0:
+        p_tok = max(24, len(l.query or "") // 3) + (img_tok if has_img else 0)
+    
+    c_tok = getattr(l, "completion_tokens", 0) or 0
+    if c_tok <= 0:
+        c_tok = max(35, len(l.reply_text or "") // 3)
+        
+    tot_tok = getattr(l, "total_tokens", 0) or 0
+    if tot_tok <= 0:
+        tot_tok = p_tok + c_tok
+
+    m_name = getattr(l, "model_name", None)
+    if not m_name:
+        if has_img:
+            m_name = "gemini-3.5-flash-lite"
+        elif status == "blocked":
+            m_name = "clinical-guardrail-v2"
+        else:
+            m_name = "gemini-2.5-flash"
+
+    prov = getattr(l, "provider", None) or ("gemini" if "gemini" in m_name else "system")
+    lat = float(getattr(l, "latency_ms", 0.0) or (4.0 if status == "blocked" else 85.0))
+
+    return TelemetryEventItem(
+        id=l.id,
+        timestamp=l.created_at.strftime("%H:%M:%S") if l.created_at else "00:00:00",
+        event_type=ev_type,
+        query=l.query or "",
+        user_role=l.user_role or "doctor",
+        latency_ms=lat,
+        tokens=tot_tok,
+        prompt_tokens=p_tok,
+        completion_tokens=c_tok,
+        total_tokens=tot_tok,
+        model_name=m_name,
+        provider=prov,
+        has_image=has_img,
+        image_tokens=img_tok,
+        status=status,
+        reply_text=l.reply_text,
+        intent=l.intent,
+        user_name=l.user_name,
+        session_id=l.session_id,
+        grounded_source=l.grounded_source,
+        quality_category=l.quality_category
+    )
+
+async def get_paginated_telemetry_logs(
+    db: AsyncSession,
+    page: int = 1,
+    page_size: int = 25,
+    event_type: Optional[str] = None,
+    model_name: Optional[str] = None,
+    user_role: Optional[str] = None,
+    q: Optional[str] = None
+) -> PaginatedTelemetryResponse:
+    """Truy vấn nhật ký sự kiện Copilot AI & Multimodal có phân trang và bộ lọc chuyên sâu."""
+    stmt = select(CopilotChatLog)
+    count_stmt = select(func.count(CopilotChatLog.id))
+
+    filters = []
+
+    if q and q.strip():
+        term = f"%{q.strip()}%"
+        filters.append(
+            (CopilotChatLog.query.ilike(term)) |
+            (CopilotChatLog.id.ilike(term)) |
+            (CopilotChatLog.user_role.ilike(term)) |
+            (CopilotChatLog.reply_text.ilike(term))
+        )
+
+    if model_name and model_name.upper() != "ALL":
+        filters.append(CopilotChatLog.model_name == model_name)
+
+    if user_role and user_role.upper() != "ALL":
+        filters.append(CopilotChatLog.user_role.ilike(user_role))
+
+    if event_type and event_type.upper() != "ALL":
+        et = event_type.upper()
+        if et == "DDI_BLOCKED":
+            filters.append(CopilotChatLog.intent.in_(["MEDICATION_INTERACTION_BLOCKED", "CLINICAL_CONTRAINDICATION_BLOCKED"]))
+        elif et == "GUARDRAIL_BLOCKED":
+            filters.append(CopilotChatLog.intent.in_(["SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED"]))
+        elif et == "VISION_OCR_BHYT":
+            filters.append((CopilotChatLog.intent == "BHYT_VISION_OCR") | (CopilotChatLog.id.like("%OCR%")))
+        elif et == "MULTIMODAL_CLINICAL_VISION":
+            filters.append((CopilotChatLog.has_image == True) | (CopilotChatLog.intent.like("%MULTIMODAL%")))
+        elif et == "ADAPTIVE_RAG":
+            filters.append(CopilotChatLog.intent.not_in([
+                "MEDICATION_INTERACTION_BLOCKED", "CLINICAL_CONTRAINDICATION_BLOCKED",
+                "SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED", "BHYT_VISION_OCR"
+            ]))
+
+    for f in filters:
+        stmt = stmt.where(f)
+        count_stmt = count_stmt.where(f)
+
+    total_res = await db.execute(count_stmt)
+    total_items = total_res.scalar() or 0
+
+    page = max(1, page)
+    page_size = max(5, min(page_size, 200))
+    total_pages = max(1, math.ceil(total_items / page_size))
+    offset = (page - 1) * page_size
+
+    stmt = stmt.order_by(CopilotChatLog.created_at.desc(), CopilotChatLog.id.desc()).offset(offset).limit(page_size)
+    rows_res = await db.execute(stmt)
+    logs = rows_res.scalars().all()
+
+    items = [map_chat_log_to_telemetry_event(l) for l in logs]
+
+    return PaginatedTelemetryResponse(
+        total_items=total_items,
+        total_pages=total_pages,
+        current_page=page,
+        page_size=page_size,
+        items=items
+    )
+
 async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewResponse:
     from sqlalchemy import func
     from app.services.telemetry_store import get_all_time_token_usage, get_last_7_days_token_trend
@@ -103,81 +246,11 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     total_queries = total_hits + misses
     hit_rate = round((total_hits / total_queries) * 100, 1) if total_queries > 0 else 0.0
 
-    # 2. Nhật ký và sự kiện kiểm toán thật từ CSDL Bệnh viện
-    stmt = select(CopilotChatLog).order_by(CopilotChatLog.created_at.desc()).limit(15)
+    # 2. Nhật ký và sự kiện kiểm toán thật từ CSDL Bệnh viện (30 sự kiện gần nhất)
+    stmt = select(CopilotChatLog).order_by(CopilotChatLog.created_at.desc(), CopilotChatLog.id.desc()).limit(30)
     res = await db.execute(stmt)
     logs = res.scalars().all()
-
-    recent_events: List[TelemetryEventItem] = []
-    for l in logs:
-        ev_type = "ADAPTIVE_RAG"
-        status = "success"
-
-        intent_val = getattr(l, "intent", "") or ""
-        if intent_val in ("MEDICATION_INTERACTION_BLOCKED", "CLINICAL_CONTRAINDICATION_BLOCKED"):
-            ev_type = "DDI_BLOCKED"
-            status = "blocked"
-        elif intent_val in ("SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED"):
-            ev_type = "GUARDRAIL_BLOCKED"
-            status = "blocked"
-        elif intent_val == "BHYT_VISION_OCR" or "OCR" in getattr(l, "id", ""):
-            ev_type = "VISION_OCR_BHYT"
-            status = "success"
-        elif getattr(l, "has_image", False) or "MULTIMODAL" in intent_val:
-            ev_type = "MULTIMODAL_CLINICAL_VISION"
-            status = "success"
-
-        has_img = bool(getattr(l, "has_image", False) or ev_type in ("VISION_OCR_BHYT", "MULTIMODAL_CLINICAL_VISION"))
-        img_tok = getattr(l, "image_tokens", 0) or (258 if has_img else 0)
-        
-        # Lấy token thực tế, nếu bản ghi cũ thiếu thì nội suy chính xác từ độ dài prompt & completion
-        p_tok = getattr(l, "prompt_tokens", 0) or 0
-        if p_tok <= 0:
-            p_tok = max(24, len(l.query or "") // 3) + (img_tok if has_img else 0)
-        
-        c_tok = getattr(l, "completion_tokens", 0) or 0
-        if c_tok <= 0:
-            c_tok = max(35, len(l.reply_text or "") // 3)
-            
-        tot_tok = getattr(l, "total_tokens", 0) or 0
-        if tot_tok <= 0:
-            tot_tok = p_tok + c_tok
-
-        m_name = getattr(l, "model_name", None)
-        if not m_name:
-            if has_img:
-                m_name = "gemini-3.5-flash-lite"
-            elif status == "blocked":
-                m_name = "clinical-guardrail-v2"
-            else:
-                m_name = "gemini-2.5-flash"
-
-        prov = getattr(l, "provider", None) or ("gemini" if "gemini" in m_name else "system")
-        lat = float(getattr(l, "latency_ms", 0.0) or (4.0 if status == "blocked" else 85.0))
-
-        recent_events.append(TelemetryEventItem(
-            id=l.id,
-            timestamp=l.created_at.strftime("%H:%M:%S") if l.created_at else "00:00:00",
-            event_type=ev_type,
-            query=l.query,
-            user_role=l.user_role or "doctor",
-            latency_ms=lat,
-            tokens=tot_tok,
-            prompt_tokens=p_tok,
-            completion_tokens=c_tok,
-            total_tokens=tot_tok,
-            model_name=m_name,
-            provider=prov,
-            has_image=has_img,
-            image_tokens=img_tok,
-            status=status,
-            reply_text=l.reply_text,
-            intent=l.intent,
-            user_name=l.user_name,
-            session_id=l.session_id,
-            grounded_source=l.grounded_source,
-            quality_category=l.quality_category
-        ))
+    recent_events: List[TelemetryEventItem] = [map_chat_log_to_telemetry_event(l) for l in logs]
 
     # 3. Thống kê Token & Chi phí thực tế từ Sổ cái Telemetry Ledger
     _, _, real_tokens_consumed, _ = get_all_time_token_usage()
@@ -287,7 +360,7 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
         bhyt_rejection_saved_vnd=bhyt_saved_vnd,
         ddi_blocks_count=ddi_blocks_count,
         guardrail_blocks_count=guardrail_blocks_count,
-        recent_events=recent_events[:10],
+        recent_events=recent_events[:30],
         intent_distribution=intent_distribution,
         timeline_trend=timeline_trend,
         bhyt_logs=bhyt_logs_list

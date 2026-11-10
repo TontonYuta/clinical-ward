@@ -233,3 +233,39 @@ async def test_admin_bhyt_monitoring_logs():
         search_logs = search_res.json()
         assert len(search_logs) >= 1
         assert "Test Monitor" in search_logs[0]["patient_name"]
+
+@pytest.mark.asyncio
+async def test_admin_paginated_telemetry_logs():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # 1. Truy vấn trang 1 với pageSize 25
+        res = await client.get("/api/v1/admin/monitoring/telemetry-logs?page=1&page_size=25")
+        assert res.status_code == 200
+        data = res.json()
+        assert "total_items" in data
+        assert "total_pages" in data
+        assert "current_page" in data
+        assert "page_size" in data
+        assert "items" in data
+        assert data["current_page"] == 1
+        assert data["page_size"] == 25
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) <= 25
+
+        if data["items"]:
+            item = data["items"][0]
+            assert "prompt_tokens" in item
+            assert "completion_tokens" in item
+            assert "total_tokens" in item
+            assert "model_name" in item
+
+        # 2. Kiểm tra bộ lọc theo event_type
+        rag_res = await client.get("/api/v1/admin/monitoring/telemetry-logs?event_type=ADAPTIVE_RAG&page_size=10")
+        assert rag_res.status_code == 200
+        rag_data = rag_res.json()
+        assert isinstance(rag_data["items"], list)
+
+        # 3. Kiểm tra trang 2
+        page2_res = await client.get("/api/v1/admin/monitoring/telemetry-logs?page=2&page_size=10")
+        assert page2_res.status_code == 200
+        page2_data = page2_res.json()
+        assert page2_data["current_page"] == 2

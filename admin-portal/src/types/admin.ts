@@ -122,6 +122,14 @@ export interface TelemetryOverviewResponse {
   }>;
 }
 
+export interface PaginatedTelemetryResponse {
+  total_items: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+  items: TelemetryEventItem[];
+}
+
 export interface TestKeyResponse {
   success: boolean;
   status: string;

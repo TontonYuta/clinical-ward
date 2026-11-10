@@ -6,7 +6,8 @@ import {
   TestKeyResponse,
   EsmsStatusResponse,
   GasStatusResponse,
-  BhytAuditLogItem
+  BhytAuditLogItem,
+  PaginatedTelemetryResponse
 } from '../types/admin';
 
 const BASE_URL = '/api/v1/admin';
@@ -28,6 +29,27 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
 export async function fetchTelemetryOverview(): Promise<TelemetryOverviewResponse> {
   const res = await fetchWithTimeout(`${BASE_URL}/monitoring/overview`, {}, 8000);
   if (!res.ok) throw new Error(`Lỗi tải dữ liệu giám sát: HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchPaginatedTelemetry(params: {
+  page?: number;
+  pageSize?: number;
+  eventType?: string;
+  modelName?: string;
+  userRole?: string;
+  q?: string;
+} = {}): Promise<PaginatedTelemetryResponse> {
+  const qp = new URLSearchParams();
+  if (params.page) qp.set('page', String(params.page));
+  if (params.pageSize) qp.set('page_size', String(params.pageSize));
+  if (params.eventType && params.eventType !== 'all' && params.eventType !== 'ALL') qp.set('event_type', params.eventType);
+  if (params.modelName && params.modelName !== 'all' && params.modelName !== 'ALL') qp.set('model_name', params.modelName);
+  if (params.userRole && params.userRole !== 'all' && params.userRole !== 'ALL') qp.set('user_role', params.userRole);
+  if (params.q && params.q.trim()) qp.set('q', params.q.trim());
+
+  const res = await fetchWithTimeout(`${BASE_URL}/monitoring/telemetry-logs?${qp.toString()}`, {}, 8000);
+  if (!res.ok) throw new Error(`Lỗi tải nhật ký telemetry: HTTP ${res.status}`);
   return res.json();
 }
 
