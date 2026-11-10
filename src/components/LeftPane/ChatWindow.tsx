@@ -17,6 +17,8 @@ import { CdssAlertBanner } from './Cards/CdssAlertBanner';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import { ImageLightboxModal } from '../Modals/ImageLightboxModal';
+import { PdfViewerModal } from '../Modals/PdfViewerModal';
+import { resolvePdfDocumentTarget } from '../../utils/pdfDocumentResolver';
 import { isCloudAIAvailable } from '../../services/geminiService';
 import { removeLegacySourceText, formatCitationLabel } from '../../utils/chatAnswerPresentation';
 
@@ -55,6 +57,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   });
   const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
   const [viewingImage, setViewingImage] = useState<{ url: string; title: string } | null>(null);
+  const [activePdfViewer, setActivePdfViewer] = useState<{ url: string; title: string; page?: number } | null>(null);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => {
@@ -72,14 +75,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const firstCit = activeCits.length > 0 ? activeCits[0] : undefined;
 
     const finalPage = citationRef.page || firstCit?.page || undefined;
-    let targetUrl = citationRef.url || firstCit?.url || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
-    if (finalPage && !targetUrl.includes('#page=')) {
-      targetUrl = `${targetUrl.split('#')[0]}#page=${finalPage}`;
-    }
+    const rawTarget = citationRef.url || firstCit?.url || citationRef.legal_basis || citationRef.title || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
+    const target = resolvePdfDocumentTarget(rawTarget, finalPage);
 
-    if (typeof window !== 'undefined') {
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    }
+    // Mở trực tiếp trong In-App PDF Viewer Modal, chống chặn Pop-up và giữ nguyên ngữ cảnh chat
+    setActivePdfViewer({
+      url: target.pdfUrl,
+      title: citationRef.title || citationRef.legal_basis || target.documentTitle,
+      page: target.pageNumber
+    });
   };
 
   const isStreamingAny = messages.some(m => m.isStreaming);
@@ -529,6 +533,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           imageUrl={viewingImage.url}
           title={viewingImage.title}
           subtitle="Dùng chuột kéo để di chuyển khi phóng to • Bấm phím Esc hoặc click ra ngoài để đóng"
+        />
+      )}
+
+      {/* 7. PDF Viewer Modal xem tài liệu y văn đối chứng chuẩn xác số trang */}
+      {activePdfViewer && (
+        <PdfViewerModal
+          isOpen={!!activePdfViewer}
+          onClose={() => setActivePdfViewer(null)}
+          pdfUrl={activePdfViewer.url}
+          title={activePdfViewer.title}
+          pageNumber={activePdfViewer.page}
         />
       )}
     </div>

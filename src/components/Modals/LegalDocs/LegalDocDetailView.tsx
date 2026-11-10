@@ -4,16 +4,20 @@
  * Chi tiết Nội dung Văn bản Pháp luật & Điểm Cốt Lõi Áp Dụng Phần Mềm
  */
 
-import React from 'react';
-import { ExternalLink, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { ExternalLink, ShieldCheck, CheckCircle2, BookOpen } from 'lucide-react';
 import { LegalDocMeta } from '../../../types/legal';
+import { PdfViewerModal } from '../PdfViewerModal';
+import { resolvePdfDocumentTarget } from '../../../utils/pdfDocumentResolver';
 
 interface LegalDocDetailViewProps {
   doc: LegalDocMeta;
 }
 
 export const LegalDocDetailView: React.FC<LegalDocDetailViewProps> = ({ doc }) => {
+  const [isPdfOpen, setIsPdfOpen] = useState<boolean>(false);
   const IconComponent = doc.icon || ShieldCheck;
+  const target = resolvePdfDocumentTarget({ docCode: doc.code, title: doc.title });
 
   return (
     <div className="space-y-6">
@@ -39,20 +43,42 @@ export const LegalDocDetailView: React.FC<LegalDocDetailViewProps> = ({ doc }) =
               )}
             </div>
           </div>
-          <a
-            href={doc.link}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 transition shrink-0 shadow-xs"
-          >
-            <span>Văn bản gốc</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsPdfOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-teal-800 text-white hover:bg-teal-900 transition shadow-2xs cursor-pointer active:scale-98"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Xem bản PDF scan</span>
+            </button>
+            <a
+              href={doc.link}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 transition shadow-xs"
+              title="Mở cổng thông tin văn bản gốc ngoài trình duyệt"
+            >
+              <span>Web</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
         <div className="mt-3 pt-3 border-t border-slate-200/80 flex items-center gap-2 text-xs text-slate-500">
           <span>Cơ quan ban hành: <strong>{doc.authority}</strong></span>
         </div>
       </div>
+
+      {/* In-App PDF Viewer Modal */}
+      {isPdfOpen && (
+        <PdfViewerModal
+          isOpen={isPdfOpen}
+          onClose={() => setIsPdfOpen(false)}
+          pdfUrl={target.pdfUrl}
+          title={doc.title}
+          pageNumber={target.pageNumber}
+        />
+      )}
 
       {/* Key Articles List */}
       <div>

@@ -44,6 +44,8 @@ import { compressImageForOcr } from '../../../utils/imageOptimization';
 import { BhytAuditReportModal } from './BhytAuditReportModal';
 import { BhytSubstitutionModal } from './BhytSubstitutionModal';
 import { ImageLightboxModal } from '../../Modals/ImageLightboxModal';
+import { PdfViewerModal } from '../../Modals/PdfViewerModal';
+import { resolvePdfDocumentTarget } from '../../../utils/pdfDocumentResolver';
 import { findDrugSubstitutes } from '../../../services/drugSubstitutionService';
 import { DrugSubstituteCandidate } from '../../../types/bhytSubstitution';
 
@@ -106,6 +108,7 @@ export const BhytAuditTab: React.FC = () => {
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [rotationAngle, setRotationAngle] = useState<number>(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [activeLegalPdf, setActiveLegalPdf] = useState<{ url: string; title: string; page?: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 6. Tra cứu danh mục TT 20 & XML
@@ -1003,17 +1006,14 @@ export const BhytAuditTab: React.FC = () => {
     setActiveAnalysisTab('pure_breakdown');
   };
 
-  // Mở tài liệu PDF căn cứ pháp lý trong tab mới
-  const handleOpenLegalPdf = (docCode: string, pageNumber: number = 1) => {
-    let pdfUrl = '/pdf/bhyt/Thong_Tu_20_2022_TT_BYT_Danh_Muc_Thanh_Toan_Thuoc_BHYT.pdf';
-    if (docCode.includes('3618')) {
-      pdfUrl = '/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf';
-    } else if (docCode.includes('130')) {
-      pdfUrl = '/pdf/bhyt/Quyet_Dinh_130_QD_BYT_2023_Chuan_Du_Lieu_Dau_Ra_BHYT.pdf';
-    }
-    if (typeof window !== 'undefined') {
-      window.open(`${pdfUrl}#page=${pageNumber}`, '_blank', 'noopener,noreferrer');
-    }
+  // Mở tài liệu PDF căn cứ pháp lý trực tiếp trong In-App PDF Viewer Modal
+  const handleOpenLegalPdf = (docCode: string, pageNumber: number = 1, docTitle?: string) => {
+    const target = resolvePdfDocumentTarget({ docCode, title: docTitle, page: pageNumber }, pageNumber);
+    setActiveLegalPdf({
+      url: target.pdfUrl,
+      title: docTitle || target.documentTitle,
+      page: target.pageNumber
+    });
   };
 
   // Lấy vi phạm của từng dòng thuốc
@@ -2536,6 +2536,17 @@ export const BhytAuditTab: React.FC = () => {
           imageUrl={documentFile.url}
           title={documentFile.name}
           subtitle={`Dung lượng: ${documentFile.sizeKb || 0} KB • Kiểm tra chi tiết đơn thuốc BHYT`}
+        />
+      )}
+
+      {/* PDF Viewer Modal mở trực tiếp căn cứ pháp lý Thông tư / Quyết định */}
+      {activeLegalPdf && (
+        <PdfViewerModal
+          isOpen={!!activeLegalPdf}
+          onClose={() => setActiveLegalPdf(null)}
+          pdfUrl={activeLegalPdf.url}
+          title={activeLegalPdf.title}
+          pageNumber={activeLegalPdf.page}
         />
       )}
 
