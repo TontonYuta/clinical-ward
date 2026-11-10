@@ -11,8 +11,9 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, X, Check, Image as ImageIcon, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Camera, Upload, X, Check, Image as ImageIcon, Trash2, RefreshCw, AlertCircle, ZoomIn, Eye } from 'lucide-react';
 import { compressImageForOcr } from '../../utils/imageOptimization';
+import { ImageLightboxModal } from './ImageLightboxModal';
 
 export interface SendImagePayload {
   title: string;
@@ -50,6 +51,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
   const [isProcessingFile, setIsProcessingFile] = useState<boolean>(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -226,13 +228,21 @@ export const ImageModal: React.FC<ImageModalProps> = ({
           ) : (
             <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70 space-y-3">
               <div className="flex items-start gap-3.5">
-                {/* Thumbnail Preview */}
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg overflow-hidden border border-slate-300 bg-black/5 shrink-0 flex items-center justify-center relative shadow-2xs">
+                {/* Thumbnail Preview - Bấm vào để phóng to kiểm tra chi tiết */}
+                <div
+                  onClick={() => setIsLightboxOpen(true)}
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg overflow-hidden border border-slate-300 bg-black/5 shrink-0 flex items-center justify-center relative shadow-2xs cursor-zoom-in group transition hover:border-teal-500"
+                  title="Nhấp vào ảnh để phóng to và kiểm tra chi tiết"
+                >
                   <img
                     src={selectedFile.previewUrl}
                     alt="Preview"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain group-hover:scale-105 transition duration-200"
                   />
+                  <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-1 text-white p-1 text-center">
+                    <ZoomIn className="w-5 h-5 drop-shadow" />
+                    <span className="text-3xs font-bold leading-tight drop-shadow">Phóng to</span>
+                  </div>
                 </div>
 
                 {/* File Metadata */}
@@ -267,11 +277,19 @@ export const ImageModal: React.FC<ImageModalProps> = ({
                     )}
                   </div>
 
-                  <div className="pt-1.5">
+                  <div className="pt-1.5 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsLightboxOpen(true)}
+                      className="text-xs font-semibold text-teal-800 hover:text-teal-900 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" /> Phóng to kiểm tra
+                    </button>
+                    <span className="text-slate-300">•</span>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-xs font-semibold text-teal-800 hover:text-teal-900 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-semibold text-slate-600 hover:text-slate-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
                     >
                       <RefreshCw className="w-3 h-3" /> Đổi ảnh khác
                     </button>
@@ -325,6 +343,17 @@ export const ImageModal: React.FC<ImageModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Lightbox Modal phóng to kiểm tra ảnh đơn thuốc */}
+      {selectedFile && (
+        <ImageLightboxModal
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          imageUrl={selectedFile.previewUrl}
+          title={selectedFile.file.name}
+          subtitle={`Dung lượng: ${selectedFile.sizeKb} KB • Độ phân giải: ${selectedFile.width}×${selectedFile.height}px • Kiểm tra chi tiết đơn thuốc`}
+        />
+      )}
     </div>
   );
 };

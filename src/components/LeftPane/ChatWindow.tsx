@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, ChevronRight, FileText, History, Plus, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, ChevronRight, FileText, History, Plus, PanelLeftOpen, PanelLeftClose, ZoomIn } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { ChatSession } from '../../types/chatSession';
 import { ChatSessionsDrawer } from './ChatSessionsDrawer';
@@ -16,6 +16,7 @@ import { renderFormattedText } from './ChatMarkdown';
 import { CdssAlertBanner } from './Cards/CdssAlertBanner';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
+import { ImageLightboxModal } from '../Modals/ImageLightboxModal';
 import { isCloudAIAvailable } from '../../services/geminiService';
 import { removeLegacySourceText, formatCitationLabel } from '../../utils/chatAnswerPresentation';
 
@@ -53,6 +54,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     return true;
   });
   const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
+  const [viewingImage, setViewingImage] = useState<{ url: string; title: string } | null>(null);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => {
@@ -335,24 +337,33 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                               return (
                                 <div
                                   key={`att-${msg.id}-${attIdx}`}
-                                  className="rounded-lg overflow-hidden border border-teal-300 bg-white/80 max-w-[220px] shadow-2xs"
+                                  className="rounded-lg overflow-hidden border border-teal-300 bg-white/80 max-w-[220px] shadow-2xs group/att"
                                 >
-                                  <a
-                                    href={imgSrc}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title="Bấm để xem ảnh kích thước đầy đủ"
-                                    className="block"
+                                  <div
+                                    onClick={() => setViewingImage({ url: imgSrc, title: att.title || 'Ảnh đơn thuốc / tài liệu' })}
+                                    className="block cursor-zoom-in relative overflow-hidden bg-slate-900/5"
+                                    title="Nhấp vào để phóng to kiểm tra ảnh chi tiết"
                                   >
                                     <img
                                       src={imgSrc}
                                       alt={att.title || 'Ảnh đính kèm'}
-                                      className="max-h-36 w-auto object-contain rounded-t hover:opacity-95 transition"
+                                      className="max-h-36 w-auto object-contain rounded-t group-hover/att:scale-102 transition duration-150"
                                     />
-                                  </a>
-                                  <div className="px-2 py-1 text-3xs font-semibold text-slate-700 bg-teal-50/50 border-t border-teal-200 truncate flex items-center gap-1">
-                                    <span>📷</span>
-                                    <span className="truncate">{att.title || 'Ảnh hiện trường'}</span>
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/att:opacity-100 transition flex items-center justify-center gap-1 text-white text-xs font-bold drop-shadow">
+                                      <ZoomIn className="w-4 h-4" />
+                                      <span>Phóng to</span>
+                                    </div>
+                                  </div>
+                                  <div 
+                                    onClick={() => setViewingImage({ url: imgSrc, title: att.title || 'Ảnh đơn thuốc / tài liệu' })}
+                                    className="px-2 py-1 text-3xs font-semibold text-slate-700 bg-teal-50/50 border-t border-teal-200 truncate flex items-center justify-between cursor-pointer hover:bg-teal-100/60 transition"
+                                    title="Nhấp để xem ảnh đầy đủ"
+                                  >
+                                    <div className="truncate flex items-center gap-1">
+                                      <span>📷</span>
+                                      <span className="truncate">{att.title || 'Ảnh đơn thuốc'}</span>
+                                    </div>
+                                    <span className="text-teal-700 text-3xs shrink-0 font-bold ml-1">Xem</span>
                                   </div>
                                 </div>
                               );
@@ -507,6 +518,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           onNewSession={() => onNewSession?.()}
           onDeleteSession={(id) => onDeleteSession?.(id)}
           onRenameSession={(id, title) => onRenameSession?.(id, title)}
+        />
+      )}
+
+      {/* 6. Lightbox Modal xem chi tiết ảnh đính kèm */}
+      {viewingImage && (
+        <ImageLightboxModal
+          isOpen={!!viewingImage}
+          onClose={() => setViewingImage(null)}
+          imageUrl={viewingImage.url}
+          title={viewingImage.title}
+          subtitle="Dùng chuột kéo để di chuyển khi phóng to • Bấm phím Esc hoặc click ra ngoài để đóng"
         />
       )}
     </div>

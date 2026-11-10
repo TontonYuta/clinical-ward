@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { AlertTriangle, X, ExternalLink } from 'lucide-react';
+import { AlertTriangle, X, ExternalLink, Maximize2 } from 'lucide-react';
 import {
   BhytPrescriptionPayload,
   BhytAuditReport,
@@ -43,6 +43,7 @@ import {
 import { compressImageForOcr } from '../../../utils/imageOptimization';
 import { BhytAuditReportModal } from './BhytAuditReportModal';
 import { BhytSubstitutionModal } from './BhytSubstitutionModal';
+import { ImageLightboxModal } from '../../Modals/ImageLightboxModal';
 import { findDrugSubstitutes } from '../../../services/drugSubstitutionService';
 import { DrugSubstituteCandidate } from '../../../types/bhytSubstitution';
 
@@ -104,6 +105,7 @@ export const BhytAuditTab: React.FC = () => {
   // 5. Tương tác Canvas xem tài liệu
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [rotationAngle, setRotationAngle] = useState<number>(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 6. Tra cứu danh mục TT 20 & XML
@@ -1351,6 +1353,15 @@ export const BhytAuditTab: React.FC = () => {
                   >
                     ⟳
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsLightboxOpen(true)}
+                    className="w-7 h-7 flex items-center justify-center border border-slate-300 rounded hover:bg-slate-100 text-slate-700"
+                    title="Phóng to toàn màn hình để kiểm tra chi tiết"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
             </div>
@@ -1394,7 +1405,9 @@ export const BhytAuditTab: React.FC = () => {
                   <img
                     src={documentFile.url}
                     alt="Đơn thuốc BHYT"
-                    className="max-w-full h-auto object-contain rounded bg-white border border-slate-200 block shadow-sm"
+                    onClick={() => setIsLightboxOpen(true)}
+                    title="Nhấp vào để phóng to kiểm tra chi tiết đơn thuốc"
+                    className="max-w-full h-auto object-contain rounded bg-white border border-slate-200 block shadow-sm cursor-zoom-in hover:shadow-md transition"
                   />
                 </div>
               )
@@ -2513,6 +2526,17 @@ export const BhytAuditTab: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Lightbox Modal phóng to kiểm tra chi tiết đơn thuốc */}
+      {documentFile && documentFile.type === 'image' && (
+        <ImageLightboxModal
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+          imageUrl={documentFile.url}
+          title={documentFile.name}
+          subtitle={`Dung lượng: ${documentFile.sizeKb || 0} KB • Kiểm tra chi tiết đơn thuốc BHYT`}
+        />
       )}
 
     </div>
