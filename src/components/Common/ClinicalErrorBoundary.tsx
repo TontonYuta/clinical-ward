@@ -39,7 +39,7 @@ function getSafeErrorMessage(error: Error | null, fallbackTitle?: string, fallba
   const raw = (error.message || '').toLowerCase();
 
   // Nhóm lỗi cấu hình API Key / Xác thực
-  if (raw.includes('key') || raw.includes('api') || raw.includes('401') || raw.includes('403') || raw.includes('quota') || raw.includes('unauthorized')) {
+  if (raw.includes('api_key') || raw.includes('apikey') || raw.includes('resource_exhausted') || raw.includes('quota') || raw.includes('401') || raw.includes('403') || raw.includes('unauthorized')) {
     return {
       title: 'Lỗi cấu hình dịch vụ AI',
       message: 'Dịch vụ phân tích chưa được cấu hình API Key hợp lệ hoặc đã chạm hạn mức. Vui lòng liên hệ quản trị viên để kiểm tra cấu hình.'

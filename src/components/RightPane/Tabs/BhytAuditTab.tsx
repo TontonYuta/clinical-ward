@@ -10,13 +10,14 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X, ExternalLink } from 'lucide-react';
 import {
   BhytPrescriptionPayload,
   BhytAuditReport,
   HospitalRank,
   TreatmentType,
   BhytPrescriptionItem,
+  BhytViolationItem,
   DrugResolutionResult
 } from '../../../types/bhyt';
 import {
@@ -528,10 +529,10 @@ export const BhytAuditTab: React.FC = () => {
               return;
             } else {
               const lowMsg = msg.toLowerCase();
-              if (lowMsg.includes('key') || lowMsg.includes('quota') || lowMsg.includes('401') || lowMsg.includes('auth')) {
+              if (lowMsg.includes('api_key') || lowMsg.includes('apikey') || lowMsg.includes('resource_exhausted') || lowMsg.includes('401') || lowMsg.includes('unauthorized')) {
                 setErrorPopup({
                   title: 'Lỗi cấu hình dịch vụ AI',
-                  message: 'Dịch vụ phân tích chưa được cấu hình API Key hoặc đã chạm hạn mức. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
+                  message: 'Dịch vụ phân tích chưa được cấu hình API Key hợp lệ hoặc đã chạm hạn mức. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
                 });
                 return;
               }
@@ -546,7 +547,7 @@ export const BhytAuditTab: React.FC = () => {
             if (extracted.items.length === 0) {
               ocrWarning = {
                 title: 'Đã nhận diện thông tin hành chính',
-                message: `Đã nạp thông tin bệnh nhân "${extracted.patientName || 'Bệnh nhân'}" (Mã BHYT: ${extracted.insuranceCardNumber || 'Chưa rõ'}, ICD: ${extracted.primaryIcd10} - ${extracted.primaryDiagnosis}). Không phát hiện danh mục thuốc trong ảnh. Bạn có thể bấm "+ Thêm thuốc" để bổ sung danh mục thuốc cần giám định.`
+                message: `Đã nạp thông tin bệnh nhân "${extracted.patientName || 'Bệnh nhân'}" (Mã BHYT: ${extracted.insuranceCardNumber || 'Chưa rõ'}, ICD: ${extracted.primaryIcd10} - ${extracted.primaryDiagnosis}). Chưa trích xuất được danh mục thuốc tự động từ ảnh. Bạn có thể đối chiếu tài liệu bên trái và bấm "+ Thêm thuốc" để nhập bổ sung.`
               };
             }
           }
@@ -554,10 +555,10 @@ export const BhytAuditTab: React.FC = () => {
       } catch (ocrErr: any) {
         console.warn('[BHYT OCR] Gọi API Vision thất bại:', ocrErr?.message);
         const errMsg = String(ocrErr?.message || '').toLowerCase();
-        if (errMsg.includes('key') || errMsg.includes('api') || errMsg.includes('401') || errMsg.includes('quota') || errMsg.includes('unauthorized')) {
+        if (errMsg.includes('api_key') || errMsg.includes('apikey') || errMsg.includes('resource_exhausted') || errMsg.includes('401') || errMsg.includes('unauthorized')) {
           setErrorPopup({
             title: 'Lỗi cấu hình dịch vụ AI',
-            message: 'Dịch vụ phân tích hình ảnh chưa được cấu hình API Key hoặc đã chạm hạn ngạch. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp.'
+            message: 'Dịch vụ phân tích hình ảnh chưa được cấu hình API Key hợp lệ hoặc đã chạm hạn ngạch. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp.'
           });
           return;
         }
@@ -569,13 +570,12 @@ export const BhytAuditTab: React.FC = () => {
         extracted = sanitizeOcrPrescriptionPayload(extractPrescriptionFromDocument(file.name), hospitalRank, treatmentType);
       }
 
-      // Nếu tài liệu hoàn toàn không nhận diện được gì (không tên bệnh nhân, không chẩn đoán và không thuốc)
+      // Nếu tài liệu chưa nhận diện được thuốc tự động
       if (!extracted || (extracted.items.length === 0 && (!extracted.patientName || extracted.patientName === 'Bệnh nhân BHYT') && (!extracted.primaryIcd10 || extracted.primaryIcd10 === 'I10'))) {
         setErrorPopup({
-          title: 'Không nhận diện được nội dung đơn thuốc',
-          message: 'Hình ảnh quá mờ hoặc tệp không chứa danh mục thuốc y tế hợp lệ. Bạn có thể chụp lại rõ nét hơn hoặc bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
+          title: 'Chưa nhận diện được nội dung thuốc tự động',
+          message: 'Tài liệu đã được tải lên khung xem bên trái. Do chữ viết tay hoặc ảnh chụp chưa rõ nét, hệ thống chưa trích xuất được danh mục thuốc tự động. Bạn có thể nhìn tài liệu và bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng giám định.'
         });
-        return;
       }
 
       const sanitized = sanitizeOcrPrescriptionPayload(extracted, hospitalRank, treatmentType);
