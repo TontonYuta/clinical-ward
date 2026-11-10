@@ -101,11 +101,36 @@ async def chat_with_copilot(
     latency_ms = round((time.monotonic() - start_time) * 1000, 1)
     has_img = bool(payload.image_base64 or getattr(response, "has_image", False))
     img_tok = getattr(response, "image_tokens", 0) or (258 if has_img else 0)
-    p_tok = getattr(response, "prompt_tokens", 0) or (max(18, len(payload.query) // 3) + img_tok)
-    c_tok = getattr(response, "completion_tokens", 0) or max(25, len(response.reply_text) // 3)
+
+    from app.services.llm_provider import get_last_llm_execution
+    last_exec = get_last_llm_execution()
+
+    # Đồng bộ model thực thi chính xác với Google AI Studio và hệ thống Guardrails / Cache
+    if cached_resp:
+        m_name = "clinical-cache-engine"
+        prov = "local-cache"
+    elif response.intent in ("MEDICATION_INTERACTION_BLOCKED", "CLINICAL_CONTRAINDICATION_BLOCKED"):
+        m_name = "safety-ddi-matrix"
+        prov = "clinical-safety"
+    elif response.intent in ("SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED"):
+        m_name = "clinical-guardrail-v2"
+        prov = "system-guardrail"
+    elif getattr(response, "model_name", None) and response.model_name not in ("gemini-2.5-flash", None):
+        m_name = response.model_name
+        prov = getattr(response, "provider", "gemini")
+    elif last_exec.get("model") and last_exec["model"] != "gemini-2.5-flash":
+        m_name = last_exec["model"]
+        prov = last_exec.get("provider", "gemini")
+    elif has_img:
+        m_name = "gemini-3.5-flash-lite"
+        prov = "gemini"
+    else:
+        m_name = "gemini-3.5-flash-lite"
+        prov = "gemini"
+
+    p_tok = last_exec.get("prompt_tokens") or getattr(response, "prompt_tokens", 0) or (max(18, len(payload.query) // 3) + img_tok)
+    c_tok = last_exec.get("completion_tokens") or getattr(response, "completion_tokens", 0) or max(25, len(response.reply_text) // 3)
     tot_tok = p_tok + c_tok
-    m_name = getattr(response, "model_name", None) or ("gemini-3.5-flash-lite" if has_img else "gemini-2.5-flash")
-    prov = "gemini"
 
     if not cached_resp:
         try:

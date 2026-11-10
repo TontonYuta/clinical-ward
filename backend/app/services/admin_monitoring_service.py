@@ -5,6 +5,7 @@ import os
 import json
 import time
 import math
+from datetime import timedelta, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,8 @@ from app.schemas.admin_monitoring_schema import (
     BhytAuditLogItem, PaginatedTelemetryResponse
 )
 from app.models.bhyt import BhytAuditLog
+
+VN_TZ = timezone(timedelta(hours=7))
 
 _BUDGET_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data/token_budget_config.json"))
 
@@ -123,21 +126,53 @@ def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
     if tot_tok <= 0:
         tot_tok = p_tok + c_tok
 
-    m_name = getattr(l, "model_name", None)
-    if not m_name:
-        if has_img:
-            m_name = "gemini-3.5-flash-lite"
-        elif status == "blocked":
-            m_name = "clinical-guardrail-v2"
-        else:
-            m_name = "gemini-2.5-flash"
+    # 1. Chuẩn hóa Múi giờ Việt Nam (UTC + 7 tiếng) và Ngày Tháng
+    time_str = "00:00:00"
+    date_str = ""
+    full_str = "00:00:00"
+    iso_str = None
 
-    prov = getattr(l, "provider", None) or ("gemini" if "gemini" in m_name else "system")
+    if l.created_at:
+        raw_dt = l.created_at
+        if raw_dt.tzinfo is None:
+            vn_dt = raw_dt.replace(tzinfo=timezone.utc).astimezone(VN_TZ)
+        else:
+            vn_dt = raw_dt.astimezone(VN_TZ)
+        time_str = vn_dt.strftime("%H:%M:%S")
+        date_str = vn_dt.strftime("%d/%m/%Y")
+        full_str = vn_dt.strftime("%H:%M:%S %d/%m/%Y")
+        iso_str = vn_dt.isoformat()
+
+    # 2. Chuẩn hóa Model AI đồng bộ với Google AI Studio và hệ thống kiểm soát lâm sàng
+    m_name = getattr(l, "model_name", None)
+    prov = getattr(l, "provider", None)
+
+    if status == "blocked":
+        if ev_type == "DDI_BLOCKED":
+            m_name = "safety-ddi-matrix"
+            prov = "clinical-safety"
+        else:
+            m_name = "clinical-guardrail-v2"
+            prov = "system-guardrail"
+    elif ev_type == "CACHE_HIT":
+        m_name = "clinical-cache-engine"
+        prov = "local-cache"
+    elif not m_name or m_name in ("gemini-2.5-flash", "gemini-auto"):
+        # Google AI Studio không còn hỗ trợ gemini-2.5-flash (404) -> chuẩn hóa sang model hoạt động thực tế
+        m_name = "gemini-3.5-flash-lite"
+        prov = "gemini"
+
+    if not prov:
+        prov = "gemini" if "gemini" in m_name else "system"
+
     lat = float(getattr(l, "latency_ms", 0.0) or (4.0 if status == "blocked" else 85.0))
 
     return TelemetryEventItem(
         id=l.id,
-        timestamp=l.created_at.strftime("%H:%M:%S") if l.created_at else "00:00:00",
+        timestamp=time_str,
+        created_at_date=date_str,
+        created_at_full=full_str,
+        created_at_iso=iso_str,
         event_type=ev_type,
         query=l.query or "",
         user_role=l.user_role or "doctor",

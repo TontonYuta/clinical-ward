@@ -51,7 +51,7 @@ class CopilotResponse(BaseModel):
     prompt_tokens: int | None = 0
     completion_tokens: int | None = 0
     total_tokens: int | None = 0
-    model_name: str | None = "gemini-2.5-flash"
+    model_name: str | None = "gemini-3.5-flash-lite"
     has_image: bool | None = False
     image_tokens: int | None = 0
 

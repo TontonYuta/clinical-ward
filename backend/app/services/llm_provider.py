@@ -11,11 +11,30 @@ import re
 import hashlib
 import logging
 from typing import Optional, Dict, Tuple
+from contextvars import ContextVar
 import httpx
 
 from app.config import settings
 
 logger = logging.getLogger("clinical_llm_provider")
+
+# Biến ngữ cảnh luồng (ContextVar) ghi nhận model và token thực tế từ Google AI Studio
+_current_llm_execution: ContextVar[dict] = ContextVar(
+    "_current_llm_execution",
+    default={
+        "model": "gemini-3.5-flash-lite",
+        "provider": "gemini",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+    }
+)
+
+def get_last_llm_execution() -> dict:
+    return _current_llm_execution.get()
+
+def set_last_llm_execution(data: dict) -> None:
+    _current_llm_execution.set(data)
 
 # Lightweight response cache to avoid redundant inferences
 _LLM_CACHE: Dict[str, Tuple[str, float]] = {}
@@ -45,12 +64,10 @@ async def _call_gemini_api(
 
     models = [
         "gemini-3.5-flash-lite",
-        "gemini-3.1-flash-lite",
-        "gemini-3.8-flash",
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
         "gemini-flash-lite-latest",
+        "gemini-3.8-flash",
+        "gemini-flash-latest",
+        "gemini-3.1-flash-lite",
     ]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -82,6 +99,13 @@ async def _call_gemini_api(
                             usage = data.get("usageMetadata", {})
                             p_tok = usage.get("promptTokenCount") or (len(prompt) // 4)
                             c_tok = usage.get("candidatesTokenCount") or (len(reply) // 4)
+                            set_last_llm_execution({
+                                "model": model,
+                                "provider": "gemini",
+                                "prompt_tokens": p_tok,
+                                "completion_tokens": c_tok,
+                                "total_tokens": p_tok + c_tok
+                            })
                             try:
                                 from app.services.telemetry_store import record_llm_token_usage
                                 from app.services.admin_key_vault import record_key_consumption
@@ -112,6 +136,13 @@ async def _call_gemini_api(
                                     usage = data.get("usageMetadata", {})
                                     p_tok = usage.get("promptTokenCount") or (len(prompt) // 4)
                                     c_tok = usage.get("candidatesTokenCount") or (len(reply) // 4)
+                                    set_last_llm_execution({
+                                        "model": model,
+                                        "provider": "gemini",
+                                        "prompt_tokens": p_tok,
+                                        "completion_tokens": c_tok,
+                                        "total_tokens": p_tok + c_tok
+                                    })
                                     try:
                                         from app.services.telemetry_store import record_llm_token_usage
                                         from app.services.admin_key_vault import record_key_consumption
@@ -221,11 +252,10 @@ async def _call_gemini_vision_ocr(
     ocr_prompt = prompt or DEFAULT_PRESCRIPTION_OCR_PROMPT
     models = [
         "gemini-3.5-flash-lite",
+        "gemini-flash-lite-latest",
         "gemini-3.8-flash",
+        "gemini-flash-latest",
         "gemini-3.1-flash-lite",
-        "gemini-2.5-flash",
-        "gemini-3-flash-preview",
-        "gemini-3.1-pro-preview",
     ]
 
     payload = {
@@ -601,9 +631,10 @@ async def query_clinical_multimodal_chat(
 
     models = [
         "gemini-3.5-flash-lite",
-        "gemini-3.1-flash-lite",
+        "gemini-flash-lite-latest",
         "gemini-3.8-flash",
-        "gemini-2.5-flash",
+        "gemini-flash-latest",
+        "gemini-3.1-flash-lite",
     ]
 
     prompt_text = f"Câu hỏi / Yêu cầu của nhân viên y tế ({user_role}): {user_query or 'Phân tích đơn thuốc / hình ảnh thuốc đính kèm: trích xuất danh mục hoạt chất, liều dùng, tương tác thuốc và rà soát điều kiện thanh toán BHYT.'}"

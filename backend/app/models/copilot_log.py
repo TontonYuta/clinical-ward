@@ -23,7 +23,7 @@ class CopilotChatLog(Base):
     prompt_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     completion_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     total_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
-    model_name: Mapped[str | None] = mapped_column(String(64), nullable=True, default="gemini-2.5-flash")
+    model_name: Mapped[str | None] = mapped_column(String(64), nullable=True, default="gemini-3.5-flash-lite")
     provider: Mapped[str | None] = mapped_column(String(64), nullable=True, default="gemini")
     has_image: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     image_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=True)

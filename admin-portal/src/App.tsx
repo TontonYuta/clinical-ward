@@ -9,11 +9,14 @@ import { AuditTab } from './components/Tabs/AuditTab';
 import { AdminTab, TelemetryOverviewResponse, ApiKeyItem, BudgetCapResponse } from './types/admin';
 import { fetchTelemetryOverview, fetchApiKeys, fetchBudgetStatus, fetchEsmsStatus } from './services/adminApi';
 
-const CACHE_KEY_TELEMETRY = 'clinical_ai_monitor_telemetry_cache';
-const CACHE_KEY_BUDGET = 'clinical_ai_monitor_budget_cache';
+const CACHE_KEY_TELEMETRY = 'clinical_ai_monitor_telemetry_cache_v2';
+const CACHE_KEY_BUDGET = 'clinical_ai_monitor_budget_cache_v2';
 
 function getCachedItem<T>(key: string): T | null {
   try {
+    // Tự động dọn sạch cache phiên bản cũ v1 để đồng bộ tức thì trên mọi máy
+    localStorage.removeItem('clinical_ai_monitor_telemetry_cache');
+    localStorage.removeItem('clinical_ai_monitor_budget_cache');
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) as T : null;
   } catch {

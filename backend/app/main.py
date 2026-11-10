@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI):
             ("prompt_tokens", "INTEGER DEFAULT 0"),
             ("completion_tokens", "INTEGER DEFAULT 0"),
             ("total_tokens", "INTEGER DEFAULT 0"),
-            ("model_name", "VARCHAR(64) DEFAULT 'gemini-2.5-flash'"),
+            ("model_name", "VARCHAR(64) DEFAULT 'gemini-3.5-flash-lite'"),
             ("provider", "VARCHAR(64) DEFAULT 'gemini'"),
             ("has_image", "BOOLEAN DEFAULT 0"),
             ("image_tokens", "INTEGER DEFAULT 0"),

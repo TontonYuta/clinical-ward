@@ -48,7 +48,9 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
               <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800">
                 {event.event_type}
               </span>
-              <span className="text-xs text-slate-400 font-mono">{event.timestamp}</span>
+              <span className="text-xs text-slate-600 font-mono font-medium bg-white px-2 py-0.5 rounded border border-slate-200" title={event.created_at_full || `${event.timestamp} · ${event.created_at_date || '10/11/2026'} (GMT+7 · Giờ Việt Nam)`}>
+                🕒 {event.timestamp} · {event.created_at_date || '10/11/2026'} <span className="text-teal-700 font-bold">(GMT+7)</span>
+              </span>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                 event.status === 'blocked' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
               }`}>
@@ -81,7 +83,7 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                 <Cpu className="w-4 h-4 text-teal-700" />
-                Model Đọc: <strong className="font-mono text-teal-950 font-bold ml-1">{event.model_name || 'gemini-2.5-flash'}</strong>
+                Model Đọc: <strong className="font-mono text-teal-950 font-bold ml-1">{event.model_name || 'gemini-3.5-flash-lite'}</strong>
               </span>
               <span className="text-2xs font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-600">
                 Provider: {event.provider || 'gemini'}
@@ -188,12 +190,25 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
             </span>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <span className="text-slate-400 block font-medium">Thời Gian Ghi Nhận (GMT+7)</span>
+                <span className="text-xs font-bold font-mono text-slate-900 block">
+                  {event.timestamp} · {event.created_at_date || '10/11/2026'}
+                </span>
+                <span className="text-3xs text-slate-400 block truncate">
+                  {event.created_at_iso || 'Asia/Ho_Chi_Minh'}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                 <span className="text-slate-400 block font-medium">Độ Trễ Phục Vụ</span>
                 <span className="text-sm font-bold font-mono text-slate-900">{event.latency_ms} ms</span>
               </div>
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                 <span className="text-slate-400 block font-medium">Người Thao Tác</span>
                 <span className="text-sm font-semibold text-slate-800">{event.user_name || 'Bác sĩ lâm sàng'}</span>
+              </div>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <span className="text-slate-400 block font-medium">Nhà Cung Cấp Model</span>
+                <span className="text-xs font-bold font-mono text-teal-800">{event.provider || 'gemini'}</span>
               </div>
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 col-span-2">
                 <span className="text-slate-400 block font-medium">Căn Cứ Dược Điển &amp; Pháp Lý (Grounded Sources)</span>

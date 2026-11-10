@@ -37,6 +37,9 @@ export interface BudgetCapResponse {
 export interface TelemetryEventItem {
   id: string;
   timestamp: string;
+  created_at_date?: string;
+  created_at_full?: string;
+  created_at_iso?: string;
   event_type: 'CACHE_HIT' | 'ADAPTIVE_RAG' | 'BHYT_SUBSTITUTION' | 'DDI_BLOCKED' | 'GUARDRAIL_BLOCKED' | 'VISION_OCR_BHYT' | 'MULTIMODAL_CLINICAL_VISION' | string;
   query: string;
   user_role: string;

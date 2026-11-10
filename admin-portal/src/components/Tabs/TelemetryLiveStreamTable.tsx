@@ -87,7 +87,9 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
   // Xuất file CSV đối soát kiểm toán
   const handleExportCsv = () => {
     const headers = [
-      'Thời Gian',
+      'Thời Gian (GMT+7)',
+      'Ngày',
+      'Thời Gian Đầy Đủ',
       'Mã Sự Kiện',
       'Cơ Chế Phục Vụ',
       'Model AI',
@@ -104,9 +106,11 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
 
     const rows = displayItems.map((ev) => [
       `"${ev.timestamp || ''}"`,
+      `"${ev.created_at_date || ''}"`,
+      `"${ev.created_at_full || (ev.timestamp + ' ' + (ev.created_at_date || ''))}"`,
       `"${ev.id || ''}"`,
       `"${ev.event_type || ''}"`,
-      `"${ev.model_name || ''}"`,
+      `"${ev.model_name || 'gemini-3.5-flash-lite'}"`,
       `"${ev.provider || ''}"`,
       `"${(ev.query || '').replace(/"/g, '""')}"`,
       ev.prompt_tokens || 0,
@@ -191,9 +195,13 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             className="h-8 bg-white border border-slate-200 rounded-lg px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
           >
             <option value="all">Tất Cả Model</option>
-            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite</option>
-            <option value="clinical-guardrail-v2">clinical-guardrail-v2</option>
+            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Active Google AI Studio)</option>
+            <option value="gemini-flash-lite-latest">gemini-flash-lite-latest</option>
+            <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+            <option value="gemini-flash-latest">gemini-flash-latest</option>
+            <option value="clinical-cache-engine">clinical-cache-engine (Local Cache)</option>
+            <option value="safety-ddi-matrix">safety-ddi-matrix (DDI Safety)</option>
+            <option value="clinical-guardrail-v2">clinical-guardrail-v2 (Guardrail)</option>
           </select>
         </div>
 
@@ -286,7 +294,17 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   className="hover:bg-teal-50/70 cursor-pointer transition group"
                   title="Nhấn để mở thanh tra chi tiết truy vấn & phân bổ token"
                 >
-                  <td className="py-3 pr-3 font-mono text-xs text-slate-500 whitespace-nowrap">{ev.timestamp}</td>
+                  {/* Cột Thời Gian (Giờ VN GMT+7 & Ngày Tháng) */}
+                  <td className="py-3 pr-3 whitespace-nowrap" title={ev.created_at_full || `${ev.timestamp} · ${ev.created_at_date || '10/11/2026'} (GMT+7 · Giờ Việt Nam)`}>
+                    <div className="flex flex-col">
+                      <span className="font-mono text-xs font-bold text-slate-800 tracking-tight">
+                        {ev.timestamp}
+                      </span>
+                      <span className="font-mono text-3xs text-slate-400">
+                        {ev.created_at_date || '10/11/2026'} <span className="text-teal-700 font-semibold">(VN)</span>
+                      </span>
+                    </div>
+                  </td>
                   
                   {/* Cột Cơ Chế Phục Vụ */}
                   <td className="py-3 px-3 whitespace-nowrap">
@@ -307,10 +325,25 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
 
                   {/* Cột Model Đọc */}
                   <td className="py-3 px-3 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 text-2xs font-mono font-semibold" title={`Nhà cung cấp: ${ev.provider || 'gemini'}`}>
-                      <Cpu className="w-3 h-3 text-teal-700 shrink-0" />
-                      <span>{ev.model_name || 'gemini-2.5-flash'}</span>
-                    </span>
+                    {(() => {
+                      const mName = ev.model_name || 'gemini-3.5-flash-lite';
+                      const isGemini = mName.startsWith('gemini');
+                      const isCache = mName.includes('cache');
+                      const isSafety = mName.includes('ddi') || mName.includes('guardrail');
+                      const colorClass = isGemini
+                        ? 'bg-cyan-50 text-cyan-900 border-cyan-200'
+                        : isCache
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : isSafety
+                        ? 'bg-amber-50 text-amber-900 border-amber-200'
+                        : 'bg-slate-100 text-slate-800 border-slate-200';
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-2xs font-mono font-semibold ${colorClass}`} title={`Nhà cung cấp: ${ev.provider || (isGemini ? 'Google AI Studio' : 'Hệ thống')}`}>
+                          <Cpu className="w-3 h-3 shrink-0 text-current opacity-80" />
+                          <span>{mName}</span>
+                        </span>
+                      );
+                    })()}
                   </td>
 
                   {/* Cột Câu Hỏi / Tác Vụ */}

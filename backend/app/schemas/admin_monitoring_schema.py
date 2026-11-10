@@ -61,11 +61,14 @@ class TelemetryEventItem(BaseModel):
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
-    model_name: Optional[str] = "gemini-2.5-flash"
+    model_name: Optional[str] = "gemini-3.5-flash-lite"
     provider: Optional[str] = "gemini"
     has_image: bool = False
     image_tokens: int = 0
     status: str            # "success", "blocked", "fallback"
+    created_at_date: Optional[str] = None
+    created_at_full: Optional[str] = None
+    created_at_iso: Optional[str] = None
     reply_text: Optional[str] = None
     intent: Optional[str] = None
     user_name: Optional[str] = None
