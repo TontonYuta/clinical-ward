@@ -1307,12 +1307,12 @@ export const BhytAuditTab: React.FC = () => {
               </button>
 
               {documentFile && documentFile.type === 'pdf' && (
-                <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-300">
+                <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-200">
                   <a
                     href={documentFile.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold transition flex items-center justify-center gap-1 border border-slate-300 shadow-2xs"
+                    className="h-8 px-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-slate-300 shadow-2xs"
                     title="Mở tài liệu trong tab mới"
                   >
                     <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
@@ -2260,7 +2260,7 @@ export const BhytAuditTab: React.FC = () => {
             )}
 
             {/* -------------------------------------------------------------
-                NỘI DUNG TAB 5: PHÂN TÍCH XML 130
+                NỘI DUNG TAB 5: PHÂN TÍCH XML 130 (LIGHT MODE TỐI GIẢN)
                ------------------------------------------------------------- */}
             {activeAnalysisTab === 'xml' && (
               <div className="space-y-3">
@@ -2273,33 +2273,33 @@ export const BhytAuditTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleSyncCurrentPrescriptionToXml}
-                      className="px-3 py-1.5 rounded-md bg-teal-50 border border-teal-300 text-sm font-semibold text-teal-800 hover:bg-teal-100 cursor-pointer transition flex items-center gap-1 shadow-2xs"
+                      className="px-3 py-1.5 rounded-md bg-teal-50 border border-teal-300 text-xs font-semibold text-teal-800 hover:bg-teal-100 cursor-pointer transition flex items-center gap-1 shadow-2xs"
                       title="Đồng bộ danh mục thuốc từ đơn/hóa đơn hiện tại sang XML 130"
                     >
-                      <span>🔄 Đồng bộ từ đơn hiện tại</span>
+                      <span>🔄 Đồng bộ từ đơn</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleCopyXml}
                       disabled={!xmlInputText.trim()}
-                      className="px-3 py-1.5 rounded-md border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-40 transition shadow-2xs"
+                      className="px-3 py-1.5 rounded-md bg-white border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-40 transition shadow-2xs flex items-center gap-1"
                     >
-                      📋 Sao chép XML
+                      📋 Sao chép
                     </button>
                     <button
                       type="button"
                       onClick={handleDownloadXml}
                       disabled={!xmlInputText.trim()}
-                      className="px-3 py-1.5 rounded-md border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-40 transition shadow-2xs"
+                      className="px-3 py-1.5 rounded-md bg-white border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-40 transition shadow-2xs flex items-center gap-1"
                     >
-                      💾 Tải file XML
+                      💾 Tải XML
                     </button>
                     <button
                       type="button"
                       onClick={handleLoadSampleXml}
-                      className="px-2.5 py-1.5 rounded-md border border-slate-200 text-xs font-medium text-slate-500 hover:bg-slate-100 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-200 cursor-pointer transition"
                     >
-                      Dán XML Mẫu
+                      XML Mẫu
                     </button>
                   </div>
                 </div>
@@ -2308,8 +2308,8 @@ export const BhytAuditTab: React.FC = () => {
                   value={xmlInputText}
                   onChange={(e) => setXmlInputText(e.target.value)}
                   placeholder="<BANG_CHI_TIET_THUOC_QD130>...</BANG_CHI_TIET_THUOC_QD130>"
-                  rows={12}
-                  className="w-full text-xs font-mono tabular-nums p-3 rounded-md bg-slate-900 text-teal-300 border border-slate-700 resize-y focus:outline-none focus:border-teal-500"
+                  rows={13}
+                  className="w-full text-xs font-mono tabular-nums p-3.5 rounded-lg bg-white text-slate-800 border border-slate-300 resize-y focus:outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-700 shadow-2xs leading-relaxed selection:bg-teal-100 selection:text-teal-900"
                 />
 
                 <div className="flex justify-between items-center flex-wrap gap-2">
