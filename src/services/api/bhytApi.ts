@@ -43,6 +43,9 @@ export interface BhytCatalogResponse {
 
 export interface BhytOcrPrescriptionResponse {
   success: boolean;
+  is_valid_document?: boolean;
+  document_classification?: string;
+  warning_code?: string;
   provider: string;
   model_used?: string;
   prescription: BhytPrescriptionPayload;

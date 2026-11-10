@@ -6,6 +6,8 @@ Supports:
 3. 100% Offline Mode (Deterministic Extractive RAG - 0 Cloud, 0 VND)
 """
 import time
+import json
+import re
 import hashlib
 import logging
 from typing import Optional, Dict, Tuple
@@ -135,51 +137,56 @@ def _clean_base64_data(image_base64: str, default_mime: str = "image/jpeg") -> t
         mime_type = prefix.replace("data:", "").strip() or default_mime
     return clean_data.strip(), mime_type
 
-DEFAULT_PRESCRIPTION_OCR_PROMPT = """Bạn là trợ lý AI Vision OCR y tế & dược phẩm lâm sàng chuyên nghiệp tại Việt Nam.
-Nhiệm vụ: Phân tích hình ảnh tài liệu y tế (Đơn thuốc lâm sàng, Hóa đơn điện tử VAT, Phiếu xuất kho kiêm vận chuyển nội bộ, Bảng kê phân phối dược CPC1/Sanofi/DHG, hoặc Bill bán lẻ).
+DEFAULT_PRESCRIPTION_OCR_PROMPT = """Bạn là chuyên gia AI Vision OCR y tế & dược phẩm lâm sàng chuẩn Bộ Y tế Việt Nam.
+Nhiệm vụ: Phân tích và bóc tách tài liệu y tế (Đơn thuốc điều trị, Hóa đơn điện tử VAT, Bảng kê chi phí KCB BHYT mẫu 01/BV 02/BV, Phiếu xuất kho dược CPC1/Sanofi/DHG, Bill bán lẻ).
 
-HƯỚNG DẪN BÓC TÁCH CHI TIẾT THEO BỐ CỤC:
-1. PHÂN LOẠI TÀI LIỆU (document_type):
-   - "PRESCRIPTION": Đơn thuốc điều trị ngoại trú / nội trú (có tên bệnh nhân, chẩn đoán, thuốc, liều dùng).
-   - "INVOICE": Hóa đơn GTGT điện tử (e-Invoice VAT) hoặc Bảng kê viện phí (có MST, Số HĐ, Đơn giá, Thành tiền).
-   - "DELIVERY_NOTE": Phiếu xuất kho / Phiếu giao nhận dược phẩm (có Số lô, HSD, SĐK).
-   - "RECEIPT": Hóa đơn bán lẻ / Bill in nhiệt K80/K57.
+HƯỚNG DẪN BÓC TÁCH & PHÂN LOẠI CHI TIẾT:
+1. PHÂN LOẠI TÀI LIỆU (document_type & is_valid):
+   - "PRESCRIPTION": Đơn thuốc điều trị ngoại trú / nội trú (có tên bệnh nhân, chẩn đoán, danh mục thuốc, liều dùng). is_valid = true.
+   - "INVOICE": Hóa đơn GTGT điện tử (e-Invoice) hoặc Bảng kê viện phí BHYT (có MST, Số HĐ, Đơn giá, Thành tiền). is_valid = true.
+   - "DELIVERY_NOTE": Phiếu xuất/nhập kho dược phẩm, biên bản giao nhận (có Số lô, HSD, SĐK). is_valid = true.
+   - "RECEIPT": Hóa đơn bán lẻ / Bill nhiệt POS (K80/K57). is_valid = true.
+   - "NON_MEDICAL": Hình ảnh phong cảnh, chân dung, đồ vật, ảnh chụp màn hình không liên quan đến y tế hoặc dược phẩm. is_valid = false.
+   - "UNREADABLE": Hình ảnh quá mờ, rung nhòe, thiếu sáng, bị che khuất nghiêm trọng không thể đọc được nội dung chữ. is_valid = false.
 
-2. QUY TẮC BÓC TÁCH BẢNG & DÒNG PHỤ (Sub-row Reconstruction):
-   - Gom cụm thông tin: Nếu Số lô (Lot/Batch) và Hạn dùng (Exp/HSD) nằm ở dòng phụ thụt lề dưới tên thuốc (phổ biến ở CPC1/Sanofi), hãy gom vào cùng một mặt hàng.
-   - Tách sạch Tên thuốc (drug_name): Chỉ chứa tên thương mại hoặc hoạt chất (ví dụ 'Augmentin', 'Nexium', 'Panadol Extra'), KHÔNG gộp số lô hay hạn dùng vào tên thuốc.
-   - Hàm lượng (dosage): Tách riêng nồng độ/hàm lượng (ví dụ '500mg', '1g', '20mg', '100ml').
-   - Đơn vị tính (unit): Viên, Hộp, Vỉ, Gói, Lọ, Chai, Ống, Tuýp, Nang...
-   - Số lượng (quantity): Số lượng thực xuất/cấp phát dạng số (float/int).
-   - Đơn giá & Thành tiền: Trích xuất đơn giá và thành tiền chính xác. Logic: total_price = quantity * unit_price (trừ đi chiết khấu nếu có).
-   - Số lô (batch_number) & Hạn dùng (expiry_date): Trích xuất chính xác chuỗi số lô và ngày hết hạn.
+2. NGUYÊN TẮC BÓC TÁCH DANH MỤC THUỐC (items):
+   - Nhận diện linh hoạt: Bảng có dòng kẻ viền, danh sách đánh số STT (1., 2.), gạch đầu dòng (-), hoặc đoạn văn bản kê thuốc.
+   - Tên thuốc (drug_name): Biệt dược hoặc tên hoạt chất sạch (ví dụ: Augmentin, Nexium, Paracetamol, Amlodipin). Không đưa số lô, hạn dùng vào tên thuốc.
+   - Hàm lượng (dosage): Tách riêng (500mg, 1g, 40mg, 5mg, 100ml...).
+   - Đơn vị tính (unit): Viên, Hộp, Vỉ, Gói, Chai, Lọ, Ống, Tuýp, Nang...
+   - Số lượng (quantity): Số lượng cấp phát dạng số thực (float/int).
+   - Đường dùng (route): Uống, Tiêm bắp, Tiêm tĩnh mạch, Nhỏ mắt, Bôi ngoài da, Khí dung, Đặt...
+   - Cách dùng & Liều lượng (instructions): "Uống 1 viên x 2 lần/ngày sau ăn"...
+   - Đơn giá & Thành tiền: Trích xuất nếu có. Nếu không có để 0.0.
 
-3. ĐỊNH DẠNG KẾT QUẢ:
-Trả về DUY NHẤT một đối tượng JSON hợp lệ (không chứa markdown fences hay text giải thích ngoài):
+3. ĐỊNH DẠNG TRẢ VỀ:
+Trả về DUY NHẤT một đối tượng JSON hợp lệ (không kèm văn bản dẫn dắt hay ký hiệu ngoài):
 {
+  "is_valid": true,
   "document_type": "PRESCRIPTION",
-  "seller_name": "Tên đơn vị phát hành / Bệnh viện / Công ty dược nếu có",
+  "validation_message": "Mô tả nếu is_valid = false hoặc có lưu ý",
+  "seller_name": "Tên cơ sở KCB / Bệnh viện / Phòng khám / Đơn vị bán nếu có",
   "seller_tax_id": "Mã số thuế bên bán nếu có",
   "invoice_number": "Số hóa đơn hoặc mã phiếu nếu có",
-  "patient_name": "Họ và tên bệnh nhân hoặc khách hàng (chữ hoa chuẩn)",
+  "patient_name": "Họ và tên bệnh nhân (chữ in hoa chuẩn tiếng Việt)",
   "patient_age": 50,
   "insurance_card_number": "Mã thẻ BHYT (ví dụ GD4790000000000, 15 ký tự nếu có)",
-  "primary_icd10": "Mã ICD-10 bệnh chính nếu có (ví dụ I10, E11, M16)",
-  "primary_diagnosis": "Chẩn đoán bệnh chính nếu có",
+  "primary_icd10": "Mã ICD-10 bệnh chính nếu có (ví dụ I10, E11, J06, K21)",
+  "primary_diagnosis": "Chẩn đoán bệnh chính",
   "secondary_icd10s": ["Mã ICD phụ nếu có"],
   "items": [
     {
       "drug_name": "Tên biệt dược hoặc hoạt chất sạch",
-      "active_ingredient": "Hoạt chất nếu ghi rõ trên tài liệu",
+      "active_ingredient": "Hoạt chất nếu có",
       "dosage": "500mg",
       "unit": "Viên",
       "quantity": 10.0,
       "days_supply": 7,
       "unit_price": 15000.0,
       "total_price": 150000.0,
-      "batch_number": "B24098",
-      "expiry_date": "30/12/2027",
-      "vat_rate": 5.0,
+      "batch_number": "",
+      "expiry_date": "",
+      "vat_rate": 0.0,
       "route": "Uống",
       "instructions": "Uống 1 viên x 2 lần/ngày sau ăn"
     }
@@ -259,16 +266,25 @@ async def _call_gemini_vision_ocr(
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts and "text" in parts[0]:
                             raw_text = parts[0]["text"].strip()
-                            if raw_text.startswith("```json"):
+                            json_match = re.search(r'(\{[\s\S]*\})', raw_text)
+                            if json_match:
+                                raw_text = json_match.group(1)
+                            elif raw_text.startswith("```json"):
                                 raw_text = raw_text.split("```json", 1)[1]
-                            if raw_text.startswith("```"):
+                            elif raw_text.startswith("```"):
                                 raw_text = raw_text.split("```", 1)[1]
                             if raw_text.endswith("```"):
                                 raw_text = raw_text.rsplit("```", 1)[0]
                             parsed = json.loads(raw_text.strip())
-                            if isinstance(parsed, dict) and "items" in parsed:
+                            if isinstance(parsed, dict):
                                 parsed["_model_used"] = model
                                 parsed["_provider"] = "gemini"
+                                if "items" not in parsed or not isinstance(parsed.get("items"), list):
+                                    parsed["items"] = []
+                                doc_t = str(parsed.get("document_type") or "PRESCRIPTION").upper()
+                                parsed["document_type"] = doc_t
+                                if "is_valid" not in parsed:
+                                    parsed["is_valid"] = (doc_t not in ("NON_MEDICAL", "UNREADABLE"))
                                 return parsed
             except Exception as e:
                 logger.debug("Gemini vision model %s attempt failed: %s", model, e)
@@ -335,10 +351,20 @@ async def _call_openai_compatible_vision_ocr(
                 if choices:
                     content = choices[0].get("message", {}).get("content", "")
                     if content:
-                        parsed = json.loads(content.strip())
-                        if isinstance(parsed, dict) and "items" in parsed:
+                        raw_content = content.strip()
+                        json_match = re.search(r'(\{[\s\S]*\})', raw_content)
+                        if json_match:
+                            raw_content = json_match.group(1)
+                        parsed = json.loads(raw_content.strip())
+                        if isinstance(parsed, dict):
                             parsed["_model_used"] = model
                             parsed["_provider"] = "openai_compatible"
+                            if "items" not in parsed or not isinstance(parsed.get("items"), list):
+                                parsed["items"] = []
+                            doc_t = str(parsed.get("document_type") or "PRESCRIPTION").upper()
+                            parsed["document_type"] = doc_t
+                            if "is_valid" not in parsed:
+                                parsed["is_valid"] = (doc_t not in ("NON_MEDICAL", "UNREADABLE"))
                             return parsed
     except Exception as e:
         logger.warning("Failed to query OpenAI-compatible vision endpoint %s: %s", url, e)

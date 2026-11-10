@@ -143,6 +143,9 @@ class BhytOcrPrescriptionRequest(BaseModel):
 
 class BhytOcrPrescriptionResponse(BaseModel):
     success: bool = True
+    is_valid_document: bool = True
+    document_classification: Optional[str] = "DON_THUOC"
+    warning_code: Optional[str] = None
     provider: str = "gemini"
     model_used: Optional[str] = None
     prescription: BhytPrescriptionPayload

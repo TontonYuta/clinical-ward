@@ -533,10 +533,48 @@ async def ocr_prescription_endpoint(req: BhytOcrPrescriptionRequest):
         seller_tax_id = ""
         invoice_no = ""
 
-        if raw_ocr_data and isinstance(raw_ocr_data, dict) and raw_ocr_data.get("items"):
+        if raw_ocr_data and isinstance(raw_ocr_data, dict):
             provider = raw_ocr_data.get("_provider", "gemini")
             model_used = raw_ocr_data.get("_model_used", "gemini-vision")
-            doc_type = raw_ocr_data.get("document_type") or "DON_THUOC"
+            doc_type = str(raw_ocr_data.get("document_type") or "DON_THUOC").upper()
+            is_valid_doc = raw_ocr_data.get("is_valid", True)
+
+            # Trường hợp tài liệu không phải y tế hoặc hình ảnh mờ không đọc được
+            if doc_type in ("NON_MEDICAL", "UNREADABLE") or not is_valid_doc:
+                msg = raw_ocr_data.get("validation_message") or (
+                    "Tài liệu tải lên không phải là đơn thuốc hoặc chứng từ y tế hợp lệ."
+                    if doc_type == "NON_MEDICAL" else
+                    "Hình ảnh quá mờ hoặc rung nhòe, không thể nhận diện được thông tin y tế trên tài liệu."
+                )
+                empty_rx = BhytPrescriptionPayload(
+                    prescription_id="RX-OCR-INVALID",
+                    document_type=doc_type,
+                    seller_name="",
+                    seller_tax_id="",
+                    invoice_number="",
+                    patient_name="",
+                    patient_age=0,
+                    insurance_card_number="",
+                    hospital_rank=req.hospital_rank or "HANG_I",
+                    treatment_type=req.treatment_type or "NGOAI_TRU",
+                    primary_icd10="",
+                    primary_diagnosis="",
+                    secondary_icd10s=[],
+                    items=[]
+                )
+                return BhytOcrPrescriptionResponse(
+                    success=False,
+                    is_valid_document=False,
+                    document_classification=doc_type,
+                    warning_code="INVALID_DOCUMENT_TYPE" if doc_type == "NON_MEDICAL" else "UNREADABLE_IMAGE",
+                    provider=provider,
+                    model_used=model_used,
+                    prescription=empty_rx,
+                    resolved_count=0,
+                    total_items=0,
+                    message=msg
+                )
+
             seller_name = raw_ocr_data.get("seller_name") or ""
             seller_tax_id = raw_ocr_data.get("seller_tax_id") or ""
             invoice_no = raw_ocr_data.get("invoice_number") or ""
@@ -562,6 +600,36 @@ async def ocr_prescription_endpoint(req: BhytOcrPrescriptionRequest):
                     extracted_text = extract_text_from_prescription_bytes(file_bytes, req.mime_type or "")
                 except Exception as ex:
                     logger.warning(f"Local file extraction failed: {ex}")
+
+            if not extracted_text or len(extracted_text.strip()) < 10:
+                empty_rx = BhytPrescriptionPayload(
+                    prescription_id="RX-OCR-EMPTY",
+                    document_type="UNKNOWN",
+                    seller_name="",
+                    seller_tax_id="",
+                    invoice_number="",
+                    patient_name="",
+                    patient_age=0,
+                    insurance_card_number="",
+                    hospital_rank=req.hospital_rank or "HANG_I",
+                    treatment_type=req.treatment_type or "NGOAI_TRU",
+                    primary_icd10="",
+                    primary_diagnosis="",
+                    secondary_icd10s=[],
+                    items=[]
+                )
+                return BhytOcrPrescriptionResponse(
+                    success=False,
+                    is_valid_document=False,
+                    document_classification="UNKNOWN",
+                    warning_code="NO_TEXT_EXTRACTED",
+                    provider=provider,
+                    model_used=model_used,
+                    prescription=empty_rx,
+                    resolved_count=0,
+                    total_items=0,
+                    message="Không thể trích xuất văn bản từ tài liệu tải lên. Vui lòng kiểm tra lại độ rõ nét hoặc chọn tệp hợp lệ."
+                )
 
             parsed = parse_vietnamese_prescription_text(extracted_text)
             doc_type = parsed.get("document_type", "DON_THUOC")
@@ -655,14 +723,23 @@ async def ocr_prescription_endpoint(req: BhytOcrPrescriptionRequest):
             items=items_payload
         )
 
+        warning_code = None
+        resp_msg = "Trích xuất và đối soát đơn thuốc BHYT thành công"
+        if len(items_payload) == 0:
+            warning_code = "NO_ITEMS_FOUND"
+            resp_msg = "Đã nhận diện thông tin hành chính & chẩn đoán. Không tìm thấy danh mục thuốc trong tài liệu."
+
         return BhytOcrPrescriptionResponse(
             success=True,
+            is_valid_document=True,
+            document_classification=doc_type,
+            warning_code=warning_code,
             provider=provider,
             model_used=model_used,
             prescription=prescription,
             resolved_count=resolved_count,
             total_items=len(items_payload),
-            message="Trích xuất và đối soát đơn thuốc BHYT thành công"
+            message=resp_msg
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi Vision OCR đơn thuốc: {str(e)}")

@@ -496,18 +496,58 @@ export const BhytAuditTab: React.FC = () => {
       // Trích xuất tự động qua Multimodal Vision OCR (Gemini / Universal Gateway / Local Fallback)
       setIsOcrProcessing(true);
       let extracted: BhytPrescriptionPayload | null = null;
+      let ocrWarning: { title: string; message: string } | null = null;
+
       try {
         if (targetDataUrl) {
           const ocrRes = await bhytApi.ocrPrescription(targetDataUrl, targetMime);
-          if (ocrRes.success && ocrRes.prescription && Array.isArray(ocrRes.prescription.items) && ocrRes.prescription.items.length > 0) {
-            extracted = sanitizeOcrPrescriptionPayload(ocrRes.prescription, hospitalRank, treatmentType);
-          } else if (ocrRes && !ocrRes.success) {
-            const msg = String(ocrRes.message || '').toLowerCase();
-            if (msg.includes('key') || msg.includes('quota') || msg.includes('401') || msg.includes('auth')) {
+
+          // 1. Trường hợp backend trả về tài liệu không hợp lệ (ảnh phi y tế hoặc mờ nhòe)
+          if (ocrRes && (ocrRes.is_valid_document === false || !ocrRes.success)) {
+            const warnCode = ocrRes.warning_code;
+            const docClass = ocrRes.document_classification;
+            const msg = ocrRes.message || '';
+
+            if (warnCode === 'INVALID_DOCUMENT_TYPE' || docClass === 'NON_MEDICAL') {
               setErrorPopup({
-                title: 'Lỗi cấu hình dịch vụ AI',
-                message: 'Dịch vụ phân tích chưa được cấu hình API Key hoặc đã chạm hạn mức. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
+                title: 'Tài liệu không phải đơn thuốc',
+                message: msg || 'Hình ảnh tải lên không phải là đơn thuốc, hóa đơn hay chứng từ y tế hợp lệ. Vui lòng chọn tệp đơn thuốc hợp lệ.'
               });
+              return;
+            } else if (warnCode === 'UNREADABLE_IMAGE' || docClass === 'UNREADABLE') {
+              setErrorPopup({
+                title: 'Hình ảnh quá mờ hoặc bị lỗi',
+                message: msg || 'Hình ảnh quá mờ, rung nhòe hoặc thiếu sáng, không thể nhận diện được các thông tin y tế. Vui lòng chụp lại rõ nét hơn.'
+              });
+              return;
+            } else if (warnCode === 'NO_TEXT_EXTRACTED') {
+              setErrorPopup({
+                title: 'Không thể đọc nội dung tệp',
+                message: msg || 'Hệ thống không nhận diện được văn bản từ tệp tải lên. Vui lòng chọn tệp rõ nét hơn.'
+              });
+              return;
+            } else {
+              const lowMsg = msg.toLowerCase();
+              if (lowMsg.includes('key') || lowMsg.includes('quota') || lowMsg.includes('401') || lowMsg.includes('auth')) {
+                setErrorPopup({
+                  title: 'Lỗi cấu hình dịch vụ AI',
+                  message: 'Dịch vụ phân tích chưa được cấu hình API Key hoặc đã chạm hạn mức. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
+                });
+                return;
+              }
+            }
+          }
+
+          // 2. Trường hợp trích xuất thành công (có thể có items hoặc chỉ có thông tin hành chính)
+          if (ocrRes && ocrRes.success && ocrRes.prescription) {
+            extracted = sanitizeOcrPrescriptionPayload(ocrRes.prescription, hospitalRank, treatmentType);
+
+            // Nếu đơn thuốc không có danh mục thuốc (chỉ có thông tin bệnh nhân/chẩn đoán)
+            if (extracted.items.length === 0) {
+              ocrWarning = {
+                title: 'Đã nhận diện thông tin hành chính',
+                message: `Đã nạp thông tin bệnh nhân "${extracted.patientName || 'Bệnh nhân'}" (Mã BHYT: ${extracted.insuranceCardNumber || 'Chưa rõ'}, ICD: ${extracted.primaryIcd10} - ${extracted.primaryDiagnosis}). Không phát hiện danh mục thuốc trong ảnh. Bạn có thể bấm "+ Thêm thuốc" để bổ sung danh mục thuốc cần giám định.`
+              };
             }
           }
         }
@@ -519,6 +559,7 @@ export const BhytAuditTab: React.FC = () => {
             title: 'Lỗi cấu hình dịch vụ AI',
             message: 'Dịch vụ phân tích hình ảnh chưa được cấu hình API Key hoặc đã chạm hạn ngạch. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp.'
           });
+          return;
         }
       } finally {
         setIsOcrProcessing(false);
@@ -528,8 +569,8 @@ export const BhytAuditTab: React.FC = () => {
         extracted = sanitizeOcrPrescriptionPayload(extractPrescriptionFromDocument(file.name), hospitalRank, treatmentType);
       }
 
-      // Nếu tài liệu không nhận diện được thuốc y tế nào
-      if (!extracted || extracted.items.length === 0) {
+      // Nếu tài liệu hoàn toàn không nhận diện được gì (không tên bệnh nhân, không chẩn đoán và không thuốc)
+      if (!extracted || (extracted.items.length === 0 && (!extracted.patientName || extracted.patientName === 'Bệnh nhân BHYT') && (!extracted.primaryIcd10 || extracted.primaryIcd10 === 'I10'))) {
         setErrorPopup({
           title: 'Không nhận diện được nội dung đơn thuốc',
           message: 'Hình ảnh quá mờ hoặc tệp không chứa danh mục thuốc y tế hợp lệ. Bạn có thể chụp lại rõ nét hơn hoặc bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
@@ -543,6 +584,14 @@ export const BhytAuditTab: React.FC = () => {
       setTreatmentType(sanitized.treatmentType);
       setActiveAnalysisTab('pure_breakdown');
       handleRunOcrProcess(sanitized, sanitized.hospitalRank, sanitized.treatmentType);
+
+      // Nếu có thông báo hướng dẫn (chỉ có hành chính, thiếu thuốc), hiển thị cho người dùng biết
+      if (ocrWarning) {
+        setErrorPopup({
+          title: ocrWarning.title,
+          message: ocrWarning.message
+        });
+      }
 
       // Kích hoạt phân giải thực thể thuốc đồng bộ ngay lập tức cho bảng HITL
       if (sanitized.items.length > 0) {
