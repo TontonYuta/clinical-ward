@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock } from 'lucide-react';
 import {
   DebtRecord,
@@ -99,6 +99,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
   const allowedTabs = currentProfile.allowedTabs || ['debt'];
 
+  // Giữ trạng thái (Keep-Alive) cho tab Giám định BHYT một khi đã được truy cập để không mất ảnh & đơn khi chuyển tab
+  const [hasVisitedBhyt, setHasVisitedBhyt] = useState<boolean>(() => currentTab === 'bhyt_audit');
+
+  useEffect(() => {
+    if (currentTab === 'bhyt_audit' && !hasVisitedBhyt) {
+      setHasVisitedBhyt(true);
+    }
+  }, [currentTab, hasVisitedBhyt]);
+
   return (
     <div className="flex flex-col h-full bg-slate-50/70 overflow-hidden">
       {/* Main Tab Viewport (Pinned Controls & Isolated Scroll Table with Mobile Bottom Nav Clearance) */}
@@ -148,13 +157,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             )}
 
-            {currentTab === 'bhyt_audit' && (
-              <ClinicalErrorBoundary
-                fallbackTitle="Phòng vệ Giám Định BHYT: Đã phát hiện lỗi giao diện"
-                fallbackMessage="Hệ thống đã tự động ngăn chặn tình trạng trắng trang. Dữ liệu bệnh nhân và kho dược vẫn được bảo toàn. Bấm nút bên dưới để khôi phục giao diện."
+            {hasVisitedBhyt && (
+              <div
+                className={currentTab === 'bhyt_audit' ? 'flex-1 flex flex-col min-h-0 w-full h-full' : 'hidden'}
+                aria-hidden={currentTab !== 'bhyt_audit'}
               >
-                <BhytAuditTab />
-              </ClinicalErrorBoundary>
+                <ClinicalErrorBoundary
+                  fallbackTitle="Phòng vệ Giám Định BHYT: Đã phát hiện lỗi giao diện"
+                  fallbackMessage="Hệ thống đã tự động ngăn chặn tình trạng trắng trang. Dữ liệu bệnh nhân và kho dược vẫn được bảo toàn. Bấm nút bên dưới để khôi phục giao diện."
+                >
+                  <BhytAuditTab />
+                </ClinicalErrorBoundary>
+              </div>
             )}
 
             {/* Tạm thời comment tính năng Sổ nợ vỏ và TBYT theo yêu cầu người dùng */}

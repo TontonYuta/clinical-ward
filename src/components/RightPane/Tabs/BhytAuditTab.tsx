@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { AlertTriangle, X, ExternalLink, Maximize2 } from 'lucide-react';
+import { AlertTriangle, X, ExternalLink, Maximize2, RotateCcw } from 'lucide-react';
 import {
   BhytPrescriptionPayload,
   BhytAuditReport,
@@ -48,6 +48,11 @@ import { PdfViewerModal } from '../../Modals/PdfViewerModal';
 import { resolvePdfDocumentTarget } from '../../../utils/pdfDocumentResolver';
 import { findDrugSubstitutes } from '../../../services/drugSubstitutionService';
 import { DrugSubstituteCandidate } from '../../../types/bhytSubstitution';
+import {
+  saveBhytDraft,
+  getBhytDraft,
+  clearBhytDraft
+} from '../../../utils/storage/bhytDraftStorage';
 
 type AnalysisTab = 'pure_breakdown' | 'clinical_7' | 'violations' | 'catalog' | 'xml';
 
@@ -94,6 +99,7 @@ export const BhytAuditTab: React.FC = () => {
     type: 'pdf' | 'image';
     url: string;
     rawFile?: File;
+    blob?: Blob;
     sizeKb?: number;
     originalSizeKb?: number;
     compressionRatio?: number;
@@ -110,6 +116,74 @@ export const BhytAuditTab: React.FC = () => {
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [activeLegalPdf, setActiveLegalPdf] = useState<{ url: string; title: string; page?: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Khôi phục bản nháp BHYT (Draft Session) từ IndexedDB khi mount hoặc F5 reload
+  useEffect(() => {
+    let isMounted = true;
+    getBhytDraft().then((draft) => {
+      if (!isMounted || !draft) return;
+      if (draft.documentFile) {
+        setDocumentFile({
+          name: draft.documentFile.name,
+          type: draft.documentFile.type,
+          url: draft.documentFile.url,
+          blob: draft.documentFile.blob,
+          sizeKb: draft.documentFile.sizeKb,
+          originalSizeKb: draft.documentFile.originalSizeKb,
+          compressionRatio: draft.documentFile.compressionRatio
+        });
+      }
+      if (draft.activePayload && draft.activePayload.items && draft.activePayload.items.length > 0) {
+        setActivePayload(draft.activePayload);
+      }
+      if (draft.hospitalRank) setHospitalRank(draft.hospitalRank);
+      if (draft.treatmentType) setTreatmentType(draft.treatmentType);
+      if (draft.resolutionMap) setResolutionMap(draft.resolutionMap);
+    }).catch((err) => {
+      console.warn('Lỗi khôi phục draft BHYT:', err);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Tự động lưu bản nháp BHYT vào IndexedDB mỗi khi có tài liệu hoặc dữ liệu đơn thay đổi
+  useEffect(() => {
+    if (!documentFile && activePayload.items.length === 0) return;
+
+    const timer = setTimeout(() => {
+      saveBhytDraft({
+        documentFile: documentFile ? {
+          name: documentFile.name,
+          type: documentFile.type,
+          url: documentFile.url,
+          blob: documentFile.blob || documentFile.rawFile,
+          sizeKb: documentFile.sizeKb,
+          originalSizeKb: documentFile.originalSizeKb,
+          compressionRatio: documentFile.compressionRatio
+        } : null,
+        activePayload,
+        hospitalRank,
+        treatmentType,
+        resolutionMap,
+        timestamp: Date.now()
+      }).catch((e) => console.warn('Lỗi tự động lưu nháp BHYT:', e));
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [documentFile, activePayload, hospitalRank, treatmentType, resolutionMap]);
+
+  // Làm sạch tài liệu & bản nháp để bắt đầu đơn thuốc mới
+  const handleClearDraftAndFile = () => {
+    if (documentFile?.url && documentFile.url.startsWith('blob:')) {
+      try { URL.revokeObjectURL(documentFile.url); } catch {}
+    }
+    setDocumentFile(null);
+    setActivePayload(EMPTY_PRESCRIPTION);
+    setResolutionMap({});
+    clearBhytDraft().catch(() => {});
+  };
 
   // 6. Tra cứu danh mục TT 20 & XML
   const [catalogQuery, setCatalogQuery] = useState<string>('');
@@ -445,6 +519,7 @@ export const BhytAuditTab: React.FC = () => {
           type: 'pdf',
           url: URL.createObjectURL(file),
           rawFile: file,
+          blob: file,
           sizeKb: Math.round(file.size / 1024)
         });
         setActiveAnalysisTab('pure_breakdown');
@@ -466,6 +541,7 @@ export const BhytAuditTab: React.FC = () => {
           type: 'pdf',
           url: URL.createObjectURL(file),
           rawFile: file,
+          blob: file,
           sizeKb: Math.round(file.size / 1024)
         });
       } else {
@@ -479,6 +555,7 @@ export const BhytAuditTab: React.FC = () => {
             type: 'image',
             url: opt.dataUrl,
             rawFile: file,
+            blob: opt.blob || file,
             sizeKb: Math.round(opt.compressedSize / 1024),
             originalSizeKb: Math.round(opt.originalSize / 1024),
             compressionRatio: Math.round(opt.compressionRatio * 100)
@@ -491,6 +568,7 @@ export const BhytAuditTab: React.FC = () => {
             type: 'image',
             url: URL.createObjectURL(file),
             rawFile: file,
+            blob: file,
             sizeKb: Math.round(file.size / 1024)
           });
         }
@@ -1295,6 +1373,18 @@ export const BhytAuditTab: React.FC = () => {
               >
                 <span>{documentFile ? 'Đổi tệp' : 'Chọn tệp'}</span>
               </button>
+
+              {(documentFile || activePayload.items.length > 0) && (
+                <button
+                  type="button"
+                  onClick={handleClearDraftAndFile}
+                  className="h-8 px-2.5 bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-slate-300 hover:border-rose-300 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                  title="Xóa tài liệu và dữ liệu bóc tách hiện tại để tải đơn mới"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Tạo đơn mới</span>
+                </button>
+              )}
 
               {/* Nút phân tích đơn duy nhất tại toolbar tài liệu */}
               <button
