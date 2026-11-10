@@ -189,6 +189,8 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
     if (!isRankAllowed) {
       const risk = itemCost;
       atRiskCostVnd += risk;
+      const allowedStr = rule.allowedRanks.map(r => HOSPITAL_RANK_LABELS[r] || r).join(', ');
+      const currentRankStr = HOSPITAL_RANK_LABELS[payload.hospitalRank] || payload.hospitalRank || 'Không xác định';
       violations.push({
         id: `v-rank-${item.id || index}`,
         drugCode: item.drugCode,
@@ -197,7 +199,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
         severity: 'REJECT',
         category: 'HOSPITAL_RANK_MISMATCH',
         title: 'Vượt tuyến / Hạng BV không được dùng',
-        detail: `Thuốc chỉ được thanh toán tại: ${rule.allowedRanks.map(r => HOSPITAL_RANK_LABELS[r]).join(', ')}. Cơ sở hiện tại (${HOSPITAL_RANK_LABELS[payload.hospitalRank]}) không thuộc phạm vi thanh toán.`,
+        detail: `Thuốc chỉ được thanh toán tại: ${allowedStr}. Cơ sở hiện tại (${currentRankStr}) không thuộc phạm vi thanh toán.`,
         legalRef: {
           docCode: '20/2022/TT-BYT',
           docTitle: 'Thông tư 20/2022/TT-BYT',

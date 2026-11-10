@@ -118,13 +118,13 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
 
               <div className="bg-white p-2.5 rounded border border-rose-200/80">
                 <strong className="text-slate-900 block font-semibold">Tuyến KCB:</strong>
-                <span className="text-slate-800 mt-0.5 block font-medium">{HOSPITAL_RANK_LABELS[hospitalRank]}</span>
+                <span className="text-slate-800 mt-0.5 block font-medium">{HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I'}</span>
               </div>
 
               <div className="bg-white p-2.5 rounded border border-rose-200/80">
                 <strong className="text-slate-900 block font-semibold">Căn cứ pháp lý:</strong>
                 <span className="text-slate-800 mt-0.5 block font-medium">
-                  {violation.legalRef.docTitle} ({violation.legalRef.section})
+                  {violation.legalRef?.docTitle || 'Thông tư 20/2022/TT-BYT'} ({violation.legalRef?.section || 'Quy định thanh toán'})
                 </span>
               </div>
             </div>
@@ -147,7 +147,7 @@ export const BhytSubstitutionModal: React.FC<BhytSubstitutionModalProps> = ({
           {candidates.length === 0 ? (
             <div className="p-8 text-center bg-white rounded-lg border border-slate-200 space-y-2">
               <div className="text-base font-bold text-slate-800">
-                Chưa tìm thấy thuốc thay thế tương đương tại {HOSPITAL_RANK_LABELS[hospitalRank]}
+                Chưa tìm thấy thuốc thay thế tương đương tại {HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I'}
               </div>
               <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
                 Danh mục BHYT tuyến cơ sở hiện tại không có hoạt chất cùng nhóm. Khuyến nghị Bác sĩ điều trị xem xét chuyển tuyến KCB hoặc làm thủ tục hội chẩn chuyên khoa theo quy định.

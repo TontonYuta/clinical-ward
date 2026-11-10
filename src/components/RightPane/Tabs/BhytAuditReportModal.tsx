@@ -234,7 +234,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                   </tr>
                   <tr>
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Tuyến kỹ thuật KCB:</td>
-                    <td className="border border-black px-2.5 py-1.5 font-semibold">{HOSPITAL_RANK_LABELS[hospitalRank]}</td>
+                    <td className="border border-black px-2.5 py-1.5 font-semibold">{HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I'}</td>
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Mã đơn thuốc:</td>
                     <td className="font-sans tabular-nums border border-black px-2.5 py-1.5">{prescription.prescriptionId || 'RX-20261107-001'}</td>
                   </tr>
@@ -242,7 +242,7 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                     <td className="font-semibold bg-slate-50 border border-black px-2.5 py-1.5">Chẩn đoán chính (ICD-10):</td>
                     <td colSpan={3} className="border border-black px-2.5 py-1.5">
                       <strong className="font-sans tabular-nums text-teal-900 font-bold">{prescription.primaryIcd10 || 'J20.9'}</strong> — {prescription.primaryDiagnosis || 'Viêm phế quản cấp'}
-                      {prescription.secondaryIcd10s && prescription.secondaryIcd10s.length > 0 && (
+                      {Array.isArray(prescription.secondaryIcd10s) && prescription.secondaryIcd10s.length > 0 && (
                         <span className="ml-2 text-slate-600 italic">
                           (Kèm theo: {prescription.secondaryIcd10s.join(', ')})
                         </span>

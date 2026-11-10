@@ -19,6 +19,7 @@ import { FefoInventoryTab } from './Tabs/FefoInventoryTab';
 import { ColdChainTab } from './Tabs/ColdChainTab';
 import { AssetAuditTab } from './Tabs/AssetAuditTab';
 import { BhytAuditTab } from './Tabs/BhytAuditTab';
+import { ClinicalErrorBoundary } from '../Common/ClinicalErrorBoundary';
 import { OperationsOverview } from './OperationsOverview';
 import { PrintableFormType } from '../Modals/PrintableFormModal';
 
@@ -148,7 +149,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
 
             {currentTab === 'bhyt_audit' && (
-              <BhytAuditTab />
+              <ClinicalErrorBoundary
+                fallbackTitle="Phòng vệ Giám Định BHYT: Đã phát hiện lỗi giao diện"
+                fallbackMessage="Hệ thống đã tự động ngăn chặn tình trạng trắng trang. Dữ liệu bệnh nhân và kho dược vẫn được bảo toàn. Bấm nút bên dưới để khôi phục giao diện."
+              >
+                <BhytAuditTab />
+              </ClinicalErrorBoundary>
             )}
 
             {/* Tạm thời comment tính năng Sổ nợ vỏ và TBYT theo yêu cầu người dùng */}

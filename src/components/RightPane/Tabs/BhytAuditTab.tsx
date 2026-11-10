@@ -26,6 +26,11 @@ import {
 import {
   auditBhytPrescription
 } from '../../../services/bhytAuditEngine';
+import {
+  sanitizeOcrPrescriptionPayload,
+  sanitizeHospitalRank,
+  sanitizeTreatmentType
+} from '../../../utils/bhytSanitizer';
 import { bhytApi } from '../../../services/api/bhytApi';
 import {
   parseQd130Xml,
@@ -161,14 +166,15 @@ export const BhytAuditTab: React.FC = () => {
       bhytShareCost += Math.round(lineCost * ratio * copayRate);
 
       // Đếm số lô cận hạn < 180 ngày theo Thông tư 36/2018/TT-BYT GSP
-      if (item.expiryDate) {
+      const expStr = String(item.expiryDate || '').trim();
+      if (expStr) {
         try {
           let expDate: Date | null = null;
-          if (item.expiryDate.includes('/')) {
-            const parts = item.expiryDate.split('/');
+          if (expStr.includes('/')) {
+            const parts = expStr.split('/');
             if (parts.length === 3) expDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-          } else if (item.expiryDate.includes('-')) {
-            expDate = new Date(item.expiryDate);
+          } else if (expStr.includes('-')) {
+            expDate = new Date(expStr);
           }
           if (expDate && !isNaN(expDate.getTime())) {
             const daysDiff = Math.ceil((expDate.getTime() - now) / (1000 * 60 * 60 * 24));
@@ -223,11 +229,12 @@ export const BhytAuditTab: React.FC = () => {
 
     // 2. Chống chỉ định lâm sàng & Phân tuyến bệnh viện
     const rankViolations = auditReport.violations.filter(v => v.category === 'HOSPITAL_RANK_MISMATCH');
+    const safeRankLabel = HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I';
     if (rankViolations.length > 0) {
       list.push({
         id: 2,
         title: '2. Chống chỉ định & Tuyến bệnh viện',
-        subtitle: `Tuyến hiện tại: ${HOSPITAL_RANK_LABELS[hospitalRank]}`,
+        subtitle: `Tuyến hiện tại: ${safeRankLabel}`,
         status: 'ALERT' as const,
         statusLabel: 'Vượt tuyến / Không thanh toán',
         details: rankViolations.map(v => `${v.drugName}: ${v.detail}`)
@@ -236,10 +243,10 @@ export const BhytAuditTab: React.FC = () => {
       list.push({
         id: 2,
         title: '2. Chống chỉ định & Tuyến bệnh viện',
-        subtitle: `Tuyến hiện tại: ${HOSPITAL_RANK_LABELS[hospitalRank]}`,
+        subtitle: `Tuyến hiện tại: ${safeRankLabel}`,
         status: 'PASS' as const,
         statusLabel: 'Đúng phân tuyến BHYT',
-        details: [`Toàn bộ thuốc được phép kê đơn và thanh toán tại ${HOSPITAL_RANK_LABELS[hospitalRank]}. Không có chống chỉ định phân tuyến.`]
+        details: [`Toàn bộ thuốc được phép kê đơn và thanh toán tại ${safeRankLabel}. Không có chống chỉ định phân tuyến.`]
       });
     }
 
@@ -366,167 +373,138 @@ export const BhytAuditTab: React.FC = () => {
 
   // Xử lý nạp và trích xuất dữ liệu tài liệu (Ảnh / PDF / XML)
   const processUploadedFile = async (file: File) => {
-    const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
-    const isXml = file.type === 'application/xml' || file.type === 'text/xml' || file.name.endsWith('.xml');
+    try {
+      const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+      const isXml = file.type === 'application/xml' || file.type === 'text/xml' || file.name.endsWith('.xml');
 
-    if (isXml) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const content = (ev.target?.result as string) || '';
-        setXmlInputText(content);
-        try {
-          const parsed = parseQd130Xml(content);
-          if (parsed.items && parsed.items.length > 0) {
-            const nextPayload = {
-              ...activePayload,
-              ...parsed,
-              items: parsed.items || activePayload.items
-            };
-            setActivePayload(nextPayload);
-            handleRunOcrProcess(nextPayload);
+      if (isXml) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const content = (ev.target?.result as string) || '';
+          setXmlInputText(content);
+          try {
+            const parsed = parseQd130Xml(content);
+            if (parsed.items && parsed.items.length > 0) {
+              const nextPayload = sanitizeOcrPrescriptionPayload({
+                ...activePayload,
+                ...parsed,
+                items: parsed.items || activePayload.items
+              }, hospitalRank, treatmentType);
+              setActivePayload(nextPayload);
+              handleRunOcrProcess(nextPayload);
+            }
+          } catch (err) {
+            console.error('Lỗi phân tích XML:', err);
           }
-        } catch (err) {
-          console.error('Lỗi phân tích XML:', err);
-        }
-      };
-      reader.readAsText(file);
-      setDocumentFile({
-        name: file.name,
-        type: 'pdf',
-        url: URL.createObjectURL(file),
-        rawFile: file,
-        sizeKb: Math.round(file.size / 1024)
-      });
-      setActiveAnalysisTab('pure_breakdown');
-      return;
-    }
-
-    let targetDataUrl: string = '';
-    let targetMime: string = 'image/jpeg';
-
-    if (isPdf) {
-      try {
-        targetDataUrl = await readFileAsDataUrl(file);
-        targetMime = 'application/pdf';
-      } catch (err) {
-        console.error('Lỗi đọc file PDF:', err);
-      }
-      setDocumentFile({
-        name: file.name,
-        type: 'pdf',
-        url: URL.createObjectURL(file),
-        rawFile: file,
-        sizeKb: Math.round(file.size / 1024)
-      });
-    } else {
-      // Tệp ảnh: Tối ưu hóa & nén Canvas Client-side (<200KB, JPEG 0.78)
-      try {
-        const opt = await compressImageForOcr(file);
-        targetDataUrl = opt.dataUrl;
-        targetMime = 'image/jpeg';
+        };
+        reader.readAsText(file);
         setDocumentFile({
           name: file.name,
-          type: 'image',
-          url: opt.dataUrl,
-          rawFile: file,
-          sizeKb: Math.round(opt.compressedSize / 1024),
-          originalSizeKb: Math.round(opt.originalSize / 1024),
-          compressionRatio: Math.round(opt.compressionRatio * 100)
-        });
-      } catch {
-        targetDataUrl = await readFileAsDataUrl(file);
-        targetMime = file.type || 'image/jpeg';
-        setDocumentFile({
-          name: file.name,
-          type: 'image',
+          type: 'pdf',
           url: URL.createObjectURL(file),
           rawFile: file,
           sizeKb: Math.round(file.size / 1024)
         });
+        setActiveAnalysisTab('pure_breakdown');
+        return;
       }
-    }
 
-    setZoomLevel(100);
-    setRotationAngle(0);
+      let targetDataUrl: string = '';
+      let targetMime: string = 'image/jpeg';
 
-    // Trích xuất tự động qua Multimodal Vision OCR (Gemini / Universal Gateway / Local Fallback)
-    setIsOcrProcessing(true);
-    let extracted: BhytPrescriptionPayload | null = null;
-    try {
-      if (targetDataUrl) {
-        const ocrRes = await bhytApi.ocrPrescription(targetDataUrl, targetMime);
-        if (ocrRes.success && ocrRes.prescription && ocrRes.prescription.items.length > 0) {
-          const p = ocrRes.prescription as any;
-          extracted = {
-            prescriptionId: p.prescription_id || p.prescriptionId || `RX-${Date.now()}`,
-            documentType: p.document_type || p.documentType || 'DON_THUOC',
-            sellerName: p.seller_name || p.sellerName || '',
-            sellerTaxId: p.seller_tax_id || p.sellerTaxId || '',
-            invoiceNumber: p.invoice_number || p.invoiceNumber || '',
-            patientName: p.patient_name || p.patientName || (p.document_type === 'HOA_DON_VAT' ? (p.seller_name || 'Khách hàng') : 'Bệnh nhân BHYT'),
-            patientAge: p.patient_age ?? p.patientAge ?? 50,
-            insuranceCardNumber: p.insurance_card_number || p.insuranceCardNumber || '',
-            hospitalRank: (p.hospital_rank || p.hospitalRank || hospitalRank) as HospitalRank,
-            treatmentType: (p.treatment_type || p.treatmentType || treatmentType) as TreatmentType,
-            primaryIcd10: p.primary_icd10 || p.primaryIcd10 || '',
-            primaryDiagnosis: p.primary_diagnosis || p.primaryDiagnosis || '',
-            secondaryIcd10s: p.secondary_icd10s || p.secondaryIcd10s || [],
-            items: (p.items || []).map((it: any, idx: number) => {
-              const q = Number(it.quantity || 1);
-              const u = Number(it.unit_price ?? it.unitPrice ?? 0);
-              const tot = Number(it.total_price ?? it.totalPrice ?? (q * u));
-              return {
-                id: it.id || `ITEM-${idx + 1}`,
-                drugCode: it.drug_code || it.drugCode || '',
-                drugName: it.drug_name || it.drugName || `Thuốc ${idx + 1}`,
-                activeIngredient: it.active_ingredient || it.activeIngredient || '',
-                dosage: it.dosage || '',
-                unit: it.unit || 'Viên',
-                batchNumber: it.batch_number || it.batchNumber || '',
-                expiryDate: it.expiry_date || it.expiryDate || '',
-                route: it.route || 'Uống',
-                quantity: q,
-                daysSupply: Number(it.days_supply ?? it.daysSupply ?? 1),
-                unitPrice: u,
-                totalPrice: tot,
-                vatRate: Number(it.vat_rate ?? it.vatRate ?? 0),
-                instructions: it.instructions || '',
-                hasConsultationForm: Boolean(it.has_consultation_form ?? it.hasConsultationForm ?? false)
-              };
-            })
-          };
+      if (isPdf) {
+        try {
+          targetDataUrl = await readFileAsDataUrl(file);
+          targetMime = 'application/pdf';
+        } catch (err) {
+          console.error('Lỗi đọc file PDF:', err);
+        }
+        setDocumentFile({
+          name: file.name,
+          type: 'pdf',
+          url: URL.createObjectURL(file),
+          rawFile: file,
+          sizeKb: Math.round(file.size / 1024)
+        });
+      } else {
+        // Tệp ảnh: Tối ưu hóa & nén Canvas Client-side (<200KB, JPEG 0.78)
+        try {
+          const opt = await compressImageForOcr(file);
+          targetDataUrl = opt.dataUrl;
+          targetMime = 'image/jpeg';
+          setDocumentFile({
+            name: file.name,
+            type: 'image',
+            url: opt.dataUrl,
+            rawFile: file,
+            sizeKb: Math.round(opt.compressedSize / 1024),
+            originalSizeKb: Math.round(opt.originalSize / 1024),
+            compressionRatio: Math.round(opt.compressionRatio * 100)
+          });
+        } catch {
+          targetDataUrl = await readFileAsDataUrl(file);
+          targetMime = file.type || 'image/jpeg';
+          setDocumentFile({
+            name: file.name,
+            type: 'image',
+            url: URL.createObjectURL(file),
+            rawFile: file,
+            sizeKb: Math.round(file.size / 1024)
+          });
         }
       }
-    } catch (ocrErr) {
-      console.warn('[BHYT OCR] Gọi API Vision thất bại, tự động chuyển về fallback nội bộ:', ocrErr);
+
+      setZoomLevel(100);
+      setRotationAngle(0);
+
+      // Trích xuất tự động qua Multimodal Vision OCR (Gemini / Universal Gateway / Local Fallback)
+      setIsOcrProcessing(true);
+      let extracted: BhytPrescriptionPayload | null = null;
+      try {
+        if (targetDataUrl) {
+          const ocrRes = await bhytApi.ocrPrescription(targetDataUrl, targetMime);
+          if (ocrRes.success && ocrRes.prescription && Array.isArray(ocrRes.prescription.items) && ocrRes.prescription.items.length > 0) {
+            extracted = sanitizeOcrPrescriptionPayload(ocrRes.prescription, hospitalRank, treatmentType);
+          }
+        }
+      } catch (ocrErr) {
+        console.warn('[BHYT OCR] Gọi API Vision thất bại, tự động chuyển về fallback nội bộ:', ocrErr);
+      } finally {
+        setIsOcrProcessing(false);
+      }
+
+      if (!extracted) {
+        extracted = sanitizeOcrPrescriptionPayload(extractPrescriptionFromDocument(file.name), hospitalRank, treatmentType);
+      }
+
+      const sanitized = sanitizeOcrPrescriptionPayload(extracted, hospitalRank, treatmentType);
+      setActivePayload(sanitized);
+      setHospitalRank(sanitized.hospitalRank);
+      setTreatmentType(sanitized.treatmentType);
+      setActiveAnalysisTab('pure_breakdown');
+      handleRunOcrProcess(sanitized, sanitized.hospitalRank, sanitized.treatmentType);
+
+      // Kích hoạt phân giải thực thể thuốc đồng bộ ngay lập tức cho bảng HITL
+      if (sanitized.items.length > 0) {
+        try {
+          const drugQueries = sanitized.items.map(it => `${it.drugName} ${it.dosage || ''}`);
+          const batchRes = await bhytApi.batchResolveDrugs(drugQueries);
+          const newMap: Record<string, DrugResolutionResult> = {};
+          if (batchRes && Array.isArray(batchRes.results)) {
+            batchRes.results.forEach((res, idx) => {
+              const it = sanitized.items[idx];
+              if (it && it.id && res) newMap[it.id] = res;
+            });
+          }
+          setResolutionMap(newMap);
+        } catch (davErr) {
+          console.warn('[BHYT DAV] Phân giải thực thể nền:', davErr);
+        }
+      }
+    } catch (criticalFileErr) {
+      console.error('🛑 [BHYT Ingest] Ngoại lệ nghiêm trọng khi nạp tệp:', criticalFileErr);
     } finally {
       setIsOcrProcessing(false);
-    }
-
-    if (!extracted) {
-      extracted = extractPrescriptionFromDocument(file.name);
-    }
-
-    setActivePayload(extracted);
-    setHospitalRank(extracted.hospitalRank);
-    setTreatmentType(extracted.treatmentType);
-    setActiveAnalysisTab('pure_breakdown');
-    handleRunOcrProcess(extracted, extracted.hospitalRank, extracted.treatmentType);
-
-    // Kích hoạt phân giải thực thể thuốc đồng bộ ngay lập tức cho bảng HITL
-    if (extracted.items.length > 0) {
-      try {
-        const drugQueries = extracted.items.map(it => `${it.drugName} ${it.dosage || ''}`);
-        const batchRes = await bhytApi.batchResolveDrugs(drugQueries);
-        const newMap: Record<string, DrugResolutionResult> = {};
-        batchRes.results.forEach((res, idx) => {
-          const it = extracted!.items[idx];
-          if (it && res) newMap[it.id] = res;
-        });
-        setResolutionMap(newMap);
-      } catch (davErr) {
-        console.warn('[BHYT DAV] Phân giải thực thể nền:', davErr);
-      }
     }
   };
 
@@ -621,7 +599,7 @@ export const BhytAuditTab: React.FC = () => {
       ['Mã đơn thuốc', activePayload.prescriptionId || 'RX-2026', 'Ngày giám định', new Date().toLocaleDateString('vi-VN')],
       ['Họ và tên người bệnh', activePayload.patientName || 'NGUYỄN VĂN AN', 'Tuổi', String(activePayload.patientAge || 54)],
       ['Mã thẻ BHYT', activePayload.insuranceCardNumber || 'DN4010123456789', 'Hình thức điều trị', treatmentType === 'NGOAI_TRU' ? 'Ngoại trú' : 'Nội trú'],
-      ['Tuyến bệnh viện', HOSPITAL_RANK_LABELS[hospitalRank], 'Chẩn đoán chính', `${activePayload.primaryIcd10} - ${activePayload.primaryDiagnosis}`],
+      ['Tuyến bệnh viện', HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I', 'Chẩn đoán chính', `${activePayload.primaryIcd10} - ${activePayload.primaryDiagnosis}`],
       [''],
       ['DANH MỤC THUỐC KÊ ĐƠN & ĐỐI SOÁT DƯỢC QUỐC GIA (DAV)'],
       [
@@ -703,7 +681,12 @@ export const BhytAuditTab: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    processUploadedFile(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    processUploadedFile(file).catch(err => {
+      console.error('Lỗi khi nạp tệp:', err);
+    });
   };
 
   // Lắng nghe dán ảnh Ctrl + V từ Clipboard
@@ -716,7 +699,9 @@ export const BhytAuditTab: React.FC = () => {
           const blob = items[i].getAsFile();
           if (blob) {
             const pastedFile = new File([blob], `don_thuoc_clipboard_${Date.now()}.png`, { type: blob.type });
-            processUploadedFile(pastedFile);
+            processUploadedFile(pastedFile).catch(err => {
+              console.error('Lỗi khi xử lý ảnh clipboard:', err);
+            });
           }
           break;
         }
@@ -1270,7 +1255,9 @@ export const BhytAuditTab: React.FC = () => {
               setIsDragging(false);
               const file = e.dataTransfer.files?.[0];
               if (file) {
-                processUploadedFile(file);
+                processUploadedFile(file).catch(err => {
+                  console.error('Lỗi khi kéo thả tệp:', err);
+                });
               }
             }}
             className={`w-full flex-1 min-h-0 overflow-auto bg-slate-100 flex items-center justify-center p-2.5 relative ${
@@ -1470,7 +1457,7 @@ export const BhytAuditTab: React.FC = () => {
 
                     <div className="bg-white p-3 rounded-md border border-slate-200/80 shadow-2xs">
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Tuyến KCB &amp; Hạng BV</span>
-                      <strong className="text-sm font-bold text-slate-900 block mt-0.5">{HOSPITAL_RANK_LABELS[hospitalRank]}</strong>
+                      <strong className="text-sm font-bold text-slate-900 block mt-0.5">{HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I'}</strong>
                       <span className="text-slate-600 text-xs font-medium">{treatmentType === 'NGOAI_TRU' ? 'Điều trị Ngoại trú' : 'Điều trị Nội trú'}</span>
                     </div>
 
@@ -2025,19 +2012,19 @@ export const BhytAuditTab: React.FC = () => {
 
                         <div className="text-xs text-slate-500 pt-1 flex items-center justify-between">
                           <span>
-                            Căn cứ pháp lý: <strong>{violation.legalRef.docCode}</strong> ({violation.legalRef.section})
+                            Căn cứ pháp lý: <strong>{violation.legalRef?.docCode || '20/2022/TT-BYT'}</strong> ({violation.legalRef?.section || 'Quy định thanh toán'})
                           </span>
                           <button
                             type="button"
                             onClick={() => handleOpenLegalPdf(
-                              violation.legalRef.docCode,
-                              violation.legalRef.pageNumber,
-                              `${violation.legalRef.docTitle} (Trang ${violation.legalRef.pageNumber})`,
+                              violation.legalRef?.docCode || '20/2022/TT-BYT',
+                              violation.legalRef?.pageNumber || 1,
+                              `${violation.legalRef?.docTitle || 'Thông tư 20/2022/TT-BYT'} (Trang ${violation.legalRef?.pageNumber || 1})`,
                               violation.detail
                             )}
                             className="text-teal-700 font-semibold hover:underline cursor-pointer flex items-center gap-1"
                           >
-                            <span>Xem trang {violation.legalRef.pageNumber} văn bản gốc ↗</span>
+                            <span>Xem trang {violation.legalRef?.pageNumber || 1} văn bản gốc ↗</span>
                           </button>
                         </div>
                       </div>
