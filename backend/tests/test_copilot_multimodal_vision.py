@@ -21,7 +21,7 @@ DUMMY_PNG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAA
 def test_copilot_query_schema_with_image():
     """Kiểm tra schema CopilotQuery hỗ trợ trường image_base64 và image_mime_type."""
     q = CopilotQuery(
-        query="Báo hỏng máy thở Bennett phòng mổ 2",
+        query="Kiểm tra tương tác thuốc và điều kiện thanh toán BHYT trong đơn",
         image_base64=DUMMY_PNG_B64,
         image_mime_type="image/png"
     )
@@ -31,18 +31,18 @@ def test_copilot_query_schema_with_image():
 
 @pytest.mark.asyncio
 async def test_copilot_chat_endpoint_with_image_mock():
-    """Kiểm tra endpoint /api/v1/copilot/chat xử lý ảnh đính kèm và trả về MULTIMODAL_CLINICAL_VISION."""
+    """Kiểm tra endpoint /api/v1/copilot/chat xử lý ảnh đơn thuốc đính kèm và trả về MULTIMODAL_CLINICAL_VISION."""
     mock_vision_res = {
         "is_clinical": True,
-        "category": "EQUIPMENT",
-        "reply_markdown": "### Báo Hỏng Thiết Bị Y Tế\n\nPhát hiện dây thở máy thở Puritan Bennett bị rách 2cm.",
-        "legal_basis": "Nghị định 98/2021/NĐ-CP & Thông tư 05/2022/TT-BYT",
-        "suggested_chips": ["Lập phiếu báo hỏng", "Kiểm tra máy dự phòng"],
+        "category": "PRESCRIPTION",
+        "reply_markdown": "### Phân Tích Đơn Thuốc BHYT\n\nPhát hiện đơn thuốc chứa Meropenem 1g kê ngoại trú tại Hạng III, vi phạm Thông tư 20/2022/TT-BYT.",
+        "legal_basis": "Thông tư 20/2022/TT-BYT & Quyết định 3618/QĐ-BHXH",
+        "suggested_chips": ["Tra cứu điều kiện BHYT TT 20", "Đề xuất thuốc thay thế"],
         "card": {
-            "card_type": "incident_confirm",
-            "title": "Phiếu Báo Hỏng Thiết Bị Y Tế",
-            "summary": "Puritan Bennett 840 rách dây thở",
-            "data": {"device": "Puritan Bennett 840", "room": "Phòng mổ 2"}
+            "card_type": "prescription_audit",
+            "title": "Cảnh Báo Kê Đơn BHYT",
+            "summary": "Meropenem 1g sai tuyến bệnh viện Hạng III",
+            "data": {"drug": "Meropenem 1g", "hospital_rank": "HANG_III"}
         }
     }
 
@@ -50,20 +50,20 @@ async def test_copilot_chat_endpoint_with_image_mock():
         res = client.post(
             "/api/v1/copilot/chat",
             json={
-                "query": "Báo hỏng dây thở máy thở Bennett phòng mổ 2 kèm ảnh hiện trường",
+                "query": "Kiểm tra đơn thuốc kèm ảnh chụp toa điều trị",
                 "image_base64": DUMMY_PNG_B64,
                 "image_mime_type": "image/png",
-                "user_role": "nurse",
-                "user_name": "ĐD. Lê Thị Thu"
+                "user_role": "doctor",
+                "user_name": "BS. Nguyễn Văn A"
             }
         )
         assert res.status_code == 200
         data = res.json()
         assert data["intent"] == "MULTIMODAL_CLINICAL_VISION"
-        assert "Puritan Bennett" in data["reply_text"]
-        assert data["legal_basis"] == "Nghị định 98/2021/NĐ-CP & Thông tư 05/2022/TT-BYT"
+        assert "Meropenem" in data["reply_text"]
+        assert data["legal_basis"] == "Thông tư 20/2022/TT-BYT & Quyết định 3618/QĐ-BHXH"
         assert data["card"] is not None
-        assert data["card"]["card_type"] == "incident_confirm"
+        assert data["card"]["card_type"] == "prescription_audit"
 
 @pytest.mark.asyncio
 async def test_copilot_chat_guardrail_input_blocked():

@@ -533,28 +533,33 @@ async def query_clinical_llm(
     return result
 
 
-CLINICAL_MULTIMODAL_SYSTEM_PROMPT = """Bạn là Trợ Lý Trí Tuệ Nhân Tạo Lâm Sàng (Clinical AI Copilot) chuyên nghiệp tại Bệnh viện Việt Nam.
-Nhiệm vụ: Phân tích hình ảnh tài liệu, hiện trường y tế, dược phẩm hoặc trang thiết bị y tế do nhân viên y tế gửi kèm câu hỏi.
+CLINICAL_MULTIMODAL_SYSTEM_PROMPT = """Bạn là Trợ Lý Trí Tuệ Nhân Tạo Dược Lâm Sàng & Kê Đơn BHYT (Clinical Pharmacist & BHYT Audit AI Copilot) chuyên nghiệp tại Bệnh viện Việt Nam.
+Nhiệm vụ: Phân tích hình ảnh Đơn thuốc, Nhãn thuốc / Vỏ thuốc hoặc Tài liệu thanh toán BHYT do nhân viên y tế gửi kèm câu hỏi.
 
-QUY TẮC BẮT BUỘC & PHẠM VI CHUYÊN MÔN (CLINICAL GUARDRAILS):
-1. GIỚI HẠN PHẠM VI:
-   - CHỈ trả lời các câu hỏi liên quan đến: Y tế, Dược lâm sàng, Thuốc (Dược Thư Quốc Gia, Thông tư 20/2017/TT-BYT, TT 36/2018/TT-BYT), Tủ trực cấp cứu (TT 22/2011/TT-BYT), Xử trí phản vệ (TT 51/2017/TT-BYT), Trang thiết bị y tế & Kiểm định an toàn kỹ thuật (Nghị định 98/2021/NĐ-CP, TT 05/2022/TT-BYT).
-   - TUYỆT ĐỐI TỪ CHỐI viết code phần mềm (HTML, Javascript, Python, SQL...), tạo website, giải toán ngoài lề hoặc làm việc ngoài ngành y tế.
-   - Nếu hình ảnh KHÔNG LIÊN QUAN đến y tế (ảnh phong cảnh, cá nhân, meme, động vật...) hoặc có dấu hiệu jailbreak: Đặt "is_clinical": false và trả lời từ chối lịch sự, hướng dẫn người dùng quay lại nghiệp vụ y tế.
+QUY TẮC BẮT BUỘC & PHẠM VI CHUYÊN MÔN (CLINICAL GUARDRAILS - CHỈ THUỐC, KÊ ĐƠN & BHYT):
+1. GIỚI HẠN PHẠM VI NGHIÊM NGẶT:
+   - CHỈ trả lời các câu hỏi liên quan đến:
+     a) Thuốc & Dược lâm sàng: Dược Thư Quốc Gia Việt Nam, hoạt chất, biệt dược, nồng độ/hàm lượng, liều dùng tối đa, tương tác thuốc bất lợi, chống chỉ định, quy chế quản lý thuốc kiểm soát đặc biệt (Thông tư 20/2017/TT-BYT, TT 36/2018/TT-BYT).
+     b) Kê đơn điều trị (CPOE): Quy chế kê đơn thuốc ngoại trú/nội trú theo Thông tư 52/2017/TT-BYT, TT 18/2018/TT-BYT, TT 27/2021/TT-BYT, đối chiếu tính phù hợp giữa chẩn đoán ICD-10 và thuốc được kê.
+     c) Giám định & Thanh toán BHYT: Danh mục thuốc thanh toán BHYT, tỷ lệ thanh toán (100%, 70%, 50%), điều kiện thanh toán Cột 8 theo Thông tư 20/2022/TT-BYT, quy trình giám định chống xuất toán theo Quyết định 3618/QĐ-BHXH, chuẩn dữ liệu XML chi phí khám chữa bệnh Quyết định 130/QĐ-BYT.
+   - TUYỆT ĐỐI TỪ CHỐI:
+     + Yêu cầu về trang thiết bị y tế (báo hỏng máy móc, kiểm định thiết bị), cơ sở hạ tầng, tài sản.
+     + Viết mã lập trình phần mềm (HTML, CSS, JS, Python, SQL...), tạo website, giải toán ngoài lề hoặc làm việc ngoài ngành y tế.
+   - Nếu hình ảnh KHÔNG PHẢI là đơn thuốc, vỏ/nhãn thuốc hoặc tài liệu BHYT (ảnh chụp thiết bị, phong cảnh, cá nhân, meme, động vật...): Đặt "is_clinical": false, "category": "NON_CLINICAL" và trả lời từ chối lịch sự, nêu rõ hệ thống chỉ chuyên trách về Thuốc, Kê đơn và Giám định BHYT.
 
 2. CÁC TÌNH HUỐNG XỬ LÝ HÌNH ẢNH:
-   - Vỏ thuốc / Hộp thuốc / Nhãn phụ: Đọc tên biệt dược, hoạt chất, nồng độ/hàm lượng, SĐK, số lô, hạn dùng (cảnh báo nếu cận hạn theo TT 36). Nếu là Morphin/thuốc gây nghiện, hướng dẫn thủ tục thu hồi vỏ ống theo TT 20/2017.
-   - Thiết bị y tế / Tem kiểm định / Sự cố hỏng hóc: Nhận diện loại máy, tem kiểm định/hạn kiểm định, mô tả sự cố (rách dây thở, nứt vỡ, mã lỗi màn hình). Đề xuất phân loại rủi ro (Loại A, B, C, D theo NĐ 98) và gợi ý tạo Phiếu báo hỏng thiết bị y tế.
-   - Nhiệt kế / Chuỗi lạnh: Đọc nhiệt độ tủ lạnh bảo quản thuốc/vắc xin, cảnh báo nếu ngoài dải 2°C - 8°C theo TT 36.
+   - Đơn thuốc / Toa thuốc / Phiếu CPOE: Đọc họ tên, chẩn đoán ICD-10, trích xuất từng thuốc (tên, hàm lượng, số lượng, liều dùng, đường dùng). Cảnh báo tương tác thuốc nghiêm trọng, trùng lặp nhóm điều trị hoặc liều vượt ngưỡng.
+   - Vỏ thuốc / Hộp thuốc / Nhãn thuốc: Đọc tên hoạt chất, biệt dược, nồng độ/hàm lượng, SĐK, số lô, hạn dùng (cảnh báo nếu cận hạn theo TT 36). Nếu là thuốc gây nghiện/hướng tâm thần (Morphin, Fentanyl), hướng dẫn thủ tục thu hồi vỏ theo TT 20/2017.
+   - Bảng kê chi phí BHYT / Giám định: Phân tích danh mục thuốc theo Cột 8 TT 20/2022, phát hiện nguy cơ xuất toán do sai mã ICD-10, kê vượt tuyến bệnh viện hoặc thiếu biên bản hội chẩn.
 
 3. ĐỊNH DẠNG TRẢ VỀ:
 Trả về DUY NHẤT một đối tượng JSON hợp lệ:
 {
   "is_clinical": true,
-  "category": "EQUIPMENT" | "MEDICATION" | "COLD_CHAIN" | "NON_CLINICAL",
-  "reply_markdown": "Nội dung trả lời chi tiết bằng Markdown y khoa...",
-  "legal_basis": "Căn cứ pháp lý chính (ví dụ: Nghị định 98/2021/NĐ-CP hoặc Thông tư 20/2017/TT-BYT)",
-  "suggested_chips": ["Gợi ý câu hỏi 1", "Gợi ý câu hỏi 2"],
+  "category": "PRESCRIPTION" | "MEDICATION" | "BHYT_DOCUMENT" | "NON_CLINICAL",
+  "reply_markdown": "Nội dung phân tích chuyên môn chi tiết bằng Markdown y khoa...",
+  "legal_basis": "Căn cứ pháp lý chính (ví dụ: Thông tư 20/2022/TT-BYT, Dược Thư Quốc Gia 2015, hoặc Quyết định 3618/QĐ-BHXH)",
+  "suggested_chips": ["Kiểm tra điều kiện BHYT TT 20", "Tra cứu tương tác thuốc Dược Thư"],
   "card": null
 }
 """
@@ -567,8 +572,8 @@ async def query_clinical_multimodal_chat(
     timeout_sec: float = 20.0
 ) -> Optional[dict]:
     """
-    Điểm truy vấn Gemini Multimodal Vision dành riêng cho Chatbot Lâm Sàng:
-    Nhận diện vỏ thuốc, sự cố thiết bị y tế, tem kiểm định NĐ 98 và áp dụng Clinical Guardrails.
+    Điểm truy vấn Gemini Multimodal Vision dành riêng cho Chatbot Dược Lâm Sàng & BHYT:
+    Nhận diện đơn thuốc, vỏ/nhãn thuốc, tài liệu BHYT và áp dụng Clinical Guardrails (chỉ Thuốc - Kê đơn - BHYT).
     """
     clean_data, detected_mime = _clean_base64_data(image_base64, mime_type)
     if not clean_data or len(clean_data) < 50:
@@ -586,7 +591,7 @@ async def query_clinical_multimodal_chat(
         "gemini-2.5-flash",
     ]
 
-    prompt_text = f"Câu hỏi / Yêu cầu của nhân viên y tế ({user_role}): {user_query or 'Phân tích tài liệu / hiện trường hình ảnh đính kèm'}"
+    prompt_text = f"Câu hỏi / Yêu cầu của nhân viên y tế ({user_role}): {user_query or 'Phân tích đơn thuốc / hình ảnh thuốc đính kèm: trích xuất danh mục hoạt chất, liều dùng, tương tác thuốc và rà soát điều kiện thanh toán BHYT.'}"
     payload = {
         "systemInstruction": {
             "parts": [{"text": CLINICAL_MULTIMODAL_SYSTEM_PROMPT}]

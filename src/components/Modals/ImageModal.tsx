@@ -2,16 +2,16 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * 
- * Modal Đính Kèm Ảnh Hiện Trường & Thiết Bị Y Tế Cho Chatbot AI (Zero-Mock)
- * Hỗ trợ:
- * 1. Tải ảnh chụp thực tế từ điện thoại / máy tính (kéo thả hoặc chọn tệp)
+ * Modal Đính Kèm Ảnh Đơn Thuốc / Vỏ Thuốc Cho Chatbot AI (Zero-Mock)
+ * Chuyên trách: Thuốc - Kê đơn - Giám định BHYT
+ * 1. Tải ảnh thực tế (kéo thả hoặc chọn tệp)
  * 2. Tự động nén Canvas Client-side (<250KB) bảo toàn độ nét tối ưu cho Vision OCR
  * 3. Khung xem trước (Live Thumbnail Preview) kèm kích thước và dung lượng tệp
- * 4. Nhập câu hỏi lâm sàng tùy biến & Gợi ý nghiệp vụ y tế chuẩn (NĐ 98, TT 20, TT 36)
+ * 4. Nhập câu hỏi lâm sàng tùy biến (liều dùng, tương tác, điều kiện thanh toán BHYT)
  */
 
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, X, Check, Image as ImageIcon, Trash2, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { Camera, Upload, X, Check, Image as ImageIcon, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
 import { compressImageForOcr } from '../../utils/imageOptimization';
 
 export interface SendImagePayload {
@@ -28,33 +28,6 @@ interface ImageModalProps {
   onClose: () => void;
   onSendImage: (payload: SendImagePayload) => void;
 }
-
-const CLINICAL_PROMPT_SUGGESTIONS = [
-  {
-    id: 'sug-equipment',
-    badge: '🩺 Báo hỏng (NĐ 98)',
-    prompt: 'Báo hỏng phụ kiện / thiết bị y tế theo hiện trường ảnh chụp, đề xuất phân loại rủi ro và lập phiếu sửa chữa.',
-    color: 'hover:border-rose-400 hover:bg-rose-50/50 text-rose-800'
-  },
-  {
-    id: 'sug-drug-label',
-    badge: '💊 Tra cứu nhãn thuốc (TT 36)',
-    prompt: 'Tra cứu thông tin thuốc theo ảnh vỏ hộp: hoạt chất, nồng độ, SĐK, số lô và kiểm tra hạn dùng FEFO.',
-    color: 'hover:border-blue-400 hover:bg-blue-50/50 text-blue-800'
-  },
-  {
-    id: 'sug-morphine',
-    badge: '⚠️ Thu hồi vỏ ống Morphin (TT 20)',
-    prompt: 'Đối chiếu vỏ ống thuốc gây nghiện đã tiêm cấp cứu theo ảnh chụp để lập biên bản hoàn trả tủ trực.',
-    color: 'hover:border-amber-400 hover:bg-amber-50/50 text-amber-800'
-  },
-  {
-    id: 'sug-screen-error',
-    badge: '🔍 Mã lỗi màn hình máy',
-    prompt: 'Đọc thông số hoặc mã lỗi cảnh báo trên màn hình thiết bị và hướng dẫn các bước xử lý kỹ thuật ban đầu.',
-    color: 'hover:border-teal-400 hover:bg-teal-50/50 text-teal-800'
-  }
-];
 
 export const ImageModal: React.FC<ImageModalProps> = ({
   isOpen,
@@ -107,9 +80,9 @@ export const ImageModal: React.FC<ImageModalProps> = ({
         height: opt.height
       });
 
-      // Nếu ô câu hỏi đang trống, tự động gợi ý câu hỏi mặc định theo ngữ cảnh
+      // Nếu ô câu hỏi đang trống, tự động gán câu hỏi mặc định về thuốc / kê đơn / BHYT
       if (!promptText.trim()) {
-        setPromptText(`Phân tích hình ảnh hiện trường lâm sàng [${file.name}], nhận diện thông tin và hỗ trợ xử lý nghiệp vụ.`);
+        setPromptText(`Phân tích đơn thuốc / hình ảnh thuốc [${file.name}]: trích xuất danh mục hoạt chất, liều dùng, tương tác thuốc và rà soát điều kiện thanh toán BHYT.`);
       }
     } catch (err: any) {
       console.warn('Lỗi nén ảnh phía client:', err);
@@ -155,7 +128,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
   const handleConfirmSend = () => {
     if (!selectedFile) return;
 
-    const finalPrompt = promptText.trim() || `Phân tích hình ảnh tài liệu / hiện trường [${selectedFile.file.name}]`;
+    const finalPrompt = promptText.trim() || 'Phân tích đơn thuốc / hình ảnh thuốc này: trích xuất danh mục hoạt chất, liều dùng, tương tác thuốc và rà soát điều kiện thanh toán BHYT.';
     onSendImage({
       title: selectedFile.file.name,
       prompt: finalPrompt,
@@ -186,10 +159,10 @@ export const ImageModal: React.FC<ImageModalProps> = ({
             </div>
             <div className="min-w-0">
               <h3 id="image-modal-title" className="font-bold text-sm sm:text-base text-slate-900 truncate">
-                Đính kèm ảnh hiện trường / Thiết bị y tế
+                Đính kèm ảnh Đơn thuốc / Vỏ thuốc / BHYT
               </h3>
               <p className="text-xs text-slate-500 truncate">
-                Multimodal Vision AI: Phân tích vỏ thuốc, sự cố máy y tế &amp; đối chiếu quy chế
+                Multimodal Vision AI: Trích xuất đơn thuốc, rà soát tương tác dược lý &amp; giám định BHYT
               </p>
             </div>
           </div>
@@ -246,7 +219,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
                   {isProcessingFile ? 'Đang tối ưu hóa hình ảnh...' : 'Nhấn để chọn ảnh hoặc kéo thả ảnh vào đây'}
                 </p>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Hỗ trợ JPG, PNG, WEBP (Tối đa 15MB - tự động nén Canvas sắc nét)
+                  Chụp rõ nét đơn thuốc, nhãn thuốc hoặc bảng kê chi phí BHYT (PNG, JPG, WEBP - tự động nén Canvas)
                 </p>
               </div>
             </div>
@@ -326,32 +299,9 @@ export const ImageModal: React.FC<ImageModalProps> = ({
               rows={3}
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
-              placeholder="Ví dụ: Báo hỏng máy thở phòng mổ 2 bị xì khí, đối chiếu hạn dùng vỏ thuốc, hoặc tra cứu mã lỗi hiển thị..."
+              placeholder="Ví dụ: Phân tích đơn thuốc này, kiểm tra tương tác thuốc, liều dùng hoặc giám định điều kiện thanh toán BHYT theo TT 20/2022/TT-BYT..."
               className="w-full text-xs sm:text-sm p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-transparent resize-none leading-relaxed"
             />
-          </div>
-
-          {/* Gợi ý nghiệp vụ y tế chuẩn (Clinical Prompt Chips) */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1 text-2xs font-bold text-slate-500 uppercase tracking-wider">
-              <Sparkles className="w-3 h-3 text-amber-500" />
-              <span>Gợi ý mẫu câu hỏi nghiệp vụ y tế:</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {CLINICAL_PROMPT_SUGGESTIONS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setPromptText(item.prompt)}
-                  className={`text-left p-2.5 rounded-lg border border-slate-200 bg-white transition cursor-pointer shadow-2xs group ${item.color}`}
-                >
-                  <div className="text-xs font-bold mb-0.5">{item.badge}</div>
-                  <div className="text-2xs text-slate-500 line-clamp-2 leading-relaxed">
-                    {item.prompt}
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
