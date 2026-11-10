@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { AlertTriangle, X } from 'lucide-react';
 import {
   BhytPrescriptionPayload,
   BhytAuditReport,
@@ -124,6 +125,12 @@ export const BhytAuditTab: React.FC = () => {
   const [substitutionToast, setSubstitutionToast] = useState<{
     message: string;
     type: 'success' | 'info';
+  } | null>(null);
+
+  // 8. Popup thông báo lỗi tinh gọn, bảo mật không để lộ thông tin kỹ thuật
+  const [errorPopup, setErrorPopup] = useState<{
+    title: string;
+    message: string;
   } | null>(null);
 
   // Thẩm định BHYT thời gian thực
@@ -374,8 +381,28 @@ export const BhytAuditTab: React.FC = () => {
   // Xử lý nạp và trích xuất dữ liệu tài liệu (Ảnh / PDF / XML)
   const processUploadedFile = async (file: File) => {
     try {
-      const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
-      const isXml = file.type === 'application/xml' || file.type === 'text/xml' || file.name.endsWith('.xml');
+      const fileName = (file.name || '').toLowerCase();
+      const isPdf = file.type === 'application/pdf' || fileName.endsWith('.pdf');
+      const isXml = file.type === 'application/xml' || file.type === 'text/xml' || fileName.endsWith('.xml');
+      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp|gif)$/i.test(fileName);
+
+      // 1. Tiền kiểm tra định dạng tệp hợp lệ
+      if (!isPdf && !isXml && !isImage) {
+        setErrorPopup({
+          title: 'Lỗi không đúng định dạng',
+          message: 'Hệ thống chỉ hỗ trợ tệp định dạng PDF, Ảnh (JPG, PNG, WEBP) hoặc tệp XML BHYT 130. Vui lòng kiểm tra lại tệp.'
+        });
+        return;
+      }
+
+      // 2. Tiền kiểm tra kích thước tệp tối đa (15MB)
+      if (file.size > 15 * 1024 * 1024) {
+        setErrorPopup({
+          title: 'Dung lượng tệp vượt quá giới hạn',
+          message: 'Tệp tải lên vượt quá 15MB. Vui lòng chọn tệp có kích thước nhỏ hơn để đảm bảo tốc độ xử lý.'
+        });
+        return;
+      }
 
       if (isXml) {
         const reader = new FileReader();
@@ -392,9 +419,18 @@ export const BhytAuditTab: React.FC = () => {
               }, hospitalRank, treatmentType);
               setActivePayload(nextPayload);
               handleRunOcrProcess(nextPayload);
+            } else {
+              setErrorPopup({
+                title: 'Lỗi cấu trúc tệp XML',
+                message: 'Tệp XML 130 không chứa danh mục Bảng 2 chi tiết thuốc hợp lệ.'
+              });
             }
           } catch (err) {
             console.error('Lỗi phân tích XML:', err);
+            setErrorPopup({
+              title: 'Lỗi không đúng định dạng',
+              message: 'Cấu trúc tệp XML không hợp lệ hoặc bị lỗi cú pháp. Vui lòng kiểm tra lại tệp.'
+            });
           }
         };
         reader.readAsText(file);
@@ -465,16 +501,40 @@ export const BhytAuditTab: React.FC = () => {
           const ocrRes = await bhytApi.ocrPrescription(targetDataUrl, targetMime);
           if (ocrRes.success && ocrRes.prescription && Array.isArray(ocrRes.prescription.items) && ocrRes.prescription.items.length > 0) {
             extracted = sanitizeOcrPrescriptionPayload(ocrRes.prescription, hospitalRank, treatmentType);
+          } else if (ocrRes && !ocrRes.success) {
+            const msg = String(ocrRes.message || '').toLowerCase();
+            if (msg.includes('key') || msg.includes('quota') || msg.includes('401') || msg.includes('auth')) {
+              setErrorPopup({
+                title: 'Lỗi cấu hình dịch vụ AI',
+                message: 'Dịch vụ phân tích chưa được cấu hình API Key hoặc đã chạm hạn mức. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
+              });
+            }
           }
         }
-      } catch (ocrErr) {
-        console.warn('[BHYT OCR] Gọi API Vision thất bại, tự động chuyển về fallback nội bộ:', ocrErr);
+      } catch (ocrErr: any) {
+        console.warn('[BHYT OCR] Gọi API Vision thất bại:', ocrErr?.message);
+        const errMsg = String(ocrErr?.message || '').toLowerCase();
+        if (errMsg.includes('key') || errMsg.includes('api') || errMsg.includes('401') || errMsg.includes('quota') || errMsg.includes('unauthorized')) {
+          setErrorPopup({
+            title: 'Lỗi cấu hình dịch vụ AI',
+            message: 'Dịch vụ phân tích hình ảnh chưa được cấu hình API Key hoặc đã chạm hạn ngạch. Bạn có thể bấm "+ Thêm thuốc" để nhập trực tiếp.'
+          });
+        }
       } finally {
         setIsOcrProcessing(false);
       }
 
       if (!extracted) {
         extracted = sanitizeOcrPrescriptionPayload(extractPrescriptionFromDocument(file.name), hospitalRank, treatmentType);
+      }
+
+      // Nếu tài liệu không nhận diện được thuốc y tế nào
+      if (!extracted || extracted.items.length === 0) {
+        setErrorPopup({
+          title: 'Không nhận diện được nội dung đơn thuốc',
+          message: 'Hình ảnh quá mờ hoặc tệp không chứa danh mục thuốc y tế hợp lệ. Bạn có thể chụp lại rõ nét hơn hoặc bấm "+ Thêm thuốc" để nhập trực tiếp vào bảng.'
+        });
+        return;
       }
 
       const sanitized = sanitizeOcrPrescriptionPayload(extracted, hospitalRank, treatmentType);
@@ -502,7 +562,11 @@ export const BhytAuditTab: React.FC = () => {
         }
       }
     } catch (criticalFileErr) {
-      console.error('🛑 [BHYT Ingest] Ngoại lệ nghiêm trọng khi nạp tệp:', criticalFileErr);
+      console.error('🛑 [BHYT Ingest] Ngoại lệ khi nạp tệp:', criticalFileErr);
+      setErrorPopup({
+        title: 'Đã xảy ra sự cố khi đọc tệp',
+        message: 'Hệ thống không thể mở tệp này. Vui lòng kiểm tra lại định dạng tệp hoặc thử lại.'
+      });
     } finally {
       setIsOcrProcessing(false);
     }
@@ -2353,6 +2417,54 @@ export const BhytAuditTab: React.FC = () => {
         hospitalRank={hospitalRank}
         onApplySubstitute={handleApplySubstitute}
       />
+
+      {/* POPUP THÔNG BÁO LỖI TINH GỌN (Zero Info Leak) */}
+      {errorPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden text-slate-800 animate-in zoom-in-95 duration-150">
+            {/* Header Popup */}
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                  <AlertTriangle className="w-4.5 h-4.5" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 leading-snug">
+                  {errorPopup.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorPopup(null)}
+                className="w-7 h-7 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition cursor-pointer"
+                title="Đóng thông báo"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Nội dung Popup */}
+            <div className="p-5 space-y-3">
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {errorPopup.message}
+              </p>
+              <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3 text-xs text-slate-500">
+                🛡️ <strong>Ghi chú:</strong> Dữ liệu đơn thuốc hiện tại của bạn vẫn được bảo toàn an toàn.
+              </div>
+            </div>
+
+            {/* Footer nút hành động */}
+            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setErrorPopup(null)}
+                className="h-8.5 px-4 bg-teal-800 hover:bg-teal-900 text-white rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs active:scale-98"
+              >
+                Đã hiểu &amp; Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
