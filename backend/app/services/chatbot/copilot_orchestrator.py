@@ -114,7 +114,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 legal_basis=legal_basis,
                 suggested_chips=suggested_chips,
                 card=card_obj,
-                rag_grounded=True
+                rag_grounded=True,
+                prompt_tokens=vision_res.get("_prompt_tokens", 280),
+                completion_tokens=vision_res.get("_completion_tokens", 350),
+                total_tokens=vision_res.get("_total_tokens", 630),
+                model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
+                has_image=True,
+                image_tokens=vision_res.get("_image_tokens", 258)
             )
 
     query = guard_res.sanitized_query

@@ -53,11 +53,18 @@ class BudgetCapResponse(BaseModel):
 class TelemetryEventItem(BaseModel):
     id: str
     timestamp: str
-    event_type: str        # "CACHE_HIT", "ADAPTIVE_RAG", "BHYT_SUBSTITUTION", "GUARDRAIL_BLOCKED"
+    event_type: str        # "CACHE_HIT", "ADAPTIVE_RAG", "BHYT_SUBSTITUTION", "GUARDRAIL_BLOCKED", "VISION_OCR_BHYT", "MULTIMODAL_CLINICAL_VISION"
     query: str
     user_role: str
     latency_ms: float
     tokens: int
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    model_name: Optional[str] = "gemini-2.5-flash"
+    provider: Optional[str] = "gemini"
+    has_image: bool = False
+    image_tokens: int = 0
     status: str            # "success", "blocked", "fallback"
     reply_text: Optional[str] = None
     intent: Optional[str] = None

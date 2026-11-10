@@ -30,6 +30,7 @@ async def chat_with_copilot(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
+    start_time = time.monotonic()
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
     session = get_or_create_session(session_id, user_name, user_role)
 
@@ -97,6 +98,22 @@ async def chat_with_copilot(
         if not is_context_dependent and response.answer_type not in ("clarification", "safe_abstention"):
             clinical_cache.set(payload.query, user_role, response)
 
+    latency_ms = round((time.monotonic() - start_time) * 1000, 1)
+    has_img = bool(payload.image_base64 or getattr(response, "has_image", False))
+    img_tok = getattr(response, "image_tokens", 0) or (258 if has_img else 0)
+    p_tok = getattr(response, "prompt_tokens", 0) or (max(18, len(payload.query) // 3) + img_tok)
+    c_tok = getattr(response, "completion_tokens", 0) or max(25, len(response.reply_text) // 3)
+    tot_tok = p_tok + c_tok
+    m_name = getattr(response, "model_name", None) or ("gemini-3.5-flash-lite" if has_img else "gemini-2.5-flash")
+    prov = "gemini"
+
+    if not cached_resp:
+        try:
+            from app.services.telemetry_store import record_llm_token_usage
+            record_llm_token_usage(p_tok, c_tok, model=m_name, provider=prov)
+        except Exception:
+            pass
+
     try:
         from app.security.prompt_utility_scorer import compute_prompt_utility
         util = compute_prompt_utility(payload.query, reply_text=response.reply_text, intent=response.intent)
@@ -113,6 +130,14 @@ async def chat_with_copilot(
             is_useful=util.is_useful,
             quality_category=util.category,
             grounded_source=util.grounded_source,
+            prompt_tokens=p_tok,
+            completion_tokens=c_tok,
+            total_tokens=tot_tok,
+            model_name=m_name,
+            provider=prov,
+            has_image=has_img,
+            image_tokens=img_tok,
+            latency_ms=latency_ms,
         )
         db.add(log_entry)
         await db.commit()

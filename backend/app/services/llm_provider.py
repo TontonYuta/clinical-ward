@@ -277,8 +277,23 @@ async def _call_gemini_vision_ocr(
                                 raw_text = raw_text.rsplit("```", 1)[0]
                             parsed = json.loads(raw_text.strip())
                             if isinstance(parsed, dict):
+                                usage = data.get("usageMetadata", {})
+                                p_tok = usage.get("promptTokenCount") or (len(ocr_prompt) // 4 + 258)
+                                c_tok = usage.get("candidatesTokenCount") or max(40, len(raw_text) // 4)
+                                img_tok = 258
                                 parsed["_model_used"] = model
                                 parsed["_provider"] = "gemini"
+                                parsed["_prompt_tokens"] = p_tok
+                                parsed["_completion_tokens"] = c_tok
+                                parsed["_total_tokens"] = p_tok + c_tok
+                                parsed["_image_tokens"] = img_tok
+                                try:
+                                    from app.services.telemetry_store import record_llm_token_usage
+                                    from app.services.admin_key_vault import record_key_consumption
+                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                    record_key_consumption(key, p_tok + c_tok)
+                                except Exception:
+                                    pass
                                 if "items" not in parsed or not isinstance(parsed.get("items"), list):
                                     parsed["items"] = []
                                 doc_t = str(parsed.get("document_type") or "PRESCRIPTION").upper()
@@ -638,8 +653,23 @@ async def query_clinical_multimodal_chat(
                                 raw_text = match.group(1)
                             parsed = json.loads(raw_text)
                             if isinstance(parsed, dict):
+                                usage = data.get("usageMetadata", {})
+                                p_tok = usage.get("promptTokenCount") or (len(prompt_text) // 4 + 258)
+                                c_tok = usage.get("candidatesTokenCount") or max(30, len(raw_text) // 4)
+                                img_tok = 258
                                 parsed["_model_used"] = model
                                 parsed["_provider"] = "gemini"
+                                parsed["_prompt_tokens"] = p_tok
+                                parsed["_completion_tokens"] = c_tok
+                                parsed["_total_tokens"] = p_tok + c_tok
+                                parsed["_image_tokens"] = img_tok
+                                try:
+                                    from app.services.telemetry_store import record_llm_token_usage
+                                    from app.services.admin_key_vault import record_key_consumption
+                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                    record_key_consumption(key, p_tok + c_tok)
+                                except Exception:
+                                    pass
                                 return parsed
             except Exception as e:
                 logger.debug("Clinical vision chat model %s failed: %s", model, e)

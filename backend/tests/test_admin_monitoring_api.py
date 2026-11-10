@@ -20,6 +20,13 @@ async def test_admin_telemetry_overview():
         assert isinstance(data["bhyt_logs"], list)
         assert len(data.get("intent_distribution", [])) >= 3
         assert len(data.get("timeline_trend", [])) >= 5
+        if data.get("recent_events"):
+            first = data["recent_events"][0]
+            assert "prompt_tokens" in first
+            assert "completion_tokens" in first
+            assert "total_tokens" in first
+            assert "model_name" in first
+            assert "has_image" in first
 
 @pytest.mark.asyncio
 async def test_admin_key_vault_crud():

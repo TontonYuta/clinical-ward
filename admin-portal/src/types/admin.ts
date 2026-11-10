@@ -37,11 +37,18 @@ export interface BudgetCapResponse {
 export interface TelemetryEventItem {
   id: string;
   timestamp: string;
-  event_type: 'CACHE_HIT' | 'ADAPTIVE_RAG' | 'BHYT_SUBSTITUTION' | 'DDI_BLOCKED' | 'GUARDRAIL_BLOCKED';
+  event_type: 'CACHE_HIT' | 'ADAPTIVE_RAG' | 'BHYT_SUBSTITUTION' | 'DDI_BLOCKED' | 'GUARDRAIL_BLOCKED' | 'VISION_OCR_BHYT' | 'MULTIMODAL_CLINICAL_VISION' | string;
   query: string;
   user_role: string;
   latency_ms: number;
   tokens: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  model_name?: string;
+  provider?: string;
+  has_image?: boolean;
+  image_tokens?: number;
   status: 'success' | 'blocked' | 'fallback';
   reply_text?: string;
   intent?: string;

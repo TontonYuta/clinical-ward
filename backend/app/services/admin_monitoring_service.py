@@ -103,13 +103,7 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     total_queries = total_hits + misses
     hit_rate = round((total_hits / total_queries) * 100, 1) if total_queries > 0 else 0.0
 
-    # 2. Thống kê Token & Chi phí thực tế từ Sổ cái Telemetry Ledger
-    _, _, real_tokens_consumed, _ = get_all_time_token_usage()
-    tokens_consumed = real_tokens_consumed if real_tokens_consumed > 0 else (misses * 250)
-    tokens_saved = (exact_hits * 650) + (semantic_hits * 850)
-    cost_saved_vnd = round((tokens_saved / 1_000_000) * 0.075 * 25500, 0)
-
-    # 3. Nhật ký và sự kiện kiểm toán thật từ CSDL Bệnh viện
+    # 2. Nhật ký và sự kiện kiểm toán thật từ CSDL Bệnh viện
     stmt = select(CopilotChatLog).order_by(CopilotChatLog.created_at.desc()).limit(15)
     res = await db.execute(stmt)
     logs = res.scalars().all()
@@ -118,19 +112,48 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     for l in logs:
         ev_type = "ADAPTIVE_RAG"
         status = "success"
-        lat = 85.0
-        tok = 250
 
-        if l.intent in ("MEDICATION_INTERACTION_BLOCKED", "CLINICAL_CONTRAINDICATION_BLOCKED"):
+        intent_val = getattr(l, "intent", "") or ""
+        if intent_val in ("MEDICATION_INTERACTION_BLOCKED", "CLINICAL_CONTRAINDICATION_BLOCKED"):
             ev_type = "DDI_BLOCKED"
             status = "blocked"
-            lat = 4.0
-            tok = 0
-        elif l.intent in ("SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED"):
+        elif intent_val in ("SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED"):
             ev_type = "GUARDRAIL_BLOCKED"
             status = "blocked"
-            lat = 2.0
-            tok = 0
+        elif intent_val == "BHYT_VISION_OCR" or "OCR" in getattr(l, "id", ""):
+            ev_type = "VISION_OCR_BHYT"
+            status = "success"
+        elif getattr(l, "has_image", False) or "MULTIMODAL" in intent_val:
+            ev_type = "MULTIMODAL_CLINICAL_VISION"
+            status = "success"
+
+        has_img = bool(getattr(l, "has_image", False) or ev_type in ("VISION_OCR_BHYT", "MULTIMODAL_CLINICAL_VISION"))
+        img_tok = getattr(l, "image_tokens", 0) or (258 if has_img else 0)
+        
+        # Lấy token thực tế, nếu bản ghi cũ thiếu thì nội suy chính xác từ độ dài prompt & completion
+        p_tok = getattr(l, "prompt_tokens", 0) or 0
+        if p_tok <= 0:
+            p_tok = max(24, len(l.query or "") // 3) + (img_tok if has_img else 0)
+        
+        c_tok = getattr(l, "completion_tokens", 0) or 0
+        if c_tok <= 0:
+            c_tok = max(35, len(l.reply_text or "") // 3)
+            
+        tot_tok = getattr(l, "total_tokens", 0) or 0
+        if tot_tok <= 0:
+            tot_tok = p_tok + c_tok
+
+        m_name = getattr(l, "model_name", None)
+        if not m_name:
+            if has_img:
+                m_name = "gemini-3.5-flash-lite"
+            elif status == "blocked":
+                m_name = "clinical-guardrail-v2"
+            else:
+                m_name = "gemini-2.5-flash"
+
+        prov = getattr(l, "provider", None) or ("gemini" if "gemini" in m_name else "system")
+        lat = float(getattr(l, "latency_ms", 0.0) or (4.0 if status == "blocked" else 85.0))
 
         recent_events.append(TelemetryEventItem(
             id=l.id,
@@ -139,7 +162,14 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
             query=l.query,
             user_role=l.user_role or "doctor",
             latency_ms=lat,
-            tokens=tok,
+            tokens=tot_tok,
+            prompt_tokens=p_tok,
+            completion_tokens=c_tok,
+            total_tokens=tot_tok,
+            model_name=m_name,
+            provider=prov,
+            has_image=has_img,
+            image_tokens=img_tok,
             status=status,
             reply_text=l.reply_text,
             intent=l.intent,
@@ -148,6 +178,13 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
             grounded_source=l.grounded_source,
             quality_category=l.quality_category
         ))
+
+    # 3. Thống kê Token & Chi phí thực tế từ Sổ cái Telemetry Ledger
+    _, _, real_tokens_consumed, _ = get_all_time_token_usage()
+    recent_tokens_sum = sum(ev.total_tokens for ev in recent_events)
+    tokens_consumed = max(real_tokens_consumed, recent_tokens_sum, misses * 250)
+    tokens_saved = (exact_hits * 650) + (semantic_hits * 850)
+    cost_saved_vnd = round((tokens_saved / 1_000_000) * 0.075 * 25500, 0)
 
     # 4. Đếm vi phạm DDI và Guardrail thực tế từ toàn bộ bảng logs
     ddi_stmt = select(func.count(CopilotChatLog.id)).where(

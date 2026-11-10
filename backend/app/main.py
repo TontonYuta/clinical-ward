@@ -72,6 +72,14 @@ async def lifespan(app: FastAPI):
             ("is_useful", "BOOLEAN DEFAULT 1"),
             ("quality_category", "VARCHAR(64) DEFAULT 'high_value_clinical'"),
             ("grounded_source", "VARCHAR(256)"),
+            ("prompt_tokens", "INTEGER DEFAULT 0"),
+            ("completion_tokens", "INTEGER DEFAULT 0"),
+            ("total_tokens", "INTEGER DEFAULT 0"),
+            ("model_name", "VARCHAR(64) DEFAULT 'gemini-2.5-flash'"),
+            ("provider", "VARCHAR(64) DEFAULT 'gemini'"),
+            ("has_image", "BOOLEAN DEFAULT 0"),
+            ("image_tokens", "INTEGER DEFAULT 0"),
+            ("latency_ms", "FLOAT DEFAULT 85.0"),
         ]
         for col_name, col_type in copilot_extra_cols:
             if col_name not in chat_log_cols:

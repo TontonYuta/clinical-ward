@@ -48,6 +48,12 @@ class CopilotResponse(BaseModel):
     factuality_score: float | None = None
     critique_verdict: str | None = None
     cdss_alert: CopilotCdssAlert | None = None
+    prompt_tokens: int | None = 0
+    completion_tokens: int | None = 0
+    total_tokens: int | None = 0
+    model_name: str | None = "gemini-2.5-flash"
+    has_image: bool | None = False
+    image_tokens: int | None = 0
 
 class RagQuery(BaseModel):
     query: str = Field(..., min_length=1, max_length=1500)
