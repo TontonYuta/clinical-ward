@@ -332,12 +332,14 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 or getattr(nlu_res, "is_deictic_referent", False)
                 or is_field_inquiry
             )
+            from app.services.chatbot.gemini_nlu_router import _has_explicit_context_reference
+            has_explicit_context_reference = _has_explicit_context_reference(query)
             # Never trust an LLM-extracted medication that has no support in
             # the current query or the explicitly referenced session context.
             # This prevents unrelated turns from entering the medication RAG
             # path and wasting a second generation call.
             current_medication_supported = bool(
-                has_contextual_entity
+                has_explicit_context_reference and has_contextual_entity
                 or get_drug_lexical_matcher().extract_medications(query)
                 or resolve_registered_medications(query)
                 or find_matched_med(query.lower())
