@@ -63,62 +63,14 @@ def _evaluate_claim_support(
     evidence_unacc: str
 ) -> Tuple[str, float]:
     """Evaluate whether a clinical claim is supported by evidence ([IsSup] reflection token)."""
-    claim_lower = claim.casefold()
-    claim_unacc = _strip_diacritics(claim)
-
-    claim_words = {w for w in re.findall(r"\w{2,}", claim_lower) if w not in _QUERY_STOPWORDS}
-    if not claim_words:
+    normalized_claim = " ".join(re.findall(r"[\w]+", _strip_diacritics(claim).casefold()))
+    normalized_evidence = " ".join(re.findall(r"[\w]+", _strip_diacritics(evidence_text).casefold()))
+    if normalized_claim and normalized_claim in normalized_evidence and _claim_quantities_are_present(claim, evidence_text):
         return "FULLY_SUPPORTED", 1.0
-
-    # Check word overlap
-    matched_words = {w for w in claim_words if w in evidence_text}
-    overlap_ratio = len(matched_words) / len(claim_words)
-
-    # Check dosage and quantity preservation
-    claim_dosages = _extract_numbers_and_units(claim)
-    if claim_dosages:
-        evidence_dosages = _extract_numbers_and_units(evidence_text)
-        missing_dosages = claim_dosages - evidence_dosages
-        # If numbers like 400mg appear in claim but evidence has none of them, penalize
-        if missing_dosages and len(missing_dosages) == len(claim_dosages):
-            return "UNSUPPORTED", round(overlap_ratio * 0.4, 3)
-
-    if overlap_ratio >= 0.65 or claim_unacc in evidence_unacc:
-        return "FULLY_SUPPORTED", round(overlap_ratio, 3)
-    elif overlap_ratio >= 0.35:
-        return "PARTIALLY_SUPPORTED", round(overlap_ratio, 3)
-    else:
-        return "UNSUPPORTED", round(overlap_ratio, 3)
+    return "UNSUPPORTED", 0.0
 
 def _detect_safety_contradictions(claim: str, query: str) -> Optional[str]:
-    """Detect fatal clinical contradictions against established safety guidelines."""
-    c_lower = claim.casefold()
-    q_lower = query.casefold()
-
-    # Rule 1: Metformin in Severe Renal Impairment (ClCr < 30)
-    has_severe_renal = any(t in q_lower or t in c_lower for t in ("clcr < 30", "clcr dưới 30", "egfr < 30", "suy thận nặng"))
-    if has_severe_renal and "metformin" in c_lower:
-        if any(safe in c_lower for safe in ("ngừng", "chống chỉ định", "tránh", "không dùng", "bỏ", "chuyển sang")):
-            pass
-        elif any(unsafe in c_lower for unsafe in ("uống", "dùng liều", "tiếp tục", "kê", "khuyên dùng")):
-            return "FATAL_CONTRADICTION: Metformin is contraindicated when ClCr < 30 mL/min (Lactic Acidosis risk)."
-
-    # Rule 2: Macrolide + Statin combination
-    has_macrolide = any(m in c_lower for m in ("macrolid", "clarithromycin", "erythromycin"))
-    has_statin = any(s in c_lower for s in ("statin", "simvastatin", "atorvastatin"))
-    if has_macrolide and has_statin:
-        if any(unsafe in c_lower for unsafe in ("an toàn", "không có tương tác", "dùng chung tốt", "kết hợp được")):
-            return "FATAL_CONTRADICTION: Macrolide + Statin is contraindicated (CYP3A4 inhibition & Rhabdomyolysis risk)."
-
-    # Rule 3: ACEI / ARB in pregnancy
-    has_preg = any(p in q_lower or p in c_lower for p in ("thai kỳ", "có thai", "mang thai", "phụ nữ mang thai"))
-    has_raas = any(r in c_lower for r in ("acei", "arb", "coversyl", "perindopril", "enalapril", "losartan"))
-    if has_preg and has_raas:
-        if any(safe in c_lower for safe in ("chống chỉ định", "ngừng", "độc tính", "tránh")):
-            pass
-        elif any(unsafe in c_lower for unsafe in ("dùng an toàn", "lựa chọn đầu tay", "hạ áp an toàn")):
-            return "FATAL_CONTRADICTION: ACEi/ARB are strictly contraindicated in pregnancy (Category X fetotoxicity)."
-
+    """No domain exception list is maintained here; resolve against source claims."""
     return None
 
 class SelfRagVerifier:
@@ -135,12 +87,12 @@ class SelfRagVerifier:
         claims = _extract_clinical_claims(answer)
         if not claims:
             return {
-                "factuality_score": 1.0,
-                "hallucination_rate": 0.0,
-                "critique_verdict": "PASS",
+                "factuality_score": 0.0,
+                "hallucination_rate": 1.0,
+                "critique_verdict": "NOT_VERIFIABLE",
                 "claims_audit": [],
                 "cleaned_answer": answer,
-                "audit_summary": "Không có mệnh đề lâm sàng độc lập cần kiểm chứng."
+                "audit_summary": "Không trích xuất được mệnh đề để kiểm chứng."
             }
 
         # Build master evidence text
@@ -231,3 +183,81 @@ def verify_clinical_answer(
 ) -> Dict[str, Any]:
     """Helper functional API for Self-RAG verification."""
     return _VERIFIER.audit_and_critique(query, answer, retrieved_chunks, kg_data)
+
+
+def verify_answer_claims(claims, evidence_records: list[dict]) -> dict:
+    """Conservatively validate claim/evidence links without treating word overlap as proof."""
+    from app.schemas.copilot import AnswerClaim
+
+    evidence_by_id = {
+        item.get("evidence_id"): item
+        for item in evidence_records
+        if isinstance(item, dict) and item.get("evidence_id")
+    }
+    verified_claims = []
+    all_supported = bool(claims)
+    for raw_claim in claims:
+        claim = raw_claim if isinstance(raw_claim, AnswerClaim) else AnswerClaim.model_validate(raw_claim)
+        referenced = [evidence_by_id.get(evidence_id) for evidence_id in claim.evidence_ids]
+        supported = bool(referenced) and all(
+            evidence is not None
+            and evidence.get("source_id")
+            and _normalized_version_is_verified(evidence.get("source_version"))
+            for evidence in referenced
+        )
+        if supported and claim.claim_type == "source_fact":
+            supported = any(
+                _normalize_claim_text(claim.text) in _normalize_claim_text(str(evidence.get("content") or ""))
+                and _claim_quantities_are_present(claim.text, str(evidence.get("content") or ""))
+                for evidence in referenced
+            )
+        else:
+            # No configured semantic entailment model: inference cannot be auto-verified.
+            supported = False
+        provenance_valid = bool(referenced) and all(
+            evidence is not None
+            and evidence.get("source_id")
+            and _normalized_version_is_verified(evidence.get("source_version"))
+            for evidence in referenced
+        )
+        if supported:
+            status = "supported"
+        elif not referenced or any(e is None for e in referenced):
+            status = "unsupported"
+        elif not provenance_valid:
+            status = "insufficient_evidence"
+        elif claim.claim_type == "source_fact" and any(
+            _normalize_claim_text(claim.text) in _normalize_claim_text(str(evidence.get("content") or ""))
+            or _claim_quantity_mismatch(claim.text, str(evidence.get("content") or ""))
+            for evidence in referenced
+        ):
+            status = "unsupported"
+        else:
+            status = "insufficient_evidence"
+        claim.support_status = status
+        all_supported = all_supported and supported
+        verified_claims.append(claim)
+    return {"claims": verified_claims, "all_supported": all_supported}
+
+
+def _normalized_version_is_verified(value: object) -> bool:
+    normalized = str(value or "").strip().casefold()
+    return bool(normalized) and normalized not in {"unknown", "none", "unversioned"}
+
+
+def _normalize_claim_text(value: str) -> str:
+    return " ".join(re.findall(r"[\w]+", _strip_diacritics(value).casefold()))
+
+
+def _claim_quantities_are_present(claim: str, evidence: str) -> bool:
+    quantities = _extract_numbers_and_units(claim)
+    evidence_quantities = _extract_numbers_and_units(evidence)
+    return quantities.issubset(evidence_quantities)
+
+
+def _claim_quantity_mismatch(claim: str, evidence: str) -> bool:
+    claim_quantities = _extract_numbers_and_units(claim)
+    evidence_quantities = _extract_numbers_and_units(evidence)
+    claim_values = {re.match(r"\d+(?:[.,]\d+)?", item).group(0) for item in claim_quantities if re.match(r"\d+(?:[.,]\d+)?", item)}
+    evidence_values = {re.match(r"\d+(?:[.,]\d+)?", item).group(0) for item in evidence_quantities if re.match(r"\d+(?:[.,]\d+)?", item)}
+    return bool(claim_values & evidence_values) and not claim_quantities.issubset(evidence_quantities)

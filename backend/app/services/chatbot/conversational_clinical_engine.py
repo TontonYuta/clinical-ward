@@ -5,7 +5,15 @@ high-IQ clinical dialogues (Med-PaLM 2 / Gemini Health benchmark) with 100% veri
 """
 import re
 from typing import Optional, List, Dict, Any
-from app.schemas.copilot import CopilotResponse
+from app.schemas.copilot import (
+    CopilotResponse,
+    ClinicalSummary,
+    StructuredClinicalPayload,
+    DrugIdentitySchema,
+    DosageMatrixSchema,
+    DosageDetailSchema,
+    DdiFindingSchema,
+)
 from app.services.copilot_drug_citation_helper import (
     format_clinical_text,
     build_drug_citation,
@@ -14,6 +22,63 @@ from app.services.copilot_drug_citation_helper import (
 )
 from app.services.chatbot.smart_chip_engine import generate_smart_clinical_chips
 from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
+
+def _link_medication_profile_evidence(response: CopilotResponse, monograph: Any) -> CopilotResponse:
+    """Attach versioned evidence from the exact database monograph used to compose the reply."""
+    # Provenance can support a factual answer, but must never promote an
+    # already rejected/unverified response back to a grounded one.
+    if response.answer_type == "safe_abstention" or not response.rag_grounded or (
+        response.confidence is not None and response.confidence <= 0
+    ):
+        return response
+    if not monograph or not getattr(monograph, "source_id", None) or not getattr(monograph, "source_version", None):
+        return response
+    fields = ("indications", "adult_dosage", "pediatric_dosage", "contraindications",
+              "precautions", "renal_adjustment", "hepatic_adjustment", "pregnancy_warning",
+              "adverse_effects", "drug_interactions", "overdose_treatment", "antidote")
+    content = "\n".join(f"{field}: {value}" for field in fields
+                        if (value := str(getattr(monograph, field, None) or "").strip()))
+    if not content:
+        return response
+
+    chunk_id = f"monograph:{monograph.id}:profile"
+    mono_section = monograph.title or monograph.inn or "Chuyên luận Dược thư"
+
+    citation = next((item for item in response.citations or [] if item.get("document_id") == "dtqg-v2-2015"), None)
+    if citation is not None:
+        citation.update({
+            "chunk_id": chunk_id,
+            "source_id": monograph.source_id,
+            "source_version": monograph.source_version,
+            "section": mono_section,
+        })
+    else:
+        new_citation = {
+            "chunk_id": chunk_id,
+            "source": monograph.source or "Dược thư Quốc gia Việt Nam",
+            "legal_basis": monograph.source or "Dược thư Quốc gia Việt Nam",
+            "section": mono_section,
+            "excerpt": content[:200],
+            "document_id": "dtqg-v2-2015",
+            "source_id": monograph.source_id,
+            "source_version": monograph.source_version,
+        }
+        if response.citations is None:
+            response.citations = []
+        response.citations.append(new_citation)
+
+    response.evidence = [{
+        "evidence_id": chunk_id,
+        "evidence_type": "document_chunk",
+        "source_id": monograph.source_id,
+        "source_version": monograph.source_version,
+        "chunk_id": chunk_id,
+        "source_name": monograph.source or "Dược thư Quốc gia Việt Nam",
+        "section": mono_section,
+        "content": content,
+    }]
+    response.rag_grounded = True
+    return response
 
 def get_clinical_persona_greeting(user_name: str, user_role: str) -> str:
     role_lower = (user_role or "").lower()
@@ -27,7 +92,12 @@ def get_clinical_persona_greeting(user_name: str, user_role: str) -> str:
     return "Chào Quý đồng nghiệp y tế,"
 
 
-def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: bool = False) -> list[str]:
+def format_hierarchical_dosage(
+    raw_adult: str,
+    raw_pediatric: str,
+    is_detailed: bool = False,
+    target_audience: Optional[str] = None
+) -> list[str]:
     """Định dạng Liều dùng & Cách dùng phân cấp chuẩn Y khoa, chống lặp prefix đối tượng và rách dòng."""
     clean_ad = (raw_adult or "").strip()
     clean_pd = (raw_pediatric or "").strip()
@@ -38,6 +108,11 @@ def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: 
         clean_ad = ad_part.strip()
         if not clean_pd or len(clean_pd) < 50:
             clean_pd = ped_part.strip()
+
+    if target_audience == "adult":
+        clean_pd = ""
+    elif target_audience == "pediatric":
+        clean_ad = ""
 
     def clean_bullet(text: str) -> str:
         text = re.sub(r'^(?:Người lớn|Trẻ em|Cách dùng|Liều lượng):\s*', '', text, flags=re.IGNORECASE)
@@ -57,9 +132,9 @@ def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: 
         if is_detailed and general_admin and len(general_admin) > 20:
             gen_chunks = [clean_bullet(c) for c in split_clinical_chunks(general_admin) if len(clean_bullet(c)) > 15]
             if gen_chunks:
-                lines.append("  - **Cách dùng chung:**")
+                lines.append("- **Cách dùng chung:**")
                 for gc in gen_chunks[:3]:
-                    lines.append(f"    + {gc}")
+                    lines.append(f"  - {gc}")
 
         adult_chunks = [clean_bullet(c) for c in split_clinical_chunks(dose_body) if len(clean_bullet(c)) > 5]
 
@@ -79,27 +154,27 @@ def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: 
                 other_items.append(c)
 
         if oral_items or rectal_items or iv_items:
-            lines.append("  - **Người lớn:**")
+            lines.append("- **Người lớn:**")
             if oral_items:
-                lines.append(f"    + **Đường uống:** {' '.join(oral_items)}")
+                lines.append(f"  - **Đường uống:** {' '.join(oral_items)}")
             if rectal_items:
-                lines.append(f"    + **Đặt trực tràng:** {' '.join(rectal_items)}")
+                lines.append(f"  - **Đặt trực tràng:** {' '.join(rectal_items)}")
             if iv_items:
-                lines.append(f"    + **Truyền tĩnh mạch (15 phút):** {' '.join(iv_items)}")
+                lines.append(f"  - **Truyền tĩnh mạch (15 phút):** {' '.join(iv_items)}")
             for ot in other_items:
                 if "không được vượt quá" in ot.lower() or "tối đa" in ot.lower():
-                    lines.append(f"    + *Lưu ý an toàn liều tối đa:* {ot}")
+                    lines.append(f"  - *Lưu ý an toàn liều tối đa:* {ot}")
                 else:
-                    lines.append(f"    + {ot}")
+                    lines.append(f"  - {ot}")
         elif adult_chunks:
-            lines.append("  - **Người lớn:**")
+            lines.append("- **Người lớn:**")
             bullets = adult_chunks if is_detailed else adult_chunks[:2]
             for b in bullets:
-                lines.append(f"    + {b}")
+                lines.append(f"  - {b}")
 
     # 3. Xử lý liều Nhi khoa
     if clean_pd and clean_pd != "Tính liều theo cân nặng (mg/kg) hoặc diện tích da":
-        lines.append("  - **Trẻ em:**")
+        lines.append("- **Trẻ em:**")
         ped_chunks = [clean_bullet(c) for c in split_clinical_chunks(clean_pd) if len(clean_bullet(c)) > 5]
 
         ped_oral, ped_rectal, ped_iv, ped_other = [], [], [], []
@@ -131,23 +206,23 @@ def format_hierarchical_dosage(raw_adult: str, raw_pediatric: str, is_detailed: 
         if ped_oral or ped_rectal or ped_iv:
             if ped_oral:
                 items = ped_oral if is_detailed else ped_oral[:2]
-                lines.append("    + **Đau & Sốt (Đường uống):**")
+                lines.append("  - **Đau & Sốt (Đường uống):**")
                 for it in items:
-                    lines.append(f"      * {it}")
+                    lines.append(f"    - {it}")
             if ped_rectal and is_detailed:
-                lines.append("    + **Đặt trực tràng:**")
+                lines.append("  - **Đặt trực tràng:**")
                 for it in ped_rectal:
-                    lines.append(f"      * {it}")
+                    lines.append(f"    - {it}")
             if ped_iv and is_detailed:
-                lines.append("    + **Truyền tĩnh mạch (15 phút - tính theo cân nặng):**")
+                lines.append("  - **Truyền tĩnh mạch (15 phút - tính theo cân nặng):**")
                 for it in ped_iv:
-                    lines.append(f"      * {it}")
+                    lines.append(f"    - {it}")
             for ot in ped_other:
-                lines.append(f"    + {ot}")
+                lines.append(f"  - {ot}")
         else:
             bullets = ped_chunks if is_detailed else ped_chunks[:2]
             for b in bullets:
-                lines.append(f"    + {b}")
+                lines.append(f"  - {b}")
 
     return lines
 
@@ -204,7 +279,7 @@ async def build_fluent_drug_profile_response(
     """Xây dựng phản hồi tra cứu thuốc liền mạch, súc tích chuẩn PaperQA2 Evidence Synthesis."""
     greeting = get_clinical_persona_greeting(user_name, user_role)
     clean_name = matched_drug.brand_name.split("(")[0].strip()
-    active_ing = matched_drug.active_ingredient or "Hoạt chất chuẩn"
+    active_ing = matched_drug.active_ingredient or ""
     q_lower = query.lower()
 
     # Bóc tách dữ liệu chuẩn DĐVN V
@@ -215,6 +290,14 @@ async def build_fluent_drug_profile_response(
     renal = (monograph.renal_adjustment if monograph and monograph.renal_adjustment else None) or matched_drug.renal_adjustment or ""
     preg = (monograph.pregnancy_warning if monograph and monograph.pregnancy_warning else None) or matched_drug.pregnancy_warning or ""
     adr = (monograph.adverse_effects if monograph and monograph.adverse_effects else None) or matched_drug.adverse_effects or ""
+    # Source identity must come from the exact record used for the answer. A
+    # second name-based lookup cannot prove that its fields match this record.
+    artifact_monograph = None
+    has_monograph_provenance = bool(
+        monograph
+        and getattr(monograph, "source_id", None)
+        and getattr(monograph, "source_version", None)
+    )
 
     has_real_clinical_data = bool(monograph and (ind or adult_d or contra)) or bool(ind or adult_d or contra)
     if not has_real_clinical_data:
@@ -235,7 +318,8 @@ async def build_fluent_drug_profile_response(
                 source_status="retrieved_evidence",
                 confidence=rag_res.confidence_score,
                 rag_grounded=True,
-                citations=[c.to_dict() for c in rag_res.citations]
+                citations=[c.to_dict() for c in rag_res.citations],
+                evidence=list(getattr(rag_res, "evidence", []) or [])
             )
 
     # Tra cứu tương tác QĐ 5948
@@ -248,9 +332,9 @@ async def build_fluent_drug_profile_response(
             seen.add(p)
             top_ddi_list.append(f"**{p}** ({d.get('severity')}: {d.get('consequence')})")
 
-    ddi_summary = "; ".join(top_ddi_list[:3]) if top_ddi_list else "Chưa ghi nhận tương tác chống chỉ định nguy hiểm theo Quyết định 5948/QĐ-BYT."
+    ddi_summary = "; ".join(top_ddi_list[:3])
 
-    source_str = (monograph.source if monograph and monograph.source else matched_drug.clinical_source) or "Dược thư Quốc gia Việt Nam (DĐVN V) & Cục Quản lý Dược (DAV)"
+    source_str = (monograph.source if monograph and monograph.source else matched_drug.clinical_source) or ""
 
     # RAG Retrieval: Lấy chunks thực tế từ CSDL RAG FTS
     from app.services.rag.hybrid_retriever import HybridRetriever
@@ -266,13 +350,60 @@ async def build_fluent_drug_profile_response(
         if clean_name.lower() in r.chunk.title.lower() or active_ing.lower() in r.chunk.title.lower()
         or clean_name.lower() in r.chunk.content.lower() or active_ing.lower() in r.chunk.content.lower()
     ]
+    direct_chunks = [
+        r for r in relevant_chunks
+        if r.chunk.title.casefold().strip().startswith(active_ing.casefold())
+        or r.chunk.page_or_section.casefold().strip().startswith(active_ing.casefold())
+    ]
+    if direct_chunks:
+        relevant_chunks = direct_chunks
+    # FTS can rank incidental mentions (for example methionine as paracetamol's antidote)
+    # above the drug's own monograph. Ensure the matching source chunk is considered.
+    query_facets = []
+    if any(term in q_lower for term in ("liều", "dosage", "dose")):
+        query_facets.append("dosage")
+    if any(term in q_lower for term in ("chống chỉ định", "chong chi dinh")):
+        query_facets.append("safety")
+    if any(term in q_lower for term in ("tương tác", "tac dung phu", "quá liều", "ngo doc")):
+        query_facets.append("inter")
+    for chunk in retriever.all_chunks:
+        title = chunk.title.casefold()
+        has_direct_drug = clean_name.casefold() in title or active_ing.casefold() in title
+        if has_direct_drug and any(facet in chunk.chunk_id.casefold() for facet in query_facets):
+            if chunk.source_version and all(item.chunk.chunk_id != chunk.chunk_id for item in relevant_chunks):
+                from app.services.rag.types import RetrievedChunk
+                relevant_chunks.append(RetrievedChunk(chunk=chunk, score=0.0, match_reasons=["direct monograph subject and requested facet"]))
 
     citations = []
     if relevant_chunks:
         citations = [c.to_dict() for c in build_claim_citations(relevant_chunks)]
+        # Do not claim indexed clinical fields are DB-grounded unless the DB row
+        # itself has an independently recorded source artifact/version.
+    if not has_monograph_provenance:
+        relevant_chunks = []
+        citations = []
 
-    if not citations:
+    if not citations and has_monograph_provenance:
         citations = [build_drug_citation(matched_drug, monograph, source_str)]
+    else:
+        citations = [c for c in citations if c.get("chunk_id") in {r.chunk.chunk_id for r in relevant_chunks if r.chunk.source_version}]
+
+    linked_evidence = []
+    cited_chunk_ids = {c.get("chunk_id") for c in citations if isinstance(c, dict) and c.get("chunk_id")}
+    for retrieved in relevant_chunks:
+        chunk = retrieved.chunk
+        if chunk.chunk_id not in cited_chunk_ids:
+            continue
+        linked_evidence.append({
+            "evidence_id": f"document:{chunk.chunk_id}",
+            "evidence_type": "document_chunk",
+            "source_id": chunk.source_id or chunk.source_doc,
+            "source_version": chunk.source_version,
+            "chunk_id": chunk.chunk_id,
+            "source_name": chunk.source_doc,
+            "section": chunk.page_or_section,
+            "content": chunk.content,
+        })
 
     is_detailed = any(w in q_lower for w in [
         "chi tiết", "chi tiet", "toàn văn", "toan van", "đầy đủ", "day du",
@@ -284,13 +415,14 @@ async def build_fluent_drug_profile_response(
     hepatic = (monograph.hepatic_adjustment if monograph and monograph.hepatic_adjustment else None) or ""
 
     drug_header = clean_name if (active_ing.lower() in clean_name.lower() or clean_name.lower() in active_ing.lower()) else f"{clean_name} ({active_ing})"
-    token = extract_inline_citation_token(source_str)
+    token = extract_inline_citation_token(source_str) if source_str else ""
 
     # 1. Định danh thuốc
-    header_block = (
-        f"{greeting} gửi thông tin chuyên môn về **{drug_header}** (theo Dược thư Quốc gia Việt Nam):\n\n"
-        f"• **Hoạt chất chính:** **{active_ing}** | **Số đăng ký (DAV):** `{matched_drug.national_code}` | **Dạng bào chế:** {matched_drug.dosage_form or 'Đạt chuẩn DĐVN V'}"
-    )
+    header_block = f"{greeting} gửi thông tin chuyên môn về **{drug_header}**:\n\n"
+    if matched_drug.active_ingredient:
+        header_block += f"• **Hoạt chất chính:** **{matched_drug.active_ingredient}**"
+        if matched_drug.dosage_form:
+            header_block += f" ({matched_drug.dosage_form})"
 
     sections = [header_block]
 
@@ -363,21 +495,87 @@ async def build_fluent_drug_profile_response(
         sections.append(f"• **Tồn kho nội viện:** Hiện còn {stock} {matched_drug.standard_unit} (Vị trí kho: `{location}`).")
 
     # 8. Kết luận với duy nhất 1 tag nguồn ở cuối phản hồi
-    reply_text = "\n\n".join(sections) + f"\n\nNguồn: {token}"
+    reply_text = "\n\n".join(sections) + (f"\n\nNguồn: {token}" if token else "")
+    has_factual_clinical_content = any((ind, adult_d, ped_d, contra, renal, preg, adr, overdose, hepatic)) or bool(top_ddi_list)
+    source_chunk_ids = {r.chunk.chunk_id for r in retrieved_chunks if r.chunk.source_version}
+    has_source_linked_chunk = bool(source_chunk_ids.intersection(cited_chunk_ids))
+    has_source_linked_monograph = bool(
+        has_monograph_provenance
+        and citations
+        and any(
+            citation.get("source_id") == monograph.source_id
+            and citation.get("source_version") == monograph.source_version
+            for citation in citations
+        )
+    )
+    sourced = bool(has_source_linked_monograph or has_source_linked_chunk) or not has_factual_clinical_content
     chips = generate_smart_clinical_chips(query, drug_name=clean_name, active_ingredient=active_ing)
 
-    return CopilotResponse(
+    # Xây dựng Structured Output Contract
+    summary_obj = None
+    payload_obj = None
+    if sourced:
+        headline = f"Thông tin Dược thư: {drug_header}"
+        takeaway = f"Hoạt chất {active_ing}." if active_ing else headline
+        if clean_ind and clean_ind != "Theo đơn chỉ định chuyên khoa":
+            takeaway += f" Chỉ định: {clean_ind[:120]}"
+        summary_obj = ClinicalSummary(headline=headline, key_takeaway=takeaway, urgency="routine")
+
+        adult_schema = DosageDetailSchema(standard_dose=str(adult_d).strip()) if adult_d else None
+        ped_schema = DosageDetailSchema(standard_dose=str(ped_d).strip()) if ped_d else None
+        dosage_matrix = DosageMatrixSchema(adult=adult_schema, pediatric=ped_schema) if (adult_schema or ped_schema) else None
+
+        ind_list = split_clinical_chunks(clean_ind) if (clean_ind and clean_ind != "Theo đơn chỉ định chuyên khoa") else []
+        contra_list = split_clinical_chunks(clean_contra) if clean_contra else []
+        adr_list = split_clinical_chunks(clean_adr) if (clean_adr and clean_adr != "None") else []
+        prec_list = split_clinical_chunks(clean_prec) if (clean_prec and clean_prec != "None") else []
+
+        payload_obj = StructuredClinicalPayload(
+            drug_identity=DrugIdentitySchema(
+                brand_name=clean_name,
+                inn=active_ing or None,
+                national_code=matched_drug.national_code or None,
+                sdk=matched_drug.national_code or None,
+                drug_class=matched_drug.group or None,
+                dosage_form=matched_drug.dosage_form or None,
+            ),
+            dosage_matrix=dosage_matrix,
+            indications=ind_list,
+            contraindications=contra_list,
+            adverse_effects=adr_list,
+            special_warnings=prec_list,
+        )
+
+    response = CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE",
-        reply_text=reply_text,
+        reply_text=reply_text if sourced else "Không thể xác minh nguồn hiện hành cho nội dung chuyên khoa này; vui lòng đối chiếu tài liệu đã được phê duyệt.",
+        clinical_summary=summary_obj,
+        clinical_data=payload_obj,
         legal_basis=source_str,
         suggested_chips=chips,
         session_id=session_id,
-        answer_type="medication_profile",
-        source_status="exact_match",
-        confidence=1.0,
-        rag_grounded=True,
-        citations=citations
+        answer_type="medication_profile" if sourced else "safe_abstention",
+        source_status="exact_match" if sourced else "evidence_provenance_missing",
+        confidence=1.0 if sourced else 0.0,
+        rag_grounded=sourced,
+        abstention_reason=None if sourced else "Không xác minh được evidence có provenance cho nội dung thuốc",
+        citations=citations,
+        evidence=linked_evidence + ([{
+            "evidence_id": f"monograph:{monograph.id}",
+            "evidence_type": "document_chunk",
+            "source_id": monograph.source_id,
+            "source_version": monograph.source_version,
+            "chunk_id": citations[0].get("chunk_id"),
+            "source_name": source_str,
+            "section": monograph.title,
+            "content": "\n".join(
+                str(getattr(monograph, field, None) or "")
+                for field in ("indications", "adult_dosage", "pediatric_dosage", "contraindications", "precautions", "renal_adjustment", "hepatic_adjustment", "pregnancy_warning", "adverse_effects", "drug_interactions", "overdose_treatment", "antidote")
+                if getattr(monograph, field, None)
+            ),
+        }] if sourced and has_source_linked_monograph else [])
     )
+    return _link_medication_profile_evidence(response, monograph)
 
 # ==============================================================================
 # HỆ TRI THỨC LÂM SÀNG CHUYÊN SÂU (DYNAMIC SPECIALTY KNOWLEDGE REGISTRY)
@@ -429,6 +627,10 @@ async def synthesize_specialty_response(
     )
 
     chips = generate_smart_clinical_chips(query)
+    specialty_source = SpecialtyKnowledgeRegistry.get_instance().get_source_metadata()
+    specialty_content = "\n".join([str(bluf or ""), *[str(line) for line in knowledge.get("details", [])], str(warnings or "")]).strip()
+    citation_chunk_id = f"specialty:{specialty_source.get('source_id') or 'unavailable'}:{topic}"
+    sourced = bool(specialty_source.get("source_id") and specialty_source.get("source_version") and specialty_content)
     is_legal_topic = any(k in topic.lower() for k in ["thông tư", "quy chế", "quy định", "nghị định", "luật dược"])
     is_onco_topic = any(k in topic.lower() for k in ["ung thư", "u bướu", "oncology"])
     is_consultation = any(k in query.lower() for k in ["biểu hiện", "triệu chứng", "của gì", "là gì", "thế nào", "như thế nào", "kiêng gì", "dùng thuốc nào", "nên dùng", "sinh hoạt"])
@@ -444,19 +646,41 @@ async def synthesize_specialty_response(
     else:
         chosen_intent = "MEDICATION_SAFETY_PROFILE"
 
+    spec_summary = ClinicalSummary(
+        headline=f"Hướng dẫn chuyên khoa: {topic}",
+        key_takeaway=reply_text[:160].replace("\n", " "),
+        urgency="routine"
+    ) if sourced else None
+    spec_payload = StructuredClinicalPayload(
+        special_warnings=[topic]
+    ) if sourced else None
+
     return CopilotResponse(
         intent=chosen_intent,
         reply_text=reply_text,
+        clinical_summary=spec_summary,
+        clinical_data=spec_payload,
         legal_basis=legal,
         suggested_chips=chips,
         session_id=session_id,
-        answer_type="grounded_reference",
+        answer_type="grounded_reference" if sourced else "safe_abstention",
         source_status=synth_res.source_status,
-        confidence=synth_res.grounded_confidence,
+        confidence=synth_res.grounded_confidence if sourced else 0.0,
+        rag_grounded=sourced,
         citations=[{
             "source": legal,
             "title": topic,
             "section": "Chuyên luận Hướng dẫn Lâm sàng",
-            "legal_basis": legal
-        }]
+            "legal_basis": legal,
+            "chunk_id": citation_chunk_id,
+        }] if sourced else [],
+        evidence=[{
+            "evidence_id": citation_chunk_id,
+            "evidence_type": "document_chunk",
+            **specialty_source,
+            "chunk_id": citation_chunk_id,
+            "source_name": legal,
+            "section": topic,
+            "content": specialty_content,
+        }] if sourced else []
     )

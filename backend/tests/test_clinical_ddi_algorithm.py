@@ -208,3 +208,23 @@ def test_check_pair_returns_insufficient_data_for_unidentified_drugs():
     result = check_pair_endpoint(CheckPairRequest(drug_a="", drug_b=""))
     assert result["source_status"] == "insufficient_data"
     assert result["has_interaction"] is None
+
+def test_unresolved_drug_does_not_hide_verified_pair_alert():
+    from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
+    response = format_multi_ddi_response(["Plavix 75mg", "Nexium 40mg", "thuốc không có trong danh mục"], "kiểm tra tương tác")
+    assert response.answer_type != "safe_abstention"
+    assert response.clinical_data and response.clinical_data.ddi_findings
+    assert any(f.drug_a and f.drug_b for f in response.clinical_data.ddi_findings)
+    assert response.clinical_data.abstention_details
+    assert "thuốc không có trong danh mục" in response.clinical_data.abstention_details.unresolved_entities
+    assert "Chưa đủ dữ liệu để kết luận" in response.reply_text
+    assert "CHƯA XÁC MINH" in response.reply_text
+    assert response.source_status == "partial_unresolved_entities"
+
+def test_unresolved_only_response_does_not_claim_safety_or_crash():
+    from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
+    response = format_multi_ddi_response(["thuốc chưa nhận diện A", "thuốc chưa nhận diện B"], "kiểm tra tương tác")
+    assert response.answer_type == "safe_abstention"
+    assert "Chưa đủ dữ liệu để kết luận" in response.reply_text
+    assert "không có kết luận an toàn" in response.reply_text.casefold()
+    assert not response.citations

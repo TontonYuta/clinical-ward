@@ -38,7 +38,9 @@ async def resolve_active_drug_and_terms(
     is_field_only = not is_complaint and not is_specialty_topic and any(term in lower_query for term in (
         "liều tối đa", "còn liều", "liều dùng", "liều lượng", "tác dụng phụ", "tác dụng không mong muốn",
         "chống chỉ định", "thành phần", "hoạt chất", "chỉ định", "công dụng", "có gây nghiện", "gây nghiện không", "độc tính",
-        "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no", "trước ăn", "sau ăn",
+        "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no", "trước ăn", "sau ăn", "trước/sau ăn", "trước hay sau ăn",
+        "thời điểm", "thời điểm uống", "uống lúc nào", "uống khi nào", "cách uống", "cách dùng",
+        "tóm tắt cho tôi", "tóm tắt lại", "tóm tắt", "chi tiết về thuốc này", "chi tiết thuốc này", "thông tin chi tiết",
         "tiêm nhắc lại", "bao lâu thì tiêm", "tần suất", "mỗi bao lâu",
         "chong chi dinh", "tac dung phu", "lieu dung", "lieu luong", "lieu toi da", "thanh phan", "chi dinh", "cong dung", "tuong tac",
         "trẻ em", "cho trẻ em", "tre em", "cho tre em", "nhi khoa", "cho bé", "cho be", "trẻ nhỏ", "tre nho",
@@ -101,6 +103,8 @@ async def resolve_active_drug_and_terms(
     field_triggers = (
         "liều tối đa", "còn liều", "liều dùng", "liều lượng", "tác dụng phụ", "tác dụng không mong muốn",
         "chống chỉ định", "thành phần", "hoạt chất", "chỉ định", "công dụng", "độc tính",
+        "thời điểm", "thời điểm uống", "trước/sau ăn", "trước hay sau ăn", "uống lúc nào", "uống khi nào",
+        "cách uống", "cách dùng", "tóm tắt cho tôi", "tóm tắt lại", "tóm tắt", "chi tiết về thuốc này", "chi tiết thuốc này", "thông tin chi tiết",
         "kỵ rượu", "uống rượu", "uống bia", "rượu bia", "say rượu", "với rượu", "với bia",
         "uống cùng sữa", "với sữa", "uống sữa", "nước cam", "thức ăn", "kiêng ăn gì",
         "suy gan", "xơ gan", "men gan", "người già", "người cao tuổi", "quá liều", "ngộ độc"

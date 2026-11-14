@@ -40,7 +40,7 @@ async function testVoiceOptionA() {
   });
 
   console.log('1. Navigating to Clinical Ward application...');
-  await page.goto('http://127.0.0.1:5173', { waitUntil: 'domcontentloaded' });
+  await page.goto('http://127.0.0.1:3000', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1000);
 
   // Open Copilot
@@ -84,7 +84,7 @@ async function testVoiceOptionA() {
   await page.evaluate((text) => {
     if (window.__activeRecognition && window.__activeRecognition.onresult) {
       window.__activeRecognition.onresult({
-        results: [[{ transcript: text }]]
+        results: [Object.assign([{ transcript: text }], { isFinal: true })]
       });
     }
   }, 'Kiểm tra tương tác Morphin và Diazepam');
@@ -118,7 +118,7 @@ async function testVoiceOptionA() {
   await page.evaluate((text) => {
     if (window.__activeRecognition && window.__activeRecognition.onresult) {
       window.__activeRecognition.onresult({
-        results: [[{ transcript: text }]]
+        results: [Object.assign([{ transcript: text }], { isFinal: true })]
       });
     }
   }, 'Kê đơn Paracetamol 500mg');
@@ -157,7 +157,7 @@ async function testVoiceOptionA() {
   await page.evaluate((text) => {
     if (window.__activeRecognition && window.__activeRecognition.onresult) {
       window.__activeRecognition.onresult({
-        results: [[{ transcript: text }]]
+        results: [Object.assign([{ transcript: text }], { isFinal: true })]
       });
     }
   }, 'Âm thanh ồn ào không mong muốn');
@@ -185,7 +185,7 @@ async function testVoiceOptionA() {
   // -------------------------------------------------------------
   // TEST CASE 4: Hands-free Auto-send on 2.0s Silence
   // -------------------------------------------------------------
-  console.log('\n--- TEST CASE 4: Hands-free Auto-send after 2s Silence ---');
+  console.log('\n--- TEST CASE 4: Hands-free Auto-send after 1s Silence ---');
   await voiceBtn.click();
   await page.waitForTimeout(400);
 
@@ -193,25 +193,25 @@ async function testVoiceOptionA() {
   await page.evaluate((text) => {
     if (window.__activeRecognition && window.__activeRecognition.onresult) {
       window.__activeRecognition.onresult({
-        results: [[{ transcript: text }]]
+        results: [Object.assign([{ transcript: text }], { isFinal: true })]
       });
     }
   }, 'Liều dùng Paracetamol cho trẻ em 15kg');
   await page.waitForTimeout(300);
 
   // Verify countdown badge is visible
-  const countdownBadge = page.locator('text=Ngừng nói... Tự gửi sau 2s').first();
+  const countdownBadge = page.locator('text=Ngừng nói... Tự gửi sau 1s').first();
   const isCountingDown = await countdownBadge.isVisible().catch(() => false);
   console.log(`- Countdown badge visible: ${isCountingDown}`);
   await page.screenshot({ path: path.join(screenshotDir, '14_voice_option_a_silence_countdown.png') });
 
-  console.log('- Waiting 2.3s for silence timer to trigger auto-send...');
-  await page.waitForTimeout(2300);
+  console.log('- Waiting 1.3s for silence timer to trigger auto-send...');
+  await page.waitForTimeout(1300);
 
   const fieldAfterSilence = await inputField.inputValue();
   console.log(`- Field after silence auto-send (should be empty): "${fieldAfterSilence}"`);
   if (fieldAfterSilence !== '') {
-    throw new Error('Auto-send after 2s silence did not fire!');
+    throw new Error('Auto-send after 1s silence did not fire!');
   }
   console.log('✅ Hands-free Auto-send on silence worked perfectly: message automatically submitted!');
   await waitForReady();

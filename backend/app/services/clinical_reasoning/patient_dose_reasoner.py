@@ -144,6 +144,34 @@ def build_reasoned_renal_dose_response(
     user_role: str = "doctor"
 ) -> CopilotResponse:
     """Đóng gói câu trả lời suy luận lâm sàng theo chuẩn Swiss Medical BLUF."""
+    from pathlib import Path
+    import hashlib
+    import json
+    backend_root = Path(__file__).resolve().parents[3]
+    manifest_path = backend_root / "data" / "knowledge_base" / "clinical_source_manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        source = next((item for item in manifest.get("sources", []) if item.get("id") == "dtqg-v2-2015"), None)
+    except (OSError, ValueError, TypeError):
+        source = None
+    repository_root = backend_root.parent
+    source_path = repository_root / (source.get("backend_copy") or "") if source else None
+    try:
+        source_digest = hashlib.sha256(source_path.read_bytes()).hexdigest() if source_path and source_path.is_file() else None
+    except OSError:
+        source_digest = None
+    if not source or not source.get("sha256") or source_digest != source.get("sha256"):
+        return CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE",
+            reply_text="Chưa thể xác minh quy tắc hiệu chỉnh liều bằng nguồn tài liệu có phiên bản. Vui lòng kiểm tra tài liệu đã lập chỉ mục hoặc yêu cầu quản trị viên cập nhật nguồn.",
+            session_id=session.session_id if session else "default",
+            active_patient_id=session.active_patient_id if session else None,
+            active_patient_name=session.active_patient_name if session else None,
+            active_medication_name=rec.drug_name, answer_type="safe_abstention",
+            source_status="evidence_provenance_missing", confidence=0.0,
+            rag_grounded=False, citations=[], evidence=[],
+            abstention_reason="Không có manifest phiên bản hóa cho quy tắc hiệu chỉnh liều",
+        )
     is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
     greeting = f"Kính gửi {user_name}," if is_doc else f"Chào Đồng nghiệp y tế,"
 
@@ -186,19 +214,6 @@ def build_reasoned_renal_dose_response(
     reply_text = "\n".join(lines)
 
     # Citations
-    citations = [
-        {
-            "source": rec.legal_basis,
-            "title": f"Dược thư Quốc gia Việt Nam ({rec.drug_name})",
-            "legal_basis": rec.legal_basis,
-            "document_id": rec.citation_document_id,
-            "url": rec.pdf_url,
-            "page": rec.citation_page,
-            "section": f"Hiệu chỉnh liều trong suy thận: {rec.drug_name}",
-            "excerpt": f"Khuyến cáo liều cho CrCl {assessment.crcl_ml_min} ml/phút: {rec.recommended_dose} {rec.dosing_interval}."
-        }
-    ]
-
     # Chips
     chips = [
         f"Theo dõi chức năng thận {rec.drug_name}",
@@ -206,6 +221,22 @@ def build_reasoned_renal_dose_response(
         f"Thuốc thay thế an toàn cho thận"
     ]
 
+    evidence = [{
+        "evidence_type": "document_chunk",
+        "chunk_id": rec.citation_document_id,
+        "source_id": source["id"],
+        "source_version": f"sha256:{source_digest}",
+        "section": f"Hiệu chỉnh liều trong suy thận: {rec.drug_name}",
+        "content": f"CrCl {assessment.crcl_ml_min} ml/phút: {rec.recommended_dose} {rec.dosing_interval}.",
+    }]
+    citations = [{
+        "chunk_id": rec.citation_document_id,
+        "source": source.get("title"), "title": source.get("title"),
+        "legal_basis": source.get("legal_basis"),
+        "document_id": source.get("id"), "url": rec.pdf_url,
+        "page": rec.citation_page, "section": evidence[0]["section"],
+        "excerpt": evidence[0]["content"],
+    }]
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE",
         reply_text=reply_text,
@@ -215,7 +246,7 @@ def build_reasoned_renal_dose_response(
         active_patient_id=session.active_patient_id if session else None,
         active_patient_name=session.active_patient_name if session else None,
         active_medication_name=rec.drug_name,
-        citations=citations,
+        citations=citations, evidence=evidence,
         rag_grounded=True,
         answer_type="grounded_reference",
         source_status="exact_match",

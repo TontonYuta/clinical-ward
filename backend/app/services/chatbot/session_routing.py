@@ -28,8 +28,10 @@ CLINICAL_NON_DRUG_TERMS = {
 
 TIMING_TERMS = (
     "sáng hay tối", "uống sáng", "uống tối", "lúc đói", "lúc no",
-    "trước ăn", "sau ăn", "bao lâu thì tiêm", "tiêm nhắc lại",
-    "tần suất", "mỗi bao lâu", "đường dùng", "cách pha",
+    "trước ăn", "sau ăn", "trước/sau ăn", "truoc/sau an", "trước hay sau ăn",
+    "thời điểm", "thời điểm uống", "thoi diem uong", "uống lúc nào", "uống khi nào",
+    "bao lâu thì tiêm", "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng", "cách pha",
+    "cách uống", "uống ra sao", "cách dùng",
 )
 
 FIELD_ONLY_TERMS = (
@@ -37,12 +39,14 @@ FIELD_ONLY_TERMS = (
     "liều dùng", "liều lượng", "liều tối đa", "thành phần", "hoạt chất",
     "chỉ định", "công dụng", "thông tin thuốc",
     "còn liều", "sáng hay tối", "uống sáng", "uống tối",
-    "lúc đói", "lúc no", "trước ăn", "sau ăn", "bao lâu thì tiêm",
-    "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng",
+    "lúc đói", "lúc no", "trước ăn", "sau ăn", "trước/sau ăn", "trước hay sau ăn",
+    "thời điểm", "thời điểm uống", "uống lúc nào", "uống khi nào", "cách uống", "cách dùng",
+    "bao lâu thì tiêm", "tiêm nhắc lại", "tần suất", "mỗi bao lâu", "đường dùng",
     "cách pha", "gây nghiện", "lệ thuộc", "suy thận", "suy gan",
     "độc tính", "thuốc đó", "thuốc này", "nó có",
-    "của thuốc này", "của thuốc đó",
+    "của thuốc này", "của thuốc đó", "chi tiết về thuốc này", "chi tiết thuốc này",
     "thông tin chi tiết đầy đủ", "thông tin chi tiết", "thông tin đầy đủ",
+    "tóm tắt cho tôi", "tóm tắt lại", "ngắn gọn thôi",
     "tóm tắt thông tin thuốc đó", "tóm tắt thông tin", "tóm tắt",
     "hồ sơ đầy đủ", "hồ sơ chi tiết", "toàn bộ thông tin",
     "trẻ em", "cho trẻ em", "nhi khoa", "cho bé", "trẻ nhỏ",
@@ -242,6 +246,13 @@ def check_pediatric_guidance_request(lower_query: str, query: str, session_id: s
     }
     if not is_pediatric:
         return None
+
+    reply_md = "Vui lòng nêu tên thuốc cụ thể, độ tuổi và cân nặng của trẻ để tra cứu khuyến cáo trong nguồn đã lập chỉ mục. Nếu không tìm thấy nguồn phù hợp, hệ thống sẽ thông báo chưa xác minh được."
+    return CopilotResponse(
+        intent="CLINICAL_PEDIATRIC_GUIDANCE", reply_text=reply_md,
+        suggested_chips=[], answer_type="clarification",
+        source_status="missing_medication_context", confidence=1.0, session_id=session_id,
+    )
 
     reply_md = (
         "### NGUYÊN TẮC AN TOÀN DƯỢC NHI KHOA & HƯỚNG DẪN KÊ ĐƠN CHO TRẺ EM\n\n"

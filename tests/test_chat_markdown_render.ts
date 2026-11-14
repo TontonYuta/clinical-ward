@@ -135,6 +135,14 @@ function testChatMarkdown() {
   console.log('✅ 11. Suppression of duplicate source line with citations passed!');
 
   console.log('🎉 ALL CHAT MARKDOWN TESTS PASSED 100%!');
+
+  const imageReport = `## Kết quả đọc ảnh\n\n**Loại tài liệu:** PRESCRIPTION\n\n### Dữ kiện nhận diện\n\n• Paracetamol 500 mg\n\n### Trường chưa đọc rõ\n\nSố thẻ BHYT\n\n### Trạng thái đối chiếu\n\n> Trích xuất từ ảnh, chưa xác minh với cơ sở dữ liệu.`;
+  const imageNodes = renderFormattedText(imageReport) as any[];
+  const imageHeaderKeys = imageNodes.map((node) => String(node?.key || ''));
+  if (!imageHeaderKeys.some((key) => key.startsWith('h2-')) || imageHeaderKeys.filter((key) => key.startsWith('h3-')).length < 3) {
+    throw new Error('Structured image report headings failed to render as headings');
+  }
+  console.log('✅ Structured image report headings passed!');
 }
 
 testChatMarkdown();

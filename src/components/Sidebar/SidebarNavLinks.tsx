@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2, LayoutDashboard, ShieldAlert } from 'lucide-react';
+import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2, LayoutDashboard, ShieldAlert, BookOpen } from 'lucide-react';
 import { DashboardTab } from '../RightPane/Dashboard';
 
 interface SidebarNavLinksProps {
@@ -75,6 +75,7 @@ export const SidebarNavLinks: React.FC<SidebarNavLinksProps> = ({
       //   </span>
       // ) : null
     },
+    { tab: 'documents', label: 'Tài liệu', icon: BookOpen, title: 'Thư viện tài liệu y tế' },
     // Tạm thời comment tab Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
     // {
     //   tab: 'coldchain',

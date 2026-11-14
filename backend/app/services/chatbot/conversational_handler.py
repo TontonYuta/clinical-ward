@@ -21,6 +21,19 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
         "chao dong nghiep", "chào đồng nghiệp", "hi bot", "hello bot", "halo", "yo"
     } or (len(greeting_tokens) <= 3 and any(t in clean_greeting for t in ["xin chào", "xin chao", "chào bạn", "chao ban", "chào em", "chao em"])) or (len(greeting_tokens) <= 2 and any(t in greeting_tokens for t in ["hi", "hello", "alo", "hey"])) or wellbeing
 
+    is_voice_mic_test = any(phrase in clean_greeting_ascii for phrase in (
+        "nghe toi noi khong", "co nghe khong", "co nghe thay khong", "nghe ro khong",
+        "ban co dang nghe", "co dang nghe", "test mic", "thu mic", "kiem tra mic"
+    ))
+    if is_voice_mic_test:
+        role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else ("Điều dưỡng" if "nurse" in user_role.lower() or "đd" in user_name.lower() else "Nhân viên y tế")
+        return CopilotResponse(
+            intent="GREETING_WELLBEING",
+            reply_text=f"Dạ em nghe rất rõ ạ, {role_label}! Em sẵn sàng hỗ trợ tra cứu Dược thư Quốc gia, liều dùng hoặc kiểm tra tương tác thuốc. {role_label} cần hỗ trợ thông tin gì ạ?",
+            suggested_chips=["Tra cứu thông tin thuốc", "Liều dùng Paracetamol", "Kiểm tra tương tác thuốc"],
+            confidence=1.0
+        )
+
     if is_pure_greeting:
         role_label = "Bác sĩ" if "doctor" in user_role.lower() or "bác" in user_name.lower() else "Nhân viên y tế"
         if wellbeing:

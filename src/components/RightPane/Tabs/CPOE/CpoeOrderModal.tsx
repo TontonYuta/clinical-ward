@@ -9,6 +9,7 @@ import React, { useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, Stethoscope, AlertTriangle, ShieldAlert, Pill, User, Building2, Phone, Mail, Calendar, Plus, Trash2, Printer, Scale, CheckCircle2 } from 'lucide-react';
 import { PrescriptionOrder, PrescriptionType, Tt26FormType, getTt26FormMetadata } from '../../../../types/cpoe';
+import { BhytPrescriptionItem } from '../../../../types/bhyt';
 import { MasterMedication } from '../../../../types/medication';
 import { MedicationSearchAutocomplete } from '../../../Common/MedicationSearchAutocomplete';
 import { useModalDismiss } from '../../../../hooks/useModalDismiss';
@@ -75,12 +76,13 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
   type DraftMedication = { id: string; medicationName: string; activeIngredient: string; unit: string; route: string; quantity: number; dosage: string; frequency: string; instructions: string };
   const emptyMedication = (): DraftMedication => ({ id: 'rxi-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), medicationName: '', activeIngredient: '', unit: 'Viên', route: '', quantity: 0, dosage: '', frequency: '', instructions: '' });
   const [medications, setMedications] = useState<DraftMedication[]>([emptyMedication()]);
-  const [ddiAudit, setDdiAudit] = useState<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean } | null>(null);
+  const [ddiAudit, setDdiAudit] = useState<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string; drug_a?: string; drug_b?: string }>; has_contraindication: boolean; unresolved_entities: string[] } | null>(null);
   const [ddiAuditUnavailable, setDdiAuditUnavailable] = useState(false);
   const [ddiAuditLoading, setDdiAuditLoading] = useState(false);
   const auditRevision = useRef(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [clinicalNotes, setClinicalNotes] = useState('');
+  const actionableDdiAlerts = ddiAudit?.pair_alerts?.filter((alert) => alert.severity !== 'SAFE_SYNERGY') || [];
 
   // Giám định tuân thủ quy tắc BHYT thời gian thực (Thông tư 20/2022/TT-BYT)
   const bhytAuditReport = useMemo(() => {
@@ -88,26 +90,28 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     if (validItems.length === 0) return null;
 
     return auditBhytPrescription({
-      prescriptionId: 'CPOE-LIVE',
-      patientName: patientName || 'Bệnh nhân',
-      patientAge: 45,
-      insuranceCardNumber: 'DN4010123456789',
-      hospitalRank: 'HANG_3',
-      treatmentType: 'NGOAI_TRU',
-      primaryIcd10: diagnosisIcd10.trim() || 'R69',
-      primaryDiagnosis: diagnosisText.trim() || 'Khám bệnh',
+      prescriptionId: '',
+      patientName,
+      patientAge: 0,
+      insuranceCardNumber: '',
+      hospitalRank: '',
+      treatmentType: '',
+      primaryIcd10: diagnosisIcd10.trim(),
+      primaryDiagnosis: diagnosisText.trim(),
       secondaryIcd10s: [],
-      items: validItems.map(m => ({
+      items: validItems.map((m): BhytPrescriptionItem => ({
+        id: m.id,
+        drugCode: '',
         drugName: m.medicationName,
         activeIngredient: m.activeIngredient || m.medicationName,
-        quantity: Number(m.quantity) || 1,
-        unitPrice: 25000,
+        quantity: Number(m.quantity) || 0,
+        unitPrice: 0,
         dosage: m.dosage || '',
-        daysOfSupply: Number(daysPrescribed) || 7,
-        route: m.route || 'Uống',
+        daysSupply: Number(daysPrescribed) || undefined,
+        route: m.route || '',
         instructions: m.instructions || ''
       }))
-    });
+    }, { mode: 'prescription' });
   }, [medications, diagnosisIcd10, diagnosisText, daysPrescribed, patientName]);
   const handlePrintDraft = () => {
     const documentNode = document.getElementById('prescription-print-document');
@@ -203,10 +207,11 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
     setValidationErrors(errors);
     const medicationCount = medications.filter((med) => med.activeIngredient.trim() || med.medicationName.trim()).length;
     const auditRequired = medicationCount > 1;
-    if (errors.length || (auditRequired && (ddiAudit?.has_contraindication || ddiAuditUnavailable || ddiAuditLoading || !ddiAudit))) {
+    if (errors.length || (auditRequired && (ddiAudit?.has_contraindication || ddiAudit?.unresolved_entities?.length || ddiAuditUnavailable || ddiAuditLoading || !ddiAudit))) {
       if (ddiAudit?.has_contraindication) setValidationErrors([...errors, 'Không thể lưu khi danh sách có cặp thuốc chống chỉ định.']);
       if (ddiAuditUnavailable) setValidationErrors([...errors, 'Chưa kết nối được bộ kiểm tra tương tác; hãy thử lại trước khi lưu.']);
       if (ddiAuditLoading) setValidationErrors([...errors, 'Đang kiểm tra tương tác thuốc; vui lòng chờ hoàn tất.']);
+      if (ddiAudit?.unresolved_entities?.length) setValidationErrors([...errors, `Chưa đủ dữ liệu để kết luận tương tác cho: ${ddiAudit.unresolved_entities.join(', ')}. Bổ sung tên hoạt chất hoặc biệt dược chuẩn trước khi lưu.`]);
       return;
     }
 
@@ -792,7 +797,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                                 </span>
                               );
                             }
-                            const isRankAllowed = rule.allowedRanks.includes('HANG_3');
+                            const isRankAllowed = rule.allowedRanks.includes('HANG_III');
                             return (
                               <div className="flex items-center gap-1">
                                 <span className={`text-3xs font-semibold px-1.5 py-0.5 rounded border ${
@@ -946,7 +951,7 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                   ))}
                 </div>
 
-                {(ddiAuditUnavailable || ddiAudit?.has_contraindication || (ddiAudit?.pair_alerts?.length ?? 0) > 0) && (
+                {(ddiAuditUnavailable || ddiAudit?.has_contraindication || actionableDdiAlerts.length > 0 || (ddiAudit?.unresolved_entities?.length ?? 0) > 0) && (
                   <div
                     role="alert"
                     className={`p-4 border rounded-xl text-xs space-y-2 ${
@@ -962,12 +967,19 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                           ? "Chưa kiểm tra được tương tác"
                           : ddiAudit?.has_contraindication
                           ? "Chống chỉ định phối hợp — không thể lưu đơn"
+                          : ddiAudit?.unresolved_entities?.length
+                          ? "Chưa đủ dữ liệu để kết luận tương tác"
                           : "Cảnh báo tương tác cần rà soát"}
                       </span>
                     </b>
-                    {ddiAudit?.pair_alerts?.map((a, i) => (
+                    {!!ddiAudit?.unresolved_entities?.length && (
+                      <div className="p-2 ml-5 rounded border border-amber-300 bg-amber-50 text-amber-900">
+                        <strong>Chưa xác minh được:</strong> {ddiAudit.unresolved_entities.join(', ')}. Các cảnh báo bên dưới chỉ áp dụng cho thuốc đã nhận diện; chưa thể kết luận an toàn cho thuốc này.
+                      </div>
+                    )}
+                    {actionableDdiAlerts.map((a, i) => (
                       <p key={i} className="text-xs leading-relaxed pl-5">
-                        • <strong>{a.title}</strong> ({a.severity}) — {a.consequence}; Xử trí: {a.action}; Nguồn: {a.source}
+                        • <strong>{a.drug_a && a.drug_b ? `${a.drug_a} + ${a.drug_b}: ` : ''}{a.title}</strong> ({a.severity}) — {a.consequence}; Xử trí: {a.action}; Nguồn: {a.source}
                       </p>
                     ))}
                   </div>
@@ -996,14 +1008,14 @@ export const CpoeOrderModal: React.FC<CpoeOrderModalProps> = ({
                           <div className="flex items-center gap-1.5 font-semibold text-slate-900">
                             <span>• {v.drugName}</span>
                             <span className={`px-1.5 py-0.2 rounded text-3xs uppercase font-bold ${
-                              v.severity === 'XUAT_TOAN' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'
+                              v.severity === 'REJECT' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'
                             }`}>
-                              {v.severity === 'XUAT_TOAN' ? 'Xuất toán' : 'Lưu ý'}
+                              {v.severity === 'REJECT' ? 'Xuất toán' : 'Lưu ý'}
                             </span>
-                            <span className="text-slate-500 font-normal">({v.ruleTitle})</span>
+                            <span className="text-slate-500 font-normal">({v.title})</span>
                           </div>
-                          <p className="text-slate-700 mt-0.5">{v.description}</p>
-                          <p className="text-slate-500 italic mt-0.5">💡 Khuyến nghị: {v.legalAdvice}</p>
+                          <p className="text-slate-700 mt-0.5">{v.detail}</p>
+                          <p className="text-slate-500 italic mt-0.5">💡 Khuyến nghị: {v.action}</p>
                         </div>
                       ))}
                     </div>

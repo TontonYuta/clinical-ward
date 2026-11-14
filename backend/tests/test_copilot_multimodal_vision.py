@@ -60,10 +60,11 @@ async def test_copilot_chat_endpoint_with_image_mock():
         assert res.status_code == 200
         data = res.json()
         assert data["intent"] == "MULTIMODAL_CLINICAL_VISION"
-        assert "Meropenem" in data["reply_text"]
-        assert data["legal_basis"] == "Thông tư 20/2022/TT-BYT & Quyết định 3618/QĐ-BHXH"
-        assert data["card"] is not None
-        assert data["card"]["card_type"] == "prescription_audit"
+        assert "chưa xác minh" in data["reply_text"]
+        assert data["rag_grounded"] is False
+        assert data["answer_type"] == "image_extraction"
+        assert data["legal_basis"] is None
+        assert data["card"] is None
 
 @pytest.mark.asyncio
 async def test_copilot_chat_guardrail_input_blocked():
@@ -108,3 +109,59 @@ async def test_copilot_chat_guardrail_vision_non_clinical():
         assert data["intent"] == "MULTIMODAL_CLINICAL_VISION"
         assert "chỉ phục vụ công tác y tế" in data["reply_text"]
         assert data["card"] is None
+
+@pytest.mark.asyncio
+async def test_vision_preserves_extracted_text_when_rag_evidence_is_unavailable():
+    """OCR vẫn được hiển thị; chỉ phần kết luận thiếu nguồn mới bị giới hạn."""
+    mock_vision_res = {
+        "is_clinical": True,
+        "category": "PRESCRIPTION",
+        "document_type_label": "Đơn thuốc ngoại trú",
+        "extracted_sections": [
+            {"title": "Thuốc được kê", "items": ["Paracetamol 500 mg, uống 2 lần mỗi ngày"]}
+        ],
+        "reply_markdown": "Paracetamol 500 mg, uống 2 lần mỗi ngày.",
+        "legal_basis": None,
+        "evidence": [],
+        "citations": [],
+        "rag_grounded": False,
+    }
+    with patch("app.services.llm_provider.query_clinical_multimodal_chat", new=AsyncMock(return_value=mock_vision_res)):
+        res = client.post(
+            "/api/v1/copilot/chat",
+            json={
+                "query": "Đọc ảnh đơn thuốc này",
+                "image_base64": DUMMY_PNG_B64,
+                "image_mime_type": "image/png"
+            }
+        )
+    assert res.status_code == 200
+    data = res.json()
+    assert "Paracetamol 500 mg" in data["reply_text"]
+    assert "chưa xác minh" in data["reply_text"]
+    assert "## Kết quả đọc ảnh" in data["reply_text"]
+    assert "### Thuốc được kê" in data["reply_text"]
+    assert "### Trạng thái đối chiếu" in data["reply_text"]
+    assert data["clinical_summary"]["headline"] == "Kết quả đọc ảnh chưa xác minh"
+    assert data["legal_basis"] is None
+    assert data["source_status"] == "image_extracted_unverified"
+
+def test_image_report_formatter_renders_vietnamese_document_type_and_rechecked_sections():
+    from app.services.chatbot.image_report_formatter import format_image_extraction_report
+
+    formatted = format_image_extraction_report({
+        "document_type_label": "Đơn thuốc ngoại trú",
+        "extracted_sections": [
+            {"title": "Thông tin người bệnh", "items": ["Chẩn đoán: Viêm họng cấp"]},
+            {"title": "Thuốc được kê", "items": ["Paracetamol 500 mg — uống 1 viên mỗi lần"]},
+        ],
+        "unreadable_fields": ["Số thẻ bảo hiểm y tế"],
+        "reply_markdown": "nội dung chưa cấu trúc",
+    })
+
+    assert "**Loại tài liệu:** Đơn thuốc ngoại trú" in formatted
+    assert "### Thông tin người bệnh" in formatted
+    assert "### Thuốc được kê" in formatted
+    assert "• Paracetamol 500 mg — uống 1 viên mỗi lần" in formatted
+    assert "Số thẻ bảo hiểm y tế" in formatted
+    assert "PRESCRIPTION" not in formatted

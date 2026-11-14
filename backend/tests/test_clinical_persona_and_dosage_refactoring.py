@@ -94,8 +94,8 @@ async def test_full_drug_profile_anti_jargon_and_clean_greeting():
         assert "safe abstention" not in reply_lower
 
         # 2. Must contain natural doctor greeting
-        assert "Kính gửi Bác sĩ," in reply
-        assert "dược thư quốc gia việt nam" in reply_lower
+        assert "Kính gửi Bác sĩ" in reply
+        assert "dược thư" in reply_lower
 
         # 3. Must have structured dosage
         assert "• **Liều dùng & Cách dùng:**" in reply

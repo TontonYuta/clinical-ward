@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS dav_national_drugs (
     drug_interactions TEXT, incompatibilities TEXT,
     storage_stability TEXT, overdose_treatment TEXT,
     antidote TEXT, clinical_source TEXT, clinical_monograph_id TEXT,
+    source_id TEXT, source_version TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 """
@@ -61,6 +62,8 @@ COLS_TO_ADD = [
     ("antidote", "TEXT"),
     ("clinical_source", "TEXT"),
     ("clinical_monograph_id", "TEXT"),
+    ("source_id", "TEXT"),
+    ("source_version", "TEXT"),
     ("created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 ]
 
@@ -91,7 +94,7 @@ def init_dav_table(cursor: sqlite3.Cursor):
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_active_ingredient ON dav_national_drugs (active_ingredient)")
     cursor.execute('CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_group ON dav_national_drugs ("group")')
 
-def update_curated_enrichment(cursor: sqlite3.Cursor, curated_path: str):
+def update_curated_enrichment(cursor: sqlite3.Cursor, curated_path: str, *, source_id: str | None = None, source_version: str | None = None):
     with open(curated_path, "r", encoding="utf-8") as f:
         curated_items = json.load(f)
     for item in curated_items:
@@ -106,6 +109,13 @@ def update_curated_enrichment(cursor: sqlite3.Cursor, curated_path: str):
             f"UPDATE dav_national_drugs SET {set_clause} WHERE national_code = ?",
             (*valid_updates.values(), code),
         )
+        if valid_updates:
+            # The curated artifact only supports fields it supplied. Do not keep
+            # provenance pointing at the un-enriched DAV base registry.
+            cursor.execute(
+                "UPDATE dav_national_drugs SET source_id=?, source_version=? WHERE national_code=?",
+                (source_id, source_version, code),
+            )
 
 def map_drug_item_to_tuple(d: dict) -> tuple:
     return (
@@ -146,5 +156,7 @@ def map_drug_item_to_tuple(d: dict) -> tuple:
         d.get("overdoseTreatment") or d.get("overdose_treatment"),
         d.get("antidote"),
         d.get("clinicalSource") or d.get("clinical_source"),
-        d.get("clinicalMonographId") or d.get("clinical_monograph_id")
+        d.get("clinicalMonographId") or d.get("clinical_monograph_id"),
+        d.get("source_id"),
+        d.get("source_version")
     )

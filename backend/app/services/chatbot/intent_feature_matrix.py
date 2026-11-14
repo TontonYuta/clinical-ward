@@ -11,6 +11,12 @@ def _unaccent(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c)).lower()
 
 INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
+    "pharmacokinetics": [
+        (r"\b(?:dược\s+động\s+học|thời\s+gian\s+bán\s+thải|nửa\s+đời|thời\s+gian\s+đạt\s+nồng\s+độ|sinh\s+khả\s+dụng|hấp\s+thu|phân\s+bố|thải\s+trừ)\b", 3.5),
+    ],
+    "pharmacodynamics": [
+        (r"\b(?:dược\s+lực\s+học|cơ\s+chế\s+tác\s+dụng|tác\s+động\s+dược\s+lý)\b", 3.5),
+    ],
     "pediatric_dosage": [
         (r"\bliều\s+(?:cho\s+)?(?:trẻ|bé|con|sơ\s+sinh|bệnh\s+nhi)\b", 3.0),
         (r"\b(?:trẻ\s+em|nhi\s+khoa|trẻ\s+nhỏ|bé|sơ\s+sinh|bệnh\s+nhi)\b", 2.0),

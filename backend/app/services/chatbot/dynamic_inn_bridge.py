@@ -100,7 +100,7 @@ def get_monograph_section_page(
     if not monograph:
         return None, None
 
-    sec_pages: dict[str, int] = {}
+    sec_pages: dict[str, Any] = {}
     if hasattr(monograph, "section_pages"):
         val = getattr(monograph, "section_pages")
         if isinstance(val, dict):
@@ -140,11 +140,21 @@ def get_monograph_section_page(
             break
 
     if target_section and target_section in sec_pages:
-        return sec_pages[target_section], target_section
+        page_record = sec_pages[target_section]
+        page = page_record.get("page") if isinstance(page_record, dict) else page_record
+        try:
+            return int(page), target_section
+        except (TypeError, ValueError):
+            pass
 
     # Nếu hỏi liều người lớn / nhi khoa nhưng không có mục riêng -> fallback về dosage
     if target_section in ("adult_dosage", "pediatric_dosage") and "dosage" in sec_pages:
-        return sec_pages["dosage"], "dosage"
+        page_record = sec_pages["dosage"]
+        page = page_record.get("page") if isinstance(page_record, dict) else page_record
+        try:
+            return int(page), "dosage"
+        except (TypeError, ValueError):
+            pass
 
     return start_page, None
 

@@ -21,8 +21,8 @@ export interface BhytDocumentFileDraft {
 export interface BhytDraftSession {
   documentFile: BhytDocumentFileDraft | null;
   activePayload: BhytPrescriptionPayload;
-  hospitalRank: HospitalRank;
-  treatmentType: TreatmentType;
+  hospitalRank: HospitalRank | '';
+  treatmentType: TreatmentType | '';
   resolutionMap?: Record<string, DrugResolutionResult>;
   timestamp: number;
 }

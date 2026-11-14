@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Maximize2, Minimize2, BookOpen, ExternalLink, ChevronDown, ChevronRight, FileText, History, Plus, PanelLeftOpen, PanelLeftClose, ZoomIn } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Maximize2, Minimize2, ChevronDown, ChevronRight, FileText, History, Plus, PanelLeftOpen, PanelLeftClose, ZoomIn } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { ChatSession } from '../../types/chatSession';
 import { ChatSessionsDrawer } from './ChatSessionsDrawer';
@@ -19,11 +19,13 @@ import { ChatSettingsModal } from './ChatSettingsModal';
 import { ImageLightboxModal } from '../Modals/ImageLightboxModal';
 import { PdfViewerModal } from '../Modals/PdfViewerModal';
 import { resolvePdfDocumentTarget } from '../../utils/pdfDocumentResolver';
-import { isCloudAIAvailable } from '../../services/geminiService';
-import { removeLegacySourceText, formatCitationLabel } from '../../utils/chatAnswerPresentation';
+import { CitationSourceList } from './CitationSourceList';
+import { removeLegacySourceText } from '../../utils/chatAnswerPresentation';
+import type { ChatbotAvailability } from '../../services/api';
 
 interface ChatWindowProps {
   messages: ChatMessage[]; suggestionChips: QuickSuggestionChip[];
+  availabilityMode?: ChatbotAvailability['mode'];
   onSendMessage: (text: string, attachment?: any) => void;
   isProcessing: boolean; isAudioMuted: boolean; onSelectTab?: (tab: DashboardTab) => void;
   currentUserRole?: UserRole; onClose?: () => void; pendingDebtsCount?: number;
@@ -37,7 +39,7 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
-  messages, suggestionChips, onSendMessage, isProcessing, isAudioMuted, onSelectTab,
+  messages, suggestionChips, availabilityMode = 'checking', onSendMessage, isProcessing, isAudioMuted, onSelectTab,
   currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
   lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs, onOpenUserGuide,
   isFullScreen = false, onToggleFullScreen,
@@ -55,7 +57,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
     return true;
   });
-  const [cloudActive, setCloudActive] = useState(isCloudAIAvailable());
   const [viewingImage, setViewingImage] = useState<{ url: string; title: string } | null>(null);
   const [activePdfViewer, setActivePdfViewer] = useState<{ url: string; title: string; page?: number } | null>(null);
 
@@ -163,10 +164,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <h3 className="text-base font-bold text-slate-950 whitespace-nowrap">
                   Trợ Lý AI Lâm Sàng
                 </h3>
-                <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${cloudActive ? 'bg-teal-500 ring-2 ring-teal-200' : 'bg-emerald-500'}`}
-                  title={cloudActive ? 'Mô hình: Gemini Flash-Lite' : 'Mô hình: Nội bộ Offline'}
-                />
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-1.5 py-0.5 text-[9px] font-medium text-slate-500" role="status" aria-live="polite">
+                  {availabilityMode === 'checking' && 'Đang kiểm tra'}
+                  {availabilityMode === 'online_ai' && 'Online'}
+                  {availabilityMode === 'local_only' && 'Cục bộ'}
+                  {availabilityMode === 'offline' && 'Offline'}
+                </span>
                 {activeSessionTitle && (
                   <span className="hidden sm:inline-block max-w-[130px] truncate text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200" title={activeSessionTitle}>
                     {activeSessionTitle}
@@ -293,20 +296,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           const isSystem = msg.sender === 'system';
           const isUser = msg.sender === 'user';
           const isRightAligned = isUser || isSystem;
-          const activeCitations: RagCitationItem[] = (msg.citations && msg.citations.length > 0)
-            ? msg.citations
-            : (msg.legalReference ? [{
-                source: msg.legalReference.title || msg.legalReference.lawCode,
-                title: msg.legalReference.lawCode,
-                legal_basis: msg.legalReference.title || msg.legalReference.lawCode,
-                section: msg.legalReference.clause,
-                url: msg.legalReference.lawCode.includes('26') ? '/pdf/Thong_Tu_26_2025_TT_BYT_Ke_Don_Thuoc.pdf'
-                   : msg.legalReference.lawCode.includes('20') ? '/pdf/Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf'
-                   : msg.legalReference.lawCode.includes('22') ? '/pdf/Thong_Tu_22_2011_TT_BYT_Khoa_Duoc_Benh_Vien.pdf'
-                   : msg.legalReference.lawCode.includes('51') ? '/pdf/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf'
-                   : msg.legalReference.lawCode.includes('5948') ? '/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf'
-                   : '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf'
-              }] : []);
+          const activeCitations: RagCitationItem[] = msg.citations || [];
+          const displayText = isAgent ? removeLegacySourceText(msg.text, true) : msg.text;
 
           return (
             <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-3 w-full ${isRightAligned ? 'ml-auto flex-row-reverse max-w-[96%] sm:max-w-[85%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
@@ -386,67 +377,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         </div>
                       ) : (
                         <>
-                          {renderFormattedText(removeLegacySourceText(msg.text, activeCitations.length > 0), {
+                          {renderFormattedText(displayText, {
                             isDark: false,
+                            hideInlineSources: isAgent,
                             citations: activeCitations,
                             onCitationClick: (ref) => handleInlineCitationClick(msg.id, ref),
                           })}
                           {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-teal-600 animate-pulse align-middle" />}
                         </>
                       )}
-
-                      {/* Khối Nguồn Đối Soát (Hiển thị tất cả các nguồn bảo chứng, highlight đối chứng nổi bật) */}
-                      {isAgent && activeCitations.length > 0 && (() => {
-                        // Khử trùng lặp theo url + page hoặc title
-                        const uniqueCitations: RagCitationItem[] = [];
-                        const seenKeys = new Set<string>();
-                        for (const c of activeCitations) {
-                          const key = `${c.url || ''}#p${c.page || 0}_${c.title || c.legal_basis || ''}`;
-                          if (!seenKeys.has(key)) {
-                            seenKeys.add(key);
-                            uniqueCitations.push(c);
-                          }
-                        }
-                        const displayList = uniqueCitations.slice(0, 4);
-
-                        return (
-                          <div className="mt-2.5 pt-2 border-t border-slate-100">
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                              <span className="text-2xs font-semibold text-slate-600 uppercase tracking-wider">
-                                {displayList.length > 1 ? `Tài liệu đối chứng y văn (${displayList.length}):` : 'Tài liệu đối chứng:'}
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              {displayList.map((citation, cIdx) => {
-                                const { title, subtitle, pageTag } = formatCitationLabel(citation);
-                                return (
-                                  <button
-                                    key={`cit_${msg.id}_${cIdx}`}
-                                    type="button"
-                                    onClick={() => handleInlineCitationClick(msg.id, citation)}
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-950 hover:bg-amber-100 border border-amber-300 shadow-2xs transition-all cursor-pointer active:scale-95 text-left group ring-1 ring-amber-400/40"
-                                    title={citation.excerpt ? `Đoạn trích: "${citation.excerpt.slice(0, 150)}..."` : `Bấm để xem bản scan PDF: ${citation.legal_basis || citation.source}`}
-                                  >
-                                    <span className="font-bold text-slate-900 truncate max-w-[240px]">{title}</span>
-                                    {pageTag && (
-                                      <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 font-extrabold text-2xs shadow-2xs border border-amber-300/80 shrink-0">
-                                        {pageTag}
-                                      </span>
-                                    )}
-                                    {subtitle && !pageTag && (
-                                      <span className="text-amber-800/80 text-2xs font-normal truncate max-w-[140px]">
-                                        ({subtitle})
-                                      </span>
-                                    )}
-                                    <ExternalLink className="w-3 h-3 text-amber-600 group-hover:text-amber-900 shrink-0" />
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })()}
+                      {isAgent && !msg.isStreaming && activeCitations.length > 0 && (
+                        <CitationSourceList
+                          citations={activeCitations}
+                          onCitationClick={(citation) => handleInlineCitationClick(msg.id, citation)}
+                        />
+                      )}
 
                   {/* Tạm thời comment thẻ thông tin Action Card có sẵn theo yêu cầu người dùng để tập trung test SOTA RAG
                   {isAgent && msg.card && msg.card.primaryActionLabel && !['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket', 'medication_safety'].includes((msg.card as any).card_type || (msg.card as any).type || '') && (

@@ -1,6 +1,5 @@
 """
-Automatic Real-Time Telemetry & Token Ledger Storage
-Records genuine token consumption from LLM usageMetadata and calculates exact costs.
+Provider-reported token telemetry and cost ledger.
 """
 import os
 import sqlite3
@@ -26,7 +25,7 @@ def init_telemetry_db() -> None:
     """Khởi tạo bảng lưu trữ vết token thực tế."""
     with _get_connection() as conn:
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS token_ledger (
+        CREATE TABLE IF NOT EXISTS token_ledger (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp REAL NOT NULL,
                 date_str TEXT NOT NULL,
@@ -36,11 +35,15 @@ def init_telemetry_db() -> None:
                 prompt_tokens INTEGER NOT NULL,
                 completion_tokens INTEGER NOT NULL,
                 total_tokens INTEGER NOT NULL,
-                cost_vnd REAL NOT NULL
+                cost_vnd REAL NOT NULL,
+                usage_source TEXT NOT NULL DEFAULT 'provider'
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_ledger_date ON token_ledger(date_str)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_ledger_month ON token_ledger(month_str)")
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(token_ledger)").fetchall()}
+        if "usage_source" not in cols:
+            conn.execute("ALTER TABLE token_ledger ADD COLUMN usage_source TEXT NOT NULL DEFAULT 'provider'")
         conn.commit()
 
 init_telemetry_db()
@@ -49,14 +52,20 @@ def record_llm_token_usage(
     prompt_tokens: int,
     completion_tokens: int,
     model: str = "gemini-auto",
-    provider: str = "gemini"
+    provider: str = "gemini",
+    usage_source: str = "provider",
 ) -> float:
     """
-    Ghi nhận chính xác số lượng token từ phản hồi thực tế của LLM Gateway.
-    Tính toán chi phí tức thời theo tỷ giá 25.500 VND/USD:
+    Store token counts only when supplied by provider metadata. Cost uses configured
+    historical rate assumptions and exchange rate, not an invoice total:
     - Input: $0.075 / 1M tokens
     - Output: $0.30 / 1M tokens
     """
+    # Cost ledger is a billing record; estimated token counts belong in request
+    # telemetry and must never be converted into a provider charge.
+    if usage_source != "provider":
+        return 0.0
+
     now = time.time()
     dt = datetime.fromtimestamp(now)
     date_str = dt.strftime("%Y-%m-%d")
@@ -66,7 +75,7 @@ def record_llm_token_usage(
     c_tok = max(0, int(completion_tokens))
     total = p_tok + c_tok
 
-    # Tính chi phí VND thực tế
+    # Estimate cost from configured rate assumptions.
     input_usd = (p_tok / 1_000_000) * 0.075
     output_usd = (c_tok / 1_000_000) * 0.30
     cost_vnd = round((input_usd + output_usd) * 25500.0, 2)
@@ -76,9 +85,9 @@ def record_llm_token_usage(
             conn.execute("""
                 INSERT INTO token_ledger (
                     timestamp, date_str, month_str, provider, model,
-                    prompt_tokens, completion_tokens, total_tokens, cost_vnd
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (now, date_str, month_str, provider, model, p_tok, c_tok, total, cost_vnd))
+                    prompt_tokens, completion_tokens, total_tokens, cost_vnd, usage_source
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (now, date_str, month_str, provider, model, p_tok, c_tok, total, cost_vnd, usage_source))
             conn.commit()
     except Exception:
         pass
@@ -92,7 +101,7 @@ def get_daily_token_usage(date_str: Optional[str] = None) -> Tuple[int, float]:
         with _get_connection() as conn:
             cur = conn.execute("""
                 SELECT COALESCE(SUM(total_tokens), 0) as tok, COALESCE(SUM(cost_vnd), 0.0) as cost
-                FROM token_ledger WHERE date_str = ?
+                FROM token_ledger WHERE date_str = ? AND usage_source = 'provider'
             """, (target_date,))
             row = cur.fetchone()
             if row:
@@ -108,7 +117,7 @@ def get_monthly_token_usage(month_str: Optional[str] = None) -> Tuple[int, float
         with _get_connection() as conn:
             cur = conn.execute("""
                 SELECT COALESCE(SUM(total_tokens), 0) as tok, COALESCE(SUM(cost_vnd), 0.0) as cost
-                FROM token_ledger WHERE month_str = ?
+                FROM token_ledger WHERE month_str = ? AND usage_source = 'provider'
             """, (target_month,))
             row = cur.fetchone()
             if row:
@@ -127,7 +136,7 @@ def get_all_time_token_usage() -> Tuple[int, int, int, float]:
                     COALESCE(SUM(completion_tokens), 0) as c_tok,
                     COALESCE(SUM(total_tokens), 0) as t_tok,
                     COALESCE(SUM(cost_vnd), 0.0) as cost
-                FROM token_ledger
+                FROM token_ledger WHERE usage_source = 'provider'
             """)
             row = cur.fetchone()
             if row:
@@ -150,7 +159,7 @@ def get_last_7_days_token_trend() -> list:
                 d_str = d.strftime("%Y-%m-%d")
                 w_label = weekday_map.get(d.weekday(), "T?")
 
-                cur = conn.execute("SELECT COALESCE(SUM(total_tokens), 0) as tok FROM token_ledger WHERE date_str = ?", (d_str,))
+                cur = conn.execute("SELECT COALESCE(SUM(total_tokens), 0) as tok FROM token_ledger WHERE date_str = ? AND usage_source = 'provider'", (d_str,))
                 row = cur.fetchone()
                 tok = int(row["tok"]) if row else 0
                 results.append({

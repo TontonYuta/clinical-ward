@@ -2,6 +2,7 @@
 Orchestration pipeline for Clinical Copilot Chat (<=200 LOC).
 """
 import re
+from sqlalchemy import func, select
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.copilot import CopilotQuery, CopilotResponse
@@ -22,6 +23,11 @@ from app.services.chatbot.pure_rag_handler import handle_contextual_rag_followup
 from app.services.chatbot.drug_comparison import handle_clinical_drug_comparison
 from app.services.chatbot.fsm_router import route_fsm_context
 from app.services.chatbot.sandwich_pipeline import execute_clinical_sandwich_pipeline
+
+
+def _has_verified_source_version(value: object) -> bool:
+    normalized = str(value or "").strip().casefold()
+    return bool(normalized) and normalized not in {"unversioned", "unknown", "none"}
 
 def normalize_conversational_query(text: str) -> str:
     cleaned = (text or "").strip()
@@ -50,6 +56,70 @@ def normalize_conversational_query(text: str) -> str:
     for p in suffix_patterns:
         cleaned = re.sub(p, "", cleaned, flags=re.IGNORECASE).strip()
     return cleaned if len(cleaned) >= 3 else text
+
+def _portal_guidance_text() -> str:
+    return (
+        "### CỔNG TRA CỨU THUỐC\n\n"
+        "Hãy nhập tên biệt dược, hoạt chất hoặc số đăng ký để tra cứu trong các nguồn hiện có."
+        " Nếu chưa tìm thấy tài liệu phù hợp, hệ thống sẽ yêu cầu bổ sung hoặc thông báo chưa có nguồn xác minh.\n\n"
+        "Bạn cũng có thể mở mục Thông tin thuốc để tìm kiếm trong danh mục."
+    )
+
+def _requested_fields_from_managed_schema(
+    query: str,
+    requested_field: str | None = None,
+    requested_fields: list[str] | None = None,
+) -> list[str]:
+    """Resolve requested facets without widening a specific NLU field.
+
+    ``requested_field`` is the structured classifier's primary decision. When it
+    names a specific facet, lexical scoring may disambiguate the dosage subtype,
+    but must not add unrelated facets merely because their terms appear as
+    patient context (for example, hepatic impairment alongside a dosage cue).
+    """
+    from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
+    # The ranker also scores contextual mentions (e.g. an illness in the
+    # patient's background). Keep only clearly expressed facets when refining
+    # the NLU's field list. NLU remains the fallback when lexical evidence is
+    # weak or paraphrased.
+    scored_fields = [field for field, _ in rank_clinical_intents(query, min_score=2.5)]
+    nlu_fields = list(dict.fromkeys(requested_fields or []))
+    if scored_fields:
+        matched_nlu_fields = [field for field in nlu_fields if field in scored_fields]
+        if matched_nlu_fields:
+            return matched_nlu_fields
+        return scored_fields
+    if nlu_fields:
+        return nlu_fields
+    field_map = {
+        "dosage": ("adult_dosage", "pediatric_dosage"),
+        "pediatric": ("pediatric_dosage",),
+        "renal": ("renal_adjustment",),
+        "hepatic": ("hepatic_adjustment",),
+        "contraindications": ("contraindications",),
+        "adverse_effects": ("adverse_effects",),
+        "interactions": ("drug_interactions",),
+        "pregnancy": ("pregnancy_warning",),
+        "timing": ("administration_timing",),
+        "administration": ("administration_timing",),
+    }
+    specific_fields = field_map.get(requested_field or "")
+    if specific_fields:
+        matching = [field for field in scored_fields if field in specific_fields]
+        if matching:
+            return matching
+        return [specific_fields[0]]
+
+    return scored_fields
+
+async def _portal_catalog_counts(db: AsyncSession) -> tuple[int, int]:
+    from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
+    drug_result = await db.execute(select(func.count()).select_from(DavNationalDrug))
+    monograph_result = await db.execute(select(func.count()).select_from(ClinicalDrugMonograph))
+    return int(drug_result.scalar_one()), int(monograph_result.scalar_one())
+
+def _portal_guidance_text_with_counts(drug_count: int, monograph_count: int) -> str:
+    return f"{_portal_guidance_text()}\n\nDanh mục hiện có {drug_count:,} thuốc và {monograph_count:,} chuyên luận."
 
 def resolve_copilot_identity(payload: CopilotQuery, request: Request, session=None) -> tuple[str, str, str]:
     authenticated = getattr(request.state, "authenticated_user", None)
@@ -93,10 +163,23 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         )
         if vision_res and isinstance(vision_res, dict):
             reply_text = vision_res.get("reply_markdown") or "Đã phân tích hình ảnh đính kèm thành công."
-            legal_basis = vision_res.get("legal_basis") or "Nghị định 98/2021/NĐ-CP & Thông tư Bộ Y Tế"
+            evidence = vision_res.get("evidence") or []
+            citations = vision_res.get("citations") or []
+            is_non_clinical = vision_res.get("is_clinical") is False or vision_res.get("category") == "NON_CLINICAL"
+            grounded = bool(evidence and citations and vision_res.get("rag_grounded"))
+            if not grounded and not is_non_clinical:
+                from app.services.chatbot.image_report_formatter import format_image_extraction_report
+                extracted_text = vision_res.get("extracted_text") or vision_res.get("reply_markdown")
+                if extracted_text or vision_res.get("extracted_sections"):
+                    reply_text = format_image_extraction_report(vision_res)
+                else:
+                    reply_text = "Chưa đọc được nội dung ảnh. Vui lòng gửi ảnh rõ hơn hoặc dùng chức năng đọc ảnh/biểu mẫu chuyên dụng."
+            legal_basis = vision_res.get("legal_basis") if grounded else None
+            if is_non_clinical:
+                reply_text = str(vision_res.get("reply_markdown") or "Hệ thống chỉ hỗ trợ phân tích ảnh thuốc, đơn thuốc và tài liệu BHYT.")
             suggested_chips = vision_res.get("suggested_chips") or ["Báo hỏng thiết bị", "Tra cứu Dược Thư", "Đối chiếu quy chế"]
             card_obj = None
-            if vision_res.get("card") and isinstance(vision_res.get("card"), dict):
+            if grounded and vision_res.get("card") and isinstance(vision_res.get("card"), dict):
                 from app.schemas.copilot import CopilotActionCard
                 c = vision_res["card"]
                 card_obj = CopilotActionCard(
@@ -108,16 +191,29 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                     primary_action_type=c.get("primary_action_type", "CREATE_TICKET"),
                     target_tab=c.get("target_tab", "asset_audit")
                 )
+            from app.schemas.copilot import ClinicalSummary
             return CopilotResponse(
                 intent="MULTIMODAL_CLINICAL_VISION",
                 reply_text=reply_text,
                 legal_basis=legal_basis,
+                clinical_summary=(
+                    ClinicalSummary(
+                        headline="Kết quả đọc ảnh chưa xác minh",
+                        key_takeaway="Nội dung trích xuất từ ảnh chưa được đối chiếu với nguồn y tế.",
+                        urgency="warning",
+                    ) if not grounded and not is_non_clinical else None
+                ),
                 suggested_chips=suggested_chips,
                 card=card_obj,
-                rag_grounded=True,
-                prompt_tokens=vision_res.get("_prompt_tokens", 280),
-                completion_tokens=vision_res.get("_completion_tokens", 350),
-                total_tokens=vision_res.get("_total_tokens", 630),
+                rag_grounded=grounded,
+                citations=citations,
+                evidence=evidence,
+                answer_type=("out_of_scope" if is_non_clinical else ("grounded_reference" if grounded else "image_extraction")),
+                source_status="out_of_scope" if is_non_clinical else ("verified_evidence" if grounded else "image_extracted_unverified"),
+                abstention_reason=None if (grounded or is_non_clinical) else "Không có evidence/citation kiểm chứng cho kết quả phân tích ảnh",
+                prompt_tokens=vision_res.get("_prompt_tokens", 0),
+                completion_tokens=vision_res.get("_completion_tokens", 0),
+                total_tokens=vision_res.get("_total_tokens", 0),
                 model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
                 has_image=True,
                 image_tokens=vision_res.get("_image_tokens", 258)
@@ -135,20 +231,163 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     # Gemini NLU Router (Structured Intent & Entity Resolution - Zero Hardcode)
     from app.services.chatbot.gemini_nlu_router import parse_clinical_nlu
     nlu_res = await parse_clinical_nlu(query, history=history, active_med=session.active_medication_name)
+    from app.services.chatbot.workflow_router import prepare_request, decide_route
+    from app.schemas.clinical_nlu import ClinicalNluExtraction
+    policy_state = request.scope.get("app") if hasattr(request, "scope") and isinstance(getattr(request, "scope", None), dict) else None
+    workflow_policy = getattr(getattr(policy_state, "state", None), "workflow_policy", None) if policy_state is not None else None
+    from app.services.chatbot.workflow_policy import WorkflowPolicy, load_workflow_policy
+    if not isinstance(workflow_policy, WorkflowPolicy):
+        from app.config import settings
+        workflow_policy = load_workflow_policy(
+            settings.WORKFLOW_POLICY_PATH,
+            registered_executors={"conversation", "drug_lookup", "portal_guidance", "ddi",
+                                  "clinical_reasoning", "sandwich", "specialty", "clarification", "multi_intent"},
+        )
+    if not nlu_res:
+        fallback_intent = "CLINICAL_CASE_CLARIFICATION"
+        fallback_res = ClinicalNluExtraction(intent=fallback_intent)
+        workflow_context = prepare_request(payload.query, normalized_query=query, user_role=user_role,
+                                           nlu_result=fallback_res, session=session)
+        workflow_decision = decide_route(workflow_context, None, workflow_policy, fallback_intent=fallback_intent)
+        workflow_decision = workflow_decision.model_copy(update={"reason_code": "managed_nlu_unavailable_fallback"})
+        if policy_state is not None:
+            request.state.workflow_context = workflow_context
+            request.state.workflow_route = workflow_decision
+        return CopilotResponse(
+            intent=fallback_intent,
+            reply_text="Chưa xác định được chủ đề từ bộ phân loại hiện tại. Vui lòng nêu rõ tên thuốc, hoạt chất, văn bản hoặc nghiệp vụ cần tra cứu.",
+            answer_type="clarification",
+            source_status="nlu_unavailable",
+            confidence=1.0,
+            abstention_reason="Bộ phân loại ý định tạm thời không khả dụng",
+            session_id=session_id,
+        )
+
     if nlu_res:
+        request.state.clinical_nlu_result = nlu_res
+        from app.services.chatbot.answer_operation import requires_reference_note
+        inference_required = requires_reference_note(nlu_res)
+        # Capture the single NLU decision with immutable query identity before
+        # topic updates or query rewriting. Ordered legacy handlers remain the
+        # executor implementation until their adapter parity tasks are complete.
+        workflow_context = prepare_request(
+            payload.query,
+            normalized_query=query,
+            user_role=user_role,
+            nlu_result=nlu_res,
+            session=session,
+        )
+        # Session entities are eligible only for an explicitly contextual turn.
+        # An independent turn must not inherit the previous medication merely
+        # because the session still has an active slot.
+        from app.services.chatbot.session_routing import FIELD_ONLY_TERMS
+        is_field_inquiry = bool(session.active_medication_name and any(term in lower_query for term in FIELD_ONLY_TERMS))
+        if (
+            getattr(nlu_res, "conversation_mode", "independent") == "independent"
+            and not getattr(nlu_res, "is_deictic_referent", False)
+            and not is_field_inquiry
+        ):
+            workflow_context = workflow_context.model_copy(update={"required_entities": []})
+        request_app = policy_state
+        if request_app is not None:
+            request.state.workflow_context = workflow_context
+        # One managed decision owns the intent and precedence used by dispatch.
+        nlu_intent = str(getattr(nlu_res, "intent", "") or "").strip()
+        if nlu_intent not in workflow_policy.routes:
+            nlu_intent = ""
+        workflow_decision = decide_route(
+            workflow_context, nlu_res, workflow_policy,
+            fallback_intent="AMBIGUOUS_INTENT" if not nlu_intent else None,
+        )
+        workflow_intent = workflow_decision.intent
+        if request_app is not None:
+            request.state.workflow_route = workflow_decision
+        if workflow_intent == "AMBIGUOUS_INTENT":
+            return CopilotResponse(
+                intent="CLINICAL_CASE_CLARIFICATION",
+                reply_text="Chưa xác định được ý định cần xử lý. Vui lòng diễn đạt lại câu hỏi hoặc nêu rõ thuốc, chủ đề hay nghiệp vụ cần hỗ trợ.",
+                answer_type="clarification",
+                source_status="ambiguous_intent",
+                confidence=1.0,
+                abstention_reason="Kết quả phân loại không ánh xạ được sang một ý định đã quản lý",
+                session_id=session_id,
+            )
+
         # Nhận diện đơn thuốc thô nhiều dòng -> kích hoạt Prescription Block Audit Mode
-        if getattr(nlu_res, "is_prescription_block", False):
+        if workflow_decision.reason_code == "managed_precedence:prescription_block":
             from app.services.chatbot.prescription_block_handler import handle_prescription_block_audit
             return await handle_prescription_block_audit(
                 query, nlu_res.prescription_lines, user_name, user_role, session_id, db
             )
 
         # Xử lý câu hỏi kép / đa ý định -> phân rã sub_queries song song
-        if len(getattr(nlu_res, "sub_queries", [])) >= 2:
+        if workflow_decision.executor_key == "multi_intent":
             from app.services.chatbot.multi_intent_handler import handle_multi_intent_chat
             return await handle_multi_intent_chat(
                 nlu_res.sub_queries, payload, request, db, session=session, history=history, core_handler_fn=_handle_copilot_chat_core
             )
+        if workflow_decision.executor_key == "drug_lookup":
+            has_contextual_entity = (
+                getattr(nlu_res, "conversation_mode", "independent") == "contextual_followup"
+                or getattr(nlu_res, "is_deictic_referent", False)
+                or is_field_inquiry
+            )
+            if not nlu_res.primary_drug and not has_contextual_entity:
+                return CopilotResponse(
+                    intent="MEDICATION_LOOKUP_CLARIFICATION",
+                    reply_text="Chưa xác định được thuốc cần tra cứu. Vui lòng nêu tên thuốc, hoạt chất hoặc số đăng ký.",
+                    answer_type="clarification", source_status="missing_medication_entity",
+                    confidence=1.0, session_id=session_id,
+                )
+            if nlu_res.primary_drug and getattr(nlu_res, "is_topic_shift", False):
+                session.set_active_medication(name=nlu_res.primary_drug)
+            medication_query = query
+            if (has_contextual_entity or is_field_inquiry) and not nlu_res.primary_drug and session.active_medication_name:
+                medication_query = f"{query} của thuốc {session.active_medication_name}"
+            lookup_response = await lookup_drug_authoritative(
+                medication_query, db, session_id=session_id, user_name=user_name, user_role=user_role,
+                requested_fields=(
+                    _requested_fields_from_managed_schema(
+                        query,
+                        getattr(nlu_res, "requested_field", None),
+                        getattr(nlu_res, "requested_fields", None),
+                    ) or None
+                ),
+            )
+            from app.services.copilot_drug_lookup import _attach_database_claims
+            return _attach_database_claims(lookup_response)
+        if workflow_decision.executor_key == "clinical_reasoning":
+            is_advice_or_schedule = any(w in lower_query for w in ["dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc", "thông báo uống"])
+            if not is_advice_or_schedule:
+                from app.services.clinical_reasoning.patient_dose_reasoner import evaluate_patient_dose_reasoning
+                patient_dose_res = await evaluate_patient_dose_reasoning(
+                    query=query, session=session, db=db, user_name=user_name,
+                    user_role=user_role, nlu_extraction=nlu_res,
+                )
+                if patient_dose_res is not None:
+                    return patient_dose_res
+            # Complex case questions use the same indexed evidence, claim
+            # validation, and citation path as the rest of RAG. The legacy
+            # multi-hop rule engine builds fixed drafts and placeholder sources.
+            reasoning_response = await handle_deep_rag_consultation(
+                query, lower_query, user_role, history, session_id, user_name,
+                is_deep_pharmacology=False, inference_required=inference_required,
+            )
+            if reasoning_response is not None:
+                return reasoning_response
+        if (
+            workflow_decision.executor_key == "ddi"
+            and getattr(nlu_res, "secondary_entity_type", None)
+            and nlu_res.secondary_entity_type != "drug"
+        ):
+            # Non-drug interaction entities use the common evidence retriever;
+            # the pairwise DDI matrix only accepts resolved medication pairs.
+            ddi_evidence_response = await handle_deep_rag_consultation(
+                query, lower_query, user_role, history, session_id, user_name,
+                is_deep_pharmacology=True, inference_required=inference_required,
+            )
+            if ddi_evidence_response is not None:
+                return ddi_evidence_response
 
         # Quản lý chuyển chủ đề tự động (Topic Shift) ngay từ đầu để đảm bảo tính liên tục của session
         if getattr(nlu_res, "is_topic_shift", False):
@@ -157,49 +396,15 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             else:
                 session.set_active_medication(name="", ingredient="", sdk="")
 
-        # =========================================================================
-        # MULTI-HOP CLINICAL AGENT & COT REASONING (IRCoT ACL 2023 / Med-PaLM 2)
-        # Intercept complex multi-condition & polypharmacy cases before simple 1-drug or pairwise checks
-        # =========================================================================
-        from app.services.rag.multihop_clinical_agent import is_multihop_clinical_case, execute_multihop_clinical_evaluation
-        if is_multihop_clinical_case(query, lower_query):
-            multihop_rag = await execute_multihop_clinical_evaluation(query, user_role=user_role)
-            citations_data = [
-                c.to_dict() if hasattr(c, "to_dict") else (c.model_dump() if hasattr(c, "model_dump") else dict(c))
-                for c in multihop_rag.citations
-            ] if multihop_rag.citations else []
-            from app.schemas.copilot import CopilotCdssAlert
-            cdss_alert_obj = CopilotCdssAlert(**multihop_rag.cdss_alert) if multihop_rag.cdss_alert else None
-            return CopilotResponse(
-                intent="CLINICAL_AI_CONSULTATION",
-                reply_text=multihop_rag.answer,
-                legal_basis=multihop_rag.legal_basis,
-                citations=citations_data,
-                suggested_chips=[
-                    "Hiệu chỉnh liều theo ClCr",
-                    "Phác đồ thay thế an toàn cho thận",
-                    "Theo dõi điện giải đồ K+ và Creatinin"
-                ],
-                confidence=multihop_rag.confidence_score,
-                rag_grounded=multihop_rag.rag_grounded,
-                answer_type="multihop_case_consultation",
-                source_status="rag_grounded_verified" if multihop_rag.critique_verdict == "PASS" else "rag_grounded_caution",
-                critique_verdict=multihop_rag.critique_verdict,
-                factuality_score=multihop_rag.factuality_score,
-                session_id=session_id,
-                cdss_alert=cdss_alert_obj
-            )
+        # Complex clinical reasoning continues through the common RAG workflow.
 
-        if nlu_res.intent == "MEDICATION_LOOKUP_GUIDE":
+        # Once the managed policy has resolved the route, downstream intent
+        # dispatch must read that decision rather than the raw NLU label. This
+        # keeps policy precedence (for example multi-intent overrides) authoritative.
+        if workflow_intent == "MEDICATION_LOOKUP_GUIDE":
             session.set_active_medication(name="", ingredient="", sdk="")
-            portal_text = (
-                "### CỔNG TRA CỨU DƯỢC THƯ QUỐC GIA VIỆT NAM (DĐVN V)\n\n"
-                "Hệ thống đã nạp sẵn toàn bộ **771 chuyên luận Dược Thư Quốc Gia Việt Nam (QĐ 2033/QĐ-BYT)** "
-                "và **54.885 số đăng ký thuốc Cục Quản lý Dược (DAV)**.\n\n"
-                "Đồng nghiệp có thể tra cứu nhanh bằng cách:\n"
-                "• Gõ trực tiếp tên biệt dược hoặc hoạt chất vào ô chat (ví dụ: *Coversyl, Augmentin, Zithromax, Ciprofloxacin...*).\n"
-                "• Hoặc bấm vào nút **'Thông tin thuốc' / 'Tra cứu Dược thư'** trên thanh công cụ để mở giao diện tìm kiếm nâng cao."
-            )
+            drug_count, monograph_count = await _portal_catalog_counts(db)
+            portal_text = _portal_guidance_text_with_counts(drug_count, monograph_count)
             return CopilotResponse(
                 intent="MEDICATION_LOOKUP_GUIDE",
                 reply_text=portal_text,
@@ -210,21 +415,21 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 source_status="exact_match",
                 confidence=1.0
             )
-        elif nlu_res.intent == "CAPABILITY_OPENING":
+        elif workflow_intent == "CAPABILITY_OPENING":
             from app.services.chatbot.conversational_steering import handle_capability_opening
             session.set_active_medication(name="", ingredient="", sdk="")
             return handle_capability_opening(user_role=user_role, user_name=user_name, session_id=session_id)
-        elif nlu_res.intent == "CONVERSATIONAL_FEEDBACK":
+        elif workflow_intent == "CONVERSATIONAL_FEEDBACK":
             greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
             if greeting_res:
                 session.set_active_medication(name="", ingredient="", sdk="")
                 return greeting_res
-        elif nlu_res.intent == "GREETING_WELLBEING":
+        elif workflow_intent == "GREETING_WELLBEING":
             greeting_res = handle_greeting_and_acknowledgment(lower_query, user_name, user_role)
             if greeting_res:
                 session.set_active_medication(name="", ingredient="", sdk="")
                 return greeting_res
-        elif nlu_res.intent == "OUT_OF_SCOPE":
+        elif workflow_intent == "OUT_OF_SCOPE":
             from app.services.chatbot.conversational_steering import handle_gentle_chitchat_steering
             session.set_active_medication(name="", ingredient="", sdk="")
             out_scope_type = getattr(nlu_res, "out_of_scope_type", None)
@@ -234,7 +439,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             if out_scope:
                 return out_scope
             return handle_gentle_chitchat_steering(query, out_of_scope_type=out_scope_type, user_name=user_name, user_role=user_role, session_id=session_id)
-        elif nlu_res.intent == "MEDICATION_INTERACTION_CLARIFICATION" and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+")):
+        elif workflow_intent == "MEDICATION_INTERACTION_CLARIFICATION" and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+")):
             from app.services.chatbot.session_routing import check_interaction_examples_request
             ddi_ex = check_interaction_examples_request(lower_query, session_id)
             if ddi_ex:
@@ -242,28 +447,34 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)
             if clarification_res:
                 return clarification_res
-        elif nlu_res.intent == "MEDICATION_INTERACTION_CHECK" and nlu_res.primary_drug and nlu_res.secondary_drug:
-            from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
-            all_ddi_meds = [nlu_res.primary_drug, nlu_res.secondary_drug] + (nlu_res.additional_drugs or [])
-            session.set_comparison_drugs(all_ddi_meds)
-            if nlu_res.primary_drug:
-                session.set_active_medication(name=nlu_res.primary_drug)
-            ddi_res = format_multi_ddi_response(all_ddi_meds, query, session_id=session_id)
-            if ddi_res:
-                ddi_res.active_medication_name = session.active_medication_name
-                return ddi_res
-            clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)
-            if clarification_res:
-                return clarification_res
-        elif nlu_res.intent == "MEDICATION_LOOKUP" and nlu_res.primary_drug and nlu_res.is_deictic_referent:
+        elif workflow_intent == "MEDICATION_INTERACTION_CHECK" and nlu_res.primary_drug and nlu_res.secondary_drug:
+            has_interaction_kw = any(w in lower_query for w in ("tương tác", "tương kỵ", "kỵ nhau", "kỵ thuốc", "uống cùng", "dùng cùng", "uống chung", "phối hợp"))
+            has_profile_kw = any(w in lower_query for w in ("chỉ định", "chống chỉ định", "liều dùng", "công dụng", "tác dụng phụ"))
+            if has_profile_kw and not has_interaction_kw:
+                # Không chặn DDI khi người dùng hỏi hồ sơ chuyên môn của thuốc phối hợp
+                pass
+            else:
+                from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
+                all_ddi_meds = [nlu_res.primary_drug, nlu_res.secondary_drug] + (nlu_res.additional_drugs or [])
+                session.set_comparison_drugs(all_ddi_meds)
+                if nlu_res.primary_drug:
+                    session.set_active_medication(name=nlu_res.primary_drug)
+                ddi_res = format_multi_ddi_response(all_ddi_meds, query, session_id=session_id)
+                if ddi_res:
+                    ddi_res.active_medication_name = session.active_medication_name
+                    return ddi_res
+                clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)
+                if clarification_res:
+                    return clarification_res
+        elif workflow_intent == "MEDICATION_LOOKUP" and nlu_res.primary_drug and nlu_res.is_deictic_referent:
             session.set_active_medication(name=nlu_res.primary_drug)
-        elif nlu_res.intent == "PATIENT_MEDICATION_COUNSELING":
+        elif workflow_intent == "PATIENT_MEDICATION_COUNSELING":
             target_med = nlu_res.primary_drug or session.active_medication_name
             if target_med:
                 sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
                 if sandwich_res:
                     return sandwich_res
-        elif nlu_res.intent == "SPECIALTY_CLINICAL_PROTOCOL":
+        elif workflow_intent == "SPECIALTY_CLINICAL_PROTOCOL":
             from app.services.chatbot.conversational_clinical_engine import (
                 find_clinical_specialty_consultation,
                 synthesize_specialty_response,
@@ -291,6 +502,8 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     rewritten_res = await rewrite_clinical_query(query, history=history, active_med=session.active_medication_name)
     query = rewritten_res.rewritten_query
     lower_query = query.lower()
+    if nlu_res and request_app is not None:
+        request.state.workflow_context = workflow_context.model_copy(update={"rewritten_query": query})
 
     # 2.1. Neuro-Symbolic Patient Dose Reasoning (Cockcroft-Gault CrCl & Dược Thư Grounding)
     is_advice_or_schedule = any(w in lower_query for w in ["dặn dò", "nhắc uống thuốc", "nhắc thuốc", "lịch uống", "lên lịch nhắc", "thông báo uống"])
@@ -386,14 +599,8 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         "tra cứu dược thư 2015", "dược thư 2015", "dược thư", "dược thư qg"
     }:
         session.set_active_medication(name="", ingredient="", sdk="")
-        portal_text = (
-            "### CỔNG TRA CỨU DƯỢC THƯ QUỐC GIA VIỆT NAM (DĐVN V)\n\n"
-            "Hệ thống đã nạp sẵn toàn bộ **771 chuyên luận Dược Thư Quốc Gia Việt Nam (QĐ 2033/QĐ-BYT)** "
-            "và **54.885 số đăng ký thuốc Cục Quản lý Dược (DAV)**.\n\n"
-            "Đồng nghiệp có thể tra cứu nhanh bằng cách:\n"
-            "• Gõ trực tiếp tên biệt dược hoặc hoạt chất vào ô chat (ví dụ: *Coversyl, Augmentin, Zithromax, Ciprofloxacin...*).\n"
-            "• Hoặc bấm vào nút **'Thông tin thuốc' / 'Tra cứu Dược thư'** trên thanh công cụ để mở giao diện tìm kiếm nâng cao."
-        )
+        drug_count, monograph_count = await _portal_catalog_counts(db)
+        portal_text = _portal_guidance_text_with_counts(drug_count, monograph_count)
         return CopilotResponse(
             intent="MEDICATION_LOOKUP_GUIDE",
             reply_text=portal_text,
@@ -408,38 +615,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     norm_query = normalize_conversational_query(query)
     norm_lower = norm_query.lower()
 
-    # =========================================================================
-    # MULTI-HOP CLINICAL AGENT & COT REASONING (IRCoT ACL 2023 / Med-PaLM 2)
-    # Intercept complex multi-condition & polypharmacy cases before subflows or 1-drug consults
-    # =========================================================================
-    from app.services.rag.multihop_clinical_agent import is_multihop_clinical_case, execute_multihop_clinical_evaluation
-    if is_multihop_clinical_case(query, norm_lower):
-        multihop_rag = await execute_multihop_clinical_evaluation(query, user_role=user_role)
-        citations_data = [
-            c.to_dict() if hasattr(c, "to_dict") else (c.model_dump() if hasattr(c, "model_dump") else dict(c))
-            for c in multihop_rag.citations
-        ] if multihop_rag.citations else []
-        from app.schemas.copilot import CopilotCdssAlert
-        cdss_alert_obj = CopilotCdssAlert(**multihop_rag.cdss_alert) if multihop_rag.cdss_alert else None
-        return CopilotResponse(
-            intent="CLINICAL_AI_CONSULTATION",
-            reply_text=multihop_rag.answer,
-            legal_basis=multihop_rag.legal_basis,
-            citations=citations_data,
-            suggested_chips=[
-                "Hiệu chỉnh liều theo ClCr",
-                "Phác đồ thay thế an toàn cho thận",
-                "Theo dõi điện giải đồ K+ và Creatinin"
-            ],
-            confidence=multihop_rag.confidence_score,
-            rag_grounded=multihop_rag.rag_grounded,
-            answer_type="multihop_case_consultation",
-            source_status="rag_grounded_verified" if multihop_rag.critique_verdict == "PASS" else "rag_grounded_caution",
-            critique_verdict=multihop_rag.critique_verdict,
-            factuality_score=multihop_rag.factuality_score,
-            session_id=session_id,
-            cdss_alert=cdss_alert_obj
-        )
+    # Complex clinical reasoning continues through the common RAG workflow.
 
     subflow_res = await dispatch_clinical_subflows(norm_query, norm_lower, user_name, db, user_role=user_role)
     if subflow_res:
@@ -478,7 +654,11 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     has_single_cand = (has_candidate_drug or len(resolved_meds) == 1 or (len(extracted_kw) >= 3 and not is_non_drug_kw) or active_in_query) and not is_two_drug and not is_deictic_interaction
     is_single_interaction = has_single_cand and has_interaction_term and not any(c in lower_query for c in (" và ", " cùng ", " với ", "+", " kết hợp ", " phối hợp ", " va ", " voi ", " cung "))
 
-    is_multi_drug_active = is_two_drug or len(resolved_meds) >= 2 or len(lex_meds) >= 2
+    has_explicit_interaction_term = any(term in lower_query for term in (
+        "tương tác", "tương kỵ", "kỵ nhau", "kỵ thuốc", "kỵ với", "kỵ gì",
+        "tuong tac", "tuong ky", "ky thuoc", "phối hợp", "uống cùng", "uống chung",
+        "dùng cùng", "uong cung", "dung cung", "kết hợp"
+    ))
     excluded_field_terms = [
         "tương tác thuốc của thuốc", "tương tác thuốc paracetamol",
         "tác dụng phụ", "tác dụng không mong muốn", "liều dùng", "liều tối đa",
@@ -488,7 +668,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         "trước ăn", "sau ăn", "lúc đói", "lúc no", "sáng hay tối", "uống sáng", "uống tối",
         "suy gan", "xơ gan", "men gan", "người già", "người cao tuổi", "quá liều", "ngộ độc"
     ]
-    if not is_multi_drug_active:
+    if not has_explicit_interaction_term:
         excluded_field_terms.extend(["chống chỉ định", "chong chi dinh", "chỉ định", "chi dinh", "công dụng", "cong dung"])
 
     if (is_interaction_q or is_deictic_interaction) and not is_single_interaction and not any(term in lower_query for term in excluded_field_terms):
@@ -592,12 +772,12 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         "đổi sang", "chuyển sang", "thay thế", "thay bằng", "đổi nhóm", "đổi thuốc", "lựa chọn thay thế"
     )) or ("ho khan" in lower_query and any(term in lower_query for term in ("coversyl", "enalapril", "perindopril", "acei", "ức chế men chuyển")))
     if is_therapeutic_alternative:
-        deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm)
+        deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm, inference_required=inference_required)
         if deep_rag:
             return deep_rag
 
     if not is_renal and not is_therapeutic_alternative and has_drug_ent and any(cue in lower_query or cue in norm_lower for cue in drug_cues) and not is_two_drug and not is_deep_complex:
-        is_personalized_request = (nlu_res and nlu_res.intent == "PATIENT_MEDICATION_COUNSELING") or any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
+        is_personalized_request = workflow_intent == "PATIENT_MEDICATION_COUNSELING" or any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:
@@ -610,7 +790,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     #     sc_res2.reply_text = validate_output_guardrail(sc_res2.reply_text, query)
     #     return sc_res2
 
-    contextual_rag = await handle_contextual_rag_followup(query, lower_query, user_role, history, session_id, user_name, is_interaction_q, explicit_named, session.active_medication_name)
+    contextual_rag = await handle_contextual_rag_followup(query, lower_query, user_role, history, session_id, user_name, is_interaction_q, explicit_named, session.active_medication_name, inference_required=inference_required)
     if contextual_rag:
         return contextual_rag
 
@@ -631,7 +811,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     cand_kw_present = bool(extract_drug_keywords(lower_query))
     is_short_drug_candidate = len(lower_query.split()) <= 3 and cand_kw_present and not any(w in lower_query for w in ["chào", "hello", "hi", "tủ trực", "báo hỏng", "hư hỏng", "máy thở", "monitor", "kiểm kê", "giao ban"])
     if (has_sdk or ((has_drug_ask or is_short_drug_candidate) and (has_drug_ent or cand_kw_present))) and not is_deep_pharm and not is_interaction_q and not is_renal and not is_deep_complex and not is_therapeutic_alternative:
-        is_personalized_request = (nlu_res and nlu_res.intent == "PATIENT_MEDICATION_COUNSELING") or any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
+        is_personalized_request = workflow_intent == "PATIENT_MEDICATION_COUNSELING" or any(w in lower_query for w in ["dặn dò", "bệnh nhân hiểu", "người nhà", "3 ý", "giải thích cho", "lưu ý quan trọng", "dễ hiểu", "dành cho điều dưỡng", "dành cho bác sĩ", "súc tích"])
         if is_personalized_request:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:
@@ -646,30 +826,210 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
 
     clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
     if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:
-        deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm)
+        deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm, inference_required=inference_required)
         if deep_rag:
             return deep_rag
 
     greeting = get_clinical_persona_greeting(user_name, user_role)
-    fallback_reply = (
-        f"{greeting} em đã tiếp nhận câu hỏi chuyên môn của đồng nghiệp.\n\n"
-        f"Để đảm bảo an toàn điều trị chính xác theo Dược thư Quốc gia và danh mục Cục Quản lý Dược, "
-        f"đồng nghiệp vui lòng cung cấp thêm tên thuốc/hoạt chất hoặc ca bệnh cụ thể:\n"
-        f"• **Tra cứu thuốc:** Tên biệt dược, hoạt chất (INN) hoặc số đăng ký (SĐK).\n"
-        f"• **Kiểm tra tương tác:** Cặp thuốc phối hợp (ví dụ: *Clopidogrel + Omeprazol*).\n"
-        f"• **Quy chế & Nghiệp vụ:** Thẩm định đơn TT 26, phác đồ phản vệ TT 51, hạn dùng FEFO TT 36.\n\n"
-        f"Em luôn sẵn sàng hỗ trợ đồng nghiệp ngay ạ!"
-    )
+    fallback_reply = "Chưa xác định được ý định và chủ đề cần tra cứu. Vui lòng nêu rõ tên thuốc, hoạt chất, văn bản hoặc nghiệp vụ cần hỗ trợ."
     return CopilotResponse(
-        intent="GENERAL_CLINICAL_ASSISTANCE", reply_text=fallback_reply,
-        legal_basis="Thông tư 26/2025, TT 52/2017, QĐ 5948 & DĐVN V",
+        intent="GENERAL_CLINICAL_ASSISTANCE", reply_text="Chưa xác định được ý định và chủ đề cần tra cứu. Vui lòng nêu rõ tên thuốc, hoạt chất, văn bản hoặc nghiệp vụ cần hỗ trợ.",
         suggested_chips=[]
     )
+
+
+def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotResponse:
+    if resp.intent == "MULTIMODAL_CLINICAL_VISION" and resp.answer_type in {"image_extraction", "out_of_scope"}:
+        return resp
+    non_factual_types = {
+        "clarification", "safe_abstention", "feedback_acknowledgment",
+        "conversational_feedback", "conversational_correction",
+        "conversational_guidance", "capability_overview", "unavailable",
+        "operational_result", "action_result", "action_confirmation", "cdss_alert",
+        "guideline", "medication_lookup_guide", "acknowledgment", "image_extraction",
+    }
+    non_factual_intents = {
+        "GREETING_WELCOME", "GREETING_WELLBEING", "CONVERSATIONAL_FEEDBACK",
+        "CONVERSATIONAL_CORRECTION", "FEEDBACK_DATA_ENRICHMENT",
+        "FEEDBACK_UI_ADJUSTMENT", "OUT_OF_SCOPE", "SECURITY_GUARDRAIL_BLOCKED",
+        "CLINICAL_CASE_CLARIFICATION", "MEDICATION_LOOKUP_CLARIFICATION",
+        "CLINICAL_SAFE_ABSTENTION", "CAPABILITY_OPENING",
+        "BUSINESS_OVERVIEW", "GENERAL_CLINICAL_ASSISTANCE", "CLINICAL_ALLERGY_CDSS",
+        "MEDICATION_LOOKUP_GUIDE", "ACKNOWLEDGMENT", "CLINICAL_DDI_INTERACTION_LOOKUP",
+        "CLINICAL_PEDIATRIC_GUIDANCE", "MEDICATION_INTERACTION_CLARIFICATION",
+    }
+    clinical_fact_intents = {
+        "CLINICAL_ALLERGY_CDSS", "CLINICAL_DDI_INTERACTION_LOOKUP",
+        "CLINICAL_PEDIATRIC_GUIDANCE", "MEDICATION_SAFETY_PROFILE",
+        "CLINICAL_AI_CONSULTATION", "ONCOLOGY_SPECIALTY_GUIDANCE",
+        "LEGAL_GUIDANCE", "MULTI_INTENT_COMPOSITE",
+    }
+    clinical_factual_types = {
+        "grounded_reference", "medication_profile", "medication_summary", "medication_field",
+        "medication_fields", "multihop_case_consultation", "composite_answer", "guideline", "cdss_alert",
+    }
+    is_clinical_factual = resp.intent in clinical_fact_intents or resp.answer_type in clinical_factual_types
+    if resp.intent in non_factual_intents and not is_clinical_factual:
+        return resp
+    if resp.intent in clinical_fact_intents and resp.answer_type not in {"safe_abstention", "clarification"}:
+        # Clinical facts always require claim-level validation, regardless of
+        # historical intent allowlists or an attached CDSS alert.
+        pass
+    if resp.answer_type == "safe_abstention" and resp.intent not in non_factual_intents:
+        resp.rag_grounded = False
+        resp.confidence = 0.0
+        resp.citations = []
+        resp.evidence = []
+        resp.claims = []
+        resp.evidence_claim_map = {}
+        is_explicit_explanation = any(
+            phrase in (resp.reply_text or "").casefold()
+            for phrase in ("thiếu nguồn", "chưa thể xác minh", "chưa tìm thấy", "unable to resolve", "vui lòng", "không thể")
+        )
+        if not is_explicit_explanation and resp.source_status in {None, "evidence_provenance_missing", "evidence_validation_failed", "insufficient_retrieval_evidence"}:
+            resp.reply_text = "Chưa thể xác minh nội dung lâm sàng từ nguồn tài liệu có thể truy xuất. Vui lòng thử lại với tài liệu đã được lập chỉ mục hoặc yêu cầu quản trị viên kiểm tra nguồn."
+        return resp
+    if resp.answer_type in non_factual_types and not is_clinical_factual:
+        return resp
+    # Citation and provenance metadata alone cannot prove the returned prose.
+    # The common boundary accepts only claim objects produced by a validated executor.
+    evidence_by_id = {
+        item.get("evidence_id"): item
+        for item in (resp.evidence or [])
+        if isinstance(item, dict) and item.get("evidence_id")
+    }
+    cited_chunk_ids = {
+        str(item.get("chunk_id")) for item in (resp.citations or [])
+        if isinstance(item, dict) and item.get("chunk_id")
+    }
+    valid_claims = []
+    for claim in resp.claims or []:
+        if claim.support_status != "supported" or not claim.evidence_ids:
+            continue
+        linked = [evidence_by_id.get(evidence_id) for evidence_id in claim.evidence_ids]
+        if any(item is None for item in linked):
+            continue
+        if any(
+            item.get("evidence_type") == "document_chunk"
+            and str(item.get("chunk_id")) not in cited_chunk_ids
+            for item in linked
+        ):
+            continue
+        if any(claim.claim_id not in (resp.evidence_claim_map or {}).get(evidence_id, []) for evidence_id in claim.evidence_ids):
+            continue
+        if claim.claim_type == "evidence_inference":
+            continue
+        if any(
+            not item.get("source_id") or not _has_verified_source_version(item.get("source_version"))
+            or " ".join(str(claim.text).casefold().split()) not in " ".join(str(item.get("content") or "").casefold().split())
+            for item in linked
+        ):
+            continue
+        valid_claims.append(claim)
+    reply_normalized = " ".join((resp.reply_text or "").casefold().split())
+    if len(valid_claims) != len(resp.claims or []) or any(
+        " ".join(claim.text.casefold().split()) not in reply_normalized for claim in valid_claims
+    ):
+        valid_claims = []
+    if not valid_claims:
+        resp.rag_grounded = False
+        resp.answer_type = "safe_abstention"
+        has_versioned_evidence = any(
+            isinstance(item, dict) and item.get("source_id")
+            and _has_verified_source_version(item.get("source_version"))
+            for item in (resp.evidence or [])
+        )
+        resp.source_status = "evidence_validation_failed" if has_versioned_evidence else "evidence_provenance_missing"
+        resp.abstention_reason = "Không có claim lâm sàng đã xác minh với evidence nguồn"
+        resp.reply_text = "Chưa thể xác minh nội dung câu trả lời với claim được gắn trực tiếp vào evidence có provenance."
+        resp.confidence = 0.0
+        resp.citations = []
+        resp.evidence = []
+        resp.claims = []
+        resp.evidence_claim_map = {}
+        return resp
+    resp.claims = valid_claims
+    # A factual response with zero confidence is not eligible to be grounded,
+    # even if a later stage attached valid provenance metadata.
+    if resp.confidence is not None and resp.confidence <= 0:
+        resp.rag_grounded = False
+        resp.answer_type = "safe_abstention"
+        resp.source_status = resp.source_status or "evidence_validation_failed"
+        resp.abstention_reason = resp.abstention_reason or "Phản hồi factual chưa đạt ngưỡng xác thực"
+        resp.citations = []
+        resp.evidence = []
+        return resp
+
+    evidence, citations = resp.evidence or [], resp.citations or []
+    def is_real_version(value: object) -> bool:
+        normalized = str(value or "").strip().casefold()
+        return bool(normalized) and normalized not in {"unversioned", "unknown", "none"}
+
+    cited_chunks = {str(c.get("chunk_id")) for c in citations if isinstance(c, dict) and c.get("chunk_id")}
+    has_linked_document = any(
+        isinstance(item, dict) and item.get("evidence_type") == "document_chunk"
+        and item.get("chunk_id") in cited_chunks
+        and item.get("source_id") and item.get("content")
+        and is_real_version(item.get("source_version"))
+        for item in evidence
+    )
+    has_versioned_graph = any(
+        isinstance(item, dict) and item.get("evidence_type") == "knowledge_graph"
+        and item.get("content") and item.get("source_id") and item.get("source_version")
+        and is_real_version(item.get("source_version"))
+        for item in evidence
+    )
+    if not (has_linked_document or has_versioned_graph):
+        resp.rag_grounded = False
+        resp.answer_type = "safe_abstention"
+        resp.source_status = "evidence_provenance_missing"
+        resp.abstention_reason = "Không xác minh được evidence gắn với citation của câu trả lời"
+        resp.reply_text = "Chưa thể xác minh câu trả lời từ nguồn tài liệu có thể truy xuất. Vui lòng thử lại với tài liệu đã được lập chỉ mục hoặc yêu cầu quản trị viên kiểm tra nguồn."
+        resp.confidence = 0.0
+    elif not resp.rag_grounded:
+        resp.answer_type = "safe_abstention"
+        resp.abstention_reason = resp.abstention_reason or "Kết quả factual chưa qua xác thực evidence"
+        resp.source_status = "evidence_validation_failed"
+        resp.reply_text = "Đã tìm thấy tài liệu liên quan nhưng chưa xác minh được nội dung trả lời. Vui lòng thử lại hoặc đối chiếu trực tiếp với nguồn được quản trị."
+        resp.confidence = 0.0
+    return resp
 
 
 async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
     """Entrypoint chính của Copilot: Xử lý chat và tự động chuẩn hóa 100% nguồn đối chứng (citations)."""
     from app.services.chatbot.citation_standardizer import standardize_response_citations
     resp = await _handle_copilot_chat_core(payload, request, db, session=session, history=history)
-    return standardize_response_citations(resp, payload.query)
+    resp = standardize_response_citations(resp, payload.query)
+    resp = validate_response_evidence_contract(resp)
+    route_intent = getattr(getattr(request.state, "workflow_route", None), "intent", None)
+    from app.services.chatbot.answer_operation import apply_reference_note
+    resp = apply_reference_note(resp, getattr(request.state, "clinical_nlu_result", None), route_intent)
+    if resp.answer_type == "safe_abstention":
+        resp.citations = []
+        resp.evidence = []
+        if not resp.clinical_summary:
+            from app.schemas.copilot import ClinicalSummary
+            headline = "Từ chối an toàn (Safe Abstention)"
+            takeaway = (resp.abstention_reason or resp.reply_text[:120]).replace("\n", " ").strip()
+            resp.clinical_summary = ClinicalSummary(headline=headline, key_takeaway=takeaway, urgency="warning")
+        if not resp.clinical_data or not resp.clinical_data.abstention_details:
+            from app.schemas.copilot import StructuredClinicalPayload, AbstentionDetailsSchema
+            reason_code = str(resp.source_status or "SAFE_ABSTENTION").upper()
+            resp.clinical_data = StructuredClinicalPayload(
+                abstention_details=AbstentionDetailsSchema(
+                    reason_code=reason_code,
+                    unresolved_entities=[],
+                    professional_recommendations=[
+                        "Kiểm tra lại tên biệt dược/hoạt chất hoặc tài liệu chuyên môn đã được Bộ Y tế phê duyệt.",
+                        "Tham khảo ý kiến Dược sĩ lâm sàng trước khi chỉ định."
+                    ]
+                )
+            )
+    elif resp.answer_type == "clarification":
+        if not resp.clinical_summary:
+            from app.schemas.copilot import ClinicalSummary
+            headline = "Yêu cầu làm rõ thông tin"
+            takeaway = resp.reply_text[:120].replace("\n", " ").strip()
+            resp.clinical_summary = ClinicalSummary(headline=headline, key_takeaway=takeaway, urgency="routine")
+    return resp
 

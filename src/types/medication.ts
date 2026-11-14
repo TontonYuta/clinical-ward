@@ -106,6 +106,7 @@ export interface FiveRightsSafetyInfo {
 export interface MasterMedication {
   id: string;
   nationalCode: string; // Mã định danh Bộ Y tế / BHYT
+  clinical_monograph_id?: string;
   brandName: string; // Tên biệt dược / thương mại
   tallManName?: string; // Tên theo chuẩn Tall Man Lettering (chống nhầm lẫn LASA)
   activeIngredient: string; // Tên hoạt chất quốc tế (INN)

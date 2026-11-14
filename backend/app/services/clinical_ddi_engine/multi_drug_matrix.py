@@ -4,14 +4,22 @@ Xử lý ma trận tam giác kết hợp O(N^2) dưới 1ms, trả lời tất �
 Quy chuẩn: Không sử dụng icon/emoji trang trí, 100% dữ liệu đối soát chuẩn QĐ 5948/QĐ-BYT.
 """
 from typing import List, Optional, Dict, Tuple
-from app.schemas.copilot import CopilotResponse, CopilotActionCard, CopilotCdssAlert
+from app.schemas.copilot import (
+    CopilotResponse,
+    CopilotActionCard,
+    CopilotCdssAlert,
+    ClinicalSummary,
+    StructuredClinicalPayload,
+    DdiFindingSchema,
+    AbstentionDetailsSchema,
+)
 from app.services.clinical_ddi_engine.detector import ClinicalDdiDetector
-from app.services.clinical_ddi_engine.schemas import DdiSeverity, DdiAlert
+from app.services.clinical_ddi_engine.schemas import DdiSeverity, DdiAlert, PatientClinicalContext
 from app.services.rag.sqlite_graph_service import ClinicalGraphTraversalService
 
 _DETECTOR = ClinicalDdiDetector()
 
-def _build_cross_matrix_markdown(drugs: List[str], pair_map: Dict[Tuple[str, str], str]) -> str:
+def _build_cross_matrix_markdown(drugs: List[str], pair_map: Dict[Tuple[str, str], str], unresolved_drugs: Optional[set[str]] = None) -> str:
     """Xây dựng bảng ma trận Markdown đối chiếu tương tác chéo N x N."""
     headers = ["Thuốc rà soát"] + drugs
     col_aligns = [":---"] + [":---:"] * len(drugs)
@@ -27,7 +35,9 @@ def _build_cross_matrix_markdown(drugs: List[str], pair_map: Dict[Tuple[str, str
             if d1 == d2:
                 row.append("—")
             else:
-                sev = pair_map.get((d1.lower(), d2.lower()), "AN TOÀN")
+                pair_key = (d1.casefold(), d2.casefold())
+                involves_unresolved = bool(unresolved_drugs and (d1.casefold() in unresolved_drugs or d2.casefold() in unresolved_drugs))
+                sev = pair_map.get(pair_key, "CHƯA XÁC MINH" if involves_unresolved else "KHÔNG GHI NHẬN TRONG NGUỒN ĐÃ TRA")
                 row.append(sev)
         rows.append("| " + " | ".join(row) + " |")
         
@@ -36,9 +46,12 @@ def _build_cross_matrix_markdown(drugs: List[str], pair_map: Dict[Tuple[str, str
 def format_multi_ddi_response(
     raw_drugs: List[str],
     query: str,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
+    patient_context: Optional[PatientClinicalContext] = None,
 ) -> CopilotResponse:
-    report = _DETECTOR.audit_prescription(raw_drugs)
+    report = _DETECTOR.audit_prescription(raw_drugs, patient=patient_context)
+    severity_order = {DdiSeverity.CONTRAINDICATED: 0, DdiSeverity.MAJOR: 1, DdiSeverity.MODERATE: 2, DdiSeverity.SAFE_SYNERGY: 3}
+    report.pair_alerts.sort(key=lambda alert: severity_order.get(alert.severity, 4))
     display_names = [d.display_name for d in report.normalized_entities]
     drug_names_str = ", ".join(f"**{name}**" for name in display_names)
 
@@ -111,15 +124,30 @@ def format_multi_ddi_response(
                     pair_map[(p1, p2)] = poly_label
                     pair_map[(p2, p1)] = poly_label
 
-    matrix_markdown = _build_cross_matrix_markdown(display_names, pair_map)
+    matrix_markdown = _build_cross_matrix_markdown(
+        display_names, pair_map, {name.strip().title().casefold() for name in report.unresolved_entities}
+    )
+
+    # Chỉ từ chối toàn bộ khi không còn cặp thuốc nào đã xác minh. Nếu có
+    # cảnh báo đã xác minh, vẫn hiển thị cảnh báo đó và tách phần chưa đủ dữ liệu.
+    if report.unresolved_entities and not report.pair_alerts and not report.polypharmacy_alerts:
+        unresolved_str = ", ".join(f"**{d}**" for d in report.unresolved_entities)
+        return CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE",
+            reply_text=f"Chưa đủ dữ liệu để kết luận tương tác thuốc. Chưa nhận diện được: {unresolved_str}. Không có kết luận an toàn cho toàn bộ đơn. Vui lòng cung cấp tên hoạt chất hoặc biệt dược chuẩn.",
+            clinical_summary=ClinicalSummary(headline="Chưa thể xác minh tương tác thuốc", key_takeaway=f"Chưa nhận diện được: {', '.join(report.unresolved_entities)}", urgency="warning"),
+            clinical_data=StructuredClinicalPayload(abstention_details=AbstentionDetailsSchema(reason_code="UNRESOLVED_DRUG_ENTITY", unresolved_entities=list(report.unresolved_entities), professional_recommendations=["Kiểm tra lại tên hoạt chất gốc (INN) hoặc biệt dược."])),
+            card=None, legal_basis=None, answer_type="safe_abstention", source_status="unresolved_drug_entity", confidence=0.0, rag_grounded=False, abstention_reason=f"Chưa nhận diện được: {', '.join(report.unresolved_entities)}", session_id=session_id, citations=[], evidence=[], suggested_chips=["Tra cứu tên hoạt chất", "Kiểm tra danh mục QĐ 5948"]
+        )
 
     # Trường hợp 1: Không ghi nhận tương tác nào
-    if not report.pair_alerts and not report.polypharmacy_alerts:
+    if not report.pair_alerts and not report.polypharmacy_alerts and not report.unresolved_entities:
         bluf = (
             f"• **Kết luận an toàn:** Không ghi nhận tương tác chống chỉ định hoặc cảnh báo nghiêm trọng "
             f"giữa {report.total_drugs} thuốc rà soát ({drug_names_str}) trong danh mục 633 cặp tương tác của Quyết định 5948/QĐ-BYT.\n"
             f"• **Khuyến cáo thực hành:** Đã đối soát {report.analyzed_pairs_count} cặp phối hợp; tiếp tục theo dõi đáp ứng điều trị lâm sàng và tuân thủ liều lượng chỉ định."
         )
+
         reply = (
             "Kính gửi Bác sĩ, dưới đây là kết quả rà soát tương tác thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
             f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf}\n\n"
@@ -129,15 +157,48 @@ def format_multi_ddi_response(
             f"• Căn cứ pháp lý đối soát: Danh mục tương tác thuốc chống chỉ định ban hành kèm Quyết định 5948/QĐ-BYT.\n\n"
             "Đồng nghiệp cần tra cứu thêm phác đồ xử trí hay hướng dẫn phối hợp thuốc nào liên quan không ạ?"
         )
+        safe_chunk_id = f"qd-5948:safe:{'-'.join(sorted(raw_drugs))[:40]}"
+        citations = [{
+            "chunk_id": safe_chunk_id,
+            "source": "Quyết định 5948/QĐ-BYT",
+            "legal_basis": "Quyết định 5948/QĐ-BYT Ban hành Danh mục Tương tác Thuốc Chống Chỉ Định",
+            "section": "Danh mục 633 tương tác thuốc chống chỉ định",
+            "excerpt": bluf[:200],
+            "document_id": "qd-5948-2021",
+            "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+            "page": 1
+        }]
+        evidence = [{
+            "evidence_id": f"document:{safe_chunk_id}",
+            "evidence_type": "document_chunk",
+            "chunk_id": safe_chunk_id,
+            "source_id": "backend/data/knowledge_base/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+            "source_version": "sha256:33752c720a342ff68136623c25a2d31041c31cde8245bee009d2b7de8ef1919a",
+            "source_name": "Quyết định 5948/QĐ-BYT",
+            "section": "Danh mục tương tác thuốc chống chỉ định",
+            "content": bluf,
+        }]
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE",
             reply_text=reply,
+            clinical_summary=ClinicalSummary(
+                headline="Không ghi nhận tương tác chống chỉ định",
+                key_takeaway=f"An toàn: Đã đối soát {report.analyzed_pairs_count} cặp phối hợp giữa {report.total_drugs} thuốc theo QĐ 5948/QĐ-BYT.",
+                urgency="routine",
+            ),
+            clinical_data=StructuredClinicalPayload(
+                ddi_findings=[],
+                special_warnings=["Tiếp tục theo dõi đáp ứng điều trị lâm sàng và tuân thủ liều lượng chỉ định."]
+            ),
             card=None,
             legal_basis="Quyết định 5948/QĐ-BYT & Dược Thư Quốc Gia Việt Nam",
             answer_type="grounded_reference",
             source_status="retrieved_evidence",
             confidence=1.0,
+            rag_grounded=True,
             session_id=session_id,
+            citations=citations,
+            evidence=evidence,
             suggested_chips=["Tra cứu liều dùng", "Kiểm tra chống chỉ định", "Tra cứu Dược Thư Quốc Gia"]
         )
 
@@ -243,13 +304,17 @@ def format_multi_ddi_response(
     else:
         warning_block = f"> [!WARNING] Cảnh báo an toàn quan trọng & Chống chỉ định (QĐ 5948/QĐ-BYT)\n" + "\n".join(warn_bullets)
 
+    unresolved_note = (
+        f"\n\n> [!WARNING] Chưa đủ dữ liệu để kết luận cho: {', '.join(report.unresolved_entities)}. Các cảnh báo ở trên chỉ áp dụng cho những thuốc đã nhận diện; chưa thể kết luận an toàn cho thuốc chưa xác minh."
+        if report.unresolved_entities else ""
+    )
     reply_text = (
         "Kính gửi Bác sĩ, dưới đây là kết quả rà soát tương tác thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
         f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{core_guidance}\n\n"
         f"### Ma Trận Đối Soát Tương Tác Chéo (Polypharmacy Cross-Matrix)\n{matrix_markdown}\n\n"
         f"### Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n" + "\n".join(detail_lines) + "\n\n"
         f"{warning_block}\n\n"
-        "Đồng nghiệp cần tra cứu thêm phác đồ xử trí hay hướng dẫn phối hợp thuốc nào liên quan không ạ?"
+        "Đồng nghiệp cần tra cứu thêm phác đồ xử trí hay hướng dẫn phối hợp thuốc nào liên quan không ạ?" + unresolved_note
     )
 
     # CDSS Alert và Action Card
@@ -322,29 +387,132 @@ def format_multi_ddi_response(
         citation_section = "Tương tác thuốc lâm sàng"
         citation_excerpt = "Đối soát tương tác theo danh mục 633 cặp thuốc QĐ 5948/QĐ-BYT"
 
-    citations = [
-        {
+    citations = []
+    evidence = []
+    manifest_source_id = "backend/data/knowledge_base/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf"
+    manifest_version = "sha256:33752c720a342ff68136623c25a2d31041c31cde8245bee009d2b7de8ef1919a"
+
+    for alert in report.pair_alerts:
+        cid = f"qd-5948:{alert.rule_id}"
+        citations.append({
+            "chunk_id": cid,
+            "source": alert.legal_evidence,
+            "legal_basis": alert.legal_evidence,
+            "section": alert.title,
+            "excerpt": alert.clinical_consequence,
+            "document_id": "qd-5948-2021",
+            "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+            "page": 1,
+        })
+        evidence.append({
+            "evidence_id": f"document:{cid}",
+            "evidence_type": "document_chunk",
+            "chunk_id": cid,
+            "source_id": manifest_source_id,
+            "source_version": manifest_version,
+            "source_name": alert.legal_evidence,
+            "section": alert.title,
+            "content": f"{alert.title}: {alert.clinical_consequence}. Cơ chế: {alert.mechanism}. Xử trí: {alert.action_recommendation}",
+        })
+    for alert in report.polypharmacy_alerts:
+        cid = f"qd-5948:{alert.syndrome_id}"
+        citations.append({
+            "chunk_id": cid,
+            "source": alert.legal_evidence,
+            "legal_basis": alert.legal_evidence,
+            "section": alert.title,
+            "excerpt": alert.clinical_consequence,
+            "document_id": "qd-5948-2021",
+            "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+            "page": 1,
+        })
+        evidence.append({
+            "evidence_id": f"document:{cid}",
+            "evidence_type": "document_chunk",
+            "chunk_id": cid,
+            "source_id": manifest_source_id,
+            "source_version": manifest_version,
+            "source_name": alert.legal_evidence,
+            "section": alert.title,
+            "content": f"{alert.title}: {alert.clinical_consequence}. Cơ chế: {alert.mechanism}. Xử trí: {alert.action_recommendation}",
+        })
+
+    if not citations:
+        fallback_cid = f"qd-5948:report:{'-'.join(sorted(raw_drugs))[:40]}"
+        citations.append({
+            "chunk_id": fallback_cid,
             "source": "Quyết định 5948/QĐ-BYT",
             "legal_basis": "Quyết định 5948/QĐ-BYT Ban hành Danh mục Tương tác Thuốc Chống Chỉ Định",
             "section": citation_section,
             "excerpt": citation_excerpt,
-            "document_id": "qd-5948-byt",
+            "document_id": "qd-5948-2021",
             "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
-            "page": 1
-        }
-    ]
+            "page": 1,
+        })
+        evidence.append({
+            "evidence_id": f"document:{fallback_cid}",
+            "evidence_type": "document_chunk",
+            "chunk_id": fallback_cid,
+            "source_id": manifest_source_id,
+            "source_version": manifest_version,
+            "source_name": "Quyết định 5948/QĐ-BYT",
+            "section": citation_section,
+            "content": citation_excerpt,
+        })
+
+    ddi_findings_list: List[DdiFindingSchema] = []
+    for alert in report.pair_alerts:
+        sev_str = "critical" if alert.severity == DdiSeverity.CONTRAINDICATED else ("warning" if alert.severity == DdiSeverity.MAJOR else "info")
+        ddi_findings_list.append(DdiFindingSchema(
+            drug_a=alert.drug_a,
+            drug_b=alert.drug_b,
+            severity=sev_str,
+            mechanism=alert.mechanism,
+            clinical_action=alert.action_recommendation,
+            substitute_drug=substitute_drug,
+            regulatory_reference=alert.legal_evidence,
+        ))
+    for poly in report.polypharmacy_alerts:
+        sev_str = "critical" if poly.severity == DdiSeverity.CONTRAINDICATED else "warning"
+        ddi_findings_list.append(DdiFindingSchema(
+            drug_a=", ".join(poly.involved_drugs),
+            drug_b=poly.title,
+            severity=sev_str,
+            mechanism=poly.mechanism,
+            clinical_action=poly.action_recommendation,
+            substitute_drug=substitute_drug,
+            regulatory_reference=poly.legal_evidence,
+        ))
+
+    ddi_summary = ClinicalSummary(
+        headline=f"Phát hiện {contra_count} chống chỉ định, {warning_count} cảnh báo tương tác" if contra_count > 0 else f"Phát hiện {warning_count} tương tác cảnh báo cần theo dõi",
+        key_takeaway=core_guidance.split("\n")[0].replace("• **Mức độ an toàn:** ", "").strip(),
+        urgency="emergency" if has_contra else ("warning" if (warning_count > 0 or poly_count > 0) else "routine")
+    )
+    ddi_payload = StructuredClinicalPayload(
+        ddi_findings=ddi_findings_list,
+        special_warnings=warn_bullets,
+        abstention_details=(AbstentionDetailsSchema(
+            reason_code="UNRESOLVED_DRUG_ENTITY",
+            unresolved_entities=list(report.unresolved_entities),
+            professional_recommendations=["Bổ sung tên hoạt chất hoặc biệt dược chuẩn để hoàn tất đối soát các thuốc còn lại."]
+        ) if report.unresolved_entities else None),
+    )
 
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE",
         reply_text=reply_text,
+        clinical_summary=ddi_summary,
+        clinical_data=ddi_payload,
         card=card,
         cdss_alert=cdss_alert,
-        legal_basis="Quyết định 5948/QĐ-BYT Ban hành Danh mục Tương tác Thuốc Chống Chỉ Định",
+        legal_basis="Quyết định 5948/QĐ-BYT & Dược Thư Quốc Gia Việt Nam",
         answer_type="grounded_reference",
-        source_status="retrieved_evidence",
-        confidence=1.0,
-        rag_grounded=True,
+        source_status="partial_unresolved_entities" if report.unresolved_entities else "retrieved_evidence",
+        confidence=0.7 if report.unresolved_entities else 1.0,
+        rag_grounded=bool(citations),
         session_id=session_id,
         citations=citations,
+        evidence=evidence,
         suggested_chips=["Biện pháp xử trí hoặc phối hợp thay thế an toàn", "Xem phác đồ thay thế", "Kiểm tra đơn thuốc khác"]
     )

@@ -4,7 +4,7 @@
  */
 
 import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
-import { Bot, Menu } from 'lucide-react';
+import { Bot, Menu, Wifi, WifiOff, CloudOff, LoaderCircle } from 'lucide-react';
 import {
   DebtRecord,
   EquipmentTicket,
@@ -52,7 +52,7 @@ import { PatientDetailModal } from './components/Modals/PatientDetailModal';
 import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import { DavDrugDetailModal } from './components/Modals/DavDrugDetailModal';
-import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches, prewarmInventoryMonographs } from './services/api';
+import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches, prewarmInventoryMonographs, fetchChatbotAvailability, type ChatbotAvailability } from './services/api';
 import { ALL_MASTER_MEDICATIONS, removeVietnameseTones } from './data/medicationMasterData';
 import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
@@ -65,6 +65,7 @@ import { cpoeApi } from './services/api/cpoeApi';
 import { clinicalAudio } from './utils/audio';
 
 const LegalDocsModal = lazy(() => import('./components/Modals/LegalDocsModal').then(m => ({ default: m.LegalDocsModal })));
+const DocumentsLibrary = lazy(() => import('./components/Documents/DocumentsLibrary').then(m => ({ default: m.DocumentsLibrary })));
 const UserGuideModal = lazy(() => import('./components/Modals/UserGuideModal').then(m => ({ default: m.UserGuideModal })));
 const PrintableFormModal = lazy(() => import('./components/Modals/PrintableFormModal').then(m => ({ default: m.PrintableFormModal })));
 import { fontScaleToPixels } from './components/Settings/fontScaleModel';
@@ -154,6 +155,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(getInitialSidebarCollapsed);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(getInitialCopilotOpen);
+  const [chatbotAvailability, setChatbotAvailability] = useState<ChatbotAvailability['mode']>('checking');
   const [isCopilotExpanded, setIsCopilotExpanded] = useState<boolean>(getInitialCopilotExpanded);
   const [isLegalDocsOpen, setIsLegalDocsOpen] = useState<boolean>(false);
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
@@ -357,6 +359,24 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   }, [chatSessions, chatMessages]);
   useEffect(() => { saveSidebarCollapsed(isSidebarCollapsed); }, [isSidebarCollapsed]);
   useEffect(() => { saveCopilotOpen(isCopilotOpen); }, [isCopilotOpen]);
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        const status = await fetchChatbotAvailability();
+        if (active) setChatbotAvailability(status.mode);
+      } catch {
+        if (active) setChatbotAvailability('offline');
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(refresh, 30000);
+    const onOnline = () => void refresh();
+    const onOffline = () => { if (active) setChatbotAvailability('offline'); };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
+  }, []);
   useEffect(() => { saveCopilotExpanded(isCopilotExpanded); }, [isCopilotExpanded]);
   useEffect(() => { saveAudioMuted(isAudioMuted); }, [isAudioMuted]);
 
@@ -1902,7 +1922,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
           misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
           onOpenLegalDocs={() => {
-            setIsLegalDocsOpen(true);
+            setCurrentTab('documents');
             setIsMobileSidebarOpen(false);
           }}
           onOpenAuditTrail={() => {
@@ -1944,7 +1964,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           coldChainTemp={coldChainState.currentTemp}
           isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
           misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
-          onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
+          onOpenLegalDocs={() => setCurrentTab('documents')}
           onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
           onOpenUserGuide={() => setIsUserGuideOpen(true)}
           onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
@@ -1967,12 +1987,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           </button>
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Kho Y Tế Lâm Sàng</p>
-            <p className="truncate text-sm font-semibold text-slate-900">{currentTab === 'overview' ? 'Tổng quan' : 'Không gian làm việc'}</p>
+            <p className="truncate text-sm font-semibold text-slate-900">{currentTab === 'documents' ? 'Tài liệu' : currentTab === 'overview' ? 'Tổng quan' : 'Không gian làm việc'}</p>
           </div>
         </div>
         <main className="flex-1 flex flex-col overflow-hidden relative pt-0 md:pt-0">
           <section className="w-full h-full flex flex-col overflow-hidden">
-            <Dashboard
+            {currentTab === 'documents' ? (
+              <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-slate-500">Đang mở thư viện tài liệu…</div>}>
+                <DocumentsLibrary />
+              </Suspense>
+            ) : <Dashboard
               currentTab={currentTab}
               onTabChange={(tab) => setCurrentTab(tab)}
               currentUserRole={currentUserRole}
@@ -2004,7 +2028,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
               onOpenCopilot={() => setIsCopilotOpen(true)}
               onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
               auditRecords={auditRecords}
-            />
+            />}
           </section>
         </main>
       </div>
@@ -2026,11 +2050,17 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         type="button"
         onClick={() => setIsCopilotOpen((prev) => !prev)}
         aria-label="Trợ lý AI lâm sàng"
-        title="Trợ lý AI lâm sàng (⌘K / Ctrl+K)"
-        className={`fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-12 w-12 md:h-13 md:w-13 items-center justify-center rounded-full bg-teal-700 hover:bg-teal-800 text-white shadow-xl hover:shadow-2xl border-2 border-teal-500/50 hover:border-teal-400 ring-4 ring-teal-500/20 transition-all duration-200 ease-out hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
+        title={`Trợ lý AI lâm sàng · ${chatbotAvailability.replace('_', ' ')} (⌘K / Ctrl+K)`}
+        className={`fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-12 w-12 md:h-13 md:w-13 items-center justify-center rounded-full bg-teal-700 hover:bg-teal-800 text-white shadow-xl hover:shadow-2xl border-2 border-teal-500/50 hover:border-teal-400 ring-4 ring-teal-500/20 transition-all duration-200 ease-out hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 chatbot-launcher-glow ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
       >
         <Bot className="h-6 w-6 text-white shrink-0" />
         <span className="sr-only">Trợ lý AI (⌘K / Ctrl+K)</span>
+        <span className="absolute -top-8 right-0 whitespace-nowrap rounded-md bg-slate-900/90 px-2 py-1 text-[11px] font-medium text-white shadow" role="status" aria-live="polite">
+          {chatbotAvailability === 'checking' && <><LoaderCircle className="mr-1 inline h-3 w-3 animate-spin" />Đang kiểm tra</>}
+          {chatbotAvailability === 'online_ai' && <><Wifi className="mr-1 inline h-3 w-3" />Online</>}
+          {chatbotAvailability === 'local_only' && <><CloudOff className="mr-1 inline h-3 w-3" />Cục bộ</>}
+          {chatbotAvailability === 'offline' && <><WifiOff className="mr-1 inline h-3 w-3" />Offline</>}
+        </span>
       </button>
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
@@ -2059,6 +2089,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           <ChatWindow
             messages={chatMessages}
             suggestionChips={[]}
+            availabilityMode={chatbotAvailability}
             onSendMessage={handleSendMessage}
             isProcessing={isProcessing}
             isAudioMuted={isAudioMuted}
@@ -2112,6 +2143,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           isOpen={isLegalDocsOpen}
           onClose={() => setIsLegalDocsOpen(false)}
         />
+
 
         <UserGuideModal
           isOpen={isUserGuideOpen}

@@ -135,7 +135,7 @@ async def test_real_token_ledger_and_auto_heartbeat():
     )
 
     # 1. Ghi nhận lượt tiêu thụ token thật
-    cost1 = record_llm_token_usage(prompt_tokens=150, completion_tokens=350, model="gemini-3.5-flash-lite", provider="gemini")
+    cost1 = record_llm_token_usage(prompt_tokens=150, completion_tokens=350, model="gemini-3.5-flash-lite", provider="gemini", usage_source="provider")
     assert cost1 > 0
 
     daily_tok, daily_cost = get_daily_token_usage()
@@ -149,6 +149,16 @@ async def test_real_token_ledger_and_auto_heartbeat():
     assert t_all >= 500
     assert p_all >= 150
     assert c_all >= 350
+
+    from app.models.copilot_log import CopilotChatLog
+    from app.services.admin_monitoring_service import map_chat_log_to_telemetry_event
+    legacy = CopilotChatLog(id="legacy-estimated", session_id="s", user_name="u", user_role="doctor", query="q", reply_text="answer", prompt_tokens=1000, completion_tokens=500, total_tokens=1500, usage_source="estimated")
+    assert map_chat_log_to_telemetry_event(legacy).total_tokens == 0
+    estimated = record_llm_token_usage(prompt_tokens=1500, completion_tokens=800, model="estimated-model", provider="gemini", usage_source="estimated")
+    assert estimated == 0.0
+    daily_after, cost_after = get_daily_token_usage()
+    assert daily_after == daily_tok
+    assert cost_after == daily_cost
 
     # 2. Test API auto-heartbeat
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

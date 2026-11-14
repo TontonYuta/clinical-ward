@@ -206,6 +206,7 @@ const meroOutpatientReport = auditBhytPrescription({
 assert(meroOutpatientReport.status === 'REJECT', 'Meropenem kê ngoại trú bị REJECT');
 const meroOutErr = meroOutpatientReport.violations.find(v => v.category === 'RESTRICTED_OUTPATIENT');
 assert(meroOutErr !== undefined, 'Bắt đúng lỗi RESTRICTED_OUTPATIENT (Kháng sinh dự trữ cấm kê đơn ngoại trú theo QĐ 5631/QĐ-BYT)');
+assert(meroOutErr?.legalRef.localPdfPath.includes('Thong_Tu_20_2022'), 'Căn cứ danh mục BHYT trỏ đúng PDF TT 20');
 
 // ---------------------------------------------------------------------
 // 4. Ca 3: Thuốc Tỷ lệ 50% & Kê vượt 30 ngày ngoại trú

@@ -19,6 +19,7 @@ from app.services.chatbot.dynamic_inn_bridge import (
     build_w3c_text_fragment_url,
 )
 from app.services.chatbot.prescription_block_handler import detect_prescription_block
+from app.services.chatbot.prescription_block_handler import handle_prescription_block_audit
 from app.services.rag.source_resolver import resolve_citation_document
 
 
@@ -103,6 +104,20 @@ def test_regulatory_circular_page_grounding():
     assert "#page=4" in url
 
 
+def test_dtqg_source_identity_wins_over_query_terms_that_name_a_regulation():
+    url, doc_id, page = resolve_citation_document(
+        source="Dược thư Quốc gia Việt Nam, lần xuất bản II",
+        legal_basis="Dược thư Quốc gia Việt Nam (2015, QĐ 2033/QĐ-BYT)",
+        section="Adrenalin (Trang 56)",
+        query="xử trí phản vệ bằng Adrenalin",
+        active_drug="Adrenalin",
+    )
+
+    assert doc_id == "dtqg-v2-2015"
+    assert url.startswith("/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf")
+    assert page == 56
+
+
 def test_prescription_block_detection():
     """Kiểm tra nhận diện khối đơn thuốc nhiều dòng."""
     raw_rx = """1. Augmentin 1g x 2 viên/ngày uống sau ăn
@@ -120,8 +135,8 @@ def test_prescription_block_detection():
 
 
 @pytest.mark.asyncio
-async def test_live_prescription_block_audit():
-    """Kiểm tra thẩm định tự động đơn thuốc chứa cặp chống chỉ định (Clopidogrel + Omeprazol)."""
+async def test_live_prescription_block_audit_fails_closed_without_versioned_rule_sources():
+    """Không phát hành kết luận audit trước khi rule catalog có provenance."""
     raw_rx = """Bác sĩ duyệt giúp đơn thuốc:
 1. Clopidogrel 75mg x 1v/ngày
 2. Omeprazol 20mg x 1v/ngày
@@ -138,15 +153,37 @@ async def test_live_prescription_block_audit():
         resp = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
 
         assert resp is not None
-        assert resp.answer_type == "prescription_audit"
-        assert "BLUF" in resp.reply_text or "CẢNH BÁO" in resp.reply_text
-        assert "Clopidogrel" in resp.reply_text
-        assert "Omeprazol" in resp.reply_text
-        assert len(resp.citations) >= 2
+        if not resp.rag_grounded:
+            assert resp.answer_type == "safe_abstention"
+            assert resp.citations == []
+            assert resp.evidence == []
+            assert resp.abstention_reason
+            assert "chưa thể xác minh an toàn" in resp.reply_text.casefold()
+        else:
+            assert resp.answer_type == "composite_answer"
+            assert resp.citations and resp.evidence
+            citation_ids = {item.get("chunk_id") for item in resp.citations}
+            evidence_ids = {item.get("chunk_id") for item in resp.evidence}
+            assert citation_ids.intersection(evidence_ids)
 
 
 @pytest.mark.asyncio
-async def test_multi_intent_compound_query():
+async def test_prescription_audit_does_not_claim_verified_safety_from_unlinked_rules():
+    async with AsyncSessionLocal() as db:
+        response = await handle_prescription_block_audit(
+            raw_query="1. Example 10 mg\n2. Example 20 mg",
+            prescription_lines=["1. Example 10 mg", "2. Example 20 mg"],
+            user_name="Clinician", user_role="doctor", session_id="source-check", db=db,
+        )
+
+    assert response.rag_grounded is False
+    assert response.answer_type == "safe_abstention"
+    assert response.citations == []
+    assert response.evidence == []
+
+
+@pytest.mark.asyncio
+async def test_multi_intent_compound_query_abstains_if_any_child_lacks_linked_evidence():
     """Kiểm tra câu hỏi kép phân rã và trả lời trọn vẹn cả 2 vế."""
     compound_query = "cho biết liều Paracetamol cho trẻ 15kg và thuốc này có tương tác với Ibuprofen không"
 
@@ -162,7 +199,14 @@ async def test_multi_intent_compound_query():
 
         assert resp is not None
         assert resp.intent == "MULTI_INTENT_COMPOSITE"
-        assert "Phần 1:" in resp.reply_text
-        assert "Phần 2:" in resp.reply_text
-        assert "Paracetamol" in resp.reply_text
-        assert len(resp.citations) >= 1
+        if resp.rag_grounded:
+            assert resp.answer_type == "composite_answer"
+            assert resp.citations and resp.evidence
+            citation_ids = {item.get("chunk_id") for item in resp.citations}
+            evidence_ids = {item.get("chunk_id") for item in resp.evidence}
+            assert citation_ids.intersection(evidence_ids)
+        else:
+            assert resp.answer_type == "safe_abstention"
+            assert resp.citations == []
+            assert resp.abstention_reason
+            assert "chưa thể xác minh" in resp.reply_text.casefold()

@@ -40,7 +40,7 @@ Vui lòng liên hệ dược sĩ nếu cần thêm chi tiết.
     # Greetings should be filtered out
     assert not any("dạ chào bác sĩ" in c.lower() for c in claims)
 
-def test_self_rag_supported_claims_pass():
+def test_self_rag_does_not_accept_paraphrase_by_word_overlap():
     verifier = SelfRagVerifier()
     evidence_content = (
         "Liều khuyến nghị là 4 mg perindopril erbumin uống một lần vào buổi sáng trước bữa ăn. "
@@ -63,9 +63,9 @@ def test_self_rag_supported_claims_pass():
         kg_data=kg_data
     )
 
-    assert res["factuality_score"] >= 0.8
-    assert res["hallucination_rate"] <= 0.2
-    assert res["critique_verdict"] == "PASS"
+    assert res["factuality_score"] < 0.8
+    assert res["hallucination_rate"] > 0.2
+    assert res["critique_verdict"] != "PASS"
     assert "Đã đối soát" in res["audit_summary"]
     assert res["cleaned_answer"] is not None and len(res["cleaned_answer"]) > 0
 
@@ -92,14 +92,13 @@ def test_self_rag_unsupported_hallucinated_dosage():
     assert res["hallucination_rate"] > 0.5
     assert res["critique_verdict"] == "REJECT"
 
-def test_self_rag_fatal_contradiction_detection():
+def test_self_rag_has_no_inline_domain_specific_contradiction_rules():
     # Test 1: Metformin in severe renal failure
     contra1 = _detect_safety_contradictions(
         "Bệnh nhân có ClCr dưới 30 ml/phút có thể uống Metformin 1000mg bình thường.",
         "Bệnh nhân đái tháo đường kèm suy thận ClCr dưới 30 thì dùng Metformin được không?"
     )
-    assert contra1 is not None
-    assert "Lactic Acidosis" in contra1
+    assert contra1 is None
 
     # Test 2: Safe statement should NOT be flagged as contradiction
     contra2 = _detect_safety_contradictions(
@@ -113,18 +112,31 @@ def test_self_rag_fatal_contradiction_detection():
         "Phối hợp kháng sinh Clarithromycin nhóm Macrolid với Simvastatin nhóm Statin rất an toàn và không có tương tác.",
         "Macrolid phối hợp với Statin có nguy cơ gì?"
     )
-    assert contra3 is not None
-    assert "Rhabdomyolysis" in contra3
+    assert contra3 is None
 
 @pytest.mark.asyncio
 async def test_self_rag_pipeline_integration():
     q = "Kháng sinh nhóm Macrolid phối hợp với Statin có nguy cơ gì?"
-    res = await execute_clinical_rag(q)
-    assert res.rag_grounded is True
+    res = await execute_clinical_rag(q, inference_required=True)
+    assert res.rag_grounded is False
     assert hasattr(res, "factuality_score")
-    assert res.factuality_score >= 0.7
-    assert res.critique_verdict in ("PASS", "CAUTION")
+    assert res.factuality_score == 0.0
+    assert res.critique_verdict == "NOT_VERIFIABLE"
     assert res.answer is not None and len(res.answer) > 0
     resp_dict = res.to_response_dict()
     assert "factuality_score" in resp_dict
     assert "critique_verdict" in resp_dict
+
+
+def test_self_rag_does_not_pass_when_no_clinical_claims_can_be_audited():
+    from app.services.rag.self_rag_verifier import verify_clinical_answer
+
+    result = verify_clinical_answer(
+        query="Thông tin?",
+        answer="Không có dữ liệu",
+        retrieved_chunks=[],
+        kg_data={},
+    )
+
+    assert result["critique_verdict"] == "NOT_VERIFIABLE"
+    assert result["factuality_score"] == 0.0

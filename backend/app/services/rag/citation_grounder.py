@@ -74,23 +74,30 @@ def _display_source(citation: RagCitation) -> str:
 
 def build_claim_citations(retrieved_chunks: list[RetrievedChunk], query: str = "") -> list[RagCitation]:
     citations: list[RagCitation] = []
-    seen_sections = set()
+    seen_chunks = set()
 
     for r in retrieved_chunks:
         c = r.chunk
-        sec_key = f"{c.legal_basis}_{c.page_or_section}"
-        if sec_key in seen_sections:
+        if c.chunk_id in seen_chunks:
             continue
-        seen_sections.add(sec_key)
+        seen_chunks.add(c.chunk_id)
 
         lines = [line.strip() for line in c.content.split("\n") if line.strip() and not line.startswith("#")]
         excerpt_text = " ".join(lines[:3]).strip() or c.title
         from app.services.copilot_drug_citation_helper import truncate_clinical_excerpt
         excerpt = truncate_clinical_excerpt(excerpt_text, max_length=240)
 
-        document_url, document_id, document_page = resolve_citation_document(
-            c.source_doc, c.legal_basis, c.page_or_section, query=query
+        document_url, document_id, _ = resolve_citation_document(
+            c.source_doc, c.legal_basis, c.page_or_section, query=""
         )
+        if c.source_version is None:
+            document_url, document_id = None, None
+        page_match = re.search(r"\b(?:page|trang)\s*(\d+)\b", c.page_or_section, re.IGNORECASE)
+        document_page = int(page_match.group(1)) if page_match else None
+        if document_url and "#page=" in document_url and document_page is None:
+            document_url = document_url.split("#page=", 1)[0]
+        elif document_url and document_page is not None:
+            document_url = f"{document_url.split('#page=', 1)[0]}#page={document_page}"
         citations.append(RagCitation(
             source=c.source_doc,
             legal_basis=c.legal_basis,
@@ -101,15 +108,48 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk], query: str = "
             url=document_url,
             document_id=document_id,
             page=document_page,
+            source_id=c.source_id,
+            source_version=c.source_version,
         ))
     return citations
+
+
+def render_validated_claims(claims, evidence_records: list[dict], *, inference_required: bool) -> tuple[str | None, list, set[str]]:
+    """Render only claim objects explicitly verified against prompt evidence."""
+    from app.schemas.copilot import AnswerClaim
+
+    evidence_by_id = {item.get("evidence_id"): item for item in evidence_records if item.get("evidence_id")}
+    accepted = [
+        claim if isinstance(claim, AnswerClaim) else AnswerClaim.model_validate(claim)
+        for claim in claims
+        if (claim.support_status if isinstance(claim, AnswerClaim) else claim.get("support_status")) == "supported"
+    ]
+    accepted = [
+        claim for claim in accepted
+        if claim.evidence_ids and all(evidence_id in evidence_by_id for evidence_id in claim.evidence_ids)
+    ]
+    if not accepted:
+        return None, [], set()
+    parts = [claim.text.strip() for claim in accepted if claim.text.strip()]
+    if not parts:
+        return None, [], set()
+    answer = "\n\n".join(parts)
+    if inference_required or any(claim.claim_type == "evidence_inference" for claim in accepted):
+        answer = f"**Chỉ mang tính tham khảo.**\n\n{answer}"
+    if any(
+        claim.support_status != "supported" for claim in claims
+    ):
+        answer += "\n\nMột số ý chưa đủ căn cứ trong tài liệu được truy xuất nên đã được lược bỏ."
+    used_evidence_ids = {evidence_id for claim in accepted for evidence_id in claim.evidence_ids}
+    return answer, accepted, used_evidence_ids
 
 def format_grounded_answer(
     query: str,
     retrieved_chunks: list[RetrievedChunk],
     citations: list[RagCitation],
     kg_data: dict,
-    llm_generated_text: str | None = None
+    llm_generated_text: str | None = None,
+    inference_required: bool = False,
 ) -> RagResult:
     retrieved_chunks, citations = _filter_supported_chunks(query, retrieved_chunks, citations)
     if not retrieved_chunks:
@@ -117,7 +157,7 @@ def format_grounded_answer(
             query=query,
             answer="Chưa tìm thấy tài liệu đủ phù hợp để trả lời chính xác câu hỏi này. Vui lòng nêu rõ tên thuốc, nội dung cần tra cứu hoặc văn bản liên quan.",
             citations=[], retrieved_chunks=[], kg_entities=[],
-            confidence_score=0.1, legal_basis="", rag_grounded=False,
+            confidence_score=0.0, legal_basis="", rag_grounded=False,
         )
 
     if retrieved_chunks and all(r.chunk.entity_type == "ddi" for r in retrieved_chunks):
@@ -131,7 +171,17 @@ def format_grounded_answer(
 
     if llm_generated_text and len(llm_generated_text.strip()) > 30:
         clean_text = llm_generated_text.strip()
-        primary_basis = citations[0].legal_basis if citations else "Dược Thư Quốc Gia Việt Nam"
+        if not citations:
+            return RagResult(
+                query=query,
+                answer="Chưa thể xác minh từng khẳng định với mã đoạn nguồn cụ thể. Vui lòng thử lại hoặc kiểm tra tài liệu đã lập chỉ mục.",
+                citations=[], retrieved_chunks=[], kg_entities=kg_data.get("kg_entities", []),
+                confidence_score=0.0, legal_basis="", rag_grounded=False,
+                critique_verdict="NOT_RUN",
+            )
+        if inference_required and "chỉ mang tính tham khảo" not in clean_text.casefold():
+            clean_text = f"**Chỉ mang tính tham khảo.**\n\n{clean_text}"
+        primary_basis = citations[0].legal_basis
         return RagResult(
             query=query,
             answer=clean_text,
@@ -139,7 +189,8 @@ def format_grounded_answer(
             retrieved_chunks=retrieved_chunks,
             kg_entities=kg_data.get("kg_entities", []),
             confidence_score=min(0.75, max(0.3, 0.3 + len(_normalize_terms(query) & _normalize_terms(retrieved_chunks[0].chunk.title + " " + retrieved_chunks[0].chunk.content)) * 0.08)),
-            legal_basis=primary_basis
+            legal_basis=primary_basis,
+            rag_grounded=True
         )
 
     top_chunk = retrieved_chunks[0].chunk if retrieved_chunks else None
@@ -171,6 +222,8 @@ def format_grounded_answer(
         parts.append(f"🛑 **LƯU Ý AN TOÀN LÂM SÀNG & BỆNH NỀN:**\n{contra_str}")
 
     parts.append(top_chunk.content)
+    if inference_required:
+        parts.insert(0, "**Chỉ mang tính tham khảo.** Chưa thể tổng hợp suy luận; dưới đây là dữ kiện được tìm thấy trong nguồn.")
     primary_basis = top_chunk.legal_basis or (citations[0].legal_basis if citations else "")
 
     return RagResult(
@@ -180,5 +233,6 @@ def format_grounded_answer(
         retrieved_chunks=retrieved_chunks,
         kg_entities=kg_data.get("kg_entities", []),
         confidence_score=min(0.75, max(0.3, 0.3 + len(_normalize_terms(query) & _normalize_terms(retrieved_chunks[0].chunk.title + " " + retrieved_chunks[0].chunk.content)) * 0.08)),
-        legal_basis=primary_basis
+        legal_basis=primary_basis,
+        rag_grounded=bool(citations)
     )

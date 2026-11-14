@@ -88,6 +88,8 @@ async def test_end_to_end_rag_endpoint():
 
 @pytest.mark.asyncio
 async def test_copilot_chat_rag_integration():
+    from app.services.cache.clinical_cache import get_clinical_cache
+    get_clinical_cache().clear()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         res = await client.post(
             "/api/v1/copilot/chat",
@@ -95,10 +97,13 @@ async def test_copilot_chat_rag_integration():
         )
         assert res.status_code == 200
         data = res.json()
-        assert data["intent"] == "CLINICAL_AI_CONSULTATION"
+        assert data["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert data["answer_type"] == "medication_fields"
         assert data["rag_grounded"] is True
-        assert len(data["citations"]) > 0
-    assert "Paracetamol" in data["reply_text"]
+        assert data["citations"]
+        assert data["claims"]
+        assert "Nửa đời huyết tương" in data["reply_text"]
+        assert "tối đa là 4 g/ngày" in data["reply_text"]
 
 @pytest.mark.asyncio
 async def test_rag_prompt_separates_bounded_conversation_context_from_evidence(monkeypatch):
@@ -107,7 +112,7 @@ async def test_rag_prompt_separates_bounded_conversation_context_from_evidence(m
     captured = {}
     chunk = RagChunk("ctx-test", "Dược thư", "QĐ 2033/QĐ-BYT", "Paracetamol", "Paracetamol", "Liều tham khảo là 500 mg.", [], "monograph")
     class Retriever:
-        def retrieve(self, *args, **kwargs):
+        async def retrieve_async(self, *args, **kwargs):
             return [RetrievedChunk(chunk, 0.04)]
     async def fake_query(prompt, key):
         captured["prompt"] = prompt
@@ -119,6 +124,203 @@ async def test_rag_prompt_separates_bounded_conversation_context_from_evidence(m
     assert "NGỮ CẢNH HỘI THOẠI" in captured["prompt"]
     assert "CHỨNG CỨ #1" in captured["prompt"]
     assert captured["prompt"].index("NGỮ CẢNH HỘI THOẠI") < captured["prompt"].index("CHỨNG CỨ #1")
+
+
+@pytest.mark.asyncio
+async def test_rag_prompt_separates_database_facts_from_reference_inference_and_identifies_evidence(monkeypatch):
+    from app.services.rag import rag_pipeline
+    from app.services.rag.types import RagChunk, RetrievedChunk
+    captured = {}
+    chunk = RagChunk(
+        "contract-source-chunk", "handbook.pdf", "Source basis", "page 12",
+        "Medication section", "The source states fact A.", [], "monograph",
+        source_id="handbook.pdf", source_version="sha256:verified",
+    )
+    class Retriever:
+        async def retrieve_async(self, *args, **kwargs):
+            return [RetrievedChunk(chunk, 0.9)]
+    async def fake_query(prompt, key):
+        captured["prompt"] = prompt
+        return "Dữ kiện trực tiếp: fact A [contract-source-chunk]."
+    monkeypatch.setattr(rag_pipeline, "get_rag_retriever", lambda: Retriever())
+    monkeypatch.setattr(rag_pipeline.settings, "GEMINI_API_KEY", "test-api-key-12345")
+    monkeypatch.setattr("app.services.copilot_gemini.query_gemini_models", fake_query)
+    result = await execute_clinical_rag("Summarize the record and state any cautious implication")
+
+    prompt = captured["prompt"]
+    assert "Mã chứng cứ backend: document:contract-source-chunk" in prompt
+    assert "không thêm nhãn tham khảo cho phần tra cứu/trích tóm tắt" in prompt
+    assert "Chỉ mang tính tham khảo" in prompt
+    assert "Không tạo source ID, citation hay mã evidence mới" in prompt
+    assert "contract-source-chunk" in prompt
+    assert "không thêm kiến thức ngoài chứng cứ" in prompt.lower()
+
+
+@pytest.mark.asyncio
+async def test_rag_assigns_only_prompt_evidence_ids_to_generated_claims(monkeypatch):
+    from app.services.rag import rag_pipeline
+    from app.services.rag.types import RagChunk, RetrievedChunk
+
+    captured = {}
+    chunk = RagChunk(
+        "claim-evidence-1", "handbook.pdf", "Source", "page 1",
+        "Fact", "Source fact A.", [], "monograph",
+        source_id="handbook-id", source_version="sha256:v1",
+    )
+    class Retriever:
+        async def retrieve_async(self, *args, **kwargs):
+            return [RetrievedChunk(chunk, 0.9)]
+
+    async def fake_query(prompt, key):
+        captured["prompt"] = prompt
+        return (
+            "Unsupported extra: fact Z.\nDirect answer: Source fact A.\n"
+            '<ANSWER_CLAIMS>[{"claim_id":"claim-1","text":"Source fact A.","claim_type":"source_fact","evidence_ids":["document:claim-evidence-1"]}]</ANSWER_CLAIMS>'
+        )
+
+    monkeypatch.setattr(rag_pipeline, "get_rag_retriever", lambda: Retriever())
+    monkeypatch.setattr(rag_pipeline.settings, "GEMINI_API_KEY", "test-api-key-12345")
+    monkeypatch.setattr("app.services.copilot_gemini.query_gemini_models", fake_query)
+
+    result = await execute_clinical_rag("Source fact A?")
+
+    assert "Mã chứng cứ backend: document:claim-evidence-1" in captured["prompt"]
+    assert len(result.claims) == 1
+    assert result.claims[0].evidence_ids == ["document:claim-evidence-1"]
+    assert result.evidence_claim_map == {"document:claim-evidence-1": ["claim-1"]}
+
+
+def test_claim_parser_rejects_unknown_evidence_ids_and_malformed_payloads():
+    from app.services.rag.rag_pipeline import _parse_answer_claims
+
+    answer, claims = _parse_answer_claims(
+        'Text\n<ANSWER_CLAIMS>[{"claim_id":"c1","text":"Unsupported","claim_type":"source_fact","evidence_ids":["other:evidence"]}]</ANSWER_CLAIMS>',
+        {"document:known"},
+    )
+    assert answer == "Text"
+    assert claims == []
+
+
+def test_grounded_answer_is_rendered_from_validated_claims_only():
+    from app.services.rag.citation_grounder import render_validated_claims
+    from app.schemas.copilot import AnswerClaim
+
+    evidence = [{"evidence_id": "document:one", "chunk_id": "one", "content": "Fact A"}]
+    claims = [
+        AnswerClaim(claim_id="a", text="Fact A", claim_type="source_fact", evidence_ids=["document:one"], support_status="supported"),
+        AnswerClaim(claim_id="b", text="Unsupported Fact B", claim_type="source_fact", evidence_ids=["document:one"], support_status="unsupported"),
+    ]
+
+    rendered, accepted, evidence_ids = render_validated_claims(claims, evidence, inference_required=False)
+
+    assert rendered == "Fact A\n\nMột số ý chưa đủ căn cứ trong tài liệu được truy xuất nên đã được lược bỏ."
+    assert [claim.claim_id for claim in accepted] == ["a"]
+    assert evidence_ids == {"document:one"}
+
+
+def test_inference_claims_get_reference_label_and_empty_valid_claims_abstain():
+    from app.services.rag.citation_grounder import render_validated_claims
+    from app.schemas.copilot import AnswerClaim
+
+    evidence = [{"evidence_id": "document:one", "chunk_id": "one", "content": "Premise"}]
+    inference = AnswerClaim(claim_id="i", text="Inference", claim_type="evidence_inference", evidence_ids=["document:one"], support_status="supported")
+    rendered, _, _ = render_validated_claims([inference], evidence, inference_required=True)
+    assert rendered.startswith("**Chỉ mang tính tham khảo.**")
+
+    abstention, accepted, ids = render_validated_claims([], evidence, inference_required=False)
+    assert abstention is None
+    assert accepted == []
+    assert ids == set()
+
+
+
+def test_claim_parser_omits_malformed_payload():
+    from app.services.rag.rag_pipeline import _parse_answer_claims
+
+    answer, claims = _parse_answer_claims(
+        "Text<ANSWER_CLAIMS>not-json</ANSWER_CLAIMS>", {"document:known"}
+    )
+    assert answer == "Text"
+    assert claims == []
+
+
+def test_offline_direct_lookup_claims_are_verbatim_evidence_only():
+    from app.services.rag.rag_pipeline import _source_fact_claims
+    from app.services.rag.types import EvidenceRecord
+
+    evidence = [EvidenceRecord(
+        evidence_id="document:direct", evidence_type="document_chunk",
+        source_id="source-id", source_version="sha256:source",
+        content="Source statement without model inference.", chunk_id="direct",
+    )]
+    claims = _source_fact_claims(evidence)
+
+    assert len(claims) == 1
+    assert claims[0].text == evidence[0].content
+    assert claims[0].evidence_ids == [evidence[0].evidence_id]
+    assert claims[0].support_status == "insufficient_evidence"
+
+
+def test_llm_answer_gets_backend_citations_without_model_generated_chunk_ids():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RagChunk, RagCitation, RetrievedChunk
+    chunk = RagChunk(
+        "known-chunk", "source.pdf", "source basis", "page 4",
+        "title", "The source states fact A.", source_id="source.pdf",
+        source_version="sha256:known",
+    )
+    retrieved = RetrievedChunk(chunk, 0.9)
+    citation = RagCitation(
+        source="source.pdf", legal_basis="source basis", section="page 4",
+        excerpt="The source states fact A.", chunk_id="known-chunk",
+        source_id="source.pdf", source_version="sha256:known",
+    )
+
+    result = format_grounded_answer(
+        query="Summarize fact A", retrieved_chunks=[retrieved], citations=[citation],
+        kg_data={}, llm_generated_text="The source states fact A in the retrieved clinical evidence.",
+    )
+
+    assert result.rag_grounded is True
+    assert [item.chunk_id for item in result.citations] == ["known-chunk"]
+
+
+def test_direct_lookup_answer_is_not_labeled_as_reference_inference():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RagCitation, RagChunk, RetrievedChunk
+    chunk = RagChunk("direct-source", "source.pdf", "Source", "page 4", "Dose", "Dose fact 500 mg.", source_id="source.pdf", source_version="sha256:1")
+    retrieved = RetrievedChunk(chunk, 0.9)
+    citation = RagCitation(source="source.pdf", legal_basis="Source", section="page 4", excerpt="Dose fact 500 mg.", chunk_id="direct-source", source_id="source.pdf", source_version="sha256:1")
+    result = format_grounded_answer("dose", [retrieved], [citation], {}, "Dose fact 500 mg.")
+
+    assert result.rag_grounded is True
+    assert "chỉ mang tính tham khảo" not in result.answer.casefold()
+
+
+def test_synthesized_answer_is_labeled_reference_and_keeps_source_citation():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RagCitation, RagChunk, RetrievedChunk
+    chunk = RagChunk("synthesis-source", "source.pdf", "Source", "page 7", "Comparison", "Evidence supports comparison fact.", source_id="source.pdf", source_version="sha256:2")
+    retrieved = RetrievedChunk(chunk, 0.9)
+    citation = RagCitation(source="source.pdf", legal_basis="Source", section="page 7", excerpt="Evidence supports comparison fact.", chunk_id="synthesis-source", source_id="source.pdf", source_version="sha256:2")
+    result = format_grounded_answer("comparison evidence", [retrieved], [citation], {}, "A supported comparison based on evidence.", inference_required=True)
+
+    assert result.rag_grounded is True
+    assert "chỉ mang tính tham khảo" in result.answer.casefold()
+    assert [item.chunk_id for item in result.citations] == ["synthesis-source"]
+
+
+def test_reasoning_fallback_is_labeled_reference_when_llm_has_no_answer():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RagCitation, RagChunk, RetrievedChunk
+    chunk = RagChunk("fallback-source", "source.pdf", "Source", "page 9", "Kidney", "Evidence about renal function.", source_id="source.pdf", source_version="sha256:3")
+    retrieved = RetrievedChunk(chunk, 0.9)
+    citation = RagCitation(source="source.pdf", legal_basis="Source", section="page 9", excerpt="Evidence about renal function.", chunk_id="fallback-source", source_id="source.pdf", source_version="sha256:3")
+    result = format_grounded_answer("renal assessment", [retrieved], [citation], {}, inference_required=True)
+
+    assert result.rag_grounded is True
+    assert "chỉ mang tính tham khảo" in result.answer.casefold()
+    assert [item.chunk_id for item in result.citations] == ["fallback-source"]
 
 @pytest.mark.asyncio
 async def test_chat_records_each_reply_in_owner_scoped_session():
@@ -235,6 +437,15 @@ def test_grounded_answers_use_plain_source_lines_without_sample_badges():
     assert result.citations
     assert result.answer.startswith("Chỉ định:")
 
+def test_llm_answer_abstains_when_no_citable_source_exists():
+    from app.services.rag.citation_grounder import format_grounded_answer
+    from app.services.rag.types import RetrievedChunk
+    chunk = RagChunk("source-without-id", "Dược thư", "Nguồn", "Chuyên luận", "Thông tin", "Thông tin có liên quan đến thuốc.", [], "monograph")
+    result = format_grounded_answer("thông tin thuốc?", [RetrievedChunk(chunk, 0.02)], [], {}, llm_generated_text="Một câu trả lời lâm sàng đủ dài nhưng chưa có nguồn trích dẫn hợp lệ.")
+    assert result.rag_grounded is False
+    assert result.citations == []
+    assert result.confidence_score == 0.0
+
 def test_weak_retrieval_abstains_instead_of_claiming_grounded_answer():
     from app.services.rag.citation_grounder import format_grounded_answer
     from app.services.rag.types import RetrievedChunk
@@ -272,7 +483,7 @@ def test_grounded_answer_omits_citations_that_do_not_support_query_topic():
 
 def test_citations_expose_stable_chunk_id_and_exact_evidence_excerpt():
     from app.services.rag.types import RetrievedChunk
-    chunk = RagChunk("core_inns_monographs_2_1", "Dược thư", "Dược thư Quốc gia", "Paracetamol", "Paracetamol", "Liều tối đa: 4 g mỗi ngày.", [], "monograph")
+    chunk = RagChunk("core_inns_monographs_2_1", "Dược thư", "Dược thư Quốc gia", "Paracetamol (Trang 1118)", "Paracetamol", "Liều tối đa: 4 g mỗi ngày.", [], "monograph", source_id="dtqg-v2-2015", source_version="sha256:verified-fixture")
     citation = build_claim_citations([RetrievedChunk(chunk, 0.03)])[0]
     serialized = citation.to_dict()
     assert serialized["chunk_id"] == "core_inns_monographs_2_1"
@@ -281,7 +492,7 @@ def test_citations_expose_stable_chunk_id_and_exact_evidence_excerpt():
 
 def test_citation_for_known_dtqg_monograph_contains_clickable_pdf_page():
     from app.services.rag.types import RetrievedChunk
-    chunk = RagChunk("core_inns_monographs_2_1", "Dược thư Quốc gia", "QĐ 2033/QĐ-BYT", "Paracetamol", "Paracetamol", "Liều tối đa: 4 g mỗi ngày.", [], "monograph")
+    chunk = RagChunk("core_inns_monographs_2_1", "Dược thư Quốc gia", "QĐ 2033/QĐ-BYT", "Paracetamol (Trang 1118)", "Paracetamol", "Liều tối đa: 4 g mỗi ngày.", [], "monograph", source_id="dtqg-v2-2015", source_version="sha256:verified-fixture")
     serialized = build_claim_citations([RetrievedChunk(chunk, 0.03)])[0].to_dict()
     assert serialized["url"] == "/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page=1118"
     assert serialized["page"] == 1118
@@ -289,7 +500,7 @@ def test_citation_for_known_dtqg_monograph_contains_clickable_pdf_page():
 
 def test_citation_for_verified_regulatory_source_links_to_document_without_invented_page():
     from app.services.rag.types import RetrievedChunk
-    chunk = RagChunk("tt51_2017_anaphylaxis_protocol_4", "Phác Đồ Cấp Cứu Phản Vệ", "Thông tư 51/2017/TT-BYT", "Xử trí phản vệ", "Adrenalin tiêm bắp", "Tiêm bắp Adrenalin theo phác đồ.", [], "circular")
+    chunk = RagChunk("tt51_2017_anaphylaxis_protocol_4", "Phác Đồ Cấp Cứu Phản Vệ", "Thông tư 51/2017/TT-BYT", "Xử trí phản vệ", "Adrenalin tiêm bắp", "Tiêm bắp Adrenalin theo phác đồ.", [], "circular", source_id="tt-51-2017", source_version="sha256:verified-fixture")
     serialized = build_claim_citations([RetrievedChunk(chunk, 0.03)])[0].to_dict()
     assert serialized["document_id"] == "tt-51-2017"
     assert serialized["url"] == "/pdf/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf"

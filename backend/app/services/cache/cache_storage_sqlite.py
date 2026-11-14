@@ -127,6 +127,14 @@ class CacheStorageSqlite:
         except Exception as e:
             logger.debug("Lỗi lưu SQLite cache: %s", e)
 
+    def delete_entry(self, key: str) -> None:
+        try:
+            with self._get_conn() as conn:
+                conn.execute("DELETE FROM semantic_cache WHERE cache_key = ?", (key,))
+                conn.commit()
+        except Exception as e:
+            logger.debug("Lỗi xóa cache entry không hợp lệ: %s", e)
+
     def clear_all(self) -> None:
         try:
             with self._get_conn() as conn:

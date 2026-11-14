@@ -110,6 +110,10 @@ class ClinicalDdiDetector:
 
     def audit_prescription(self, raw_drug_list: list[str], patient: Optional[PatientClinicalContext] = None) -> PrescriptionAuditReport:
         entities = [normalize_drug_entity(item) for item in raw_drug_list if item and item.strip()]
+        unresolved_entities = [
+            entity.raw_name for entity in entities
+            if not entity.atc_classes and entity.brand_matched is None
+        ]
         unique_entities: list[DrugEntity] = []
         seen_inns = set()
         for e in entities:
@@ -142,5 +146,6 @@ class ClinicalDdiDetector:
             has_contraindication=(c_count > 0),
             pair_alerts=pair_alerts,
             polypharmacy_alerts=poly_alerts,
-            normalized_entities=unique_entities
+            normalized_entities=unique_entities,
+            unresolved_entities=unresolved_entities,
         )

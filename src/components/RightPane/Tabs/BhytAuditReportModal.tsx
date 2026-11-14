@@ -41,8 +41,8 @@ interface BhytAuditReportModalProps {
   auditReport: BhytAuditReport;
   resolutionMap: Record<string, DrugResolutionResult>;
   clinicalCategories: ClinicalCategoryItem[];
-  hospitalRank: HospitalRank;
-  treatmentType: TreatmentType;
+  hospitalRank: HospitalRank | '';
+  treatmentType: TreatmentType | '';
 }
 
 const HOSPITAL_RANK_LABELS: Record<HospitalRank, string> = {
@@ -382,12 +382,18 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                 </div>
               </div>
 
-              {auditReport.violations.length === 0 ? (
+              {auditReport.violations.length === 0 && !(auditReport.missingFields?.length) ? (
                 <div className="p-2.5 border border-black bg-emerald-50 text-center font-bold text-emerald-800 text-xs sm:text-sm">
                   Đơn thuốc hợp lệ 100%. Không phát hiện vi phạm quy định thanh toán BHYT.
                 </div>
               ) : (
-                <table className="w-full border-collapse border border-black text-xs sm:text-[12px]">
+                <>
+                {!!auditReport.missingFields?.length && (
+                  <div className="p-3 mb-2 border border-amber-700 bg-amber-50 text-amber-950 text-xs">
+                    <strong>Chưa đủ dữ liệu để kết luận.</strong> Cần bổ sung: {auditReport.missingFields.join(', ')}. Không kết luận vi phạm từ dữ liệu còn thiếu.
+                  </div>
+                )}
+                {auditReport.violations.length > 0 && <table className="w-full border-collapse border border-black text-xs sm:text-[12px]">
                   <thead>
                     <tr className="bg-slate-100 font-bold">
                       <th className="border border-black px-2 py-1.5 w-8 text-center">STT</th>
@@ -417,7 +423,8 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table>}
+                </>
               )}
             </section>
 
@@ -427,9 +434,11 @@ export const BhytAuditReportModal: React.FC<BhytAuditReportModalProps> = ({
                 <strong className="text-sm font-bold uppercase">V. KẾT LUẬN CỦA HỘI ĐỒNG GIÁM ĐỊNH:</strong>
                 <p className="mt-1.5 italic leading-relaxed text-slate-800">
                   Đơn thuốc đã được rà soát đối chiếu toàn diện qua Hệ thống Giám định tự động BHYT.
-                  {auditReport.violations.length === 0
+                  {auditReport.violations.length === 0 && !(auditReport.missingFields?.length)
                     ? ' Toàn bộ danh mục thuốc đủ điều kiện đề nghị Cơ quan BHXH thanh toán theo chế độ.'
-                    : ` Đề nghị Bác sĩ điều trị và Khoa Dược hoàn thiện biên bản giải trình cho ${auditReport.violations.length} khoản thuốc trước khi gửi dữ liệu lên Cổng tiếp nhận Hệ thống Thông tin Giám định BHYT.`}
+                    : auditReport.violations.length > 0
+                      ? ` Đề nghị Bác sĩ điều trị và Khoa Dược rà soát ${auditReport.violations.length} cảnh báo hoặc vi phạm đã được liệt kê.`
+                      : ` Chưa thể kết luận; cần bổ sung dữ liệu còn thiếu (${auditReport.missingFields?.join(', ')}).`}
                 </p>
               </div>
 

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "policy_version": "copilot-workflow-1",
+  "provenance": {
+    "source_id": "copilot-workflow-policy",
+    "source_version": "sha256:workflow-policy-1"
+  },
+  "routes": [
+    {"intent": "GREETING_WELLBEING", "executor_key": "conversation", "evidence_required": false},
+    {"intent": "CAPABILITY_OPENING", "executor_key": "conversation", "evidence_required": false},
+    {"intent": "CONVERSATIONAL_FEEDBACK", "executor_key": "conversation", "evidence_required": false},
+    {"intent": "MEDICATION_LOOKUP", "executor_key": "drug_lookup", "evidence_required": true},
+    {"intent": "MEDICATION_LOOKUP_GUIDE", "executor_key": "portal_guidance", "evidence_required": false},
+    {"intent": "MEDICATION_INTERACTION_CHECK", "executor_key": "ddi", "evidence_required": true},
+    {"intent": "MEDICATION_INTERACTION_CLARIFICATION", "executor_key": "clarification", "evidence_required": false},
+    {"intent": "PATIENT_CASE_REASONING", "executor_key": "clinical_reasoning", "evidence_required": true},
+    {"intent": "MULTI_INTENT_COMPOSITE", "executor_key": "multi_intent", "evidence_required": true},
+    {"intent": "PATIENT_MEDICATION_COUNSELING", "executor_key": "sandwich", "evidence_required": true},
+    {"intent": "SPECIALTY_CLINICAL_PROTOCOL", "executor_key": "specialty", "evidence_required": true},
+    {"intent": "CLINICAL_CASE_CLARIFICATION", "executor_key": "clarification", "evidence_required": false},
+    {"intent": "AMBIGUOUS_INTENT", "executor_key": "clarification", "evidence_required": false},
+    {"intent": "OUT_OF_SCOPE", "executor_key": "conversation", "evidence_required": false}
+  ],
+  "decision_precedence": [
+    {"signal": "prescription_block", "intent": "PATIENT_CASE_REASONING"},
+    {"signal": "multiple_subqueries", "intent": "MULTI_INTENT_COMPOSITE"}
+  ],
+  "budgets": {"max_context_chars": 12000, "top_k": 5}
+}

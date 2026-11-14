@@ -6,6 +6,7 @@ import re
 import json
 import gzip
 import sqlite3
+import hashlib
 from app.services.active_ingredient_normalizer import extract_candidate_inns, clean_key
 
 def sanitize_title(title: str | None, inn: str) -> str:
@@ -63,11 +64,17 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
         overdose_treatment TEXT,
         antidote TEXT,
         source TEXT,
+        source_id TEXT,
+        source_version TEXT,
+        section_pages TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
     # Bổ sung các cột mới nếu đã tạo bảng trước đó
     cursor.execute("PRAGMA table_info(clinical_drug_monographs)")
     existing_cols = {row[1] for row in cursor.fetchall()}
+    for col in ("source_id", "source_version", "section_pages"):
+        if col not in existing_cols:
+            cursor.execute(f"ALTER TABLE clinical_drug_monographs ADD COLUMN {col} TEXT")
     for col in ("pharmacodynamics", "pharmacokinetics", "adr_management", "incompatibilities", "storage_stability", "lactation_warning"):
         if col not in existing_cols:
             cursor.execute(f"ALTER TABLE clinical_drug_monographs ADD COLUMN {col} TEXT")
@@ -75,15 +82,29 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_clinical_monographs_atc ON clinical_drug_monographs(atc_code)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_dav_national_drugs_clinical_monograph_id ON dav_national_drugs(clinical_monograph_id)")
 
-    # Bỏ qua nếu chuyên luận và liên kết đã được nạp đầy đủ (ngăn ngừa cold-start và OOM trên Render)
+    src = find_monographs_source()
+    source_digest = None
+    if src and os.path.isfile(src):
+        with open(src, "rb") as source_file:
+            source_digest = hashlib.sha256(source_file.read()).hexdigest()
+
+    # Skip only when the currently seeded records match this exact source
+    # snapshot. A row-count-only shortcut leaves corrected source data stale.
     cursor.execute("SELECT count(*) FROM clinical_drug_monographs WHERE pharmacodynamics IS NOT NULL AND length(pharmacodynamics) > 20")
     existing_rich_count = cursor.fetchone()[0]
     cursor.execute("SELECT count(*) FROM dav_national_drugs WHERE clinical_monograph_id IS NOT NULL")
     existing_linked = cursor.fetchone()[0]
-    if existing_rich_count >= 650 and existing_linked >= 10000:
+    cursor.execute("SELECT count(*) FROM clinical_drug_monographs WHERE source_version = ?", (f"sha256:{source_digest}",))
+    source_version_count = cursor.fetchone()[0]
+    source_identity = os.path.relpath(src, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) if src else None
+    cursor.execute(
+        "SELECT count(*) FROM clinical_drug_monographs WHERE source_id = ? AND source_version != ?",
+        (source_identity, f"sha256:{source_digest}"),
+    )
+    stale_source_count = cursor.fetchone()[0]
+    if existing_rich_count >= 650 and existing_linked >= 10000 and source_version_count >= 650 and stale_source_count == 0:
         return existing_rich_count
 
-    src = find_monographs_source()
     if not src:
         print("⚠️ Không tìm thấy dtqg_monographs_extracted.json")
         cursor.execute("SELECT COUNT(*) FROM clinical_drug_monographs")
@@ -92,7 +113,28 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
     try:
         with open(src, "r", encoding="utf-8") as f:
             monos = json.load(f)
+        source_identity = os.path.relpath(src, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        if source_digest:
+            stale_ids = [row[0] for row in cursor.execute(
+                "SELECT id FROM clinical_drug_monographs WHERE source_id = ? AND source_version != ?",
+                (source_identity, f"sha256:{source_digest}"),
+            ).fetchall()]
+            if stale_ids:
+                placeholders = ",".join("?" for _ in stale_ids)
+                cursor.execute(
+                    f"UPDATE dav_national_drugs SET clinical_monograph_id = NULL WHERE clinical_monograph_id IN ({placeholders})",
+                    stale_ids,
+                )
+                cursor.execute(
+                    f"DELETE FROM clinical_drug_monographs WHERE id IN ({placeholders})", stale_ids
+                )
+                conn.commit()
         registry_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vietnam_drug_registry/dav_essential_formulary.json"))
+        registry_digest = None
+        if os.path.isfile(registry_path):
+            with open(registry_path, "rb") as source_file:
+                registry_digest = hashlib.sha256(source_file.read()).hexdigest()
+        registry_identity = os.path.relpath(registry_path, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))) if registry_digest else None
         registry_items = []
         if registry_path and os.path.exists(registry_path):
             with open(registry_path, "r", encoding="utf-8") as f:
@@ -123,6 +165,8 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 "overdose_treatment": item.get("overdoseTreatment") or item.get("overdose_treatment"),
                 "antidote": item.get("antidote"),
                 "source": item.get("clinicalSource") or item.get("clinical_source"),
+                "_source_id": registry_identity,
+                "_source_version": f"sha256:{registry_digest}" if registry_digest else None,
             }
         monos_dict = {m.get("id"): m for m in monos if m.get("id")}
         monos_dict.update(monographs_by_id)
@@ -136,6 +180,8 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 src_val = f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {m.get('start_page')}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
             elif not src_val:
                 src_val = "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
+            row_source_id = m.get("_source_id", source_identity)
+            row_source_version = m.get("_source_version", f"sha256:{source_digest}")
             rows.append((
                 m_id, inn, sanitize_title(m.get("title"), inn), m.get("atc_code"), m.get("drug_class"),
                 m.get("dosage_forms"), m.get("pharmacodynamics"), m.get("pharmacokinetics"),
@@ -146,13 +192,14 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 m.get("hepatic_adjustment"), m.get("drug_interactions"),
                 m.get("incompatibilities"), m.get("storage_stability"),
                 m.get("overdose_treatment"), m.get("antidote"),
-                src_val
+                src_val, row_source_id, row_source_version,
+                json.dumps(m.get("section_pages") or {}, ensure_ascii=False) if m.get("section_pages") else None
             ))
         cursor.execute("BEGIN TRANSACTION")
         cursor.executemany("""
         INSERT OR REPLACE INTO clinical_drug_monographs
-        (id, inn, title, atc_code, drug_class, dosage_forms, pharmacodynamics, pharmacokinetics, indications, contraindications, precautions, pregnancy_warning, lactation_warning, adverse_effects, adr_management, adult_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, drug_interactions, incompatibilities, storage_stability, overdose_treatment, antidote, source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, inn, title, atc_code, drug_class, dosage_forms, pharmacodynamics, pharmacokinetics, indications, contraindications, precautions, pregnancy_warning, lactation_warning, adverse_effects, adr_management, adult_dosage, pediatric_dosage, renal_adjustment, hepatic_adjustment, drug_interactions, incompatibilities, storage_stability, overdose_treatment, antidote, source, source_id, source_version, section_pages)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, rows)
         conn.commit()
         # Đồng bộ các stub cũ trong clinical_drug_monographs với chuyên luận đầy đủ
@@ -163,8 +210,10 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
             'renal_adjustment', 'hepatic_adjustment', 'drug_interactions', 'incompatibilities',
             'storage_stability', 'overdose_treatment', 'antidote', 'source'
         ]
-        # Xây dựng map từ candidate INN -> chuyên luận giàu dữ liệu nhất
-        cursor.execute(f"SELECT id, inn, title, {', '.join(clinical_cols)} FROM clinical_drug_monographs WHERE pharmacodynamics IS NOT NULL AND length(pharmacodynamics) > 20")
+        # Prefer the latest source-backed DTQG record when multiple records
+        # share the same INN/title; old curated/stub rows must not win solely
+        # because they contain stale non-null text.
+        cursor.execute(f"SELECT id, inn, title, {', '.join(clinical_cols)}, source_version FROM clinical_drug_monographs WHERE pharmacodynamics IS NOT NULL AND length(pharmacodynamics) > 20")
         rich_monos = cursor.fetchall()
         rich_map = {}
         for r in rich_monos:
@@ -175,12 +224,13 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 k = clean_key(cand)
                 if k:
                     cur_score = len(r[6] or '') + len(r[8] or '')
+                    is_current_source = r[-1] == f"sha256:{source_digest}"
                     if k not in rich_map:
-                        rich_map[k] = r
+                        rich_map[k] = (is_current_source, cur_score, r)
                     else:
-                        existing_score = len(rich_map[k][6] or '') + len(rich_map[k][8] or '')
-                        if cur_score > existing_score:
-                            rich_map[k] = r
+                        existing_current, existing_score, _ = rich_map[k]
+                        if (is_current_source, cur_score) > (existing_current, existing_score):
+                            rich_map[k] = (is_current_source, cur_score, r)
 
         stubs = cursor.execute("SELECT id, inn, title FROM clinical_drug_monographs WHERE pharmacodynamics IS NULL OR length(pharmacodynamics) <= 20").fetchall()
         for sid, sinn, stitle in stubs:
@@ -191,21 +241,21 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 for cand in extract_candidate_inns(text):
                     k = clean_key(cand)
                     if k in rich_map:
-                        best_row = rich_map[k]
+                        best_row = rich_map[k][2]
                         break
                 if best_row:
                     break
             if best_row:
-                vals = list(best_row[3:])
+                vals = list(best_row[3:-1])
                 set_clause = ', '.join([f"{col} = COALESCE(?, {col})" for col in clinical_cols])
                 cursor.execute(f"UPDATE clinical_drug_monographs SET {set_clause} WHERE id = ?", (*vals, sid))
         conn.commit()
 
         # 1. Liên kết Monograph bằng Active Ingredient Normalizer (bóc tách muối, nồng độ, từ đồng nghĩa INN)
-        cursor.execute("SELECT id, inn, title FROM clinical_drug_monographs ORDER BY length(coalesce(pharmacodynamics, '')) + length(coalesce(indications, '')) + length(coalesce(adult_dosage, '')) DESC")
+        cursor.execute("SELECT id, inn, title, source_version FROM clinical_drug_monographs ORDER BY (source_version = ?) DESC, length(coalesce(pharmacodynamics, '')) + length(coalesce(indications, '')) + length(coalesce(adult_dosage, '')) DESC", (f"sha256:{source_digest}",))
         monos_for_link = cursor.fetchall()
         mono_by_key = {}
-        for mid, minn, mtitle in monos_for_link:
+        for mid, minn, mtitle, _version in monos_for_link:
             if minn:
                 k = clean_key(minn)
                 if k and k not in mono_by_key:
@@ -219,11 +269,11 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 if k and k not in mono_by_key:
                     mono_by_key[k] = mid
 
-        cursor.execute("SELECT id, active_ingredient, brand_name FROM dav_national_drugs WHERE clinical_monograph_id IS NULL")
+        cursor.execute("SELECT id, active_ingredient, brand_name, clinical_monograph_id FROM dav_national_drugs")
         drugs_to_link = cursor.fetchall()
 
         link_updates = []
-        for did, act, brnd in drugs_to_link:
+        for did, act, brnd, existing_monograph_id in drugs_to_link:
             chosen_id = None
             if act:
                 candidates = extract_candidate_inns(act)
@@ -236,7 +286,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
                 k_brnd = clean_key(brnd)
                 if k_brnd in mono_by_key:
                     chosen_id = mono_by_key[k_brnd]
-            if chosen_id:
+            if chosen_id and chosen_id != existing_monograph_id:
                 link_updates.append((chosen_id, did))
 
         if link_updates:

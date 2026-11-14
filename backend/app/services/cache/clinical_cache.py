@@ -6,13 +6,54 @@ tương tác thuốc QĐ 5948/QĐ-BYT và văn bản pháp quy y tế.
 """
 import re
 import time
+import hashlib
 import logging
+from pathlib import Path
 from collections import OrderedDict
 from typing import Optional, Dict, Any, List, Union
 import numpy as np
 from app.schemas.copilot import CopilotResponse
 
 logger = logging.getLogger("clinical_cache")
+
+def _current_workflow_namespace() -> str:
+    """Fingerprint response-producing logic and managed policy/data metadata.
+
+    Persisted responses from an older routing or formatting contract must never
+    satisfy a request after those inputs change.
+    """
+    backend_dir = Path(__file__).resolve().parents[3]
+    root_dir = backend_dir.parent
+    digest = hashlib.sha256()
+    logic_roots = (
+        backend_dir / "app/services/chatbot",
+        backend_dir / "app/services/rag",
+        backend_dir / "app/services/cache",
+        backend_dir / "app/services/clinical_reasoning",
+        backend_dir / "app/services/clinical_ddi_engine",
+    )
+    logic_files = {
+        path for root in logic_roots if root.is_dir()
+        for path in root.rglob("*.py")
+    }
+    logic_files.update({
+        backend_dir / "app/services/copilot_drug_formatter.py",
+        backend_dir / "app/services/copilot_drug_lookup.py",
+        backend_dir / "app/services/copilot_drug_citation_helper.py",
+        backend_dir / "app/schemas/clinical_nlu.py",
+        backend_dir / "app/schemas/copilot.py",
+    })
+    for path in sorted(logic_files):
+        digest.update(path.relative_to(backend_dir).as_posix().encode())
+        if path.is_file():
+            digest.update(path.read_bytes())
+    managed_data_dir = backend_dir / "data/knowledge_base"
+    for path in sorted(managed_data_dir.rglob("*.json")):
+        digest.update(path.relative_to(root_dir).as_posix().encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:20]
+
+_WORKFLOW_NAMESPACE = _current_workflow_namespace()
 
 # Các từ ngữ/hành động làm biến đổi trạng thái kho hoặc tủ trực (CẤM CACHE)
 MUTATION_KEYWORDS = (
@@ -89,12 +130,24 @@ class ClinicalLRUCache:
         self.misses = 0
         self.evictions = 0
         self.storage = None
+        self._loaded_persistent_keys: set[str] = set()
         if db_path is not False:
             try:
                 from app.services.cache.cache_storage_sqlite import CacheStorageSqlite
                 self.storage = CacheStorageSqlite(db_path if isinstance(db_path, str) else None)
                 for entry in self.storage.load_active_entries(limit=self.max_size):
+                    if str(entry.get("key", "")).startswith(f"{_WORKFLOW_NAMESPACE}:"):
+                        entry["namespace"] = _WORKFLOW_NAMESPACE
                     self._cache[entry["key"]] = entry
+                    self._loaded_persistent_keys.add(entry["key"])
+                stale_entries = [
+                    key for key, entry in self._cache.items()
+                    if entry.get("namespace") != _WORKFLOW_NAMESPACE
+                ]
+                if stale_entries:
+                    self.storage.clear_all()
+                    self._cache.clear()
+                    self._loaded_persistent_keys.clear()
             except Exception:
                 pass
 
@@ -176,7 +229,7 @@ class ClinicalLRUCache:
     def make_key(self, query: str, user_role: str = "doctor") -> str:
         canonical = self.normalize_query(query)
         role = (user_role or "doctor").strip().lower()
-        return f"{role}:{canonical}"
+        return f"{_WORKFLOW_NAMESPACE}:{role}:{canonical}"
 
     def extract_clinical_features(
         self,
@@ -194,6 +247,13 @@ class ClinicalLRUCache:
         - Vector dense embedding (768 chiều float32 L2-normalized)
         """
         norm = self.normalize_query(query)
+        try:
+            from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
+            requested_fields = frozenset(
+                field for field, _ in rank_clinical_intents(query)
+            )
+        except Exception:
+            requested_fields = frozenset()
 
         # 1. Nhóm ý định lâm sàng (Hỗ trợ đa ý định / compound intents để chống nhầm cache)
         intents = set()
@@ -264,6 +324,7 @@ class ClinicalLRUCache:
         return {
             "norm": norm,
             "intent": intent,
+            "requested_fields": requested_fields,
             "numbers": numbers,
             "tokens": tokens,
             "conditions": norm_conditions,
@@ -284,6 +345,11 @@ class ClinicalLRUCache:
         """
         # Ràng buộc an toàn 1: Ý định y khoa
         if f1["intent"] != f2["intent"]:
+            return 0.0
+
+        # Similar wording is not enough to share a clinical response: a dosage
+        # lookup and a hepatic/renal adjustment request must remain distinct.
+        if f1.get("requested_fields", frozenset()) != f2.get("requested_fields", frozenset()):
             return 0.0
 
         # Ràng buộc an toàn 2: Số liệu liều lượng / độ tuổi
@@ -348,6 +414,8 @@ class ClinicalLRUCache:
             return False
         if response.intent == "SECURITY_GUARDRAIL_BLOCKED":
             return False
+        if response.answer_type in {"safe_abstention", "clarification"}:
+            return False
         if response.card:
             card_type = getattr(response.card, "card_type", "")
             if card_type in {
@@ -356,6 +424,20 @@ class ClinicalLRUCache:
             }:
                 return False
         return True
+
+    def _is_current_contract_response(self, response: CopilotResponse) -> bool:
+        if not self.is_cacheable_response(response):
+            return False
+        factual_types = {
+            "grounded_reference", "medication_profile", "medication_summary",
+            "medication_field", "medication_fields", "multihop_case_consultation",
+            "composite_answer", "guideline", "medication_lookup_guide"
+        }
+        if response.answer_type in factual_types and (
+            not response.rag_grounded or response.confidence is None or response.confidence <= 0
+        ):
+            return False
+        return response.answer_type not in factual_types or bool(response.evidence)
 
     def get(
         self,
@@ -385,6 +467,15 @@ class ClinicalLRUCache:
                 self.hits += 1
                 resp_dict = entry["data"].copy()
                 resp = CopilotResponse.model_validate(resp_dict)
+                if not self._is_current_contract_response(resp):
+                    self._cache.pop(key, None)
+                    if self.storage and key in self._loaded_persistent_keys:
+                        self.storage.delete_entry(key)
+                        self._loaded_persistent_keys.discard(key)
+                    self.hits -= 1
+                    self.exact_hits -= 1
+                    self.misses += 1
+                    return None
                 resp.source_status = "cache_exact"
                 return resp
             else:
@@ -401,6 +492,8 @@ class ClinicalLRUCache:
         best_key = None
 
         for k, entry in self._cache.items():
+            if entry.get("namespace") != _WORKFLOW_NAMESPACE:
+                continue
             if entry.get("role", "doctor").strip().lower() != target_role:
                 continue
             if now > entry.get("expire_at", 0):
@@ -428,6 +521,15 @@ class ClinicalLRUCache:
             self.hits += 1
             resp_dict = best_entry["data"].copy()
             resp = CopilotResponse.model_validate(resp_dict)
+            if not self._is_current_contract_response(resp):
+                self._cache.pop(best_key, None)
+                if self.storage and best_key in self._loaded_persistent_keys:
+                    self.storage.delete_entry(best_key)
+                    self._loaded_persistent_keys.discard(best_key)
+                self.hits -= 1
+                self.semantic_hits -= 1
+                self.misses += 1
+                return None
             resp.source_status = "cache_semantic"
             return resp
 
@@ -449,6 +551,8 @@ class ClinicalLRUCache:
             return False
         if not self.is_cacheable_response(response):
             return False
+        if not self._is_current_contract_response(response):
+            return False
 
         key = self.make_key(query, user_role)
         now = time.time()
@@ -466,6 +570,7 @@ class ClinicalLRUCache:
         features = self.extract_clinical_features(query, vector=vector)
         entry_val = {
             "data": response.model_dump(),
+            "namespace": _WORKFLOW_NAMESPACE,
             "expire_at": now + ttl,
             "created_at": now,
             "canonical_query": self.normalize_query(query),
@@ -475,6 +580,7 @@ class ClinicalLRUCache:
         self._cache[key] = entry_val
         if self.storage:
             self.storage.save_entry(key, entry_val)
+            self._loaded_persistent_keys.add(key)
         return True
 
     def get_stats(self) -> Dict[str, Any]:

@@ -10,7 +10,6 @@ from typing import Dict, Any, List, Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.copilot_log import CopilotChatLog
-from app.services.cache.clinical_cache import get_clinical_cache
 from app.schemas.admin_monitoring_schema import (
     BudgetCapConfig, BudgetCapResponse,
     TelemetryOverviewResponse, TelemetryEventItem,
@@ -48,9 +47,8 @@ def check_token_budget_gate() -> tuple[bool, str]:
         cfg = load_budget_config()
         from app.services.telemetry_store import get_daily_token_usage
         today_tokens_used, _ = get_daily_token_usage()
-        if today_tokens_used == 0:
-            cache_stats = get_clinical_cache().get_stats()
-            today_tokens_used = cache_stats.get("misses", 0) * 850
+        # The daily token gate uses provider reported calls only. Legacy estimates
+        # remain display telemetry and must not trigger a billing/budget cutoff.
         if cfg.daily_token_limit > 0 and today_tokens_used >= cfg.daily_token_limit:
             return False, "Chạm trần ngân sách Token ngày (Tự động chuyển về Dược thư Local 0 VNĐ)"
     except Exception:
@@ -59,21 +57,16 @@ def check_token_budget_gate() -> tuple[bool, str]:
 
 async def get_budget_status() -> BudgetCapResponse:
     cfg = load_budget_config()
-    cache_stats = get_clinical_cache().get_stats()
-    hits = cache_stats.get("hits", 0)
-    misses = cache_stats.get("misses", 0)
-    
     from app.services.telemetry_store import get_daily_token_usage, get_monthly_token_usage
     today_real_tok, today_real_cost = get_daily_token_usage()
     month_real_tok, month_real_cost = get_monthly_token_usage()
 
-    today_tokens_used = today_real_tok if today_real_tok > 0 else (misses * 850)
-    month_tokens_used = month_real_tok if month_real_tok > 0 else (today_tokens_used * 12)
+    today_tokens_used = today_real_tok
+    month_tokens_used = month_real_tok
     today_pct = min(100.0, round((today_tokens_used / cfg.daily_token_limit) * 100, 1)) if cfg.daily_token_limit > 0 else 0.0
     
-    saved_tokens = hits * 4200
-    saved_cost_vnd = round((saved_tokens / 1000000) * 0.075 * 25500, 0)
-    est_cost_vnd = today_real_cost if today_real_cost > 0 else round((today_tokens_used / 1000000) * 0.075 * 25500, 0)
+    saved_cost_vnd = 0.0
+    est_cost_vnd = today_real_cost
 
     # Tự động tính toán trạng thái thích ứng ngân sách (Auto Adaptive Throttling)
     throttling_status = "normal"
@@ -113,17 +106,16 @@ def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
     has_img = bool(getattr(l, "has_image", False) or ev_type in ("VISION_OCR_BHYT", "MULTIMODAL_CLINICAL_VISION"))
     img_tok = getattr(l, "image_tokens", 0) or (258 if has_img else 0)
     
-    # Lấy token thực tế, nếu bản ghi cũ thiếu thì nội suy chính xác từ độ dài prompt & completion
+    usage_source = getattr(l, "usage_source", None) or "none"
+    # Legacy logs may carry estimated values; expose provider-confirmed usage only.
     p_tok = getattr(l, "prompt_tokens", 0) or 0
-    if p_tok <= 0:
-        p_tok = max(24, len(l.query or "") // 3) + (img_tok if has_img else 0)
     
     c_tok = getattr(l, "completion_tokens", 0) or 0
-    if c_tok <= 0:
-        c_tok = max(35, len(l.reply_text or "") // 3)
         
     tot_tok = getattr(l, "total_tokens", 0) or 0
-    if tot_tok <= 0:
+    if usage_source != "provider":
+        p_tok = c_tok = tot_tok = 0
+    if tot_tok <= 0 and p_tok + c_tok > 0:
         tot_tok = p_tok + c_tok
 
     # 1. Chuẩn hóa Múi giờ Việt Nam (UTC + 7 tiếng) và Ngày Tháng
@@ -146,6 +138,9 @@ def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
     # 2. Chuẩn hóa Model AI đồng bộ với Google AI Studio và hệ thống kiểm soát lâm sàng
     m_name = getattr(l, "model_name", None)
     prov = getattr(l, "provider", None)
+    if getattr(l, "model_call_count", 0) == 0 and getattr(l, "cache_hit_count", 0) > 0:
+        m_name = "clinical-cache-engine"
+        prov = "local-cache"
 
     if status == "blocked":
         if ev_type == "DDI_BLOCKED":
@@ -273,6 +268,7 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     from app.models.cpoe import CpoePrescription
 
     # 1. Thống kê Cache thực tế từ bộ nhớ đệm
+    from app.services.cache.clinical_cache import get_clinical_cache
     cache_stats = get_clinical_cache().get_stats()
     exact_hits = cache_stats.get("exact_hits", 0)
     semantic_hits = cache_stats.get("semantic_hits", 0)
@@ -287,12 +283,13 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     logs = res.scalars().all()
     recent_events: List[TelemetryEventItem] = [map_chat_log_to_telemetry_event(l) for l in logs]
 
-    # 3. Thống kê Token & Chi phí thực tế từ Sổ cái Telemetry Ledger
+    # 3. Token từ provider metadata; chi phí quy đổi dùng giả định rate cấu hình
     _, _, real_tokens_consumed, _ = get_all_time_token_usage()
     recent_tokens_sum = sum(ev.total_tokens for ev in recent_events)
-    tokens_consumed = max(real_tokens_consumed, recent_tokens_sum, misses * 250)
-    tokens_saved = (exact_hits * 650) + (semantic_hits * 850)
-    cost_saved_vnd = round((tokens_saved / 1_000_000) * 0.075 * 25500, 0)
+    tokens_consumed = real_tokens_consumed
+    # No counterfactual token/cost savings are claimed without measured paired runs.
+    tokens_saved = 0
+    cost_saved_vnd = 0.0
 
     # 4. Đếm vi phạm DDI và Guardrail thực tế từ toàn bộ bảng logs
     ddi_stmt = select(func.count(CopilotChatLog.id)).where(

@@ -116,7 +116,7 @@ export const BudgetCapTab: React.FC<BudgetCapTabProps> = ({ budget, onRefresh })
           </div>
           <div className="p-4 bg-emerald-50/80 rounded-xl border border-emerald-200">
             <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-emerald-800 block mb-1">
-              Số tiền đã tiết kiệm nhờ Cache L1/L2
+              Tiết kiệm chi phí đã đo
             </span>
             <span className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-700">
               +{b.saved_cost_vnd.toLocaleString('vi-VN')} đ

@@ -49,7 +49,11 @@ async function runTests() {
         drugName: 'Amlodipin 5mg',
         quantity: 30,
         unit: 'Viên',
-        usage: '1 viên/ngày',
+        dosage: '1 viên/ngày',
+        daysSupply: 30,
+        unitPrice: 0,
+        activeIngredient: 'Amlodipin',
+        drugCode: 'AMLO-5',
         route: 'Uống'
       }
     ]

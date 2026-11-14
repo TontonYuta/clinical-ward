@@ -1,5 +1,7 @@
-import type { AppFontScale } from '../../utils/storage/appStatePersistence';
+import type { AppFontScale, LegacyFontScale } from '../../utils/storage/appStatePersistence';
 
 export function fontScaleToPixels(scale: AppFontScale): number {
-  return scale === 'compact' ? 14.5 : scale === 'large' ? 17.5 : 16.0;
+  if (typeof scale === 'number') return Math.min(24, Math.max(12, scale));
+  const legacy: Record<LegacyFontScale, number> = { compact: 14.5, standard: 16, large: 17.5 };
+  return legacy[scale];
 }

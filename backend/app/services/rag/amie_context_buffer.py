@@ -82,13 +82,14 @@ class AMIEContextBuffer:
         except Exception:
             has_explicit_med = False
 
-        has_explicit_pronoun = any(term in lower_q for term in ("nó", "thuốc đó", "thuốc này", "thuốc kia", "vừa rồi", "vừa nói", "thuốc trên", "cặp nữa"))
+        has_explicit_pronoun = bool(re.search(r'\b(?:nó|thuốc\s+(?:đó|này|kia|trên|vừa\s+nói)|vừa\s+rồi|cặp\s+nữa)\b', lower_q))
 
         # Nếu câu hỏi đã nêu rõ tên thuốc cụ thể và không có đại từ chỉ định thay thế, đây là câu hỏi mới độc lập
         if has_explicit_med and not has_explicit_pronoun:
             return False
 
-        if history.strip():
+        has_history = bool(history) if isinstance(history, list) else bool(str(history or "").strip())
+        if has_history:
             if any(marker in lower_q for marker in DEICTIC_CONTINUATION_MARKERS):
                 return True
             if len(clean_q.split()) <= 4 and not has_explicit_med:

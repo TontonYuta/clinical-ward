@@ -44,10 +44,25 @@ async def handle_multi_intent_chat(
     combined_chips = []
     seen_chips = set()
     last_active_med = ""
+    combined_evidence = []
+    evidence_keys = set()
+    all_grounded = True
+    confidences = []
 
     for idx, (sub_q, res) in enumerate(zip(sub_queries, results), 1):
         if not res:
+            all_grounded = False
             continue
+        factual_subanswer = res.answer_type not in {"clarification", "safe_abstention", "feedback_acknowledgment", "conversational_feedback", "conversational_guidance"}
+        if factual_subanswer and not res.rag_grounded:
+            all_grounded = False
+        if factual_subanswer:
+            confidences.append(res.confidence or 0.0)
+            citation_ids = {str(c.get("chunk_id")) for c in (res.citations or []) if isinstance(c, dict) and c.get("chunk_id")}
+            evidence_ids = {str(e.get("chunk_id")) for e in (res.evidence or []) if isinstance(e, dict) and e.get("chunk_id")}
+            has_graph_evidence = any(isinstance(e, dict) and e.get("evidence_type") == "knowledge_graph" and e.get("content") for e in (res.evidence or []))
+            if not citation_ids.intersection(evidence_ids) and not has_graph_evidence:
+                all_grounded = False
 
         clean_reply = res.reply_text.strip()
         # Loại bỏ lời chào lặp lại ở câu trả lời thứ 2 trở đi
@@ -69,6 +84,12 @@ async def handle_multi_intent_chat(
             if key not in seen_citation_keys:
                 seen_citation_keys.add(key)
                 combined_citations.append(cit_dict)
+        for evidence in (res.evidence or []):
+            evidence_dict = evidence if isinstance(evidence, dict) else evidence.model_dump() if hasattr(evidence, "model_dump") else {}
+            key = evidence_dict.get("evidence_id") or evidence_dict.get("chunk_id")
+            if key and key not in evidence_keys:
+                evidence_keys.add(key)
+                combined_evidence.append(evidence_dict)
 
         # Thu thập gợi ý
         for chip in (res.suggested_chips or []):
@@ -82,7 +103,12 @@ async def handle_multi_intent_chat(
 
     final_text = f"Kính gửi {role_label}, dưới đây là phản hồi chi tiết cho từng ý trong câu hỏi của Bác sĩ:\n\n{composite_reply}"
 
-    return CopilotResponse(
+    merged_citations = [c for c in combined_citations if c.get("chunk_id") in evidence_keys]
+    has_graph_evidence = any(e.get("evidence_type") == "knowledge_graph" and e.get("content") for e in combined_evidence)
+    grounded = all_grounded and bool(merged_citations or has_graph_evidence)
+    if not grounded:
+        final_text = "Chưa thể xác minh một hoặc nhiều ý trong yêu cầu từ nguồn tài liệu có thể truy xuất. Vui lòng tách câu hỏi hoặc kiểm tra kho nguồn trước khi sử dụng nội dung chuyên môn."
+    response = CopilotResponse(
         intent="MULTI_INTENT_COMPOSITE",
         reply_text=final_text,
         card=None,
@@ -92,7 +118,13 @@ async def handle_multi_intent_chat(
         active_medication_name=last_active_med or session.active_medication_name if session else "",
         answer_type="composite_answer",
         source_status="exact_match",
-        confidence=0.98,
-        rag_grounded=True,
-        citations=combined_citations
+        confidence=min(confidences, default=0.0) if grounded else 0.0,
+        rag_grounded=grounded,
+        citations=merged_citations,
+        evidence=combined_evidence,
+        abstention_reason=None if all_grounded else "Ít nhất một phần câu trả lời chưa được xác minh bằng evidence",
     )
+    if grounded:
+        from app.services.chatbot.answer_operation import apply_reference_note
+        response = apply_reference_note(response, None, route_intent="MULTI_INTENT_COMPOSITE")
+    return response

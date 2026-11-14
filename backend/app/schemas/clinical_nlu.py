@@ -7,6 +7,14 @@ from pydantic import BaseModel, Field
 
 
 class ClinicalNluExtraction(BaseModel):
+    answer_operation: Literal["direct_lookup", "evidence_synthesis", "patient_specific_inference"] = Field(
+        "direct_lookup",
+        description="Kiểu tác vụ cần trả lời: tra cứu dữ kiện, tổng hợp/so sánh chứng cứ, hay suy luận theo tình huống cụ thể"
+    )
+    conversation_mode: Literal["independent", "contextual_followup", "topic_shift"] = Field(
+        "independent",
+        description="Phân biệt lượt độc lập, lượt phụ thuộc ngữ cảnh hội thoại, hoặc lượt chuyển chủ đề"
+    )
     intent: Literal[
         "GREETING_WELLBEING",
         "CAPABILITY_OPENING",
@@ -32,6 +40,14 @@ class ClinicalNluExtraction(BaseModel):
         None,
         description="Tên thuốc thứ hai nếu là câu hỏi kiểm tra cặp tương tác thuốc"
     )
+    secondary_entity: Optional[str] = Field(
+        None,
+        description="Thực thể thứ hai trong câu hỏi tương tác; có thể là thuốc hoặc nhóm dược lý/enzym/chất vận chuyển được nêu trong câu"
+    )
+    secondary_entity_type: Optional[Literal["drug", "pharmacological_class", "enzyme", "transporter"]] = Field(
+        None,
+        description="Loại thực thể thứ hai trong yêu cầu tương tác, phân biệt tên thuốc với lớp dược lý hoặc đích chuyển hóa"
+    )
     additional_drugs: List[str] = Field(
         default_factory=list,
         description="Danh sách các thuốc phụ nếu hỏi đơn thuốc từ 3 loại trở lên"
@@ -55,6 +71,17 @@ class ClinicalNluExtraction(BaseModel):
     ]] = Field(
         None,
         description="Khía cạnh thông tin cụ thể người dùng yêu cầu"
+    )
+    requested_fields: List[Literal[
+        "administration_timing", "pediatric_dosage", "adult_dosage",
+        "contraindications", "adverse_effects", "drug_interactions",
+        "overdose_treatment", "indications", "ingredient",
+        "pregnancy_warning", "renal_adjustment", "hepatic_adjustment",
+        "alcohol_interaction", "food_interaction", "elderly_warning",
+        "stock_inquiry", "monitoring", "pharmacokinetics", "pharmacodynamics"
+    ]] = Field(
+        default_factory=list,
+        description="Tất cả khía cạnh thông tin được yêu cầu trong lượt hiện tại, giữ nguyên đầy đủ khi có nhiều ý"
     )
     is_deictic_referent: bool = Field(
         False,

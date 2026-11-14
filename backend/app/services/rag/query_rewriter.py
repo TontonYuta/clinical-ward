@@ -78,6 +78,15 @@ def _fast_heuristic_rewrite(query: str, history: str, active_med: Optional[str] 
                 detected_intent="CLINICAL_PEDIATRIC_GUIDANCE",
                 confidence=0.95
             )
+        if any(w in lower_q for w in ("chi tiết", "toàn văn", "đầy đủ", "không phải tóm tắt", "kỹ hơn", "chuyên luận")):
+            return ClinicalRewriteResult(
+                original_query=clean_q,
+                rewritten_query=f"Thông tin chi tiết chuyên luận thuốc {recent_drug}",
+                is_continuation=True,
+                detected_drug_entities=[recent_drug],
+                detected_intent="MEDICATION_SAFETY_PROFILE",
+                confidence=0.98
+            )
         if any(w in lower_q for w in ("suy thận", "suy gan", "chức năng thận", "egfr")):
             return ClinicalRewriteResult(
                 original_query=clean_q,

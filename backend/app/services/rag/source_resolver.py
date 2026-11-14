@@ -1,5 +1,6 @@
 import re
 import json
+import hashlib
 import unicodedata
 from pathlib import Path
 from functools import lru_cache
@@ -65,11 +66,19 @@ def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict
             conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT id, inn, title, atc_code, drug_class FROM clinical_drug_monographs")
+            cursor.execute("SELECT id, inn, title, atc_code, drug_class, source_id, source_version, indications, contraindications, adult_dosage, pediatric_dosage, precautions, renal_adjustment, hepatic_adjustment, pregnancy_warning, adverse_effects, drug_interactions, overdose_treatment, antidote FROM clinical_drug_monographs")
             records = [dict(row) for row in cursor.fetchall()]
             conn.close()
 
         sources = manifest.get("sources", []) if isinstance(manifest, dict) else []
+        if _MONOGRAPHS_PATH.exists():
+            artifact_id = _MONOGRAPHS_PATH.resolve().relative_to(_BACKEND_DIR.resolve().parent).as_posix()
+            artifact_hash = hashlib.sha256(_MONOGRAPHS_PATH.read_bytes()).hexdigest()
+            for record in records:
+                if not record.get("source_id"):
+                    record["source_id"] = artifact_id
+                if not record.get("source_version"):
+                    record["source_version"] = f"sha256:{artifact_hash}"
 
         by_inn = {}
         token_map = {}
@@ -106,6 +115,15 @@ def find_monograph_for_query(
         return None
     lower_ctx = search_context.casefold()
     unacc_ctx = _strip_accents(search_context)
+
+    # Prefer a direct active-ingredient record before broad brand/token matches.
+    for key in (lower_ctx, unacc_ctx):
+        normalized = re.sub(r"[^a-z0-9]+", " ", key).strip()
+        for token in normalized.split():
+            if len(token) >= 4:
+                direct = by_inn.get(token) or by_inn.get(_strip_accents(token))
+                if direct:
+                    return direct
 
     # 1. Tra cứu qua Brand to INN mapping
     for brand, mapped_inn in BRAND_TO_INN.items():
@@ -155,33 +173,39 @@ def resolve_citation_document(
     sources, by_inn, token_map = load_source_documents()
     pool_text = f"{source} {legal_basis} {section} {query} {active_drug}".casefold()
     unacc_pool = _strip_accents(pool_text)
+    source_identity = f"{source} {legal_basis}".casefold()
+    unacc_source_identity = _strip_accents(source_identity)
 
     # 1. Phát hiện văn bản quy phạm pháp luật đặc thù
     match = None
 
-    if "26/2025" in pool_text or "thong tu 26" in unacc_pool or "ke don" in unacc_pool:
+    # The citation is tied to an already retrieved chunk. Explicit source metadata
+    # must therefore take precedence over topic words from its section/query.
+    if "dược thư" in source_identity or "duoc thu" in unacc_source_identity or "2033" in source_identity or "dtqg" in unacc_source_identity:
+        match = next((s for s in sources if s.get("id") == "dtqg-v2-2015"), None)
+    elif "26/2025" in source_identity or "thong tu 26" in unacc_source_identity or "ke_don_thuoc" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "tt-26-2025"), None)
-    elif "51/2017" in pool_text or "phan ve" in unacc_pool or "adrenalin" in unacc_pool:
+    elif "51/2017" in source_identity or "phan_ve" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "tt-51-2017"), None)
-    elif "20/2017" in pool_text or "kiem soat dac biet" in unacc_pool:
+    elif "20/2017" in source_identity or "kiem_soat_dac_biet" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "tt-20-2017"), None)
-    elif "22/2011" in pool_text or "khoa duoc" in unacc_pool or "co so tu truc" in unacc_pool:
+    elif "22/2011" in source_identity or "khoa_duoc" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "tt-22-2011"), None)
-    elif "23/2011" in pool_text or "su dung thuoc" in unacc_pool:
+    elif "23/2011" in source_identity or "su_dung_thuoc" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "tt-23-2011"), None)
-    elif "5948" in pool_text or "tuong tac chong chi dinh" in unacc_pool:
+    elif "5948" in source_identity or "tuong_tac_chong_chi_dinh" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "qd-5948-2021"), None)
-    elif "20/2022" in pool_text or "danh muc thuoc bhyt" in unacc_pool:
+    elif "20/2022" in source_identity or "danh_muc_thanh_toan_thuoc_bhyt" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "tt-20-2022"), None)
-    elif "146/2018" in pool_text or "nghi dinh 146" in unacc_pool:
+    elif "146/2018" in source_identity or "nd_146" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "nd-146-2018"), None)
-    elif "188/2025" in pool_text or "nghi dinh 188" in unacc_pool:
+    elif "188/2025" in source_identity or "nd_188" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "nd-188-2025"), None)
-    elif "75/2023" in pool_text or "nghi dinh 75" in unacc_pool:
+    elif "75/2023" in source_identity or "nd_75" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "nd-75-2023"), None)
-    elif "130" in pool_text and ("qd-byt" in pool_text or "giam dinh" in unacc_pool):
+    elif "130" in source_identity and ("qd-byt" in source_identity or "chuan_du_lieu" in unacc_source_identity):
         match = next((s for s in sources if s.get("id") == "qd-130-2023"), None)
-    elif "3618" in pool_text or "quy trinh giam dinh bhyt" in unacc_pool:
+    elif "3618" in source_identity or "giam_dinh_bhyt" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "qd-3618-2022"), None)
     elif "98/2021" in pool_text or "nghi dinh 98" in unacc_pool or "thiet bi y te" in unacc_pool or "may tho" in unacc_pool:
         match = next((s for s in sources if s.get("id") == "nd-98-2021"), None)

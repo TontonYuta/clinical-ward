@@ -9,7 +9,6 @@ import { X, Search, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { MasterMedication } from '../../types/medication';
 import { getNationalDrugRegistryApi, setCachedDrugDetail } from '../../services/api';
 import { NationalDrugTableRow } from './NationalDrugRegistry/NationalDrugTableRow';
-import { NationalDrugTabs } from './NationalDrugRegistry/NationalDrugTabs';
 import { queryOfflineRegistry } from './NationalDrugRegistry/offlineRegistry';
 import { DavDrugDetailModal } from './DavDrugDetailModal';
 import { PHARMACOLOGICAL_GROUPS } from '../../utils/clinical/pharmacologicalClassification';
@@ -86,13 +85,12 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const selectedGroup = 'all';
   const [pharmGroup, setPharmGroup] = useState<string>('all');
   const [onlyInWarehouse, setOnlyInWarehouse] = useState(false);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(54885);
   const [totalPages, setTotalPages] = useState(1);
-  const [groupStats, setGroupStats] = useState<Record<string, number>>({});
   const [hospitalStockDrugCount, setHospitalStockDrugCount] = useState(0);
   const [cacheStatus, setCacheStatus] = useState<'none' | 'checking' | 'current' | 'updated' | 'offline' | 'static'>('none');
   const [selectedDrugForDav, setSelectedDrugForDav] = useState<MasterMedication | null>(null);
@@ -114,7 +112,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
       const cachedResponse = cached.response;
       const mappedCache = cachedResponse.items.map(mapMedicationItem);
       setDrugs(mappedCache); setTotalCount(cachedResponse.total); setTotalPages(cachedResponse.total_pages);
-      setGroupStats(cachedResponse.group_stats); setHospitalStockDrugCount(cachedResponse.hospital_stock_drug_count);
+      setHospitalStockDrugCount(cachedResponse.hospital_stock_drug_count);
       setCacheStatus('checking'); setLoading(false);
     } else if (isManualSync) { setIsSyncing(true); setSyncNotice(null); } else setLoading(true);
     let loaded = false;
@@ -124,7 +122,6 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
         const mapped = data.items.map(mapMedicationItem);
         setDrugs(mapped); setTotalCount(data.total ?? mapped.length); setTotalPages(data.total_pages || 1);
         setHospitalStockDrugCount(data.hospital_stock_drug_count ?? 0);
-        if (data.group_stats) setGroupStats(data.group_stats);
         saveCachedRegistryPage(key, data);
         setCacheStatus(cached && cached.response.inventory_revision === data.inventory_revision && cached.response.registry_revision === data.registry_revision ? 'current' : cached ? 'updated' : 'none');
         if (isManualSync) { setSyncNotice(`Đã cập nhật ${data.total.toLocaleString()} kết quả`); setTimeout(() => setSyncNotice(null), 3500); }
@@ -136,7 +133,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
       try {
         if (onlyInWarehouse) throw new Error('Warehouse inventory requires the authoritative database');
         const off = await queryOfflineRegistry(search, selectedGroup, pharmGroup, page, PAGE_SIZE);
-        setDrugs(off.items); setTotalCount(off.total); setTotalPages(off.totalPages); setGroupStats(off.groupStats); setHospitalStockDrugCount(0);
+        setDrugs(off.items); setTotalCount(off.total); setTotalPages(off.totalPages); setHospitalStockDrugCount(0);
         setCacheStatus('static');
         if (isManualSync) { setSyncNotice('Danh mục DAV bản chuẩn hóa đã được tải. API nghiệp vụ chưa cung cấp trạng thái tồn kho trực tiếp.'); setTimeout(() => setSyncNotice(null), 5000); }
       } catch {
@@ -196,7 +193,10 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
           {cacheStatus === 'static' && <p role="status" className="text-xs text-amber-800">Đang tra cứu danh mục DAV canonical đã đồng bộ lên web. Tồn kho bệnh viện cần API trực tiếp nên chưa hiển thị tại đây.</p>}
           {cacheStatus === 'offline' && <p role="status" className="text-xs text-amber-700">Chưa kết nối được CSDL; đang hiển thị lần tải gần nhất. Bấm Cập nhật để thử lại.</p>}
           <p className="text-xs text-slate-500">Danh mục tra cứu được đồng bộ từ bản DAV chuẩn hóa, cập nhật ngày 30/10/2026. Thông tin tương tác hiển thị theo nguyên văn nguồn chuyên luận; không tự suy diễn thành chống chỉ định phối hợp.</p>
-            <NationalDrugTabs selectedGroup={selectedGroup} onSelectGroup={(g) => { setSelectedGroup(g); setPage(1); }} groupStats={groupStats} totalCount={totalCount} />
+            <div className="flex items-center justify-between border-t border-slate-100 pt-1 text-xs text-slate-500" aria-label="Danh mục thuốc thống nhất">
+              <span>Tất cả thuốc trong danh mục</span>
+              <span className="tabular-nums">{totalCount.toLocaleString('vi-VN')} thuốc</span>
+            </div>
         </div>
 
         <div className="flex-1 overflow-auto bg-white p-2 sm:p-3">

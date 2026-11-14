@@ -113,6 +113,32 @@ def handle_gentle_chitchat_steering(
                 confidence=1.0
             )
 
+    # Câu hỏi danh tính hoặc giới thiệu bản thân
+    is_identity = (
+        any(w in low_q for w in (
+            "bạn là ai", "ban la ai", "bạn tên gì", "ban ten gi", "bạn là chatbot",
+            "phải chatbot", "bạn là bot", "giới thiệu bản thân", "ai tạo ra bạn", "trợ lý gì"
+        ))
+        or bool(re.search(r'\b(?:bạn|em|mày)\s+(?:là|ten\s+la)\s+(?:ai|gì|chatbot|bot|trợ lý|tro ly)\b', low_q))
+    )
+    if is_identity:
+        reply_text = (
+            f"Dạ em là **Trợ lý Dược Lâm Sàng & Nghiệp vụ Bệnh viện**!\n\n"
+            f"Em luôn sẵn sàng đồng hành cùng {role_label} trong công tác chuyên môn: tra cứu chuyên luận Dược thư Quốc gia Việt Nam (DĐVN V), "
+            f"tính liều theo chức năng thận/nhi khoa, cảnh báo tương tác thuốc theo Quyết định 5948/QĐ-BYT và rà soát danh mục BHYT.\n\n"
+            f"{role_label} cần tra cứu thuốc hoặc hỗ trợ ca bệnh nào ạ?"
+        )
+        return CopilotResponse(
+            intent="OUT_OF_SCOPE",
+            reply_text=reply_text,
+            legal_basis="Phạm vi chuyên môn Dược Lâm Sàng & Quy chế Bộ Y tế",
+            suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Phác đồ phản vệ TT 51"],
+            session_id=session_id,
+            answer_type="safe_abstention",
+            source_status="steered_non_clinical",
+            confidence=1.0
+        )
+
     # Chitchat ngoài lề hoặc yêu cầu dạy học ngoài ngành
     if out_of_scope_type in ("MATH_LOGIC", "GENERAL_CHITCHAT") or any(w in low_q for w in ("dạy tôi", "học toán", "kể chuyện", "làm thơ", "hát")):
         reply_text = (

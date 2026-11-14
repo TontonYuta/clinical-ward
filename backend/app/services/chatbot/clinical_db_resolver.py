@@ -51,6 +51,7 @@ async def resolve_drug_entity_deterministic(
 
     # 1. Tra cứu Chuyên khảo Dược thư Quốc gia (ClinicalDrugMonograph)
     mono_conds = []
+    mono_orders = []
     for term in search_terms:
         t_low = term.lower()
         mono_conds.extend([
@@ -59,11 +60,18 @@ async def resolve_drug_entity_deterministic(
             func.lower(ClinicalDrugMonograph.inn).like(f"{t_low} %"),
             func.lower(ClinicalDrugMonograph.title).like(f"{t_low} %")
         ])
-    mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*mono_conds)).limit(1))
+        mono_orders.extend([
+            (func.lower(ClinicalDrugMonograph.title) == t_low).desc(),
+            (func.lower(ClinicalDrugMonograph.inn) == t_low).desc(),
+            (func.lower(ClinicalDrugMonograph.title).like(f"{t_low} %")).desc(),
+            (func.lower(ClinicalDrugMonograph.inn).like(f"{t_low} %")).desc(),
+        ])
+    mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*mono_conds)).order_by(*mono_orders).limit(1))
     monograph = mono_res.scalar_one_or_none()
 
     # 2. Tra cứu Danh mục Cục QLD (DavNationalDrug)
     dav_conds = []
+    dav_orders = []
     for term in search_terms:
         t_low = term.lower()
         dav_conds.extend([
@@ -73,7 +81,14 @@ async def resolve_drug_entity_deterministic(
             func.lower(DavNationalDrug.brand_name).like(f"{t_low} %"),
             func.lower(DavNationalDrug.brand_name).like(f"% {t_low}%")
         ])
-    dav_res = await db.execute(select(DavNationalDrug).where(or_(*dav_conds)).limit(1))
+        dav_orders.extend([
+            (func.lower(DavNationalDrug.brand_name) == t_low).desc(),
+            (func.lower(DavNationalDrug.active_ingredient) == t_low).desc(),
+            (func.lower(DavNationalDrug.national_code) == t_low).desc(),
+            (func.lower(DavNationalDrug.brand_name).like(f"{t_low} %")).desc(),
+            (func.lower(DavNationalDrug.active_ingredient).like(f"{t_low} %")).desc(),
+        ])
+    dav_res = await db.execute(select(DavNationalDrug).where(or_(*dav_conds)).order_by(*dav_orders).limit(1))
     dav_drug = dav_res.scalar_one_or_none()
 
     if dav_drug:

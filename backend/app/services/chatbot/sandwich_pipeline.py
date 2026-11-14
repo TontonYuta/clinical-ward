@@ -253,6 +253,32 @@ async def execute_clinical_sandwich_pipeline(
     )
 
     chips = generate_suggested_chips(drug.brand_name.lower(), "monograph_field_lookup", drug_name=drug.brand_name)
+    from app.services.rag.source_resolver import load_source_documents
+    sources, _, _ = load_source_documents()
+    source_owner = ground_truth.get("monograph") if ground_truth.get("monograph") and getattr(ground_truth.get("monograph"), "source_id", None) else drug
+    source_id = getattr(source_owner, "source_id", None)
+    source_version = getattr(source_owner, "source_version", None)
+    source_record = next((item for item in sources if item.get("id") == ("dtqg-v2-2015" if str(source_id or "").endswith("dtqg_monographs_extracted.json") else source_id)), None)
+    if not (source_id and source_version and source_record and source_record.get("sha256") and (source_version == f"sha256:{source_record['sha256']}" or str(source_id).endswith("dtqg_monographs_extracted.json"))):
+        return CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE",
+            reply_text="Chưa thể xác minh hồ sơ thuốc từ bản ghi có nguồn và phiên bản. Vui lòng kiểm tra tài liệu đã lập chỉ mục hoặc cập nhật provenance của dữ liệu.",
+            session_id=session.session_id, active_medication_name=drug.brand_name,
+            answer_type="safe_abstention", source_status="evidence_provenance_missing",
+            confidence=0.0, rag_grounded=False, citations=[], evidence=[],
+            abstention_reason="Bản ghi DAV chưa có nguồn được xác nhận trong manifest",
+        )
+    citation = (ground_truth.get("citations") or [{}])[0]
+    chunk_id = f"registry:{getattr(drug, 'id', '')}"
+    citation = {**citation, "chunk_id": chunk_id, "source_id": source_id, "source_version": source_version}
+    fields = ("brand_name", "active_ingredient", "national_code", "dosage_form", "indications", "adult_dosage", "pediatric_dosage", "contraindications", "adverse_effects", "drug_interactions", "renal_adjustment", "pregnancy_warning")
+    monograph = ground_truth.get("monograph")
+    evidence_text = "\n".join(f"{field}: {getattr(monograph, field, None) or getattr(drug, field, '')}" for field in fields if getattr(monograph, field, None) or getattr(drug, field, None))
+    evidence = [{
+        "evidence_type": "document_chunk", "chunk_id": chunk_id,
+        "source_id": source_id, "source_version": source_version,
+        "source_name": source_record.get("title"), "content": evidence_text,
+    }]
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE",
         reply_text=reply_text,
@@ -263,6 +289,6 @@ async def execute_clinical_sandwich_pipeline(
         answer_type="medication_profile",
         source_status="grounded_sandwich_synthesis",
         confidence=1.0,
-        citations=ground_truth.get("citations", []),
+        citations=[citation], evidence=evidence,
         rag_grounded=True
     )

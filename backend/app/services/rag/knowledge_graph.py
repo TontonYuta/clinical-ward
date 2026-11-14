@@ -4,6 +4,8 @@ Biểu diễn quan hệ Dược chất <-> Tương tác DDI (QĐ 5948) <-> Chố
 Căn cứ: LightRAG (arXiv:2410.05779, HKUDS) & Dược thư Quốc gia Việt Nam (DĐVN V)
 """
 from typing import Optional, List, Dict, Any
+import hashlib
+from pathlib import Path
 from app.services.rag.ddi_graph_data import CLINICAL_DDI_GRAPH, CLINICAL_CONTRAINDICATION_GRAPH
 from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 from app.services.rag.lightrag_data import (
@@ -184,7 +186,17 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
 
     graph_context_text = "\n\n".join(context_sections)
 
+    graph_data_path = Path(__file__).with_name("lightrag_data.py")
+    try:
+        graph_digest = hashlib.sha256(
+            graph_data_path.read_bytes() + Path(__file__).with_name("ddi_graph_data.py").read_bytes()
+        ).hexdigest()
+        graph_version = f"sha256:{graph_digest}"
+    except OSError:
+        graph_version = None
     return {
+        "graph_source": "curated-clinical-graph",
+        "graph_version": graph_version,
         "matched_inns": list(dict.fromkeys(matched_inns)),
         "active_ddi_alerts": active_ddi_alerts,
         "contra_warnings": contra_warnings,

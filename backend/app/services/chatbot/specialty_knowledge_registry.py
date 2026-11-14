@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import hashlib
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -77,6 +78,18 @@ class SpecialtyKnowledgeRegistry:
 
     def get_knowledge_items(self) -> List[Dict[str, Any]]:
         return self._knowledge_items
+
+    def get_source_metadata(self) -> dict[str, str | None]:
+        try:
+            with self._data_file.open("rb") as source_file:
+                digest = hashlib.sha256(source_file.read()).hexdigest()
+            try:
+                source_id = self._data_file.resolve().relative_to(Path(__file__).resolve().parents[3]).as_posix()
+            except ValueError:
+                source_id = self._data_file.name
+            return {"source_id": source_id, "source_version": f"sha256:{digest}"}
+        except OSError:
+            return {"source_id": None, "source_version": None}
 
     def get_by_topic(self, topic: str) -> Optional[Dict[str, Any]]:
         return self._topic_map.get(topic)

@@ -167,15 +167,6 @@ class BhytAuditService:
         warning_count = 0
         reject_count = 0
         missing_fields: List[str] = []
-        if not payload.primary_icd10:
-            missing_fields.append("primary_icd10")
-        if not payload.primary_diagnosis:
-            missing_fields.append("primary_diagnosis")
-        if not payload.hospital_rank:
-            missing_fields.append("hospital_rank")
-        if not payload.treatment_type:
-            missing_fields.append("treatment_type")
-
         # Tra cứu quy tắc cho từng thuốc
         matched_rules: Dict[str, Optional[sqlite3.Row]] = {}
         for item in payload.items:
@@ -183,13 +174,15 @@ class BhytAuditService:
             total_cost += item_cost
             rule = self.find_rule_for_drug(item.drug_name, item.active_ingredient or "")
             matched_rules[item.id] = rule
+            if rule is None and "catalogMatch" not in missing_fields:
+                missing_fields.append("catalogMatch")
 
         # Kiểm tra 1: Vượt tuyến KCB (HOSPITAL_RANK_MISMATCH)
         for item in payload.items:
             rule = matched_rules.get(item.id)
             if rule:
                 ranks = json.loads(rule["allowed_ranks_json"]) if rule["allowed_ranks_json"] else []
-                if payload.hospital_rank not in ranks:
+                if payload.hospital_rank and payload.hospital_rank not in ranks:
                     rejection_vnd = item.quantity * item.unit_price
                     at_risk_cost += rejection_vnd
                     reject_count += 1
@@ -212,6 +205,15 @@ class BhytAuditService:
                         rejection_risk_vnd=rejection_vnd,
                         action="Chuyển tuyến bệnh nhân hoặc thay thế bằng hoạt chất được phân hạng cho tuyến cơ sở."
                     ))
+                elif not payload.hospital_rank and ranks and len(ranks) < 5:
+                    if "hospital_rank" not in missing_fields:
+                        missing_fields.append("hospital_rank")
+                allowed_icd = json.loads(rule["allowed_icd10_json"]) if rule["allowed_icd10_json"] else []
+                forbidden_icd = json.loads(rule["forbidden_icd10_json"]) if rule["forbidden_icd10_json"] else []
+                if (allowed_icd or forbidden_icd) and not payload.primary_icd10 and "primary_icd10" not in missing_fields:
+                    missing_fields.append("primary_icd10")
+                if rule["requires_consultation"] and not payload.treatment_type and "treatment_type" not in missing_fields:
+                    missing_fields.append("treatment_type")
 
         # Kiểm tra 2: Trùng lặp hoạt chất / Nhóm tác dụng điều trị (ĐỘNG CƠ LUẬT KHAI BÁO CSDL - ZERO HARDCODE)
         therapeutic_classes = self.get_declarative_therapeutic_classes()
@@ -474,14 +476,6 @@ class BhytAuditService:
         violated_item_ids = {v.id.split('-')[-1] for v in violations if v.severity == 'REJECT'}
         pass_count = len(payload.items) - len(violated_item_ids)
 
-        if missing_fields:
-            violations.append(BhytViolationItemSchema(
-                id="VIO-MISSING-DATA", drug_code="", drug_name="Toàn bộ đơn thuốc", active_ingredient="",
-                severity="WARNING", category="MISSING_DATA", title="Chưa đủ dữ liệu để kết luận",
-                detail=f"Thiếu trường: {', '.join(missing_fields)}. Không kết luận vi phạm từ trường đang thiếu.",
-                legal_ref=BhytLegalRefSchema(doc_code="", doc_title="", section="", page_number=0, local_pdf_path=""),
-                rejection_risk_vnd=0.0, action="Bổ sung thông tin gốc rồi thực hiện giám định lại."
-            ))
         status = "REJECT" if reject_count > 0 else ("WARNING" if warning_count > 0 else ("NEEDS_REVIEW" if missing_fields else "PASS"))
 
         # Lưu log vào SQLite

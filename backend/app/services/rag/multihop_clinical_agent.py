@@ -44,13 +44,17 @@ def is_multihop_clinical_case(query: str, lower_query: str) -> bool:
     ))
     # Symptom / Adverse reaction cues
     has_symptom_cue = any(s in q_low for s in (
-        "ho khan", "bị ho", "ho", "phù", "đau cơ", "tiêu cơ", "mệt", "khó thở", "chóng mặt", "tác dụng phụ", "dị ứng"
-    ))
+        "ho khan", "bị ho", "phù", "đau cơ", "tiêu cơ", "mệt", "khó thở", "chóng mặt", "tác dụng phụ", "dị ứng"
+    )) or bool(re.search(r"(?<!\w)ho(?!\w)", q_low, flags=re.UNICODE))
 
     matcher = get_drug_lexical_matcher()
     meds = matcher.extract_medications(query)
     resolved = resolve_registered_medications(q_low)
     total_meds = len(_canonicalize_meds(meds + resolved))
+
+    # Single-patient record inquiries or allergy alerts without any medications are handled by CDSS scenarios
+    if total_meds == 0:
+        return False
 
     # Pattern A: Formal clinical case with subject, organ condition/symptom, and prescription cue or >= 2 meds
     if has_subject and (has_condition or has_symptom_cue) and (has_prescribe_cue or total_meds >= 2):
@@ -84,7 +88,6 @@ async def execute_multihop_clinical_evaluation(
         proposed_meds = all_meds[2:]
 
     all_involved_inns = list(dict.fromkeys(current_meds + proposed_meds))
-
     # =========================================================================
     # HOP 1: Baseline Regimen vs. Organ Function Audit
     # =========================================================================
@@ -485,7 +488,8 @@ async def execute_multihop_clinical_evaluation(
                     "ống thận gấp 3 - 5 lần. Cần theo dõi điện giải đồ định kỳ 3 - 5 ngày một lần. "
                     "Cảnh báo nguy hiểm: Thuốc lợi tiểu giữ Kali dùng trên bệnh nhân suy thận mạn ClCr < 30 "
                     "có nguy cơ rất cao gây Tăng Kali máu nặng dẫn tới rối loạn nhịp tim nguy kịch."
-                )
+                ),
+                source_id="qd-5948-2021", source_version=None
             ),
             score=0.97
         ),
@@ -509,7 +513,8 @@ async def execute_multihop_clinical_evaluation(
                     "Điện giải đồ (Kali máu K+) bắt buộc làm sau 3 - 5 ngày điều chỉnh do dùng đồng thời Coversyl và Spironolacton; "
                     "Creatinin huyết tương & eGFR/ClCr đánh giá lại sau 7 - 14 ngày; "
                     "Dấu hiệu quá tải dịch: Cân nặng hàng ngày, tình trạng phù hai chi dưới và khó thở khi nằm."
-                )
+                ),
+                source_id=None, source_version=None
             ),
             score=0.96
         )
@@ -582,18 +587,21 @@ async def execute_multihop_clinical_evaluation(
             "substituteDrug": sub_drug
         }
 
+    # This executor currently synthesizes rule text and citation payloads rather
+    # than retrieving source chunks. Keep its diagnostic draft internal and
+    # fail closed until every claim is backed by retrieved, versioned evidence.
     return RagResult(
         query=query,
         answer=audit_res["cleaned_answer"],
-        citations=citations,
+        citations=[],
         retrieved_chunks=retrieved_chunks,
         kg_entities=[f"INN:{m.upper()}" for m in all_involved_inns],
-        confidence_score=0.96,
+        confidence_score=0.0,
         legal_basis="Dược Thư Quốc Gia Việt Nam (QĐ 2033/QĐ-BYT) & Quyết định 5948/QĐ-BYT",
-        rag_grounded=True,
-        factuality_score=audit_res["factuality_score"],
-        hallucination_rate=audit_res["hallucination_rate"],
-        critique_verdict=audit_res["critique_verdict"],
+        rag_grounded=False,
+        factuality_score=0.0,
+        hallucination_rate=1.0,
+        critique_verdict="NOT_RUN",
         claims_audit=audit_res["claims_audit"],
         cdss_alert=cdss_alert_data
     )

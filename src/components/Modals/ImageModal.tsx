@@ -10,7 +10,7 @@
  * 4. Nhập câu hỏi lâm sàng tùy biến (liều dùng, tương tác, điều kiện thanh toán BHYT)
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, X, Check, Image as ImageIcon, Trash2, RefreshCw, AlertCircle, ZoomIn, Eye } from 'lucide-react';
 import { compressImageForOcr } from '../../utils/imageOptimization';
 import { ImageLightboxModal } from './ImageLightboxModal';
@@ -28,12 +28,16 @@ interface ImageModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSendImage: (payload: SendImagePayload) => void;
+  initialFile?: File | null;
+  onInitialFileConsumed?: () => void;
 }
 
 export const ImageModal: React.FC<ImageModalProps> = ({
   isOpen,
   onClose,
-  onSendImage
+  onSendImage,
+  initialFile,
+  onInitialFileConsumed
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<{
@@ -52,6 +56,13 @@ export const ImageModal: React.FC<ImageModalProps> = ({
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+
+
+  useEffect(() => {
+    if (!isOpen || !initialFile) return;
+    onInitialFileConsumed?.();
+    void handleProcessFile(initialFile);
+  }, [isOpen, initialFile, onInitialFileConsumed]);
 
   if (!isOpen) return null;
 
@@ -108,6 +119,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
       setIsProcessingFile(false);
     }
   };
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

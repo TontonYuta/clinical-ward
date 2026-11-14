@@ -34,9 +34,10 @@ TOOL_SEMANTIC_PROFILES: Dict[ClinicalIntent, Dict[str, Any]] = {
         "negatives": {"dặn dò", "nhắc thuốc"}
     },
     ClinicalIntent.DISPENSE_MEDICATION: {
-        "anchors": {"mượn", "mượn thuốc", "lập phiếu mượn", "mượn tủ trực", "xuất mượn", "xuất khẩn", "xuất khẩn cấp", "rút khẩn", "kê nợ", "phiếu nợ", "cho", "lấy", "xuất", "cần", "kê", "tiêm"},
+        "anchors": {"mượn", "mượn thuốc", "lập phiếu mượn", "mượn tủ trực", "xuất mượn", "xuất khẩn", "xuất khẩn cấp", "rút khẩn", "kê nợ", "phiếu nợ", "xuất kho cấp cứu"},
         "negatives": {
             "nhắc thuốc", "lịch uống", "dặn dò", "thông tin", "kê đơn điện tử", "cpoe", "hỏi số lượng",
+            "tóm tắt", "tom tat", "cho tôi", "cho em", "cho minh", "cho bác sĩ",
             "mang thai", "có thai", "thai kỳ", "bà bầu", "sốt", "được không", "uống được không",
             "dùng được không", "thế nào", "là gì", "tác dụng", "liều", "chỉ định", "chống chỉ định", "tương tác"
         }

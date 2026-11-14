@@ -19,7 +19,8 @@ export type DashboardTab =
   | 'fefo'
   | 'coldchain'
   | 'asset_audit'
-  | 'bhyt_audit';
+  | 'bhyt_audit'
+  | 'documents';
 
 export type ClinicalActionType =
   | 'PRESCRIBE_MEDICATION'

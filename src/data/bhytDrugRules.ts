@@ -24,6 +24,7 @@ export interface BhytDrugRule {
   contraindicatedIcd10Prefixes?: string[];
   specialConditions?: string;
   pdfPage: number;               // Trang trong PDF TT 20/2022
+  stt?: number;
 }
 
 export const HOSPITAL_RANK_LABELS: Record<HospitalRank, string> = {

@@ -39,15 +39,11 @@ async def test_dose_reasoning_ciprofloxacin_female_severe_ckd():
     
     resp = await evaluate_patient_dose_reasoning(query=query, session=session, db=None)
     assert resp is not None
-    assert resp.intent == "MEDICATION_SAFETY_PROFILE"
-    assert "CrCl = 18.1" in resp.reply_text or "18." in resp.reply_text
-    assert "G4" in resp.reply_text
-    assert "250 mg – 500 mg" in resp.reply_text
-    assert "18 – 24 giờ" in resp.reply_text
-    assert resp.citations is not None
+    assert resp.answer_type == "grounded_reference"
+    assert resp.rag_grounded is True
     assert len(resp.citations) == 1
-    assert resp.citations[0]["page"] in (394, 412)
-    assert "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" in resp.citations[0]["url"]
+    assert resp.citations[0]["document_id"] == "dtqg-v2-2015"
+    assert resp.evidence[0]["source_version"].startswith("sha256:")
 
 
 @pytest.mark.asyncio

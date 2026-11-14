@@ -1,6 +1,6 @@
 from app.schemas.copilot import CopilotResponse
 from app.services.rag import rag_pipeline
-from app.services.rag.hybrid_retriever import HybridRetriever
+from app.services.rag.types import filter_evidence_for_citations
 from app.services.session_context import get_or_create_session
 from app.services.clinical_ddi_engine.drug_registry import DRUG_REGISTRY
 from app.services.clinical_ddi_engine.entity_resolution import resolve_registered_medications
@@ -18,6 +18,7 @@ async def handle_contextual_rag_followup(
     is_interaction_question: bool,
     explicit_medication_named: bool,
     active_medication_name: str | None,
+    inference_required: bool = False,
 ) -> CopilotResponse | None:
     has_contextual_clinical_followups = any(
         term in lower_query for term in ("dùng gì", "uống gì", "gợi ý", "nên dùng", "nên uống", "đau đầu", "đau bụng")
@@ -25,7 +26,7 @@ async def handle_contextual_rag_followup(
     if not ((is_interaction_question or has_contextual_clinical_followups) and (explicit_medication_named or active_medication_name)):
         return None
 
-    rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role, conversation_context=history)
+    rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role, conversation_context=history, inference_required=inference_required)
     if not rag_res:
         return None
 
@@ -48,13 +49,16 @@ async def handle_contextual_rag_followup(
         suggested_chips=[],
         session_id=session.session_id,
         citations=[c.to_dict() for c in rag_res.citations],
+        evidence=filter_evidence_for_citations(rag_res.evidence, [c.to_dict() for c in rag_res.citations]),
+        claims=rag_res.claims,
+        evidence_claim_map=rag_res.evidence_claim_map,
         rag_grounded=rag_res.rag_grounded,
         answer_type="grounded_reference" if rag_res.rag_grounded else "safe_abstention",
         source_status="retrieved_evidence" if rag_res.rag_grounded else "insufficient_retrieval_evidence",
         confidence=rag_res.confidence_score,
         abstention_reason=None if rag_res.rag_grounded else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
-        factuality_score=getattr(rag_res, "factuality_score", 1.0),
-        critique_verdict=getattr(rag_res, "critique_verdict", "PASS"),
+        factuality_score=getattr(rag_res, "factuality_score", 0.0),
+        critique_verdict=getattr(rag_res, "critique_verdict", "NOT_RUN"),
         cdss_alert=cdss_alert_obj,
     )
 
@@ -72,7 +76,8 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
     "sốt xuất huyết", "dengue", "dấu hiệu cảnh báo", "cảnh báo đỏ", "red flag", "hạ sốt", "thuốc hạ sốt", "oresol", "sốt", "kiêng gì", "kiêng",
     "macrolid", "statin", "acei", "arb", "ccb", "chẹn beta", "quinolon", "nsaid", "opioid", "benzodiazepin",
     "sglt2", "dpp4", "tiểu đường", "đái tháo đường", "huyết áp", "đổi thuốc", "thay thế", "ho khan", "nhóm thuốc",
-    "đổi sang", "chuyển sang", "thay bằng", "đổi nhóm", "thay thế bằng"
+    "đổi sang", "chuyển sang", "thay bằng", "đổi nhóm", "thay thế bằng",
+    "trào ngược", "trào ngược dạ dày", "gerd", "loét dạ dày", "dạ dày", "tiêu hóa", "ợ chua", "ợ nóng", "thực quản", "viêm loét", "ppi"
 )
 
 def is_qualified_clinical_rag_query(lower_query: str, session) -> bool:
@@ -93,6 +98,7 @@ async def handle_deep_rag_consultation(
     session_id: str,
     user_name: str,
     is_deep_pharmacology: bool,
+    inference_required: bool = False,
 ) -> CopilotResponse | None:
     session = get_or_create_session(session_id, user_name, user_role)
     is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
@@ -118,15 +124,17 @@ async def handle_deep_rag_consultation(
             legal_basis="Thông tư 22/2011/TT-BYT & Quyết định 5948/QĐ-BYT"
         )
 
-    top_results = await HybridRetriever().retrieve_async(query, top_k=1)
-    if not top_results:
+    rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role, conversation_context=history, inference_required=inference_required)
+    if not rag_res or (not rag_res.retrieved_chunks and not rag_res.rag_grounded):
         return CopilotResponse(
             intent="CLINICAL_SAFE_ABSTENTION",
-            reply_text="Dạ thưa Bác sĩ, hiện tại tôi chưa tìm thấy thông tin chuyên môn phù hợp về nội dung này trong các hướng dẫn chính thức. Bác sĩ vui lòng nêu rõ thêm tên thuốc hoặc chủ đề cần tra cứu ạ.",
-            answer_type="safe_abstention", source_status="no_retrieval_results",
+            reply_text=rag_res.answer if rag_res else "Chưa tìm thấy tài liệu đủ phù hợp để trả lời chính xác câu hỏi này.",
+            answer_type="safe_abstention", source_status="insufficient_retrieval_evidence",
             confidence=0.0, abstention_reason="Không có tài liệu truy xuất phù hợp",
+            citations=[], rag_grounded=False,
+            factuality_score=getattr(rag_res, "factuality_score", 0.0),
+            critique_verdict=getattr(rag_res, "critique_verdict", "NOT_RUN"),
         )
-    rag_res = await rag_pipeline.execute_clinical_rag(query, user_role=user_role, conversation_context=history)
     if not (rag_res and (rag_res.citations or not rag_res.rag_grounded or is_deep_pharmacology)):
         return None
 
@@ -155,12 +163,15 @@ async def handle_deep_rag_consultation(
         legal_basis=rag_res.legal_basis or None,
         suggested_chips=[],
         session_id=session.session_id,
+        evidence=filter_evidence_for_citations(rag_res.evidence, validated_citations),
+        claims=rag_res.claims,
+        evidence_claim_map=rag_res.evidence_claim_map,
         citations=validated_citations,
         rag_grounded=rag_res.rag_grounded and is_grounded,
         answer_type="grounded_reference" if (rag_res.rag_grounded and is_grounded) else "safe_abstention",
         source_status="retrieved_evidence" if (rag_res.rag_grounded and is_grounded) else "insufficient_retrieval_evidence",
         confidence=rag_res.confidence_score if is_grounded else 0.5,
         abstention_reason=None if (rag_res.rag_grounded and is_grounded) else "Tài liệu truy xuất không đủ phù hợp để hỗ trợ câu trả lời",
-        factuality_score=getattr(rag_res, "factuality_score", 1.0),
-        critique_verdict=getattr(rag_res, "critique_verdict", "PASS"),
+        factuality_score=getattr(rag_res, "factuality_score", 0.0),
+        critique_verdict=getattr(rag_res, "critique_verdict", "NOT_RUN"),
     )

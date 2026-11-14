@@ -34,7 +34,7 @@ export const DEFAULT_LEGAL_REF: BhytLegalRef = {
 /**
  * Chuẩn hóa hạng bệnh viện, tự động ánh xạ các biến thể text sang Enum chuẩn
  */
-export function sanitizeHospitalRank(rawRank: any, fallback: HospitalRank = 'HANG_I'): HospitalRank {
+export function sanitizeHospitalRank(rawRank: any, fallback: HospitalRank | '' = ''): HospitalRank | '' {
   if (!rawRank) return fallback;
   const str = String(rawRank).trim().toUpperCase();
 
@@ -65,11 +65,12 @@ export function sanitizeHospitalRank(rawRank: any, fallback: HospitalRank = 'HAN
 /**
  * Chuẩn hóa loại hình điều trị
  */
-export function sanitizeTreatmentType(rawType: any, fallback: TreatmentType = 'NGOAI_TRU'): TreatmentType {
+export function sanitizeTreatmentType(rawType: any, fallback: TreatmentType | '' = ''): TreatmentType | '' {
   if (!rawType) return fallback;
   const str = String(rawType).trim().toUpperCase();
   if (str === 'NOI_TRU' || str.includes('NỘI TRÚ')) return 'NOI_TRU';
-  return 'NGOAI_TRU';
+  if (str === 'NGOAI_TRU' || str.includes('NGOẠI TRÚ')) return 'NGOAI_TRU';
+  return fallback;
 }
 
 /**
@@ -78,17 +79,17 @@ export function sanitizeTreatmentType(rawType: any, fallback: TreatmentType = 'N
 export function sanitizePrescriptionItem(rawItem: any, index: number = 0): BhytPrescriptionItem {
   const it = rawItem && typeof rawItem === 'object' ? rawItem : {};
 
-  const q = Number(it.quantity ?? it.quantity_val ?? 1);
-  const quantity = !isNaN(q) && q > 0 ? q : 1;
+  const q = Number(it.quantity ?? it.quantity_val ?? 0);
+  const quantity = !isNaN(q) && q > 0 ? q : 0;
 
   const p = Number(it.unitPrice ?? it.unit_price ?? 0);
   const unitPrice = !isNaN(p) && p >= 0 ? p : 0;
 
   const t = Number(it.totalPrice ?? it.total_price ?? 0);
-  const totalPrice = !isNaN(t) && t > 0 ? t : Math.round(quantity * unitPrice);
+  const totalPrice = !isNaN(t) && t > 0 ? t : undefined;
 
-  const ds = Number(it.daysSupply ?? it.days_supply ?? 7);
-  const daysSupply = !isNaN(ds) && ds > 0 ? Math.round(ds) : 7;
+  const ds = Number(it.daysSupply ?? it.days_supply ?? 0);
+  const daysSupply = !isNaN(ds) && ds > 0 ? Math.round(ds) : undefined;
 
   const vr = Number(it.vatRate ?? it.vat_rate ?? 0);
   const vatRate = !isNaN(vr) && vr >= 0 ? vr : 0;
@@ -96,20 +97,20 @@ export function sanitizePrescriptionItem(rawItem: any, index: number = 0): BhytP
   return {
     id: String(it.id || it.item_id || `ITEM-${index + 1}`),
     drugCode: String(it.drugCode || it.drug_code || ''),
-    drugName: String(it.drugName || it.drug_name || `Thuốc ${index + 1}`).trim(),
+    drugName: String(it.drugName || it.drug_name || '').trim(),
     activeIngredient: String(it.activeIngredient || it.active_ingredient || '').trim(),
     dosage: String(it.dosage || '').trim(),
-    unit: String(it.unit || it.dvt || 'Viên').trim(),
+    unit: String(it.unit || it.dvt || '').trim() || undefined,
     batchNumber: String(it.batchNumber || it.batch_number || it.lot_no || it.lot || '').trim(),
     expiryDate: String(it.expiryDate || it.expiry_date || it.hsd || '').trim(),
-    route: String(it.route || 'Uống').trim(),
+    route: String(it.route || '').trim(),
     quantity,
     daysSupply,
     unitPrice,
     totalPrice,
     vatRate,
     instructions: String(it.instructions || it.lieu_dung || '').trim(),
-    hasConsultationForm: Boolean(it.hasConsultationForm ?? it.has_consultation_form ?? false)
+    hasConsultationForm: typeof (it.hasConsultationForm ?? it.has_consultation_form) === 'boolean' ? (it.hasConsultationForm ?? it.has_consultation_form) : undefined
   };
 }
 
@@ -118,8 +119,8 @@ export function sanitizePrescriptionItem(rawItem: any, index: number = 0): BhytP
  */
 export function sanitizeOcrPrescriptionPayload(
   raw: any,
-  defaultRank: HospitalRank = 'HANG_I',
-  defaultType: TreatmentType = 'NGOAI_TRU'
+  defaultRank: HospitalRank | '' = '',
+  defaultType: TreatmentType | '' = ''
 ): BhytPrescriptionPayload {
   const p = raw && typeof raw === 'object' ? raw : {};
 
@@ -137,8 +138,8 @@ export function sanitizeOcrPrescriptionPayload(
   const items = rawItems.map((it, idx) => sanitizePrescriptionItem(it, idx));
 
   // Tuổi bệnh nhân
-  const rawAge = Number(p.patientAge ?? p.patient_age ?? 50);
-  const patientAge = !isNaN(rawAge) && rawAge >= 0 && rawAge < 150 ? rawAge : 50;
+  const rawAge = Number(p.patientAge ?? p.patient_age ?? 0);
+  const patientAge = !isNaN(rawAge) && rawAge > 0 && rawAge < 150 ? rawAge : 0;
 
   return {
     prescriptionId: String(p.prescriptionId || p.prescription_id || `RX-${Date.now()}`),
@@ -146,7 +147,7 @@ export function sanitizeOcrPrescriptionPayload(
     sellerName: String(p.sellerName || p.seller_name || '').trim(),
     sellerTaxId: String(p.sellerTaxId || p.seller_tax_id || '').trim(),
     invoiceNumber: String(p.invoiceNumber || p.invoice_number || '').trim(),
-    patientName: String(p.patientName || p.patient_name || 'Bệnh nhân BHYT').trim(),
+    patientName: String(p.patientName || p.patient_name || '').trim(),
     patientAge,
     insuranceCardNumber: String(p.insuranceCardNumber || p.insurance_card_number || '').trim(),
     hospitalRank: sanitizeHospitalRank(p.hospitalRank || p.hospital_rank, defaultRank),

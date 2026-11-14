@@ -73,3 +73,4 @@ class PrescriptionAuditReport:
     pair_alerts: list[DdiAlert] = field(default_factory=list)
     polypharmacy_alerts: list[PolypharmacyCumulativeAlert] = field(default_factory=list)
     normalized_entities: list[DrugEntity] = field(default_factory=list)
+    unresolved_entities: list[str] = field(default_factory=list)

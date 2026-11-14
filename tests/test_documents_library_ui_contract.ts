@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs.readFileSync('src/components/Documents/DocumentsLibrary.tsx', 'utf8');
+assert.ok(!source.includes('Mở PDF'), 'Thư viện không hiển thị nút mở PDF');
+assert.ok(source.includes('aria-label="Thêm tài liệu PDF"'), 'Thư viện có nút upload nhỏ');
+assert.ok(source.includes('role="dialog"'), 'Form upload chỉ hiện trong hộp thoại');
+assert.ok(source.includes('data-testid="documents-library"'), 'Thư viện có điểm neo giao diện');
+assert.ok(source.includes('Thả tệp PDF vào đây'), 'Dialog có dropzone dễ nhận biết');
+assert.ok(source.includes('data-testid="selected-document-file"'), 'Dialog hiển thị rõ file đã chọn');
+assert.ok(source.includes('aria-label="Bỏ tệp đã chọn"'), 'Có thể bỏ file đã chọn');
+assert.ok(source.includes('Đang tải lên và lập chỉ mục'), 'Dialog có trạng thái upload/indexing');
+assert.ok(source.includes('accept="application/pdf,.pdf"'), 'File picker giới hạn loại PDF');
+assert.ok(source.includes('data-testid="document-card-link"'), 'Toàn bộ thẻ văn bản là vùng mở PDF');
+assert.ok(source.includes('href={pdfUrl(document)}'), 'Thẻ dùng URL PDF của tài liệu');
+console.log('documents library compact UI contract passed');
+assert.ok(source.includes('sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'), 'Thẻ tài liệu rộng hơn trên màn hình lớn');
+assert.ok(source.includes('min-h-36') && source.includes('p-5'), 'Thẻ tài liệu có kích thước và khoảng đệm thoáng hơn');
+assert.ok(!source.includes('max-w-[1600px]'), 'Kho không bị giới hạn bề rộng trên màn hình lớn');
+const settings = fs.readFileSync('src/components/Settings/SettingsModal.tsx', 'utf8');
+assert.ok(settings.includes('type="range"'), 'Cỡ chữ có thể điều chỉnh theo dải số');
+assert.ok(settings.includes('step="0.5"'), 'Cỡ chữ điều chỉnh được theo bước nhỏ');

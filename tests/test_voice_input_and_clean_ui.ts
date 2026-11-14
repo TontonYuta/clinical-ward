@@ -8,6 +8,15 @@ function runVoiceInputAndCleanUiTest() {
   // 1. Kiểm tra ChatInputBar.tsx
   const chatInputBarPath = path.resolve('src/components/LeftPane/ChatInputBar.tsx');
   const chatInputBarCode = fs.readFileSync(chatInputBarPath, 'utf-8');
+  const globalCss = fs.readFileSync(path.resolve('src/index.css'), 'utf-8');
+  assert.ok(
+    globalCss.includes('@keyframes chatbot-slow-glow') && globalCss.includes('.chatbot-launcher-glow'),
+    'Nút mở chatbot cần hiệu ứng nhấp nháy nhẹ'
+  );
+  assert.ok(
+    globalCss.includes('@media (prefers-reduced-motion: reduce)'),
+    'Hiệu ứng phải tôn trọng thiết lập giảm chuyển động của hệ điều hành'
+  );
 
   assert.ok(
     chatInputBarCode.includes('SpeechRecognition'),
@@ -33,7 +42,49 @@ function runVoiceInputAndCleanUiTest() {
     chatInputBarCode.includes('toggleListening'),
     'Nút mic phải kích hoạt toggleListening trực tiếp một chạm'
   );
-  console.log('✅ ChatInputBar.tsx: Tích hợp One-click Voice Input tiếng Việt (vi-VN) chuẩn mực.');
+  assert.ok(
+    chatInputBarCode.includes('recognition.onspeechstart') && chatInputBarCode.includes('recognition.onspeechend'),
+    'ChatInputBar phải xử lý onspeechstart và onspeechend để triệt tiêu độ trễ cảm nhận'
+  );
+  assert.ok(
+    chatInputBarCode.includes('isUserSpeaking'),
+    'ChatInputBar phải duy trì trạng thái người dùng đang nói'
+  );
+  assert.ok(
+    !chatInputBarCode.includes('{liveInterimSnippet ? ('),
+    'Transcript chỉ được hiển thị trong ô nhập, thanh trạng thái mic không được lặp lại transcript'
+  );
+  assert.ok(
+    chatInputBarCode.includes('event.results[i]') && chatInputBarCode.includes('setInputText(merged)'),
+    'Transcript interim/final phải cập nhật trực tiếp trong một ô nhập duy nhất'
+  );
+  assert.ok(
+    chatInputBarCode.includes('scheduleVoiceDispatch') && chatInputBarCode.includes('VOICE_SILENCE_DELAY_MS = 1000'),
+    'ChatInputBar dùng một lịch gửi tự động sau 1 giây im lặng'
+  );
+  assert.ok(
+    chatInputBarCode.includes('aria-label="Sóng âm thanh"'),
+    'ChatInputBar phải có hiệu ứng sóng âm thanh trực quan khi người dùng đang nói'
+  );
+  assert.ok(
+    chatInputBarCode.includes('ref={inputFieldRef}'),
+    'ChatInputBar phải gắn inputFieldRef vào ô nhập để tự động cuộn text theo thời gian thực'
+  );
+  assert.ok(
+    chatInputBarCode.includes('VOICE_SILENCE_DELAY_MS = 1000'),
+    'Thời gian tự gửi sau im lặng phải dùng một hằng số 1 giây'
+  );
+  assert.strictEqual(
+    (chatInputBarCode.match(/window\.setTimeout\(/g) || []).length,
+    2,
+    'Chỉ được có timer tự gửi và timer xoá lỗi micro'
+  );
+  const onEndBlock = chatInputBarCode.slice(chatInputBarCode.indexOf('recognition.onend ='), chatInputBarCode.indexOf('recognitionRef.current = recognition;'));
+  assert.ok(
+    !onEndBlock.includes('dispatchVoiceMessage('),
+    'onend không được gửi ngay, tránh bỏ qua khoảng im lặng thống nhất'
+  );
+  console.log('✅ ChatInputBar.tsx: Tích hợp One-click Voice Input tiếng Việt (vi-VN) chuẩn mực với Live Interim Preview, Audio Wave & Auto-scroll.');
 
   // 2. Kiểm tra ChatWindow.tsx: Render suggestedChips chuẩn xác và có bộ lọc
   const chatWindowPath = path.resolve('src/components/LeftPane/ChatWindow.tsx');

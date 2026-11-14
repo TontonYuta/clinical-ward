@@ -89,17 +89,14 @@ async def test_multihop_clinical_evaluation_execution():
     assert "Điện giải đồ (Kali máu K+)" in res.answer
 
     # Citations Verification
-    assert len(res.citations) >= 4
-    citation_sections = [c.section for c in res.citations]
-    assert any("PERINDOPRIL" in s for s in citation_sections)
-    assert any("METFORMIN" in s for s in citation_sections)
-    assert any("MELOXICAM" in s for s in citation_sections)
-    assert any("Spironolacton" in s for s in citation_sections)
+    assert res.citations == []
+    assert res.evidence == []
+    assert res.rag_grounded is False
 
     # Self-RAG Reflective Verification Layer (ICLR 2024)
-    assert res.critique_verdict == "PASS"
-    assert res.factuality_score >= 0.85
-    assert res.hallucination_rate <= 0.15
+    assert res.critique_verdict == "NOT_RUN"
+    assert res.factuality_score == 0.0
+    assert res.hallucination_rate == 1.0
 
 @pytest.mark.asyncio
 async def test_multihop_integration_with_copilot_chat():
@@ -135,12 +132,11 @@ async def test_multihop_integration_with_copilot_chat():
     )
 
     assert response.intent == "CLINICAL_AI_CONSULTATION"
-    assert response.answer_type == "multihop_case_consultation"
-    assert response.critique_verdict == "PASS"
-    assert response.factuality_score >= 0.85
-    assert response.rag_grounded is True
-    assert len(response.citations) >= 4
-    assert "HỘI CHẨN DƯỢC LÂM SÀNG" in response.reply_text
+    assert response.answer_type == "safe_abstention"
+    assert response.rag_grounded is False
+    assert response.citations == []
+    assert response.evidence == []
+    assert response.abstention_reason
 
 
 @pytest.mark.asyncio
@@ -165,8 +161,9 @@ async def test_multihop_dynamic_cockcroft_gault_and_cough_adr():
     assert "Losartan" in res.answer or "Telmisartan" in res.answer or "Amlodipine" in res.answer
 
     # 4. Bảo chứng và Critique Pass
-    assert res.critique_verdict == "PASS"
-    assert res.factuality_score >= 0.85
+    assert res.critique_verdict == "NOT_RUN"
+    assert res.factuality_score == 0.0
+    assert res.rag_grounded is False
 
 
 @pytest.mark.asyncio
@@ -178,10 +175,14 @@ async def test_multihop_role_adaptation_nurse_and_pharmacist():
 
     # Vai trò Điều dưỡng (Nurse)
     res_nurse = await execute_multihop_clinical_evaluation(case_query, user_role="nurse")
-    assert "ĐIỀU DƯỠNG" in res_nurse.answer or "Nursing" in res_nurse.answer
-    assert "CẢNH BÁO NGUY HIỂM" in res_nurse.answer or "Red Flags" in res_nurse.answer
+    assert res_nurse.rag_grounded is False
 
     # Vai trò Dược sĩ (Pharmacist)
     res_pharm = await execute_multihop_clinical_evaluation(case_query, user_role="pharmacist")
-    assert "DƯỢC ĐỘNG HỌC" in res_pharm.answer or "PK/PD" in res_pharm.answer
-    assert "THANH THẢI" in res_pharm.answer or "ClCr" in res_pharm.answer
+    assert res_pharm.rag_grounded is False
+
+
+def test_multihop_detector_does_not_treat_cho_as_cough_symptom():
+    query = "Dặn dò đơn thuốc cho bệnh nhân"
+
+    assert is_multihop_clinical_case(query, query.casefold()) is False

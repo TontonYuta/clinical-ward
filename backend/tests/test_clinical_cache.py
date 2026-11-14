@@ -30,11 +30,92 @@ def test_mutation_queries_rejected():
     assert not cache.is_cacheable_query("Báo hỏng máy thở phòng mổ 2"), "Should reject equipment query"
     assert not cache.is_cacheable_query("Thuốc nào cận hạn"), "Should reject expiry inventory query"
     assert not cache.is_cacheable_query("Giao ban ca trực sáng"), "Should reject handover query"
+
+
+def test_cache_rejects_clinical_response_without_evidence():
+    cache = ClinicalLRUCache(max_size=5, db_path=False)
+    response = CopilotResponse(
+        intent="CLINICAL_AI_CONSULTATION", reply_text="Cached claim",
+        answer_type="grounded_reference", rag_grounded=True,
+        citations=[{"chunk_id": "old-chunk"}], evidence=[],
+    )
+    stored = cache.set("verifiable clinical query", "doctor", response)
+
+    assert stored is False
+    assert cache.get("verifiable clinical query", "doctor") is None
     assert not cache.is_cacheable_query("Kê đơn ceftriaxone 1g"), "Should reject CPOE query"
+
+
+def test_cache_rejects_grounded_profile_whose_reply_is_an_abstention():
+    cache = ClinicalLRUCache(max_size=5, db_path=False)
+    response = CopilotResponse(
+        intent="MEDICATION_SAFETY_PROFILE",
+        reply_text="Không thể xác minh nguồn hiện hành; vui lòng đối chiếu tài liệu đã được phê duyệt.",
+        answer_type="medication_profile", rag_grounded=True, confidence=0.0,
+        citations=[{"chunk_id": "monograph:generic:profile"}],
+        evidence=[{"evidence_type": "document_chunk", "chunk_id": "monograph:generic:profile",
+                   "source_id": "source", "source_version": "sha256:source", "content": "monograph facts"}],
+    )
+
+    assert cache.set("Generic medication profile", "doctor", response) is False
+
+
+def test_cache_removes_persisted_entry_that_violates_current_contract(tmp_path):
+    cache_path = str(tmp_path / "cache.sqlite")
+    cache = ClinicalLRUCache(max_size=5, db_path=cache_path)
+    query = "Generic medication profile"
+    key = cache.make_key(query, "doctor")
+    invalid_response = CopilotResponse(
+        intent="MEDICATION_SAFETY_PROFILE", reply_text="Rejected answer",
+        answer_type="medication_profile", rag_grounded=True, confidence=0.0,
+        evidence=[{"evidence_type": "document_chunk", "chunk_id": "c1",
+                   "source_id": "s1", "source_version": "v1", "content": "evidence"}],
+    )
+    now = __import__("time").time()
+    cache.storage.save_entry(key, {
+        "data": invalid_response.model_dump(), "expire_at": now + 3600,
+        "created_at": now, "canonical_query": cache.normalize_query(query),
+        "role": "doctor", "features": cache.extract_clinical_features(query),
+    })
+    cache = ClinicalLRUCache(max_size=5, db_path=cache_path)
+
+    assert cache.get(query, "doctor") is None
+    assert cache.storage.load_active_entries() == []
 
     assert cache.is_cacheable_query("Paracetamol 500mg uống thế nào"), "Should accept clinical query"
     assert cache.is_cacheable_query("Tương tác thuốc giữa Plavix và Nexium"), "Should accept interaction query"
     print("✅ Mutation query rejection test passed!")
+
+
+def test_cache_rejects_abstentions_and_clarifications():
+    cache = ClinicalLRUCache(max_size=5, db_path=False)
+    for answer_type in ("safe_abstention", "clarification"):
+        response = CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE",
+            reply_text="Chưa thể xác minh từ nguồn.",
+            answer_type=answer_type,
+        )
+        assert cache.set("Paracetamol clinical fact", "doctor", response) is False
+
+
+def test_cache_ignores_entries_written_before_current_response_contract():
+    cache = ClinicalLRUCache(max_size=5, db_path=False)
+    query = "Paracetamol detailed profile"
+    key = cache.make_key(query, "doctor")
+    cache._cache[key] = {
+        "data": CopilotResponse(
+            intent="MEDICATION_SAFETY_PROFILE",
+            reply_text="unverified old answer",
+            answer_type="safe_abstention",
+        ).model_dump(),
+        "expire_at": 10**12,
+        "created_at": 0,
+        "canonical_query": cache.normalize_query(query),
+        "role": "doctor",
+        "features": cache.extract_clinical_features(query),
+    }
+
+    assert cache.get(query, "doctor") is None
 
 def test_lru_and_retrieval():
     cache = ClinicalLRUCache(max_size=2, db_path=False)

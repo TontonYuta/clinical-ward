@@ -6,10 +6,21 @@ from app.models.registry import DavNationalDrug
 
 
 def format_clinical_text(text: str) -> str:
-    """Join PDF line wraps while preserving blank line paragraphs and list items."""
+    """Join PDF line wraps while preserving paragraph and list boundaries."""
     lines = [line.rstrip() for line in text.splitlines()]
     paragraphs: list[str] = []
     current: list[str] = []
+
+    def repair_pdf_wrap_space(value: str) -> str:
+        # Restore a missing separator after a numeric quantity when the next
+        # token starts with a lowercase word (for example, `6giờ`). Preserve
+        # uppercase scientific identifiers such as CYP3A4 and B12.
+        value = re.sub(r"(?<=\d)(?=[a-zà-ỹ])", " ", value)
+        value = re.sub(r"(?<=[a-zà-ỹ])(?=\d)", " ", value)
+        value = re.sub(r"(?<=[,.;:!?])(?=[A-Za-zÀ-ỹ])", " ", value)
+        value = re.sub(r"(?<=%)(?=[A-Za-zÀ-ỹ])", " ", value)
+        return value
+
     for line in lines:
         stripped = line.strip()
         if not stripped:
@@ -26,7 +37,7 @@ def format_clinical_text(text: str) -> str:
             current.append(stripped)
     if current:
         paragraphs.append(" ".join(current))
-    return "\n\n".join(paragraphs)
+    return repair_pdf_wrap_space("\n\n".join(paragraphs))
 
 
 def truncate_clinical_excerpt(text: str, max_length: int = 240) -> str:
@@ -166,7 +177,7 @@ def build_drug_citation(
         url = "https://dichvucong.dav.gov.vn/congbothuoc/index"
         text_fragment_url = url
 
-    return {
+    citation = {
         "source": title,
         "legal_basis": legal or "Cục Quản lý Dược (DAV)",
         "section": clean_section,
@@ -176,6 +187,12 @@ def build_drug_citation(
         "text_fragment_url": text_fragment_url,
         "page": page if has_dtqg_provenance else None,
     }
+    source_id = getattr(monograph, "source_id", None) if monograph is not None else None
+    source_version = getattr(monograph, "source_version", None) if monograph is not None else None
+    if source_id and source_version:
+        citation["source_id"] = source_id
+        citation["source_version"] = source_version
+    return citation
 
 
 def extract_inline_citation_token(source_str: str) -> str:
@@ -305,15 +322,9 @@ def format_flat_field_inquiry(
         header = f"**Thông tin chuyên môn về {drug_title}:**"
 
     def get_cluster_token(key: str, label: str, text: str) -> str:
-        k_lower = key.lower()
-        l_lower = label.lower()
-        if "interaction" in k_lower or "tương tác" in l_lower or "5948" in text:
-            return "[QĐ 5948]"
-        if "anaphylaxis" in k_lower or "phản vệ" in l_lower or "51/2017" in text:
-            return "[TT 51/2017/TT-BYT]"
-        if "prescription" in k_lower or "kê đơn" in l_lower or "26/2025" in text:
-            return "[TT 26/2025/TT-BYT]"
+        """Derive citation badge from verified provenance, never topic keywords."""
         return default_token
+
 
     body_parts = []
     if len(field_data) == 1:
@@ -328,6 +339,17 @@ def format_flat_field_inquiry(
                 sl_clean = re.sub(r'\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]', '', sl)
                 lines.append(sl_clean)
             body_parts.append("\n".join(lines))
+        elif re.search(r"(?m)^\s*-\s+\*\*[^*]+\*\*:?\s*$", val) and "\n" in val:
+            # Structured clinical subsections already contain their own hierarchy.
+            # Re-splitting them into prose chunks adds a second set of bullets and
+            # can turn a section heading's trailing colon into a period.
+            lines = []
+            for line in val.splitlines():
+                if not line.strip():
+                    continue
+                cleaned = re.sub(r"\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]", "", line).rstrip()
+                lines.append(cleaned)
+            body_parts.append("\n".join(lines))
         else:
             chunks = split_clinical_chunks(val)
             if not chunks:
@@ -338,8 +360,7 @@ def format_flat_field_inquiry(
                 clean_chunks.append(f"• {c_clean}")
             body_parts.append("\n".join(clean_chunks))
     else:
-        has_ddi_only = all("interaction" in k.lower() or "tương tác" in l.lower() for k, l, _ in field_data)
-        single_token = "[QĐ 5948]" if has_ddi_only else default_token
+        single_token = default_token
 
         for key, label, val in field_data:
             if val.startswith("[") and "\n" in val:

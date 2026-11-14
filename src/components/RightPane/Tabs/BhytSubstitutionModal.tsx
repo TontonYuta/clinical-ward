@@ -28,7 +28,7 @@ interface BhytSubstitutionModalProps {
   originalItem: BhytPrescriptionItem | null;
   violation: BhytViolationItem | null;
   candidates: DrugSubstituteCandidate[];
-  hospitalRank: HospitalRank;
+  hospitalRank?: HospitalRank;
   onApplySubstitute: (candidate: DrugSubstituteCandidate) => void;
 }
 

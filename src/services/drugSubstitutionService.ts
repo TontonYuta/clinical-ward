@@ -123,10 +123,11 @@ function passesPreflightSafetyGate(
 export function findDrugSubstitutes(
   targetItem: BhytPrescriptionItem,
   violation: BhytViolationItem,
-  hospitalRank: HospitalRank,
+  hospitalRank: HospitalRank | '',
   primaryIcd10: string,
   allPrescriptionItems: BhytPrescriptionItem[]
 ): DrugSubstituteCandidate[] {
+  if (!hospitalRank) return [];
   const targetRule = findBhytRule(targetItem.activeIngredient || targetItem.drugName);
   const targetAtc = targetRule?.atcGroup || '';
   const targetAtcUpper = targetAtc.trim().toUpperCase();
@@ -151,7 +152,7 @@ export function findDrugSubstitutes(
     }
 
     // 1. HARD FILTER: Tuyến BV phải cho phép sử dụng hoạt chất này
-    if (!rule.allowedRanks.includes(hospitalRank)) {
+    if (hospitalRank && !rule.allowedRanks.includes(hospitalRank)) {
       continue;
     }
 

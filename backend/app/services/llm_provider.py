@@ -12,6 +12,8 @@ import hashlib
 import logging
 from typing import Optional, Dict, Tuple
 from contextvars import ContextVar
+from dataclasses import dataclass, field
+import threading
 import httpx
 
 from app.config import settings
@@ -19,22 +21,93 @@ from app.config import settings
 logger = logging.getLogger("clinical_llm_provider")
 
 # Biến ngữ cảnh luồng (ContextVar) ghi nhận model và token thực tế từ Google AI Studio
-_current_llm_execution: ContextVar[dict] = ContextVar(
+_EMPTY_LLM_EXECUTION = {
+    "model": None,
+    "provider": None,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "call_count": 0,
+    "cache_hits": 0,
+    "model_call_count": 0,
+    "provider_call_count": 0,
+    "usage_source": "none",
+    "actual_usage": False,
+}
+
+@dataclass
+class _LLMExecutionTrace:
+    data: dict = field(default_factory=lambda: dict(_EMPTY_LLM_EXECUTION))
+    lock: threading.Lock = field(default_factory=threading.Lock)
+
+
+_current_llm_execution: ContextVar[_LLMExecutionTrace | None] = ContextVar(
     "_current_llm_execution",
-    default={
-        "model": "gemini-3.5-flash-lite",
-        "provider": "gemini",
-        "prompt_tokens": 0,
-        "completion_tokens": 0,
-        "total_tokens": 0
-    }
+    default=None,
 )
 
+
+def _get_execution_trace() -> _LLMExecutionTrace:
+    trace = _current_llm_execution.get()
+    if trace is None:
+        trace = _LLMExecutionTrace()
+        _current_llm_execution.set(trace)
+    return trace
+
 def get_last_llm_execution() -> dict:
-    return _current_llm_execution.get()
+    trace = _get_execution_trace()
+    with trace.lock:
+        return dict(trace.data)
 
 def set_last_llm_execution(data: dict) -> None:
-    _current_llm_execution.set(data)
+    if "usage_source" not in data:
+        data = {**data, "usage_source": "estimated", "actual_usage": False}
+    _current_llm_execution.set(_LLMExecutionTrace({**_EMPTY_LLM_EXECUTION, **data}))
+
+def reset_llm_execution() -> None:
+    """Start a request-scoped usage trace without sharing mutable defaults."""
+    _current_llm_execution.set(_LLMExecutionTrace())
+
+def record_llm_execution(
+    model: str,
+    provider: str,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    *,
+    usage_source: str = "provider",
+    cache_hit: bool = False,
+) -> dict:
+    """Accumulate provider calls in this async request context."""
+    trace = _get_execution_trace()
+    with trace.lock:
+        previous = trace.data
+        sources = set(previous.get("usage_sources", []))
+        if not cache_hit:
+            sources.add(usage_source)
+        if not sources:
+            combined_source = "none"
+        elif len(sources) == 1:
+            combined_source = next(iter(sources))
+        else:
+            combined_source = "mixed"
+        p_tokens = int(prompt_tokens or 0)
+        c_tokens = int(completion_tokens or 0)
+        current = {
+        "model": model,
+        "provider": provider,
+        "prompt_tokens": previous.get("prompt_tokens", 0) + p_tokens,
+        "completion_tokens": previous.get("completion_tokens", 0) + c_tokens,
+        "total_tokens": previous.get("total_tokens", 0) + p_tokens + c_tokens,
+        "call_count": previous.get("call_count", 0) + (0 if cache_hit else 1),
+        "cache_hits": previous.get("cache_hits", 0) + (1 if cache_hit else 0),
+        "usage_source": combined_source,
+        "usage_sources": sorted(sources),
+        "actual_usage": bool(sources) and sources == {"provider"},
+        "model_call_count": previous.get("model_call_count", 0) + (0 if cache_hit else 1),
+        "provider_call_count": previous.get("provider_call_count", 0) + (1 if not cache_hit and usage_source == "provider" else 0),
+        }
+        trace.data = current
+        return dict(current)
 
 # Lightweight response cache to avoid redundant inferences
 _LLM_CACHE: Dict[str, Tuple[str, float]] = {}
@@ -97,19 +170,18 @@ async def _call_gemini_api(
                         if parts and "text" in parts[0]:
                             reply = parts[0]["text"].strip()
                             usage = data.get("usageMetadata", {})
-                            p_tok = usage.get("promptTokenCount") or (len(prompt) // 4)
-                            c_tok = usage.get("candidatesTokenCount") or (len(reply) // 4)
-                            set_last_llm_execution({
-                                "model": model,
-                                "provider": "gemini",
-                                "prompt_tokens": p_tok,
-                                "completion_tokens": c_tok,
-                                "total_tokens": p_tok + c_tok
-                            })
+                            p_value = usage.get("promptTokenCount")
+                            c_value = usage.get("candidatesTokenCount")
+                            p_tok = p_value if p_value is not None else (len(prompt) // 4)
+                            c_tok = c_value if c_value is not None else (len(reply) // 4)
+                            record_llm_execution(
+                                model, "gemini", p_tok, c_tok,
+                                usage_source="provider" if p_value is not None and c_value is not None else "estimated",
+                            )
                             try:
                                 from app.services.telemetry_store import record_llm_token_usage
                                 from app.services.admin_key_vault import record_key_consumption
-                                record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
                                 record_key_consumption(key, p_tok + c_tok)
                             except Exception:
                                 pass
@@ -134,19 +206,18 @@ async def _call_gemini_api(
                                 if parts and "text" in parts[0]:
                                     reply = parts[0]["text"].strip()
                                     usage = data.get("usageMetadata", {})
-                                    p_tok = usage.get("promptTokenCount") or (len(prompt) // 4)
-                                    c_tok = usage.get("candidatesTokenCount") or (len(reply) // 4)
-                                    set_last_llm_execution({
-                                        "model": model,
-                                        "provider": "gemini",
-                                        "prompt_tokens": p_tok,
-                                        "completion_tokens": c_tok,
-                                        "total_tokens": p_tok + c_tok
-                                    })
+                                    p_value = usage.get("promptTokenCount")
+                                    c_value = usage.get("candidatesTokenCount")
+                                    p_tok = p_value if p_value is not None else (len(prompt) // 4)
+                                    c_tok = c_value if c_value is not None else (len(reply) // 4)
+                                    record_llm_execution(
+                                        model, "gemini", p_tok, c_tok,
+                                        usage_source="provider" if p_value is not None and c_value is not None else "estimated",
+                                    )
                                     try:
                                         from app.services.telemetry_store import record_llm_token_usage
                                         from app.services.admin_key_vault import record_key_consumption
-                                        record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                        record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
                                         record_key_consumption(key, p_tok + c_tok)
                                     except Exception:
                                         pass
@@ -308,8 +379,11 @@ async def _call_gemini_vision_ocr(
                             parsed = json.loads(raw_text.strip())
                             if isinstance(parsed, dict):
                                 usage = data.get("usageMetadata", {})
-                                p_tok = usage.get("promptTokenCount") or (len(ocr_prompt) // 4 + 258)
-                                c_tok = usage.get("candidatesTokenCount") or max(40, len(raw_text) // 4)
+                                p_value = usage.get("promptTokenCount")
+                                c_value = usage.get("candidatesTokenCount")
+                                p_tok = p_value if p_value is not None else (len(ocr_prompt) // 4 + 258)
+                                c_tok = c_value if c_value is not None else max(40, len(raw_text) // 4)
+                                record_llm_execution(model, "gemini", p_tok, c_tok, usage_source="provider" if p_value is not None and c_value is not None else "estimated")
                                 img_tok = 258
                                 parsed["_model_used"] = model
                                 parsed["_provider"] = "gemini"
@@ -320,7 +394,7 @@ async def _call_gemini_vision_ocr(
                                 try:
                                     from app.services.telemetry_store import record_llm_token_usage
                                     from app.services.admin_key_vault import record_key_consumption
-                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
                                     record_key_consumption(key, p_tok + c_tok)
                                 except Exception:
                                     pass
@@ -429,6 +503,7 @@ async def query_vision_ocr(
     """
     provider = (settings.LLM_PROVIDER or "gemini").strip().lower()
     if provider in {"offline", "none", "disable", "disabled"}:
+        set_last_llm_execution({"model": "local-extractive", "provider": "local", "usage_source": "none"})
         return None
 
     if provider == "openai_compatible":
@@ -491,11 +566,18 @@ async def _call_openai_compatible_api(
                     if content:
                         reply = content.strip()
                         usage = data.get("usage", {})
-                        p_tok = usage.get("prompt_tokens") or (len(prompt) // 4)
-                        c_tok = usage.get("completion_tokens") or (len(reply) // 4)
+                        p_value = usage.get("prompt_tokens")
+                        c_value = usage.get("completion_tokens")
+                        p_tok = p_value if p_value is not None else (len(prompt) // 4)
+                        c_tok = c_value if c_value is not None else (len(reply) // 4)
+                        record_llm_execution(
+                            settings.OPENAI_MODEL or "openai-compatible",
+                            "openai_compatible", p_tok, c_tok,
+                            usage_source="provider" if p_value is not None and c_value is not None else "estimated",
+                        )
                         try:
                             from app.services.telemetry_store import record_llm_token_usage
-                            record_llm_token_usage(p_tok, c_tok, model=settings.OPENAI_MODEL or "qwen2.5:7b-instruct", provider="openai_compatible")
+                            record_llm_token_usage(p_tok, c_tok, model=settings.OPENAI_MODEL or "qwen2.5:7b-instruct", provider="openai_compatible", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
                         except Exception:
                             pass
                         return reply
@@ -535,6 +617,7 @@ async def query_clinical_llm(
     budget_allowed, budget_msg = check_token_budget_gate()
     if not budget_allowed:
         logger.warning("Token budget gate closed: %s. Falling back to local offline RAG.", budget_msg)
+        set_last_llm_execution({"model": "local-extractive", "provider": "local", "usage_source": "none"})
         return None
 
     # 2. Kiểm tra bộ nhớ đệm LLM
@@ -544,6 +627,7 @@ async def query_clinical_llm(
     if cached:
         text, ts = cached
         if time.time() - ts < CACHE_TTL_SEC:
+            record_llm_execution(model_identifier, provider, cache_hit=True)
             return text
         _LLM_CACHE.pop(cache_hash, None)
 
@@ -570,10 +654,17 @@ async def query_clinical_llm(
 
     # 4. Lưu cache nếu thành công
     if result:
+        # A provider call may have occurred without returning token metadata. Track
+        # execution separately from usage so request counters don't report zero.
+        execution = get_last_llm_execution()
+        if execution.get("model_call_count", 0) == 0 and execution.get("cache_hits", 0) == 0:
+            record_llm_execution(model_identifier, provider, usage_source="estimated")
         if len(_LLM_CACHE) >= MAX_CACHE_ITEMS:
             oldest = min(_LLM_CACHE.keys(), key=lambda k: _LLM_CACHE[k][1])
             _LLM_CACHE.pop(oldest, None)
         _LLM_CACHE[cache_hash] = (result, time.time())
+    elif get_last_llm_execution().get("model_call_count", 0) == 0 and get_last_llm_execution().get("cache_hits", 0) == 0:
+        record_llm_execution(model_identifier, provider, usage_source="estimated")
 
     return result
 
@@ -602,8 +693,14 @@ Trả về DUY NHẤT một đối tượng JSON hợp lệ:
 {
   "is_clinical": true,
   "category": "PRESCRIPTION" | "MEDICATION" | "BHYT_DOCUMENT" | "NON_CLINICAL",
-  "reply_markdown": "Nội dung phân tích chuyên môn chi tiết bằng Markdown y khoa...",
-  "legal_basis": "Căn cứ pháp lý chính (ví dụ: Thông tư 20/2022/TT-BYT, Dược Thư Quốc Gia 2015, hoặc Quyết định 3618/QĐ-BHXH)",
+  "document_type_label": "Tên loại tài liệu bằng tiếng Việt, ví dụ: Đơn thuốc ngoại trú, Nhãn thuốc, Phiếu thanh toán BHYT",
+  "extracted_sections": [
+    {"title": "Tên nhóm thông tin bằng tiếng Việt", "items": ["Một dữ kiện đọc được trên ảnh"]}
+  ],
+  "extracted_text": "Nội dung quan sát/đọc được trên ảnh, không bổ sung suy đoán...",
+  "unreadable_fields": ["Các trường không đọc rõ hoặc không xuất hiện"],
+  "reply_markdown": "Tóm tắt dữ kiện quan sát được; không tự kết luận tương tác, liều phù hợp hay thanh toán BHYT nếu chưa được đối chiếu nguồn.",
+  "legal_basis": null,
   "suggested_chips": ["Kiểm tra điều kiện BHYT TT 20", "Tra cứu tương tác thuốc Dược Thư"],
   "card": null
 }
@@ -685,8 +782,11 @@ async def query_clinical_multimodal_chat(
                             parsed = json.loads(raw_text)
                             if isinstance(parsed, dict):
                                 usage = data.get("usageMetadata", {})
-                                p_tok = usage.get("promptTokenCount") or (len(prompt_text) // 4 + 258)
-                                c_tok = usage.get("candidatesTokenCount") or max(30, len(raw_text) // 4)
+                                p_value = usage.get("promptTokenCount")
+                                c_value = usage.get("candidatesTokenCount")
+                                p_tok = p_value if p_value is not None else (len(prompt_text) // 4 + 258)
+                                c_tok = c_value if c_value is not None else max(30, len(raw_text) // 4)
+                                record_llm_execution(model, "gemini", p_tok, c_tok, usage_source="provider" if p_value is not None and c_value is not None else "estimated")
                                 img_tok = 258
                                 parsed["_model_used"] = model
                                 parsed["_provider"] = "gemini"
@@ -697,7 +797,7 @@ async def query_clinical_multimodal_chat(
                                 try:
                                     from app.services.telemetry_store import record_llm_token_usage
                                     from app.services.admin_key_vault import record_key_consumption
-                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini")
+                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
                                     record_key_consumption(key, p_tok + c_tok)
                                 except Exception:
                                     pass

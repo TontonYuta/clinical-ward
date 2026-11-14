@@ -5,6 +5,7 @@ Chunking theo từng chuyên luận, điều khoản và tương tác thuốc (<
 import os
 import re
 import json
+import hashlib
 from pathlib import Path
 from app.services.rag.types import RagChunk
 
@@ -15,6 +16,47 @@ def get_active_kb_dir() -> Path:
     if KB_BASE_DIR.exists() and (KB_BASE_DIR / "clinical_pharmacopoeia").exists():
         return KB_BASE_DIR
     return LOCAL_DOCS_DIR
+
+def _file_sha256(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as source_file:
+        for block in iter(lambda: source_file.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+def _stable_source_id(path: Path) -> str:
+    repository_root = Path(__file__).resolve().parents[4]
+    try:
+        return path.resolve().relative_to(repository_root).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
+
+def _manifest_sources(base_dir: Path) -> dict[str, dict]:
+    manifest_path = (base_dir / "clinical_source_manifest.json") if base_dir.name == "knowledge_base" else (base_dir.parent / "clinical_source_manifest.json")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {}
+    sources = manifest.get("sources", []) if isinstance(manifest, dict) else []
+    return {item["id"]: item for item in sources if isinstance(item, dict) and item.get("id")}
+
+def _verified_source_version(base_dir: Path, source_id: str | None) -> str | None:
+    if not source_id:
+        return None
+    source = _manifest_sources(base_dir).get(source_id)
+    if not source or not source.get("sha256"):
+        return None
+    relative_path = source.get("backend_copy")
+    if not relative_path:
+        return None
+    artifact_path = (base_dir.parent.parent.parent / relative_path) if base_dir.name == "knowledge_base" else (Path(__file__).resolve().parents[4] / relative_path)
+    actual = _file_sha256(artifact_path)
+    expected = str(source["sha256"]).casefold()
+    if actual is None or actual.casefold() != expected:
+        return None
+    return f"sha256:{actual}"
 
 def _extract_keywords(text: str) -> list[str]:
     tokens = re.findall(r"\w+", text, flags=re.UNICODE)
@@ -27,7 +69,7 @@ def _extract_keywords(text: str) -> list[str]:
     keywords = {t.strip().lower() for t in tokens if len(t.strip()) >= 3 and t.strip().lower() not in stopwords}
     return sorted(list(keywords))[:40]
 
-def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, entity_type: str) -> list[RagChunk]:
+def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, entity_type: str, *, source_id: str | None = None, source_version: str | None = None) -> list[RagChunk]:
     if not file_path.exists():
         return []
     content = file_path.read_text(encoding="utf-8")
@@ -87,7 +129,9 @@ def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, e
                 title=title_line,
                 content=part,
                 keywords=keywords,
-                entity_type=entity_type
+                entity_type=entity_type,
+                source_id=source_id or _stable_source_id(file_path),
+                source_version=source_version or _file_sha256(file_path),
             ))
     return chunks
 
@@ -108,6 +152,9 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
         return []
 
     chunks: list[RagChunk] = []
+    extracted_version = _file_sha256(json_path)
+    source_id = _stable_source_id(json_path)
+    source_version = f"sha256:{extracted_version}" if extracted_version else None
     for idx, m in enumerate(data, 1):
         inn = m.get("inn") or ""
         if not inn:
@@ -143,7 +190,9 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
                 title=dosage_title,
                 content=content_a,
                 keywords=kws_a,
-                entity_type="monograph"
+                entity_type="monograph",
+                source_id=source_id,
+                source_version=source_version,
             ))
 
         # 2. Chunk Chống chỉ định & Thận trọng
@@ -162,7 +211,9 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
                 title=f"Chống chỉ định & Thận trọng: {inn} ({title})",
                 content=content_b,
                 keywords=kws_b,
-                entity_type="monograph"
+                entity_type="monograph",
+                source_id=source_id,
+                source_version=source_version,
             ))
 
         # 3. Chunk Tác dụng phụ, Tương tác & Quá liều
@@ -183,7 +234,9 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
                 title=f"Tác dụng phụ, Tương tác & Quá liều: {inn} ({title})",
                 content=content_c,
                 keywords=kws_c,
-                entity_type="monograph"
+                entity_type="monograph",
+                source_id=source_id,
+                source_version=source_version,
             ))
 
     return chunks
@@ -197,68 +250,90 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
 
     # Core stubs bảo tồn tính tương thích ngược
     mono_path = active_dir / "clinical_pharmacopoeia" / "core_inns_monographs.md"
-    all_chunks.extend(_parse_markdown_chunks(
+    derived_mono_chunks = _parse_markdown_chunks(
         mono_path,
         source_doc="Chuyên luận nội bộ trích xuất/bổ sung; cần đối chiếu Dược thư bản gốc",
         legal_basis="Nguồn dẫn trong từng bản ghi; không tự coi là văn bản pháp quy",
-        entity_type="monograph"
-    ))
+        entity_type="monograph",
+    )
+    for chunk in derived_mono_chunks:
+        chunk.source_id = _stable_source_id(mono_path)
+        chunk.source_version = None
+    all_chunks.extend(derived_mono_chunks)
 
     # 2. Tương tác thuốc chống chỉ định QĐ 5948
     ddi_cardio = active_dir / "ddi_interactions" / "qd_5948_cardiovascular_and_cns.md"
+    ddi_manifest_version = _verified_source_version(KB_BASE_DIR, "qd-5948-2021")
     all_chunks.extend(_parse_markdown_chunks(
         ddi_cardio,
         source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Tim Mạch & Thần Kinh)",
         legal_basis="Quyết định 5948/QĐ-BYT",
-        entity_type="ddi"
+        entity_type="ddi",
+        source_id="qd-5948-2021",
+        source_version=ddi_manifest_version,
     ))
     ddi_anti = active_dir / "ddi_interactions" / "qd_5948_antibiotics_and_antiinflammatory.md"
     all_chunks.extend(_parse_markdown_chunks(
         ddi_anti,
         source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Kháng Sinh & NSAID)",
         legal_basis="Quyết định 5948/QĐ-BYT",
-        entity_type="ddi"
+        entity_type="ddi",
+        source_id="qd-5948-2021",
+        source_version=ddi_manifest_version,
     ))
     ddi_meta = active_dir / "ddi_interactions" / "qd_5948_metabolic_and_gastrointestinal.md"
     all_chunks.extend(_parse_markdown_chunks(
         ddi_meta,
         source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Chuyển Hóa & Tiêu Hóa)",
         legal_basis="Quyết định 5948/QĐ-BYT",
-        entity_type="ddi"
+        entity_type="ddi",
+        source_id="qd-5948-2021",
+        source_version=ddi_manifest_version
     ))
     ddi_blood = active_dir / "ddi_interactions" / "qd_5948_anticoagulants_and_hematology.md"
     all_chunks.extend(_parse_markdown_chunks(
         ddi_blood,
         source_doc="Danh Mục Tương Tác Thuốc Chống Chỉ Định (Chống Đông & Huyết Học)",
         legal_basis="Quyết định 5948/QĐ-BYT",
-        entity_type="ddi"
+        entity_type="ddi",
+        source_id="qd-5948-2021",
+        source_version=ddi_manifest_version
     ))
 
     # 3. Thông tư cấp cứu phản vệ TT 51/2017
     tt51_path = active_dir / "regulatory_circulars" / "tt51_2017_anaphylaxis_protocol.md"
+    tt51_version = _verified_source_version(KB_BASE_DIR, "tt-51-2017")
     all_chunks.extend(_parse_markdown_chunks(
         tt51_path,
         source_doc="Phác Đồ Cấp Cứu Phản Vệ",
         legal_basis="Thông tư 51/2017/TT-BYT",
-        entity_type="circular"
+        entity_type="circular",
+        source_id="tt-51-2017",
+        source_version=tt51_version
     ))
 
     # 4. Quản lý thuốc gây nghiện TT 20/2017
     tt20_path = active_dir / "regulatory_circulars" / "tt20_2017_narcotics_management.md"
+    tt20_version = _verified_source_version(KB_BASE_DIR, "tt-20-2017")
     all_chunks.extend(_parse_markdown_chunks(
         tt20_path,
         source_doc="Quy Chế Quản Lý Thuốc Kiểm Soát Đặc Biệt",
         legal_basis="Thông tư 20/2017/TT-BYT",
-        entity_type="circular"
+        entity_type="circular",
+        source_id="tt-20-2017",
+        source_version=tt20_version
     ))
 
     # 5. Khoa dược & Tủ trực TT 22/2011
     tt22_path = active_dir / "regulatory_circulars" / "tt22_2011_hospital_pharmacy_ward.md"
+    tt22_version = _verified_source_version(KB_BASE_DIR, "tt-22-2011")
     all_chunks.extend(_parse_markdown_chunks(
         tt22_path,
         source_doc="Quy Chế Tủ Thuốc Cấp Cứu & Tủ Trực Khoa Lâm Sàng",
         legal_basis="Thông tư 22/2011/TT-BYT",
-        entity_type="circular"
+        entity_type="circular",
+        source_id="tt-22-2011",
+        source_version=tt22_version
     ))
 
     # 6. Hướng dẫn Dược Lâm Sàng & An Toàn Thuốc Chuyên Sâu (Specialty Clinical Guidelines)
@@ -286,6 +361,7 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
             kw_pool = item.get("keywords", []) + _extract_keywords(f"{topic} {bluf} {details_text}")
             unique_kws = sorted(list(set(kw.strip().lower() for kw in kw_pool if len(kw.strip()) >= 2)))
 
+            specialty_file = SpecialtyKnowledgeRegistry.get_instance()._data_file
             all_chunks.append(RagChunk(
                 chunk_id=f"spec_guideline_{idx}_{clean_slug}",
                 source_doc=f"Hướng Dẫn Chuyên Môn Lâm Sàng: {topic}",
@@ -294,7 +370,9 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
                 title=topic,
                 content=full_content,
                 keywords=unique_kws,
-                entity_type="guideline"
+                entity_type="guideline",
+                source_id=_stable_source_id(specialty_file),
+                source_version=_file_sha256(specialty_file),
             ))
     except Exception:
         pass
@@ -303,6 +381,11 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
     try:
         from app.services.rag.lightrag_graph_builder import build_lightrag_graph_chunks
         graph_chunks = build_lightrag_graph_chunks()
+        graph_file = Path(__file__).with_name("lightrag_data.py")
+        graph_version = _file_sha256(graph_file)
+        for chunk in graph_chunks:
+            chunk.source_id = _stable_source_id(graph_file)
+            chunk.source_version = graph_version
         all_chunks.extend(graph_chunks)
     except Exception as e:
         pass

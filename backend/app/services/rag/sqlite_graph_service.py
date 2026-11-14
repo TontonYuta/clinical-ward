@@ -89,6 +89,17 @@ class ClinicalGraphTraversalService:
         condition_terms = condition_terms or []
         bfs_res = cls.traverse_k_hop_neighborhood(start_drugs, max_hops=2)
         discovered_classes = set(bfs_res["discovered_classes"])
+        # Keep provenance from each input medication to its direct classes. A class
+        # edge is active only when two distinct input drugs occupy its two endpoints;
+        # neighbor traversal alone must not turn a possible interaction into an alert.
+        direct_classes_by_drug: Dict[str, Set[str]] = {}
+        for drug in start_drugs:
+            normalized_drug = drug.casefold().strip()
+            direct_classes_by_drug[normalized_drug] = {
+                class_key
+                for class_key, class_info in PHARMACOLOGICAL_CLASS_TAXONOMY.items()
+                if normalized_drug in {member.casefold() for member in class_info.get("members", [])}
+            }
 
         active_class_ddis: List[Dict[str, Any]] = []
         neighbor_interacting_drugs: Dict[str, List[str]] = {}
@@ -97,7 +108,14 @@ class ClinicalGraphTraversalService:
         # Rà soát cạnh tương tác giữa các nhóm đã phát hiện
         for c_ddi in CLASS_INTERACTION_GRAPH:
             ca, cb = c_ddi["class_a"], c_ddi["class_b"]
-            if ca in discovered_classes and cb in discovered_classes:
+            has_distinct_drug_pair = any(
+                drug_a != drug_b
+                and ca in classes_a
+                and cb in classes_b
+                for drug_a, classes_a in direct_classes_by_drug.items()
+                for drug_b, classes_b in direct_classes_by_drug.items()
+            )
+            if has_distinct_drug_pair:
                 active_class_ddis.append({
                     "class_a": ca,
                     "class_b": cb,

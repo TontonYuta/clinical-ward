@@ -18,6 +18,106 @@ async def test_gemini_nlu_feedback_detection():
 
 
 @pytest.mark.asyncio
+async def test_standalone_turn_is_classified_without_previous_medication_context(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    nlu._NLU_CACHE.clear()
+    seen = {}
+    monkeypatch.setattr(nlu.settings, "GEMINI_API_KEY", "test-api-key-value")
+
+    async def capture_prompt(**kwargs):
+        seen.update(kwargs)
+        return (
+            '{"intent":"GREETING_WELLBEING","primary_drug":null,'
+            '"secondary_drug":null,"additional_drugs":[],"sub_queries":[],'
+            '"requested_field":null,"is_deictic_referent":false,'
+            '"is_topic_shift":true,"depth_preference":"SUMMARY",'
+            '"user_sentiment":"positive","confidence":0.99}'
+        )
+
+    monkeypatch.setattr(
+        "app.services.llm_provider.query_clinical_llm", capture_prompt, raising=False
+    )
+    result = await nlu.parse_clinical_nlu(
+        "Bạn có đang nghe tôi nói không?",
+        history="Bác sĩ: Liều Paracetamol người lớn?\nTrợ lý: ...",
+        active_med="Paracetamol",
+    )
+
+    assert result is not None
+    assert result.intent == "GREETING_WELLBEING"
+    assert "last_active_medication" not in seen["prompt"]
+    assert "conversation_history" not in seen["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_contextual_nlu_classification_cache_reuses_only_current_turn_decision(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    nlu._NLU_CACHE.clear()
+    monkeypatch.setattr(nlu, "fallback_nlu_heuristic", lambda query, active_med=None: None)
+    monkeypatch.setattr(
+        "app.services.admin_key_vault.get_active_api_key",
+        lambda provider: "test-api-key-value",
+    )
+    calls = []
+    first = (
+        '{"intent":"MEDICATION_LOOKUP","conversation_mode":"contextual_followup",'
+        '"primary_drug":null,"is_deictic_referent":true,'
+        '"requested_field":"dosage","confidence":0.99}'
+    )
+
+    async def contextual_response(**kwargs):
+        calls.append(kwargs["prompt"])
+        return first
+
+    monkeypatch.setattr(
+        "app.services.llm_provider.query_clinical_llm", contextual_response
+    )
+    query = "Còn liều dùng thì sao?"
+    first_result = await nlu.parse_clinical_nlu(
+        query, history="Lượt trước hỏi Paracetamol", active_med="Paracetamol"
+    )
+    second_result = await nlu.parse_clinical_nlu(
+        query, history="Lượt trước hỏi Ibuprofen", active_med="Ibuprofen"
+    )
+
+    assert len(calls) == 1
+    assert "conversation_history" not in calls[0]
+    assert first_result is not None and first_result.primary_drug == "Paracetamol"
+    assert second_result is not None and second_result.primary_drug == "Ibuprofen"
+
+
+@pytest.mark.asyncio
+async def test_contextual_followup_reuses_active_entity_without_second_llm_call(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    nlu._NLU_CACHE.clear()
+    monkeypatch.setattr(nlu.settings, "GEMINI_API_KEY", "test-api-key-value")
+    calls = []
+
+    async def classify_current_turn(**kwargs):
+        calls.append(kwargs["prompt"])
+        return (
+            '{"intent":"MEDICATION_LOOKUP","conversation_mode":"contextual_followup",'
+            '"primary_drug":null,"is_deictic_referent":true,'
+            '"requested_field":"dosage","confidence":0.99}'
+        )
+
+    monkeypatch.setattr(
+        "app.services.llm_provider.query_clinical_llm", classify_current_turn
+    )
+    result = await nlu.parse_clinical_nlu(
+        "Còn liều dùng thì sao?", history="previous drug context", active_med="Paracetamol"
+    )
+
+    assert len(calls) == 1
+    assert result is not None and result.primary_drug == "Paracetamol"
+    assert result.is_deictic_referent is True
+    assert "last_active_medication" not in calls[0]
+
+
+@pytest.mark.asyncio
 async def test_gemini_nlu_interaction_clarification():
     query = "Tương tác thuốc thế nào?"
     res = await parse_clinical_nlu(query)
@@ -121,3 +221,33 @@ async def test_gemini_nlu_topic_shift_detection():
     assert res.primary_drug and "paracetamol" in res.primary_drug.lower()
     assert res.is_topic_shift is True
 
+
+
+def test_fallback_nlu_does_not_treat_dosage_unit_as_drug_entity():
+    result = fallback_nlu_heuristic(
+        "bệnh nhân cần dùng 3 lọ morphin và 1 ống diazepam"
+    )
+
+    assert result.intent == "MEDICATION_INTERACTION_CHECK"
+    assert result.primary_drug and "morphin" in result.primary_drug.casefold()
+    assert result.secondary_drug and "diazepam" in result.secondary_drug.casefold()
+    assert result.additional_drugs == []
+
+
+def test_lexical_medication_matcher_ignores_dosage_quantity_and_packaging_phrases():
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+
+    meds = get_drug_lexical_matcher().extract_medications(
+        "bệnh nhân cần dùng 3 lọ morphin và 1 ống diazepam"
+    )
+
+    assert [med.casefold() for med in meds] == ["morphin", "diazepam"]
+
+
+def test_fallback_keeps_single_medication_question_with_compound_facets_intact():
+    result = fallback_nlu_heuristic(
+        "Thời gian bán thải và liều tối đa của Paracetamol trong huyết tương"
+    )
+
+    assert result.sub_queries == []
+    assert set(result.requested_fields) == {"pharmacokinetics", "adult_dosage"}

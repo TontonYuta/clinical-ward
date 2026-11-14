@@ -81,7 +81,15 @@ class DrugLexicalMatcher:
                             clean_part = re.sub(r"^mỗi\s+[\w\s\d.,%/-]+?\s+chứa:?\s*", "", part.strip(), flags=re.I).strip()
                             clean_part = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị|mmol).*$", "", clean_part, flags=re.I).strip()
                             clean_part = re.sub(prefix_pattern, "", clean_part, flags=re.I).strip()
-                            if 3 <= len(clean_part) <= 35 and clean_part.lower() not in COMMON_EXCLUSIONS and not dosage_form_filter.match(clean_part):
+                            # Reject dosage/package lead-ins before alias insertion.
+                            # Otherwise text such as "1 ống ... chứa Ascorbic acid"
+                            # creates a fake medication entity ("1 ống") in clinical queries.
+                            is_package_lead = bool(re.match(
+                                r"^(?:cho\s+)?\d+(?:[.,]\d+)?\s*(?:ống|ong|lọ|lo|viên|vien|chai|gói|goi|bộ|bo)\b",
+                                clean_part, flags=re.I
+                            ))
+                            if (3 <= len(clean_part) <= 35 and clean_part.lower() not in COMMON_EXCLUSIONS
+                                    and not dosage_form_filter.match(clean_part) and not is_package_lead):
                                 self.insert(clean_part, clean_part, "ingredient")
                                 salt_sub = re.sub(salt_pattern, "", clean_part, flags=re.I).strip()
                                 if 3 <= len(salt_sub) <= 35 and salt_sub.lower() not in COMMON_EXCLUSIONS and not dosage_form_filter.match(salt_sub):

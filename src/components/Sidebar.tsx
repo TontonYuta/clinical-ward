@@ -9,7 +9,6 @@ import { UserRole } from '../types/clinical';
 import { USER_PROFILES } from '../data/initialData';
 import { SidebarHeader } from './Sidebar/SidebarHeader';
 import { SidebarNavLinks } from './Sidebar/SidebarNavLinks';
-import { SidebarLegalLinks } from './Sidebar/SidebarLegalLinks';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
 import type { AppFontScale } from '../utils/storage/appStatePersistence';
 
@@ -90,15 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           misallocatedAssetsCount={misallocatedAssetsCount}
         />
 
-        <SidebarLegalLinks
-          isCollapsed={isCollapsed}
-          onCloseMobile={onCloseMobile}
-          onOpenAuditTrail={onOpenAuditTrail}
-          onOpenLegalDocs={onOpenLegalDocs}
-          onOpenUserGuide={onOpenUserGuide}
-          onOpenPrintableForms={onOpenPrintableForms}
-          onOpenMedicationSafety={onOpenMedicationSafety}
-        />
+        {/* Tiện ích & Pháp lý tiếp tục được ẩn khỏi FE. */}
       </div>
 
       <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} isAuthenticated={isAuthenticated} username={username} fontScale={fontScale} onFontScaleChange={onFontScaleChange} onCloseMobile={onCloseMobile} />

@@ -56,13 +56,28 @@ import {
 
 type AnalysisTab = 'pure_breakdown' | 'clinical_7' | 'violations' | 'catalog' | 'xml';
 
+const MISSING_FIELD_LABELS: Record<string, string> = {
+  unitPrice: 'Đơn giá',
+  insuranceCardNumber: 'Mã thẻ BHYT',
+  primaryIcd10: 'Mã ICD-10 chính',
+  catalogMatch: 'Đối chiếu danh mục thuốc',
+  quantity: 'Số lượng',
+  dosage: 'Liều dùng',
+  route: 'Đường dùng',
+  daysSupply: 'Số ngày điều trị',
+  patientAge: 'Tuổi người bệnh',
+  primaryDiagnosis: 'Chẩn đoán chính',
+  hospitalRank: 'Hạng cơ sở khám chữa bệnh',
+  treatmentType: 'Loại điều trị'
+};
+
 const EMPTY_PRESCRIPTION: BhytPrescriptionPayload = {
   prescriptionId: '',
   patientName: '',
   patientAge: 0,
   insuranceCardNumber: '',
-  hospitalRank: 'HANG_III',
-  treatmentType: 'NGOAI_TRU',
+  hospitalRank: '',
+  treatmentType: '',
   primaryIcd10: '',
   primaryDiagnosis: '',
   secondaryIcd10s: [],
@@ -72,8 +87,8 @@ const EMPTY_PRESCRIPTION: BhytPrescriptionPayload = {
 export const BhytAuditTab: React.FC = () => {
   // 1. Dữ liệu đơn thuốc & Cấu hình KCB (Khởi tạo sạch, không nạp mẫu)
   const [activePayload, setActivePayload] = useState<BhytPrescriptionPayload>(EMPTY_PRESCRIPTION);
-  const [hospitalRank, setHospitalRank] = useState<HospitalRank>('HANG_III');
-  const [treatmentType, setTreatmentType] = useState<TreatmentType>('NGOAI_TRU');
+  const [hospitalRank, setHospitalRank] = useState<HospitalRank | ''>('');
+  const [treatmentType, setTreatmentType] = useState<TreatmentType | ''>('');
 
   // 2. Tab phân tích bên dưới (Mặc định chọn Tab 1: Bản phân tích dữ liệu đơn thuần)
   const [activeAnalysisTab, setActiveAnalysisTab] = useState<AnalysisTab>('pure_breakdown');
@@ -316,7 +331,7 @@ export const BhytAuditTab: React.FC = () => {
 
     // 2. Chống chỉ định lâm sàng & Phân tuyến bệnh viện
     const rankViolations = auditReport.violations.filter(v => v.category === 'HOSPITAL_RANK_MISMATCH');
-    const safeRankLabel = HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I';
+    const safeRankLabel = hospitalRank ? HOSPITAL_RANK_LABELS[hospitalRank] : 'Chưa có dữ liệu hạng cơ sở';
     if (rankViolations.length > 0) {
       list.push({
         id: 2,
@@ -366,7 +381,7 @@ export const BhytAuditTab: React.FC = () => {
       subtitle: 'Kiểm tra đường uống, tiêm truyền, bôi ngoài da',
       status: 'PASS' as const,
       statusLabel: 'Đường dùng phù hợp',
-      details: activePayload.items.map(it => `${it.drugName}: Dùng đường ${it.route || 'Uống'}`)
+        details: activePayload.items.map(it => `${it.drugName}: ${it.route ? `Dùng đường ${it.route}` : 'Chưa có dữ liệu đường dùng'}`)
     });
 
     // 5. Thời điểm dùng thuốc
@@ -376,7 +391,7 @@ export const BhytAuditTab: React.FC = () => {
       subtitle: 'Hướng dẫn uống trước ăn, sau ăn, sáng, tối',
       status: 'PASS' as const,
       statusLabel: 'Đã có chỉ dẫn thời điểm',
-      details: activePayload.items.map(it => `${it.drugName}: ${it.instructions || 'Theo chỉ định của bác sĩ'}`)
+        details: activePayload.items.map(it => `${it.drugName}: ${it.instructions || 'Chưa có hướng dẫn thời điểm dùng trong dữ liệu đầu vào'}`)
     });
 
     // 6. Tương tác thuốc bất lợi (DDI)
@@ -423,7 +438,28 @@ export const BhytAuditTab: React.FC = () => {
       });
     }
 
-    return list;
+    const missing = new Set(auditReport.missingFields || []);
+    const reviewById: Record<number, string[]> = {
+      1: ['primaryIcd10'],
+      2: ['hospitalRank'],
+      3: ['treatmentType', 'daysSupply', 'quantity'],
+      4: ['route']
+    };
+    return list.map((category) => {
+      const missingForCategory = reviewById[category.id]?.filter((field) => missing.has(field as any)) || [];
+      if (missingForCategory.length === 0) return category;
+      const labels: Record<string, string> = {
+        primaryIcd10: 'mã ICD-10', primaryDiagnosis: 'chẩn đoán chính', hospitalRank: 'hạng cơ sở',
+        treatmentType: 'loại điều trị', daysSupply: 'số ngày điều trị', quantity: 'số lượng',
+        route: 'đường dùng', catalogMatch: 'đối chiếu danh mục thuốc', instructions: 'hướng dẫn thời điểm dùng'
+      };
+      return {
+        ...category,
+        status: 'REVIEW' as const,
+        statusLabel: 'Chưa đủ dữ liệu',
+        details: [`Chưa thể kết luận vì thiếu ${missingForCategory.map((field) => labels[field] || field).join(', ')}.`]
+      };
+    });
   }, [auditReport, activePayload, hospitalRank]);
 
   // Cập nhật draft hành chính khi activePayload đổi
@@ -666,7 +702,7 @@ export const BhytAuditTab: React.FC = () => {
       setHospitalRank(sanitized.hospitalRank);
       setTreatmentType(sanitized.treatmentType);
       setActiveAnalysisTab('pure_breakdown');
-      handleRunOcrProcess(sanitized, sanitized.hospitalRank, sanitized.treatmentType);
+      handleRunOcrProcess(sanitized, sanitized.hospitalRank || undefined, sanitized.treatmentType || undefined);
 
       // Nếu có thông báo hướng dẫn (chỉ có hành chính, thiếu thuốc), hiển thị cho người dùng biết
       if (ocrWarning) {
@@ -795,7 +831,7 @@ export const BhytAuditTab: React.FC = () => {
       ['Mã đơn thuốc', activePayload.prescriptionId || 'Chưa có dữ liệu', 'Ngày giám định', new Date().toLocaleDateString('vi-VN')],
       ['Họ và tên người bệnh', activePayload.patientName || 'Chưa có dữ liệu', 'Tuổi', activePayload.patientAge > 0 ? String(activePayload.patientAge) : 'Chưa có dữ liệu'],
       ['Mã thẻ BHYT', activePayload.insuranceCardNumber || 'Chưa có dữ liệu', 'Hình thức điều trị', treatmentType === 'NGOAI_TRU' ? 'Ngoại trú' : 'Nội trú'],
-      ['Tuyến bệnh viện', HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I', 'Chẩn đoán chính', `${activePayload.primaryIcd10} - ${activePayload.primaryDiagnosis}`],
+      ['Tuyến bệnh viện', hospitalRank ? HOSPITAL_RANK_LABELS[hospitalRank] : 'Chưa có dữ liệu', 'Chẩn đoán chính', `${activePayload.primaryIcd10} - ${activePayload.primaryDiagnosis}`],
       [''],
       ['DANH MỤC THUỐC KÊ ĐƠN & ĐỐI SOÁT DƯỢC QUỐC GIA (DAV)'],
       [
@@ -840,7 +876,7 @@ export const BhytAuditTab: React.FC = () => {
         it.drugCode || res?.matched_dav?.national_code || '',
         matchedRule?.atcGroupName || 'Thuốc khác',
         it.dosage || res?.detected_concentration || '',
-        it.route || 'Uống',
+        it.route || 'Chưa có dữ liệu',
         String(it.daysSupply || 7),
         String(it.quantity || 0),
         String(it.unitPrice || 0),
@@ -920,8 +956,8 @@ export const BhytAuditTab: React.FC = () => {
   // Xử lý nạp và ghi nhận log
   const handleRunOcrProcess = (
     overridePayload?: BhytPrescriptionPayload,
-    overrideRank?: HospitalRank,
-    overrideType?: TreatmentType
+    overrideRank?: HospitalRank | '',
+    overrideType?: TreatmentType | ''
   ) => {
     setIsOcrProcessing(true);
     setTimeout(() => {
@@ -1131,11 +1167,11 @@ export const BhytAuditTab: React.FC = () => {
         drugName: violation.drugName,
         activeIngredient: violation.activeIngredient,
         dosage: '',
-        route: 'Uống',
-        quantity: 1,
-        unitPrice: violation.rejectionRiskVnd || 0,
-        daysSupply: 7,
-        instructions: 'Theo chỉ định của bác sĩ'
+        route: '',
+        quantity: 0,
+        unitPrice: 0,
+        daysSupply: undefined,
+        instructions: ''
       };
     }
 
@@ -1237,9 +1273,10 @@ export const BhytAuditTab: React.FC = () => {
             <select
               aria-label="Tuyến bệnh viện"
               value={hospitalRank}
-              onChange={(e) => setHospitalRank(e.target.value as HospitalRank)}
+              onChange={(e) => setHospitalRank(e.target.value as HospitalRank | '')}
               className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-semibold cursor-pointer focus:border-teal-600 focus:outline-none shadow-2xs"
             >
+              <option value="">Chọn hạng bệnh viện</option>
               <option value="HANG_DAC_BIET">Hạng ĐB (Trung ương)</option>
               <option value="HANG_I">Hạng I (Tỉnh/TW)</option>
               <option value="HANG_II">Hạng II (Tỉnh)</option>
@@ -1253,9 +1290,10 @@ export const BhytAuditTab: React.FC = () => {
             <select
               aria-label="Hình thức điều trị"
               value={treatmentType}
-              onChange={(e) => setTreatmentType(e.target.value as TreatmentType)}
+              onChange={(e) => setTreatmentType(e.target.value as TreatmentType | '')}
               className="h-9 bg-white border border-slate-300 rounded-md px-3 text-sm text-slate-800 font-semibold cursor-pointer focus:border-teal-600 focus:outline-none shadow-2xs"
             >
+              <option value="">Chọn hình thức điều trị</option>
               <option value="NGOAI_TRU">Ngoại trú</option>
               <option value="NOI_TRU">Nội trú</option>
             </select>
@@ -1578,6 +1616,10 @@ export const BhytAuditTab: React.FC = () => {
                 <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold">
                   Cảnh báo
                 </span>
+              ) : clinicalSevenCategories.some(c => c.status === 'REVIEW') ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
+                  Chưa đủ dữ liệu
+                </span>
               ) : (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
                   Đạt
@@ -1603,6 +1645,10 @@ export const BhytAuditTab: React.FC = () => {
               ) : auditReport.warningCount > 0 ? (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold font-sans tabular-nums">
                   {auditReport.warningCount} lưu ý
+                </span>
+              ) : auditReport.status === 'NEEDS_REVIEW' ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
+                  Chưa đủ dữ liệu
                 </span>
               ) : auditReport.itemsCount > 0 ? (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
@@ -1684,7 +1730,7 @@ export const BhytAuditTab: React.FC = () => {
 
                     <div className="bg-white p-3 rounded-md border border-slate-200/80 shadow-2xs">
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Tuyến KCB &amp; Hạng BV</span>
-                      <strong className="text-sm font-bold text-slate-900 block mt-0.5">{HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I'}</strong>
+                      <strong className="text-sm font-bold text-slate-900 block mt-0.5">{hospitalRank ? HOSPITAL_RANK_LABELS[hospitalRank] : 'Chưa có dữ liệu'}</strong>
                       <span className="text-slate-600 text-xs font-medium">{treatmentType === 'NGOAI_TRU' ? 'Điều trị Ngoại trú' : 'Điều trị Nội trú'}</span>
                     </div>
 
@@ -2116,6 +2162,7 @@ export const BhytAuditTab: React.FC = () => {
                     {clinicalSevenCategories.map((cat) => {
                       const isAlert = cat.status === 'ALERT';
                       const isWarning = cat.status === 'WARNING';
+                      const isReview = cat.status === 'REVIEW';
 
                       return (
                         <div
@@ -2123,8 +2170,10 @@ export const BhytAuditTab: React.FC = () => {
                           className={`p-4 rounded-lg border transition-all shadow-2xs ${
                             isAlert
                               ? 'bg-rose-50/60 border-rose-200'
-                              : isWarning
+                            : isWarning
                               ? 'bg-amber-50/60 border-amber-200'
+                              : isReview
+                                ? 'bg-sky-50/60 border-sky-200'
                               : 'bg-white border-slate-200'
                           }`}
                         >
@@ -2138,8 +2187,10 @@ export const BhytAuditTab: React.FC = () => {
                             <span className={`text-xs px-2 py-0.5 rounded font-semibold shrink-0 border ${
                               isAlert
                                 ? 'bg-rose-100 text-rose-800 border-rose-200'
-                                : isWarning
+                              : isWarning
                                 ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                : isReview
+                                  ? 'bg-sky-100 text-sky-800 border-sky-200'
                                 : 'bg-slate-100 text-slate-600 border-slate-200'
                             }`}>
                               {cat.statusLabel}
@@ -2194,12 +2245,24 @@ export const BhytAuditTab: React.FC = () => {
                       Vui lòng tải lên đơn thuốc ở khung bên trái hoặc thêm thuốc ở Bước 1 để đối soát tuyến kỹ thuật và tỷ lệ thanh toán.
                     </p>
                   </div>
-                ) : auditReport.violations.length === 0 ? (
+                ) : auditReport.violations.length === 0 && !(auditReport.missingFields?.length) ? (
                   <div className="p-6 text-center text-slate-800 bg-slate-50 rounded-md border border-slate-200">
                     <div className="text-base font-bold text-slate-900">Đơn thuốc hợp lệ</div>
                     <div className="text-sm text-slate-600 mt-0.5">Không phát hiện nguy cơ xuất toán hoặc trùng lặp chỉ định theo quy định.</div>
                   </div>
                 ) : (
+                  <>
+                  {!!auditReport.missingFields?.length && (
+                    <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md space-y-2">
+                      <div className="font-semibold text-amber-900">Chưa đủ dữ liệu để kết luận</div>
+                      <p className="text-sm text-amber-800">Hệ thống không tự suy đoán và chưa xác định vi phạm từ các trường còn thiếu.</p>
+                      <ul className="list-disc pl-5 text-sm text-amber-900">
+                        {auditReport.missingFields.map((field) => <li key={field}>{MISSING_FIELD_LABELS[field] || field}</li>)}
+                      </ul>
+                      <p className="text-sm text-amber-800">Bổ sung dữ liệu gốc trên đơn thuốc hoặc hồ sơ thanh toán rồi thực hiện giám định lại.</p>
+                    </div>
+                  )}
+                  {auditReport.violations.length > 0 && (
                   <div className="divide-y divide-slate-200 border-t border-b border-slate-200">
                     {auditReport.violations.map((violation, vIndex) => (
                       <div key={violation.id || vIndex} className="py-4 space-y-2.5 text-sm">
@@ -2259,6 +2322,8 @@ export const BhytAuditTab: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                  )}
+                  </>
                 )}
               </div>
             )}
@@ -2578,7 +2643,7 @@ export const BhytAuditTab: React.FC = () => {
         originalItem={substitutionModalState.originalItem}
         violation={substitutionModalState.violation}
         candidates={substitutionModalState.candidates}
-        hospitalRank={hospitalRank}
+        hospitalRank={hospitalRank || undefined}
         onApplySubstitute={handleApplySubstitute}
       />
 

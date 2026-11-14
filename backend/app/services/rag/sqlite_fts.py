@@ -9,7 +9,7 @@ from app.services.rag.types import RagChunk, RetrievedChunk
 CREATE_FTS_TABLE_SQL = """
 CREATE VIRTUAL TABLE IF NOT EXISTS clinical_rag_fts USING fts5(
     chunk_id UNINDEXED, source_doc, legal_basis, page_or_section,
-    title, content, keywords, entity_type UNINDEXED, tokenize = 'unicode61'
+    title, content, keywords, entity_type UNINDEXED, source_id UNINDEXED, source_version UNINDEXED, tokenize = 'unicode61'
 )
 """
 
@@ -68,6 +68,10 @@ class SqliteFtsIndex:
         try:
             with self._get_connection() as conn:
                 conn.execute(CREATE_FTS_TABLE_SQL)
+                columns = {row[1] for row in conn.execute("PRAGMA table_info(clinical_rag_fts)")}
+                if not {"source_id", "source_version"}.issubset(columns):
+                    conn.execute("DROP TABLE clinical_rag_fts")
+                    conn.execute(CREATE_FTS_TABLE_SQL)
                 conn.commit()
         except sqlite3.OperationalError:
             self.db_path = ":memory:"
@@ -79,7 +83,7 @@ class SqliteFtsIndex:
         with self._get_connection() as conn:
             count = conn.execute("SELECT COUNT(*) FROM clinical_rag_fts").fetchone()[0]
             fingerprint = hashlib.sha256(json.dumps([
-                (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, c.keywords, c.entity_type)
+                (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, c.keywords, c.entity_type, c.source_id, c.source_version)
                 for c in chunks
             ], ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
             try:
@@ -94,16 +98,32 @@ class SqliteFtsIndex:
                 conn.execute(
                     """
                     INSERT INTO clinical_rag_fts(
-                        chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type, source_id, source_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, " ".join(c.keywords), c.entity_type)
+                    (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, " ".join(c.keywords), c.entity_type, c.source_id, c.source_version)
                 )
             conn.execute("CREATE TABLE IF NOT EXISTS clinical_rag_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
             conn.execute(
                 "INSERT INTO clinical_rag_meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 ("chunk_fingerprint", fingerprint)
             )
+            conn.commit()
+
+    def upsert_chunks(self, chunks: list[RagChunk]):
+        if not chunks:
+            return
+        with self._get_connection() as conn:
+            for c in chunks:
+                conn.execute("DELETE FROM clinical_rag_fts WHERE chunk_id = ?", (c.chunk_id,))
+                conn.execute(
+                    """
+                    INSERT INTO clinical_rag_fts(
+                        chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type, source_id, source_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, " ".join(c.keywords), c.entity_type, c.source_id, c.source_version)
+                )
             conn.commit()
 
     def search_bm25(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
@@ -117,7 +137,7 @@ class SqliteFtsIndex:
                 cur = conn.execute(
                     """
                     SELECT chunk_id, source_doc, legal_basis, page_or_section,
-                           title, content, keywords, entity_type, bm25(clinical_rag_fts) as rank_score
+                           title, content, keywords, entity_type, source_id, source_version, bm25(clinical_rag_fts) as rank_score
                     FROM clinical_rag_fts WHERE clinical_rag_fts MATCH ? ORDER BY rank_score ASC LIMIT ?
                     """,
                     (fts_query, top_k)
@@ -128,7 +148,8 @@ class SqliteFtsIndex:
                         chunk=RagChunk(
                             chunk_id=row["chunk_id"], source_doc=row["source_doc"], legal_basis=row["legal_basis"],
                             page_or_section=row["page_or_section"], title=row["title"], content=row["content"],
-                            keywords=row["keywords"].split(), entity_type=row["entity_type"]
+                            keywords=row["keywords"].split(), entity_type=row["entity_type"],
+                            source_id=row["source_id"], source_version=row["source_version"]
                         ),
                         score=max(0.01, 1.0 / (1.0 + abs(raw_score))),
                         bm25_rank=rank_idx + 1,
@@ -148,7 +169,7 @@ class SqliteFtsIndex:
         with self._get_connection() as conn:
             cur = conn.execute(
                 """
-                SELECT chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type
+                SELECT chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type, source_id, source_version
                 FROM clinical_rag_fts WHERE title LIKE ? OR content LIKE ? LIMIT ?
                 """,
                 (term, term, top_k)
@@ -158,7 +179,8 @@ class SqliteFtsIndex:
                     chunk=RagChunk(
                         chunk_id=row["chunk_id"], source_doc=row["source_doc"], legal_basis=row["legal_basis"],
                         page_or_section=row["page_or_section"], title=row["title"], content=row["content"],
-                        keywords=row["keywords"].split(), entity_type=row["entity_type"]
+                        keywords=row["keywords"].split(), entity_type=row["entity_type"],
+                        source_id=row["source_id"], source_version=row["source_version"]
                     ),
                     score=0.5 / (i + 1), bm25_rank=i + 1, match_reasons=["Fallback LIKE search"]
                 ))

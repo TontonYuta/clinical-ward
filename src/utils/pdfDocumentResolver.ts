@@ -41,6 +41,21 @@ export function resolvePdfDocumentTarget(
 
   const combinedSearch = `${docCode} ${url} ${title}`.toLowerCase();
 
+  // A citation URL comes from the retrieved source record and is the canonical
+  // document identity. Do not reinterpret a valid PDF path using title keywords.
+  if (url.startsWith('/pdf/') || /^https?:\/\//i.test(url) && url.toLowerCase().includes('.pdf')) {
+    const resolvedPath = url.split('#')[0];
+    const hashPage = url.match(/#page=(\d+)/i)?.[1];
+    if (hashPage) page = Number(hashPage);
+    const safePage = Math.max(1, Math.floor(page));
+    return {
+      pdfUrl: resolvedPath,
+      pageNumber: safePage,
+      documentTitle: title || 'Tài liệu nguồn',
+      exactHashUrl: `${resolvedPath}#page=${safePage}`,
+    };
+  }
+
   // 1. Nếu URL đã chứa sẵn số trang trong hash
   if (url && url.includes('#page=')) {
     const pageMatch = url.match(/#page=(\d+)/i);
@@ -50,10 +65,13 @@ export function resolvePdfDocumentTarget(
   }
 
   // 2. Phân giải tài liệu cụ thể
-  let resolvedPath = '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
-  let resolvedTitle = 'Dược Thư Quốc Gia Việt Nam (Ấn bản II - 2015)';
+  let resolvedPath = '';
+  let resolvedTitle = '';
 
-  if (combinedSearch.includes('20/2022') || combinedSearch.includes('thanh_toan_thuoc_bhyt') || (combinedSearch.includes('20') && combinedSearch.includes('bhyt'))) {
+  if (combinedSearch.includes('dược thư') || combinedSearch.includes('duoc thu') || combinedSearch.includes('dtqg')) {
+    resolvedPath = '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
+    resolvedTitle = 'Dược Thư Quốc Gia Việt Nam (Ấn bản II - 2015)';
+  } else if (combinedSearch.includes('20/2022') || combinedSearch.includes('thanh_toan_thuoc_bhyt')) {
     resolvedPath = '/pdf/bhyt/Thong_Tu_20_2022_TT_BYT_Danh_Muc_Thanh_Toan_Thuoc_BHYT.pdf';
     resolvedTitle = 'Thông tư 20/2022/TT-BYT (Danh Mục Thuốc Thanh Toán BHYT)';
   } else if (combinedSearch.includes('3618') || combinedSearch.includes('giam_dinh_bhyt')) {
@@ -71,7 +89,7 @@ export function resolvePdfDocumentTarget(
   } else if (combinedSearch.includes('188/2025') || combinedSearch.includes('nd_188')) {
     resolvedPath = '/pdf/bhyt/Nghi_Dinh_188_2025_ND_CP_Chi_Tiet_Luat_BHYT.pdf';
     resolvedTitle = 'Nghị định 188/2025/NĐ-CP (Quy Định Chi Tiết Luật BHYT)';
-  } else if (combinedSearch.includes('20/2017') || combinedSearch.includes('kiem_soat_dac_biet') || combinedSearch.includes('morphin') || (combinedSearch.includes('20') && !combinedSearch.includes('2022'))) {
+  } else if (combinedSearch.includes('20/2017') || combinedSearch.includes('kiem_soat_dac_biet') || combinedSearch.includes('morphin')) {
     resolvedPath = '/pdf/Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf';
     resolvedTitle = 'Thông tư 20/2017/TT-BYT (Thuốc Kiểm Soát Đặc Biệt & Morphin)';
   } else if (combinedSearch.includes('5948') || combinedSearch.includes('tuong_tac')) {
@@ -95,14 +113,11 @@ export function resolvePdfDocumentTarget(
   } else if (combinedSearch.includes('98/2021') || combinedSearch.includes('thiet_bi')) {
     resolvedPath = '/pdf/Nghi_Dinh_98_2021_ND_CP_Trang_Thiet_Bi_Y_Te.pdf';
     resolvedTitle = 'Nghị định 98/2021/NĐ-CP (Quản Lý Trang Thiết Bị Y Tế)';
-  } else if (url && url.startsWith('/pdf/')) {
-    resolvedPath = url.split('#')[0];
-    resolvedTitle = title || 'Tài Liệu Y Văn Đối Chứng';
   }
 
   // Đảm bảo số trang hợp lệ >= 1
   const safePage = Math.max(1, Math.floor(page));
-  const exactHashUrl = `${resolvedPath}#page=${safePage}`;
+  const exactHashUrl = resolvedPath ? `${resolvedPath}#page=${safePage}` : '';
 
   return {
     pdfUrl: resolvedPath,

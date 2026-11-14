@@ -32,11 +32,27 @@ from app.routers import (
     prescription_audit,
     bhyt,
     admin_monitoring,
-    admin_integrations
+    admin_integrations,
+    availability,
+    admin_knowledge,
 )
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from pathlib import Path
+    from app.services.chatbot.workflow_policy import load_workflow_policy, validate_policy_route_coverage
+    from app.schemas.clinical_nlu import ClinicalNluExtraction
+    workflow_policy = load_workflow_policy(
+        settings.WORKFLOW_POLICY_PATH,
+        registered_executors={
+            "conversation", "drug_lookup", "portal_guidance", "ddi",
+            "clinical_reasoning", "sandwich", "specialty", "clarification", "multi_intent",
+        },
+    )
+    validate_policy_route_coverage(
+        workflow_policy, required_intents=set(ClinicalNluExtraction.model_fields["intent"].annotation.__args__)
+    )
+    app.state.workflow_policy = workflow_policy
     # Ensure tables exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -75,6 +91,10 @@ async def lifespan(app: FastAPI):
             ("prompt_tokens", "INTEGER DEFAULT 0"),
             ("completion_tokens", "INTEGER DEFAULT 0"),
             ("total_tokens", "INTEGER DEFAULT 0"),
+            ("usage_source", "VARCHAR(32) DEFAULT 'estimated'"),
+            ("model_call_count", "INTEGER DEFAULT 0"),
+            ("usage_call_count", "INTEGER DEFAULT 0"),
+            ("cache_hit_count", "INTEGER DEFAULT 0"),
             ("model_name", "VARCHAR(64) DEFAULT 'gemini-3.5-flash-lite'"),
             ("provider", "VARCHAR(64) DEFAULT 'gemini'"),
             ("has_image", "BOOLEAN DEFAULT 0"),
@@ -96,8 +116,13 @@ async def lifespan(app: FastAPI):
                 await conn.execute(text(f"ALTER TABLE sms_delivery_logs ADD COLUMN {col_name} {col_type}"))
 
         monograph_cols = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("clinical_drug_monographs")})
-        if "section_pages" not in monograph_cols:
-            await conn.execute(text("ALTER TABLE clinical_drug_monographs ADD COLUMN section_pages TEXT"))
+        for col_name in ("section_pages", "source_id", "source_version"):
+            if col_name not in monograph_cols:
+                await conn.execute(text(f"ALTER TABLE clinical_drug_monographs ADD COLUMN {col_name} TEXT"))
+        dav_cols = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("dav_national_drugs")})
+        for col_name in ("source_id", "source_version"):
+            if col_name not in dav_cols:
+                await conn.execute(text(f"ALTER TABLE dav_national_drugs ADD COLUMN {col_name} TEXT"))
 
     # Check if DB has data, if not seed it automatically
     async with AsyncSessionLocal() as session:
@@ -188,6 +213,8 @@ app.include_router(bhyt.router, prefix=settings.API_V1_STR)
 app.include_router(mcp.router, prefix=settings.API_V1_STR)
 app.include_router(admin_monitoring.router, prefix=settings.API_V1_STR)
 app.include_router(admin_integrations.router, prefix=settings.API_V1_STR)
+app.include_router(availability.router, prefix=settings.API_V1_STR)
+app.include_router(admin_knowledge.router, prefix=settings.API_V1_STR)
 
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=100)

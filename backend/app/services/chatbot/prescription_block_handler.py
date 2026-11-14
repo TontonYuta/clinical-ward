@@ -139,9 +139,11 @@ async def handle_prescription_block_audit(
         }
     ]
 
+    # Rule outputs and timing advice below have no source/version linkage yet.
+    # Keep the candidate text internal to this handler, but fail closed at the API.
     return CopilotResponse(
         intent="PATIENT_CASE_REASONING",
-        reply_text="\n".join(lines_output),
+        reply_text="Chưa thể xác minh an toàn của đơn thuốc từ các quy tắc có provenance và phiên bản nguồn. Vui lòng đối chiếu từng thuốc với tài liệu đã lập chỉ mục hoặc nhờ quản trị viên kiểm tra nguồn quy tắc.",
         card=None,
         legal_basis="Thông tư 26/2025/TT-BYT & Quyết định 5948/QĐ-BYT",
         suggested_chips=[
@@ -151,9 +153,11 @@ async def handle_prescription_block_audit(
         ],
         session_id=session_id,
         active_medication_name=med_names_for_ddi[0] if med_names_for_ddi else "",
-        answer_type="prescription_audit",
-        source_status="exact_match",
-        confidence=0.99,
-        rag_grounded=True,
-        citations=citations
+        evidence=[],
+        answer_type="safe_abstention",
+        source_status="evidence_provenance_missing",
+        confidence=0.0,
+        rag_grounded=False,
+        citations=[],
+        abstention_reason="Quy tắc DDI và lịch dùng trong audit chưa gắn với nguồn có phiên bản"
     )

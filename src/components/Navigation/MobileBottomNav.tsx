@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2, LayoutDashboard } from 'lucide-react';
+import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2, LayoutDashboard, ShieldAlert, BookOpen } from 'lucide-react';
 import { DashboardTab, UserRole } from '../../types/clinical';
 import { USER_PROFILES } from '../../data/initialData';
 
@@ -23,6 +23,8 @@ interface MobileBottomNavProps {
 const TAB_CONFIG: Record<DashboardTab, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
   overview: { label: 'Tổng quan', icon: LayoutDashboard },
   cpoe: { label: 'Kê đơn', icon: Stethoscope },
+  bhyt_audit: { label: 'Giám định BHYT', icon: ShieldAlert },
+  documents: { label: 'Tài liệu', icon: BookOpen },
   debt: { label: 'Sổ nợ', icon: FileText },
   fefo: { label: 'Kho dược', icon: Boxes },
   equipment: { label: 'Thiết bị', icon: Wrench },

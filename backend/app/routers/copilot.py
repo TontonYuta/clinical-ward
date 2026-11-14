@@ -24,12 +24,35 @@ __all__ = ["router", "resolve_copilot_identity"]
 
 router = APIRouter(prefix="/copilot", tags=["Trợ Lý Agent Lâm Sàng Thông Minh"])
 
+
+def validate_cached_chat_response(response: CopilotResponse) -> CopilotResponse:
+    """Recheck persisted responses against the current provenance contract."""
+    from app.services.chatbot.offline_drug_reply_formatter import format_offline_drug_reply
+    response = format_offline_drug_reply(response)
+    from app.services.chatbot.copilot_orchestrator import validate_response_evidence_contract
+    response = validate_response_evidence_contract(response)
+    if response.answer_type == "safe_abstention":
+        response.citations = []
+        response.evidence = []
+    return response
+
+
+def format_offline_drug_response(response: CopilotResponse) -> CopilotResponse:
+    from app.services.chatbot.offline_drug_reply_formatter import format_offline_drug_reply
+    return format_offline_drug_reply(response)
+
+def _sse_event(event_type: str, **payload) -> str:
+    event_payload = json.dumps({"type": event_type, **payload}, ensure_ascii=False)
+    return f"data: {event_payload}\n\n"
+
 @router.post("/chat", response_model=CopilotResponse)
 async def chat_with_copilot(
     payload: CopilotQuery,
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
+    from app.services.llm_provider import reset_llm_execution
+    reset_llm_execution()
     start_time = time.monotonic()
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
     session = get_or_create_session(session_id, user_name, user_role)
@@ -66,16 +89,24 @@ async def chat_with_copilot(
 
     cached_resp = clinical_cache.get(payload.query, user_role=user_role) if can_use_cache else None
     if cached_resp:
-        response = cached_resp.model_copy(deep=True)
-        response.session_id = session.session_id
-        from app.services.chatbot.citation_standardizer import standardize_response_citations
-        response = standardize_response_citations(response, payload.query)
-        session.append_conversation_turn(payload.query, response.reply_text)
-        if response.active_medication_name and not is_regulatory_q:
-            session.set_active_medication(name=response.active_medication_name)
-        elif session.active_medication_name and not is_regulatory_q:
-            response.active_medication_name = session.active_medication_name
-    else:
+        validated = validate_cached_chat_response(cached_resp.model_copy(deep=True))
+        if validated.answer_type == "safe_abstention" or (
+            cached_resp.intent == "MEDICATION_SAFETY_PROFILE" and not getattr(cached_resp, "clinical_summary", None)
+        ):
+            # Stale cache entry lacking valid provenance evidence or structured schema -> treat as cache miss & recompute
+            cached_resp = None
+        else:
+            response = validated
+            response.session_id = session.session_id
+            from app.services.chatbot.citation_standardizer import standardize_response_citations
+            response = standardize_response_citations(response, payload.query)
+            session.append_conversation_turn(payload.query, response.reply_text)
+            if response.active_medication_name and not is_regulatory_q:
+                session.set_active_medication(name=response.active_medication_name)
+            elif session.active_medication_name and not is_regulatory_q:
+                response.active_medication_name = session.active_medication_name
+
+    if not cached_resp:
         response = await handle_copilot_chat(
             payload, request, db,
             session=session,
@@ -83,6 +114,10 @@ async def chat_with_copilot(
         )
         from app.services.chatbot.conversational_handler import attach_correction_empathy
         response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
+        response = format_offline_drug_response(response)
+        response.has_image = bool(payload.image_base64 or response.has_image)
+        if payload.image_base64 and not response.image_tokens:
+            response.image_tokens = 258
         session.append_conversation_turn(payload.query, response.reply_text)
         response.session_id = session.session_id
         if response.active_medication_name and not is_regulatory_q:
@@ -97,6 +132,8 @@ async def chat_with_copilot(
         )
         if not is_context_dependent and response.answer_type not in ("clarification", "safe_abstention"):
             clinical_cache.set(payload.query, user_role, response)
+
+    response = format_offline_drug_response(response)
 
     latency_ms = round((time.monotonic() - start_time) * 1000, 1)
     has_img = bool(payload.image_base64 or getattr(response, "has_image", False))
@@ -128,16 +165,21 @@ async def chat_with_copilot(
         m_name = "gemini-3.5-flash-lite"
         prov = "gemini"
 
-    p_tok = last_exec.get("prompt_tokens") or getattr(response, "prompt_tokens", 0) or (max(18, len(payload.query) // 3) + img_tok)
-    c_tok = last_exec.get("completion_tokens") or getattr(response, "completion_tokens", 0) or max(25, len(response.reply_text) // 3)
+    # Usage stays unknown for handlers/cache paths that did not call an LLM.
+    p_tok = last_exec.get("prompt_tokens", 0)
+    c_tok = last_exec.get("completion_tokens", 0)
     tot_tok = p_tok + c_tok
-
-    if not cached_resp:
-        try:
-            from app.services.telemetry_store import record_llm_token_usage
-            record_llm_token_usage(p_tok, c_tok, model=m_name, provider=prov)
-        except Exception:
-            pass
+    response.prompt_tokens = p_tok
+    response.completion_tokens = c_tok
+    response.total_tokens = tot_tok
+    response.usage_source = last_exec.get("usage_source", "none")
+    response.model_call_count = last_exec.get("model_call_count", last_exec.get("call_count", 0))
+    response.usage_call_count = last_exec.get("provider_call_count", 0)
+    response.cache_hit_count = last_exec.get("cache_hits", 0)
+    if last_exec.get("call_count", 0) and last_exec.get("model"):
+        response.model_name = last_exec["model"]
+    if last_exec.get("call_count", 0) and last_exec.get("provider"):
+        response.provider = last_exec["provider"]
 
     try:
         from app.security.prompt_utility_scorer import compute_prompt_utility
@@ -158,8 +200,12 @@ async def chat_with_copilot(
             prompt_tokens=p_tok,
             completion_tokens=c_tok,
             total_tokens=tot_tok,
-            model_name=m_name,
-            provider=prov,
+            usage_source=response.usage_source,
+            model_call_count=response.model_call_count or 0,
+            usage_call_count=response.usage_call_count or 0,
+            cache_hit_count=response.cache_hit_count or 0,
+            model_name=response.model_name or m_name,
+            provider=response.provider or prov,
             has_image=has_img,
             image_tokens=img_tok,
             latency_ms=latency_ms,
@@ -177,10 +223,13 @@ async def chat_with_copilot_stream(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
+    from app.services.llm_provider import reset_llm_execution
+    reset_llm_execution()
+    start_time = time.monotonic()
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
     session = get_or_create_session(session_id, user_name, user_role)
 
-    async def event_generator():
+    async def response_events():
         # 1. Kiểm tra bộ nhớ đệm lâm sàng (Clinical LRU Cache) để đạt latency < 1ms
         from app.services.cache.clinical_cache import get_clinical_cache
         clinical_cache = get_clinical_cache()
@@ -205,6 +254,7 @@ async def chat_with_copilot_stream(
         cached_resp = clinical_cache.get(payload.query, user_role=user_role) if can_use_cache else None
         if cached_resp:
             response = cached_resp.model_copy(deep=True)
+            response = validate_cached_chat_response(response)
             response.session_id = session.session_id
             session.append_conversation_turn(payload.query, response.reply_text)
             if response.active_medication_name:
@@ -218,6 +268,7 @@ async def chat_with_copilot_stream(
             )
             from app.services.chatbot.conversational_handler import attach_correction_empathy
             response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
+            response = format_offline_drug_response(response)
             session.append_conversation_turn(payload.query, response.reply_text)
             response.session_id = session.session_id
 
@@ -228,6 +279,31 @@ async def chat_with_copilot_stream(
             )
             if not is_context_dependent and response.answer_type not in ("clarification", "safe_abstention"):
                 clinical_cache.set(payload.query, user_role, response)
+
+        response = format_offline_drug_response(response)
+        response.has_image = bool(payload.image_base64 or response.has_image)
+        if payload.image_base64 and not response.image_tokens:
+            response.image_tokens = 258
+
+        from app.services.llm_provider import get_last_llm_execution
+        usage = get_last_llm_execution()
+        response.prompt_tokens = usage.get("prompt_tokens", 0)
+        response.completion_tokens = usage.get("completion_tokens", 0)
+        response.total_tokens = usage.get("total_tokens", 0)
+        response.usage_source = usage.get("usage_source", "none")
+        response.model_call_count = usage.get("model_call_count", usage.get("call_count", 0))
+        response.usage_call_count = usage.get("provider_call_count", 0)
+        response.cache_hit_count = usage.get("cache_hits", 0) + (1 if cached_resp else 0)
+        response.availability_mode = "online_ai" if usage.get("provider_call_count", 0) else "local_only"
+        if cached_resp:
+            response.availability_mode = "local_only"
+        if response.answer_type == "unavailable":
+            response.availability_mode = "offline"
+        if usage.get("call_count", 0) and usage.get("model"):
+            response.model_name = usage["model"]
+        if usage.get("call_count", 0) and usage.get("provider"):
+            response.provider = usage["provider"]
+        latency_ms = round((time.monotonic() - start_time) * 1000, 1)
 
         # 2. Ghi nhật ký bất đồng bộ
         try:
@@ -246,6 +322,18 @@ async def chat_with_copilot_stream(
                 is_useful=util.is_useful,
                 quality_category=util.category,
                 grounded_source=util.grounded_source,
+                prompt_tokens=response.prompt_tokens or 0,
+                completion_tokens=response.completion_tokens or 0,
+                total_tokens=response.total_tokens or 0,
+                usage_source=response.usage_source,
+                model_call_count=response.model_call_count or 0,
+                usage_call_count=response.usage_call_count or 0,
+                cache_hit_count=response.cache_hit_count or 0,
+                has_image=bool(payload.image_base64 or response.has_image),
+                image_tokens=response.image_tokens or 0,
+                model_name=response.model_name,
+                provider=response.provider,
+                latency_ms=latency_ms,
             )
             db.add(log_entry)
             await db.commit()
@@ -254,30 +342,22 @@ async def chat_with_copilot_stream(
 
         full_text = response.reply_text or ""
 
-        # 3. Phân tách thành các cụm từ để truyền phát tốc độ cao (High-Throughput Smooth SSE Stream)
-        tokens = re.findall(r'\S+\s*|\s+', full_text)
-        if not tokens:
-            tokens = [full_text]
-
-        # Gửi ngay cụm BLUF đầu tiên (10-12 từ) để UI lập tức hiện tiêu đề mà không trễ (TTFT < 1ms)
-        first_burst_size = min(12, len(tokens))
-        if tokens:
-            first_chunk = "".join(tokens[0:first_burst_size])
-            event_payload = json.dumps({"type": "token", "content": first_chunk}, ensure_ascii=False)
-            yield f"data: {event_payload}\n\n"
-
-        # Các cụm tiếp theo nhả đều 8 từ/nhịp với micro-delay 3ms để duy trì 60 FPS mượt mà
-        step_size = 8
-        for i in range(first_burst_size, len(tokens), step_size):
-            chunk = "".join(tokens[i:i + step_size])
-            event_payload = json.dumps({"type": "token", "content": chunk}, ensure_ascii=False)
-            yield f"data: {event_payload}\n\n"
-            await asyncio.sleep(0.003)
+        # Clinical generation and validation have completed before any text is emitted.
+        if full_text:
+            yield _sse_event("token", content=full_text)
 
         # 4. Truyền phát gói dữ liệu hoàn tất chứa toàn bộ metadata, cards, alerts
         done_dict = response.model_dump()
-        done_payload = json.dumps({"type": "done", "response": done_dict}, ensure_ascii=False)
-        yield f"data: {done_payload}\n\n"
+        yield _sse_event("done", response=done_dict)
+
+    async def event_generator():
+        try:
+            async for event in response_events():
+                yield event
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            yield _sse_event("error", message="Không thể hoàn tất yêu cầu. Vui lòng thử lại.")
 
     return StreamingResponse(
         event_generator(),

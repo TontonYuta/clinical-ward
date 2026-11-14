@@ -120,6 +120,7 @@ export interface TelemetryOverviewResponse {
   }>;
   timeline_trend: Array<{
     day: string;
+    date: string;
     consumed_k: number;
     saved_k: number;
   }>;

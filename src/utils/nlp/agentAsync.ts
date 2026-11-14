@@ -4,16 +4,10 @@
  * Điều phối xử lý câu hỏi lâm sàng bất đồng bộ (Action Cards & Gemini AI) (<200 LOC)
  */
 
-import { ActionPayload, ChatMessage, UserProfile, AgentActionCard } from '../../types/clinical';
-import { chatCopilotApi, chatCopilotApiStream, checkPairDdiApi } from '../../services/api';
-import { askGeminiClinicalCopilot, isCloudAIAvailable } from '../../services/geminiService';
-import { processGeminiClinicalScenario, isClinicalScenarioQuery } from '../../services/gemini/clinicalScenarios';
+import { ActionPayload, UserProfile, AgentActionCard } from '../../types/clinical';
+import { chatCopilotApiStream } from '../../services/api';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
-import { processClinicalUserQuery } from './queryProcessor';
-import { matchDrugInteractionIntent, extractDrugPair } from './intents/drugInteractionIntent';
-import { matchMedicationSafetyIntent } from './intents/medicationSafetyIntent';
 import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
-import { SmoothStreamBuffer } from './streamBuffer';
 
 let _clientSessionId: string = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -27,7 +21,7 @@ export function getClientSessionId(): string {
 
 export async function processClinicalAgentQueryAsync(
   rawInput: string,
-  currentState: AsyncClinicalState,
+  _currentState: AsyncClinicalState,
   currentUserProfile?: UserProfile,
   onToken?: (token: string, currentFullText: string) => void,
   sessionId?: string,
@@ -56,7 +50,6 @@ export async function processClinicalAgentQueryAsync(
   }
 
   const cleanInput = guardCheck.sanitizedQuery;
-  const lower = cleanInput.toLowerCase();
 
   // Tạm thời comment interceptor DDI cục bộ theo yêu cầu để chuyển toàn bộ câu hỏi sang backend SOTA RAG Copilot API
   // if (matchDrugInteractionIntent(lower)) {
@@ -123,6 +116,8 @@ export async function processClinicalAgentQueryAsync(
           sender: 'agent',
           text: validateClientOutputGuardrail(backendData.reply_text, cleanInput),
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          clinicalSummary: backendData.clinical_summary || undefined,
+          clinicalData: backendData.clinical_data || undefined,
           legalReference: backendData.legal_basis ? {
             lawCode: backendData.legal_basis.split('-')[0].trim(),
             title: backendData.legal_basis,
@@ -132,11 +127,18 @@ export async function processClinicalAgentQueryAsync(
           card,
           suggestedChips: backendData.suggested_chips || [],
           citations: backendData.citations || [],
+          evidence: backendData.evidence || [],
           ragGrounded: backendData.rag_grounded,
           answerType: backendData.answer_type,
           sourceStatus: backendData.source_status,
           confidence: backendData.confidence,
           abstentionReason: backendData.abstention_reason,
+          usageSource: backendData.usage_source,
+          modelCallCount: backendData.model_call_count,
+          usageCallCount: backendData.usage_call_count,
+          cacheHitCount: backendData.cache_hit_count,
+          provider: backendData.provider,
+          availabilityMode: backendData.availability_mode,
           cdssAlert: backendData.cdss_alert ? {
             level: backendData.cdss_alert.level || 'critical',
             title: backendData.cdss_alert.title,
@@ -151,62 +153,16 @@ export async function processClinicalAgentQueryAsync(
       };
     }
   } catch (err) {
-    console.warn('[AgentAsync] Backend stream call failed, falling back to local handlers:', err);
+    console.warn('[AgentAsync] Backend stream call failed; returning unavailable state:', err);
   }
 
-  // 2. Dự phòng ngoại tuyến (Offline Fallback): Chỉ kích hoạt khi Backend hoàn toàn mất kết nối
-  const localResult = processClinicalUserQuery(cleanInput, {
-    debts: currentState.debts,
-    tickets: currentState.tickets,
-    batches: currentState.batches,
-    coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5
-  }, role);
-
-  if (localResult.replyMessage?.text && onToken) {
-    const buffer = new SmoothStreamBuffer(onToken);
-    buffer.push(localResult.replyMessage.text);
-    await buffer.finish();
-  }
-  return localResult;
-
-  // 3. Xử lý 8 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & Hồ Sơ Bệnh Nhân
-  const scenarioResult = await processGeminiClinicalScenario(
-    rawInput, new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), currentState.coldChainState
-  );
-  if (scenarioResult) {
-    if (scenarioResult.replyMessage) {
-      scenarioResult.replyMessage.text = validateClientOutputGuardrail(scenarioResult.replyMessage.text, cleanInput);
-    }
-    return scenarioResult;
-  }
-
-  // 4. Với các câu hỏi lâm sàng tự do, dược lý: Gemini Flash-Lite
-  if (isCloudAIAvailable()) {
-    try {
-      const geminiAnswer = await askGeminiClinicalCopilot(rawInput, {
-        activeDebtsCount: currentState.debts.filter(d => d.status === 'debt').length,
-        pendingAmpoulesCount: currentState.debts.filter(d => d.itemType === 'Thuốc gây nghiện' && !d.ampouleReturned).length,
-        urgentTicketsCount: currentState.tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length,
-        lowStockBatchesCount: currentState.batches.filter(b => b.isLowStock || b.currentStock <= b.minThreshold).length,
-        coldChainTemp: currentState.coldChainState?.currentTemp ?? 4.5,
-        role
-      });
-      if (geminiAnswer) {
-        return { replyMessage: {
-          id: `msg-agent-gemini-${Date.now()}`, sender: 'agent',
-          text: validateClientOutputGuardrail(geminiAnswer, cleanInput),
-          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          suggestedChips: ['Tra cứu Dược Thư Quốc Gia', 'Hướng dẫn liều dùng & chỉ định', 'Kiểm tra tương tác thuốc']
-        } };
-      }
-    } catch (e) {
-      console.warn('Gemini query bypassed:', e);
-    }
-  }
-
-  // 5. Fallback cuối cùng
-  if (localResult.replyMessage) {
-    localResult.replyMessage.text = validateClientOutputGuardrail(localResult.replyMessage.text, cleanInput);
-  }
-  return localResult;
+  return { replyMessage: {
+    id: `msg-agent-unavailable-${Date.now()}`,
+    sender: 'agent',
+    text: 'Không thể truy cập backend chatbot lúc này. Yêu cầu chưa được xử lý và không có kết luận lâm sàng nào được tạo. Vui lòng kiểm tra kết nối rồi thử lại.',
+    timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    answerType: 'unavailable',
+    sourceStatus: 'unavailable',
+    ragGrounded: false,
+  } };
 }

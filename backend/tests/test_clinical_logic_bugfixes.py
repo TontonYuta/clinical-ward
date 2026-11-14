@@ -103,7 +103,7 @@ def test_typo_and_space_resilience_extract_slots():
 
 
 @pytest.mark.asyncio
-async def test_pediatric_query_with_specific_drug_not_blocked():
+async def test_pediatric_query_without_source_linked_evidence_abstains():
     """Hỏi liều Cefixim cho trẻ em phải tra cứu thông tin Cefixim, không trả văn mẫu chung chung."""
     sid = "test_ped_cefixim_sess"
     clear_session("bác sĩ:" + sid)
@@ -118,8 +118,10 @@ async def test_pediatric_query_with_specific_drug_not_blocked():
     assert resp.status_code == 200
     data = resp.json()
     reply = data["reply_text"].lower()
-    # Phải có thông tin Cefixim, không phải văn mẫu Paracetamol + Aspirin
-    assert "cefixim" in reply
+    # Missing provenance must not be replaced with a drug-specific claim.
+    assert data["answer_type"] == "safe_abstention"
+    assert data["rag_grounded"] is False
+    assert data["citations"] == []
     assert "aspirin & salicylat" not in reply or "cefixim" in reply
 
 

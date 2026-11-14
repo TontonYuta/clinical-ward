@@ -52,6 +52,8 @@ class DavNationalDrug(Base):
     antidote: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     clinical_source: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     clinical_monograph_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None, index=True)
+    source_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    source_version: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now(), nullable=True)
 
 class ClinicalDrugMonograph(Base):
@@ -82,6 +84,8 @@ class ClinicalDrugMonograph(Base):
     overdose_treatment: Mapped[str | None] = mapped_column(Text, nullable=True)
     antidote: Mapped[str | None] = mapped_column(Text, nullable=True)
     source: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_version: Mapped[str | None] = mapped_column(String, nullable=True)
     section_pages: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now(), nullable=True)
 

@@ -1,0 +1,170 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{vietnam}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{geometry}
+\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+\usepackage{booktabs,tabularx,array,ragged2e}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{enumitem}
+
+\setstretch{1.22}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% Định nghĩa kiểu cột căn trái tự nhiên không bị kéo giãn khoảng cách từ
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=teal,
+    urlcolor=teal,
+    citecolor=teal
+}
+
+\begin{document}
+
+% Tiêu đề chính
+\begin{center}
+    {\large \textbf{BỘ Y TẾ --- BỆNH VIỆN ĐA KHOA LÂM SÀNG}}\\[0.3em]
+    {\normalsize \textbf{HỆ THỐNG GIÁM SÁT \& TRỢ LÝ Y TẾ AI (CLINICAL WARD)}}\\[0.8em]
+    \rule{\textwidth}{1.2pt}\\[0.8em]
+    {\Large \textbf{Báo cáo nghiên cứu ứng dụng các công trình khoa học và kho mã nguồn hàng đầu nhằm tối ưu chi phí và độ trễ cho trợ lý lâm sàng}}\\[0.5em]
+    {\normalsize \textit{Tài liệu tổng hợp nghiên cứu thực nghiệm dựa trên chứng cứ (Evidence-Grounded Engineering)}}\\[0.3em]
+    {\small Thời gian: Tháng 11 Năm 2026}
+\end{center}
+
+\vspace{0.5em}
+\rule{\textwidth}{0.4pt}
+
+\section{Tổng quan về bài toán tối ưu chi phí và thời gian đáp ứng}
+
+Trong quá trình vận hành thực tế tại buồng bệnh và khoa Dược, hệ thống trợ lý lâm sàng (Clinical Chatbot Copilot) đóng vai trò hỗ trợ đắc lực cho bác sĩ và điều dưỡng trong việc tra cứu tương tác thuốc, liều dùng suy thận, quy chế dược chính quy và hướng dẫn sử dụng thuốc an toàn. Tuy nhiên, qua theo dõi thực tế trên bảng giám sát thời gian thực, hệ thống đang gặp phải hai vướng mắc lớn:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Thời gian đáp ứng còn chậm (Độ trễ trung bình 2,8s --- 4,5s):} Một câu hỏi tra cứu ngắn (ví dụ: \textit{``chống chỉ định venclexta''}) mất tới gần 3 giây để nhận phản hồi. Trong môi trường cấp cứu hoặc đi buồng bệnh, độ trễ này làm giảm trải nghiệm của nhân viên y tế.
+    \item \textbf{Chi phí token đầu vào bị đội lên cao (3.500 --- 4.000 tokens/lượt):} Cũng với câu hỏi 4 từ nêu trên, hệ thống tiêu tốn tới 3.577 prompt tokens. Lượng token quá lớn khiến hệ thống dễ chạm ngưỡng giới hạn tốc độ (Rate Limit 429) của nhà cung cấp dịch vụ và gia tăng chi phí vận hành.
+\end{itemize}
+
+\paragraph{Nguyên nhân kỹ thuật chính:} Hiện tượng trên bắt nguồn từ mô hình xử lý theo kiểu ``thác nước'' (Waterfall Pipeline). Một câu hỏi của người dùng bị chia thành nhiều lượt gọi mô hình ngôn ngữ lớn (LLM) tuần tự liên tiếp: (1) Lượt gọi NLU phân tích ý định; (2) Lượt gọi viết lại câu hỏi; (3) Lượt gọi nhúng vector; (4) Lượt gọi sinh câu trả lời RAG. Mỗi lượt gọi lại gửi kèm các chỉ dẫn hệ thống dài hàng nghìn từ, dẫn đến chi phí nhân đôi và độ trễ cộng dồn.
+
+\paragraph{Định hướng giải quyết:} Báo cáo này tiến hành khảo sát và đối chiếu các công trình nghiên cứu khoa học xuất bản trên arXiv (giai đoạn 2025 --- 2026) cùng các kho mã nguồn mở uy tín có từ 5.000 đến 38.000 lượt yêu thích (GitHub Stars). Mục tiêu là xây dựng phương án kiến trúc mới thuần AI (Zero-Hardcode), tuyệt đối không dựa vào các biểu thức quy tắc (regex) hay từ khóa cứng dễ gây sai lệch ngữ nghĩa y khoa.
+
+\section{Các công trình nghiên cứu và kho mã nguồn tiêu biểu}
+
+Dưới đây là các công trình khoa học đã được kiểm chứng thực nghiệm bằng công cụ Playwright và giao diện lập trình GitHub API, đại diện cho những chuẩn mực công nghệ tối ưu hóa mô hình ngôn ngữ hiện nay:
+
+\subsection{SGLang và cơ chế RadixAttention (38.660 Stars, UC Berkeley \& LMSYS)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bài báo:} \textit{Fast and Expressive LLM Inference with RadixAttention and SGLang} (arXiv: 2312.07104).
+    \item \textbf{Kho mã nguồn:} \href{https://github.com/sgl-project/sglang}{sgl-project/sglang} (38.660 Stars, 10.322 Forks).
+    \item \textbf{Cơ chế hoạt động:} SGLang giới thiệu cơ chế RadixAttention, tổ chức bộ nhớ đệm khóa-giá trị (Key-Value Cache) dưới dạng cây tiền tố (Radix Tree). Khi có câu hỏi mới gửi đến, hệ thống tự động tìm và tái sử dụng toàn bộ vùng nhớ đệm của các câu lệnh hệ thống (System Prompt) và Dược thư đã nạp trước đó.
+    \item \textbf{Hiệu quả áp dụng:} Giúp giảm thời gian sinh từ đầu tiên (Time to First Token --- TTFT) từ 3 đến 5 lần và loại bỏ việc tính toán lặp lại cho các văn bản y khoa cố định.
+\end{itemize}
+
+\subsection{LMCache và bộ nhớ đệm tiền tố đa truy vấn (12.326 Stars, Đại học Chicago)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bài báo:} \textit{LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference} (arXiv:2510.09665).
+    \item \textbf{Kho mã nguồn:} \href{https://github.com/LMCache/LMCache}{LMCache/LMCache} (12.326 Stars, 2.152 Forks).
+    \item \textbf{Cơ chế hoạt động:} Cho phép lưu trữ và chia sẻ bộ nhớ đệm tiền tố (Cross-Query Prefix Caching) xuyên suốt giữa các phiên làm việc và người dùng khác nhau trên nhiều nút máy chủ, kết hợp phân tầng bộ nhớ (GPU, CPU RAM, ổ đĩa lưu trữ).
+    \item \textbf{Hiệu quả áp dụng:} Giúp giảm tới 80\% chi phí tính toán phần mở đầu (prefill stage) cho các tài liệu tra cứu Dược thư dùng chung trong bệnh viện.
+\end{itemize}
+
+\subsection{Speculative RAG (Google Research, Hội nghị ICLR 2025)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bài báo:} \textit{Speculative RAG: Enhancing Retrieval Augmented Generation through Drafting} (arXiv:2407.08223).
+    \item \textbf{Tác giả:} Zilong Wang, Tomas Pfister và nhóm nghiên cứu Google Research.
+    \item \textbf{Cơ chế hoạt động:} Thay vì đưa toàn bộ tài liệu dài vào một mô hình lớn gây chậm và loãng thông tin, Speculative RAG sử dụng mô hình nhẹ, tốc độ cao (như \texttt{gemini-3.5-flash-lite}) để đọc song song các đoạn chứng cứ và tạo ra bản phác thảo ngắn gọn (Draft). Mô hình chính chỉ cần một lượt kiểm chứng nhanh để hoàn thiện câu trả lời.
+    \item \textbf{Hiệu quả áp dụng:} Giảm 51\% độ trễ xử lý và tăng 13\% độ chính xác, triệt tiêu hiện tượng mô hình bị phân tâm khi đọc văn bản quá dài.
+\end{itemize}
+
+\subsection{GPTCache và bộ nhớ đệm ngữ nghĩa vector (8.223 Stars, Zilliz)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Kho mã nguồn:} \href{https://github.com/zilliztech/GPTCache}{zilliztech/GPTCache} (8.223 Stars, 605 Forks).
+    \item \textbf{Cơ chế hoạt động:} Không so khớp chuỗi chữ cái thô sơ, GPTCache chuyển đổi câu hỏi thành vector ngữ nghĩa và tính toán độ tương đồng góc Cosine. Nếu câu hỏi mới có cùng bản chất ngữ nghĩa với câu đã trả lời trước đó ($\text{Sim} \ge 0,95$), hệ thống xuất ngay kết quả từ kho lưu trữ.
+    \item \textbf{Hiệu quả áp dụng:} Trả về kết quả trong thời gian dưới 5 mili-giây, tiêu tốn 0 token và 0 đồng chi phí cho các câu hỏi thường gặp lặp lại.
+\end{itemize}
+
+\subsection{FrugalGPT (Đại học Stanford)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bài báo:} \textit{FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance} (arXiv:2305.05176).
+    \item \textbf{Tác giả:} Lingjiao Chen, Matei Zaharia, James Zou (Đại học Stanford).
+    \item \textbf{Cơ chế hoạt động:} Đề xuất 3 trụ cột tiết kiệm chi phí: Thích ứng độ dài câu lệnh (Prompt Adaptation), dùng mô hình xấp xỉ gọn nhẹ (LLM Approximation) và chuỗi mô hình phân tầng (LLM Cascade). Câu hỏi được xử lý ưu tiên ở tầng mô hình chi phí thấp nhất, chỉ chuyển giao lên tầng cao hơn khi độ bất định vượt ngưỡng.
+    \item \textbf{Hiệu quả áp dụng:} Đạt chất lượng tương đương mô hình cao cấp nhất nhưng tiết kiệm tới 98\% ngân sách vận hành.
+\end{itemize}
+
+\subsection{LLMLingua và LLMLingua-2 (6.813 Stars, Microsoft Research, ACL 2024)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bài báo:} \textit{LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models} (arXiv:2310.05736 \& arXiv:2403.12968).
+    \item \textbf{Kho mã nguồn:} \href{https://github.com/microsoft/LLMLingua}{microsoft/LLMLingua} (6.813 Stars, 451 Forks).
+    \item \textbf{Cơ chế hoạt động:} Đo lường mức độ dư thừa thông tin (Perplexity) của từng từ trong đoạn trích dẫn để nén và loại bỏ từ nối, ký tự rác mà vẫn giữ trọn vẹn thuật ngữ y khoa, liều lượng và thông số lâm sàng.
+    \item \textbf{Hiệu quả áp dụng:} Nén ngữ cảnh văn bản từ 3 đến 6 lần trước khi đưa vào mô hình sinh lời đáp.
+\end{itemize}
+
+\subsection{Adaptive-RAG (Hội nghị NAACL 2024)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bài báo:} \textit{Adaptive-RAG: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity} (arXiv:2403.14403).
+    \item \textbf{Cơ chế hoạt động:} Đánh giá độ phức tạp của câu hỏi để cấp phát số lượng đoạn trích dẫn phù hợp. Với các câu hỏi tra cứu đơn thuộc tính (như hỏi liều hoặc chống chỉ định của một thuốc), hệ thống chỉ lấy đúng 1 đoạn trích dẫn quan trọng nhất thay vì nhồi nhét nhiều tài liệu thừa.
+\end{itemize}
+
+\section{Kiến trúc đề xuất ứng dụng vào hệ thống Clinical Ward}
+
+Dựa trên các bằng chứng khoa học vững chắc từ các nghiên cứu trên, hệ thống được đề xuất cải tiến theo mô hình kiến trúc gồm 3 điểm mấu chốt:
+
+\paragraph{1. Chuyển sang luồng thực thi một lượt duy nhất (Single-Pass Execution):}
+Loại bỏ việc gọi mô hình riêng biệt ở khâu phân tích ý định (NLU) và khâu viết lại câu hỏi (Rewriter). Khi người dùng đặt câu hỏi, hệ thống thực hiện truy xuất tài liệu Dược thư qua thuật toán lai (Hybrid BM25 và Vector). Sau đó, câu hỏi gốc cùng tài liệu được chuyển thẳng vào một lượt gọi duy nhất tới mô hình \texttt{gemini-3.5-flash-lite}. Mô hình tự đọc câu hỏi gốc, tự nắm bắt tiền sử, các từ phủ định và ngữ cảnh lâm sàng để trả lời ngay lập tức.
+
+\paragraph{2. Ứng dụng bộ đệm ngữ nghĩa vector (Semantic Caching):}
+Thiết lập lớp lưu đệm trong bộ nhớ dựa trên khoảng cách Cosine giữa các vector nhúng (theo mô hình GPTCache). Những câu hỏi lặp lại hoặc có cách diễn đạt tương đương (ví dụ: \textit{``chống chỉ định venclexta''} và \textit{``venclexta không được dùng cho đối tượng nào''}) sẽ được trả lời ngay trong vài mili-giây mà không cần gọi lại máy chủ của nhà cung cấp.
+
+\paragraph{3. Tận dụng cơ chế Prompt Caching của Google AI Studio:}
+Đóng băng toàn bộ chỉ dẫn hệ thống cố định (văn phong y khoa, căn cứ pháp lý DĐVN V, quy định trích dẫn) trên bộ nhớ đệm của Google. Nhờ đó, chi phí token cho phần chỉ dẫn này giảm từ 75\% đến 90\%, đồng thời tăng tốc độ phản hồi đáng kể.
+
+\vspace{0.8em}
+\noindent \textbf{Bảng so sánh đối chiếu trước và sau khi tối ưu:}
+\vspace{0.4em}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} L{3.8cm} L{4.5cm} Y}
+\toprule
+\textbf{Chỉ số kỹ thuật} & \textbf{Trước tối ưu (Hiện tại)} & \textbf{Sau tối ưu (Đề xuất)} & \textbf{Mức độ cải thiện} \\
+\midrule
+Số lượt gọi mô hình mạng & 3 lượt tuần tự (NLU $\rightarrow$ Rewriter $\rightarrow$ RAG) & 1 lượt duy nhất (Single-Pass RAG) & Giảm 66\% số lần gọi \\
+Thời gian xử lý & 2,8s --- 4,5s & 0,8s --- 1,1s (hoặc $<$ 5ms nếu trúng đệm) & Nhanh hơn 3 đến 4 lần \\
+Số token đầu vào/lượt & 3.500 --- 4.000 tokens & 800 --- 1.100 tokens & Tiết kiệm 65\% --- 75\% \\
+Khả năng hiểu ngữ cảnh & Dễ bị phân tâm do văn bản nhồi quá dài & Tập trung đúng đoạn chứng cứ liên quan nhất & Giảm thiểu hiện tượng ảo giác \\
+Nguy cơ chạm hạn ngạch 429 & Cao khi nhiều bác sĩ cùng dùng & Rất thấp, chịu tải đồng thời gấp 3 lần & Bền bỉ và ổn định \\
+Quy tắc an toàn lâm sàng & Đầy đủ (QĐ 5948, TT 20, TT 51) & Đầy đủ, giữ nguyên 100\% các chốt chặn & Bảo toàn an toàn tuyệt đối \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Kế hoạch triển khai và lộ trình kỹ thuật}
+
+Quá trình chuyển đổi được thiết kế cẩn trọng theo 3 giai đoạn để đảm bảo không làm gián đoạn dịch vụ và giữ vững độ an toàn điều trị:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Giai đoạn 1 --- Xây dựng lớp đệm ngữ nghĩa vector (Semantic Cache):} Cài đặt cấu trúc lưu đệm vector trong bộ nhớ, đo lường tỷ lệ trúng đệm cho các câu hỏi tra cứu Dược thư phổ biến và kiểm thử ngưỡng tương đồng Cosine ($\ge 0,95$).
+    \item \textbf{Giai đoạn 2 --- Hợp nhất luồng xử lý RAG một lượt:} Tích hợp bước phân tích câu hỏi trực tiếp vào câu lệnh sinh phản hồi RAG, loại bỏ các bước gọi mô hình trung gian và kích hoạt cơ chế Context Caching trên Google AI Studio.
+    \item \textbf{Giai đoạn 3 --- Kiểm thử hồi quy và đối soát an toàn:} Chạy toàn bộ 664 bài kiểm thử tự động của hệ thống, kiểm chứng sự bất biến của ma trận cảnh báo tương tác thuốc (Quyết định 5948/QĐ-BYT) và phác đồ xử trí phản vệ (Thông tư 51/2017/TT-BYT).
+\end{enumerate}
+
+\section{Danh mục tài liệu tham khảo khoa học}
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item L. Chen, M. Zaharia, J. Zou. \textit{FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance}. arXiv:2305.05176, Đại học Stanford, 2023.
+    \item I. Ong, A. Almahairi, V. Wu, W. Chiang, I. Stoica et al. \textit{RouteLLM: Learning to Route LLMs with Preference Data}. arXiv:2406.18665, LMSYS Org \& UC Berkeley, 2024.
+    \item Z. Wang, T. Pfister et al. \textit{Speculative RAG: Enhancing Retrieval Augmented Generation through Drafting}. arXiv:2407.08223, Google Research, Hội nghị ICLR 2025.
+    \item L. Zheng, H. Zhang et al. \textit{Fast and Expressive LLM Inference with RadixAttention and SGLang}. arXiv:2312.07104, LMSYS Org, 2024.
+    \item Y. Liu, Y. Cheng et al. \textit{LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference}. arXiv:2510.09665, Đại học Chicago \& TensorMesh, 2025.
+    \item H. Jiang, Q. Wu, C. Lin, Y. Yang, L. Qiu. \textit{LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models}. arXiv:2310.05736, Microsoft Research, Hội nghị EMNLP 2023.
+    \item S. Jeong, J. Baek, S. Cho, S. Hwang, J. Park. \textit{Adaptive-RAG: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity}. arXiv:2403.14403, KAIST, Hội nghị NAACL 2024.
+    \item Google DeepMind. \textit{Context Caching Overview \& Pricing Documentation}. Google Cloud Vertex AI, 2025 --- 2026.
+\end{enumerate}
+
+\end{document}

@@ -8,9 +8,60 @@ import os
 import re
 import json
 import time
+import subprocess
+from difflib import SequenceMatcher
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
-TXT_PATH = "/tmp/duoc_thu_all.txt"
-OUTPUT_JSON = "/home/tontonyuta/Downloads/DoAn2/backend/data/knowledge_base/dtqg_monographs_extracted.json"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PDF_PATH = PROJECT_ROOT / "public/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
+OUTPUT_JSON = PROJECT_ROOT / "backend/data/knowledge_base/dtqg_monographs_extracted.json"
+
+def load_pdf_pages(pdf_path: Path = PDF_PATH) -> list[str]:
+    """Extract PDF text in content-stream order to preserve multi-column reading flow."""
+    text = subprocess.check_output(
+        ["pdftotext", "-raw", str(pdf_path), "-"], text=True, encoding="utf-8"
+    )
+    return text.split("\f")
+
+def load_pdf_layout_pages(pdf_path: Path = PDF_PATH) -> list[str]:
+    """Load visual page layout for catalogue entries absent from content-order text."""
+    text = subprocess.check_output(
+        ["pdftotext", "-layout", str(pdf_path), "-"], text=True, encoding="utf-8"
+    )
+    return text.split("\f")
+
+def load_pdf_bbox_pages(
+    pdf_path: Path = PDF_PATH, page_range: tuple[int, int] | None = None
+) -> list[str]:
+    """Extract text from Poppler's positioned words, ordered by page columns."""
+    command = ["pdftotext", "-bbox-layout"]
+    if page_range is not None:
+        command.extend(["-f", str(page_range[0]), "-l", str(page_range[1])])
+    command.extend([str(pdf_path), "-"])
+    output = subprocess.check_output(command, text=True, encoding="utf-8")
+    root = ET.fromstring(output)
+    ns = {"pdf": "http://www.w3.org/1999/xhtml"}
+    pages = []
+    for page in root.findall(".//pdf:page", ns):
+        blocks = []
+        for block in page.findall("pdf:flow/pdf:block", ns):
+            lines = []
+            for line in block.findall("pdf:line", ns):
+                words = [word.text or "" for word in line.findall("pdf:word", ns)]
+                if words:
+                    lines.append(" ".join(words))
+            if lines:
+                blocks.append({
+                    "x": float(block.get("xMin", "0")),
+                    "y": float(block.get("yMin", "0")),
+                    "text": "\n".join(lines),
+                })
+        # Poppler groups blocks by reading order. Sort by visual column and
+        # then vertical position, preserving multi-column monograph reading.
+        blocks.sort(key=lambda item: (item["x"], item["y"]))
+        pages.append("\n".join(block["text"] for block in blocks))
+    return pages
 
 def clean_text(text: str) -> str:
     if not text:
@@ -19,8 +70,156 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\nDTQGVN\s*2\s*\n', '\n', text)
     text = re.sub(r'\n\d{1,4}\s*\n', '\n', text)
     text = re.sub(r'[ \t]+', ' ', text)
+    # PDF text layers can encode a numeric quantity and its following unit or
+    # noun as one token even though the visual source contains a word boundary.
+    text = re.sub(r'(?<=\d)(?=[a-zà-ỹ])', ' ', text)
     text = re.sub(r'\n\s*\n+', '\n', text)
     return text.strip()
+
+def _compact_text(text: str) -> str:
+    return re.sub(r"\s+", "", text or "")
+
+def repair_spacing_from_reference(value: str, reference: str) -> str:
+    """Restore PDF word boundaries only when the compact text matches source.
+
+    The positioned PDF text is treated as the authority for whitespace. No
+    medical vocabulary or hand-written word substitutions are introduced.
+    """
+    if not value or not reference:
+        return value
+    compact_value = _compact_text(value)
+    if not compact_value:
+        return value
+    compact_reference = _compact_text(reference)
+    start = compact_reference.find(compact_value)
+    if start < 0:
+        return value
+    source_positions = [i for i, ch in enumerate(reference) if not ch.isspace()]
+    left, right = source_positions[start], source_positions[start + len(compact_value) - 1] + 1
+    return reference[left:right].strip()
+
+def remove_running_page_headers(value: str) -> str:
+    """Remove DTQGVN running headers that leaked into extracted section text."""
+    if not value:
+        return value
+    lines = value.splitlines()
+    cleaned = [
+        line for line in lines
+        if not re.match(
+            r"^\s*(?:DTQGVN\s*2(?:\s+\d{1,4})?(?:\s+[^\n]*)?|"
+            r"\d{1,4}\s+DTQGVN\s*2(?:\s+[^\n]*)?)\s*$",
+            line,
+            re.IGNORECASE,
+        )
+    ]
+    return "\n".join(cleaned).strip()
+
+_SECTION_PAGE_SOURCES = {
+    "indications": (("Chỉ định",), ("indications",)),
+    "contraindications": (("Chống chỉ định",), ("contraindications",)),
+    "precautions": (("Thận trọng",), ("precautions",)),
+    "adverse_effects": (("Tác dụng không mong muốn",), ("adverse_effects",)),
+    "drug_interactions": (("Tương tác thuốc",), ("drug_interactions",)),
+    "dosage": (("Liều lượng và cách dùng",), ("adult_dosage", "pediatric_dosage", "renal_adjustment", "hepatic_adjustment")),
+    "overdose_treatment": (("Quá liều và xử trí",), ("overdose_treatment",)),
+}
+
+def derive_section_pages(
+    monograph: dict,
+    positioned_pages: list[str],
+    first_pdf_page: int = 1,
+) -> dict[str, int]:
+    """Find section pages where both the source heading and its extracted text occur."""
+    return derive_section_pages_with_evidence(
+        monograph, positioned_pages, first_pdf_page=first_pdf_page
+    )
+
+def derive_section_pages_with_evidence(
+    monograph: dict,
+    positioned_pages: list[str],
+    first_pdf_page: int = 1,
+) -> dict[str, dict[str, object]]:
+    """Return the matching PDF page and source lines proving each section map."""
+    page_text = [(first_pdf_page + offset, _compact_text(page).casefold(), page) for offset, page in enumerate(positioned_pages)]
+    result = {}
+    for section_key, (headings, fields) in _SECTION_PAGE_SOURCES.items():
+        source_lines = [
+            _compact_text(line).casefold()
+            for field in fields
+            for line in str(monograph.get(field) or "").splitlines()
+            if len(_compact_text(line)) >= 18
+        ]
+        if not source_lines:
+            continue
+        page_matches = []
+        for page_number, compact_page, original_page in page_text:
+            has_heading = any(_compact_text(heading).casefold() in compact_page for heading in headings)
+            matched_lines = [
+                line for line in source_lines
+                if line in compact_page or SequenceMatcher(None, line, compact_page).ratio() >= 0.72
+            ]
+            if not matched_lines:
+                continue
+            original_lines = [
+                line_value
+                for field in fields
+                for line_value in str(monograph.get(field) or "").splitlines()
+                if any(
+                    _compact_text(line_value).casefold() == matched
+                    or SequenceMatcher(None, _compact_text(line_value).casefold(), matched).ratio() >= 0.72
+                    for matched in matched_lines
+                )
+            ]
+            if original_lines:
+                page_matches.append({
+                    "page": page_number,
+                    "has_heading": has_heading,
+                    "evidence": original_lines,
+                })
+        anchored_matches = [item for item in page_matches if item["has_heading"]]
+        if anchored_matches:
+            anchor_page = anchored_matches[0]["page"]
+            continuation = [item for item in page_matches if item["page"] >= anchor_page]
+            result[section_key] = {
+                "page": anchor_page,
+                "pages": [item["page"] for item in continuation],
+                "evidence": [line for item in continuation for line in item["evidence"]],
+                "page_evidence": [
+                    {"page": item["page"], "evidence": item["evidence"]}
+                    for item in continuation
+                ],
+            }
+    return result
+
+def repair_monograph_spacing(monographs: list[dict], positioned_pages: list[str]) -> int:
+    """Repair extracted fields against all PDF pages spanned by each record."""
+    repaired_fields = 0
+    ordered = sorted(
+        (row for row in monographs if str(row.get("start_page", "")).isdigit()),
+        key=lambda row: int(row["start_page"]),
+    )
+    for index, row in enumerate(ordered):
+        first_page = max(0, int(row["start_page"]) - 1)
+        if index + 1 < len(ordered):
+            # Include the next record's first page because a section may
+            # continue in the opposite column above that record's heading.
+            end_page = min(len(positioned_pages), int(ordered[index + 1]["start_page"]))
+        else:
+            end_page = min(len(positioned_pages), first_page + 10)
+        reference = "\n".join(positioned_pages[first_page:end_page])
+        row["section_pages"] = derive_section_pages_with_evidence(
+            row, positioned_pages[first_page:end_page], first_pdf_page=first_page + 1
+        )
+        for key, value in row.items():
+            if key in {"source", "inn", "title", "section_pages"} or not isinstance(value, str):
+                continue
+            cleaned = remove_running_page_headers(value)
+            repaired_lines = [repair_spacing_from_reference(line, reference) for line in cleaned.splitlines()]
+            repaired = "\n".join(repaired_lines).strip()
+            if repaired != value:
+                row[key] = repaired
+                repaired_fields += 1
+    return repaired_fields
 
 def build_index(pages):
     index = []
@@ -143,13 +342,21 @@ def extract_sections(raw_text: str) -> dict:
 
 def main():
     t0 = time.time()
-    with open(TXT_PATH, 'r', encoding='utf-8') as f:
-        pages = f.read().split('\x0c')
-        
+    # Keep content-order extraction as canonical for section parsing. Positioned
+    # words are used only to restore spaces when their compact text matches a
+    # field exactly, so they cannot introduce or remove clinical content.
+    pages = load_pdf_pages()
     index = build_index(pages)
+    # Some index headings are arranged in page margins/columns and are not
+    # emitted by Poppler in content-stream order. Retain those catalogue rows
+    # from layout extraction but parse full records in reading order.
+    layout_index = build_index(load_pdf_layout_pages())
+    indexed = {(row["inn"].casefold(), row["start_page"]) for row in index}
+    index.extend(row for row in layout_index if (row["inn"].casefold(), row["start_page"]) not in indexed)
+    index.sort(key=lambda row: (row["start_page"], row["char_offset"]))
     print(f"Loaded {len(pages)} pages. Indexed {len(index)} monographs.")
     
-    monographs = []
+    extracted_monographs = []
     for i, cur in enumerate(index):
         nxt = index[i + 1] if i + 1 < len(index) else None
         raw = slice_monograph(pages, cur, nxt)
@@ -182,7 +389,34 @@ def main():
             "antidote": parsed.get("antidote"),
             "source": f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {cur['start_page']}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if cur.get("start_page") else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
         }
-        monographs.append(entry)
+        extracted_monographs.append(entry)
+
+    # Preserve existing catalogue entries and curated metadata that the PDF
+    # text layer cannot reliably index, while refreshing fields from source
+    # records that can be matched by their source identity.
+    if OUTPUT_JSON.exists():
+        with OUTPUT_JSON.open('r', encoding='utf-8') as f:
+            existing = json.load(f)
+        def record_key(row):
+            return (re.sub(r'\W+', '', row.get('inn', '')).casefold(), str(row.get('start_page') or ''))
+        extracted_by_key = {record_key(row): row for row in extracted_monographs}
+        monographs = []
+        for row in existing:
+            refreshed = extracted_by_key.pop(record_key(row), None)
+            if refreshed:
+                row.update({
+                    key: value for key, value in refreshed.items()
+                    if key not in {"inn", "start_page", "source"}
+                    and value is not None and (not isinstance(value, str) or value.strip())
+                })
+            monographs.append(row)
+        monographs.extend(extracted_by_key.values())
+    else:
+        monographs = extracted_monographs
+
+    positioned_pages = load_pdf_bbox_pages()
+    repaired_fields = repair_monograph_spacing(monographs, positioned_pages)
+    print(f"Restored source word boundaries in {repaired_fields} exact-match fields.")
         
     os.makedirs(os.path.dirname(OUTPUT_JSON), exist_ok=True)
     with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:

@@ -13,9 +13,33 @@ from app.services.copilot_drug_keyword_extractor import extract_drug_keywords
 from app.services.copilot_inventory_suggester import suggest_inventory_typo
 from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
 
+
+def _attach_database_claims(response: CopilotResponse) -> CopilotResponse:
+    from app.services.chatbot.offline_drug_reply_formatter import format_offline_drug_reply
+
+    response = format_offline_drug_reply(response)
+    from app.services.copilot_drug_formatter import _evidence_claim_contract
+
+    cited_chunk_ids = {str(citation.get("chunk_id")) for citation in response.citations or [] if citation.get("chunk_id")}
+    contract = _evidence_claim_contract(response.evidence or [], response.reply_text, cited_chunk_ids)
+    response.claims = contract["claims"]
+    response.evidence_claim_map = contract["evidence_claim_map"]
+    response.rag_grounded = bool(response.claims) and bool(response.rag_grounded)
+    if not response.claims and response.answer_type not in {"clarification", "safe_abstention", "lookup_guide"}:
+        response.answer_type = "safe_abstention"
+        response.source_status = "evidence_provenance_missing"
+        response.confidence = 0.0
+        response.rag_grounded = False
+        response.citations = []
+        response.evidence = []
+        response.abstention_reason = "Không có trường dữ liệu với provenance đã xác minh để hỗ trợ câu trả lời"
+        response.reply_text = "Chưa thể xác minh nội dung tra cứu từ bản ghi có provenance trong cơ sở dữ liệu hiện tại."
+    return response
+
 async def lookup_drug_authoritative(
     query: str, db: AsyncSession, session_id: str | None = None,
     user_name: str = "Nhân viên y tế", user_role: str = "nurse",
+    requested_fields: Optional[List[str]] = None,
 ) -> CopilotResponse:
     from app.services.session_context import get_or_create_session
     session = get_or_create_session(session_id, user_name, user_role)
@@ -65,7 +89,11 @@ async def lookup_drug_authoritative(
             session_id=session.session_id, suggested_chips=["Tra cứu thuốc Teglutik", "Tra cứu thuốc Paracetamol", "Tra cứu SĐK VD-24757-16"]
         )
 
-    if (not kw or len(kw) < 2 or is_deictic or (is_unanchored_info and not meds and not sdk)) and session.active_medication_name:
+    from app.services.chatbot.session_routing import FIELD_ONLY_TERMS
+    is_field_inquiry_term = any(term in query.lower() for term in FIELD_ONLY_TERMS)
+    is_stop_or_field_kw = kw.lower() in ("trẻ", "tiết", "thuốc", "liều", "dùng", "uống", "ăn", "đó", "này", "nó") if kw else False
+
+    if (not kw or len(kw) < 2 or is_deictic or is_stop_or_field_kw or (is_unanchored_info and not meds and not sdk) or (is_field_inquiry_term and not meds and not sdk)) and session.active_medication_name:
         kw = session.active_medication_sdk or session.active_medication_ingredient or session.active_medication_name
 
     query_field_only = (not kw or len(kw) < 2 or is_deictic) and any(term in query.lower() for term in [
@@ -118,9 +146,10 @@ async def lookup_drug_authoritative(
         .where(or_(*conds))
         .order_by(
             or_(*[(func.lower(DavNationalDrug.brand_name) == term.lower()) for term in search_terms]).desc(),
-            or_(*[func.lower(DavNationalDrug.brand_name).like(f"{term.lower()}%") for term in search_terms]).desc(),
-            or_(*[func.lower(DavNationalDrug.brand_name).like(f"%{term.lower()}%") for term in search_terms]).desc(),
             or_(*[(func.lower(DavNationalDrug.active_ingredient) == term.lower()) for term in search_terms]).desc(),
+            or_(*[func.lower(DavNationalDrug.brand_name).like(f"{term.lower()}%") for term in search_terms]).desc(),
+            or_(*[func.lower(DavNationalDrug.active_ingredient).like(f"{term.lower()}%") for term in search_terms]).desc(),
+            or_(*[func.lower(DavNationalDrug.brand_name).like(f"%{term.lower()}%") for term in search_terms]).desc(),
             DavNationalDrug.national_code.asc()
         )
         .limit(5)
@@ -216,12 +245,35 @@ async def lookup_drug_authoritative(
         if spec_item:
             return await synthesize_specialty_response(query, spec_item, user_name=user_name, user_role=user_role, session_id=session.session_id)
 
-    from app.services.chatbot.corrective_rag import evaluate_crag_tripartite
-    crag_res = await evaluate_crag_tripartite(
-        query=query, raw_kw=kw, direct_drugs=drugs, db=db,
-        session_id=session.session_id, user_name=user_name, user_role=user_role
-    )
-    if crag_res:
-        return crag_res
+        return CopilotResponse(
+            intent="CLINICAL_SAFE_ABSTENTION",
+            reply_text=(
+                f'Chưa tìm thấy thông tin cho “{kw_clean}” trong các nguồn đã lập chỉ mục. '
+                "Hãy kiểm tra lại tên thuốc hoặc số đăng ký; hiện chưa có căn cứ để cung cấp thông tin."
+            ),
+            answer_type="safe_abstention",
+            source_status="no_matching_local_source",
+            confidence=0.0,
+            rag_grounded=False,
+            citations=[],
+            evidence=[],
+            abstention_reason="Không tìm thấy bản ghi hoặc nguồn tài liệu phù hợp trong kho dữ liệu hiện có.",
+            session_id=session.session_id,
+        )
 
-    return await build_drug_profile_response(drugs, db, session, query=query)
+    # Explicit fields already represent the NLU's structured contract. A CRAG
+    # summary must not short-circuit that contract and silently drop requested
+    # sections; unconstrained lookups still receive corrective retrieval.
+    if not requested_fields:
+        from app.services.chatbot.corrective_rag import evaluate_crag_tripartite
+        crag_res = await evaluate_crag_tripartite(
+            query=query, raw_kw=kw, direct_drugs=drugs, db=db,
+            session_id=session.session_id, user_name=user_name, user_role=user_role
+        )
+        if crag_res:
+            return crag_res
+
+    response = await build_drug_profile_response(
+        drugs, db, session, query=query, requested_fields=requested_fields
+    )
+    return _attach_database_claims(response)

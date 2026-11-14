@@ -6,6 +6,8 @@ export function removeLegacySourceText(rawText: string, hasCitations: boolean = 
   if (!rawText) return '';
   if (!hasCitations) return rawText;
   return rawText
+    .replace(/\s*\[[^\]\n]+\]\([^)]*\.pdf(?:#[^)]*)?\)/gi, '')
+    .replace(/\s*\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Bộ Y tế)[^\]\n]+\](?=\s*(?:$|[.!?]))/gi, '')
     .split('\n')
     .filter((line) => {
       const trimmed = line.trim();

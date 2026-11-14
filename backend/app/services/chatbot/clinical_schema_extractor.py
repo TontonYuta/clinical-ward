@@ -208,7 +208,12 @@ def extract_clinical_query_schema_deterministic(
         has_patient_info = True
         target_facets.append("pregnancy_lactation")
 
-    if any(k in lower for k in ("trẻ em", "tre em", "bé", "sơ sinh", "tháng tuổi", "tuổi", "nhi khoa")):
+    if any(k in lower for k in ("người lớn", "nguoi lon", "trưởng thành", "truong thanh", "adult")):
+        patient_ctx.age_group = "adult"
+        has_patient_info = True
+        target_facets.append("adult_dosage")
+
+    if any(k in lower for k in ("trẻ em", "tre em", "bé", "sơ sinh", "tháng tuổi", "nhi khoa")):
         patient_ctx.age_group = "pediatric"
         has_patient_info = True
         target_facets.append("pediatric_dosage")

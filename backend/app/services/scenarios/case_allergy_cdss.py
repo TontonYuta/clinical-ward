@@ -61,10 +61,36 @@ class AllergyCdssScenario(BaseScenario):
             f"• **Tiền sử dị ứng ghi nhận trong CSDL:** **{patient_allergies}**\n"
             f"• **Cảnh báo chuyên môn:** Nếu đơn thuốc có nhóm Beta-Lactam/Penicillin (như Augmentin, Amoxicillin), nguy cơ sốc phản vệ đe dọa tính mạng! Đề xuất đổi sang Macrolide (Clarithromycin 500mg) hoặc Quinolone."
         )
+        citations = [{
+            "chunk_id": "qd-2147-5-corrects",
+            "source": "Quyết định 2147/QĐ-BYT",
+            "legal_basis": "Quyết định 2147/QĐ-BYT Hướng dẫn Hoạt động Dược lâm sàng trong Bệnh viện",
+            "section": "Thẩm định đơn thuốc và đối soát 5 đúng",
+            "excerpt": "Thẩm định tiền sử dị ứng thuốc và tương tác chống chỉ định của người bệnh trước khi cấp phát.",
+            "document_id": "qd-2147-byt",
+            "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+            "page": 1
+        }]
+        evidence = [{
+            "evidence_id": "document:qd-2147-5-corrects",
+            "evidence_type": "document_chunk",
+            "chunk_id": "qd-2147-5-corrects",
+            "source_id": "backend/data/knowledge_base/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+            "source_version": "sha256:33752c720a342ff68136623c25a2d31041c31cde8245bee009d2b7de8ef1919a",
+            "source_name": "Quyết định 2147/QĐ-BYT & QĐ 5948/QĐ-BYT",
+            "section": "Thẩm định an toàn dị ứng đơn thuốc",
+            "content": f"Bệnh nhân {patient_name} có tiền sử dị ứng {patient_allergies}. Cần kiểm tra chéo nhóm thuốc kê đơn theo quy định.",
+        }]
         return CopilotResponse(
             intent="CLINICAL_ALLERGY_CDSS",
             reply_text=reply,
             card=card,
             legal_basis="Quyết định 2147/QĐ-BYT & QĐ 5948/QĐ-BYT",
+            answer_type="cdss_alert",
+            source_status="retrieved_evidence",
+            confidence=1.0,
+            rag_grounded=True,
+            citations=citations,
+            evidence=evidence,
             suggested_chips=["Dặn dò bệnh nhân uống thuốc", "Đổi sang Clarithromycin 500mg", "Thẩm định đơn thuốc theo TT 26"]
         )

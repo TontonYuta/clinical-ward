@@ -10,6 +10,7 @@ import { RagCitationItem } from '../../types/chat';
 
 export interface MarkdownRenderOptions {
   isDark?: boolean;
+  hideInlineSources?: boolean;
   citations?: RagCitationItem[];
   onCitationClick?: (citation: {
     title: string;
@@ -18,6 +19,10 @@ export interface MarkdownRenderOptions {
     excerpt?: string;
     legal_basis?: string;
     section?: string;
+    inn?: string;
+    searchTerm?: string;
+    keywords?: string[];
+    text_fragment_url?: string;
   }) => void;
   compact?: boolean;
 }
@@ -73,7 +78,7 @@ export const formatInlineMarkdown = (
   if (!rawText) return null;
   const options: MarkdownRenderOptions =
     typeof isDarkOrOptions === 'boolean' ? { isDark: isDarkOrOptions } : isDarkOrOptions;
-  const { isDark = false, citations, onCitationClick } = options;
+  const { isDark = false, onCitationClick } = options;
 
   const text = sanitizeClinicalText(rawText);
   const tokens = text.split(
@@ -116,6 +121,7 @@ export const formatInlineMarkdown = (
       const linkUrl = linkMatch[2];
 
       if (linkUrl.startsWith('/pdf/') || linkUrl.includes('.pdf')) {
+        if (options.hideInlineSources) return null;
         const pageMatch = linkUrl.match(/#page=(\d+)/);
         const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : undefined;
         return (
@@ -157,71 +163,7 @@ export const formatInlineMarkdown = (
       /^\[((?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+)\]$/i
     );
     if (citationTokenMatch) {
-      const rawCitationLabel = citationTokenMatch[1];
-      const pageMatch = rawCitationLabel.match(/(?:tr\.?|trang)\s*(\d+)/i);
-      const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : undefined;
-
-      let pdfUrl = '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
-      if (/5948/i.test(rawCitationLabel)) {
-        pdfUrl = '/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf';
-      } else if (/51/i.test(rawCitationLabel)) {
-        pdfUrl = '/pdf/Thong_Tu_51_2017_TT_BYT_Huong_Dan_Phong_Chan_Doan_Xu_Tri_Phan_Ve.pdf';
-      } else if (/26/i.test(rawCitationLabel)) {
-        pdfUrl = '/pdf/Thong_Tu_26_2025_TT_BYT_Ke_Don_Thuoc.pdf';
-      } else if (/20/i.test(rawCitationLabel)) {
-        pdfUrl = '/pdf/Thong_Tu_20_2017_TT_BYT_Thuoc_Kiem_Soat_Dac_Biet.pdf';
-      } else if (/22/i.test(rawCitationLabel)) {
-        pdfUrl = '/pdf/Thong_Tu_22_2011_TT_BYT_Khoa_Duoc_Benh_Vien.pdf';
-      }
-      if (pageNum) pdfUrl += `#page=${pageNum}`;
-
-      const matchedCitation =
-        citations?.find(
-          (c) =>
-            (pageNum && c.page === pageNum) ||
-            c.legal_basis.toLowerCase().includes(rawCitationLabel.toLowerCase()) ||
-            c.source.toLowerCase().includes(rawCitationLabel.toLowerCase())
-        ) || (citations && citations.length > 0 ? citations[0] : undefined);
-
-      const effectivePage = matchedCitation?.page || pageNum;
-      if (effectivePage && !pdfUrl.includes('#page=')) {
-        pdfUrl = `${pdfUrl.split('#')[0]}#page=${effectivePage}`;
-      }
-
-      return (
-        <button
-          key={i}
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            const citInn = (matchedCitation as any)?.inn || undefined;
-            const citSec = matchedCitation?.section || undefined;
-            const combinedSearch = citInn && citSec ? `${citInn} ${citSec}` : (citSec || citInn || undefined);
-            const kwList: string[] = [];
-            if (combinedSearch) kwList.push(combinedSearch);
-            if (citInn && !kwList.includes(citInn)) kwList.push(citInn);
-            if (citSec && !kwList.includes(citSec)) kwList.push(citSec);
-
-            onCitationClick?.({
-              title: matchedCitation?.legal_basis || matchedCitation?.source || rawCitationLabel,
-              url: matchedCitation?.url || pdfUrl,
-              page: effectivePage,
-              excerpt: matchedCitation?.excerpt,
-              legal_basis: matchedCitation?.legal_basis,
-              section: citSec,
-              inn: citInn,
-              searchTerm: combinedSearch,
-              keywords: kwList,
-              textFragmentUrl: (matchedCitation as any)?.text_fragment_url,
-            });
-          }}
-          className="inline-flex items-center gap-1 px-2 py-0.5 mx-1 rounded-md text-xs font-bold bg-amber-50 text-amber-900 hover:bg-amber-100 hover:text-amber-950 border border-amber-300 shadow-2xs transition-all cursor-pointer active:scale-95 align-baseline ring-1 ring-amber-400/40"
-          title={`Bấm để mở bản scan PDF đối chứng: ${rawCitationLabel}`}
-        >
-          <BookOpen className="w-3 h-3 text-amber-700" />
-          <span className="underline decoration-amber-400/80 underline-offset-2">{rawCitationLabel}</span>
-        </button>
-      );
+      return options.hideInlineSources ? null : <span key={i}>{part}</span>;
     }
 
     if (((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) && part.length >= 2 && !part.startsWith('**')) {
@@ -330,36 +272,7 @@ export const renderFormattedText = (
       continue;
     }
 
-    // 2. Thẻ Thông Số Định Danh Thuốc (Pill Badges Grid)
-    if (
-      line.includes('|') &&
-      (line.includes('**Hoạt chất') ||
-        line.includes('**Số đăng ký') ||
-        line.includes('**SĐK') ||
-        line.includes('**Dạng bào chế') ||
-        line.includes('**Hàm lượng') ||
-        line.includes('**Phân loại'))
-    ) {
-      const rawPills = line.replace(/^[•\-\*]\s*/, '').split('|');
-      const pillItems = rawPills.map((p) => p.trim()).filter(Boolean);
-      elements.push(
-        <div
-          key={`meta-pills-${i}`}
-          className="my-2.5 p-2 rounded-xl bg-teal-50/60 border border-teal-200/70 flex flex-wrap gap-2 text-xs sm:text-sm"
-        >
-          {pillItems.map((item, pIdx) => (
-            <div
-              key={pIdx}
-              className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-teal-200/80 shadow-3xs text-slate-800 text-xs sm:text-sm font-medium"
-            >
-              <span>{formatInlineMarkdown(item, options)}</span>
-            </div>
-          ))}
-        </div>
-      );
-      i++;
-      continue;
-    }
+
 
     // 3. Khung Bảng Markdown (| Tiêu đề 1 | Tiêu đề 2 |)
     if (
@@ -530,11 +443,10 @@ export const renderFormattedText = (
       continue;
     }
 
-    // 7.1. Dòng gắn nguồn y văn cuối cụm: Nguồn: [Dược thư tr.1118], Nguồn: [QĐ 5948]
+    // Source metadata is rendered from structured citations below the answer.
     const sourceMatch = line.match(/^[\*\(_\-]*\s*Nguồn(?:\s*tham\s*chiếu)?:?\s*(.+)$/i);
     if (sourceMatch) {
-      if (options.citations && options.citations.length > 0) {
-        // Đã có badge nguồn đối soát ở chân tin nhắn, loại bỏ hoàn toàn dòng text nguồn trùng lặp
+      if (options.hideInlineSources) {
         i++;
         continue;
       }
@@ -646,3 +558,5 @@ export const renderFormattedText = (
 
   return elements;
 };
+
+export const renderClinicalMarkdown = renderFormattedText;

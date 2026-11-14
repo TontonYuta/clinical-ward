@@ -12,6 +12,8 @@ from app.services.chatbot.sandwich_pipeline import (
     synthesize_persona_optimized_output,
     execute_clinical_sandwich_pipeline
 )
+from app.schemas.copilot import CopilotResponse
+from app.services.chatbot.copilot_orchestrator import validate_response_evidence_contract
 
 @pytest.mark.asyncio
 async def test_sandwich_nlu_parsing_styles():
@@ -91,3 +93,17 @@ async def test_sandwich_end_to_end_pipeline():
         assert len(resp.suggested_chips) >= 1
         assert "dược thư quốc gia" in resp.legal_basis.lower() or "cục qld" in resp.legal_basis.lower()
         assert len(resp.reply_text) > 80
+
+
+def test_sandwich_database_response_is_not_verified_without_attached_provenance():
+    response = CopilotResponse(
+        intent="MEDICATION_SAFETY_PROFILE", reply_text="clinical claim",
+        answer_type="medication_profile", source_status="grounded_sandwich_synthesis",
+        rag_grounded=True, confidence=1.0, citations=[{"document_id": "dav-registry"}], evidence=[],
+    )
+
+    validated = validate_response_evidence_contract(response)
+
+    assert validated.answer_type == "safe_abstention"
+    assert validated.rag_grounded is False
+    assert validated.confidence == 0.0

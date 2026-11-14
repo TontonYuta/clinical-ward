@@ -39,8 +39,8 @@ async function verifyNoDuplicateAndNoHdsd() {
     }
   });
 
-  console.log('1. Navigating to http://127.0.0.1:5173...');
-  await page.goto('http://127.0.0.1:5173', { waitUntil: 'domcontentloaded' });
+  console.log('1. Navigating to http://127.0.0.1:3000...');
+  await page.goto('http://127.0.0.1:3000', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1000);
 
   console.log('2. Opening Copilot...');
@@ -92,7 +92,7 @@ async function verifyNoDuplicateAndNoHdsd() {
   await page.evaluate((text) => {
     if (window.__activeRecognition && window.__activeRecognition.onresult) {
       window.__activeRecognition.onresult({
-        results: [[{ transcript: text }]]
+        results: [Object.assign([{ transcript: text }], { isFinal: true })]
       });
     }
   }, queryText);
@@ -106,7 +106,7 @@ async function verifyNoDuplicateAndNoHdsd() {
   await page.evaluate((text) => {
     if (window.__activeRecognition) {
       if (window.__activeRecognition.onresult) {
-        window.__activeRecognition.onresult({ results: [[{ transcript: text }]] });
+        window.__activeRecognition.onresult({ results: [Object.assign([{ transcript: text }], { isFinal: true })] });
       }
       if (window.__activeRecognition.onend) {
         window.__activeRecognition.onend();

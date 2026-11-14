@@ -3,6 +3,7 @@ from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.database import AsyncSessionLocal
 from app.models.registry import DavNationalDrug
+from app.models.registry import ClinicalDrugMonograph
 from sqlalchemy import select
 
 @pytest.mark.asyncio
@@ -17,6 +18,22 @@ async def test_clinical_drug_enrichment_and_empty_handling():
                 DavNationalDrug.clinical_monograph_id.is_not(None),
             ).limit(1)
             para_drug = (await session.execute(para_stmt)).scalar_one()
+            para_monograph = (await session.execute(
+                select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.inn == "Paracetamol")
+            )).scalar_one()
+            import json
+            section_pages = json.loads(para_monograph.section_pages or "{}")
+            assert section_pages["drug_interactions"]["page"] == 1120
+            from app.services.copilot_drug_citation_helper import build_drug_citation
+            interaction_citation = build_drug_citation(
+                para_drug, para_monograph, para_monograph.source, target_field="drug_interactions"
+            )
+            assert interaction_citation["page"] == 1120
+            assert "#page=1120" in interaction_citation["url"]
+            interaction_evidence = " ".join(section_pages["drug_interactions"]["evidence"]).casefold()
+            assert "isoniazid" in interaction_evidence
+            assert "paracetamol" in interaction_evidence
+            assert "parafin lỏng" not in interaction_evidence
             
             # 2. Unmatched herbal drug
             herbal_stmt = select(DavNationalDrug).where(DavNationalDrug.active_ingredient.like('%Cao đặc Nấm linh chi%')).limit(1)

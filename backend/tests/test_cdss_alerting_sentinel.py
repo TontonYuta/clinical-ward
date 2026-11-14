@@ -60,7 +60,7 @@ async def test_ddi_with_one_click_substitution():
         assert any(term in resp.cdss_alert.message.lower() for term in ("omeprazol", "clopidogrel", "kháng kết tập", "cyp2c19", "giảm hoạt tính"))
 
 @pytest.mark.asyncio
-async def test_multihop_clinical_case_cdss_alert():
+async def test_multihop_clinical_case_abstains_without_claim_level_evidence():
     """
     Multihop Case: Metformin + ClCr 24 mL/min is contraindicated.
     Spironolactone + Enalapril has severe hyperkalemia risk.
@@ -76,10 +76,10 @@ async def test_multihop_clinical_case_cdss_alert():
         )
         resp = await handle_copilot_chat(payload, DummyRequest(), db, session=session, history="")
         assert resp is not None
-        assert resp.cdss_alert is not None, "CDSS Alert must be present in multihop contraindicated case"
-        assert resp.cdss_alert.level == "critical"
-        assert resp.cdss_alert.substituteDrug is not None
-        assert resp.cdss_alert.substituteDrug in ("Linagliptin 5mg", "Hiệu chỉnh giảm 50% liều", "Pantoprazol 40mg")
+        assert resp.cdss_alert is None
+        assert resp.rag_grounded is False
+        assert resp.answer_type == "safe_abstention"
+        assert "Chưa thể xác minh" in resp.reply_text
 
 @pytest.mark.asyncio
 async def test_single_drug_no_false_cdss_alert():
@@ -146,3 +146,11 @@ async def test_out_of_scope_no_cdss_alert():
         resp = await handle_copilot_chat(payload, DummyRequest(), db, session=session, history="")
         assert resp is not None
         assert resp.cdss_alert is None, "Out-of-scope query must NOT have CDSS alert"
+
+
+def test_graph_expansion_does_not_create_class_interaction_from_unmentioned_neighbor():
+    from app.services.rag.sqlite_graph_service import ClinicalGraphTraversalService
+
+    result = ClinicalGraphTraversalService.traverse_clinical_subgraph(["aspirin", "paracetamol"])
+
+    assert result["active_class_ddis"] == []

@@ -38,7 +38,7 @@ const KEYS = {
 };
 
 // Tạm thời ẩn các tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng (chỉ giữ 4 tab)
-const VALID_TABS: DashboardTab[] = ['overview', 'cpoe', 'bhyt_audit', 'fefo'];
+const VALID_TABS: DashboardTab[] = ['overview', 'cpoe', 'bhyt_audit', 'fefo', 'documents'];
 const VALID_ROLES: UserRole[] = ['nurse', 'doctor', 'pharmacist', 'biomedical_engineer', 'director'];
 
 /**
@@ -182,16 +182,23 @@ export function saveAudioMuted(isMuted: boolean): void {
   } catch {}
 }
 
-export type AppFontScale = 'compact' | 'standard' | 'large';
-const VALID_FONT_SCALES: AppFontScale[] = ['compact', 'standard', 'large'];
+export type LegacyFontScale = 'compact' | 'standard' | 'large';
+export type AppFontScale = number | LegacyFontScale;
+const LEGACY_FONT_PIXELS: Record<LegacyFontScale, number> = { compact: 14.5, standard: 16, large: 17.5 };
 export function getInitialFontScale(): AppFontScale {
   try {
-    const saved = localStorage.getItem(KEYS.FONT_SCALE) as AppFontScale | null;
-    return saved && VALID_FONT_SCALES.includes(saved) ? saved : 'standard';
-  } catch { return 'standard'; }
+    const saved = localStorage.getItem(KEYS.FONT_SCALE);
+    if (!saved) return 16;
+    if (saved in LEGACY_FONT_PIXELS) return LEGACY_FONT_PIXELS[saved as LegacyFontScale];
+    const pixels = Number(saved);
+    return Number.isFinite(pixels) && pixels >= 12 && pixels <= 24 ? pixels : 16;
+  } catch { return 16; }
 }
 export function saveFontScale(scale: AppFontScale): void {
-  try { localStorage.setItem(KEYS.FONT_SCALE, scale); } catch {}
+  try {
+    const pixels = typeof scale === 'number' ? scale : LEGACY_FONT_PIXELS[scale];
+    localStorage.setItem(KEYS.FONT_SCALE, String(pixels));
+  } catch {}
 }
 
 /**

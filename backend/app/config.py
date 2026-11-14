@@ -47,6 +47,10 @@ class Settings(BaseModel):
     AUTH_TOKEN_TTL_SECONDS: int = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "3600"))
     DAV_CATALOG_DB_PATH: str = os.getenv("DAV_CATALOG_DB_PATH", "")
     DAV_CATALOG_RUN_ID: str = os.getenv("DAV_CATALOG_RUN_ID", "dav-canonical-20261030-v12")
+    WORKFLOW_POLICY_PATH: str = os.getenv(
+        "WORKFLOW_POLICY_PATH",
+        os.path.join(_BACKEND_DIR, "data", "knowledge_base", "workflow", "routing_policy.json"),
+    )
 
 settings = Settings()
 if settings.APP_ENV.strip().lower() in {"production", "prod"} and (

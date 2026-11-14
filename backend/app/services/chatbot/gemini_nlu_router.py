@@ -25,13 +25,14 @@ BẢNG 11 Ý ĐỊNH DUY NHẤT (INTENT TAXONOMY):
 2. CAPABILITY_OPENING: Người dùng mở đầu thiện chí muốn hỏi thông tin về thuốc, kiểm tra khả năng hỗ trợ tra cứu thuốc mà chưa nêu tên thuốc cụ thể (ví dụ: "tôi có thể hỏi bạn thông tin về thuốc được không", "tôi muốn hỏi về thuốc, bạn hỗ trợ tôi được không", "bạn giúp tôi tra cứu thuốc được không", "hỏi thông tin thuốc nhé").
 3. CONVERSATIONAL_FEEDBACK: Góp ý, phàn nàn, khen ngợi thái độ phản hồi (ví dụ: "Bạn trả lời bị cứng nhắc quá", "trả lời chưa linh hoạt", "câu trả lời rất hữu ích").
 4. MEDICATION_LOOKUP: Tra cứu thông tin, tóm tắt, chỉ định, chống chỉ định, liều dùng, tác dụng phụ, hiệu chỉnh liều suy thận/suy gan/nhi khoa, tồn kho của 1 thuốc cụ thể.
-5. MEDICATION_INTERACTION_CHECK: Tra cứu tương tác thuốc khi người dùng ĐÃ NÊU RÕ từ 2 loại thuốc/hoạt chất trở lên (ví dụ: "Warfarin + Aspirin", "uống Paracetamol cùng Ibuprofen được không").
+5. MEDICATION_INTERACTION_CHECK: Tra cứu tương tác khi yêu cầu nêu một thuốc cùng một thực thể tương tác thứ hai. Thực thể thứ hai có thể là tên thuốc hoặc khái niệm có cấu trúc trong CSDL (nhóm dược lý, enzym, chất vận chuyển). Với loại không phải thuốc, điền secondary_entity và secondary_entity_type; không ép thành tên thuốc cụ thể.
 6. MEDICATION_INTERACTION_CLARIFICATION: Người dùng hỏi về tương tác thuốc nhưng CHƯA NÊU ĐỦ 2 thuốc (ví dụ: "Tương tác thuốc thế nào?", "Cho tôi biết tương tác thuốc", "Thuốc này có tương tác không?").
 7. PATIENT_CASE_REASONING: Đánh giá ca bệnh phức tạp cá thể hóa (suy thận, người cao tuổi kèm đa bệnh lý, suy gan) cần tính toán ClCr, eGFR hoặc đánh giá phác đồ.
 8. PATIENT_MEDICATION_COUNSELING: Yêu cầu dặn dò bệnh nhân, hướng dẫn dễ hiểu, 3 ý chính cho người nhà, hướng dẫn uống thuốc trước/sau ăn.
 9. SPECIALTY_CLINICAL_PROTOCOL: Tra cứu phác đồ bệnh học chuyên khoa hoặc quy chế hành chính kho dược (sốc phản vệ TT 51, quy chế quản lý thuốc gây nghiện TT 20, chuỗi lạnh TT 36, đơn thuốc TT 26, hạn dùng FEFO, nợ morphin).
 10. CLINICAL_CASE_CLARIFICATION: Người dùng tự kể triệu chứng cá nhân ("tôi bị sốt đau đầu uống gì") cần hướng dẫn làm rõ ca bệnh.
 11. OUT_OF_SCOPE: Các câu hỏi ngoài phạm vi y tế. BẮT BUỘC gán "out_of_scope_type": "MATH_LOGIC" (nếu là toán học, phép tính "1+1=2", logic số học), "GENERAL_CHITCHAT" (nếu là hỏi tuổi bot, đố vui, "dạy tôi học toán", hỏi thăm ngoài lề), hoặc "DISALLOWED_DOMAIN" (thời tiết, chứng khoán, tiền ảo, bóng đá, giá tiền).
+12. answer_operation: Với mọi câu hỏi chuyên môn, phân loại "direct_lookup" nếu yêu cầu lấy/tóm tắt dữ kiện trực tiếp từ tài liệu; "evidence_synthesis" nếu cần so sánh, tổng hợp nhiều dữ kiện hoặc rút ra nhận định chung; "patient_specific_inference" nếu cần áp dụng dữ kiện vào ca bệnh cụ thể. Chỉ phân loại thao tác, không đánh giá mức độ đúng của câu trả lời.
 
 QUY TẮC BÓC TÁCH THÔNG SỐ LÂM SÀNG & AN TOÀN NHI KHOA / SUY THẬN:
 - TUỔI VÀ NHI KHOA (PEDIATRIC vs ADULT):
@@ -53,6 +54,11 @@ QUY TẮC BÓC TÁCH THÔNG SỐ LÂM SÀNG & AN TOÀN NHI KHOA / SUY THẬN:
   + "DETAILED": nếu yêu cầu "chi tiết", "đầy đủ", "toàn văn", "chuyên sâu".
   + "COUNSELING": nếu yêu cầu "dặn dò", "dễ hiểu", "3 ý", "cho người nhà".
   + "SUMMARY": mặc định.
+- Gán answer_operation dựa trên yêu cầu của câu hiện tại, không dựa riêng vào việc câu có tên nhiều thuốc hay nhiều trường thông tin. Câu liệt kê/tóm tắt nhiều dữ kiện theo yêu cầu vẫn là direct_lookup; câu hỏi "so sánh" hoặc yêu cầu kết luận tổng hợp là evidence_synthesis; đánh giá một người bệnh cụ thể là patient_specific_inference.
+- Khi yêu cầu đánh giá tương tác nêu một thuốc và một nhóm dược lý/enzym/chất vận chuyển thay vì thuốc thứ hai, vẫn chọn MEDICATION_INTERACTION_CHECK; giữ nguyên thực thể thứ hai trong secondary_entity và gán đúng secondary_entity_type. Chỉ yêu cầu làm rõ nếu không nhận diện được thực thể tương tác thứ hai.
+- TRƯỜNG ĐƯỢC YÊU CẦU: điền requested_fields với TOÀN BỘ các khía cạnh độc lập được hỏi trong câu hiện tại, dùng tên trường schema tương ứng; không chỉ chọn một trường đại diện. Nếu không yêu cầu trường cụ thể, trả mảng rỗng.
+- GIỚI HẠN PHẠM VI TRƯỜNG: requested_fields chỉ gồm các khía cạnh người dùng yêu cầu trực tiếp hoặc các khía cạnh được nêu rõ là cần so sánh/tổng hợp. Không thêm trường liên quan chỉ vì có thể hữu ích; thông tin bệnh nền làm bối cảnh không tự động biến thành yêu cầu trả lời mọi trường liên quan.
+- CHẾ ĐỘ HỘI THOẠI: Phân loại ý nghĩa câu hiện tại độc lập trước khi dùng lịch sử. Chọn "contextual_followup" chỉ khi hiểu câu hiện tại cần lượt trước; chọn "topic_shift" khi bắt đầu chủ đề mới; còn lại là "independent". Không kế thừa thuốc hoặc thực thể từ lượt trước cho câu độc lập.
 
 MẪU ĐỐI CHỨNG (FEW-SHOT EXAMPLES):
 - Input: "cho biết liều Paracetamol cho trẻ 15kg và thuốc này có tương tác với Ibuprofen không"
@@ -76,10 +82,59 @@ MẪU ĐỐI CHỨNG (FEW-SHOT EXAMPLES):
 """
 
 
-def _compute_cache_key(query: str, active_med: Optional[str] = None) -> str:
+def _compute_cache_key(
+    query: str, active_med: Optional[str] = None, history: str = ""
+) -> str:
     norm_q = re.sub(r"\s+", " ", query.strip().lower())
     norm_med = (active_med or "").strip().lower()
-    return hashlib.md5(f"{norm_q}__ctx:{norm_med}".encode("utf-8")).hexdigest()
+    norm_history = re.sub(r"\s+", " ", (history or "").strip())
+    history_digest = hashlib.sha256(norm_history.encode("utf-8")).hexdigest() if norm_history else ""
+    return hashlib.sha256(
+        f"{norm_q}__ctx:{norm_med}__history:{history_digest}".encode("utf-8")
+    ).hexdigest()
+
+
+def try_deterministic_fast_path(clean_q: str, active_med: Optional[str] = None) -> Optional[ClinicalNluExtraction]:
+    """Phân loại tức thì (< 5ms, 0 tokens) cho các truy vấn đơn giản, rõ ràng."""
+    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+    matcher = get_drug_lexical_matcher()
+    low_q = clean_q.lower().strip()
+
+    # 1. Chào hỏi, cảm ơn đơn giản
+    if any(low_q == g or low_q.startswith(g + " ") for g in ("xin chào", "chào", "hello", "hi", "cảm ơn", "cam on", "thanks")):
+        return fallback_nlu_heuristic(clean_q, active_med)
+
+    # 2. Cổng tra cứu Dược thư Quốc gia
+    if any(p in low_q for p in ("tra cứu dược thư", "cổng tra cứu", "dược thư quốc gia 2015", "tra cứu dđvn")):
+        res = fallback_nlu_heuristic(clean_q, active_med)
+        res.intent = "MEDICATION_LOOKUP_GUIDE"
+        return res
+
+    # 3. Tra cứu trực tiếp theo SĐK (Số đăng ký)
+    sdk = matcher.extract_sdk(clean_q)
+    if sdk and len(clean_q.split()) <= 4:
+        res = fallback_nlu_heuristic(clean_q, active_med)
+        res.primary_drug = sdk
+        res.intent = "MEDICATION_LOOKUP"
+        return res
+
+    # 4. Tra cứu thông tin thuốc đơn chất chuẩn mực
+    meds = matcher.extract_medications(clean_q)
+    if len(meds) == 1:
+        complex_signals = (
+            "suy thận", "creatinin", "độ thanh thải", "clcr", "kèm theo", "bệnh nền",
+            "dị ứng", "chuyển sang", "đổi sang", "tại sao", "cơ chế"
+        )
+        if not any(sig in low_q for sig in complex_signals):
+            simple_prefixes = (
+                "tra cứu thuốc", "thông tin thuốc", "thông tin", "thuốc",
+                "liều dùng", "chỉ định", "chống chỉ định", "tác dụng phụ",
+                "cách dùng", "thời điểm uống"
+            )
+            if len(clean_q.split()) <= 6 or any(low_q.startswith(p) for p in simple_prefixes):
+                return fallback_nlu_heuristic(clean_q, active_med)
+
+    return None
 
 
 async def parse_clinical_nlu(
@@ -94,24 +149,29 @@ async def parse_clinical_nlu(
     if not clean_q:
         return None
 
-    cache_key = _compute_cache_key(clean_q, active_med)
+    cache_key = _compute_cache_key(clean_q)
     now = time.time()
     cached = _NLU_CACHE.get(cache_key)
     if cached:
         result, ts = cached
         if now - ts < _CACHE_TTL_SEC:
-            return result
+            cached_result = result.model_copy(deep=True)
+            if (cached_result.conversation_mode == "contextual_followup" or cached_result.is_deictic_referent) and active_med:
+                cached_result.primary_drug = active_med.strip()
+                cached_result.is_deictic_referent = True
+                cached_result.conversation_mode = "contextual_followup"
+            return cached_result
         _NLU_CACHE.pop(cache_key, None)
+
+    # Fast-Path tức thì không tiêu tốn token (Zero-Token Serving)
+    fast_res = try_deterministic_fast_path(clean_q, active_med)
+    if fast_res:
+        _NLU_CACHE[cache_key] = (fast_res, now)
+        return fast_res
 
     # Xây dựng prompt kèm thẻ XML cách ly an toàn (OWASP LLM01 Prompt Injection Defense)
     context_block = ""
-    if active_med:
-        context_block += f"<last_active_medication>{active_med.strip()}</last_active_medication>\n"
-    if history:
-        context_block += f"<conversation_history>\n{history.strip()[:600]}\n</conversation_history>\n"
-
     user_prompt = (
-        f"{context_block}"
         f"<user_input>{clean_q}</user_input>\n"
         "Hãy trả về duy nhất chuỗi JSON phân tích cú pháp theo đúng schema:"
     )
@@ -140,6 +200,13 @@ async def parse_clinical_nlu(
         data = json.loads(cleaned)
         parsed = ClinicalNluExtraction(**data)
 
+        if (parsed.conversation_mode == "contextual_followup" or parsed.is_deictic_referent) and active_med:
+            if not parsed.primary_drug:
+                parsed.primary_drug = active_med.strip()
+            parsed.is_deictic_referent = True
+            parsed.conversation_mode = "contextual_followup"
+
+
         # Chuẩn hóa intent nếu người dùng yêu cầu Cổng tra cứu Dược thư Quốc gia
         if parsed.intent in ("CAPABILITY_OPENING", "GREETING_WELLBEING", "OUT_OF_SCOPE", "MEDICATION_LOOKUP"):
             low_check = clean_q.lower()
@@ -157,7 +224,7 @@ async def parse_clinical_nlu(
                     p_strip = p.strip()
                     if idx_p > 0 and prime and re.search(r'\b(?:thuốc\s+này|thuốc\s+đó|nó)\b', p_strip, re.I):
                         p_strip = re.sub(r'\b(?:thuốc\s+này|thuốc\s+đó|nó)\b', prime, p_strip, flags=re.I)
-                    if len(p_strip) >= 8:
+                    if len(p_strip) >= 8 and (not prime or prime.casefold() in p_strip.casefold()):
                         cand_parts.append(p_strip)
                 if len(cand_parts) >= 2:
                     parsed.sub_queries = cand_parts
@@ -173,7 +240,10 @@ async def parse_clinical_nlu(
         if len(_NLU_CACHE) >= _MAX_NLU_CACHE:
             oldest_key = min(_NLU_CACHE.keys(), key=lambda k: _NLU_CACHE[k][1])
             _NLU_CACHE.pop(oldest_key, None)
-        _NLU_CACHE[cache_key] = (parsed, now)
+        cache_value = parsed.model_copy(deep=True)
+        if cache_value.conversation_mode == "contextual_followup" or cache_value.is_deictic_referent:
+            cache_value.primary_drug = None
+        _NLU_CACHE[cache_key] = (cache_value, now)
 
         return parsed
     except Exception:
@@ -228,7 +298,7 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
             p_strip = p.strip()
             if idx_p > 0 and prime and re.search(r'\b(?:thuốc\s+này|thuốc\s+đó|nó)\b', p_strip, re.I):
                 p_strip = re.sub(r'\b(?:thuốc\s+này|thuốc\s+đó|nó)\b', prime, p_strip, flags=re.I)
-            if len(p_strip) >= 8:
+            if len(p_strip) >= 8 and (not prime or prime.casefold() in p_strip.casefold()):
                 cand_parts.append(p_strip)
         if len(cand_parts) >= 2:
             sub_queries = cand_parts
@@ -317,12 +387,21 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
             depth_preference=depth_pref
         )
 
-    if not meds and not is_sdk and any(w in low_q for w in ("dạy tôi", "bạn mấy tuổi", "bạn là ai", "ai tạo ra bạn", "kể chuyện", "làm thơ", "hát", "chơi game", "đố vui")):
+    is_identity_q = not meds and not is_sdk and (
+        any(w in low_q for w in (
+            "bạn là ai", "bạn là chatbot", "bạn là bot", "phải chatbot", "phải bot",
+            "bạn là gì", "bạn tên gì", "em là ai", "mày là ai", "em tên gì", "bạn mấy tuổi",
+            "ai tạo ra bạn", "giới thiệu bản thân", "kể chuyện", "làm thơ", "hát", "chơi game", "đố vui", "dạy tôi"
+        ))
+        or bool(re.search(r'\b(?:bạn|em|mày)\s+(?:là|ten\s+la)\s+(?:ai|gì|chatbot|bot|trợ lý|tro ly|con\s+bot)\b', low_q))
+    )
+    if is_identity_q:
         return ClinicalNluExtraction(
             intent="OUT_OF_SCOPE",
             out_of_scope_type="GENERAL_CHITCHAT",
+            conversation_mode="independent",
             user_sentiment="neutral",
-            confidence=0.98,
+            confidence=0.99,
             is_topic_shift=is_topic_shift,
             depth_preference=depth_pref
         )
@@ -341,12 +420,19 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
             depth_preference=depth_pref
         )
 
-    # 3. Chào hỏi
-    if any(low_q.startswith(g) for g in ("chào", "xin chào", "hello", "hi ", "cảm ơn", "cam on", "thanks")):
+    # 3. Chào hỏi & Kiểm tra Micro / Kết nối âm thanh (Voice Audio Check)
+    is_voice_test = not meds and any(phrase in low_q for phrase in (
+        "nghe tôi nói không", "nghe toi noi khong", "có nghe không", "co nghe khong",
+        "có nghe thấy không", "co nghe thay khong", "nghe rõ không", "nghe ro khong",
+        "bạn có đang nghe", "ban co dang nghe", "có đang nghe", "co dang nghe",
+        "test mic", "thử mic", "thu mic", "kiểm tra mic", "alo", "alo alo"
+    ))
+    if is_voice_test or any(low_q.startswith(g) for g in ("chào", "xin chào", "hello", "hi ", "cảm ơn", "cam on", "thanks")):
         return ClinicalNluExtraction(
             intent="GREETING_WELLBEING",
+            conversation_mode="independent",
             user_sentiment="positive",
-            confidence=0.95,
+            confidence=0.98,
             is_topic_shift=is_topic_shift,
             depth_preference=depth_pref
         )
@@ -472,8 +558,21 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
     else:
         req_field = "detailed_profile"
 
-    # 8. Kế thừa đại từ ("thuốc đó", "nó")
-    has_deictic = any(w in low_q for w in ("thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuoc do", "thuoc nay"))
+    # Preserve every explicitly detected monograph facet when the NLU API is
+    # unavailable. A single-drug multi-facet request stays one lookup.
+    from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
+    supported_fields = {
+        "administration_timing", "pediatric_dosage", "adult_dosage",
+        "contraindications", "adverse_effects", "drug_interactions",
+        "overdose_treatment", "indications", "ingredient",
+        "pregnancy_warning", "renal_adjustment", "hepatic_adjustment",
+        "alcohol_interaction", "food_interaction", "elderly_warning",
+        "stock_inquiry", "monitoring", "pharmacokinetics", "pharmacodynamics",
+    }
+    requested_fields = [name for name, _ in rank_clinical_intents(clean_q) if name in supported_fields]
+
+    # 8. Kế thừa đại từ ("thuốc đó", "nó") - Bắt buộc dùng regex word-boundary để không nhận nhầm từ "nói" thành "nó"
+    has_deictic = bool(re.search(r'\b(?:nó|thuốc\s+(?:đó|này|kia|vừa\s+nói)|thuoc\s+(?:do|nay|kia))\b', low_q))
     if has_deictic:
         target_med = active_med.strip() if active_med else None
         target_intent = "PATIENT_CASE_REASONING" if (is_renal_inquiry and target_med) else "MEDICATION_LOOKUP"
@@ -482,6 +581,7 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
             primary_drug=target_med,
             sub_queries=sub_queries,
             requested_field=req_field,
+            requested_fields=requested_fields,
             is_deictic_referent=True,
             is_topic_shift=False,
             depth_preference=depth_pref,
@@ -496,6 +596,20 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
 
     # 9. Tra cứu thuốc mặc định hoặc Ca bệnh lâm sàng
     target_drug = meds[0] if meds else None
+    if not target_drug and is_sdk:
+        sdk_m = matcher.extract_sdk(clean_q)
+        if not sdk_m:
+            raw_sdk = re.search(r'[A-Za-z]{2,3}-\d+-\d+', clean_q)
+            sdk_m = raw_sdk.group(0) if raw_sdk else None
+        target_drug = sdk_m
+
+    is_inherited = False
+    if not target_drug and active_med:
+        from app.services.chatbot.session_routing import FIELD_ONLY_TERMS
+        if any(term in low_q for term in FIELD_ONLY_TERMS) or has_deictic:
+            target_drug = active_med.strip()
+            is_inherited = True
+
     if is_renal_inquiry and target_drug:
         final_intent = "PATIENT_CASE_REASONING"
         final_drug = target_drug
@@ -511,6 +625,9 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
         primary_drug=final_drug,
         sub_queries=sub_queries,
         requested_field=req_field,
+        requested_fields=requested_fields,
+        conversation_mode="contextual_followup" if is_inherited else "independent",
+        is_deictic_referent=True if is_inherited else False,
         is_topic_shift=is_topic_shift,
         depth_preference=depth_pref,
         confidence=0.85,

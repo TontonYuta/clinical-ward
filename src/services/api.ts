@@ -1,9 +1,11 @@
 import type { RegistryPageResponse } from '../types/registry';
 import { loadOfflineRegistry, getOfflineCachedDrug } from '../components/Modals/NationalDrugRegistry/offlineRegistry';
 import { SmoothStreamBuffer } from '../utils/nlp/streamBuffer';
+import { consumeCopilotSse } from '../utils/nlp/sseParser';
 import { getCachedRegistryPage, saveCachedRegistryPage } from '../utils/storage/registryPageCache';
 
 import { getApiBaseUrl } from '../config/apiConfig';
+import type { KnowledgeDocument } from '../types/documents';
 
 /**
  * API Service connecting Frontend to Backend (Render / Local)
@@ -13,8 +15,52 @@ import { getApiBaseUrl } from '../config/apiConfig';
 export const API_BASE_URL = getApiBaseUrl();
 const ROOT_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 
+export interface ChatbotAvailability {
+  mode: 'online_ai' | 'local_only' | 'offline' | 'checking';
+  backend: 'available' | 'unavailable';
+  database: 'available' | 'unavailable';
+  vector_index: 'available' | 'unavailable';
+  provider: 'available' | 'unavailable' | 'not_configured' | 'unknown';
+  checked_at: string;
+}
+
+export async function fetchChatbotAvailability(): Promise<ChatbotAvailability> {
+  const response = await apiFetch(`${API_BASE_URL}/availability`, { method: 'GET', signal: AbortSignal.timeout(7000) });
+  if (!response.ok) throw new Error('Availability check failed');
+  return response.json();
+}
+
 function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   return fetch(input, { ...init, credentials: 'include' });
+}
+
+export async function getKnowledgeDocumentsApi(): Promise<KnowledgeDocument[]> {
+  const response = await apiFetch(`${API_BASE_URL}/admin/knowledge/documents`);
+  if (!response.ok) throw new Error('Không thể tải danh mục tài liệu');
+  const payload = await response.json();
+  return Array.isArray(payload.documents) ? payload.documents : [];
+}
+
+export async function uploadKnowledgeDocumentApi(input: {
+  file: File; title: string; legalBasis: string; category: string; editionYear: number;
+}): Promise<KnowledgeDocument> {
+  const body = new FormData();
+  body.set('file', input.file);
+  body.set('title', input.title);
+  body.set('legal_basis', input.legalBasis);
+  body.set('category', input.category);
+  body.set('edition_year', String(input.editionYear));
+  const response = await apiFetch(`${API_BASE_URL}/admin/knowledge/upload-pdf`, { method: 'POST', body });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || 'Không thể tải và lập chỉ mục tài liệu');
+  }
+  const result = await response.json();
+  return {
+    id: result.doc_id, title: result.title, legal_basis: result.legal_basis,
+    category: input.category, edition_year: input.editionYear, filename: result.filename,
+    public_url: result.public_url || `/api/v1/pdf/${encodeURIComponent(result.filename)}`, sha256: result.sha256, bytes: result.file_bytes,
+  };
 }
 
 export async function checkBackendHealth(): Promise<{ status: string; system: string; legal_compliance: string[] } | null> {
@@ -326,67 +372,31 @@ export async function chatCopilotApiStream(
       body: JSON.stringify(payload)
     });
   } catch {
-    // Fallback nếu mạng hoặc server không hỗ trợ SSE stream
-    return chatCopilotApi(query, userRole, userName, sessionId, imageBase64, imageMimeType);
+    throw new Error('Copilot backend unavailable');
   }
 
   if (!response.ok || !response.body) {
-    return chatCopilotApi(query, userRole, userName, sessionId, imageBase64, imageMimeType);
+    throw new Error('Copilot stream unavailable');
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let accumulatedText = '';
-  let finalResponseData: any = null;
-  let buffer = '';
+  const streamBody = response.body;
   const streamBuffer = onToken ? new SmoothStreamBuffer(onToken) : null;
 
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data: ')) continue;
-        const jsonStr = trimmed.slice(6);
-        try {
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.type === 'token') {
-            accumulatedText += parsed.content;
-            if (streamBuffer) {
-              streamBuffer.push(parsed.content);
-            } else {
-              onToken?.(parsed.content, accumulatedText);
-            }
-          } else if (parsed.type === 'done') {
-            finalResponseData = parsed.response;
-          }
-        } catch {
-          // bỏ qua chunk JSON chưa hoàn chỉnh
-        }
-      }
-    }
-
+    const finalResponseData = await consumeCopilotSse(streamBody, (token, currentFullText) => {
+      if (streamBuffer) streamBuffer.push(token);
+      else onToken?.(token, currentFullText);
+    });
     if (streamBuffer) {
       await streamBuffer.finish();
     }
+    return finalResponseData;
+  } catch (error) {
+    try { await streamBody.cancel(); } catch { /* stream may already be closed */ }
+    throw error;
   } finally {
     streamBuffer?.stop();
   }
-
-  if (finalResponseData) {
-    if (!finalResponseData.reply_text && accumulatedText) {
-      finalResponseData.reply_text = accumulatedText;
-    }
-    return finalResponseData;
-  }
-
-  return { reply_text: accumulatedText };
 }
 
 export type DdiPairApiResponse = {
@@ -418,7 +428,7 @@ export async function auditPrescriptionDdiApi(drugs: string[]) {
     body: JSON.stringify({ drugs })
   });
   if (!res.ok) throw new Error(`DDI audit backend error: ${res.status}`);
-  return res.json() as Promise<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string }>; has_contraindication: boolean; analyzed_pairs_count: number; normalized_drugs: Array<{ raw: string; inn: string; display: string }> }>;
+  return res.json() as Promise<{ pair_alerts: Array<{ severity: string; title: string; consequence: string; action: string; source: string; drug_a?: string; drug_b?: string }>; has_contraindication: boolean; analyzed_pairs_count: number; normalized_drugs: Array<{ raw: string; inn: string; display: string }>; unresolved_entities: string[] }>;
 }
 
 export async function queryPureRagApi(query: string, userRole: string = 'nurse', userName: string = 'ĐD. Lê Thị Thu', patientInfo?: any) {

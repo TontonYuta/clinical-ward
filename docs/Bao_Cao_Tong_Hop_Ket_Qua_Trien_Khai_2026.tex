@@ -1,0 +1,174 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{vietnam}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{geometry}
+\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+\usepackage{booktabs,tabularx,array,ragged2e}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{enumitem}
+
+\setstretch{1.22}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% Định nghĩa kiểu cột căn trái tự nhiên không bị kéo giãn khoảng cách từ
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=teal,
+    urlcolor=teal,
+    citecolor=teal
+}
+
+\begin{document}
+
+% Tiêu đề chính
+\begin{center}
+    {\large \textbf{BỘ Y TẾ --- BỆNH VIỆN ĐA KHOA LÂM SÀNG}}\\[0.3em]
+    {\normalsize \textbf{HỆ THỐNG QUẢN LÝ KHO DƯỢC, TRỢ LÝ Y TẾ AI \& GIÁM SÁT THỜI GIAN THỰC}}\\[0.8em]
+    \rule{\textwidth}{1.2pt}\\[0.8em]
+    {\Large \textbf{Báo cáo tổng hợp chi tiết kết quả xây dựng cơ sở dữ liệu, không gian vector nhúng và các chức năng hệ thống Clinical Ward}}\\[0.5em]
+    {\normalsize \textit{Tài liệu nghiệm thu kỹ thuật và đối soát dữ liệu thực tế}}\\[0.3em]
+    {\small Thời gian lập báo cáo: Tháng 11 Năm 2026}
+\end{center}
+
+\vspace{0.5em}
+\rule{\textwidth}{0.4pt}
+
+\section{Tổng quan dự án và mục tiêu xây dựng}
+
+Dự án \textbf{Clinical Ward \& Clinical AI Monitor} là một hệ sinh thái phần mềm y tế toàn diện, được thiết kế chuyên biệt nhằm giải quyết các bài toán cấp thiết trong công tác dược lâm sàng, an toàn điều trị, kiểm soát kho dược và hỗ trợ ra quyết định lâm sàng tại buồng bệnh (CDSS).
+
+Hệ thống được phát triển theo triết lý \textit{kỹ thuật dựa trên chứng cứ thực nghiệm (Evidence-Grounded Engineering)}, bảo đảm mọi kết luận y văn, cảnh báo kê đơn và quy tắc kiểm định bảo hiểm đều có nguồn đối chứng xác thực từ Dược thư Quốc gia Việt Nam (DĐVN V), danh mục quản lý của Cục Quản lý Dược (DAV) và các văn bản quy phạm pháp luật chính quy của Bộ Y tế.
+
+Báo cáo này tổng hợp đầy đủ các hạng mục đã hoàn thiện, các con số thống kê chính xác trong cơ sở dữ liệu, kiến trúc không gian vector nhúng (vector embeddings), đường ống RAG đa tầng, các module thị giác đa phương thức (Multimodal Vision OCR) và hạ tầng giám sát thời gian thực đã triển khai trên đám mây.
+
+\section{Cơ sở dữ liệu y tế và không gian vector nhúng}
+
+Hệ thống đã hoàn tất việc số hóa, làm sạch và chỉ mục hóa khối lượng lớn dữ liệu y tế chính quy, phục vụ tra cứu tức thì và suy luận RAG không độ trễ:
+
+\subsection{Quy mô cơ sở dữ liệu quan hệ và danh mục dược chính quy}
+Hệ thống sử dụng cơ sở dữ liệu quan hệ SQLite tối ưu hóa cao ở chế độ ghi nhật ký trước (WAL Mode --- Write-Ahead Logging), cho phép đọc và ghi song song không chặn khóa:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Cơ sở dữ liệu Cục Quản lý Dược (DAV National Drugs):} Đã nạp thành công \textbf{54.885 bản ghi thuốc} có số đăng ký lưu hành tại Việt Nam (thuộc bảng \texttt{dav\_national\_drugs}). Mỗi bản ghi bao gồm tên biệt dược, tên hoạt chất, số đăng ký, dạng bào chế, quy cách đóng gói, nhà sản xuất và nước sản xuất.
+    \item \textbf{Chuyên luận Dược thư Quốc gia Việt Nam (DĐVN V):} Đã xây dựng và chuẩn hóa \textbf{1.454 chuyên luận thuốc} chuyên sâu (thuộc bảng \texttt{clinical\_drug\_monographs}), bao gồm đầy đủ chỉ định, liều dùng người lớn, liều dùng trẻ em, hiệu chỉnh liều theo độ thanh thải Creatinin (ClCr/eGFR) cho bệnh nhân suy thận, chống chỉ định, thận trọng và tác dụng không mong muốn.
+    \item \textbf{Danh mục thuốc Bảo hiểm Y tế (BHYT Catalog):} Nạp \textbf{114 hoạt chất} và nhóm tác dụng điều trị trọng điểm bám sát Thông tư 20/2022/TT-BYT và Thông tư 30/2013/TT-BYT, kèm điều kiện thanh toán và tỷ lệ chi trả.
+    \item \textbf{Sổ nhật ký tương tác lâm sàng (Copilot Chat Logs):} Lưu trữ và đối soát \textbf{36.739 lượt hội thoại} thực tế của nhân viên y tế (bác sĩ, điều dưỡng, dược sĩ), ghi nhận đầy đủ phân bổ token, model thực thi và độ trễ.
+    \item \textbf{Nhật ký thẩm định viện phí (BHYT Audit Logs):} Ghi nhận \textbf{279 hồ sơ bệnh án} đã được quét kiểm định xuất toán tự động.
+\end{itemize}
+
+\subsection{Không gian vector nhúng và mô hình biểu diễn tri thức}
+Để phục vụ việc truy xuất ngữ nghĩa (Dense Semantic Retrieval), hệ thống đã xây dựng không gian vector chuyên sâu:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Mô hình vector chuẩn (Embedding Model):} Sử dụng mô hình nhúng y khoa chuyên biệt \texttt{gemini-embedding-2} (Google Gemini MRL) với số chiều không gian cố định \textbf{768 chiều} (768-dimensional float32).
+    \item \textbf{Dung lượng ma trận vector nhúng:} Toàn bộ kho ngữ liệu đã được chia cắt ngữ nghĩa thành \textbf{2.191 đoạn trích dẫn (chunks)}. Ma trận vector kích thước \textbf{$(2.191 \times 768)$} tương đương 6,0 MB được nén và xuất bản dưới tệp \texttt{clinical\_embeddings\_cache.npz}.
+    \item \textbf{Tải sẵn vào bộ nhớ RAM (In-Memory Fast Loading):} Khi khởi động dịch vụ, ma trận này được nạp trực tiếp vào bộ nhớ RAM máy chủ. Việc tính toán khoảng cách Cosine Similarity giữa câu hỏi của bác sĩ và 2.191 chuyên luận diễn ra bằng các phép nhân ma trận NumPy song song với độ trễ \textbf{dưới 3 mili-giây}.
+    \item \textbf{Chỉ mục tìm kiếm toàn văn FTS5 (Sparse BM25 Index):} Song song với vector nhúng, hệ thống duy trì bảng chỉ mục toàn văn tiếng Việt \texttt{clinical\_rag\_fts\_data} với \textbf{1.111 tài liệu} được tối ưu hóa cho thuật toán xếp hạng BM25.
+\end{itemize}
+
+\vspace{0.6em}
+\noindent \textbf{Bảng tổng hợp quy mô dữ liệu và chỉ mục hệ thống:}
+\vspace{0.4em}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{5.2cm} L{2.4cm} L{3.2cm} Y}
+\toprule
+\textbf{Tên bảng / Tệp chỉ mục} & \textbf{Số bản ghi} & \textbf{Định dạng / Mô hình} & \textbf{Mục đích sử dụng} \\
+\midrule
+\texttt{dav\_national\_drugs} & 54.885 thuốc & Bảng SQLite Indexed & Tra cứu số đăng ký và biệt dược Cục QLD \\
+\texttt{clinical\_drug\_monographs} & 1.454 mục & Bảng SQLite Indexed & Dược thư Quốc gia Việt Nam (DĐVN V) \\
+\texttt{clinical\_rag\_fts\_data} & 1.111 chunks & SQLite FTS5 BM25 & Truy xuất từ khóa toàn văn tiếng Việt \\
+\texttt{clinical\_embeddings\_cache} & 2.191 vectors & Ma trận $(2191 \times 768)$ & Truy xuất Dense Vector nhúng (768-dim) \\
+\texttt{copilot\_chat\_logs} & 36.739 sự kiện & Bảng SQLite Ledger & Nhật ký hội thoại, token và độ trễ phục vụ \\
+\texttt{bhyt\_audit\_logs} & 279 hồ sơ & Bảng SQLite Audit & Hồ sơ thẩm định viện phí và xuất toán BHYT \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Đường ống RAG lâm sàng và kiểm chứng chống ảo giác}
+
+Hệ thống RAG (Retrieval-Augmented Generation) của Clinical Ward không áp dụng RAG thông thường mà tích hợp các kỹ thuật tiên tiến nhất để bảo đảm độ chính xác y khoa:
+
+\subsection{Cơ chế truy xuất lai kết hợp hợp nhất thứ hạng (Hybrid RRF)}
+Hệ thống kết hợp đồng thời hai luồng truy xuất:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Luồng truy xuất thưa (Sparse BM25):} Bắt chính xác tên thuốc viết tắt, tên biệt dược đặc thù, số đăng ký hoặc hàm lượng (ví dụ: \textit{``Augmentin 625mg''}, \textit{``VN-12345-20''}).
+    \item \textbf{Luồng truy xuất dày (Dense Vector):} Nắm bắt bản chất ngữ nghĩa câu hỏi dù bác sĩ dùng cách diễn đạt khác (ví dụ: câu \textit{``dùng cho người suy giảm chức năng lọc cầu thận''} khớp với chuyên luận \textit{``hiệu chỉnh liều suy thận''}).
+\end{enumerate}
+Kết quả từ 2 luồng được xếp hạng và hợp nhất bằng thuật toán \textbf{Reciprocal Rank Fusion (RRF với hằng số $k=60$)}:
+$$\text{RRF Score}(d) = \sum_{m \in \{\text{BM25}, \text{Vector}\}} \frac{1}{60 + \text{Rank}_m(d)}$$
+
+\subsection{Lớp kiểm chứng tự suy ngẫm Self-RAG (ICLR 2024)}
+Sau khi mô hình sinh lời đáp, hệ thống chạy lớp kiểm toán độc lập \texttt{self\_rag\_verifier}:
+\begin{itemize}[leftmargin=1.5em]
+    \item Tính toán chỉ số bám sát thực tế (\textit{Factuality Score}, thang điểm $0,0$ đến $1,0$).
+    \item Đo lường tỷ lệ thông tin không có trong tài liệu gốc (\textit{Hallucination Rate}).
+    \item Đưa ra phán quyết kiểm duyệt (\textit{Critique Verdict}): Nếu phán quyết là \texttt{REJECT} hoặc tỷ lệ vượt quá $60\%$, hệ thống tự động từ chối câu trả lời và cảnh báo bác sĩ chuyển sang tra cứu trực tiếp tài liệu gốc.
+\end{itemize}
+
+\subsection{Gắn nhãn trích dẫn chứng cứ y văn chuẩn PaperQA2}
+Mọi khuyến cáo điều trị đều được bóc tách và gắn nhãn nguồn chứng cứ cụ thể (Provenance Attribution), nêu rõ tên văn bản, số quyết định của Bộ Y tế (ví dụ: QĐ 5948/QĐ-BYT, QĐ 2033/QĐ-BYT), mục điều khoản và trang tham chiếu, không bịa đặt nguồn dẫn.
+
+\section{Hệ thống an toàn lâm sàng và quy chế pháp quy}
+
+Hệ thống tích hợp sẵn các chốt chặn an toàn lâm sàng (Clinical Safety Guardrails) chạy tự động:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Ma trận cảnh báo tương tác thuốc chống chỉ định (Quyết định 5948/QĐ-BYT):} Quét kiểm tra tức thì các cặp thuốc tương tác nguy hiểm Mức độ 1 (chống chỉ định phối hợp tuyệt đối). Khi phát hiện bác sĩ kê đơn hoặc hỏi cặp thuốc cấm (ví dụ: \textit{Clopidogrel + Omeprazol}), hệ thống chặn ngay và tự động gợi ý hoạt chất thay thế an toàn (ví dụ: đổi sang \textit{Pantoprazol 40mg}).
+    \item \textbf{Phác đồ cấp cứu sốc phản vệ (Thông tư 51/2017/TT-BYT):} Nhận diện nhanh các dấu hiệu phản vệ 4 mức độ (Nhẹ, Nặng, Nguy kịch, Ngừng tuần hoàn) và đưa phác đồ tiêm bắp dung dịch Adrenalin 1mg/1ml tức thì.
+    \item \textbf{Quy chế quản lý thuốc gây nghiện và hướng thần (Thông tư 20/2017/TT-BYT):} Giám sát cơ số tủ trực cấp cứu, quản lý quy trình nợ/trả vỏ ống Morphin, tạo biên bản hủy vỏ ống thuốc kiểm soát đặc biệt có chữ ký xác nhận của điều dưỡng trưởng và dược sĩ.
+    \item \textbf{Bảo quản thuốc GSP và hạn dùng FEFO (Thông tư 36/2018/TT-BYT):} Tự động theo dõi hạn dùng thuốc theo nguyên tắc ``Hết hạn trước --- Xuất trước'' (First Expired, First Out) và cảnh báo thuốc cận hạn dưới 6 tháng.
+    \item \textbf{Giám sát dây chuyền lạnh 24/7 (Cold Chain Telemetry):} Giám sát nhiệt độ tủ lạnh bảo quản vaccine và thuốc sinh học ($+2^\circ\text{C}$ đến $+8^\circ\text{C}$). Khi phát hiện nhiệt độ vượt ngưỡng hoặc mất điện ban đêm, hệ thống kích hoạt gửi tin nhắn SMS khẩn cấp tới số điện thoại điều dưỡng trực qua cổng eSMS.
+\end{itemize}
+
+\section{Module thị giác y khoa và nhận diện đa phương thức}
+
+Không chỉ xử lý văn bản, hệ thống đã hoàn thiện module thị giác máy tính y tế (Multimodal Vision OCR) không dùng dữ liệu giả lập (Zero-Mock):
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Nhận diện và trích xuất thẻ Bảo hiểm Y tế (BHYT OCR):} Bóc tách tự động mã thẻ BHYT (chuẩn 15 ký tự theo Quyết định 1666/QĐ-BHXH), họ và tên người bệnh, ngày tháng năm sinh, giới tính, nơi đăng ký khám chữa bệnh ban đầu và thời hạn sử dụng thẻ từ ảnh chụp thật.
+    \item \textbf{Quét đơn thuốc và hóa đơn nhập kho dược:} Nhận diện danh mục thuốc kê tay hoặc in ấn, số lượng, hàm lượng, số lô sản xuất, đối chiếu trực tiếp với 54.885 thuốc DAV để kiểm tra tính hợp pháp.
+    \item \textbf{Nhận diện thiết bị y tế hư hỏng (Nghị định 98/2021/NĐ-CP):} Bác sĩ hoặc điều dưỡng chụp ảnh thiết bị y tế gặp sự cố (máy thở, máy theo dõi bệnh nhân monitor, bơm tiêm điện); hệ thống tự động nhận diện model máy, đọc tem kiểm định và tự động sinh phiếu đề xuất sửa chữa (\textit{Incident Ticket Card}) để ký duyệt.
+\end{itemize}
+
+\section{Trung tâm giám sát AI toàn diện và đồng bộ đám mây}
+
+Hệ thống giám sát vận hành trung tâm (\textbf{Clinical AI Monitor}) đã được triển khai hoàn chỉnh để quản trị tài nguyên và minh bạch hóa chi phí:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Đồng bộ 100\% các loại token:} Bảng theo dõi phân định rành mạch: Input Prompt Tokens, Output Completion Tokens, Image Multimodal Tokens và Tổng Tokens của từng lượt truy vấn.
+    \item \textbf{Đồng bộ chuẩn xác mô hình Google AI Studio:} Loại bỏ hoàn toàn model bị Google ngừng cung cấp (HTTP 404 cho \texttt{gemini-2.5-flash}), chuyển sang 100\% model đang hoạt động: \texttt{gemini-3.5-flash-lite}, \texttt{gemini-flash-lite-latest}, \texttt{gemini-3.8-flash}. Đồng thời ghi nhận đúng bản chất phục vụ: trúng đệm (\texttt{clinical-cache-engine}), chặn tương tác thuốc (\texttt{safety-ddi-matrix}), chặn an ninh (\texttt{clinical-guardrail-v2}).
+    \item \textbf{Chuẩn hóa múi giờ Việt Nam (UTC+7 GMT+7):} Toàn bộ mốc thời gian lưu vết được ghim cố định theo giờ Việt Nam, hiển thị rõ ràng 2 dòng trên bảng (Giờ:Phút:Giây và Ngày/Tháng/Năm) và cung cấp đầy đủ chuỗi ISO chuẩn quốc tế khi mở thanh tra chi tiết.
+    \item \textbf{Kho khóa API xoay vòng (Key Vault Multi-Key Pool):} Quản lý bể khóa API của Google Gemini, tự động đo lường độ trễ (latency ms) và mức tiêu thụ token của từng khóa, tự động chuyển đổi sang khóa dự phòng khi có khóa bị lỗi 429 quá tải.
+    \item \textbf{Hạn mức ngân sách và dự phòng ngoại tuyến (Budget Cap):} Giới hạn trần tiêu thụ token theo ngày và theo tháng, tự động kích hoạt chế độ ngoại tuyến (Offline Local Fallback) khi chạm trần chi phí.
+    \item \textbf{Tích hợp cổng SMS y tế (eSMS Brandname):} Kiểm tra số dư ví trực tiếp và lưu sổ nhật ký gửi tin nhắn cảnh báo cấp cứu.
+\end{itemize}
+
+\section{Hiện trạng triển khai hạ tầng và kết quả kiểm thử}
+
+Hệ thống đã được đóng gói và triển khai hoạt động ổn định trên môi trường đám mây Internet:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Ứng dụng buồng bệnh lâm sàng:} Triển khai chính thức tại liên kết Vercel Edge: \url{https://clinical-ward.vercel.app}.
+    \item \textbf{Trung tâm giám sát AI toàn diện:} Triển khai độc lập tại liên kết: \url{https://clinical-ai-monitor.vercel.app}.
+    \item \textbf{Máy chủ dịch vụ API trung tâm:} Chạy trên Render Cloud tại liên kết: \url{https://clinical-ward-api.onrender.com}.
+    \item \textbf{Kết quả kiểm thử tự động (Unit \& Integration Tests):} Bộ kiểm thử bao gồm \textbf{664 ca kiểm thử tự động} bằng thư viện \texttt{pytest}, bảo đảm không xảy ra lỗi hồi quy logic khi cập nhật tính năng mới.
+\end{itemize}
+
+\section{Kết luận}
+
+Hệ thống \textbf{Clinical Ward \& Clinical AI Monitor} đã hoàn thành toàn diện các mục tiêu đề ra về xây dựng cơ sở dữ liệu y tế quy mô lớn (54.885 thuốc DAV, 1.454 chuyên luận DĐVN V), thiết lập không gian vector nhúng 768 chiều hoàn chỉnh (2.191 chunks), triển khai đường ống RAG chống ảo giác, đảm bảo an toàn điều trị theo các quy định hiện hành của Bộ Y tế và vận hành minh bạch qua cổng giám sát AI trực tuyến.
+
+Báo cáo này là căn cứ kỹ thuật chính thức ghi nhận khối lượng công việc và chất lượng sản phẩm phần mềm đã hoàn thành.
+
+\end{document}

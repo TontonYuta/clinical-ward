@@ -24,7 +24,7 @@ export type BhytViolationCategory =
   | 'NOT_IN_BHYT_CATALOG'        // Thuốc ngoài danh mục Thông tư 20/2022
   | 'PARTIAL_PAYMENT_ALERT';     // Thuốc có tỷ lệ thanh toán 50% hoặc 30% (Đồng chi trả theo luật)
 
-export type BhytMissingField = 'quantity' | 'unitPrice' | 'dosage' | 'route' | 'daysSupply' | 'insuranceCardNumber' | 'patientAge' | 'primaryIcd10' | 'primaryDiagnosis';
+export type BhytMissingField = 'quantity' | 'unitPrice' | 'dosage' | 'route' | 'daysSupply' | 'insuranceCardNumber' | 'patientAge' | 'primaryIcd10' | 'primaryDiagnosis' | 'hospitalRank' | 'treatmentType' | 'catalogMatch';
 
 export interface BhytLegalRef {
   docCode: string;               // VD: '20/2022/TT-BYT'
@@ -85,8 +85,8 @@ export interface BhytPrescriptionPayload {
   patientName: string;
   patientAge: number;
   insuranceCardNumber: string;
-  hospitalRank: HospitalRank;
-  treatmentType: TreatmentType;
+  hospitalRank: HospitalRank | '';
+  treatmentType: TreatmentType | '';
   primaryIcd10: string;
   primaryDiagnosis: string;
   secondaryIcd10s?: string[];
@@ -96,8 +96,8 @@ export interface BhytPrescriptionPayload {
 export interface BhytAuditReport {
   status: BhytAuditSeverity;
   evaluatedAt: string;
-  hospitalRank: HospitalRank;
-  treatmentType: TreatmentType;
+  hospitalRank: HospitalRank | '';
+  treatmentType: TreatmentType | '';
   primaryIcd10: string;
   primaryDiagnosis: string;
   totalCostVnd: number;

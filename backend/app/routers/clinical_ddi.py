@@ -45,6 +45,8 @@ def audit_prescription_endpoint(req: AuditPrescriptionRequest):
             age=req.patient_context.age
         )
     report = evaluate_prescription(req.drugs, ctx)
+    severity_order = {"CONTRAINDICATED": 0, "MAJOR": 1, "MODERATE": 2, "SAFE_SYNERGY": 3}
+    ordered_alerts = sorted(report.pair_alerts, key=lambda alert: severity_order.get(alert.severity.value, 4))
     return {
         "total_drugs": report.total_drugs,
         "analyzed_pairs_count": report.analyzed_pairs_count,
@@ -68,7 +70,7 @@ def audit_prescription_endpoint(req: AuditPrescriptionRequest):
                 "source": a.legal_evidence,
                 "escalated": a.escalated_by_patient_context,
                 "escalation_reason": a.escalation_reason
-            } for a in report.pair_alerts
+            } for a in ordered_alerts
         ],
         "polypharmacy_alerts": [
             {
@@ -91,7 +93,8 @@ def audit_prescription_endpoint(req: AuditPrescriptionRequest):
                 "classes": e.atc_classes,
                 "risk_flags": e.risk_flags
             } for e in report.normalized_entities
-        ]
+        ],
+        "unresolved_entities": report.unresolved_entities
     }
 
 @router.post("/check-pair")
