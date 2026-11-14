@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 
 from app.routers import availability
 
@@ -74,6 +75,20 @@ async def test_availability_uses_configured_openai_compatible_provider(monkeypat
     import httpx
     monkeypatch.setattr(httpx, "AsyncClient", Client)
     assert await availability._check_provider() == "available"
+
+
+@pytest.mark.asyncio
+async def test_availability_reports_provider_check_as_wall_clock_time(monkeypatch):
+    checked = datetime.now(timezone.utc).timestamp()
+    monkeypatch.setattr(availability, "_provider_state", {"value": "available", "checked_at": checked, "checked_at_wall": checked})
+    monkeypatch.setattr(availability, "_check_provider", lambda: _async_value("available"))
+    monkeypatch.setattr(availability, "engine", type("Engine", (), {"connect": lambda self: _BrokenConnection()})())
+
+    status = await availability.get_availability()
+
+    assert status.provider_checked_at is not None
+    parsed = datetime.fromisoformat(status.provider_checked_at)
+    assert abs(parsed.timestamp() - checked) < 2
 
 
 class _BrokenConnection:

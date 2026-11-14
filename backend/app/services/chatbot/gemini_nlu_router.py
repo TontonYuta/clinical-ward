@@ -94,6 +94,44 @@ def _compute_cache_key(
     ).hexdigest()
 
 
+def _has_explicit_context_reference(query: str) -> bool:
+    """Return whether the current turn explicitly refers to prior context."""
+    low_q = re.sub(r"\s+", " ", (query or "").strip().casefold())
+    if not low_q:
+        return False
+    references = (
+        "thuốc này", "thuốc đó", "thuốc kia", "thuốc vừa nói", "thuốc trên",
+        "nó", "vừa rồi", "còn ", "thế còn", "còn về", "còn liều",
+    )
+    if any(ref in low_q for ref in references):
+        return True
+    try:
+        from app.services.chatbot.session_routing import FIELD_ONLY_TERMS
+        return any(term in low_q for term in FIELD_ONLY_TERMS)
+    except Exception:
+        return False
+
+
+def _normalize_contextual_result(
+    result: ClinicalNluExtraction, query: str, active_med: Optional[str]
+) -> ClinicalNluExtraction:
+    """Apply a current-turn evidence gate before inheriting session entities."""
+    normalized = result.model_copy(deep=True)
+    if not active_med:
+        return normalized
+    if not _has_explicit_context_reference(query):
+        normalized.primary_drug = None
+        normalized.is_deictic_referent = False
+        if normalized.conversation_mode == "contextual_followup":
+            normalized.conversation_mode = "independent"
+        return normalized
+    if (normalized.conversation_mode == "contextual_followup" or normalized.is_deictic_referent) and not normalized.primary_drug:
+        normalized.primary_drug = active_med.strip()
+        normalized.is_deictic_referent = True
+        normalized.conversation_mode = "contextual_followup"
+    return normalized
+
+
 def try_deterministic_fast_path(clean_q: str, active_med: Optional[str] = None) -> Optional[ClinicalNluExtraction]:
     """Phân loại tức thì (< 5ms, 0 tokens) cho các truy vấn đơn giản, rõ ràng."""
     from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
@@ -155,12 +193,7 @@ async def parse_clinical_nlu(
     if cached:
         result, ts = cached
         if now - ts < _CACHE_TTL_SEC:
-            cached_result = result.model_copy(deep=True)
-            if (cached_result.conversation_mode == "contextual_followup" or cached_result.is_deictic_referent) and active_med:
-                cached_result.primary_drug = active_med.strip()
-                cached_result.is_deictic_referent = True
-                cached_result.conversation_mode = "contextual_followup"
-            return cached_result
+            return _normalize_contextual_result(result, clean_q, active_med)
         _NLU_CACHE.pop(cache_key, None)
 
     # Fast-Path tức thì không tiêu tốn token (Zero-Token Serving)
@@ -200,11 +233,7 @@ async def parse_clinical_nlu(
         data = json.loads(cleaned)
         parsed = ClinicalNluExtraction(**data)
 
-        if (parsed.conversation_mode == "contextual_followup" or parsed.is_deictic_referent) and active_med:
-            if not parsed.primary_drug:
-                parsed.primary_drug = active_med.strip()
-            parsed.is_deictic_referent = True
-            parsed.conversation_mode = "contextual_followup"
+        parsed = _normalize_contextual_result(parsed, clean_q, active_med)
 
 
         # Chuẩn hóa intent nếu người dùng yêu cầu Cổng tra cứu Dược thư Quốc gia

@@ -11,7 +11,7 @@ from app.database import engine
 from app.schemas.availability import AvailabilityResponse
 
 router = APIRouter(prefix="/availability", tags=["Availability"])
-_provider_state = {"value": "unknown", "checked_at": 0.0}
+_provider_state = {"value": "unknown", "checked_at": 0.0, "checked_at_wall": 0.0}
 _provider_lock: asyncio.Lock | None = None
 _PROVIDER_CACHE_SECONDS = 60.0
 _PROVIDER_TIMEOUT_SECONDS = 4.0
@@ -41,7 +41,7 @@ async def _check_provider() -> str:
                     async with httpx.AsyncClient(timeout=_PROVIDER_TIMEOUT_SECONDS) as client:
                         response = await client.get(f"{base_url}/models", headers=headers)
                     state = "available" if response.status_code == 200 else "unavailable"
-                _provider_state.update(value=state, checked_at=time.monotonic())
+                _provider_state.update(value=state, checked_at=time.monotonic(), checked_at_wall=time.time())
                 return state
             if provider in {"offline", "none", "disable", "disabled"}:
                 state = "not_configured"
@@ -58,7 +58,7 @@ async def _check_provider() -> str:
                 state = "available" if response.status_code == 200 else "unavailable"
         except Exception:
             state = "unavailable" if state != "not_configured" else "unknown"
-        _provider_state.update(value=state, checked_at=time.monotonic())
+        _provider_state.update(value=state, checked_at=time.monotonic(), checked_at_wall=time.time())
         return state
 
 
@@ -117,5 +117,7 @@ async def get_availability() -> AvailabilityResponse:
     return AvailabilityResponse(
         mode=mode, backend=backend_state, database=db_state, vector_index=vector_state,
         provider=provider_state, checked_at=datetime.now(timezone.utc).isoformat(),
-        provider_checked_at=datetime.fromtimestamp(_provider_state["checked_at"], timezone.utc).isoformat() if _provider_state["checked_at"] else None,
+        provider_checked_at=datetime.fromtimestamp(
+            _provider_state.get("checked_at_wall", 0.0), timezone.utc
+        ).isoformat() if _provider_state.get("checked_at_wall", 0.0) else None,
     )

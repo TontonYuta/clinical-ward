@@ -251,3 +251,50 @@ def test_fallback_keeps_single_medication_question_with_compound_facets_intact()
 
     assert result.sub_queries == []
     assert set(result.requested_fields) == {"pharmacokinetics", "adult_dosage"}
+
+@pytest.mark.asyncio
+async def test_contextless_turn_does_not_inherit_active_medication(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    nlu._NLU_CACHE.clear()
+    monkeypatch.setattr(nlu.settings, "GEMINI_API_KEY", "test-api-key-value")
+
+    async def classify_unanchored_turn(**kwargs):
+        return (
+            '{"intent":"MEDICATION_LOOKUP","conversation_mode":"contextual_followup",'
+            '"primary_drug":null,"is_deictic_referent":true,"requested_field":null,"confidence":0.99}'
+        )
+
+    monkeypatch.setattr("app.services.llm_provider.query_clinical_llm", classify_unanchored_turn)
+    result = await nlu.parse_clinical_nlu(
+        "dùng bạn - tôi", history="Lượt trước hỏi liều Paracetamol", active_med="Paracetamol"
+    )
+
+    assert result is not None
+    assert result.primary_drug is None
+    assert result.is_deictic_referent is False
+    assert result.conversation_mode == "independent"
+
+
+@pytest.mark.asyncio
+async def test_explicit_new_drug_is_preserved_when_session_has_another_drug(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    nlu._NLU_CACHE.clear()
+    monkeypatch.setattr(nlu.settings, "GEMINI_API_KEY", "test-api-key-value")
+
+    async def classify_new_drug(**kwargs):
+        return (
+            '{"intent":"MEDICATION_LOOKUP","conversation_mode":"independent",'
+            '"primary_drug":"Ibuprofen","is_deictic_referent":false,'
+            '"requested_field":"dosage","confidence":0.99}'
+        )
+
+    monkeypatch.setattr("app.services.llm_provider.query_clinical_llm", classify_new_drug)
+    result = await nlu.parse_clinical_nlu(
+        "Liều Ibuprofen dùng thế nào?", active_med="Paracetamol"
+    )
+
+    assert result is not None
+    assert result.primary_drug == "Ibuprofen"
+    assert result.is_deictic_referent is False
