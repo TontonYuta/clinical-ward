@@ -298,3 +298,10 @@ async def test_explicit_new_drug_is_preserved_when_session_has_another_drug(monk
     assert result is not None
     assert result.primary_drug == "Ibuprofen"
     assert result.is_deictic_referent is False
+
+
+def test_context_reference_gate_rejects_unrelated_phrase():
+    from app.services.chatbot.gemini_nlu_router import _has_explicit_context_reference
+
+    assert _has_explicit_context_reference("dùng bạn - tôi") is False
+    assert _has_explicit_context_reference("còn liều dùng thuốc đó thì sao") is True

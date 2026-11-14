@@ -559,8 +559,10 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         ))
         from app.services.chatbot.fsm_router import has_explicit_new_medication
         has_new_med = has_explicit_new_medication(lower_query, session.active_medication_name)
+        from app.services.chatbot.gemini_nlu_router import _has_explicit_context_reference
+        has_context_reference = _has_explicit_context_reference(query)
 
-        if not is_legal_or_regulatory and not has_new_med:
+        if not is_legal_or_regulatory and not has_new_med and has_context_reference:
             from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
             from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
             from app.services.chatbot.adaptive_clinical_synthesizer import synthesize_adaptive_clinical_response
