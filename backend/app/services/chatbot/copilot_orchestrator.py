@@ -281,7 +281,38 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         # An independent turn must not inherit the previous medication merely
         # because the session still has an active slot.
         from app.services.chatbot.session_routing import FIELD_ONLY_TERMS
+        from app.services.chatbot.gemini_nlu_router import _has_explicit_context_reference
         is_field_inquiry = bool(session.active_medication_name and any(term in lower_query for term in FIELD_ONLY_TERMS))
+        query_has_medication_entity = bool(
+            get_drug_lexical_matcher().extract_medications(query)
+            or resolve_registered_medications(query)
+            or find_matched_med(query.lower())
+        )
+        has_session_reference = bool(
+            session.active_medication_name
+            and _has_explicit_context_reference(query)
+            and (
+                is_field_inquiry
+                or getattr(nlu_res, "conversation_mode", "independent") == "contextual_followup"
+                or getattr(nlu_res, "is_deictic_referent", False)
+            )
+        )
+        if (
+            session.active_medication_name
+            and not query_has_medication_entity
+            and not has_session_reference
+            and getattr(nlu_res, "intent", "") in {
+                "MEDICATION_LOOKUP", "MEDICATION_INTERACTION_CHECK",
+                "MEDICATION_INTERACTION_CLARIFICATION", "PATIENT_CASE_REASONING",
+                "PATIENT_MEDICATION_COUNSELING",
+            }
+        ):
+            from app.services.chatbot.conversational_steering import handle_gentle_chitchat_steering
+            session.set_active_medication(name="", ingredient="", sdk="")
+            return handle_gentle_chitchat_steering(
+                query, out_of_scope_type="GENERAL_CHITCHAT", user_name=user_name,
+                user_role=user_role, session_id=session_id
+            ).model_copy(update={"source_status": "unanchored_turn"})
         if (
             getattr(nlu_res, "conversation_mode", "independent") == "independent"
             and not getattr(nlu_res, "is_deictic_referent", False)
@@ -344,6 +375,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 or resolve_registered_medications(query)
                 or find_matched_med(query.lower())
             )
+            if nlu_res.primary_drug and not current_medication_supported and not has_contextual_entity:
+                return CopilotResponse(
+                    intent="MEDICATION_LOOKUP_CLARIFICATION",
+                    reply_text="Chưa xác định được thuốc cần tra cứu. Vui lòng nêu tên thuốc, hoạt chất hoặc số đăng ký.",
+                    answer_type="clarification", source_status="unsupported_medication_entity",
+                    confidence=1.0, session_id=session_id,
+                )
             if not current_medication_supported:
                 return CopilotResponse(
                     intent="MEDICATION_LOOKUP_CLARIFICATION",

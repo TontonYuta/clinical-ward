@@ -228,7 +228,7 @@ async def test_unanchored_medication_intent_fails_closed_before_lookup(monkeypat
         conversation_mode="independent", is_deictic_referent=False,
     )
     monkeypatch.setattr("app.services.chatbot.gemini_nlu_router.parse_clinical_nlu", AsyncMock(return_value=nlu))
-    lookup = AsyncMock(side_effect=AssertionError("unanchored query reached medication lookup"))
+    lookup = AsyncMock(side_effect=AssertionError("conversational query reached medication lookup"))
     monkeypatch.setattr(copilot_orchestrator, "lookup_drug_authoritative", lookup)
     request = Request({"type": "http", "method": "POST", "path": "/chat", "headers": [],
                        "query_string": b"", "server": ("test", 80), "client": ("test", 1), "scheme": "http"})
@@ -238,11 +238,14 @@ async def test_unanchored_medication_intent_fails_closed_before_lookup(monkeypat
                               "sandwich", "specialty", "clarification", "multi_intent"},
     )))
 
+    from app.services.session_context import SessionState
+    session = SessionState("test-session", "test", "doctor")
+    session.set_active_medication("Paracetamol")
     response = await copilot_orchestrator._handle_copilot_chat_core(
         CopilotQuery(query="dùng bạn - tôi"), request, None,
-        session=SimpleNamespace(active_medication_name="Paracetamol"), history="",
+        session=session, history="",
     )
 
-    assert response.answer_type == "clarification"
-    assert response.source_status == "missing_medication_entity"
+    assert response.answer_type == "safe_abstention"
+    assert response.source_status == "unanchored_turn"
     lookup.assert_not_awaited()
