@@ -14,6 +14,7 @@ import {
   DrugResolutionResult,
   DrugBatchResolutionResponse
 } from '../../types/bhyt';
+export type { DrugResolutionResult } from '../../types/bhyt';
 import {
   searchBhytRules,
   BhytDrugRule,
@@ -98,7 +99,7 @@ export const bhytApi = {
           requires_consultation: r.requiresConsultation,
           max_outpatient_days: 30,
           approved_icd10_prefixes: r.approvedIcd10Prefixes,
-          forbidden_icd10_prefixes: r.forbiddenIcd10Prefixes,
+          forbidden_icd10_prefixes: r.contraindicatedIcd10Prefixes,
           special_conditions: r.specialConditions,
           pdf_page: r.pdfPage
         }))
@@ -127,7 +128,7 @@ export const bhytApi = {
           drug_name: it.drugName,
           active_ingredient: it.activeIngredient || '',
           dosage: it.dosage || '',
-          route: it.route || 'Uống',
+          route: it.route || '',
           quantity: it.quantity,
           days_supply: it.daysSupply,
           unit_price: it.unitPrice,
@@ -151,10 +152,12 @@ export const bhytApi = {
         primaryDiagnosis: res.primary_diagnosis,
         totalCostVnd: res.total_cost_vnd,
         atRiskCostVnd: res.at_risk_cost_vnd,
+        patientCoPayCostVnd: res.patient_co_pay_cost_vnd ?? 0,
         itemsCount: res.items_count,
         passCount: res.pass_count,
         warningCount: res.warning_count,
         rejectCount: res.reject_count,
+        missingFields: res.missing_fields || [],
         violations: res.violations.map((v: any) => ({
           id: v.id,
           drugCode: v.drug_code,
@@ -281,15 +284,15 @@ export const bhytApi = {
         provider: 'offline_fallback',
         model_used: 'client_spatial_parser',
         prescription: {
-          prescription_id: 'RX-FALLBACK-OFFLINE',
-          patient_name: 'Bệnh nhân BHYT',
-          patient_age: 50,
-          insurance_card_number: 'GD4790000000000',
-          hospital_rank: 'HANG_I',
-          treatment_type: 'NGOAI_TRU',
-          primary_icd10: 'I10',
-          primary_diagnosis: 'Tăng huyết áp',
-          secondary_icd10s: [],
+          prescriptionId: 'RX-FALLBACK-OFFLINE',
+          patientName: 'Bệnh nhân BHYT',
+          patientAge: 50,
+          insuranceCardNumber: '',
+          hospitalRank: 'HANG_I',
+          treatmentType: 'NGOAI_TRU',
+          primaryIcd10: '',
+          primaryDiagnosis: '',
+          secondaryIcd10s: [],
           items: []
         },
         resolved_count: 0,

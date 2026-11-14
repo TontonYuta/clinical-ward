@@ -58,9 +58,9 @@ export function parseQd130Xml(xmlContent: string): Partial<BhytPrescriptionPaylo
     }
 
     // Lấy thông tin chẩn đoán từ bảng tổng hợp nếu có
-    const maBenh = /<MA_BENH>(.*?)<\/MA_BENH>/i.exec(xmlContent)?.[1] || 'I10';
-    const tenBenh = /<TEN_BENH>(.*?)<\/TEN_BENH>/i.exec(xmlContent)?.[1] || 'Tăng huyết áp nguyên phát';
-    const maThe = /<MA_THE_BHYT>(.*?)<\/MA_THE_BHYT>/i.exec(xmlContent)?.[1] || 'DN4791234567890';
+    const maBenh = /<MA_BENH>(.*?)<\/MA_BENH>/i.exec(xmlContent)?.[1]?.trim() || '';
+    const tenBenh = /<TEN_BENH>(.*?)<\/TEN_BENH>/i.exec(xmlContent)?.[1]?.trim() || '';
+    const maThe = /<MA_THE_BHYT>(.*?)<\/MA_THE_BHYT>/i.exec(xmlContent)?.[1]?.trim() || '';
 
     return {
       primaryIcd10: maBenh,
@@ -95,7 +95,7 @@ export function generateQd130XmlFromPayload(payload: BhytPrescriptionPayload): s
   const maLk = payload.invoiceNumber || payload.prescriptionId || `LK-${Date.now().toString().slice(-6)}`;
   const maThe = payload.insuranceCardNumber || 'TE1790000000000';
   const hoTen = payload.patientName || (isInvoice ? (payload.sellerName || 'Đơn vị mua hàng') : 'Bệnh nhân BHYT');
-  const maBenh = payload.primaryIcd10 || (isInvoice ? 'Z00' : 'I10');
+  const maBenh = payload.primaryIcd10 || '';
   const tenBenh = payload.primaryDiagnosis || (isInvoice ? 'Bảng kê thuốc / Hóa đơn dược phẩm' : 'Khám chữa bệnh');
 
   const xmlItems = (payload.items || []).map((it, idx) => {
@@ -444,8 +444,8 @@ export const SAMPLE_PRESCRIPTIONS: Record<string, BhytPrescriptionPayload> = {
  */
 export function parsePrescriptionText(
   rawText: string,
-  fallbackRank: HospitalRank = 'HANG_III',
-  fallbackType: TreatmentType = 'NGOAI_TRU'
+  fallbackRank: HospitalRank | '' = '',
+  fallbackType: TreatmentType | '' = ''
 ): BhytPrescriptionPayload {
   const cleanText = (rawText || '').trim();
 
@@ -460,7 +460,7 @@ export function parsePrescriptionText(
 
   // 3. Tên bệnh nhân & tuổi
   const nameMatch = /(?:họ và tên|họ tên|bệnh nhân|bn)[:\s]*([^\n,–-]+)/i.exec(cleanText);
-  const patientName = nameMatch ? nameMatch[1].trim() : 'Bệnh nhân';
+  const patientName = nameMatch ? nameMatch[1].trim() : '';
 
   const ageMatch = /(?:tuổi|sinh năm|năm sinh)[:\s]*(\d{1,4})/i.exec(cleanText);
   let patientAge = 0;
@@ -500,6 +500,10 @@ export function parsePrescriptionText(
     else if (/tiêm\s*bắp|tiêm/i.test(trimmed)) route = 'Tiêm';
     else if (/nhỏ\s*mắt|tra\s*mắt/i.test(trimmed)) route = 'Nhỏ mắt';
     else if (/bôi|ngoài\s*da/i.test(trimmed)) route = 'Bôi ngoài da';
+    else if (/\b(?:uống|đường uống|oral)\b/i.test(trimmed)) route = 'Uống';
+    else if (/\b(?:hít|khí dung|đường hô hấp)\b/i.test(trimmed)) route = 'Hít';
+    else if (/\b(?:đặt trực tràng|đường trực tràng)\b/i.test(trimmed)) route = 'Đặt trực tràng';
+    else if (/\b(?:xịt mũi|đường mũi)\b/i.test(trimmed)) route = 'Xịt mũi';
 
     // Tách tên thuốc sạch
     let drugName = trimmed
@@ -513,7 +517,7 @@ export function parsePrescriptionText(
     const rule = findBhytRule(drugName);
     items.push({
       id: `rx-ext-${idx}`,
-      drugCode: rule?.atcGroup || `MED-${idx}`,
+      drugCode: rule?.atcGroup,
       drugName,
       activeIngredient: rule?.activeIngredient || '',
       dosage,
@@ -521,7 +525,7 @@ export function parsePrescriptionText(
       quantity,
       daysSupply: undefined,
       unitPrice: 0,
-      instructions: 'Theo chỉ định của bác sĩ',
+      instructions: '',
       hasConsultationForm: undefined
     });
     idx++;
@@ -560,8 +564,8 @@ export function extractPrescriptionFromDocument(
     patientName: '',
     patientAge: 0,
     insuranceCardNumber: '',
-    hospitalRank: 'HANG_III',
-    treatmentType: 'NGOAI_TRU',
+    hospitalRank: '',
+    treatmentType: '',
     primaryIcd10: '',
     primaryDiagnosis: '',
     secondaryIcd10s: [],

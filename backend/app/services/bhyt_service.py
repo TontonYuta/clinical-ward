@@ -166,6 +166,15 @@ class BhytAuditService:
         pass_count = 0
         warning_count = 0
         reject_count = 0
+        missing_fields: List[str] = []
+        if not payload.primary_icd10:
+            missing_fields.append("primary_icd10")
+        if not payload.primary_diagnosis:
+            missing_fields.append("primary_diagnosis")
+        if not payload.hospital_rank:
+            missing_fields.append("hospital_rank")
+        if not payload.treatment_type:
+            missing_fields.append("treatment_type")
 
         # Tra cứu quy tắc cho từng thuốc
         matched_rules: Dict[str, Optional[sqlite3.Row]] = {}
@@ -378,7 +387,7 @@ class BhytAuditService:
         all_icd10s = [c.strip().upper() for c in all_icd10s if c and c.strip()]
 
         # Nếu là Hóa đơn mua sắm / Bảng kê xuất kho không gắn mã ca bệnh -> Bỏ qua ràng buộc ICD-10 để tránh phạt sai
-        if not (is_invoice_doc and not all_icd10s):
+        if all_icd10s:
             for item in payload.items:
                 rule = matched_rules.get(item.id)
                 if rule:
@@ -465,7 +474,15 @@ class BhytAuditService:
         violated_item_ids = {v.id.split('-')[-1] for v in violations if v.severity == 'REJECT'}
         pass_count = len(payload.items) - len(violated_item_ids)
 
-        status = "REJECT" if reject_count > 0 else ("WARNING" if warning_count > 0 else "PASS")
+        if missing_fields:
+            violations.append(BhytViolationItemSchema(
+                id="VIO-MISSING-DATA", drug_code="", drug_name="Toàn bộ đơn thuốc", active_ingredient="",
+                severity="WARNING", category="MISSING_DATA", title="Chưa đủ dữ liệu để kết luận",
+                detail=f"Thiếu trường: {', '.join(missing_fields)}. Không kết luận vi phạm từ trường đang thiếu.",
+                legal_ref=BhytLegalRefSchema(doc_code="", doc_title="", section="", page_number=0, local_pdf_path=""),
+                rejection_risk_vnd=0.0, action="Bổ sung thông tin gốc rồi thực hiện giám định lại."
+            ))
+        status = "REJECT" if reject_count > 0 else ("WARNING" if warning_count > 0 else ("NEEDS_REVIEW" if missing_fields else "PASS"))
 
         # Lưu log vào SQLite
         self.save_audit_log(payload, status, total_cost, at_risk_cost, violations)
@@ -484,6 +501,7 @@ class BhytAuditService:
             warning_count=warning_count,
             reject_count=reject_count,
             violations=violations
+            ,missing_fields=missing_fields
         )
 
     def save_audit_log(

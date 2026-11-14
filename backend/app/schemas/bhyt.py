@@ -41,13 +41,13 @@ class BhytPrescriptionPayload(BaseModel):
     seller_name: Optional[str] = ""
     seller_tax_id: Optional[str] = ""
     invoice_number: Optional[str] = ""
-    patient_name: str = "Bệnh nhân"
-    patient_age: int = 50
-    insurance_card_number: str = "GD4790000000000"
-    hospital_rank: str = "HANG_I"
-    treatment_type: str = "NGOAI_TRU"
-    primary_icd10: str = "I10"
-    primary_diagnosis: str = "Tăng huyết áp"
+    patient_name: str = ""
+    patient_age: int = 0
+    insurance_card_number: str = ""
+    hospital_rank: str = ""
+    treatment_type: str = ""
+    primary_icd10: str = ""
+    primary_diagnosis: str = ""
     secondary_icd10s: List[str] = Field(default_factory=list)
     items: List[BhytPrescriptionItemPayload] = Field(default_factory=list)
 
@@ -85,6 +85,7 @@ class BhytAuditReportSchema(BaseModel):
     warning_count: int
     reject_count: int
     violations: List[BhytViolationItemSchema]
+    missing_fields: List[str] = Field(default_factory=list)
 
 class BhytCatalogQueryResponse(BaseModel):
     total: int

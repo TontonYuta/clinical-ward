@@ -287,11 +287,11 @@ def parse_vietnamese_prescription_text(extracted_text: str) -> dict:
         if not val.lower().startswith(('lượng', 'ngày', 'thứ', 'tiền')):
             invoice_no = val
 
-    patient_name = "Bệnh nhân BHYT"
-    patient_age = 50
-    card_no = "GD4790000000000"
-    icd10 = "I10"
-    diag = "Bệnh tim mạch / Tăng huyết áp"
+    patient_name = ""
+    patient_age = 0
+    card_no = ""
+    icd10 = ""
+    diag = ""
     sec_icds: List[str] = []
     ocr_items: List[dict] = []
 
@@ -584,11 +584,11 @@ async def ocr_prescription_endpoint(
             seller_name = raw_ocr_data.get("seller_name") or ""
             seller_tax_id = raw_ocr_data.get("seller_tax_id") or ""
             invoice_no = raw_ocr_data.get("invoice_number") or ""
-            patient_name = raw_ocr_data.get("patient_name") or "Bệnh nhân"
-            patient_age = int(raw_ocr_data.get("patient_age") or 50)
-            card_no = raw_ocr_data.get("insurance_card_number") or "GD4790000000000"
-            icd10 = raw_ocr_data.get("primary_icd10") or "I10"
-            diag = raw_ocr_data.get("primary_diagnosis") or "Tăng huyết áp"
+            patient_name = raw_ocr_data.get("patient_name") or ""
+            patient_age = int(raw_ocr_data.get("patient_age") or 0)
+            card_no = raw_ocr_data.get("insurance_card_number") or ""
+            icd10 = raw_ocr_data.get("primary_icd10") or ""
+            diag = raw_ocr_data.get("primary_diagnosis") or ""
             sec_icds = raw_ocr_data.get("secondary_icd10s") or []
             ocr_items = raw_ocr_data.get("items") or []
         else:
