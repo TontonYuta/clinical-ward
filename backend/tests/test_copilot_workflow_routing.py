@@ -213,3 +213,36 @@ async def test_managed_drug_lookup_route_uses_session_entity_for_contextual_foll
     assert response.rag_grounded is False
     assert response.reply_text != "profile"
     assert lookup.await_args.args[0] == "liều dùng thuốc đó của thuốc Paracetamol"
+
+
+@pytest.mark.asyncio
+async def test_unanchored_medication_intent_fails_closed_before_lookup(monkeypatch):
+    from unittest.mock import AsyncMock
+    from fastapi import Request
+    from app.schemas.copilot import CopilotQuery
+    from app.schemas.clinical_nlu import ClinicalNluExtraction
+    from app.services.chatbot import copilot_orchestrator
+
+    nlu = ClinicalNluExtraction(
+        intent="MEDICATION_LOOKUP", primary_drug="Paracetamol",
+        conversation_mode="independent", is_deictic_referent=False,
+    )
+    monkeypatch.setattr("app.services.chatbot.gemini_nlu_router.parse_clinical_nlu", AsyncMock(return_value=nlu))
+    lookup = AsyncMock(side_effect=AssertionError("unanchored query reached medication lookup"))
+    monkeypatch.setattr(copilot_orchestrator, "lookup_drug_authoritative", lookup)
+    request = Request({"type": "http", "method": "POST", "path": "/chat", "headers": [],
+                       "query_string": b"", "server": ("test", 80), "client": ("test", 1), "scheme": "http"})
+    request.scope["app"] = SimpleNamespace(state=SimpleNamespace(workflow_policy=load_workflow_policy(
+        settings.WORKFLOW_POLICY_PATH,
+        registered_executors={"conversation", "drug_lookup", "portal_guidance", "ddi", "clinical_reasoning",
+                              "sandwich", "specialty", "clarification", "multi_intent"},
+    )))
+
+    response = await copilot_orchestrator._handle_copilot_chat_core(
+        CopilotQuery(query="dùng bạn - tôi"), request, None,
+        session=SimpleNamespace(active_medication_name="Paracetamol"), history="",
+    )
+
+    assert response.answer_type == "clarification"
+    assert response.source_status == "missing_medication_entity"
+    lookup.assert_not_awaited()

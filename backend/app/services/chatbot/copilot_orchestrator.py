@@ -332,6 +332,23 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 or getattr(nlu_res, "is_deictic_referent", False)
                 or is_field_inquiry
             )
+            # Never trust an LLM-extracted medication that has no support in
+            # the current query or the explicitly referenced session context.
+            # This prevents unrelated turns from entering the medication RAG
+            # path and wasting a second generation call.
+            current_medication_supported = bool(
+                has_contextual_entity
+                or get_drug_lexical_matcher().extract_medications(query)
+                or resolve_registered_medications(query)
+                or find_matched_med(query.lower())
+            )
+            if not current_medication_supported:
+                return CopilotResponse(
+                    intent="MEDICATION_LOOKUP_CLARIFICATION",
+                    reply_text="Chưa xác định được thuốc cần tra cứu. Vui lòng nêu tên thuốc, hoạt chất hoặc số đăng ký.",
+                    answer_type="clarification", source_status="missing_medication_entity",
+                    confidence=1.0, session_id=session_id,
+                )
             if not nlu_res.primary_drug and not has_contextual_entity:
                 return CopilotResponse(
                     intent="MEDICATION_LOOKUP_CLARIFICATION",
