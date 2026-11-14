@@ -28,6 +28,16 @@ from app.services.dav_normalizer import clean_brand_name
 _format_clinical_text, _drug_citation = format_clinical_text, build_drug_citation
 
 
+def _scope_alcohol_evidence(value: Optional[str]) -> str:
+    """Keep only source sentences that address alcohol exposure."""
+    text = format_clinical_text(str(value or "").strip())
+    if not text:
+        return ""
+    sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", text) if part.strip()]
+    alcohol_terms = ("rượu", "bia", "cồn", "alcohol", "ethanol")
+    return " ".join(sentence for sentence in sentences if any(term in sentence.casefold() for term in alcohol_terms))
+
+
 def _evidence_claim_contract(
     evidence: list[dict],
     reply_text: str | None = None,
@@ -443,9 +453,12 @@ async def build_drug_profile_response(
                 else:
                     detail = format_clinical_text(str(raw_val).strip()) if raw_val else f"Chưa có dữ liệu {req_label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
             elif field_key == "alcohol" or "Rượu" in req_label:
-                detail = format_clinical_text(str(value("food_alcohol_interactions") or value("precautions") or "").strip())
+                alcohol_text = _scope_alcohol_evidence(value("drug_interactions"))
+                if not alcohol_text:
+                    alcohol_text = _scope_alcohol_evidence(value("precautions"))
+                detail = alcohol_text or f"Chưa tìm thấy thông tin về rượu, bia hoặc cồn trong chuyên luận của {clean_name}."
             elif field_key == "food" or "Thức ăn" in req_label:
-                detail = format_clinical_text(str(value("food_alcohol_interactions") or value("precautions") or "").strip())
+                detail = format_clinical_text(str(value("food_alcohol_interactions") or "").strip())
             elif field_key == "hepatic_adjustment" or "suy gan" in req_label.lower():
                 raw_val = value("hepatic_adjustment")
                 hep_lines = []
@@ -503,7 +516,27 @@ async def build_drug_profile_response(
         for field_key, _, req_field, req_label in requested_fields:
             # A requested facet must be backed by that exact structured field.
             # Do not substitute general precautions or another monograph section.
-            if field_key in {"alcohol", "food", "elderly", "timing", "monitoring"}:
+            if field_key == "alcohol":
+                alcohol_text = _scope_alcohol_evidence(value("drug_interactions"))
+                citation_field = "drug_interactions"
+                if not alcohol_text:
+                    alcohol_text = _scope_alcohol_evidence(value("precautions"))
+                    citation_field = "precautions"
+                if not alcohol_text:
+                    continue
+                citation = build_drug_citation(matched, monograph, source, target_field=citation_field)
+                citation.update({
+                    "excerpt": alcohol_text,
+                    "section": req_label,
+                    "source_id": getattr(monograph, "source_id", None) or getattr(matched, "source_id", None),
+                    "source_version": getattr(monograph, "source_version", None) or getattr(matched, "source_version", None),
+                    "chunk_id": f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:{citation_field}",
+                })
+                if citation["source_id"] and citation["source_version"]:
+                    field_citations.append(citation)
+                    field_evidence.extend(_build_drug_evidence([citation]))
+                continue
+            if field_key in {"food", "elderly", "timing", "monitoring"}:
                 continue
             raw_field_value = value(req_field)
             if not raw_field_value or not str(raw_field_value).strip():

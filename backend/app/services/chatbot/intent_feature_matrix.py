@@ -74,7 +74,7 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
     "alcohol_interaction": [
         (r"\b(?:kỵ\s+rượu|uống\s+rượu|uống\s+bia|rượu\s+bia|chất\s+cồn|say\s+rượu|khi\s+say|với\s+rượu|với\s+bia|uống\s+rượu\s+được\s+không|uống\s+bia\s+được\s+không|kỵ\s+cồn)\b", 3.5),
         (r"\b(?:nghiện\s+rượu|uống\s+nhiều\s+rượu|uống\s+rượu\s+nhiều)\b", 3.0),
-        (r"\b(?:rượu|bia)\b", 1.5),
+        (r"\b(?:rượu|bia)\b", 3.0),
         (r"\bcồn\b", 1.5),
     ],
     "food_interaction": [

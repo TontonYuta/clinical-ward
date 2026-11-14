@@ -162,6 +162,12 @@ def extract_clinical_query_schema_deterministic(
         target_facets.append("max_dosage")
     if any(k in lower for k in ("rượu", "bia", "cồn", "alcohol", "kỵ rượu", "uống rượu")):
         target_facets.append("alcohol_interaction")
+        # Alcohol is an exposure facet. Do not widen the answer to the
+        # complete drug-interaction section when no second medication is named.
+        if len(medications) < 2:
+            target_facets = [facet for facet in target_facets if facet != "drug_interactions"]
+            requested_fields = [field for field in requested_fields if field != "interactions"]
+            requested_fields.append("alcohol_interaction")
     if any(k in lower for k in ("sữa", "thức ăn", "canxi", "nước cam", "uống cùng sữa")):
         target_facets.append("food_interaction")
 
