@@ -181,7 +181,7 @@ export function sanitizeViolationItem(rawV: any, index: number = 0): BhytViolati
     drugCode: String(v.drugCode || v.drug_code || ''),
     drugName: String(v.drugName || v.drug_name || 'Thuốc vi phạm'),
     activeIngredient: String(v.activeIngredient || v.active_ingredient || ''),
-    severity: (v.severity === 'REJECT' || v.severity === 'WARNING' || v.severity === 'PASS') ? v.severity : 'WARNING',
+    severity: (v.severity === 'REJECT' || v.severity === 'WARNING' || v.severity === 'PASS' || v.severity === 'NEEDS_REVIEW') ? v.severity : 'WARNING',
     category: v.category || 'NOT_IN_BHYT_CATALOG',
     title: String(v.title || 'Cảnh báo thanh toán BHYT'),
     detail: String(v.detail || ''),

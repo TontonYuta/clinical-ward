@@ -100,9 +100,9 @@ export function generateQd130XmlFromPayload(payload: BhytPrescriptionPayload): s
 
   const xmlItems = (payload.items || []).map((it, idx) => {
     const rule = findBhytRule(it.activeIngredient || it.drugName, it.route);
-    const maThuoc = it.drugCode || rule?.atcCode || `THUOC.${String(idx + 1).padStart(3, '0')}`;
+    const maThuoc = it.drugCode || rule?.atcGroup || `THUOC.${String(idx + 1).padStart(3, '0')}`;
     const tenThuoc = it.drugName;
-    const hamLuong = it.dosage || rule?.concentration || '';
+    const hamLuong = it.dosage || '';
     const duongDung = it.route || 'Đường uống';
     const soLuong = it.quantity || 1;
     const donGia = it.unitPrice || 0;
@@ -451,11 +451,11 @@ export function parsePrescriptionText(
 
   // 1. Mã thẻ BHYT (QĐ 1666/QĐ-BHXH: 15 ký tự, 2 chữ cái đầu + 13 số)
   const cardMatch = /[A-Z]{2}[0-9]{13}/i.exec(cleanText);
-  const cardNumber = cardMatch ? cardMatch[0].toUpperCase() : 'GD4790000000000';
+  const cardNumber = cardMatch ? cardMatch[0].toUpperCase() : '';
 
   // 2. Mã ICD-10 chính & phụ
   const icdMatches = Array.from(cleanText.matchAll(/\b([A-Z][0-9]{2}(?:\.[0-9]+)?)\b/gi)).map(m => m[1].toUpperCase());
-  const primaryIcd10 = icdMatches.length > 0 ? icdMatches[0] : 'I10';
+  const primaryIcd10 = icdMatches.length > 0 ? icdMatches[0] : '';
   const secondaryIcd10s = icdMatches.slice(1, 4);
 
   // 3. Tên bệnh nhân & tuổi
@@ -463,7 +463,7 @@ export function parsePrescriptionText(
   const patientName = nameMatch ? nameMatch[1].trim() : 'Bệnh nhân';
 
   const ageMatch = /(?:tuổi|sinh năm|năm sinh)[:\s]*(\d{1,4})/i.exec(cleanText);
-  let patientAge = 50;
+  let patientAge = 0;
   if (ageMatch) {
     const val = parseInt(ageMatch[1], 10);
     patientAge = val > 1900 ? (new Date().getFullYear() - val) : val;
@@ -471,7 +471,7 @@ export function parsePrescriptionText(
 
   // 4. Chẩn đoán
   const diagMatch = /(?:chẩn đoán|bệnh chính|lý do khám)[:\s]*([^\n]+)/i.exec(cleanText);
-  const primaryDiagnosis = diagMatch ? diagMatch[1].trim() : 'Khám chữa bệnh ngoại trú';
+  const primaryDiagnosis = diagMatch ? diagMatch[1].trim() : '';
 
   // 5. Danh sách dòng thuốc
   const items: BhytPrescriptionItem[] = [];
@@ -488,14 +488,14 @@ export function parsePrescriptionText(
 
     // Tách số lượng
     const qtyMatch = /(?:x|sl:?|số lượng:?)?\s*(\d+(?:[.,]\d+)?)\s*(?:viên|ống|lọ|chai|gói|vỉ|hộp|nang|tuýp)\b/i.exec(trimmed);
-    const quantity = qtyMatch ? parseFloat(qtyMatch[1].replace(',', '.')) : 20;
+    const quantity = qtyMatch ? parseFloat(qtyMatch[1].replace(',', '.')) : 0;
 
     // Tách hàm lượng
     const concMatch = /(\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml|%|iu|ui))\b/i.exec(trimmed);
-    const dosage = concMatch ? concMatch[1].replace(' ', '') : '500mg';
+    const dosage = concMatch ? concMatch[1].replace(' ', '') : '';
 
     // Tách đường dùng
-    let route = 'Uống';
+    let route = '';
     if (/tiêm\s*truyền|truyền\s*tm|tiêm\s*tm/i.test(trimmed)) route = 'Tiêm tĩnh mạch';
     else if (/tiêm\s*bắp|tiêm/i.test(trimmed)) route = 'Tiêm';
     else if (/nhỏ\s*mắt|tra\s*mắt/i.test(trimmed)) route = 'Nhỏ mắt';
@@ -515,14 +515,14 @@ export function parsePrescriptionText(
       id: `rx-ext-${idx}`,
       drugCode: rule?.atcGroup || `MED-${idx}`,
       drugName,
-      activeIngredient: rule?.activeIngredient || drugName.split(' ')[0],
+      activeIngredient: rule?.activeIngredient || '',
       dosage,
       route,
       quantity,
-      daysSupply: 7,
-      unitPrice: 15000,
+      daysSupply: undefined,
+      unitPrice: 0,
       instructions: 'Theo chỉ định của bác sĩ',
-      hasConsultationForm: false
+      hasConsultationForm: undefined
     });
     idx++;
   }

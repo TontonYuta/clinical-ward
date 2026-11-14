@@ -21,6 +21,8 @@ import {
 
 const TT20_PDF_PATH = '/pdf/bhyt/Thong_Tu_20_2022_TT_BYT_Danh_Muc_Thanh_Toan_Thuoc_BHYT.pdf';
 const QD3618_PDF_PATH = '/pdf/bhyt/Quyet_Dinh_3618_QD_BHXH_2022_Quy_Trinh_Giam_Dinh_BHYT.pdf';
+const TT26_PDF_PATH = '/pdf/Thong_Tu_26_2025_TT_BYT_Ke_Don_Thuoc.pdf';
+const TT36_PDF_PATH = '/pdf/Thong_Tu_36_2018_TT_BYT_GSP.pdf';
 
 /**
  * So khớp mã ICD-10 chuẩn hóa không phân biệt dấu chấm
@@ -139,6 +141,7 @@ export function getTherapeuticGroup(atcGroup: string): { key: string; name: stri
 export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAuditReport {
   const violations: BhytViolationItem[] = [];
   const evaluatedAt = new Date().toISOString();
+  const missingFields = new Set<import('../types/bhyt').BhytMissingField>();
 
   let totalCostVnd = 0;
   let atRiskCostVnd = 0;
@@ -153,8 +156,17 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
   const seenAtcGroups = new Map<string, { drugName: string; index: number }>();
 
   payload.items.forEach((item, index) => {
-    const itemCost = item.quantity * item.unitPrice;
+    const itemCost = (item.quantity || 0) * (item.unitPrice || 0);
     totalCostVnd += itemCost;
+    if (!item.quantity) missingFields.add('quantity');
+    if (!item.unitPrice) missingFields.add('unitPrice');
+    if (!item.dosage) missingFields.add('dosage');
+    if (!item.route) missingFields.add('route');
+    if (!item.daysSupply) missingFields.add('daysSupply');
+    if (!payload.insuranceCardNumber) missingFields.add('insuranceCardNumber');
+    if (!payload.patientAge) missingFields.add('patientAge');
+    if (!payload.primaryIcd10) missingFields.add('primaryIcd10');
+    if (!payload.primaryDiagnosis) missingFields.add('primaryDiagnosis');
 
     const rule = findBhytRule(item.activeIngredient || item.drugName, item.route);
 
@@ -163,7 +175,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
       const risk = itemCost;
       atRiskCostVnd += risk;
       violations.push({
-        id: `v-not-catalog-${item.id || index}`,
+        id: `v-not-catalog-${index}-${item.id || index}`,
         drugCode: item.drugCode,
         drugName: item.drugName,
         activeIngredient: item.activeIngredient || item.drugName,
@@ -192,7 +204,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
       const allowedStr = rule.allowedRanks.map(r => HOSPITAL_RANK_LABELS[r] || r).join(', ');
       const currentRankStr = HOSPITAL_RANK_LABELS[payload.hospitalRank] || payload.hospitalRank || 'Không xác định';
       violations.push({
-        id: `v-rank-${item.id || index}`,
+        id: `v-rank-${index}-${item.id || index}`,
         drugCode: item.drugCode,
         drugName: item.drugName,
         activeIngredient: rule.activeIngredient,
@@ -217,7 +229,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
       const risk = itemCost;
       atRiskCostVnd += risk;
       violations.push({
-        id: `v-outpatient-restricted-${item.id || index}`,
+        id: `v-outpatient-restricted-${index}-${item.id || index}`,
         drugCode: item.drugCode,
         drugName: item.drugName,
         activeIngredient: rule.activeIngredient,
@@ -245,12 +257,12 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
         const matchesIcd = allIcd10s.some(icd => 
           rule.approvedIcd10Prefixes!.some(prefix => isIcd10Matching(icd, prefix))
         );
-        if (!matchesIcd) {
+        if (allIcd10s.length > 0 && !matchesIcd) {
           const risk = itemCost;
           atRiskCostVnd += risk;
           const conditionDetail = rule.specialConditions || `Quỹ BHYT chỉ thanh toán cho nhóm bệnh lý [${rule.approvedIcd10Prefixes.join(', ')}]`;
           violations.push({
-            id: `v-icd-${item.id || index}`,
+            id: `v-icd-${index}-${item.id || index}`,
             drugCode: item.drugCode,
             drugName: item.drugName,
             activeIngredient: rule.activeIngredient,
@@ -276,11 +288,11 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
         const isContraindicated = allIcd10s.some(icd =>
           rule.contraindicatedIcd10Prefixes!.some(prefix => isIcd10Matching(icd, prefix))
         );
-        if (isContraindicated) {
+        if (allIcd10s.length > 0 && isContraindicated) {
           const risk = itemCost;
           atRiskCostVnd += risk;
           violations.push({
-            id: `v-contra-icd-${item.id || index}`,
+            id: `v-contra-icd-${index}-${item.id || index}`,
             drugCode: item.drugCode,
             drugName: item.drugName,
             activeIngredient: rule.activeIngredient,
@@ -316,7 +328,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
           const daysDiff = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
           if (daysDiff >= 0 && daysDiff < 180) {
             violations.push({
-              id: `v-expiry-${item.id || index}`,
+              id: `v-expiry-${index}-${item.id || index}`,
               drugCode: item.drugCode,
               drugName: item.drugName,
               activeIngredient: item.activeIngredient || item.drugName,
@@ -329,7 +341,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
                 docTitle: 'Thông tư 36/2018/TT-BYT (GSP)',
                 section: 'Mục 12 Phụ lục I (Quản lý hạn dùng FEFO)',
                 pageNumber: 14,
-                localPdfPath: '/pdf/Thong_Tu_36_2018_TT_BYT_GSP.pdf'
+                localPdfPath: TT36_PDF_PATH
               },
               rejectionRiskVnd: 0,
               action: 'Gắn nhãn cận hạn, bảo quản khu vực riêng và ưu tiên cấp phát trước.'
@@ -352,7 +364,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
           const risk = itemCost;
           atRiskCostVnd += risk;
           violations.push({
-            id: `v-dup-${item.id || index}`,
+            id: `v-dup-${index}-${item.id || index}`,
             drugCode: item.drugCode,
             drugName: item.drugName,
             activeIngredient: rule.activeIngredient,
@@ -377,11 +389,11 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
     }
 
     // 5. Kiểm tra biên bản hội chẩn đối với thuốc kháng sinh dự trữ / thuốc hạn chế (Chỉ áp dụng khi nội trú)
-    if (rule.requiresConsultation && payload.treatmentType === 'NOI_TRU' && !item.hasConsultationForm) {
+    if (rule.requiresConsultation && payload.treatmentType === 'NOI_TRU' && item.hasConsultationForm === false) {
       const risk = itemCost;
       atRiskCostVnd += risk;
       violations.push({
-        id: `v-consult-${item.id || index}`,
+        id: `v-consult-${index}-${item.id || index}`,
         drugCode: item.drugCode,
         drugName: item.drugName,
         activeIngredient: rule.activeIngredient,
@@ -394,7 +406,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
           docTitle: 'Thông tư 20/2022/TT-BYT',
           section: 'Điều 5 & Hướng dẫn sử dụng kháng sinh BYT',
           pageNumber: rule.pdfPage,
-          localPdfPath: TT20_PDF_PATH
+          localPdfPath: TT26_PDF_PATH
         },
         rejectionRiskVnd: risk,
         action: 'Ký duyệt Biên bản Hội chẩn chuyên khoa và lưu trữ kèm bệnh án trước khi xuất viện.'
@@ -403,12 +415,12 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
 
     // 6. Kiểm tra số ngày điều trị ngoại trú tối đa (>30 ngày hoặc quy định riêng)
     const maxDays = rule.maxOutpatientDays || 30;
-    if (payload.treatmentType === 'NGOAI_TRU' && item.daysSupply > maxDays) {
+    if (payload.treatmentType === 'NGOAI_TRU' && item.daysSupply && item.daysSupply > maxDays) {
       const excessDays = item.daysSupply - maxDays;
       const excessRisk = Math.round((excessDays / item.daysSupply) * itemCost);
       atRiskCostVnd += excessRisk;
       violations.push({
-        id: `v-days-${item.id || index}`,
+        id: `v-days-${index}-${item.id || index}`,
         drugCode: item.drugCode,
         drugName: item.drugName,
         activeIngredient: rule.activeIngredient,
@@ -433,7 +445,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
       const patientShareRisk = Math.round(itemCost * (1 - rule.paymentRatio));
       patientCoPayCostVnd += patientShareRisk;
       violations.push({
-        id: `v-ratio-${item.id || index}`,
+        id: `v-ratio-${index}-${item.id || index}`,
         drugCode: item.drugCode,
         drugName: item.drugName,
         activeIngredient: rule.activeIngredient,
@@ -456,15 +468,44 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
   });
 
   // Tính toán kết quả tổng thể
+  if (missingFields.size > 0) {
+    violations.push({
+      id: 'v-missing-data', drugCode: '', drugName: 'Toàn bộ đơn thuốc', activeIngredient: '', severity: 'WARNING', category: 'MISSING_DATA',
+      title: 'Chưa đủ dữ liệu để kết luận',
+      detail: `Thiếu trường: ${[...missingFields].join(', ')}. Hệ thống không tự suy đoán và chưa kết luận vi phạm.`,
+      legalRef: { docCode: '', docTitle: '', section: '', pageNumber: 0, localPdfPath: '' }, rejectionRiskVnd: 0,
+      action: 'Bổ sung dữ liệu gốc trên đơn thuốc hoặc hồ sơ thanh toán rồi thực hiện giám định lại.'
+    });
+  }
   const rejectCount = violations.filter(v => v.severity === 'REJECT').length;
-  const warningCount = violations.filter(v => v.severity === 'WARNING').length;
-  const passCount = payload.items.length - violations.length;
+  const warningCount = violations.filter(v => v.severity === 'WARNING' && v.category !== 'MISSING_DATA').length;
+  // Một dòng thuốc có thể sinh nhiều cảnh báo; chỉ tính dòng đó một lần.
+  const violationsForItem = (item: BhytPrescriptionPayload['items'][number], index: number) => {
+    const itemKey = `${index}-${item.id || index}`;
+    return violations.filter((violation) => violation.id.endsWith(`-${itemKey}`));
+  };
+  const passCount = payload.items.reduce(
+    (count, item, index) => count + (violationsForItem(item, index).length === 0 ? 1 : 0),
+    0,
+  );
+  // Tổng nguy cơ của một dòng không thể vượt quá giá trị dòng thuốc, dù có
+  // nhiều quy tắc cùng phát hiện lỗi trên dòng đó.
+  atRiskCostVnd = payload.items.reduce((total, item, index) => {
+    const lineCost = Math.max(0, item.quantity * item.unitPrice);
+    const itemRisk = violationsForItem(item, index).reduce(
+      (sum, violation) => sum + Math.max(0, violation.rejectionRiskVnd || 0),
+      0,
+    );
+    return total + Math.min(lineCost, itemRisk);
+  }, 0);
 
   let overallStatus: BhytAuditSeverity = 'PASS';
   if (rejectCount > 0) {
     overallStatus = 'REJECT';
   } else if (warningCount > 0) {
     overallStatus = 'WARNING';
+  } else if (missingFields.size > 0) {
+    overallStatus = 'NEEDS_REVIEW';
   }
 
   return {
@@ -481,6 +522,7 @@ export function auditBhytPrescription(payload: BhytPrescriptionPayload): BhytAud
     passCount: Math.max(0, passCount),
     warningCount,
     rejectCount,
-    violations
+    violations,
+    missingFields: [...missingFields]
   };
 }

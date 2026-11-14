@@ -10,18 +10,21 @@ export type HospitalRank = 'HANG_DAC_BIET' | 'HANG_I' | 'HANG_II' | 'HANG_III' |
 
 export type TreatmentType = 'NGOAI_TRU' | 'NOI_TRU';
 
-export type BhytAuditSeverity = 'PASS' | 'WARNING' | 'REJECT';
+export type BhytAuditSeverity = 'PASS' | 'WARNING' | 'REJECT' | 'NEEDS_REVIEW';
 
 export type BhytViolationCategory =
   | 'HOSPITAL_RANK_MISMATCH'     // Vượt tuyến / Hạng bệnh viện không được thanh toán
   | 'ICD10_UNSUPPORTED'          // Chẩn đoán ICD-10 không khớp chỉ định thanh toán (Cột 8 TT 20)
   | 'THERAPEUTIC_DUPLICATION'    // Trùng hoạt chất hoặc trùng nhóm tác dụng điều trị
+  | 'INCOMPATIBLE_CLASS_COMBINATION' // Phối hợp nhóm thuốc không tương thích
   | 'OVER_MAX_OUTPATIENT_DAYS'   // Kê quá số ngày tối đa điều trị ngoại trú
   | 'MISSING_CONSULTATION_FORM'  // Kháng sinh dự trữ / thuốc ung thư thiếu biên bản hội chẩn
   | 'RESTRICTED_OUTPATIENT'      // Kháng sinh dự trữ / thuốc cấm kê đơn điều trị ngoại trú
   | 'UNAPPROVED_ROUTE'           // Đường dùng không thuộc phạm vi thanh toán BHYT
   | 'NOT_IN_BHYT_CATALOG'        // Thuốc ngoài danh mục Thông tư 20/2022
   | 'PARTIAL_PAYMENT_ALERT';     // Thuốc có tỷ lệ thanh toán 50% hoặc 30% (Đồng chi trả theo luật)
+
+export type BhytMissingField = 'quantity' | 'unitPrice' | 'dosage' | 'route' | 'daysSupply' | 'insuranceCardNumber' | 'patientAge' | 'primaryIcd10' | 'primaryDiagnosis';
 
 export interface BhytLegalRef {
   docCode: string;               // VD: '20/2022/TT-BYT'
@@ -33,31 +36,36 @@ export interface BhytLegalRef {
 
 export interface BhytViolationItem {
   id: string;
+  drugId?: string;
   drugCode: string;
   drugName: string;
   activeIngredient: string;
   severity: BhytAuditSeverity;
-  category: BhytViolationCategory;
+  category: BhytViolationCategory | 'MISSING_DATA';
+  violationType?: string;
   title: string;                 // Tên lỗi ngắn gọn
+  ruleTitle?: string;
   detail: string;                // Mô tả súc tích (1-2 câu)
+  description?: string;
   legalRef: BhytLegalRef;
   rejectionRiskVnd: number;      // Số tiền có nguy cơ xuất toán (phạt vi phạm)
   patientCoPayVnd?: number;      // Số tiền người bệnh cùng chi trả theo luật (50% hoặc 30%)
   action: string;                // Khuyến nghị hành động khắc phục
+  legalAdvice?: string;
 }
 
 export type BhytRouteCategory = 'ORAL' | 'INJECTION' | 'TOPICAL' | 'OPHTHALMIC_OTIC' | 'INHALATION';
 
 export interface BhytPrescriptionItem {
   id: string;
-  drugCode: string;
+  drugCode?: string;
   drugName: string;
   activeIngredient: string;
   dosage: string;
   route: string;
   routeCategory?: BhytRouteCategory;
   quantity: number;
-  daysSupply: number;
+  daysSupply?: number;
   unitPrice: number;
   totalPrice?: number;
   unit?: string;
@@ -81,7 +89,7 @@ export interface BhytPrescriptionPayload {
   treatmentType: TreatmentType;
   primaryIcd10: string;
   primaryDiagnosis: string;
-  secondaryIcd10s: string[];
+  secondaryIcd10s?: string[];
   items: BhytPrescriptionItem[];
 }
 
@@ -94,12 +102,13 @@ export interface BhytAuditReport {
   primaryDiagnosis: string;
   totalCostVnd: number;
   atRiskCostVnd: number;
-  patientCoPayCostVnd: number;
+  patientCoPayCostVnd?: number;
   itemsCount: number;
   passCount: number;
   warningCount: number;
   rejectCount: number;
   violations: BhytViolationItem[];
+  missingFields?: BhytMissingField[];
 }
 
 export interface DavDrugCandidate {

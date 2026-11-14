@@ -792,9 +792,9 @@ export const BhytAuditTab: React.FC = () => {
       ['Căn cứ Thông tư 20/2022/TT-BYT, QĐ 130/QĐ-BYT & QĐ 3618/QĐ-BHXH'],
       [''],
       ['THÔNG TIN HÀNH CHÍNH & HỒ SƠ KHÁM BỆNH'],
-      ['Mã đơn thuốc', activePayload.prescriptionId || 'RX-2026', 'Ngày giám định', new Date().toLocaleDateString('vi-VN')],
-      ['Họ và tên người bệnh', activePayload.patientName || 'NGUYỄN VĂN AN', 'Tuổi', String(activePayload.patientAge || 54)],
-      ['Mã thẻ BHYT', activePayload.insuranceCardNumber || 'DN4010123456789', 'Hình thức điều trị', treatmentType === 'NGOAI_TRU' ? 'Ngoại trú' : 'Nội trú'],
+      ['Mã đơn thuốc', activePayload.prescriptionId || 'Chưa có dữ liệu', 'Ngày giám định', new Date().toLocaleDateString('vi-VN')],
+      ['Họ và tên người bệnh', activePayload.patientName || 'Chưa có dữ liệu', 'Tuổi', activePayload.patientAge > 0 ? String(activePayload.patientAge) : 'Chưa có dữ liệu'],
+      ['Mã thẻ BHYT', activePayload.insuranceCardNumber || 'Chưa có dữ liệu', 'Hình thức điều trị', treatmentType === 'NGOAI_TRU' ? 'Ngoại trú' : 'Nội trú'],
       ['Tuyến bệnh viện', HOSPITAL_RANK_LABELS[hospitalRank] || HOSPITAL_RANK_LABELS.HANG_I || 'Hạng I', 'Chẩn đoán chính', `${activePayload.primaryIcd10} - ${activePayload.primaryDiagnosis}`],
       [''],
       ['DANH MỤC THUỐC KÊ ĐƠN & ĐỐI SOÁT DƯỢC QUỐC GIA (DAV)'],
@@ -1110,7 +1110,7 @@ export const BhytAuditTab: React.FC = () => {
   const handleOpenSubstitutionModal = (violation: BhytViolationItem, explicitItem?: BhytPrescriptionItem) => {
     let target = explicitItem;
     if (!target) {
-      target = activePayload.items.find(it => it.id === violation.drugId) ||
+      target = activePayload.items.find(it => it.id === violation.id || it.drugCode === violation.drugCode) ||
         activePayload.items.find(it => {
           const itName = it.drugName.trim().toLowerCase();
           const vName = violation.drugName.trim().toLowerCase();
@@ -1126,7 +1126,8 @@ export const BhytAuditTab: React.FC = () => {
 
     if (!target) {
       target = {
-        id: violation.drugId || `target-${Date.now()}`,
+        id: violation.id || `target-${Date.now()}`,
+        drugCode: violation.drugCode || '',
         drugName: violation.drugName,
         activeIngredient: violation.activeIngredient,
         dosage: '',
@@ -1185,15 +1186,21 @@ export const BhytAuditTab: React.FC = () => {
     setResolutionMap(prev => ({
       ...prev,
       [original.id]: {
-        raw_name: candidate.drugName,
+        raw_query: candidate.drugName,
+        cleaned_name: candidate.drugName,
         match_status: 'HIGH',
         confidence_score: 1.0,
+        match_strategy: 'LOCAL_SUBSTITUTION',
+        alternatives: [],
         matched_dav: {
+          id: candidate.id,
+          national_code: candidate.id,
           brand_name: candidate.drugName,
           active_ingredient: candidate.activeIngredient,
-          registration_number: candidate.id,
-          declared_price: candidate.unitPrice,
-          standard_dosage: candidate.dosage
+          concentration: candidate.dosage,
+          dosage_form: '',
+          route: candidate.route,
+          atc_code: ''
         }
       }
     }));
@@ -1218,7 +1225,7 @@ export const BhytAuditTab: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden w-full bg-slate-50 text-slate-900">
+    <div className="bhyt-audit-tab flex flex-col h-full overflow-hidden w-full bg-slate-50 text-slate-900">
       
       {/* 1. THANH ĐIỀU HƯỚNG TỔNG QUAN, TRẠNG THÁI & CÁC NÚT XUẤT BÁO CÁO */}
       <div className="shrink-0 border-b border-slate-200 px-4 py-2.5 bg-white flex items-center justify-between gap-4 flex-wrap shadow-2xs">
@@ -1269,6 +1276,10 @@ export const BhytAuditTab: React.FC = () => {
           ) : auditReport.status === 'WARNING' ? (
             <span className="font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md text-sm flex items-center shadow-2xs font-sans tabular-nums">
               <span>Cần lưu ý: {auditReport.warningCount} thuốc</span>
+            </span>
+          ) : auditReport.status === 'NEEDS_REVIEW' ? (
+            <span className="font-bold text-sky-800 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-md text-sm flex items-center shadow-2xs font-sans tabular-nums">
+              <span>Chưa đủ dữ liệu để kết luận</span>
             </span>
           ) : (
             <span className="font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-md text-sm flex items-center shadow-2xs font-sans tabular-nums">
@@ -2023,18 +2034,21 @@ export const BhytAuditTab: React.FC = () => {
                                         const primaryViolation = itemViolations[0];
                                         const violationToUse = primaryViolation || {
                                           id: `alt-${item.id}`,
-                                          drugId: item.id,
+                                          drugCode: item.drugCode,
                                           drugName: item.drugName,
                                           activeIngredient: item.activeIngredient,
-                                          violationType: 'UNAPPROVED_RANK',
+                                          category: 'HOSPITAL_RANK_MISMATCH',
+                                          title: 'Không phù hợp hạng bệnh viện',
                                           severity: 'WARNING',
                                           rejectionRiskVnd: lineTotal,
                                           detail: 'Tìm kiếm thuốc tương đương điều trị hợp lệ BHYT',
                                           action: 'Gợi ý thuốc Generic hoặc nhóm tương đương điều trị',
                                           legalRef: {
                                             docCode: '20/2022/TT-BYT',
+                                            docTitle: 'Thông tư 20/2022/TT-BYT',
                                             section: 'Điều 4 - Thay thế thuốc hợp lệ',
-                                            pageNumber: 1
+                                            pageNumber: 1,
+                                            localPdfPath: ''
                                           }
                                         };
                                         handleOpenSubstitutionModal(violationToUse, item);
@@ -2235,8 +2249,7 @@ export const BhytAuditTab: React.FC = () => {
                             onClick={() => handleOpenLegalPdf(
                               violation.legalRef?.docCode || '20/2022/TT-BYT',
                               violation.legalRef?.pageNumber || 1,
-                              `${violation.legalRef?.docTitle || 'Thông tư 20/2022/TT-BYT'} (Trang ${violation.legalRef?.pageNumber || 1})`,
-                              violation.detail
+                              `${violation.legalRef?.docTitle || 'Thông tư 20/2022/TT-BYT'} (Trang ${violation.legalRef?.pageNumber || 1})`
                             )}
                             className="text-teal-700 font-semibold hover:underline cursor-pointer flex items-center gap-1"
                           >
@@ -2333,8 +2346,7 @@ export const BhytAuditTab: React.FC = () => {
                               onClick={() => handleOpenLegalPdf(
                                 '20/2022/TT-BYT',
                                 rule.pdfPage,
-                                `Thông tư 20/2022/TT-BYT - STT ${rule.stt}: ${rule.activeIngredient}`,
-                                rule.specialConditions || undefined
+                                `Thông tư 20/2022/TT-BYT - Trang ${rule.pdfPage}: ${rule.activeIngredient}`
                               )}
                               className="text-xs font-semibold text-teal-700 hover:underline cursor-pointer"
                             >
