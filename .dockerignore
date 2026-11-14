@@ -1,0 +1,17 @@
+.git
+.github
+node_modules
+dist
+admin-portal/node_modules
+backend/tests
+backend/__pycache__
+backend/.pytest_cache
+backend/*.db
+backend/*.db-*
+backend/data/*.sqlite
+backend/data/knowledge_base/evaluation
+*.log
+*.pyc
+!backend/clinical_prebaked.db.gz
+public/pdf/source-provenance.json
+public/pdf/source-provenance-bhyt.json

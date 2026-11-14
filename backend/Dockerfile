@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Final Runtime Image
@@ -42,12 +42,15 @@ ENV PYTHONUNBUFFERED=1 \
     CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app,https://clinical-ai-monitor.vercel.app"
 
 # Copy prebaked database first to leverage Docker layer caching
-COPY clinical_prebaked.db.gz /app/
+COPY backend/clinical_prebaked.db.gz /app/
 RUN gzip -dc /app/clinical_prebaked.db.gz > /app/clinical_hospital.db \
     && rm -f /app/clinical_prebaked.db.gz
 
 # Copy application source and data
-COPY . /app/
+# Backend application/data and the source PDFs used by the document catalog.
+COPY backend/app /app/app
+COPY backend/data /app/data
+COPY public/pdf /app/public/pdf
 
 EXPOSE 8000
 

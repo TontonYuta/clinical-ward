@@ -18,7 +18,12 @@ def _manifest_path() -> Path:
 
 
 def _public_pdf_dir() -> Path:
-    return Path(__file__).resolve().parents[3] / "public" / "pdf"
+    candidates = (
+        Path(__file__).resolve().parents[3] / "public" / "pdf",
+        Path(__file__).resolve().parents[2] / "public" / "pdf",
+        Path("/app/public/pdf"),
+    )
+    return next((candidate for candidate in candidates if candidate.is_dir()), candidates[0])
 
 
 def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:

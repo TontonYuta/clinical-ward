@@ -74,6 +74,7 @@ async def get_availability() -> AvailabilityResponse:
         pass
 
     vector_state = "unavailable"
+    fts_state = "unavailable"
     try:
         from pathlib import Path
         from app.services.rag.sqlite_fts import get_fts_db_path
@@ -85,24 +86,30 @@ async def get_availability() -> AvailabilityResponse:
                 try:
                     fts = conn.execute("SELECT 1 FROM sqlite_master WHERE name='clinical_rag_fts'").fetchone()
                     vectors = conn.execute("SELECT 1 FROM sqlite_master WHERE name='clinical_chunk_vectors'").fetchone()
-                    if not fts or not vectors:
-                        return False
+                    if not fts:
+                        return (False, False)
                     fts_count = conn.execute("SELECT count(*) FROM clinical_rag_fts").fetchone()[0]
-                    vector_count = conn.execute("SELECT count(*) FROM clinical_chunk_vectors").fetchone()[0]
-                    return fts_count > 0 and vector_count > 0
+                    vector_count = 0
+                    if vectors:
+                        vector_count = conn.execute("SELECT count(*) FROM clinical_chunk_vectors").fetchone()[0]
+                    return (fts_count > 0, vector_count > 0)
                 finally:
                     conn.close()
             async with asyncio.timeout(1.5):
-                if await asyncio.to_thread(_check_indexes):
+                fts_ok, vector_ok = await asyncio.to_thread(_check_indexes)
+                if fts_ok:
+                    fts_state = "available"
+                if vector_ok:
                     vector_state = "available"
     except Exception:
         pass
 
     provider_state = await _check_provider()
     backend_state = "available"
-    if provider_state == "available" and db_state == "available" and vector_state == "available":
+    retrieval_ready = db_state == "available" and fts_state == "available"
+    if provider_state == "available" and retrieval_ready:
         mode = "online_ai"
-    elif backend_state == "available" and db_state == "available" and vector_state == "available":
+    elif backend_state == "available" and retrieval_ready:
         mode = "local_only"
     else:
         mode = "offline"

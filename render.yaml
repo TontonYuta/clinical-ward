@@ -3,7 +3,10 @@ services:
     name: clinical-ward-api
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    # The image needs both backend runtime files and the repository's public
+    # medical PDFs. Keep the repository root as context so the Dockerfile can
+    # copy both sets without relying on files outside the build context.
+    dockerContext: .
     plan: free
     region: singapore
     autoDeploy: true
