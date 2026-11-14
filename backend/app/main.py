@@ -266,8 +266,13 @@ async def logout(response: Response):
 
 import os
 from fastapi.staticfiles import StaticFiles
-_pdf_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "public", "pdf"))
-if os.path.exists(_pdf_dir):
+_pdf_candidates = (
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "pdf")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "public", "pdf")),
+    "/app/public/pdf",
+)
+_pdf_dir = next((path for path in _pdf_candidates if os.path.isdir(path)), _pdf_candidates[0])
+if os.path.isdir(_pdf_dir):
     app.mount("/api/v1/pdf", StaticFiles(directory=_pdf_dir), name="clinical_source_pdf")
 
 @app.get("/", tags=["Health Check"])
