@@ -88,3 +88,30 @@ async def test_stream_persists_image_usage_metadata(monkeypatch):
     assert entries[0].availability_mode == "local_only"
     assert entries[0].rag_grounded is False
     assert entries[0].evidence_count == 0
+
+@pytest.mark.asyncio
+async def test_stream_emits_answer_before_telemetry_commit(monkeypatch):
+    response = CopilotResponse(intent="GREETING_WELLBEING", reply_text="Validated answer")
+    session = SimpleNamespace(
+        active_medication_name=None, session_id="s1", append_conversation_turn=lambda *args: None,
+        set_active_medication=lambda **kwargs: None, render_recent_history=lambda: "",
+    )
+    committed = False
+    async def commit():
+        nonlocal committed
+        committed = True
+
+    monkeypatch.setattr(copilot, "resolve_copilot_identity", lambda *args: ("doctor", "doctor", "s1"))
+    monkeypatch.setattr(copilot, "get_or_create_session", lambda *args: session)
+    monkeypatch.setattr("app.services.cache.clinical_cache.get_clinical_cache", lambda: SimpleNamespace(get=lambda *a, **k: response.model_copy(deep=True), set=lambda *a, **k: None))
+    db = SimpleNamespace(add=lambda *_: None, commit=commit)
+    endpoint_response = await copilot.chat_with_copilot_stream(
+        CopilotQuery(query="hello"), SimpleNamespace(), db
+    )
+
+    async for frame in endpoint_response.body_iterator:
+        events = _events([frame])
+        if any(event["type"] == "token" for event in events):
+            assert committed is False
+
+    assert committed is True

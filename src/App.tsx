@@ -155,8 +155,23 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [featureFlags, setFeatureFlags] = useState<FeatureFlagPayload | null>(() => readCachedFeatureFlags());
   useEffect(() => {
     let active = true;
-    void loadFeatureFlags().then((payload) => { if (active) setFeatureFlags(payload); });
-    return () => { active = false; };
+    let refreshTimer: number | undefined;
+    const refresh = () => {
+      void loadFeatureFlags().then((payload) => { if (active) setFeatureFlags(payload); });
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    refresh();
+    refreshTimer = window.setInterval(refresh, 15000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('focus', refreshWhenVisible);
+    return () => {
+      active = false;
+      if (refreshTimer !== undefined) window.clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('focus', refreshWhenVisible);
+    };
   }, []);
   const effectiveTabs = getEffectiveAllowedTabs(currentUserRole, featureFlags);
   useEffect(() => {

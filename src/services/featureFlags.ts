@@ -69,7 +69,7 @@ export function cacheFeatureFlags(payload: FeatureFlagPayload): void {
 
 export async function loadFeatureFlags(): Promise<FeatureFlagPayload> {
   try {
-    const response = await fetch('/api/v1/admin/feature-flags');
+    const response = await fetch('/api/v1/admin/feature-flags', { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const raw = await response.json();
     if (!isValidFeatureFlagPayload(raw)) throw new Error('Cấu hình tab không hợp lệ');

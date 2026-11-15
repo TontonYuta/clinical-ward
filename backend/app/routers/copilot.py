@@ -314,6 +314,12 @@ async def chat_with_copilot_stream(
             response.provider = usage["provider"]
         latency_ms = round((time.monotonic() - start_time) * 1000, 1)
 
+        # Phát nội dung ngay sau khi pipeline hoàn tất. Ghi telemetry phía sau
+        # không được chặn TTFT/UX của người dùng; telemetry chỉ là side effect.
+        full_text = response.reply_text or ""
+        if full_text:
+            yield _sse_event("token", content=full_text)
+
         # 2. Ghi nhật ký bất đồng bộ
         try:
             from app.security.prompt_utility_scorer import compute_prompt_utility
@@ -353,12 +359,6 @@ async def chat_with_copilot_stream(
             await db.commit()
         except Exception:
             pass
-
-        full_text = response.reply_text or ""
-
-        # Clinical generation and validation have completed before any text is emitted.
-        if full_text:
-            yield _sse_event("token", content=full_text)
 
         # 4. Truyền phát gói dữ liệu hoàn tất chứa toàn bộ metadata, cards, alerts
         done_dict = response.model_dump()
