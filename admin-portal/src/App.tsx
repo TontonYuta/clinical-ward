@@ -69,10 +69,9 @@ export default function App() {
         }
       })
       .catch(() => setEsmsBalance(undefined));
-    const pFlags = fetchFeatureFlags().then(setFeatureFlags).catch((err) => console.warn('Feature flags poll warn:', err));
 
     try {
-      await Promise.allSettled([pTelemetry, pKeys, pBudget, pEsms, pFlags]);
+      await Promise.allSettled([pTelemetry, pKeys, pBudget, pEsms]);
       setLastUpdated(new Date().toLocaleTimeString('vi-VN'));
     } finally {
       setIsRefreshing(false);
@@ -82,6 +81,10 @@ export default function App() {
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
+
+  useEffect(() => {
+    fetchFeatureFlags().then(setFeatureFlags).catch((err) => console.warn('Feature flags load warn:', err));
+  }, []);
 
   // Chu kỳ tự động làm mới mỗi 10 giây
   useEffect(() => {
