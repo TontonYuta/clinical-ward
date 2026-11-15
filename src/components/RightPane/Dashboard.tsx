@@ -22,6 +22,8 @@ import { BhytAuditTab } from './Tabs/BhytAuditTab';
 import { ClinicalErrorBoundary } from '../Common/ClinicalErrorBoundary';
 import { OperationsOverview } from './OperationsOverview';
 import { PrintableFormType } from '../Modals/PrintableFormModal';
+import type { FeatureFlagPayload } from '../../services/featureFlags';
+import { getEffectiveAllowedTabs } from '../../services/featureFlags';
 
 export type { DashboardTab };
 
@@ -59,6 +61,7 @@ interface DashboardProps {
   onOpenCopilot?: () => void;
   onOpenLegalDocs?: () => void;
   auditRecords?: AuditTrailRecord[];
+  featureFlags?: FeatureFlagPayload | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -95,9 +98,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenCopilot,
   onOpenLegalDocs,
   auditRecords = [],
+  featureFlags = null,
 }) => {
   const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
-  const allowedTabs = currentProfile.allowedTabs || ['debt'];
+  const allowedTabs = getEffectiveAllowedTabs(currentUserRole, featureFlags);
 
   // Giữ trạng thái (Keep-Alive) cho tab Giám định BHYT một khi đã được truy cập để không mất ảnh & đơn khi chuyển tab
   const [hasVisitedBhyt, setHasVisitedBhyt] = useState<boolean>(() => currentTab === 'bhyt_audit');

@@ -7,7 +7,9 @@ import { IntegrationsTab } from './components/Tabs/IntegrationsTab';
 import { BudgetCapTab } from './components/Tabs/BudgetCapTab';
 import { AuditTab } from './components/Tabs/AuditTab';
 import { AdminTab, TelemetryOverviewResponse, ApiKeyItem, BudgetCapResponse } from './types/admin';
-import { fetchTelemetryOverview, fetchApiKeys, fetchBudgetStatus, fetchEsmsStatus } from './services/adminApi';
+import { fetchTelemetryOverview, fetchApiKeys, fetchBudgetStatus, fetchEsmsStatus, fetchFeatureFlags } from './services/adminApi';
+import { FeatureFlagsTab } from './components/Tabs/FeatureFlagsTab';
+import type { FeatureFlagResponse } from './types/admin';
 
 const CACHE_KEY_TELEMETRY = 'clinical_ai_monitor_telemetry_cache_v2';
 const CACHE_KEY_BUDGET = 'clinical_ai_monitor_budget_cache_v2';
@@ -35,6 +37,7 @@ export default function App() {
   const [budget, setBudget] = useState<BudgetCapResponse | null>(() => getCachedItem<BudgetCapResponse>(CACHE_KEY_BUDGET));
   const [esmsBalance, setEsmsBalance] = useState<number | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlagResponse | null>(null);
 
   const loadAllData = useCallback(async () => {
     setIsRefreshing(true);
@@ -78,6 +81,10 @@ export default function App() {
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
+
+  useEffect(() => {
+    fetchFeatureFlags().then(setFeatureFlags).catch((err) => console.warn('Feature flags load warn:', err));
+  }, []);
 
   // Chu kỳ tự động làm mới mỗi 10 giây
   useEffect(() => {
@@ -132,6 +139,7 @@ export default function App() {
             {currentTab === 'safety_audit' && (
               <AuditTab data={telemetry} />
             )}
+            {currentTab === 'feature_flags' && <FeatureFlagsTab data={featureFlags} onSaved={setFeatureFlags} />}
           </div>
         </main>
       </div>

@@ -1,4 +1,8 @@
-export type AdminTab = 'telemetry' | 'key_vault' | 'integrations' | 'budget_cap' | 'safety_audit';
+export type AdminTab = 'telemetry' | 'key_vault' | 'integrations' | 'budget_cap' | 'safety_audit' | 'feature_flags';
+
+export type ClinicalFeatureKey = 'overview' | 'cpoe' | 'debt' | 'equipment' | 'fefo' | 'coldchain' | 'asset_audit' | 'bhyt_audit' | 'documents';
+export interface FeatureFlagItem { key: ClinicalFeatureKey; label: string; description: string; enabled: boolean; }
+export interface FeatureFlagResponse { version: number; flags: FeatureFlagItem[]; }
 
 export interface ApiKeyItem {
   key_id: string;

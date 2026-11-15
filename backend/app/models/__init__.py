@@ -11,6 +11,7 @@ from app.models.patient import PatientProfile, PrescriptionAdviceRecord
 from app.models.sms import SmsDeliveryLog
 from app.models.copilot_log import CopilotChatLog
 from app.models.bhyt import BhytDrugCatalog, BhytAuditLog
+from app.models.feature_flag import ClinicalFeatureFlag
 
 __all__ = [
     "User",
@@ -30,4 +31,5 @@ __all__ = [
     "CopilotChatLog",
     "BhytDrugCatalog",
     "BhytAuditLog",
+    "ClinicalFeatureFlag",
 ]

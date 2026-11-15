@@ -11,8 +11,11 @@ from app.models.bhyt import BhytAuditLog
 from app.schemas.admin_monitoring_schema import (
     ApiKeyItem, AddApiKeyRequest, TestKeyRequest, TestKeyResponse,
     BudgetCapConfig, BudgetCapResponse, TelemetryOverviewResponse,
-    BhytAuditLogItem, PaginatedTelemetryResponse
+    BhytAuditLogItem, PaginatedTelemetryResponse, FeatureFlagItem,
+    FeatureFlagResponse, FeatureFlagUpdate
 )
+from app.models.feature_flag import ClinicalFeatureFlag
+from sqlalchemy import update
 from app.services.admin_key_vault import (
     get_all_masked_keys, add_api_key, delete_api_key, ping_test_gemini_key, _load_vault_data
 )
@@ -22,6 +25,57 @@ from app.services.admin_monitoring_service import (
 )
 
 router = APIRouter(prefix="/admin", tags=["Cổng Quản Trị & Giám Sát AI"])
+
+FEATURE_FLAG_METADATA = {
+    "overview": ("Tổng quan", "Màn hình tổng quan vận hành"),
+    "cpoe": ("Kê đơn thuốc", "Kê đơn và hồ sơ CPOE"),
+    "debt": ("Sổ nợ vỏ", "Theo dõi mượn và hoàn trả thuốc kiểm soát đặc biệt"),
+    "equipment": ("Sự cố thiết bị", "Báo hỏng và theo dõi thiết bị y tế"),
+    "fefo": ("Kho dược", "Tồn kho, FEFO và dự trù"),
+    "coldchain": ("Chuỗi lạnh", "Theo dõi nhiệt độ và trạng thái bảo quản lạnh"),
+    "asset_audit": ("Kiểm kê tài sản", "Kiểm kê và điều chuyển tài sản"),
+    "bhyt_audit": ("Giám định BHYT", "Rà soát thanh toán và cảnh báo xuất toán"),
+    "documents": ("Tài liệu", "Thư viện văn bản y tế"),
+}
+DEFAULT_ENABLED_FLAGS = {"overview", "cpoe", "bhyt_audit", "fefo", "documents"}
+
+async def _ensure_feature_flags(db: AsyncSession) -> list[ClinicalFeatureFlag]:
+    connection = await db.connection()
+    await connection.run_sync(lambda sync_connection: ClinicalFeatureFlag.__table__.create(sync_connection, checkfirst=True))
+    rows = (await db.execute(select(ClinicalFeatureFlag).order_by(ClinicalFeatureFlag.key))).scalars().all()
+    existing = {row.key for row in rows}
+    if not rows or existing != set(FEATURE_FLAG_METADATA):
+        for key, (label, description) in FEATURE_FLAG_METADATA.items():
+            if key not in existing:
+                db.add(ClinicalFeatureFlag(key=key, label=label, description=description, enabled=key in DEFAULT_ENABLED_FLAGS, version=1))
+        await db.commit()
+        rows = (await db.execute(select(ClinicalFeatureFlag).order_by(ClinicalFeatureFlag.key))).scalars().all()
+    return list(rows)
+
+@router.get("/feature-flags", response_model=FeatureFlagResponse)
+async def get_feature_flags(db: AsyncSession = Depends(get_db)):
+    rows = await _ensure_feature_flags(db)
+    return FeatureFlagResponse(
+        version=max((row.version for row in rows), default=1),
+        flags=[FeatureFlagItem(key=row.key, label=row.label, description=row.description, enabled=row.enabled) for row in rows],
+    )
+
+@router.put("/feature-flags", response_model=FeatureFlagResponse)
+async def update_feature_flags(payload: FeatureFlagUpdate, db: AsyncSession = Depends(get_db)):
+    rows = await _ensure_feature_flags(db)
+    current_version = max((row.version for row in rows), default=1)
+    if payload.version != current_version:
+        raise HTTPException(status_code=409, detail={"reason": "stale_version", "current_version": current_version})
+    requested = {item.key: item.enabled for item in payload.flags if item.key in FEATURE_FLAG_METADATA}
+    if set(requested) != set(FEATURE_FLAG_METADATA) or len(payload.flags) != len(FEATURE_FLAG_METADATA):
+        raise HTTPException(status_code=422, detail="Cần gửi đầy đủ trạng thái của mọi tab đã đăng ký.")
+    next_version = current_version + 1
+    for row in rows:
+        if row.key in requested:
+            row.enabled = True if row.key == "overview" else requested[row.key]
+        row.version = next_version
+    await db.commit()
+    return await get_feature_flags(db)
 
 @router.get("/monitoring/overview", response_model=TelemetryOverviewResponse)
 async def get_telemetry_overview(db: AsyncSession = Depends(get_db)):

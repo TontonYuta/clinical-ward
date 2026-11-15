@@ -50,3 +50,5 @@ def test_role_policy_rejects_unprivileged_writes_and_patient_reads():
     assert AuthenticationMiddleware._role_allowed("POST", "/api/v1/inventory/restock-proposal", "pharmacist")
     assert not AuthenticationMiddleware._role_allowed("GET", "/api/v1/patients", "biomedical_engineer")
     assert AuthenticationMiddleware._role_allowed("GET", "/api/v1/patients", "doctor")
+    assert not AuthenticationMiddleware._role_allowed("PUT", "/api/v1/admin/feature-flags", "nurse")
+    assert AuthenticationMiddleware._role_allowed("PUT", "/api/v1/admin/feature-flags", "director")

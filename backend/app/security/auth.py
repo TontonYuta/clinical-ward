@@ -147,6 +147,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             "/clinical-ddi": set(),
         }
         suffix = path.removeprefix("/api/v1")
+        if suffix.startswith("/admin"):
+            return role == "director"
         if suffix == "/auth/logout":
             return True
         if suffix.startswith("/auth/"):

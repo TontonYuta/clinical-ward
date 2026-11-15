@@ -56,6 +56,7 @@ import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches, prewarmInv
 import { ALL_MASTER_MEDICATIONS, removeVietnameseTones } from './data/medicationMasterData';
 import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
+import { getEffectiveAllowedTabs, loadFeatureFlags, readCachedFeatureFlags, type FeatureFlagPayload } from './services/featureFlags';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
 import { isPrescriptionFormIntent } from './utils/nlp/cpoeFormMatcher';
@@ -151,6 +152,19 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   };
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(authenticatedRole || getInitialUserRole);
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlagPayload | null>(() => readCachedFeatureFlags());
+  useEffect(() => {
+    let active = true;
+    void loadFeatureFlags().then((payload) => { if (active) setFeatureFlags(payload); });
+    return () => { active = false; };
+  }, []);
+  const effectiveTabs = getEffectiveAllowedTabs(currentUserRole, featureFlags);
+  useEffect(() => {
+    if (effectiveTabs.length > 0 && !effectiveTabs.includes(currentTab)) {
+      const preferred = USER_PROFILES[currentUserRole]?.defaultTab;
+      setCurrentTab(preferred && effectiveTabs.includes(preferred) ? preferred : effectiveTabs[0]);
+    }
+  }, [currentTab, currentUserRole, effectiveTabs.join('|')]);
   const [authRequest, setAuthRequest] = useState<ClinicalAuthRequest | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(getInitialSidebarCollapsed);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -415,8 +429,10 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     setCurrentUserRole(newRole);
     saveUserRole(newRole);
     const profile = USER_PROFILES[newRole];
-    if (profile && !profile.allowedTabs.includes(currentTab)) {
-      setCurrentTab(profile.defaultTab);
+    const nextAllowedTabs = getEffectiveAllowedTabs(newRole, featureFlags);
+    if (profile && !nextAllowedTabs.includes(currentTab)) {
+      const fallbackTab = nextAllowedTabs.includes(profile.defaultTab) ? profile.defaultTab : nextAllowedTabs[0];
+      if (fallbackTab) setCurrentTab(fallbackTab);
     }
     if (!isAudioMuted) clinicalAudio.playSuccessChime();
   };
@@ -1399,7 +1415,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           };
           setChatMessages(prev => [...prev, confirmMsg]);
 
-          if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('debt')) {
+          if (effectiveTabs.includes('debt')) {
             setCurrentTab('debt');
           }
           if (!isAudioMuted) clinicalAudio.playSuccessChime();
@@ -1492,7 +1508,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           };
           setChatMessages(prev => [...prev, confirmMsg]);
 
-          if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('equipment')) {
+          if (effectiveTabs.includes('equipment')) {
             setCurrentTab('equipment');
           }
         }
@@ -1502,14 +1518,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       if (batchIds.length > 0) {
         handleRestockBatches(batchIds);
         markExecuted();
-        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('fefo')) {
+        if (effectiveTabs.includes('fefo')) {
           setCurrentTab('fefo');
         }
       }
     } else if (actionType === 'NAVIGATE' || actionType === 'NAVIGATE_TAB') {
       const targetTab = cardData?.target_tab || cardData?.targetTab;
       if (targetTab) {
-        const userAllowedTabs = USER_PROFILES[currentUserRole]?.allowedTabs || ['cpoe'];
+        const userAllowedTabs = effectiveTabs;
         if (userAllowedTabs.includes(targetTab)) {
           setCurrentTab(targetTab);
         }
@@ -1518,14 +1534,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
           setCurrentUserRole('doctor');
         }
-        if (USER_PROFILES['doctor']?.allowedTabs.includes('cpoe')) {
+        if (getEffectiveAllowedTabs('doctor', featureFlags).includes('cpoe')) {
           setCurrentTab('cpoe');
         }
         setIsCopilotOpen(false);
         sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
         setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
       } else if (cardData?.openModal === 'prescription_advice') {
-        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+        if (effectiveTabs.includes('cpoe')) {
           setCurrentTab('cpoe');
         }
         setIsCopilotOpen(false);
@@ -1537,7 +1553,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
         setCurrentUserRole('doctor');
       }
-      if (USER_PROFILES['doctor']?.allowedTabs.includes('cpoe')) {
+      if (getEffectiveAllowedTabs('doctor', featureFlags).includes('cpoe')) {
         setCurrentTab('cpoe');
       }
       setIsCopilotOpen(false);
@@ -1545,7 +1561,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
       markExecuted();
     } else if (actionType === 'OPEN_SEND_EMAIL_SMS' || actionType === 'OPEN_PRESCRIPTION_ADVICE') {
-      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+      if (effectiveTabs.includes('cpoe')) {
         setCurrentTab('cpoe');
       }
       setIsCopilotOpen(false);
@@ -1561,7 +1577,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       handleOpenMedicationSafety(med);
       markExecuted();
     } else if (actionType === 'OPEN_FEFO_MODAL') {
-      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('fefo')) {
+      if (effectiveTabs.includes('fefo')) {
         setCurrentTab('fefo');
       }
       markExecuted();
@@ -1593,7 +1609,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
       setBatches(prev => [...newBatches, ...prev]);
       markExecuted();
-      if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('fefo')) {
+      if (effectiveTabs.includes('fefo')) {
         setCurrentTab('fefo');
       }
       if (!isAudioMuted) clinicalAudio.playSuccessChime();
@@ -1613,7 +1629,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           window.dispatchEvent(new CustomEvent('cpoe_order_created', { detail: order }));
         }
         markExecuted();
-        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+        if (effectiveTabs.includes('cpoe')) {
           setCurrentTab('cpoe');
         }
         if (!isAudioMuted) clinicalAudio.playSuccessChime();
@@ -1630,7 +1646,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       if (debtId) {
         handleToggleAmpouleReturn(debtId);
         markExecuted();
-        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('debt')) {
+        if (effectiveTabs.includes('debt')) {
           setCurrentTab('debt');
         }
         if (!isAudioMuted) clinicalAudio.playSuccessChime();
@@ -1647,7 +1663,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       if (debtId) {
         handleSettleDebt(debtId);
         markExecuted();
-        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('debt')) {
+        if (effectiveTabs.includes('debt')) {
           setCurrentTab('debt');
         }
         if (!isAudioMuted) clinicalAudio.playSuccessChime();
@@ -1788,7 +1804,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
         // Switch to corresponding tab (Enforcing strict RBAC isolation)
         if (actionPayload.targetTab) {
-          const userAllowedTabs = USER_PROFILES[currentUserRole]?.allowedTabs || ['debt'];
+          const userAllowedTabs = effectiveTabs;
           if (userAllowedTabs.includes(actionPayload.targetTab)) {
             setCurrentTab(actionPayload.targetTab);
           } else {
@@ -1823,14 +1839,14 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
           setCurrentUserRole('doctor');
         }
-        if (USER_PROFILES['doctor']?.allowedTabs.includes('cpoe')) {
+        if (getEffectiveAllowedTabs('doctor', featureFlags).includes('cpoe')) {
           setCurrentTab('cpoe');
         }
         setIsCopilotOpen(false); // Ẩn Chatbot
         sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
         setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
       } else if (actionType === 'OPEN_SEND_EMAIL_SMS' || actionType === 'OPEN_PRESCRIPTION_ADVICE' || cardData?.openModal === 'prescription_advice') {
-        if (USER_PROFILES[currentUserRole]?.allowedTabs.includes('cpoe')) {
+        if (effectiveTabs.includes('cpoe')) {
           setCurrentTab('cpoe');
         }
         setIsCopilotOpen(false); // Ẩn Chatbot
@@ -1838,7 +1854,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
       } else if (actionType === 'NAVIGATE' || actionType === 'NAVIGATE_TAB') {
         const targetTab = cardData?.target_tab || cardData?.targetTab;
-        if (targetTab && USER_PROFILES[currentUserRole]?.allowedTabs.includes(targetTab)) {
+        if (targetTab && effectiveTabs.includes(targetTab)) {
           setCurrentTab(targetTab);
         }
         if (cardData?.openModal === 'cpoe_prescription') {
@@ -1941,6 +1957,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             handleOpenMedicationSafety();
             setIsMobileSidebarOpen(false);
           }}
+          featureFlags={featureFlags}
         />
       </div>
 
@@ -1969,6 +1986,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onOpenUserGuide={() => setIsUserGuideOpen(true)}
           onOpenPrintableForms={() => handleOpenPrintForm('TT20_AMPOULE_DESTRUCTION')}
           onOpenMedicationSafety={() => handleOpenMedicationSafety()}
+          featureFlags={featureFlags}
         />
       </div>
 
@@ -2028,6 +2046,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
               onOpenCopilot={() => setIsCopilotOpen(true)}
               onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
               auditRecords={auditRecords}
+              featureFlags={featureFlags}
             />}
           </section>
         </main>
@@ -2044,6 +2063,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         coldChainTemp={coldChainState.currentTemp}
         isColdAlarm={coldChainState.alarmActive || coldChainState.currentTemp > 8.0}
         misallocatedAssetsCount={assets.filter(a => a.isMisallocated).length}
+        featureFlags={featureFlags}
       />
       {/* Mobile navigation is opened from the sidebar dock below. */}
       <button
