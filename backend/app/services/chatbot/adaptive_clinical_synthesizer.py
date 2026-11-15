@@ -205,11 +205,12 @@ def synthesize_adaptive_clinical_response(
         )
 
         clean_ind = _clean_clinical_lead(ind_snippet) or ind_snippet
-        clean_ind = _compact_sentence(clean_ind, 220)
-        clean_adult = _compact_sentence(adult_snippet, 240)
-        clean_ped = _compact_sentence(ped_snippet, 240)
-        clean_contra = _compact_sentence(contra_snippet, 240)
-        clean_adr = _compact_sentence(getattr(evidence, "core_adverse_effects", "") or getattr(evidence, "core_precautions", ""), 220)
+        # Keep the overview bounded while preserving complete source sentences.
+        clean_ind = _compact_sentence(clean_ind, 150)
+        clean_adult = _compact_sentence(adult_snippet, 150)
+        clean_ped = _compact_sentence(ped_snippet, 150)
+        clean_contra = _compact_sentence(contra_snippet, 130)
+        clean_adr = _compact_sentence(getattr(evidence, "core_adverse_effects", "") or getattr(evidence, "core_precautions", ""), 130)
         clean_timing = _compact_sentence(getattr(evidence, "core_timing", ""), 180)
 
         is_adult_targeted = (
@@ -224,7 +225,11 @@ def synthesize_adaptive_clinical_response(
         dose_lines = []
         if clean_adult and not is_pediatric_targeted:
             dose_lines.append(f"  - **Người lớn:** {clean_adult}")
-        if clean_ped and not is_adult_targeted:
+        # Overview is intentionally limited to the adult regimen unless the
+        # query explicitly targets children. Pediatric details remain
+        # available through the dedicated follow-up facet, preventing a
+        # general lookup from becoming a full monograph dump.
+        if clean_ped and is_pediatric_targeted:
             dose_lines.append(f"  - **Trẻ em:** {clean_ped}")
 
         lines = [
@@ -235,14 +240,30 @@ def synthesize_adaptive_clinical_response(
             lines.append(f"• **Chỉ định chính:** {clean_ind}")
         if dose_lines:
             lines.append(f"• **Liều dùng & Cách dùng:**\n" + "\n".join(dose_lines))
-        if clean_timing:
+        if clean_timing and ("timing_and_administration" in evidence.target_facets):
             lines.append(f"• **Thời điểm & Cách uống:** {clean_timing}")
         if clean_contra:
             lines.append(f"• **Chống chỉ định:** {clean_contra} [{source_cite}]")
-        if clean_adr:
+        if clean_adr and ("adverse_effects" in evidence.target_facets):
             lines.append(f"• **Cảnh báo an toàn & ADR:** {clean_adr}")
 
         reply_text = "\n".join(lines)
+        if len(reply_text) >= 500:
+            for removable in ("• **Cảnh báo an toàn & ADR:**", "• **Chống chỉ định:**", "• **Liều dùng & Cách dùng:**"):
+                if len(reply_text) < 500:
+                    break
+                kept = []
+                skipping_indented = False
+                for line in lines:
+                    if line.startswith(removable):
+                        skipping_indented = removable.endswith("Cách dùng:**")
+                        continue
+                    if skipping_indented and line.startswith("  - **"):
+                        continue
+                    skipping_indented = False
+                    kept.append(line)
+                lines = kept
+                reply_text = "\n".join(lines)
 
         chips = [
             f"Liều dùng cho trẻ em",

@@ -90,6 +90,11 @@ async def seed():
             ("is_useful", "BOOLEAN DEFAULT 1"),
             ("quality_category", "VARCHAR(64) DEFAULT 'high_value_clinical'"),
             ("grounded_source", "VARCHAR(256)"),
+            ("availability_mode", "VARCHAR(32)"),
+            ("rag_grounded", "BOOLEAN DEFAULT 0"),
+            ("evidence_count", "INTEGER DEFAULT 0"),
+            ("status_reason", "VARCHAR(128)"),
+            ("telemetry_version", "VARCHAR(16)"),
         ]
         for col_name, col_type in copilot_extra_cols:
             if col_name not in chat_log_cols:

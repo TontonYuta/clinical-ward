@@ -6,15 +6,14 @@ from app.services.copilot_business_overview import handle_business_overview_inte
 from app.services.copilot_intents_info import (
     handle_legal_intent,
     handle_shift_handover_intent,
-    handle_coldchain_intent,
+    # handle_coldchain_intent,
     handle_audit_intent,
     handle_ocr_intent,
 )
 from app.services.copilot_intents_actions import (
     handle_borrow_intent,
     handle_equipment_intent,
-    handle_fefo_intent,
-    handle_restock_intent,
+    # Legacy FEFO/restock handlers are retired; domain tools are used below.
 )
 from app.services.copilot_intents_prescription import (
     handle_prescription_advice_intent,
@@ -135,17 +134,20 @@ async def dispatch_operational_business(
     #     return await handle_equipment_intent(query, lower_query, user_name, db)
 
     if any(w in lower_query for w in ["fefo", "cận hạn", "hạn dùng", "hết hạn", "sắp hết hạn", "ngày hết hạn", "ưu tiên xuất", "bảng kho", "kho dược", "tồn kho dược", "bảng kho dược"]) or re.search(r"\bdate\b", lower_query):
-        return await handle_fefo_intent(db)
+        from app.domains.pharmacy_inventory.tools import PharmacyInventoryTools
+        return await PharmacyInventoryTools().execute_fefo(db)
 
     if any(w in lower_query for w in ["dự trù", "mẫu 01", "cạn kho", "sắp hết", "hết thuốc", "bù tồn kho", "chạm ngưỡng", "cơ số"]):
-        return await handle_restock_intent(db)
+        from app.domains.pharmacy_inventory.tools import PharmacyInventoryTools
+        return await PharmacyInventoryTools().execute_restock(db)
 
     if any(w in lower_query for w in ["chuỗi lạnh", "cold chain", "kho lạnh", "nhiệt độ tủ lạnh", "datalogger", "mất điện tủ", "arrhenius", "giám sát tủ lạnh", "nhiệt độ bảo quản"]) or re.search(r"\bmkt\b", lower_query):
         from app.services.scenarios.registry import dispatch_clinical_scenario
         sc_res = await dispatch_clinical_scenario(query, lower_query, user_name, "nurse", None, db)
         if sc_res:
             return sc_res
-        return await handle_coldchain_intent(db)
+        from app.domains.cold_chain.tools import ColdChainTools
+        return await ColdChainTools().status_response(db)
 
     if any(w in lower_query for w in ["kiểm toán", "toàn vẹn", "chuỗi băm", "sha256", "sha-256", "hmac", "nhật ký bảo mật", "sổ bất biến"]):
         return await handle_audit_intent(db)

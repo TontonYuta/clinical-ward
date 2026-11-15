@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
-from app.models.inventory import InventoryBatch
 from app.schemas.copilot import CopilotResponse
 from app.security.guardrails import validate_output_guardrail
 from app.services.copilot_gemini import query_gemini_models
@@ -105,12 +104,6 @@ async def retrieve_ground_truth_context(nlu_data: Dict[str, Any], db: AsyncSessi
     else:
         monograph = None
 
-    # 3. Lấy tồn kho thực tế nếu có
-    batch_stmt = select(InventoryBatch).where(func.lower(InventoryBatch.item_name).like(f"%{matched_drug.brand_name.lower()}%"))
-    batches = (await db.execute(batch_stmt)).scalars().all()
-    stock_qty = sum(batch.current_stock for batch in batches)
-    location = batches[0].warehouse_location if batches else "Kho Dược Trung Tâm"
-
     ind = (monograph.indications if monograph and monograph.indications else None) or matched_drug.indications or "Theo đơn chỉ định bác sĩ"
     adult_d = (monograph.adult_dosage if monograph and monograph.adult_dosage else None) or matched_drug.adult_dosage or "Tuân thủ đơn điều trị"
     ped_d = (monograph.pediatric_dosage if monograph and monograph.pediatric_dosage else None) or matched_drug.pediatric_dosage or "Thận trọng theo cân nặng/diện tích da"
@@ -146,7 +139,6 @@ async def retrieve_ground_truth_context(nlu_data: Dict[str, Any], db: AsyncSessi
         f"• Hoạt chất & Nồng độ: {matched_drug.active_ingredient} ({matched_drug.concentration or 'Theo nhãn'})",
         f"• Số đăng ký (SĐK): {matched_drug.national_code}",
         f"• Dạng bào chế: {matched_drug.dosage_form or 'Theo nhãn'} ({matched_drug.route or 'Đường dùng chuẩn'})",
-        f"• Tồn kho bệnh viện: {stock_qty} {matched_drug.standard_unit} (Vị trí: {location})",
         f"\n=== CHUYÊN LUẬN LÂM SÀNG DƯỢC THƯ QUỐC GIA (DĐVN V) ===",
         f"• Chỉ định: {ind}",
         f"• Liều người lớn: {adult_d}",
@@ -167,7 +159,6 @@ async def retrieve_ground_truth_context(nlu_data: Dict[str, Any], db: AsyncSessi
         "citations": citations,
         "drug": matched_drug,
         "monograph": monograph,
-        "stock": stock_qty,
         "legal_basis": src
     }
 
@@ -214,7 +205,7 @@ async def synthesize_persona_optimized_output(
         f"• **Chỉ định chính:** {format_clinical_text(indications_text)}\n"
         f"• **Liều dùng & Cách dùng:** {format_clinical_text(dosage_text)}\n"
         f"• **Chống chỉ định & Thận trọng:** {format_clinical_text(contra_text)}\n"
-        f"• **Tồn kho thực tế:** {ground_truth.get('stock', 0)} {drug.standard_unit}\n\n"
+        f"\n"
         f"*(Dữ liệu được đối soát trực tiếp từ danh mục Cục Quản Lý Dược và Dược Thư Quốc Gia Việt Nam)*"
     )
 

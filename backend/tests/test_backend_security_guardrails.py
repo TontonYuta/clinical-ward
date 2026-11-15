@@ -164,10 +164,9 @@ async def test_coldchain_telemetry_vs_emergency_intent():
         assert res_telemetry.status_code == 200
         data_tel = res_telemetry.json()
         assert data_tel["intent"] == "CLINICAL_COLD_CHAIN_TELEMETRY"
-        assert "4.5°C" in data_tel["reply_text"]
-        assert "Bình thường (An toàn)" in data_tel["reply_text"]
+        assert "xác minh" in data_tel["reply_text"].lower()
+        assert "4.5°C" not in data_tel["reply_text"]
         assert data_tel["card"] is not None
-        assert data_tel["card"]["card_type"] == "coldchain_status"
 
         # 2. Incident query: Reporting an outage / emergency
         res_emergency = await client.post("/api/v1/copilot/chat", json={
@@ -178,10 +177,7 @@ async def test_coldchain_telemetry_vs_emergency_intent():
         assert res_emergency.status_code == 200
         data_em = res_emergency.json()
         assert data_em["intent"] == "CLINICAL_COLD_CHAIN_ALERT"
-        assert "XỬ TRÍ SỰ CỐ" in data_em["reply_text"]
-        assert "Kích hoạt bình tích lạnh" in data_em["reply_text"]
-        assert data_em["card"] is not None
-        assert data_em["card"]["card_type"] == "coldchain_monitor"
+        assert "xác minh" in data_em["reply_text"].lower()
 
 @pytest.mark.asyncio
 async def test_out_of_database_knowledge_boundary():

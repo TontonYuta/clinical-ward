@@ -100,6 +100,11 @@ async def lifespan(app: FastAPI):
             ("has_image", "BOOLEAN DEFAULT 0"),
             ("image_tokens", "INTEGER DEFAULT 0"),
             ("latency_ms", "FLOAT DEFAULT 85.0"),
+            ("availability_mode", "VARCHAR(32)"),
+            ("rag_grounded", "BOOLEAN DEFAULT 0"),
+            ("evidence_count", "INTEGER DEFAULT 0"),
+            ("status_reason", "VARCHAR(128)"),
+            ("telemetry_version", "VARCHAR(16)"),
         ]
         for col_name, col_type in copilot_extra_cols:
             if col_name not in chat_log_cols:

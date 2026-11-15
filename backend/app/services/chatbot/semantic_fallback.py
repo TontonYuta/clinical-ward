@@ -51,7 +51,14 @@ def extract_parameters(query: str, lower: str, intent: ClinicalIntent) -> Dict[s
         qty_match = re.search(r"(\d+)\s*(lọ|ống|bộ|cái|hộp|liều|chai|viên)?", lower)
         params["quantity"] = int(qty_match.group(1)) if qty_match and qty_match.group(1) else 1
         params["unit"] = qty_match.group(2) if qty_match and qty_match.group(2) else "ống"
-        params["drug_name"] = query
+        # Keep the requested item separate from the transaction sentence.
+        # This is surface-form extraction only; identity is still verified
+        # against the inventory database by the execution tool.
+        item_match = re.search(
+            r"\d+\s*(?:lọ|ống|bộ|cái|hộp|liều|chai|viên)\s+(.+?)(?=\s+(?:cho|tại|ở|vào|để)\b|$)",
+            lower,
+        )
+        params["drug_name"] = item_match.group(1).strip() if item_match else query
         params["urgency"] = "urgent" if any(w in lower for w in ["gấp", "khẩn", "stat", "ngay", "cấp cứu"]) else "routine"
 
     elif intent == ClinicalIntent.FEFO_INVENTORY_CHECK:
@@ -114,6 +121,14 @@ def fallback_semantic_classification(query: str) -> IntentExtractionResult:
             has_qty = bool(re.search(r"\d+\s*(lọ|ống|viên|bộ|hộp|chai|liều|cái|adre|morphin)?", lower)) or bool(re.search(r"(?:tiêm|cho|lấy|cần|kê|xuất)\s+\d+", lower))
             if not has_qty and not any(w in lower for w in ["mượn", "xuất khẩn", "rút khẩn"]):
                 score = 0.0
+            elif has_qty and is_dispense_op:
+                # A transactional request can omit the profile's explicit
+                # action anchors (for example, "cho 1 lọ ...").  The
+                # quantity/unit + action structure is a generic linguistic
+                # signal; it does not infer a drug, stock level, or clinical
+                # fact.  Keep the decision gated by the same inquiry guard
+                # above so ordinary dosage questions remain consultation.
+                score = max(score, 2.0)
 
         if score > best_score and score >= 2.0:
             best_score = score

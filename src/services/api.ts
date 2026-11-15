@@ -22,6 +22,8 @@ export interface ChatbotAvailability {
   vector_index: 'available' | 'unavailable';
   provider: 'available' | 'unavailable' | 'not_configured' | 'unknown';
   checked_at: string;
+  vector_index_reason?: string | null;
+  vector_count?: number | null;
 }
 
 export async function fetchChatbotAvailability(): Promise<ChatbotAvailability> {

@@ -1,0 +1,1 @@
+"""Cold-chain monitoring domain."""

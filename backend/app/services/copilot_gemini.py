@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models.debt import DebtRecord
 from app.models.equipment import EquipmentTicket
-from app.models.coldchain import ColdChainCurrentState
 
 SYSTEM_PROMPT = """Bạn là Trợ Lý Trí Tuệ Nhân Tạo Lâm Sàng (Clinical AI Copilot) chuyên nghiệp, phục vụ tại Bệnh viện và Cơ sở Y tế Việt Nam.
 Người sử dụng là bác sĩ/nhân viên y tế; người bệnh là đối tượng của một ca bệnh riêng. Không trò chuyện với người dùng như thể họ là bệnh nhân, không hỏi về triệu chứng sức khỏe của bác sĩ và không tự tạo hồ sơ/đơn thuốc/lịch dùng thuốc. Nếu yêu cầu quyết định cá thể hóa nhưng chưa có ca/người bệnh được xác định, hãy hỏi bác sĩ bổ sung thông tin ca.
@@ -76,29 +75,28 @@ async def ask_backend_gemini_copilot(
         return None
 
     try:
-        debt_res = await db.execute(select(DebtRecord))
-        debts = debt_res.scalars().all()
-        active_debts = len([d for d in debts if d.status == "debt"])
-        pending_ampoules = len([d for d in debts if d.item_type == "Thuốc gây nghiện" and not d.ampoule_returned])
-
-        ticket_res = await db.execute(select(EquipmentTicket))
-        tickets = ticket_res.scalars().all()
-        urgent_tickets = len([t for t in tickets if t.urgency == "urgent" and t.status != "resolved"])
-
-        cc_res = await db.execute(select(ColdChainCurrentState))
-        cc = cc_res.scalars().first()
-        temp = cc.current_temp if cc else 4.5
-
         is_shift_query = any(w in query.lower() for w in ["ca trực", "giao ban", "đối soát", "tồn đọng", "khoa phòng", "bàn giao", "tổng quan ca"])
         context = ""
         if is_shift_query:
+            debt_res = await db.execute(select(DebtRecord))
+            debts = debt_res.scalars().all()
+            active_debts = len([d for d in debts if d.status == "debt"])
+            pending_ampoules = len([d for d in debts if d.item_type == "Thuốc gây nghiện" and not d.ampoule_returned])
+
+            ticket_res = await db.execute(select(EquipmentTicket))
+            tickets = ticket_res.scalars().all()
+            urgent_tickets = len([t for t in tickets if t.urgency == "urgent" and t.status != "resolved"])
+
+            from app.domains.cold_chain.repository import ColdChainRepository
+            snapshot = await ColdChainRepository.get_current_snapshot(db)
+            temp = snapshot.current_temp if snapshot is not None else None
             context = (
                 f"\n\n[Bối cảnh ca trực hiện tại: "
                 f"Người dùng: {user_name} ({user_role}), "
                 f"Nợ ca đêm: {active_debts} phiếu, "
                 f"Vỏ Morphin chưa nộp: {pending_ampoules} vỏ, "
                 f"Sự cố TBYT khẩn: {urgent_tickets}, "
-                f"Nhiệt độ tủ vắc xin: {temp}°C]"
+                f"Nhiệt độ tủ vắc xin: {temp if temp is not None else 'chưa có dữ liệu'}]"
             )
 
         fenced_prompt = f"<user_query>\n{query}\n</user_query>{context}"

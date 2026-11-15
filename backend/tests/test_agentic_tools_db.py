@@ -1,4 +1,8 @@
 import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from app.database import Base
+from app.models.inventory import InventoryBatch
 from app.database import AsyncSessionLocal
 from app.services.chatbot.agentic_router import IntentExtractionResult, ClinicalIntent
 from app.services.chatbot.agentic_tools import (
@@ -9,6 +13,99 @@ from app.services.chatbot.agentic_tools import (
     execute_shift_handover_tool,
     execute_coldchain_tool
 )
+
+
+@pytest_asyncio.fixture
+async def empty_inventory_session():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session:
+        yield session
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_agentic_dispense_does_not_fabricate_missing_inventory(empty_inventory_session):
+    params = IntentExtractionResult(
+        intent=ClinicalIntent.DISPENSE_MEDICATION,
+        drug_name="thuốc chưa có trong dữ liệu",
+        quantity=1,
+        unit="ống",
+    )
+
+    response = await execute_dispense_tool(empty_inventory_session, params, "ĐD. Minh", "nurse")
+
+    assert response.answer_type == "unavailable"
+    assert response.source_status == "inventory_record_not_found"
+    assert response.card is None
+    assert response.evidence == []
+
+
+@pytest.mark.asyncio
+async def test_agentic_dispense_rejects_quantity_above_persisted_stock(empty_inventory_session):
+    empty_inventory_session.add(InventoryBatch(
+        id="limited-batch", item_name="Medication Q", batch_number="Q-1",
+        category="Medication", expiry_date="2027-01-01", days_left=100,
+        current_stock=2, min_threshold=0, max_threshold=5, unit="vial",
+        warehouse_location="Cabinet 1",
+    ))
+    await empty_inventory_session.commit()
+    params = IntentExtractionResult(
+        intent=ClinicalIntent.DISPENSE_MEDICATION, drug_name="Medication Q",
+        quantity=3, unit="vial",
+    )
+
+    response = await execute_dispense_tool(empty_inventory_session, params, "Nurse", "nurse")
+
+    assert response.answer_type == "unavailable"
+    assert response.source_status == "insufficient_inventory"
+    assert response.card is None
+
+
+@pytest.mark.asyncio
+async def test_agentic_dispense_selects_a_batch_with_sufficient_stock(empty_inventory_session):
+    empty_inventory_session.add_all([
+        InventoryBatch(
+            id="near-expiry", item_name="Medication R", batch_number="R-1",
+            category="Medication", expiry_date="2027-01-01", days_left=10,
+            current_stock=1, min_threshold=0, max_threshold=5, unit="vial",
+            warehouse_location="Cabinet 1",
+        ),
+        InventoryBatch(
+            id="available-batch", item_name="Medication R", batch_number="R-2",
+            category="Medication", expiry_date="2028-01-01", days_left=100,
+            current_stock=5, min_threshold=0, max_threshold=5, unit="vial",
+            warehouse_location="Cabinet 2",
+        ),
+    ])
+    await empty_inventory_session.commit()
+    params = IntentExtractionResult(
+        intent=ClinicalIntent.DISPENSE_MEDICATION, drug_name="Medication R", quantity=3,
+    )
+
+    response = await execute_dispense_tool(empty_inventory_session, params, "Nurse", "nurse")
+
+    assert response.card is not None
+    assert response.card.data["batch_number"] == "R-2"
+
+
+@pytest.mark.asyncio
+async def test_agentic_equipment_report_does_not_fabricate_missing_device(empty_inventory_session):
+    params = IntentExtractionResult(
+        intent=ClinicalIntent.REPORT_EQUIPMENT_INCIDENT,
+        device_name="thiết bị không có trong dữ liệu",
+        issue_description="không khởi động",
+    )
+
+    response = await execute_equipment_tool(empty_inventory_session, params, "KTV", "engineer")
+
+    assert response.card is not None
+    assert response.card.data["device_name"] == "thiết bị không có trong dữ liệu"
+    assert response.card.data["device_model"] is None
+    assert response.card.data["serial_number"] is None
+    assert response.card.data["risk_class"] is None
 
 @pytest.mark.asyncio
 async def test_agentic_dispense_tool_real_db():

@@ -74,6 +74,14 @@ def test_reason_pediatric_dosage_with_weight():
     assert "400 – 600 mg/lần" in res
     assert "2400 mg/ngày" in res
 
+def test_weight_only_pediatric_dosage_does_not_invent_regimen_without_age():
+    query = "Paracetamol cho trẻ 15kg liều thế nào"
+    slots = extract_demographic_slots(query)
+    result = reason_pediatric_dosage(
+        "Paracetamol", "paracetamol", "Dược thư có nhiều nhóm tuổi và đường dùng", query, slots
+    )
+    assert result is None
+
 
 @pytest.mark.asyncio
 async def test_api_copilot_chat_pediatric_12yo_integration():

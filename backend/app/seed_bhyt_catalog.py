@@ -31,10 +31,10 @@ def resolve_db_path(db_file: str | None = None) -> str:
         return "/tmp/clinical_hospital.db"
     candidates = (
         "/app/clinical_hospital.db",
-        "clinical_hospital.db",
         "backend/clinical_hospital.db",
         "../clinical_hospital.db",
         os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "clinical_hospital.db")),
+        "clinical_hospital.db",
         "/home/tontonyuta/Downloads/DoAn2/backend/clinical_hospital.db"
     )
     for c in candidates:

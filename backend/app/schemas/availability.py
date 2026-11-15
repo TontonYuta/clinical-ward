@@ -13,3 +13,5 @@ class AvailabilityResponse(BaseModel):
     provider: Literal["available", "unavailable", "not_configured", "unknown"]
     checked_at: str
     provider_checked_at: str | None = None
+    vector_index_reason: str | None = None
+    vector_count: int | None = None

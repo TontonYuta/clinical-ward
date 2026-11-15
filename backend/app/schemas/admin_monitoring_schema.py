@@ -75,6 +75,11 @@ class TelemetryEventItem(BaseModel):
     session_id: Optional[str] = None
     grounded_source: Optional[str] = None
     quality_category: Optional[str] = None
+    availability_mode: Optional[str] = None
+    rag_grounded: bool = False
+    evidence_count: int = 0
+    status_reason: Optional[str] = None
+    telemetry_version: Optional[str] = None
 
 class BhytAuditLogItem(BaseModel):
     id: str

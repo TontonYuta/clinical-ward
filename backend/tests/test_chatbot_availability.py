@@ -96,3 +96,12 @@ class _BrokenConnection:
         raise RuntimeError("database unavailable")
     async def __aexit__(self, *_):
         return False
+
+@pytest.mark.asyncio
+async def test_vector_index_diagnostic_accepts_valid_npz_cache_when_sqlite_table_missing(monkeypatch, tmp_path):
+    import numpy as np
+    cache = tmp_path / "clinical_embeddings_cache.npz"
+    np.savez_compressed(cache, matrix=np.eye(2, dtype=np.float32), chunk_ids=np.array(["a", "b"], dtype=object))
+    monkeypatch.setattr(availability, "_inspect_vector_index_sync", lambda: ("available", "npz_cache", 2))
+    result = await availability._get_vector_index_status()
+    assert result == ("available", "npz_cache", 2)

@@ -11,6 +11,7 @@ from app.services.session_context import get_or_create_session
 from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
 from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
 from app.services.chatbot.adaptive_clinical_synthesizer import synthesize_adaptive_clinical_response
+from app.services.chatbot import adaptive_drug_slicer as slicer
 
 
 @pytest.mark.asyncio
@@ -86,3 +87,10 @@ async def test_adaptive_max_dosage():
 
         resp = synthesize_adaptive_clinical_response(evidence, "Bác sĩ", "doctor", session.session_id)
         assert "4.000 mg" in resp.reply_text or "4g" in resp.reply_text or "4 g" in resp.reply_text
+
+
+def test_missing_clinical_facet_is_explicitly_unavailable():
+    response = slicer._facet_unavailable("chức năng thận")
+
+    assert "chưa có dữ liệu" in response.lower()
+    assert "thận trọng" not in response.lower()

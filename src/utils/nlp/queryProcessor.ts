@@ -25,6 +25,11 @@ import { matchDrugLookupGuideIntent, handleDrugLookupGuideIntent } from './inten
 import { matchPrescriptionAdviceIntent, handlePrescriptionAdviceIntent } from './intents/prescriptionAdviceIntent';
 import { matchCpoeIntent, handleCpoeIntent } from './intents/cpoeIntent';
 import { matchDebtSettleIntent, handleDebtSettleIntent } from './intents/debtSettleIntent';
+/**
+ * @deprecated Legacy synchronous client router. Production requests use
+ * processClinicalAgentQueryAsync() and the backend unified workflow. Keep this
+ * export for compatibility until downstream consumers are migrated.
+ */
 import { validateClientInputGuardrail } from '../security/clinicalGuardrails';
 
 export function processClinicalUserQuery(

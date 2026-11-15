@@ -17,6 +17,19 @@ def test_dispense_intent_detection():
         res = fallback_semantic_classification(q)
         assert res.intent == ClinicalIntent.DISPENSE_MEDICATION, f"Failed for query: {q}, got {res.intent}"
 
+def test_dispense_extracts_item_from_short_transaction_request():
+    result = fallback_semantic_classification("Cho 1 lọ morphin")
+
+    assert result.intent == ClinicalIntent.DISPENSE_MEDICATION
+    assert result.quantity == 1
+    assert result.unit == "lọ"
+    assert result.drug_name == "morphin"
+
+def test_dosage_question_does_not_become_dispense_request():
+    result = fallback_semantic_classification("Cho tôi biết liều 1 lọ morphin")
+
+    assert result.intent == ClinicalIntent.CLINICAL_CONSULTATION
+
 def test_equipment_incident_detection():
     cases = [
         "máy thở PB840 phòng mổ 2 bị xì khí nứt bẫy nước",

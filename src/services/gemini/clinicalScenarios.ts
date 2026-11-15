@@ -4,6 +4,12 @@
  * Điều Phối 12 Kịch Bản Lâm Sàng Chuyên Sâu Tác Tử Gemini AI & CSDL Bệnh Viện Thực Tế (<=280 LOC)
  */
 
+/**
+ * @deprecated Legacy client-side scenario renderer.
+ * The production chatbot workflow is backend Copilot -> RAG -> evidence contract
+ * through src/utils/nlp/agentAsync.ts. This module remains only for compatibility
+ * with existing tests and must not be used to answer production queries.
+ */
 import { AgentActionCard, ColdChainMonitorState } from '../../types/clinical';
 import { findPatientByNameOrQuery, INITIAL_PATIENTS } from '../patientService';
 import { INITIAL_PRESCRIPTIONS } from '../../data/mockCpoeData';

@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import pytest
+from fastapi import Request
 
 from app.services.chatbot.workflow_models import ClinicalRequestContext
 from app.services.chatbot.workflow_router import decide_route, prepare_request
@@ -249,3 +250,22 @@ async def test_unanchored_medication_intent_fails_closed_before_lookup(monkeypat
     assert response.answer_type == "safe_abstention"
     assert response.source_status == "unanchored_turn"
     lookup.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_out_of_domain_query_abstains_before_nlu_call(monkeypatch):
+    from unittest.mock import AsyncMock
+    from app.services.session_context import SessionState
+    from app.schemas.copilot import CopilotQuery
+    from app.services.chatbot import copilot_orchestrator
+    nlu = AsyncMock(side_effect=AssertionError("OOD query reached remote NLU"))
+    monkeypatch.setattr("app.services.chatbot.gemini_nlu_router.parse_clinical_nlu", nlu)
+    request = Request({"type": "http", "method": "POST", "path": "/chat", "headers": [],
+                       "query_string": b"", "server": ("test", 80), "client": ("test", 1), "scheme": "http"})
+    session = SessionState("test-session", "test", "doctor")
+    response = await copilot_orchestrator._handle_copilot_chat_core(
+        CopilotQuery(query="dự báo thời tiết ngày mai"), request, None,
+        session=session, history="",
+    )
+    assert response.answer_type == "safe_abstention"
+    assert response.source_status == "out_of_scope"
+    nlu.assert_not_awaited()

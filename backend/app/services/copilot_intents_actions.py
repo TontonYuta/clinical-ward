@@ -1,8 +1,7 @@
 import re
 from datetime import datetime
-from sqlalchemy import select
+# Legacy inventory handlers are retained below only as compatibility adapters.
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.inventory import InventoryBatch
 from app.models.equipment import EquipmentTicket
 from app.services.copilot_catalog import find_matched_med, find_matched_eq, MEDICATION_CATALOG
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
@@ -103,72 +102,12 @@ async def handle_equipment_intent(query: str, lower_query: str, user_name: str, 
     )
 
 async def handle_fefo_intent(db: AsyncSession) -> CopilotResponse:
-    stmt = select(InventoryBatch).order_by(InventoryBatch.days_left.asc())
-    res = await db.execute(stmt)
-    batches = res.scalars().all()
-    near_expiry = [b for b in batches if b.days_left < 60]
+    """Compatibility adapter; the former inline FEFO handler is retired."""
+    from app.domains.pharmacy_inventory.tools import PharmacyInventoryTools
+    return await PharmacyInventoryTools().execute_fefo(db)
 
-    card = CopilotActionCard(
-        card_type="fefo_report",
-        title="Danh Mục Thuốc Cận Hạn FEFO (< 60 ngày)",
-        summary=f"Có {len(near_expiry)} lô thuốc cần ưu tiên xuất theo Thông tư 36 GSP",
-        data={
-            "batches": [
-                {"name": b.item_name, "batch": b.batch_number, "expiry": b.expiry_date, "days_left": b.days_left, "stock": b.current_stock, "unit": b.unit}
-                for b in near_expiry
-            ]
-        },
-        primary_action_label="Điều Phối Xuất Kho FEFO",
-        primary_action_type="NAVIGATE_TAB",
-        target_tab="fefo"
-    )
-    reply_lines = [
-        "### 📅 BÁO CÁO TỒN KHO THEO NGUYÊN TẮC FEFO (TT 36/2018/TT-BYT)\n",
-        "• **Nguyên tắc FEFO (First Expired, First Out):** Thuốc có hạn dùng ngắn hơn phải được xuất trước. Dược sĩ kho kiểm tra đối chiếu số lô hạn dùng trên thực tế với phần mềm trước khi giao thuốc cho các khoa lâm sàng.",
-        "• **Giám sát cận hạn:** Hệ thống rà soát toàn bộ lô thuốc trong kho nội trú và tủ trực, cảnh báo các mặt hàng có hạn dùng dưới 60 ngày để ưu tiên cấp phát hoặc điều chuyển đơn vị khác.\n"
-    ]
-    for b in near_expiry[:4]:
-        reply_lines.append(f"• **{b.item_name}** (Lô `{b.batch_number}`): Còn **{b.days_left} ngày** (Hạn dùng: `{b.expiry_date}`) - Tồn `{b.current_stock} {b.unit}`")
-    return CopilotResponse(
-        intent="QUERY_FEFO_EXPIRY",
-        reply_text="\n".join(reply_lines),
-        card=card,
-        legal_basis="Thông tư 36/2018/TT-BYT (Thực hành tốt bảo quản thuốc GSP) & Thông tư 22/2011/TT-BYT",
-        suggested_chips=["Kiểm tra hạn dùng FEFO", "Danh mục thuốc cận hạn < 60 ngày", "Quy tắc xuất kho FEFO"]
-    )
 
 async def handle_restock_intent(db: AsyncSession) -> CopilotResponse:
-    stmt = select(InventoryBatch)
-    res = await db.execute(stmt)
-    batches = res.scalars().all()
-    low_stocks = [b for b in batches if b.is_low_stock or b.current_stock <= b.min_threshold]
-
-    card = CopilotActionCard(
-        card_type="low_stock_report",
-        title="Phiếu Dự Trù Bù Tồn Kho (Mẫu 01/TT22)",
-        summary=f"Có {len(low_stocks)} mặt hàng chạm ngưỡng cơ số tối thiểu cần bổ sung",
-        data={
-            "items": [
-                {"name": b.item_name, "needed": (b.max_threshold or 20) - b.current_stock, "unit": b.unit}
-                for b in low_stocks
-            ]
-        },
-        primary_action_label="Ký Duyệt Dự Trù Mẫu 01",
-        primary_action_type="NAVIGATE_TAB",
-        target_tab="fefo"
-    )
-    reply_lines = [
-        "### 📦 ĐỀ XUẤT DỰ TRÙ BỔ SUNG CƠ SỐ TỦ TRỰC (TT 22 MẪU 01)\n",
-        "• **Cơ sở lập dự trù:** Căn cứ vào số lượng thuốc đã dùng theo y lệnh trong ca trực để lập phiếu lĩnh bù thuốc cấp cứu.",
-        "• **Quy trình phê duyệt:** Dược sĩ kho duyệt và cấp phát bù đúng số lượng và chủng loại để tủ trực luôn đủ cơ số quy định.\n"
-    ]
-    for b in low_stocks[:4]:
-        needed = (b.max_threshold or 20) - b.current_stock
-        reply_lines.append(f"• **{b.item_name}**: Tồn hiện tại `{b.current_stock} {b.unit}` / Min `{b.min_threshold}` ➡️ Cần bù **+{needed} {b.unit}**")
-    return CopilotResponse(
-        intent="PROPOSE_RESTOCK_PLAN",
-        reply_text="\n".join(reply_lines),
-        card=card,
-        legal_basis="Mẫu số 01/TT22 Thông tư 22/2011/TT-BYT Quy chế Khoa Dược",
-        suggested_chips=["Kiểm tra hạn dùng FEFO", "Thẩm định đơn thuốc theo TT 26", "Kê đơn thuốc CPOE"]
-    )
+    """Compatibility adapter; the former inline restock handler is retired."""
+    from app.domains.pharmacy_inventory.tools import PharmacyInventoryTools
+    return await PharmacyInventoryTools().execute_restock(db)

@@ -61,7 +61,7 @@ async def test_stream_emits_error_without_done_when_orchestrator_fails(monkeypat
 @pytest.mark.asyncio
 async def test_stream_persists_image_usage_metadata(monkeypatch):
     response = CopilotResponse(
-        intent="MULTIMODAL_CLINICAL_VISION", reply_text="OCR", has_image=True, image_tokens=258,
+        intent="MULTIMODAL_CLINICAL_VISION", reply_text="OCR", has_image=True, image_tokens=0,
         answer_type="image_extraction", source_status="image_extracted_unverified",
     )
     session = SimpleNamespace(
@@ -83,4 +83,8 @@ async def test_stream_persists_image_usage_metadata(monkeypatch):
 
     assert len(entries) == 1
     assert entries[0].has_image is True
-    assert entries[0].image_tokens == 258
+    assert entries[0].image_tokens == 0
+    assert entries[0].telemetry_version == "v2"
+    assert entries[0].availability_mode == "local_only"
+    assert entries[0].rag_grounded is False
+    assert entries[0].evidence_count == 0

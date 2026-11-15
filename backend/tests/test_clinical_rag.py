@@ -190,6 +190,29 @@ async def test_rag_assigns_only_prompt_evidence_ids_to_generated_claims(monkeypa
     assert result.evidence_claim_map == {"document:claim-evidence-1": ["claim-1"]}
 
 
+@pytest.mark.asyncio
+async def test_general_gemini_query_does_not_load_operational_context(monkeypatch):
+    from app.services import copilot_gemini
+
+    async def fail_if_db_is_read(*args, **kwargs):
+        raise AssertionError("unrelated query must not load operational DB context")
+
+    async def fake_generate(prompt, api_key):
+        return "Tra cứu xong."
+
+    class NoOperationalReads:
+        execute = fail_if_db_is_read
+
+    monkeypatch.setattr("app.services.admin_key_vault.get_active_api_key", lambda provider: "test-api-key-12345")
+    monkeypatch.setattr(copilot_gemini, "query_gemini_models", fake_generate)
+
+    result = await copilot_gemini.ask_backend_gemini_copilot(
+        "Xin chào", "doctor", "Bác sĩ", NoOperationalReads()
+    )
+
+    assert result == "Tra cứu xong."
+
+
 def test_claim_parser_rejects_unknown_evidence_ids_and_malformed_payloads():
     from app.services.rag.rag_pipeline import _parse_answer_claims
 

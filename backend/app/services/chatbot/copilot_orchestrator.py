@@ -208,7 +208,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 rag_grounded=grounded,
                 citations=citations,
                 evidence=evidence,
-                answer_type=("out_of_scope" if is_non_clinical else ("grounded_reference" if grounded else "image_extraction")),
+                answer_type=("safe_abstention" if is_non_clinical else ("grounded_reference" if grounded else "image_extraction")),
                 source_status="out_of_scope" if is_non_clinical else ("verified_evidence" if grounded else "image_extracted_unverified"),
                 abstention_reason=None if (grounded or is_non_clinical) else "Không có evidence/citation kiểm chứng cho kết quả phân tích ảnh",
                 prompt_tokens=vision_res.get("_prompt_tokens", 0),
@@ -216,7 +216,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 total_tokens=vision_res.get("_total_tokens", 0),
                 model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
                 has_image=True,
-                image_tokens=vision_res.get("_image_tokens", 258)
+                image_tokens=vision_res.get("_image_tokens", 0)
             )
 
     query = guard_res.sanitized_query
@@ -227,6 +227,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     sanitized_ctx = sanitize_clinical_input(query)
     query = sanitized_ctx.clean_query
     lower_query = query.lower()
+
+    # Reject clearly non-clinical requests before remote NLU. This keeps the
+    # request out of medication/session context and avoids an unnecessary
+    # provider call. Legacy route checks remain as a secondary guard.
+    early_boundary = handle_out_of_scope_or_pricing(lower_query)
+    if early_boundary is not None:
+        return early_boundary.model_copy(update={"session_id": session_id})
 
     # Gemini NLU Router (Structured Intent & Entity Resolution - Zero Hardcode)
     from app.services.chatbot.gemini_nlu_router import parse_clinical_nlu
@@ -295,12 +302,18 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 is_field_inquiry
                 or getattr(nlu_res, "conversation_mode", "independent") == "contextual_followup"
                 or getattr(nlu_res, "is_deictic_referent", False)
+                or getattr(nlu_res, "intent", "") == "MEDICATION_INTERACTION_CLARIFICATION"
             )
+        )
+        is_generic_interaction_followup = (
+            bool(session.active_medication_name)
+            and getattr(nlu_res, "intent", "") == "MEDICATION_INTERACTION_CLARIFICATION"
         )
         if (
             session.active_medication_name
             and not query_has_medication_entity
             and not has_session_reference
+            and not is_generic_interaction_followup
             and getattr(nlu_res, "intent", "") in {
                 "MEDICATION_LOOKUP", "MEDICATION_INTERACTION_CHECK",
                 "MEDICATION_INTERACTION_CLARIFICATION", "PATIENT_CASE_REASONING",
@@ -898,10 +911,10 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
 
 
 def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotResponse:
-    if resp.intent == "MULTIMODAL_CLINICAL_VISION" and resp.answer_type in {"image_extraction", "out_of_scope"}:
+    if resp.intent == "MULTIMODAL_CLINICAL_VISION" and resp.answer_type in {"image_extraction", "safe_abstention", "out_of_scope"}:
         return resp
     non_factual_types = {
-        "clarification", "safe_abstention", "feedback_acknowledgment",
+        "clarification", "corrective_clarification", "safe_abstention", "feedback_acknowledgment",
         "conversational_feedback", "conversational_correction",
         "conversational_guidance", "capability_overview", "unavailable",
         "operational_result", "action_result", "action_confirmation", "cdss_alert",
@@ -980,7 +993,7 @@ def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotRespons
             continue
         if any(
             not item.get("source_id") or not _has_verified_source_version(item.get("source_version"))
-            or " ".join(str(claim.text).casefold().split()) not in " ".join(str(item.get("content") or "").casefold().split())
+            or (claim.claim_type == "source_fact" and " ".join(str(claim.text).casefold().split()) not in " ".join(str(item.get("content") or "").casefold().split()))
             for item in linked
         ):
             continue

@@ -14,6 +14,9 @@ async def test_admin_telemetry_overview():
         assert "total_queries" in data
         assert "cache_hit_rate_pct" in data
         assert "tokens_consumed" in data
+        telemetry = await client.get("/api/v1/admin/monitoring/telemetry-logs?page_size=200")
+        assert telemetry.status_code == 200
+        assert data["total_queries"] == telemetry.json()["total_items"]
         assert "tokens_saved" in data
         assert "bhyt_rejection_saved_vnd" in data
         assert "bhyt_logs" in data
@@ -154,6 +157,34 @@ async def test_real_token_ledger_and_auto_heartbeat():
     from app.services.admin_monitoring_service import map_chat_log_to_telemetry_event
     legacy = CopilotChatLog(id="legacy-estimated", session_id="s", user_name="u", user_role="doctor", query="q", reply_text="answer", prompt_tokens=1000, completion_tokens=500, total_tokens=1500, usage_source="estimated")
     assert map_chat_log_to_telemetry_event(legacy).total_tokens == 0
+    mapped = map_chat_log_to_telemetry_event(legacy)
+    assert mapped.latency_ms == 0
+    assert mapped.image_tokens == 0
+    assert mapped.rag_grounded is False
+    assert mapped.model_name == "unknown"
+    assert mapped.provider == "unknown"
+    from app.models.copilot_log import CopilotChatLog
+    current = CopilotChatLog(
+        id="current-v2", session_id="s", user_name="u", user_role="doctor",
+        query="q", reply_text="answer", model_name="local-rag-engine", provider="local",
+        latency_ms=12.5, availability_mode="local_only", rag_grounded=True,
+        evidence_count=2, status_reason=None, telemetry_version="v2",
+    )
+    current_event = map_chat_log_to_telemetry_event(current)
+    assert current_event.model_name == "local-rag-engine"
+    assert current_event.provider == "local"
+    assert current_event.latency_ms == 12.5
+    assert current_event.availability_mode == "local_only"
+    assert current_event.rag_grounded is True
+    assert current_event.evidence_count == 2
+    unavailable = CopilotChatLog(
+        id="unavailable-v2", session_id="s", user_name="u", user_role="doctor",
+        query="q", reply_text="no evidence", answer_type="safe_abstention",
+        model_name="local-rag-engine", provider="local", telemetry_version="v2",
+    )
+    unavailable_event = map_chat_log_to_telemetry_event(unavailable)
+    assert unavailable_event.status == "fallback"
+    assert unavailable_event.event_type == "REQUEST_UNAVAILABLE"
     estimated = record_llm_token_usage(prompt_tokens=1500, completion_tokens=800, model="estimated-model", provider="gemini", usage_source="estimated")
     assert estimated == 0.0
     daily_after, cost_after = get_daily_token_usage()

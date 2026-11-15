@@ -46,6 +46,11 @@ def _clean_text(val: Optional[str]) -> str:
     return re.sub(r"\s+", " ", text)
 
 
+def _facet_unavailable(label: str) -> str:
+    """Return a source-status message without inventing clinical guidance."""
+    return f"• **{label}:** Chưa có dữ liệu trong bản ghi nguồn đã truy xuất; không tự suy đoán."
+
+
 def _extract_core_bullets(text: Optional[str], max_items: int = 1) -> str:
     if not text:
         return ""
@@ -112,7 +117,7 @@ def _extract_timing_from_monograph(monograph, matched) -> str:
     if raw_adm:
         first_line = sentences[0] if sentences else _clean_text(raw_adm)[:150]
         return f"• **Cách dùng theo Dược thư:** {first_line}."
-    return "• **Hướng dẫn chung:** Uống thuốc đúng liều lượng và khoảng cách thời gian theo chỉ định của bác sĩ điều trị."
+    return _facet_unavailable("Thời điểm & cách dùng")
 
 
 def _extract_max_dosage_from_monograph(monograph, matched) -> str:
@@ -128,7 +133,7 @@ def _extract_max_dosage_from_monograph(monograph, matched) -> str:
     
     if matched_sentences:
         return "• **Giới hạn liều theo Dược thư:**\n" + "\n".join(f"  * {s}." for s in matched_sentences[:4])
-    return f"• **Khuyến cáo liều:** Tuân thủ chặt chẽ liều lượng đã kê đơn: {_clean_text(raw_ad)[:180]}..."
+    return _facet_unavailable("Giới hạn liều")
 
 
 def _extract_alcohol_interaction_from_monograph(clean_brand: str, monograph, matched) -> str:
@@ -147,17 +152,14 @@ def _extract_alcohol_interaction_from_monograph(clean_brand: str, monograph, mat
             + "\n".join(f"  * {s}." for s in matched_sentences[:3])
             + f"\n• **Khuyến cáo an toàn:** Cần kiêng rượu bia (kỵ rượu) trong suốt thời gian điều trị bằng {clean_brand} để tránh tăng độc tính hoặc tương tác bất lợi."
         )
-    return (
-        f"• **Tương tác rượu bia (Kỵ rượu bia):** Trong Dược thư Quốc gia Việt Nam, chuyên luận {clean_brand} chưa ghi nhận tương tác đặc hiệu với rượu bia.\n"
-        f"• **Khuyến cáo an toàn:** Nên hạn chế rượu bia (kỵ rượu) trong thời gian dùng thuốc để tránh ảnh hưởng đến chuyển hóa thuốc qua gan/thận và giảm hiệu quả điều trị."
-    )
+    return _facet_unavailable("Tương tác với rượu/cồn")
 
 
 def _extract_adult_dosage_facet(monograph, matched) -> str:
     """Trích xuất liều người lớn từ chuyên luận Dược thư."""
     raw_ad = (monograph.adult_dosage if monograph else None) or (matched.adult_dosage if matched else "") or ""
     if not raw_ad:
-        return "• **Liều dùng người lớn:** Tuân thủ theo chỉ định chuyên khoa của bác sĩ điều trị."
+        return _facet_unavailable("Liều dùng người lớn")
     from app.services.chatbot.conversational_clinical_engine import format_hierarchical_dosage
     formatted = format_hierarchical_dosage(str(raw_ad), "", is_detailed=True, target_audience="adult")
     if formatted:
@@ -169,7 +171,7 @@ def _extract_pediatric_dosage_facet(monograph, matched) -> str:
     """Trích xuất liều trẻ em từ chuyên luận Dược thư."""
     raw_ped = (monograph.pediatric_dosage if monograph else None) or getattr(matched, "pediatric_dosage", None) or ""
     if not raw_ped:
-        return "• **Liều dùng trẻ em:** Tính liều theo cân nặng (mg/kg) hoặc diện tích da theo hướng dẫn của bác sĩ chuyên khoa nhi."
+        return _facet_unavailable("Liều dùng trẻ em")
     from app.services.chatbot.conversational_clinical_engine import format_hierarchical_dosage
     formatted = format_hierarchical_dosage("", str(raw_ped), is_detailed=True, target_audience="pediatric")
     if formatted:
@@ -188,7 +190,7 @@ def _extract_renal_facet(monograph, matched) -> str:
     renal_s = [s for s in sentences if any(k in s.lower() for k in ("suy thận", "thận", "clcr", "creatinin"))]
     if renal_s:
         return "• **Lưu ý chức năng thận theo Dược thư:**\n" + "\n".join(f"  * {s}." for s in renal_s[:3])
-    return "• **Khuyến cáo suy thận:** Thận trọng khi dùng cho bệnh nhân suy giảm chức năng thận; theo dõi ClCr định kỳ và điều chỉnh liều theo phác đồ."
+    return _facet_unavailable("Hiệu chỉnh liều theo chức năng thận")
 
 
 def _extract_hepatic_facet(monograph, matched) -> str:
@@ -202,7 +204,7 @@ def _extract_hepatic_facet(monograph, matched) -> str:
     hep_s = [s for s in sentences if any(k in s.lower() for k in ("suy gan", "gan", "men gan"))]
     if hep_s:
         return "• **Lưu ý chức năng gan theo Dược thư:**\n" + "\n".join(f"  * {s}." for s in hep_s[:3])
-    return "• **Khuyến cáo suy gan:** Thận trọng và theo dõi chức năng gan trong suốt đợt điều trị."
+    return _facet_unavailable("Hiệu chỉnh liều theo chức năng gan")
 
 
 def _extract_adverse_effects_facet(clean_brand: str, monograph, matched) -> str:
@@ -217,7 +219,7 @@ def _extract_adverse_effects_facet(clean_brand: str, monograph, matched) -> str:
             lines.append("• **Lưu ý phản ứng nghiêm trọng (Dược thư):** " + ". ".join(urgent_s[:2]) + ".")
         lines.append(f"• **Tác dụng không mong muốn (ADR theo Dược thư):**\n{_clean_text(raw_adv)}")
         return "\n".join(lines)
-    return "• **Tác dụng không mong muốn:** Hiện chưa ghi nhận tác dụng phụ nghiêm trọng trong dữ liệu chuẩn. Bác sĩ vui lòng theo dõi đáp ứng lâm sàng của người bệnh."
+    return _facet_unavailable("Tác dụng không mong muốn")
 
 
 async def slice_clinical_drug_evidence(
@@ -356,7 +358,7 @@ async def slice_clinical_drug_evidence(
     # f) Thai kỳ & Cho con bú
     if "pregnancy_lactation" in target_facets:
         raw_preg = (monograph.pregnancy_warning if monograph else None) or ""
-        facet_data["pregnancy_lactation"] = f"• **Cảnh báo thai kỳ & cho con bú:** {_clean_text(raw_preg) or 'Chỉ sử dụng khi lợi ích điều trị vượt trội nguy cơ đối với thai nhi hoặc trẻ bú mẹ.'}"
+        facet_data["pregnancy_lactation"] = f"• **Cảnh báo thai kỳ & cho con bú:** {_clean_text(raw_preg)}" if _clean_text(raw_preg) else _facet_unavailable("Cảnh báo thai kỳ & cho con bú")
 
     # g0) Liều người lớn
     if "adult_dosage" in target_facets:
@@ -368,7 +370,7 @@ async def slice_clinical_drug_evidence(
 
     # h) Chống chỉ định
     if "contraindications" in target_facets:
-        facet_data["contraindications"] = f"• **Chống chỉ định:** {_clean_text(raw_contra) or 'Mẫn cảm với bất kỳ thành phần nào của thuốc.'}"
+        facet_data["contraindications"] = f"• **Chống chỉ định:** {_clean_text(raw_contra)}" if _clean_text(raw_contra) else _facet_unavailable("Chống chỉ định")
 
     # i) Tương tác thuốc
     if "drug_interactions" in target_facets:
@@ -397,7 +399,7 @@ async def slice_clinical_drug_evidence(
     # m) Theo dõi & Xét nghiệm
     if "monitoring" in target_facets:
         raw_prec = (monograph.precautions if monograph else None) or ""
-        facet_data["monitoring"] = f"• **Theo dõi & Giám sát lâm sàng:** {_clean_text(raw_prec)[:250] or 'Theo dõi đáp ứng điều trị và các chỉ số xét nghiệm định kỳ.'}"
+        facet_data["monitoring"] = f"• **Theo dõi & Giám sát lâm sàng:** {_clean_text(raw_prec)[:250]}" if _clean_text(raw_prec) else _facet_unavailable("Theo dõi lâm sàng")
 
     # n) Nếu là truy vấn chi tiết toàn diện (DETAILED) hoặc rỗng facet ở lượt con
     if query_depth == "DETAILED" or (not facet_data and not target_facets and query_depth != "OVERVIEW"):

@@ -2,7 +2,6 @@ import re
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.debt import DebtRecord
-from app.models.coldchain import ColdChainCurrentState
 from app.models.audit import AuditRecord
 from app.services.audit_service import verify_ledger_integrity
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
@@ -240,43 +239,9 @@ async def handle_shift_handover_intent(db: AsyncSession) -> CopilotResponse:
     )
 
 async def handle_coldchain_intent(db: AsyncSession) -> CopilotResponse:
-    stmt = select(ColdChainCurrentState).limit(1)
-    res = await db.execute(stmt)
-    state = res.scalar_one_or_none()
-    current_temp = getattr(state, "current_temp", 4.5) if state else 4.5
-    mkt = getattr(state, "mkt_temp", getattr(state, "mkt_value", 4.8)) if state else 4.8
-    is_quarantine = getattr(state, "is_quarantined", False) if state else False
-    is_outage = getattr(state, "is_outage", False) if state else False
-
-    status_text = "BÌNH THƯỜNG (2.0°C - 8.0°C)" if not is_outage and not is_quarantine else "CẢNH BÁO BIỆT TRỮ CÁCH LY"
-    reply_text = (f"### ❄️ BÁO CÁO GIÁM SÁT DÂY CHUYỀN LẠNH (COLD CHAIN - GSP)\n\n"
-                  f"• **Trạng thái buồng lạnh:** **{status_text}**\n"
-                  f"• **Dải nhiệt độ chuẩn bắt buộc:** Từ `+2.0°C đến +8.0°C` theo WHO PQS và Thông tư 36/2018/TT-BYT\n"
-                  f"• **Nhiệt độ hiện tại:** `{current_temp}°C` (Giám sát liên tục bằng cảm biến IoT tự động)\n"
-                  f"• **Chỉ số nhiệt động học Arrhenius (MKT):** `{mkt}°C`\n"
-                  f"• **Nguồn điện:** {'MẤT ĐIỆN LƯỚI' if is_outage else 'Điện lưới 220V ổn định'}\n\n"
-                  f"> [!IMPORTANT]\n"
-                  f"> **Quy trình xử trí khi tủ lạnh bảo quản vắc xin mất điện hoặc vượt ngưỡng:**\n"
-                  f"> 1. Tuyệt đối không mở cửa tủ để duy trì nhiệt độ lạnh.\n"
-                  f"> 2. Nếu mất điện kéo dài quá thời gian an toàn: chuyển ngay vắc xin sang hòm lạnh/phích vắc xin có bình tích lạnh đạt chuẩn.\n"
-                  f"> 3. Ghi biên bản sự cố và kiểm tra chỉ thị nhiệt độ đông băng Shake test trước khi tái sử dụng.")
-
-    card = CopilotActionCard(
-        card_type="coldchain_status",
-        title="Giám Sát Chuỗi Lạnh Vắc Xin (WHO PQS)",
-        summary="Dữ liệu cảm biến thời gian thực buồng lạnh GSP",
-        data={"temperature": current_temp, "mkt": mkt, "is_outage": is_outage, "is_quarantined": is_quarantine},
-        primary_action_label="Xem Biểu Đồ Datalogger",
-        primary_action_type="NAVIGATE_TAB",
-        target_tab="coldchain"
-    )
-    return CopilotResponse(
-        intent="COLD_CHAIN_MONITORING",
-        reply_text=reply_text,
-        card=card,
-        legal_basis="Thông tư 36/2018/TT-BYT (GSP) & WHO PQS Guidelines",
-        suggested_chips=["Kích hoạt máy phát dự phòng", "Biệt trữ cách ly lô vắc xin", "Kiểm tra hạn dùng FEFO"]
-    )
+    """Compatibility adapter; the former inline handler is retired."""
+    from app.domains.cold_chain.tools import ColdChainTools
+    return await ColdChainTools().status_response(db)
 
 async def handle_audit_intent(db: AsyncSession) -> CopilotResponse:
     is_valid, msg = await verify_ledger_integrity(db)

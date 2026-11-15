@@ -369,6 +369,26 @@ async def test_image_route_precedes_nlu_and_returns_multimodal_executor_result(m
     nlu.assert_not_awaited()
 
 
+def test_common_gate_accepts_deterministically_verified_database_inference():
+    from app.schemas.copilot import CopilotResponse, AnswerClaim
+    from app.services.chatbot.copilot_orchestrator import validate_response_evidence_contract
+    response = CopilotResponse(
+        intent="MEDICATION_SAFETY_PROFILE", answer_type="medication_field",
+        reply_text="Liều tính từ nguồn: 150 mg.", confidence=1.0, factuality_score=1.0,
+        rag_grounded=True,
+        claims=[AnswerClaim(claim_id="calc", text="Liều tính từ nguồn: 150 mg.",
+                            claim_type="evidence_inference", evidence_ids=["e1"],
+                            support_status="supported")],
+        evidence=[{"evidence_id": "e1", "evidence_type": "document_chunk",
+                   "chunk_id": "c1", "source_id": "dtqg",
+                   "source_version": "sha256:abc", "content": "10 mg/kg"}],
+        citations=[{"chunk_id": "c1"}], evidence_claim_map={"e1": ["calc"]},
+    )
+    result = validate_response_evidence_contract(response)
+    assert result.rag_grounded is True
+    assert result.answer_type == "medication_field"
+
+
 @pytest.mark.asyncio
 async def test_prescription_block_route_precedes_multi_intent_decomposition(monkeypatch):
     nlu = SimpleNamespace(is_prescription_block=True, prescription_lines=["raw row"],

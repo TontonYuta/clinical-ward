@@ -740,10 +740,11 @@ async def ocr_prescription_endpoint(
             import uuid
             from app.models.copilot_log import CopilotChatLog
             ocr_lat = round((time.monotonic() - start_time) * 1000, 1)
-            p_tok = int(raw_ocr_data.get("_prompt_tokens", 540)) if raw_ocr_data else 450
-            c_tok = int(raw_ocr_data.get("_completion_tokens", 360)) if raw_ocr_data else 250
+            p_tok = int(raw_ocr_data.get("_prompt_tokens", 0)) if raw_ocr_data else 0
+            c_tok = int(raw_ocr_data.get("_completion_tokens", 0)) if raw_ocr_data else 0
             tot_tok = p_tok + c_tok
-            m_used = model_used or "gemini-3.5-flash-lite"
+            m_used = model_used
+            ocr_usage_source = "provider" if raw_ocr_data and raw_ocr_data.get("_usage_source") == "provider" else "none"
             ocr_log = CopilotChatLog(
                 id=f"OCR-{int(time.time()*1000)}-{uuid.uuid4().hex[:6]}",
                 session_id=f"bhyt_ocr_{prescription.prescription_id}",
@@ -760,11 +761,17 @@ async def ocr_prescription_endpoint(
                 prompt_tokens=p_tok,
                 completion_tokens=c_tok,
                 total_tokens=tot_tok,
+                usage_source=ocr_usage_source,
                 model_name=m_used,
                 provider=provider,
                 has_image=True,
-                image_tokens=258,
-                latency_ms=ocr_lat
+                image_tokens=int(raw_ocr_data.get("_image_tokens", 0)) if raw_ocr_data else 0,
+                latency_ms=ocr_lat,
+                availability_mode="online_ai" if provider else "offline",
+                rag_grounded=False,
+                evidence_count=0,
+                status_reason=warning_code,
+                telemetry_version="v2",
             )
             db.add(ocr_log)
             await db.commit()

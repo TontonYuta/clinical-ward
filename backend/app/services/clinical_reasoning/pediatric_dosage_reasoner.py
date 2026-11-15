@@ -338,6 +338,11 @@ def reason_pediatric_dosage(
     norm_drug = _remove_accents(drug_name.casefold())
     combined = f"{norm_inn} {norm_drug}"
     weight = slots.get("weight_kg")
+    # Weight alone cannot select a safe regimen: the source differentiates
+    # neonatal, infant, child and adolescent schedules and routes. Keep the
+    # request grounded until an age/age-group is supplied.
+    if weight and slots.get("age_years") is None and slots.get("age_months") is None and not slots.get("is_neonate"):
+        return None
 
     # 1. Chuyên luận chuyên sâu cho Paracetamol
     if any(k in combined for k in ["paracetamol", "acetaminophen", "panadol", "efferalgan", "hapacol"]):

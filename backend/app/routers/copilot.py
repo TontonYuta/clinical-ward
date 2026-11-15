@@ -116,8 +116,6 @@ async def chat_with_copilot(
         response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
         response = format_offline_drug_response(response)
         response.has_image = bool(payload.image_base64 or response.has_image)
-        if payload.image_base64 and not response.image_tokens:
-            response.image_tokens = 258
         session.append_conversation_turn(payload.query, response.reply_text)
         response.session_id = session.session_id
         if response.active_medication_name and not is_regulatory_q:
@@ -137,7 +135,7 @@ async def chat_with_copilot(
 
     latency_ms = round((time.monotonic() - start_time) * 1000, 1)
     has_img = bool(payload.image_base64 or getattr(response, "has_image", False))
-    img_tok = getattr(response, "image_tokens", 0) or (258 if has_img else 0)
+    img_tok = getattr(response, "image_tokens", 0) or 0
 
     from app.services.llm_provider import get_last_llm_execution
     last_exec = get_last_llm_execution()
@@ -152,18 +150,15 @@ async def chat_with_copilot(
     elif response.intent in ("SECURITY_GUARDRAIL_BLOCKED", "OFFTOPIC_DECLINED"):
         m_name = "clinical-guardrail-v2"
         prov = "system-guardrail"
-    elif getattr(response, "model_name", None) and response.model_name not in ("gemini-2.5-flash", None):
+    elif last_exec.get("model_call_count", 0) > 0 and getattr(response, "model_name", None) and response.model_name not in ("gemini-2.5-flash", None):
         m_name = response.model_name
         prov = getattr(response, "provider", "gemini")
     elif last_exec.get("model") and last_exec["model"] != "gemini-2.5-flash":
         m_name = last_exec["model"]
         prov = last_exec.get("provider", "gemini")
-    elif has_img:
-        m_name = "gemini-3.5-flash-lite"
-        prov = "gemini"
     else:
-        m_name = "gemini-3.5-flash-lite"
-        prov = "gemini"
+        m_name = "local-rag-engine"
+        prov = "local"
 
     # Usage stays unknown for handlers/cache paths that did not call an LLM.
     p_tok = last_exec.get("prompt_tokens", 0)
@@ -176,10 +171,19 @@ async def chat_with_copilot(
     response.model_call_count = last_exec.get("model_call_count", last_exec.get("call_count", 0))
     response.usage_call_count = last_exec.get("provider_call_count", 0)
     response.cache_hit_count = last_exec.get("cache_hits", 0)
+    response.availability_mode = "online_ai" if response.model_call_count else ("offline" if response.answer_type == "unavailable" else "local_only")
+    if cached_resp:
+        response.availability_mode = "local_only"
+        response.model_name = "clinical-cache-engine"
+        response.provider = "local-cache"
+        response.cache_hit_count = max(1, response.cache_hit_count or 0)
     if last_exec.get("call_count", 0) and last_exec.get("model"):
         response.model_name = last_exec["model"]
     if last_exec.get("call_count", 0) and last_exec.get("provider"):
         response.provider = last_exec["provider"]
+    if not response.usage_call_count and not cached_resp:
+        response.model_name = m_name
+        response.provider = prov
 
     try:
         from app.security.prompt_utility_scorer import compute_prompt_utility
@@ -209,6 +213,11 @@ async def chat_with_copilot(
             has_image=has_img,
             image_tokens=img_tok,
             latency_ms=latency_ms,
+            availability_mode=response.availability_mode,
+            rag_grounded=bool(response.rag_grounded),
+            evidence_count=len(response.evidence or []),
+            status_reason=response.abstention_reason or response.source_status,
+            telemetry_version="v2",
         )
         db.add(log_entry)
         await db.commit()
@@ -282,8 +291,6 @@ async def chat_with_copilot_stream(
 
         response = format_offline_drug_response(response)
         response.has_image = bool(payload.image_base64 or response.has_image)
-        if payload.image_base64 and not response.image_tokens:
-            response.image_tokens = 258
 
         from app.services.llm_provider import get_last_llm_execution
         usage = get_last_llm_execution()
@@ -294,9 +301,11 @@ async def chat_with_copilot_stream(
         response.model_call_count = usage.get("model_call_count", usage.get("call_count", 0))
         response.usage_call_count = usage.get("provider_call_count", 0)
         response.cache_hit_count = usage.get("cache_hits", 0) + (1 if cached_resp else 0)
-        response.availability_mode = "online_ai" if usage.get("provider_call_count", 0) else "local_only"
+        response.availability_mode = "online_ai" if response.model_call_count else "local_only"
         if cached_resp:
             response.availability_mode = "local_only"
+            response.model_name = "clinical-cache-engine"
+            response.provider = "local-cache"
         if response.answer_type == "unavailable":
             response.availability_mode = "offline"
         if usage.get("call_count", 0) and usage.get("model"):
@@ -334,6 +343,11 @@ async def chat_with_copilot_stream(
                 model_name=response.model_name,
                 provider=response.provider,
                 latency_ms=latency_ms,
+                availability_mode=response.availability_mode,
+                rag_grounded=bool(response.rag_grounded),
+                evidence_count=len(response.evidence or []),
+                status_reason=response.abstention_reason or response.source_status,
+                telemetry_version="v2",
             )
             db.add(log_entry)
             await db.commit()

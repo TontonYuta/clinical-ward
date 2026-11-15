@@ -102,9 +102,12 @@ def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
     elif getattr(l, "has_image", False) or "MULTIMODAL" in intent_val:
         ev_type = "MULTIMODAL_CLINICAL_VISION"
         status = "success"
+    elif getattr(l, "answer_type", None) in ("unavailable", "safe_abstention"):
+        ev_type = "REQUEST_UNAVAILABLE"
+        status = "fallback"
 
     has_img = bool(getattr(l, "has_image", False) or ev_type in ("VISION_OCR_BHYT", "MULTIMODAL_CLINICAL_VISION"))
-    img_tok = getattr(l, "image_tokens", 0) or (258 if has_img else 0)
+    img_tok = getattr(l, "image_tokens", 0) or 0
     
     usage_source = getattr(l, "usage_source", None) or "none"
     # Legacy logs may carry estimated values; expose provider-confirmed usage only.
@@ -152,15 +155,19 @@ def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
     elif ev_type == "CACHE_HIT":
         m_name = "clinical-cache-engine"
         prov = "local-cache"
-    elif not m_name or m_name in ("gemini-2.5-flash", "gemini-auto"):
-        # Google AI Studio không còn hỗ trợ gemini-2.5-flash (404) -> chuẩn hóa sang model hoạt động thực tế
-        m_name = "gemini-3.5-flash-lite"
-        prov = "gemini"
+    elif not m_name or getattr(l, "telemetry_version", None) != "v2":
+        m_name = "unknown"
+        prov = "unknown"
 
     if not prov:
-        prov = "gemini" if "gemini" in m_name else "system"
+        prov = "unknown"
 
-    lat = float(getattr(l, "latency_ms", 0.0) or (4.0 if status == "blocked" else 85.0))
+    lat = float(getattr(l, "latency_ms", 0.0) or 0.0) if getattr(l, "telemetry_version", None) == "v2" else 0.0
+    availability_mode = getattr(l, "availability_mode", None)
+    rag_grounded = bool(getattr(l, "rag_grounded", False))
+    evidence_count = int(getattr(l, "evidence_count", 0) or 0)
+    status_reason = getattr(l, "status_reason", None)
+    telemetry_version = getattr(l, "telemetry_version", None)
 
     return TelemetryEventItem(
         id=l.id,
@@ -186,7 +193,12 @@ def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
         user_name=l.user_name,
         session_id=l.session_id,
         grounded_source=l.grounded_source,
-        quality_category=l.quality_category
+        quality_category=l.quality_category,
+        availability_mode=availability_mode,
+        rag_grounded=rag_grounded,
+        evidence_count=evidence_count,
+        status_reason=status_reason,
+        telemetry_version=telemetry_version,
     )
 
 async def get_paginated_telemetry_logs(
@@ -264,7 +276,6 @@ async def get_paginated_telemetry_logs(
 async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewResponse:
     from sqlalchemy import func
     from app.services.telemetry_store import get_all_time_token_usage, get_last_7_days_token_trend
-    from app.services.admin_key_vault import _load_vault_data
     from app.models.cpoe import CpoePrescription
 
     # 1. Thống kê Cache thực tế từ bộ nhớ đệm
@@ -272,10 +283,13 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     cache_stats = get_clinical_cache().get_stats()
     exact_hits = cache_stats.get("exact_hits", 0)
     semantic_hits = cache_stats.get("semantic_hits", 0)
-    total_hits = exact_hits + semantic_hits
-    misses = cache_stats.get("misses", 0)
-    total_queries = total_hits + misses
-    hit_rate = round((total_hits / total_queries) * 100, 1) if total_queries > 0 else 0.0
+    query_count_result = await db.execute(select(func.count(CopilotChatLog.id)))
+    total_queries = int(query_count_result.scalar() or 0)
+    cache_hit_result = await db.execute(
+        select(func.count(CopilotChatLog.id)).where(CopilotChatLog.cache_hit_count > 0)
+    )
+    cache_hit_requests = int(cache_hit_result.scalar() or 0)
+    hit_rate = round((cache_hit_requests / total_queries) * 100, 1) if total_queries else 0.0
 
     # 2. Nhật ký và sự kiện kiểm toán thật từ CSDL Bệnh viện (30 sự kiện gần nhất)
     stmt = select(CopilotChatLog).order_by(CopilotChatLog.created_at.desc(), CopilotChatLog.id.desc()).limit(30)
@@ -285,7 +299,6 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
 
     # 3. Token từ provider metadata; chi phí quy đổi dùng giả định rate cấu hình
     _, _, real_tokens_consumed, _ = get_all_time_token_usage()
-    recent_tokens_sum = sum(ev.total_tokens for ev in recent_events)
     tokens_consumed = real_tokens_consumed
     # No counterfactual token/cost savings are claimed without measured paired runs.
     tokens_saved = 0
@@ -339,10 +352,24 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     except Exception as e:
         print(f"Warning: Failed to fetch bhyt logs in telemetry: {e}")
 
-    # 6. Độ trễ thực tế từ Bể Khóa API Key
-    vault_keys = _load_vault_data()
-    lats = [k.get("latency_ms", 0.0) for k in vault_keys if k.get("latency_ms") and k.get("latency_ms") > 0]
-    p95_latency = round(sum(lats) / len(lats), 1) if lats else (recent_events[0].latency_ms if recent_events else 0.0)
+    # Request latency comes from request telemetry, not API-key heartbeat latency.
+    measured_count = await db.execute(
+        select(func.count(CopilotChatLog.id)).where(
+            CopilotChatLog.telemetry_version == "v2", CopilotChatLog.latency_ms > 0
+        )
+    )
+    latency_count = int(measured_count.scalar() or 0)
+    p95_latency = 0.0
+    if latency_count:
+        p95_index = max(0, math.ceil(latency_count * 0.95) - 1)
+        p95_result = await db.execute(
+            select(CopilotChatLog.latency_ms)
+            .where(CopilotChatLog.telemetry_version == "v2", CopilotChatLog.latency_ms > 0)
+            .order_by(CopilotChatLog.latency_ms.asc())
+            .offset(p95_index).limit(1)
+        )
+        p95_value = p95_result.scalar_one_or_none()
+        p95_latency = round(float(p95_value), 1) if p95_value is not None else 0.0
 
     # 7. Phân bố ý định lâm sàng thực tế 100% từ bảng CopilotChatLog
     intent_color_map = {

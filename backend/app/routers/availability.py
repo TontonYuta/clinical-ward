@@ -2,6 +2,7 @@
 import asyncio
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter
 from sqlalchemy import text
@@ -15,6 +16,52 @@ _provider_state = {"value": "unknown", "checked_at": 0.0, "checked_at_wall": 0.0
 _provider_lock: asyncio.Lock | None = None
 _PROVIDER_CACHE_SECONDS = 60.0
 _PROVIDER_TIMEOUT_SECONDS = 4.0
+
+
+def _inspect_vector_index_sync() -> tuple[str, str, int]:
+    """Inspect the effective persistent/cache index without hiding its cause."""
+    from pathlib import Path
+    from app.services.rag.sqlite_fts import get_fts_db_path
+
+    index_path = Path(get_fts_db_path())
+    if not index_path.exists():
+        return "unavailable", "database_missing", 0
+    try:
+        import sqlite3
+        conn = sqlite3.connect(f"file:{index_path}?mode=ro", uri=True, timeout=1.0)
+        try:
+            row = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='clinical_chunk_vectors'"
+            ).fetchone()
+            if row:
+                count = int(conn.execute("SELECT count(*) FROM clinical_chunk_vectors").fetchone()[0])
+                if count > 0:
+                    return "available", "sqlite", count
+        finally:
+            conn.close()
+    except Exception:
+        pass
+
+    cache_path = Path(__file__).resolve().parents[1] / "services/rag/embeddings/clinical_embeddings_cache.npz"
+    if cache_path.exists():
+        try:
+            import numpy as np
+            with np.load(cache_path, allow_pickle=True) as data:
+                matrix = data["matrix"]
+                ids = data["chunk_ids"]
+                if matrix.ndim == 2 and matrix.shape[0] and matrix.shape[0] == len(ids):
+                    return "available", "npz_cache", int(matrix.shape[0])
+            return "unavailable", "invalid_npz_cache", 0
+        except Exception:
+            return "unavailable", "invalid_npz_cache", 0
+    return "unavailable", "vectors_missing", 0
+
+
+async def _get_vector_index_status() -> tuple[str, str, int]:
+    try:
+        return await asyncio.to_thread(_inspect_vector_index_sync)
+    except Exception:
+        return "unavailable", "inspection_failed", 0
 
 
 async def _check_provider() -> str:
@@ -74,9 +121,10 @@ async def get_availability() -> AvailabilityResponse:
         pass
 
     vector_state = "unavailable"
+    vector_reason = "inspection_failed"
+    vector_count = 0
     fts_state = "unavailable"
     try:
-        from pathlib import Path
         from app.services.rag.sqlite_fts import get_fts_db_path
         index_path = Path(get_fts_db_path())
         if index_path.exists():
@@ -103,6 +151,7 @@ async def get_availability() -> AvailabilityResponse:
                     vector_state = "available"
     except Exception:
         pass
+    vector_state, vector_reason, vector_count = await _get_vector_index_status()
 
     provider_state = await _check_provider()
     backend_state = "available"
@@ -120,4 +169,5 @@ async def get_availability() -> AvailabilityResponse:
         provider_checked_at=datetime.fromtimestamp(
             _provider_state.get("checked_at_wall", 0.0), timezone.utc
         ).isoformat() if _provider_state.get("checked_at_wall", 0.0) else None,
+        vector_index_reason=vector_reason, vector_count=vector_count,
     )
