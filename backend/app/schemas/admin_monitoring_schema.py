@@ -103,6 +103,24 @@ class PaginatedTelemetryResponse(BaseModel):
     page_size: int
     items: List[TelemetryEventItem]
 
+class FeatureFlagItem(BaseModel):
+    key: str
+    label: str
+    description: str
+    enabled: bool
+
+class FeatureFlagResponse(BaseModel):
+    version: int
+    flags: List[FeatureFlagItem]
+
+class FeatureFlagUpdateItem(BaseModel):
+    key: str
+    enabled: bool
+
+class FeatureFlagUpdate(BaseModel):
+    version: int = Field(ge=0)
+    flags: List[FeatureFlagUpdateItem]
+
 class TelemetryOverviewResponse(BaseModel):
     total_queries: int
     cache_hit_rate_pct: float

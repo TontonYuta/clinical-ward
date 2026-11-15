@@ -6,11 +6,12 @@
 import React from 'react';
 import { DashboardTab } from './RightPane/Dashboard';
 import { UserRole } from '../types/clinical';
-import { USER_PROFILES } from '../data/initialData';
 import { SidebarHeader } from './Sidebar/SidebarHeader';
 import { SidebarNavLinks } from './Sidebar/SidebarNavLinks';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
 import type { AppFontScale } from '../utils/storage/appStatePersistence';
+import type { FeatureFlagPayload } from '../services/featureFlags';
+import { getEffectiveAllowedTabs } from '../services/featureFlags';
 
 export interface SidebarProps {
   currentTab: DashboardTab;
@@ -36,6 +37,7 @@ export interface SidebarProps {
   onOpenUserGuide: () => void;
   onOpenPrintableForms?: () => void;
   onOpenMedicationSafety?: () => void;
+  featureFlags?: FeatureFlagPayload | null;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -59,9 +61,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUserGuide,
   onOpenPrintableForms,
   onOpenMedicationSafety,
+  featureFlags = null,
 }) => {
-  const currentProfile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
-  const allowedTabs = currentProfile.allowedTabs || ['debt'];
+  const allowedTabs = getEffectiveAllowedTabs(currentUserRole, featureFlags);
 
   return (
     <aside

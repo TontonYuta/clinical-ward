@@ -6,7 +6,8 @@
 import React from 'react';
 import { FileText, Boxes, Wrench, Stethoscope, Thermometer, Building2, LayoutDashboard, ShieldAlert, BookOpen } from 'lucide-react';
 import { DashboardTab, UserRole } from '../../types/clinical';
-import { USER_PROFILES } from '../../data/initialData';
+import type { FeatureFlagPayload } from '../../services/featureFlags';
+import { getEffectiveAllowedTabs } from '../../services/featureFlags';
 
 interface MobileBottomNavProps {
   currentTab: DashboardTab;
@@ -18,6 +19,7 @@ interface MobileBottomNavProps {
   coldChainTemp: number;
   isColdAlarm: boolean;
   misallocatedAssetsCount: number;
+  featureFlags?: FeatureFlagPayload | null;
 }
 
 const TAB_CONFIG: Record<DashboardTab, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -42,15 +44,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   coldChainTemp,
   isColdAlarm,
   misallocatedAssetsCount,
+  featureFlags = null,
 }) => {
-  const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
-  const allowedTabs = profile.allowedTabs || ['overview'];
+  const allowedTabs = getEffectiveAllowedTabs(currentUserRole, featureFlags);
   
   const displayTabs = React.useMemo(() => {
-    // Tạm thời comment / ẩn các tab TBYT, Sổ nợ vỏ và Chuỗi lạnh theo yêu cầu người dùng
-    const hiddenTabs: DashboardTab[] = ['debt', 'equipment', 'asset_audit', 'coldchain'];
     const filtered = (Object.keys(TAB_CONFIG) as DashboardTab[])
-      .filter(t => !hiddenTabs.includes(t) && allowedTabs.includes(t));
+      .filter(t => allowedTabs.includes(t));
     return filtered.length > 0 ? filtered : (['overview', 'cpoe'] as DashboardTab[]);
   }, [allowedTabs]);
 

@@ -8,6 +8,7 @@ import {
   GasStatusResponse,
   BhytAuditLogItem,
   PaginatedTelemetryResponse
+  , FeatureFlagResponse
 } from '../types/admin';
 
 const BASE_URL = '/api/v1/admin';
@@ -29,6 +30,20 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
 export async function fetchTelemetryOverview(): Promise<TelemetryOverviewResponse> {
   const res = await fetchWithTimeout(`${BASE_URL}/monitoring/overview`, {}, 8000);
   if (!res.ok) throw new Error(`Lỗi tải dữ liệu giám sát: HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchFeatureFlags(): Promise<FeatureFlagResponse> {
+  const res = await fetchWithTimeout(`${BASE_URL}/feature-flags`, {}, 8000);
+  if (!res.ok) throw new Error(`Lỗi tải cấu hình tab: HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function updateFeatureFlags(payload: FeatureFlagResponse): Promise<FeatureFlagResponse> {
+  const res = await fetchWithTimeout(`${BASE_URL}/feature-flags`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  }, 8000);
+  if (!res.ok) throw new Error(`Lỗi lưu cấu hình tab: HTTP ${res.status}`);
   return res.json();
 }
 

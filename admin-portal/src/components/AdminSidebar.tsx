@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, KeyRound, Radio, Coins, ShieldAlert, Server } from 'lucide-react';
+import { BarChart3, KeyRound, Radio, Coins, ShieldAlert, Server, SlidersHorizontal } from 'lucide-react';
 import { AdminTab } from '../types/admin';
 
 interface AdminSidebarProps {
@@ -51,6 +51,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       desc: 'Chặn DDI & Guardrails',
       icon: ShieldAlert,
     },
+    { id: 'feature_flags' as AdminTab, label: 'Chức năng app', desc: 'Bật/ẩn các tab Clinical Ward', icon: SlidersHorizontal },
   ];
 
   return (
