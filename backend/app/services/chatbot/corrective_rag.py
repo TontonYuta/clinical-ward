@@ -12,6 +12,15 @@ from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
 from app.schemas.copilot import CopilotResponse, CopilotActionCard
 from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher, strip_accents
 
+ASK_SCORE_THRESHOLD = 0.68
+
+
+def _candidate_similarity(query: str, candidate: str) -> float:
+    """Return measured lexical similarity after accent/case normalization."""
+    return difflib.SequenceMatcher(
+        None, strip_accents(query.strip().lower()), strip_accents(candidate.strip().lower())
+    ).ratio()
+
 def is_exact_drug_match(kw: str, drug: DavNationalDrug) -> bool:
     kw_c = kw.strip().lower()
     b_c = (drug.brand_name or "").strip().lower()
@@ -77,7 +86,7 @@ async def find_crag_candidates(
             seen_names.add(clean_b.lower())
             r1 = difflib.SequenceMatcher(None, kw_norm, strip_accents(clean_b.lower())).ratio()
             r2 = difflib.SequenceMatcher(None, kw_norm, strip_accents((act_ing or "").lower())).ratio()
-            score = max(r1, r2, 0.72)
+            score = max(r1, r2)
             candidates.append({
                 "brand_name": clean_b,
                 "active_ingredient": act_ing or clean_b,
@@ -104,7 +113,7 @@ async def find_crag_candidates(
                         "active_ingredient": d.active_ingredient or d.brand_name,
                         "concentration": d.concentration or "Theo nhãn",
                         "national_code": d.national_code,
-                        "score": difflib.SequenceMatcher(None, kw_norm, fname).ratio(),
+                    "score": _candidate_similarity(kw_norm, fname),
                         "source": "Dược thư Quốc gia & Cục Quản lý Dược"
                     })
 
@@ -125,7 +134,10 @@ async def find_crag_candidates(
                     "active_ingredient": m.inn,
                     "concentration": "Dược thư Quốc gia",
                     "national_code": m.atc_code or "DĐVN V",
-                    "score": 0.75,
+                    "score": max(
+                        _candidate_similarity(kw_norm, m_title),
+                        _candidate_similarity(kw_norm, m.inn or ""),
+                    ),
                     "source": "Dược thư Quốc gia Việt Nam"
                 })
 
@@ -229,7 +241,7 @@ async def evaluate_crag_tripartite(
 ) -> Optional[CopilotResponse]:
     # 1. BRANCH 1: DECIDE (Đã khớp chính xác hoặc có direct drugs) -> Trả về None để luồng chính tiếp tục
     if direct_drugs and len(direct_drugs) > 0:
-        if is_exact_drug_match(raw_kw, direct_drugs[0]):
+        if any(is_exact_drug_match(raw_kw, drug) for drug in direct_drugs):
             return None
 
     # 2. Rà soát ứng viên theo CRAG
@@ -237,7 +249,7 @@ async def evaluate_crag_tripartite(
     if candidates:
         top_score = candidates[0]["score"]
         # 2a. BRANCH 2: ASK (Độ tin cậy 0.68 <= score < 1.0 -> Gợi ý đối soát và hỏi lại làm rõ)
-        if top_score >= 0.68:
+        if ASK_SCORE_THRESHOLD <= top_score < 1.0:
             return build_crag_clarification_response(
                 raw_kw, candidates, session_id=session_id, user_name=user_name, user_role=user_role
             )

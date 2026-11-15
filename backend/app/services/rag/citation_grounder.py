@@ -60,8 +60,13 @@ def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
     min_count = 2 if len(query_terms) >= 3 else 1
     return bool(overlap) and len(overlap) >= min_count and len(overlap) / len(query_terms) >= 0.25
 
+
+def is_evidence_relevant(query: str, chunk: RetrievedChunk) -> bool:
+    """Expose the pipeline's current generic evidence relevance gate."""
+    return _has_evidence_overlap(query, chunk)
+
 def _filter_supported_chunks(query: str, retrieved_chunks: list[RetrievedChunk], citations: list[RagCitation]) -> tuple[list[RetrievedChunk], list[RagCitation]]:
-    supported = [chunk for chunk in retrieved_chunks if _has_evidence_overlap(query, chunk)]
+    supported = [chunk for chunk in retrieved_chunks if is_evidence_relevant(query, chunk)]
     supported_sections = {f"{item.chunk.legal_basis}_{item.chunk.page_or_section}" for item in supported}
     supported_citations = [citation for citation in citations if f"{citation.legal_basis}_{citation.section}" in supported_sections]
     return supported, supported_citations

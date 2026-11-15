@@ -8,10 +8,36 @@ from app.services.rag.types import RagResult, EvidenceRecord
 from app.schemas.copilot import AnswerClaim
 from app.services.rag.knowledge_graph import expand_clinical_graph
 from app.services.rag.hybrid_retriever import HybridRetriever
-from app.services.rag.citation_grounder import build_claim_citations, format_grounded_answer, render_validated_claims
+from app.services.rag.citation_grounder import (
+    build_claim_citations, format_grounded_answer, render_validated_claims,
+    is_evidence_relevant,
+)
 from app.services.rag.adaptive_retriever import classify_query_complexity
 
 _GLOBAL_RETRIEVER: Optional[HybridRetriever] = None
+
+MAX_CORRECTIVE_TOP_K_MULTIPLIER = 2
+
+
+async def _retrieve_with_correction(retriever, query: str, top_k: int, kg_entities=None):
+    """Run one bounded same-query retrieval expansion when first-pass evidence is weak."""
+    retrieval_kwargs = {"kg_entities": kg_entities or []}
+    initial = await retriever.retrieve_async(query=query, top_k=top_k, **retrieval_kwargs)
+    initially_relevant = [item for item in initial if is_evidence_relevant(query, item)]
+    if initially_relevant:
+        return initially_relevant
+
+    corpus_size = len(getattr(retriever, "all_chunks", ()) or ())
+    expanded_top_k = max(top_k + 1, top_k * MAX_CORRECTIVE_TOP_K_MULTIPLIER)
+    if corpus_size:
+        expanded_top_k = min(expanded_top_k, corpus_size)
+    if expanded_top_k <= top_k:
+        return initially_relevant
+    expanded = await retriever.retrieve_async(query=query, top_k=expanded_top_k, **retrieval_kwargs)
+    unique = {}
+    for item in [*initial, *expanded]:
+        unique.setdefault(item.chunk.chunk_id, item)
+    return [item for item in unique.values() if is_evidence_relevant(query, item)]
 
 def get_rag_retriever() -> HybridRetriever:
     global _GLOBAL_RETRIEVER
@@ -34,10 +60,10 @@ async def execute_clinical_rag(
     kg_data = expand_clinical_graph(query, patient_info=patient_info) if budget_cfg.include_graph else {}
 
     # 2. Truy xuất lai Hybrid Retrieval có cấp phát ngân sách (Adaptive Top-K RRF k=60, Async Parallel)
-    retrieved_chunks = await retriever.retrieve_async(
-        query=query,
+    # First pass uses normal retrieval settings; correction only widens its candidate count.
+    retrieved_chunks = await _retrieve_with_correction(
+        retriever, query, budget_cfg.top_k,
         kg_entities=kg_data.get("kg_entities", []) if kg_data else [],
-        top_k=budget_cfg.top_k
     )
 
     # Keep evidence records aligned with complete blocks passed to generation.
@@ -142,6 +168,8 @@ async def execute_clinical_rag(
     rag_res.evidence = [record.to_dict() for record in evidence_records]
 
     # Offline direct lookup may expose source text verbatim, but never synthesize claims.
+    # Graph evidence is a versioned source in the same contract as document chunks;
+    # excluding it here made valid offline LightRAG answers fail provenance checks.
     if not gemini_key and not inference_required and not rag_res.claims:
         rag_res.claims = _source_fact_claims(evidence_records)
 
@@ -176,7 +204,10 @@ async def execute_clinical_rag(
             if record.evidence_id in used_evidence_ids
         ]
     elif rag_res.rag_grounded:
-        rag_res.answer = "Chưa thể xác minh câu trả lời từ evidence có nguồn và provenance phù hợp; vui lòng đối chiếu tài liệu đã lập chỉ mục."
+        rag_res.answer = (
+            "Đã tìm thấy tài liệu liên quan nhưng chưa thể xác minh câu trả lời bằng bằng chứng "
+            "có nguồn gốc rõ ràng. Vui lòng đối chiếu tài liệu đã lập chỉ mục."
+        )
         rag_res.rag_grounded = False
         rag_res.confidence_score = 0.0
         rag_res.citations = []
@@ -237,5 +268,5 @@ def _source_fact_claims(evidence_records: list[EvidenceRecord]) -> list[AnswerCl
             support_status="insufficient_evidence",
         )
         for index, record in enumerate(evidence_records, start=1)
-        if record.content.strip() and record.evidence_type == "document_chunk"
+        if record.content.strip() and record.evidence_type in {"document_chunk", "knowledge_graph"}
     ]

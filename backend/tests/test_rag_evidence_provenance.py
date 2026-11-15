@@ -9,6 +9,79 @@ from app.services.rag import clinical_indexer
 from app.services.rag.sqlite_fts import SqliteFtsIndex
 
 
+@pytest.mark.asyncio
+async def test_crag_retrieval_expands_once_when_initial_chunks_fail_relevance():
+    from app.services.rag.rag_pipeline import _retrieve_with_correction
+
+    rejected = RetrievedChunk(RagChunk("bad", "Guide", "Basis", "Section", "Unrelated topic", "Unrelated content", [], "general"), 0.4)
+    accepted = RetrievedChunk(RagChunk("good", "Guide", "Basis", "Section", "Paracetamol dose", "Paracetamol dosage", [], "monograph"), 0.2)
+    calls = []
+
+    class Retriever:
+        async def retrieve_async(self, query, *, top_k, **kwargs):
+            calls.append((query, top_k))
+            return [rejected] if len(calls) == 1 else [rejected, accepted]
+
+    result = await _retrieve_with_correction(Retriever(), "Paracetamol dosage", 1)
+    assert [item.chunk.chunk_id for item in result] == ["good"]
+    assert calls == [("Paracetamol dosage", 1), ("Paracetamol dosage", 2)]
+
+
+@pytest.mark.asyncio
+async def test_crag_retrieval_does_not_expand_when_initial_chunk_is_relevant():
+    from app.services.rag.rag_pipeline import _retrieve_with_correction
+
+    accepted = RetrievedChunk(RagChunk("good", "Guide", "Basis", "Section", "Paracetamol dose", "Paracetamol dosage", [], "monograph"), 0.2)
+
+    class Retriever:
+        calls = 0
+        async def retrieve_async(self, query, *, top_k, **kwargs):
+            self.calls += 1
+            return [accepted]
+
+    retriever = Retriever()
+    result = await _retrieve_with_correction(retriever, "Paracetamol dosage", 1)
+    assert [item.chunk.chunk_id for item in result] == ["good"]
+    assert retriever.calls == 1
+
+
+@pytest.mark.asyncio
+async def test_crag_retrieval_keeps_only_relevant_results_and_deduplicates_ids():
+    from app.services.rag.rag_pipeline import _retrieve_with_correction
+
+    irrelevant = RetrievedChunk(RagChunk("irrelevant", "Guide", "Basis", "Section", "Unrelated heading", "Other content", [], "general"), 0.5)
+    duplicate_irrelevant = RetrievedChunk(RagChunk("irrelevant", "Guide", "Basis", "Section", "Unrelated heading", "Other content", [], "general"), 0.6)
+    accepted = RetrievedChunk(RagChunk("accepted", "Guide", "Basis", "Section", "Paracetamol dosage", "Paracetamol dosage", [], "monograph"), 0.4)
+
+    class Retriever:
+        calls = 0
+        async def retrieve_async(self, query, *, top_k, **kwargs):
+            self.calls += 1
+            return [irrelevant] if self.calls == 1 else [duplicate_irrelevant, accepted]
+
+    result = await _retrieve_with_correction(Retriever(), "Paracetamol dosage", 1)
+    assert [item.chunk.chunk_id for item in result] == ["accepted"]
+
+
+@pytest.mark.asyncio
+async def test_crag_expansion_is_capped_by_indexed_corpus_size():
+    from app.services.rag.rag_pipeline import _retrieve_with_correction
+
+    rejected = RetrievedChunk(RagChunk("bad", "Guide", "Basis", "Section", "Unrelated", "Unrelated", [], "general"), 0.4)
+    calls = []
+
+    class Retriever:
+        all_chunks = [object(), object(), object()]
+
+        async def retrieve_async(self, query, *, top_k, **kwargs):
+            calls.append(top_k)
+            return [rejected]
+
+    result = await _retrieve_with_correction(Retriever(), "Paracetamol dosage", 4)
+    assert result == []
+    assert calls == [4]
+
+
 def test_markdown_chunk_retains_content_hash_provenance(tmp_path):
     doc = tmp_path / "guide.md"
     doc.write_text("### Section\n\nEvidence paragraph.", encoding="utf-8")
