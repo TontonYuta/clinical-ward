@@ -12,6 +12,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=sqlite+aiosqlite:////app/clinical_hospital.db
+      - TELEMETRY_DB_PATH=/app/data/telemetry_ledger.db
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app
     volumes:
       # Persistent storage for hospital database and custom DDI rules

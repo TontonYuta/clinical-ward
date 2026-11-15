@@ -8,7 +8,15 @@ from contextlib import contextmanager
 from typing import Optional, Tuple
 from datetime import datetime
 
-_DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data/telemetry_ledger.db"))
+_DEFAULT_DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data/telemetry_ledger.db"))
+
+def resolve_telemetry_db_path(environ=None) -> str:
+    """Resolve a configurable SQLite path for deployments with persistent storage."""
+    env = os.environ if environ is None else environ
+    configured_path = (env.get("TELEMETRY_DB_PATH") or "").strip()
+    return os.path.abspath(configured_path) if configured_path else _DEFAULT_DB_PATH
+
+_DB_PATH = resolve_telemetry_db_path()
 
 @contextmanager
 def _get_connection():

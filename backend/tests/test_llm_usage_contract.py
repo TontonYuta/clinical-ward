@@ -96,6 +96,16 @@ def test_estimated_usage_is_not_recorded_as_billable_cost():
     assert cost == 0.0
 
 
+def test_telemetry_ledger_path_can_target_persistent_runtime_storage():
+    from app.services.telemetry_store import resolve_telemetry_db_path
+
+    configured = resolve_telemetry_db_path({"TELEMETRY_DB_PATH": "/var/data/telemetry.db"})
+    assert configured == "/var/data/telemetry.db"
+
+    defaulted = resolve_telemetry_db_path({})
+    assert defaulted.endswith("/data/telemetry_ledger.db")
+
+
 def test_execution_count_distinguishes_provider_call_from_actual_usage():
     reset_llm_execution()
     record_llm_execution("gemini-auto", "gemini", 12, 0, usage_source="estimated")
