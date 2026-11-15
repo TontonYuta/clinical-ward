@@ -13,6 +13,13 @@ import {
 
 const BASE_URL = '/api/v1/admin';
 
+export class AdminApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'AdminApiError';
+  }
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = 8000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -43,7 +50,7 @@ export async function updateFeatureFlags(payload: FeatureFlagResponse): Promise<
   const res = await fetchWithTimeout(`${BASE_URL}/feature-flags`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
   }, 8000);
-  if (!res.ok) throw new Error(`Lỗi lưu cấu hình tab: HTTP ${res.status}`);
+  if (!res.ok) throw new AdminApiError(`Lỗi lưu cấu hình tab: HTTP ${res.status}`, res.status);
   return res.json();
 }
 
