@@ -205,6 +205,8 @@ async def test_gemini_nlu_renal_reasoning_detection():
 
 @pytest.mark.asyncio
 async def test_gemini_nlu_protocol_detection():
+    import app.services.chatbot.gemini_nlu_router as nlu
+    nlu._NLU_CACHE.clear()
     query = "Quy chế quản lý thuốc gây nghiện theo Thông tư 20"
     res = await parse_clinical_nlu(query)
     assert res is not None

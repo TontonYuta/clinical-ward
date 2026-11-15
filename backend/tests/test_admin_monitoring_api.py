@@ -157,6 +157,7 @@ async def test_real_token_ledger_and_auto_heartbeat():
     from app.services.admin_monitoring_service import map_chat_log_to_telemetry_event
     legacy = CopilotChatLog(id="legacy-estimated", session_id="s", user_name="u", user_role="doctor", query="q", reply_text="answer", prompt_tokens=1000, completion_tokens=500, total_tokens=1500, usage_source="estimated")
     assert map_chat_log_to_telemetry_event(legacy).total_tokens == 0
+    assert map_chat_log_to_telemetry_event(legacy).usage_source == "estimated"
     mapped = map_chat_log_to_telemetry_event(legacy)
     assert mapped.latency_ms == 0
     assert mapped.image_tokens == 0
@@ -177,6 +178,16 @@ async def test_real_token_ledger_and_auto_heartbeat():
     assert current_event.availability_mode == "local_only"
     assert current_event.rag_grounded is True
     assert current_event.evidence_count == 2
+    assert current_event.usage_source == "none"
+    current_with_usage = CopilotChatLog(
+        id="current-provider-usage", session_id="s", user_name="u",
+        user_role="doctor", query="q", reply_text="answer",
+        prompt_tokens=12, completion_tokens=8, total_tokens=20,
+        usage_source="provider", telemetry_version="v2",
+    )
+    provider_event = map_chat_log_to_telemetry_event(current_with_usage)
+    assert provider_event.total_tokens == 20
+    assert provider_event.usage_source == "provider"
     unavailable = CopilotChatLog(
         id="unavailable-v2", session_id="s", user_name="u", user_role="doctor",
         query="q", reply_text="no evidence", answer_type="safe_abstention",

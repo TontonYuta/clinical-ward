@@ -52,6 +52,8 @@ export interface TelemetryEventItem {
   prompt_tokens?: number;
   completion_tokens?: number;
   total_tokens?: number;
+  usage_source?: 'provider' | 'estimated' | 'mixed' | 'none' | string;
+  cache_hit_count?: number;
   model_name?: string;
   provider?: string;
   has_image?: boolean;

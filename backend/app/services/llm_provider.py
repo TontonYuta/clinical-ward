@@ -612,15 +612,8 @@ async def query_clinical_llm(
     if provider in {"offline", "none", "disable", "disabled"}:
         return None
 
-    # 1.1 Kiểm tra Token Budget Cap (Chặn vượt trần chi phí & tự động trượt sang Offline Mode)
-    from app.services.admin_monitoring_service import check_token_budget_gate
-    budget_allowed, budget_msg = check_token_budget_gate()
-    if not budget_allowed:
-        logger.warning("Token budget gate closed: %s. Falling back to local offline RAG.", budget_msg)
-        set_last_llm_execution({"model": "local-extractive", "provider": "local", "usage_source": "none"})
-        return None
-
-    # 2. Kiểm tra bộ nhớ đệm LLM
+    # 1.1 Check exact response cache first: returning a prior result incurs no
+    # provider usage and must remain available when the daily budget is exhausted.
     model_identifier = settings.OPENAI_MODEL if provider == "openai_compatible" else "gemini-auto"
     cache_hash = _compute_prompt_hash(provider, model_identifier, prompt, system_instruction)
     cached = _LLM_CACHE.get(cache_hash)
@@ -630,6 +623,15 @@ async def query_clinical_llm(
             record_llm_execution(model_identifier, provider, cache_hit=True)
             return text
         _LLM_CACHE.pop(cache_hash, None)
+
+    # 1.2 Only a cache miss can spend provider tokens, so apply the budget gate
+    # immediately before dispatching a new external request.
+    from app.services.admin_monitoring_service import check_token_budget_gate
+    budget_allowed, budget_msg = check_token_budget_gate()
+    if not budget_allowed:
+        logger.warning("Token budget gate closed: %s. Falling back to local offline RAG.", budget_msg)
+        set_last_llm_execution({"model": "local-extractive", "provider": "local", "usage_source": "none"})
+        return None
 
     # 3. Phân phối cuộc gọi theo Provider
     result: Optional[str] = None

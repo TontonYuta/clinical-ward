@@ -97,6 +97,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
       'Nội Dung Truy Vấn',
       'Input Prompt Tokens',
       'Output Tokens',
+      'Nguồn usage',
       'Image Tokens',
       'Tổng Tokens',
       'Vai Trò',
@@ -110,13 +111,14 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
       `"${ev.created_at_full || (ev.timestamp + ' ' + (ev.created_at_date || ''))}"`,
       `"${ev.id || ''}"`,
       `"${ev.event_type || ''}"`,
-      `"${ev.model_name || 'gemini-3.5-flash-lite'}"`,
+      `"${ev.model_name || 'unknown'}"`,
       `"${ev.provider || ''}"`,
       `"${(ev.query || '').replace(/"/g, '""')}"`,
-      ev.prompt_tokens || 0,
-      ev.completion_tokens || 0,
-      ev.image_tokens || 0,
-      ev.total_tokens || ev.tokens || 0,
+      ev.usage_source === 'provider' ? ev.prompt_tokens || 0 : '',
+      ev.usage_source === 'provider' ? ev.completion_tokens || 0 : '',
+      `"${ev.usage_source || 'none'}"`,
+      ev.usage_source === 'provider' ? ev.image_tokens || 0 : '',
+      ev.usage_source === 'provider' ? ev.total_tokens || ev.tokens || 0 : '',
       `"${ev.user_role || ''}"`,
       ev.latency_ms || 0,
       `"${ev.status || ''}"`
@@ -147,7 +149,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             )}
           </div>
           <p className="text-xs text-slate-500">
-            Theo dõi toàn diện {totalItems.toLocaleString()} lượt truy vấn, đồng bộ 100% token input prompt, completion output, ảnh multimodal và model AI
+            Theo dõi {totalItems.toLocaleString()} lượt truy vấn cùng token usage và model do hệ thống ghi nhận
           </p>
         </div>
 
@@ -295,13 +297,13 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   title="Nhấn để mở thanh tra chi tiết truy vấn & phân bổ token"
                 >
                   {/* Cột Thời Gian (Giờ VN GMT+7 & Ngày Tháng) */}
-                  <td className="py-3 pr-3 whitespace-nowrap" title={ev.created_at_full || `${ev.timestamp} · ${ev.created_at_date || '10/11/2026'} (GMT+7 · Giờ Việt Nam)`}>
+                  <td className="py-3 pr-3 whitespace-nowrap" title={ev.created_at_full || `${ev.timestamp}${ev.created_at_date ? ` · ${ev.created_at_date}` : ''} (GMT+7 · Giờ Việt Nam)`}>
                     <div className="flex flex-col">
                       <span className="font-mono text-xs font-bold text-slate-800 tracking-tight">
                         {ev.timestamp}
                       </span>
                       <span className="font-mono text-3xs text-slate-400">
-                        {ev.created_at_date || '10/11/2026'} <span className="text-teal-700 font-semibold">(VN)</span>
+                        {ev.created_at_date || 'Ngày chưa có'} <span className="text-teal-700 font-semibold">(VN)</span>
                       </span>
                     </div>
                   </td>
@@ -326,7 +328,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   {/* Cột Model Đọc */}
                   <td className="py-3 px-3 whitespace-nowrap">
                     {(() => {
-                      const mName = ev.model_name || 'gemini-3.5-flash-lite';
+                      const mName = ev.model_name || 'unknown';
                       const isGemini = mName.startsWith('gemini');
                       const isCache = mName.includes('cache');
                       const isSafety = mName.includes('ddi') || mName.includes('guardrail');
@@ -363,11 +365,21 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   <td className="py-3 px-3 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end">
                       <span className="font-mono font-bold text-slate-900 text-xs">
-                        {(ev.total_tokens || ev.tokens || 0).toLocaleString()} <span className="text-2xs font-normal text-slate-400">tok</span>
+                        {ev.usage_source === 'provider'
+                          ? `${(ev.total_tokens || ev.tokens || 0).toLocaleString()} tok`
+                          : ev.usage_source === 'estimated' || ev.usage_source === 'mixed'
+                          ? 'Có ước tính'
+                          : ev.cache_hit_count
+                          ? 'Cache · 0 token provider'
+                          : 'Chưa có usage'}
                       </span>
                       <span className="text-2xs text-slate-500 font-mono tracking-tight">
-                        In: {ev.prompt_tokens || Math.max(15, Math.floor(ev.query.length / 3))} · Out: {ev.completion_tokens || Math.max(25, Math.floor((ev.reply_text || '').length / 3))}
-                        {ev.has_image && <span className="text-teal-700 font-bold ml-1">· 📷 {ev.image_tokens || 258}</span>}
+                        {ev.usage_source === 'provider'
+                          ? `In: ${ev.prompt_tokens || 0} · Out: ${ev.completion_tokens || 0}`
+                          : ev.usage_source === 'estimated' || ev.usage_source === 'mixed'
+                          ? 'Số liệu chỉ gồm phần provider báo cáo'
+                          : 'Không có số liệu token từ provider'}
+                        {ev.usage_source === 'provider' && ev.has_image && ev.image_tokens ? <span className="text-teal-700 font-bold ml-1">· 📷 {ev.image_tokens}</span> : null}
                       </span>
                     </div>
                   </td>

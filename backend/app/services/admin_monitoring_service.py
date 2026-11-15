@@ -183,6 +183,8 @@ def map_chat_log_to_telemetry_event(l: CopilotChatLog) -> TelemetryEventItem:
         prompt_tokens=p_tok,
         completion_tokens=c_tok,
         total_tokens=tot_tok,
+        usage_source=usage_source,
+        cache_hit_count=int(getattr(l, "cache_hit_count", 0) or 0),
         model_name=m_name,
         provider=prov,
         has_image=has_img,
