@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.config import settings
-from app.services.llm_provider import query_clinical_llm, _compute_prompt_hash, _LLM_CACHE
+from app.services.llm_provider import query_clinical_llm, _compute_prompt_hash, _LLM_CACHE, reset_llm_execution, get_last_llm_execution
 
 @pytest.mark.asyncio
 async def test_offline_mode_returns_none():
@@ -57,6 +57,38 @@ def test_prompt_hashing():
     assert h1 != h3
 
 @pytest.mark.asyncio
+async def test_estimated_usage_never_reports_zero_for_successful_provider_result():
+    """Khi provider không trả usage metadata, telemetry vẫn phải có ước tính > 0."""
+    import app.services.llm_provider as provider
+    _LLM_CACHE.clear()
+    reset_llm_execution()
+    with patch.object(settings, "LLM_PROVIDER", "gemini"), \
+         patch.object(provider, "_call_gemini_api", return_value="Kết quả lâm sàng có căn cứ"):
+        result = await query_clinical_llm("Liều dùng Paracetamol")
+    usage = get_last_llm_execution()
+    assert result == "Kết quả lâm sàng có căn cứ"
+    assert usage["model_call_count"] == 1
+    assert usage["usage_source"] == "estimated"
+    assert usage["total_tokens"] > 0
+
+@pytest.mark.asyncio
+async def test_zero_gemini_usage_metadata_is_estimated():
+    from app.services.llm_provider import _call_gemini_api
+    reset_llm_execution()
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "candidates": [{"content": {"parts": [{"text": "Có căn cứ"}]}}],
+        "usageMetadata": {"promptTokenCount": 0, "candidatesTokenCount": 0},
+    }
+    with patch("httpx.AsyncClient.post", return_value=mock_resp):
+        result = await _call_gemini_api("Một câu hỏi lâm sàng", api_key="test-api-key-value")
+    usage = get_last_llm_execution()
+    assert result == "Có căn cứ"
+    assert usage["usage_source"] == "estimated"
+    assert usage["total_tokens"] > 0
+
+@pytest.mark.asyncio
 async def test_gemini_auto_failover_on_429():
     """Kiểm tra tự động chuyển đổi sang API key khác khi gặp HTTP 429 (hết token/quota)."""
     from app.services.llm_provider import _call_gemini_api
@@ -95,3 +127,29 @@ async def test_gemini_auto_failover_on_429():
     finally:
         delete_api_key(k_fail["key_id"])
         delete_api_key(k_succ["key_id"])
+
+@pytest.mark.asyncio
+async def test_gemini_sends_json_schema_in_generation_config():
+    from app.services.llm_provider import _call_gemini_api
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "candidates": [{"content": {"parts": [{"text": "{}"}]}}],
+        "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 2},
+    }
+    schema = {"type": "object", "properties": {"intent": {"type": "string"}}}
+    captured = {}
+
+    async def capture_post(url, *, json, **kwargs):
+        captured.update(json)
+        return mock_resp
+
+    with patch("httpx.AsyncClient.post", side_effect=capture_post):
+        result = await _call_gemini_api(
+            "classify", api_key="test-api-key-value", response_schema=schema
+        )
+
+    assert result == "{}"
+    assert captured["generationConfig"]["responseMimeType"] == "application/json"
+    assert captured["generationConfig"]["responseJsonSchema"] == schema

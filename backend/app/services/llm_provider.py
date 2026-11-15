@@ -47,6 +47,22 @@ _current_llm_execution: ContextVar[_LLMExecutionTrace | None] = ContextVar(
 )
 
 
+def _resolve_usage_token(value: object, text: str) -> tuple[int, bool]:
+    """Return a positive token count and whether it came from provider metadata.
+
+    Some gateways return zero-valued or partial usage metadata.  Treat those as
+    unavailable so telemetry does not claim provider-confirmed zero usage for a
+    successful request.
+    """
+    try:
+        parsed = int(value) if value is not None else 0
+    except (TypeError, ValueError):
+        parsed = 0
+    if parsed > 0:
+        return parsed, True
+    return max(1, len(text or "") // 4), False
+
+
 def _get_execution_trace() -> _LLMExecutionTrace:
     trace = _current_llm_execution.get()
     if trace is None:
@@ -125,6 +141,7 @@ async def _call_gemini_api(
     temperature: float = 0.2,
     max_output_tokens: int = 800,
     timeout_sec: float = 8.0,
+    response_schema: Optional[dict] = None,
 ) -> Optional[str]:
     from app.services.admin_key_vault import get_active_api_key, rotate_to_next_key
     key = api_key
@@ -142,9 +159,14 @@ async def _call_gemini_api(
         "gemini-flash-latest",
         "gemini-3.1-flash-lite",
     ]
+    generation_config = {"temperature": temperature, "maxOutputTokens": max_output_tokens}
+    if response_schema:
+        generation_config["responseMimeType"] = "application/json"
+        generation_config["responseJsonSchema"] = response_schema
+
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": temperature, "maxOutputTokens": max_output_tokens}
+        "generationConfig": generation_config
     }
     if system_instruction:
         payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
@@ -172,11 +194,11 @@ async def _call_gemini_api(
                             usage = data.get("usageMetadata", {})
                             p_value = usage.get("promptTokenCount")
                             c_value = usage.get("candidatesTokenCount")
-                            p_tok = p_value if p_value is not None else (len(prompt) // 4)
-                            c_tok = c_value if c_value is not None else (len(reply) // 4)
+                            p_tok, p_actual = _resolve_usage_token(p_value, prompt)
+                            c_tok, c_actual = _resolve_usage_token(c_value, reply)
                             record_llm_execution(
                                 model, "gemini", p_tok, c_tok,
-                                usage_source="provider" if p_value is not None and c_value is not None else "estimated",
+                                usage_source="provider" if p_actual and c_actual else "estimated",
                             )
                             try:
                                 from app.services.telemetry_store import record_llm_token_usage
@@ -208,11 +230,11 @@ async def _call_gemini_api(
                                     usage = data.get("usageMetadata", {})
                                     p_value = usage.get("promptTokenCount")
                                     c_value = usage.get("candidatesTokenCount")
-                                    p_tok = p_value if p_value is not None else (len(prompt) // 4)
-                                    c_tok = c_value if c_value is not None else (len(reply) // 4)
+                                    p_tok, p_actual = _resolve_usage_token(p_value, prompt)
+                                    c_tok, c_actual = _resolve_usage_token(c_value, reply)
                                     record_llm_execution(
                                         model, "gemini", p_tok, c_tok,
-                                        usage_source="provider" if p_value is not None and c_value is not None else "estimated",
+                                        usage_source="provider" if p_actual and c_actual else "estimated",
                                     )
                                     try:
                                         from app.services.telemetry_store import record_llm_token_usage
@@ -381,9 +403,9 @@ async def _call_gemini_vision_ocr(
                                 usage = data.get("usageMetadata", {})
                                 p_value = usage.get("promptTokenCount")
                                 c_value = usage.get("candidatesTokenCount")
-                                p_tok = p_value if p_value is not None else (len(ocr_prompt) // 4 + 258)
-                                c_tok = c_value if c_value is not None else max(40, len(raw_text) // 4)
-                                record_llm_execution(model, "gemini", p_tok, c_tok, usage_source="provider" if p_value is not None and c_value is not None else "estimated")
+                                p_tok, p_actual = _resolve_usage_token(p_value, ocr_prompt)
+                                c_tok, c_actual = _resolve_usage_token(c_value, raw_text)
+                                record_llm_execution(model, "gemini", p_tok, c_tok, usage_source="provider" if p_actual and c_actual else "estimated")
                                 img_tok = 258
                                 parsed["_model_used"] = model
                                 parsed["_provider"] = "gemini"
@@ -598,6 +620,7 @@ async def query_clinical_llm(
     temperature: float = 0.2,
     max_output_tokens: int = 800,
     timeout_sec: float = 8.0,
+    response_schema: Optional[dict] = None,
 ) -> Optional[str]:
     """
     Điểm truy vấn LLM thống nhất cho toàn bộ hệ thống lâm sàng.
@@ -615,7 +638,9 @@ async def query_clinical_llm(
     # 1.1 Check exact response cache first: returning a prior result incurs no
     # provider usage and must remain available when the daily budget is exhausted.
     model_identifier = settings.OPENAI_MODEL if provider == "openai_compatible" else "gemini-auto"
-    cache_hash = _compute_prompt_hash(provider, model_identifier, prompt, system_instruction)
+    schema_fingerprint = json.dumps(response_schema, sort_keys=True) if response_schema else ""
+    cache_prompt = f"{prompt}\n<response_schema>{schema_fingerprint}</response_schema>" if response_schema else prompt
+    cache_hash = _compute_prompt_hash(provider, model_identifier, cache_prompt, system_instruction)
     cached = _LLM_CACHE.get(cache_hash)
     if cached:
         text, ts = cached
@@ -652,6 +677,7 @@ async def query_clinical_llm(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             timeout_sec=timeout_sec,
+            response_schema=response_schema,
         )
 
     # 4. Lưu cache nếu thành công
@@ -660,7 +686,9 @@ async def query_clinical_llm(
         # execution separately from usage so request counters don't report zero.
         execution = get_last_llm_execution()
         if execution.get("model_call_count", 0) == 0 and execution.get("cache_hits", 0) == 0:
-            record_llm_execution(model_identifier, provider, usage_source="estimated")
+            p_tok, _ = _resolve_usage_token(None, prompt)
+            c_tok, _ = _resolve_usage_token(None, result)
+            record_llm_execution(model_identifier, provider, p_tok, c_tok, usage_source="estimated")
         if len(_LLM_CACHE) >= MAX_CACHE_ITEMS:
             oldest = min(_LLM_CACHE.keys(), key=lambda k: _LLM_CACHE[k][1])
             _LLM_CACHE.pop(oldest, None)
