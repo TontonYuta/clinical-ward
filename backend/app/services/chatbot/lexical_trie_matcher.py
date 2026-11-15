@@ -23,7 +23,7 @@ class DrugLexicalMatcher:
 
     def insert(self, term: str, canonical: str, entity_type: str = "brand") -> None:
         term_clean = term.strip().lower()
-        if len(term_clean) < 2 or len(term_clean) > 35 or term_clean in COMMON_EXCLUSIONS:
+        if len(term_clean) < 2 or len(term_clean) > 255 or term_clean in COMMON_EXCLUSIONS:
             return
         if entity_type == "brand":
             self.canonical_brands.add(canonical)
@@ -97,9 +97,9 @@ class DrugLexicalMatcher:
             try:
                 cursor.execute("SELECT title, inn FROM clinical_drug_monographs")
                 for title, inn in cursor.fetchall():
-                    if title and 3 <= len(title) <= 40:
+                    if title and 3 <= len(title) <= 255:
                         self.insert(title, title, "monograph")
-                    if inn and 3 <= len(inn) <= 40:
+                    if inn and 3 <= len(inn) <= 255:
                         self.insert(inn, inn, "monograph")
             except Exception:
                 pass

@@ -44,3 +44,11 @@ def test_extract_medications_integration():
     lower_extracted = [x.lower() for x in extracted]
     assert any("coversyl" in x for x in lower_extracted)
     assert any("paracetamol" in x for x in lower_extracted)
+
+def test_extracts_long_database_backed_monograph_names():
+    matcher = get_drug_lexical_matcher()
+    query = "Vaccinum rabiei ex cellulis ad usum humanum có chỉ định gì?"
+
+    extracted = matcher.extract_medications(query)
+
+    assert extracted == ["VACCINUM RABIEI EX CELLULIS AD USUM HUMANUM"]
