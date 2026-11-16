@@ -109,6 +109,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>(getCachedAuditRecords);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(loadChatSessions);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string>(() => getActiveSessionId(chatSessions));
+  const sidebarAutoCollapseTimer = useRef<number | null>(null);
 
   const activeSession = chatSessions.find(s => s.id === activeChatSessionId) || chatSessions[0] || createNewSession();
   const chatMessages = activeSession.messages;
@@ -387,6 +388,11 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     saveChatMessages(chatMessages);
   }, [chatSessions, chatMessages]);
   useEffect(() => { saveSidebarCollapsed(isSidebarCollapsed); }, [isSidebarCollapsed]);
+  useEffect(() => () => {
+    if (sidebarAutoCollapseTimer.current !== null) {
+      window.clearTimeout(sidebarAutoCollapseTimer.current);
+    }
+  }, []);
   useEffect(() => { saveCopilotOpen(isCopilotOpen); }, [isCopilotOpen]);
   useEffect(() => {
     let active = true;
@@ -1906,6 +1912,28 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     }
   };
 
+  const handleDesktopTabChange = (tab: DashboardTab) => {
+    setCurrentTab(tab);
+    if (!isSidebarCollapsed) return;
+
+    setIsSidebarCollapsed(false);
+    if (sidebarAutoCollapseTimer.current !== null) {
+      window.clearTimeout(sidebarAutoCollapseTimer.current);
+    }
+    sidebarAutoCollapseTimer.current = window.setTimeout(() => {
+      setIsSidebarCollapsed(true);
+      sidebarAutoCollapseTimer.current = null;
+    }, 1800);
+  };
+
+  const handleDesktopSidebarToggle = () => {
+    if (sidebarAutoCollapseTimer.current !== null) {
+      window.clearTimeout(sidebarAutoCollapseTimer.current);
+      sidebarAutoCollapseTimer.current = null;
+    }
+    setIsSidebarCollapsed((collapsed) => !collapsed);
+  };
+
   return (
     <div className="flex flex-row h-[100dvh] min-h-0 w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block relative">
       {/* 1. Mobile Drawer Backdrop Overlay */}
@@ -1980,7 +2008,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       <div className="hidden md:block shrink-0 print:hidden h-full">
         <Sidebar
           currentTab={currentTab}
-          onTabChange={(tab) => setCurrentTab(tab)}
+          onTabChange={handleDesktopTabChange}
           currentUserRole={currentUserRole}
               onSelectUserRole={authenticatedRole ? undefined : handleSelectUserRole}
               onLogout={authenticatedRole ? onLogout : undefined}
@@ -1989,7 +2017,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           fontScale={fontScale}
           onFontScaleChange={setFontScale}
           isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onToggleCollapse={handleDesktopSidebarToggle}
           debtCount={debts.filter(d => d.status === 'debt').length}
           urgentTicketsCount={tickets.filter(t => t.urgency === 'urgent' && t.status !== 'resolved').length}
           nearExpiryAndLowStockCount={batches.filter(b => b.isNearExpiry || b.isLowStock || b.currentStock <= b.minThreshold).length}
