@@ -110,6 +110,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(loadChatSessions);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string>(() => getActiveSessionId(chatSessions));
   const sidebarAutoCollapseTimer = useRef<number | null>(null);
+  const sidebarTemporaryPreview = useRef(false);
 
   const activeSession = chatSessions.find(s => s.id === activeChatSessionId) || chatSessions[0] || createNewSession();
   const chatMessages = activeSession.messages;
@@ -1916,14 +1917,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     setCurrentTab(tab);
     if (!isSidebarCollapsed) return;
 
+    sidebarTemporaryPreview.current = true;
     setIsSidebarCollapsed(false);
-    if (sidebarAutoCollapseTimer.current !== null) {
-      window.clearTimeout(sidebarAutoCollapseTimer.current);
-    }
-    sidebarAutoCollapseTimer.current = window.setTimeout(() => {
-      setIsSidebarCollapsed(true);
-      sidebarAutoCollapseTimer.current = null;
-    }, 1800);
   };
 
   const handleDesktopSidebarToggle = () => {
@@ -1931,7 +1926,27 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       window.clearTimeout(sidebarAutoCollapseTimer.current);
       sidebarAutoCollapseTimer.current = null;
     }
+    sidebarTemporaryPreview.current = false;
     setIsSidebarCollapsed((collapsed) => !collapsed);
+  };
+
+  const handleDesktopSidebarMouseEnter = () => {
+    if (sidebarAutoCollapseTimer.current !== null) {
+      window.clearTimeout(sidebarAutoCollapseTimer.current);
+      sidebarAutoCollapseTimer.current = null;
+    }
+  };
+
+  const handleDesktopSidebarMouseLeave = () => {
+    if (!sidebarTemporaryPreview.current || isSidebarCollapsed) return;
+    if (sidebarAutoCollapseTimer.current !== null) {
+      window.clearTimeout(sidebarAutoCollapseTimer.current);
+    }
+    sidebarAutoCollapseTimer.current = window.setTimeout(() => {
+      setIsSidebarCollapsed(true);
+      sidebarTemporaryPreview.current = false;
+      sidebarAutoCollapseTimer.current = null;
+    }, 1800);
   };
 
   return (
@@ -2005,7 +2020,11 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       </div>
 
       {/* 3. Desktop Left Enterprise Navigation Sidebar */}
-      <div className="hidden md:block shrink-0 print:hidden h-full">
+      <div
+        className="hidden md:block shrink-0 print:hidden h-full"
+        onMouseEnter={handleDesktopSidebarMouseEnter}
+        onMouseLeave={handleDesktopSidebarMouseLeave}
+      >
         <Sidebar
           currentTab={currentTab}
           onTabChange={handleDesktopTabChange}
