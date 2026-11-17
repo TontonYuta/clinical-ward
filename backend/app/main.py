@@ -261,7 +261,7 @@ async def auth_me(request: Request):
     from app.security.auth import verify_token
     user = verify_token(token or "", settings.SECRET_KEY)
     if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+        return {"enabled": True, "authenticated": False, "username": None, "role": None}
     return {"enabled": True, "authenticated": True, "username": user.username, "role": user.role}
 
 @app.post(f"{settings.API_V1_STR}/auth/logout")
