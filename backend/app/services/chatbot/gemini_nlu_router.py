@@ -140,18 +140,18 @@ def try_deterministic_fast_path(clean_q: str, active_med: Optional[str] = None) 
 
     # 1. Chào hỏi, cảm ơn đơn giản
     if any(low_q == g or low_q.startswith(g + " ") for g in ("xin chào", "chào", "hello", "hi", "cảm ơn", "cam on", "thanks")):
-        return fallback_nlu_heuristic(clean_q, active_med)
+        return fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
 
     # 2. Cổng tra cứu Dược thư Quốc gia
     if any(p in low_q for p in ("tra cứu dược thư", "cổng tra cứu", "dược thư quốc gia 2015", "tra cứu dđvn")):
-        res = fallback_nlu_heuristic(clean_q, active_med)
+        res = fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
         res.intent = "MEDICATION_LOOKUP_GUIDE"
         return res
 
     # 3. Tra cứu trực tiếp theo SĐK (Số đăng ký)
     sdk = matcher.extract_sdk(clean_q)
     if sdk and len(clean_q.split()) <= 4:
-        res = fallback_nlu_heuristic(clean_q, active_med)
+        res = fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
         res.primary_drug = sdk
         res.intent = "MEDICATION_LOOKUP"
         return res
@@ -170,7 +170,7 @@ def try_deterministic_fast_path(clean_q: str, active_med: Optional[str] = None) 
                 "cách dùng", "thời điểm uống"
             )
             if len(clean_q.split()) <= 6 or any(low_q.startswith(p) for p in simple_prefixes):
-                return fallback_nlu_heuristic(clean_q, active_med)
+                return fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
 
     return None
 
@@ -279,7 +279,9 @@ async def parse_clinical_nlu(
         return fallback_nlu_heuristic(clean_q, active_med)
 
 
-def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> ClinicalNluExtraction:
+def fallback_nlu_heuristic(
+    query: str, active_med: Optional[str] = None, *, matcher=None
+) -> ClinicalNluExtraction:
     """Fallback an toàn cục bộ (< 0.1ms) khi API LLM ngoại tuyến hoặc timeout."""
     clean_q = query.strip()
     low_q = clean_q.lower()
@@ -292,8 +294,9 @@ def fallback_nlu_heuristic(query: str, active_med: Optional[str] = None) -> Clin
         depth_pref = "COUNSELING"
 
     # Trích xuất thuốc để phát hiện chuyển chủ đề (topic shift)
-    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
-    matcher = get_drug_lexical_matcher()
+    if matcher is None:
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        matcher = get_drug_lexical_matcher()
     meds = matcher.extract_medications(clean_q)
     is_topic_shift = False
     if active_med:

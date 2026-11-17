@@ -54,6 +54,25 @@ def test_try_deterministic_fast_path_latency_and_accuracy():
         assert dt < 50.0, f"Latency exceeded 50ms: {dt:.2f}ms"
 
 
+def test_fast_path_reuses_initialized_medication_matcher(monkeypatch):
+    import app.services.chatbot.lexical_trie_matcher as lexical
+
+    calls = []
+    real_get = lexical.get_drug_lexical_matcher
+
+    def count_getter_calls():
+        calls.append(1)
+        return real_get()
+
+    monkeypatch.setattr(lexical, "get_drug_lexical_matcher", count_getter_calls)
+    result = try_deterministic_fast_path(
+        "Liều dùng người lớn của Paracetamol là bao nhiêu?"
+    )
+
+    assert result is not None
+    assert calls == [1]
+
+
 @pytest.mark.asyncio
 async def test_zero_token_direct_serving_end_to_end():
     async with AsyncSessionLocal() as db:
