@@ -1,0 +1,79 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{vietnam}
+\usepackage{geometry}
+\geometry{top=1.55cm,bottom=1.5cm,left=1.8cm,right=1.8cm}
+\usepackage{setspace}
+\setstretch{1.08}
+\setlength{\parskip}{0.22em}
+\usepackage{booktabs,tabularx,array,ragged2e}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,urlcolor=teal!70!black}
+\definecolor{medblue}{RGB}{24,76,120}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\setlist[itemize]{leftmargin=*,itemsep=0.12em,topsep=0.12em}
+\setlist[enumerate]{leftmargin=*,itemsep=0.15em,topsep=0.12em}
+
+\begin{document}
+\begin{center}
+    {\Large\textbf{BÁO CÁO TUẦN 8}}\\[0.18em]
+    {\large\textbf{Xây dựng Chatbot tra cứu thông tin và hỗ trợ nghiệp vụ y tế}}\\[0.25em]
+    Sinh viên thực hiện: \textbf{Trần Huy Hoàng}\quad $|$\quad MSSV: \textbf{20237337}\quad $|$\quad Tháng 11/2026\\[0.12em]
+    Ứng dụng: \url{https://clinical-ward.vercel.app}\quad $|$\quad Máy chủ API: \url{https://clinical-ward-api.onrender.com}
+\end{center}
+\noindent\textcolor{medblue}{\rule{\textwidth}{0.7pt}}
+
+\section{Tổng quan}
+Trong tuần 8, dự án tập trung củng cố luồng tra cứu chatbot dựa trên dữ liệu y tế, cải thiện khả năng hoạt động khi không có kết nối dịch vụ AI bên ngoài, đồng thời hoàn thiện monitor và một số nghiệp vụ hỗ trợ bệnh viện. Các thay đổi được đánh giá theo hướng chỉ trả lời khi có dữ liệu nguồn phù hợp; trường hợp thiếu dữ liệu cần được thể hiện rõ để nhân viên y tế xem xét.
+
+\section{Hoàn thiện luồng chatbot và truy xuất dữ liệu}
+\begin{itemize}
+    \item Rà soát định tuyến câu hỏi, tách truy vấn tra cứu trực tiếp khỏi các câu hỏi cần tổng hợp hoặc áp dụng dữ liệu vào tình huống cụ thể.
+    \item Bổ sung kiểm soát phạm vi bằng chứng để nội dung trả lời gắn với thuốc, trường thông tin và nguồn đã truy xuất; không coi dữ kiện không có nguồn là kết luận.
+    \item Củng cố truy xuất kết hợp dữ liệu thuốc, chuyên luận và tài liệu đã đóng gói cùng backend, đồng thời duy trì đường dự phòng khi một phương thức truy xuất không khả dụng.
+    \item Bổ sung kiểm thử hồi quy cho các tình huống chuyển chủ đề, câu hỏi nhiều trường, tương tác thuốc, ngữ cảnh bệnh nhân và câu hỏi ngoài phạm vi.
+\end{itemize}
+
+\section{Tra cứu ngoại tuyến và tối ưu thời gian phản hồi}
+Tra cứu trường thông tin thuốc đã có thể đi theo đường xử lý cục bộ: phân loại câu hỏi, tìm thuốc trong danh mục, lấy dữ liệu và bằng chứng từ cơ sở dữ liệu, sau đó dựng câu trả lời mà không cần gọi mô hình sinh nội dung cho các trường hợp phù hợp.
+
+Trong quá trình đo, bộ nhận diện thuốc dạng Trie có gần 50 nghìn tên biệt dược và hơn 11 nghìn tên hoạt chất. Lần khởi tạo lạnh trên máy phát triển mất khoảng 3,5--4 giây; sau khi khởi tạo, tra cứu tên thuốc bằng bộ nhận diện thường dưới 1 ms. Đây là độ trễ khởi tạo tiến trình, khác với thời gian xử lý câu hỏi sau khi backend đã sẵn sàng.
+
+Sau khi làm nóng tiến trình, phép đo local cho thấy phân loại fast path có trung vị khoảng 1,0--1,1 ms; một lượt tra cứu có trường thông tin từ DB và dựng phản hồi có trung vị khoảng 194--201 ms trong các mẫu đã đo. Các số liệu này là kết quả trên môi trường phát triển, không đại diện cho mọi cấu hình triển khai hoặc độ trễ đầu cuối của người dùng.
+
+\section{Monitor và nghiệp vụ hỗ trợ}
+\begin{itemize}
+    \item Tiếp tục hoàn thiện cấu hình hiển thị tab chức năng, đồng bộ trạng thái giữa monitor và ứng dụng, cùng các bộ lọc và phân trang log.
+    \item Bổ sung cách theo dõi token đầu vào/đầu ra, request và thời gian xử lý để hỗ trợ đánh giá chi phí vận hành.
+    \item Rà soát trạng thái giám định BHYT: dữ liệu đầu vào thiếu cần được phân biệt với trường hợp đã xác định vi phạm, tránh tự kết luận khi chưa đủ căn cứ.
+    \item Cải thiện trải nghiệm một số thành phần giao diện như sidebar và đăng nhập; xác thực nhiều thiết bị vẫn là phần cần tiếp tục kiểm tra trên môi trường triển khai.
+\end{itemize}
+
+\section{Kiểm thử và trạng thái triển khai}
+Các bộ kiểm thử liên quan đến NLU, định tuyến workflow, SSE, phạm vi bằng chứng và phục vụ tra cứu không token đã được chạy trên local. Trong nhóm kiểm thử tập trung của đợt tối ưu hiện tại có \textbf{57 trường hợp đạt}; riêng bộ kiểm tra phục vụ trực tiếp không token đạt \textbf{6/6 trường hợp}.
+
+Một số kiểm thử dữ liệu/citation vẫn cần được rà soát do kỳ vọng nguồn trong test chưa hoàn toàn thống nhất với provenance của các bản ghi hiện có. Vì vậy, các thay đổi cục bộ đang tiếp tục được kiểm chứng và chưa được đưa lên production. Tại thời điểm lập báo cáo, endpoint kiểm tra sức khỏe production trả trạng thái hoạt động bình thường.
+
+\section{Kế hoạch tuần tiếp theo}
+\begin{enumerate}
+    \item Đo thời gian từng chặng của request offline qua endpoint thực tế: NLU, truy vấn DB, dựng bằng chứng và citation, cache, telemetry.
+    \item Rà soát provenance từ bản ghi thuốc tới citation và xử lý các kiểm thử còn sai khác về nguồn.
+    \item Tách các thay đổi đã hoàn tất khỏi các thay đổi auth, monitor và chatbot còn dở; kiểm tra bản cô lập trước khi phát hành.
+    \item Tiếp tục xác nhận trạng thái đăng nhập sau reload, trạng thái kết nối AI và mức đầy đủ của dữ liệu hiển thị trên production.
+\end{enumerate}
+
+\section{Kết luận}
+Trong tuần 8, dự án tập trung củng cố chatbot tra cứu có căn cứ dữ liệu, cải thiện khả năng phục vụ ngoại tuyến và bổ sung công cụ theo dõi hoạt động. Các phép đo hiện tại cho thấy phân loại tra cứu cục bộ nhanh sau khởi tạo, trong khi độ trễ lạnh của bộ nhận diện thuốc vẫn cần được quản lý và đo riêng. Việc phát hành tiếp theo sẽ được cân nhắc sau khi hoàn tất rà soát provenance và kiểm thử trên một bản thay đổi được cô lập.
+
+\vfill
+\noindent\textcolor{medblue}{\rule{\textwidth}{0.5pt}}
+\begin{center}
+    \small Báo cáo tuần 8 được tổng hợp từ lịch sử triển khai, mã nguồn và kết quả kiểm tra local.\\[0.35em]
+    \begin{tabular*}{0.85\textwidth}{@{\extracolsep{\fill}}cc@{}}
+        \textbf{Sinh viên thực hiện} & \textbf{Giảng viên hướng dẫn duyệt}\\[1.6em]
+        \textbf{Trần Huy Hoàng} & \textit{(Ký và ghi rõ họ tên)}
+    \end{tabular*}
+\end{center}
+\end{document}
