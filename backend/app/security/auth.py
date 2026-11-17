@@ -216,7 +216,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return False
         if suffix in {"/clinical-ddi/audit", "/clinical-ddi/check-pair", "/clinical-ddi/normalize"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
-        if suffix in {"/copilot/chat", "/copilot/rag"}:
+        if suffix in {"/copilot/chat", "/copilot/chat/stream", "/copilot/rag"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
         for prefix, allowed_roles in prefixes.items():
             if suffix == prefix or suffix.startswith(prefix + "/"):
