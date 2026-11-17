@@ -15,11 +15,20 @@ from fastapi import HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+try:
+    from argon2 import PasswordHasher, Type
+    from argon2.exceptions import VerifyMismatchError, VerificationError
+except ImportError:  # Optional until identity auth is enabled in deployment.
+    PasswordHasher = Type = None
+    VerifyMismatchError = VerificationError = Exception
+
 
 @dataclass(frozen=True)
 class AuthenticatedUser:
     username: str
     role: str
+    account_id: str | None = None
+    session_id: str | None = None
 
 
 def _b64(value: bytes) -> str:
@@ -37,6 +46,13 @@ def hash_password(password: str, *, salt: bytes | None = None, iterations: int =
 
 
 def verify_password(password: str, encoded: str) -> bool:
+    if encoded.startswith("$argon2"):
+        if PasswordHasher is None:
+            return False
+        try:
+            return PasswordHasher().verify(encoded, password)
+        except (VerifyMismatchError, VerificationError, ValueError, TypeError):
+            return False
     try:
         algorithm, iteration_text, salt_text, digest_text = encoded.split("$", 3)
         if algorithm != "pbkdf2_sha256":
@@ -48,8 +64,21 @@ def verify_password(password: str, encoded: str) -> bool:
         return False
 
 
-def issue_token(username: str, role: str, secret_key: str, ttl_seconds: int = 3600) -> str:
+def hash_password_argon2(password: str) -> str:
+    """Hash a staff password with Argon2id.
+
+    This is deliberately separate from the legacy PBKDF2 helper so existing
+    AUTH_USERS_JSON deployments remain compatible during migration.
+    """
+    if PasswordHasher is None:
+        raise RuntimeError("argon2-cffi is required for identity authentication")
+    return PasswordHasher(type=Type.ID).hash(password)
+
+
+def issue_token(username: str, role: str, secret_key: str, ttl_seconds: int = 3600, session_id: str | None = None) -> str:
     payload = {"sub": username, "role": role, "exp": int(time.time()) + ttl_seconds}
+    if session_id:
+        payload["sid"] = session_id
     encoded = _b64(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode())
     signature = hmac.new(secret_key.encode(), encoded.encode(), hashlib.sha256).digest()
     return f"{encoded}.{_b64(signature)}"
@@ -64,7 +93,7 @@ def verify_token(token: str, secret_key: str) -> AuthenticatedUser | None:
         payload = json.loads(_unb64(encoded))
         if int(payload["exp"]) <= int(time.time()):
             return None
-        return AuthenticatedUser(username=str(payload["sub"]), role=str(payload["role"]))
+        return AuthenticatedUser(username=str(payload["sub"]), role=str(payload["role"]), session_id=payload.get("sid"))
     except (ValueError, KeyError, TypeError, json.JSONDecodeError):
         return None
 
@@ -81,7 +110,7 @@ def require_authenticated(request: Request, secret_key: str) -> AuthenticatedUse
 
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, *, enabled: bool, secret_key: str, users_json: str, trusted_origins: list[str] | None = None):
+    def __init__(self, app, *, enabled: bool, secret_key: str, users_json: str, identity_store_enabled: bool = False, trusted_origins: list[str] | None = None):
         super().__init__(app)
         self.enabled = enabled
         self.secret_key = secret_key
@@ -91,8 +120,9 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             self.users = users if isinstance(users, dict) else {}
         except (ValueError, TypeError):
             self.users = {}
-        if enabled and (len(secret_key) < 32 or not self.users):
-            raise RuntimeError("AUTH_REQUIRED needs a 32+ character SECRET_KEY and non-empty AUTH_USERS_JSON.")
+        self.identity_store_enabled = identity_store_enabled
+        if enabled and (len(secret_key) < 32 or (not self.users and not identity_store_enabled)):
+            raise RuntimeError("AUTH_REQUIRED needs a 32+ character SECRET_KEY and either identity storage or AUTH_USERS_JSON.")
 
     async def dispatch(self, request: Request, call_next):
         if not self.enabled or not request.url.path.startswith("/api/v1/"):
@@ -113,6 +143,20 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             same_origin = f"{forwarded_proto}://{forwarded_host}".rstrip("/") if forwarded_host else ""
             if origin and origin.rstrip("/") not in self.trusted_origins | {same_origin}:
                 return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
+        public_auth_requests = {
+            ("/api/v1/auth/me", "GET"),
+            ("/api/v1/auth/me", "HEAD"),
+            ("/api/v1/auth/me", "OPTIONS"),
+            ("/api/v1/auth/logout", "POST"),
+            ("/api/v1/auth/logout", "OPTIONS"),
+        }
+        # The frontend needs an unauthenticated session response to render the
+        # login screen; treating this read-only status check as protected turns
+        # a normal logged-out state into a misleading Authentication required error.
+        if request.url.path == "/api/v1/auth/me" and request.method == "GET":
+            return await call_next(request)
+        if (request.url.path, request.method) in public_auth_requests:
+            return await call_next(request)
         token = request.cookies.get("clinical_session")
         header = request.headers.get("authorization", "")
         if header.lower().startswith("bearer "):
@@ -120,6 +164,19 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         user = verify_token(token or "", self.secret_key)
         if user is None:
             return JSONResponse({"detail": "Authentication required"}, status_code=401, headers={"WWW-Authenticate": "Bearer"})
+        if self.identity_store_enabled:
+            if not user.session_id:
+                return JSONResponse({"detail": "Identity session required"}, status_code=401)
+            try:
+                from app.identity_database import get_identity_session_factory
+                from app.services.identity_service import validate_identity_session
+                _, factory = get_identity_session_factory()
+                async with factory() as session:
+                    is_valid = await validate_identity_session(session, token or "", user)
+            except Exception:
+                return JSONResponse({"detail": "Identity service unavailable"}, status_code=503)
+            if not is_valid:
+                return JSONResponse({"detail": "Identity session expired or revoked"}, status_code=401)
         if not self._role_allowed(request.method, request.url.path, user.role):
             return JSONResponse({"detail": "Role is not authorized for this operation"}, status_code=403)
         request.state.authenticated_user = user
@@ -127,8 +184,10 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
     @staticmethod
     def _role_allowed(method: str, path: str, role: str) -> bool:
+        suffix = path.removeprefix("/api/v1")
+        if suffix.startswith("/admin"):
+            return role == "director"
         if method in {"GET", "HEAD", "OPTIONS"}:
-            suffix = path.removeprefix("/api/v1")
             if suffix.startswith("/patients") or suffix.startswith("/prescription-advice"):
                 return role in {"doctor", "nurse"}
             if suffix.startswith("/audit"):
@@ -146,9 +205,6 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             "/sms": {"doctor", "nurse"},
             "/clinical-ddi": set(),
         }
-        suffix = path.removeprefix("/api/v1")
-        if suffix.startswith("/admin"):
-            return role == "director"
         if suffix == "/auth/logout":
             return True
         if suffix.startswith("/auth/"):
