@@ -36,9 +36,20 @@ function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   return fetch(input, { ...init, credentials: 'include' });
 }
 
+async function authenticatedApiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const first = await apiFetch(input, init);
+  if (first.status !== 401) return first;
+  try {
+    const sessionResponse = await apiFetch(`${API_BASE_URL}/auth/me`, { method: 'GET', cache: 'no-store' });
+    const session = await sessionResponse.json();
+    if (session?.authenticated) return apiFetch(input, init);
+  } catch {}
+  return first;
+}
+
 export async function getKnowledgeDocumentsApi(): Promise<KnowledgeDocument[]> {
-  const response = await apiFetch(`${API_BASE_URL}/admin/knowledge/documents`);
-  if (!response.ok) throw new Error('Không thể tải danh mục tài liệu');
+  const response = await authenticatedApiFetch(`${API_BASE_URL}/admin/knowledge/documents`);
+  if (!response.ok) throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại để tải tài liệu.' : 'Không thể tải danh mục tài liệu');
   const payload = await response.json();
   return Array.isArray(payload.documents) ? payload.documents : [];
 }
@@ -461,8 +472,8 @@ export async function getNationalDrugRegistryApi(params?: {
   if (params?.pageSize) query.set('page_size', (params.pageSize || 50).toString());
   if (params?.onlyInWarehouse) query.set('only_in_warehouse', 'true');
 
-  const res = await apiFetch(`${API_BASE_URL}/registry/catalog?${query.toString()}`);
-  if (!res.ok) throw new Error('Không thể nạp danh mục dược quốc gia từ máy chủ');
+  const res = await authenticatedApiFetch(`${API_BASE_URL}/registry/catalog?${query.toString()}`);
+  if (!res.ok) throw new Error(res.status === 401 ? 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại để tải danh mục thuốc.' : 'Không thể nạp danh mục dược quốc gia từ máy chủ');
   const data = (await res.json()) as RegistryPageResponse;
   if (data && Array.isArray(data.items)) {
     for (const item of data.items) {
