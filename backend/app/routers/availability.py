@@ -24,15 +24,7 @@ def _active_provider_key(provider: str = "gemini") -> str | None:
 
 
 async def _active_provider_key_async(provider: str = "gemini") -> str | None:
-    """Read the key through the async identity store used by request handlers."""
-    from app.services.admin_key_vault import _require_complete_identity_vault_config
-    _require_complete_identity_vault_config()
-    if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
-        from app.identity_database import get_identity_session_factory
-        from app.services.identity_service import get_active_provider_key
-        _, factory = get_identity_session_factory()
-        async with factory() as session:
-            return await get_active_provider_key(session, provider)
+    """Read the key from the configured production vault without blocking."""
     return await asyncio.to_thread(_active_provider_key, provider)
 
 

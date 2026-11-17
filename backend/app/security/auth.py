@@ -155,6 +155,11 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # a normal logged-out state into a misleading Authentication required error.
         if request.url.path == "/api/v1/auth/me" and request.method == "GET":
             return await call_next(request)
+        # This endpoint exposes only bounded service readiness metadata; it
+        # contains no patient data or secrets and powers the public app's
+        # online/offline indicator before a staff member signs in.
+        if request.url.path == "/api/v1/availability" and request.method in {"GET", "HEAD", "OPTIONS"}:
+            return await call_next(request)
         if (request.url.path, request.method) in public_auth_requests:
             return await call_next(request)
         token = request.cookies.get("clinical_session")

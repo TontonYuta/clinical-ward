@@ -45,6 +45,23 @@ def test_auth_middleware_protects_api_but_allows_login_route():
     assert client.post("/api/v1/inventory/restock-proposal", headers={"Authorization": f"Bearer {pharmacist_token}"}).status_code == 200
 
 
+def test_auth_middleware_allows_read_only_availability_without_session():
+    app = FastAPI()
+    app.add_middleware(AuthenticationMiddleware, enabled=True, secret_key="s" * 32, users_json='{"nurse":{"role":"nurse"}}')
+
+    @app.get("/api/v1/availability")
+    def availability():
+        return {"mode": "local_only"}
+
+    @app.post("/api/v1/availability")
+    def mutate_availability():
+        return {"ok": True}
+
+    client = TestClient(app)
+    assert client.get("/api/v1/availability").status_code == 200
+    assert client.post("/api/v1/availability").status_code == 401
+
+
 def test_role_policy_rejects_unprivileged_writes_and_patient_reads():
     assert not AuthenticationMiddleware._role_allowed("POST", "/api/v1/inventory/restock-proposal", "nurse")
     assert AuthenticationMiddleware._role_allowed("POST", "/api/v1/inventory/restock-proposal", "pharmacist")
