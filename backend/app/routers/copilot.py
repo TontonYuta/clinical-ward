@@ -171,7 +171,7 @@ async def chat_with_copilot(
     response.model_call_count = last_exec.get("model_call_count", last_exec.get("call_count", 0))
     response.usage_call_count = last_exec.get("provider_call_count", 0)
     response.cache_hit_count = last_exec.get("cache_hits", 0)
-    response.availability_mode = "online_ai" if response.model_call_count else ("offline" if response.answer_type == "unavailable" else "local_only")
+    response.availability_mode = "online_ai" if response.model_call_count else "local_only"
     if cached_resp:
         response.availability_mode = "local_only"
         response.model_name = "clinical-cache-engine"
@@ -307,7 +307,7 @@ async def chat_with_copilot_stream(
             response.model_name = "clinical-cache-engine"
             response.provider = "local-cache"
         if response.answer_type == "unavailable":
-            response.availability_mode = "offline"
+            response.availability_mode = "local_only"
         if usage.get("call_count", 0) and usage.get("model"):
             response.model_name = usage["model"]
         if usage.get("call_count", 0) and usage.get("provider"):

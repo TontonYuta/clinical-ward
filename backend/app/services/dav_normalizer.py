@@ -8,9 +8,7 @@ def clean_brand_name(name: str | None) -> str:
     if not name:
         return ""
     # Nếu có ghi chú nhà sản xuất/đóng gói/địa chỉ ở cuối, lược bỏ từ dấu mở ngoặc đến hết
-    cleaned = re.sub(r"\s*\((?:Cơ sở|Nhà sản xuất|Địa chỉ|Đóng gói|Xuất xưởng|NSX).*?\)\s*$", "", name, flags=re.IGNORECASE)
-    # Xử lý trường hợp ngoặc lồng nhau (Thailand)
-    cleaned = re.sub(r"\s*\((?:Cơ sở|Nhà sản xuất|Địa chỉ|Đóng gói|Xuất xưởng|NSX)[^)]*(?:\([^)]*\)[^)]*)*\)", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*\(.*?(?:Cơ sở|Nhà sản xuất|Địa chỉ|Đóng gói|Xuất xưởng|NSX|SX|Sản xuất).*", "", name, flags=re.IGNORECASE)
     cleaned = re.sub(r"[\s,\-]+$", "", cleaned)
     return cleaned.strip() or name
 

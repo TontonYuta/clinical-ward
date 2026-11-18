@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, ExternalLink, RotateCcw, ShieldCheck, Radio } from 'lucide-react';
+import { Activity, ExternalLink, RotateCcw, ShieldCheck, Radio, LogOut, LockKeyhole, LockKeyholeOpen } from 'lucide-react';
 
 interface AdminHeaderProps {
   autoRefresh: boolean;
@@ -8,6 +8,11 @@ interface AdminHeaderProps {
   isRefreshing: boolean;
   clinicalAppUrl?: string;
   lastUpdated?: string;
+  authenticatedUsername?: string;
+  onLogout?: () => Promise<void>;
+  authEnabled: boolean;
+  canConfigureAuth: boolean;
+  onToggleAuth: () => void;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({
@@ -20,7 +25,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         ? `${window.location.protocol}//${window.location.hostname}:3000`
         : 'https://clinical-ward.vercel.app')
     : 'http://localhost:3000',
-  lastUpdated
+  lastUpdated,
+  authenticatedUsername,
+  onLogout,
+  authEnabled,
+  canConfigureAuth,
+  onToggleAuth,
 }) => {
   return (
     <header className="h-15 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-2xs z-20">
@@ -45,6 +55,9 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-3">
+        {authenticatedUsername && <span className="hidden md:block text-xs text-slate-600">{authenticatedUsername}</span>}
+        {canConfigureAuth && <button type="button" onClick={onToggleAuth} aria-pressed={authEnabled} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" title="Chỉ ẩn hoặc hiện form trên thiết bị này. API backend vẫn xác thực theo phiên.">{authEnabled ? <LockKeyhole className="h-3.5 w-3.5" /> : <LockKeyholeOpen className="h-3.5 w-3.5" />}{authEnabled ? 'Form đăng nhập: Hiện' : 'Form đăng nhập: Ẩn'}</button>}
+        {onLogout && <button type="button" onClick={() => void onLogout()} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" title="Đăng xuất"><LogOut className="h-3.5 w-3.5" /><span className="hidden sm:inline">Đăng xuất</span></button>}
         {lastUpdated && (
           <span className="text-2xs font-mono text-slate-400 hidden xl:inline">
             Cập nhật: {lastUpdated}

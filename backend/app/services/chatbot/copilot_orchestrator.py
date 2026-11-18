@@ -85,6 +85,13 @@ def _requested_fields_from_managed_schema(
     scored_fields = [field for field, _ in rank_clinical_intents(query, min_score=2.5)]
     nlu_fields = list(dict.fromkeys(requested_fields or []))
     if scored_fields:
+        # When the classifier explicitly identified multiple requested facets,
+        # retain that contract even if some facets lack a current schema field.
+        # The authoritative lookup layer will abstain on unsupported fields;
+        # filtering them here would silently turn a compound question into a
+        # partial answer.
+        if len(nlu_fields) > 1 and all(field in scored_fields for field in nlu_fields):
+            return nlu_fields
         matched_nlu_fields = [field for field in nlu_fields if field in scored_fields]
         if matched_nlu_fields:
             return matched_nlu_fields
@@ -363,6 +370,24 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             return await handle_prescription_block_audit(
                 query, nlu_res.prescription_lines, user_name, user_role, session_id, db
             )
+
+        # An explicit multi-drug interaction query has one authoritative DDI
+        # workflow. Resolve it before generic multi-intent decomposition so
+        # source claims cannot be lost during synthesis.
+        interaction_terms = (
+            "tương tác", "tương kỵ", "uống cùng", "dùng cùng",
+            "uống chung", "phối hợp", "có uống được", "kỵ nhau"
+        )
+        direct_ddi_meds = get_drug_lexical_matcher().extract_medications(query)
+        if (
+            any(term in lower_query for term in interaction_terms)
+            and len(direct_ddi_meds) >= 2
+        ):
+            from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
+            session.set_comparison_drugs(direct_ddi_meds)
+            ddi_res = format_multi_ddi_response(direct_ddi_meds, query, session_id=session_id)
+            if ddi_res:
+                return ddi_res
 
         # Xử lý câu hỏi kép / đa ý định -> phân rã sub_queries song song
         if workflow_decision.executor_key == "multi_intent":
@@ -1013,7 +1038,10 @@ def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotRespons
         )
         resp.source_status = "evidence_validation_failed" if has_versioned_evidence else "evidence_provenance_missing"
         resp.abstention_reason = "Không có claim lâm sàng đã xác minh với evidence nguồn"
-        resp.reply_text = "Chưa thể xác minh nội dung câu trả lời với claim được gắn trực tiếp vào evidence có provenance."
+        resp.reply_text = (
+            "Chưa thể xác minh nội dung câu trả lời bằng khẳng định đã được liên kết trực tiếp "
+            "với bằng chứng có nguồn gốc rõ ràng."
+        )
         resp.confidence = 0.0
         resp.citations = []
         resp.evidence = []

@@ -73,6 +73,37 @@ def test_multi_drug_matrix_evaluates_combinations_deterministically():
     assert len(res3.evidence) > 0
 
 
+def test_multi_drug_response_survives_claim_provenance_validation_and_is_vietnamese():
+    from app.services.chatbot.copilot_orchestrator import validate_response_evidence_contract
+
+    response = validate_response_evidence_contract(
+        format_multi_ddi_response(
+            ["Clopidogrel", "Omeprazol", "Aspirin"],
+            "Kiểm tra tương tác giữa Clopidogrel và Omeprazol và Aspirin",
+        )
+    )
+
+    assert response.answer_type != "safe_abstention"
+    assert response.rag_grounded is True
+    assert response.claims
+    assert "Core Clinical Guidance" not in response.reply_text
+    assert "Polypharmacy Cross-Matrix" not in response.reply_text
+    assert "NSAID + ANTICOAGULANT" not in response.reply_text
+    evidence_by_id = {item["evidence_id"]: item for item in response.evidence}
+    assert all(
+        claim.text in response.reply_text
+        and claim.text in evidence_by_id[claim.evidence_ids[0]]["content"]
+        for claim in response.claims
+    )
+    assert "**Aspirin**" in response.reply_text
+    assert "Aspirin với Clopidogrel" not in response.reply_text
+    assert "Aspirin với Omeprazol" not in response.reply_text
+    assert "Cặp Clopidogrel + Omeprazol" in response.reply_text
+    assert "Cặp Aspirin + Clopidogrel" not in response.reply_text
+    assert "NSAID" not in response.reply_text
+    assert "ANTICOAGULANT" not in response.reply_text
+
+
 def test_multi_drug_matrix_marks_unresolved_medication_as_unverified():
     response = format_multi_ddi_response(
         ["Clopidogrel", "UnknownDrugXYZ"], "Kiểm tra tương tác Clopidogrel và UnknownDrugXYZ"
@@ -82,3 +113,12 @@ def test_multi_drug_matrix_marks_unresolved_medication_as_unverified():
     assert response.rag_grounded is False
     assert response.abstention_reason
     assert not any(citation.get("document_id") == "qd-5948-byt" for citation in response.citations or [])
+
+
+def test_unlisted_pair_is_not_claimed_safe():
+    response = format_multi_ddi_response(
+        ["Clopidogrel", "Aspirin"], "Kiểm tra tương tác Clopidogrel và Aspirin"
+    )
+
+    assert "không đồng nghĩa với an toàn" in response.reply_text.casefold()
+    assert "được xác định là an toàn" not in response.reply_text.casefold()

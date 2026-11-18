@@ -9,6 +9,7 @@ import hmac
 import json
 import secrets
 import time
+import uuid
 from dataclasses import dataclass
 
 from fastapi import HTTPException, Request, status
@@ -76,7 +77,7 @@ def hash_password_argon2(password: str) -> str:
 
 
 def issue_token(username: str, role: str, secret_key: str, ttl_seconds: int = 3600, session_id: str | None = None) -> str:
-    payload = {"sub": username, "role": role, "exp": int(time.time()) + ttl_seconds}
+    payload = {"sub": username, "role": role, "exp": int(time.time()) + ttl_seconds, "jti": uuid.uuid4().hex}
     if session_id:
         payload["sid"] = session_id
     encoded = _b64(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode())
@@ -150,12 +151,12 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             ("/api/v1/auth/logout", "POST"),
             ("/api/v1/auth/logout", "OPTIONS"),
         }
-        # The frontend needs an unauthenticated session response to render the
-        # login screen; treating this read-only status check as protected turns
-        # a normal logged-out state into a misleading Authentication required error.
-        if request.url.path == "/api/v1/auth/me" and request.method == "GET":
-            return await call_next(request)
-        if (request.url.path, request.method) in public_auth_requests:
+        if (
+            (request.url.path == "/api/v1/auth/me" and request.method == "GET")
+            or ((request.url.path, request.method) in public_auth_requests)
+            or (request.url.path.startswith("/api/v1/registry") and request.method in {"GET", "HEAD", "OPTIONS"})
+            or (request.url.path == "/api/v1/availability" and request.method in {"GET", "HEAD", "OPTIONS"})
+        ):
             return await call_next(request)
         token = request.cookies.get("clinical_session")
         header = request.headers.get("authorization", "")
@@ -211,7 +212,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return False
         if suffix in {"/clinical-ddi/audit", "/clinical-ddi/check-pair", "/clinical-ddi/normalize"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
-        if suffix in {"/copilot/chat", "/copilot/rag"}:
+        if suffix in {"/copilot/chat", "/copilot/chat/stream", "/copilot/rag"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
         for prefix, allowed_roles in prefixes.items():
             if suffix == prefix or suffix.startswith(prefix + "/"):

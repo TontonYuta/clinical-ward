@@ -5,17 +5,6 @@
  * - Fallback for Web/Vercel: /api/v1 (reverse-proxied to Render backend)
  */
 export function getApiBaseUrl(): string {
-  if (typeof process !== 'undefined' && process.env?.VITE_API_BASE_URL) {
-    return process.env.VITE_API_BASE_URL.replace(/\/+$/, '');
-  }
-
-  if (typeof import.meta !== 'undefined') {
-    const envUrl = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL;
-    if (envUrl && typeof envUrl === 'string') {
-      return envUrl.replace(/\/+$/, '');
-    }
-  }
-
   if (typeof window !== 'undefined') {
     const isTauri = '__TAURI__' in window ||
       window.location.protocol === 'tauri:' ||
@@ -33,6 +22,16 @@ export function getApiBaseUrl(): string {
     }
   }
 
+  const envUrl = typeof import.meta !== 'undefined'
+    ? (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL
+    : undefined;
+  const processUrl = typeof process !== 'undefined' ? process.env?.VITE_API_BASE_URL : undefined;
+  return resolveWebApiBaseUrl(envUrl || processUrl);
+}
+
+export function resolveWebApiBaseUrl(_configuredUrl?: string): string {
+  // Browser clients must use the Vercel same-origin proxy so browsers persist
+  // and send the HttpOnly session cookie as a first-party cookie.
   return '/api/v1';
 }
 

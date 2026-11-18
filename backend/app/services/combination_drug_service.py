@@ -18,18 +18,18 @@ from app.services.ingredient_mapping import CURATED_ALIASES
 
 # Danh mục ánh xạ các cặp hoạt chất phối hợp chuẩn sang chuyên luận phối hợp chính danh trong DĐVN V
 CANONICAL_COMBINED_MONOGRAPHS: dict[frozenset[str], str] = {
-    frozenset(["amoxicillin", "clavulanic"]): "DTQG-0048-Amoxicillinandpotass",
-    frozenset(["amoxicilin", "clavulanic"]): "DTQG-0048-Amoxicillinandpotass",
-    frozenset(["amoxicillin", "acid clavulanic"]): "DTQG-0048-Amoxicillinandpotass",
-    frozenset(["amoxicilin", "acid clavulanic"]): "DTQG-0048-Amoxicillinandpotass",
-    frozenset(["ampicillin", "sulbactam"]): "DTQG-0051-Ampicillinandsulbact",
-    frozenset(["ampicilin", "sulbactam"]): "DTQG-0051-Ampicillinandsulbact",
-    frozenset(["sulfamethoxazole", "trimethoprim"]): "DTQG-0170-SulfamethoxazoleTrim",
-    frozenset(["sulfamethoxazol", "trimethoprim"]): "DTQG-0170-SulfamethoxazoleTrim",
-    frozenset(["carbidopa", "levodopa"]): "DTQG-0106-Carbidopalevodopa",
-    frozenset(["lopinavir", "ritonavir"]): "DTQG-0397-Lopinavirandritonavi",
-    frozenset(["imipenem", "cilastatin"]): "DTQG-0340-Imipenemandenzymeinh",
-    frozenset(["cyanocobalamin", "hydroxocobalamin"]): "DTQG-0173-Cyanocobalaminandhyd",
+    frozenset(["amoxicillin", "clavulanic"]): "DTQG-0069-Amoxicillinandpotass",
+    frozenset(["amoxicilin", "clavulanic"]): "DTQG-0069-Amoxicillinandpotass",
+    frozenset(["amoxicillin", "acid clavulanic"]): "DTQG-0069-Amoxicillinandpotass",
+    frozenset(["amoxicilin", "acid clavulanic"]): "DTQG-0069-Amoxicillinandpotass",
+    frozenset(["ampicillin", "sulbactam"]): "DTQG-0072-Ampicillinandsulbact",
+    frozenset(["ampicilin", "sulbactam"]): "DTQG-0072-Ampicillinandsulbact",
+    frozenset(["sulfamethoxazole", "trimethoprim"]): "DTQG-0191-SulfamethoxazoleTrim",
+    frozenset(["sulfamethoxazol", "trimethoprim"]): "DTQG-0191-SulfamethoxazoleTrim",
+    frozenset(["carbidopa", "levodopa"]): "DTQG-0127-Carbidopalevodopa",
+    frozenset(["lopinavir", "ritonavir"]): "DTQG-0418-Lopinavirandritonavi",
+    frozenset(["imipenem", "cilastatin"]): "DTQG-0361-Imipenemandenzymeinh",
+    frozenset(["cyanocobalamin", "hydroxocobalamin"]): "DTQG-0194-Cyanocobalaminandhyd",
 }
 
 def extract_concise_drug_class(raw_class: Optional[str]) -> str:
@@ -64,12 +64,13 @@ def clean_monograph_field(text: Optional[str], max_chars: int = 220) -> str:
     return truncated + '...'
 
 SALT_SUFFIXES = re.compile(
-    r"\b(?:maleat|maleate|hydroclorid|hydrochloride|hcl|phosphat|phosphate|"
-    r"natri|sodium|calci|calcium|kali|potassium|fumarat|fumarate|acetat|acetate|"
-    r"succinat|succinate|sulfat|sulfate|clorid|chloride|nitrat|nitrate|"
-    r"trihydrat|trihydrate|dihydrat|dihydrate|dipropionat|dipropionate|"
-    r"valerat|valerate|tartrat|tartrate|arginin|arginine|besilat|besylate|"
-    r"erbumin|erbumine|mesylat|mesylate)\b",
+    r"\b(?:maleat|maleate|hydroclorid|hydrochloride|hydrochlorid|hcl|phosphat|phosphate|diphosphat|"
+    r"natri|sodium|calci|calcium|kali|potassium|magnesi|magnesium|kem|zinc|amoni|ammonium|"
+    r"fumarat|fumarate|acetat|acetate|succinat|succinate|sulfat|sulfate|bisulfat|bisulfate|clorid|chloride|nitrat|nitrate|"
+    r"trihydrat|trihydrate|dihydrat|dihydrate|monohydrat|monohydrate|hemihydrat|hemihydrate|"
+    r"tetrahydrat|pentahydrat|hexahydrat|sesquihydrat|dipropionat|dipropionate|"
+    r"valerat|valerate|tartrat|tartrate|citrat|citrate|arginin|arginine|besilat|besylate|besylat|"
+    r"erbumin|erbumine|mesylat|mesylate|gluconat|lactat|lactate|benzoat|benzoate|khan|anhydrous|micronized|base)\b",
     re.IGNORECASE
 )
 
@@ -146,8 +147,16 @@ async def resolve_combination_monographs(
 
     primary_monograph = None
     if canonical_mono_id:
-        res = await db.execute(select(ClinicalDrugMonograph).where(ClinicalDrugMonograph.id == canonical_mono_id))
-        primary_monograph = res.scalar_one_or_none()
+        slug = canonical_mono_id.split("-", 2)[-1]
+        res = await db.execute(
+            select(ClinicalDrugMonograph).where(
+                or_(
+                    ClinicalDrugMonograph.id == canonical_mono_id,
+                    ClinicalDrugMonograph.id.like(f"%{slug}")
+                )
+            ).order_by(ClinicalDrugMonograph.id.asc())
+        )
+        primary_monograph = res.scalars().first()
 
     # Bước 2: Tìm chuyên luận riêng cho từng thành phần
     component_details: List[dict[str, Any]] = []

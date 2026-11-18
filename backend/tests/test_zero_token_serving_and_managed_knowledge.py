@@ -37,6 +37,7 @@ def test_try_deterministic_fast_path_latency_and_accuracy():
         ("Tra cứu thuốc Calci clorid", "MEDICATION_LOOKUP", "Calci clorid"),
         ("Liều dùng Diazepam", "MEDICATION_LOOKUP", "Diazepam"),
         ("Chỉ định của Morphin", "MEDICATION_LOOKUP", "Morphin"),
+        ("Xử trí quá liều Theophylline như thế nào?", "MEDICATION_LOOKUP", "Theophylline"),
         ("VD-10405-10", "MEDICATION_LOOKUP", "VD-10405-10"),
         ("xin chào", "GREETING_WELLBEING", None),
         ("bạn là ai", "OUT_OF_SCOPE", None),
@@ -54,19 +55,40 @@ def test_try_deterministic_fast_path_latency_and_accuracy():
         assert dt < 50.0, f"Latency exceeded 50ms: {dt:.2f}ms"
 
 
-def test_fast_path_reuses_initialized_medication_matcher(monkeypatch):
+def test_first_eligible_medication_query_compiles_shared_matcher_once(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
     import app.services.chatbot.lexical_trie_matcher as lexical
 
     calls = []
     real_get = lexical.get_drug_lexical_matcher
 
-    def count_getter_calls():
+    def count_matcher_initialization():
         calls.append(1)
         return real_get()
 
-    monkeypatch.setattr(lexical, "get_drug_lexical_matcher", count_getter_calls)
-    result = try_deterministic_fast_path(
+    monkeypatch.setattr(lexical, "get_drug_lexical_matcher", count_matcher_initialization)
+    result = nlu.try_deterministic_fast_path(
         "Liều dùng người lớn của Paracetamol là bao nhiêu?"
+    )
+
+    assert result is not None
+    assert calls == [1]
+
+
+def test_fast_path_reuses_facets_computed_by_local_classifier(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+    import app.services.chatbot.intent_feature_matrix as features
+
+    calls = []
+    real_rank = features.rank_clinical_intents
+
+    def count_rank(*args, **kwargs):
+        calls.append(1)
+        return real_rank(*args, **kwargs)
+
+    monkeypatch.setattr(features, "rank_clinical_intents", count_rank)
+    result = nlu.try_deterministic_fast_path(
+        "Hiệu chỉnh liều Ciprofloxacin ở bệnh nhân suy thận"
     )
 
     assert result is not None

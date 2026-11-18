@@ -48,6 +48,31 @@ async def test_standalone_turn_is_classified_without_previous_medication_context
     assert result.intent == "GREETING_WELLBEING"
     assert "last_active_medication" not in seen["prompt"]
     assert "conversation_history" not in seen["prompt"]
+    assert seen.get("response_schema") is not None
+    assert "MEDICATION_LOOKUP" in str(seen["response_schema"])
+
+
+def test_nlu_system_prompt_keeps_contract_but_drops_redundant_few_shot_payload():
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    prompt = nlu.GEMINI_NLU_SYSTEM_PROMPT
+    assert "BẢNG 11 Ý ĐỊNH" in prompt
+    assert "QUY TẮC BÓC TÁCH THÔNG SỐ" in prompt
+    assert "answer_operation" in prompt
+    assert "requested_fields" in prompt
+    assert "MẪU ĐỐI CHỨNG (FEW-SHOT EXAMPLES)" not in prompt
+    assert len(prompt) < 7500
+
+def test_nlu_response_schema_keeps_contract_without_prose_metadata():
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    schema = nlu._structured_output_schema()
+
+    assert schema["type"] == "object"
+    assert "intent" in schema["properties"]
+    assert "MEDICATION_LOOKUP" in schema["properties"]["intent"]["enum"]
+    assert "description" not in str(schema)
+    assert "title" not in str(schema)
 
 
 @pytest.mark.asyncio
@@ -55,7 +80,7 @@ async def test_contextual_nlu_classification_cache_reuses_only_current_turn_deci
     import app.services.chatbot.gemini_nlu_router as nlu
 
     nlu._NLU_CACHE.clear()
-    monkeypatch.setattr(nlu, "fallback_nlu_heuristic", lambda query, active_med=None: None)
+    monkeypatch.setattr(nlu, "fallback_nlu_heuristic", lambda query, active_med=None, **kwargs: None)
     monkeypatch.setattr(
         "app.services.admin_key_vault.get_active_api_key",
         lambda provider: "test-api-key-value",
@@ -94,6 +119,7 @@ async def test_contextual_followup_reuses_active_entity_without_second_llm_call(
 
     nlu._NLU_CACHE.clear()
     monkeypatch.setattr(nlu.settings, "GEMINI_API_KEY", "test-api-key-value")
+    monkeypatch.setattr("app.services.admin_key_vault.get_active_api_key", lambda provider: None)
     calls = []
 
     async def classify_current_turn(**kwargs):
@@ -135,6 +161,132 @@ async def test_gemini_nlu_interaction_check_two_drugs():
     assert res.primary_drug and "warfarin" in res.primary_drug.lower()
     assert res.secondary_drug and "aspirin" in res.secondary_drug.lower()
 
+@pytest.mark.parametrize("query", [
+    "Xử trí quá liều Theophylline như thế nào?",
+    "Liều dùng người lớn của Paracetamol là bao nhiêu?",
+    "Chống chỉ định của Paracetamol là gì?",
+])
+def test_single_drug_single_facet_lookup_uses_deterministic_fast_path(query):
+    from app.services.chatbot.gemini_nlu_router import try_deterministic_fast_path
+
+    result = try_deterministic_fast_path(query)
+
+    assert result is not None
+    assert result.intent == "MEDICATION_LOOKUP"
+    assert len(result.requested_fields) == 1
+
+def test_long_unconstrained_lookup_for_known_drug_uses_local_nlu():
+    from app.services.chatbot.gemini_nlu_router import try_deterministic_fast_path
+
+    query = "Tôi muốn tra cứu các thông tin hiện có về thuốc Paracetamol"
+    result = try_deterministic_fast_path(query)
+
+    assert result is not None
+    assert result.intent == "MEDICATION_LOOKUP"
+    assert result.primary_drug and result.primary_drug.casefold() == "paracetamol"
+    assert result.answer_operation == "direct_lookup"
+
+@pytest.mark.asyncio
+async def test_long_unconstrained_lookup_does_not_call_remote_nlu(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    nlu._NLU_CACHE.clear()
+    monkeypatch.setattr(nlu.settings, "GEMINI_API_KEY", "test-api-key-value")
+
+    async def fail_if_called(**kwargs):
+        raise AssertionError("direct known-drug lookup must not call remote NLU")
+
+    monkeypatch.setattr("app.services.llm_provider.query_clinical_llm", fail_if_called)
+    result = await nlu.parse_clinical_nlu(
+        "Tôi muốn tra cứu các thông tin hiện có về thuốc Paracetamol"
+    )
+
+    assert result is not None
+    assert result.intent == "MEDICATION_LOOKUP"
+    assert result.primary_drug and result.primary_drug.casefold() == "paracetamol"
+
+@pytest.mark.asyncio
+async def test_direct_faceted_lookup_does_not_contact_remote_nlu_on_cache_miss(monkeypatch):
+    import app.services.chatbot.gemini_nlu_router as nlu
+
+    nlu._NLU_CACHE.clear()
+    monkeypatch.setattr(nlu.settings, "GEMINI_API_KEY", "test-api-key-value")
+    monkeypatch.setattr("app.services.admin_key_vault.get_active_api_key", lambda provider: None)
+
+    async def fail_if_called(**kwargs):
+        raise AssertionError("direct faceted lookup must not call remote NLU")
+
+    monkeypatch.setattr("app.services.llm_provider.query_clinical_llm", fail_if_called)
+    result = await nlu.parse_clinical_nlu(
+        "Paracetamol 500 mg có liều dùng như thế nào?"
+    )
+
+    assert result is not None
+    assert result.intent == "MEDICATION_LOOKUP"
+    assert result.primary_drug and result.primary_drug.casefold().startswith("paracetamol")
+    assert "adult_dosage" in result.requested_fields
+
+def test_alcohol_exposure_is_not_classified_as_a_second_drug():
+    from app.services.chatbot.gemini_nlu_router import fallback_nlu_heuristic
+
+    result = fallback_nlu_heuristic(
+        "Dựa trên dữ liệu, so sánh nguy cơ gan khi dùng Paracetamol với rượu"
+    )
+
+    assert result.intent != "MEDICATION_INTERACTION_CHECK"
+    assert result.primary_drug == "Paracetamol"
+    assert result.secondary_drug is None
+    assert result.answer_operation == "evidence_synthesis"
+
+def test_fallback_nlu_preserves_multiple_facets_for_one_drug():
+    from app.services.chatbot.gemini_nlu_router import fallback_nlu_heuristic
+
+    result = fallback_nlu_heuristic(
+        "Chỉ định và liều dùng của Paracetamol"
+    )
+
+    assert set(result.requested_fields) == {"indications", "adult_dosage"}
+
+def test_direct_lookup_fast_path_handles_pediatric_multifacet_query_without_provider():
+    from app.services.chatbot.gemini_nlu_router import try_deterministic_fast_path
+
+    result = try_deterministic_fast_path("Chỉ định và liều Paracetamol cho trẻ 15 kg")
+
+    assert result is not None
+    assert result.intent == "MEDICATION_LOOKUP"
+    assert result.primary_drug and result.primary_drug.casefold() == "paracetamol"
+    assert {"indications", "pediatric_dosage"}.issubset(result.requested_fields)
+    assert result.is_pediatric is True
+
+def test_known_drug_interaction_fast_path_avoids_nlu_provider():
+    from app.services.chatbot.gemini_nlu_router import try_deterministic_fast_path
+
+    result = try_deterministic_fast_path("Kiểm tra tương tác Warfarin và Aspirin")
+
+    assert result is not None
+    assert result.intent == "MEDICATION_INTERACTION_CHECK"
+    assert result.primary_drug and result.secondary_drug
+    assert result.requested_field == "interactions"
+    assert "drug_interactions" in result.requested_fields
+
+def test_generic_renal_adjustment_lookup_uses_local_database_path():
+    from app.services.chatbot.gemini_nlu_router import try_deterministic_fast_path
+
+    result = try_deterministic_fast_path("Hiệu chỉnh liều Ciprofloxacin ở bệnh nhân suy thận")
+
+    assert result is not None
+    assert result.intent == "MEDICATION_LOOKUP"
+    assert result.primary_drug and result.primary_drug.casefold() == "ciprofloxacin"
+    assert "renal_adjustment" in result.requested_fields
+    assert result.is_renal_inquiry is True
+
+def test_patient_specific_renal_dosing_stays_in_reasoning_path():
+    from app.services.chatbot.gemini_nlu_router import fallback_nlu_heuristic
+
+    result = fallback_nlu_heuristic("Liều Ciprofloxacin cho bệnh nhân creatinin 165 umol/L")
+
+    assert result.intent == "PATIENT_CASE_REASONING"
+    assert result.is_renal_inquiry is True
 
 @pytest.mark.asyncio
 async def test_gemini_nlu_deictic_lookup_with_context():

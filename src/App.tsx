@@ -400,15 +400,15 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     const refresh = async () => {
       try {
         const status = await fetchChatbotAvailability();
-        if (active) setChatbotAvailability(status.mode);
+        if (active) setChatbotAvailability(status.mode === 'online_ai' ? 'online_ai' : 'local_only');
       } catch {
-        if (active) setChatbotAvailability('offline');
+        if (active) setChatbotAvailability('local_only');
       }
     };
     void refresh();
     const timer = window.setInterval(refresh, 30000);
     const onOnline = () => void refresh();
-    const onOffline = () => { if (active) setChatbotAvailability('offline'); };
+    const onOffline = () => { if (active) setChatbotAvailability('local_only'); };
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     return () => { active = false; window.clearInterval(timer); window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
@@ -2139,9 +2139,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         <span className="sr-only">Trợ lý AI (⌘K / Ctrl+K)</span>
         <span className="absolute -top-8 right-0 whitespace-nowrap rounded-md bg-slate-900/90 px-2 py-1 text-[11px] font-medium text-white shadow" role="status" aria-live="polite">
           {chatbotAvailability === 'checking' && <><LoaderCircle className="mr-1 inline h-3 w-3 animate-spin" />Đang kiểm tra</>}
-          {chatbotAvailability === 'online_ai' && <><Wifi className="mr-1 inline h-3 w-3" />Online</>}
-          {chatbotAvailability === 'local_only' && <><CloudOff className="mr-1 inline h-3 w-3" />Cục bộ</>}
-          {chatbotAvailability === 'offline' && <><WifiOff className="mr-1 inline h-3 w-3" />Offline</>}
+          {chatbotAvailability === 'online_ai' && <><Wifi className="mr-1 inline h-3 w-3 text-emerald-400" />Online</>}
+          {chatbotAvailability !== 'online_ai' && chatbotAvailability !== 'checking' && <><CloudOff className="mr-1 inline h-3 w-3 text-sky-400" />Cục bộ</>}
         </span>
       </button>
 

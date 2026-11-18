@@ -38,6 +38,34 @@ def _scope_alcohol_evidence(value: Optional[str]) -> str:
     return " ".join(sentence for sentence in sentences if any(term in sentence.casefold() for term in alcohol_terms))
 
 
+def _extract_timing_guidance(mono) -> str:
+    """Trích xuất hướng dẫn thời điểm uống, trước/sau ăn trực tiếp từ chuyên luận DĐVN V."""
+    if not mono:
+        return ""
+    candidates = [
+        getattr(mono, "adult_dosage", None),
+        getattr(mono, "precautions", None),
+        getattr(mono, "dosage_forms", None),
+    ]
+    cues = (
+        "trước khi ăn", "sau khi ăn", "trước bữa ăn", "sau bữa ăn",
+        "lúc đói", "lúc no", "cùng bữa ăn", "trong bữa ăn",
+        "buổi sáng", "trước khi đi ngủ", "uống lúc", "khi đói", "khi no",
+        "uống nguyên viên", "nuốt nguyên viên", "uống cùng với", "uống trước", "uống sau"
+    )
+    extracted = []
+    for cand in candidates:
+        if not cand:
+            continue
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?\n])\s+", str(cand)) if s.strip()]
+        for s in sentences:
+            if any(cue in s.lower() for cue in cues) and len(s) > 10:
+                extracted.append(s)
+    if extracted:
+        return " ".join(extracted[:3])
+    return ""
+
+
 def _evidence_claim_contract(
     evidence: list[dict],
     reply_text: str | None = None,
@@ -68,11 +96,12 @@ def _evidence_claim_contract(
         fragments = [fragment.strip() for fragment in re.split(r"(?<=[.!?])\s+|\n+", str(content)) if fragment.strip()]
         claim_ids = []
         for fragment_index, fragment in enumerate(fragments, start=1):
-            if rendered is not None and normalize(fragment) not in rendered:
+            frag_clean = fragment.rstrip("….").strip()
+            if rendered is not None and normalize(frag_clean) not in rendered:
                 continue
             claim = AnswerClaim(
                 claim_id=f"database-source-{index}-{fragment_index}",
-                text=fragment,
+                text=frag_clean,
                 claim_type="source_fact",
                 evidence_ids=[evidence_id],
                 support_status="supported",
@@ -151,6 +180,62 @@ def _build_formatter_structured_payload(
     return summary, payload
 
 
+SALT_PATTERN = re.compile(
+    r"\b(?:natri|sodium|kali|potassium|calci|calcium|magnesi|magnesium|kem|zinc|amoni|ammonium|"
+    r"hydroclorid|hydrochloride|hydrochlorid|hcl|sulfat|sulfate|bisulfat|bisulfate|phosphat|phosphate|diphosphat|"
+    r"tartrat|tartrate|acetat|acetate|maleat|maleate|fumarat|fumarate|succinat|succinate|citrat|citrate|"
+    r"besylat|besylate|besilat|mesylat|mesylate|gluconat|lactat|lactate|benzoat|benzoate|valerat|propionat|"
+    r"dipropionat|trihydrat|dihydrat|monohydrat|hemihydrat|tetrahydrat|pentahydrat|hexahydrat|"
+    r"trihydrate|dihydrate|monohydrate|hemihydrate|sesquihydrat|khan|anhydrous|micronized|base)\b",
+    re.IGNORECASE
+)
+
+
+def extract_monograph_search_targets(active_raw: Optional[str], brand_raw: Optional[str]) -> list[str]:
+    """Trích xuất từ khóa tìm kiếm chuyên luận DĐVN V tối ưu hóa (bóc tách tiền tố đóng gói, muối, dạng ngậm nước & biến thể ngôn ngữ)."""
+    raw = (active_raw or "").strip()
+    first = raw.split(";")[0].split("+")[0].strip()
+    first = re.sub(r"^.*?(?:chứa|thuốc chứa)\s*:\s*", "", first, flags=re.IGNORECASE)
+    first = re.sub(r"^(?:mỗi|trong)\s+[\w\d.,\s\xa0]+(?:viên|gói|lọ|ống|bơm tiêm|chai|túi|ml|liều)\s*(?:chứa)?\s*[:\-]?\s*", "", first, flags=re.IGNORECASE)
+    first_no_strength = re.sub(r"[\d.,\s\xa0]+(?:mg|g|mcg|ml|iu|ui|%|đơn vị|mmol)\b.*$", "", first, flags=re.IGNORECASE).strip()
+    clean_inn = re.sub(r"\(.*?\)", "", first_no_strength).strip()
+    clean_inn = re.sub(r"\b(?:dưới dạng|tương đương|as|equivalent)\b.*$", "", clean_inn, flags=re.IGNORECASE).strip()
+    base_substance = SALT_PATTERN.sub("", clean_inn).strip()
+    base_substance = re.sub(r"\s+", " ", base_substance).strip()
+
+    core_candidates = [base_substance, clean_inn, first_no_strength]
+    if brand_raw:
+        core_candidates.append(brand_raw.strip())
+
+    targets: list[str] = []
+    seen = set()
+
+    def add_target(t: str):
+        t_clean = t.strip().lower()
+        if len(t_clean) >= 3 and t_clean not in seen:
+            seen.add(t_clean)
+            targets.append(t_clean)
+
+    for cand in core_candidates:
+        if not cand:
+            continue
+        c_l = cand.strip().lower()
+        add_target(c_l)
+        words = c_l.split()
+        if len(words) <= 2:
+            main_word = words[0]
+            if main_word.endswith("e"):
+                add_target(main_word[:-1])
+            else:
+                add_target(main_word + "e")
+            if main_word.endswith("in"):
+                add_target(main_word + "e")
+            elif main_word.endswith("ine"):
+                add_target(main_word[:-1])
+
+    return targets
+
+
 async def build_drug_profile_response(
     drugs: List[DavNationalDrug],
     db: AsyncSession,
@@ -185,9 +270,11 @@ async def build_drug_profile_response(
             if m:
                 candidates.append(m)
 
-        mono_targets = [t for t in [clean_inn, clean_active, first_active, matched.brand_name.lower()] if t and len(t) >= 3]
-        conds = [func.lower(ClinicalDrugMonograph.inn).like(f"%{t}%") for t in mono_targets]
-        conds.extend([func.lower(ClinicalDrugMonograph.title).like(f"%{t}%") for t in mono_targets])
+        mono_targets = extract_monograph_search_targets(matched.active_ingredient, matched.brand_name)
+        if not mono_targets:
+            mono_targets = [t for t in [clean_inn, clean_active, first_active, matched.brand_name.lower()] if t and len(t) >= 3]
+        conds = [func.lower(ClinicalDrugMonograph.inn).like(f"%{t}%") for t in mono_targets[:8]]
+        conds.extend([func.lower(ClinicalDrugMonograph.title).like(f"%{t}%") for t in mono_targets[:8]])
         if conds:
             mono_res = await db.execute(select(ClinicalDrugMonograph).where(or_(*conds)))
             candidates.extend(mono_res.scalars().all())
@@ -201,14 +288,15 @@ async def build_drug_profile_response(
                 score = min(text_len, 5000)
                 m_title = (m.title or "").strip().lower()
                 m_inn = (m.inn or "").strip().lower()
-                for t in mono_targets:
+                for idx, t in enumerate(mono_targets):
                     t_l = t.lower()
+                    priority_bonus = max(0, 50000 - idx * 5000)
                     if m_title == t_l or m_inn == t_l:
-                        score += 100000
+                        score += 100000 + priority_bonus
                     elif m_title.startswith(t_l) or m_inn.startswith(t_l):
-                        score += 20000
+                        score += 20000 + priority_bonus
                     elif t_l in m_title or t_l in m_inn:
-                        score += 5000
+                        score += 5000 + (priority_bonus // 2)
                 if ("," in m_inn or ";" in m_inn or "+" in m_inn) and not any(sep in clean_inn for sep in (",", ";", "+")):
                     score -= 50000
                 return score
@@ -220,7 +308,10 @@ async def build_drug_profile_response(
     lower_query = query.casefold()
     from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
     intent_to_field = {
-        "administration_timing": ("timing", "precautions", "Thời điểm & Cách dùng thuốc (Trước/Sau ăn)"),
+        # Timing and meal guidance have no dedicated source-backed column in
+        # the current monograph schema. Keep the requested facet distinct so
+        # it abstains instead of borrowing unrelated precautions.
+        "administration_timing": ("timing", "administration_timing", "Thời điểm dùng thuốc"),
         "pediatric_dosage": ("pediatric_dosage", "pediatric_dosage", "Liều dùng trẻ em"),
         "adult_dosage": ("adult_dosage", "adult_dosage", "Liều dùng người lớn"),
         "contraindications": ("contraindications", "contraindications", "Chống chỉ định"),
@@ -233,7 +324,7 @@ async def build_drug_profile_response(
         "renal_adjustment": ("renal_adjustment", "renal_adjustment", "Hiệu chỉnh liều suy thận"),
         "hepatic_adjustment": ("hepatic_adjustment", "hepatic_adjustment", "Hiệu chỉnh liều cho bệnh nhân suy gan"),
         "alcohol_interaction": ("alcohol", "precautions", "Tương tác với Rượu & Đồ uống có cồn"),
-        "food_interaction": ("food", "precautions", "Tương tác với Thức ăn, Sữa & Đồ uống"),
+        "food_interaction": ("food", "food_interaction", "Tương tác với Thức ăn, Sữa & Đồ uống"),
         "elderly_warning": ("elderly", "precautions", "Cảnh báo & Liều dùng người cao tuổi"),
         "stock_inquiry": ("stock", "", "Tồn kho"),
         "monitoring": ("monitoring", "description", "Theo dõi / xét nghiệm"),
@@ -338,6 +429,25 @@ async def build_drug_profile_response(
                     details.append(f"- **{req_label}:** {total_stock} {matched.standard_unit}" + (f"; vị trí: {stock_batches[0].warehouse_location}" if stock_batches else ""))
                     labels.append(req_label)
                     continue
+                if field_key == "ingredient" or req_field == "active_ingredient":
+                    details.append(f"- **Thành phần hoạt chất:** {matched.active_ingredient} (Dạng bào chế: {matched.dosage_form or 'Đạt chuẩn'}, SĐK: {matched.national_code or 'DAV'})")
+                    labels.append("Thành phần hoạt chất")
+                    cit = {
+                        "source": "Cục Quản lý Dược (DAV) - Danh mục thuốc lưu hành",
+                        "legal_basis": "Cục Quản lý Dược Việt Nam (DAV Master Registry)",
+                        "section": "active_ingredient",
+                        "excerpt": matched.active_ingredient,
+                        "document_id": "dav-national-registry",
+                        "url": "/registry/dav_master_registry.json.gz",
+                        "text_fragment_url": "",
+                        "page": 1,
+                        "source_id": matched.source_id or "data/vietnam_drug_registry/dav_master_registry.json.gz",
+                        "source_version": matched.source_version or "sha256:df0da7ecd18ec5a9413d9cb04e99979d319d95365675986dc0c02763c813a2d2",
+                        "chunk_id": f"dav:{matched.national_code or clean_name}:ingredient"
+                    }
+                    combo_citations.append(cit)
+                    legal_bases.append(cit["source"])
+                    continue
                 comp_lines = []
                 for c in components:
                     ing_name = c["ingredient_name"]
@@ -387,7 +497,7 @@ async def build_drug_profile_response(
                 legal_basis=" • ".join(dict.fromkeys(legal_bases)) if legal_bases else "Dược Thư Quốc Gia Việt Nam",
                 suggested_chips=contextual_chips, session_id=session.session_id,
                 active_medication_name=session.active_medication_name,
-                answer_type="medication_fields", source_status="exact_match", confidence=1.0, rag_grounded=True,
+                answer_type="medication_field" if len(requested_fields) == 1 else "medication_fields", source_status="exact_match", confidence=1.0, rag_grounded=True,
                 citations=unique_citations,
                 evidence=_build_drug_evidence(unique_citations, reply, clean_name)
             )
@@ -400,14 +510,28 @@ async def build_drug_profile_response(
         is_adult_patient = (demo_slots.get("age_years") is not None and demo_slots["age_years"] >= 18)
 
         field_data = []
+        fields_without_verified_source = []
         for field_key, _, req_field, req_label in requested_fields:
-            if field_key == "stock":
+            if field_key == "timing":
+                timing_guidance = _extract_timing_guidance(monograph)
+                if timing_guidance:
+                    detail = format_clinical_text(timing_guidance)
+                else:
+                    fields_without_verified_source.append(field_key)
+                    detail = ""
+            elif field_key in {"food", "elderly", "monitoring"}:
+                # These are virtual facets rather than columns in either
+                # monograph model. Never substitute generic precautions or
+                # description text for a field that the source does not model.
+                fields_without_verified_source.append(field_key)
+                detail = ""
+            elif field_key == "ingredient":
+                ing_val = matched.active_ingredient or clean_inn
+                detail = f"Thành phần hoạt chất của **{clean_name}**: **{ing_val}** (Dạng bào chế: {matched.dosage_form or 'Đạt chuẩn DĐVN V'}, SĐK: `{matched.national_code or 'DAV'}`)."
+            elif field_key == "stock":
                 stock_batches = await get_batches()
                 total_stock = sum(batch.current_stock for batch in stock_batches)
                 detail = f"{total_stock} {matched.standard_unit}" + (f"; vị trí: {stock_batches[0].warehouse_location}" if stock_batches else "")
-            elif field_key == "timing":
-                raw_val = value(req_field)
-                detail = format_clinical_text(str(raw_val).strip()) if raw_val else ""
             elif req_field == "drug_interactions" or req_label == "Tương tác thuốc":
                 from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
                 brand_ddis = find_all_interactions_for_drug(matched.brand_name)
@@ -441,15 +565,18 @@ async def build_drug_profile_response(
                     detail = f"Chưa có dữ liệu tương tác thuốc được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
             elif req_field == "pediatric_dosage" and not is_adult_patient:
                 raw_val = value(req_field) or value("pediatric_dosage")
-                reasoned_ped = reason_pediatric_dosage(
-                    drug_name=clean_name,
-                    clean_inn=clean_inn,
-                    raw_pediatric_dosage=str(raw_val or ""),
-                    query=query,
-                    slots=demo_slots
+                has_patient_demographics = any(
+                    demo_slots.get(k) is not None for k in ("age_years", "age_months", "weight_kg")
                 )
-                if reasoned_ped:
-                    detail = reasoned_ped
+                if has_patient_demographics:
+                    reasoned_ped = reason_pediatric_dosage(
+                        drug_name=clean_name,
+                        clean_inn=clean_inn,
+                        raw_pediatric_dosage=str(raw_val or ""),
+                        query=query,
+                        slots=demo_slots
+                    )
+                    detail = reasoned_ped or (format_clinical_text(str(raw_val).strip()) if raw_val else f"Chưa có dữ liệu {req_label.lower()} được xác thực cho {clean_name}.")
                 else:
                     detail = format_clinical_text(str(raw_val).strip()) if raw_val else f"Chưa có dữ liệu {req_label.lower()} được xác thực cho {clean_name} trong nguồn đang lập chỉ mục. Hãy đối chiếu tờ hướng dẫn sử dụng hoặc hỏi dược sĩ lâm sàng."
             elif field_key == "alcohol" or "Rượu" in req_label:
@@ -501,6 +628,16 @@ async def build_drug_profile_response(
 
             field_data.append((field_key, req_label, detail))
 
+        if fields_without_verified_source:
+            return CopilotResponse(
+                intent="CLINICAL_SAFE_ABSTENTION",
+                reply_text="Kho hiện chưa có trường dữ liệu có nguồn kiểm chứng cho một hoặc nhiều nội dung được hỏi.",
+                answer_type="safe_abstention", source_status="requested_field_unavailable",
+                confidence=0.0, rag_grounded=False, citations=[], evidence=[],
+                abstention_reason="Một hoặc nhiều trường được hỏi chưa có dữ liệu nguồn chuyên biệt",
+                session_id=session.session_id,
+            )
+
         source = (monograph.source if monograph and monograph.source else matched.clinical_source) or "Danh mục đăng ký thuốc Cục Quản lý Dược"
         u_name = getattr(session, "user_name", "Bác sĩ") or "Bác sĩ"
         reply_text = format_flat_field_inquiry(
@@ -527,7 +664,7 @@ async def build_drug_profile_response(
                 citation = build_drug_citation(matched, monograph, source, target_field=citation_field)
                 citation.update({
                     "excerpt": alcohol_text,
-                    "section": req_label,
+                "section": field_key,
                     "source_id": getattr(monograph, "source_id", None) or getattr(matched, "source_id", None),
                     "source_version": getattr(monograph, "source_version", None) or getattr(matched, "source_version", None),
                     "chunk_id": f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:{citation_field}",
@@ -536,7 +673,42 @@ async def build_drug_profile_response(
                     field_citations.append(citation)
                     field_evidence.extend(_build_drug_evidence([citation]))
                 continue
-            if field_key in {"food", "elderly", "timing", "monitoring"}:
+            if field_key == "timing":
+                timing_guidance = _extract_timing_guidance(monograph)
+                if not timing_guidance:
+                    continue
+                citation = build_drug_citation(matched, monograph, source, target_field="adult_dosage")
+                citation.update({
+                    "excerpt": format_clinical_text(timing_guidance),
+                    "section": "adult_dosage",
+                    "source_id": getattr(monograph, "source_id", None) or getattr(matched, "source_id", None),
+                    "source_version": getattr(monograph, "source_version", None) or getattr(matched, "source_version", None),
+                    "chunk_id": f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:adult_dosage",
+                })
+                if citation["source_id"] and citation["source_version"]:
+                    field_citations.append(citation)
+                    field_evidence.extend(_build_drug_evidence([citation]))
+                continue
+            if field_key == "ingredient":
+                ing_val = matched.active_ingredient or clean_inn
+                citation = {
+                    "source": "Cục Quản lý Dược (DAV) - Danh mục thuốc lưu hành",
+                    "legal_basis": "Cục Quản lý Dược Việt Nam (DAV Master Registry)",
+                    "section": "active_ingredient",
+                    "excerpt": ing_val,
+                    "document_id": "dav-national-registry",
+                    "url": "/registry/dav_master_registry.json.gz",
+                    "text_fragment_url": "",
+                    "page": 1,
+                    "source_id": matched.source_id or "data/vietnam_drug_registry/dav_master_registry.json.gz",
+                    "source_version": matched.source_version or "sha256:df0da7ecd18ec5a9413d9cb04e99979d319d95365675986dc0c02763c813a2d2",
+                    "chunk_id": f"dav:{matched.national_code or clean_name}:ingredient"
+                }
+                if citation["source_id"] and citation["source_version"]:
+                    field_citations.append(citation)
+                    field_evidence.extend(_build_drug_evidence([citation]))
+                continue
+            if field_key in {"food", "elderly", "monitoring"}:
                 continue
             raw_field_value = value(req_field)
             if not raw_field_value or not str(raw_field_value).strip():
@@ -545,7 +717,7 @@ async def build_drug_profile_response(
             # Citation helper may fall back to a different monograph field.
             # Bind the citation excerpt to the exact requested field instead.
             citation["excerpt"] = format_clinical_text(str(raw_field_value).strip())
-            citation["section"] = req_label
+            citation["section"] = req_field
             citation["source_id"] = (getattr(monograph, "source_id", None) or getattr(matched, "source_id", None))
             citation["source_version"] = (getattr(monograph, "source_version", None) or getattr(matched, "source_version", None))
             citation["chunk_id"] = (
@@ -564,7 +736,11 @@ async def build_drug_profile_response(
                 seen_field_citations.add(citation_key)
                 unique_field_citations.append(citation)
         field_citations = unique_field_citations
-        if not field_citations or len(field_evidence) != len(field_citations):
+        if (
+            not field_citations
+            or len(field_evidence) != len(field_citations)
+            or len(field_citations) != len(requested_fields)
+        ):
             return CopilotResponse(
                 intent="CLINICAL_SAFE_ABSTENTION",
                 reply_text="Chưa có trường dữ liệu được yêu cầu với nguồn kiểm chứng phù hợp trong kho hiện tại.",

@@ -164,11 +164,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <h3 className="text-base font-bold text-slate-950 whitespace-nowrap">
                   Trợ Lý AI Lâm Sàng
                 </h3>
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-1.5 py-0.5 text-[9px] font-medium text-slate-500" role="status" aria-live="polite">
-                  {availabilityMode === 'checking' && 'Đang kiểm tra'}
-                  {availabilityMode === 'online_ai' && 'Online'}
-                  {availabilityMode === 'local_only' && 'Cục bộ'}
-                  {availabilityMode === 'offline' && 'Offline'}
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold ${
+                  availabilityMode === 'online_ai'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-sky-50 text-sky-700 border border-sky-200'
+                }`} role="status" aria-live="polite">
+                  {availabilityMode === 'checking' && 'Đang kiểm tra...'}
+                  {availabilityMode === 'online_ai' && '🟢 Online'}
+                  {availabilityMode !== 'online_ai' && availabilityMode !== 'checking' && '🔵 Cục bộ'}
                 </span>
                 {activeSessionTitle && (
                   <span className="hidden sm:inline-block max-w-[130px] truncate text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200" title={activeSessionTitle}>

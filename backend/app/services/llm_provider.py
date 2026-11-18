@@ -140,13 +140,13 @@ async def _call_gemini_api(
     api_key: Optional[str] = None,
     temperature: float = 0.2,
     max_output_tokens: int = 800,
-    timeout_sec: float = 8.0,
+    timeout_sec: float = 15.0,
     response_schema: Optional[dict] = None,
 ) -> Optional[str]:
-    from app.services.admin_key_vault import get_active_api_key, rotate_to_next_key
+    from app.services.admin_key_vault import get_active_api_key_async, rotate_to_next_key
     key = api_key
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
-        key = get_active_api_key(provider="gemini")
+        key = await get_active_api_key_async(provider="gemini")
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         key = settings.GEMINI_API_KEY
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
@@ -172,17 +172,19 @@ async def _call_gemini_api(
         payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 
     deadline = time.monotonic() + timeout_sec
-    async with httpx.AsyncClient(timeout=httpx.Timeout(min(4.0, timeout_sec), connect=2.0)) as client:
+    headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(min(12.0, timeout_sec), connect=3.0)) as client:
         for model in models:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             try:
                 res = await client.post(
                     url,
+                    headers=headers,
                     json=payload,
-                    timeout=httpx.Timeout(min(4.0, remaining), connect=min(2.0, remaining))
+                    timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
                 )
                 if res.status_code == 200:
                     data = res.json()
@@ -218,8 +220,9 @@ async def _call_gemini_api(
                     next_key = rotate_to_next_key(key, "Chạm hạn ngạch 429")
                     if next_key and next_key != key:
                         key = next_key
-                        retry_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
-                        retry_res = await client.post(retry_url, json=payload, timeout=httpx.Timeout(min(4.0, remaining), connect=min(2.0, remaining)))
+                        headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
+                        retry_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                        retry_res = await client.post(retry_url, headers=headers, json=payload, timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining)))
                         if retry_res.status_code == 200:
                             data = retry_res.json()
                             candidates = data.get("candidates", [])
@@ -329,10 +332,10 @@ async def _call_gemini_vision_ocr(
     Gọi Gemini Multimodal API trích xuất đơn thuốc với mô hình thị giác và cascading fallback.
     Ưu tiên gemini-2.5-flash / gemini-3-flash, tự động trượt xuống gemini-3.5-flash-lite khi hết hạn ngạch.
     """
-    from app.services.admin_key_vault import get_active_api_key, rotate_to_next_key
+    from app.services.admin_key_vault import get_active_api_key_async, rotate_to_next_key
     key = api_key
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
-        key = get_active_api_key(provider="gemini")
+        key = await get_active_api_key_async(provider="gemini")
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         key = settings.GEMINI_API_KEY
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
@@ -370,15 +373,17 @@ async def _call_gemini_vision_ocr(
     }
 
     deadline = time.monotonic() + timeout_sec
+    headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=httpx.Timeout(min(12.0, timeout_sec), connect=3.0)) as client:
         for model in models:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             try:
                 res = await client.post(
                     url,
+                    headers=headers,
                     json=payload,
                     timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
                 )
@@ -619,7 +624,7 @@ async def query_clinical_llm(
     api_key: Optional[str] = None,
     temperature: float = 0.2,
     max_output_tokens: int = 800,
-    timeout_sec: float = 8.0,
+    timeout_sec: float = 15.0,
     response_schema: Optional[dict] = None,
 ) -> Optional[str]:
     """
@@ -751,8 +756,8 @@ async def query_clinical_multimodal_chat(
     if not clean_data or len(clean_data) < 50:
         return None
 
-    from app.services.admin_key_vault import get_active_api_key
-    key = get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key_async
+    key = await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         return None
 
@@ -787,15 +792,17 @@ async def query_clinical_multimodal_chat(
     }
 
     deadline = time.monotonic() + timeout_sec
+    headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=httpx.Timeout(min(12.0, timeout_sec), connect=3.0)) as client:
         for model in models:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             try:
                 res = await client.post(
                     url,
+                    headers=headers,
                     json=payload,
                     timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
                 )

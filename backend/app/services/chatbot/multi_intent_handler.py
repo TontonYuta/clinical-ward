@@ -45,6 +45,7 @@ async def handle_multi_intent_chat(
     seen_chips = set()
     last_active_med = ""
     combined_evidence = []
+    combined_claims = []
     evidence_keys = set()
     all_grounded = True
     confidences = []
@@ -89,7 +90,19 @@ async def handle_multi_intent_chat(
             key = evidence_dict.get("evidence_id") or evidence_dict.get("chunk_id")
             if key and key not in evidence_keys:
                 evidence_keys.add(key)
+                if evidence_dict.get("chunk_id"):
+                    evidence_keys.add(str(evidence_dict["chunk_id"]))
                 combined_evidence.append(evidence_dict)
+        for claim in (res.claims or []):
+            claim_data = claim if isinstance(claim, dict) else claim.model_dump() if hasattr(claim, "model_dump") else {}
+            if not claim_data:
+                continue
+            evidence_ids = claim_data.get("evidence_ids") or []
+            if not evidence_ids or any(evidence_id not in evidence_keys for evidence_id in evidence_ids):
+                continue
+            copied_claim = dict(claim_data)
+            copied_claim["claim_id"] = f"part-{idx}-{claim_data.get('claim_id', 'claim')}"
+            combined_claims.append(copied_claim)
 
         # Thu thập gợi ý
         for chip in (res.suggested_chips or []):
@@ -106,6 +119,12 @@ async def handle_multi_intent_chat(
     merged_citations = [c for c in combined_citations if c.get("chunk_id") in evidence_keys]
     has_graph_evidence = any(e.get("evidence_type") == "knowledge_graph" and e.get("content") for e in combined_evidence)
     grounded = all_grounded and bool(merged_citations or has_graph_evidence)
+    evidence_claim_map = {}
+    for claim in combined_claims:
+        for evidence_id in claim["evidence_ids"]:
+            evidence_claim_map.setdefault(evidence_id, []).append(claim["claim_id"])
+    claim_text_is_rendered = all(claim["text"] in final_text for claim in combined_claims)
+    grounded = grounded and bool(combined_claims) and claim_text_is_rendered
     if not grounded:
         final_text = "Chưa thể xác minh một hoặc nhiều ý trong yêu cầu từ nguồn tài liệu có thể truy xuất. Vui lòng tách câu hỏi hoặc kiểm tra kho nguồn trước khi sử dụng nội dung chuyên môn."
     response = CopilotResponse(
@@ -122,6 +141,8 @@ async def handle_multi_intent_chat(
         rag_grounded=grounded,
         citations=merged_citations,
         evidence=combined_evidence,
+        claims=combined_claims if grounded else [],
+        evidence_claim_map=evidence_claim_map if grounded else {},
         abstention_reason=None if all_grounded else "Ít nhất một phần câu trả lời chưa được xác minh bằng evidence",
     )
     if grounded:

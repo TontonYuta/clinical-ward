@@ -148,19 +148,47 @@ async def get_monitoring_bhyt_logs(
 @router.get("/keys", response_model=List[ApiKeyItem])
 async def list_api_keys():
     """Lấy danh sách các khóa API trong Key Pool (đã che mờ an toàn)."""
+    from app.config import settings
+    if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
+        from app.identity_database import get_identity_session_factory
+        from app.services.identity_service import list_provider_keys
+        factory = get_identity_session_factory()[1]
+        async with factory() as session:
+            return await list_provider_keys(session)
     return get_all_masked_keys()
 
 @router.post("/keys", response_model=ApiKeyItem)
 async def create_api_key(payload: AddApiKeyRequest):
     """Thêm một khóa API mới vào bể khóa xoay vòng."""
-    return add_api_key(name=payload.name, raw_key=payload.api_key, provider=payload.provider)
+    from app.config import settings
+    if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
+        from app.identity_database import get_identity_session_factory
+        from app.services.identity_service import add_provider_key
+        factory = get_identity_session_factory()[1]
+        async with factory() as session:
+            result = await add_provider_key(session, payload.name, payload.api_key, payload.provider)
+    else:
+        result = add_api_key(name=payload.name, raw_key=payload.api_key, provider=payload.provider)
+    from app.routers.availability import invalidate_availability_cache
+    invalidate_availability_cache()
+    return result
 
 @router.delete("/keys/{key_id}")
 async def remove_api_key(key_id: str):
     """Xóa một khóa API khỏi bể khóa."""
-    success = delete_api_key(key_id)
+    from app.config import settings
+    if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
+        from app.identity_database import get_identity_session_factory
+        from app.services.identity_service import delete_provider_key
+        factory = get_identity_session_factory()[1]
+        async with factory() as session:
+            success = await delete_provider_key(session, key_id)
+    else:
+        success = delete_api_key(key_id)
     if not success:
         raise HTTPException(status_code=404, detail="Không tìm thấy Key ID để xóa")
+    from app.routers.availability import invalidate_availability_cache
+    invalidate_availability_cache()
     return {"status": "success", "message": f"Đã xóa khóa {key_id}"}
 
 @router.post("/keys/test", response_model=TestKeyResponse)

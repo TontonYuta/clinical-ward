@@ -4,6 +4,12 @@ Unit and Integration Tests for Admin Monitoring, Key Vault & Token Budget APIs.
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
+from app.security.auth import issue_token
+from app.config import settings
+
+
+def _admin_headers():
+    return {"Authorization": f"Bearer {issue_token('test-director', 'director', settings.SECRET_KEY)}"}
 
 @pytest.mark.asyncio
 async def test_admin_telemetry_overview():
@@ -32,10 +38,40 @@ async def test_admin_telemetry_overview():
             assert "has_image" in first
 
 @pytest.mark.asyncio
-async def test_admin_key_vault_crud():
+async def test_admin_key_vault_crud(monkeypatch):
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+    from app.models.identity import IdentityBase, StaffAccount, StaffProfile, StaffRoleGrant
+    from app.security.auth import hash_password_argon2
+    from app.services.identity_service import create_identity_session
+    from datetime import datetime, timedelta, timezone
+    import uuid
+
+    identity_engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with identity_engine.begin() as connection:
+        await connection.run_sync(IdentityBase.metadata.create_all)
+    identity_factory = async_sessionmaker(identity_engine, expire_on_commit=False)
+    monkeypatch.setattr(settings, "IDENTITY_DATABASE_URL", "sqlite+aiosqlite:///monitor-test-identity.db")
+    import base64
+    monkeypatch.setattr(settings, "KEY_ENCRYPTION_KEY", base64.urlsafe_b64encode(b"t" * 32).decode())
+    from app import identity_database
+    monkeypatch.setattr(identity_database, "get_identity_session_factory", lambda: (identity_engine, identity_factory))
+    from app.services import admin_key_vault
+    monkeypatch.setattr(admin_key_vault, "_VAULT_FILE", "/tmp/monitor-test-api-key-vault.json")
+    monkeypatch.setattr(admin_key_vault, "_identity_vault_configured", lambda: False)
+    monkeypatch.setattr(admin_key_vault, "_require_complete_identity_vault_config", lambda: None)
+    async with identity_factory() as session:
+        staff_id, account_id = str(uuid.uuid4()), str(uuid.uuid4())
+        session.add(StaffProfile(id=staff_id, full_name="Test Director", department="Test", job_title="Director"))
+        session.add(StaffAccount(id=account_id, staff_id=staff_id, username="test-director", password_hash=hash_password_argon2("test-password")))
+        await session.flush()
+        session.add(StaffRoleGrant(id=str(uuid.uuid4()), account_id=account_id, role="director"))
+        await session.flush()
+        token = issue_token("test-director", "director", settings.SECRET_KEY, session_id="monitor-test-session")
+        await create_identity_session(session, account_id, token, datetime.now(timezone.utc) + timedelta(minutes=5), "monitor-test-session")
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 1. Liệt kê keys
-        list_res = await client.get("/api/v1/admin/keys")
+        test_headers = {"Authorization": f"Bearer {token}"}
+        list_res = await client.get("/api/v1/admin/keys", headers=test_headers)
         assert list_res.status_code == 200
         keys = list_res.json()
         assert isinstance(keys, list)
@@ -45,7 +81,7 @@ async def test_admin_key_vault_crud():
             "name": "Test Hospital Unit Key",
             "api_key": "AIzaSyTestMockKeyForAdminUnitTesting123456",
             "provider": "gemini"
-        })
+        }, headers=test_headers)
         assert add_res.status_code == 200
         new_key = add_res.json()
         assert new_key["name"] == "Test Hospital Unit Key"
@@ -55,8 +91,12 @@ async def test_admin_key_vault_crud():
         test_key_id = new_key["key_id"]
 
         # 3. Xóa key vừa tạo
-        del_res = await client.delete(f"/api/v1/admin/keys/{test_key_id}")
+        del_res = await client.delete(f"/api/v1/admin/keys/{test_key_id}", headers=test_headers)
         assert del_res.status_code == 200
+        from app.routers import availability
+        assert availability._provider_state.get("checked_at") == 0.0
+    await identity_engine.dispose()
+
 
 @pytest.mark.asyncio
 async def test_admin_token_budget_crud():

@@ -13,6 +13,16 @@ from app.services.rag.citation_grounder import build_claim_citations
 from app.services.rag.rag_pipeline import execute_clinical_rag
 from app.services.rag.types import RagChunk
 
+
+def test_public_evidence_relevance_matches_existing_overlap_gate():
+    from app.services.rag.citation_grounder import is_evidence_relevant
+    from app.services.rag.types import RetrievedChunk
+
+    relevant = RagChunk("rel", "Guide", "Basis", "Section", "Paracetamol dosage", "Paracetamol adult dosage is 500 mg.", [], "monograph")
+    unrelated = RagChunk("unrel", "Guide", "Basis", "Section", "Aspirin warnings", "Aspirin adverse effect details.", [], "monograph")
+    assert is_evidence_relevant("Paracetamol adult dosage", RetrievedChunk(relevant, 0.01))
+    assert not is_evidence_relevant("Paracetamol adult dosage", RetrievedChunk(unrelated, 0.01))
+
 def test_clinical_indexer_chunks():
     chunks = load_all_clinical_chunks()
     assert len(chunks) >= 30
@@ -110,7 +120,7 @@ async def test_rag_prompt_separates_bounded_conversation_context_from_evidence(m
     from app.services.rag import rag_pipeline
     from app.services.rag.types import RagChunk, RetrievedChunk
     captured = {}
-    chunk = RagChunk("ctx-test", "Dược thư", "QĐ 2033/QĐ-BYT", "Paracetamol", "Paracetamol", "Liều tham khảo là 500 mg.", [], "monograph")
+    chunk = RagChunk("ctx-test", "Dược thư", "QĐ 2033/QĐ-BYT", "Paracetamol", "Paracetamol chống chỉ định", "Paracetamol chống chỉ định theo nguồn.", [], "monograph")
     class Retriever:
         async def retrieve_async(self, *args, **kwargs):
             return [RetrievedChunk(chunk, 0.04)]
@@ -120,7 +130,7 @@ async def test_rag_prompt_separates_bounded_conversation_context_from_evidence(m
     monkeypatch.setattr(rag_pipeline, "get_rag_retriever", lambda: Retriever())
     monkeypatch.setattr(rag_pipeline.settings, "GEMINI_API_KEY", "test-api-key-12345")
     monkeypatch.setattr("app.services.copilot_gemini.query_gemini_models", fake_query)
-    await execute_clinical_rag("Còn chống chỉ định?", conversation_context="Bác sĩ: Thông tin thuốc Paracetamol\nTrợ lý: Liều 500mg")
+    await execute_clinical_rag("Paracetamol chống chỉ định", conversation_context="Bác sĩ: Thông tin thuốc Paracetamol\nTrợ lý: Liều 500mg")
     assert "NGỮ CẢNH HỘI THOẠI" in captured["prompt"]
     assert "CHỨNG CỨ #1" in captured["prompt"]
     assert captured["prompt"].index("NGỮ CẢNH HỘI THOẠI") < captured["prompt"].index("CHỨNG CỨ #1")
@@ -133,7 +143,7 @@ async def test_rag_prompt_separates_database_facts_from_reference_inference_and_
     captured = {}
     chunk = RagChunk(
         "contract-source-chunk", "handbook.pdf", "Source basis", "page 12",
-        "Medication section", "The source states fact A.", [], "monograph",
+        "Medication section", "The source states fact A in this record.", [], "monograph",
         source_id="handbook.pdf", source_version="sha256:verified",
     )
     class Retriever:
@@ -145,7 +155,7 @@ async def test_rag_prompt_separates_database_facts_from_reference_inference_and_
     monkeypatch.setattr(rag_pipeline, "get_rag_retriever", lambda: Retriever())
     monkeypatch.setattr(rag_pipeline.settings, "GEMINI_API_KEY", "test-api-key-12345")
     monkeypatch.setattr("app.services.copilot_gemini.query_gemini_models", fake_query)
-    result = await execute_clinical_rag("Summarize the record and state any cautious implication")
+    result = await execute_clinical_rag("Summarize record fact A")
 
     prompt = captured["prompt"]
     assert "Mã chứng cứ backend: document:contract-source-chunk" in prompt

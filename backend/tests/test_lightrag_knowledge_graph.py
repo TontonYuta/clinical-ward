@@ -54,15 +54,33 @@ def test_lightrag_therapeutic_substitution_acei_cough():
     assert "Bradykinin" in subst["recommendation"]
 
 @pytest.mark.asyncio
-async def test_lightrag_dual_level_pipeline_integration():
+async def test_lightrag_dual_level_pipeline_integration(monkeypatch):
     """Kiểm tra tích hợp đồ thị LightRAG vào quy trình RAG Pipeline hoàn chỉnh."""
     query = "Kháng sinh nhóm Macrolid phối hợp với Statin có nguy cơ gì?"
+    from app.services import admin_key_vault
+    from app import config
+    monkeypatch.setattr(admin_key_vault, "get_active_api_key", lambda provider="gemini": None)
+    monkeypatch.setattr(config.settings, "GEMINI_API_KEY", None)
     rag_res = await execute_clinical_rag(query)
 
     assert rag_res is not None
     assert rag_res.rag_grounded is True
     assert any(term in rag_res.answer.lower() for term in ("tiêu cơ vân", "cyp3a4", "statin", "macrolid"))
     assert any(term in rag_res.answer for term in ("Tương Tác Nhóm Dược Lý", "Chống chỉ định", "CYP3A4"))
+
+
+@pytest.mark.asyncio
+async def test_lightrag_offline_graph_evidence_is_grounded_without_llm_claims(monkeypatch):
+    """Offline graph facts remain verifiable through versioned graph evidence."""
+    from app.services import admin_key_vault
+    from app import config
+    monkeypatch.setattr(admin_key_vault, "get_active_api_key", lambda provider="gemini": None)
+    monkeypatch.setattr(config.settings, "GEMINI_API_KEY", None)
+    result = await execute_clinical_rag("Kháng sinh nhóm Macrolid phối hợp với Statin có nguy cơ gì?")
+
+    assert result.rag_grounded is True
+    assert result.claims
+    assert any(item.get("evidence_type") == "knowledge_graph" for item in result.evidence)
 
 
 def test_dual_level_query_analyzer_extraction():

@@ -18,7 +18,9 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export async function getAuthSession(): Promise<AuthSession> {
-  const response = await fetch(`${API_BASE_URL}/auth/me`, { credentials: 'include', cache: 'no-store' });
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    credentials: 'include', cache: 'no-store',
+  });
   return readJson<AuthSession>(response);
 }
 

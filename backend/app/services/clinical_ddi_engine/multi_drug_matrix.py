@@ -15,7 +15,30 @@ from app.schemas.copilot import (
 )
 from app.services.clinical_ddi_engine.detector import ClinicalDdiDetector
 from app.services.clinical_ddi_engine.schemas import DdiSeverity, DdiAlert, PatientClinicalContext
-from app.services.rag.sqlite_graph_service import ClinicalGraphTraversalService
+from app.schemas.copilot import AnswerClaim
+
+def _attach_ddi_claims(response: CopilotResponse) -> CopilotResponse:
+    """Bind each rendered interaction consequence to its versioned evidence chunk."""
+    claims = []
+    evidence_claim_map = {}
+    for index, evidence in enumerate(response.evidence or [], start=1):
+        evidence_id = evidence.get("evidence_id")
+        content = str(evidence.get("content") or "")
+        if not evidence_id or not evidence.get("source_id") or not evidence.get("source_version"):
+            continue
+        consequence = str(evidence.get("claim_text") or "").strip()
+        if not consequence or consequence.casefold() not in (response.reply_text or "").casefold():
+            continue
+        claim = AnswerClaim(
+            claim_id=f"ddi-source-{index}", text=consequence, claim_type="source_fact",
+            evidence_ids=[evidence_id], support_status="supported",
+        )
+        claims.append(claim)
+        evidence_claim_map[evidence_id] = [claim.claim_id]
+    response.claims = claims
+    response.evidence_claim_map = evidence_claim_map
+    response.rag_grounded = bool(response.rag_grounded and claims)
+    return response
 
 _DETECTOR = ClinicalDdiDetector()
 
@@ -55,38 +78,6 @@ def format_multi_ddi_response(
     display_names = [d.display_name for d in report.normalized_entities]
     drug_names_str = ", ".join(f"**{name}**" for name in display_names)
 
-    # LightRAG Knowledge Graph Subgraph Traversal (Class-to-Class DDI)
-    subgraph = ClinicalGraphTraversalService.traverse_clinical_subgraph(raw_drugs)
-    if subgraph.get("active_class_ddis"):
-        for c_ddi in subgraph["active_class_ddis"]:
-            ca = c_ddi["class_a"]
-            cb = c_ddi["class_b"]
-            is_contra = "chống chỉ định" in c_ddi["severity"].lower()
-            rec = c_ddi["management"]
-            if subgraph.get("metabolic_notes"):
-                for note in subgraph["metabolic_notes"]:
-                    rec += f" Ngoại lệ: {note['drug'].capitalize()} ({note['exception']['mechanism']})."
-
-            report.pair_alerts.append(DdiAlert(
-                rule_id=f"GRAPH_CLASS_{ca}_{cb}",
-                severity=DdiSeverity.CONTRAINDICATED if is_contra else DdiSeverity.MAJOR,
-                title=f"Tương tác Nhóm Dược lý: {ca} + {cb}",
-                drug_a=ca.capitalize(),
-                drug_b=cb.capitalize(),
-                inn_a=ca.lower(),
-                inn_b=cb.lower(),
-                mechanism=c_ddi["mechanism"],
-                clinical_consequence=c_ddi["consequence"],
-                action_recommendation=rec,
-                legal_evidence="Quyết định 5948/QĐ-BYT & DĐVN V (LightRAG Knowledge Graph)"
-            ))
-
-        if len(display_names) < 2:
-            display_names = [d.capitalize() for d in raw_drugs]
-            drug_names_str = ", ".join(f"**{name}**" for name in display_names)
-            report.total_drugs = len(display_names)
-            report.analyzed_pairs_count = max(1, len(display_names) * (len(display_names) - 1) // 2)
-
     # Lập bản đồ tra cứu tương tác giữa từng cặp thuốc
     pair_map: Dict[Tuple[str, str], str] = {}
     for alert in report.pair_alerts:
@@ -104,14 +95,6 @@ def format_multi_ddi_response(
             label = "CẢNH BÁO"
         pair_map[(d1, d2)] = label
         pair_map[(d2, d1)] = label
-
-    for c_ddi in subgraph.get("active_class_ddis", []):
-        lbl = "CHỐNG CHỈ ĐỊNH" if "chống chỉ định" in c_ddi["severity"].lower() else "CẢNH BÁO"
-        for d1 in raw_drugs:
-            for d2 in raw_drugs:
-                if d1.lower() != d2.lower():
-                    pair_map[(d1.lower(), d2.lower())] = lbl
-                    pair_map[(d2.lower(), d1.lower())] = lbl
 
     # Bổ sung các cặp thuộc hội chứng tích lũy đa thuốc nếu chưa có tương tác cặp riêng
     for poly in report.polypharmacy_alerts:
@@ -132,28 +115,28 @@ def format_multi_ddi_response(
     # cảnh báo đã xác minh, vẫn hiển thị cảnh báo đó và tách phần chưa đủ dữ liệu.
     if report.unresolved_entities and not report.pair_alerts and not report.polypharmacy_alerts:
         unresolved_str = ", ".join(f"**{d}**" for d in report.unresolved_entities)
-        return CopilotResponse(
+        return _attach_ddi_claims(CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE",
             reply_text=f"Chưa đủ dữ liệu để kết luận tương tác thuốc. Chưa nhận diện được: {unresolved_str}. Không có kết luận an toàn cho toàn bộ đơn. Vui lòng cung cấp tên hoạt chất hoặc biệt dược chuẩn.",
             clinical_summary=ClinicalSummary(headline="Chưa thể xác minh tương tác thuốc", key_takeaway=f"Chưa nhận diện được: {', '.join(report.unresolved_entities)}", urgency="warning"),
             clinical_data=StructuredClinicalPayload(abstention_details=AbstentionDetailsSchema(reason_code="UNRESOLVED_DRUG_ENTITY", unresolved_entities=list(report.unresolved_entities), professional_recommendations=["Kiểm tra lại tên hoạt chất gốc (INN) hoặc biệt dược."])),
             card=None, legal_basis=None, answer_type="safe_abstention", source_status="unresolved_drug_entity", confidence=0.0, rag_grounded=False, abstention_reason=f"Chưa nhận diện được: {', '.join(report.unresolved_entities)}", session_id=session_id, citations=[], evidence=[], suggested_chips=["Tra cứu tên hoạt chất", "Kiểm tra danh mục QĐ 5948"]
-        )
+        ))
 
     # Trường hợp 1: Không ghi nhận tương tác nào
     if not report.pair_alerts and not report.polypharmacy_alerts and not report.unresolved_entities:
         bluf = (
-            f"• **Kết luận an toàn:** Không ghi nhận tương tác chống chỉ định hoặc cảnh báo nghiêm trọng "
+            f"• **Kết luận:** Không ghi nhận tương tác chống chỉ định hoặc cảnh báo nghiêm trọng "
             f"giữa {report.total_drugs} thuốc rà soát ({drug_names_str}) trong danh mục 633 cặp tương tác của Quyết định 5948/QĐ-BYT.\n"
-            f"• **Khuyến cáo thực hành:** Đã đối soát {report.analyzed_pairs_count} cặp phối hợp; tiếp tục theo dõi đáp ứng điều trị lâm sàng và tuân thủ liều lượng chỉ định."
+            f"• **Khuyến cáo thực hành:** Đã đối soát {report.analyzed_pairs_count} cặp phối hợp. Việc không ghi nhận trong nguồn đã tra không đồng nghĩa với an toàn tuyệt đối; cần tiếp tục đối chiếu chuyên luận và theo dõi đáp ứng điều trị."
         )
 
         reply = (
             "Kính gửi Bác sĩ, dưới đây là kết quả rà soát tương tác thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
-            f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{bluf}\n\n"
-            f"### Ma Trận Đối Soát Tương Tác Chéo (Polypharmacy Cross-Matrix)\n{matrix_markdown}\n\n"
+            f"**Kết luận lâm sàng chính:**\n{bluf}\n\n"
+            f"### Ma trận đối soát tương tác giữa các thuốc\n{matrix_markdown}\n\n"
             f"### Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n"
-            f"• Toàn bộ {report.analyzed_pairs_count} cặp phối hợp giữa các hoạt chất được xác định là an toàn ở liều điều trị thông thường.\n"
+            f"• Không tìm thấy cảnh báo cho {report.analyzed_pairs_count} cặp trong danh mục đã tra; điều này không xác nhận các phối hợp an toàn trong mọi bối cảnh lâm sàng.\n"
             f"• Căn cứ pháp lý đối soát: Danh mục tương tác thuốc chống chỉ định ban hành kèm Quyết định 5948/QĐ-BYT.\n\n"
             "Đồng nghiệp cần tra cứu thêm phác đồ xử trí hay hướng dẫn phối hợp thuốc nào liên quan không ạ?"
         )
@@ -177,12 +160,13 @@ def format_multi_ddi_response(
             "source_name": "Quyết định 5948/QĐ-BYT",
             "section": "Danh mục tương tác thuốc chống chỉ định",
             "content": bluf,
+            "claim_text": bluf,
         }]
         return CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE",
             reply_text=reply,
             clinical_summary=ClinicalSummary(
-                headline="Không ghi nhận tương tác chống chỉ định",
+                headline="Không ghi nhận tương tác trong nguồn đã tra",
                 key_takeaway=f"An toàn: Đã đối soát {report.analyzed_pairs_count} cặp phối hợp giữa {report.total_drugs} thuốc theo QĐ 5948/QĐ-BYT.",
                 urgency="routine",
             ),
@@ -216,7 +200,7 @@ def format_multi_ddi_response(
         rec = alert.action_recommendation.lower()
         if "pantoprazol" in rec or "rabeprazol" in rec:
             substitute_drug = "Pantoprazol 40mg"
-            substitute_advice = "Thay thế Esomeprazol/Omeprazol bằng Pantoprazol 40 mg hoặc Rabeprazol 20 mg (ít ức chế CYP2C19)."
+            substitute_advice = "Thay Omeprazol/Esomeprazol bằng Pantoprazol 40 mg hoặc Rabeprazol 20 mg (ít ức chế CYP2C19)."
             break
         elif "rosuvastatin" in rec or "tạm ngừng statin" in rec:
             substitute_drug = "Rosuvastatin 10mg"
@@ -235,8 +219,8 @@ def format_multi_ddi_response(
     bluf_lines = []
     if contra_count > 0:
         has_contra = True
-        contra_pairs = [f"{a.drug_a} + {a.drug_b}" for a in report.pair_alerts if a.severity == DdiSeverity.CONTRAINDICATED]
-        bluf_lines.append(f"• **Mức độ an toàn:** Phát hiện **{contra_count} tương tác CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI** ({', '.join(contra_pairs)})" + (f" và {warning_count} tương tác cảnh báo cần theo dõi." if warning_count > 0 else "."))
+        contra_pairs = [f"{a.drug_a} với {a.drug_b}" for a in report.pair_alerts if a.severity == DdiSeverity.CONTRAINDICATED]
+        bluf_lines.append(f"• **Mức độ an toàn:** Phát hiện **{contra_count} tương tác CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI** ({'; '.join(contra_pairs)})" + (f" và {warning_count} tương tác cảnh báo cần theo dõi." if warning_count > 0 else "."))
         top_contra = [a for a in report.pair_alerts if a.severity == DdiSeverity.CONTRAINDICATED][0]
         bluf_lines.append(f"• **Hành động can thiệp tức thời:** CẤM PHỐI HỢP {top_contra.drug_a} với {top_contra.drug_b} do {top_contra.clinical_consequence.rstrip('.')}.")
     elif poly_count > 0:
@@ -245,8 +229,8 @@ def format_multi_ddi_response(
         bluf_lines.append(f"• **Mức độ an toàn:** Phát hiện **Hội chứng tích lũy đa thuốc ({top_poly.title})** nguy cơ biến cố nặng ({sev_txt}).")
         bluf_lines.append(f"• **Hành động can thiệp:** {top_poly.action_recommendation.rstrip('.')}.")
     elif has_synergy_only:
-        syn_pairs = [f"{a.drug_a} + {a.drug_b}" for a in report.pair_alerts]
-        bluf_lines.append(f"• **Mức độ an toàn:** Ghi nhận phối hợp **HIỆP ĐỒNG AN TOÀN ĐA MÔ THỨC** ({', '.join(syn_pairs)}).")
+        syn_pairs = [f"{a.drug_a} với {a.drug_b}" for a in report.pair_alerts]
+        bluf_lines.append(f"• **Mức độ an toàn:** Ghi nhận phối hợp **HIỆP ĐỒNG AN TOÀN ĐA MÔ THỨC** ({'; '.join(syn_pairs)}).")
         bluf_lines.append(f"• **Lợi ích lâm sàng:** {report.pair_alerts[0].clinical_consequence.rstrip('.')}.")
     else:
         bluf_lines.append(f"• **Mức độ an toàn:** Phát hiện **{warning_count} tương tác CẢNH BÁO / THẬN TRỌNG** cần giám sát lâm sàng.")
@@ -275,7 +259,9 @@ def format_multi_ddi_response(
         detail_lines.append(f"  - **Mức độ:** {sev_label}.")
         detail_lines.append(f"  - **Cơ chế:** {alert.mechanism.rstrip('.')}.")
         detail_lines.append(f"  - **Hậu quả lâm sàng:** {alert.clinical_consequence.rstrip('.')}.")
-        detail_lines.append(f"  - **Khuyến cáo xử trí:** {alert.action_recommendation.rstrip('.')}.")
+        action_text = alert.action_recommendation.rstrip('.')
+        action_text = action_text.replace(" PPI ", " thuốc ức chế bơm proton ").replace(" PPI,", " thuốc ức chế bơm proton,")
+        detail_lines.append(f"  - **Khuyến cáo xử trí:** {action_text}.")
         detail_lines.append(f"  - **Căn cứ pháp lý:** `{alert.legal_evidence}`.")
 
     for j, poly in enumerate(report.polypharmacy_alerts, start=len(report.pair_alerts) + 1):
@@ -310,8 +296,8 @@ def format_multi_ddi_response(
     )
     reply_text = (
         "Kính gửi Bác sĩ, dưới đây là kết quả rà soát tương tác thuốc lâm sàng theo chuẩn Quyết định 5948/QĐ-BYT:\n\n"
-        f"**Kết luận lâm sàng chính (Core Clinical Guidance):**\n{core_guidance}\n\n"
-        f"### Ma Trận Đối Soát Tương Tác Chéo (Polypharmacy Cross-Matrix)\n{matrix_markdown}\n\n"
+        f"**Kết luận lâm sàng chính:**\n{core_guidance}\n\n"
+        f"### Ma trận đối soát tương tác giữa các thuốc\n{matrix_markdown}\n\n"
         f"### Chi Tiết Hướng Dẫn & Cơ Sở Dược Lý Học\n" + "\n".join(detail_lines) + "\n\n"
         f"{warning_block}\n\n"
         "Đồng nghiệp cần tra cứu thêm phác đồ xử trí hay hướng dẫn phối hợp thuốc nào liên quan không ạ?" + unresolved_note
@@ -413,6 +399,7 @@ def format_multi_ddi_response(
             "source_name": alert.legal_evidence,
             "section": alert.title,
             "content": f"{alert.title}: {alert.clinical_consequence}. Cơ chế: {alert.mechanism}. Xử trí: {alert.action_recommendation}",
+            "claim_text": alert.clinical_consequence.rstrip("."),
         })
     for alert in report.polypharmacy_alerts:
         cid = f"qd-5948:{alert.syndrome_id}"
@@ -435,6 +422,7 @@ def format_multi_ddi_response(
             "source_name": alert.legal_evidence,
             "section": alert.title,
             "content": f"{alert.title}: {alert.clinical_consequence}. Cơ chế: {alert.mechanism}. Xử trí: {alert.action_recommendation}",
+            "claim_text": alert.clinical_consequence.rstrip("."),
         })
 
     if not citations:
@@ -458,6 +446,7 @@ def format_multi_ddi_response(
             "source_name": "Quyết định 5948/QĐ-BYT",
             "section": citation_section,
             "content": citation_excerpt,
+            "claim_text": citation_excerpt,
         })
 
     ddi_findings_list: List[DdiFindingSchema] = []
@@ -499,7 +488,7 @@ def format_multi_ddi_response(
         ) if report.unresolved_entities else None),
     )
 
-    return CopilotResponse(
+    return _attach_ddi_claims(CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE",
         reply_text=reply_text,
         clinical_summary=ddi_summary,
@@ -515,4 +504,4 @@ def format_multi_ddi_response(
         citations=citations,
         evidence=evidence,
         suggested_chips=["Biện pháp xử trí hoặc phối hợp thay thế an toàn", "Xem phác đồ thay thế", "Kiểm tra đơn thuốc khác"]
-    )
+    ))

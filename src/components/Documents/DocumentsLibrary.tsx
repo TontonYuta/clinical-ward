@@ -3,6 +3,7 @@ import { FileText, Search, Upload, LoaderCircle, X, FileUp, AlertCircle, CheckCi
 import { getKnowledgeDocumentsApi, uploadKnowledgeDocumentApi } from '../../services/api';
 import type { KnowledgeDocument } from '../../types/documents';
 import { filterKnowledgeDocuments, formatDocumentFileSize, isPdfFile } from './documentsLibraryModel';
+import { getAuthSession } from '../../services/authApi';
 
 export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
@@ -22,8 +23,24 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
   const refreshDocuments = async () => {
     setLoading(true);
     setError('');
-    try { setDocuments(await getKnowledgeDocumentsApi()); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể tải danh mục tài liệu'); }
+    try {
+      setDocuments(await getKnowledgeDocumentsApi());
+    }
+    catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Không thể tải danh mục tài liệu';
+      if (/401|authentication required/i.test(message)) {
+        try {
+          const session = await getAuthSession();
+          if (session.authenticated) {
+            setDocuments(await getKnowledgeDocumentsApi());
+            return;
+          }
+          setError('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại để tải tài liệu.');
+          return;
+        } catch {}
+      }
+      setError(message);
+    }
     finally { setLoading(false); }
   };
 

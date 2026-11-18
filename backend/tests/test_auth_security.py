@@ -45,10 +45,44 @@ def test_auth_middleware_protects_api_but_allows_login_route():
     assert client.post("/api/v1/inventory/restock-proposal", headers={"Authorization": f"Bearer {pharmacist_token}"}).status_code == 200
 
 
+def test_identity_mode_rejects_tokens_without_persisted_session_id():
+    app = FastAPI()
+    app.add_middleware(
+        AuthenticationMiddleware, enabled=True, secret_key="s" * 32,
+        users_json="{}", identity_store_enabled=True,
+    )
+
+    @app.get("/api/v1/private")
+    def private():
+        return {"ok": True}
+
+    token = issue_token("staff-1", "director", "s" * 32)
+    response = TestClient(app).get("/api/v1/private", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 401
+
+
+def test_auth_status_endpoint_is_public_but_admin_api_remains_protected():
+    app = FastAPI()
+    app.add_middleware(AuthenticationMiddleware, enabled=True, secret_key="s" * 32, users_json='{"director":{"role":"director"}}')
+
+    @app.get("/api/v1/auth/me")
+    def auth_status():
+        return {"enabled": True, "authenticated": False}
+
+    @app.get("/api/v1/admin/monitoring/overview")
+    def admin_data():
+        return {"ok": True}
+
+    client = TestClient(app)
+    assert client.get("/api/v1/auth/me").status_code == 200
+    assert client.get("/api/v1/admin/monitoring/overview").status_code == 401
+
+
 def test_role_policy_rejects_unprivileged_writes_and_patient_reads():
     assert not AuthenticationMiddleware._role_allowed("POST", "/api/v1/inventory/restock-proposal", "nurse")
     assert AuthenticationMiddleware._role_allowed("POST", "/api/v1/inventory/restock-proposal", "pharmacist")
     assert not AuthenticationMiddleware._role_allowed("GET", "/api/v1/patients", "biomedical_engineer")
     assert AuthenticationMiddleware._role_allowed("GET", "/api/v1/patients", "doctor")
     assert not AuthenticationMiddleware._role_allowed("PUT", "/api/v1/admin/feature-flags", "nurse")
+    assert not AuthenticationMiddleware._role_allowed("GET", "/api/v1/admin/monitoring/overview", "nurse")
     assert AuthenticationMiddleware._role_allowed("PUT", "/api/v1/admin/feature-flags", "director")

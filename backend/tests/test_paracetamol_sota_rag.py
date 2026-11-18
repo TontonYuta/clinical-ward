@@ -110,6 +110,35 @@ async def test_structured_requested_field_without_matching_source_abstains():
         assert resp.citations == []
         assert resp.evidence == []
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("requested_field", ["administration_timing", "food_interaction"])
+async def test_unmodeled_timing_and_food_fields_abstain_without_substituting_precautions(requested_field):
+    async with AsyncSessionLocal() as db:
+        resp = await lookup_drug_authoritative(
+            "Paracetamol uống sáng hay tối, trước hay sau ăn?", db,
+            user_name="Bác sĩ", user_role="doctor",
+            requested_fields=[requested_field],
+        )
+
+    assert resp.answer_type == "safe_abstention"
+    assert resp.rag_grounded is False
+    assert resp.citations == []
+    assert resp.evidence == []
+
+@pytest.mark.asyncio
+async def test_multi_field_lookup_abstains_if_any_requested_field_lacks_source_data():
+    async with AsyncSessionLocal() as db:
+        resp = await lookup_drug_authoritative(
+            "Paracetamol: chỉ định và thời điểm uống", db,
+            user_name="Bác sĩ", user_role="doctor",
+            requested_fields=["indications", "administration_timing"],
+        )
+
+    assert resp.answer_type == "safe_abstention"
+    assert resp.rag_grounded is False
+    assert resp.citations == []
+    assert resp.evidence == []
+
 
 @pytest.mark.asyncio
 async def test_unknown_drug_without_local_source_returns_safe_abstention():

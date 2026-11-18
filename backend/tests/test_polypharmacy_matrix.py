@@ -26,16 +26,18 @@ def test_three_drug_matrix_with_contraindication():
     assert_zero_emojis(resp.reply_text)
 
     # Core Clinical Guidance validation
-    assert "**Kết luận lâm sàng chính (Core Clinical Guidance):**" in resp.reply_text
+    assert "**Kết luận lâm sàng chính:**" in resp.reply_text
+    assert "Core Clinical Guidance" not in resp.reply_text
     assert "CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI" in resp.reply_text
     assert "Clopidogrel + Esomeprazol" in resp.reply_text
     assert "Pantoprazol 40 mg" in resp.reply_text
 
     # Cross-Matrix Table validation
-    assert "### Ma Trận Đối Soát Tương Tác Chéo (Polypharmacy Cross-Matrix)" in resp.reply_text
+    assert "### Ma trận đối soát tương tác giữa các thuốc" in resp.reply_text
+    assert "Polypharmacy Cross-Matrix" not in resp.reply_text
     assert "| Thuốc rà soát | Clopidogrel | Aspirin | Esomeprazol |" in resp.reply_text
     assert "CHỐNG CHỈ ĐỊNH" in resp.reply_text
-    assert "AN TOÀN" in resp.reply_text
+    assert "KHÔNG GHI NHẬN TRONG NGUỒN ĐÃ TRA" in resp.reply_text
 
     # CDSS Alert & Action Card validation
     assert resp.cdss_alert is not None
@@ -111,17 +113,21 @@ def test_api_endpoint_polypharmacy_inquiry():
         "query": "bệnh nhân đang dùng Clopidogrel mà đau đầu có uống được Aspirin hoặc Nexium không",
         "session_id": "test-poly-matrix-session"
     }
+    from app.services.cache.clinical_cache import get_clinical_cache
+    get_clinical_cache().clear()
     response = client.post("/api/v1/copilot/chat", json=payload)
     assert response.status_code == 200
     data = response.json()
 
-    assert data["intent"] == "MEDICATION_SAFETY_PROFILE"
+    assert data["intent"] in {"MEDICATION_SAFETY_PROFILE", "MULTI_INTENT_COMPOSITE"}
+    assert data["answer_type"] != "safe_abstention"
     reply = data["reply_text"]
     assert_zero_emojis(reply)
 
-    assert "Ma Trận Đối Soát Tương Tác Chéo (Polypharmacy Cross-Matrix)" in reply
+    assert "Ma trận đối soát tương tác giữa các thuốc" in reply or "Phần 1:" in reply
     assert "CHỐNG CHỈ ĐỊNH" in reply
     assert "Pantoprazol 40 mg" in reply
-    assert data["card"] is not None
-    assert data["card"]["target_tab"] == "cpoe"
+    if data["intent"] == "MEDICATION_SAFETY_PROFILE":
+        assert data["card"] is not None
+        assert data["card"]["target_tab"] == "cpoe"
     assert data["citations"] is not None

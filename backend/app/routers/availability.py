@@ -12,10 +12,39 @@ from app.database import engine
 from app.schemas.availability import AvailabilityResponse
 
 router = APIRouter(prefix="/availability", tags=["Availability"])
-_provider_state = {"value": "unknown", "checked_at": 0.0, "checked_at_wall": 0.0}
+_provider_state = {"value": "unknown", "checked_at": 0.0, "checked_at_wall": 0.0, "fingerprint": None}
 _provider_lock: asyncio.Lock | None = None
 _PROVIDER_CACHE_SECONDS = 60.0
 _PROVIDER_TIMEOUT_SECONDS = 4.0
+
+
+def _active_provider_key(provider: str = "gemini") -> str | None:
+    from app.services.admin_key_vault import get_active_api_key
+    return get_active_api_key(provider)
+
+
+async def _active_provider_key_async(provider: str = "gemini") -> str | None:
+    """Read the key through the async identity store used by request handlers."""
+    from app.services.admin_key_vault import _require_complete_identity_vault_config
+    _require_complete_identity_vault_config()
+    if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
+        from app.identity_database import get_identity_session_factory
+        from app.services.identity_service import get_active_provider_key
+        _, factory = get_identity_session_factory()
+        async with factory() as session:
+            return await get_active_provider_key(session, provider)
+    return await asyncio.to_thread(_active_provider_key, provider)
+
+
+async def _provider_fingerprint() -> str:
+    provider = (settings.LLM_PROVIDER or "gemini").strip().lower()
+    key = await _active_provider_key_async("gemini") or settings.GEMINI_API_KEY or ""
+    openai_key = settings.OPENAI_API_KEY or ""
+    return f"{provider}:{bool(key)}:{hash(key) if key else 0}:{bool(openai_key)}"
+
+
+def invalidate_availability_cache() -> None:
+    _provider_state.update(value="unknown", checked_at=0.0, checked_at_wall=0.0, fingerprint=None)
 
 
 def _inspect_vector_index_sync() -> tuple[str, str, int]:
@@ -70,13 +99,13 @@ async def _check_provider() -> str:
         _provider_lock = asyncio.Lock()
     async with _provider_lock:
         now = time.monotonic()
-        if now - _provider_state["checked_at"] < _PROVIDER_CACHE_SECONDS:
+        fingerprint = await _provider_fingerprint()
+        if _provider_state.get("fingerprint") == fingerprint and now - _provider_state["checked_at"] < _PROVIDER_CACHE_SECONDS:
             return _provider_state["value"]
         state = "not_configured"
         try:
-            from app.services.admin_key_vault import get_active_api_key
             provider = (settings.LLM_PROVIDER or "gemini").strip().lower()
-            key = get_active_api_key("gemini") or settings.GEMINI_API_KEY
+            key = await _active_provider_key_async("gemini") or settings.GEMINI_API_KEY
             if provider == "openai_compatible":
                 base_url = (settings.OPENAI_API_BASE or "").strip().rstrip("/")
                 api_key = (settings.OPENAI_API_KEY or "").strip()
@@ -88,7 +117,7 @@ async def _check_provider() -> str:
                     async with httpx.AsyncClient(timeout=_PROVIDER_TIMEOUT_SECONDS) as client:
                         response = await client.get(f"{base_url}/models", headers=headers)
                     state = "available" if response.status_code == 200 else "unavailable"
-                _provider_state.update(value=state, checked_at=time.monotonic(), checked_at_wall=time.time())
+                _provider_state.update(value=state, checked_at=time.monotonic(), checked_at_wall=time.time(), fingerprint=fingerprint)
                 return state
             if provider in {"offline", "none", "disable", "disabled"}:
                 state = "not_configured"
@@ -105,7 +134,7 @@ async def _check_provider() -> str:
                 state = "available" if response.status_code == 200 else "unavailable"
         except Exception:
             state = "unavailable" if state != "not_configured" else "unknown"
-        _provider_state.update(value=state, checked_at=time.monotonic(), checked_at_wall=time.time())
+        _provider_state.update(value=state, checked_at=time.monotonic(), checked_at_wall=time.time(), fingerprint=fingerprint)
         return state
 
 
@@ -158,10 +187,8 @@ async def get_availability() -> AvailabilityResponse:
     retrieval_ready = db_state == "available" and fts_state == "available"
     if provider_state == "available" and retrieval_ready:
         mode = "online_ai"
-    elif backend_state == "available" and retrieval_ready:
-        mode = "local_only"
     else:
-        mode = "offline"
+        mode = "local_only"
 
     return AvailabilityResponse(
         mode=mode, backend=backend_state, database=db_state, vector_index=vector_state,

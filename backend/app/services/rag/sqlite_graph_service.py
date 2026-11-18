@@ -108,17 +108,18 @@ class ClinicalGraphTraversalService:
         # Rà soát cạnh tương tác giữa các nhóm đã phát hiện
         for c_ddi in CLASS_INTERACTION_GRAPH:
             ca, cb = c_ddi["class_a"], c_ddi["class_b"]
-            has_distinct_drug_pair = any(
-                drug_a != drug_b
-                and ca in classes_a
-                and cb in classes_b
+            matched_pair = next((
+                (drug_a, drug_b)
                 for drug_a, classes_a in direct_classes_by_drug.items()
                 for drug_b, classes_b in direct_classes_by_drug.items()
-            )
-            if has_distinct_drug_pair:
+                if drug_a != drug_b and ca in classes_a and cb in classes_b
+            ), None)
+            if matched_pair:
                 active_class_ddis.append({
                     "class_a": ca,
                     "class_b": cb,
+                    "drug_a": matched_pair[0],
+                    "drug_b": matched_pair[1],
                     "severity": c_ddi["severity"],
                     "mechanism": c_ddi["mechanism"],
                     "consequence": c_ddi["consequence"],

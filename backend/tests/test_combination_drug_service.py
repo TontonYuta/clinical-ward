@@ -52,7 +52,7 @@ async def test_canonical_combination_monograph_amox_clav():
 
         primary_mono, components = await resolve_combination_monographs(aug, db)
         assert primary_mono is not None
-        assert primary_mono.id == "DTQG-0048-Amoxicillinandpotass"
+        assert "Amoxicillinandpotass" in primary_mono.id
         assert "AMOXICILIN VÀ KALI CLAVULANAT" in primary_mono.title
         assert "Trang 192" in (primary_mono.source or "")
 

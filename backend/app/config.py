@@ -45,6 +45,11 @@ class Settings(BaseModel):
     AUTH_REQUIRED: bool = os.getenv("AUTH_REQUIRED", "false").strip().lower() in {"1", "true", "yes", "on"}
     AUTH_USERS_JSON: str = os.getenv("AUTH_USERS_JSON", "{}")
     AUTH_TOKEN_TTL_SECONDS: int = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "3600"))
+    AUTH_MAX_FAILED_ATTEMPTS: int = int(os.getenv("AUTH_MAX_FAILED_ATTEMPTS", "5"))
+    AUTH_LOCKOUT_SECONDS: int = int(os.getenv("AUTH_LOCKOUT_SECONDS", "900"))
+    # Separate database for staff identity, sessions, permissions and provider keys.
+    IDENTITY_DATABASE_URL: str = os.getenv("IDENTITY_DATABASE_URL", "").strip()
+    KEY_ENCRYPTION_KEY: str | None = os.getenv("KEY_ENCRYPTION_KEY")
     DAV_CATALOG_DB_PATH: str = os.getenv("DAV_CATALOG_DB_PATH", "")
     DAV_CATALOG_RUN_ID: str = os.getenv("DAV_CATALOG_RUN_ID", "dav-canonical-20261030-v12")
     WORKFLOW_POLICY_PATH: str = os.getenv(

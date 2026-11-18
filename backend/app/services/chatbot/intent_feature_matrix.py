@@ -22,6 +22,7 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
         (r"\b(?:trẻ\s+em|nhi\s+khoa|trẻ\s+nhỏ|bé|sơ\s+sinh|bệnh\s+nhi)\b", 2.0),
         (r"\b(?:trẻ|bé|cháu|em bé|bệnh nhi)\s*\d+\s*tháng\b|\b\d+\s*tháng\s*tuổi\b", 2.0),
         (r"\b(?:[1-9]|1[0-7])\s*(?:tuổi|t\b)(?!\s*(?:đầu|giữa|cuối))\b", 2.0),
+        (r"\b(?:cho\s+)?(?:trẻ|bé|cháu|em bé|bệnh nhi)\s+\d+(?:[.,]\d+)?\s*(?:kg|ký)\b", 2.5),
         (r"\bmg/kg\b", 2.5),
     ],
     "administration_timing": [
@@ -64,7 +65,7 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
         (r"\b(?:cho\s+con\s+bú|nuôi\s+con\s+bằng\s+sữa\s+mẹ)\b", 3.0),
     ],
     "renal_adjustment": [
-        (r"\b(?:chỉnh\s+liều\s+suy\s+thận|suy\s+thận|chỉnh\s+liều\s+thận)\b", 3.0),
+        (r"\b(?:hiệu\s+chỉnh\s+liều.*thận|chỉnh\s+liều.*thận|chức\s+năng\s+thận|suy\s+thận|chỉnh\s+liều\s+thận|bệnh\s+thận)\b", 3.5),
         (r"\b(?:crcl|egfr|creatinin|chạy\s+thận|lọc\s+máu)\b", 2.5),
     ],
     "hepatic_adjustment": [
@@ -126,9 +127,11 @@ def score_clinical_intents(query: str) -> Dict[str, float]:
         scores["adult_dosage"] = 0.0
 
     # 3. Nếu có chỉ dấu suy thận rõ rệt, ưu tiên renal_adjustment
-    has_cr_cue = any(k in q_norm for k in ("creatinin", "crystalin", "creatin", "crcl", "egfr", "suy thận"))
+    has_cr_cue = any(k in q_norm for k in ("creatinin", "crystalin", "creatin", "crcl", "egfr", "suy thận", "chức năng thận", "chỉnh liều theo thận", "chỉnh liều thận"))
     if has_cr_cue:
-        scores["renal_adjustment"] = max(scores["renal_adjustment"], 3.0)
+        scores["renal_adjustment"] = max(scores["renal_adjustment"], 3.5)
+        if not any(w in q_norm for w in ("người lớn thông thường", "liều thông thường", "liều chuẩn")):
+            scores["adult_dosage"] = min(scores["adult_dosage"], 0.5)
 
     if scores["renal_adjustment"] >= 2.5 and scores["adult_dosage"] <= 1.0:
         scores["adult_dosage"] = 0.5
@@ -138,6 +141,13 @@ def score_clinical_intents(query: str) -> Dict[str, float]:
         scores["drug_interactions"] = 0.0
     if scores["food_interaction"] >= 2.0:
         scores["drug_interactions"] = 0.0
+    # An explicit exposure/food facet scopes the request; generic terms such
+    # as "nguy cơ" and "liều" in the same sentence must not widen it to
+    # dosage or inventory lookup. The feature is query scope, not medical data.
+    if scores["alcohol_interaction"] >= 2.0 or scores["food_interaction"] >= 2.0:
+        scores["adult_dosage"] = 0.0
+        scores["pediatric_dosage"] = 0.0
+        scores["stock_inquiry"] = 0.0
 
     return scores
 

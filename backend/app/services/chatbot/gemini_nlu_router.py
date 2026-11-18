@@ -55,33 +55,18 @@ QUY TẮC BÓC TÁCH THÔNG SỐ LÂM SÀNG & AN TOÀN NHI KHOA / SUY THẬN:
   + "COUNSELING": nếu yêu cầu "dặn dò", "dễ hiểu", "3 ý", "cho người nhà".
   + "SUMMARY": mặc định.
 - Gán answer_operation dựa trên yêu cầu của câu hiện tại, không dựa riêng vào việc câu có tên nhiều thuốc hay nhiều trường thông tin. Câu liệt kê/tóm tắt nhiều dữ kiện theo yêu cầu vẫn là direct_lookup; câu hỏi "so sánh" hoặc yêu cầu kết luận tổng hợp là evidence_synthesis; đánh giá một người bệnh cụ thể là patient_specific_inference.
+- Phân biệt thực thể thuốc với thực thể không phải thuốc theo loại thực thể và dữ liệu định danh được cung cấp. Không gán một thực thể không được xác minh là thuốc vào secondary_drug. Nếu yêu cầu cần tổng hợp nhiều bằng chứng hoặc áp dụng chúng để rút ra kết luận, gán answer_operation=evidence_synthesis; nếu chỉ trích xuất một trường, giữ direct_lookup.
 - Khi yêu cầu đánh giá tương tác nêu một thuốc và một nhóm dược lý/enzym/chất vận chuyển thay vì thuốc thứ hai, vẫn chọn MEDICATION_INTERACTION_CHECK; giữ nguyên thực thể thứ hai trong secondary_entity và gán đúng secondary_entity_type. Chỉ yêu cầu làm rõ nếu không nhận diện được thực thể tương tác thứ hai.
 - TRƯỜNG ĐƯỢC YÊU CẦU: điền requested_fields với TOÀN BỘ các khía cạnh độc lập được hỏi trong câu hiện tại, dùng tên trường schema tương ứng; không chỉ chọn một trường đại diện. Nếu không yêu cầu trường cụ thể, trả mảng rỗng.
 - GIỚI HẠN PHẠM VI TRƯỜNG: requested_fields chỉ gồm các khía cạnh người dùng yêu cầu trực tiếp hoặc các khía cạnh được nêu rõ là cần so sánh/tổng hợp. Không thêm trường liên quan chỉ vì có thể hữu ích; thông tin bệnh nền làm bối cảnh không tự động biến thành yêu cầu trả lời mọi trường liên quan.
 - CHẾ ĐỘ HỘI THOẠI: Phân loại ý nghĩa câu hiện tại độc lập trước khi dùng lịch sử. Chọn "contextual_followup" chỉ khi hiểu câu hiện tại cần lượt trước; chọn "topic_shift" khi bắt đầu chủ đề mới; còn lại là "independent". Không kế thừa thuốc hoặc thực thể từ lượt trước cho câu độc lập.
 
-MẪU ĐỐI CHỨNG (FEW-SHOT EXAMPLES):
-- Input: "cho biết liều Paracetamol cho trẻ 15kg và thuốc này có tương tác với Ibuprofen không"
-  Output: {"intent": "MEDICATION_LOOKUP", "primary_drug": "Paracetamol", "secondary_drug": "Ibuprofen", "additional_drugs": [], "sub_queries": ["cho biết liều Paracetamol cho trẻ 15kg", "Paracetamol có tương tác với Ibuprofen không"], "requested_field": "dosage", "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "SUMMARY", "user_sentiment": "neutral", "confidence": 0.99, "clarification_prompt": null, "patient_age": null, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": 15.0, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": true, "is_geriatric": false, "is_renal_inquiry": false}
-- Input: "bệnh nhân nữ 30 tuổi 45 kg crystalin 165 um mol/l dùng Ciprofloxacin liều thế nào"
-  Output: {"intent": "MEDICATION_LOOKUP", "primary_drug": "Ciprofloxacin", "secondary_drug": null, "additional_drugs": [], "requested_field": "renal", "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "DETAILED", "user_sentiment": "neutral", "confidence": 0.99, "clarification_prompt": null, "patient_age": 30.0, "patient_age_unit": "year", "patient_gender": "female", "patient_weight_kg": 45.0, "patient_creatinine_val": 165.0, "patient_creatinine_unit": "umol_l", "is_pediatric": false, "is_geriatric": false, "is_renal_inquiry": true}
-- Input: "kháng sinh Augmentin cho bé 3 tuổi 14kg liều bao nhiêu"
-  Output: {"intent": "MEDICATION_LOOKUP", "primary_drug": "Augmentin", "secondary_drug": null, "additional_drugs": [], "requested_field": "pediatric", "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "SUMMARY", "user_sentiment": "neutral", "confidence": 0.99, "clarification_prompt": null, "patient_age": 3.0, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": 14.0, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": true, "is_geriatric": false, "is_renal_inquiry": false}
-- Input: "Bác sĩ dặn bệnh nhân cách uống thuốc này dễ hiểu giúp em"
-  Output: {"intent": "PATIENT_MEDICATION_COUNSELING", "primary_drug": null, "secondary_drug": null, "additional_drugs": [], "requested_field": "counseling", "is_deictic_referent": true, "is_topic_shift": false, "depth_preference": "COUNSELING", "user_sentiment": "neutral", "confidence": 0.99, "clarification_prompt": null, "patient_age": null, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": null, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": false, "is_geriatric": false, "is_renal_inquiry": false}
-- Input: "Bạn trả lời bị cứng nhắc quá"
-  Output: {"intent": "CONVERSATIONAL_FEEDBACK", "primary_drug": null, "secondary_drug": null, "additional_drugs": [], "requested_field": null, "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "SUMMARY", "user_sentiment": "complaint", "confidence": 0.99, "clarification_prompt": null, "patient_age": null, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": null, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": false, "is_geriatric": false, "is_renal_inquiry": false}
-- Input: "Kiểm tra tương tác Warfarin và Aspirin"
-  Output: {"intent": "MEDICATION_INTERACTION_CHECK", "primary_drug": "Warfarin", "secondary_drug": "Aspirin", "additional_drugs": [], "requested_field": "interactions", "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "SUMMARY", "user_sentiment": "neutral", "confidence": 0.99, "clarification_prompt": null, "patient_age": null, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": null, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": false, "is_geriatric": false, "is_renal_inquiry": false}
-- Input: "tôi có thể hỏi bạn thông tin về thuốc được không"
-  Output: {"intent": "CAPABILITY_OPENING", "primary_drug": null, "secondary_drug": null, "additional_drugs": [], "requested_field": null, "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "SUMMARY", "user_sentiment": "positive", "confidence": 0.99, "clarification_prompt": null, "patient_age": null, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": null, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": false, "is_geriatric": false, "is_renal_inquiry": false, "out_of_scope_type": null}
-- Input: "1+1 = 2 đúng không"
-  Output: {"intent": "OUT_OF_SCOPE", "primary_drug": null, "secondary_drug": null, "additional_drugs": [], "requested_field": null, "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "SUMMARY", "user_sentiment": "neutral", "confidence": 0.99, "clarification_prompt": null, "patient_age": null, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": null, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": false, "is_geriatric": false, "is_renal_inquiry": false, "out_of_scope_type": "MATH_LOGIC"}
-- Input: "bạn có thể dạy tôi học toán được không"
-  Output: {"intent": "OUT_OF_SCOPE", "primary_drug": null, "secondary_drug": null, "additional_drugs": [], "requested_field": null, "is_deictic_referent": false, "is_topic_shift": false, "depth_preference": "SUMMARY", "user_sentiment": "neutral", "confidence": 0.99, "clarification_prompt": null, "patient_age": null, "patient_age_unit": "year", "patient_gender": null, "patient_weight_kg": null, "patient_creatinine_val": null, "patient_creatinine_unit": "umol_l", "is_pediatric": false, "is_geriatric": false, "is_renal_inquiry": false, "out_of_scope_type": "GENERAL_CHITCHAT"}
+NGUYÊN TẮC ĐỐI CHIẾU:
+- Phân biệt câu tra cứu đơn, câu đa ý và câu theo ca bệnh; chỉ tạo sub_queries khi có nhiều yêu cầu độc lập.
+- Trích chính xác thuốc, trường yêu cầu, thông số bệnh nhân; kế thừa thuốc chỉ khi có tham chiếu hội thoại rõ.
+- Với tương tác, xác định đủ hai thực thể và phân biệt thuốc với nhóm dược lý/enzym/chất vận chuyển.
+- Với câu ngoài chuyên môn, phân loại đúng loại ngoài phạm vi và không gán dữ kiện y khoa.
 """
-
-
 def _compute_cache_key(
     query: str, active_med: Optional[str] = None, history: str = ""
 ) -> str:
@@ -92,6 +77,21 @@ def _compute_cache_key(
     return hashlib.sha256(
         f"{norm_q}__ctx:{norm_med}__history:{history_digest}".encode("utf-8")
     ).hexdigest()
+
+
+def _structured_output_schema() -> dict:
+    """Build compact structured-output schema while preserving its contract."""
+    schema = ClinicalNluExtraction.model_json_schema()
+    omitted_metadata = {"title", "description", "default", "examples"}
+
+    def compact(value):
+        if isinstance(value, dict):
+            return {key: compact(child) for key, child in value.items() if key not in omitted_metadata}
+        if isinstance(value, list):
+            return [compact(item) for item in value]
+        return value
+
+    return compact(schema)
 
 
 def _has_explicit_context_reference(query: str) -> bool:
@@ -137,40 +137,87 @@ def try_deterministic_fast_path(clean_q: str, active_med: Optional[str] = None) 
     from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
     matcher = get_drug_lexical_matcher()
     low_q = clean_q.lower().strip()
+    local_result = fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
 
     # 1. Chào hỏi, cảm ơn đơn giản
     if any(low_q == g or low_q.startswith(g + " ") for g in ("xin chào", "chào", "hello", "hi", "cảm ơn", "cam on", "thanks")):
-        return fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
+        return local_result
+
+    if local_result and local_result.intent in {
+        "OUT_OF_SCOPE", "MEDICATION_LOOKUP_GUIDE",
+    }:
+        return local_result
 
     # 2. Cổng tra cứu Dược thư Quốc gia
     if any(p in low_q for p in ("tra cứu dược thư", "cổng tra cứu", "dược thư quốc gia 2015", "tra cứu dđvn")):
-        res = fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
+        res = local_result.model_copy(deep=True)
         res.intent = "MEDICATION_LOOKUP_GUIDE"
         return res
 
     # 3. Tra cứu trực tiếp theo SĐK (Số đăng ký)
     sdk = matcher.extract_sdk(clean_q)
     if sdk and len(clean_q.split()) <= 4:
-        res = fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
+        res = local_result.model_copy(deep=True)
         res.primary_drug = sdk
         res.intent = "MEDICATION_LOOKUP"
         return res
 
-    # 4. Tra cứu thông tin thuốc đơn chất chuẩn mực
+    # A named pair of database-resolved medications with an explicit interaction
+    # request is a structured lookup task; it does not need remote intent parsing.
+    if len(matcher.extract_medications(clean_q)) >= 2 and any(
+        term in low_q for term in ("tương tác", "tuong tac", "tương kỵ", "tuong ky")
+    ):
+        if local_result.intent == "MEDICATION_INTERACTION_CHECK" and local_result.primary_drug and local_result.secondary_drug:
+            return local_result
+
     meds = matcher.extract_medications(clean_q)
+    ranked_facets = []
+    if len(meds) == 1:
+        ranked_facets = [(name, 0.0) for name in local_result.requested_fields]
+        if (
+            local_result.intent == "MEDICATION_LOOKUP"
+            and local_result.answer_operation == "direct_lookup"
+            and not local_result.sub_queries
+        ):
+            local_result.primary_drug = meds[0]
+            return local_result
+    renal_lookup_only = (
+        len(meds) == 1
+        and any(name == "renal_adjustment" for name, _ in ranked_facets)
+        and not re.search(r"(?:creatinin|crystalin|creatin|scr|crcl|egfr)\s*[:=]?\s*\d+|\b\d+(?:[.,]\d+)?\s*(?:tuổi|tuoi|kg|ml/min|ml/phút|umol/l|µmol/l|mg/dl)\b", low_q)
+        and not any(term in low_q for term in ("bệnh nhân này", "ca bệnh", "tính liều", "tính giúp", "cụ thể"))
+    )
+    if renal_lookup_only:
+        if local_result.primary_drug and "renal_adjustment" in local_result.requested_fields:
+            local_result.intent = "MEDICATION_LOOKUP"
+            local_result.answer_operation = "direct_lookup"
+            return local_result
+
+    # 4. Tra cứu thông tin thuốc đơn chất chuẩn mực
     if len(meds) == 1:
         complex_signals = (
             "suy thận", "creatinin", "độ thanh thải", "clcr", "kèm theo", "bệnh nền",
             "dị ứng", "chuyển sang", "đổi sang", "tại sao", "cơ chế"
         )
         if not any(sig in low_q for sig in complex_signals):
+            # A single, confidently identified facet is a direct database
+            # lookup even when the phrasing is longer than a short query.
+            # The feature matrix defines facets; this adds no clinical facts.
+            from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
+            ranked_facets = rank_clinical_intents(clean_q, min_score=2.5)
+            if len(ranked_facets) == 1:
+                return local_result
             simple_prefixes = (
                 "tra cứu thuốc", "thông tin thuốc", "thông tin", "thuốc",
-                "liều dùng", "chỉ định", "chống chỉ định", "tác dụng phụ",
+                "liều dùng", "liều", "chỉ định", "chống chỉ định", "tác dụng phụ",
                 "cách dùng", "thời điểm uống"
             )
-            if len(clean_q.split()) <= 6 or any(low_q.startswith(p) for p in simple_prefixes):
-                return fallback_nlu_heuristic(clean_q, active_med, matcher=matcher)
+            if (
+                len(clean_q.split()) <= 6
+                or any(low_q.startswith(p) for p in simple_prefixes)
+                or any(w in low_q for w in ("trẻ em", "trẻ nhỏ", "bệnh nhi", "bé", "sơ sinh", "cháu"))
+            ):
+                return local_result
 
     return None
 
@@ -223,7 +270,8 @@ async def parse_clinical_nlu(
             api_key=api_key,
             temperature=0.0,
             max_output_tokens=350,
-            timeout_sec=timeout_sec
+            timeout_sec=timeout_sec,
+            response_schema=_structured_output_schema()
         )
         if not raw_json:
             return fallback_nlu_heuristic(clean_q, active_med)
@@ -232,6 +280,43 @@ async def parse_clinical_nlu(
         cleaned = re.sub(r"\s*```$", "", cleaned)
         data = json.loads(cleaned)
         parsed = ClinicalNluExtraction(**data)
+
+        # Validate the model's DDI drug pair against database-backed entity
+        # recognition. If the query contains one recognized medication and
+        # the model put a non-medication exposure into `secondary_drug`, use
+        # the explicitly ranked monograph facet instead of the drug-pair
+        # auditor. Unknown actual drugs remain a clarification case.
+        from app.services.chatbot.intent_feature_matrix import rank_clinical_intents
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        current_drugs = get_drug_lexical_matcher().extract_medications(clean_q)
+        alcohol_food_facets = {"alcohol_interaction", "food_interaction", "administration_timing"}
+        ranked_facets = rank_clinical_intents(clean_q, min_score=2.5)
+        ranked_names = {name for name, _ in ranked_facets}
+        if (
+            parsed.intent == "MEDICATION_INTERACTION_CHECK"
+            and parsed.primary_drug
+            and parsed.secondary_drug
+            and len(current_drugs) == 1
+            and ranked_names.intersection(alcohol_food_facets)
+            and not any(
+                parsed.secondary_drug.casefold() == recognized.casefold()
+                for recognized in current_drugs
+            )
+        ):
+            parsed.intent = "MEDICATION_LOOKUP"
+            parsed.primary_drug = current_drugs[0]
+            parsed.secondary_drug = None
+            parsed.secondary_entity = None
+            parsed.secondary_entity_type = None
+            parsed.requested_fields = [
+                name for name, _ in ranked_facets
+                if name in alcohol_food_facets
+            ]
+            parsed.requested_field = {
+                "alcohol_interaction": "interactions",
+                "food_interaction": "interactions",
+                "administration_timing": "timing",
+            }.get(parsed.requested_fields[0]) or parsed.requested_field
 
         parsed = _normalize_contextual_result(parsed, clean_q, active_med)
 
@@ -280,7 +365,10 @@ async def parse_clinical_nlu(
 
 
 def fallback_nlu_heuristic(
-    query: str, active_med: Optional[str] = None, *, matcher=None
+    query: str,
+    active_med: Optional[str] = None,
+    *,
+    matcher=None,
 ) -> ClinicalNluExtraction:
     """Fallback an toàn cục bộ (< 0.1ms) khi API LLM ngoại tuyến hoặc timeout."""
     clean_q = query.strip()
@@ -512,6 +600,7 @@ def fallback_nlu_heuristic(
                     additional_drugs=meds[2:],
                     sub_queries=sub_queries,
                     requested_field="interactions",
+                    requested_fields=["drug_interactions"],
                     is_topic_shift=is_topic_shift,
                     depth_preference=depth_pref,
                     confidence=0.92
@@ -542,7 +631,7 @@ def fallback_nlu_heuristic(
     patient_gender: Optional[str] = None
     patient_creatinine_val: Optional[float] = None
     is_pediatric: bool = False
-    is_renal_inquiry: bool = any(w in low_q for w in ("suy thận", "thận", "creatinin", "crcl", "egfr", "crystalin", "creatin", "suy than"))
+    is_renal_inquiry: bool = any(w in low_q for w in ("suy thận", "thận", "creatinin", "crcl", "egfr", "crystalin", "creatin", "suy than", "chức năng thận"))
 
     if any(k in low_q for k in ("nữ", "female", "bà", "chị", "cô", "nu")):
         patient_gender = "female"
@@ -577,7 +666,7 @@ def fallback_nlu_heuristic(
     # Phân loại trường thông tin yêu cầu
     if is_renal_inquiry:
         req_field = "renal"
-    elif is_pediatric or any(w in low_q for w in ("trẻ em", "tre em", "trẻ nhỏ", "bệnh nhi", "bé")):
+    elif is_pediatric or any(w in low_q for w in ("trẻ em", "tre em", "trẻ nhỏ", "bệnh nhi", "bé", "sơ sinh", "cháu")):
         req_field = "pediatric"
     elif any(w in low_q for w in ("liều", "lieu", "uống mấy viên", "uống bao nhiêu", "cách dùng")):
         req_field = "dosage"
@@ -601,13 +690,35 @@ def fallback_nlu_heuristic(
         "alcohol_interaction", "food_interaction", "elderly_warning",
         "stock_inquiry", "monitoring", "pharmacokinetics", "pharmacodynamics",
     }
-    requested_fields = [name for name, _ in rank_clinical_intents(clean_q) if name in supported_fields]
+    is_pediatric = bool(
+        is_pediatric
+        or re.search(r"\b(?:trẻ|tre|bé|be|cháu|chau|sơ sinh|so sinh|bệnh nhi|benh nhi)\b", low_q)
+    )
+    requested_fields = [
+        name for name, _ in rank_clinical_intents(clean_q, min_score=2.5)
+        if name in supported_fields
+    ]
+    if any(term in low_q for term in ("tương tác", "tuong tac", "tương kỵ", "tuong ky")) and len(meds) >= 2:
+        if "drug_interactions" not in requested_fields:
+            requested_fields.append("drug_interactions")
+    if is_pediatric and "pediatric_dosage" not in requested_fields:
+        requested_fields.append("pediatric_dosage")
+    if is_pediatric and req_field == "dosage":
+        req_field = "pediatric"
+    if is_renal_inquiry and "renal_adjustment" not in requested_fields:
+        requested_fields.append("renal_adjustment")
+
+    has_patient_case_data = bool(
+        patient_creatinine_val is not None
+        or (patient_age is not None and patient_weight_kg is not None)
+        or re.search(r"\b(?:bệnh nhân|bn|ca bệnh|người bệnh|nhiễm toan)\b", low_q)
+    )
 
     # 8. Kế thừa đại từ ("thuốc đó", "nó") - Bắt buộc dùng regex word-boundary để không nhận nhầm từ "nói" thành "nó"
     has_deictic = bool(re.search(r'\b(?:nó|thuốc\s+(?:đó|này|kia|vừa\s+nói)|thuoc\s+(?:do|nay|kia))\b', low_q))
     if has_deictic:
         target_med = active_med.strip() if active_med else None
-        target_intent = "PATIENT_CASE_REASONING" if (is_renal_inquiry and target_med) else "MEDICATION_LOOKUP"
+        target_intent = "PATIENT_CASE_REASONING" if (is_renal_inquiry and target_med and has_patient_case_data) else "MEDICATION_LOOKUP"
         return ClinicalNluExtraction(
             intent=target_intent,
             primary_drug=target_med,
@@ -643,7 +754,7 @@ def fallback_nlu_heuristic(
             is_inherited = True
 
     if is_renal_inquiry and target_drug:
-        final_intent = "PATIENT_CASE_REASONING"
+        final_intent = "PATIENT_CASE_REASONING" if has_patient_case_data else "MEDICATION_LOOKUP"
         final_drug = target_drug
     elif target_drug:
         final_intent = "MEDICATION_LOOKUP"
@@ -652,12 +763,23 @@ def fallback_nlu_heuristic(
         final_intent = "CLINICAL_CASE_CLARIFICATION"
         final_drug = None
 
+    comparison_cues = (
+        "so sánh", "so sanh", "khác nhau", "khac nhau",
+        "nguy cơ", "ảnh hưởng", "anh huong", "liên quan thế nào",
+    )
+    answer_operation = (
+        "evidence_synthesis"
+        if any(cue in low_q for cue in comparison_cues)
+        else "direct_lookup"
+    )
+
     return ClinicalNluExtraction(
         intent=final_intent,
         primary_drug=final_drug,
         sub_queries=sub_queries,
         requested_field=req_field,
         requested_fields=requested_fields,
+        answer_operation=answer_operation,
         conversation_mode="contextual_followup" if is_inherited else "independent",
         is_deictic_referent=True if is_inherited else False,
         is_topic_shift=is_topic_shift,

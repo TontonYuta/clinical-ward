@@ -187,7 +187,7 @@ export interface ChatMessage {
   modelCallCount?: number;
   usageCallCount?: number;
   cacheHitCount?: number;
-  availabilityMode?: 'online_ai' | 'local_only' | 'offline' | 'checking';
+  availabilityMode?: 'online_ai' | 'local_only' | 'checking';
   provider?: string | null;
   ragGrounded?: boolean;
   answerType?: string;

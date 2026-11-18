@@ -5,7 +5,7 @@
  */
 
 import { ActionPayload, UserProfile, AgentActionCard } from '../../types/clinical';
-import { chatCopilotApiStream } from '../../services/api';
+import { chatCopilotApiStream, chatCopilotApi } from '../../services/api';
 import { AsyncClinicalState, ProcessedQueryResult } from './types';
 import { validateClientInputGuardrail, validateClientOutputGuardrail } from '../security/clinicalGuardrails';
 
@@ -91,7 +91,13 @@ export async function processClinicalAgentQueryAsync(
     const activeSessionId = sessionId || _clientSessionId;
     const imageBase64 = attachment?.imageBase64;
     const imageMimeType = attachment?.mimeType || 'image/jpeg';
-    const backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken, imageBase64, imageMimeType);
+    let backendData: any = null;
+    try {
+      backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken, imageBase64, imageMimeType);
+    } catch (streamErr) {
+      console.warn('[AgentAsync] Stream call failed, falling back to direct JSON API:', streamErr);
+      backendData = await chatCopilotApi(cleanInput, role, name, activeSessionId, imageBase64, imageMimeType);
+    }
     if (backendData && backendData.reply_text) {
       let card: AgentActionCard | undefined = undefined;
       let actionPayload: ActionPayload | undefined = undefined;
@@ -152,17 +158,25 @@ export async function processClinicalAgentQueryAsync(
         card
       };
     }
-  } catch (err) {
-    console.warn('[AgentAsync] Backend stream call failed; returning unavailable state:', err);
-  }
+  } catch (err: any) {
+    console.warn('[AgentAsync] Backend call failed:', err);
+    const errMsg = String(err?.message || '');
+    const isAuth = errMsg.includes('401') || errMsg.includes('xác thực') || errMsg.includes('hết hạn');
+    const isPerm = errMsg.includes('403') || errMsg.includes('quyền');
+    const userNotice = isAuth
+      ? 'Phiên làm việc đã hết hạn hoặc chưa được xác thực. Vui lòng đăng nhập lại để tiếp tục tra cứu.'
+      : (isPerm
+        ? 'Tài khoản hiện tại không có quyền truy cập chức năng này.'
+        : 'Không thể kết nối đến máy chủ lâm sàng nội viện. Vui lòng kiểm tra lại kết nối mạng nội viện hoặc máy chủ backend.');
 
-  return { replyMessage: {
-    id: `msg-agent-unavailable-${Date.now()}`,
-    sender: 'agent',
-    text: 'Không thể truy cập backend chatbot lúc này. Yêu cầu chưa được xử lý và không có kết luận lâm sàng nào được tạo. Vui lòng kiểm tra kết nối rồi thử lại.',
-    timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    answerType: 'unavailable',
-    sourceStatus: 'unavailable',
-    ragGrounded: false,
-  } };
+    return { replyMessage: {
+      id: `msg-agent-unavailable-${Date.now()}`,
+      sender: 'agent',
+      text: userNotice,
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      answerType: 'unavailable',
+      sourceStatus: 'unavailable',
+      ragGrounded: false,
+    } };
+  }
 }

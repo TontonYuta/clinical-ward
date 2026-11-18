@@ -54,6 +54,39 @@ async def test_multi_intent_response_cannot_claim_grounding_without_linked_sourc
     assert response.abstention_reason
 
 
+@pytest.mark.asyncio
+async def test_multi_intent_response_preserves_valid_claim_evidence_links():
+    from app.schemas.copilot import AnswerClaim
+
+    async def core(payload, *_args, **_kwargs):
+        evidence_id = f"evidence:{payload.query}"
+        chunk_id = f"chunk:{payload.query}"
+        claim_text = f"Đã xác minh: {payload.query}."
+        claim = AnswerClaim(
+            claim_id=f"claim:{payload.query}", text=claim_text, claim_type="source_fact",
+            evidence_ids=[evidence_id], support_status="supported",
+        )
+        return CopilotResponse(
+            intent="CLINICAL", reply_text=claim_text, answer_type="grounded_reference",
+            rag_grounded=True, confidence=0.9, claims=[claim],
+            evidence_claim_map={evidence_id: [claim.claim_id]},
+            citations=[{"chunk_id": chunk_id}],
+            evidence=[{"evidence_id": evidence_id, "evidence_type": "document_chunk",
+                       "chunk_id": chunk_id, "source_id": "source",
+                       "source_version": "sha256:verified", "content": claim_text}],
+        )
+
+    response = await handle_multi_intent_chat(
+        ["first fact", "second fact"], CopilotQuery(query="combined"), None, None,
+        session=SimpleNamespace(active_medication_name=None), core_handler_fn=core,
+    )
+
+    assert response.rag_grounded is True
+    assert len(response.claims) == 2
+    assert len(response.evidence_claim_map) == 2
+    assert all(claim.text in response.reply_text for claim in response.claims)
+
+
 def test_factual_response_without_provenance_abstains_even_when_grounding_flag_is_false():
     response = CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE", reply_text="unsupported dosage claim",
@@ -369,7 +402,7 @@ async def test_image_route_precedes_nlu_and_returns_multimodal_executor_result(m
     nlu.assert_not_awaited()
 
 
-def test_common_gate_accepts_deterministically_verified_database_inference():
+def test_common_gate_rejects_inference_without_semantic_or_calculation_verifier():
     from app.schemas.copilot import CopilotResponse, AnswerClaim
     from app.services.chatbot.copilot_orchestrator import validate_response_evidence_contract
     response = CopilotResponse(
@@ -385,8 +418,9 @@ def test_common_gate_accepts_deterministically_verified_database_inference():
         citations=[{"chunk_id": "c1"}], evidence_claim_map={"e1": ["calc"]},
     )
     result = validate_response_evidence_contract(response)
-    assert result.rag_grounded is True
-    assert result.answer_type == "medication_field"
+    assert result.rag_grounded is False
+    assert result.answer_type == "safe_abstention"
+    assert result.confidence == 0.0
 
 
 @pytest.mark.asyncio

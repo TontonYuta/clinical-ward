@@ -30,20 +30,26 @@ def is_exact_drug_match(kw: str, drug: DavNationalDrug) -> bool:
     if kw_c == b_c or kw_c == i_c or kw_c == s_c:
         return True
 
+    from app.services.dav_normalizer import clean_brand_name
+    clean_b = clean_brand_name(drug.brand_name).strip().lower()
+    if kw_c == clean_b:
+        return True
+
     # Composite name check: "INN (Brand)" e.g. "Riluzol (Teglutik)", "Venetoclax (Venclexta)"
     import re
     comp_m = re.match(r"^([^(]+)\s*\(([^)]+)\)$", kw.strip())
     if comp_m:
         p1 = comp_m.group(1).strip().lower()
         p2 = comp_m.group(2).strip().lower()
-        if p1 in (b_c, i_c) or p2 in (b_c, i_c) or b_c in (p1, p2) or i_c in (p1, p2):
+        if p1 in (b_c, i_c, clean_b) or p2 in (b_c, i_c, clean_b) or b_c in (p1, p2) or i_c in (p1, p2) or clean_b in (p1, p2):
             return True
-        if any(p in b_c.split() or p in i_c.replace(";", " ").replace("+", " ").split() for p in (p1, p2) if len(p) >= 3):
+        if any(p in b_c.split() or p in clean_b.split() or p in i_c.replace(";", " ").replace("+", " ").split() for p in (p1, p2) if len(p) >= 3):
             return True
 
-    tokens_b = [t.strip(",.()[]/+-;") for t in b_c.split() if t.strip(",.()[]/+-;")]
-    tokens_i = [t.strip(",.()[]/+-;") for t in i_c.split() if t.strip(",.()[]/+-;")]
-    if kw_c in tokens_b or kw_c in tokens_i:
+    tokens_b = [t.strip(",.()[]/+-;") for t in re.split(r"[\s,()\[\]/+\-;]+", b_c) if t.strip(",.()[]/+-;")]
+    tokens_clean_b = [t.strip(",.()[]/+-;") for t in re.split(r"[\s,()\[\]/+\-;]+", clean_b) if t.strip(",.()[]/+-;")]
+    tokens_i = [t.strip(",.()[]/+-;") for t in re.split(r"[\s,()\[\]/+\-;]+", i_c) if t.strip(",.()[]/+-;")]
+    if kw_c in tokens_b or kw_c in tokens_clean_b or kw_c in tokens_i:
         return True
 
     # Đối soát tương đồng hậu tố Latinh/Pháp (Codein vs Codeine, Morphin vs Morphine)

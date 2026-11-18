@@ -139,9 +139,42 @@ async def enrich_monograph_for_drug(drug: DavNationalDrug, db: AsyncSession, ref
         m_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn) == clean_ing).limit(1))
         mono = m_res.scalar_one_or_none()
         if not mono:
+            # Bóc tách hoạt chất thành phần, loại bỏ muối, hàm lượng, dược điển và biệt dược
+            salt_pat = re.compile(r'\b(natri|kali|calci|magnesi|hydroclorid|hydrochloride|hcl|besylat|besylate|maleat|maleate|phosphat|phosphate|acetat|acetate|succinat|succinate|tartrat|tartrate|sulfat|sulfate|nitrat|nitrate|citrat|citrate|lactat|lactate|hydrat|hydrate|trihydrat|trihydrate|bp|usp|ph\.eur|ddvn)\b', re.IGNORECASE)
+            strength_pat = re.compile(r'\b\d+([.,]\d+)?\s*(mcg|microgram|µg|μg|ug|mg|g|kg|ml|iu|ui|%|don vi)\b', re.IGNORECASE)
+            aliases = {
+                'acetaminophen': 'paracetamol', 'amoxicillin': 'amoxicilin', 'ceftriaxone': 'ceftriaxon',
+                'caffeine': 'cafein', 'epinephrine': 'adrenalin', 'norepinephrine': 'noradrenalin',
+                'morphine': 'morphin', 'clarithromycine': 'clarithromycin', 'azithromycine': 'azithromycin'
+            }
+            parts = re.split(r'[;+,/]|\b(?:và|and)\b', drug.active_ingredient, flags=re.IGNORECASE)
+            candidates: list[str] = []
+            for p in parts:
+                p = re.sub(r'\(.*?\)', '', p)
+                p = strength_pat.sub('', p)
+                p = salt_pat.sub('', p)
+                p = p.strip().lower()
+                if p and p not in candidates:
+                    candidates.append(p)
+                if p in aliases and aliases[p] not in candidates:
+                    candidates.append(aliases[p])
+                first_w = p.split()[0] if p else ''
+                if len(first_w) >= 4 and first_w not in candidates:
+                    candidates.append(first_w)
+                if first_w in aliases and aliases[first_w] not in candidates:
+                    candidates.append(aliases[first_w])
+
+            for cand in candidates:
+                cand_res = await db.execute(select(ClinicalDrugMonograph).where(func.lower(ClinicalDrugMonograph.inn) == cand).limit(1))
+                cand_mono = cand_res.scalar_one_or_none()
+                if cand_mono:
+                    mono = cand_mono
+                    break
+
+        if not mono:
             normalize = lambda value: re.sub(r"[^a-z0-9]+", "", value.casefold())
             active_key = normalize(drug.active_ingredient)
-            mono_res = await db.execute(select(ClinicalDrugMonograph).limit(100))
+            mono_res = await db.execute(select(ClinicalDrugMonograph))
             exact_matches = [candidate for candidate in mono_res.scalars() if normalize(candidate.inn) == active_key]
             if len(exact_matches) == 1:
                 mono = exact_matches[0]

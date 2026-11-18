@@ -10,6 +10,7 @@ import { AdminTab, TelemetryOverviewResponse, ApiKeyItem, BudgetCapResponse } fr
 import { fetchTelemetryOverview, fetchApiKeys, fetchBudgetStatus, fetchEsmsStatus, fetchFeatureFlags } from './services/adminApi';
 import { FeatureFlagsTab } from './components/Tabs/FeatureFlagsTab';
 import type { FeatureFlagResponse } from './types/admin';
+import { AdminLoginGate } from './components/AdminLoginGate';
 
 const CACHE_KEY_TELEMETRY = 'clinical_ai_monitor_telemetry_cache_v2';
 const CACHE_KEY_BUDGET = 'clinical_ai_monitor_budget_cache_v2';
@@ -26,7 +27,7 @@ function getCachedItem<T>(key: string): T | null {
   }
 }
 
-export default function App() {
+function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigureAuth, onToggleAuth }: { authenticatedUsername?: string; onLogout?: () => Promise<void>; authEnabled: boolean; canConfigureAuth: boolean; onToggleAuth: () => void }) {
   const [currentTab, setCurrentTab] = useState<AdminTab>('telemetry');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -111,7 +112,18 @@ export default function App() {
         isRefreshing={isRefreshing}
         clinicalAppUrl={clinicalAppUrl}
         lastUpdated={lastUpdated}
+        authenticatedUsername={authenticatedUsername}
+        onLogout={onLogout}
+        authEnabled={authEnabled}
+        canConfigureAuth={canConfigureAuth}
+        onToggleAuth={onToggleAuth}
       />
+      {!authEnabled && !authenticatedUsername && (
+        <div role="status" className="flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6">
+          <span>Form đăng nhập đang ẩn trên thiết bị này. API backend vẫn yêu cầu phiên đăng nhập hợp lệ.</span>
+          <button type="button" onClick={onToggleAuth} className="shrink-0 font-semibold underline underline-offset-2">Hiện form</button>
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         <AdminSidebar
@@ -145,4 +157,8 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+export default function App() {
+  return <AdminLoginGate>{context => <MonitorApp key={context.username ?? 'anonymous'} {...context} />}</AdminLoginGate>;
 }
