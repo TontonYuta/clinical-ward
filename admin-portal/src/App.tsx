@@ -6,6 +6,7 @@ import { KeyVaultTab } from './components/Tabs/KeyVaultTab';
 import { IntegrationsTab } from './components/Tabs/IntegrationsTab';
 import { BudgetCapTab } from './components/Tabs/BudgetCapTab';
 import { AuditTab } from './components/Tabs/AuditTab';
+import { DocumentIngestionTab } from './components/Tabs/DocumentIngestionTab';
 import { AdminTab, TelemetryOverviewResponse, ApiKeyItem, BudgetCapResponse } from './types/admin';
 import { fetchTelemetryOverview, fetchApiKeys, fetchBudgetStatus, fetchEsmsStatus, fetchFeatureFlags } from './services/adminApi';
 import { FeatureFlagsTab } from './components/Tabs/FeatureFlagsTab';
@@ -138,6 +139,9 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
           <div className="w-full max-w-[1920px] mx-auto">
             {currentTab === 'telemetry' && (
               <TelemetryTab data={telemetry} loading={isRefreshing && !telemetry} />
+            )}
+            {currentTab === 'document_ingestion' && (
+              <DocumentIngestionTab />
             )}
             {currentTab === 'key_vault' && (
               <KeyVaultTab keys={keys} onRefresh={loadAllData} />

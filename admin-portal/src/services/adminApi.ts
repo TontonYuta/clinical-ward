@@ -7,8 +7,11 @@ import {
   EsmsStatusResponse,
   GasStatusResponse,
   BhytAuditLogItem,
-  PaginatedTelemetryResponse
-  , FeatureFlagResponse
+  PaginatedTelemetryResponse,
+  FeatureFlagResponse,
+  KnowledgeDocumentItem,
+  IngestPdfResponse,
+  DocumentQueryResponse
 } from '../types/admin';
 
 const BASE_URL = '/api/v1/admin';
@@ -200,3 +203,59 @@ export async function updateGasConfig(webhookUrl: string): Promise<GasStatusResp
   if (!res.ok) throw new Error(`Lỗi cập nhật cấu hình GAS: HTTP ${res.status}`);
   return res.json();
 }
+
+export async function fetchKnowledgeDocuments(): Promise<KnowledgeDocumentItem[]> {
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/documents`, {}, 8000);
+  if (!res.ok) throw new Error(`Lỗi tải danh mục tài liệu: HTTP ${res.status}`);
+  const data = await res.json();
+  return data.documents || [];
+}
+
+export async function uploadKnowledgePdf(formData: FormData): Promise<IngestPdfResponse> {
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/upload-pdf`, {
+    method: 'POST',
+    body: formData,
+  }, 120000);
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.detail) detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+    } catch {}
+    throw new Error(`Lỗi nạp tài liệu: ${detail}`);
+  }
+  return res.json();
+}
+
+export async function queryKnowledgeDocuments(query: string, docId?: string, topK: number = 5): Promise<DocumentQueryResponse> {
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, doc_id: docId || null, top_k: topK }),
+  }, 15000);
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.detail) detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+    } catch {}
+    throw new Error(`Lỗi truy vấn tài liệu: ${detail}`);
+  }
+  return res.json();
+}
+
+export async function deleteKnowledgeDocument(docId: string): Promise<{ status: string; deleted_doc_id: string }> {
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/documents/${encodeURIComponent(docId)}`, {
+    method: 'DELETE',
+  }, 15000);
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.detail) detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+    } catch {}
+    throw new Error(`Lỗi xóa tài liệu: ${detail}`);
+  }
+  return res.json();
+}
+

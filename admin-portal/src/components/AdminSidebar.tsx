@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, KeyRound, Radio, Coins, ShieldAlert, Server, SlidersHorizontal } from 'lucide-react';
+import { BarChart3, KeyRound, Radio, Coins, ShieldAlert, Server, SlidersHorizontal, FileText } from 'lucide-react';
 import { AdminTab } from '../types/admin';
 
 interface AdminSidebarProps {
@@ -23,6 +23,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'Giám sát vận hành',
       desc: 'Telemetry, Cache & Token',
       icon: BarChart3,
+    },
+    {
+      id: 'document_ingestion' as AdminTab,
+      label: 'Nạp tài liệu & RAG',
+      desc: 'Bóc tách PDF & Vector',
+      icon: FileText,
+      badge: 'PDF',
     },
     {
       id: 'key_vault' as AdminTab,

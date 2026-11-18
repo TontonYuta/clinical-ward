@@ -1,4 +1,49 @@
-export type AdminTab = 'telemetry' | 'key_vault' | 'integrations' | 'budget_cap' | 'safety_audit' | 'feature_flags';
+export type AdminTab = 'telemetry' | 'document_ingestion' | 'key_vault' | 'integrations' | 'budget_cap' | 'safety_audit' | 'feature_flags';
+
+export interface KnowledgeDocumentItem {
+  id: string;
+  title: string;
+  legal_basis: string;
+  category: string;
+  edition_year?: number;
+  filename: string;
+  public_url: string;
+  sha256: string;
+  bytes: number;
+}
+
+export interface IngestPdfResponse {
+  status: string;
+  doc_id: string;
+  title: string;
+  legal_basis: string;
+  filename: string;
+  sha256: string;
+  source_id: string;
+  source_version: string;
+  total_pages: number;
+  extracted_chunks_count: number;
+  indexed_vectors_count: number;
+  file_bytes: number;
+  public_url: string;
+}
+
+export interface DocumentQueryResultItem {
+  chunk_id: string;
+  title: string;
+  page_or_section: string;
+  source_doc: string;
+  legal_basis: string;
+  content: string;
+  score: number;
+  match_reasons: string[];
+}
+
+export interface DocumentQueryResponse {
+  query: string;
+  doc_id?: string;
+  results: DocumentQueryResultItem[];
+}
 
 export type ClinicalFeatureKey = 'overview' | 'cpoe' | 'debt' | 'equipment' | 'fefo' | 'coldchain' | 'asset_audit' | 'bhyt_audit' | 'documents';
 export interface FeatureFlagItem { key: ClinicalFeatureKey; label: string; description: string; enabled: boolean; }
