@@ -78,6 +78,86 @@ def test_auth_status_endpoint_is_public_but_admin_api_remains_protected():
     assert client.get("/api/v1/admin/monitoring/overview").status_code == 401
 
 
+def test_auth_middleware_allows_read_only_availability_without_session():
+    app = FastAPI()
+    app.add_middleware(AuthenticationMiddleware, enabled=True, secret_key="s" * 32, users_json='{"nurse":{"role":"nurse"}}')
+
+    @app.get("/api/v1/availability")
+    def availability():
+        return {"mode": "local_only"}
+
+    @app.post("/api/v1/availability")
+    def mutate_availability():
+        return {"ok": True}
+
+    client = TestClient(app)
+    assert client.get("/api/v1/availability").status_code == 200
+    assert client.post("/api/v1/availability").status_code == 401
+
+
+def test_auth_middleware_allows_chat_stream_from_configured_monitor_origin():
+    app = FastAPI()
+    app.add_middleware(
+        AuthenticationMiddleware, enabled=True, secret_key="s" * 32,
+        users_json='{"director":{"role":"director"}}',
+        trusted_origins=["https://clinical-ai-monitor.vercel.app"],
+    )
+
+    @app.post("/api/v1/copilot/chat/stream")
+    def chat_stream():
+        return {"ok": True}
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/copilot/chat/stream",
+        headers={"Origin": "https://clinical-ai-monitor.vercel.app"},
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Authentication required"
+
+
+def test_director_can_use_chat_stream_when_authenticated():
+    app = FastAPI()
+    secret = "s" * 32
+    app.add_middleware(
+        AuthenticationMiddleware, enabled=True, secret_key=secret,
+        users_json='{"director":{"role":"director"}}',
+        trusted_origins=["https://clinical-ward.vercel.app"],
+    )
+
+    @app.post("/api/v1/copilot/chat/stream")
+    def chat_stream():
+        return {"ok": True}
+
+    token = issue_token("director", "director", secret)
+    response = TestClient(app).post(
+        "/api/v1/copilot/chat/stream",
+        headers={"Origin": "https://clinical-ward.vercel.app", "Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+
+
+def test_auth_middleware_accepts_chat_stream_origin_configured_by_runtime():
+    app = FastAPI()
+    app.add_middleware(
+        AuthenticationMiddleware, enabled=True, secret_key="s" * 32,
+        users_json='{"director":{"role":"director"}}',
+        trusted_origins=["https://clinical-ai-monitor.vercel.app"],
+    )
+
+    @app.post("/api/v1/copilot/chat/stream")
+    def chat_stream():
+        return {"ok": True}
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/copilot/chat/stream",
+        headers={"Origin": "https://clinical-ai-monitor.vercel.app"},
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Authentication required"
+
+
 def test_role_policy_rejects_unprivileged_writes_and_patient_reads():
     assert not AuthenticationMiddleware._role_allowed("POST", "/api/v1/inventory/restock-proposal", "nurse")
     assert AuthenticationMiddleware._role_allowed("POST", "/api/v1/inventory/restock-proposal", "pharmacist")

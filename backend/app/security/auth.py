@@ -151,11 +151,16 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             ("/api/v1/auth/logout", "POST"),
             ("/api/v1/auth/logout", "OPTIONS"),
         }
+        # Public endpoints that do not require an authenticated clinical session:
+        # - /api/v1/auth/me (GET): Allows frontend to check session status
+        # - /api/v1/availability (GET/HEAD/OPTIONS): Service health and readiness metadata
+        # - /api/v1/registry (GET/HEAD/OPTIONS): Public drug catalog and monograph search
+        # - public_auth_requests: Login, logout, CSRF
         if (
             (request.url.path == "/api/v1/auth/me" and request.method == "GET")
-            or ((request.url.path, request.method) in public_auth_requests)
-            or (request.url.path.startswith("/api/v1/registry") and request.method in {"GET", "HEAD", "OPTIONS"})
             or (request.url.path == "/api/v1/availability" and request.method in {"GET", "HEAD", "OPTIONS"})
+            or (request.url.path.startswith("/api/v1/registry") and request.method in {"GET", "HEAD", "OPTIONS"})
+            or ((request.url.path, request.method) in public_auth_requests)
         ):
             return await call_next(request)
         token = request.cookies.get("clinical_session")

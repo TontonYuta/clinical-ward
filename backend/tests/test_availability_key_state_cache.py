@@ -30,13 +30,14 @@ async def test_provider_status_is_rechecked_after_key_vault_change(monkeypatch):
     monkeypatch.setattr(availability.settings, "GEMINI_API_KEY", None)
     import httpx
     monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
-    monkeypatch.setattr(availability, "_provider_state", {"value": "not_configured", "checked_at": time.monotonic(), "checked_at_wall": time.time(), "fingerprint": "old"})
+    monkeypatch.setattr(availability, "_provider_state", {
+        "value": "not_configured", "checked_at": time.monotonic(), "checked_at_wall": time.time(), "fingerprint": "old",
+    })
     async def fingerprint():
         return "new"
 
     async def active_key(_provider="gemini"):
         return "valid-looking-gemini-key"
-
     monkeypatch.setattr(availability, "_provider_fingerprint", fingerprint, raising=False)
     monkeypatch.setattr(availability, "_active_provider_key_async", active_key, raising=False)
     assert await availability._check_provider() == "available"
