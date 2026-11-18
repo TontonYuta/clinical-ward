@@ -6,7 +6,7 @@ import json
 import time
 import uuid
 import httpx
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from app.config import settings
 
 _VAULT_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../data/api_key_vault.json"))
