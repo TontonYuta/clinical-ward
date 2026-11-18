@@ -35,19 +35,28 @@ class VectorStore:
     - Tìm kiếm tức thời (In-Memory Search): Ma trận NumPy chuẩn hóa trên RAM.
     """
 
-    def __init__(self, db_path: Optional[Union[str, Path]] = None, auto_load: bool = True):
+    def __init__(
+        self,
+        db_path: Optional[Union[str, Path]] = None,
+        auto_load: bool = True,
+        dimension: int = 768
+    ):
         self.db_path = str(db_path) if db_path else get_fts_db_path()
         self._conn: Optional[sqlite3.Connection] = None
+        self._dimension: int = dimension
         self._init_db()
 
         # In-Memory Cache cấu trúc ma trận
         self._matrix: Optional[np.ndarray] = None  # shape: (N, dim), unit-normalized
         self._chunk_ids: List[str] = []
         self._id_to_idx: Dict[str, int] = {}
-        self._dimension: int = 768
 
         if auto_load:
             self.load_in_memory_index()
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
 
     def _get_connection(self) -> sqlite3.Connection:
         if self._conn is None:
@@ -120,14 +129,45 @@ class VectorStore:
         except Exception:
             pass
 
+        loaded_from_cache = False
         if prefer_cache and is_default_db:
             cache_npz = Path(__file__).resolve().parent / "clinical_embeddings_cache.npz"
             if cache_npz.exists():
                 try:
                     if self.import_npz(cache_npz) and len(self._chunk_ids) > 0:
-                        return len(self._chunk_ids)
+                        loaded_from_cache = True
                 except Exception as e:
                     logger.warning(f"[VectorStore] Không thể đọc cache NPZ, fallback sang SQLite: {e}")
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        if loaded_from_cache:
+            # Bổ sung các vector động trong SQLite chưa có trong cache NPZ
+            cursor.execute("SELECT chunk_id, embedding, dimension FROM clinical_chunk_vectors")
+            rows = cursor.fetchall()
+            new_chunk_ids = []
+            new_vectors = []
+            for row in rows:
+                cid = row["chunk_id"]
+                if cid not in self._id_to_idx:
+                    new_chunk_ids.append(cid)
+                    new_vectors.append(np.frombuffer(row["embedding"], dtype=np.float32))
+
+            if new_vectors:
+                new_raw = np.vstack(new_vectors).astype(np.float32)
+                new_norms = np.linalg.norm(new_raw, axis=1, keepdims=True)
+                new_norms[new_norms == 0] = 1.0
+                new_normed = new_raw / new_norms
+
+                combined = np.vstack([self._matrix, new_normed]) if self._matrix is not None else new_normed
+                self._matrix = np.ascontiguousarray(combined, dtype=np.float32)
+                start_idx = len(self._chunk_ids)
+                for idx, cid in enumerate(new_chunk_ids):
+                    self._chunk_ids.append(cid)
+                    self._id_to_idx[cid] = start_idx + idx
+                logger.info(f"[VectorStore] Đã nạp thêm {len(new_chunk_ids)} dynamic vectors từ SQLite vào ma trận RAM.")
+            return len(self._chunk_ids)
 
         conn = self._get_connection()
         cursor = conn.cursor()
@@ -154,7 +194,7 @@ class VectorStore:
         # Chuẩn hóa ma trận L2 norm để phép tính Dot Product tương đương Cosine Similarity
         norms = np.linalg.norm(raw_matrix, axis=1, keepdims=True)
         norms[norms == 0] = 1.0  # Tránh chia cho 0
-        self._matrix = raw_matrix / norms
+        self._matrix = np.ascontiguousarray(raw_matrix / norms, dtype=np.float32)
         self._chunk_ids = chunk_ids
         self._id_to_idx = {cid: idx for idx, cid in enumerate(chunk_ids)}
 
@@ -260,6 +300,18 @@ class VectorStore:
         logger.info(f"[VectorStore] Đã nạp {len(self._chunk_ids)} vectors từ cache {file_path}")
         return True
 
+    def delete_embeddings(self, chunk_ids: List[str]) -> int:
+        """Xóa danh sách vector theo chunk_ids khỏi SQLite và nạp lại RAM."""
+        if not chunk_ids:
+            return 0
+        conn = self._get_connection()
+        placeholders = ",".join("?" for _ in chunk_ids)
+        with conn:
+            conn.execute(f"DELETE FROM clinical_chunk_vectors WHERE chunk_id IN ({placeholders})", chunk_ids)
+        # Nạp lại RAM
+        self.load_in_memory_index(prefer_cache=True)
+        return len(chunk_ids)
+
     def clear(self) -> None:
         """Xóa sạch bảng vector (chỉ dùng trong testing)."""
         conn = self._get_connection()
@@ -276,6 +328,7 @@ _default_store: Optional[VectorStore] = None
 def get_vector_store(db_path: Optional[str] = None, auto_load: bool = True) -> VectorStore:
     """Singleton getter cho VectorStore toàn hệ thống."""
     global _default_store
-    if _default_store is None or (db_path and _default_store.db_path != str(db_path)):
-        _default_store = VectorStore(db_path=db_path, auto_load=auto_load)
+    target_path = str(db_path) if db_path else get_fts_db_path()
+    if _default_store is None or _default_store.db_path != target_path:
+        _default_store = VectorStore(db_path=target_path, auto_load=auto_load)
     return _default_store

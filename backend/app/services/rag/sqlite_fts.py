@@ -185,3 +185,59 @@ class SqliteFtsIndex:
                     score=0.5 / (i + 1), bm25_rank=i + 1, match_reasons=["Fallback LIKE search"]
                 ))
         return results
+
+    def get_chunks_by_ids(self, chunk_ids: list[str]) -> dict[str, RagChunk]:
+        """Truy xuất danh sách RagChunk theo chunk_ids từ bảng FTS."""
+        if not chunk_ids:
+            return {}
+        result: dict[str, RagChunk] = {}
+        with self._get_connection() as conn:
+            # Query theo batch để tránh vượt quá giới hạn biến SQLite (SQLITE_MAX_VARIABLE_NUMBER)
+            batch_size = 500
+            for i in range(0, len(chunk_ids), batch_size):
+                batch = chunk_ids[i:i + batch_size]
+                placeholders = ",".join("?" for _ in batch)
+                cur = conn.execute(
+                    f"""
+                    SELECT chunk_id, source_doc, legal_basis, page_or_section,
+                           title, content, keywords, entity_type, source_id, source_version
+                    FROM clinical_rag_fts WHERE chunk_id IN ({placeholders})
+                    """,
+                    batch
+                )
+                for row in cur.fetchall():
+                    cid = row["chunk_id"]
+                    result[cid] = RagChunk(
+                        chunk_id=cid,
+                        source_doc=row["source_doc"],
+                        legal_basis=row["legal_basis"],
+                        page_or_section=row["page_or_section"],
+                        title=row["title"],
+                        content=row["content"],
+                        keywords=row["keywords"].split() if row["keywords"] else [],
+                        entity_type=row["entity_type"],
+                        source_id=row["source_id"],
+                        source_version=row["source_version"]
+                    )
+        return result
+
+    def delete_chunks_by_source_doc(self, source_doc: str) -> list[str]:
+        """Xóa toàn bộ chunks của một tài liệu source_doc và trả về danh sách chunk_id đã xóa."""
+        with self._get_connection() as conn:
+            cur = conn.execute("SELECT chunk_id FROM clinical_rag_fts WHERE source_doc = ?", (source_doc,))
+            deleted_ids = [row["chunk_id"] for row in cur.fetchall()]
+            if deleted_ids:
+                conn.execute("DELETE FROM clinical_rag_fts WHERE source_doc = ?", (source_doc,))
+                conn.commit()
+            return deleted_ids
+
+    def delete_chunks_by_prefix(self, prefix: str) -> list[str]:
+        """Xóa toàn bộ chunks có chunk_id bắt đầu bằng prefix (VD: doc_id) và trả về danh sách đã xóa."""
+        with self._get_connection() as conn:
+            cur = conn.execute("SELECT chunk_id FROM clinical_rag_fts WHERE chunk_id LIKE ?", (f"{prefix}%",))
+            deleted_ids = [row["chunk_id"] for row in cur.fetchall()]
+            if deleted_ids:
+                conn.execute("DELETE FROM clinical_rag_fts WHERE chunk_id LIKE ?", (f"{prefix}%",))
+                conn.commit()
+            return deleted_ids
+

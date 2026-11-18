@@ -395,6 +395,12 @@ class HybridRetriever:
         chunk_map: Dict[str, RagChunk] = {c.chunk_id: c for c in self.all_chunks}
         all_candidate_ids = set(bm25_rank_map.keys()).union(dense_rank_map.keys()).union(kg_matched_ids)
 
+        # Bổ sung các chunks động từ PDF tải lên (nếu có trong candidate_ids mà chưa có trong self.all_chunks)
+        missing_candidate_ids = [cid for cid in all_candidate_ids if cid not in chunk_map]
+        if missing_candidate_ids:
+            dynamic_chunks = self.fts_index.get_chunks_by_ids(missing_candidate_ids)
+            chunk_map.update(dynamic_chunks)
+
         # 4b. Chủ động đưa các Graph Chunks phù hợp vào ứng viên (Dual-Level Knowledge Routing)
         # Khuyến cáo thay thế (Therapeutic Substitutions)
         for subst_key, s_info in THERAPEUTIC_ALTERNATIVE_MAP.items():

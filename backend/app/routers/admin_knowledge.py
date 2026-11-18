@@ -7,8 +7,13 @@ import json
 from pathlib import Path
 from typing import Optional
 from urllib.parse import quote
+from pydantic import BaseModel
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
-from app.services.rag.pdf_ingestion_service import ingest_pdf_bytes
+from app.services.rag.pdf_ingestion_service import (
+    ingest_pdf_bytes,
+    delete_ingested_pdf,
+    query_ingested_documents
+)
 
 router = APIRouter(prefix="/admin/knowledge", tags=["Quản Trị Tri Thức & PDF RAG"])
 
@@ -94,7 +99,7 @@ async def upload_and_ingest_pdf(
     try:
         content = await file.read()
         safe_category = category.strip()
-        result = ingest_pdf_bytes(
+        result = await ingest_pdf_bytes(
             file_bytes=content,
             filename=file.filename,
             title=title,
@@ -109,3 +114,45 @@ async def upload_and_ingest_pdf(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi trong quá trình trích xuất và lập chỉ mục PDF: {str(e)}"
         )
+
+
+@router.delete("/documents/{doc_id}")
+async def delete_knowledge_document(doc_id: str):
+    """
+    Xóa tài liệu PDF khỏi kho ứng dụng, SQLite FTS index, Vector Store và manifest.
+    """
+    try:
+        result = delete_ingested_pdf(doc_id)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi xóa tài liệu {doc_id}: {str(e)}"
+        )
+
+
+class KnowledgeQueryRequest(BaseModel):
+    query: str
+    doc_id: Optional[str] = None
+    top_k: int = 5
+
+
+@router.post("/query")
+async def query_knowledge(request: KnowledgeQueryRequest):
+    """
+    Truy vấn lai (Hybrid BM25 + Dense Vector) trên các tài liệu PDF đã nạp.
+    Trả về trích dẫn cụ thể kèm số trang để giao diện hiển thị tài liệu nguồn.
+    """
+    try:
+        result = await query_ingested_documents(
+            query=request.query,
+            doc_id=request.doc_id,
+            top_k=request.top_k
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi truy vấn tài liệu: {str(e)}"
+        )
+
