@@ -1,0 +1,29 @@
+\section{Thiết kế luồng xử lý và các biểu đồ tuần tự (Sequence Diagrams)}
+\label{sec:sequence_diagrams}
+
+Hoạt động phối hợp giữa các thành phần trong hệ thống được thể hiện qua các luồng tương tác tuần tự:
+
+\subsection{Luồng xử lý câu hỏi lâm sàng đa tầng (Pipeline 9 bước)}
+Khi người dùng gửi một yêu cầu tra cứu từ giao diện:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Giao diện React} gửi HTTP POST request đến FastAPI endpoint \code{/api/clinical/chat/stream}.
+    \item \textbf{FastAPI Gateway} kiểm tra cookie phiên và kiểm tra chuỗi băm SHA-256 trong \code{SemanticCache}. Nếu có, trả về kết quả đệm nóng ngay lập tức ($< 3\,\text{ms}$).
+    \item Nếu chưa có trong đệm, chuyển câu hỏi sang \code{GeminiNLURouter} để phân loại ý định (\code{DRUG_DOSAGE}, \code{DDI}, \code{BHYT_RULE}...).
+    \item \code{ActiveIngredientNormalizer} chuẩn hóa các tên thuốc trong câu hỏi về hoạt chất gốc INN.
+    \item \code{CDSS Sentinel} kiểm tra bảng băm tương tác cấm ($O(1)$).
+    \item \code{HybridRetriever} chạy song song tìm kiếm Cosine Similarity trên ma trận vector trong RAM và tìm kiếm từ khóa FTS5 BM25 trên SQLite.
+    \item Đóng gói ngữ cảnh vào XML Prompt và gọi mô hình Gemini với tham số khóa cứng $T = 0.0$.
+    \item \code{SelfRAGVerifier} quét số liệu đầu ra đối chiếu với tài liệu gốc; nếu có số lạ sẽ thu hồi câu trả lời.
+    \item Trả dữ liệu qua luồng Server-Sent Events (SSE) về giao diện React, tự động hiển thị thẻ hành động và nút mở PDF.
+\end{enumerate}
+
+\subsection{Luồng chặn tương tác cấm và gợi ý thay thế thuốc tại CPOE}
+Khi bác sĩ kê đơn có thuốc vi phạm tương tác:
+\begin{enumerate}[leftmargin=1.5em]
+    \item Bác sĩ thêm thuốc thứ hai vào đơn tại \code{CpoeOrderModal.tsx}.
+    \item Giao diện gửi danh sách hoạt chất tới endpoint \code{/api/clinical/check-interactions}.
+    \item \code{CDSS Sentinel} phát hiện cặp tương tác chống chỉ định theo QĐ 5948/QĐ-BYT (ví dụ Clopidogrel + Nexium).
+    \item Backend phản hồi mã trạng thái HTTP 409 Conflict kèm payload chứa thông tin cặp tương tác và danh sách thuốc thay thế gợi ý (Pantoprazol 40mg).
+    \item Frontend khóa nút "Lưu đơn", hiển thị thông báo vi phạm màu đỏ và nút bấm "Gợi ý thay thế 1-Click".
+    \item Bác sĩ nhấp nút thay thế, đơn thuốc được cập nhật tự động và nút "Lưu đơn" được mở khóa.
+\end{enumerate}

@@ -1,0 +1,27 @@
+\section{Danh mục yêu cầu phi chức năng (Non-Functional Requirements)}
+\label{sec:nonfunctional_requirements}
+
+Các yêu cầu phi chức năng định hình chất lượng kỹ thuật, tính ổn định và an toàn của hệ thống:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{C{2.0cm} L{3.5cm} Y C{2.0cm}}
+\toprule
+\textbf{Mã YC} & \textbf{Khía cạnh kỹ thuật} & \textbf{Chỉ số và Tiêu chuẩn định lượng đo lường} & \textbf{Mức ưu tiên} \\
+\midrule
+\textbf{NFR01} & Hiệu năng \& Độ trễ & Thời gian xử lý kiểm tra tương tác thuốc CDSS tại máy chủ phải dưới $5\,\text{ms}$. Độ trễ phản hồi đệm nóng (Hot Cache TTFT) dưới $250\,\text{ms}$. & Tối cao \\
+\addlinespace
+\textbf{NFR02} & Độ tin cậy \& Ảo giác & Tỷ lệ ảo giác thông tin liều lượng và chỉ định lâm sàng phải đạt $0.0\%$ trên các bộ kiểm thử tự động chuẩn mực. & Tối cao \\
+\addlinespace
+\textbf{NFR03} & Tính sẵn sàng \& Chịu lỗi & Hệ thống phải vận hành ổn định 24/7. Hỗ trợ chế độ ngoại tuyến (Offline Safe Mode) khi đứt kết nối mạng Internet. & Bắt buộc \\
+\addlinespace
+\textbf{NFR04} & Bảo mật \& Toàn vẹn & Quản lý phiên bằng HttpOnly Secure Cookie; mật khẩu băm chuẩn Argon2/Bcrypt; danh sách API Key mã hóa AES-256-GCM. & Bắt buộc \\
+\addlinespace
+\textbf{NFR05} & Tính tiện dụng (Usability) & Giao diện tối ưu công thái học, hỗ trợ điều dưỡng xem hành động nhanh và hỗ trợ bác sĩ mở văn bản PDF gốc đúng số trang chỉ với 1 cú nhấp chuột. & Bắt buộc \\
+\addlinespace
+\textbf{NFR06} & Khả năng tương thích & Hệ thống đóng gói trong container Docker tiêu chuẩn Linux, tương thích trên mọi trình duyệt hiện đại (Chrome, Edge, Firefox, Safari). & Bắt buộc \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả danh mục yêu cầu phi chức năng (Non-Functional Requirements)}
+\end{table}

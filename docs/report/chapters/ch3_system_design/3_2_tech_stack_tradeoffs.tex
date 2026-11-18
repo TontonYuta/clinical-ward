@@ -1,0 +1,23 @@
+\section{Phân tích và lựa chọn ngăn xếp công nghệ (Tech Stack Trade-offs)}
+\label{sec:tech_stack_tradeoffs}
+
+Việc lựa chọn công nghệ cho hệ thống y tế được cân nhắc kỹ lưỡng dựa trên tính ổn định, độ trễ và khả năng triển khai khép kín nội viện:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{2.8cm} L{3.5cm} L{3.5cm} Y}
+\toprule
+\textbf{Thành phần} & \textbf{Công nghệ lựa chọn} & \textbf{Phương án thay thế} & \textbf{Lý do kỹ thuật và Sự đánh đổi} \\
+\midrule
+\textbf{Backend Framework} & FastAPI (Python 3.12) & Express.js / Django & FastAPI hỗ trợ xử lý bất đồng bộ (async/await), tương thích trực tiếp với hệ sinh thái tính toán vector (NumPy, SciPy) và phát luồng SSE mượt mà. \\
+\addlinespace
+\textbf{Frontend Framework} & React 19 + TypeScript & Vue 3 / Angular & Khả năng kiểm tra kiểu dữ liệu nghiêm ngặt ở chế độ Strict Mode, hệ sinh thái thành phần y tế phong phú, loại bỏ lỗi runtime \code{undefined}. \\
+\addlinespace
+\textbf{Hệ quản trị CSDL} & SQLite (WAL Mode) & PostgreSQL / MySQL & Cho phép triển khai gọn nhẹ trên máy trạm bệnh viện không cần duy trì dịch vụ DB daemon riêng. Cơ chế WAL cho phép đọc đồng thời tốc độ dưới 1ms. \\
+\addlinespace
+\textbf{Vector Cache} & In-Memory NumPy Matrix & Pinecone / Milvus & 2.191 vector Dược thư (kích thước $2191 \times 768$) chỉ chiếm 6.7MB RAM. Tính toán Cosine trên RAM đạt dưới 2ms, không tốn chi phí thuê máy chủ vector đám mây. \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng phân tích đánh đổi công nghệ trong hệ thống}
+\end{table}

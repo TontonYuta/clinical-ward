@@ -1,0 +1,9 @@
+\section{Bài học kinh nghiệm trong quá trình thực hiện}
+\label{sec:lessons_learned}
+
+Quá trình thực hiện đồ án đã đem lại cho tác giả nhiều bài học kinh nghiệm sâu sắc về kỹ nghệ phần mềm và trí tuệ nhân tạo:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bài học về liêm chính dữ liệu và nguyên tắc Fail-Closed:} Trong y tế, câu trả lời an toàn nhất khi không có đủ dữ liệu là "Tôi không biết, đề nghị bác sĩ hội chẩn dược lâm sàng", tuyệt đối không bao giờ để AI phỏng đoán theo xác suất.
+    \item \textbf{Bài học về kiểm soát đứt gãy giữa lý thuyết và thực tiễn (Code-to-Text Grounding):} Một bản báo cáo kỹ thuật chỉ có giá trị khi từng dòng chữ viết ra đều gắn liền với mã nguồn đang chạy thực tế, có số liệu đo đạc cụ thể và có thể kiểm chứng lặp lại độc lập.
+    \item \textbf{Bài học về sự đánh đổi kiến trúc (Architecture Trade-offs):} Không có công nghệ nào là hoàn hảo. Việc chọn SQLite WAL mode thay vì PostgreSQL đám mây là một quyết định đánh đổi sáng suốt giữa tính phức tạp hạ tầng và tính tự chủ ngoại tuyến tại bệnh viện.
+\end{itemize}

@@ -1,0 +1,19 @@
+% ==============================================================================
+% FRONTMATTER: ABSTRACT (ENGLISH)
+% ==============================================================================
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+In hospital inpatient wards, clinical medication decisions---such as computerized physician order entry (CPOE), drug-drug interaction (DDI) screening, health insurance reimbursement compliance, and controlled substance management---are mission-critical tasks directly impacting patient survival. However, deploying generic Large Language Models (LLMs) into clinical environments poses three severe risks: fatal dosage hallucinations, lack of grounding in Vietnamese Ministry of Health (MoH) statutory regulations, and sensitive electronic health record (EHR) privacy leaks.
+
+This graduation thesis proposes and implements the \textbf{Clinical Ward CDSS} system based on an evidence-grounded \textbf{Hybrid Architecture} integrating:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Deterministic CDSS Sentinel Gateway}: Evaluates contraindicated drug interactions and maximum 24-hour dosage thresholds in $O(1)$ time complexity entirely offline, ensuring sub-2ms response times.
+    \item \textbf{Multi-stage Clinical RAG Pipeline}: Integrates hybrid retrieval (combining 768-dimensional Cosine Similarity over an in-memory NumPy cache and SQLite FTS5 BM25 search), a two-tiered LightRAG medical knowledge graph, and Corrective RAG (CRAG) governed by the Fail-Closed principle.
+    \item \textbf{Seven-Layer Defense-in-Depth against Hallucinations}: Incorporates strict conversational turn isolation, deterministic temperature locking ($T = 0.0$), mandatory MoH statutory grounding (PaperQA2 style), and automated Self-RAG verification prior to token streaming.
+    \item \textbf{Computer Vision and Clinical Ingestion Subsystem}: Automated scanning for National Health Insurance cards (Decision 1666/QD-BHXH), pharmaceutical warehouse invoice processing with FEFO inventory rules, and handwriting-assisted prescription auditing.
+\end{enumerate}
+
+The system has been containerized with Docker, verified through 150+ automated clinical test cases (achieving a measured 0.0\% hallucination rate), and deployed to production infrastructure (Render Singapore Backend and Vercel Frontends). Empirical benchmarks show a hot cache Time-To-First-Token (TTFT) of 193.6ms (internal server compute $< 1\text{ms}$), fully satisfying rigorous real-time clinical standards.
+
+\textbf{Keywords:} \textit{Clinical Decision Support System (CDSS), Retrieval-Augmented Generation (RAG), Self-RAG, Medical Hallucination Mitigation, Vietnam National Pharmacopoeia, Health Insurance Circular 20/2022, FastAPI, React 19.}

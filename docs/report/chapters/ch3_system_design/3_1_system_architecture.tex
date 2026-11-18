@@ -1,0 +1,11 @@
+\section{Kiến trúc tổng thể bốn tầng của hệ thống}
+\label{sec:system_architecture}
+
+Hệ thống Clinical Ward CDSS được thiết kế theo mô hình kiến trúc phân tầng lỏng lẻo (Loosely Coupled Layered Architecture), phân chia ranh giới trách nhiệm rõ ràng nhằm đảm bảo tính bảo trì, tính mở rộng và khả năng thay thế linh hoạt:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Tầng 1: Giao diện người dùng (Presentation Layer):} Xây dựng dưới dạng Single Page Application (SPA) trên nền React 19, TypeScript strict mode và Tailwind CSS 4. Tầng này chịu trách nhiệm hiển thị thông tin bệnh án, hỗ trợ thao tác kê đơn CPOE, bố trí tin nhắn hai phân vùng độc lập (\code{DualZoneMessageBubble}) và nhúng trình xem tài liệu pháp quy PDF (\code{PdfViewerModal}).
+    \item \textbf{Tầng 2: Cổng điều phối và Bảo mật (Gateway \& Security Layer):} Phát triển bằng FastAPI (Python 3.12), quản lý phiên làm việc bằng HttpOnly Cookie, bảo vệ bằng phân quyền theo vai trò (RBAC), kiểm soát tốc độ (Rate Limiter) và bộ định tuyến ý định câu hỏi (\code{GeminiNLURouter}).
+    \item \textbf{Tầng 3: Lý luận lâm sàng và Động cơ CDSS (Clinical Reasoning \& CDSS Layer):} Bao gồm Cổng an toàn xác định (\code{cdss_sentinel.py}) kiểm tra tương tác cấm và trần liều trong $O(1)$; Bộ chuẩn hóa hoạt chất (\code{active_ingredient_normalizer.py}); Bộ truy xuất lai ghép (\code{hybrid_retriever.py}); Đồ thị tri thức hai tầng (\code{sqlite_graph_service.py}); và Bộ hậu kiểm chống ảo giác (\code{self_rag_verifier.py}).
+    \item \textbf{Tầng 4: Lưu trữ dữ liệu và Tri thức (Data \& Knowledge Layer):} CSDL quan hệ SQLite cấu hình WAL Mode (\code{clinical_hospital.db}, dung lượng 208MB) chứa 54.885 số đăng ký thuốc DAV, 1.400 chuyên luận Dược thư; tệp nén vector 2.191 đoạn nạp sẵn trong RAM (\code{clinical_embeddings_cache.npz}); cùng hệ thống văn bản pháp quy PDF gốc.
+\end{itemize}

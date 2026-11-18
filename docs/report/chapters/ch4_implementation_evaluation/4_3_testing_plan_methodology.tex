@@ -1,0 +1,10 @@
+\section{Kế hoạch và phương pháp kiểm thử hệ thống}
+\label{sec:testing_plan_methodology}
+
+Để kiểm chứng toàn diện chất lượng của hệ thống trước khi đưa vào vận hành, kế hoạch kiểm thử được phân định theo 3 cấp độ độc lập:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Kiểm thử đơn vị (Unit Testing):} Sử dụng framework \code{pytest} (cho Backend Python) và \code{vitest} (cho Frontend TypeScript), kiểm tra tính chính xác của các hàm logic thuần túy: hàm bóc tách hoạt chất INN, hàm tính eGFR Cockcroft-Gault, hàm sinh tích Đề-các tương tác thuốc.
+    \item \textbf{Kiểm thử tích hợp và an toàn lâm sàng (Integration \& Clinical Safety Testing):} Xây dựng bộ kiểm thử 150 kịch bản lâm sàng thực tế (\code{test_chatbot_suite.ts}) bao phủ các tình huống kê đơn có tương tác chống chỉ định (QĐ 5948/QĐ-BYT), vượt trần liều 24 giờ, bệnh nhân suy thận nặng và các trường hợp nhập sai biệt dược.
+    \item \textbf{Kiểm thử tải và hiệu năng thực tế (Load \& Latency Benchmarking):} Thực hiện đo đạc độ trễ phản hồi đệm nóng (Hot Cache) và truy vấn nguội (Cold Query) trực tiếp trên máy chủ Production đám mây qua công cụ \code{benchmark_cache_and_latency.py}.
+\end{enumerate}

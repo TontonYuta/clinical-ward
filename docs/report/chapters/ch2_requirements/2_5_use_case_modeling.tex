@@ -1,0 +1,18 @@
+\section{Mô hình hóa ca sử dụng (Use Case Modeling)}
+\label{sec:use_case_modeling}
+
+Dựa trên việc phân tích các yêu cầu chức năng và phân định tác nhân, các ca sử dụng của hệ thống được tổ chức thành 4 phân hệ chính:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Phân hệ Kê đơn CPOE và Cảnh báo An toàn CDSS:}
+    Bao gồm các ca sử dụng: \textit{Kê đơn thuốc mới, Quét tương tác thuốc chống chỉ định, Cảnh báo hội chứng Triple Whammy / QTc, Gợi ý thuốc thay thế 1-Click, Tính toán mức lọc cầu thận eGFR, Lưu đơn thuốc vào bệnh án}. Tác nhân chính: Bác sĩ điều trị.
+    
+    \item \textbf{Phân hệ Trợ lý Y tế Lâm sàng RAG và Đối soát Y văn:}
+    Bao gồm các ca sử dụng: \textit{Hỏi đáp dược lâm sàng bằng ngôn ngữ tự nhiên, Tra cứu chuyên luận Dược thư Quốc gia, Tra cứu danh mục thanh toán BHYT Thông tư 20/2022, Mở trình xem PDF văn bản gốc tại đúng số trang}. Tác nhân chính: Bác sĩ điều trị, Dược sĩ lâm sàng.
+    
+    \item \textbf{Phân hệ Quản trị Kho Dược và Tự động hóa Nhập liệu:}
+    Bao gồm các ca sử dụng: \textit{Quét ảnh nhận diện thẻ BHYT, Quét hóa đơn nhập kho dược phẩm, Phân bổ thuốc buồng bệnh theo FEFO, Quản lý nợ vỏ thuốc gây nghiện Morphin}. Tác nhân chính: Dược sĩ lâm sàng, Điều dưỡng viên.
+    
+    \item \textbf{Phân hệ Quản trị Hệ thống và Giám sát An toàn:}
+    Bao gồm các ca sử dụng: \textit{Đăng nhập / Đăng xuất an toàn, Quản lý tài khoản và phân quyền người dùng (RBAC), Tra cứu nhật ký kiểm toán (Audit Log), Cấu hình và giám sát kho khóa API Key Vault}. Tác nhân chính: Quản trị viên hệ thống.
+\end{enumerate}

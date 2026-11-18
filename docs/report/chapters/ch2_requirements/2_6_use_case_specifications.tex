@@ -1,0 +1,63 @@
+\section{Đặc tả chi tiết các ca sử dụng cốt lõi (Use Case Specifications)}
+\label{sec:use_case_specifications}
+
+Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ trọng tâm trong hệ thống:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} Y}
+\toprule
+\textbf{Mục đặc tả} & \textbf{Nội dung chi tiết} \\
+\midrule
+\textbf{Mã ca sử dụng} & \textbf{UC01} \\
+\textbf{Tên ca sử dụng} & Kê đơn điện tử và kiểm tra tương tác thuốc CDSS \\
+\textbf{Tác nhân chính} & Bác sĩ điều trị \\
+\textbf{Tiền điều kiện} & Bác sĩ đã đăng nhập hệ thống với quyền hợp lệ và đã chọn hồ sơ bệnh nhân. \\
+\textbf{Hậu điều kiện} & Đơn thuốc hợp lệ được lưu vào CSDL; các cảnh báo tương tác được ghi nhận vào nhật ký kiểm toán. \\
+\midrule
+\textbf{Luồng sự kiện chính (Basic Flow)} & 
+\begin{enumerate}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item Bác sĩ mở giao diện kê đơn CPOE từ danh sách buồng bệnh.
+    \item Bác sĩ tìm kiếm và chọn thuốc từ danh mục 54.885 số đăng ký DAV.
+    \item Bác sĩ nhập liều dùng, đường dùng, số lần dùng và thời gian điều trị.
+    \item Hệ thống tự động kích hoạt Cổng CDSS Sentinel: kiểm tra trần liều 24 giờ và đối chiếu ma trận tương tác với các thuốc đã có trong đơn.
+    \item Không phát hiện vi phạm tương tác hoặc vượt liều. Hệ thống hiển thị trạng thái an toàn (màu xanh).
+    \item Bác sĩ bấm nút "Lưu đơn thuốc". Hệ thống lưu dữ liệu và phát thông báo thành công.
+\end{enumerate} \\
+\midrule
+\textbf{Các luồng rẽ nhánh / ngoại lệ (Alternative Flows)} & 
+\begin{itemize}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item \textbf{4a. Phát hiện tương tác chống chỉ định (QĐ 5948):} Cổng Sentinel lập tức khóa nút Lưu đơn, đổi giao diện sang màu đỏ cảnh báo, hiển thị cơ chế nguy hiểm và kích hoạt luồng UC02 (Gợi ý thay thế 1-Click).
+    \item \textbf{4b. Phát hiện bệnh nhân suy thận (eGFR $< 30$):} Hệ thống hiển thị cảnh báo vàng, đề xuất mức giảm liều theo Dược thư Quốc gia.
+\end{itemize} \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả ca sử dụng UC01: Kê đơn điện tử và kiểm tra tương tác CDSS}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} Y}
+\toprule
+\textbf{Mục đặc tả} & \textbf{Nội dung chi tiết} \\
+\midrule
+\textbf{Mã ca sử dụng} & \textbf{UC02} \\
+\textbf{Tên ca sử dụng} & Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click \\
+\textbf{Tác nhân chính} & Bác sĩ điều trị \\
+\textbf{Tiền điều kiện} & Đơn thuốc đang bị khóa do phát hiện tương tác chống chỉ định (từ bước 4a của UC01). \\
+\textbf{Hậu điều kiện} & Thuốc vi phạm được thay thế bằng thuốc an toàn; nút Lưu đơn được mở khóa. \\
+\midrule
+\textbf{Luồng sự kiện chính (Basic Flow)} & 
+\begin{enumerate}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item Hệ thống kích hoạt thuật toán tìm kiếm thuốc thay thế 4 chiều: cùng nhóm ATC, được phép kê tại tuyến bệnh viện theo Thông tư 20/2022/TT-BYT, ưu tiên BHYT 100\%, và không tương tác với các thuốc còn lại.
+    \item Hệ thống hiển thị thẻ gợi ý thuốc thay thế kèm lý do lâm sàng trên giao diện (ví dụ: Thay thế Esomeprazol bằng Pantoprazol 40mg).
+    \item Bác sĩ bấm nút "Chấp nhận thay thế 1-Click".
+    \item Hệ thống tự động gỡ bỏ thuốc vi phạm, thêm thuốc mới vào đơn, tính toán lại tương tác toàn đơn.
+    \item Đơn thuốc đạt trạng thái an toàn, nút "Lưu đơn thuốc" được mở khóa trở lại.
+\end{enumerate} \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả ca sử dụng UC02: Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click}
+\end{table}

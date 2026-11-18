@@ -1,0 +1,102 @@
+% ==============================================================================
+% CONFIG: PREAMBLE - GÓI LỆNH VÀ ĐỊNH DẠNG HỌC THUẬT
+% ==============================================================================
+\usepackage[utf8]{vietnam}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{geometry}
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=3.0cm,   % Dành cho gáy đóng quyển đồ án
+    right=2.0cm
+}
+
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,array,ragged2e,longtable,multirow}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{xurl}
+\usepackage{cite}
+\usepackage[strings]{underscore}
+
+% Thiết lập khoảng cách dòng và đoạn
+\setstretch{1.25}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{1.2em}
+
+% Định nghĩa màu sắc nhận diện
+\definecolor{primaryteal}{RGB}{0, 102, 102}
+\definecolor{darkslate}{RGB}{30, 41, 59}
+\definecolor{codegray}{RGB}{245, 247, 250}
+\definecolor{commentgray}{RGB}{100, 116, 139}
+\definecolor{keywordblue}{RGB}{37, 99, 235}
+\definecolor{stringgreen}{RGB}{16, 185, 129}
+\definecolor{alertred}{RGB}{220, 38, 38}
+
+% Định nghĩa kiểu cột bảng căn trái không bị giãn chữ
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% Thiết lập listings cho mã nguồn
+\lstset{
+    backgroundcolor=\color{codegray},
+    commentstyle=\color{commentgray}\itshape,
+    keywordstyle=\color{keywordblue}\bfseries,
+    stringstyle=\color{stringgreen},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=7pt,
+    numberstyle=\tiny\color{commentgray},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{commentgray!30}
+}
+
+% Cấu hình Hyperref
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primaryteal,
+    urlcolor=primaryteal,
+    citecolor=primaryteal,
+    filecolor=primaryteal,
+    pdftitle={Báo cáo Kỹ thuật Đồ án 2 - Hệ thống Clinical Ward CDSS},
+    pdfauthor={Trần Huy Hoàng - 20237337}
+}
+
+% Định dạng tiêu đề chương mục
+\titleformat{\chapter}[display]
+  {\normalfont\Large\bfseries\color{primaryteal}}
+  {\filleft\MakeUppercase{\chaptertitlename} \Huge\thechapter}
+  {1ex}
+  {\titlerule\vspace{1ex}\filright}
+  [\vspace{1ex}\titlerule]
+
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{primaryteal}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\color{darkslate}}
+  {\thesubsection}{1em}{}
+
+% Cấu hình Header và Footer
+\usepackage{fancyhdr}
+\setlength{\headheight}{14.5pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape\color{commentgray} Báo cáo Đồ án 2 --- Hệ thống Clinical Ward CDSS}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}

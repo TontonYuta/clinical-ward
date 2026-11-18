@@ -1,0 +1,14 @@
+\section{Thiết kế giao diện người dùng và trải nghiệm buồng bệnh (UI/UX)}
+\label{sec:ui_ux_design}
+
+Thiết kế giao diện trong y tế đòi hỏi sự rõ ràng tối đa nhằm giảm thiểu áp lực thị giác và ngăn ngừa các thao tác nhầm lẫn của nhân viên y tế trong ca trực:
+
+\subsection{Triết lý phân tách hai phân vùng thông điệp (Dual-Zone Pattern)}
+Thành phần \code{DualZoneMessageBubble.tsx} chia mỗi phản hồi của trợ lý thành hai vùng độc lập:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Vùng 1 (Quick Action Header):} Hiển thị nền màu xanh/vàng nhạt, cô đọng liều dùng, đường dùng, tốc độ tiêm truyền để điều dưỡng thao tác ngay tại giường bệnh.
+    \item \textbf{Vùng 2 (Legal Evidence Body):} Hiển thị căn cứ pháp lý, tên văn bản Bộ Y tế, số quyết định, và các nút liên kết trực tiếp mở trình xem PDF tại đúng số trang quy định.
+\end{itemize}
+
+\subsection{Trình xem tài liệu pháp quy PDF nội tuyến (Inline PDF Viewer)}
+Thành phần \code{PdfViewerModal.tsx} tích hợp thư viện hiển thị PDF trực tiếp trong ứng dụng. Khi người dùng nhấp vào một trích dẫn (ví dụ \code{[DTQG: Trang 842]}), modal PDF tự động mở tệp Dược thư lưu cục bộ và cuộn đến trang 842 trong thời gian dưới $0.5$ giây, giúp bác sĩ đối soát văn bản gốc tức thì.

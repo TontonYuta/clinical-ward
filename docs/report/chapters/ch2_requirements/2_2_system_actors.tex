@@ -1,0 +1,11 @@
+\section{Xác định các tác nhân hệ thống (System Actors)}
+\label{sec:system_actors}
+
+Hệ thống phân định 4 nhóm tác nhân người dùng chính với các vai trò và quyền hạn độc lập:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Bác sĩ điều trị (Doctor):} Kê đơn điện tử CPOE, xem cảnh báo tương tác thuốc DDI, yêu cầu gợi ý thuốc thay thế 1-Click, tra cứu dược lâm sàng và xem hồ sơ bệnh án.
+    \item \textbf{Dược sĩ lâm sàng (Pharmacist):} Thẩm định đơn thuốc nội trú, đối soát hóa đơn nhập kho dược, quản lý danh mục thuốc DAV, và giám định điều kiện chi trả BHYT.
+    \item \textbf{Điều dưỡng viên (Nurse):} Tiếp nhận kế hoạch dùng thuốc ca trực, quét thẻ BHYT bệnh nhân, ghi nhận thực hiện y lệnh dùng thuốc và hoàn trả vỏ thuốc hướng thần, gây nghiện.
+    \item \textbf{Quản trị viên hệ thống (Administrator):} Quản lý tài khoản và phân quyền người dùng (RBAC), theo dõi nhật ký kiểm toán (Audit Trail) và cấu hình xoay vòng khóa API Vault.
+\end{itemize}

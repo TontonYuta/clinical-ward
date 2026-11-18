@@ -1,0 +1,15 @@
+\section{Các kết quả chính đã đạt được của đồ án}
+\label{sec:conclusions}
+
+Sau quá trình nghiên cứu, thiết kế, cài đặt và kiểm thử nghiêm túc, đồ án đã hoàn thành toàn diện các mục tiêu đề ra ban đầu:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Về mặt khoa học và phương pháp luận:}
+    Hiện thực hóa thành công kiến trúc lai ghép kết hợp Cổng an toàn xác định $O(1)$ với hệ thống Truy xuất Thông tin Tăng cường đa tầng (Advanced RAG). Đề xuất và áp dụng thành công mô hình 7 tầng phòng thủ chống ảo giác (cách ly phiên độc lập, khóa nhiệt độ $T = 0.0$, trích dẫn chính xác số trang Dược thư Quốc gia và hậu kiểm Self-RAG), triệt tiêu hoàn toàn rủi ro bịa đặt số liệu trong câu trả lời y tế.
+    
+    \item \textbf{Về mặt dữ liệu y tế nội địa hóa:}
+    Số hóa, chuẩn hóa và tích hợp thành công CSDL gồm 54.885 số đăng ký thuốc lưu hành của Cục Quản lý Dược (DAV), 1.400 chuyên luận Dược thư Quốc gia Việt Nam lần thứ III (2022) và danh mục quy tắc thanh toán BHYT theo Thông tư 20/2022/TT-BYT. Toàn bộ 2.191 vector ngữ nghĩa Dược thư được tối ưu hóa trong bộ nhớ RAM, cho phép tra cứu thời gian thực dưới 2ms.
+    
+    \item \textbf{Về mặt sản phẩm phần mềm và triển khai thực tế:}
+    Xây dựng hoàn chỉnh hệ thống phần mềm Clinical Ward CDSS gồm Backend FastAPI và Frontend React 19 tối ưu công thái học buồng bệnh với giao diện Dual-Zone. Đóng gói container Docker hoàn chỉnh và triển khai thành công trên môi trường Production đám mây (Render và Vercel), đạt độ trễ phản hồi đệm nóng 193.6ms (thời gian xử lý nội bộ máy chủ $< 1\,\text{ms}$).
+\end{enumerate}

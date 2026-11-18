@@ -1,0 +1,91 @@
+\section{Thiết kế cơ sở dữ liệu chi tiết (Physical Database Design)}
+\label{sec:database_design}
+
+Cơ sở dữ liệu trung tâm của hệ thống (\code{clinical_hospital.db}) được thiết kế theo mô hình quan hệ đã chuẩn hóa đến dạng chuẩn 3 (3NF), lưu trữ cục bộ và tối ưu hóa ở mức nhị phân.
+
+\subsection{Cấu hình hiệu năng cao SQLite WAL Mode}
+Hệ thống kích hoạt các thiết lập pragma tối ưu tại thời điểm khởi tạo kết nối:
+\begin{itemize}[leftmargin=1.5em]
+    \item \code{PRAGMA journal_mode = WAL;} Cho phép cơ chế Write-Ahead Logging; các thao tác đọc và ghi diễn ra đồng thời mà không khóa lẫn nhau.
+    \item \code{PRAGMA synchronous = NORMAL;} Giảm thiểu tần suất ghi đĩa đồng bộ, tăng tốc độ xử lý I/O đĩa lên gấp 3 lần.
+    \item \code{PRAGMA cache_size = -64000;} Cấp phát 64MB bộ nhớ RAM làm bộ đệm trang (Page Cache) cho CSDL.
+\end{itemize}
+
+\subsection{Từ điển dữ liệu chi tiết các bảng (Data Dictionary)}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.5cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{id} & INTEGER & PK & NOT NULL & Khóa chính định danh tự tăng. \\
+\code{registration_no} & VARCHAR(50) & & NOT NULL & Số đăng ký lưu hành do DAV cấp (VD: VD-25489-16). \\
+\code{drug_name} & VARCHAR(255) & & NOT NULL & Tên biệt dược thương mại của thuốc. \\
+\code{active_ingredient} & VARCHAR(255) & & NOT NULL & Tên hoạt chất quốc tế INN chuẩn hóa. \\
+\code{content} & VARCHAR(100) & & & Nồng độ hoặc hàm lượng thuốc (VD: 500mg, 1g). \\
+\code{dosage_form} & VARCHAR(100) & & & Dạng bào chế (viên nén, dung dịch tiêm). \\
+\code{manufacturer} & VARCHAR(255) & & & Tên công ty/nhà máy sản xuất dược phẩm. \\
+\code{country} & VARCHAR(100) & & & Quốc gia sản xuất (Việt Nam, Pháp, Ấn Độ...). \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{dav_drugs} (54.885 thuốc Cục Quản lý Dược)}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{id} & INTEGER & PK & NOT NULL & Khóa chính định danh tự tăng. \\
+\code{drug_a} & VARCHAR(100) & & NOT NULL & Hoạt chất INN thứ nhất (đã chuẩn hóa chữ thường). \\
+\code{drug_b} & VARCHAR(100) & & NOT NULL & Hoạt chất INN thứ hai (đã chuẩn hóa chữ thường). \\
+\code{severity_level} & VARCHAR(20) & & NOT NULL & Mức độ nghiêm trọng: CONTRAINDICATED (Cấm), MAJOR. \\
+\code{mechanism} & TEXT & & NOT NULL & Cơ chế dược lý sinh học dẫn đến tương tác. \\
+\code{clinical_effect} & TEXT & & NOT NULL & Hậu quả lâm sàng (tử vong, xuất huyết, suy thận cấp). \\
+\code{legal_reference} & VARCHAR(100) & & NOT NULL & Căn cứ pháp lý (Quyết định 5948/QĐ-BYT). \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{ddi_rules} (Tương tác chống chỉ định)}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{id} & VARCHAR(50) & PK & NOT NULL & Mã bệnh nhân (Hospital Patient ID). \\
+\code{full_name} & VARCHAR(150) & & NOT NULL & Họ và tên đầy đủ của người bệnh. \\
+\code{dob} & DATE & & NOT NULL & Ngày tháng năm sinh. \\
+\code{gender} & VARCHAR(10) & & NOT NULL & Giới tính (Nam, Nữ). \\
+\code{bhyt_code} & VARCHAR(15) & & & Mã số thẻ BHYT 15 ký tự theo Quyết định 1666. \\
+\code{bed_number} & VARCHAR(20) & & & Số giường bệnh nội trú đang nằm điều trị. \\
+\code{serum_cr} & REAL & & & Chỉ số Creatinine huyết thanh gần nhất (mg/dL). \\
+\code{egfr} & REAL & & & Mức lọc cầu thận tính toán theo Cockcroft-Gault. \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{patients} (Quản lý người bệnh nội trú)}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{id} & INTEGER & PK & NOT NULL & Khóa chính tự tăng của bản ghi nhật ký. \\
+\code{user_id} & VARCHAR(50) & & NOT NULL & Mã tài khoản nhân viên y tế thực hiện thao tác. \\
+\code{action_type} & VARCHAR(50) & & NOT NULL & Loại hành động (PRESCRIBE, DDI_ALERT, OVERRIDE_ALERT). \\
+\code{patient_id} & VARCHAR(50) & FK & NOT NULL & Mã bệnh nhân liên quan đến thao tác. \\
+\code{payload} & TEXT & & NOT NULL & Dữ liệu chi tiết của sự kiện dưới định dạng JSON. \\
+\code{timestamp} & DATETIME & & NOT NULL & Thời điểm chính xác xảy ra sự kiện theo chuẩn ISO 8601. \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{audit_logs} (Nhật ký kiểm toán lâm sàng)}
+\end{table}

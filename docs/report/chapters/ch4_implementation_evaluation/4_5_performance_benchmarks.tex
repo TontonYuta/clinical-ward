@@ -1,0 +1,19 @@
+\section{Kết quả đo lường hiệu năng và độ trễ trên môi trường Production}
+\label{sec:performance_benchmarks}
+
+Thực nghiệm đo đạc độ trễ phản hồi được thực hiện trực tiếp từ máy trạm tại Việt Nam kết nối đến máy chủ Production trên Render (khu vực Singapore) bằng công cụ tự động \code{benchmark_cache_and_latency.py}:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} C{2.5cm} C{3.0cm} Y}
+\toprule
+\textbf{Kịch bản đo lường} & \textbf{Độ trễ tổng (TTFT)} & \textbf{Xử lý tại máy chủ} & \textbf{Phân tích kỹ thuật chi tiết} \\
+\midrule
+\textbf{Truy vấn nguội (Cold Query)} & $502.4\,\text{ms}$ & $\approx 310\,\text{ms}$ & Bao gồm thời gian bắt tay mã hóa TLS 1.3, phân loại ý định NLU, tính khoảng cách vector Cosine và gọi luồng Gemini. \\
+\addlinespace
+\textbf{Truy vấn đệm nóng (Hot Cache)} & \latency{193.6\,ms} & \latency{$< 1.0\,ms$} & Trong đó $\approx 190\,\text{ms}$ là độ trễ truyền gói tin mạng (Round-Trip Time - RTT) giữa Việt Nam và cụm máy chủ Singapore. Thời gian xử lý SHA-256 trong RAM máy chủ chỉ mất $0.4\,\text{ms}$. \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đo lường hiệu năng thời gian thực trên môi trường Production}
+\end{table}

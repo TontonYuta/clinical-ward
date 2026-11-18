@@ -1,0 +1,15 @@
+\section{Môi trường cài đặt và cấu hình hệ thống}
+\label{sec:environment_setup}
+
+Toàn bộ hệ thống được triển khai trên môi trường chuẩn hóa thông qua Docker container và các dịch vụ đám mây chuyên dụng:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Môi trường phát triển Backend:} Python 3.12, FastAPI 0.115, Uvicorn, NumPy 2.x, Pydantic v2, SQLite3. Đóng gói trong Docker image nền \code{python:3.12-slim-bookworm}.
+    \item \textbf{Môi trường phát triển Frontend:} Node.js v20+, React 19, TypeScript strict mode, Vite 6, Tailwind CSS 4, Lucide React icons.
+    \item \textbf{Môi trường Production đám mây:}
+    \begin{itemize}
+        \item Backend API: Render PaaS (Khu vực Singapore, 512MB RAM, 0.5 CPU).
+        \item Frontend Web App: Vercel Global Edge Network (\url{https://clinical-ward.vercel.app}).
+        \item Admin Portal: Vercel Global Edge Network (\url{https://clinical-ai-monitor.vercel.app}).
+    \end{itemize}
+\end{itemize}

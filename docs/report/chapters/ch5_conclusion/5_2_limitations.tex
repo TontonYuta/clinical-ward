@@ -1,0 +1,11 @@
+\section{Những hạn chế và tồn tại của hệ thống (Critical Self-Assessment)}
+\label{sec:limitations}
+
+Bên cạnh những kết quả tích cực đã đạt được, tác giả thẳng thắn nhìn nhận hệ thống vẫn còn một số hạn chế và góc khuất kỹ thuật cần tiếp tục khắc phục:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Phụ thuộc vào chất lượng ảnh quét đơn thuốc viết tay:} Mặc dù mô hình thị giác máy tính nhận diện tốt các đơn thuốc in máy hoặc thẻ BHYT chuẩn, nhưng đối với các đơn thuốc chữ viết tay quá tháu, mực nhòe hoặc viết tắt không theo quy chuẩn y tế, tỷ lệ nhận diện chính xác bị sụt giảm, vẫn đòi hỏi dược sĩ lâm sàng phải đối soát trực tiếp bằng mắt.
+    \item \textbf{Phạm vi dữ liệu chưa bao phủ hết thuốc y học cổ truyền:} Kho tri thức hiện tại tập trung chủ yếu vào thuốc tân dược hóa dược và sinh phẩm. Các chế phẩm đông dược, thuốc cổ truyền và dược liệu chưa được tích hợp đầy đủ trong ma trận kiểm tra tương tác.
+    \item \textbf{Yêu cầu về tài nguyên RAM máy trạm khi chạy offline:} Cơ chế nạp toàn bộ 2.191 vector Dược thư vào RAM đòi hỏi máy trạm bệnh viện phải có tối thiểu 2GB RAM khả dụng. Với các máy tính quá cũ tại một số trạm y tế vùng sâu vùng xa, việc khởi tạo ban đầu có thể mất từ 5 đến 10 giây.
+    \item \textbf{Chưa kết nối trực tiếp với Cổng Giám định BHYT Quốc gia:} Hệ thống hiện giám định dựa trên bộ luật số hóa nội bộ của Thông tư 20/2022/TT-BYT chứ chưa có giao thức API trực tiếp tới Cổng tiếp nhận dữ liệu Hệ thống Thông tin Giám định BHYT của Bảo hiểm Xã hội Việt Nam.
+\end{itemize}

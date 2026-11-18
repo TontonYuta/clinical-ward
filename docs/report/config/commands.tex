@@ -1,0 +1,24 @@
+% ==============================================================================
+% CONFIG: COMMANDS - CÁC MACRO VÀ LỆNH TÙY BIẾN TIỆN ÍCH
+% ==============================================================================
+
+% Trình bày mã nguồn inline
+\newcommand{\code}[1]{\texttt{\color{primaryteal}#1}}
+
+% Trình bày đường dẫn API Endpoint
+\newcommand{\apiroute}[2]{\textbf{\color{keywordblue}#1} \texttt{\color{darkslate}#2}}
+
+% Trình bày chỉ số độ trễ đo đạc
+\newcommand{\latency}[1]{\textbf{\color{stringgreen}#1}}
+
+% Trình bày cảnh báo lâm sàng nghiêm trọng
+\newcommand{\clinicalalert}[1]{%
+    \begin{quote}
+        \color{alertred}\textbf{\textsf{[CẢNH BÁO LÂM SÀNG CẤM]}} \textit{#1}
+    \end{quote}
+}
+
+% Trình bày căn cứ pháp lý
+\newcommand{\legalcite}[1]{%
+    \noindent\textbf{\color{primaryteal}\textsf{[Căn cứ Pháp lý]:}} \textit{#1}
+}

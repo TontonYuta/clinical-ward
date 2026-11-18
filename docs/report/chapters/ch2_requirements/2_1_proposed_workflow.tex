@@ -1,0 +1,12 @@
+\section{Mô hình quy trình nghiệp vụ đề xuất (Mô hình To-Be)}
+\label{sec:proposed_workflow}
+
+Nhằm khắc phục triệt để các điểm nghẽn của quy trình truyền thống (As-Is), hệ thống Clinical Ward CDSS tái cấu trúc quy trình kê đơn và theo dõi dùng thuốc theo mô hình hỗ trợ thời gian thực (To-Be):
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{Khởi tạo đơn thuốc tại giường bệnh (CPOE):} Bác sĩ điều trị chọn người bệnh trên giao diện bảng buồng bệnh nội trú và tiến hành kê đơn.
+    \item \textbf{Cảnh báo an toàn xác định tức thời ($< 5\,\text{ms}$):} Ngay khi bác sĩ chọn cặp thuốc, Cổng CDSS Sentinel kiểm tra bảng băm tương tác chống chỉ định (QĐ 5948/QĐ-BYT). Nếu vi phạm, hệ thống khóa nút lưu đơn, phát cảnh báo đỏ giải thích cơ chế dược lý và hiển thị nút "Gợi ý thay thế 1-Click" theo danh mục BHYT.
+    \item \textbf{Trợ lý Dược lâm sàng thông minh (RAG Grounding):} Bác sĩ có thể đặt câu hỏi bằng ngôn ngữ tự nhiên để tra cứu liều suy thận, chỉnh liều người cao tuổi hoặc đối chiếu văn bản pháp quy. Câu trả lời trả về phân tách rõ ràng giữa hành động khẩn cấp và nút bấm mở trực tiếp trang PDF Dược thư gốc.
+    \item \textbf{Duyệt cấp phát và Quản trị kho dược (FEFO):} Khoa Dược tiếp nhận đơn đã qua kiểm duyệt. Hệ thống tự động đối chiếu hạn dùng theo nguyên tắc FEFO (Hết hạn trước, Xuất trước) và cảnh báo nợ vỏ thuốc gây nghiện (Morphin, Fentanyl) theo quy định.
+    \item \textbf{Thực hiện y lệnh điều dưỡng:} Điều dưỡng quét mã thẻ BHYT hoặc đối chiếu đơn thuốc qua giao diện tablet tại giường bệnh, ghi nhận thời điểm tiêm/truyền vào hồ sơ điện tử.
+\end{enumerate}

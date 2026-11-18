@@ -1,0 +1,42 @@
+\section{Ma trận kết quả kiểm thử chức năng (Functional Test Matrix)}
+\label{sec:functional_test_matrix}
+
+Dưới đây là kết quả kiểm thử thực nghiệm của các ca kiểm thử chức năng cốt lõi trên hệ thống:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{C{1.2cm} L{3.5cm} L{3.5cm} Y C{1.5cm}}
+\toprule
+\textbf{Mã TC} & \textbf{Tên ca kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả mong đợi \& Kết quả thực tế} & \textbf{Đánh giá} \\
+\midrule
+\textbf{TC01} & Chặn cặp tương tác cấm Clopidogrel + Nexium & Kê đơn gồm \code{Plavix 75mg} và \code{Nexium 40mg} & \textbf{Kỳ vọng:} Báo động đỏ, HTTP 409, gợi ý Pantoprazol.\newline \textbf{Thực tế:} Khóa nút lưu đơn, hiển thị thẻ gợi ý 1-Click. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC02} & Phát hiện hội chứng Triple Whammy & Kê đồng thời: Enalapril + Furosemid + Meloxicam & \textbf{Kỳ vọng:} Cảnh báo suy thận cấp do ức chế tưới máu cầu thận.\newline \textbf{Thực tế:} Phát cảnh báo nguy cơ hoại tử ống thận cấp. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC03} & Chỉnh liều suy thận nặng Vancomycin & Bệnh nhân eGFR = 25 mL/phút, hỏi liều Vancomycin & \textbf{Kỳ vọng:} Đề xuất giãn liều 24--48h, trích dẫn Dược thư.\newline \textbf{Thực tế:} Trích dẫn [DTQG: Trang 1412], hướng dẫn đo nồng độ đáy. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC04} & Khóa thuốc độc thận Metformin khi eGFR $< 30$ & Bệnh nhân eGFR = 20 mL/phút, kê đơn Metformin & \textbf{Kỳ vọng:} Chống chỉ định tuyệt đối (nhiễm toan lactic).\newline \textbf{Thực tế:} Khóa lựa chọn Metformin, đề xuất chuyển sang Insulin. & \textbf{PASS} \\
+\bottomrule
+\end{tabularx}
+\caption{Ma trận kiểm thử chức năng CDSS Sentinel và an toàn dược học}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{C{1.2cm} L{3.5cm} L{3.5cm} Y C{1.5cm}}
+\toprule
+\textbf{Mã TC} & \textbf{Tên ca kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả mong đợi \& Kết quả thực tế} & \textbf{Đánh giá} \\
+\midrule
+\textbf{TC05} & Kiểm soát trần liều Paracetamol 24h & Kê Paracetamol 1g x 5 lần/ngày (tổng 5g/ngày) & \textbf{Kỳ vọng:} Cảnh báo vượt trần liều 4g/ngày ở người lớn.\newline \textbf{Thực tế:} Chặn lưu đơn, cảnh báo nguy cơ hoại tử tế bào gan. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC06} & Hậu kiểm Self-RAG phát hiện số liệu lạ & Giả lập câu trả lời AI sinh liều 150mg không có trong sách & \textbf{Kỳ vọng:} Tự động thu hồi câu trả lời, hủy phát luồng SSE.\newline \textbf{Thực tế:} Phản hồi cảnh báo mâu thuẫn số liệu và yêu cầu tra tài liệu giấy. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC07} & Quét nhận diện mã thẻ BHYT hợp lệ & Ảnh chụp thẻ BHYT có mã \code{DN4010123456789} & \textbf{Kỳ vọng:} Bóc tách đúng mã thẻ, mức hưởng 80\% (ký tự 4).\newline \textbf{Thực tế:} Trích xuất chính xác 15 ký tự, hiển thị mức hưởng 80\%. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC08} & Xoay vòng khóa API khi gặp mã HTTP 429 & Giả lập khóa Gemini thứ nhất bị lỗi hạn mức 429 & \textbf{Kỳ vọng:} Tự động xoay sang khóa dự phòng trong dưới 50ms.\newline \textbf{Thực tế:} Chuyển khóa thành công trong 38ms, người dùng không thấy lỗi. & \textbf{PASS} \\
+\bottomrule
+\end{tabularx}
+\caption{Ma trận kiểm thử chức năng RAG, Vision OCR và Xoay vòng khóa API}
+\end{table}

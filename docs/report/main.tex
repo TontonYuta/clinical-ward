@@ -1,0 +1,56 @@
+% ==============================================================================
+% BÁO CÁO KỸ THUẬT CHUYÊN SÂU --- ĐỒ ÁN 2
+% TRƯỜNG ĐẠI HỌC BÁCH KHOA HÀ NỘI
+% Sinh viên: Trần Huy Hoàng - MSSV: 20237337
+% ==============================================================================
+
+\documentclass[12pt,a4paper,oneside]{report}
+
+% 1. NẠP CẤU HÌNH, THÔNG TIN VÀ CÁC LỆNH TIỆN ÍCH
+\input{config/preamble.tex}
+\input{config/metadata.tex}
+\input{config/commands.tex}
+
+\begin{document}
+
+% 2. TRANG ĐẦU (FRONTMATTER)
+\pagenumbering{roman}
+\input{frontmatter/titlepage.tex}
+\input{frontmatter/task_assignment.tex}
+\input{frontmatter/integrity_pledge.tex}
+\input{frontmatter/acknowledgment.tex}
+\input{frontmatter/abstract_vi.tex}
+\input{frontmatter/abstract_en.tex}
+
+% Mục lục và danh mục bảng biểu tự động
+\tableofcontents
+\newpage
+\listoftables
+\newpage
+\input{frontmatter/acronyms.tex}
+\newpage
+
+% 3. NỘI DUNG CHÍNH (MAINMATTER)
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% Chương 1: Tổng quan và Khảo sát hiện trạng nghiệp vụ
+\input{chapters/ch1_overview/ch1_main.tex}
+
+% Chương 2: Phân tích yêu cầu hệ thống
+\input{chapters/ch2_requirements/ch2_main.tex}
+
+% Chương 3: Thiết kế kiến trúc và cơ sở dữ liệu
+\input{chapters/ch3_system_design/ch3_main.tex}
+
+% Chương 4: Cài đặt, thử nghiệm và đánh giá kết quả
+\input{chapters/ch4_implementation_evaluation/ch4_main.tex}
+
+% Chương 5: Kết luận và Hướng phát triển
+\input{chapters/ch5_conclusion/ch5_main.tex}
+
+% 4. TÀI LIỆU THAM KHẢO (BIBLIOGRAPHY)
+\bibliographystyle{plain}
+\bibliography{backmatter/references}
+
+\end{document}

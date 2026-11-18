@@ -1,0 +1,25 @@
+\section{Đặc tả giao diện lập trình ứng dụng (RESTful API \& SSE Endpoints)}
+\label{sec:api_specifications}
+
+Hệ thống cung cấp danh mục các API phục vụ giao tiếp giữa máy khách và máy chủ:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{C{1.5cm} L{4.2cm} L{3.5cm} Y}
+\toprule
+\textbf{Method} & \textbf{Endpoint Path} & \textbf{Dữ liệu đầu vào (Request)} & \textbf{Ý nghĩa và Mã trạng thái HTTP} \\
+\midrule
+\code{POST} & \code{/api/clinical/check-interactions} & Danh sách tên thuốc (JSON Array) & Kiểm tra tương tác thuốc CDSS Sentinel. Trả về 200 OK nếu an toàn; 409 Conflict nếu có tương tác cấm. \\
+\addlinespace
+\code{POST} & \code{/api/clinical/chat/stream} & Câu hỏi lâm sàng và lịch sử hội thoại & Truy vấn RAG lâm sàng; trả về luồng dữ liệu Server-Sent Events (SSE) từng token với trích dẫn số trang. \\
+\addlinespace
+\code{GET} & \code{/api/clinical/drugs/search} & Query param: \code{q=paracetamol} & Tìm kiếm thuốc FTS5 trên CSDL 54.885 số đăng ký DAV. Trả về mã 200 OK và mảng JSON thuốc. \\
+\addlinespace
+\code{POST} & \code{/api/clinical/cpoe/orders} & Đơn thuốc: mã bệnh nhân, danh sách thuốc, liều dùng & Lưu đơn thuốc vào CSDL bệnh án. Trả về 201 Created hoặc 409 Conflict nếu đơn vi phạm an toàn. \\
+\addlinespace
+\code{POST} & \code{/api/clinical/vision/ocr-bhyt} & Form-data: tệp ảnh thẻ BHYT & Nhận diện mã thẻ BHYT, bóc tách mức hưởng và nơi KCB ban đầu. Trả về mã 200 OK. \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả các giao tiếp lập trình ứng dụng (API Endpoints)}
+\end{table}

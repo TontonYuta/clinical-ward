@@ -1,0 +1,45 @@
+\section{Thiết kế các thuật toán và mô-đun xử lý cốt lõi}
+\label{sec:core_algorithms}
+
+\subsection{Cổng kiểm duyệt an toàn xác định CDSS Sentinel \texorpdfstring{($O(1)$)}{(O(1))}}
+Module \code{cdss_sentinel.py} được thiết kế với cơ chế bảng băm lưu trong bộ nhớ:
+\begin{itemize}[leftmargin=1.5em]
+    \item Khóa tra cứu (Hash Key) là chuỗi kết hợp chuẩn hóa của hai hoạt chất theo thứ tự từ điển:
+    \begin{equation}
+        \text{Key}(A, B) = \min(\text{INN}_A, \text{INN}_B) + \text{"\_"} + \max(\text{INN}_A, \text{INN}_B)
+    \end{equation}
+    \item Khi nhận đơn thuốc có $N$ thuốc, thuật toán sinh $\binom{N}{2} = \frac{N(N-1)}{2}$ cặp và tra cứu trực tiếp trong bảng băm với thời gian truy cập trung bình $O(1)$ cho mỗi cặp. Với một đơn thuốc thông thường ($N \le 10$), tổng thời gian kiểm tra diễn ra dưới $1\,\text{ms}$.
+\end{itemize}
+
+\subsection{Thuật toán bóc tách và chuẩn hóa hoạt chất quốc tế INN}
+Module \code{active_ingredient_normalizer.py} thực hiện 4 bước làm sạch dữ liệu đầu vào:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Khử bỏ nồng độ và dạng bào chế:} Sử dụng biểu thức chính quy để loại bỏ các hậu tố như \code{500mg}, \code{10ml}, \code{viên nén}, \code{ống tiêm}.
+    \item \textbf{Loại bỏ gốc muối hóa học (Salt Stripping):} Chuyển đổi các dạng muối về dạng bazơ (ví dụ: \textit{Amlodipin besylat} $\to$ \code{Amlodipin}, \textit{Metoprolol tartrat} $\to$ \code{Metoprolol}).
+    \item \textbf{Ánh xạ từ điển biệt dược:} Đối chiếu với 54.885 số đăng ký DAV để chuyển tên thương mại về tên hoạt chất INN (ví dụ: \textit{Nexium} $\to$ \code{Esomeprazol}).
+    \item \textbf{Phân rã phối hợp:} Nhận diện các chế phẩm kết hợp (\textit{Amoxicilin/Acid clavulanic}) thành các thành phần độc lập để kiểm tra tương tác chéo.
+\end{enumerate}
+
+\subsection{Ma trận phát hiện tương tác đa thuốc (Polypharmacy Matrix)}
+Module \code{multi_drug_matrix.py} nhận diện các tương tác xảy ra khi phối hợp từ 3 thuốc trở lên:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Hội chứng Triple Whammy:} Phát hiện sự kết hợp đồng thời giữa:
+    \begin{center}
+        \textbf{Ức chế hệ RAAS} (ACEI/ARB) + \textbf{Thuốc lợi tiểu} (Quai/Thiazide) + \textbf{NSAID}
+    \end{center}
+    Sự kết hợp này làm giảm tưới máu cầu thận nặng nề, dẫn đến suy thận cấp tính.
+    \item \textbf{Cảnh báo kéo dài khoảng QTc tích lũy:} Tính tổng điểm nguy cơ loạn nhịp thất khi có từ 2 thuốc trở lên cùng kéo dài khoảng QT (Amiodaron, Levofloxacin, Ondansetron).
+\end{itemize}
+
+\subsection{Thuật toán truy xuất lai ghép (Hybrid Retrieval) trên RAM}
+Module \code{hybrid_retriever.py} kết hợp tìm kiếm ngữ nghĩa vector và tìm kiếm từ khóa FTS5 BM25. Độ tương đồng Cosine giữa vector câu hỏi $\mathbf{q}$ và tài liệu $\mathbf{d}_i$ trong ma trận RAM được tính theo:
+\begin{equation}
+S_{\text{vector}}(\mathbf{q}, \mathbf{d}_i) = \frac{\mathbf{q} \cdot \mathbf{d}_i}{\|\mathbf{q}\|_2 \|\mathbf{d}_i\|_2}
+\end{equation}
+Điểm số tổng hợp được chuẩn hóa theo trọng số:
+\begin{equation}
+S_{\text{final}} = 0.65 \cdot S_{\text{vector}} + 0.35 \cdot S_{\text{BM25}}
+\end{equation}
+
+\subsection{Bộ hậu kiểm số liệu tự động chống ảo giác (Self-RAG Verifier)}
+Module \code{self_rag_verifier.py} trích xuất toàn bộ các số liệu định lượng (hàm lượng mg, g; khoảng cách giờ; eGFR mL/phút) xuất hiện trong câu trả lời tạo sinh và đối chiếu chéo với tập số liệu trong đoạn văn bản gốc. Nếu xuất hiện bất kỳ số liệu nào không có trong tài liệu nguồn, hệ thống lập tức thu hồi câu trả lời để đảm bảo an toàn tuyệt đối cho người bệnh.

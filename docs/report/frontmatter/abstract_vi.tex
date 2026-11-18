@@ -1,0 +1,19 @@
+% ==============================================================================
+% FRONTMATTER: TÓM TẮT BÁO CÁO (TIẾNG VIỆT)
+% ==============================================================================
+\chapter*{Tóm Tắt Báo Cáo}
+\addcontentsline{toc}{chapter}{Tóm Tắt Báo Cáo}
+
+Trong môi trường điều trị nội trú tại bệnh viện, việc ra quyết định dùng thuốc (kê đơn điện tử CPOE, đối kháng tương tác thuốc DDI, tuân thủ danh mục BHYT và quản lý thuốc gây nghiện) là mắt xích quan trọng hàng đầu liên quan trực tiếp đến sinh mạng người bệnh. Tuy nhiên, việc áp dụng các Mô hình Ngôn ngữ Lớn (LLM) phổ thông vào y tế gặp phải 3 rào cản nghiêm trọng: nguy cơ ảo giác (hallucination) liều dùng, thiếu căn cứ pháp lý theo văn bản của Bộ Y tế Việt Nam, và nguy cơ lộ lọt dữ liệu bệnh án riêng tư.
+
+Đồ án này đề xuất và hiện thực hóa hệ thống \textbf{Clinical Ward CDSS} dựa trên kiến trúc \textbf{Lai ghép (Hybrid Architecture)} kết hợp chặt chẽ giữa:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Cổng kiểm định xác định CDSS Sentinel}: Đánh giá tương tác thuốc cấm và trần liều trong độ phức tạp $O(1)$ chạy hoàn toàn cục bộ, bảo đảm phản hồi tức thì dưới 2ms và độc lập với kết nối Internet.
+    \item \textbf{Đường ống RAG Dược lâm sàng đa tầng}: Tích hợp tìm kiếm lai ghép (Hybrid Retrieval kết hợp Cosine Similarity trên ma trận nhúng 768 chiều trong RAM và FTS5 BM25), đồ thị tri thức y khoa hai tầng (LightRAG), và cơ chế Corrective RAG (CRAG) tuân thủ nguyên tắc Fail-Closed.
+    \item \textbf{Mô hình 7 tầng phòng thủ chống ảo giác}: Áp dụng cách ly phiên độc lập (Strict Turn Isolation), khóa cứng nhiệt độ tạo sinh $T = 0.0$, ép buộc trích dẫn văn bản Bộ Y tế (PaperQA2 Grounding), và kiểm chứng độc lập Self-RAG trước khi phát luồng.
+    \item \textbf{Phân hệ thị giác máy tính và tự động hóa}: Nhận diện thẻ BHYT theo Quyết định 1666/QĐ-BHXH, trích xuất hóa đơn nhập kho dược theo nguyên tắc FEFO, và hỗ trợ quét đơn thuốc viết tay.
+\end{enumerate}
+
+Hệ thống đã được đóng gói container hóa Docker, kiểm thử tự động với 150+ ca lâm sàng thực tế (đạt tỷ lệ ảo giác 0.0\%), và triển khai thành công trên môi trường Production đám mây (Render Backend tại Singapore và Vercel Frontend tại Việt Nam). Kết quả đo lường thực tế ghi nhận độ trễ phản hồi đệm nóng (Hot Cache) đạt 193.6ms (thời gian xử lý nội bộ server $< 1\text{ms}$), đáp ứng hoàn hảo tiêu chuẩn vận hành lâm sàng khắt khe.
+
+\textbf{Từ khóa:} \textit{Hệ thống Hỗ trợ Ra Quyết định Y khoa (CDSS), Retrieval-Augmented Generation (RAG), Self-RAG, Chống ảo giác y tế, Dược thư Quốc gia Việt Nam, BHYT Thông tư 20/2022, FastAPI, React 19.}

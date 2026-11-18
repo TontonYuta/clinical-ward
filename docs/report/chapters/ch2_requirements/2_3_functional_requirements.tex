@@ -1,0 +1,40 @@
+\section{Danh mục yêu cầu chức năng (Functional Requirements)}
+\label{sec:functional_requirements}
+
+Các yêu cầu chức năng của hệ thống được phân rã và mã hóa chi tiết theo từng phân hệ nghiệp vụ:
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{C{1.5cm} L{3.5cm} Y C{1.8cm}}
+\toprule
+\textbf{Mã YC} & \textbf{Tên chức năng} & \textbf{Mô tả chi tiết yêu cầu kỹ thuật} & \textbf{Mức ưu tiên} \\
+\midrule
+\textbf{FR01} & Kê đơn điện tử CPOE & Cho phép bác sĩ chọn bệnh nhân, tìm kiếm thuốc theo tên hoạt chất/biệt dược, nhập hàm lượng, đường dùng và tần suất. & Bắt buộc \\
+\addlinespace
+\textbf{FR02} & Kiểm tra tương tác cấm & Tự động quét các cặp thuốc trong đơn đối chiếu với Quyết định 5948/QĐ-BYT; chặn lưu đơn và báo động đỏ nếu phát hiện vi phạm. & Bắt buộc \\
+\addlinespace
+\textbf{FR03} & Gợi ý thay thế thuốc 1-Click & Đề xuất thuốc thay thế có cùng nhóm điều trị ATC, được BHYT chi trả 100\% và không gây tương tác mới; cập nhật vào đơn chỉ với 1 thao tác. & Bắt buộc \\
+\addlinespace
+\textbf{FR04} & Cảnh báo đa thuốc (Polypharmacy) & Phát hiện các hội chứng nguy hiểm từ 3 thuốc trở lên: Triple Whammy (suy thận cấp), kéo dài khoảng QTc tích lũy, cạnh tranh men gan CYP2C19. & Bắt buộc \\
+\addlinespace
+\textbf{FR05} & Tính eGFR \& Chỉnh liều thận & Tính mức lọc cầu thận ước tính theo công thức Cockcroft-Gault và tự động đưa ra khuyến cáo giảm liều/khóa thuốc chống chỉ định. & Bắt buộc \\
+\addlinespace
+\textbf{FR06} & Kiểm soát trần liều 24 giờ & Kiểm tra tổng liều tích lũy của từng hoạt chất trong ngày theo ngưỡng an toàn của Dược thư Quốc gia (ví dụ Paracetamol $\le 4\,\text{g/ngày}$). & Bắt buộc \\
+\addlinespace
+\textbf{FR07} & Trợ lý hỏi đáp Dược thư RAG & Cho phép hỏi đáp bằng ngôn ngữ tự nhiên về chỉ định, liều dùng, tương tác; bắt buộc trích dẫn số trang Dược thư Quốc gia và văn bản Bộ Y tế. & Bắt buộc \\
+\addlinespace
+\textbf{FR08} & Hậu kiểm Self-RAG & Quét các con số liều dùng trong câu trả lời đối chiếu với đoạn văn bản gốc; tự động thu hồi câu trả lời nếu xuất hiện số liệu lạ. & Bắt buộc \\
+\addlinespace
+\textbf{FR09} & Quét nhận diện thẻ BHYT & Tiền xử lý ảnh Canvas và bóc tách tự động mã thẻ BHYT 15 ký tự theo QĐ 1666/QĐ-BHXH, xác định mức hưởng và tuyến KCB. & Nâng cao \\
+\addlinespace
+\textbf{FR10} & Quản lý kho dược theo FEFO & Quét hóa đơn nhập kho, bóc tách số lô, hạn sử dụng, tự động khớp số đăng ký DAV và kích hoạt xuất kho ưu tiên thuốc hết hạn trước. & Nâng cao \\
+\addlinespace
+\textbf{FR11} & Quản lý nợ vỏ thuốc gây nghiện & Theo dõi số lượng ống tiêm Morphin/Fentanyl đã cấp phát, ghi nhận thời điểm hoàn trả vỏ thuốc rỗng theo quy định kiểm soát dược phẩm. & Bắt buộc \\
+\addlinespace
+\textbf{FR12} & Xoay vòng khóa API tự động & Lưu trữ khóa API Gemini trong kho mã hóa AES-256; tự động chuyển sang khóa dự phòng khi gặp lỗi HTTP 429/403 trong dưới 50ms. & Bắt buộc \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả danh mục yêu cầu chức năng hệ thống (Functional Requirements)}
+\end{table}

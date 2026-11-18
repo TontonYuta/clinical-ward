@@ -1,0 +1,34 @@
+\section{Mục tiêu, đối tượng và phạm vi nghiên cứu của đề tài}
+\label{sec:objectives_scope}
+
+\noindent\textbf{1. Mục tiêu của đề tài:}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Mục tiêu khoa học:} Nghiên cứu và hiện thực hóa mô hình lai ghép kết hợp Cổng an toàn xác định $O(1)$ với hệ thống Truy xuất Thông tin Tăng cường đa tầng (Advanced RAG) nhằm triệt tiêu hoàn toàn hiện tượng ảo giác định lượng trong câu trả lời y khoa.
+    \item \textbf{Mục tiêu thực tiễn:} Xây dựng một hệ thống phần mềm hoàn chỉnh (Clinical Ward CDSS) hỗ trợ đắc lực cho bác sĩ điều trị và dược sĩ lâm sàng tại buồng bệnh nội trú: chặn tương tác cấm thời gian thực, gợi ý thuốc thay thế 1-Click theo danh mục BHYT, quét tự động thẻ BHYT và hóa đơn nhập kho dược.
+\end{itemize}
+
+\noindent\textbf{2. Đối tượng nghiên cứu:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Cơ sở dữ liệu danh mục thuốc lưu hành tại Việt Nam (54.885 số đăng ký thuốc từ Cục Quản lý Dược --- DAV).
+    \item Dữ liệu chuyên luận Dược thư Quốc gia Việt Nam 2022 và các quy định pháp luật y tế hiện hành.
+    \item Các kỹ thuật mô hình ngôn ngữ lớn, kỹ thuật trích xuất vector, tìm kiếm toàn văn FTS5, và các thuật toán kiểm tra an toàn dược học.
+\end{itemize}
+
+\noindent\textbf{3. Phạm vi nghiên cứu:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Hệ thống tập trung phục vụ công tác điều trị nội trú tại bệnh viện (Inpatient Clinical Ward).
+    \item Dữ liệu lâm sàng được số hóa cục bộ trong SQLite tối ưu WAL Mode.
+    \item Hệ thống được đóng gói container Docker hoàn chỉnh và triển khai thử nghiệm trên hạ tầng đám mây Production.
+\end{itemize}
+
+\section{Bố cục của đồ án}
+\label{sec:report_structure}
+
+Nội dung của bản đồ án tốt nghiệp được cấu trúc thành 5 chương chính:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Chương 1: Tổng quan và Khảo sát hiện trạng nghiệp vụ:} Trình bày tính cấp thiết của đề tài, phân tích quy trình sử dụng thuốc hiện tại (As-Is), đánh giá các giải pháp CDSS hiện hữu, làm rõ các rào cản của LLM và xác định mục tiêu nghiên cứu.
+    \item \textbf{Chương 2: Phân tích yêu cầu hệ thống:} Xây dựng mô hình quy trình nghiệp vụ mới (To-Be), xác định các tác nhân, lập danh mục yêu cầu chức năng (FR) và phi chức năng (NFR), mô hình hóa biểu đồ Use Case và lập bảng đặc tả Use Case chi tiết.
+    \item \textbf{Chương 3: Thiết kế kiến trúc và cơ sở dữ liệu:} Trình bày kiến trúc 4 tầng, phân tích các đánh đổi công nghệ, thiết kế các biểu đồ tuần tự (Sequence Diagram), chi tiết hóa các thuật toán lõi, thiết kế CSDL (ERD, Data Dictionary) và thiết kế giao diện người dùng.
+    \item \textbf{Chương 4: Cài đặt, thử nghiệm và đánh giá kết quả:} Mô tả môi trường cài đặt, bảng đặc tả API, kế hoạch kiểm thử, ma trận kết quả kiểm thử chức năng, kết quả benchmark hiệu năng Production và đối chiếu với mục tiêu ban đầu.
+    \item \textbf{Chương 5: Kết luận và hướng phát triển:} Tổng kết các kết quả đạt được, tự phê bình các hạn chế tồn đọng, rút ra bài học kinh nghiệm và đề xuất các hướng nghiên cứu mở rộng tiếp theo.
+\end{itemize}
