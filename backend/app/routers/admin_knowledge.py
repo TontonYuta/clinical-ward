@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import quote
 from pydantic import BaseModel
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request, status
 from app.services.rag.pdf_ingestion_service import (
     ingest_pdf_bytes,
     delete_ingested_pdf,
@@ -76,6 +76,7 @@ async def list_knowledge_documents():
 
 @router.post("/upload-pdf")
 async def upload_and_ingest_pdf(
+    request: Request,
     file: UploadFile = File(..., description="Tệp tài liệu PDF y tế hoặc văn bản quy định"),
     title: str = Form(..., description="Tiêu đề văn bản (VD: Thông tư 26/2025/TT-BYT)"),
     legal_basis: str = Form(..., description="Căn cứ pháp lý (VD: Thông tư 26/2025/TT-BYT Kê đơn điện tử)"),
@@ -85,11 +86,20 @@ async def upload_and_ingest_pdf(
 ):
     """
     Nạp và lập chỉ mục động tài liệu PDF:
+    - Kiểm tra chữ ký Magic Bytes (%PDF-) và cấu trúc tệp hợp lệ
     - Trích xuất văn bản từng trang bằng pypdf
     - Phân mảnh ngữ nghĩa kèm chỉ số trang
     - Tính mã băm SHA256 và lưu provenance vào manifest
-    - Đưa vào SQLite FTS index sẵn sàng cho câu hỏi người dùng mà không cần sửa code.
+    - Đưa vào SQLite FTS index sẵn sàng cho câu hỏi người dùng mà không cần sửa code
+    - Sinh Dense Vectors và tự động nạp vào ma trận RAM Cosine Similarity.
     """
+    user = getattr(request.state, "authenticated_user", None)
+    if user and user.role not in {"admin", "director"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ Quản trị viên (Admin/Director) mới có quyền nạp tài liệu vào CSDL Bệnh viện."
+        )
+
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -109,6 +119,11 @@ async def upload_and_ingest_pdf(
             category=safe_category,
         )
         return result
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -117,10 +132,17 @@ async def upload_and_ingest_pdf(
 
 
 @router.delete("/documents/{doc_id}")
-async def delete_knowledge_document(doc_id: str):
+async def delete_knowledge_document(doc_id: str, request: Request):
     """
     Xóa tài liệu PDF khỏi kho ứng dụng, SQLite FTS index, Vector Store và manifest.
     """
+    user = getattr(request.state, "authenticated_user", None)
+    if user and user.role not in {"admin", "director"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ Quản trị viên (Admin/Director) mới có quyền xóa tài liệu khỏi CSDL Bệnh viện."
+        )
+
     try:
         result = delete_ingested_pdf(doc_id)
         return result

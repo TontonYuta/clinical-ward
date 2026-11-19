@@ -132,6 +132,9 @@ def _update_manifest(
     MANIFEST_PATH.write_text(json.dumps(manifest_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+MAX_FILE_BYTES = 50 * 1024 * 1024  # 50MB giới hạn an toàn
+
+
 async def ingest_pdf_bytes(
     file_bytes: bytes,
     filename: str,
@@ -144,41 +147,45 @@ async def ingest_pdf_bytes(
     vector_store: Optional[VectorStore] = None,
 ) -> Dict[str, Any]:
     """
-    Nạp tài liệu PDF từ byte stream:
-    1. Tính băm SHA256 định danh nguồn độc lập.
-    2. Lưu bản sao vật lý vào kho tài liệu knowledge_base & public/pdf.
-    3. Trích xuất văn bản từng trang bằng pypdf.
-    4. Phân đoạn ngữ nghĩa thành các RagChunk kèm đầy đủ provenance (trang, tiêu đề, căn cứ pháp lý).
-    5. Cập nhật clinical_source_manifest.json.
-    6. Index trực tiếp vào SqliteFtsIndex để tìm kiếm tức thì.
-    7. Tạo dense vector embedding (768-dim), lưu vào SQLite clinical_chunk_vectors và nạp vào ma trận RAM.
+    Nạp tài liệu PDF từ byte stream với cơ chế nguyên tử (Atomic Transaction & Rollback):
+    1. Kiểm tra chữ ký Magic Bytes (%PDF-) và dung lượng <= 50MB.
+    2. Bóc tách trang và chunks trên bộ nhớ trước khi chạm vào đĩa hoặc CSDL.
+    3. Ghi file vật lý, FTS5 chunks, Vector Store và manifest.
+    4. Tự động Rollback sạch sẽ nếu xảy ra bất kỳ lỗi nào giữa chừng.
     """
+    # 1. Chốt chặn 1: Thẩm định nhị phân & Dung lượng
     if not file_bytes:
-        raise ValueError("File bytes rỗng, không thể trích xuất PDF.")
+        raise ValueError("Tệp tài liệu rỗng (0 bytes). Vui lòng chọn tệp PDF hợp lệ.")
+
+    if len(file_bytes) > MAX_FILE_BYTES:
+        raise ValueError(
+            f"Dung lượng tệp ({len(file_bytes) / (1024 * 1024):.1f}MB) vượt quá hạn mức tối đa cho phép (50MB)."
+        )
+
+    if not file_bytes.startswith(b"%PDF"):
+        raise ValueError(
+            "Định dạng tệp không hợp lệ: Không tìm thấy chữ ký Magic Bytes '%PDF'. Vui lòng chọn tệp PDF chuẩn."
+        )
 
     sha256_hex = hashlib.sha256(file_bytes).hexdigest()
-    safe_filename = re.sub(r"[^\w\-.]", "_", filename)
+    safe_filename = re.sub(r"[^\w\-.]", "_", Path(filename).name)
     if not safe_filename.lower().endswith(".pdf"):
         safe_filename += ".pdf"
 
     if not doc_id:
         doc_id = re.sub(r"[^\w\-]", "_", Path(safe_filename).stem).lower()
 
-    # Lưu bản sao backend
-    KB_DIR.mkdir(parents=True, exist_ok=True)
-    target_backend_path = KB_DIR / safe_filename
-    target_backend_path.write_bytes(file_bytes)
+    # 2. Bóc tách cấu trúc trang trên bộ nhớ (In-Memory Pre-Extraction)
+    try:
+        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+        total_pages = len(reader.pages)
+    except Exception as read_err:
+        raise ValueError(f"Tệp PDF bị hỏng hoặc cấu trúc tệp không hợp lệ: {str(read_err)}")
 
-    # Giữ URL xem PDF hoạt động trên local và production, kể cả khi public/pdf
-    # chưa được tạo trước lúc ứng dụng khởi động.
-    PUBLIC_PDF_DIR.mkdir(parents=True, exist_ok=True)
-    (PUBLIC_PDF_DIR / safe_filename).write_bytes(file_bytes)
+    if total_pages == 0:
+        raise ValueError("Tệp PDF không chứa trang nào.")
 
-    # Trích xuất PDF qua pypdf
-    reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-    total_pages = len(reader.pages)
     chunks: List[RagChunk] = []
-
     source_id = f"backend/data/knowledge_base/{safe_filename}"
     source_ver = f"sha256:{sha256_hex}"
 
@@ -210,31 +217,37 @@ async def ingest_pdf_bytes(
                 source_version=source_ver,
             ))
 
-    # Cập nhật manifest
-    _update_manifest(
-        doc_id=doc_id,
-        title=title,
-        legal_basis=legal_basis,
-        edition_year=edition_year,
-        filename=safe_filename,
-        sha256_hex=sha256_hex,
-        file_bytes_len=len(file_bytes),
-        category=category,
-        representation="source_pdf"
-    )
+    if not chunks:
+        raise ValueError(
+            f"Tệp PDF gồm {total_pages} trang nhưng không trích xuất được lớp văn bản (text layer). "
+            "Đây có thể là tài liệu scan ảnh thuần túy không có lớp OCR. Vui lòng cung cấp văn bản có thể trích xuất chữ."
+        )
 
-    # Index vào FTS
-    fts_index = SqliteFtsIndex()
-    fts_index.upsert_chunks(chunks)
+    # 3. Chu trình Ghi CSDL Nguyên Tử & Cơ Chế Rollback
+    written_files: List[Path] = []
+    inserted_chunk_ids: List[str] = []
+    saved_vector_chunk_ids: List[str] = []
+    manifest_updated = False
+    previous_manifest_content: Optional[str] = None
 
-    # Tạo vector embeddings và nạp vào VectorStore
-    indexed_vectors_count = 0
-    if chunks:
-        if vector_store is None:
-            vector_store = get_vector_store()
-        if provider is None:
-            provider = get_embedding_provider()
+    if vector_store is None:
+        vector_store = get_vector_store()
+    if provider is None:
+        provider = get_embedding_provider()
 
+    try:
+        # 3.1. Lưu bản sao vật lý
+        KB_DIR.mkdir(parents=True, exist_ok=True)
+        target_backend_path = KB_DIR / safe_filename
+        target_backend_path.write_bytes(file_bytes)
+        written_files.append(target_backend_path)
+
+        PUBLIC_PDF_DIR.mkdir(parents=True, exist_ok=True)
+        target_public_path = PUBLIC_PDF_DIR / safe_filename
+        target_public_path.write_bytes(file_bytes)
+        written_files.append(target_public_path)
+
+        # 3.2. Sinh Dense Vector Embeddings (768 chiều)
         chunk_texts = [c.content for c in chunks]
         try:
             vectors = await provider.batch_embed_chunks(chunk_texts)
@@ -243,7 +256,6 @@ async def ingest_pdf_bytes(
             fallback = MockEmbeddingProvider(dimension=vector_store.dimension)
             vectors = await fallback.batch_embed_chunks(chunk_texts)
 
-        # Nếu provider trả về None (VD: chưa cấu hình GEMINI_API_KEY) -> fallback sang Mock
         if not vectors or all(v is None for v in vectors):
             fallback = MockEmbeddingProvider(dimension=vector_store.dimension)
             vectors = await fallback.batch_embed_chunks(chunk_texts)
@@ -254,8 +266,67 @@ async def ingest_pdf_bytes(
                 chash = hashlib.sha256(c.content.encode("utf-8")).hexdigest()
                 save_items.append((c.chunk_id, vec, chash))
 
-        if save_items:
-            indexed_vectors_count = vector_store.save_embeddings(save_items, auto_reload=True)
+        if not save_items:
+            raise RuntimeError("Không thể tạo vector embeddings hợp lệ cho tài liệu.")
+
+        # 3.3. Index vào SQLite FTS5
+        fts_index = SqliteFtsIndex()
+        fts_index.upsert_chunks(chunks)
+        inserted_chunk_ids = [c.chunk_id for c in chunks]
+
+        # 3.4. Lưu Vectors vào SQLite & Tải lại RAM matrix
+        indexed_vectors_count = vector_store.save_embeddings(save_items, auto_reload=True)
+        saved_vector_chunk_ids = [item[0] for item in save_items]
+
+        # 3.5. Cập nhật Manifest
+        if MANIFEST_PATH.exists():
+            try:
+                previous_manifest_content = MANIFEST_PATH.read_text(encoding="utf-8")
+            except Exception:
+                pass
+
+        _update_manifest(
+            doc_id=doc_id,
+            title=title,
+            legal_basis=legal_basis,
+            edition_year=edition_year,
+            filename=safe_filename,
+            sha256_hex=sha256_hex,
+            file_bytes_len=len(file_bytes),
+            category=category,
+            representation="source_pdf"
+        )
+        manifest_updated = True
+
+    except Exception as exc:
+        logger.error(f"[PdfIngestion] Gặp sự cố khi nạp PDF '{filename}'. Kích hoạt Rollback toàn diện: {exc}")
+        # THỰC HIỆN ROLLBACK SẠCH SẼ:
+        for fpath in written_files:
+            if fpath.exists():
+                try:
+                    fpath.unlink()
+                except Exception:
+                    pass
+
+        if inserted_chunk_ids:
+            try:
+                SqliteFtsIndex().delete_chunks_by_prefix(f"{doc_id}_")
+            except Exception:
+                pass
+
+        if saved_vector_chunk_ids and vector_store:
+            try:
+                vector_store.delete_embeddings(saved_vector_chunk_ids)
+            except Exception:
+                pass
+
+        if manifest_updated and previous_manifest_content is not None:
+            try:
+                MANIFEST_PATH.write_text(previous_manifest_content, encoding="utf-8")
+            except Exception:
+                pass
+
+        raise exc
 
     return {
         "status": "success",

@@ -45,7 +45,7 @@ export const DocumentIngestionTab: React.FC = () => {
   const [category, setCategory] = useState<string>('Thông tư Bộ Y tế');
   const [editionYear, setEditionYear] = useState<number>(2026);
   const [docId, setDocId] = useState<string>('');
-  const [storageTarget, setStorageTarget] = useState<'local' | 'backend'>('local');
+  const [storageTarget, setStorageTarget] = useState<'local' | 'backend'>('backend');
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadResult, setUploadResult] = useState<IngestPdfResponse | null>(null);
   const [uploadError, setUploadError] = useState<string>('');

@@ -13,7 +13,7 @@ import os
 import json
 from pathlib import Path
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from app.routers import admin_knowledge
@@ -26,6 +26,7 @@ from app.services.rag.pdf_ingestion_service import (
 from app.services.rag.sqlite_fts import SqliteFtsIndex
 from app.services.rag.embeddings.vector_store import VectorStore
 from app.services.rag.embeddings.provider import MockEmbeddingProvider
+from app.security.auth import AuthenticatedUser
 
 
 def _create_sample_pdf_bytes(title: str, body: str) -> bytes:
@@ -49,8 +50,14 @@ def _create_sample_pdf_bytes(title: str, body: str) -> bytes:
     return pdf_content
 
 
-def _make_test_client() -> TestClient:
+def _make_test_client(role: str = "director") -> TestClient:
     test_app = FastAPI()
+
+    @test_app.middleware("http")
+    async def inject_user(request: Request, call_next):
+        request.state.authenticated_user = AuthenticatedUser(username="test_admin", role=role)
+        return await call_next(request)
+
     test_app.include_router(admin_knowledge.router, prefix="/api/v1")
     return TestClient(test_app)
 
@@ -332,3 +339,102 @@ async def test_real_pdf_ingestion_and_page_citation(monkeypatch, tmp_path):
     assert top_hit["source_doc"] == real_pdf_path.name
     assert top_hit["legal_basis"] == "Thông tư 22/2011/TT-BYT"
     assert len(top_hit["content"]) > 50
+
+
+@pytest.mark.asyncio
+async def test_magic_bytes_validation_rejects_fake_pdf():
+    # File text hoặc binary giả danh không có magic bytes %PDF
+    fake_pdf = b"Day la tap tin text gia mao khong phai PDF."
+    with pytest.raises(ValueError, match="Magic Bytes"):
+        await ingest_pdf_bytes(
+            file_bytes=fake_pdf,
+            filename="fake_document.pdf",
+            title="Tài liệu giả",
+            legal_basis="Không có",
+        )
+
+
+@pytest.mark.asyncio
+async def test_corrupted_pdf_rejection():
+    # File bắt đầu bằng %PDF nhưng phần sau là rác bị hỏng
+    corrupt_pdf = b"%PDF-1.4\nCorrupted content completely broken"
+    with pytest.raises(ValueError):
+        await ingest_pdf_bytes(
+            file_bytes=corrupt_pdf,
+            filename="corrupt.pdf",
+            title="Tài liệu hỏng",
+            legal_basis="Không có",
+        )
+
+
+@pytest.mark.asyncio
+async def test_atomic_rollback_on_vector_failure(monkeypatch, tmp_path):
+    db_path = tmp_path / "test_rag.sqlite"
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text('{"manifest_version": 1, "sources": []}', encoding="utf-8")
+    kb_path = tmp_path / "kb"
+    pub_path = tmp_path / "public"
+
+    monkeypatch.setattr(pdf_ingestion_service, 'MANIFEST_PATH', manifest_path)
+    monkeypatch.setattr(pdf_ingestion_service, 'KB_DIR', kb_path)
+    monkeypatch.setattr(pdf_ingestion_service, 'PUBLIC_PDF_DIR', pub_path)
+    monkeypatch.setenv('DATABASE_URL', f"sqlite:///{db_path}")
+
+    vstore = VectorStore(db_path=db_path, dimension=768)
+
+    class FailingVectorStore(VectorStore):
+        def save_embeddings(self, items, auto_reload=True):
+            raise RuntimeError("Giả lập lỗi CSDL bị khóa hoặc đĩa đầy")
+
+    failing_vstore = FailingVectorStore(db_path=db_path, dimension=768)
+    provider = MockEmbeddingProvider(dimension=768)
+    sample_pdf = _create_sample_pdf_bytes("Quy Chế Rollback", "Noi dung kiem thu tinh nguyen tu.")
+
+    with pytest.raises(RuntimeError, match="Giả lập lỗi CSDL"):
+        await ingest_pdf_bytes(
+            file_bytes=sample_pdf,
+            filename="rollback_test.pdf",
+            title="Quy chế Rollback",
+            legal_basis="Nghị định 01",
+            doc_id="rollback-doc",
+            provider=provider,
+            vector_store=failing_vstore,
+        )
+
+    # KIỂM THỬ TÍNH NGUYÊN TỬ: Không có file mồ côi nào còn sót lại
+    assert not (kb_path / "rollback_test.pdf").exists()
+    assert not (pub_path / "rollback_test.pdf").exists()
+
+    # CSDL FTS và Vector Store phải sạch 100%
+    fts = SqliteFtsIndex(db_path=db_path)
+    assert len(fts.search_bm25("Rollback")) == 0
+    assert vstore.count() == 0
+
+    # Manifest không được ghi nhận tài liệu hỏng
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert not any(s["id"] == "rollback-doc" for s in manifest_data["sources"])
+
+
+def test_admin_upload_pdf_rbac_enforcement(monkeypatch, tmp_path):
+    db_path = tmp_path / "test_rag.sqlite"
+    monkeypatch.setattr(pdf_ingestion_service, 'MANIFEST_PATH', tmp_path / 'manifest.json')
+    monkeypatch.setattr(pdf_ingestion_service, 'KB_DIR', tmp_path / 'kb')
+    monkeypatch.setattr(pdf_ingestion_service, 'PUBLIC_PDF_DIR', tmp_path / 'public')
+    monkeypatch.setenv('DATABASE_URL', f"sqlite:///{db_path}")
+
+    sample_pdf = _create_sample_pdf_bytes("Phân Quyền", "Kiem tra quyen admin.")
+    files = {"file": ("test_rbac.pdf", sample_pdf, "application/pdf")}
+    data = {"title": "Phân Quyền", "legal_basis": "TT 01"}
+
+    # 1. User là điều dưỡng (nurse) -> Bị từ chối 403 Forbidden
+    client_nurse = _make_test_client(role="nurse")
+    resp_nurse = client_nurse.post("/api/v1/admin/knowledge/upload-pdf", files=files, data=data)
+    assert resp_nurse.status_code == 403
+    assert "Quản trị viên" in resp_nurse.json()["detail"]
+
+    # 2. User là giám đốc (director) -> Thành công 200 OK
+    client_director = _make_test_client(role="director")
+    resp_director = client_director.post("/api/v1/admin/knowledge/upload-pdf", files=files, data=data)
+    assert resp_director.status_code == 200
+    assert resp_director.json()["status"] == "success"
+
