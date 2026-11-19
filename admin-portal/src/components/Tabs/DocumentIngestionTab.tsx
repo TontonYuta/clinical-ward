@@ -439,11 +439,24 @@ export const DocumentIngestionTab: React.FC = () => {
                         &quot;{item.content}&quot;
                       </p>
 
+                      {item.match_reasons && item.match_reasons.length > 0 && (
+                        <div className="flex flex-wrap gap-1 text-2xs text-slate-500 font-mono">
+                          {item.match_reasons.map((r, i) => (
+                            <span key={i} className="px-1.5 py-0.5 bg-white rounded border border-slate-200 text-slate-600">
+                              {r}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-2xs text-slate-500">
                         <span className="truncate">Căn cứ: {item.legal_basis}</span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono text-teal-700 font-medium">
-                            Score: {item.score}
+                          <span className={`font-mono font-semibold px-2 py-0.5 rounded-md ${
+                            item.score >= 80 ? 'bg-emerald-100 text-emerald-800' :
+                            item.score >= 60 ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            Độ phù hợp: {item.score}%
                           </span>
                           <a
                             href={`/api/v1/pdf/${encodeURIComponent(item.source_doc)}`}

@@ -451,15 +451,26 @@ async def query_ingested_documents(
 
         r_b = bm25_ranks.get(cid)
         r_v = vector_ranks.get(cid)
-        score = 0.0
+        raw_score = 0.0
         reasons = []
 
         if r_b:
-            score += 0.5 / (k_const + r_b)
+            raw_score += 0.5 / (k_const + r_b)
             reasons.append(f"BM25 rank #{r_b}")
         if r_v:
-            score += 0.5 / (k_const + r_v)
+            raw_score += 0.5 / (k_const + r_v)
             reasons.append(f"Vector rank #{r_v} (cosine={vector_scores.get(cid, 0.0):.3f})")
+
+        # Quy đổi RRF score thành thang điểm trực quan 0 - 100%
+        # max_rrf tương ứng với rank #1 ở cả BM25 và Vector (~0.01639)
+        max_rrf = 1.0 / (k_const + 1)
+        ratio = min(1.0, raw_score / max_rrf)
+        if r_b and r_v:
+            confidence_pct = round(min(99.5, 70.0 + (ratio * 29.5)), 1)
+        elif r_b or r_v:
+            confidence_pct = round(min(85.0, 40.0 + (ratio * 75.0)), 1)
+        else:
+            confidence_pct = round(ratio * 100.0, 1)
 
         scored_results.append({
             "chunk_id": chunk.chunk_id,
@@ -468,7 +479,8 @@ async def query_ingested_documents(
             "source_doc": chunk.source_doc,
             "legal_basis": chunk.legal_basis,
             "content": chunk.content,
-            "score": round(score, 5),
+            "score": confidence_pct,
+            "raw_score": round(raw_score, 5),
             "match_reasons": reasons,
         })
 
