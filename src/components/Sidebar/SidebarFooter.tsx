@@ -1,11 +1,11 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Footer Sidebar: Nút người dùng tích hợp Thông tin cá nhân & Cấu hình (<120 LOC)
+ * Footer Sidebar: Nút người dùng tích hợp Thông tin cá nhân & Cấu hình (<100 LOC)
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, UserRound, Sliders, LogOut, RefreshCw } from 'lucide-react';
+import { ChevronDown, UserRound, Sliders, LogOut } from 'lucide-react';
 import { UserRole } from '../../types/clinical';
 import type { AppFontScale } from '../../utils/storage/appStatePersistence';
 import { SettingsModal } from '../Settings/SettingsModal';
@@ -24,23 +24,18 @@ interface SidebarFooterProps {
   onCloseMobile?: () => void;
 }
 
-const ROLE_OPTIONS: UserRole[] = ['doctor', 'pharmacist', 'nurse', 'biomedical_engineer', 'director'];
-
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({
   isCollapsed,
   currentUserRole,
-  onSelectUserRole,
   onLogout,
   isAuthenticated,
   username,
   fontScale,
   onFontScaleChange,
-  onCloseMobile,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
@@ -51,12 +46,22 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsMenuOpen(false);
-        setShowRoleSwitcher(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
+
+  const handleLogout = () => {
+    setIsMenuOpen(false);
+    if (onLogout) {
+      void onLogout();
+    } else {
+      sessionStorage.removeItem('clinical_active_role');
+      sessionStorage.removeItem('clinical_active_username');
+      window.location.reload();
+    }
+  };
 
   return (
     <div ref={menuRef} className="relative border-t border-slate-200 p-2 shrink-0">
@@ -107,66 +112,18 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
             <span>Cấu hình hiển thị</span>
           </button>
 
-          {/* Lựa chọn 3: Đổi vai trò ca trực (Mở danh sách vai trò) */}
-          {onSelectUserRole && (
-            <div className="mt-1 pt-1 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowRoleSwitcher((prev) => !prev)}
-                className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
-              >
-                <span className="flex items-center gap-2">
-                  <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-                  Đổi vai trò ca trực
-                </span>
-                <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${showRoleSwitcher ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showRoleSwitcher && (
-                <div className="mt-1 space-y-0.5 pl-2 max-h-36 overflow-y-auto">
-                  {ROLE_OPTIONS.map((role) => {
-                    const item = USER_PROFILES[role];
-                    const isCurrent = role === currentUserRole;
-                    return (
-                      <button
-                        key={role}
-                        type="button"
-                        onClick={() => {
-                          onSelectUserRole(role);
-                          setIsMenuOpen(false);
-                          setShowRoleSwitcher(false);
-                          onCloseMobile?.();
-                        }}
-                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-[11px] transition ${
-                          isCurrent ? 'bg-teal-50 font-semibold text-teal-800' : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span className="truncate">{item.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Lựa chọn 4: Đăng xuất */}
-          {onLogout && (
-            <div className="mt-1 pt-1 border-t border-slate-100">
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  void onLogout();
-                }}
-                className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Đăng xuất</span>
-              </button>
-            </div>
-          )}
+          {/* Lựa chọn 3: Đăng xuất */}
+          <div className="mt-1 pt-1 border-t border-slate-100">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Đăng xuất</span>
+            </button>
+          </div>
         </div>
       )}
 

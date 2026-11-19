@@ -1983,7 +1983,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             handleSelectUserRole(role);
             setIsMobileSidebarOpen(false);
           }}
-          onLogout={authenticatedRole ? onLogout : undefined}
+          onLogout={onLogout}
           isAuthenticated={Boolean(authenticatedRole)}
           username={authenticatedUsername}
           fontScale={fontScale}
@@ -2032,7 +2032,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onTabChange={handleDesktopTabChange}
           currentUserRole={currentUserRole}
               onSelectUserRole={authenticatedRole ? undefined : handleSelectUserRole}
-              onLogout={authenticatedRole ? onLogout : undefined}
+              onLogout={onLogout}
           isAuthenticated={Boolean(authenticatedRole)}
           username={authenticatedUsername}
           fontScale={fontScale}
