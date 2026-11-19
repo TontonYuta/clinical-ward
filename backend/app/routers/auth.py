@@ -36,7 +36,7 @@ async def login(payload: LoginRequest, request: Request, response: Response):
 @router.get("/me")
 async def auth_me(request: Request):
     if not settings.AUTH_REQUIRED:
-        return {"enabled": False, "authenticated": True, "username": "local", "role": "nurse"}
+        return {"enabled": False, "authenticated": True, "username": "test_director", "role": "director"}
     token = request.cookies.get("clinical_session", "")
     authorization = request.headers.get("authorization", "")
     if authorization.lower().startswith("bearer "):
