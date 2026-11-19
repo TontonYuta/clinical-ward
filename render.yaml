@@ -18,5 +18,7 @@ services:
         value: https://clinical-ward.vercel.app,http://localhost:3000,http://localhost:3001,https://clinical-ai-monitor.vercel.app
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
+      - key: AUTH_REQUIRED
+        value: "false"
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261110-monograph-schema-patch-v6"
+        value: "20261120-frameless-auth-v2"

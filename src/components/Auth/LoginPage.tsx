@@ -28,7 +28,7 @@ export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Cách 1: Đăng nhập 1 chạm trực tiếp theo vai trò (khi authRequired = false)
+  // Cách 1: Đăng nhập 1 chạm trực tiếp theo vai trò thuần chữ (khi authRequired = false)
   async function handleRoleLogin(r: RoleOption) {
     if (submitting) return;
     setError('');
@@ -39,7 +39,6 @@ export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
       sessionStorage.setItem('clinical_active_username', r.username);
       onSuccess(session);
     } catch {
-      // Fallback an toàn nếu backend đang chạy chế độ không auth
       const fallbackSession: AuthSession = {
         enabled: false,
         authenticated: true,
@@ -72,16 +71,19 @@ export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
 
   return (
     <main
-      className="min-h-screen w-full flex items-center justify-center p-6 bg-cover bg-center"
+      className="relative isolate min-h-screen overflow-hidden bg-[#edf5fc] bg-cover bg-[center_left] px-5 py-8 flex items-center justify-center sm:px-8 lg:justify-end lg:bg-center lg:px-[7vw] xl:px-[10vw]"
       style={{ backgroundImage: "url('/images/login-locai-background.webp')" }}
     >
-      <div className="w-full max-w-[340px] text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-8">
-          Đăng nhập
-        </h1>
+      {/* Vùng đăng nhập sát bên phải, hoàn toàn không dùng khung hộp */}
+      <section className="relative z-10 w-full max-w-[320px] text-left">
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Đăng nhập
+          </h1>
+        </header>
 
         {!authRequired ? (
-          /* CÁCH 1: KHÔNG DÙNG KHUNG, CHỈ CÓ CÁC VAI TRÒ THUẦN CHỮ (KHÔNG ICON) */
+          /* CÁCH 1: THUẦN CHỮ VAI TRÒ, KHÔNG KHUNG, KHÔNG ICON */
           <div className="space-y-3">
             {ROLES.map(r => (
               <button
@@ -89,7 +91,7 @@ export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
                 type="button"
                 disabled={submitting}
                 onClick={() => void handleRoleLogin(r)}
-                className="w-full h-12 rounded-xl bg-white/90 hover:bg-white text-slate-800 hover:text-blue-700 font-medium text-sm transition-all backdrop-blur-sm border border-slate-200/80 hover:border-blue-300 shadow-sm hover:shadow flex items-center justify-center disabled:opacity-60"
+                className="w-full h-12 rounded-xl bg-white/85 hover:bg-white text-slate-800 hover:text-blue-700 font-medium text-sm transition-all border border-slate-200/80 hover:border-blue-400 shadow-sm hover:shadow flex items-center justify-center disabled:opacity-60"
               >
                 {submitting ? <LoaderCircle className="h-4 w-4 animate-spin text-slate-400" /> : r.label}
               </button>
@@ -97,9 +99,9 @@ export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
           </div>
         ) : (
           /* ĐĂNG NHẬP HOÀN CHỈNH KHI CỜ AUTH = TRUE */
-          <form onSubmit={handleFullLogin} className="space-y-4 text-left">
+          <form onSubmit={handleFullLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                 Tên đăng nhập
               </label>
               <input
@@ -113,7 +115,7 @@ export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                 Mật khẩu
               </label>
               <div className="relative">
@@ -144,14 +146,14 @@ export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-11 mt-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-medium text-sm transition shadow-sm hover:shadow flex items-center justify-center gap-2 disabled:opacity-70"
+              className="w-full h-11 mt-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm transition shadow-sm hover:shadow flex items-center justify-center gap-2 disabled:opacity-70"
             >
               {submitting && <LoaderCircle className="h-4 w-4 animate-spin" />}
               {submitting ? 'Đang xác thực…' : 'Đăng nhập'}
             </button>
           </form>
         )}
-      </div>
+      </section>
     </main>
   );
 }

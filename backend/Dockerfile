@@ -39,7 +39,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000 \
     DATABASE_URL="sqlite+aiosqlite:////app/clinical_hospital.db" \
-    CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app,https://clinical-ai-monitor.vercel.app"
+    CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app,https://clinical-ai-monitor.vercel.app" \
+    AUTH_REQUIRED="false"
 
 # Copy prebaked database first to leverage Docker layer caching
 COPY backend/clinical_prebaked.db.gz /app/
