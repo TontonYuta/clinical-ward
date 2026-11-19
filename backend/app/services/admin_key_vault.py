@@ -72,7 +72,12 @@ def _run_identity(coroutine_factory):
         asyncio.get_running_loop()
     except RuntimeError:
         return asyncio.run(coroutine_factory())
-    raise RuntimeError("Synchronous provider key vault cannot be used from an active event loop.")
+
+    # Nếu đang chạy bên trong một asyncio event loop (như FastAPI async routes),
+    # ủy thác thực thi sang ThreadPool riêng biệt để không chặn event loop và tránh lỗi RuntimeError
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coroutine_factory()).result()
 
 
 def _load_identity_vault_sync() -> List[Dict[str, Any]]:
@@ -265,6 +270,34 @@ async def get_active_api_key_async(provider: str = "gemini") -> Optional[str]:
         pass
     return None
 
+async def get_raw_key_by_id_async(key_id: str) -> Optional[str]:
+    """Lấy raw key theo key_id bất đồng bộ, giải mã an toàn từ DB identity."""
+    _require_complete_identity_vault_config()
+    if _identity_vault_configured():
+        try:
+            from app.identity_database import get_identity_session_factory
+            from app.models.identity import ProviderApiKey
+            from app.security.secret_encryption import decrypt_secret
+            from sqlalchemy import select
+            factory = get_identity_session_factory()[1]
+            async with factory() as session:
+                row = await session.scalar(select(ProviderApiKey).where(ProviderApiKey.key_id == key_id))
+                if row and row.encrypted_key:
+                    return decrypt_secret(row.encrypted_key, settings.KEY_ENCRYPTION_KEY)
+        except Exception:
+            pass
+
+    try:
+        if os.path.exists(_VAULT_FILE):
+            with open(_VAULT_FILE, "r", encoding="utf-8") as f:
+                keys = json.load(f)
+                for k in keys:
+                    if k.get("key_id") == key_id:
+                        return k.get("raw_key")
+    except Exception:
+        pass
+    return None
+
 def get_active_api_key(provider: str = "gemini") -> Optional[str]:
     """Lấy khóa API đang kích hoạt đầu tiên từ Key Vault (Quản lý độc quyền qua Clinical AI Monitor)."""
     cached = _ACTIVE_KEY_CACHE.get(provider)
@@ -367,6 +400,35 @@ async def ping_test_gemini_key(raw_key: str) -> tuple[bool, str, float, List[str
 
 async def auto_heartbeat_all_keys() -> List[Dict[str, Any]]:
     """Tự động kiểm tra sức khỏe, độ trễ và quota cho toàn bộ bể khóa API Key."""
+    _require_complete_identity_vault_config()
+    if _identity_vault_configured():
+        try:
+            from app.identity_database import get_identity_session_factory
+            from app.models.identity import ProviderApiKey
+            from app.security.secret_encryption import decrypt_secret
+            from sqlalchemy import select
+            factory = get_identity_session_factory()[1]
+            async with factory() as session:
+                db_rows = (await session.scalars(select(ProviderApiKey).order_by(ProviderApiKey.created_at))).all()
+                for row in db_rows:
+                    if not row.encrypted_key:
+                        continue
+                    raw = decrypt_secret(row.encrypted_key, settings.KEY_ENCRYPTION_KEY)
+                    if not raw or len(raw.strip()) < 10:
+                        continue
+                    success, msg, latency, _ = await ping_test_gemini_key(raw)
+                    row.latency_ms = latency
+                    if success:
+                        row.status = "active"
+                    elif "429" in msg:
+                        row.status = "rate_limited"
+                    else:
+                        row.status = "error"
+                await session.commit()
+            return get_all_masked_keys()
+        except Exception as e:
+            logger.warning(f"[KeyVault] Lỗi auto heartbeat: {e}")
+
     keys = _load_vault_data()
     best_candidate_key = None
     min_latency = float("inf")

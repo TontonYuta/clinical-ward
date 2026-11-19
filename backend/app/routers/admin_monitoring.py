@@ -17,7 +17,8 @@ from app.schemas.admin_monitoring_schema import (
 from app.models.feature_flag import ClinicalFeatureFlag
 from sqlalchemy import update
 from app.services.admin_key_vault import (
-    get_all_masked_keys, add_api_key, delete_api_key, ping_test_gemini_key, _load_vault_data
+    get_all_masked_keys, add_api_key, delete_api_key, ping_test_gemini_key, _load_vault_data,
+    get_raw_key_by_id_async
 )
 from app.services.admin_monitoring_service import (
     aggregate_telemetry_overview, get_budget_status, save_budget_config,
@@ -198,11 +199,8 @@ async def test_api_key_connection(payload: TestKeyRequest):
     if payload.api_key:
         raw_key = payload.api_key
     elif payload.key_id:
-        keys = _load_vault_data()
-        for k in keys:
-            if k["key_id"] == payload.key_id:
-                raw_key = k.get("raw_key")
-                break
+        raw_key = await get_raw_key_by_id_async(payload.key_id)
+
     if not raw_key:
         raise HTTPException(status_code=400, detail="Thiếu thông tin API Key để kiểm tra")
 
