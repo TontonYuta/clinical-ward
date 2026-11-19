@@ -11,10 +11,13 @@ import {
   Layers,
   Sparkles,
   BookOpen,
-  FileCheck
+  FileCheck,
+  Database,
+  HardDrive
 } from 'lucide-react';
 import {
   fetchKnowledgeDocuments,
+  uploadKnowledgePdf,
   queryKnowledgeDocuments,
   deleteKnowledgeDocument
 } from '../../services/adminApi';
@@ -42,6 +45,7 @@ export const DocumentIngestionTab: React.FC = () => {
   const [category, setCategory] = useState<string>('Thông tư Bộ Y tế');
   const [editionYear, setEditionYear] = useState<number>(2026);
   const [docId, setDocId] = useState<string>('');
+  const [storageTarget, setStorageTarget] = useState<'local' | 'backend'>('local');
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadResult, setUploadResult] = useState<IngestPdfResponse | null>(null);
   const [uploadError, setUploadError] = useState<string>('');
@@ -77,7 +81,7 @@ export const DocumentIngestionTab: React.FC = () => {
     loadDocuments();
   }, [loadDocuments]);
 
-  // Xử lý nạp tài liệu (Chỉ lưu vào LocalStorage/IndexedDB theo cấu hình)
+  // Xử lý nạp tài liệu: hỗ trợ Thử nghiệm Cục bộ (mặc định) và Nạp vào CSDL Backend
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
@@ -94,30 +98,44 @@ export const DocumentIngestionTab: React.FC = () => {
     setUploadResult(null);
 
     try {
-      const localDoc = await saveLocalPdfDocument({
-        file,
-        title: title.trim(),
-        legalBasis: legalBasis.trim(),
-        category: category.trim(),
-        editionYear: Number(editionYear) || 2026,
-        docId: docId.trim() || undefined,
-      });
+      if (storageTarget === 'local') {
+        const localDoc = await saveLocalPdfDocument({
+          file,
+          title: title.trim(),
+          legalBasis: legalBasis.trim(),
+          category: category.trim(),
+          editionYear: Number(editionYear) || 2026,
+          docId: docId.trim() || undefined,
+        });
 
-      setUploadResult({
-        status: 'success (local_only)',
-        doc_id: localDoc.id,
-        title: localDoc.title,
-        legal_basis: localDoc.legal_basis,
-        filename: localDoc.filename,
-        sha256: localDoc.sha256,
-        source_id: localDoc.id,
-        source_version: 'local_storage',
-        total_pages: 1,
-        extracted_chunks_count: 0,
-        indexed_vectors_count: 0,
-        file_bytes: localDoc.bytes,
-        public_url: localDoc.public_url,
-      });
+        setUploadResult({
+          status: 'success (local_only)',
+          doc_id: localDoc.id,
+          title: localDoc.title,
+          legal_basis: localDoc.legal_basis,
+          filename: localDoc.filename,
+          sha256: localDoc.sha256,
+          source_id: localDoc.id,
+          source_version: 'local_storage',
+          total_pages: 1,
+          extracted_chunks_count: 0,
+          indexed_vectors_count: 0,
+          file_bytes: localDoc.bytes,
+          public_url: localDoc.public_url,
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title.trim());
+        formData.append('legal_basis', legalBasis.trim());
+        formData.append('category', category.trim());
+        formData.append('edition_year', String(editionYear));
+        if (docId.trim()) {
+          formData.append('doc_id', docId.trim());
+        }
+        const res = await uploadKnowledgePdf(formData);
+        setUploadResult(res);
+      }
 
       // Reset form
       setFile(null);
@@ -127,7 +145,7 @@ export const DocumentIngestionTab: React.FC = () => {
       // Tải lại danh sách tài liệu ghép cục bộ và máy chủ
       await loadDocuments();
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : 'Lỗi khi lưu tài liệu vào bộ nhớ cục bộ.');
+      setUploadError(err instanceof Error ? err.message : 'Lỗi khi xử lý nạp tài liệu.');
     } finally {
       setUploading(false);
     }
@@ -249,6 +267,44 @@ export const DocumentIngestionTab: React.FC = () => {
           </div>
 
           <form onSubmit={handleUpload} className="space-y-3.5">
+            {/* Chế độ đích nạp tài liệu */}
+            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <label className="block text-2xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                Chế độ nạp tri thức
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStorageTarget('local')}
+                  className={`py-2 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    storageTarget === 'local'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <HardDrive className="w-3.5 h-3.5" />
+                  <span>Thử nghiệm Cục bộ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStorageTarget('backend')}
+                  className={`py-2 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    storageTarget === 'backend'
+                      ? 'bg-teal-700 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  <span>Nạp CSDL Backend</span>
+                </button>
+              </div>
+              <p className="mt-1.5 text-2xs text-slate-500">
+                {storageTarget === 'local'
+                  ? '• Đang chọn Thử nghiệm Cục bộ (mặc định): Tệp chỉ lưu vào LocalStorage/IndexedDB của trình duyệt để test, chưa nạp vào CSDL Backend.'
+                  : '• Đang chọn Nạp CSDL Backend: Quản trị viên nạp chính thức vào CSDL Backend (Vector hóa 768-dim, FTS5 & RAM Cosine).'}
+              </p>
+            </div>
+
             {/* File Picker */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -361,38 +417,59 @@ export const DocumentIngestionTab: React.FC = () => {
 
             {/* Success Message */}
             {uploadResult && (
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-amber-800">
-                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Đã lưu vào bộ nhớ cục bộ (LocalStorage & IndexedDB)!</span>
+              uploadResult.source_version === 'local_storage' ? (
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Đã lưu vào bộ nhớ cục bộ (LocalStorage & IndexedDB)!</span>
+                  </div>
+                  <p className="text-2xs text-amber-700">
+                    Chế độ thử nghiệm: Tệp PDF đã được lưu an toàn trên trình duyệt client để test, chưa ghi thêm vào CSDL máy chủ Backend.
+                  </p>
+                  <div className="text-2xs space-y-0.5 text-amber-800 font-mono">
+                    <div>• Mã tài liệu: {uploadResult.doc_id}</div>
+                    <div>• Tên tệp: {uploadResult.filename}</div>
+                    <div>• Dung lượng: {(uploadResult.file_bytes / 1024).toFixed(1)} KB</div>
+                    <div>• SHA256: {uploadResult.sha256.substring(0, 16)}...</div>
+                  </div>
                 </div>
-                <p className="text-2xs text-amber-700">
-                  Theo yêu cầu, tệp PDF chỉ lưu trong trình duyệt client, không nạp thêm vào CSDL máy chủ Backend.
-                </p>
-                <div className="text-2xs space-y-0.5 text-amber-800 font-mono">
-                  <div>• Mã tài liệu: {uploadResult.doc_id}</div>
-                  <div>• Tên tệp: {uploadResult.filename}</div>
-                  <div>• Dung lượng: {(uploadResult.file_bytes / 1024).toFixed(1)} KB</div>
-                  <div>• SHA256: {uploadResult.sha256.substring(0, 16)}...</div>
+              ) : (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Nạp và Vector hóa thành công vào CSDL Backend!</span>
+                  </div>
+                  <p className="text-2xs text-emerald-700">
+                    Tài liệu đã được phân tích ngữ nghĩa, lập chỉ mục FTS5 và nạp Dense Vectors vào RAM Cosine Similarity của Chatbot.
+                  </p>
+                  <div className="text-2xs space-y-0.5 text-emerald-800 font-mono">
+                    <div>• Mã tài liệu: {uploadResult.doc_id}</div>
+                    <div>• Tổng số trang: {uploadResult.total_pages} trang</div>
+                    <div>• Chunks ngữ nghĩa: {uploadResult.extracted_chunks_count} đoạn</div>
+                    <div>• Vector embeddings: {uploadResult.indexed_vectors_count} vectors (768-dim)</div>
+                    <div>• SHA256: {uploadResult.sha256.substring(0, 16)}...</div>
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={uploading}
-              className="w-full py-2.5 px-4 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs tracking-wide shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-xs tracking-wide shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                storageTarget === 'local' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-700 hover:bg-teal-800'
+              }`}
             >
               {uploading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Đang lưu vào bộ nhớ cục bộ...</span>
+                  <span>{storageTarget === 'local' ? 'Đang lưu vào bộ nhớ cục bộ...' : 'Đang trích xuất & Vector hóa CSDL...'}</span>
                 </>
               ) : (
                 <>
                   <UploadCloud className="w-4 h-4" />
-                  <span>Tải lên (Lưu cục bộ LocalStorage)</span>
+                  <span>{storageTarget === 'local' ? 'Tải lên (Lưu cục bộ để Test)' : 'Tải lên & Nạp vào CSDL Backend'}</span>
                 </>
               )}
             </button>

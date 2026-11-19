@@ -1,6 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, Search, Upload, LoaderCircle, X, FileUp, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
-import { getKnowledgeDocumentsApi } from '../../services/api';
+import {
+  FileText,
+  Search,
+  Upload,
+  LoaderCircle,
+  X,
+  FileUp,
+  AlertCircle,
+  CheckCircle2,
+  Trash2,
+  HardDrive,
+  Database
+} from 'lucide-react';
+import { getKnowledgeDocumentsApi, uploadKnowledgeDocumentApi } from '../../services/api';
 import type { KnowledgeDocument } from '../../types/documents';
 import { filterKnowledgeDocuments, formatDocumentFileSize, isPdfFile } from './documentsLibraryModel';
 import { getAuthSession } from '../../services/authApi';
@@ -17,6 +29,7 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
   const [category, setCategory] = useState('Tất cả');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [storageTarget, setStorageTarget] = useState<'local' | 'backend'>('local');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -108,13 +121,18 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
     if (!title || !legalBasis || !documentCategory || !Number.isInteger(year)) { setUploadError('Vui lòng điền đầy đủ thông tin tài liệu.'); return; }
     setIsUploading(true); setUploadError(''); setUploadMessage('');
     try {
-      await saveLocalPdfDocument({ file: selectedFile, title, legalBasis, category: documentCategory, editionYear: year });
-      setUploadMessage('Tài liệu đã được lưu cục bộ trên trình duyệt (LocalStorage / IndexedDB). Không ghi vào CSDL Backend.');
+      if (storageTarget === 'local') {
+        await saveLocalPdfDocument({ file: selectedFile, title, legalBasis, category: documentCategory, editionYear: year });
+        setUploadMessage('Tài liệu đã được lưu cục bộ trên trình duyệt (LocalStorage / IndexedDB). Không ghi vào CSDL Backend.');
+      } else {
+        await uploadKnowledgeDocumentApi({ file: selectedFile, title, legalBasis, category: documentCategory, editionYear: year });
+        setUploadMessage('Tài liệu đã được nạp và lập chỉ mục CSDL máy chủ cho chatbot.');
+      }
       setSelectedFile(null);
       formElement.reset();
       await refreshDocuments();
       setIsUploadOpen(false);
-    } catch (cause) { setUploadError(cause instanceof Error ? cause.message : 'Không thể lưu tài liệu vào bộ nhớ cục bộ.'); }
+    } catch (cause) { setUploadError(cause instanceof Error ? cause.message : 'Không thể lưu tài liệu.'); }
     finally { setIsUploading(false); }
   };
 
@@ -185,11 +203,52 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
         {isUploadOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-0 sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isUploading) setIsUploadOpen(false); }}>
           <div ref={uploadDialogRef} tabIndex={-1} className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-2xl outline-none sm:h-auto sm:max-h-[min(92dvh,780px)] sm:max-w-2xl sm:rounded-2xl sm:border sm:border-slate-200" role="dialog" aria-modal="true" aria-labelledby="document-upload-title" data-testid="document-upload-dialog">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5 sm:px-6 sm:py-4">
-              <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-800"><FileUp className="h-5 w-5" /></div><div><h2 id="document-upload-title" className="font-semibold text-slate-900">Thêm tài liệu y tế (Cục bộ)</h2><p className="text-xs text-slate-500">Lưu vào bộ nhớ trình duyệt (LocalStorage / IndexedDB), không can thiệp CSDL Backend</p></div></div>
+              <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-800"><FileUp className="h-5 w-5" /></div><div><h2 id="document-upload-title" className="font-semibold text-slate-900">Thêm tài liệu y tế</h2><p className="text-xs text-slate-500">Hỗ trợ lưu thử nghiệm cục bộ hoặc nạp CSDL Backend</p></div></div>
               <button type="button" aria-label="Đóng biểu mẫu tải tài liệu" disabled={isUploading} onClick={() => setIsUploadOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleUpload} className="flex min-h-0 flex-1 flex-col">
-              <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+              <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
+                {/* Chọn chế độ đích lưu trữ */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                  <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                    <span>Mục tiêu nạp tài liệu</span>
+                    <span className="text-2xs font-normal text-slate-500">
+                      {storageTarget === 'local' ? 'Lưu tạm trình duyệt' : 'Nạp vĩnh viễn CSDL'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setStorageTarget('local')}
+                      className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-3 text-xs font-semibold transition ${
+                        storageTarget === 'local'
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <HardDrive className="h-3.5 w-3.5" />
+                      <span>Thử nghiệm (LocalStorage)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStorageTarget('backend')}
+                      className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-3 text-xs font-semibold transition ${
+                        storageTarget === 'backend'
+                          ? 'bg-teal-700 text-white shadow-xs'
+                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Database className="h-3.5 w-3.5" />
+                      <span>Nạp CSDL Backend</span>
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-slate-500">
+                    {storageTarget === 'local'
+                      ? '• Chế độ kiểm thử hiện tại: Chỉ lưu vào bộ nhớ trình duyệt, không ảnh hưởng CSDL Backend.'
+                      : '• Chế độ Quản trị viên: Tự động trích xuất pypdf, băm SHA256, sinh Vector và lập chỉ mục CSDL.'}
+                  </p>
+                </div>
+
                 <div onDragEnter={(event) => { event.preventDefault(); setIsDraggingFile(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { event.preventDefault(); if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDraggingFile(false); }} onDrop={(event) => { event.preventDefault(); setIsDraggingFile(false); acceptFile(event.dataTransfer.files[0]); }} className={`relative rounded-xl border-2 border-dashed p-5 text-center transition sm:p-7 ${isDraggingFile ? 'border-teal-600 bg-teal-50' : selectedFile ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-300 bg-slate-50 hover:border-teal-400 hover:bg-teal-50/50'}`}>
                   <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" onChange={(event) => acceptFile(event.target.files?.[0])} className="sr-only" aria-label="Chọn tệp PDF" />
                   {selectedFile ? <div data-testid="selected-document-file" className="flex items-center justify-center gap-3 text-left"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-rose-700 shadow-xs"><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-900">{selectedFile.name}</p><p className="mt-0.5 text-xs text-slate-500">{formatDocumentFileSize(selectedFile.size)} · PDF</p></div><button type="button" aria-label="Bỏ tệp đã chọn" disabled={isUploading} onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-rose-700"><X className="h-4 w-4" /></button></div> : <><div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-teal-700 shadow-xs"><Upload className="h-5 w-5" /></div><p className="text-sm font-semibold text-slate-800">Thả tệp PDF vào đây</p><p className="mt-1 text-xs text-slate-500">hoặc</p><button type="button" onClick={() => fileInputRef.current?.click()} className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-teal-800 hover:bg-teal-50">Chọn tệp từ thiết bị</button><p className="mt-2 text-[11px] text-slate-400">Chỉ nhận tài liệu định dạng PDF</p></>}
@@ -201,11 +260,15 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
                   <label className="block text-sm font-medium text-slate-700 sm:col-span-2">Số hiệu / căn cứ<input name="legal_basis" required maxLength={300} className="mt-1.5 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100" placeholder="VD: Thông tư 26/2025/TT-BYT" /></label>
                 </div>
                 {uploadError && <p role="alert" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{uploadError}</p>}
-                <p className="text-xs text-slate-500">Sau khi nạp, nội dung tài liệu sẽ được lập chỉ mục để chatbot tra cứu.</p>
+                <p className="text-xs text-slate-500">
+                  {storageTarget === 'local'
+                    ? 'Tài liệu sẽ được lưu an toàn trong trình duyệt của bạn để đọc và kiểm thử.'
+                    : 'Sau khi nạp, nội dung tài liệu sẽ được phân đoạn và vector hóa để Chatbot tra cứu.'}
+                </p>
               </div>
               <div className="border-t border-slate-200 bg-white px-4 py-3.5 sm:px-6">
-                {isUploading && <div className="mb-3"><div className="mb-1.5 flex items-center justify-between text-xs text-teal-800"><span>Đang tải lên và lập chỉ mục tài liệu…</span><LoaderCircle className="h-3.5 w-3.5 animate-spin" /></div><div className="h-1.5 overflow-hidden rounded-full bg-teal-100"><div className="h-full w-1/3 animate-pulse rounded-full bg-teal-700" /></div></div>}
-                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" disabled={isUploading} onClick={() => setIsUploadOpen(false)} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Hủy</button><button type="submit" disabled={isUploading || !selectedFile} className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-50">{isUploading ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Đang xử lý…</> : <><Upload className="h-4 w-4" /> Tải lên và lập chỉ mục</>}</button></div>
+                {isUploading && <div className="mb-3"><div className="mb-1.5 flex items-center justify-between text-xs text-teal-800"><span>{storageTarget === 'local' ? 'Đang lưu vào bộ nhớ cục bộ...' : 'Đang tải lên và lập chỉ mục CSDL...'}</span><LoaderCircle className="h-3.5 w-3.5 animate-spin" /></div><div className="h-1.5 overflow-hidden rounded-full bg-teal-100"><div className="h-full w-1/3 animate-pulse rounded-full bg-teal-700" /></div></div>}
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" disabled={isUploading} onClick={() => setIsUploadOpen(false)} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Hủy</button><button type="submit" disabled={isUploading || !selectedFile} className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 ${storageTarget === 'local' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-800 hover:bg-teal-900'}`}>{isUploading ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Đang xử lý…</> : <><Upload className="h-4 w-4" /> {storageTarget === 'local' ? 'Lưu cục bộ để Test' : 'Tải lên & Nạp CSDL'}</>}</button></div>
               </div>
             </form>
           </div>
