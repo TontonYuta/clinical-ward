@@ -109,7 +109,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 step="0.5"
                 value={currentPixels}
                 onChange={(e) => onFontScaleChange(Number(e.target.value))}
-                className="min-w-0 flex-1 accent-slate-900 cursor-pointer h-2 bg-slate-100 rounded-lg"
+                className="min-w-0 flex-1 accent-teal-700 cursor-pointer h-2 bg-slate-100 rounded-lg"
               />
               <span className="text-xs font-medium text-slate-400">24px</span>
             </div>
@@ -141,28 +141,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     key={opt.id}
                     type="button"
                     onClick={() => onFontFamilyChange(opt.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition cursor-pointer ${
+                    className={`flex items-center justify-between p-3.5 rounded-xl border text-left transition cursor-pointer ${
                       isSelected
-                        ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
-                        : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+                        ? 'border-teal-600 bg-teal-50/80 text-teal-950 font-semibold shadow-xs ring-1 ring-teal-600/30'
+                        : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-300'
                     }`}
                   >
                     <div>
                       <p
-                        className="text-sm font-bold truncate"
+                        className={`text-sm font-bold truncate ${
+                          isSelected ? 'text-teal-950' : 'text-slate-900'
+                        }`}
                         style={{ fontFamily: opt.fontFamily }}
                       >
                         {opt.label}
                       </p>
                       <p
                         className={`text-[11px] truncate mt-0.5 ${
-                          isSelected ? 'text-slate-300' : 'text-slate-400'
+                          isSelected ? 'text-teal-700' : 'text-slate-400'
                         }`}
                       >
                         {opt.desc}
                       </p>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-white shrink-0 ml-2" />}
+                    {isSelected && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-700 text-white shrink-0 ml-2 shadow-xs">
+                        <Check className="w-3.5 h-3.5" />
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -208,7 +214,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer active:scale-95"
+            className="px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold transition cursor-pointer active:scale-95 shadow-xs"
           >
             Hoàn tất
           </button>

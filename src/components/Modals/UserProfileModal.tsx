@@ -143,7 +143,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   className="w-20 h-20 sm:w-22 sm:h-22 rounded-full object-cover border border-slate-200 shadow-xs"
                 />
               ) : (
-                <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-2xl shadow-xs">
+                <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-2xl shadow-xs">
                   {initials}
                 </div>
               )}
@@ -265,7 +265,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer active:scale-95"
+            className="px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold transition cursor-pointer active:scale-95 shadow-xs"
           >
             Đóng
           </button>
