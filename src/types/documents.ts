@@ -8,4 +8,5 @@ export interface KnowledgeDocument {
   public_url: string;
   sha256: string;
   bytes: number | null;
+  is_local?: boolean;
 }

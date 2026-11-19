@@ -256,6 +256,7 @@ _pdf_candidates = (
 _pdf_dir = next((path for path in _pdf_candidates if os.path.isdir(path)), _pdf_candidates[0])
 if os.path.isdir(_pdf_dir):
     app.mount("/api/v1/pdf", StaticFiles(directory=_pdf_dir), name="clinical_source_pdf")
+    app.mount("/pdf", StaticFiles(directory=_pdf_dir), name="clinical_source_pdf_root")
 
 @app.get("/", tags=["Health Check"])
 @app.get("/health", tags=["Health Check"])

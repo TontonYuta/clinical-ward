@@ -10,6 +10,7 @@ export interface KnowledgeDocumentItem {
   public_url: string;
   sha256: string;
   bytes: number;
+  is_local?: boolean;
 }
 
 export interface IngestPdfResponse {

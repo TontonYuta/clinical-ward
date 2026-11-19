@@ -1,9 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, Search, Upload, LoaderCircle, X, FileUp, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { getKnowledgeDocumentsApi, uploadKnowledgeDocumentApi } from '../../services/api';
+import { FileText, Search, Upload, LoaderCircle, X, FileUp, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
+import { getKnowledgeDocumentsApi } from '../../services/api';
 import type { KnowledgeDocument } from '../../types/documents';
 import { filterKnowledgeDocuments, formatDocumentFileSize, isPdfFile } from './documentsLibraryModel';
 import { getAuthSession } from '../../services/authApi';
+import {
+  getLocalPdfDocuments,
+  saveLocalPdfDocument,
+  deleteLocalPdfDocument,
+  openLocalPdfDocument,
+} from '../../services/localDocumentStorage';
 
 export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
@@ -23,23 +29,29 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
   const refreshDocuments = async () => {
     setLoading(true);
     setError('');
+    const localDocs = getLocalPdfDocuments();
     try {
-      setDocuments(await getKnowledgeDocumentsApi());
+      const remoteDocs = await getKnowledgeDocumentsApi();
+      setDocuments([...localDocs, ...remoteDocs]);
     }
     catch (cause) {
+      if (localDocs.length > 0) {
+        setDocuments(localDocs);
+      }
       const message = cause instanceof Error ? cause.message : 'Không thể tải danh mục tài liệu';
       if (/401|authentication required/i.test(message)) {
         try {
           const session = await getAuthSession();
           if (session.authenticated) {
-            setDocuments(await getKnowledgeDocumentsApi());
+            const remoteDocs = await getKnowledgeDocumentsApi();
+            setDocuments([...localDocs, ...remoteDocs]);
             return;
           }
-          setError('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại để tải tài liệu.');
-          return;
         } catch {}
       }
-      setError(message);
+      if (localDocs.length === 0) {
+        setError(message);
+      }
     }
     finally { setLoading(false); }
   };
@@ -75,6 +87,15 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
     setUploadMessage('');
   };
 
+  const handleDeleteLocal = async (event: React.MouseEvent, docId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (window.confirm('Bạn có chắc muốn xóa tài liệu lưu cục bộ này khỏi trình duyệt?')) {
+      await deleteLocalPdfDocument(docId);
+      await refreshDocuments();
+    }
+  };
+
   const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedFile) { setUploadError('Chọn một tệp PDF trước khi tiếp tục.'); return; }
@@ -87,13 +108,13 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
     if (!title || !legalBasis || !documentCategory || !Number.isInteger(year)) { setUploadError('Vui lòng điền đầy đủ thông tin tài liệu.'); return; }
     setIsUploading(true); setUploadError(''); setUploadMessage('');
     try {
-      await uploadKnowledgeDocumentApi({ file: selectedFile, title, legalBasis, category: documentCategory, editionYear: year });
-      setUploadMessage('Tài liệu đã được lưu và lập chỉ mục cho chatbot.');
+      await saveLocalPdfDocument({ file: selectedFile, title, legalBasis, category: documentCategory, editionYear: year });
+      setUploadMessage('Tài liệu đã được lưu cục bộ trên trình duyệt (LocalStorage / IndexedDB). Không ghi vào CSDL Backend.');
       setSelectedFile(null);
       formElement.reset();
       await refreshDocuments();
       setIsUploadOpen(false);
-    } catch (cause) { setUploadError(cause instanceof Error ? cause.message : 'Không thể tải tài liệu lên.'); }
+    } catch (cause) { setUploadError(cause instanceof Error ? cause.message : 'Không thể lưu tài liệu vào bộ nhớ cục bộ.'); }
     finally { setIsUploading(false); }
   };
 
@@ -112,9 +133,48 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
             {loading ? <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải tài liệu…</div> : error ? <div role="alert" className="rounded-lg bg-rose-50 p-4 text-sm text-rose-800">{error}</div> : visibleDocuments.length === 0 ? <div className="rounded-lg border border-dashed border-slate-300 py-14 text-center text-sm text-slate-500">{documents.length ? 'Không tìm thấy tài liệu phù hợp.' : 'Chưa có tài liệu trong thư viện.'}</div> : (
               <ul data-testid="document-card-grid" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{visibleDocuments.map((document) => (
                 <li key={document.id} className="min-w-0">
-                  <a data-testid="document-card-link" href={pdfUrl(document)} target="_blank" rel="noreferrer" aria-label={`Mở tài liệu PDF: ${document.title}`} className="block h-full min-h-36 rounded-xl border border-slate-200 p-5 text-left transition hover:border-teal-400 hover:bg-teal-50/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:p-6">
-                  <div className="flex items-start gap-4"><div className="rounded-xl bg-rose-50 p-3 text-rose-700"><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><h3 className="line-clamp-3 text-base font-semibold leading-snug text-slate-900">{document.title}</h3><p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500">{document.legal_basis || document.filename}</p></div></div>
-                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500"><span className="rounded-full bg-slate-100 px-2.5 py-1">{document.category || 'Văn bản y tế'}</span>{document.edition_year && <span>{document.edition_year}</span>}</div>
+                  <a
+                    data-testid="document-card-link"
+                    href={pdfUrl(document)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Mở tài liệu PDF: ${document.title}`}
+                    onClick={async (e) => {
+                      if (document.is_local) {
+                        e.preventDefault();
+                        await openLocalPdfDocument(document.id);
+                      }
+                    }}
+                    className="group relative block h-full min-h-36 rounded-xl border border-slate-200 p-5 text-left transition hover:border-teal-400 hover:bg-teal-50/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:p-6"
+                  >
+                    {document.is_local && (
+                      <button
+                        type="button"
+                        title="Xóa tài liệu khỏi bộ nhớ cục bộ"
+                        onClick={(e) => handleDeleteLocal(e, document.id)}
+                        className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                    <div className="flex items-start gap-4">
+                      <div className={`rounded-xl p-3 ${document.is_local ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1 pr-6">
+                        <h3 className="line-clamp-3 text-base font-semibold leading-snug text-slate-900">{document.title}</h3>
+                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500">{document.legal_basis || document.filename}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1">{document.category || 'Văn bản y tế'}</span>
+                      {document.edition_year && <span>{document.edition_year}</span>}
+                      {document.is_local && (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-medium text-amber-800">
+                          Cục bộ (LocalStorage)
+                        </span>
+                      )}
+                    </div>
                   </a>
                 </li>
               ))}</ul>
@@ -125,7 +185,7 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
         {isUploadOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-0 sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isUploading) setIsUploadOpen(false); }}>
           <div ref={uploadDialogRef} tabIndex={-1} className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-2xl outline-none sm:h-auto sm:max-h-[min(92dvh,780px)] sm:max-w-2xl sm:rounded-2xl sm:border sm:border-slate-200" role="dialog" aria-modal="true" aria-labelledby="document-upload-title" data-testid="document-upload-dialog">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5 sm:px-6 sm:py-4">
-              <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-800"><FileUp className="h-5 w-5" /></div><div><h2 id="document-upload-title" className="font-semibold text-slate-900">Thêm tài liệu y tế</h2><p className="text-xs text-slate-500">PDF được lưu và đưa vào tìm kiếm chatbot</p></div></div>
+              <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-800"><FileUp className="h-5 w-5" /></div><div><h2 id="document-upload-title" className="font-semibold text-slate-900">Thêm tài liệu y tế (Cục bộ)</h2><p className="text-xs text-slate-500">Lưu vào bộ nhớ trình duyệt (LocalStorage / IndexedDB), không can thiệp CSDL Backend</p></div></div>
               <button type="button" aria-label="Đóng biểu mẫu tải tài liệu" disabled={isUploading} onClick={() => setIsUploadOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleUpload} className="flex min-h-0 flex-1 flex-col">
