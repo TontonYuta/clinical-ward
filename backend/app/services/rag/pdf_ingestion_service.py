@@ -354,51 +354,6 @@ async def ingest_pdf_bytes(
     }
 
 
-def ingest_pdf_bytes_sync(
-    file_bytes: bytes,
-    filename: str,
-    title: str,
-    legal_basis: str,
-    edition_year: int = 2026,
-    doc_id: Optional[str] = None,
-    category: str = "",
-    provider: Optional[BaseEmbeddingProvider] = None,
-    vector_store: Optional[VectorStore] = None,
-) -> Dict[str, Any]:
-    """Phiên bản đồng bộ của ingest_pdf_bytes dành cho CLI/scripts."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(ingest_pdf_bytes(
-            file_bytes=file_bytes,
-            filename=filename,
-            title=title,
-            legal_basis=legal_basis,
-            edition_year=edition_year,
-            doc_id=doc_id,
-            category=category,
-            provider=provider,
-            vector_store=vector_store,
-        ))
-
-    import concurrent.futures
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(
-            asyncio.run,
-            ingest_pdf_bytes(
-                file_bytes=file_bytes,
-                filename=filename,
-                title=title,
-                legal_basis=legal_basis,
-                edition_year=edition_year,
-                doc_id=doc_id,
-                category=category,
-                provider=provider,
-                vector_store=vector_store,
-            )
-        ).result()
-
-
 def delete_ingested_pdf(
     doc_id: str,
     vector_store: Optional[VectorStore] = None

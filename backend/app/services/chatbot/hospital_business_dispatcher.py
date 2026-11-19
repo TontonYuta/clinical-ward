@@ -1,24 +1,15 @@
 import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.copilot import CopilotResponse
-from app.services.copilot_catalog import find_matched_med, find_matched_eq
 from app.services.copilot_business_overview import handle_business_overview_intent
 from app.services.copilot_intents_info import (
-    handle_legal_intent,
     handle_shift_handover_intent,
-    # handle_coldchain_intent,
     handle_audit_intent,
     handle_ocr_intent,
-)
-from app.services.copilot_intents_actions import (
-    handle_borrow_intent,
-    handle_equipment_intent,
-    # Legacy FEFO/restock handlers are retired; domain tools are used below.
 )
 from app.services.copilot_intents_prescription import (
     handle_prescription_advice_intent,
     handle_cpoe_intent,
-    handle_debt_settle_intent,
     handle_prescription_audit_intent,
 )
 
@@ -79,14 +70,6 @@ async def dispatch_clinical_subflows(
     if is_cpoe:
         return await handle_cpoe_intent(query, lower_query, user_name, user_role=user_role)
 
-    # Tạm thời comment tính năng xử lý trả nợ vỏ theo yêu cầu người dùng
-    # is_debt_settle = any(w in lower_query for w in [
-    #     "trả vỏ", "hoàn trả vỏ", "thu hồi vỏ", "thanh toán nợ", "thanh toán sổ nợ",
-    #     "trả nợ thuốc", "xóa nợ thuốc", "đối soát vỏ morphin", "xác nhận trả vỏ"
-    # ]) and not any(w in lower_query for w in ["quy định", "thông tư", "nghị định"])
-    # if is_debt_settle:
-    #     return await handle_debt_settle_intent(query, lower_query, db)
-
     return None
 
 async def dispatch_operational_business(
@@ -108,20 +91,6 @@ async def dispatch_operational_business(
     ]) or lower_query.strip().strip("?.! ") in ["menu", "chức năng", "tính năng", "bạn là ai"]) and not has_clinical_context
     if is_capabilities:
         return await handle_business_overview_intent()
-
-    has_clinical_question = any(w in lower_query for w in [
-        "chỉnh liều", "liều dùng", "liều lượng", "uống lúc nào", "uống thế nào", "dùng để làm gì",
-        "tác dụng phụ", "tác hại", "suy thận", "clcr", "egfr", "co thắt", "co giật", "sốt cao", "buồn nôn", "nghi ngờ sốt xuất huyết"
-    ]) and not any(w in lower_query for w in [
-        "thông tư", "nghị định", "quy chế", "quy định", "tiêu chuẩn nhiệt độ", "kiểm định", "chuỗi lạnh"
-    ])
-    # Tạm thời comment handle_legal_intent theo yêu cầu người dùng để chuyển sang tra cứu SOTA RAG
-    # is_legal = any(w in lower_query for w in [
-    #     "phác đồ", "quy định", "quy chế", "thông tư", "nghị định", "tiêu chuẩn", "hướng dẫn", "tiêu hủy", "vỡ", "làm mất", "thuốc gây nghiện", "hướng thần", "kiểm soát đặc biệt"
-    # ]) and not has_clinical_question
-    # has_action = any(w in lower_query for w in ["mượn", "lấy", "xuất", "hỏng", "báo hỏng", "cần"])
-    # if is_legal and not has_action:
-    #     return await handle_legal_intent(lower_query)
 
     is_audit_trail_ask = any(w in lower_query for w in ["sổ kiểm toán", "audit trail", "hmac", "sha256", "bất biến"])
     if not is_audit_trail_ask and any(w in lower_query for w in ["đối soát", "giao ban", "ca trực", "ca đêm", "báo cáo ca", "chốt ca", "bàn giao ca", "07:00", "lệch sổ", "tổng hợp nợ"]):
@@ -163,19 +132,5 @@ async def dispatch_operational_business(
         inv_res = await sc.handle(query, lower_query, ctx, db)
         if inv_res:
             return inv_res
-
-    matched_med = find_matched_med(lower_query)
-    has_dispense_verb = any(w in lower_query for w in ["mượn", "lấy", "rút", "xuất", "cần", "xin", "tiêm", "truyền", "cấp phát"]) or (
-        "cho" in lower_query and any(w in lower_query for w in ["lọ", "ống", "chai", "viên", "liều", "morphin", "adre"])
-    )
-    is_med_info = any(w in lower_query for w in [
-        "thời gian bán thải", "chỉ định", "chống chỉ định", "tác dụng phụ", "tác dụng",
-        "công dụng", "tương tác", "dùng để làm gì", "liều tối đa", "liều dùng", "là gì",
-        "dị ứng", "huyết tương", "dược động học", "cơ chế", "thành phần", "uống lúc nào",
-        "thế nào", "như thế nào", "bao nhiêu", "hỏi về", "thông tin"
-    ])
-    # Tạm thời comment tính năng mượn nợ thuốc tủ trực theo yêu cầu người dùng
-    # if matched_med is not None and not is_med_info and (has_dispense_verb or any(c.isdigit() for c in query)):
-    #     return await handle_borrow_intent(query, lower_query, user_name)
 
     return None

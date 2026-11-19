@@ -754,15 +754,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
         setDebts(prev => [newDebtRecord, ...prev]);
 
-        debtApi.borrowItem({
-          itemName: newRecordData.itemName,
-          itemType: newRecordData.itemType,
-          quantity: newRecordData.quantity,
-          patientName: newRecordData.patientName,
-          patientRoom: newRecordData.patientRoom,
-          borrowerName: `${signer.name} (${signer.roleName})`,
-          clinicalReason: newRecordData.note,
-        }).catch((err) => console.warn('Could not persist debt to backend:', err));
+        // Tạm thời comment đồng bộ ngầm cho Sổ nợ vỏ theo yêu cầu người dùng
+        // debtApi.borrowItem({
+        //   itemName: newRecordData.itemName,
+        //   itemType: newRecordData.itemType,
+        //   quantity: newRecordData.quantity,
+        //   patientName: newRecordData.patientName,
+        //   patientRoom: newRecordData.patientRoom,
+        //   borrowerName: `${signer.name} (${signer.roleName})`,
+        //   clinicalReason: newRecordData.note,
+        // }).catch((err) => console.warn('Could not persist debt to backend:', err));
 
         appendAuditRecord(
           'BORROW_EMERGENCY',
@@ -1200,7 +1201,8 @@ Quy trình ứng phó SOP-GSP-09:
               : d
           )
         );
-        debtApi.returnAmpoule(id).catch((err) => console.warn('Could not persist ampoule return:', err));
+        // Tạm thời comment đồng bộ ngầm cho Sổ nợ vỏ theo yêu cầu người dùng
+        // debtApi.returnAmpoule(id).catch((err) => console.warn('Could not persist ampoule return:', err));
         appendAuditRecord(
           'RETURN_AMPOULE',
           'Thu hồi vỏ ống thuốc gây nghiện',

@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
-from app.schemas.copilot import CopilotResponse, CopilotActionCard
+from app.schemas.copilot import CopilotResponse
 from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher, strip_accents
 
 ASK_SCORE_THRESHOLD = 0.68
@@ -181,16 +181,6 @@ def build_crag_clarification_response(
         + "\n\n".join(cand_lines) +
         f"\n\n---\n👉 *{role_label} có thể chọn các gợi ý bên dưới để xem ngay chỉ định và liều dùng khuyến cáo ạ.*"
     )
-
-    # Tạm thời comment thẻ thông tin Action Card và gợi ý chips theo yêu cầu người dùng
-    # card = CopilotActionCard(
-    #     card_type="medication_safety",
-    #     title=f"Gợi ý đối soát: {top['brand_name']}",
-    #     summary=f"SĐK: {top['national_code']} • Hoạt chất: {top['active_ingredient']}",
-    #     data={"national_code": top['national_code'], "brand_name": top['brand_name'], "active_ingredient": top['active_ingredient']},
-    #     primary_action_label=f"Xem {top['brand_name']}",
-    #     primary_action_type="OPEN_MEDICATION_SAFETY"
-    # )
 
     return CopilotResponse(
         intent="CLINICAL_TYPO_SUGGESTION",

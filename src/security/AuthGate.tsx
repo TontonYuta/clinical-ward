@@ -10,6 +10,9 @@ type AuthGateProps = {
 };
 
 export function AuthGate({ children, allowedRoles }: AuthGateProps) {
+  // Chế độ mở để mọi người test tự do (Ẩn form login tạm thời, giữ nguyên toàn bộ mã để bật lại sau)
+  const BYPASS_LOGIN_FOR_TESTING = true;
+
   const [auth, setAuth] = useState<AuthState | null>(null);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
@@ -28,6 +31,11 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   }
 
   useEffect(() => {
+    if (BYPASS_LOGIN_FOR_TESTING) {
+      setAuth({ enabled: false, username: 'bac_si_test', role: 'director' });
+      setChecking(false);
+      return;
+    }
     let mounted = true;
     getAuthSession()
       .then(session => { if (mounted) { setError(''); acceptSession(session); } })
@@ -37,7 +45,7 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   }, []);
 
   useEffect(() => {
-    if (!auth?.enabled) return;
+    if (!auth?.enabled || BYPASS_LOGIN_FOR_TESTING) return;
     let mounted = true;
     const refreshSession = async () => {
       if (sessionCheckInFlight.current) return;
@@ -70,9 +78,6 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể kết thúc phiên đăng nhập.'); }
     setAuth(null);
   }
-
-  // Chế độ mở để mọi người test tự do (Ẩn form login tạm thời, giữ nguyên toàn bộ mã để bật lại sau)
-  const BYPASS_LOGIN_FOR_TESTING = true;
 
   if (checking) return <div className="min-h-screen grid place-items-center bg-slate-50 text-sm text-slate-600">Đang kiểm tra phiên đăng nhập…</div>;
   if (BYPASS_LOGIN_FOR_TESTING || auth?.enabled === false) {

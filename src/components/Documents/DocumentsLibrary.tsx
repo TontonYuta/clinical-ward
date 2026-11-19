@@ -29,6 +29,8 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
   const [category, setCategory] = useState('Tất cả');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Cờ chuyển đổi CSDL: false = Lưu cục bộ (LocalStorage / IndexedDB); true = Cho phép nạp trực tiếp CSDL Backend
+  const ENABLE_BACKEND_INGEST_IN_CLIENT = false;
   const [storageTarget, setStorageTarget] = useState<'local' | 'backend'>('local');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
@@ -208,46 +210,51 @@ export const DocumentsLibrary: React.FC<{ onClose?: () => void }> = ({ onClose }
             </div>
             <form onSubmit={handleUpload} className="flex min-h-0 flex-1 flex-col">
               <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
-                {/* Chọn chế độ đích lưu trữ */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                  <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                    <span>Mục tiêu nạp tài liệu</span>
-                    <span className="text-2xs font-normal text-slate-500">
-                      {storageTarget === 'local' ? 'Lưu tạm trình duyệt' : 'Nạp vĩnh viễn CSDL'}
-                    </span>
+                {/* Chế độ đích lưu trữ (Được điều khiển bằng ENABLE_BACKEND_INGEST_IN_CLIENT) */}
+                {ENABLE_BACKEND_INGEST_IN_CLIENT ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                    <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                      <span>Mục tiêu nạp tài liệu</span>
+                      <span className="text-2xs font-normal text-slate-500">
+                        {storageTarget === 'local' ? 'Lưu tạm trình duyệt' : 'Nạp vĩnh viễn CSDL'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setStorageTarget('local')}
+                        className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-3 text-xs font-semibold transition ${
+                          storageTarget === 'local'
+                            ? 'bg-amber-500 text-white shadow-xs'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <HardDrive className="h-3.5 w-3.5" />
+                        <span>Thử nghiệm (LocalStorage)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStorageTarget('backend')}
+                        className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-3 text-xs font-semibold transition ${
+                          storageTarget === 'backend'
+                            ? 'bg-teal-700 text-white shadow-xs'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Database className="h-3.5 w-3.5" />
+                        <span>Nạp CSDL Backend</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setStorageTarget('local')}
-                      className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-3 text-xs font-semibold transition ${
-                        storageTarget === 'local'
-                          ? 'bg-amber-500 text-white shadow-xs'
-                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <HardDrive className="h-3.5 w-3.5" />
-                      <span>Thử nghiệm (LocalStorage)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStorageTarget('backend')}
-                      className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-3 text-xs font-semibold transition ${
-                        storageTarget === 'backend'
-                          ? 'bg-teal-700 text-white shadow-xs'
-                          : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <Database className="h-3.5 w-3.5" />
-                      <span>Nạp CSDL Backend</span>
-                    </button>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-xs text-amber-900">
+                    <HardDrive className="h-4 w-4 shrink-0 text-amber-700" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-semibold">Lưu trữ cục bộ: </span>
+                      <span className="text-amber-800">Tài liệu chỉ lưu trên máy bạn (LocalStorage / IndexedDB). Không ghi đè CSDL chung.</span>
+                    </div>
                   </div>
-                  <p className="mt-1.5 text-[11px] text-slate-500">
-                    {storageTarget === 'local'
-                      ? '• Chế độ kiểm thử hiện tại: Chỉ lưu vào bộ nhớ trình duyệt, không ảnh hưởng CSDL Backend.'
-                      : '• Chế độ Quản trị viên: Tự động trích xuất pypdf, băm SHA256, sinh Vector và lập chỉ mục CSDL.'}
-                  </p>
-                </div>
+                )}
 
                 <div onDragEnter={(event) => { event.preventDefault(); setIsDraggingFile(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { event.preventDefault(); if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDraggingFile(false); }} onDrop={(event) => { event.preventDefault(); setIsDraggingFile(false); acceptFile(event.dataTransfer.files[0]); }} className={`relative rounded-xl border-2 border-dashed p-5 text-center transition sm:p-7 ${isDraggingFile ? 'border-teal-600 bg-teal-50' : selectedFile ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-300 bg-slate-50 hover:border-teal-400 hover:bg-teal-50/50'}`}>
                   <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" onChange={(event) => acceptFile(event.target.files?.[0])} className="sr-only" aria-label="Chọn tệp PDF" />
