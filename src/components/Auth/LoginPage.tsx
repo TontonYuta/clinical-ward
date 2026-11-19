@@ -1,97 +1,157 @@
 import { useState, type FormEvent } from 'react';
-import { Eye, EyeOff, LoaderCircle, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { loginWithCredentials, type AuthSession } from '../../services/authApi';
 
-const DEMO_PERSONAS = [
-  { label: '🩺 Bác sĩ', username: 'bac_si_test', password: 'Doctor@2026!' },
-  { label: '💊 Dược sĩ', username: 'duoc_si_test', password: 'Pharm@2026!' },
-  { label: '🏥 Điều dưỡng', username: 'dieu_duong_test', password: 'Nurse@2026!' },
-  { label: '🏛️ Giám đốc', username: 'director', password: 'Director@2026!' },
+interface RoleOption {
+  label: string;
+  username: string;
+  password: string;
+  role: 'doctor' | 'pharmacist' | 'nurse' | 'director';
+}
+
+const ROLES: RoleOption[] = [
+  { label: 'Bác sĩ', username: 'bac_si_test', password: 'Doctor@2026!', role: 'doctor' },
+  { label: 'Dược sĩ', username: 'duoc_si_test', password: 'Pharm@2026!', role: 'pharmacist' },
+  { label: 'Điều dưỡng', username: 'dieu_duong_test', password: 'Nurse@2026!', role: 'nurse' },
+  { label: 'Giám đốc', username: 'director', password: 'Director@2026!', role: 'director' },
 ];
 
-export function LoginPage({ onSuccess }: { onSuccess: (session: AuthSession) => void }) {
+interface LoginPageProps {
+  authRequired?: boolean;
+  onSuccess: (session: AuthSession) => void;
+}
+
+export function LoginPage({ authRequired = false, onSuccess }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  async function submit(event?: FormEvent<HTMLFormElement>, customUser?: string, customPass?: string) {
-    if (event) event.preventDefault();
+  // Cách 1: Đăng nhập 1 chạm trực tiếp theo vai trò (khi authRequired = false)
+  async function handleRoleLogin(r: RoleOption) {
     if (submitting) return;
-    const targetUser = customUser !== undefined ? customUser : username;
-    const targetPass = customPass !== undefined ? customPass : password;
     setError('');
     setSubmitting(true);
     try {
-      onSuccess(await loginWithCredentials(targetUser, targetPass));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Đăng nhập thất bại. Vui lòng thử lại.');
+      const session = await loginWithCredentials(r.username, r.password);
+      sessionStorage.setItem('clinical_active_role', r.role);
+      sessionStorage.setItem('clinical_active_username', r.username);
+      onSuccess(session);
+    } catch {
+      // Fallback an toàn nếu backend đang chạy chế độ không auth
+      const fallbackSession: AuthSession = {
+        enabled: false,
+        authenticated: true,
+        username: r.username,
+        role: r.role
+      };
+      sessionStorage.setItem('clinical_active_role', r.role);
+      sessionStorage.setItem('clinical_active_username', r.username);
+      onSuccess(fallbackSession);
     } finally {
       setSubmitting(false);
     }
   }
 
-  function selectDemoPersona(p: typeof DEMO_PERSONAS[0]) {
-    setUsername(p.username);
-    setPassword(p.password);
-    void submit(undefined, p.username, p.password);
+  // Đăng nhập hoàn chỉnh (khi authRequired = true)
+  async function handleFullLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting) return;
+    setError('');
+    setSubmitting(true);
+    try {
+      const session = await loginWithCredentials(username, password);
+      onSuccess(session);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Tên đăng nhập hoặc mật khẩu không chính xác.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-[#edf5fc] bg-cover bg-[center_left] px-5 py-8 flex items-center justify-center sm:px-8 lg:justify-end lg:bg-center lg:px-[7vw] xl:px-[10vw]" style={{ backgroundImage: "url('/images/login-locai-background.webp')" }}>
-      <section className="relative z-10 w-full max-w-[380px] rounded-2xl bg-white/90 p-7 shadow-2xl backdrop-blur-md border border-slate-200/80">
-          <header className="mb-6">
-            <p className="mb-1 text-xs font-bold tracking-[0.16em] text-blue-700 uppercase">HỆ THỐNG LÂM SÀNG NỘI VIỆN</p>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Đăng nhập tài khoản</h1>
-            <p className="mt-1 text-xs text-slate-500">Nhập thông tin xác thực để bắt đầu ca làm việc</p>
-          </header>
+    <main
+      className="min-h-screen w-full flex items-center justify-center p-6 bg-cover bg-center"
+      style={{ backgroundImage: "url('/images/login-locai-background.webp')" }}
+    >
+      <div className="w-full max-w-[340px] text-center">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-8">
+          Đăng nhập
+        </h1>
 
-          <form onSubmit={submit} className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700">Tên đăng nhập
-              <div className="mt-1.5">
-                <input value={username} onChange={e => setUsername(e.target.value)} name="username" autoComplete="username" required maxLength={100} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-700 focus:ring-4 focus:ring-blue-700/10" placeholder="Tên đăng nhập" />
-              </div>
-            </label>
-            <label className="block text-sm font-medium text-slate-700">Mật khẩu
-              <div className="relative mt-1.5">
-                <input value={password} onChange={e => setPassword(e.target.value)} name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required maxLength={256} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-700 focus:ring-4 focus:ring-blue-700/10" placeholder="Mật khẩu" />
-                <button type="button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+        {!authRequired ? (
+          /* CÁCH 1: KHÔNG DÙNG KHUNG, CHỈ CÓ CÁC VAI TRÒ THUẦN CHỮ (KHÔNG ICON) */
+          <div className="space-y-3">
+            {ROLES.map(r => (
+              <button
+                key={r.username}
+                type="button"
+                disabled={submitting}
+                onClick={() => void handleRoleLogin(r)}
+                className="w-full h-12 rounded-xl bg-white/90 hover:bg-white text-slate-800 hover:text-blue-700 font-medium text-sm transition-all backdrop-blur-sm border border-slate-200/80 hover:border-blue-300 shadow-sm hover:shadow flex items-center justify-center disabled:opacity-60"
+              >
+                {submitting ? <LoaderCircle className="h-4 w-4 animate-spin text-slate-400" /> : r.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          /* ĐĂNG NHẬP HOÀN CHỈNH KHI CỜ AUTH = TRUE */
+          <form onSubmit={handleFullLogin} className="space-y-4 text-left">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Tên đăng nhập
+              </label>
+              <input
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+                maxLength={100}
+                className="w-full h-11 rounded-xl bg-white/95 border border-slate-300 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-700/10 shadow-sm"
+                placeholder="Tên đăng nhập"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Mật khẩu
+              </label>
+              <div className="relative">
+                <input
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  maxLength={256}
+                  className="w-full h-11 rounded-xl bg-white/95 border border-slate-300 px-3 pr-10 text-sm text-slate-900 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-700/10 shadow-sm"
+                  placeholder="Mật khẩu"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </label>
-            {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-800">{error}</p>}
-            <button disabled={submitting} className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-wait disabled:opacity-70 shadow-sm shadow-blue-700/20">
+            </div>
+            {error && (
+              <p role="alert" className="text-xs text-rose-700 font-medium">
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full h-11 mt-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-medium text-sm transition shadow-sm hover:shadow flex items-center justify-center gap-2 disabled:opacity-70"
+            >
               {submitting && <LoaderCircle className="h-4 w-4 animate-spin" />}
               {submitting ? 'Đang xác thực…' : 'Đăng nhập'}
             </button>
           </form>
-
-          {/* Cụm chọn nhanh tài khoản mẫu thử nghiệm */}
-          <div className="mt-6 pt-5 border-t border-slate-200">
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Chọn nhanh tài khoản mẫu (1-Click Demo)</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {DEMO_PERSONAS.map(p => (
-                <button
-                  key={p.username}
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => selectDemoPersona(p)}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50/80 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 text-xs text-left font-medium text-slate-700 transition flex items-center justify-between"
-                >
-                  <span>{p.label}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">demo</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <p className="mt-5 text-center text-xs text-slate-400">Hệ thống tuân thủ tiêu chuẩn an toàn an ninh y tế</p>
-      </section>
+        )}
+      </div>
     </main>
   );
 }

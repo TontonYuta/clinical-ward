@@ -12,12 +12,13 @@ type AuthGateProps = {
 export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   const [auth, setAuth] = useState<AuthState | null>(null);
   const [checking, setChecking] = useState(true);
+  const [serverAuthEnabled, setServerAuthEnabled] = useState(false);
   const [error, setError] = useState('');
   const sessionCheckInFlight = useRef(false);
 
   function acceptSession(session: AuthSession) {
     if (session.enabled === false && session.authenticated) {
-      setAuth({ enabled: false, username: session.username || 'bac_si_test', role: session.role || 'director' });
+      setAuth({ enabled: false, username: session.username || 'bac_si_test', role: (session.role as UserRole) || 'doctor' });
       return;
     }
     if (!session.authenticated || !session.role || !session.username) {
@@ -30,11 +31,34 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   useEffect(() => {
     let mounted = true;
     getAuthSession()
-      .then(session => { if (mounted) { setError(''); acceptSession(session); } })
+      .then(session => {
+        if (!mounted) return;
+        setError('');
+        const isStrict = Boolean(session.enabled);
+        setServerAuthEnabled(isStrict);
+        if (!isStrict) {
+          // Khi cờ auth = false (chế độ chọn vai trò Cách 1)
+          const savedRole = sessionStorage.getItem('clinical_active_role') as UserRole | null;
+          const savedUser = sessionStorage.getItem('clinical_active_username') || 'bac_si_test';
+          if (savedRole) {
+            setAuth({ enabled: false, username: savedUser, role: savedRole });
+          } else {
+            setAuth(null);
+          }
+        } else {
+          // Khi cờ auth = true (chế độ đăng nhập hoàn chỉnh)
+          acceptSession(session);
+        }
+      })
       .catch(() => {
         if (mounted) {
-          // Khi mất kết nối hoặc không truy cập được server xác thực, tự cấp phiên thử nghiệm an toàn
-          setAuth({ enabled: false, username: 'bac_si_test', role: 'director' });
+          setServerAuthEnabled(false);
+          const savedRole = sessionStorage.getItem('clinical_active_role') as UserRole | null;
+          if (savedRole) {
+            setAuth({ enabled: false, username: 'bac_si_test', role: savedRole });
+          } else {
+            setAuth(null);
+          }
         }
       })
       .finally(() => { if (mounted) setChecking(false); });
@@ -73,18 +97,38 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   async function logout() {
     try { await logoutSession(); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể kết thúc phiên đăng nhập.'); }
+    sessionStorage.removeItem('clinical_active_role');
+    sessionStorage.removeItem('clinical_active_username');
     setAuth(null);
   }
 
   if (checking) return <div className="min-h-screen grid place-items-center bg-slate-50 text-sm text-slate-600">Đang kiểm tra phiên đăng nhập…</div>;
-  if (auth?.enabled === false) {
-    const testAuth: AuthState = auth || { enabled: false, username: 'bac_si_test', role: 'director' };
-    return <>{children(testAuth, logout)}</>;
+
+  if (auth && (!allowedRoles || allowedRoles.includes(auth.role))) {
+    return <>{children(auth, logout)}</>;
   }
-  if (auth && (!allowedRoles || allowedRoles.includes(auth.role))) return <>{children(auth, logout)}</>;
+
   if (auth && allowedRoles && !allowedRoles.includes(auth.role)) {
-    return <main className="min-h-screen grid place-items-center bg-slate-50 p-6 text-center"><div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg"><h1 className="text-lg font-bold text-slate-900">Không đủ quyền truy cập</h1><p className="mt-2 text-sm text-slate-600">Tài khoản này không được cấp quyền quản trị hệ thống.</p><button onClick={() => void logout()} className="mt-5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Đăng xuất</button></div></main>;
+    return (
+      <main className="min-h-screen grid place-items-center bg-slate-50 p-6 text-center">
+        <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
+          <h1 className="text-lg font-bold text-slate-900">Không đủ quyền truy cập</h1>
+          <p className="mt-2 text-sm text-slate-600">Tài khoản này không được cấp quyền truy cập chức năng yêu cầu.</p>
+          <button onClick={() => void logout()} className="mt-5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+            Đăng xuất
+          </button>
+        </div>
+      </main>
+    );
   }
-  if (error && !auth) return <main className="min-h-screen grid place-items-center bg-slate-50 p-6"><div role="alert" className="max-w-md rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-800 shadow-lg"><p>{error}</p><button type="button" onClick={() => { setError(''); setChecking(true); void getAuthSession().then(session => { acceptSession(session); }).catch(reason => setError(reason instanceof Error ? reason.message : 'Không kết nối được máy chủ xác thực.')).finally(() => setChecking(false)); }} className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Thử kết nối lại</button></div></main>;
-  return <LoginPage onSuccess={acceptSession} />;
+
+  return (
+    <LoginPage
+      authRequired={serverAuthEnabled}
+      onSuccess={session => {
+        setError('');
+        acceptSession(session);
+      }}
+    />
+  );
 }
