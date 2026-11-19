@@ -81,7 +81,8 @@ class SqliteFtsIndex:
 
     def sync_chunks(self, chunks: list[RagChunk]):
         with self._get_connection() as conn:
-            count = conn.execute("SELECT COUNT(*) FROM clinical_rag_fts").fetchone()[0]
+            # Chỉ đồng bộ các chunks tĩnh (DTQG, phác đồ mặc định), giữ nguyên tuyệt đối các chunks PDF do Admin nạp
+            count = conn.execute("SELECT COUNT(*) FROM clinical_rag_fts WHERE entity_type != 'regulatory_pdf'").fetchone()[0]
             fingerprint = hashlib.sha256(json.dumps([
                 (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, c.keywords, c.entity_type, c.source_id, c.source_version)
                 for c in chunks
@@ -93,7 +94,7 @@ class SqliteFtsIndex:
             if count == len(chunks) and count > 0 and row and row[0] == fingerprint:
                 return
 
-            conn.execute("DELETE FROM clinical_rag_fts")
+            conn.execute("DELETE FROM clinical_rag_fts WHERE entity_type != 'regulatory_pdf'")
             for c in chunks:
                 conn.execute(
                     """

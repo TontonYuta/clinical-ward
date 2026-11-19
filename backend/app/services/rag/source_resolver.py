@@ -105,6 +105,11 @@ def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict
         return [], {}, {}
 
 
+def reload_source_documents() -> None:
+    """Xóa cache nạp manifest để cập nhật ngay lập tức các tài liệu PDF mới nạp."""
+    load_source_documents.cache_clear()
+
+
 def find_monograph_for_query(
     search_context: str,
     by_inn: dict[str, dict],
@@ -179,9 +184,29 @@ def resolve_citation_document(
     # 1. Phát hiện văn bản quy phạm pháp luật đặc thù
     match = None
 
+    # Khớp trước từ Knowledge Base Manifest nếu chunk trỏ tới file cụ thể đã được nạp
+    if source:
+        clean_src = Path(source).name.casefold()
+        for s in sources:
+            s_pub = Path(s.get("public_path", "")).name.casefold()
+            s_backend = Path(s.get("backend_copy", "")).name.casefold()
+            if clean_src and (clean_src == s_pub or clean_src == s_backend):
+                match = s
+                break
+
+    if match is None and legal_basis:
+        clean_basis = legal_basis.casefold().strip()
+        for s in sources:
+            s_basis = (s.get("legal_basis") or "").casefold().strip()
+            if clean_basis and s_basis and (clean_basis == s_basis or clean_basis in s_basis or s_basis in clean_basis):
+                match = s
+                break
+
     # The citation is tied to an already retrieved chunk. Explicit source metadata
     # must therefore take precedence over topic words from its section/query.
-    if "dược thư" in source_identity or "duoc thu" in unacc_source_identity or "2033" in source_identity or "dtqg" in unacc_source_identity:
+    if match is not None:
+        pass
+    elif "dược thư" in source_identity or "duoc thu" in unacc_source_identity or "2033" in source_identity or "dtqg" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "dtqg-v2-2015"), None)
     elif "26/2025" in source_identity or "thong tu 26" in unacc_source_identity or "ke_don_thuoc" in unacc_source_identity:
         match = next((s for s in sources if s.get("id") == "tt-26-2025"), None)

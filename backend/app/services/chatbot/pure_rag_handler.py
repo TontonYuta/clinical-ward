@@ -77,6 +77,7 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
     "macrolid", "statin", "acei", "arb", "ccb", "chẹn beta", "quinolon", "nsaid", "opioid", "benzodiazepin",
     "sglt2", "dpp4", "tiểu đường", "đái tháo đường", "huyết áp", "đổi thuốc", "thay thế", "ho khan", "nhóm thuốc",
     "đổi sang", "chuyển sang", "thay bằng", "đổi nhóm", "thay thế bằng",
+    "quy định", "quyết định", "văn bản", "tiêu chuẩn", "quy chuẩn", "hướng dẫn", "tài liệu", "chính sách", "luật",
     "trào ngược", "trào ngược dạ dày", "gerd", "loét dạ dày", "dạ dày", "tiêu hóa", "ợ chua", "ợ nóng", "thực quản", "viêm loét", "ppi"
 )
 

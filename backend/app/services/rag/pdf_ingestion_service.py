@@ -229,6 +229,7 @@ async def ingest_pdf_bytes(
     saved_vector_chunk_ids: List[str] = []
     manifest_updated = False
     previous_manifest_content: Optional[str] = None
+    is_default_instance = (vector_store is None and provider is None)
 
     if vector_store is None:
         vector_store = get_vector_store()
@@ -297,6 +298,14 @@ async def ingest_pdf_bytes(
             representation="source_pdf"
         )
         manifest_updated = True
+
+        # Tải lại retriever toàn hệ thống để lập tức truy xuất tài liệu mới
+        if is_default_instance:
+            try:
+                from app.services.rag.rag_pipeline import reload_rag_retriever
+                reload_rag_retriever()
+            except Exception as e:
+                logger.warning(f"[PdfIngestion] Cảnh báo reload retriever: {e}")
 
     except Exception as exc:
         logger.error(f"[PdfIngestion] Gặp sự cố khi nạp PDF '{filename}'. Kích hoạt Rollback toàn diện: {exc}")
@@ -447,10 +456,19 @@ def delete_ingested_pdf(
 
     # Xóa từ VectorStore
     deleted_vectors_count = 0
+    is_default_store = (vector_store is None)
     if deleted_chunk_ids:
         if vector_store is None:
             vector_store = get_vector_store()
         deleted_vectors_count = vector_store.delete_embeddings(deleted_chunk_ids)
+
+    # Tải lại retriever toàn hệ thống để xóa sạch vết tích tài liệu đã xóa
+    if is_default_store:
+        try:
+            from app.services.rag.rag_pipeline import reload_rag_retriever
+            reload_rag_retriever()
+        except Exception as e:
+            logger.warning(f"[PdfIngestion] Cảnh báo reload retriever khi xóa: {e}")
 
     return {
         "status": "success",

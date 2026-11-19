@@ -367,9 +367,8 @@ class HybridRetriever:
             dense_rank_map = {cid: rank for cid, rank in dense_rank_map.items() if cid not in ddi_ids or cid in allowed_ddi_ids}
 
         if not allow_ddi:
-            allowed_ids = {c.chunk_id for c in self.all_chunks if c.entity_type != "ddi"}
-            bm25_rank_map = {cid: rank for cid, rank in bm25_rank_map.items() if cid in allowed_ids}
-            dense_rank_map = {cid: rank for cid, rank in dense_rank_map.items() if cid in allowed_ids}
+            bm25_rank_map = {cid: rank for cid, rank in bm25_rank_map.items() if cid not in ddi_ids}
+            dense_rank_map = {cid: rank for cid, rank in dense_rank_map.items() if cid not in ddi_ids}
 
         # 3b. Nhận diện nhóm dược lý & Lọc an toàn DDI cấp vĩ mô (LightRAG)
         detected_classes = _detect_classes_in_text(query)
@@ -442,7 +441,9 @@ class HybridRetriever:
 
         is_protocol_query = any(p in lower_query for p in (
             "quy trình", "tiêu hủy", "thu hồi", "vỏ ống", "thông tư", "nghị định",
-            "phản vệ", "xử trí", "cấp cứu", "tủ trực"
+            "phản vệ", "xử trí", "cấp cứu", "tủ trực", "quy định", "quyết định",
+            "hướng dẫn", "văn bản", "pháp luật", "luật", "chính sách", "bảo hiểm",
+            "bhyt", "tiêu chuẩn", "phác đồ"
         ))
 
         target_drugs_for_filtering = list(resolved_query_drugs)
@@ -467,7 +468,7 @@ class HybridRetriever:
             incompatible_ids = set()
             for cid in all_candidate_ids:
                 chunk = chunk_map.get(cid)
-                if not chunk or chunk.entity_type in {"ddi", "circular", "protocol", "guideline", "regulatory"} or chunk.entity_type.startswith("graph_"):
+                if not chunk or chunk.entity_type in {"ddi", "circular", "protocol", "guideline", "regulatory", "regulatory_pdf"} or chunk.entity_type.startswith("graph_"):
                     continue
                 is_direct = _is_direct_subject_chunk(chunk, requested_drug) or requested_drug.casefold() in chunk.title.casefold()
                 if has_direct_monographs and not is_direct:
@@ -530,9 +531,21 @@ class HybridRetriever:
                 else:
                     reasons.append(f"Dense vector rank #{r_dense} (weight={w_dense:.2f})")
 
-            if is_protocol_query and chunk.entity_type in {"circular", "protocol", "guideline", "regulatory"}:
+            if is_protocol_query and chunk.entity_type in {"circular", "protocol", "guideline", "regulatory", "regulatory_pdf"}:
                 rrf_score += 0.30
                 reasons.append("Clinical circular / regulatory protocol match")
+            elif chunk.entity_type == "regulatory_pdf":
+                chunk_title_lower = (chunk.title or "").casefold()
+                chunk_legal = (chunk.legal_basis or "").casefold()
+                chunk_src = (chunk.source_doc or "").casefold()
+                q_words = [w for w in lower_query.split() if len(w) >= 3]
+                matched_words = [w for w in q_words if w in chunk_title_lower or w in chunk_legal or w in chunk_src]
+                if matched_words:
+                    rrf_score += 0.30
+                    reasons.append(f"Dynamic regulatory document match ({', '.join(matched_words[:3])})")
+                else:
+                    rrf_score += 0.20
+                    reasons.append("Dynamic regulatory document relevant context")
             else:
                 title_drug_match = any(d in chunk.title.casefold() for d in resolved_query_drugs)
                 if title_drug_match:

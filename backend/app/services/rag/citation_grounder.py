@@ -56,6 +56,10 @@ def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
         if grp.issubset(query_terms) and not (grp & evidence_terms):
             return False
 
+    basis_terms = _normalize_terms(f"{chunk.chunk.legal_basis} {chunk.chunk.title}")
+    if chunk.chunk.entity_type in {"circular", "protocol", "guideline", "regulatory", "regulatory_pdf"} and len(query_terms & basis_terms) >= 2:
+        return True
+
     overlap = query_terms & evidence_terms
     min_count = 2 if len(query_terms) >= 3 else 1
     return bool(overlap) and len(overlap) >= min_count and len(overlap) / len(query_terms) >= 0.25
