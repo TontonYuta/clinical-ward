@@ -83,9 +83,9 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
               setIsMenuOpen(false);
               setIsProfileModalOpen(true);
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition"
+            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-teal-50 hover:text-teal-800 transition cursor-pointer"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-700 shrink-0">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 shrink-0">
               <UserRound className="h-4 w-4" />
             </span>
             <span>Thông tin cá nhân</span>
@@ -99,7 +99,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
               setIsMenuOpen(false);
               setIsSettingsOpen(true);
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition mt-0.5"
+            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition mt-0.5 cursor-pointer"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 shrink-0">
               <Sliders className="h-4 w-4" />
@@ -138,7 +138,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                           onCloseMobile?.();
                         }}
                         className={`flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-[11px] transition ${
-                          isCurrent ? 'bg-blue-50 font-semibold text-blue-700' : 'text-slate-600 hover:bg-slate-50'
+                          isCurrent ? 'bg-teal-50 font-semibold text-teal-800' : 'text-slate-600 hover:bg-slate-50'
                         }`}
                       >
                         <span className="truncate">{item.name}</span>
