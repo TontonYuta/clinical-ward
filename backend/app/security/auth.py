@@ -130,7 +130,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             if not self.enabled:
                 request.state.authenticated_user = AuthenticatedUser(
                     username="test_director",
-                    role="director"
+                    role="director",
+                    session_id="sandbox_session"
                 )
             return await call_next(request)
         if request.url.path == "/api/v1/auth/login":
@@ -183,22 +184,26 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         if user is None:
             from app.config import settings
             if not settings.AUTH_REQUIRED:
-                user = AuthenticatedUser(username="test_director", role="director")
+                user = AuthenticatedUser(username="test_director", role="director", session_id="sandbox_session")
             else:
                 return JSONResponse({"detail": "Authentication required"}, status_code=401, headers={"WWW-Authenticate": "Bearer"})
         if self.identity_store_enabled:
-            if not user.session_id:
-                return JSONResponse({"detail": "Identity session required"}, status_code=401)
-            try:
-                from app.identity_database import get_identity_session_factory
-                from app.services.identity_service import validate_identity_session
-                _, factory = get_identity_session_factory()
-                async with factory() as session:
-                    is_valid = await validate_identity_session(session, token or "", user)
-            except Exception:
-                return JSONResponse({"detail": "Identity service unavailable"}, status_code=503)
-            if not is_valid:
-                return JSONResponse({"detail": "Identity session expired or revoked"}, status_code=401)
+            from app.config import settings
+            if not settings.AUTH_REQUIRED and getattr(user, "session_id", None) == "sandbox_session":
+                pass
+            else:
+                if not user.session_id:
+                    return JSONResponse({"detail": "Identity session required"}, status_code=401)
+                try:
+                    from app.identity_database import get_identity_session_factory
+                    from app.services.identity_service import validate_identity_session
+                    _, factory = get_identity_session_factory()
+                    async with factory() as session:
+                        is_valid = await validate_identity_session(session, token or "", user)
+                except Exception:
+                    return JSONResponse({"detail": "Identity service unavailable"}, status_code=503)
+                if not is_valid:
+                    return JSONResponse({"detail": "Identity session expired or revoked"}, status_code=401)
         if not self._role_allowed(request.method, request.url.path, user.role):
             return JSONResponse({"detail": "Role is not authorized for this operation"}, status_code=403)
         request.state.authenticated_user = user

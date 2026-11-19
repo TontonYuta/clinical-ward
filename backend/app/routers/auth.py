@@ -19,8 +19,6 @@ class LoginRequest(BaseModel):
 
 @router.post("/login")
 async def login(payload: LoginRequest, request: Request, response: Response):
-    if not settings.AUTH_REQUIRED:
-        raise HTTPException(status_code=404, detail="Authentication is not enabled")
     origin = request.headers.get("origin")
     trusted = {item.rstrip("/") for item in settings.CORS_ORIGINS} | {str(request.base_url).rstrip("/")}
     if origin and origin.rstrip("/") not in trusted:
@@ -30,13 +28,13 @@ async def login(payload: LoginRequest, request: Request, response: Response):
         raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác")
     token, _ = await create_login_session(user)
     _set_session_cookie(response, token)
-    return {"username": user.username, "role": user.role, "expires_in": settings.AUTH_TOKEN_TTL_SECONDS}
+    return {"username": user.username, "role": user.role, "expires_in": settings.AUTH_TOKEN_TTL_SECONDS, "token": token}
 
 
 @router.get("/me")
 async def auth_me(request: Request):
     if not settings.AUTH_REQUIRED:
-        return {"enabled": False, "authenticated": True, "username": "test_director", "role": "director"}
+        return {"enabled": False, "authenticated": True, "username": "bac_si_test", "role": "director"}
     token = request.cookies.get("clinical_session", "")
     authorization = request.headers.get("authorization", "")
     if authorization.lower().startswith("bearer "):

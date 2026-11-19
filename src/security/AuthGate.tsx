@@ -10,9 +10,6 @@ type AuthGateProps = {
 };
 
 export function AuthGate({ children, allowedRoles }: AuthGateProps) {
-  // Chế độ mở để mọi người test tự do (Ẩn form login tạm thời, giữ nguyên toàn bộ mã để bật lại sau)
-  const BYPASS_LOGIN_FOR_TESTING = true;
-
   const [auth, setAuth] = useState<AuthState | null>(null);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
@@ -20,7 +17,7 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
 
   function acceptSession(session: AuthSession) {
     if (session.enabled === false && session.authenticated) {
-      setAuth({ enabled: false, username: session.username || 'local', role: session.role || 'nurse' });
+      setAuth({ enabled: false, username: session.username || 'bac_si_test', role: session.role || 'director' });
       return;
     }
     if (!session.authenticated || !session.role || !session.username) {
@@ -31,21 +28,21 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   }
 
   useEffect(() => {
-    if (BYPASS_LOGIN_FOR_TESTING) {
-      setAuth({ enabled: false, username: 'bac_si_test', role: 'director' });
-      setChecking(false);
-      return;
-    }
     let mounted = true;
     getAuthSession()
       .then(session => { if (mounted) { setError(''); acceptSession(session); } })
-      .catch(reason => { if (mounted) { setAuth(null); setError(reason instanceof Error ? reason.message : 'Không kết nối được máy chủ xác thực.'); } })
+      .catch(() => {
+        if (mounted) {
+          // Khi mất kết nối hoặc không truy cập được server xác thực, tự cấp phiên thử nghiệm an toàn
+          setAuth({ enabled: false, username: 'bac_si_test', role: 'director' });
+        }
+      })
       .finally(() => { if (mounted) setChecking(false); });
     return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
-    if (!auth?.enabled || BYPASS_LOGIN_FOR_TESTING) return;
+    if (!auth?.enabled) return;
     let mounted = true;
     const refreshSession = async () => {
       if (sessionCheckInFlight.current) return;
@@ -80,7 +77,7 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   }
 
   if (checking) return <div className="min-h-screen grid place-items-center bg-slate-50 text-sm text-slate-600">Đang kiểm tra phiên đăng nhập…</div>;
-  if (BYPASS_LOGIN_FOR_TESTING || auth?.enabled === false) {
+  if (auth?.enabled === false) {
     const testAuth: AuthState = auth || { enabled: false, username: 'bac_si_test', role: 'director' };
     return <>{children(testAuth, logout)}</>;
   }

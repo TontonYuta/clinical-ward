@@ -159,12 +159,33 @@ def wait_for_deployment(expected_commit: str | None, max_wait: int = 540) -> boo
 def execute_production_suite() -> tuple[int, int, list[str]]:
     passed = 0
     failures = []
+    headers = {}
     with httpx.Client(timeout=45.0) as client:
+        # Auto-authenticate if production has auth enabled
+        try:
+            me_res = client.get(f"{BASE_URL}/api/v1/auth/me")
+            if me_res.status_code == 200:
+                me_data = me_res.json()
+                if me_data.get("enabled") and not me_data.get("authenticated"):
+                    login_res = client.post(
+                        f"{BASE_URL}/api/v1/auth/login",
+                        json={"username": "bac_si_test", "password": "Doctor@2026!"},
+                        headers={"Origin": BASE_URL}
+                    )
+                    if login_res.status_code == 200:
+                        login_data = login_res.json()
+                        token = login_data.get("token")
+                        if token:
+                            headers["Authorization"] = f"Bearer {token}"
+                        print(f"🔑 Authenticated as {login_data.get('username')} for production verification.")
+        except Exception as e:
+            print(f"⚠️ Auth auto-login notice: {e}")
+
         for tc in PRODUCTION_TESTS:
             session_id = f"prod_{tc['id']}_{int(time.time())}"
             payload = {"query": tc["query"], "user_name": "QA_Loop_Verifier", "user_role": "doctor", "session_id": session_id}
             try:
-                res = client.post(PROD_URL, json=payload)
+                res = client.post(PROD_URL, json=payload, headers=headers)
                 if res.status_code != 200:
                     failures.append(f"[{tc['id']}] HTTP {res.status_code}")
                     continue
