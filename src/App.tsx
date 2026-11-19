@@ -85,6 +85,10 @@ import {
   saveAudioMuted,
   getInitialFontScale,
   saveFontScale,
+  getInitialFontFamily,
+  saveFontFamily,
+  FONT_FAMILY_CSS,
+  type AppFontFamily,
   getInitialChatMessages,
   saveChatMessages,
   clearStoredChatMessages,
@@ -216,6 +220,14 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     document.documentElement.style.fontSize = `${fontScaleToPixels(fontScale)}px`;
     saveFontScale(fontScale);
   }, [fontScale]);
+
+  const [fontFamily, setFontFamily] = useState<AppFontFamily>(getInitialFontFamily);
+  useEffect(() => {
+    const css = FONT_FAMILY_CSS[fontFamily] || FONT_FAMILY_CSS.inter;
+    document.documentElement.style.setProperty('--app-font-family', css);
+    document.body.style.fontFamily = css;
+    saveFontFamily(fontFamily);
+  }, [fontFamily]);
 
   useEffect(() => {
     const handleOpenPatient = (e: any) => {
@@ -1988,6 +2000,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           username={authenticatedUsername}
           fontScale={fontScale}
           onFontScaleChange={setFontScale}
+          fontFamily={fontFamily}
+          onFontFamilyChange={setFontFamily}
           isCollapsed={false}
           onToggleCollapse={() => setIsMobileSidebarOpen(false)}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -2037,6 +2051,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           username={authenticatedUsername}
           fontScale={fontScale}
           onFontScaleChange={setFontScale}
+          fontFamily={fontFamily}
+          onFontFamilyChange={setFontFamily}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleDesktopSidebarToggle}
           debtCount={debts.filter(d => d.status === 'debt').length}

@@ -7,7 +7,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, UserRound, Sliders, LogOut } from 'lucide-react';
 import { UserRole } from '../../types/clinical';
-import type { AppFontScale } from '../../utils/storage/appStatePersistence';
+import type { AppFontScale, AppFontFamily } from '../../utils/storage/appStatePersistence';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { UserProfileModal } from '../Modals/UserProfileModal';
 import { USER_PROFILES } from '../../data/initialData';
@@ -21,6 +21,8 @@ interface SidebarFooterProps {
   username?: string;
   fontScale: AppFontScale;
   onFontScaleChange: (scale: AppFontScale) => void;
+  fontFamily?: AppFontFamily;
+  onFontFamilyChange?: (font: AppFontFamily) => void;
   onCloseMobile?: () => void;
 }
 
@@ -32,6 +34,8 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
   username,
   fontScale,
   onFontScaleChange,
+  fontFamily = 'inter',
+  onFontFamilyChange = () => {},
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -159,12 +163,14 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
         profile={profile}
       />
 
-      {/* Modal Cấu hình hiển thị (Cỡ chữ) */}
+      {/* Modal Cấu hình hiển thị (Cỡ chữ & Phông chữ) */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         fontScale={fontScale}
         onFontScaleChange={onFontScaleChange}
+        fontFamily={fontFamily}
+        onFontFamilyChange={onFontFamilyChange}
         isAuthenticated={isAuthenticated}
         username={username}
         roleLabel={profile.roleName}

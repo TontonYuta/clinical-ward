@@ -9,7 +9,7 @@ import { UserRole } from '../types/clinical';
 import { SidebarHeader } from './Sidebar/SidebarHeader';
 import { SidebarNavLinks } from './Sidebar/SidebarNavLinks';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
-import type { AppFontScale } from '../utils/storage/appStatePersistence';
+import type { AppFontScale, AppFontFamily } from '../utils/storage/appStatePersistence';
 import type { FeatureFlagPayload } from '../services/featureFlags';
 import { getEffectiveAllowedTabs } from '../services/featureFlags';
 
@@ -23,6 +23,8 @@ export interface SidebarProps {
   username?: string;
   fontScale: AppFontScale;
   onFontScaleChange: (scale: AppFontScale) => void;
+  fontFamily?: AppFontFamily;
+  onFontFamilyChange?: (font: AppFontFamily) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onCloseMobile?: () => void;
@@ -47,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectUserRole,
   onLogout,
   isAuthenticated, username, fontScale, onFontScaleChange,
+  fontFamily, onFontFamilyChange,
   isCollapsed,
   onToggleCollapse,
   onCloseMobile,
@@ -94,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Tiện ích & Pháp lý tiếp tục được ẩn khỏi FE. */}
       </div>
 
-      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} isAuthenticated={isAuthenticated} username={username} fontScale={fontScale} onFontScaleChange={onFontScaleChange} onCloseMobile={onCloseMobile} />
+      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} isAuthenticated={isAuthenticated} username={username} fontScale={fontScale} onFontScaleChange={onFontScaleChange} fontFamily={fontFamily} onFontFamilyChange={onFontFamilyChange} onCloseMobile={onCloseMobile} />
     </aside>
   );
 };

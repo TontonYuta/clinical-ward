@@ -201,6 +201,45 @@ export function saveFontScale(scale: AppFontScale): void {
   } catch {}
 }
 
+export type AppFontFamily = 'inter' | 'arial' | 'roboto' | 'be_vietnam_pro' | 'times_new_roman';
+
+export const FONT_FAMILY_CSS: Record<AppFontFamily, string> = {
+  inter: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+  arial: "Arial, Helvetica, sans-serif",
+  roboto: "'Roboto', sans-serif",
+  be_vietnam_pro: "'Be Vietnam Pro', sans-serif",
+  times_new_roman: "'Times New Roman', Times, serif",
+};
+
+export interface FontFamilyOption {
+  id: AppFontFamily;
+  label: string;
+  desc: string;
+  fontFamily: string;
+}
+
+export const FONT_FAMILY_OPTIONS: FontFamilyOption[] = [
+  { id: 'inter', label: 'Inter', desc: 'Hiện đại & Chuẩn quốc tế', fontFamily: "'Inter', sans-serif" },
+  { id: 'arial', label: 'Arial', desc: 'Phổ biến & Quen thuộc y tế', fontFamily: "Arial, sans-serif" },
+  { id: 'roboto', label: 'Roboto', desc: 'Tròn trịa & Dễ đọc', fontFamily: "'Roboto', sans-serif" },
+  { id: 'be_vietnam_pro', label: 'Be Vietnam Pro', desc: 'Tối ưu dấu tiếng Việt', fontFamily: "'Be Vietnam Pro', sans-serif" },
+  { id: 'times_new_roman', label: 'Times New Roman', desc: 'Chuẩn văn bản bệnh án', fontFamily: "'Times New Roman', serif" },
+];
+
+export function getInitialFontFamily(): AppFontFamily {
+  try {
+    const saved = localStorage.getItem('clinical_app_font_family') as AppFontFamily | null;
+    if (saved && saved in FONT_FAMILY_CSS) return saved;
+  } catch {}
+  return 'inter';
+}
+
+export function saveFontFamily(font: AppFontFamily): void {
+  try {
+    localStorage.setItem('clinical_app_font_family', font);
+  } catch {}
+}
+
 /**
  * 6. Khôi phục tin nhắn Chatbot (Duy trì hội thoại khi F5)
  */
