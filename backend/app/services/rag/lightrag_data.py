@@ -206,7 +206,7 @@ CLASS_INTERACTION_GRAPH: List[Dict[str, Any]] = [
 ORGAN_CONDITION_HIERARCHY: Dict[str, Dict[str, Any]] = {
     "RENAL_IMPAIRMENT": {
         "title": "Suy thận mạn / Giảm mức lọc cầu thận (CKD / eGFR / ClCr)",
-        "keywords": ["suy thận", "thận", "clcr", "egfr", "chức năng thận", "creatinin", "lọc máu", "chạy thận"],
+        "keywords": ["suy thận", "bệnh thận", "chức năng thận", "tổn thương thận", "clcr", "egfr", "creatinin", "lọc máu", "chạy thận"],
         "critical_rules": [
             "ClCr < 30 mL/phút: Chống chỉ định Metformin (nguy cơ toan Lactic tử vong 50%). Đổi sang Insulin hoặc Linagliptin.",
             "ClCr < 30 mL/phút: Tránh dùng NSAID (nguy cơ suy thận cấp hoại tử ống thận tiến triển).",

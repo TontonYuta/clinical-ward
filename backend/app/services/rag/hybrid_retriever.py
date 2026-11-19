@@ -469,8 +469,11 @@ class HybridRetriever:
                 chunk = chunk_map.get(cid)
                 if not chunk or chunk.entity_type in {"ddi", "circular", "protocol", "guideline", "regulatory"} or chunk.entity_type.startswith("graph_"):
                     continue
-                if has_direct_monographs and not (_is_direct_subject_chunk(chunk, requested_drug) or requested_drug in chunk.title.casefold()):
+                is_direct = _is_direct_subject_chunk(chunk, requested_drug) or requested_drug.casefold() in chunk.title.casefold()
+                if has_direct_monographs and not is_direct:
                     incompatible_ids.add(cid)
+                    continue
+                if is_direct:
                     continue
                 text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}"
                 chunk_drugs = set(resolve_registered_medications(text))
