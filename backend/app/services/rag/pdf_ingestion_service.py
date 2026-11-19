@@ -410,9 +410,10 @@ async def query_ingested_documents(
         provider = get_embedding_provider()
 
     fts_index = SqliteFtsIndex()
+    candidate_limit = max(50, top_k * 10)
 
     # 1. Sparse BM25
-    fts_results = fts_index.search_bm25(query, top_k=top_k * 3)
+    fts_results = fts_index.search_bm25(query, top_k=candidate_limit)
 
     # 2. Dense Vector
     query_vec = await provider.embed_query(query)
@@ -420,7 +421,7 @@ async def query_ingested_documents(
         fallback = MockEmbeddingProvider(dimension=vector_store.dimension)
         query_vec = await fallback.embed_query(query)
 
-    vector_matches = vector_store.search_cosine(query_vec, top_k=top_k * 3) if query_vec is not None else []
+    vector_matches = vector_store.search_cosine(query_vec, top_k=candidate_limit) if query_vec is not None else []
 
     # RRF Fusion
     bm25_ranks = {r.chunk.chunk_id: idx + 1 for idx, r in enumerate(fts_results)}

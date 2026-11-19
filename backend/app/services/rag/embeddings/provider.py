@@ -166,6 +166,12 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
                         # Rate limit ngắn hạn -> exponential backoff
                         await asyncio.sleep(INITIAL_BACKOFF_SEC * (2 ** attempt))
                         continue
+                    elif resp.status_code == 404 and self._model_name != "text-embedding-004":
+                        logger.info(f"[GeminiEmbedding] Model {self._model_name} trả về 404, tự động fallback sang text-embedding-004.")
+                        self._model_name = "text-embedding-004"
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self._model_name}:embedContent?key={api_key}"
+                        payload["model"] = f"models/{self._model_name}"
+                        continue
                     else:
                         logger.debug(f"[GeminiEmbedding] Model {self._model_name} HTTP {resp.status_code}: {resp.text[:120]}")
                         break
