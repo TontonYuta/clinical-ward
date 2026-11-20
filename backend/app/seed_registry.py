@@ -151,7 +151,7 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
     with open(src_path, "rb") as source_file:
         registry_source_version = f"sha256:{hashlib.sha256(source_file.read()).hexdigest()}"
     registry_source_id = os.path.relpath(src_path, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-    rows = [(*row, registry_source_id, registry_source_version) for row in rows]
+    rows = [(*row[:-2], registry_source_id, registry_source_version) for row in rows]
     if curated_metadata:
         curated_by_code = {}
         with open(curated_path, "r", encoding="utf-8") as f:
