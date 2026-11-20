@@ -135,20 +135,19 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
   };
 
   return (
-    <div className="p-5 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-3.5">
-      
+    <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden flex flex-col">
       {/* 1. Header & Bộ công cụ Thống kê */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-3 sm:px-4 sm:py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-sm lg:text-base font-bold text-slate-900">
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
               Nhật ký tương tác trực tiếp &amp; Chi tiết Token
             </h2>
             {isLoading && (
               <RefreshCw className="w-3.5 h-3.5 text-teal-600 animate-spin" />
             )}
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 mt-0.5">
             Theo dõi {totalItems.toLocaleString()} lượt truy vấn cùng token usage và model do hệ thống ghi nhận
           </p>
         </div>
@@ -159,7 +158,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             type="button"
             onClick={handleExportCsv}
             disabled={displayItems.length === 0}
-            className="h-8 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition cursor-pointer disabled:opacity-40"
+            className="h-8 px-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-md text-xs font-medium flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40"
             title="Xuất danh sách sự kiện ra tệp CSV để đối soát chi phí"
           >
             <Download className="w-3.5 h-3.5 text-slate-600" />
@@ -167,15 +166,14 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
           </button>
 
           {/* Huy hiệu tổng số log */}
-          <span className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+          <span className="text-2xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
             {totalItems.toLocaleString()} sự kiện
           </span>
         </div>
       </div>
 
       {/* 2. Thanh Tìm kiếm & Bộ Lọc Thời Gian Thực */}
-      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-        
+      <div className="px-3 sm:px-4 py-2 bg-slate-50/70 border-b border-slate-200/80 flex flex-wrap items-center gap-2">
         {/* Ô Tìm Kiếm Nhanh */}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -184,7 +182,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm prompt, câu lệnh, mã CHAT..."
-            className="w-full h-8 pl-8 pr-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition"
+            className="w-full h-8 pl-8 pr-2.5 bg-white border border-slate-300 rounded-md text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition"
           />
         </div>
 
@@ -194,7 +192,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             value={modelFilter}
             onChange={(e) => { setModelFilter(e.target.value); setPage(1); }}
             aria-label="Lọc theo model AI"
-            className="h-8 bg-white border border-slate-200 rounded-lg px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
+            className="h-8 bg-white border border-slate-300 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
           >
             <option value="all">Tất Cả Model</option>
             <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Active Google AI Studio)</option>
@@ -213,7 +211,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             value={roleFilter}
             onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
             aria-label="Lọc theo vai trò người dùng"
-            className="h-8 bg-white border border-slate-200 rounded-lg px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
+            className="h-8 bg-white border border-slate-300 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
           >
             <option value="all">Mọi Vai Trò</option>
             <option value="doctor">Bác Sĩ</option>
@@ -223,7 +221,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
         </div>
 
         {/* Nút lọc Loại Cơ Chế (Tabs nhỏ) */}
-        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs overflow-x-auto max-w-full">
+        <div className="flex items-center gap-0.5 bg-slate-200/80 p-0.5 rounded-md text-xs overflow-x-auto max-w-full">
           {[
             { id: 'all', label: 'Tất cả' },
             { id: 'ADAPTIVE_RAG', label: 'Adaptive RAG' },

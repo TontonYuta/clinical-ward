@@ -63,7 +63,7 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({ data, loading }) => 
   };
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="space-y-4">
       {/* 4 Thẻ Hero KPIs */}
       <TelemetryHeroCards data={d} />
 

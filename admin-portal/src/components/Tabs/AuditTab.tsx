@@ -108,74 +108,58 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
 
   return (
     <div className="space-y-4">
-      {/* 1. Thẻ Thống Kê Tổng Quan */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-4">
-        {/* Card 1: BHYT Giám định */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              BHYT đã giám định
-            </span>
-            <div className="p-2 bg-teal-50 rounded-lg text-teal-700">
-              <Stethoscope className="w-4.5 h-4.5" />
+      {/* 1. Dải Thống Kê Tổng Quan Phẳng */}
+      <div className="bg-white border border-slate-200/90 rounded-lg grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+        {/* Metric 1: BHYT Giám định */}
+        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
+          <div>
+            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">BHYT đã giám định</div>
+            <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums">
+              {auditedCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
             </div>
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-slate-900">
-            {auditedCount} ca
-          </div>
-          <div className="text-xs text-slate-500 font-medium">
-            Tự động đối soát theo Thông tư 20/2022 &amp; QĐ 130
-          </div>
+          <span className="text-2xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium">
+            TT 20/2022
+          </span>
         </div>
 
-        {/* Card 2: BHYT bảo toàn */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Xuất toán bảo toàn
-            </span>
-            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-              <FileCheck className="w-4.5 h-4.5" />
+        {/* Metric 2: BHYT bảo toàn */}
+        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
+          <div>
+            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Xuất toán bảo toàn</div>
+            <div className="text-xl sm:text-2xl font-bold font-mono text-emerald-700 tabular-nums whitespace-nowrap">
+              {bhytSaved.toLocaleString('vi-VN')} <span className="text-xs font-normal text-emerald-600 font-sans">₫</span>
             </div>
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-emerald-700 truncate" title={`${bhytSaved.toLocaleString('vi-VN')} đ`}>
-            {bhytSaved.toLocaleString('vi-VN')} đ
-          </div>
-          <div className="text-xs text-slate-500 font-medium">
-            Phát hiện và chặn từ chối thanh toán bảo hiểm
-          </div>
+          <span className="text-2xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+            Tiết kiệm
+          </span>
         </div>
 
-        {/* Card 3: Tương tác DDI */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Tương tác DDI chặn
-            </span>
-            <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
-              <AlertOctagon className="w-4.5 h-4.5" />
+        {/* Metric 3: Tương tác DDI */}
+        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
+          <div>
+            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Tương tác DDI chặn</div>
+            <div className="text-xl sm:text-2xl font-bold font-mono text-rose-700 tabular-nums">
+              {ddiCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
             </div>
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-rose-700">{ddiCount} ca</div>
-          <div className="text-xs text-slate-500 font-medium">
-            Phối hợp thuốc nguy cơ cao bị chặn trước ký toa
-          </div>
+          <span className="text-2xs font-mono text-rose-800 bg-rose-50 px-2 py-0.5 rounded font-medium">
+            Nguy cơ cao
+          </span>
         </div>
 
-        {/* Card 4: Guardrails */}
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Guardrails bảo vệ
-            </span>
-            <div className="p-2 bg-teal-50 rounded-lg text-teal-700">
-              <ShieldCheck className="w-4.5 h-4.5" />
+        {/* Metric 4: Guardrails */}
+        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
+          <div>
+            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Guardrails bảo vệ</div>
+            <div className="text-xl sm:text-2xl font-bold font-mono text-teal-800 tabular-nums">
+              {guardCount} <span className="text-xs font-normal text-slate-400 font-sans">lần</span>
             </div>
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-teal-800">{guardCount} lần</div>
-          <div className="text-xs text-slate-500 font-medium">
-            Bảo vệ ranh giới an toàn chuyên môn Bộ Y Tế
-          </div>
+          <span className="text-2xs font-mono text-teal-800 bg-teal-50 px-2 py-0.5 rounded font-medium">
+            Bộ Y Tế
+          </span>
         </div>
       </div>
 
@@ -184,14 +168,13 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
         <button
           type="button"
           onClick={() => setActiveSubTab('bhyt_audit')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
             activeSubTab === 'bhyt_audit'
-              ? 'bg-teal-700 text-white shadow-xs'
+              ? 'bg-teal-700 text-white'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
           }`}
         >
-          <FileCheck className="w-4 h-4" />
-          <span>Sổ Nhật Ký Giám Định BHYT &amp; Check Lỗi</span>
+          <span>Sổ Nhật Ký Giám Định BHYT</span>
           <span className={`px-1.5 py-0.2 rounded-full text-2xs font-mono font-bold ${
             activeSubTab === 'bhyt_audit' ? 'bg-teal-900 text-teal-100' : 'bg-slate-200 text-slate-700'
           }`}>
@@ -202,13 +185,12 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
         <button
           type="button"
           onClick={() => setActiveSubTab('safety_audit')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
             activeSubTab === 'safety_audit'
-              ? 'bg-teal-700 text-white shadow-xs'
+              ? 'bg-teal-700 text-white'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
           }`}
         >
-          <ShieldAlert className="w-4 h-4" />
           <span>Can Thiệp An Toàn Lâm Sàng (DDI &amp; Guardrails)</span>
           <span className={`px-1.5 py-0.2 rounded-full text-2xs font-mono font-bold ${
             activeSubTab === 'safety_audit' ? 'bg-teal-900 text-teal-100' : 'bg-slate-200 text-slate-700'
@@ -220,12 +202,11 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
 
       {/* 3. Nội Dung Tab 1: Nhật Ký Giám Định BHYT & Check Lỗi */}
       {activeSubTab === 'bhyt_audit' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs p-4 sm:p-5 space-y-4">
+        <div className="bg-white rounded-lg border border-slate-200/90 overflow-hidden flex flex-col space-y-3 p-3 sm:px-4 sm:py-3.5">
           {/* Header & Bộ lọc */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-teal-700" />
+              <h2 className="text-sm font-bold text-slate-900">
                 Lịch sử Giám định Đơn thuốc BHYT (Căn cứ TT 20/2022 &amp; QĐ 3618)
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -450,10 +431,9 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
 
       {/* 4. Nội Dung Tab 2: Can Thiệp An Toàn Lâm Sàng (DDI & Guardrails) */}
       {activeSubTab === 'safety_audit' && (
-        <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3.5">
+        <div className="p-3 sm:px-4 sm:py-3.5 bg-white rounded-lg border border-slate-200/90 space-y-3">
           <div>
-            <h2 className="text-base lg:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-teal-700" />
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
               Nhật ký can thiệp an toàn lâm sàng
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">

@@ -222,48 +222,34 @@ export const DocumentIngestionTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 1. Header Banner */}
-      <div className="bg-teal-50/80 border border-teal-200/90 rounded-xl p-4 sm:p-5 text-teal-950 shadow-2xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-teal-800 font-semibold text-xs tracking-wider uppercase">
-              <Layers className="w-4 h-4 text-teal-700" />
-              <span>Phân Hệ Nạp Tài Liệu &amp; Tri Thức Vector (Dynamic RAG Pipeline)</span>
-            </div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight text-teal-950">
-              Quản Trị Văn Bản Y Tế &amp; Sinh Chỉ Mục Tự Động
-            </h1>
-            <p className="text-xs text-slate-600 max-w-3xl leading-relaxed">
-              Nạp thông tư, quyết định và phác đồ PDF. Hệ thống tự động bóc tách số trang, tính băm SHA256 mật mã,
-              phân đoạn ngữ nghĩa, sinh Dense Vectors (768 chiều) và nạp tức thì vào ma trận RAM Cosine Similarity.
-            </p>
-          </div>
+    <div className="space-y-4">
+      {/* 1. Header Toolbar Phẳng */}
+      <div className="bg-white border border-slate-200/90 rounded-lg p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+            Quản Trị Văn Bản Y Tế &amp; Sinh Chỉ Mục Vector (RAG)
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Nạp thông tư, quyết định và phác đồ PDF. Bóc tách số trang, sinh Dense Vectors (768 chiều) và nạp ma trận Cosine.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-teal-200 text-xs font-mono font-medium text-teal-800 shadow-2xs">
-              <BookOpen className="w-3.5 h-3.5 text-teal-700" />
-              {documents.length} Văn bản trong kho
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-teal-200 text-xs font-mono font-medium text-emerald-800 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              Vector: 768-dim (RAM Matrix)
-            </span>
-          </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <span className="text-2xs font-mono font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+            {documents.length} văn bản
+          </span>
+          <span className="text-2xs font-mono font-medium text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+            768-dim (RAM Matrix)
+          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* 2. Upload Form (Left Column: 5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <div className="p-2 rounded-lg bg-teal-50 text-teal-800">
-              <UploadCloud className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Tải Lên Văn Bản PDF Mới</h2>
-              <p className="text-xs text-slate-500">Tự động bóc tách, băm SHA256 và vector hóa</p>
-            </div>
+        <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200/90 p-3 sm:px-4 sm:py-3.5 space-y-3">
+          <div className="pb-2.5 border-b border-slate-100">
+            <h2 className="text-sm font-bold text-slate-900">Tải Lên Văn Bản PDF Mới</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Tự động bóc tách, băm SHA256 và vector hóa</p>
           </div>
 
           <form onSubmit={handleUpload} className="space-y-3.5">
@@ -477,16 +463,11 @@ export const DocumentIngestionTab: React.FC = () => {
         </div>
 
         {/* 3. Interactive Query Sandbox (Right Column: 7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200/80 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200/90 p-3 sm:px-4 sm:py-3.5 space-y-3 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-lg bg-emerald-50 text-emerald-800">
-                <Search className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Thử Nghiệm Truy Vấn Trích Dẫn Trang</h2>
-                <p className="text-xs text-slate-500">Kiểm tra kết quả Hybrid RRF (BM25 + Cosine) và số trang được dẫn nguồn</p>
-              </div>
+            <div className="pb-2.5 border-b border-slate-100">
+              <h2 className="text-sm font-bold text-slate-900">Thử Nghiệm Truy Vấn Trích Dẫn Trang</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Kiểm tra kết quả Hybrid RRF (BM25 + Cosine) và số trang được dẫn nguồn</p>
             </div>
 
             <form onSubmit={handleQuery} className="mt-4 space-y-3">
@@ -607,25 +588,20 @@ export const DocumentIngestionTab: React.FC = () => {
       </div>
 
       {/* 4. Document Catalog Table */}
-      <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-slate-100 text-slate-800">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Danh Mục Văn Bản Tri Thức Hiện Có</h2>
-              <p className="text-xs text-slate-500">
-                Toàn bộ tài liệu PDF đã được lưu trữ provenance và lập chỉ mục trong hệ thống
-              </p>
-            </div>
+      <div className="bg-white rounded-lg border border-slate-200/90 overflow-hidden flex flex-col space-y-3 p-3 sm:px-4 sm:py-3.5">
+        <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Danh Mục Văn Bản Tri Thức Hiện Có</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Toàn bộ tài liệu PDF đã được lưu trữ provenance và lập chỉ mục trong hệ thống
+            </p>
           </div>
 
           <button
             type="button"
             onClick={loadDocuments}
             disabled={loadingDocs}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loadingDocs ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>

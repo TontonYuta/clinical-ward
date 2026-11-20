@@ -26,9 +26,9 @@ function formatIntentLabel(raw: string): string {
 
 export const TelemetryCharts: React.FC<TelemetryChartsProps> = ({ data: d }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       {/* Biểu đồ Cột: Chiếm 7/12 cột */}
-      <div className="lg:col-span-7 p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+      <div className="lg:col-span-7 p-3 sm:px-4 sm:py-3.5 bg-white rounded-lg border border-slate-200/90 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Xu hướng Token (7 ngày qua)</h2>
@@ -94,7 +94,7 @@ export const TelemetryCharts: React.FC<TelemetryChartsProps> = ({ data: d }) => 
       </div>
 
       {/* Thanh Phân Bổ Nghiệp Vụ Lâm Sàng: Chiếm 5/12 cột */}
-      <div className="lg:col-span-5 p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+      <div className="lg:col-span-5 p-3 sm:px-4 sm:py-3.5 bg-white rounded-lg border border-slate-200/90 space-y-3">
         <div>
           <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Phân bổ nghiệp vụ lâm sàng</h2>
           <p className="text-xs text-slate-500 mt-0.5">Tần suất các chủ đề tra cứu y khoa thực tế</p>

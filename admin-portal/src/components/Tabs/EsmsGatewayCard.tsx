@@ -50,23 +50,18 @@ export const EsmsGatewayCard: React.FC<EsmsGatewayCardProps> = ({ esms, onRefres
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-xl shadow-2xs overflow-hidden">
-      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-teal-800 text-white flex items-center justify-center shadow-xs">
-            <Radio className="w-4.5 h-4.5" />
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-900 text-sm sm:text-base">Cổng Viễn Thông eSMS.vn Brandname</h3>
-            <p className="text-2xs text-slate-500">API Viễn thông thật • Số dư: <strong className="text-slate-800 font-mono font-bold">{(Number(esms?.balance_vnd) || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
-          </div>
+    <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden">
+      <div className="p-3 sm:px-4 sm:py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-bold text-slate-900 text-sm">Cổng Viễn Thông eSMS.vn Brandname</h3>
+          <p className="text-2xs text-slate-500 mt-0.5">API Viễn thông thật • Số dư: <strong className="text-slate-800 font-mono font-bold">{(Number(esms?.balance_vnd) || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handlePing}
             disabled={isPinging}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition"
+            className="px-2.5 py-1 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin text-teal-700' : ''}`} />
             <span>{isPinging ? 'Đang kiểm tra...' : 'Ping Số Dư Thật'}</span>
@@ -74,7 +69,7 @@ export const EsmsGatewayCard: React.FC<EsmsGatewayCardProps> = ({ esms, onRefres
           <button
             type="button"
             onClick={() => setShowEdit(true)}
-            className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-2xs active:scale-98"
+            className="px-3 py-1 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition active:scale-98"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Cấu Hình</span>

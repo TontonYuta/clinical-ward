@@ -9,10 +9,7 @@ import {
   EyeOff,
   UserX,
   UserCheck,
-  Building2,
-  ShieldAlert,
   AlertCircle,
-  FileCheck2,
   CheckCircle2
 } from 'lucide-react';
 import { StaffItem, StaffCreatePayload, StaffUpdatePayload } from '../../../types/staff';
@@ -154,7 +151,7 @@ export const StaffManagementTab: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Metric Cards */}
+      {/* Hero Metric Ribbon */}
       <StaffHeroMetrics
         total={total}
         activeCount={activeCount}
@@ -162,20 +159,18 @@ export const StaffManagementTab: React.FC = () => {
         items={items}
       />
 
-      {/* Main Staff Container Card */}
-      <div className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+      {/* Main Staff Section: Flat & Seamless */}
+      <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden flex flex-col">
         {/* Header & Tool Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                Danh Sách Nhân Sự Bệnh Viện &amp; Phân Quyền Trực
-              </h2>
-              {loading && <RefreshCw className="w-3.5 h-3.5 text-teal-600 animate-spin" />}
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Hồ sơ Bác sĩ, Điều dưỡng, Dược sĩ lưu trực tiếp tại bảng `users` trong CSDL
-            </p>
+        <div className="p-3 sm:px-4 sm:py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+              Danh Sách Nhân Sự Bệnh Viện
+            </h2>
+            <span className="text-2xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+              {items.length} người
+            </span>
+            {loading && <RefreshCw className="w-3.5 h-3.5 text-teal-600 animate-spin" />}
           </div>
 
           <div className="flex items-center gap-2">
@@ -183,7 +178,7 @@ export const StaffManagementTab: React.FC = () => {
               type="button"
               onClick={loadData}
               disabled={loading}
-              className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition disabled:opacity-50"
+              className="p-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition disabled:opacity-50"
               title="Tải lại từ CSDL"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-700' : ''}`} />
@@ -194,25 +189,25 @@ export const StaffManagementTab: React.FC = () => {
                 setEditingStaff(null);
                 setIsModalOpen(true);
               }}
-              className="px-3.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition active:scale-98"
+              className="px-3 py-1.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-98"
             >
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-3.5 h-3.5" />
               <span>Thêm Nhân Viên</span>
             </button>
           </div>
         </div>
 
         {/* Filter Bar */}
-        <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-slate-100">
+        <div className="px-3 sm:px-4 py-2.5 bg-slate-50/70 border-b border-slate-200/80 flex flex-wrap items-center gap-2.5">
           {/* Ô Tìm Kiếm Nhanh */}
-          <div className="relative flex-1 min-w-[220px] max-w-sm">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm tên, mã NV, CCHN, khoa phòng..."
-              className="w-full h-8.5 pl-8 pr-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition"
+              placeholder="Tìm theo tên, mã NV, CCHN, khoa phòng..."
+              className="w-full h-8 pl-8 pr-2.5 bg-white border border-slate-300/80 rounded-md text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition"
             />
           </div>
 
@@ -220,7 +215,7 @@ export const StaffManagementTab: React.FC = () => {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-8.5 bg-white border border-slate-200 rounded-lg px-2.5 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
+            className="h-8 bg-white border border-slate-300/80 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
           >
             <option value="all">Mọi Vai Trò</option>
             <option value="doctor">Bác Sĩ</option>
@@ -234,7 +229,7 @@ export const StaffManagementTab: React.FC = () => {
           <select
             value={deptFilter}
             onChange={(e) => setDeptFilter(e.target.value)}
-            className="h-8.5 bg-white border border-slate-200 rounded-lg px-2.5 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer max-w-[200px] truncate"
+            className="h-8 bg-white border border-slate-300/80 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer max-w-[180px] truncate"
           >
             <option value="all">Mọi Khoa Phòng</option>
             {departmentsList.map((dept) => (
@@ -243,7 +238,7 @@ export const StaffManagementTab: React.FC = () => {
           </select>
 
           {/* Lọc Trạng Thái Công Tác */}
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+          <div className="flex items-center gap-0.5 bg-slate-200/80 p-0.5 rounded-md text-xs">
             {[
               { id: 'all', label: 'Tất cả' },
               { id: 'active', label: 'Đang trực' },
@@ -253,7 +248,7 @@ export const StaffManagementTab: React.FC = () => {
                 key={btn.id}
                 type="button"
                 onClick={() => setStatusFilter(btn.id as any)}
-                className={`px-2.5 py-1 rounded-md text-2xs font-medium transition cursor-pointer ${
+                className={`px-2 py-0.5 rounded text-2xs font-medium transition cursor-pointer ${
                   statusFilter === btn.id
                     ? 'bg-white text-teal-900 font-bold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -276,7 +271,7 @@ export const StaffManagementTab: React.FC = () => {
               }}
               className="text-xs text-rose-600 hover:underline cursor-pointer font-medium ml-auto"
             >
-              Đặt lại bộ lọc
+              Đặt lại
             </button>
           )}
         </div>
@@ -285,14 +280,14 @@ export const StaffManagementTab: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 font-semibold text-2xs uppercase tracking-wider">
-                <th className="pb-3 pr-3">Nhân Sự</th>
-                <th className="pb-3 px-3">Vai Trò &amp; Chức Danh</th>
-                <th className="pb-3 px-3">Khoa / Phòng</th>
-                <th className="pb-3 px-3">Chứng Chỉ CCHN</th>
-                <th className="pb-3 px-3">Mã RFID / PIN</th>
-                <th className="pb-3 px-3 text-center">Trạng Thái</th>
-                <th className="pb-3 pl-3 text-right">Thao Tác</th>
+              <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-500 font-semibold text-2xs uppercase tracking-wider">
+                <th className="py-2.5 px-3">Nhân Sự</th>
+                <th className="py-2.5 px-3">Vai Trò &amp; Chức Danh</th>
+                <th className="py-2.5 px-3">Khoa / Phòng</th>
+                <th className="py-2.5 px-3">Chứng Chỉ CCHN</th>
+                <th className="py-2.5 px-3">Mã RFID / PIN</th>
+                <th className="py-2.5 px-3 text-center">Trạng Thái</th>
+                <th className="py-2.5 px-3 text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -331,9 +326,9 @@ export const StaffManagementTab: React.FC = () => {
                       className="hover:bg-slate-50/80 transition group"
                     >
                       {/* Cột 1: Avatar + Tên + Học hàm + Mã */}
-                      <td className="py-3.5 pr-3">
+                      <td className="py-3 px-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                          <div className="w-7 h-7 rounded bg-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0">
                             {staff.name.replace(/^(BS|ĐD|DS|KS|TS|PGS)\.?\s*/i, '').charAt(0) || 'U'}
                           </div>
                           <div>
@@ -367,19 +362,17 @@ export const StaffManagementTab: React.FC = () => {
                       </td>
 
                       {/* Cột 3: Khoa phòng */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-slate-700 text-xs">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate max-w-[160px]">{staff.department}</span>
-                        </div>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="text-slate-800 text-xs font-medium truncate max-w-[160px] block">
+                          {staff.department}
+                        </span>
                       </td>
 
                       {/* Cột 4: Số CCHN */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-xs font-mono text-slate-800">
-                          <FileCheck2 className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-                          <span>{staff.practice_certificate}</span>
-                        </div>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="text-xs font-mono text-slate-800">
+                          {staff.practice_certificate}
+                        </span>
                       </td>
 
                       {/* Cột 5: Mã RFID & PIN */}
@@ -422,7 +415,7 @@ export const StaffManagementTab: React.FC = () => {
                       </td>
 
                       {/* Cột 7: Thao tác */}
-                      <td className="py-3.5 pl-3 text-right whitespace-nowrap">
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           {/* Sửa thông tin */}
                           <button
@@ -478,7 +471,7 @@ export const StaffManagementTab: React.FC = () => {
         </div>
 
         {/* Footer info */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
+        <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
           <span>Hiển thị {items.length} trên tổng số {total} nhân sự</span>
           <span className="font-mono">CSDL: SQLite `clinical_hospital.db`</span>
         </div>
