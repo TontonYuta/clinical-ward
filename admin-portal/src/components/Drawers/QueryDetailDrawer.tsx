@@ -45,20 +45,21 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
         <div className="px-6 py-4.5 border-b border-slate-200/90 flex items-center justify-between bg-slate-50/70">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800">
+              <span className="text-xs font-mono font-bold text-slate-800">
                 {event.event_type}
               </span>
-              <span className="text-xs text-slate-600 font-mono font-medium bg-white px-2 py-0.5 rounded border border-slate-200" title={event.created_at_full || `${event.timestamp} · ${event.created_at_date || '10/11/2026'} (GMT+7 · Giờ Việt Nam)`}>
-                🕒 {event.timestamp} · {event.created_at_date || '10/11/2026'} <span className="text-teal-700 font-bold">(GMT+7)</span>
+              <span className="text-xs text-slate-500 font-mono" title={event.created_at_full || `${event.timestamp} · ${event.created_at_date || ''}`}>
+                · {event.timestamp} {event.created_at_date ? `· ${event.created_at_date}` : ''}
               </span>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                event.status === 'blocked' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
-              }`}>
-                {event.status === 'blocked' ? 'Bị Chặn An Toàn' : 'Phục Vụ Thành Công'}
+              <span className="inline-flex items-center gap-1 text-xs font-medium font-mono">
+                <span className={`w-1.5 h-1.5 rounded-full ${event.status === 'blocked' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                <span className={event.status === 'blocked' ? 'text-rose-600' : 'text-slate-700'}>
+                  {event.status === 'blocked' ? 'Bị Chặn An Toàn' : 'Thành Công'}
+                </span>
               </span>
               {event.has_image && (
-                <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200">
-                  <ImageIcon className="w-3 h-3" /> Thị Giác (Vision)
+                <span className="text-xs text-slate-500 font-mono">
+                  · 📷 Vision
                 </span>
               )}
             </div>
@@ -79,61 +80,60 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
         {/* Drawer Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Card Phân Bổ Token Độc Quyền */}
-          <div className="p-4.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3.5">
+          <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-teal-700" />
-                Model Đọc: <strong className="font-mono text-teal-950 font-bold ml-1">{event.model_name || 'gemini-3.5-flash-lite'}</strong>
+              <span className="text-xs font-medium text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                Model: <strong className="font-mono text-slate-900 font-semibold ml-1">{event.model_name || 'gemini-3.5-flash-lite'}</strong>
               </span>
-              <span className="text-2xs font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-600">
+              <span className="text-2xs font-mono text-slate-400">
                 Provider: {event.provider || 'gemini'}
               </span>
             </div>
 
             {/* Thanh Tỷ Lệ Token Bar */}
             <div className="space-y-1.5">
-              <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex">
-                <div style={{ width: `${pPct}%` }} className="bg-teal-600 h-full" title={`Input Prompt: ${pPct}%`} />
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                <div style={{ width: `${pPct}%` }} className="bg-slate-400 h-full" title={`Input Prompt: ${pPct}%`} />
                 {imgTokens > 0 && (
-                  <div style={{ width: `${imgPct}%` }} className="bg-purple-600 h-full" title={`Image Vision: ${imgPct}%`} />
+                  <div style={{ width: `${imgPct}%` }} className="bg-slate-500 h-full" title={`Image Vision: ${imgPct}%`} />
                 )}
-                <div style={{ width: `${cPct}%` }} className="bg-emerald-500 h-full" title={`Output Completion: ${cPct}%`} />
+                <div style={{ width: `${cPct}%` }} className="bg-teal-700 h-full" title={`Output Completion: ${cPct}%`} />
               </div>
               <div className="flex items-center justify-between text-2xs text-slate-500 font-mono">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-teal-600 inline-block" /> Prompt: {pTokens} tok ({pPct}%)
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" /> Prompt: {pTokens} tok ({pPct}%)
                 </span>
                 {imgTokens > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-purple-600 inline-block" /> Ảnh: {imgTokens} tok
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block" /> Ảnh: {imgTokens} tok
                   </span>
                 )}
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Output: {cTokens} tok ({cPct}%)
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-700 inline-block" /> Output: {cTokens} tok ({cPct}%)
                 </span>
               </div>
             </div>
 
             {/* Grid 4 Thống Kê Token */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-              <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
-                <span className="text-3xs font-semibold text-slate-400 uppercase tracking-wider block">Prompt Input</span>
+              <div className="p-2.5 bg-slate-50/60 border border-slate-200 rounded-lg">
+                <span className="text-3xs font-medium text-slate-400 uppercase tracking-wider block">Prompt Input</span>
                 <span className="text-sm font-bold font-mono text-slate-900 mt-0.5 block">{pTokens.toLocaleString()}</span>
               </div>
-              <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
-                <span className="text-3xs font-semibold text-slate-400 uppercase tracking-wider block">Ảnh Multimodal</span>
-                <span className="text-sm font-bold font-mono text-purple-700 mt-0.5 block">
+              <div className="p-2.5 bg-slate-50/60 border border-slate-200 rounded-lg">
+                <span className="text-3xs font-medium text-slate-400 uppercase tracking-wider block">Ảnh Vision</span>
+                <span className="text-sm font-bold font-mono text-slate-900 mt-0.5 block">
                   {imgTokens > 0 ? `${imgTokens} tok` : '0 tok'}
                 </span>
               </div>
-              <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
-                <span className="text-3xs font-semibold text-slate-400 uppercase tracking-wider block">Output Sinh Ra</span>
-                <span className="text-sm font-bold font-mono text-emerald-700 mt-0.5 block">{cTokens.toLocaleString()}</span>
+              <div className="p-2.5 bg-slate-50/60 border border-slate-200 rounded-lg">
+                <span className="text-3xs font-medium text-slate-400 uppercase tracking-wider block">Output Sinh Ra</span>
+                <span className="text-sm font-bold font-mono text-slate-900 mt-0.5 block">{cTokens.toLocaleString()}</span>
               </div>
-              <div className="p-2.5 bg-teal-50/70 border border-teal-200 rounded-lg">
-                <span className="text-3xs font-semibold text-teal-800 uppercase tracking-wider block">Tổng Token &amp; Giá</span>
-                <span className="text-sm font-bold font-mono text-teal-950 mt-0.5 block">
-                  {totTokens.toLocaleString()} <span className="text-3xs font-normal text-slate-500">({costVnd} đ)</span>
+              <div className="p-2.5 bg-slate-50/60 border border-slate-200 rounded-lg">
+                <span className="text-3xs font-medium text-slate-400 uppercase tracking-wider block">Tổng Token &amp; Giá</span>
+                <span className="text-sm font-bold font-mono text-slate-900 mt-0.5 block">
+                  {totTokens.toLocaleString()} <span className="text-3xs font-normal text-slate-400">({costVnd} đ)</span>
                 </span>
               </div>
             </div>
@@ -178,7 +178,7 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
                 </button>
               )}
             </div>
-            <div className="p-4.5 bg-teal-50/40 border border-teal-200/80 rounded-xl text-sm text-slate-800 leading-relaxed max-h-80 overflow-y-auto font-sans whitespace-pre-wrap">
+            <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 leading-relaxed max-h-80 overflow-y-auto font-sans whitespace-pre-wrap">
               {event.reply_text || 'Hệ thống tra cứu tức thì từ bảng Dược thư nội viện, không cần sinh văn bản tự do.'}
             </div>
           </div>

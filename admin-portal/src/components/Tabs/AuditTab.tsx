@@ -412,60 +412,62 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    <AlertTriangle className="w-4 h-4 text-slate-500" />
                     <span>Danh sách vi phạm &amp; lỗi phát hiện ({selectedViolations.length}):</span>
                   </h4>
-                  <span className={`px-2 py-0.5 rounded text-2xs font-extrabold font-mono ${
-                    selectedLog.status === 'REJECT' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
-                    selectedLog.status === 'ERROR' ? 'bg-rose-200 text-rose-900 border border-rose-400' :
-                    selectedLog.status === 'WARNING' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                    'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  <span className={`inline-flex items-center gap-1 font-mono text-2xs font-medium ${
+                    selectedLog.status === 'REJECT' || selectedLog.status === 'ERROR' ? 'text-rose-600' :
+                    selectedLog.status === 'WARNING' ? 'text-amber-600' : 'text-emerald-700'
                   }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      selectedLog.status === 'REJECT' || selectedLog.status === 'ERROR' ? 'bg-rose-500' :
+                      selectedLog.status === 'WARNING' ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`} />
                     {selectedLog.status}
                   </span>
                 </div>
 
                 {selectedViolations.length === 0 ? (
-                  <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-center space-y-1">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
-                    <p className="text-xs font-bold text-emerald-900">Đơn thuốc hoàn toàn hợp lệ</p>
-                    <p className="text-3xs text-emerald-700">Không ghi nhận bất kỳ vi phạm danh mục hoặc điều kiện thanh toán nào</p>
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-center space-y-1">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 mx-auto" />
+                    <p className="text-xs font-semibold text-slate-900">Đơn thuốc hợp lệ</p>
+                    <p className="text-3xs text-slate-500">Không ghi nhận bất kỳ vi phạm danh mục hoặc điều kiện thanh toán nào</p>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     {selectedViolations.map((v, idx) => (
                       <div
                         key={v.id || idx}
-                        className="p-3.5 bg-rose-50/60 rounded-xl border border-rose-200 space-y-2 text-xs"
+                        className="p-3 bg-white rounded-lg border border-slate-200 space-y-2 text-xs"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <span className="font-bold text-rose-950 block text-xs">
+                            <span className="font-semibold text-slate-900 block text-xs">
                               {idx + 1}. {v.title || v.category || 'Vi phạm điều kiện thanh toán'}
                             </span>
                             {v.drug_name && (
-                              <span className="text-3xs text-slate-600 font-sans block mt-0.5">
+                              <span className="text-3xs text-slate-500 font-sans block mt-0.5">
                                 Thuốc: <strong className="text-slate-800">{v.drug_name}</strong> {v.active_ingredient ? `(${v.active_ingredient})` : ''} • Mã: {v.drug_code || '---'}
                               </span>
                             )}
                           </div>
                           {v.rejection_risk_vnd && v.rejection_risk_vnd > 0 ? (
-                            <span className="font-mono text-2xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded shrink-0">
+                            <span className="font-mono text-xs font-medium text-rose-600 shrink-0">
                               -{v.rejection_risk_vnd.toLocaleString('vi-VN')} đ
                             </span>
                           ) : null}
                         </div>
 
-                        <p className="text-slate-700 text-xs leading-relaxed bg-white/70 p-2 rounded-lg border border-rose-100">
+                        <p className="text-slate-700 text-xs leading-relaxed bg-slate-50 p-2.5 rounded-md border border-slate-100">
                           {v.detail}
                         </p>
 
                         {/* Căn cứ pháp lý & Hành động xử lý */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-rose-200/60 text-2xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100 text-2xs">
                           {v.legal_ref && (
-                            <div className="text-slate-600 font-sans flex items-center gap-1 truncate">
-                              <span className="font-semibold text-slate-700">Căn cứ:</span>
-                              <span className="text-teal-800 font-medium truncate">
+                            <div className="text-slate-500 font-sans flex items-center gap-1 truncate">
+                              <span className="font-medium text-slate-600">Căn cứ:</span>
+                              <span className="text-slate-800 truncate font-mono">
                                 {v.legal_ref.doc_code || v.legal_ref.doc_title}
                                 {v.legal_ref.section ? ` - ${v.legal_ref.section}` : ''}
                                 {v.legal_ref.page_number ? ` (Trang ${v.legal_ref.page_number})` : ''}
@@ -474,8 +476,8 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
                           )}
 
                           {v.action && (
-                            <div className="text-amber-900 font-semibold bg-amber-100/70 px-2 py-0.5 rounded text-3xs shrink-0">
-                              Khắc phục: {v.action}
+                            <div className="text-slate-600 text-3xs shrink-0 font-medium">
+                              Hướng xử lý: <span className="text-slate-800">{v.action}</span>
                             </div>
                           )}
                         </div>

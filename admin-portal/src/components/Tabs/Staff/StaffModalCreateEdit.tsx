@@ -118,11 +118,15 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
       return;
     }
     if (!practiceCertificate.trim()) {
-      setErrorMessage('Vui lòng nhập số Chứng chỉ hành nghề (CCHN).');
+      setErrorMessage('Vui lòng nhập số Chứng chỉ hành nghề (CCHN) hoặc mã định danh vị trí.');
       return;
     }
-    if (pinCode.length < 4) {
-      setErrorMessage('Mã PIN xác thực ca trực phải từ 4 chữ số trở lên.');
+    if (!/^\d{4,6}$/.test(pinCode.trim())) {
+      setErrorMessage('Mã PIN xác thực ca trực phải gồm từ 4 đến 6 chữ số (VD: 1234).');
+      return;
+    }
+    if (phone.trim() && !/^[0-9+]{9,12}$/.test(phone.trim())) {
+      setErrorMessage('Số điện thoại không hợp lệ (gồm 9 - 11 chữ số).');
       return;
     }
 
