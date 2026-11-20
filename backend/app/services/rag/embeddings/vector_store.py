@@ -205,11 +205,12 @@ class VectorStore:
         self,
         query_vector: Union[List[float], np.ndarray],
         top_k: int = 50,
-        min_score: float = 0.0
+        min_score: float = 0.0,
+        id_prefix: Optional[str] = None
     ) -> List[Tuple[str, float]]:
         """
         Tìm kiếm Top-K chunks có độ tương đồng Cosine cao nhất với query vector.
-        Thời gian tính toán < 1.5ms trên ma trận RAM.
+        Hỗ trợ lọc trực tiếp theo id_prefix (VD: doc_id) để ưu tiên văn bản đang kiểm thử.
         """
         if self._matrix is None or len(self._chunk_ids) == 0:
             return []
@@ -223,6 +224,23 @@ class VectorStore:
         # Ma trận Dot Product: (N, dim) dot (dim,) -> (N,)
         scores = np.dot(self._matrix, q_norm)
 
+        if id_prefix:
+            clean_pfx = id_prefix.strip().lower()
+            matching_indices = [
+                i for i, cid in enumerate(self._chunk_ids)
+                if cid.lower().startswith(clean_pfx) or clean_pfx in cid.lower()
+            ]
+            if not matching_indices:
+                return []
+            matching_scores = [(idx, float(scores[idx])) for idx in matching_indices]
+            matching_scores.sort(key=lambda x: x[1], reverse=True)
+            results: List[Tuple[str, float]] = []
+            for idx, score in matching_scores[:top_k]:
+                if score < min_score:
+                    break
+                results.append((self._chunk_ids[idx], round(score, 4)))
+            return results
+
         n = len(scores)
         k = min(top_k, n)
 
@@ -234,7 +252,7 @@ class VectorStore:
             sorted_order = np.argsort(-scores[partition_idx])
             top_indices = partition_idx[sorted_order]
 
-        results: List[Tuple[str, float]] = []
+        results = []
         for idx in top_indices:
             score = float(scores[idx])
             if score < min_score:

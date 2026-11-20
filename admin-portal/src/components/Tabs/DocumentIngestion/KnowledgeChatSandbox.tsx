@@ -115,10 +115,10 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
     setAuditError('');
     try {
       let res: CleanlinessAuditResponse;
-      if (uploadedFile) {
-        res = await auditDocumentCleanliness(uploadedFile, undefined);
-      } else if (activeDocId) {
+      if (activeDocId) {
         res = await auditDocumentCleanliness(undefined, activeDocId);
+      } else if (uploadedFile) {
+        res = await auditDocumentCleanliness(uploadedFile, undefined);
       } else {
         throw new Error('Vui lòng chọn một tài liệu hoặc tải lên tệp PDF để kiểm định.');
       }
@@ -130,12 +130,12 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
     }
   };
 
-  // Automatically trigger audit when selectedDoc or uploadedFile changes
+  // Automatically trigger audit when activeDocId or uploadedFile changes
   useEffect(() => {
-    if (uploadedFile || activeDocId) {
+    if (activeDocId || uploadedFile) {
       runAudit();
     }
-  }, [uploadedFile, activeDocId]);
+  }, [activeDocId, uploadedFile]);
 
   // Handle send message
   const handleSendMessage = async (queryToSend?: string) => {
@@ -348,22 +348,21 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <FileText className="w-4 h-4 text-teal-700 shrink-0" />
             <span className="font-semibold text-slate-700 shrink-0">Văn bản kiểm thử:</span>
-            {uploadedFile ? (
-              <span className="truncate font-mono text-teal-900 text-2xs bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                [Tệp mới] {uploadedFile.name} ({(uploadedFile.size / 1024).toFixed(0)} KB)
+            <select
+              value={activeDocId}
+              onChange={(e) => setActiveDocId(e.target.value)}
+              className="text-2xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-slate-800 truncate flex-1 max-w-md font-medium"
+            >
+              {allDocs.map((doc) => (
+                <option key={doc.id} value={doc.id}>
+                  [{doc.status === 'active' ? 'ĐANG DÙNG' : doc.status === 'superseded' ? 'HẾT HIỆU LỰC' : 'CHỜ DUYỆT'}] {doc.title} ({doc.filename})
+                </option>
+              ))}
+            </select>
+            {uploadedFile && (
+              <span className="truncate font-mono text-amber-900 text-2xs bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shrink-0">
+                Đang chờ tải lên: {uploadedFile.name}
               </span>
-            ) : (
-              <select
-                value={activeDocId}
-                onChange={(e) => setActiveDocId(e.target.value)}
-                className="text-2xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-slate-800 truncate flex-1 max-w-md font-medium"
-              >
-                {allDocs.map((doc) => (
-                  <option key={doc.id} value={doc.id}>
-                    [{doc.status === 'active' ? 'ĐANG DÙNG' : doc.status === 'superseded' ? 'HẾT HIỆU LỰC' : 'CHỜ DUYỆT'}] {doc.title} ({doc.filename})
-                  </option>
-                ))}
-              </select>
             )}
           </div>
 
@@ -597,24 +596,31 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
           )}
 
           {isDocStaged && (
-            <button
-              type="button"
-              onClick={handleActivateToProduction}
-              disabled={!hasVerifiedAnswer || isActivating}
-              className={`px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
-                hasVerifiedAnswer && !isActivating
-                  ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
-              }`}
-              title={hasVerifiedAnswer ? 'Kích hoạt tài liệu vào CSDL chính thức của bệnh viện' : 'Phải kiểm thử trước khi kích hoạt'}
-            >
-              {isActivating ? (
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2">
+              {!hasVerifiedAnswer && (
+                <span className="text-2xs text-amber-700 font-medium hidden sm:inline">
+                  (Cần hỏi thử ít nhất 1 câu để mở khóa kích hoạt)
+                </span>
               )}
-              <span>Kích Hoạt Vào CSDL Chính Thức</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleActivateToProduction}
+                disabled={!hasVerifiedAnswer || isActivating}
+                className={`px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
+                  hasVerifiedAnswer && !isActivating
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                }`}
+                title={hasVerifiedAnswer ? 'Kích hoạt tài liệu vào CSDL chính thức của bệnh viện' : 'Phải kiểm thử trước khi kích hoạt'}
+              >
+                {isActivating ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                )}
+                <span>Kích Hoạt Vào CSDL Chính Thức</span>
+              </button>
+            </div>
           )}
 
           {isDocActive && (

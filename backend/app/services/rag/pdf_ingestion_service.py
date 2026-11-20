@@ -517,16 +517,18 @@ async def query_ingested_documents(
     fts_index = SqliteFtsIndex()
     candidate_limit = max(50, top_k * 10)
 
-    # 1. Sparse BM25
-    fts_results = fts_index.search_bm25(query, top_k=candidate_limit)
+    # 1. Sparse BM25 (có lọc theo doc_id nếu được chỉ định)
+    fts_results = fts_index.search_bm25(query, top_k=candidate_limit, doc_id_filter=doc_id)
 
-    # 2. Dense Vector
+    # 2. Dense Vector (có lọc theo doc_id id_prefix nếu được chỉ định)
     query_vec = await provider.embed_query(query)
     if query_vec is None:
         fallback = MockEmbeddingProvider(dimension=vector_store.dimension)
         query_vec = await fallback.embed_query(query)
 
-    vector_matches = vector_store.search_cosine(query_vec, top_k=candidate_limit) if query_vec is not None else []
+    vector_matches = vector_store.search_cosine(
+        query_vec, top_k=candidate_limit, id_prefix=doc_id
+    ) if query_vec is not None else []
 
     # RRF Fusion
     bm25_ranks = {r.chunk.chunk_id: idx + 1 for idx, r in enumerate(fts_results)}
@@ -547,6 +549,13 @@ async def query_ingested_documents(
             cid for cid in all_cids
             if cid.startswith(f"{doc_id}_") or (chunk_map.get(cid) and doc_id in chunk_map[cid].source_doc)
         }
+        # Fallback an toàn: nếu FTS và Dense không bắt trúng, lấy các chunks đầu tiên của tài liệu
+        if not all_cids:
+            doc_chunks = fts_index.get_chunks_by_prefix(doc_id, limit=top_k)
+            for c in doc_chunks:
+                all_cids.add(c.chunk_id)
+                chunk_map[c.chunk_id] = c
+                bm25_ranks[c.chunk_id] = 1
 
     k_const = 60
     scored_results = []

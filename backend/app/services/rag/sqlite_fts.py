@@ -127,22 +127,36 @@ class SqliteFtsIndex:
                 )
             conn.commit()
 
-    def search_bm25(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
+    def search_bm25(self, query: str, top_k: int = 5, doc_id_filter: Optional[str] = None) -> list[RetrievedChunk]:
         fts_query = _sanitize_fts_query(query)
         if not fts_query:
+            if doc_id_filter:
+                return self._fallback_keyword_search_for_doc(query, doc_id_filter, top_k)
             return []
 
         results: list[RetrievedChunk] = []
         try:
             with self._get_connection() as conn:
-                cur = conn.execute(
-                    """
-                    SELECT chunk_id, source_doc, legal_basis, page_or_section,
-                           title, content, keywords, entity_type, source_id, source_version, bm25(clinical_rag_fts) as rank_score
-                    FROM clinical_rag_fts WHERE clinical_rag_fts MATCH ? ORDER BY rank_score ASC LIMIT ?
-                    """,
-                    (fts_query, top_k)
-                )
+                if doc_id_filter:
+                    cur = conn.execute(
+                        """
+                        SELECT chunk_id, source_doc, legal_basis, page_or_section,
+                               title, content, keywords, entity_type, source_id, source_version, bm25(clinical_rag_fts) as rank_score
+                        FROM clinical_rag_fts
+                        WHERE clinical_rag_fts MATCH ? AND (chunk_id LIKE ? OR source_doc LIKE ?)
+                        ORDER BY rank_score ASC LIMIT ?
+                        """,
+                        (fts_query, f"{doc_id_filter}%", f"%{doc_id_filter}%", top_k)
+                    )
+                else:
+                    cur = conn.execute(
+                        """
+                        SELECT chunk_id, source_doc, legal_basis, page_or_section,
+                               title, content, keywords, entity_type, source_id, source_version, bm25(clinical_rag_fts) as rank_score
+                        FROM clinical_rag_fts WHERE clinical_rag_fts MATCH ? ORDER BY rank_score ASC LIMIT ?
+                        """,
+                        (fts_query, top_k)
+                    )
                 for rank_idx, row in enumerate(cur.fetchall()):
                     raw_score = float(row["rank_score"])
                     results.append(RetrievedChunk(
@@ -157,24 +171,64 @@ class SqliteFtsIndex:
                         match_reasons=[f"BM25 match rank #{rank_idx+1}"]
                     ))
         except Exception:
-            return self._fallback_like_search(query, top_k)
+            return self._fallback_like_search(query, top_k, doc_id_filter)
+
+        if not results and doc_id_filter:
+            return self._fallback_keyword_search_for_doc(query, doc_id_filter, top_k)
 
         return results
 
-    def _fallback_like_search(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
+    def _fallback_keyword_search_for_doc(self, query: str, doc_id: str, top_k: int = 5) -> list[RetrievedChunk]:
+        """Tìm kiếm fallback theo tần suất từ khóa trực tiếp trên các chunks của tài liệu doc_id."""
+        all_chunks = self.get_chunks_by_prefix(doc_id, limit=200)
+        if not all_chunks:
+            return []
+        words = [w.casefold() for w in re.findall(r"\w+", query) if len(w) >= 2 and w.casefold() not in VIETNAMESE_STOPWORDS]
+        if not words:
+            return [RetrievedChunk(chunk=c, score=0.5, bm25_rank=i+1, match_reasons=["Direct chunk"]) for i, c in enumerate(all_chunks[:top_k])]
+
+        scored = []
+        for c in all_chunks:
+            text = f"{c.title} {c.content} {' '.join(c.keywords)}".casefold()
+            hits = sum(text.count(w) for w in words)
+            if hits > 0:
+                scored.append((hits, c))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [
+            RetrievedChunk(
+                chunk=c,
+                score=min(0.95, 0.4 + (hits * 0.1)),
+                bm25_rank=idx + 1,
+                match_reasons=[f"Keyword frequency match ({hits} hits)"]
+            )
+            for idx, (hits, c) in enumerate(scored[:top_k])
+        ]
+
+    def _fallback_like_search(self, query: str, top_k: int = 5, doc_id_filter: Optional[str] = None) -> list[RetrievedChunk]:
         tokens = [t.strip() for t in query.split() if len(t.strip()) >= 2]
         if not tokens:
             return []
         term = f"%{tokens[0]}%"
         results: list[RetrievedChunk] = []
         with self._get_connection() as conn:
-            cur = conn.execute(
-                """
-                SELECT chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type, source_id, source_version
-                FROM clinical_rag_fts WHERE title LIKE ? OR content LIKE ? LIMIT ?
-                """,
-                (term, term, top_k)
-            )
+            if doc_id_filter:
+                cur = conn.execute(
+                    """
+                    SELECT chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type, source_id, source_version
+                    FROM clinical_rag_fts
+                    WHERE (title LIKE ? OR content LIKE ?) AND (chunk_id LIKE ? OR source_doc LIKE ?)
+                    LIMIT ?
+                    """,
+                    (term, term, f"{doc_id_filter}%", f"%{doc_id_filter}%", top_k)
+                )
+            else:
+                cur = conn.execute(
+                    """
+                    SELECT chunk_id, source_doc, legal_basis, page_or_section, title, content, keywords, entity_type, source_id, source_version
+                    FROM clinical_rag_fts WHERE title LIKE ? OR content LIKE ? LIMIT ?
+                    """,
+                    (term, term, top_k)
+                )
             for i, row in enumerate(cur.fetchall()):
                 results.append(RetrievedChunk(
                     chunk=RagChunk(
@@ -221,6 +275,37 @@ class SqliteFtsIndex:
                         source_version=row["source_version"]
                     )
         return result
+
+    def get_chunks_by_prefix(self, prefix: str, limit: int = 100) -> list[RagChunk]:
+        """Lấy toàn bộ chunks có chunk_id hoặc source_doc khớp với prefix (VD: doc_id)."""
+        clean_pfx = prefix.strip()
+        if not clean_pfx:
+            return []
+        with self._get_connection() as conn:
+            cur = conn.execute(
+                """
+                SELECT chunk_id, source_doc, legal_basis, page_or_section,
+                       title, content, keywords, entity_type, source_id, source_version
+                FROM clinical_rag_fts WHERE chunk_id LIKE ? OR source_doc LIKE ?
+                LIMIT ?
+                """,
+                (f"{clean_pfx}%", f"%{clean_pfx}%", limit)
+            )
+            return [
+                RagChunk(
+                    chunk_id=row["chunk_id"],
+                    source_doc=row["source_doc"],
+                    legal_basis=row["legal_basis"],
+                    page_or_section=row["page_or_section"],
+                    title=row["title"],
+                    content=row["content"],
+                    keywords=row["keywords"].split() if row["keywords"] else [],
+                    entity_type=row["entity_type"],
+                    source_id=row["source_id"],
+                    source_version=row["source_version"]
+                )
+                for row in cur.fetchall()
+            ]
 
     def delete_chunks_by_source_doc(self, source_doc: str) -> list[str]:
         """Xóa toàn bộ chunks của một tài liệu source_doc và trả về danh sách chunk_id đã xóa."""

@@ -140,6 +140,25 @@ export const DocumentIngestionTab: React.FC = () => {
         }
         const res = await uploadKnowledgePdf(formData);
         setUploadResult(res);
+
+        if (res && res.doc_id) {
+          const newDocItem: KnowledgeDocumentItem = {
+            id: res.doc_id,
+            title: res.title || title.trim(),
+            legal_basis: res.legal_basis || legalBasis.trim(),
+            category: category.trim(),
+            edition_year: Number(editionYear) || 2026,
+            filename: res.filename,
+            public_url: res.public_url,
+            sha256: res.sha256,
+            bytes: res.file_bytes,
+            status: 'staged',
+            verified: false,
+          };
+          setSelectedDocForTest(newDocItem);
+          setRightTabMode('chatbot');
+          sandboxContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
       }
 
       // Reset form
@@ -284,6 +303,15 @@ export const DocumentIngestionTab: React.FC = () => {
                   <span>Nạp CSDL Backend</span>
                 </button>
               </div>
+              {storageTarget === 'local' ? (
+                <p className="mt-1.5 text-2xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                  ⚠️ <strong>Chế độ Cục bộ:</strong> Chỉ lưu file trong trình duyệt này để xem trước và KHÔNG đưa vào SQLite/Vector Store của máy chủ. Chatbot AI sẽ không thể trả lời nếu chọn chế độ này.
+                </p>
+              ) : (
+                <p className="mt-1.5 text-2xs text-teal-800 bg-teal-50/70 p-2 rounded border border-teal-200">
+                  ✅ <strong>Nạp CSDL Backend (Khuyên dùng):</strong> Trích xuất văn bản, tạo chỉ mục SQLite FTS5 và 768-dim Vector Store cho Chatbot RAG.
+                </p>
+              )}
             </div>
 
             {/* File Picker */}
