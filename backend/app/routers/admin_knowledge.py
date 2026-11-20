@@ -6,6 +6,7 @@ tự động trích xuất, phân đoạn, lập chỉ mục và lưu provenance
 import json
 import io
 import re
+import time
 from pathlib import Path
 from typing import Optional, List
 from urllib.parse import quote
@@ -522,8 +523,8 @@ YÊU CẦU ĐÁP ỨNG LÂM SÀNG:
         legal_basis=resp.legal_basis or None,
         rag_grounded=bool(resp.rag_grounded),
         confidence=resp.confidence or 0.95,
-        provider=last_exec.get("provider", "gemini"),
-        model_name=last_exec.get("model", "gemini-2.5-flash"),
+        provider=last_exec.get("provider") or getattr(resp, "provider", None) or "gemini",
+        model_name=last_exec.get("model") or getattr(resp, "model_name", None) or "gemini-2.5-flash",
         suggested_chips=resp.suggested_chips or []
     )
 
