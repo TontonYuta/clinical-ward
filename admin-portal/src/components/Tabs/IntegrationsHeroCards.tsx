@@ -13,50 +13,56 @@ export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ es
   const isGasOnline = gas?.status === 'ready';
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-4">
       {/* 1. Số dư eSMS thật */}
-      <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-2xs space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+      <div className="p-4 sm:p-5 bg-white border border-slate-200/80 rounded-xl shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
           <span>Số Dư Viễn Thông eSMS</span>
-          <Radio className="w-4 h-4 text-teal-700" />
+          <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+            <Radio className="w-4 h-4" />
+          </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold font-mono text-slate-900 tracking-tight">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-2xl lg:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums">
             {balance.toLocaleString('vi-VN')}
           </span>
-          <span className="text-xs font-semibold text-slate-500">VNĐ</span>
+          <span className="text-xs font-bold text-slate-400">₫</span>
         </div>
-        <div className="flex items-center gap-1.5 text-2xs font-semibold text-emerald-800">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="flex items-center gap-1.5 text-2xs font-semibold text-emerald-800 pt-0.5 border-t border-slate-100">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span>{isEsmsOnline ? 'Tài Khoản Thật Sẵn Sàng' : 'Chưa Kết Nối'}</span>
           {esms?.user_id && <span className="text-slate-400 font-mono font-normal">#{esms.user_id}</span>}
         </div>
       </div>
 
       {/* 2. Brandname & Chế độ */}
-      <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-2xs space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span>Brandname &amp; Tự Động</span>
-          <ShieldCheck className="w-4 h-4 text-teal-700" />
+      <div className="p-4 sm:p-5 bg-white border border-slate-200/80 rounded-xl shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span>Brandname Tin Nhắn</span>
+          <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
         </div>
-        <div className="text-xl font-bold font-mono text-teal-900 truncate">
+        <div className="text-xl lg:text-2xl font-bold font-mono text-teal-900 truncate tracking-tight">
           {esms?.brandname || 'BV_LAMSANG'}
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap text-2xs">
-          <span className={`px-2 py-0.5 rounded-md font-semibold ${esms?.is_sandbox ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+        <div className="flex items-center gap-1.5 flex-wrap text-2xs pt-0.5 border-t border-slate-100">
+          <span className={`px-2 py-0.5 rounded-md font-semibold ${esms?.is_sandbox ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
             {esms?.is_sandbox ? 'Sandbox (0đ)' : 'Live'}
           </span>
-          <span className="px-2 py-0.5 rounded-md font-semibold bg-teal-50 text-teal-800 flex items-center gap-0.5">
+          <span className="px-2 py-0.5 rounded-md font-semibold bg-teal-50 text-teal-800 border border-teal-200 flex items-center gap-0.5">
             <Zap className="w-3 h-3 text-teal-600" /> Auto-SMS
           </span>
         </div>
       </div>
 
       {/* 3. Tổng lượt SMS cấp cứu / đơn thuốc */}
-      <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-2xs space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span>Tin Nhắn Cấp Cứu / Đơn</span>
-          <MessageSquare className="w-4 h-4 text-teal-700" />
+      <div className="p-4 sm:p-5 bg-white border border-slate-200/80 rounded-xl shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span>Tin Nhắn Đã Gửi</span>
+          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+            <MessageSquare className="w-4 h-4" />
+          </div>
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-bold font-mono text-slate-900 tracking-tight">

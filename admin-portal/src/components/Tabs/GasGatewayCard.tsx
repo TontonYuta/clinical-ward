@@ -44,11 +44,11 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-2xs overflow-hidden">
+    <div className="bg-white border border-slate-200/80 rounded-xl shadow-2xs overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-teal-800 text-white flex items-center justify-center shadow-xs">
-            <Send className="w-5 h-5" />
+          <div className="h-9 w-9 rounded-lg bg-teal-800 text-white flex items-center justify-center shadow-xs">
+            <Send className="w-4.5 h-4.5" />
           </div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm sm:text-base">Cổng Google Apps Script (Email Dặn Dò Lâm Sàng)</h3>
@@ -68,7 +68,7 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
           <button
             type="button"
             onClick={() => setIsEditing(!isEditing)}
-            className="px-3 py-1.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+            className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-2xs active:scale-98"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>{isEditing ? 'Đóng' : 'Sửa Webhook'}</span>

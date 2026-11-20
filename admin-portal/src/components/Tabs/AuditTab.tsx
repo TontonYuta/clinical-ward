@@ -116,11 +116,11 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               BHYT đã giám định
             </span>
-            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+            <div className="p-2 bg-teal-50 rounded-lg text-teal-700">
               <Stethoscope className="w-4.5 h-4.5" />
             </div>
           </div>
-          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-indigo-700">
+          <div className="text-2xl lg:text-3xl font-extrabold font-mono text-slate-900">
             {auditedCount} ca
           </div>
           <div className="text-xs text-slate-500 font-medium">

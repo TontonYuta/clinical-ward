@@ -17,14 +17,21 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
   const [isHeartbeating, setIsHeartbeating] = useState(false);
   const [testResult, setTestResult] = useState<{ [keyId: string]: TestKeyResponse }>({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const notify = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
 
   const handleAutoHeartbeat = async () => {
     setIsHeartbeating(true);
     try {
       await triggerAutoHeartbeat();
+      notify('Đã hoàn tất quét trạng thái toàn bộ bể khóa API!');
       onRefresh();
     } catch (err: any) {
-      alert(`Lỗi tự động kiểm tra: ${err.message}`);
+      notify(`Lỗi tự động kiểm tra: ${err.message}`);
     } finally {
       setIsHeartbeating(false);
     }
@@ -38,6 +45,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
       setNewKeyName('');
       setNewKeyValue('');
       setIsAdding(false);
+      notify('Đã thêm thành công API Key mới vào bể khóa!');
       onRefresh();
     } catch (err: any) {
       setErrorMsg(err.message || 'Lỗi thêm API Key');
@@ -48,9 +56,10 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
     if (!window.confirm('Bạn có chắc chắn muốn xóa API Key này khỏi bể khóa xoay vòng?')) return;
     try {
       await deleteApiKey(keyId);
+      notify('Đã xóa API Key khỏi bể khóa thành công.');
       onRefresh();
     } catch (err: any) {
-      alert(err.message || 'Lỗi xóa API Key');
+      notify(err.message || 'Lỗi xóa API Key');
     }
   };
 
@@ -68,12 +77,20 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-18 right-6 z-50 p-3.5 bg-teal-900 text-white rounded-xl shadow-lg border border-teal-700/80 flex items-center gap-2.5 text-xs font-medium animate-in slide-in-from-top-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       {/* Header khu vực */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 bg-white rounded-xl border border-slate-200/90 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs">
         <div>
-          <h2 className="text-base lg:text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2 tracking-tight">
             <KeyRound className="w-5 h-5 text-teal-700 shrink-0" />
-            Bể khóa API đa tầng
+            Bể Khóa API Đa Tầng
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Tự động chia tải và chuyển đổi dự phòng (failover) khi có key chạm rate-limit (429)
@@ -84,7 +101,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
             type="button"
             onClick={handleAutoHeartbeat}
             disabled={isHeartbeating}
-            className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-slate-200 shadow-2xs whitespace-nowrap"
+            className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-slate-200 shadow-2xs whitespace-nowrap"
             title="Tự động kiểm tra latency và khả dụng của toàn bộ danh sách key"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-teal-700 ${isHeartbeating ? 'animate-spin' : ''}`} />
@@ -93,7 +110,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
           <button
             type="button"
             onClick={() => setIsAdding(!isAdding)}
-            className="px-3.5 py-2 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition cursor-pointer whitespace-nowrap"
+            className="px-3.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition cursor-pointer whitespace-nowrap active:scale-98"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{isAdding ? 'Đóng form' : 'Thêm khóa mới'}</span>
@@ -103,55 +120,58 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
 
       {/* Form Thêm Key Mới */}
       {isAdding && (
-        <form onSubmit={handleAddKey} className="p-6 bg-teal-50/50 rounded-2xl border border-teal-200 shadow-2xs space-y-4">
-          <div className="text-sm font-bold text-teal-950 uppercase tracking-wider">Thêm API Key Mới Vào Bể Khóa</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <form onSubmit={handleAddKey} className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3.5 animate-in fade-in">
+          <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+            <KeyRound className="w-4 h-4 text-teal-700" />
+            <span>Thêm API Key Mới Vào Bể Khóa Xoay Vòng</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs sm:text-sm font-semibold text-slate-700 block mb-1">Tên Gợi Nhớ</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Tên Gợi Nhớ</label>
               <input
                 type="text"
                 placeholder="VD: Key Khoa Cấp Cứu 1"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-teal-600"
+                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-teal-600 focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="text-xs sm:text-sm font-semibold text-slate-700 block mb-1">Nhà Cung Cấp</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Nhà Cung Cấp</label>
               <select
                 value={newKeyProvider}
                 onChange={(e) => setNewKeyProvider(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-teal-600"
+                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:border-teal-600 focus:outline-none cursor-pointer"
               >
                 <option value="gemini">Google Gemini Cloud (Chính thức)</option>
                 <option value="openai_compatible">OpenAI-Compatible (Ollama / vLLM)</option>
               </select>
             </div>
             <div>
-              <label className="text-xs sm:text-sm font-semibold text-slate-700 block mb-1">Khóa API (Bảo Mật)</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Khóa API (Bảo Mật)</label>
               <input
                 type="password"
                 placeholder="Dán mã khóa API tại đây..."
                 value={newKeyValue}
                 onChange={(e) => setNewKeyValue(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white font-mono focus:outline-teal-600"
+                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-mono text-xs text-slate-800 focus:border-teal-600 focus:outline-none"
                 required
               />
             </div>
           </div>
-          {errorMsg && <div className="text-sm text-rose-600 font-medium">{errorMsg}</div>}
-          <div className="flex justify-end gap-3 pt-2">
+          {errorMsg && <div className="text-xs text-rose-600 font-medium">{errorMsg}</div>}
+          <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="px-4 py-2 rounded-xl border border-slate-300 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-teal-800 text-white text-sm font-semibold hover:bg-teal-900 shadow-2xs"
+              className="px-4 py-1.5 rounded-lg bg-teal-700 text-white text-xs font-semibold hover:bg-teal-800 shadow-2xs transition"
             >
               Lưu Vào Bể Khóa
             </button>
@@ -160,12 +180,12 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
       )}
 
       {/* Danh Sách Khóa Trong Bể */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
         {keys.map((k) => {
           const res = testResult[k.key_id];
           const isTesting = testingKeyId === k.key_id;
           return (
-            <div key={k.key_id} className="p-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
+            <div key={k.key_id} className="p-4 sm:p-5 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-3.5">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2.5">
@@ -246,17 +266,17 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-sm">
-                <span className="text-slate-600 text-xs sm:text-sm font-medium">
-                  Trạng thái: <strong className="text-slate-900">{k.quota_status}</strong>
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">
+                  Hạn mức: <strong className="text-slate-800 font-mono">{k.quota_status}</strong>
                 </span>
                 <button
                   type="button"
                   onClick={() => handleTestKey(k.key_id)}
                   disabled={isTesting}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-semibold flex items-center gap-2 transition cursor-pointer disabled:opacity-50 border border-slate-200"
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-slate-200"
                 >
-                  <Play className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin text-teal-600' : ''}`} />
+                  <Play className={`w-3 h-3 ${isTesting ? 'animate-spin text-teal-600' : ''}`} />
                   <span>{isTesting ? 'Đang ping...' : 'Kiểm Tra Ping'}</span>
                 </button>
               </div>

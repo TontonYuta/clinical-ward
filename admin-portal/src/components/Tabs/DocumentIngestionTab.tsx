@@ -224,29 +224,29 @@ export const DocumentIngestionTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. Header Banner */}
-      <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 rounded-2xl p-6 text-white shadow-sm border border-teal-700/50">
+      <div className="bg-teal-50/80 border border-teal-200/90 rounded-xl p-4 sm:p-5 text-teal-950 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-teal-300 font-semibold text-xs tracking-wider uppercase">
-              <Layers className="w-4 h-4 text-teal-400" />
-              <span>Phân Hệ Nạp Tài Liệu & Tri Thức Vector (Dynamic RAG Pipeline)</span>
+            <div className="flex items-center gap-2 text-teal-800 font-semibold text-xs tracking-wider uppercase">
+              <Layers className="w-4 h-4 text-teal-700" />
+              <span>Phân Hệ Nạp Tài Liệu &amp; Tri Thức Vector (Dynamic RAG Pipeline)</span>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-              Quản Trị Văn Bản Y Tế & Sinh Chỉ Mục Tự Động
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-teal-950">
+              Quản Trị Văn Bản Y Tế &amp; Sinh Chỉ Mục Tự Động
             </h1>
-            <p className="text-sm text-teal-100/90 max-w-3xl">
+            <p className="text-xs text-slate-600 max-w-3xl leading-relaxed">
               Nạp thông tư, quyết định và phác đồ PDF. Hệ thống tự động bóc tách số trang, tính băm SHA256 mật mã,
               phân đoạn ngữ nghĩa, sinh Dense Vectors (768 chiều) và nạp tức thì vào ma trận RAM Cosine Similarity.
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-800/80 border border-teal-600/60 text-xs font-mono font-medium text-teal-200">
-              <BookOpen className="w-3.5 h-3.5 text-teal-300" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-teal-200 text-xs font-mono font-medium text-teal-800 shadow-2xs">
+              <BookOpen className="w-3.5 h-3.5 text-teal-700" />
               {documents.length} Văn bản trong kho
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-700/60 text-xs font-mono font-medium text-emerald-300">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-teal-200 text-xs font-mono font-medium text-emerald-800 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
               Vector: 768-dim (RAM Matrix)
             </span>
           </div>
@@ -255,7 +255,7 @@ export const DocumentIngestionTab: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* 2. Upload Form (Left Column: 5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
+        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
             <div className="p-2 rounded-lg bg-teal-50 text-teal-800">
               <UploadCloud className="w-5 h-5" />
@@ -477,7 +477,7 @@ export const DocumentIngestionTab: React.FC = () => {
         </div>
 
         {/* 3. Interactive Query Sandbox (Right Column: 7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200/80 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
               <div className="p-2 rounded-lg bg-emerald-50 text-emerald-800">
@@ -607,7 +607,7 @@ export const DocumentIngestionTab: React.FC = () => {
       </div>
 
       {/* 4. Document Catalog Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
         <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-slate-100 text-slate-800">
