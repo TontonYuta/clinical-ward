@@ -4,6 +4,7 @@ import sqlite3
 import hashlib
 import json
 from pathlib import Path
+from typing import Optional, List, Dict, Any, Tuple
 from app.services.rag.types import RagChunk, RetrievedChunk
 
 CREATE_FTS_TABLE_SQL = """
