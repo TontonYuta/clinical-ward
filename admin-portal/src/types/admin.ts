@@ -1,4 +1,4 @@
-export type AdminTab = 'telemetry' | 'document_ingestion' | 'key_vault' | 'integrations' | 'budget_cap' | 'safety_audit' | 'feature_flags';
+export type AdminTab = 'telemetry' | 'staff_management' | 'document_ingestion' | 'key_vault' | 'integrations' | 'budget_cap' | 'safety_audit' | 'feature_flags';
 
 export interface KnowledgeDocumentItem {
   id: string;

@@ -33,6 +33,7 @@ from app.routers import (
     availability,
     admin_knowledge,
     auth,
+    admin_staff,
 )
 
 @asynccontextmanager
@@ -148,6 +149,20 @@ async def lifespan(app: FastAPI):
             if col_name not in dav_cols:
                 await conn.execute(text(f"ALTER TABLE dav_national_drugs ADD COLUMN {col_name} TEXT"))
 
+        user_cols = await conn.run_sync(lambda sync_conn: {col["name"] for col in inspect(sync_conn).get_columns("users")})
+        user_extra_cols = [
+            ("email", "VARCHAR"),
+            ("phone", "VARCHAR"),
+            ("dob", "VARCHAR"),
+            ("academic_title", "VARCHAR"),
+            ("is_active", "BOOLEAN DEFAULT 1"),
+            ("avatar_url", "VARCHAR"),
+            ("updated_at", "DATETIME"),
+        ]
+        for col_name, col_type in user_extra_cols:
+            if col_name not in user_cols:
+                await conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+
     # Check if DB has data, if not seed it automatically
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(User).limit(1))
@@ -245,6 +260,7 @@ app.include_router(admin_integrations.router, prefix=settings.API_V1_STR)
 app.include_router(availability.router, prefix=settings.API_V1_STR)
 app.include_router(admin_knowledge.router, prefix=settings.API_V1_STR)
 app.include_router(auth.router, prefix=settings.API_V1_STR)
+app.include_router(admin_staff.router, prefix=settings.API_V1_STR)
 
 import os
 from fastapi.staticfiles import StaticFiles

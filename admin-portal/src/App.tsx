@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AdminHeader } from './components/AdminHeader';
 import { AdminSidebar } from './components/AdminSidebar';
 import { TelemetryTab } from './components/Tabs/TelemetryTab';
+import { StaffManagementTab } from './components/Tabs/Staff/StaffManagementTab';
 import { KeyVaultTab } from './components/Tabs/KeyVaultTab';
 import { IntegrationsTab } from './components/Tabs/IntegrationsTab';
 import { BudgetCapTab } from './components/Tabs/BudgetCapTab';
@@ -139,6 +140,9 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
           <div className="w-full max-w-[1920px] mx-auto">
             {currentTab === 'telemetry' && (
               <TelemetryTab data={telemetry} loading={isRefreshing && !telemetry} />
+            )}
+            {currentTab === 'staff_management' && (
+              <StaffManagementTab />
             )}
             {currentTab === 'document_ingestion' && (
               <DocumentIngestionTab />
