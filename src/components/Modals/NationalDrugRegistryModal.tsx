@@ -103,7 +103,7 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
     }
   }, [isOpen, initialSearch]);
 
-  useEffect(() => { const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 120); return () => clearTimeout(t); }, [searchInput]);
+  useEffect(() => { const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300); return () => clearTimeout(t); }, [searchInput]);
 
   const loadData = useCallback(async (isManualSync = false) => {
     const key: RegistryPageKey = { search, group: selectedGroup, pharmGroup, page, pageSize: PAGE_SIZE, onlyInWarehouse };

@@ -5,7 +5,7 @@
  * Bố cục Trái - Phải phẳng, sạch sẽ, triệt tiêu box lồng nhau, triệt tiêu dấu chấm đầu dòng
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, ExternalLink, RotateCw, FileText, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
@@ -114,6 +114,58 @@ const ClinicalExpandableBlock: React.FC<{
   );
 };
 
+function formatActiveIngredientDisplay(raw: string): { displayInn: string; isComplex: boolean } {
+  if (!raw || raw.trim() === '' || raw.trim() === 'Theo hồ sơ Cục QLD') {
+    return { displayInn: 'Theo hồ sơ Cục QLD', isComplex: false };
+  }
+  const text = raw.trim();
+  const isParenteral = /túi\s*\d+\s*ngăn|mỗi\s*túi|mỗi\s*\d+\s*ml\s*chứa|công thức bào chế/i.test(text);
+  if (isParenteral) {
+    const parts: string[] = [];
+    if (/acid amin|alanin|arginin|lysine/i.test(text)) parts.push('Acid amin');
+    if (/glucose|dextrose/i.test(text)) parts.push('Glucose');
+    if (/lipid|dầu đậu nành|triglycerid/i.test(text)) parts.push('Lipid nhũ tương');
+    if (/điện giải|natri|kali|calci|clorid/i.test(text)) parts.push('Điện giải');
+    if (parts.length > 0) {
+      return {
+        displayInn: `Hỗn hợp dinh dưỡng tĩnh mạch (${parts.join(' + ')})`,
+        isComplex: true,
+      };
+    }
+  }
+
+  // Loại bỏ các giải thích muối phức tạp trong ngoặc đơn để lấy tên cốt lõi
+  const cleaned = text
+    .replace(/\(dưới dạng[^\)]+\)/gi, '')
+    .replace(/\(tương đương[^\)]+\)/gi, '')
+    .replace(/dạng acid tự do\s*\d+([.,]\d+)?\s*(mg|g|mcg)?/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Nếu là thuốc phối hợp có dấu ; hoặc +
+  const pieces = cleaned.split(/[;+]/).map(p => p.trim()).filter(Boolean);
+  if (pieces.length > 1 && pieces.length <= 4) {
+    const shortPieces = pieces.map(p => {
+      const match = p.match(/^([^\d(]+)\s*(\d+([.,]\d+)?\s*(mg|g|mcg|iu|ui|%|ml)?)?/i);
+      return match ? match[0].trim() : p.slice(0, 35);
+    });
+    return {
+      displayInn: shortPieces.join(' + '),
+      isComplex: text.length > 80 || text !== cleaned,
+    };
+  }
+
+  const isComplex = text.length > 90 || text.includes('\n');
+  if (cleaned.length > 95) {
+    return {
+      displayInn: cleaned.slice(0, 92).trim() + '...',
+      isComplex: true,
+    };
+  }
+
+  return { displayInn: cleaned, isComplex };
+}
+
 export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   isOpen, onClose, batch, drug,
 }) => {
@@ -124,6 +176,9 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   const activeInn = batch?.activeIngredient || drug?.activeIngredient || 'Theo hồ sơ Cục QLD';
   const strength = batch?.concentration || drug?.concentration;
   const davPortalUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}`;
+
+  const { displayInn, isComplex: hasLongFormulation } = useMemo(() => formatActiveIngredientDisplay(activeInn), [activeInn]);
+  const [showFullFormulation, setShowFullFormulation] = useState<boolean>(false);
 
   // Đồng bộ tức thời: Khởi tạo dữ liệu thuốc ngay từ dòng được bấm (0ms - Triệt tiêu hoàn toàn loading skeleton)
   const initialCached = getCachedDrugDetail(sdk);
@@ -318,7 +373,17 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
               </h2>
             </div>
             <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
-              <span>Hoạt chất: <strong className="text-slate-800 font-semibold">{activeInn}</strong></span>
+              <span>Hoạt chất: <strong className="text-slate-800 font-semibold">{displayInn}</strong></span>
+              {hasLongFormulation && (
+                <button
+                  type="button"
+                  onClick={() => setShowFullFormulation((prev) => !prev)}
+                  className="text-2xs font-semibold px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 transition cursor-pointer"
+                  title="Bấm để xem công thức bào chế đầy đủ từ Cục Quản lý Dược"
+                >
+                  {showFullFormulation ? 'Thu gọn công thức' : 'Xem chi tiết công thức'}
+                </button>
+              )}
               {clinicalData.drugClass && (
                 <>
                   <span className="text-slate-300">·</span>
@@ -332,6 +397,15 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
                 </>
               )}
             </div>
+            {showFullFormulation && (
+              <div className="mt-2.5 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 space-y-1 animate-in fade-in duration-100">
+                <div className="flex items-center justify-between text-2xs font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Công thức bào chế chi tiết (Hồ sơ Cục Quản lý Dược)</span>
+                  <button type="button" onClick={() => setShowFullFormulation(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">✕ Đóng</button>
+                </div>
+                <p className="whitespace-pre-line leading-relaxed font-sans">{activeInn}</p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -1047,6 +1121,14 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
                 <div>
                   <dt className="text-slate-500">Quốc gia xuất xứ</dt>
                   <dd className="text-sm font-medium text-slate-900 mt-0.5">{adminData.country || 'Việt Nam'}</dd>
+                </div>
+                <div className="col-span-full pt-3 border-t border-slate-200">
+                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Thành phần hoạt chất &amp; Công thức bào chế đầy đủ (Hồ sơ Cục QLD)
+                  </dt>
+                  <dd className="text-xs text-slate-800 font-sans whitespace-pre-line leading-relaxed p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    {activeInn}
+                  </dd>
                 </div>
               </dl>
             </div>

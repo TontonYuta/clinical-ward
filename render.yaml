@@ -21,4 +21,4 @@ services:
       - key: AUTH_REQUIRED
         value: "false"
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261120-frameless-auth-v2"
+        value: "20261120-dav-registry-perf-clinical-v1"

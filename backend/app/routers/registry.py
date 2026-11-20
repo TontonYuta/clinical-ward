@@ -14,7 +14,7 @@ from app.schemas.registry import (
 )
 from app.services.registry_service import (
     normalize_code, get_registry_revision, get_inventory_revision,
-    get_hospital_stock, get_cached_group_stats, GROUP_ALIAS_MAP,
+    get_hospital_stock, get_hospital_inventory_bundle, get_cached_group_stats, GROUP_ALIAS_MAP,
     PHARM_MAPPING, enrich_monograph_for_drug, escape_fts5_query
 )
 
@@ -77,8 +77,7 @@ async def get_national_drugs_paginated(
         q = f"%{search.strip().lower()}%"
         filters.append(or_(func.lower(DavNationalDrug.brand_name).like(q), func.lower(DavNationalDrug.active_ingredient).like(q), func.lower(DavNationalDrug.national_code).like(q), func.lower(DavNationalDrug.note).like(q)))
 
-    stock_by_code = await get_hospital_stock(db)
-    hospital_codes = {code for code, units in stock_by_code.items() if any(int(unit["quantity"]) > 0 for unit in units)}
+    stock_by_code, inventory_revision, hospital_stock_drug_count, hospital_codes = await get_hospital_inventory_bundle(db)
     if only_in_warehouse:
         stock_codes = [code for code in hospital_codes if code]
         if stock_codes:
@@ -88,7 +87,7 @@ async def get_national_drugs_paginated(
 
     clean_search = (search or "").strip()
     fts_q = escape_fts5_query(clean_search) if clean_search else ""
-    use_fts = bool(fts_q and not pharm_group and not only_in_warehouse)
+    use_fts = bool(fts_q)
 
     try:
         items = []
@@ -101,6 +100,32 @@ async def get_national_drugs_paginated(
                 if target_group:
                     fts_conditions.append("d.[group] = :target_group")
                     params["target_group"] = target_group
+                if only_in_warehouse:
+                    stock_codes = [code for code in hospital_codes if code]
+                    if stock_codes:
+                        stk_placeholders = []
+                        for i, sc in enumerate(stock_codes):
+                            pname = f"stk_{i}"
+                            params[pname] = sc
+                            stk_placeholders.append(f":{pname}")
+                        fts_conditions.append(f"d.national_code IN ({', '.join(stk_placeholders)})")
+                    else:
+                        fts_conditions.append("d.id = '__no_hospital_stock__'")
+                if pharm_group and pharm_group != "all" and pharm_group in PHARM_MAPPING:
+                    atcs, kws = PHARM_MAPPING[pharm_group]
+                    p_sql = []
+                    for i, p in enumerate(atcs):
+                        pname = f"atc_{i}"
+                        params[pname] = f"{p}%"
+                        p_sql.append(f"d.atc_code LIKE :{pname}")
+                    for j, kw in enumerate(kws):
+                        pname = f"kw_{j}"
+                        params[pname] = f"%{kw}%"
+                        p_sql.append(f"lower(d.active_ingredient) LIKE :{pname}")
+                    if pharm_group == "antibiotic":
+                        p_sql.append("d.[group] = 'Kháng sinh'")
+                    if p_sql:
+                        fts_conditions.append(f"({' OR '.join(p_sql)})")
 
                 where_clause = " AND ".join(fts_conditions)
                 count_sql = text(f"SELECT count(*) FROM dav_national_drugs_fts f JOIN dav_national_drugs d ON d.rowid = f.rowid WHERE {where_clause}")
@@ -140,14 +165,6 @@ async def get_national_drugs_paginated(
             data_res = await db.execute(data_stmt)
             items = data_res.scalars().all()
 
-        if hospital_codes:
-            hospital_stock_drug_count = (await db.execute(
-                select(func.count(DavNationalDrug.id)).where(
-                    DavNationalDrug.national_code.in_(list(hospital_codes))
-                )
-            )).scalar() or len(hospital_codes)
-        else:
-            hospital_stock_drug_count = 0
         for drug in items:
             drug.hospital_stock_by_unit = stock_by_code.get(normalize_code(drug.national_code), [])
 
@@ -158,7 +175,7 @@ async def get_national_drugs_paginated(
             total=total_count, page=page, page_size=page_size, total_pages=total_pages,
             group_stats=group_stats, items=items,
             registry_revision=await get_registry_revision(db),
-            inventory_revision=await get_inventory_revision(db),
+            inventory_revision=inventory_revision,
             hospital_stock_drug_count=hospital_stock_drug_count
         )
     except Exception as e:

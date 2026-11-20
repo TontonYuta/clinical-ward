@@ -22,6 +22,7 @@ import {
   queryKnowledgeDocuments,
   deleteKnowledgeDocument
 } from '../../services/adminApi';
+import { openLocalPdfDocument } from '../../services/localDocumentStorage';
 import { KnowledgeChatSandbox } from './DocumentIngestion/KnowledgeChatSandbox';
 import type {
   KnowledgeDocumentItem,
