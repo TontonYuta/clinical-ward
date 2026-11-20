@@ -167,8 +167,8 @@ export const StaffManagementTab: React.FC = () => {
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">
               Danh Sách Nhân Sự Bệnh Viện
             </h2>
-            <span className="text-2xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-              {items.length} người
+            <span className="text-xs font-mono text-slate-400">
+              ({items.length})
             </span>
             {loading && <RefreshCw className="w-3.5 h-3.5 text-teal-600 animate-spin" />}
           </div>
@@ -238,26 +238,15 @@ export const StaffManagementTab: React.FC = () => {
           </select>
 
           {/* Lọc Trạng Thái Công Tác */}
-          <div className="flex items-center gap-0.5 bg-slate-200/80 p-0.5 rounded-md text-xs">
-            {[
-              { id: 'all', label: 'Tất cả' },
-              { id: 'active', label: 'Đang trực' },
-              { id: 'suspended', label: 'Tạm ngưng' },
-            ].map((btn) => (
-              <button
-                key={btn.id}
-                type="button"
-                onClick={() => setStatusFilter(btn.id as any)}
-                className={`px-2 py-0.5 rounded text-2xs font-medium transition cursor-pointer ${
-                  statusFilter === btn.id
-                    ? 'bg-white text-teal-900 font-bold shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="h-8 bg-white border border-slate-200 rounded-md px-2 text-xs text-slate-700 focus:border-slate-400 focus:outline-none cursor-pointer"
+          >
+            <option value="all">Mọi Trạng Thái</option>
+            <option value="active">Đang trực</option>
+            <option value="suspended">Tạm ngưng</option>
+          </select>
 
           {/* Đặt lại bộ lọc */}
           {(search || roleFilter !== 'all' || deptFilter !== 'all' || statusFilter !== 'all') && (
@@ -315,40 +304,29 @@ export const StaffManagementTab: React.FC = () => {
                       key={staff.id}
                       className="hover:bg-slate-50/80 transition group"
                     >
-                      {/* Cột 1: Avatar + Tên + Học hàm + Mã */}
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded bg-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                            {staff.name.replace(/^(BS|ĐD|DS|KS|TS|PGS)\.?\s*/i, '').charAt(0) || 'U'}
+                      {/* Cột 1: Tên + Mã */}
+                      <td className="py-2.5 px-3">
+                        <div>
+                          <div className="font-medium text-slate-900 group-hover:text-teal-900 flex items-center gap-1.5">
+                            <span>{staff.name}</span>
+                            {staff.academic_title && !staff.name.toLowerCase().includes(staff.academic_title.toLowerCase()) && (
+                              <span className="text-2xs font-mono text-slate-400">
+                                {staff.academic_title}
+                              </span>
+                            )}
                           </div>
-                          <div>
-                            <div className="font-semibold text-slate-900 group-hover:text-teal-900 flex items-center gap-1.5">
-                              <span>{staff.name}</span>
-                              {staff.academic_title && (
-                                <span className="text-2xs font-mono font-semibold text-slate-500">
-                                  {staff.academic_title}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-2xs text-slate-400 flex items-center gap-1.5 font-mono">
-                              <span>{staff.id}</span>
-                              {staff.phone && <span>· {staff.phone}</span>}
-                              {staff.dob && <span>· {staff.dob}</span>}
-                            </div>
+                          <div className="text-3xs text-slate-400 flex items-center gap-1.5 font-mono">
+                            <span>{staff.id.length > 10 ? `${staff.id.slice(0, 8)}...` : staff.id}</span>
+                            {staff.phone && <span>· {staff.phone}</span>}
                           </div>
                         </div>
                       </td>
 
                       {/* Cột 2: Vai trò & Chức danh */}
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium text-slate-800">
-                            {staff.role_name}
-                          </span>
-                          <span className="text-3xs text-slate-400 font-mono">
-                            role: {staff.role}
-                          </span>
-                        </div>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <span className="text-xs font-medium text-slate-700">
+                          {staff.role_name}
+                        </span>
                       </td>
 
                       {/* Cột 3: Khoa phòng */}

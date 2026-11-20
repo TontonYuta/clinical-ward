@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Filter,
   ChevronRight,
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
-  Cpu,
-  Image as ImageIcon,
   Download,
   Search,
   RefreshCw
@@ -158,93 +155,79 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             type="button"
             onClick={handleExportCsv}
             disabled={displayItems.length === 0}
-            className="h-8 px-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-md text-xs font-medium flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40"
+            className="h-8 px-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-xs font-medium flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40"
             title="Xuất danh sách sự kiện ra tệp CSV để đối soát chi phí"
           >
-            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <Download className="w-3.5 h-3.5 text-slate-500" />
             <span>Xuất CSV</span>
           </button>
 
           {/* Huy hiệu tổng số log */}
-          <span className="text-2xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+          <span className="text-2xs font-mono text-slate-400">
             {totalItems.toLocaleString()} sự kiện
           </span>
         </div>
       </div>
 
       {/* 2. Thanh Tìm kiếm & Bộ Lọc Thời Gian Thực */}
-      <div className="px-3 sm:px-4 py-2 bg-slate-50/70 border-b border-slate-200/80 flex flex-wrap items-center gap-2">
+      <div className="px-3 sm:px-4 py-2 bg-slate-50/60 border-b border-slate-200/80 flex flex-wrap items-center gap-2">
         {/* Ô Tìm Kiếm Nhanh */}
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm prompt, câu lệnh, mã CHAT..."
-            className="w-full h-8 pl-8 pr-2.5 bg-white border border-slate-300 rounded-md text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition"
+            className="w-full h-8 pl-8 pr-2.5 bg-white border border-slate-200 rounded-md text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 transition"
           />
         </div>
 
+        {/* Lọc Cơ Chế */}
+        <select
+          value={typeFilter}
+          onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+          aria-label="Lọc theo loại cơ chế"
+          className="h-8 bg-white border border-slate-200 rounded-md px-2 text-xs text-slate-700 focus:border-slate-400 focus:outline-none cursor-pointer"
+        >
+          <option value="all">Mọi Cơ Chế</option>
+          <option value="ADAPTIVE_RAG">Adaptive RAG</option>
+          <option value="VISION_OCR_BHYT">OCR BHYT</option>
+          <option value="MULTIMODAL_CLINICAL_VISION">Ảnh Thị Giác</option>
+          <option value="CACHE_HIT">Cache</option>
+          <option value="DDI_BLOCKED">Chặn DDI</option>
+          <option value="GUARDRAIL_BLOCKED">Guardrail</option>
+        </select>
+
         {/* Lọc Model AI */}
-        <div className="flex items-center gap-1 text-xs">
-          <select
-            value={modelFilter}
-            onChange={(e) => { setModelFilter(e.target.value); setPage(1); }}
-            aria-label="Lọc theo model AI"
-            className="h-8 bg-white border border-slate-300 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
-          >
-            <option value="all">Tất Cả Model</option>
-            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Active Google AI Studio)</option>
-            <option value="gemini-flash-lite-latest">gemini-flash-lite-latest</option>
-            <option value="gemini-3.8-flash">gemini-3.8-flash</option>
-            <option value="gemini-flash-latest">gemini-flash-latest</option>
-            <option value="clinical-cache-engine">clinical-cache-engine (Local Cache)</option>
-            <option value="safety-ddi-matrix">safety-ddi-matrix (DDI Safety)</option>
-            <option value="clinical-guardrail-v2">clinical-guardrail-v2 (Guardrail)</option>
-          </select>
-        </div>
+        <select
+          value={modelFilter}
+          onChange={(e) => { setModelFilter(e.target.value); setPage(1); }}
+          aria-label="Lọc theo model AI"
+          className="h-8 bg-white border border-slate-200 rounded-md px-2 text-xs text-slate-700 focus:border-slate-400 focus:outline-none cursor-pointer"
+        >
+          <option value="all">Mọi Model</option>
+          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite</option>
+          <option value="gemini-flash-lite-latest">gemini-flash-lite-latest</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+          <option value="gemini-flash-latest">gemini-flash-latest</option>
+          <option value="clinical-cache-engine">clinical-cache-engine</option>
+          <option value="safety-ddi-matrix">safety-ddi-matrix</option>
+          <option value="clinical-guardrail-v2">clinical-guardrail-v2</option>
+        </select>
 
         {/* Lọc Vai Trò */}
-        <div className="flex items-center gap-1 text-xs">
-          <select
-            value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-            aria-label="Lọc theo vai trò người dùng"
-            className="h-8 bg-white border border-slate-300 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
-          >
-            <option value="all">Mọi Vai Trò</option>
-            <option value="doctor">Bác Sĩ</option>
-            <option value="nurse">Điều Dưỡng</option>
-            <option value="pharmacist">Dược Sĩ</option>
-          </select>
-        </div>
-
-        {/* Nút lọc Loại Cơ Chế (Tabs nhỏ) */}
-        <div className="flex items-center gap-0.5 bg-slate-200/80 p-0.5 rounded-md text-xs overflow-x-auto max-w-full">
-          {[
-            { id: 'all', label: 'Tất cả' },
-            { id: 'ADAPTIVE_RAG', label: 'Adaptive RAG' },
-            { id: 'VISION_OCR_BHYT', label: 'OCR BHYT' },
-            { id: 'MULTIMODAL_CLINICAL_VISION', label: 'Ảnh Thị Giác' },
-            { id: 'CACHE_HIT', label: 'Cache' },
-            { id: 'DDI_BLOCKED', label: 'Chặn DDI' },
-            { id: 'GUARDRAIL_BLOCKED', label: 'Guardrail' }
-          ].map((btn) => (
-            <button
-              key={btn.id}
-              type="button"
-              onClick={() => { setTypeFilter(btn.id); setPage(1); }}
-              className={`px-2 py-1 rounded-md text-2xs font-medium transition cursor-pointer whitespace-nowrap ${
-                typeFilter === btn.id
-                  ? 'bg-white text-teal-900 font-bold shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {btn.label}
-            </button>
-          ))}
-        </div>
+        <select
+          value={roleFilter}
+          onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+          aria-label="Lọc theo vai trò người dùng"
+          className="h-8 bg-white border border-slate-200 rounded-md px-2 text-xs text-slate-700 focus:border-slate-400 focus:outline-none cursor-pointer"
+        >
+          <option value="all">Mọi Vai Trò</option>
+          <option value="doctor">Bác Sĩ</option>
+          <option value="nurse">Điều Dưỡng</option>
+          <option value="pharmacist">Dược Sĩ</option>
+        </select>
 
         {/* Nút Đặt lại bộ lọc */}
         {(typeFilter !== 'all' || roleFilter !== 'all' || modelFilter !== 'all' || searchQuery.trim()) && (
@@ -259,7 +242,7 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             }}
             className="text-xs text-rose-600 hover:underline cursor-pointer font-medium ml-auto"
           >
-            Đặt lại bộ lọc
+            Đặt lại
           </button>
         )}
       </div>
@@ -295,64 +278,37 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   title="Nhấn để mở thanh tra chi tiết truy vấn & phân bổ token"
                 >
                   {/* Cột Thời Gian (Giờ VN GMT+7 & Ngày Tháng) */}
-                  <td className="py-3 pr-3 whitespace-nowrap" title={ev.created_at_full || `${ev.timestamp}${ev.created_at_date ? ` · ${ev.created_at_date}` : ''} (GMT+7 · Giờ Việt Nam)`}>
+                  <td className="py-2.5 pr-3 whitespace-nowrap" title={ev.created_at_full || `${ev.timestamp}${ev.created_at_date ? ` · ${ev.created_at_date}` : ''}`}>
                     <div className="flex flex-col">
-                      <span className="font-mono text-xs font-bold text-slate-800 tracking-tight">
+                      <span className="font-mono text-xs font-medium text-slate-800">
                         {ev.timestamp}
                       </span>
                       <span className="font-mono text-3xs text-slate-400">
-                        {ev.created_at_date || 'Ngày chưa có'} <span className="text-teal-700 font-semibold">(VN)</span>
+                        {ev.created_at_date || ''}
                       </span>
                     </div>
                   </td>
                   
                   {/* Cột Cơ Chế Phục Vụ */}
-                  <td className="py-3 px-3 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-0.5 rounded-md text-2xs font-semibold ${
-                      ev.event_type === 'CACHE_HIT'
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : ev.event_type === 'DDI_BLOCKED' || ev.event_type === 'GUARDRAIL_BLOCKED'
-                        ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                        : ev.event_type === 'VISION_OCR_BHYT'
-                        ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                        : ev.event_type === 'MULTIMODAL_CLINICAL_VISION'
-                        ? 'bg-purple-50 text-purple-800 border border-purple-200'
-                        : 'bg-teal-50 text-teal-800 border border-teal-200'
-                    }`}>
+                  <td className="py-2.5 px-3 whitespace-nowrap">
+                    <span className="font-mono text-2xs text-slate-700">
                       {ev.event_type}
                     </span>
                   </td>
 
                   {/* Cột Model Đọc */}
-                  <td className="py-3 px-3 whitespace-nowrap">
-                    {(() => {
-                      const mName = ev.model_name || 'unknown';
-                      const isGemini = mName.startsWith('gemini');
-                      const isCache = mName.includes('cache');
-                      const isSafety = mName.includes('ddi') || mName.includes('guardrail');
-                      const colorClass = isGemini
-                        ? 'bg-cyan-50 text-cyan-900 border-cyan-200'
-                        : isCache
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : isSafety
-                        ? 'bg-amber-50 text-amber-900 border-amber-200'
-                        : 'bg-slate-100 text-slate-800 border-slate-200';
-                      return (
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-2xs font-mono font-semibold ${colorClass}`} title={`Nhà cung cấp: ${ev.provider || (isGemini ? 'Google AI Studio' : 'Hệ thống')}`}>
-                          <Cpu className="w-3 h-3 shrink-0 text-current opacity-80" />
-                          <span>{mName}</span>
-                        </span>
-                      );
-                    })()}
+                  <td className="py-2.5 px-3 whitespace-nowrap">
+                    <span className="font-mono text-2xs text-slate-500" title={`Nhà cung cấp: ${ev.provider || 'Hệ thống'}`}>
+                      {ev.model_name || 'unknown'}
+                    </span>
                   </td>
 
                   {/* Cột Câu Hỏi / Tác Vụ */}
-                  <td className="py-3 px-3 font-medium text-slate-800 group-hover:text-teal-950 max-w-xs sm:max-w-md truncate">
+                  <td className="py-2.5 px-3 text-slate-800 max-w-xs sm:max-w-md truncate">
                     <div className="flex items-center gap-1.5 min-w-0">
                       {ev.has_image && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-3xs font-bold shrink-0">
-                          <ImageIcon className="w-2.5 h-2.5" />
-                          <span>Ảnh</span>
+                        <span className="text-3xs font-mono text-slate-400 shrink-0" title="Kèm hình ảnh">
+                          📷
                         </span>
                       )}
                       <span className="truncate">{ev.query}</span>
@@ -360,44 +316,39 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   </td>
 
                   {/* Cột Phân Bổ Token (Input, Output, Image, Total) */}
-                  <td className="py-3 px-3 text-right whitespace-nowrap">
+                  <td className="py-2.5 px-3 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end">
-                      <span className="font-mono font-bold text-slate-900 text-xs">
+                      <span className="font-mono font-medium text-slate-800 text-xs">
                         {ev.usage_source === 'provider'
                           ? `${(ev.total_tokens || ev.tokens || 0).toLocaleString()} tok`
                           : ev.usage_source === 'estimated' || ev.usage_source === 'mixed'
                           ? 'Có ước tính'
                           : ev.cache_hit_count
-                          ? 'Cache · 0 token provider'
+                          ? 'Cache · 0 tok'
                           : 'Chưa có usage'}
                       </span>
-                      <span className="text-2xs text-slate-500 font-mono tracking-tight">
+                      <span className="text-3xs text-slate-400 font-mono">
                         {ev.usage_source === 'provider'
                           ? `In: ${ev.prompt_tokens || 0} · Out: ${ev.completion_tokens || 0}`
-                          : ev.usage_source === 'estimated' || ev.usage_source === 'mixed'
-                          ? 'Số liệu chỉ gồm phần provider báo cáo'
-                          : 'Không có số liệu token từ provider'}
-                        {ev.usage_source === 'provider' && ev.has_image && ev.image_tokens ? <span className="text-teal-700 font-bold ml-1">· 📷 {ev.image_tokens}</span> : null}
+                          : ''}
                       </span>
                     </div>
                   </td>
 
                   {/* Cột Vai Trò */}
-                  <td className="py-3 px-3 text-slate-600 font-semibold text-2xs whitespace-nowrap uppercase">
-                    <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-                      {ev.user_role}
-                    </span>
+                  <td className="py-2.5 px-3 text-slate-500 text-2xs whitespace-nowrap uppercase font-mono">
+                    {ev.user_role}
                   </td>
 
                   {/* Cột Độ Trễ */}
-                  <td className="py-3 px-3 text-right font-mono font-bold text-slate-800 text-xs whitespace-nowrap">
+                  <td className="py-2.5 px-3 text-right font-mono text-slate-600 text-xs whitespace-nowrap">
                     {ev.latency_ms} ms
                   </td>
 
                   {/* Cột Thao Tác */}
-                  <td className="py-3 pl-2 text-right whitespace-nowrap">
-                    <span className="inline-flex items-center text-xs font-semibold text-teal-700 group-hover:underline">
-                      Chi tiết <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                  <td className="py-2.5 pl-2 text-right whitespace-nowrap">
+                    <span className="text-xs text-slate-400 group-hover:text-slate-700 font-medium">
+                      Chi tiết →
                     </span>
                   </td>
                 </tr>

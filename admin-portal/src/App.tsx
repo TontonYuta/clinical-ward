@@ -120,12 +120,6 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
         canConfigureAuth={canConfigureAuth}
         onToggleAuth={onToggleAuth}
       />
-      {!authEnabled && !authenticatedUsername && (
-        <div role="status" className="flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6">
-          <span>Form đăng nhập đang ẩn trên thiết bị này. API backend vẫn yêu cầu phiên đăng nhập hợp lệ.</span>
-          <button type="button" onClick={onToggleAuth} className="shrink-0 font-semibold underline underline-offset-2">Hiện form</button>
-        </div>
-      )}
 
       <div className="flex flex-1 overflow-hidden">
         <AdminSidebar
