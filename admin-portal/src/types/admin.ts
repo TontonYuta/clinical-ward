@@ -56,6 +56,38 @@ export interface DocumentQueryResponse {
   results: DocumentQueryResultItem[];
 }
 
+export interface CleanlinessAuditResponse {
+  cleanliness_score: number;
+  status: 'clean' | 'warning' | 'unreadable';
+  total_pages: number;
+  extracted_chars: number;
+  avg_chars_per_page: number;
+  empty_pages: number;
+  ocr_artifact_ratio: number;
+  issues: string[];
+  golden_questions: string[];
+}
+
+export interface KnowledgeChatCitation {
+  chunk_id: string;
+  title: string;
+  legal_basis: string;
+  page_or_section: string;
+  source_doc: string;
+  snippet: string;
+}
+
+export interface KnowledgeChatTestResponse {
+  reply_text: string;
+  citations: KnowledgeChatCitation[];
+  legal_basis?: string;
+  rag_grounded: boolean;
+  confidence: number;
+  provider: string;
+  model_name: string;
+  suggested_chips: string[];
+}
+
 export type ClinicalFeatureKey = 'overview' | 'cpoe' | 'debt' | 'equipment' | 'fefo' | 'coldchain' | 'asset_audit' | 'bhyt_audit' | 'documents';
 export interface FeatureFlagItem { key: ClinicalFeatureKey; label: string; description: string; enabled: boolean; }
 export interface FeatureFlagResponse { version: number; flags: FeatureFlagItem[]; }

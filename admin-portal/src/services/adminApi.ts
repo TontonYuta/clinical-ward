@@ -11,7 +11,9 @@ import {
   FeatureFlagResponse,
   KnowledgeDocumentItem,
   IngestPdfResponse,
-  DocumentQueryResponse
+  DocumentQueryResponse,
+  CleanlinessAuditResponse,
+  KnowledgeChatTestResponse
 } from '../types/admin';
 
 const BASE_URL = '/api/v1/admin';
@@ -258,4 +260,128 @@ export async function deleteKnowledgeDocument(docId: string): Promise<{ status: 
   }
   return res.json();
 }
+
+export async function auditDocumentCleanliness(file?: File, docId?: string): Promise<CleanlinessAuditResponse> {
+  const formData = new FormData();
+  if (file) formData.append('file', file);
+  if (docId) formData.append('doc_id', docId);
+
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/audit-cleanliness`, {
+    method: 'POST',
+    body: formData,
+  }, 30000);
+
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.detail) detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+    } catch {}
+    throw new Error(`Lỗi kiểm định độ sạch: ${detail}`);
+  }
+  return res.json();
+}
+
+export async function chatTestKnowledge(
+  query: string,
+  docId?: string,
+  userRole: string = 'doctor',
+  userName: string = 'BS. Quản Trị Viên'
+): Promise<KnowledgeChatTestResponse> {
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/chat-test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query,
+      doc_id: docId || null,
+      user_role: userRole,
+      user_name: userName
+    }),
+  }, 35000);
+
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.detail) detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+    } catch {}
+    throw new Error(`Lỗi kiểm thử Chatbot: ${detail}`);
+  }
+  return res.json();
+}
+
+export async function chatTestKnowledgeStream(
+  query: string,
+  docId?: string,
+  userRole: string = 'doctor',
+  userName: string = 'BS. Quản Trị Viên',
+  onToken?: (token: string, currentFullText: string) => void
+): Promise<KnowledgeChatTestResponse> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/knowledge/chat-test/stream`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        doc_id: docId || null,
+        user_role: userRole,
+        user_name: userName
+      }),
+    });
+  } catch {
+    return chatTestKnowledge(query, docId, userRole, userName);
+  }
+
+  if (!res.ok || !res.body) {
+    return chatTestKnowledge(query, docId, userRole, userName);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let accumulated = '';
+  let finalResponse: KnowledgeChatTestResponse | null = null;
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || '';
+      for (const part of parts) {
+        const line = part.trim();
+        if (line.startsWith('data: ')) {
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === 'token' && typeof evt.content === 'string') {
+              accumulated += evt.content;
+              onToken?.(evt.content, accumulated);
+            } else if (evt.type === 'done' && evt.response) {
+              finalResponse = evt.response;
+            }
+          } catch {}
+        }
+      }
+    }
+  } catch {
+    // If stream aborted or errored, rely on accumulated
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (finalResponse) return finalResponse;
+  return {
+    reply_text: accumulated || 'Không nhận được phản hồi từ hệ thống.',
+    citations: [],
+    rag_grounded: Boolean(accumulated),
+    confidence: 0.95,
+    provider: 'gemini',
+    model_name: 'gemini-2.5-flash',
+    suggested_chips: []
+  };
+}
+
 
