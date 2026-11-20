@@ -500,15 +500,16 @@ export const DocumentIngestionTab: React.FC = () => {
               selectedDoc={selectedDocForTest}
               uploadedFile={file}
               allDocs={documents}
-              onOpenPdf={async (doc) => {
+              onOpenPdf={async (doc, page) => {
                 if (doc.is_local) {
                   await openLocalPdfDocument(doc.id);
                 } else {
-                  window.open(doc.public_url, '_blank');
+                  const targetUrl = page ? `${doc.public_url}#page=${page}` : doc.public_url;
+                  window.open(targetUrl, '_blank');
                 }
               }}
-              onConfirmIngested={() => {
-                alert('Đã xác thực tri thức hoàn chỉnh. Tài liệu sẵn sàng áp dụng trong toàn viện.');
+              onStatusChange={async () => {
+                await loadDocuments();
               }}
             />
           ) : (
@@ -667,6 +668,7 @@ export const DocumentIngestionTab: React.FC = () => {
               <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-2xs border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-3 font-semibold">Tên Văn Bản / Tệp</th>
+                  <th className="py-2.5 px-3 font-semibold">Trạng Thái CSDL</th>
                   <th className="py-2.5 px-3 font-semibold">Căn Cứ Pháp Lý</th>
                   <th className="py-2.5 px-3 font-semibold">Phân Loại</th>
                   <th className="py-2.5 px-3 font-semibold">Năm</th>
@@ -681,6 +683,29 @@ export const DocumentIngestionTab: React.FC = () => {
                     <td className="py-3 px-3">
                       <div className="font-semibold text-slate-900">{doc.title}</div>
                       <div className="text-2xs text-slate-400 font-mono mt-0.5">{doc.filename}</div>
+                    </td>
+                    <td className="py-3 px-3">
+                      {doc.status === 'active' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Đang áp dụng</span>
+                        </span>
+                      ) : doc.status === 'superseded' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                          <span>Hết hiệu lực</span>
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-bold border ${
+                            doc.verified
+                              ? 'bg-teal-50 text-teal-800 border-teal-200'
+                              : 'bg-amber-50 text-amber-900 border-amber-200'
+                          }`}
+                          title={doc.verified ? 'Đã kiểm thử thành công, sẵn sàng kích hoạt' : 'Chưa kiểm thử Chatbot'}
+                        >
+                          <span>{doc.verified ? 'Đã test (Chờ kích hoạt)' : 'Chờ kiểm duyệt'}</span>
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-3 text-slate-700">{doc.legal_basis}</td>
                     <td className="py-3 px-3">

@@ -394,6 +394,18 @@ class HybridRetriever:
         chunk_map: Dict[str, RagChunk] = {c.chunk_id: c for c in self.all_chunks}
         all_candidate_ids = set(bm25_rank_map.keys()).union(dense_rank_map.keys()).union(kg_matched_ids)
 
+        # Lọc an toàn: Tuyệt đối không đưa chunks thuộc tài liệu chưa duyệt (staged / superseded) vào phản hồi của Bác sĩ
+        try:
+            from app.services.rag.pdf_ingestion_service import get_inactive_document_prefixes
+            inactive_pfxs = get_inactive_document_prefixes()
+            if inactive_pfxs:
+                all_candidate_ids = {
+                    cid for cid in all_candidate_ids
+                    if not any(cid.startswith(pfx) for pfx in inactive_pfxs)
+                }
+        except Exception:
+            pass
+
         # Bổ sung các chunks động từ PDF tải lên (nếu có trong candidate_ids mà chưa có trong self.all_chunks)
         missing_candidate_ids = [cid for cid in all_candidate_ids if cid not in chunk_map]
         if missing_candidate_ids:

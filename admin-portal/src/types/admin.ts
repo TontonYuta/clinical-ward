@@ -21,6 +21,9 @@ export interface KnowledgeDocumentItem {
   sha256: string;
   bytes: number;
   is_local?: boolean;
+  status?: 'staged' | 'active' | 'superseded';
+  verified?: boolean;
+  verified_at?: string;
 }
 
 export interface IngestPdfResponse {

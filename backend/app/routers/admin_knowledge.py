@@ -21,7 +21,8 @@ from app.services.llm_provider import query_clinical_llm, get_last_llm_execution
 from app.services.rag.pdf_ingestion_service import (
     ingest_pdf_bytes,
     delete_ingested_pdf,
-    query_ingested_documents
+    query_ingested_documents,
+    update_document_status
 )
 
 router = APIRouter(prefix="/admin/knowledge", tags=["Quản Trị Tri Thức & PDF RAG"])
@@ -63,6 +64,8 @@ def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:
         pdf_path = (pdf_root / relative_path).resolve()
         if not pdf_path.is_relative_to(pdf_root.resolve()) or not pdf_path.is_file() or pdf_path.suffix.lower() != ".pdf":
             continue
+        status_val = str(source.get("status") or "active")
+        is_verified = bool(source.get("verified", True if status_val == "active" else False))
         documents.append({
             "id": str(source["id"]),
             "title": str(source["title"]),
@@ -73,8 +76,45 @@ def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:
             "public_url": f"/api/v1/pdf/{quote(relative_path, safe='/')}",
             "sha256": str(source.get("sha256") or ""),
             "bytes": source.get("bytes") if source.get("bytes") is not None else pdf_path.stat().st_size,
+            "status": status_val,
+            "verified": is_verified,
+            "verified_at": source.get("verified_at"),
         })
     return documents
+
+
+class UpdateDocStatusRequest(BaseModel):
+    status: str
+    verified: Optional[bool] = None
+
+
+@router.post("/documents/{doc_id}/status")
+async def update_doc_status_endpoint(doc_id: str, payload: UpdateDocStatusRequest, request: Request):
+    """
+    Chuyển đổi trạng thái vòng đời tài liệu:
+    - 'staged' (Chờ kiểm duyệt) -> 'active' (Đang áp dụng) -> 'superseded' (Hết hiệu lực).
+    - Ràng buộc an toàn: Không cho phép kích hoạt 'active' nếu tài liệu chưa được kiểm thử Chatbot thành công.
+    """
+    user = getattr(request.state, "authenticated_user", None)
+    if user and user.role not in {"admin", "director"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ Quản trị viên mới có quyền thay đổi trạng thái áp dụng tài liệu."
+        )
+
+    try:
+        updated = update_document_status(doc_id, payload.status, payload.verified)
+        return {"status": "success", "document": updated}
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi cập nhật trạng thái tài liệu: {str(e)}"
+        )
 
 
 @router.get("/documents")
@@ -478,6 +518,12 @@ YÊU CẦU ĐÁP ỨNG LÂM SÀNG:
             "Trách nhiệm của nhân viên y tế",
             "Quy trình xử lý ngoại lệ"
         ]
+
+        if doc_id and len(citations_list) > 0:
+            try:
+                update_document_status(doc_id, "staged", verified=True)
+            except Exception:
+                pass
 
         return KnowledgeChatTestResponse(
             reply_text=reply_text,

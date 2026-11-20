@@ -384,4 +384,27 @@ export async function chatTestKnowledgeStream(
   };
 }
 
+export async function updateKnowledgeDocumentStatus(
+  docId: string,
+  newStatus: 'staged' | 'active' | 'superseded',
+  verified?: boolean
+): Promise<{ status: string; document: any }> {
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/documents/${encodeURIComponent(docId)}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus, verified }),
+  }, 15000);
+
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.detail) detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+    } catch {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+
 

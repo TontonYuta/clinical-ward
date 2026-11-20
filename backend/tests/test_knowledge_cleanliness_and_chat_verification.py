@@ -133,3 +133,36 @@ def test_chat_test_knowledge_stream():
     body = response.text
     assert "data: " in body
     assert '"type": "token"' in body or '"type": "done"' in body
+
+
+def test_change_status_requires_verification():
+    client = _make_test_client(role="director")
+    # Reset a document to unverified staged
+    from app.services.rag.pdf_ingestion_service import update_document_status
+    try:
+        update_document_status("19_2026_vbhn_tt_byt", "staged", verified=False)
+    except Exception:
+        pass
+
+    # Trying to activate without verification must fail with HTTP 400
+    response = client.post(
+        "/api/v1/admin/knowledge/documents/19_2026_vbhn_tt_byt/status",
+        json={"status": "active"}
+    )
+    assert response.status_code == 400
+    assert "chưa được kiểm thử" in response.json()["detail"].lower()
+
+
+def test_change_status_success_with_verification():
+    client = _make_test_client(role="director")
+    # Activate with verified=True
+    response = client.post(
+        "/api/v1/admin/knowledge/documents/19_2026_vbhn_tt_byt/status",
+        json={"status": "active", "verified": True}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["document"]["status"] == "active"
+    assert data["document"]["verified"] is True
+

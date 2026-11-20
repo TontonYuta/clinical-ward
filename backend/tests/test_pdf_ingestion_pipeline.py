@@ -284,6 +284,9 @@ def test_admin_document_catalog_lists_manifest_records(monkeypatch, tmp_path):
         "public_url": "/api/v1/pdf/TT_99_2026.pdf",
         "sha256": "abc",
         "bytes": 123,
+        "status": "active",
+        "verified": True,
+        "verified_at": None,
     }]
 
 

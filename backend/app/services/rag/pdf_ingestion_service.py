@@ -8,6 +8,7 @@ Không yêu cầu hardcode hay sửa đổi mã nguồn khi có văn bản y t�
 import io
 import os
 import re
+import time
 import json
 import hashlib
 import logging
@@ -95,7 +96,9 @@ def _update_manifest(
     sha256_hex: str,
     file_bytes_len: int,
     category: str = "",
-    representation: str = "source_pdf"
+    representation: str = "source_pdf",
+    status: str = "staged",
+    verified: bool = False
 ) -> None:
     KB_DIR.mkdir(parents=True, exist_ok=True)
     manifest_data = {"manifest_version": 1, "sources": []}
@@ -106,6 +109,15 @@ def _update_manifest(
             pass
 
     sources = manifest_data.get("sources", [])
+
+    existing_status = None
+    existing_verified = None
+    for s in sources:
+        if s.get("id") == doc_id or s.get("backend_copy") == f"backend/data/knowledge_base/{filename}":
+            existing_status = s.get("status")
+            existing_verified = s.get("verified")
+            break
+
     entry = {
         "id": doc_id,
         "title": title,
@@ -116,7 +128,9 @@ def _update_manifest(
         "backend_copy": f"backend/data/knowledge_base/{filename}",
         "sha256": sha256_hex,
         "bytes": file_bytes_len,
-        "representation": representation
+        "representation": representation,
+        "status": existing_status or status,
+        "verified": existing_verified if existing_verified is not None else verified,
     }
 
     replaced = False
@@ -130,6 +144,53 @@ def _update_manifest(
 
     manifest_data["sources"] = sources
     MANIFEST_PATH.write_text(json.dumps(manifest_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def get_inactive_document_prefixes() -> list[str]:
+    """Trả về danh sách prefix doc_id của các tài liệu chưa được kích hoạt (staged hoặc superseded)."""
+    try:
+        if not MANIFEST_PATH.exists():
+            return []
+        manifest_data = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        sources = manifest_data.get("sources", [])
+        return [
+            f"{s['id']}_" for s in sources
+            if s.get("status") in ("staged", "superseded") and s.get("id")
+        ]
+    except Exception:
+        return []
+
+
+def update_document_status(doc_id: str, new_status: str, verified: Optional[bool] = None) -> dict:
+    """Cập nhật trạng thái vòng đời tài liệu: staged -> active -> superseded."""
+    if not MANIFEST_PATH.exists():
+        raise ValueError("Không tìm thấy manifest nguồn tài liệu.")
+    manifest_data = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    sources = manifest_data.get("sources", [])
+    target = None
+    for s in sources:
+        if s.get("id") == doc_id:
+            target = s
+            break
+    if not target:
+        raise ValueError(f"Không tìm thấy tài liệu với mã '{doc_id}'.")
+
+    if new_status == "active":
+        is_verified = verified if verified is not None else target.get("verified", False)
+        if not is_verified:
+            raise ValueError("Tài liệu chưa được kiểm thử Chatbot thành công. Vui lòng thực hiện kiểm thử trên sandbox trước khi kích hoạt vào CSDL chính thức.")
+        target["status"] = "active"
+        target["verified"] = True
+        target["verified_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    elif new_status in ("staged", "superseded"):
+        target["status"] = new_status
+        if verified is not None:
+            target["verified"] = verified
+    else:
+        raise ValueError(f"Trạng thái '{new_status}' không hợp lệ. Chỉ chấp nhận 'active', 'staged', 'superseded'.")
+
+    MANIFEST_PATH.write_text(json.dumps(manifest_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return target
 
 
 MAX_FILE_BYTES = 50 * 1024 * 1024  # 50MB giới hạn an toàn

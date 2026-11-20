@@ -154,16 +154,19 @@
       "representation": "source_pdf"
     },
     {
-      "id": "19_2026_vbhn-tt-byt",
-      "title": "19 2026 VBHN-TT-BYT",
+      "id": "19_2026_vbhn_tt_byt",
+      "title": "Văn bản hợp nhất số 19/VBHN-TT-BYT Quy định thử tương đương sinh học",
       "edition_year": 2026,
       "category": "Thông tư Bộ Y tế",
-      "legal_basis": "19 2026 VBHN-TT-BYT",
+      "legal_basis": "19/VBHN-TT-BYT",
       "public_path": "public/pdf/19_2026_VBHN-TT-BYT.pdf",
       "backend_copy": "backend/data/knowledge_base/19_2026_VBHN-TT-BYT.pdf",
       "sha256": "4450ccfb307c8366adf7ac6596c2bae6a718377a207dae9374685eeab3497247",
       "bytes": 1309424,
-      "representation": "source_pdf"
+      "representation": "source_pdf",
+      "status": "active",
+      "verified": true,
+      "verified_at": "2026-11-20T11:23:29Z"
     }
   ]
 }
