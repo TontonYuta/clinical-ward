@@ -1,7 +1,8 @@
 import re
+import time
 from pathlib import Path
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import select, func, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -10,7 +11,8 @@ from app.models.registry import DavNationalDrug, ClinicalDrugMonograph
 from app.schemas.registry import (
     RegistryPaginatedResponse,
     RegistryStatsResponse,
-    DrugItemResponse
+    DrugItemResponse,
+    DrugSummaryItem
 )
 from app.services.registry_service import (
     normalize_code, get_registry_revision, get_inventory_revision,
@@ -33,33 +35,33 @@ def _catalog_reader():
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-@router.get("/catalog")
+@router.get("/catalog", response_model=RegistryPaginatedResponse)
 async def get_canonical_catalog(
+    response: Response,
     search: str | None = Query(None), group: str | None = Query(None), pharm_group: str | None = Query(None),
-    page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=200),
     only_in_warehouse: bool = Query(False), active_only: bool = Query(False),
     db: AsyncSession = Depends(get_db)
 ):
-    try:
-        reader = _catalog_reader()
-        return reader.list_registry(search=search, group=group, pharm_group=pharm_group, page=page, page_size=page_size, only_in_warehouse=only_in_warehouse, active_only=active_only, source_mode="legacy_compatible")
-    except Exception:
-        return await get_national_drugs_paginated(
-            search=search, group=group, pharm_group=pharm_group,
-            page=page, page_size=page_size, only_in_warehouse=only_in_warehouse,
-            db=db
-        )
+    return await get_national_drugs_paginated(
+        search=search, group=group, pharm_group=pharm_group,
+        page=page, page_size=page_size, only_in_warehouse=only_in_warehouse,
+        response=response,
+        db=db
+    )
 
 @router.get("", response_model=RegistryPaginatedResponse)
 async def get_national_drugs_paginated(
+    response: Response,
     search: str | None = Query(None, description="Tìm tên thuốc, hoạt chất, SĐK"),
     group: str | None = Query(None, description="Lọc theo nhóm lâm sàng"),
     pharm_group: str | None = Query(None, description="Lọc theo tác dụng dược lý"),
     page: int = Query(1, ge=1, description="Số trang (bắt đầu từ 1)"),
-    page_size: int = Query(50, ge=1, le=200, description="Số lượng thuốc mỗi trang"),
+    page_size: int = Query(20, ge=1, le=200, description="Số lượng thuốc mỗi trang"),
     only_in_warehouse: bool = Query(False, description="Chỉ hiện thuốc đang có tồn kho bệnh viện"),
     db: AsyncSession = Depends(get_db)
 ):
+    clean_search = (search or "").strip()
     target_group = GROUP_ALIAS_MAP.get(group.lower()) if group and group.lower() in GROUP_ALIAS_MAP else group
     if target_group and target_group.lower() == "all":
         target_group = None
@@ -165,19 +167,43 @@ async def get_national_drugs_paginated(
             data_res = await db.execute(data_stmt)
             items = data_res.scalars().all()
 
+        summary_items = []
         for drug in items:
-            drug.hospital_stock_by_unit = stock_by_code.get(normalize_code(drug.national_code), [])
+            stock_units = stock_by_code.get(normalize_code(drug.national_code), [])
+            summary_items.append(DrugSummaryItem(
+                id=drug.id,
+                national_code=drug.national_code,
+                brand_name=drug.brand_name,
+                active_ingredient=drug.active_ingredient,
+                concentration=drug.concentration or "",
+                dosage_form=drug.dosage_form or "",
+                route=drug.route or "",
+                standard_unit=drug.standard_unit or "Viên",
+                group=drug.group or "Thuốc điều trị chuyên khoa",
+                is_controlled=bool(drug.is_controlled),
+                is_high_alert=bool(drug.is_high_alert),
+                is_crash_cart=bool(drug.is_crash_cart),
+                atc_code=drug.atc_code,
+                drug_class=drug.drug_class,
+                clinical_monograph_id=drug.clinical_monograph_id,
+                hospital_stock_by_unit=stock_units
+            ))
 
         group_stats = await get_cached_group_stats(db)
         total_pages = max(1, (total_count + page_size - 1) // page_size)
 
-        return RegistryPaginatedResponse(
+        result_payload = RegistryPaginatedResponse(
             total=total_count, page=page, page_size=page_size, total_pages=total_pages,
-            group_stats=group_stats, items=items,
+            group_stats=group_stats, items=summary_items,
             registry_revision=await get_registry_revision(db),
             inventory_revision=inventory_revision,
             hospital_stock_drug_count=hospital_stock_drug_count
         )
+
+        if response:
+            response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+
+        return result_payload
     except Exception as e:
         import traceback
         traceback.print_exc()

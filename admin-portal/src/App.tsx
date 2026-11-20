@@ -86,13 +86,26 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
     fetchFeatureFlags().then(setFeatureFlags).catch((err) => console.warn('Feature flags load warn:', err));
   }, []);
 
-  // Chu kỳ tự động làm mới mỗi 10 giây
+  // Chu kỳ tự động làm mới mỗi 30 giây (tạm ngắt khi ẩn tab để tiết kiệm CPU)
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
-      loadAllData();
-    }, 10000);
-    return () => clearInterval(interval);
+      if (document.visibilityState === 'visible') {
+        loadAllData();
+      }
+    }, 30000);
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadAllData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [autoRefresh, loadAllData]);
 
   const activeKeyCount = keys.filter((k) => k.is_active).length;

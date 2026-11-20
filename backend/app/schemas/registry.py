@@ -5,6 +5,26 @@ class HospitalStockUnit(BaseModel):
     quantity: int
     batch_count: int
 
+class DrugSummaryItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    national_code: str
+    brand_name: str
+    active_ingredient: str
+    concentration: str | None = ""
+    dosage_form: str | None = ""
+    route: str | None = ""
+    standard_unit: str | None = "Viên"
+    group: str | None = "Thuốc điều trị chuyên khoa"
+    is_controlled: bool | None = False
+    is_high_alert: bool | None = False
+    is_crash_cart: bool | None = False
+    atc_code: str | None = None
+    drug_class: str | None = None
+    clinical_monograph_id: str | None = None
+    hospital_stock_by_unit: list[HospitalStockUnit] = Field(default_factory=list)
+
 class DrugItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -62,7 +82,7 @@ class RegistryPaginatedResponse(BaseModel):
     page_size: int
     total_pages: int
     group_stats: dict[str, int]
-    items: list[DrugItemResponse]
+    items: list[DrugSummaryItem | DrugItemResponse]
     registry_revision: str
     inventory_revision: str
     hospital_stock_drug_count: int

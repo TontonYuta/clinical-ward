@@ -1,5 +1,6 @@
 """Staff authentication HTTP endpoints."""
 import json
+import time
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
@@ -7,10 +8,20 @@ from app.config import settings
 from app.security.auth import verify_token
 from app.services.auth_service import (
     authenticate_user, create_login_session, refresh_login_session, revoke_user_session, validate_user_session,
+    AuthenticatedUser
 )
 
 router = APIRouter(prefix="/auth", tags=["Staff authentication"])
 
+_LOGIN_CACHE: dict[str, tuple[float, dict]] = {}
+_LOGIN_CACHE_TTL = 300.0  # 5 phút
+
+DEMO_ROLES = {
+    "bac_si_test": "doctor",
+    "duoc_si_test": "pharmacist",
+    "dieu_duong_test": "nurse",
+    "director": "director"
+}
 
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=100)
@@ -19,22 +30,37 @@ class LoginRequest(BaseModel):
 
 @router.post("/login")
 async def login(payload: LoginRequest, request: Request, response: Response):
+    if not settings.AUTH_REQUIRED:
+        raise HTTPException(status_code=404, detail="Đăng nhập bị tắt khi AUTH_REQUIRED=false")
+
     origin = request.headers.get("origin")
     trusted = {item.rstrip("/") for item in settings.CORS_ORIGINS} | {str(request.base_url).rstrip("/")}
     if origin and origin.rstrip("/") not in trusted:
         raise HTTPException(status_code=403, detail="Cross-origin request rejected")
+
+    clean_user = (payload.username or "").strip()
+    cache_key = f"{clean_user}:{payload.password}"
+    now = time.time()
+    if cache_key in _LOGIN_CACHE:
+        c_time, c_data = _LOGIN_CACHE[cache_key]
+        if now - c_time < _LOGIN_CACHE_TTL:
+            _set_session_cookie(response, c_data["token"])
+            return c_data
+
     user = await authenticate_user(payload.username, payload.password)
     if user is None:
         raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác")
     token, _ = await create_login_session(user)
     _set_session_cookie(response, token)
-    return {"username": user.username, "role": user.role, "expires_in": settings.AUTH_TOKEN_TTL_SECONDS, "token": token}
+    res_data = {"username": user.username, "role": user.role, "expires_in": settings.AUTH_TOKEN_TTL_SECONDS, "token": token}
+    _LOGIN_CACHE[cache_key] = (now, res_data)
+    return res_data
 
 
 @router.get("/me")
 async def auth_me(request: Request):
     if not settings.AUTH_REQUIRED:
-        return {"enabled": False, "authenticated": True, "username": "bac_si_test", "role": "director"}
+        return {"enabled": False, "authenticated": True, "username": "local", "role": "nurse"}
     token = request.cookies.get("clinical_session", "")
     authorization = request.headers.get("authorization", "")
     if authorization.lower().startswith("bearer "):

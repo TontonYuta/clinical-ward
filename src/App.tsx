@@ -52,7 +52,7 @@ import { PatientDetailModal } from './components/Modals/PatientDetailModal';
 import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import { DavDrugDetailModal } from './components/Modals/DavDrugDetailModal';
-import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches, prewarmInventoryMonographs, fetchChatbotAvailability, type ChatbotAvailability } from './services/api';
+import { prewarmRegistryCatalogCache, seedDrugDetailCacheWithBatches, fetchChatbotAvailability, type ChatbotAvailability } from './services/api';
 import { ALL_MASTER_MEDICATIONS, removeVietnameseTones } from './data/medicationMasterData';
 import type { MasterMedication } from './types/medication';
 import type { PrintableFormType } from './components/Modals/PrintableFormModal';
@@ -169,7 +169,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
       if (document.visibilityState === 'visible') refresh();
     };
     refresh();
-    refreshTimer = window.setInterval(refresh, 15000);
+    refreshTimer = window.setInterval(refreshWhenVisible, 45000);
     document.addEventListener('visibilitychange', refreshWhenVisible);
     window.addEventListener('focus', refreshWhenVisible);
     return () => {
@@ -418,7 +418,9 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
       }
     };
     void refresh();
-    const timer = window.setInterval(refresh, 30000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') refresh();
+    }, 60000);
     const onOnline = () => void refresh();
     const onOffline = () => { if (active) setChatbotAvailability('local_only'); };
     window.addEventListener('online', onOnline);
@@ -435,13 +437,9 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
 
     const prewarmTimer = setTimeout(() => {
       prewarmRegistryCatalogCache().catch(() => {});
-      prewarmInventoryMonographs(INITIAL_INVENTORY_BATCHES).catch(() => {});
-    }, 50);
+    }, 100);
 
     Promise.allSettled([
-      // Tạm thời comment đồng bộ ngầm cho TBYT và Sổ nợ vỏ theo yêu cầu người dùng
-      // debtApi.fetchDebts(),
-      // equipmentApi.fetchEquipmentTickets(),
       inventoryApi.fetchInventoryBatches(),
     ]).then(([resBatches]) => {
       if (!isMounted) return;
@@ -449,7 +447,6 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
         setBatches(resBatches.value);
         saveCachedBatches(resBatches.value);
         seedDrugDetailCacheWithBatches(resBatches.value);
-        prewarmInventoryMonographs(resBatches.value).catch(() => {});
       }
     }).catch(() => {});
     return () => {

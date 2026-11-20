@@ -116,18 +116,26 @@ export const NationalDrugRegistryModal: React.FC<Props> = ({ isOpen, onClose, on
       setCacheStatus('checking'); setLoading(false);
     } else if (isManualSync) { setIsSyncing(true); setSyncNotice(null); } else setLoading(true);
     let loaded = false;
-    try {
-      const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, pharmGroup, page, pageSize: PAGE_SIZE, onlyInWarehouse });
-      if (data && Array.isArray(data.items)) {
-        const mapped = data.items.map(mapMedicationItem);
-        setDrugs(mapped); setTotalCount(data.total ?? mapped.length); setTotalPages(data.total_pages || 1);
-        setHospitalStockDrugCount(data.hospital_stock_drug_count ?? 0);
-        saveCachedRegistryPage(key, data);
-        setCacheStatus(cached && cached.response.inventory_revision === data.inventory_revision && cached.response.registry_revision === data.registry_revision ? 'current' : cached ? 'updated' : 'none');
-        if (isManualSync) { setSyncNotice(`Đã cập nhật ${data.total.toLocaleString()} kết quả`); setTimeout(() => setSyncNotice(null), 3500); }
-        loaded = true;
+    for (let attempt = 0; attempt < 2 && !loaded; attempt++) {
+      try {
+        const data = await getNationalDrugRegistryApi({ search, group: selectedGroup, pharmGroup, page, pageSize: PAGE_SIZE, onlyInWarehouse });
+        if (data && Array.isArray(data.items)) {
+          const mapped = data.items.map(mapMedicationItem);
+          setDrugs(mapped); setTotalCount(data.total ?? mapped.length); setTotalPages(data.total_pages || 1);
+          setHospitalStockDrugCount(data.hospital_stock_drug_count ?? 0);
+          saveCachedRegistryPage(key, data);
+          setCacheStatus(cached && cached.response.inventory_revision === data.inventory_revision && cached.response.registry_revision === data.registry_revision ? 'current' : cached ? 'updated' : 'none');
+          if (isManualSync) { setSyncNotice(`Đã cập nhật ${data.total.toLocaleString()} kết quả`); setTimeout(() => setSyncNotice(null), 3500); }
+          loaded = true;
+          break;
+        }
+      } catch {
+        if (attempt === 0) await new Promise(r => setTimeout(r, 600));
       }
-    } catch { setCacheStatus('offline'); }
+    }
+    if (!loaded) {
+      setCacheStatus('offline');
+    }
 
     if (!loaded) {
       try {
