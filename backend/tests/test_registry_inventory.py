@@ -32,6 +32,7 @@ async def test_registry_returns_hospital_stock_by_registration_number_and_filter
 @pytest.mark.asyncio
 async def test_registry_stock_revision_changes_after_inventory_dispatch():
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
+        await client.post('/api/v1/auth/login', json={'username': 'admin', 'password': 'admin'}, headers={'Origin': 'http://localhost:3000'})
         before = (await client.get('/api/v1/registry', params={'search': '893100110026'})).json()
         dispatched = await client.post('/api/v1/inventory/batches/b-1/dispatch', json={'quantity': 1})
         assert dispatched.status_code == 200
