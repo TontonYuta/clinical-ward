@@ -9,7 +9,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, ExternalLink, RotateCw, FileText, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { InventoryBatch } from '../../types/pharmacy';
 import { MasterMedication } from '../../types/medication';
-import { getDrugDetailApi, getCachedDrugDetail } from '../../services/api';
+import { getDrugDetailApi, getCachedDrugDetail, hasFullMonographContent } from '../../services/api';
 import { DavDocumentActionButtons } from './DavDrugDetail/DavDocumentActionButtons';
 import {
   formatContraindicationsList,
@@ -172,7 +172,13 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   useModalDismiss(isOpen, onClose);
 
   const itemName = batch?.itemName || drug?.brandName || 'Chưa đặt tên';
-  const sdk = batch?.registrationNumber || batch?.nationalCode || drug?.nationalCode || 'Chưa cập nhật';
+  const sdk = (
+    (batch?.registrationNumber || '').trim() ||
+    (batch?.nationalCode || '').trim() ||
+    (drug?.nationalCode || '').trim() ||
+    (drug?.id || '').replace(/^dav-/, '').trim() ||
+    'Chưa cập nhật'
+  );
   const activeInn = batch?.activeIngredient || drug?.activeIngredient || 'Theo hồ sơ Cục QLD';
   const strength = batch?.concentration || drug?.concentration;
   const davPortalUrl = `https://dichvucong.dav.gov.vn/congbothuoc/index?search=${encodeURIComponent(sdk)}`;
@@ -210,10 +216,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     is_controlled: batch.isControlledSubstance,
   } : null;
 
-  const initialHasFull = Boolean(
-    (initialCached && (initialCached.pharmacodynamics || initialCached.indications || initialCached.clinical_monograph_id)) ||
-    (drug && (drug.pharmacodynamics || drug.indications || drug.clinical_monograph_id))
-  );
+  const initialHasFull = Boolean(hasFullMonographContent(initialCached) || hasFullMonographContent(drug));
 
   const [currentSdk, setCurrentSdk] = useState(sdk);
   const [liveDrug, setLiveDrug] = useState<any>(initialCached || drug || fallbackFromBatch);
@@ -225,10 +228,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
     setCurrentSdk(sdk);
     const cached = getCachedDrugDetail(sdk);
     setLiveDrug(cached || drug || fallbackFromBatch || null);
-    const hasFull = Boolean(
-      (cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id)) ||
-      (drug && (drug.pharmacodynamics || drug.indications || drug.clinical_monograph_id))
-    );
+    const hasFull = Boolean(hasFullMonographContent(cached) || hasFullMonographContent(drug));
     setLoadingDetail(!hasFull && sdk !== 'Chưa cập nhật' && isOpen);
   }
 
@@ -238,7 +238,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
       return;
     }
     const cached = !isManual ? getCachedDrugDetail(sdk) : null;
-    const hasFull = Boolean(cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id));
+    const hasFull = Boolean(hasFullMonographContent(cached));
     if (cached) {
       setLiveDrug(cached);
     }
@@ -275,8 +275,7 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
   const profile = getMedicationClinicalProfile(batch?.id || sdk || itemName || activeInn, (drug || batch) as any);
   const liveSource = liveDrug?.clinical_source || liveDrug?.clinicalSource;
   const hasLinkedMonograph = Boolean(
-    liveDrug?.clinical_monograph_id ||
-    liveDrug?.clinicalMonographId ||
+    hasFullMonographContent(liveDrug) ||
     liveDrug?.pharmacodynamics ||
     liveDrug?.indications
   );
@@ -657,8 +656,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
                   </a>
                 )}
                 <DavDocumentActionButtons
-                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath}
-                  labelPath={batch?.labelPath || drug?.labelPath}
+                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath || liveDrug?.hdsd_path || liveDrug?.hdsdPath}
+                  labelPath={batch?.labelPath || drug?.labelPath || liveDrug?.label_path || liveDrug?.labelPath}
                   nationalCode={sdk}
                   brandName={itemName}
                 />
@@ -994,8 +993,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
                   </a>
                 )}
                 <DavDocumentActionButtons
-                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath}
-                  labelPath={batch?.labelPath || drug?.labelPath}
+                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath || liveDrug?.hdsd_path || liveDrug?.hdsdPath}
+                  labelPath={batch?.labelPath || drug?.labelPath || liveDrug?.label_path || liveDrug?.labelPath}
                   nationalCode={sdk}
                   brandName={itemName}
                 />
@@ -1153,8 +1152,8 @@ export const DavDrugDetailModal: React.FC<DavDrugDetailModalProps> = ({
                   </a>
                 )}
                 <DavDocumentActionButtons
-                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath}
-                  labelPath={batch?.labelPath || drug?.labelPath}
+                  hdsdPath={batch?.hdsdPath || drug?.hdsdPath || liveDrug?.hdsd_path || liveDrug?.hdsdPath}
+                  labelPath={batch?.labelPath || drug?.labelPath || liveDrug?.label_path || liveDrug?.labelPath}
                   nationalCode={sdk}
                   brandName={itemName}
                 />

@@ -516,7 +516,7 @@ export async function prewarmInventoryMonographs(batches: any[]): Promise<void> 
     codes.map(c => {
       const norm = c.toLowerCase();
       const cached = drugDetailCache.get(norm);
-      if (cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id)) {
+      if (cached && hasFullMonographContent(cached)) {
         return Promise.resolve(cached);
       }
       return getDrugDetailApi(c).catch(() => null);
@@ -573,15 +573,32 @@ export async function getDrugDocumentsApi(nationalCode: string) {
 
 const drugDetailCache = new Map<string, any>();
 
+export function hasFullMonographContent(data: any): boolean {
+  if (!data) return false;
+  return Boolean(
+    data._isFullDetail === true ||
+    (typeof data.pharmacodynamics === 'string' && data.pharmacodynamics.trim().length > 0) ||
+    (typeof data.indications === 'string' && data.indications.trim().length > 0) ||
+    (typeof data.contraindications === 'string' && data.contraindications.trim().length > 0) ||
+    (typeof data.adult_dosage === 'string' && data.adult_dosage.trim().length > 0) ||
+    (typeof data.adultDosage === 'string' && data.adultDosage.trim().length > 0) ||
+    (typeof data.adverse_effects === 'string' && data.adverse_effects.trim().length > 0) ||
+    (typeof data.adverseEffects === 'string' && data.adverseEffects.trim().length > 0)
+  );
+}
+
 export function getCachedDrugDetail(nationalCode?: string | null): any | null {
   if (!nationalCode) return null;
   const norm = nationalCode.trim().toLowerCase();
   if (drugDetailCache.has(norm)) {
     return drugDetailCache.get(norm);
   }
-  const fromOffline = getOfflineCachedDrug(norm);
+  const clean = norm.replace(/^dav-/, '');
+  if (drugDetailCache.has(clean)) {
+    return drugDetailCache.get(clean);
+  }
+  const fromOffline = getOfflineCachedDrug(norm) || getOfflineCachedDrug(clean);
   if (fromOffline) {
-    // Chỉ lưu tạm thời nếu chưa có chi tiết lâm sàng đầy đủ từ backend
     return fromOffline;
   }
   return null;
@@ -591,24 +608,35 @@ export function setCachedDrugDetail(nationalCode: string, data: any): void {
   if (!nationalCode || !data) return;
   const norm = nationalCode.trim().toLowerCase();
   const existing = drugDetailCache.get(norm);
-  if (existing && (existing.pharmacodynamics || existing.indications || existing.clinical_monograph_id)) {
+  if (existing && hasFullMonographContent(existing) && !hasFullMonographContent(data)) {
     // Không bao giờ ghi đè làm mất dữ liệu chuyên luận lâm sàng giàu có bằng stub hành chính rỗng
-    if (!data.pharmacodynamics && !data.indications && !data.clinical_monograph_id) {
-      drugDetailCache.set(norm, {
-        ...existing,
-        ...data,
-        pharmacodynamics: existing.pharmacodynamics,
-        pharmacokinetics: existing.pharmacokinetics,
-        indications: existing.indications,
-        contraindications: existing.contraindications,
-        clinical_monograph_id: existing.clinical_monograph_id,
-        clinicalMonographId: existing.clinicalMonographId,
-        adr_management: existing.adr_management,
-        incompatibilities: existing.incompatibilities,
-        storage_stability: existing.storage_stability,
-      });
-      return;
-    }
+    drugDetailCache.set(norm, {
+      ...existing,
+      ...data,
+      pharmacodynamics: existing.pharmacodynamics,
+      pharmacokinetics: existing.pharmacokinetics,
+      indications: existing.indications,
+      contraindications: existing.contraindications,
+      precautions: existing.precautions,
+      pregnancy_warning: existing.pregnancy_warning || existing.pregnancyWarning,
+      lactation_warning: existing.lactation_warning || existing.lactationWarning,
+      adult_dosage: existing.adult_dosage || existing.adultDosage,
+      pediatric_dosage: existing.pediatric_dosage || existing.pediatricDosage,
+      renal_adjustment: existing.renal_adjustment || existing.renalAdjustment,
+      hepatic_adjustment: existing.hepatic_adjustment || existing.hepaticAdjustment,
+      adverse_effects: existing.adverse_effects || existing.adverseEffects,
+      adr_management: existing.adr_management || existing.adrManagement,
+      drug_interactions: existing.drug_interactions || existing.drugInteractions,
+      incompatibilities: existing.incompatibilities,
+      storage_stability: existing.storage_stability || existing.storageStability,
+      overdose_treatment: existing.overdose_treatment || existing.overdoseTreatment,
+      antidote: existing.antidote,
+      clinical_source: existing.clinical_source || existing.clinicalSource,
+      clinical_monograph_id: existing.clinical_monograph_id || existing.clinicalMonographId,
+      clinicalMonographId: existing.clinicalMonographId || existing.clinical_monograph_id,
+      _isFullDetail: true,
+    });
+    return;
   }
   drugDetailCache.set(norm, data);
 }
@@ -617,17 +645,22 @@ export async function getDrugDetailApi(nationalCode: string, refresh = false) {
   if (!nationalCode) return null;
   const norm = nationalCode.trim().toLowerCase();
   const cached = drugDetailCache.get(norm);
-  if (!refresh && cached && (cached.pharmacodynamics || cached.indications || cached.clinical_monograph_id)) {
+  if (!refresh && cached && hasFullMonographContent(cached)) {
     return cached;
   }
 
-  const url = `${API_BASE_URL}/registry/${encodeURIComponent(nationalCode)}${refresh ? '?refresh=true' : ''}`;
+  const cleanCode = nationalCode.replace(/^dav-/, '').trim();
+  const url = `${API_BASE_URL}/registry/${encodeURIComponent(cleanCode)}${refresh ? '?refresh=true' : ''}`;
   try {
     const res = await apiFetch(url, refresh ? { cache: 'no-store' } : undefined);
     if (res.ok) {
       const data = await res.json();
       if (data) {
-        drugDetailCache.set(norm, data);
+        data._isFullDetail = true;
+        setCachedDrugDetail(norm, data);
+        if (cleanCode.toLowerCase() !== norm) {
+          setCachedDrugDetail(cleanCode, data);
+        }
         return data;
       }
     }
@@ -640,6 +673,6 @@ export async function getDrugDetailApi(nationalCode: string, refresh = false) {
       return match;
     }
   } catch {}
-  return null;
+  return cached || null;
 }
 

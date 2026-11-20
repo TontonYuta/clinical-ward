@@ -31,7 +31,11 @@ export const NationalDrugTableRow: React.FC<NationalDrugTableRowProps> = ({
   );
 
   return (
-    <tr className="hover:bg-slate-50 transition-colors border-b border-slate-200">
+    <tr
+      onClick={() => onOpenDavDetail?.(d)}
+      className="hover:bg-slate-50 transition-colors border-b border-slate-200 cursor-pointer"
+      title="Bấm để xem chi tiết chuyên luận lâm sàng & Giấy công bố Cục Quản lý Dược"
+    >
       {/* 1. SĐK */}
       <td className="py-3 px-4 whitespace-nowrap align-top border-r border-slate-100">
         <button
