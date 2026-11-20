@@ -65,13 +65,19 @@ export const DocumentIngestionTab: React.FC = () => {
         localStorage.removeItem('clinical_local_pdf_docs');
       } catch {}
       const docs = await fetchKnowledgeDocuments();
-      setDocuments(docs);
+      setDocuments(prev => {
+        const merged = [...docs];
+        if (selectedDocForTest && !merged.some(d => d.id === selectedDocForTest.id)) {
+          merged.unshift(selectedDocForTest);
+        }
+        return merged;
+      });
     } catch (err: unknown) {
       console.error('Lỗi nạp danh sách tài liệu từ máy chủ:', err);
     } finally {
       setLoadingDocs(false);
     }
-  }, []);
+  }, [selectedDocForTest]);
 
   useEffect(() => {
     loadDocuments();
@@ -121,15 +127,14 @@ export const DocumentIngestionTab: React.FC = () => {
           verified: false,
         };
         setSelectedDocForTest(newDocItem);
+        // Cập nhật state documents ngay lập tức để không bao giờ bị mất tài liệu
+        setDocuments(prev => [newDocItem, ...prev.filter(d => d.id !== newDocItem.id)]);
         setRightTabMode('chatbot');
         sandboxContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
 
-      // Reset form sau khi nạp thành công
+      // Xóa file input để tránh upload trùng lặp nhưng giữ trạng thái thông tin rõ ràng
       setFile(null);
-      setTitle('');
-      setLegalBasis('');
-      setDocId('');
       await loadDocuments();
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Lỗi khi xử lý nạp tài liệu.');
@@ -250,6 +255,26 @@ export const DocumentIngestionTab: React.FC = () => {
                 <div className="mt-1 flex items-center gap-1.5 text-2xs text-slate-500">
                   <FileCheck className="w-3.5 h-3.5 text-teal-600" />
                   <span>{file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
+                </div>
+              )}
+              {uploadResult && !file && (
+                <div className="mt-2 p-2 bg-teal-50 border border-teal-200/90 rounded-lg text-teal-900 text-xs flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                    <span className="truncate">Đã chuyển sang Khung Thử Nghiệm: <strong>{uploadResult.filename}</strong></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadResult(null);
+                      setTitle('');
+                      setLegalBasis('');
+                      setDocId('');
+                    }}
+                    className="text-2xs text-teal-700 hover:text-teal-900 font-semibold underline shrink-0 cursor-pointer"
+                  >
+                    Nạp tệp khác
+                  </button>
                 </div>
               )}
             </div>

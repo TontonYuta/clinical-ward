@@ -30,13 +30,20 @@ router = APIRouter(prefix="/admin/knowledge", tags=["Quản Trị Tri Thức & P
 
 
 def _manifest_path() -> Path:
-    return Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "clinical_source_manifest.json"
+    candidates = (
+        Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "clinical_source_manifest.json",
+        Path("backend/data/knowledge_base/clinical_source_manifest.json"),
+        Path("/app/backend/data/knowledge_base/clinical_source_manifest.json"),
+        Path("/app/data/knowledge_base/clinical_source_manifest.json"),
+    )
+    return next((c for c in candidates if c.is_file()), candidates[0])
 
 
 def _public_pdf_dir() -> Path:
     candidates = (
         Path(__file__).resolve().parents[3] / "public" / "pdf",
         Path(__file__).resolve().parents[2] / "public" / "pdf",
+        Path("public/pdf"),
         Path("/app/public/pdf"),
     )
     return next((candidate for candidate in candidates if candidate.is_dir()), candidates[0])
@@ -49,39 +56,60 @@ def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:
         manifest = {}
 
     sources = manifest.get("sources", []) if isinstance(manifest, dict) else []
-    by_path: dict[str, dict] = {}
+    documents = []
+    seen_ids = set()
+
     for source in sources:
         if not isinstance(source, dict):
             continue
+        doc_id = str(source.get("id") or "").strip()
+        title = str(source.get("title") or "").strip()
+        if not doc_id or not title or doc_id in seen_ids:
+            continue
+        seen_ids.add(doc_id)
+
         path_value = str(source.get("public_path") or "").replace("\\", "/")
-        if path_value:
-            by_path[path_value.removeprefix("public/pdf/")] = source
-    documents = []
-    if not pdf_root.is_dir():
-        return documents
-    for relative_path, source in sorted(by_path.items(), key=lambda item: item[0].casefold()):
-        if not source.get("id") or not source.get("title"):
-            continue
-        pdf_path = (pdf_root / relative_path).resolve()
-        if not pdf_path.is_relative_to(pdf_root.resolve()) or not pdf_path.is_file() or pdf_path.suffix.lower() != ".pdf":
-            continue
+        rel_path = path_value.removeprefix("public/pdf/").strip("/") if path_value else ""
+        filename = Path(rel_path).name if rel_path else f"{doc_id}.pdf"
+
+        # Tra cứu file vật lý trên mọi vị trí tiềm năng
+        file_bytes = source.get("bytes")
+        candidate_files = [
+            pdf_root / rel_path if rel_path else None,
+            pdf_root / filename,
+            Path("backend/data/knowledge_base") / filename,
+            Path("/app/backend/data/knowledge_base") / filename,
+            Path("/app/data/knowledge_base") / filename,
+            Path("public/pdf") / filename,
+            Path("/app/public/pdf") / filename,
+        ]
+        found_file = next((p for p in candidate_files if p and p.is_file()), None)
+        if found_file and (file_bytes is None or file_bytes == 0):
+            try:
+                file_bytes = found_file.stat().st_size
+            except Exception:
+                pass
+
         status_val = str(source.get("status") or "active")
         is_verified = bool(source.get("verified", True if status_val == "active" else False))
+        safe_rel_path = rel_path if rel_path else filename
+
         documents.append({
-            "id": str(source["id"]),
-            "title": str(source["title"]),
+            "id": doc_id,
+            "title": title,
             "legal_basis": str(source.get("legal_basis") or ""),
             "category": str(source.get("category") or "Văn bản y tế"),
             "edition_year": source.get("edition_year"),
-            "filename": pdf_path.name,
-            "public_url": f"/api/v1/pdf/{quote(relative_path, safe='/')}",
+            "filename": filename,
+            "public_url": f"/api/v1/pdf/{quote(safe_rel_path, safe='/')}",
             "sha256": str(source.get("sha256") or ""),
-            "bytes": source.get("bytes") if source.get("bytes") is not None else pdf_path.stat().st_size,
+            "bytes": file_bytes if file_bytes is not None else 0,
             "status": status_val,
             "verified": is_verified,
             "verified_at": source.get("verified_at"),
         })
-    return documents
+
+    return sorted(documents, key=lambda d: (d.get("status") != "staged", d["title"].casefold()))
 
 
 class UpdateDocStatusRequest(BaseModel):

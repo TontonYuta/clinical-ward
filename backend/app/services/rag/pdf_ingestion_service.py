@@ -32,9 +32,41 @@ from app.services.rag.embeddings.vector_store import (
 
 logger = logging.getLogger("pdf_ingestion_service")
 
-KB_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "knowledge_base"
-PUBLIC_PDF_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "public" / "pdf"
-MANIFEST_PATH = KB_DIR / "clinical_source_manifest.json"
+
+def _resolve_kb_dir() -> Path:
+    candidates = (
+        Path(__file__).resolve().parents[3] / "data" / "knowledge_base",
+        Path("backend/data/knowledge_base"),
+        Path("/app/backend/data/knowledge_base"),
+        Path("/app/data/knowledge_base"),
+    )
+    return next((c for c in candidates if c.is_dir()), candidates[0])
+
+
+def _resolve_public_pdf_dir() -> Path:
+    candidates = (
+        Path(__file__).resolve().parents[4] / "public" / "pdf",
+        Path(__file__).resolve().parents[3] / "public" / "pdf",
+        Path("public/pdf"),
+        Path("/app/public/pdf"),
+    )
+    return next((c for c in candidates if c.is_dir()), candidates[0])
+
+
+def _resolve_manifest_path() -> Path:
+    candidates = (
+        _resolve_kb_dir() / "clinical_source_manifest.json",
+        Path(__file__).resolve().parents[3] / "data" / "knowledge_base" / "clinical_source_manifest.json",
+        Path("backend/data/knowledge_base/clinical_source_manifest.json"),
+        Path("/app/backend/data/knowledge_base/clinical_source_manifest.json"),
+        Path("/app/data/knowledge_base/clinical_source_manifest.json"),
+    )
+    return next((c for c in candidates if c.is_file()), candidates[0])
+
+
+KB_DIR = _resolve_kb_dir()
+PUBLIC_PDF_DIR = _resolve_public_pdf_dir()
+MANIFEST_PATH = _resolve_manifest_path()
 
 STOPWORDS = {
     "căn", "cứ", "pháp", "lý", "quy", "định", "theo", "khoản", "điều", "trong",

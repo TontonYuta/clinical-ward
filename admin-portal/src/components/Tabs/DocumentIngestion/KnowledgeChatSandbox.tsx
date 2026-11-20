@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Send,
   Sparkles,
@@ -82,16 +82,24 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Bảo toàn danh sách tài liệu kiểm thử: nếu selectedDoc vừa được nạp mà allDocs chưa kịp cập nhật thì tự động gộp vào
+  const displayDocs = useMemo(() => {
+    if (selectedDoc && !allDocs.some(d => d.id === selectedDoc.id)) {
+      return [selectedDoc, ...allDocs];
+    }
+    return allDocs;
+  }, [selectedDoc, allDocs]);
+
   // Sync activeDocId with selectedDoc
   useEffect(() => {
     if (selectedDoc) {
       setActiveDocId(selectedDoc.id);
       setHasVerifiedAnswer(Boolean(selectedDoc.verified));
-    } else if (allDocs.length > 0 && !activeDocId) {
-      setActiveDocId(allDocs[0].id);
-      setHasVerifiedAnswer(Boolean(allDocs[0].verified));
+    } else if (displayDocs.length > 0 && !activeDocId) {
+      setActiveDocId(displayDocs[0].id);
+      setHasVerifiedAnswer(Boolean(displayDocs[0].verified));
     }
-  }, [selectedDoc, allDocs, activeDocId]);
+  }, [selectedDoc, displayDocs, activeDocId]);
 
   // Handle ESC key to exit full screen
   useEffect(() => {
@@ -355,7 +363,7 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
               onChange={(e) => setActiveDocId(e.target.value)}
               className="text-2xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-slate-800 truncate flex-1 max-w-md font-medium"
             >
-              {allDocs.map((doc) => (
+              {displayDocs.map((doc) => (
                 <option key={doc.id} value={doc.id}>
                   [{doc.status === 'active' ? 'ĐANG DÙNG' : doc.status === 'superseded' ? 'HẾT HIỆU LỰC' : 'CHỜ DUYỆT'}] {doc.title} ({doc.filename})
                 </option>
