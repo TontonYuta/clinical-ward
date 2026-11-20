@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import {
-  ShieldAlert,
-  ShieldCheck,
   CheckCircle2,
   AlertOctagon,
   FileCheck,
@@ -11,9 +9,7 @@ import {
   Copy,
   Check,
   FileText,
-  RefreshCw,
-  Eye,
-  Stethoscope
+  Eye
 } from 'lucide-react';
 import { TelemetryOverviewResponse, BhytAuditLogItem, BhytViolationDetail } from '../../types/admin';
 
@@ -22,27 +18,17 @@ interface AuditTabProps {
 }
 
 export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'bhyt_audit' | 'safety_audit'>('bhyt_audit');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'REJECT_ERROR' | 'WARNING' | 'PASS'>('ALL');
   const [selectedLog, setSelectedLog] = useState<BhytAuditLogItem | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  const ddiCount = data?.ddi_blocks_count ?? 0;
-  const guardCount = data?.guardrail_blocks_count ?? 0;
   const bhytSaved = data?.bhyt_rejection_saved_vnd ?? 0;
   const auditedCount = data?.bhyt_audited ?? 0;
 
   // Lấy danh sách log BHYT
   const bhytLogs: BhytAuditLogItem[] = useMemo(() => {
     return data?.bhyt_logs || [];
-  }, [data]);
-
-  // Lọc sự kiện kiểm toán thật từ CSDL logs (DDI & Guardrails)
-  const realAuditEvents = useMemo(() => {
-    return (data?.recent_events || []).filter(
-      (e) => e.status === 'blocked' || e.event_type === 'DDI_BLOCKED' || e.event_type === 'GUARDRAIL_BLOCKED'
-    );
   }, [data]);
 
   // Lọc danh sách BHYT theo từ khóa và trạng thái
@@ -108,97 +94,39 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
 
   return (
     <div className="space-y-4">
-      {/* 1. Dải Thống Kê Tổng Quan Phẳng */}
+      {/* 1. Dải Thống Kê Giám Định BHYT */}
       <div className="bg-white border border-slate-200/90 rounded-lg grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-        {/* Metric 1: BHYT Giám định */}
-        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
-          <div>
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">BHYT đã giám định</div>
-            <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums">
-              {auditedCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
-            </div>
+        <div className="p-3.5 sm:px-5 sm:py-4">
+          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Hồ sơ đã giám định</div>
+          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
+            {auditedCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
           </div>
-          <span className="text-2xs font-mono text-slate-400">
-            TT 20/2022
-          </span>
         </div>
 
-        {/* Metric 2: BHYT bảo toàn */}
-        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
-          <div>
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Xuất toán bảo toàn</div>
-            <div className="text-xl sm:text-2xl font-bold font-mono text-emerald-700 tabular-nums whitespace-nowrap">
-              {bhytSaved.toLocaleString('vi-VN')} <span className="text-xs font-normal text-emerald-600 font-sans">₫</span>
-            </div>
+        <div className="p-3.5 sm:px-5 sm:py-4">
+          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Xuất toán bảo toàn</div>
+          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
+            {bhytSaved.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-400 font-sans">₫</span>
           </div>
-          <span className="text-2xs font-mono text-slate-400">
-            Tiết kiệm
-          </span>
         </div>
 
-        {/* Metric 3: Tương tác DDI */}
-        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
-          <div>
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Tương tác DDI chặn</div>
-            <div className="text-xl sm:text-2xl font-bold font-mono text-rose-700 tabular-nums">
-              {ddiCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
-            </div>
+        <div className="p-3.5 sm:px-5 sm:py-4">
+          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Đạt chuẩn thanh toán</div>
+          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
+            {counts.pass} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
           </div>
-          <span className="text-2xs font-mono text-slate-400">
-            Nguy cơ cao
-          </span>
         </div>
 
-        {/* Metric 4: Guardrails */}
-        <div className="p-3 sm:px-4 sm:py-3 flex items-center justify-between">
-          <div>
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Guardrails bảo vệ</div>
-            <div className="text-xl sm:text-2xl font-bold font-mono text-teal-800 tabular-nums">
-              {guardCount} <span className="text-xs font-normal text-slate-400 font-sans">lần</span>
-            </div>
+        <div className="p-3.5 sm:px-5 sm:py-4">
+          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Cảnh báo &amp; Lỗi xuất toán</div>
+          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
+            {counts.warning + counts.rejectError} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
           </div>
-          <span className="text-2xs font-mono text-slate-400">
-            Bộ Y Tế
-          </span>
         </div>
       </div>
 
-      {/* 2. Thanh Chuyển Tab (Segmented Switcher) */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('bhyt_audit')}
-          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
-            activeSubTab === 'bhyt_audit'
-              ? 'bg-teal-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-          }`}
-        >
-          <span>Sổ Nhật Ký Giám Định BHYT</span>
-          <span className="text-2xs font-mono opacity-80">
-            ({counts.all})
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('safety_audit')}
-          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
-            activeSubTab === 'safety_audit'
-              ? 'bg-teal-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-          }`}
-        >
-          <span>Can Thiệp An Toàn Lâm Sàng (DDI &amp; Guardrails)</span>
-          <span className="text-2xs font-mono opacity-80">
-            ({realAuditEvents.length})
-          </span>
-        </button>
-      </div>
-
-      {/* 3. Nội Dung Tab 1: Nhật Ký Giám Định BHYT & Check Lỗi */}
-      {activeSubTab === 'bhyt_audit' && (
-        <div className="bg-white rounded-lg border border-slate-200/90 overflow-hidden flex flex-col space-y-3 p-3 sm:px-4 sm:py-3.5">
+      {/* 2. Sổ Nhật Ký Giám Định BHYT & Check Lỗi */}
+      <div className="bg-white rounded-lg border border-slate-200/90 overflow-hidden flex flex-col space-y-3 p-3 sm:px-4 sm:py-3.5">
           {/* Header & Bộ lọc */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
             <div>
@@ -237,56 +165,53 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
             <button
               type="button"
               onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === 'ALL'
-                  ? 'bg-slate-800 text-white shadow-2xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
               <span>Tất cả</span>
-              <span className="font-mono text-2xs opacity-80">({counts.all})</span>
+              <span className="font-mono text-2xs opacity-70">({counts.all})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setStatusFilter('REJECT_ERROR')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === 'REJECT_ERROR'
-                  ? 'bg-rose-700 text-white shadow-2xs'
-                  : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
-              <AlertOctagon className="w-3.5 h-3.5" />
               <span>Bị xuất toán / Lỗi</span>
-              <span className="font-mono text-2xs font-bold">({counts.rejectError})</span>
+              <span className="font-mono text-2xs opacity-70">({counts.rejectError})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setStatusFilter('WARNING')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === 'WARNING'
-                  ? 'bg-amber-600 text-white shadow-2xs'
-                  : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
-              <AlertTriangle className="w-3.5 h-3.5" />
               <span>Cảnh báo</span>
-              <span className="font-mono text-2xs font-bold">({counts.warning})</span>
+              <span className="font-mono text-2xs opacity-70">({counts.warning})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setStatusFilter('PASS')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === 'PASS'
-                  ? 'bg-emerald-700 text-white shadow-2xs'
-                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Hợp lệ (Pass)</span>
-              <span className="font-mono text-2xs font-bold">({counts.pass})</span>
+              <span>Đạt chuẩn</span>
+              <span className="font-mono text-2xs opacity-70">({counts.pass})</span>
             </button>
           </div>
 
@@ -302,7 +227,7 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
                   <th className="py-2.5 px-3">ICD-10</th>
                   <th className="py-2.5 px-3 text-center">Trạng thái</th>
                   <th className="py-2.5 px-3 text-right">Xuất toán rủi ro</th>
-                  <th className="py-2.5 px-3 text-center">Thao tác</th>
+                  <th className="py-2.5 px-3 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -337,63 +262,61 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
                         </td>
 
                         <td className="py-2.5 px-3 min-w-[160px]">
-                          <span className="font-bold text-slate-900 block truncate group-hover:text-teal-700 transition">
+                          <span className="font-medium text-slate-900 block truncate group-hover:text-teal-700 transition">
                             {log.patient_name || 'Bệnh nhân'}
                           </span>
-                          <span className="font-mono text-3xs text-slate-500">
+                          <span className="font-mono text-3xs text-slate-400">
                             {log.prescription_id}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 font-mono text-2xs text-slate-600 whitespace-nowrap">
+                        <td className="py-2.5 px-3 font-mono text-2xs text-slate-500 whitespace-nowrap">
                           {log.insurance_card_number || '---'}
                         </td>
 
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <span className="inline-block px-1.5 py-0.5 rounded text-3xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 mr-1">
+                        <td className="py-2.5 px-3 whitespace-nowrap text-xs text-slate-700">
+                          <span>
                             {log.hospital_rank === 'HANG_I' ? 'Tuyến 1' : log.hospital_rank === 'HANG_II' ? 'Tuyến 2' : log.hospital_rank === 'HANG_III' ? 'Tuyến 3' : 'ĐB'}
                           </span>
-                          <span className="text-3xs text-slate-500">
-                            {log.treatment_type === 'NOI_TRU' ? 'Nội trú' : 'Ngoại trú'}
+                          <span className="text-slate-400 text-3xs ml-1">
+                            ({log.treatment_type === 'NOI_TRU' ? 'Nội trú' : 'Ngoại trú'})
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3">
-                          <span className="font-mono font-bold text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
-                            {log.primary_icd10 || '---'}
-                          </span>
+                        <td className="py-2.5 px-3 font-mono text-xs text-slate-800">
+                          {log.primary_icd10 || '---'}
                         </td>
 
                         <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           {isReject && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                              <AlertOctagon className="w-3 h-3 text-rose-600" />
+                            <span className="inline-flex items-center gap-1 text-2xs font-mono font-medium text-rose-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                               REJECT
                             </span>
                           )}
                           {isError && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-bold bg-rose-200 text-rose-900 border border-rose-400">
-                              <AlertTriangle className="w-3 h-3 text-rose-700" />
+                            <span className="inline-flex items-center gap-1 text-2xs font-mono font-medium text-rose-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                               LỖI ({log.violations_count})
                             </span>
                           )}
                           {isWarning && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                              <AlertTriangle className="w-3 h-3 text-amber-600" />
+                            <span className="inline-flex items-center gap-1 text-2xs font-mono font-medium text-amber-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                               CẢNH BÁO
                             </span>
                           )}
                           {isPass && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1 text-2xs font-mono font-medium text-emerald-600">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               HỢP LỆ
                             </span>
                           )}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right font-mono text-2xs whitespace-nowrap">
+                        <td className="py-2.5 px-3 text-right font-mono text-xs whitespace-nowrap">
                           {log.at_risk_cost_vnd > 0 ? (
-                            <span className="font-bold text-rose-700">
+                            <span className="font-medium text-rose-600">
                               {log.at_risk_cost_vnd.toLocaleString('vi-VN')} đ
                             </span>
                           ) : (
@@ -401,19 +324,10 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
                           )}
                         </td>
 
-                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedLog(log);
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-teal-50 hover:bg-teal-100 text-teal-800 text-2xs font-semibold border border-teal-200 transition cursor-pointer"
-                            title="Xem chi tiết vi phạm và kiểm tra lỗi"
-                          >
-                            <Eye className="w-3 h-3 text-teal-600" />
-                            <span>Check lỗi</span>
-                          </button>
+                        <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                          <span className="text-xs text-slate-400 group-hover:text-teal-700 font-medium">
+                            Chi tiết →
+                          </span>
                         </td>
                       </tr>
                     );
@@ -423,65 +337,8 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
             </table>
           </div>
         </div>
-      )}
 
-      {/* 4. Nội Dung Tab 2: Can Thiệp An Toàn Lâm Sàng (DDI & Guardrails) */}
-      {activeSubTab === 'safety_audit' && (
-        <div className="p-3 sm:px-4 sm:py-3.5 bg-white rounded-lg border border-slate-200/90 space-y-3">
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-              Nhật ký can thiệp an toàn lâm sàng
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Ghi nhận các can thiệp chặn tương tác thuốc nguy cơ cao (DDI) và kích hoạt ranh giới an toàn Guardrails
-            </p>
-          </div>
-
-          <div className="divide-y divide-slate-100 pt-2">
-            {realAuditEvents.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center text-slate-400 space-y-3">
-                <div className="p-3 bg-emerald-50 rounded-full border border-emerald-200">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-base font-semibold text-slate-700">
-                    Chưa ghi nhận sự cố an toàn y khoa hoặc vi phạm ranh giới lâm sàng
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-                    Toàn bộ các truy vấn và y lệnh trong ca trực đều tuân thủ đúng khuyến cáo Dược thư Quốc gia V &amp; QĐ 5948/QĐ-BYT.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              realAuditEvents.map((item) => (
-                <div key={item.id} className="py-3.5 flex items-start justify-between gap-4">
-                  <div className="space-y-1.5 min-w-0">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold font-mono ${
-                        item.event_type === 'DDI_BLOCKED' ? 'bg-rose-50 text-rose-800 border border-rose-200' :
-                        'bg-amber-50 text-amber-800 border border-amber-200'
-                      }`}>
-                        {item.event_type}
-                      </span>
-                      <span className="text-xs text-slate-400 font-mono font-medium">{item.timestamp}</span>
-                      <span className="text-xs text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">
-                        {item.user_role}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-800 font-medium leading-relaxed">{item.query}</p>
-                  </div>
-
-                  <div className="shrink-0 pt-1">
-                    <ShieldCheck className="w-5 h-5 text-rose-600" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 5. Modal / Drawer Kiểm Tra Chi Tiết Lỗi Giám Định BHYT */}
+      {/* 3. Modal / Drawer Kiểm Tra Chi Tiết Lỗi Giám Định BHYT */}
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/40 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">

@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Zap, Clock, ShieldCheck } from 'lucide-react';
 import { EsmsStatusResponse, GasStatusResponse } from '../../types/admin';
 import { fetchEsmsStatus, fetchGasStatus } from '../../services/adminApi';
-import { IntegrationsHeroCards } from './IntegrationsHeroCards';
 import { EsmsGatewayCard } from './EsmsGatewayCard';
 import { GasGatewayCard } from './GasGatewayCard';
 
@@ -56,9 +55,6 @@ export const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
           Độ trễ &lt; 20ms · NĐ 130/2018
         </div>
       </div>
-
-      {/* 4 Thẻ chỉ số tổng quan */}
-      <IntegrationsHeroCards esms={esms} gas={gas} />
 
       {/* Cổng eSMS Brandname Viễn Thông */}
       <EsmsGatewayCard esms={esms} onRefresh={loadIntegrationsData} />

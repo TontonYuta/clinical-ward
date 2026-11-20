@@ -127,8 +127,11 @@ export const EsmsGatewayCard: React.FC<EsmsGatewayCardProps> = ({ esms, onRefres
                   </td>
                   <td className="py-2.5 text-2xs font-mono text-slate-500">{log.created_at}</td>
                   <td className="py-2.5">
-                    <span className={`px-2 py-0.5 rounded-md text-2xs font-bold uppercase ${log.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                      {log.status}
+                    <span className="inline-flex items-center gap-1 font-mono text-2xs uppercase">
+                      <span className={`w-1.5 h-1.5 rounded-full ${log.status === 'delivered' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      <span className={log.status === 'delivered' ? 'text-emerald-700 font-medium' : 'text-slate-600 font-medium'}>
+                        {log.status}
+                      </span>
                     </span>
                   </td>
                   <td className="py-2.5 text-2xs text-slate-600 max-w-xs truncate" title={log.content}>

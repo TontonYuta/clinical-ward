@@ -3,14 +3,11 @@ import { AdminHeader } from './components/AdminHeader';
 import { AdminSidebar } from './components/AdminSidebar';
 import { TelemetryTab } from './components/Tabs/TelemetryTab';
 import { StaffManagementTab } from './components/Tabs/Staff/StaffManagementTab';
-import { KeyVaultTab } from './components/Tabs/KeyVaultTab';
-import { IntegrationsTab } from './components/Tabs/IntegrationsTab';
-import { BudgetCapTab } from './components/Tabs/BudgetCapTab';
 import { AuditTab } from './components/Tabs/AuditTab';
 import { DocumentIngestionTab } from './components/Tabs/DocumentIngestionTab';
+import { SettingsIntegrationsTab } from './components/Tabs/SettingsIntegrationsTab';
 import { AdminTab, TelemetryOverviewResponse, ApiKeyItem, BudgetCapResponse } from './types/admin';
 import { fetchTelemetryOverview, fetchApiKeys, fetchBudgetStatus, fetchEsmsStatus, fetchFeatureFlags } from './services/adminApi';
-import { FeatureFlagsTab } from './components/Tabs/FeatureFlagsTab';
 import type { FeatureFlagResponse } from './types/admin';
 import { AdminLoginGate } from './components/AdminLoginGate';
 
@@ -132,8 +129,16 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
 
         <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 xl:p-8">
           <div className="w-full max-w-[1920px] mx-auto">
-            {currentTab === 'telemetry' && (
-              <TelemetryTab data={telemetry} loading={isRefreshing && !telemetry} />
+            {(currentTab === 'telemetry' || currentTab === 'budget_cap') && (
+              <TelemetryTab
+                data={telemetry}
+                loading={isRefreshing && !telemetry}
+                budget={budget}
+                onRefreshBudget={loadAllData}
+              />
+            )}
+            {(currentTab === 'bhyt_audit' || currentTab === 'safety_audit') && (
+              <AuditTab data={telemetry} />
             )}
             {currentTab === 'staff_management' && (
               <StaffManagementTab />
@@ -141,19 +146,24 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
             {currentTab === 'document_ingestion' && (
               <DocumentIngestionTab />
             )}
-            {currentTab === 'key_vault' && (
-              <KeyVaultTab keys={keys} onRefresh={loadAllData} />
+            {(currentTab === 'settings_integrations' ||
+              currentTab === 'key_vault' ||
+              currentTab === 'integrations' ||
+              currentTab === 'feature_flags') && (
+              <SettingsIntegrationsTab
+                keys={keys}
+                onRefresh={loadAllData}
+                featureFlags={featureFlags}
+                onFeatureFlagsSaved={setFeatureFlags}
+                initialSubTab={
+                  currentTab === 'integrations'
+                    ? 'telecom'
+                    : currentTab === 'feature_flags'
+                    ? 'flags'
+                    : 'keys'
+                }
+              />
             )}
-            {currentTab === 'integrations' && (
-              <IntegrationsTab onRefreshData={loadAllData} />
-            )}
-            {currentTab === 'budget_cap' && (
-              <BudgetCapTab budget={budget} onRefresh={loadAllData} />
-            )}
-            {currentTab === 'safety_audit' && (
-              <AuditTab data={telemetry} />
-            )}
-            {currentTab === 'feature_flags' && <FeatureFlagsTab data={featureFlags} onSaved={setFeatureFlags} />}
           </div>
         </main>
       </div>

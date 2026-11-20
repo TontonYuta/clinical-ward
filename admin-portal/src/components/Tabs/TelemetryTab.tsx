@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
-import { Zap } from 'lucide-react';
-import { TelemetryOverviewResponse, TelemetryEventItem } from '../../types/admin';
+import { Zap, Activity, Coins } from 'lucide-react';
+import { TelemetryOverviewResponse, TelemetryEventItem, BudgetCapResponse } from '../../types/admin';
 import { TelemetryHeroCards } from './TelemetryHeroCards';
 import { TelemetryCharts } from './TelemetryCharts';
 import { TelemetryLiveStreamTable } from './TelemetryLiveStreamTable';
+import { BudgetCapTab } from './BudgetCapTab';
 import { QueryDetailDrawer } from '../Drawers/QueryDetailDrawer';
 
 interface TelemetryTabProps {
   data: TelemetryOverviewResponse | null;
   loading: boolean;
+  budget?: BudgetCapResponse | null;
+  onRefreshBudget?: () => void;
 }
 
-export const TelemetryTab: React.FC<TelemetryTabProps> = ({ data, loading }) => {
+export const TelemetryTab: React.FC<TelemetryTabProps> = ({
+  data,
+  loading,
+  budget = null,
+  onRefreshBudget = () => {},
+}) => {
+  const [subView, setSubView] = useState<'live' | 'budget'>('live');
   const [selectedEvent, setSelectedEvent] = useState<TelemetryEventItem | null>(null);
 
   if (loading && !data) {
@@ -29,16 +38,6 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({ data, loading }) => 
               <div className="h-3 bg-slate-100 rounded w-full" />
             </div>
           ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="h-72 bg-white rounded-2xl border border-slate-200/90 lg:col-span-2 p-5 space-y-4">
-            <div className="h-4 bg-slate-200 rounded w-1/3" />
-            <div className="h-48 bg-slate-100 rounded" />
-          </div>
-          <div className="h-72 bg-white rounded-2xl border border-slate-200/90 p-5 space-y-4">
-            <div className="h-4 bg-slate-200 rounded w-1/2" />
-            <div className="h-44 bg-slate-100 rounded-full mx-auto w-44" />
-          </div>
         </div>
       </div>
     );
@@ -64,17 +63,52 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({ data, loading }) => 
 
   return (
     <div className="space-y-4">
-      {/* 4 Thẻ Hero KPIs */}
-      <TelemetryHeroCards data={d} />
+      {/* Sub-view switcher */}
+      <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setSubView('live')}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+            subView === 'live'
+              ? 'bg-slate-900 text-white font-semibold'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Vận hành &amp; Nhật ký</span>
+        </button>
 
-      {/* Biểu đồ Xu Hướng 7 Ngày & Phân Bổ Ý Định Lâm Sàng */}
-      <TelemetryCharts data={d} />
+        <button
+          type="button"
+          onClick={() => setSubView('budget')}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+            subView === 'budget'
+              ? 'bg-slate-900 text-white font-semibold'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <Coins className="w-3.5 h-3.5" />
+          <span>Hạn mức ngân sách Token</span>
+        </button>
+      </div>
 
-      {/* Bảng Nhật Ký Telemetry Live Stream kèm Bộ Lọc */}
-      <TelemetryLiveStreamTable
-        events={d.recent_events || []}
-        onSelectEvent={setSelectedEvent}
-      />
+      {subView === 'live' ? (
+        <>
+          {/* 4 Thẻ Hero KPIs */}
+          <TelemetryHeroCards data={d} />
+
+          {/* Biểu đồ Xu Hướng 7 Ngày & Phân Bổ Ý Định Lâm Sàng */}
+          <TelemetryCharts data={d} />
+
+          {/* Bảng Nhật Ký Telemetry Live Stream kèm Bộ Lọc */}
+          <TelemetryLiveStreamTable
+            events={d.recent_events || []}
+            onSelectEvent={setSelectedEvent}
+          />
+        </>
+      ) : (
+        <BudgetCapTab budget={budget} onRefresh={onRefreshBudget} />
+      )}
 
       {/* Drawer Thanh Tra Chi Tiết Truy Vấn (Query Inspector Drawer) */}
       <QueryDetailDrawer event={selectedEvent} onClose={() => setSelectedEvent(null)} />

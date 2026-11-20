@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Users, KeyRound, Radio, Coins, ShieldAlert, SlidersHorizontal, FileText } from 'lucide-react';
+import { BarChart3, Users, FileCheck, FileText, Settings } from 'lucide-react';
 import { AdminTab } from '../types/admin';
 
 interface AdminSidebarProps {
@@ -13,31 +13,31 @@ interface AdminSidebarProps {
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   currentTab,
   onTabChange,
-  activeKeyCount,
-  todayUsagePct,
-  esmsBalance
 }) => {
   const tabs = [
-    { id: 'telemetry' as AdminTab, label: 'Giám sát vận hành', icon: BarChart3 },
+    { id: 'telemetry' as AdminTab, label: 'Giám sát & Ngân sách AI', icon: BarChart3 },
+    { id: 'bhyt_audit' as AdminTab, label: 'Giám định BHYT', icon: FileCheck },
     { id: 'staff_management' as AdminTab, label: 'Quản lý nhân viên', icon: Users },
-    { id: 'document_ingestion' as AdminTab, label: 'Nạp tài liệu & RAG', icon: FileText },
-    { id: 'key_vault' as AdminTab, label: 'Kho khóa API', icon: KeyRound },
-    { id: 'integrations' as AdminTab, label: 'Cổng viễn thông', icon: Radio },
-    { id: 'budget_cap' as AdminTab, label: 'Ngân sách Token', icon: Coins },
-    { id: 'safety_audit' as AdminTab, label: 'Nhật ký an toàn', icon: ShieldAlert },
-    { id: 'feature_flags' as AdminTab, label: 'Chức năng app', icon: SlidersHorizontal },
+    { id: 'document_ingestion' as AdminTab, label: 'Tri thức Y học & RAG', icon: FileText },
+    { id: 'settings_integrations' as AdminTab, label: 'Cài đặt & Tích hợp', icon: Settings },
   ];
 
   return (
     <aside className="w-56 lg:w-60 bg-white border-r border-slate-200/80 p-3 flex flex-col justify-between shrink-0 h-full select-none">
       <div className="space-y-0.5">
         <div className="px-2.5 py-1.5 text-2xs font-semibold text-slate-400 uppercase tracking-wider">
-          Phân hệ giám sát
+          Phân hệ quản trị
         </div>
 
         {tabs.map((t) => {
           const Icon = t.icon;
-          const isActive = currentTab === t.id;
+          const isActive =
+            currentTab === t.id ||
+            (t.id === 'telemetry' && currentTab === 'budget_cap') ||
+            (t.id === 'bhyt_audit' && currentTab === 'safety_audit') ||
+            (t.id === 'settings_integrations' &&
+              (currentTab === 'key_vault' || currentTab === 'integrations' || currentTab === 'feature_flags'));
+
           return (
             <button
               key={t.id}

@@ -517,14 +517,14 @@ export const DocumentIngestionTab: React.FC = () => {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="px-2 py-0.5 rounded-md bg-teal-100 text-teal-800 font-bold text-2xs shrink-0">
+                          <span className="font-mono text-xs text-slate-400 font-bold shrink-0">
                             #{idx + 1}
                           </span>
                           <span className="text-xs font-bold text-slate-800 truncate">
                             {item.title}
                           </span>
                         </div>
-                        <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-mono font-bold text-2xs shrink-0">
+                        <span className="font-mono text-2xs text-slate-500 shrink-0">
                           {item.page_or_section}
                         </span>
                       </div>
@@ -536,8 +536,8 @@ export const DocumentIngestionTab: React.FC = () => {
                       {item.match_reasons && item.match_reasons.length > 0 && (
                         <div className="flex flex-wrap gap-1 text-2xs text-slate-500 font-mono">
                           {item.match_reasons.map((r, i) => (
-                            <span key={i} className="px-1.5 py-0.5 bg-white rounded border border-slate-200 text-slate-600">
-                              {r}
+                            <span key={i} className="text-slate-500">
+                              · {r}
                             </span>
                           ))}
                         </div>
@@ -546,10 +546,7 @@ export const DocumentIngestionTab: React.FC = () => {
                       <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-2xs text-slate-500">
                         <span className="truncate">Căn cứ: {item.legal_basis}</span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className={`font-mono font-semibold px-2 py-0.5 rounded-md ${
-                            item.score >= 80 ? 'bg-emerald-100 text-emerald-800' :
-                            item.score >= 60 ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
+                          <span className="font-mono font-medium text-slate-600">
                             Độ phù hợp: {item.score}%
                           </span>
                           <a
