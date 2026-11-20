@@ -18,6 +18,10 @@ def assess_query_complexity(query: str, history: str = "") -> bool:
     clean_q = query.strip()
     lower_q = clean_q.lower()
 
+    # Viết tắt thông tư / quyết định y tế (TT 26, QĐ 5948)
+    if re.search(r"\b(tt|thong tu|qd|qđ)\s*\d+\b", lower_q):
+        return True
+
     # Phát hiện câu ghép vừa hỏi năng lực vừa hỏi thuốc
     if any(p in lower_q for p in ("làm được gì", "có thể làm gì")) and any(p in lower_q for p in ("thuốc", "hỏi về")):
         return True
@@ -29,6 +33,32 @@ def _fast_heuristic_rewrite(query: str, history: str, active_med: Optional[str] 
     clean_q = query.strip()
     lower_q = clean_q.lower()
     recent_drug = (active_med.strip() if active_med and len(active_med.strip()) >= 3 else None) or AMIEContextBuffer.extract_recent_active_drug(history)
+
+    # TH Regulatory expansion: "tt 26" -> "Thông tư 26", "qđ 5948" -> "Quyết định 5948"
+    m_reg = re.search(r"\b(tt|thong tu)\s*(\d+)\b", lower_q)
+    if m_reg:
+        doc_num = m_reg.group(2)
+        expanded = re.sub(r"\b(tt|thong tu)\s*(\d+)\b", f"Thông tư {doc_num}", clean_q, flags=re.IGNORECASE)
+        return ClinicalRewriteResult(
+            original_query=clean_q,
+            rewritten_query=expanded,
+            is_continuation=False,
+            detected_drug_entities=[f"Thông tư {doc_num}"],
+            detected_intent="LEGAL_GUIDANCE",
+            confidence=0.99
+        )
+    m_qd = re.search(r"\b(qd|qđ)\s*(\d+)\b", lower_q)
+    if m_qd:
+        doc_num = m_qd.group(2)
+        expanded = re.sub(r"\b(qd|qđ)\s*(\d+)\b", f"Quyết định {doc_num}", clean_q, flags=re.IGNORECASE)
+        return ClinicalRewriteResult(
+            original_query=clean_q,
+            rewritten_query=expanded,
+            is_continuation=False,
+            detected_drug_entities=[f"Quyết định {doc_num}"],
+            detected_intent="LEGAL_GUIDANCE",
+            confidence=0.99
+        )
 
     # TH1: Câu ghép chào hỏi năng lực + hỏi thuốc cụ thể
     m_compound = re.search(

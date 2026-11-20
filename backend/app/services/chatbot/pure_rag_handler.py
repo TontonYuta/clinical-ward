@@ -1,3 +1,4 @@
+import re
 from app.schemas.copilot import CopilotResponse
 from app.services.rag import rag_pipeline
 from app.services.rag.types import filter_evidence_for_citations
@@ -63,7 +64,7 @@ async def handle_contextual_rag_followup(
     )
 
 CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
-    "thông tư", "tt 51", "tt 20", "tt 22", "qđ 5948", "qd 5948", "phác đồ", "hướng dẫn điều trị",
+    "thông tư", "tt 51", "tt 20", "tt 22", "tt 26", "tt 52", "tt 36", "tt 19", "qđ 5948", "qd 5948", "phác đồ", "hướng dẫn điều trị",
     "nghị định", "quy chế", "phản vệ", "sốc phản vệ", "ngộ độc", "cấp cứu", "mất nước", "bù nước",
     "bù dịch", "tiêu chảy", "sốt co giật", "sốt cao", "dược động học", "thời gian bán thải",
     "bán thải", "cơ chế tác dụng", "cơ chế", "chuyển hóa", "cyp", "cyp3a4", "cyp2c19", "nồng độ đáy",
@@ -83,7 +84,8 @@ CLINICAL_KNOWLEDGE_GATE_PATTERNS = (
 
 def is_qualified_clinical_rag_query(lower_query: str, session) -> bool:
     from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
-    has_clinical_pattern = any(p in lower_query for p in CLINICAL_KNOWLEDGE_GATE_PATTERNS)
+    has_regex_pattern = bool(re.search(r"\b(tt|qđ|qd)\s*\d+", lower_query))
+    has_clinical_pattern = has_regex_pattern or any(p in lower_query for p in CLINICAL_KNOWLEDGE_GATE_PATTERNS)
     has_active_or_explicit = bool(
         resolve_registered_medications(lower_query)
         or bool(get_drug_lexical_matcher().extract_medications(lower_query))

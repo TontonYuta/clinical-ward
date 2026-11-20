@@ -32,11 +32,13 @@ async def test_registry_returns_hospital_stock_by_registration_number_and_filter
 @pytest.mark.asyncio
 async def test_registry_stock_revision_changes_after_inventory_dispatch():
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
-        await client.post('/api/v1/auth/login', json={'username': 'admin', 'password': 'admin'}, headers={'Origin': 'http://localhost:3000'})
-        before = (await client.get('/api/v1/registry', params={'search': '893100110026'})).json()
-        dispatched = await client.post('/api/v1/inventory/batches/b-1/dispatch', json={'quantity': 1})
+        login_resp = await client.post('/api/v1/auth/login', json={'username': 'admin', 'password': 'admin'})
+        token = login_resp.json().get('token')
+        auth_headers = {'Authorization': f'Bearer {token}'}
+        before = (await client.get('/api/v1/registry', params={'search': '893100110026'}, headers=auth_headers)).json()
+        dispatched = await client.post('/api/v1/inventory/batches/b-1/dispatch', json={'quantity': 1}, headers=auth_headers)
         assert dispatched.status_code == 200
-        after = (await client.get('/api/v1/registry', params={'search': '893100110026'})).json()
+        after = (await client.get('/api/v1/registry', params={'search': '893100110026'}, headers=auth_headers)).json()
         assert after['inventory_revision'] != before['inventory_revision']
         assert after['items'][0]['hospital_stock_by_unit'][0]['quantity'] == before['items'][0]['hospital_stock_by_unit'][0]['quantity'] - 1
 
