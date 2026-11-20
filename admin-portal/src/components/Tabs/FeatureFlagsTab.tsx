@@ -103,8 +103,8 @@ export const FeatureFlagsTab: React.FC<{ data: FeatureFlagResponse | null; onSav
                     {flag.label}
                   </span>
                   {isFixed && (
-                    <span className="text-3xs font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded border border-slate-200 shrink-0">
-                      Cố định
+                    <span className="text-2xs font-mono text-slate-400 shrink-0">
+                      (Cố định)
                     </span>
                   )}
                 </div>
@@ -131,14 +131,12 @@ export const FeatureFlagsTab: React.FC<{ data: FeatureFlagResponse | null; onSav
                       ),
                     })
                   }
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition cursor-pointer ${
-                    flag.enabled
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                      : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium transition cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${flag.enabled ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
-                  <span>{flag.enabled ? 'Đang hiện' : 'Đang ẩn'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${flag.enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                  <span className={flag.enabled ? 'text-slate-800' : 'text-slate-400'}>
+                    {flag.enabled ? 'Đang hiện' : 'Đang ẩn'}
+                  </span>
                 </button>
               </div>
             </div>

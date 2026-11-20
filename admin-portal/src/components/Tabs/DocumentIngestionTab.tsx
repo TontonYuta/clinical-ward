@@ -234,13 +234,10 @@ export const DocumentIngestionTab: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-          <span className="text-2xs font-mono font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
-            {documents.length} văn bản
-          </span>
-          <span className="text-2xs font-mono font-medium text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-            768-dim (RAM Matrix)
-          </span>
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 text-2xs font-mono text-slate-400">
+          <span>{documents.length} văn bản</span>
+          <span>·</span>
+          <span>768-dim (RAM Matrix)</span>
         </div>
       </div>
 
@@ -252,43 +249,36 @@ export const DocumentIngestionTab: React.FC = () => {
             <p className="text-xs text-slate-500 mt-0.5">Tự động bóc tách, băm SHA256 và vector hóa</p>
           </div>
 
-          <form onSubmit={handleUpload} className="space-y-3.5">
+          <form onSubmit={handleUpload} className="space-y-3">
             {/* Chế độ đích nạp tài liệu */}
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-              <label className="block text-2xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+            <div>
+              <label className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 Chế độ nạp tri thức
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setStorageTarget('local')}
-                  className={`py-2 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`py-1.5 px-2 rounded-md text-xs font-medium transition cursor-pointer border ${
                     storageTarget === 'local'
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                      ? 'bg-slate-800 text-white border-slate-800'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
                   }`}
                 >
-                  <HardDrive className="w-3.5 h-3.5" />
                   <span>Thử nghiệm Cục bộ</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setStorageTarget('backend')}
-                  className={`py-2 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`py-1.5 px-2 rounded-md text-xs font-medium transition cursor-pointer border ${
                     storageTarget === 'backend'
-                      ? 'bg-teal-700 text-white shadow-xs'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                      ? 'bg-teal-700 text-white border-teal-700'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
                   }`}
                 >
-                  <Database className="w-3.5 h-3.5" />
                   <span>Nạp CSDL Backend</span>
                 </button>
               </div>
-              <p className="mt-1.5 text-2xs text-slate-500">
-                {storageTarget === 'local'
-                  ? '• Đang chọn Thử nghiệm Cục bộ (mặc định): Tệp chỉ lưu vào LocalStorage/IndexedDB của trình duyệt để test, chưa nạp vào CSDL Backend.'
-                  : '• Đang chọn Nạp CSDL Backend: Quản trị viên nạp chính thức vào CSDL Backend (Vector hóa 768-dim, FTS5 & RAM Cosine).'}
-              </p>
             </div>
 
             {/* File Picker */}

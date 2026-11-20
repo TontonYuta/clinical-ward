@@ -118,7 +118,7 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
               {auditedCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
             </div>
           </div>
-          <span className="text-2xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium">
+          <span className="text-2xs font-mono text-slate-400">
             TT 20/2022
           </span>
         </div>
@@ -131,7 +131,7 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
               {bhytSaved.toLocaleString('vi-VN')} <span className="text-xs font-normal text-emerald-600 font-sans">₫</span>
             </div>
           </div>
-          <span className="text-2xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+          <span className="text-2xs font-mono text-slate-400">
             Tiết kiệm
           </span>
         </div>
@@ -144,7 +144,7 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
               {ddiCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
             </div>
           </div>
-          <span className="text-2xs font-mono text-rose-800 bg-rose-50 px-2 py-0.5 rounded font-medium">
+          <span className="text-2xs font-mono text-slate-400">
             Nguy cơ cao
           </span>
         </div>
@@ -157,7 +157,7 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
               {guardCount} <span className="text-xs font-normal text-slate-400 font-sans">lần</span>
             </div>
           </div>
-          <span className="text-2xs font-mono text-teal-800 bg-teal-50 px-2 py-0.5 rounded font-medium">
+          <span className="text-2xs font-mono text-slate-400">
             Bộ Y Tế
           </span>
         </div>
@@ -175,10 +175,8 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
           }`}
         >
           <span>Sổ Nhật Ký Giám Định BHYT</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-2xs font-mono font-bold ${
-            activeSubTab === 'bhyt_audit' ? 'bg-teal-900 text-teal-100' : 'bg-slate-200 text-slate-700'
-          }`}>
-            {counts.all}
+          <span className="text-2xs font-mono opacity-80">
+            ({counts.all})
           </span>
         </button>
 
@@ -192,10 +190,8 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
           }`}
         >
           <span>Can Thiệp An Toàn Lâm Sàng (DDI &amp; Guardrails)</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-2xs font-mono font-bold ${
-            activeSubTab === 'safety_audit' ? 'bg-teal-900 text-teal-100' : 'bg-slate-200 text-slate-700'
-          }`}>
-            {realAuditEvents.length}
+          <span className="text-2xs font-mono opacity-80">
+            ({realAuditEvents.length})
           </span>
         </button>
       </div>

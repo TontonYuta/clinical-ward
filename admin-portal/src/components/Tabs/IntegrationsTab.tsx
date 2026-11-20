@@ -42,7 +42,7 @@ export const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
             <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900">
               Cổng Tích Hợp Viễn Thông SMS &amp; Email Dặn Dò
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-3xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 text-2xs text-slate-500 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               Đang hoạt động
             </span>
@@ -52,13 +52,8 @@ export const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-2xs font-mono font-medium shrink-0">
-          <span className="px-2 py-1 bg-slate-100 rounded border border-slate-200 text-slate-600">
-            Độ trễ: &lt; 20ms
-          </span>
-          <span className="px-2 py-1 bg-teal-50 rounded border border-teal-200 text-teal-800">
-            NĐ 130/2018/NĐ-CP
-          </span>
+        <div className="text-2xs font-mono text-slate-400 shrink-0">
+          Độ trễ &lt; 20ms · NĐ 130/2018
         </div>
       </div>
 

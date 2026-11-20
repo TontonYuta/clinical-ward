@@ -28,7 +28,7 @@ export const StaffHeroMetrics: React.FC<StaffHeroMetricsProps> = ({
             {total} <span className="text-xs font-normal text-slate-400 font-sans">nhân sự</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-teal-700 bg-teal-50 px-2 py-0.5 rounded font-medium">
+        <span className="text-2xs font-mono text-slate-400">
           SQLite
         </span>
       </div>
@@ -41,7 +41,7 @@ export const StaffHeroMetrics: React.FC<StaffHeroMetricsProps> = ({
             {doctorCount} <span className="text-xs font-normal text-slate-400 font-sans">bác sĩ</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium">
+        <span className="text-2xs font-mono text-slate-400">
           Kê đơn CPOE
         </span>
       </div>
@@ -54,7 +54,7 @@ export const StaffHeroMetrics: React.FC<StaffHeroMetricsProps> = ({
             {nurseCount + pharmacistCount} <span className="text-xs font-normal text-slate-400 font-sans">nhân sự</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-slate-500">
+        <span className="text-2xs font-mono text-slate-400">
           {nurseCount} ĐD · {pharmacistCount} DS
         </span>
       </div>
@@ -67,7 +67,7 @@ export const StaffHeroMetrics: React.FC<StaffHeroMetricsProps> = ({
             {activeCount} <span className="text-xs font-normal text-slate-400 font-sans">sẵn sàng</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+        <span className="text-2xs font-mono text-slate-400">
           {suspendedCount > 0 ? `${suspendedCount} tạm ngưng` : '100% hoạt động'}
         </span>
       </div>

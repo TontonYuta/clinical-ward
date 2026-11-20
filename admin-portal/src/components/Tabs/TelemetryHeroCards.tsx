@@ -16,7 +16,7 @@ export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d 
             {d.cache_hit_rate_pct}%
           </div>
         </div>
-        <span className="text-2xs font-mono text-teal-700 bg-teal-50 px-2 py-0.5 rounded font-medium">
+        <span className="text-2xs font-mono text-slate-400">
           {d.exact_hits + d.semantic_hits} hits
         </span>
       </div>
@@ -29,7 +29,7 @@ export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d 
             {Number(d.bhyt_rejection_saved_vnd || 0).toLocaleString('vi-VN')} <span className="text-xs font-normal text-emerald-600 font-sans">₫</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+        <span className="text-2xs font-mono text-slate-400">
           {d.bhyt_audited} ca đạt
         </span>
       </div>
@@ -42,7 +42,7 @@ export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d 
             {(d.tokens_consumed / 1000).toFixed(1)}k <span className="text-xs font-normal text-slate-400 font-sans">tokens</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium truncate max-w-[110px]" title={`+${Number(d.cost_saved_vnd || 0).toLocaleString('vi-VN')} ₫`}>
+        <span className="text-2xs font-mono text-slate-400 truncate max-w-[110px]" title={`+${Number(d.cost_saved_vnd || 0).toLocaleString('vi-VN')} ₫`}>
           +{Number(d.cost_saved_vnd || 0).toLocaleString('vi-VN')} ₫
         </span>
       </div>
@@ -55,7 +55,7 @@ export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d 
             {d.p95_latency_ms} <span className="text-xs font-normal text-slate-400 font-sans">ms</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-amber-800 bg-amber-50 px-2 py-0.5 rounded font-medium">
+        <span className="text-2xs font-mono text-slate-400">
           Chặn {d.ddi_blocks_count} DDI
         </span>
       </div>

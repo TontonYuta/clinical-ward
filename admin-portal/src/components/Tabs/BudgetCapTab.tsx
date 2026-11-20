@@ -66,31 +66,31 @@ export const BudgetCapTab: React.FC<BudgetCapTabProps> = ({ budget, onRefresh })
               Kiểm soát chi phí tự động — Chống hiện tượng trừ tiền bất ngờ (Bill Shock)
             </p>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-mono">
             {b.throttling_status === 'offline_fallback' && (
-              <span className="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                Offline Safe Mode (0 đ)
+              <span className="font-bold text-rose-700 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Offline Safe Mode
               </span>
             )}
             {b.throttling_status === 'adaptive_throttling' && (
-              <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                Auto Throttling (Nén Sâu)
+              <span className="font-bold text-amber-700 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Auto Throttling
               </span>
             )}
             {(!b.throttling_status || b.throttling_status === 'normal') && (
-              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                ● Full Performance
+              <span className="text-slate-600 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Full Performance
               </span>
             )}
-            <span className="text-xs font-mono font-bold text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-              {b.today_usage_pct}% Hạn Mức
+            <span className="text-slate-400">
+              · {b.today_usage_pct}% Hạn Mức
             </span>
           </div>
         </div>
 
         {/* Thanh Progress Dẹt */}
         <div className="space-y-1">
-          <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
             <div
               style={{ width: `${Math.min(100, b.today_usage_pct)}%` }}
               className={`h-full rounded-full transition-all duration-500 ${
@@ -104,16 +104,16 @@ export const BudgetCapTab: React.FC<BudgetCapTabProps> = ({ budget, onRefresh })
           </div>
         </div>
 
-        {/* 2 Chỉ Số Tài Chính Tinh Gọn */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          <div className="px-3 py-2 bg-slate-50/70 rounded-md border border-slate-200/60 flex items-center justify-between">
-            <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Chi phí API ước tính hôm nay</span>
+        {/* 2 Chỉ Số Tài Chính Tinh Gọn (Không thẻ bao bọc) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+          <div>
+            <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Chi phí API ước tính hôm nay</span>
             <span className="text-base sm:text-lg font-bold font-mono text-slate-900">
               {b.estimated_cost_vnd.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-400">₫</span>
             </span>
           </div>
-          <div className="px-3 py-2 bg-emerald-50/50 rounded-md border border-emerald-200/60 flex items-center justify-between">
-            <span className="text-2xs font-semibold text-emerald-800 uppercase tracking-wider">Tiết kiệm đã xác nhận</span>
+          <div>
+            <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Tiết kiệm đã xác nhận</span>
             <span className="text-base sm:text-lg font-bold font-mono text-emerald-700">
               +{b.saved_cost_vnd.toLocaleString('vi-VN')} <span className="text-xs font-normal text-emerald-600">₫</span>
             </span>
@@ -164,8 +164,8 @@ export const BudgetCapTab: React.FC<BudgetCapTabProps> = ({ budget, onRefresh })
           </div>
         </div>
 
-        {/* Tùy chọn Phòng vệ tự động */}
-        <div className="p-2.5 bg-slate-50 rounded-md border border-slate-200/80">
+        {/* Tùy chọn Phòng vệ tự động (Không thẻ bao bọc) */}
+        <div className="pt-1">
           <label className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"

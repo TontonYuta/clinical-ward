@@ -309,16 +309,6 @@ export const StaffManagementTab: React.FC = () => {
               ) : (
                 items.map((staff) => {
                   const isPinVisible = Boolean(revealedPins[staff.id]);
-                  const roleBadgeClass =
-                    staff.role === 'doctor'
-                      ? 'bg-blue-50 text-blue-800 border-blue-200'
-                      : staff.role === 'nurse'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : staff.role === 'pharmacist'
-                      ? 'bg-teal-50 text-teal-800 border-teal-200'
-                      : staff.role === 'director'
-                      ? 'bg-purple-50 text-purple-800 border-purple-200'
-                      : 'bg-amber-50 text-amber-800 border-amber-200';
 
                   return (
                     <tr
@@ -335,7 +325,7 @@ export const StaffManagementTab: React.FC = () => {
                             <div className="font-semibold text-slate-900 group-hover:text-teal-900 flex items-center gap-1.5">
                               <span>{staff.name}</span>
                               {staff.academic_title && (
-                                <span className="text-3xs font-mono font-bold bg-slate-100 text-slate-700 px-1 py-0.2 rounded border border-slate-200">
+                                <span className="text-2xs font-mono font-semibold text-slate-500">
                                   {staff.academic_title}
                                 </span>
                               )}
@@ -350,9 +340,9 @@ export const StaffManagementTab: React.FC = () => {
                       </td>
 
                       {/* Cột 2: Vai trò & Chức danh */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <div className="flex flex-col gap-0.5">
-                          <span className={`inline-flex items-center w-fit px-2 py-0.5 rounded text-2xs font-semibold border ${roleBadgeClass}`}>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-slate-800">
                             {staff.role_name}
                           </span>
                           <span className="text-3xs text-slate-400 font-mono">
@@ -376,9 +366,9 @@ export const StaffManagementTab: React.FC = () => {
                       </td>
 
                       {/* Cột 5: Mã RFID & PIN */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <div className="flex flex-col gap-0.5 text-xs font-mono">
-                          <span className="text-slate-600 text-2xs truncate max-w-[130px]" title={staff.rfid_card_id}>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="flex flex-col text-xs font-mono">
+                          <span className="text-slate-500 text-2xs truncate max-w-[130px]" title={staff.rfid_card_id}>
                             {staff.rfid_card_id}
                           </span>
                           <div className="flex items-center gap-1.5">
@@ -398,19 +388,17 @@ export const StaffManagementTab: React.FC = () => {
                       </td>
 
                       {/* Cột 6: Trạng thái */}
-                      <td className="py-3.5 px-3 whitespace-nowrap text-center">
+                      <td className="py-3 px-3 whitespace-nowrap text-center">
                         <button
                           type="button"
                           onClick={() => handleToggleStatus(staff)}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold border transition cursor-pointer ${
-                            staff.is_active
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                          }`}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium transition cursor-pointer hover:opacity-80"
                           title="Nhấn để đổi trạng thái"
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${staff.is_active ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
-                          <span>{staff.is_active ? 'Đang công tác' : 'Tạm ngưng'}</span>
+                          <span className={`w-1.5 h-1.5 rounded-full ${staff.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                          <span className={staff.is_active ? 'text-slate-700' : 'text-slate-400'}>
+                            {staff.is_active ? 'Đang công tác' : 'Tạm ngưng'}
+                          </span>
                         </button>
                       </td>
 

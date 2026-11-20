@@ -211,7 +211,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                           {k.name}
                         </td>
                         <td className="py-2.5 px-3">
-                          <span className="text-3xs font-mono font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 uppercase">
+                          <span className="text-2xs font-mono text-slate-500 uppercase">
                             {k.provider}
                           </span>
                         </td>
@@ -228,13 +228,13 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           {k.is_active ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-700">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               Đang phục vụ
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                               Dự phòng
                             </span>
                           )}

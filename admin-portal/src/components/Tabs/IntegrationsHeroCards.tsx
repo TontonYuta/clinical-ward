@@ -21,9 +21,7 @@ export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ es
             {balance.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-400 font-sans">₫</span>
           </div>
         </div>
-        <span className={`text-2xs font-mono px-2 py-0.5 rounded font-medium ${
-          isEsmsOnline ? 'text-emerald-800 bg-emerald-50' : 'text-slate-500 bg-slate-100'
-        }`}>
+        <span className="text-2xs font-mono text-slate-400">
           {isEsmsOnline ? 'Đã kết nối' : 'Chưa kết nối'}
         </span>
       </div>
@@ -36,9 +34,7 @@ export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ es
             {esms?.brandname || 'BV_LAMSANG'}
           </div>
         </div>
-        <span className={`text-2xs font-mono px-2 py-0.5 rounded font-medium ${
-          esms?.is_sandbox ? 'text-amber-800 bg-amber-50' : 'text-emerald-800 bg-emerald-50'
-        }`}>
+        <span className="text-2xs font-mono text-slate-400">
           {esms?.is_sandbox ? 'Sandbox' : 'Live'}
         </span>
       </div>
@@ -51,7 +47,7 @@ export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ es
             {esms?.total_sms ?? 0} <span className="text-xs font-normal text-slate-400 font-sans">lượt</span>
           </div>
         </div>
-        <span className="text-2xs font-mono text-slate-500">
+        <span className="text-2xs font-mono text-slate-400">
           {esms?.delivered_count ?? 0} phát thành công
         </span>
       </div>
@@ -64,9 +60,7 @@ export const IntegrationsHeroCards: React.FC<IntegrationsHeroCardsProps> = ({ es
             {gas?.total_advices ?? 0} <span className="text-xs font-normal text-slate-400 font-sans">email</span>
           </div>
         </div>
-        <span className={`text-2xs font-mono px-2 py-0.5 rounded font-medium ${
-          isGasOnline ? 'text-emerald-800 bg-emerald-50' : 'text-amber-800 bg-amber-50'
-        }`}>
+        <span className="text-2xs font-mono text-slate-400">
           {isGasOnline ? 'Sẵn sàng' : 'Chưa webhook'}
         </span>
       </div>
