@@ -22,12 +22,6 @@ import {
   queryKnowledgeDocuments,
   deleteKnowledgeDocument
 } from '../../services/adminApi';
-import {
-  getLocalPdfDocuments,
-  saveLocalPdfDocument,
-  deleteLocalPdfDocument,
-  openLocalPdfDocument
-} from '../../services/localDocumentStorage';
 import { KnowledgeChatSandbox } from './DocumentIngestion/KnowledgeChatSandbox';
 import type {
   KnowledgeDocumentItem,
@@ -47,7 +41,6 @@ export const DocumentIngestionTab: React.FC = () => {
   const [category, setCategory] = useState<string>('Thông tư Bộ Y tế');
   const [editionYear, setEditionYear] = useState<number>(2026);
   const [docId, setDocId] = useState<string>('');
-  const [storageTarget, setStorageTarget] = useState<'local' | 'backend'>('backend');
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadResult, setUploadResult] = useState<IngestPdfResponse | null>(null);
   const [uploadError, setUploadError] = useState<string>('');
@@ -68,15 +61,13 @@ export const DocumentIngestionTab: React.FC = () => {
   const loadDocuments = useCallback(async () => {
     setLoadingDocs(true);
     try {
+      try {
+        localStorage.removeItem('clinical_local_pdf_docs');
+      } catch {}
       const docs = await fetchKnowledgeDocuments();
-      const localDocs = getLocalPdfDocuments();
-      setDocuments([...localDocs, ...docs]);
+      setDocuments(docs);
     } catch (err: unknown) {
       console.error('Lỗi nạp danh sách tài liệu từ máy chủ:', err);
-      const localDocs = getLocalPdfDocuments();
-      if (localDocs.length > 0) {
-        setDocuments(localDocs);
-      }
     } finally {
       setLoadingDocs(false);
     }
@@ -86,7 +77,7 @@ export const DocumentIngestionTab: React.FC = () => {
     loadDocuments();
   }, [loadDocuments]);
 
-  // Xử lý nạp tài liệu: hỗ trợ Thử nghiệm Cục bộ (mặc định) và Nạp vào CSDL Backend
+  // Xử lý nạp tài liệu vào Khung Thử Nghiệm (Staged)
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
@@ -103,70 +94,42 @@ export const DocumentIngestionTab: React.FC = () => {
     setUploadResult(null);
 
     try {
-      if (storageTarget === 'local') {
-        const localDoc = await saveLocalPdfDocument({
-          file,
-          title: title.trim(),
-          legalBasis: legalBasis.trim(),
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title.trim());
+      formData.append('legal_basis', legalBasis.trim());
+      formData.append('category', category.trim());
+      formData.append('edition_year', String(editionYear));
+      if (docId.trim()) {
+        formData.append('doc_id', docId.trim());
+      }
+      const res = await uploadKnowledgePdf(formData);
+      setUploadResult(res);
+
+      if (res && res.doc_id) {
+        const newDocItem: KnowledgeDocumentItem = {
+          id: res.doc_id,
+          title: res.title || title.trim(),
+          legal_basis: res.legal_basis || legalBasis.trim(),
           category: category.trim(),
-          editionYear: Number(editionYear) || 2026,
-          docId: docId.trim() || undefined,
-        });
-
-        setUploadResult({
-          status: 'success (local_only)',
-          doc_id: localDoc.id,
-          title: localDoc.title,
-          legal_basis: localDoc.legal_basis,
-          filename: localDoc.filename,
-          sha256: localDoc.sha256,
-          source_id: localDoc.id,
-          source_version: 'local_storage',
-          total_pages: 1,
-          extracted_chunks_count: 0,
-          indexed_vectors_count: 0,
-          file_bytes: localDoc.bytes,
-          public_url: localDoc.public_url,
-        });
-      } else {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('title', title.trim());
-        formData.append('legal_basis', legalBasis.trim());
-        formData.append('category', category.trim());
-        formData.append('edition_year', String(editionYear));
-        if (docId.trim()) {
-          formData.append('doc_id', docId.trim());
-        }
-        const res = await uploadKnowledgePdf(formData);
-        setUploadResult(res);
-
-        if (res && res.doc_id) {
-          const newDocItem: KnowledgeDocumentItem = {
-            id: res.doc_id,
-            title: res.title || title.trim(),
-            legal_basis: res.legal_basis || legalBasis.trim(),
-            category: category.trim(),
-            edition_year: Number(editionYear) || 2026,
-            filename: res.filename,
-            public_url: res.public_url,
-            sha256: res.sha256,
-            bytes: res.file_bytes,
-            status: 'staged',
-            verified: false,
-          };
-          setSelectedDocForTest(newDocItem);
-          setRightTabMode('chatbot');
-          sandboxContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }
+          edition_year: Number(editionYear) || 2026,
+          filename: res.filename,
+          public_url: res.public_url,
+          sha256: res.sha256,
+          bytes: res.file_bytes,
+          status: 'staged',
+          verified: false,
+        };
+        setSelectedDocForTest(newDocItem);
+        setRightTabMode('chatbot');
+        sandboxContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
 
-      // Reset form
+      // Reset form sau khi nạp thành công
       setFile(null);
       setTitle('');
       setLegalBasis('');
       setDocId('');
-      // Tải lại danh sách tài liệu ghép cục bộ và máy chủ
       await loadDocuments();
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Lỗi khi xử lý nạp tài liệu.');
@@ -202,30 +165,9 @@ export const DocumentIngestionTab: React.FC = () => {
   };
 
   // Xử lý xóa tài liệu
-  const handleDelete = async (targetDocId: string, docTitle: string, isLocal?: boolean) => {
-    if (isLocal) {
-      const confirmed = window.confirm(
-        `Bạn có chắc chắn muốn xóa tài liệu cục bộ:\n"${docTitle}"?\n\nTài liệu sẽ được xóa khỏi LocalStorage và IndexedDB của trình duyệt.`
-      );
-      if (!confirmed) return;
-
-      setDeletingId(targetDocId);
-      try {
-        await deleteLocalPdfDocument(targetDocId);
-        await loadDocuments();
-        if (selectedDocFilter === targetDocId) {
-          setSelectedDocFilter('');
-        }
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Lỗi khi xóa tài liệu cục bộ.');
-      } finally {
-        setDeletingId(null);
-      }
-      return;
-    }
-
+  const handleDelete = async (targetDocId: string, docTitle: string) => {
     const confirmed = window.confirm(
-      `Bạn có chắc chắn muốn xóa tài liệu:\n"${docTitle}"?\n\nThao tác này sẽ xóa sạch: tệp vật lý, chỉ mục FTS5, toàn bộ vector embeddings trong CSDL và giải phóng bộ nhớ RAM.`
+      `Bạn có chắc chắn muốn xóa tài liệu:\n"${docTitle}"?\n\nTài liệu sẽ bị xóa khỏi SQLite FTS, Vector Store và kho văn bản bệnh viện.`
     );
     if (!confirmed) return;
 
@@ -235,6 +177,9 @@ export const DocumentIngestionTab: React.FC = () => {
       await loadDocuments();
       if (selectedDocFilter === targetDocId) {
         setSelectedDocFilter('');
+      }
+      if (selectedDocForTest?.id === targetDocId) {
+        setSelectedDocForTest(null);
       }
       // Lọc bỏ khỏi kết quả truy vấn nếu có
       setQueryResults((prev) => prev.filter((r) => !r.chunk_id.startsWith(`${targetDocId}_`)));
@@ -269,50 +214,16 @@ export const DocumentIngestionTab: React.FC = () => {
         {/* 2. Upload Form (Left Column: 5 cols) */}
         <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200/90 p-3 sm:px-4 sm:py-3.5 space-y-3">
           <div className="pb-2.5 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-900">Tải Lên Văn Bản PDF Mới</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Tự động bóc tách, băm SHA256 và vector hóa</p>
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <UploadCloud className="w-4 h-4 text-teal-700" />
+              <span>Nạp Văn Bản Mới (Khung Thử Nghiệm)</span>
+            </h2>
+            <p className="text-2xs text-slate-500 mt-1 leading-relaxed">
+              Mặc định văn bản nạp vào sẽ ở trạng thái <strong>Chờ kiểm duyệt (Staged)</strong> để kiểm định độ sạch và test Chatbot trong khung thử nghiệm trước khi kích hoạt vào CSDL chính thức.
+            </p>
           </div>
 
           <form onSubmit={handleUpload} className="space-y-3">
-            {/* Chế độ đích nạp tài liệu */}
-            <div>
-              <label className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Chế độ nạp tri thức
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStorageTarget('local')}
-                  className={`py-1.5 px-2 rounded-md text-xs font-medium transition cursor-pointer border ${
-                    storageTarget === 'local'
-                      ? 'bg-slate-800 text-white border-slate-800'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <span>Thử nghiệm Cục bộ</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStorageTarget('backend')}
-                  className={`py-1.5 px-2 rounded-md text-xs font-medium transition cursor-pointer border ${
-                    storageTarget === 'backend'
-                      ? 'bg-teal-700 text-white border-teal-700'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <span>Nạp CSDL Backend</span>
-                </button>
-              </div>
-              {storageTarget === 'local' ? (
-                <p className="mt-1.5 text-2xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
-                  ⚠️ <strong>Chế độ Cục bộ:</strong> Chỉ lưu file trong trình duyệt này để xem trước và KHÔNG đưa vào SQLite/Vector Store của máy chủ. Chatbot AI sẽ không thể trả lời nếu chọn chế độ này.
-                </p>
-              ) : (
-                <p className="mt-1.5 text-2xs text-teal-800 bg-teal-50/70 p-2 rounded border border-teal-200">
-                  ✅ <strong>Nạp CSDL Backend (Khuyên dùng):</strong> Trích xuất văn bản, tạo chỉ mục SQLite FTS5 và 768-dim Vector Store cho Chatbot RAG.
-                </p>
-              )}
-            </div>
 
             {/* File Picker */}
             <div>
@@ -466,19 +377,17 @@ export const DocumentIngestionTab: React.FC = () => {
             <button
               type="submit"
               disabled={uploading}
-              className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-xs tracking-wide shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                storageTarget === 'local' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-700 hover:bg-teal-800'
-              }`}
+              className="w-full py-2.5 px-4 rounded-xl text-white font-semibold text-xs tracking-wide shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-teal-700 hover:bg-teal-800"
             >
               {uploading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>{storageTarget === 'local' ? 'Đang lưu vào bộ nhớ cục bộ...' : 'Đang trích xuất & Vector hóa CSDL...'}</span>
+                  <span>Đang trích xuất, băm SHA256 & vector hóa...</span>
                 </>
               ) : (
                 <>
                   <UploadCloud className="w-4 h-4" />
-                  <span>{storageTarget === 'local' ? 'Tải lên (Lưu cục bộ để Test)' : 'Tải lên & Nạp vào CSDL Backend'}</span>
+                  <span>Tải Lên & Bắt Đầu Thử Nghiệm Chatbot</span>
                 </>
               )}
             </button>
@@ -777,22 +686,16 @@ export const DocumentIngestionTab: React.FC = () => {
                           rel="noopener noreferrer"
                           className="p-1.5 rounded-lg text-slate-600 hover:text-teal-800 hover:bg-slate-100 transition"
                           title="Mở xem tệp PDF"
-                          onClick={async (e) => {
-                            if (doc.is_local) {
-                              e.preventDefault();
-                              await openLocalPdfDocument(doc.id);
-                            }
-                          }}
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
 
                         <button
                           type="button"
-                          onClick={() => handleDelete(doc.id, doc.title, doc.is_local)}
+                          onClick={() => handleDelete(doc.id, doc.title)}
                           disabled={deletingId === doc.id}
                           className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer disabled:opacity-50"
-                          title={doc.is_local ? "Xóa tài liệu khỏi bộ nhớ cục bộ" : "Xóa tài liệu và giải phóng vector"}
+                          title="Xóa tài liệu và giải phóng vector"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

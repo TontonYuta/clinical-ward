@@ -115,12 +115,14 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
     setAuditError('');
     try {
       let res: CleanlinessAuditResponse;
-      if (activeDocId) {
-        res = await auditDocumentCleanliness(undefined, activeDocId);
-      } else if (uploadedFile) {
+      if (uploadedFile) {
+        // Ưu tiên kiểm định trực tiếp tệp PDF người dùng vừa chọn từ máy
         res = await auditDocumentCleanliness(uploadedFile, undefined);
+      } else if (activeDocId && !activeDocId.startsWith('local-')) {
+        res = await auditDocumentCleanliness(undefined, activeDocId);
       } else {
-        throw new Error('Vui lòng chọn một tài liệu hoặc tải lên tệp PDF để kiểm định.');
+        setAuditLoading(false);
+        return;
       }
       setAuditResult(res);
     } catch (err: unknown) {
