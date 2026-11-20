@@ -33,48 +33,77 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onToggleAuth,
 }) => {
   return (
-    <header className="h-15 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-2xs z-20">
+    <header className="h-14 sm:h-15 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-2xs z-20">
       <div className="flex items-center gap-3">
-        <div className="h-9 w-9 rounded-lg bg-teal-800 text-white flex items-center justify-center shadow-xs">
+        <div className="h-8.5 w-8.5 rounded-lg bg-teal-800 text-white flex items-center justify-center shadow-xs">
           <Activity className="w-4.5 h-4.5" />
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Clinical AI Monitor
-            </h1>
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live
-            </span>
+        <div className="flex items-center gap-2.5">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                Clinical AI Monitor
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Live
+              </span>
+            </div>
+            <p className="text-2xs text-slate-500 hidden sm:block">
+              Giám sát vận hành AI, Token &amp; An toàn BHYT
+            </p>
           </div>
-          <p className="text-xs text-slate-500 hidden sm:block">
-            Giám sát vận hành AI, Token &amp; An toàn BHYT
-          </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        {authenticatedUsername && <span className="hidden md:block text-xs text-slate-600">{authenticatedUsername}</span>}
-        {canConfigureAuth && <button type="button" onClick={onToggleAuth} aria-pressed={authEnabled} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" title="Chỉ ẩn hoặc hiện form trên thiết bị này. API backend vẫn xác thực theo phiên.">{authEnabled ? <LockKeyhole className="h-3.5 w-3.5" /> : <LockKeyholeOpen className="h-3.5 w-3.5" />}{authEnabled ? 'Form đăng nhập: Hiện' : 'Form đăng nhập: Ẩn'}</button>}
-        {onLogout && <button type="button" onClick={() => void onLogout()} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" title="Đăng xuất"><LogOut className="h-3.5 w-3.5" /><span className="hidden sm:inline">Đăng xuất</span></button>}
-        {lastUpdated && (
-          <span className="text-2xs font-mono text-slate-400 hidden xl:inline">
-            Cập nhật: {lastUpdated}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {authenticatedUsername && (
+          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+            {authenticatedUsername}
           </span>
         )}
+        {canConfigureAuth && (
+          <button
+            type="button"
+            onClick={onToggleAuth}
+            aria-pressed={authEnabled}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+            title="Chỉ ẩn hoặc hiện form trên thiết bị này. API backend vẫn xác thực theo phiên."
+          >
+            {authEnabled ? <LockKeyhole className="h-3.5 w-3.5 text-slate-500" /> : <LockKeyholeOpen className="h-3.5 w-3.5 text-slate-400" />}
+            <span className="hidden lg:inline">{authEnabled ? 'Form: Hiện' : 'Form: Ẩn'}</span>
+          </button>
+        )}
+        {onLogout && (
+          <button
+            type="button"
+            onClick={() => void onLogout()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+            title="Đăng xuất"
+          >
+            <LogOut className="h-3.5 w-3.5 text-slate-500" />
+            <span className="hidden sm:inline">Đăng xuất</span>
+          </button>
+        )}
+        {lastUpdated && (
+          <span className="text-2xs font-mono text-slate-400 hidden xl:inline">
+            {lastUpdated}
+          </span>
+        )}
+
         {/* Toggle Auto Refresh */}
         <button
           type="button"
           onClick={onToggleAutoRefresh}
           className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition cursor-pointer ${
             autoRefresh
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs'
-              : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+              ? 'bg-teal-50/80 text-teal-800 border-teal-200 shadow-2xs font-medium'
+              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
           }`}
           title="Tự động cập nhật số liệu mỗi 10 giây"
         >
-          <Radio className={`w-3.5 h-3.5 ${autoRefresh ? 'text-emerald-600 animate-pulse' : 'text-slate-400'}`} />
+          <Radio className={`w-3.5 h-3.5 ${autoRefresh ? 'text-teal-600 animate-pulse' : 'text-slate-400'}`} />
           <span>{autoRefresh ? 'Tự làm mới (10s)' : 'Tự làm mới: Tắt'}</span>
         </button>
 
@@ -83,10 +112,10 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           type="button"
           onClick={onManualRefresh}
           disabled={isRefreshing}
-          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition cursor-pointer disabled:opacity-50"
+          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition cursor-pointer disabled:opacity-50"
           title="Làm mới dữ liệu ngay lập tức"
         >
-          <RotateCcw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-teal-700' : ''}`} />
+          <RotateCcw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-teal-700' : ''}`} />
         </button>
 
         {/* Liên kết sang Cổng Lâm Sàng Bác Sĩ */}
@@ -94,7 +123,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           href={clinicalAppUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1.5 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition cursor-pointer hover:shadow-xs active:scale-98"
+          className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all hover:shadow-xs active:scale-98"
           title="Chuyển sang ứng dụng khám chữa bệnh cho Bác sĩ & Điều dưỡng"
         >
           <span>Cổng Bác Sĩ</span>
