@@ -17,10 +17,11 @@ _LOGIN_CACHE: dict[str, tuple[float, dict]] = {}
 _LOGIN_CACHE_TTL = 300.0  # 5 phút
 
 DEMO_ROLES = {
+    "admin": "director",
+    "director": "director",
     "bac_si_test": "doctor",
     "duoc_si_test": "pharmacist",
-    "dieu_duong_test": "nurse",
-    "director": "director"
+    "dieu_duong_test": "nurse"
 }
 
 class LoginRequest(BaseModel):

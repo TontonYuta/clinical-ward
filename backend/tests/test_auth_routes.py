@@ -61,3 +61,13 @@ def test_auth_me_reports_unauthenticated_session_as_state_instead_of_http_error(
     assert response.json() == {
         "enabled": True, "authenticated": False, "username": None, "role": None
     }
+
+
+def test_admin_demo_account_login_success(monkeypatch):
+    client = make_client(monkeypatch, {})
+    response = client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["username"] == "admin"
+    assert data["role"] == "director"
+    assert "token" in data

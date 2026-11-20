@@ -19,6 +19,6 @@ services:
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
       - key: AUTH_REQUIRED
-        value: "false"
+        value: "true"
       - key: RENDER_DEPLOY_TRIGGER
         value: "20261120-dav-registry-chunking-cache-v2"

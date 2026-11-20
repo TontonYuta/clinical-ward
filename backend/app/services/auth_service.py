@@ -9,6 +9,14 @@ from app.security.auth import AuthenticatedUser, issue_token, verify_password
 VALID_ROLES = {"nurse", "doctor", "pharmacist", "biomedical_engineer", "director"}
 
 DEFAULT_DEMO_USERS = {
+    "admin": {
+        "role": "director",
+        "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$dJg7GQ+a3Xltq4bAcwF87w$D5SP4Pin+UYpyPuj37nCQbAPCooaxc1wIy0sCwD8X8w"
+    },
+    "director": {
+        "role": "director",
+        "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$GF3Hc+mjNdKugpBguR6tww$KDPSqJ29VEb1mS9e+lsdl2zUEFxlGq0j1c6JRUg9qwU"
+    },
     "bac_si_test": {
         "role": "doctor",
         "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$sNu3Zh2CciyrxlC0KlK0OA$qlmNJiw+sN+WywQOt+ybYWEPHIxeKtXL5LK+POsw/PQ"
@@ -20,10 +28,6 @@ DEFAULT_DEMO_USERS = {
     "dieu_duong_test": {
         "role": "nurse",
         "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$7+r9w6b6RcRrYWuBMNhAOQ$z1hYuBoo4cFF5LmETfpF6B9MGHn5j1GiyUrz4HX7drQ"
-    },
-    "director": {
-        "role": "director",
-        "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$GF3Hc+mjNdKugpBguR6tww$KDPSqJ29VEb1mS9e+lsdl2zUEFxlGq0j1c6JRUg9qwU"
     }
 }
 

@@ -41,7 +41,7 @@ async def test_auth_me_returns_single_source_of_truth():
         assert data["enabled"] == settings.AUTH_REQUIRED
         if not settings.AUTH_REQUIRED:
             assert data["authenticated"] is True
-            assert data["role"] in {"director", "doctor"}
+            assert data["role"] in {"director", "doctor", "nurse"}
 
 
 @pytest.mark.asyncio

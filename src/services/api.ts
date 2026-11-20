@@ -33,7 +33,12 @@ export async function fetchChatbotAvailability(): Promise<ChatbotAvailability> {
 }
 
 function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-  return fetch(input, { ...init, credentials: 'include' });
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('clinical_auth_token') : null;
+  const headers = new Headers(init.headers || {});
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return fetch(input, { ...init, headers, credentials: 'include' });
 }
 
 async function authenticatedApiFetch(input: RequestInfo | URL, init: RequestInit = {}) {

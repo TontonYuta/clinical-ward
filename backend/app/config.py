@@ -42,7 +42,7 @@ class Settings(BaseModel):
     # Required to mutate the clinical DDI catalog. Keep unset in deployments
     # where catalog updates are not enabled.
     DDI_ADMIN_TOKEN: str = os.getenv("DDI_ADMIN_TOKEN", "")
-    AUTH_REQUIRED: bool = os.getenv("AUTH_REQUIRED", "false").strip().lower() in {"1", "true", "yes", "on"}
+    AUTH_REQUIRED: bool = os.getenv("AUTH_REQUIRED", "true").strip().lower() in {"1", "true", "yes", "on"}
     AUTH_USERS_JSON: str = os.getenv("AUTH_USERS_JSON", "{}")
     AUTH_TOKEN_TTL_SECONDS: int = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "3600"))
     AUTH_MAX_FAILED_ATTEMPTS: int = int(os.getenv("AUTH_MAX_FAILED_ATTEMPTS", "5"))
