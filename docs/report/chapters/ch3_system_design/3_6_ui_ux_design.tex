@@ -1,14 +1,25 @@
 \section{Thiết kế giao diện người dùng và trải nghiệm buồng bệnh (UI/UX)}
 \label{sec:ui_ux_design}
 
-Thiết kế giao diện trong y tế đòi hỏi sự rõ ràng tối đa nhằm giảm thiểu áp lực thị giác và ngăn ngừa các thao tác nhầm lẫn của nhân viên y tế trong ca trực:
+Thiết kế giao diện trong môi trường lâm sàng đòi hỏi sự rõ ràng tối đa nhằm giảm thiểu áp lực thị giác, ngăn ngừa sai sót thao tác của nhân viên y tế trong ca trực căng thẳng và đảm bảo hoạt động mượt mà trên cả máy trạm buồng bệnh lẫn thiết bị di động cá nhân:
 
 \subsection{Triết lý phân tách hai phân vùng thông điệp (Dual-Zone Pattern)}
-Thành phần \code{DualZoneMessageBubble.tsx} chia mỗi phản hồi của trợ lý thành hai vùng độc lập:
+Thành phần \code{DualZoneMessageBubble.tsx} chia mỗi phản hồi của trợ lý AI thành hai vùng trực quan độc lập:
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Vùng 1 (Quick Action Header):} Hiển thị nền màu xanh/vàng nhạt, cô đọng liều dùng, đường dùng, tốc độ tiêm truyền để điều dưỡng thao tác ngay tại giường bệnh.
+    \item \textbf{Vùng 1 (Quick Action Header):} Hiển thị nền màu xanh/vàng nhạt, cô đọng liều dùng, đường dùng, tốc độ tiêm truyền và các lưu ý an toàn trọng tâm để điều dưỡng hoặc bác sĩ nắm bắt ngay lập tức tại giường bệnh trong vòng 3 giây đầu tiên.
     \item \textbf{Vùng 2 (Legal Evidence Body):} Hiển thị căn cứ pháp lý, tên văn bản Bộ Y tế, số quyết định, và các nút liên kết trực tiếp mở trình xem PDF tại đúng số trang quy định.
 \end{itemize}
 
 \subsection{Trình xem tài liệu pháp quy PDF nội tuyến (Inline PDF Viewer)}
-Thành phần \code{PdfViewerModal.tsx} tích hợp thư viện hiển thị PDF trực tiếp trong ứng dụng. Khi người dùng nhấp vào một trích dẫn (ví dụ \code{[DTQG: Trang 842]}), modal PDF tự động mở tệp Dược thư lưu cục bộ và cuộn đến trang 842 trong thời gian dưới $0.5$ giây, giúp bác sĩ đối soát văn bản gốc tức thì.
+Thành phần \code{PdfViewerModal.tsx} tích hợp thư viện hiển thị PDF trực tiếp trong ứng dụng. Khi người dùng nhấp vào một trích dẫn (ví dụ \code{[DTQG: Trang 842]}), modal PDF tự động mở tệp Dược thư lưu cục bộ và cuộn đến trang 842 trong thời gian dưới $0.5$ giây, giúp bác sĩ đối soát văn bản gốc tức thì mà không cần thoát ứng dụng.
+
+\subsection{Kiến trúc Responsive Hybrid PWA và Công thái học Di động (Mobile UX)}
+Để hỗ trợ bác sĩ và điều dưỡng đi buồng bệnh mà không phải mang theo máy tính xách tay cồng kềnh, hệ thống áp dụng kiến trúc Responsive Hybrid PWA tối ưu cho điện thoại thông minh:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Thanh điều hướng vùng ngón tay cái (\textit{Thumb-Zone Navigation}):} Module \code{MobileBottomNav.tsx} bố trí cố định dưới đáy màn hình với 4 phân hệ chính yếu và 1 nút "Thêm" mở Bottom Sheet trượt mượt mà cho các mô-đun phụ, hỗ trợ khoảng đệm an toàn (\textit{Safe-Area Inset}) cho các thiết bị tai thỏ.
+    \item \textbf{Chế độ hiển thị thẻ Card-View thay thế bảng ngang:} Trên màn hình nhỏ ($< 768\,\text{px}$), các bảng dữ liệu ngang phức tạp (như danh sách nhân viên y tế, sổ nợ vỏ thuốc) tự động chuyển đổi sang dạng thẻ Card vuốt chạm với các nút thao tác nhanh (Sửa, PIN, Đổi mật khẩu) đạt chuẩn kích thước tối thiểu $44 \times 44\,\text{px}$.
+    \item \textbf{Ứng dụng PWA độc lập (\textit{Standalone App}):} Tích hợp tệp cấu hình \code{manifest.webmanifest} và các thẻ meta dành cho iOS/Android, cho phép người dùng thêm biểu tượng ứng dụng ra màn hình chính (Add to Home Screen) và khởi chạy toàn màn hình như ứng dụng gốc Native App.
+\end{itemize}
+
+\subsection{Giao diện Giám sát Quản trị Vận hành AI (Admin Portal Dashboard)}
+Phân hệ \code{admin-portal} được thiết kế theo phong cách tối giản hiện đại (Linear/Apple HIG), cung cấp các thẻ chỉ số Hero KPIs ma trận 2x2 (Tỷ lệ Cache Hit, BHYT bảo toàn, Token phục vụ, SLA P95), biểu đồ giám sát luồng truy vấn trực tiếp và kho quản lý khóa API Key Vault bảo mật.

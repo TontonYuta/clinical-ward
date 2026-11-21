@@ -40,3 +40,22 @@ Dưới đây là kết quả kiểm thử thực nghiệm của các ca kiểm 
 \end{tabularx}
 \caption{Ma trận kiểm thử chức năng RAG, Vision OCR và Xoay vòng khóa API}
 \end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{C{1.2cm} L{3.5cm} L{3.5cm} Y C{1.5cm}}
+\toprule
+\textbf{Mã TC} & \textbf{Tên ca kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả mong đợi \& Kết quả thực tế} & \textbf{Đánh giá} \\
+\midrule
+\textbf{TC09} & Cấp phát và băm mật khẩu Argon2id & Admin đặt lại mật khẩu cho bác sĩ điều trị & \textbf{Kỳ vọng:} Băm mật khẩu Argon2id vào CSDL, vô hiệu hóa mật khẩu cũ ngay lập tức (xóa cache xác thực).\newline \textbf{Thực tế:} Mật khẩu cũ bị từ chối 401, mật khẩu mới đăng nhập thành công. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC10} & Ranh giới ngữ cảnh đóng chống lệch hướng & Người dùng gửi câu hỏi phi y tế hoặc cố ý Jailbreak & \textbf{Kỳ vọng:} NLU Intent Router phát hiện ngoài phạm vi, từ chối trả lời lịch sự.\newline \textbf{Thực tế:} Hệ thống kích hoạt Safe Fallback, không sinh nội dung sai lệch. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC11} & Đồng bộ phiên chat đa thiết bị theo tài khoản & Đăng nhập tài khoản Bác sĩ Hùng trên thiết bị mới & \textbf{Kỳ vọng:} Tự động tải lại đầy đủ lịch sử các ca hội chẩn trước đó từ CSDL đám mây.\newline \textbf{Thực tế:} Toàn bộ danh sách ca bệnh và tin nhắn được khôi phục trong 120ms. & \textbf{PASS} \\
+\addlinespace
+\textbf{TC12} & Trải nghiệm Hybrid PWA trên di động & Mở ứng dụng trên trình duyệt di động ($< 768\,\text{px}$) & \textbf{Kỳ vọng:} Tự động ẩn thanh sidebar ngang, kích hoạt thanh ngón tay cái và danh sách thẻ Card-View.\newline \textbf{Thực tế:} Giao diện vừa vặn 100\% màn hình, không tràn ngang, nút chạm đạt chuẩn $\ge 44\,\text{px}$. & \textbf{PASS} \\
+\bottomrule
+\end{tabularx}
+\caption{Ma trận kiểm thử chức năng Bảo mật, Ranh giới hội thoại và Trải nghiệm Hybrid PWA}
+\end{table}

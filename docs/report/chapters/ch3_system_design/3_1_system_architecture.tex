@@ -1,11 +1,21 @@
-\section{Kiến trúc tổng thể bốn tầng của hệ thống}
+\section{Kiến trúc tổng thể hệ sinh thái ứng dụng kép và bốn tầng phân rã}
 \label{sec:system_architecture}
 
-Hệ thống Clinical Ward CDSS được thiết kế theo mô hình kiến trúc phân tầng lỏng lẻo (Loosely Coupled Layered Architecture), phân chia ranh giới trách nhiệm rõ ràng nhằm đảm bảo tính bảo trì, tính mở rộng và khả năng thay thế linh hoạt:
+Hệ thống được thiết kế theo mô hình Hệ sinh thái ứng dụng kép (Dual-App Ecosystem) kết hợp Kiến trúc phân tầng lỏng lẻo (Loosely Coupled Layered Architecture), phân chia ranh giới trách nhiệm rõ ràng nhằm đáp ứng đồng thời hai bài toán: tác nghiệp lâm sàng trực tiếp tại buồng bệnh và giám sát, quản trị vận hành AI tập trung:
 
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Tầng 1: Giao diện người dùng (Presentation Layer):} Xây dựng dưới dạng Single Page Application (SPA) trên nền React 19, TypeScript strict mode và Tailwind CSS 4. Tầng này chịu trách nhiệm hiển thị thông tin bệnh án, hỗ trợ thao tác kê đơn CPOE, bố trí tin nhắn hai phân vùng độc lập (\code{DualZoneMessageBubble}) và nhúng trình xem tài liệu pháp quy PDF (\code{PdfViewerModal}).
-    \item \textbf{Tầng 2: Cổng điều phối và Bảo mật (Gateway \& Security Layer):} Phát triển bằng FastAPI (Python 3.12), quản lý phiên làm việc bằng HttpOnly Cookie, bảo vệ bằng phân quyền theo vai trò (RBAC), kiểm soát tốc độ (Rate Limiter) và bộ định tuyến ý định câu hỏi (\code{GeminiNLURouter}).
-    \item \textbf{Tầng 3: Lý luận lâm sàng và Động cơ CDSS (Clinical Reasoning \& CDSS Layer):} Bao gồm Cổng an toàn xác định (\code{cdss_sentinel.py}) kiểm tra tương tác cấm và trần liều trong $O(1)$; Bộ chuẩn hóa hoạt chất (\code{active_ingredient_normalizer.py}); Bộ truy xuất lai ghép (\code{hybrid_retriever.py}); Đồ thị tri thức hai tầng (\code{sqlite_graph_service.py}); và Bộ hậu kiểm chống ảo giác (\code{self_rag_verifier.py}).
-    \item \textbf{Tầng 4: Lưu trữ dữ liệu và Tri thức (Data \& Knowledge Layer):} CSDL quan hệ SQLite cấu hình WAL Mode (\code{clinical_hospital.db}, dung lượng 208MB) chứa 54.885 số đăng ký thuốc DAV, 1.400 chuyên luận Dược thư; tệp nén vector 2.191 đoạn nạp sẵn trong RAM (\code{clinical_embeddings_cache.npz}); cùng hệ thống văn bản pháp quy PDF gốc.
+    \item \textbf{1. Phân hệ Ứng dụng Lâm sàng Buồng bệnh (\textit{Clinical Ward Application} --- Cổng Bác sĩ \& Điều dưỡng):}
+    Xây dựng dưới dạng Single Page Application (SPA) trên nền React 19, TypeScript strict mode, Tailwind CSS 4 và kiến trúc Responsive Hybrid PWA. Phân hệ này chịu trách nhiệm phục vụ thao tác tại giường bệnh: chọn người bệnh, kê đơn điện tử CPOE, đối soát tương tác thời gian thực, giao diện tin nhắn hai phân vùng độc lập (\code{DualZoneMessageBubble}) và nhúng trình xem tài liệu pháp quy PDF (\code{PdfViewerModal}). Trên thiết bị di động, giao diện tự động chuyển đổi sang thanh điều hướng ngón tay cái (\textit{Thumb-Zone}) và danh sách thẻ chạm vuốt.
+
+    \item \textbf{2. Phân hệ Cổng Giám sát \& Quản trị AI (\textit{Clinical AI Monitor Portal} --- Cổng Quản trị viên):}
+    Ứng dụng web quản trị độc lập, cung cấp bảng điều khiển trung tâm (Dashboard Telemetry) giám sát số lượng token tiêu thụ, ngân sách chi phí theo thời gian thực (Budget Cap), tỷ lệ trúng bộ đệm Cache Hit, kiểm định xuất toán BHYT, quản lý danh bạ nhân sự CSDL, cấp phát tài khoản web mã hóa Argon2id, quản lý kho khóa API Key Vault với cơ chế xoay vòng tự động và nạp tri thức CSDL RAG động từ tệp PDF.
+
+    \item \textbf{3. Tầng Cổng điều phối và Bảo mật (Gateway \& Security Layer):}
+    Phát triển bằng FastAPI (Python 3.12), quản lý phiên làm việc bằng cơ chế xác thực kép (\textit{Dual-Channel Auth}: HttpOnly Cookie \code{clinical_session} kết hợp Bearer Token), phân quyền theo vai trò (RBAC) 5 cấp, kiểm soát tốc độ (Rate Limiter), bảo vệ chống tấn công CSRF/XSS và bộ định tuyến ý định câu hỏi (\code{GeminiNLURouter}).
+
+    \item \textbf{4. Tầng Lý luận lâm sàng và Động cơ CDSS (Clinical Reasoning \& CDSS Layer):}
+    Bao gồm Cổng an toàn xác định (\code{cdss_sentinel.py}) kiểm tra tương tác cấm và trần liều trong $O(1)$; Bộ chuẩn hóa hoạt chất (\code{active_ingredient_normalizer.py}); Bộ truy xuất lai ghép (\code{hybrid_retriever.py}); Đồ thị tri thức hai tầng (\code{sqlite_graph_service.py}); Pipeline nạp tài liệu tự động; và Bộ hậu kiểm chống ảo giác (\code{self_rag_verifier.py}).
+
+    \item \textbf{5. Tầng Lưu trữ dữ liệu và Tri thức (Data \& Knowledge Layer):}
+    CSDL quan hệ SQLite cấu hình WAL Mode (\code{clinical_hospital.db}) chứa 54.885 số đăng ký thuốc DAV, 1.400 chuyên luận Dược thư, bảng nhân sự và lịch sử chat đám mây; tệp nén vector 2.191 đoạn nạp sẵn trong RAM (\code{clinical_embeddings_cache.npz}); cùng hệ thống văn bản quy phạm pháp luật PDF gốc.
 \end{itemize}

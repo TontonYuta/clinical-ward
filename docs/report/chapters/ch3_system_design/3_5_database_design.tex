@@ -89,3 +89,80 @@ Hệ thống kích hoạt các thiết lập pragma tối ưu tại thời đi�
 \end{tabularx}
 \caption{Từ điển dữ liệu bảng \code{audit_logs} (Nhật ký kiểm toán lâm sàng)}
 \end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.5cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{id} & VARCHAR(50) & PK & NOT NULL & Mã định danh nhân viên y tế (Mã NV). \\
+\code{name} & VARCHAR(150) & & NOT NULL & Họ tên nhân viên kèm học hàm/học vị. \\
+\code{role} & VARCHAR(50) & & NOT NULL & Vai trò phân quyền (doctor, nurse, pharmacist, admin). \\
+\code{department} & VARCHAR(100) & & NOT NULL & Khoa lâm sàng công tác (Nội tổng hợp, Cấp cứu...). \\
+\code{practice_cert} & VARCHAR(50) & & & Số chứng chỉ hành nghề khám chữa bệnh (CCHN). \\
+\code{username} & VARCHAR(100) & & UNIQUE & Tên đăng nhập Web (@username). \\
+\code{hashed_password} & VARCHAR(255) & & & Mật khẩu băm chuẩn quân sự Argon2id. \\
+\code{must_change_pwd} & BOOLEAN & & DEFAULT 0 & Cờ bắt buộc đổi mật khẩu ở lần đăng nhập đầu. \\
+\code{rfid_card_id} & VARCHAR(50) & & & Mã định danh thẻ từ RFID quẹt ca trực. \\
+\code{pin_code} & VARCHAR(10) & & & Mã PIN ca trực 4 số thao tác tại giường bệnh. \\
+\code{is_active} & BOOLEAN & & DEFAULT 1 & Trạng thái tài khoản (1: Đang công tác, 0: Tạm ngưng). \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{users} (Quản lý hồ sơ nhân sự và phân quyền bảo mật)}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.5cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{session_id} & VARCHAR(64) & PK & NOT NULL & Mã phiên hội chẩn AI định danh UUID v4. \\
+\code{user_id} & VARCHAR(50) & FK & NOT NULL & Mã tài khoản nhân sự sở hữu phiên hội chẩn. \\
+\code{patient_id} & VARCHAR(50) & & & Mã bệnh nhân liên quan đến ca hội chẩn (nếu có). \\
+\code{title} & VARCHAR(255) & & NOT NULL & Tiêu đề tóm tắt ca tư vấn lâm sàng. \\
+\code{created_at} & DATETIME & & NOT NULL & Thời điểm khởi tạo phiên trên đám mây CSDL. \\
+\code{updated_at} & DATETIME & & NOT NULL & Thời điểm tin nhắn cuối cùng được trao đổi. \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{chat_sessions} (Lưu trữ phiên hội chẩn đám mây theo tài khoản)}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.5cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{id} & INTEGER & PK & NOT NULL & Khóa chính tự tăng của tin nhắn. \\
+\code{session_id} & VARCHAR(64) & FK & NOT NULL & Mã phiên tham chiếu đến bảng \code{chat_sessions}. \\
+\code{role} & VARCHAR(20) & & NOT NULL & Vai trò người gửi (\code{user} hoặc \code{assistant}). \\
+\code{content} & TEXT & & NOT NULL & Nội dung tin nhắn hội chẩn hoặc câu trả lời AI. \\
+\code{citations} & TEXT & & & Dữ liệu JSON chứa con trỏ trích dẫn số trang Dược thư. \\
+\code{created_at} & DATETIME & & NOT NULL & Thời điểm gửi tin nhắn theo chuẩn ISO 8601. \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{chat_messages} (Chi tiết tin nhắn hội chẩn lâm sàng)}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.5cm} L{2.2cm} C{1.2cm} C{1.8cm} Y}
+\toprule
+\textbf{Tên cột} & \textbf{Kiểu dữ liệu} & \textbf{Khóa} & \textbf{Ràng buộc} & \textbf{Mô tả nghiệp vụ thực tế} \\
+\midrule
+\code{id} & VARCHAR(50) & PK & NOT NULL & Mã định danh văn bản pháp quy nạp vào hệ thống. \\
+\code{title} & VARCHAR(255) & & NOT NULL & Tên văn bản pháp quy/hướng dẫn điều trị (PDF). \\
+\code{file_hash} & VARCHAR(64) & & NOT NULL & Mã băm SHA-256 chống trùng lặp dữ liệu nạp. \\
+\code{chunk_count} & INTEGER & & NOT NULL & Tổng số phân đoạn ngữ nghĩa (Chunks) sau khi cắt. \\
+\code{status} & VARCHAR(30) & & NOT NULL & Trạng thái xử lý (EMBEDDED, READY, ARCHIVED). \\
+\code{created_at} & DATETIME & & NOT NULL & Thời điểm nạp tài liệu vào CSDL RAG. \\
+\bottomrule
+\end{tabularx}
+\caption{Từ điển dữ liệu bảng \code{ingested_documents} (Quản lý tài liệu pháp quy nạp động)}
+\end{table}

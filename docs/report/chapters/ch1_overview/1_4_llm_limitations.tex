@@ -1,17 +1,20 @@
 \section{Phân tích các rào cản kỹ thuật khi ứng dụng Mô hình Ngôn ngữ Lớn (LLM) trong y tế}
 \label{sec:llm_limitations}
 
-Mặc dù sự xuất hiện của các Mô hình Ngôn ngữ Lớn (LLM) thế hệ mới (OpenAI GPT-4, Google Gemini, Anthropic Claude) mở ra tiềm năng to lớn trong việc thấu hiểu câu hỏi lâm sàng, việc áp dụng trực tiếp các mô hình thương mại này theo dạng "gọi API dịch vụ đám mây" vấp phải ba rào cản kỹ thuật nghiêm trọng:
+Mặc dù sự xuất hiện của các Mô hình Ngôn ngữ Lớn (LLM) thế hệ mới (OpenAI GPT-4, Google Gemini, Anthropic Claude) mở ra tiềm năng to lớn trong việc thấu hiểu câu hỏi lâm sàng phức tạp, việc áp dụng trực tiếp các mô hình thương mại này theo dạng "gọi API dịch vụ đám mây đơn thuần" vấp phải bốn rào cản kỹ thuật nghiêm trọng trong môi trường bệnh viện:
 
 \begin{enumerate}[leftmargin=2em]
-    \item \textbf{Ảo giác thông tin định lượng (Numerical Hallucination):}
-    Bản chất của LLM là mô hình xác suất sinh từ tiếp theo (Next-Token Probability). Khi được hỏi về liều dùng, mô hình có thể tự suy diễn ra các con số liều dùng hoặc khoảng cách dùng thuốc nghe rất hợp lý nhưng hoàn toàn sai lệch so với Dược điển. Trong y tế, việc sai lệch từ $5\,\text{mg}$ thành $50\,\text{mg}$ là tai biến chết người.
+    \item \textbf{Ảo giác thông tin định lượng (Numerical Hallucination) và Bịa đặt văn bản (Fabrication):}
+    Bản chất toán học của LLM là mô hình xác suất sinh từ tiếp theo (Next-Token Probability) tối ưu hóa độ trôi chảy ngôn ngữ thay vì tính chân lý khoa học. Khi nhận câu hỏi về liều dùng, khoảng cách đưa thuốc hoặc nồng độ, mô hình có thể tự suy diễn ra các con số liều dùng nghe rất hợp lý nhưng hoàn toàn sai lệch so với Dược thư Quốc gia. Trong thực hành dược lâm sàng, sai lệch một chữ số thập phân (từ $0.5\,\text{mg}$ thành $5.0\,\text{mg}$) hoặc nhầm lẫn giữa dạng muối (Hydrochloride vs. Base) có thể dẫn đến tai biến tim mạch hoặc ngộ độc chết người.
     
+    \item \textbf{Hiện tượng lệch hướng hội thoại (Topic Drift) và Thiếu ranh giới ngữ cảnh (Unbounded Context):}
+    Khi đối thoại đa lượt (Multi-turn Conversation), LLM thường xuyên gặp hiện tượng suy giảm chú ý (Attention Degradation) hoặc bị dẫn dắt bởi các câu hỏi mở, dẫn đến việc đưa ra các lời khuyên chung chung, lệch khỏi phạm vi ca bệnh nội trú hoặc thậm chí đưa ra khuyến cáo trái ngược với chỉ định trước đó. Nếu không có cơ chế ranh giới ngữ cảnh đóng (\textit{Bounded Clinical Context}) và bộ định tuyến ý định (\textit{NLU Intent Router}), trợ lý ảo rất dễ "lạc đề", bàn luận về các chủ đề phi lâm sàng hoặc phỏng đoán cảm tính thay vì bám sát hồ sơ bệnh nhân.
+
     \item \textbf{Thiếu hụt dữ liệu pháp quy y tế nội địa Việt Nam:}
-    Các mô hình nền tảng quốc tế được huấn luyện chủ yếu trên kho ngữ liệu tiếng Anh (PubMed, UpToDate, phác đồ điều trị của FDA/EMA). Chúng không được tiếp cận hoặc cập nhật kịp thời các văn bản pháp quy nội địa như Dược thư Quốc gia Việt Nam lần III (2022), Quyết định 5948/QĐ-BYT về tương tác chống chỉ định, và Thông tư 20/2022/TT-BYT về thanh toán BHYT theo hạng bệnh viện. Do đó, các câu trả lời sinh ra thường vô giá trị về mặt pháp lý trong bệnh viện Việt Nam.
+    Các mô hình nền tảng quốc tế được huấn luyện chủ yếu trên kho ngữ liệu tiếng Anh (PubMed, UpToDate, phác đồ điều trị của FDA/EMA). Chúng không được tiếp cận hoặc cập nhật kịp thời các văn bản pháp quy nội địa như Luật Khám bệnh, chữa bệnh 2023, Thông tư 26/2025/TT-BYT, Dược thư Quốc gia Việt Nam lần III (2022), Quyết định 5948/QĐ-BYT về tương tác chống chỉ định, và Thông tư 20/2022/TT-BYT về thanh toán BHYT theo hạng bệnh viện. Do đó, các câu trả lời sinh ra thường vô giá trị về mặt pháp lý trong bệnh viện Việt Nam.
     
     \item \textbf{Bảo mật dữ liệu bệnh án và tính sẵn sàng khi mất mạng:}
-    Hồ sơ bệnh án và thông tin dùng thuốc của người bệnh là dữ liệu tuyệt mật theo Luật Khám bệnh, chữa bệnh. Việc truyền toàn bộ dữ liệu đơn thuốc qua các máy chủ bên ngoài lãnh thổ vi phạm quy định bảo vệ dữ liệu. Đồng thời, các máy tính tại buồng bệnh thường xuyên phải hoạt động trong mạng nội bộ (LAN cách ly) hoặc gặp tình huống mất kết nối Internet. Mô hình AI dựa hoàn toàn vào đám mây sẽ tê liệt khi không có mạng.
+    Hồ sơ bệnh án và thông tin dùng thuốc của người bệnh là dữ liệu tuyệt mật theo Luật Khám bệnh, chữa bệnh số 15/2023/QH15. Việc truyền toàn bộ dữ liệu đơn thuốc qua các máy chủ bên ngoài lãnh thổ vi phạm quy định bảo vệ dữ liệu y tế. Đồng thời, các máy tính tại buồng bệnh thường xuyên phải hoạt động trong mạng nội bộ (LAN cách ly) hoặc gặp tình huống mất kết nối Internet. Mô hình AI dựa hoàn toàn vào đám mây sẽ tê liệt khi không có mạng.
 \end{enumerate}
 
-Những rào cản trên khẳng định rằng: một hệ thống hỗ trợ lâm sàng hiệu quả không thể chỉ là một vỏ bọc giao diện gọi API LLM, mà bắt buộc phải là một kiến trúc lai ghép (Hybrid Architecture) kiểm soát chặt chẽ bằng chứng y văn và các luật an toàn xác định.
+Những rào cản trên khẳng định rằng: một hệ thống hỗ trợ lâm sàng hiệu quả không thể chỉ là một vỏ bọc giao diện gọi API LLM, mà bắt buộc phải là một kiến trúc lai ghép (Hybrid Architecture) kết hợp Cổng an toàn xác định $O(1)$ với cơ chế RAG đa tầng kiểm soát chặt chẽ bằng chứng y văn và hậu kiểm đối chiếu số liệu định lượng.

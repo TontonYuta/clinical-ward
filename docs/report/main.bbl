@@ -1,5 +1,11 @@
 \begin{thebibliography}{1}
 
+\bibitem{argon2id_rfc9106}
+Alex Biryukov, Daniel Dinu, Dmitry Khovratovich, and Simon Josefsson.
+\newblock The argon2 memory-hard function for password hashing and
+  proof-of-work applications.
+\newblock RFC 9106, Internet Engineering Task Force (IETF), 2021.
+
 \bibitem{qd1666_bhxh}
 {Bảo hiểm Xã hội Việt Nam}.
 \newblock Quyết định số 1666/qĐ-bhxh về việc ban hành mẫu thẻ
@@ -21,5 +27,21 @@
 \newblock Thông tư số 20/2022/tt-byt ban hành danh mục và tỷ lệ,
   điều kiện thanh toán đối với thuốc hóa dược, sinh phẩm
   thuộc phạm vi được hưởng của người tham gia bhyt, 2022.
+
+\bibitem{tt26_2025_byt}
+{Bộ Y tế Việt Nam}.
+\newblock Thông tư số 26/2025/tt-byt quy định về hoạt động kê
+  đơn thuốc và đơn thuốc điện tử tại các cơ sở khám
+  bệnh, chữa bệnh, 2025.
+
+\bibitem{cockcroft_gault_1976}
+Donald~W. Cockcroft and M.~Henry Gault.
+\newblock Prediction of creatinine clearance from serum creatinine.
+\newblock {\em Nephron}, 16(1):31--41, 1976.
+
+\bibitem{luat_kbcb_2023}
+{Quốc hội Nước Cộng hòa Xã hội Chủ nghĩa Việt Nam}.
+\newblock Luật khám bệnh, chữa bệnh số 15/2023/qh15 (có hiệu
+  lực thi hành từ ngày 01/01/2024), 2023.
 
 \end{thebibliography}

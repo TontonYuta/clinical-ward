@@ -1,19 +1,24 @@
 \addvspace {10\p@ }
 \contentsline {table}{\numberline {1.1}{\ignorespaces Bảng so sánh và đánh giá các hệ thống CDSS hiện hữu}}{3}{table.1.1}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {2.1}{\ignorespaces Bảng đặc tả danh mục yêu cầu chức năng hệ thống (Functional Requirements)}}{9}{table.2.1}%
-\contentsline {table}{\numberline {2.2}{\ignorespaces Bảng đặc tả danh mục yêu cầu phi chức năng (Non-Functional Requirements)}}{10}{table.2.2}%
-\contentsline {table}{\numberline {2.3}{\ignorespaces Bảng đặc tả ca sử dụng UC01: Kê đơn điện tử và kiểm tra tương tác CDSS}}{12}{table.2.3}%
-\contentsline {table}{\numberline {2.4}{\ignorespaces Bảng đặc tả ca sử dụng UC02: Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click}}{13}{table.2.4}%
+\contentsline {table}{\numberline {2.1}{\ignorespaces Bảng đặc tả danh mục 16 yêu cầu chức năng hệ thống (Functional Requirements)}}{10}{table.2.1}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Bảng đặc tả danh mục yêu cầu phi chức năng (Non-Functional Requirements)}}{11}{table.2.2}%
+\contentsline {table}{\numberline {2.3}{\ignorespaces Bảng đặc tả ca sử dụng UC01: Kê đơn điện tử và kiểm tra tương tác CDSS}}{13}{table.2.3}%
+\contentsline {table}{\numberline {2.4}{\ignorespaces Bảng đặc tả ca sử dụng UC02: Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click}}{14}{table.2.4}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Bảng phân tích đánh đổi công nghệ trong hệ thống}}{15}{table.3.1}%
-\contentsline {table}{\numberline {3.2}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}dav_drugs} (54.885 thuốc Cục Quản lý Dược)}}{19}{table.3.2}%
-\contentsline {table}{\numberline {3.3}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}ddi_rules} (Tương tác chống chỉ định)}}{20}{table.3.3}%
-\contentsline {table}{\numberline {3.4}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}patients} (Quản lý người bệnh nội trú)}}{20}{table.3.4}%
-\contentsline {table}{\numberline {3.5}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}audit_logs} (Nhật ký kiểm toán lâm sàng)}}{21}{table.3.5}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Bảng phân tích đánh đổi công nghệ trong hệ thống}}{17}{table.3.1}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}dav_drugs} (54.885 thuốc Cục Quản lý Dược)}}{26}{table.3.2}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}ddi_rules} (Tương tác chống chỉ định)}}{26}{table.3.3}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}patients} (Quản lý người bệnh nội trú)}}{27}{table.3.4}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}audit_logs} (Nhật ký kiểm toán lâm sàng)}}{27}{table.3.5}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}users} (Quản lý hồ sơ nhân sự và phân quyền bảo mật)}}{28}{table.3.6}%
+\contentsline {table}{\numberline {3.7}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}chat_sessions} (Lưu trữ phiên hội chẩn đám mây theo tài khoản)}}{28}{table.3.7}%
+\contentsline {table}{\numberline {3.8}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}chat_messages} (Chi tiết tin nhắn hội chẩn lâm sàng)}}{29}{table.3.8}%
+\contentsline {table}{\numberline {3.9}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}ingested_documents} (Quản lý tài liệu pháp quy nạp động)}}{29}{table.3.9}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Bảng đặc tả các giao tiếp lập trình ứng dụng (API Endpoints)}}{23}{table.4.1}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Ma trận kiểm thử chức năng CDSS Sentinel và an toàn dược học}}{25}{table.4.2}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Ma trận kiểm thử chức năng RAG, Vision OCR và Xoay vòng khóa API}}{26}{table.4.3}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces Bảng đo lường hiệu năng thời gian thực trên môi trường Production}}{26}{table.4.4}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Bảng đặc tả các giao tiếp lập trình ứng dụng cốt lõi (API Endpoints)}}{33}{table.4.1}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Ma trận kiểm thử chức năng CDSS Sentinel và an toàn dược học}}{35}{table.4.2}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Ma trận kiểm thử chức năng RAG, Vision OCR và Xoay vòng khóa API}}{36}{table.4.3}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Ma trận kiểm thử chức năng Bảo mật, Ranh giới hội thoại và Trải nghiệm Hybrid PWA}}{37}{table.4.4}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Bảng đo lường hiệu năng thời gian thực trên môi trường Production}}{38}{table.4.5}%
 \addvspace {10\p@ }
