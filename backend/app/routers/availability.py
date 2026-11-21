@@ -123,13 +123,11 @@ async def _check_provider() -> str:
                 state = "not_configured"
             elif key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10:
                 import httpx
-                model = "gemini-3.5-flash-lite"
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                url = "https://generativelanguage.googleapis.com/v1beta/models"
                 async with httpx.AsyncClient(timeout=_PROVIDER_TIMEOUT_SECONDS) as client:
-                    response = await client.post(
+                    response = await client.get(
                         url,
                         params={"key": key},
-                        json={"contents": [{"parts": [{"text": "ping"}]}], "generationConfig": {"maxOutputTokens": 1}},
                     )
                 state = "available" if response.status_code == 200 else "unavailable"
         except Exception:

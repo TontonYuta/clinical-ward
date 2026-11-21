@@ -182,6 +182,7 @@ def add_api_key(name: str, raw_key: str, provider: str = "gemini") -> Dict[str, 
     }
     keys.append(new_item)
     _save_vault_data(keys)
+    _ACTIVE_KEY_CACHE.clear()
     return {
         "key_id": key_id,
         "name": name,
@@ -232,6 +233,7 @@ def delete_api_key(key_id: str) -> bool:
     filtered = [k for k in keys if k["key_id"] != key_id]
     if len(filtered) != len(keys):
         _save_vault_data(filtered)
+        _ACTIVE_KEY_CACHE.clear()
         return True
     return False
 
@@ -374,25 +376,23 @@ def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited") -> Opt
 
 async def ping_test_gemini_key(raw_key: str) -> tuple[bool, str, float, List[str]]:
     start_t = time.monotonic()
-    models_to_check = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
-    test_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models"
     headers = {"x-goog-api-key": raw_key, "Content-Type": "application/json"}
-    payload = {"contents": [{"parts": [{"text": "ping"}]}], "generationConfig": {"maxOutputTokens": 3}}
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
-            res = await client.post(test_url, headers=headers, json=payload)
+            res = await client.get(url, headers=headers)
             elapsed = round((time.monotonic() - start_t) * 1000, 1)
             if res.status_code == 200:
-                return True, "Kết nối thành công (Key hoạt động bình thường)", elapsed, models_to_check
+                data = res.json()
+                models = [
+                    m["name"].replace("models/", "")
+                    for m in data.get("models", [])
+                    if "generateContent" in m.get("supportedGenerationMethods", [])
+                ][:5]
+                return True, "Kết nối thành công (Key hoạt động bình thường)", elapsed, models
             elif res.status_code == 429:
                 return False, "Key đang bị giới hạn hạn ngạch (Rate Limit 429)", elapsed, []
             else:
-                # Thử thêm gemini-3.1-flash-lite nếu 3.5 gặp vấn đề
-                fallback_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent"
-                res2 = await client.post(fallback_url, headers=headers, json=payload)
-                elapsed2 = round((time.monotonic() - start_t) * 1000, 1)
-                if res2.status_code == 200:
-                    return True, "Kết nối thành công (gemini-3.1-flash-lite)", elapsed2, models_to_check
                 return False, f"Lỗi xác thực Google API (HTTP {res.status_code})", elapsed, []
     except Exception as e:
         elapsed = round((time.monotonic() - start_t) * 1000, 1)
