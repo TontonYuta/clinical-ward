@@ -15,11 +15,14 @@ class StaffBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=32, description="Số điện thoại")
     dob: Optional[str] = Field(None, max_length=32, description="Ngày sinh")
     academic_title: Optional[str] = Field(None, max_length=64, description="Học hàm / Học vị (BSCKI, BSCKII, ThS, TS, PGS, GS, CN...)")
+    username: Optional[str] = Field(None, max_length=100, description="Tên đăng nhập hệ thống (viết liền, không dấu)")
     is_active: bool = Field(default=True, description="Trạng thái công tác: True = Hoạt động, False = Tạm ngưng")
     avatar_url: Optional[str] = Field(None, description="Đường dẫn avatar")
 
 class StaffCreateRequest(StaffBase):
     id: Optional[str] = Field(None, max_length=64, description="Mã nhân viên (tùy chọn, tự sinh nếu để trống)")
+    password: Optional[str] = Field(None, min_length=6, max_length=128, description="Mật khẩu khởi tạo ban đầu")
+    must_change_password: bool = Field(default=False, description="Yêu cầu đổi mật khẩu ở lần đăng nhập đầu")
 
 class StaffUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=160)
@@ -34,6 +37,9 @@ class StaffUpdateRequest(BaseModel):
     phone: Optional[str] = None
     dob: Optional[str] = None
     academic_title: Optional[str] = None
+    username: Optional[str] = Field(None, max_length=100)
+    password: Optional[str] = Field(None, min_length=6, max_length=128)
+    must_change_password: Optional[bool] = None
     is_active: Optional[bool] = None
     avatar_url: Optional[str] = None
 
@@ -43,8 +49,13 @@ class StaffStatusUpdateRequest(BaseModel):
 class StaffResetPinRequest(BaseModel):
     new_pin: str = Field(..., min_length=4, max_length=10, description="Mã PIN mới 4-6 số")
 
+class StaffResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=6, max_length=128, description="Mật khẩu mới do Admin cấp lại")
+    must_change_password: bool = Field(default=True, description="Yêu cầu đổi mật khẩu ở lần đăng nhập tiếp theo")
+
 class StaffResponse(StaffBase):
     id: str
+    must_change_password: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

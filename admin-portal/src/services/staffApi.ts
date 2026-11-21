@@ -100,6 +100,27 @@ export async function resetStaffPin(id: string, newPin: string): Promise<{ statu
   return res.json();
 }
 
+export async function resetStaffPassword(
+  id: string,
+  newPassword: string,
+  mustChangePassword: boolean = true
+): Promise<{ status: string; user_id: string; username?: string; message: string }> {
+  const res = await fetchWithTimeout(`${BASE_URL}/${encodeURIComponent(id)}/reset-password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      new_password: newPassword,
+      must_change_password: mustChangePassword,
+    }),
+  }, 8000);
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.detail || `Lỗi cấp lại mật khẩu: HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function softDeleteStaff(id: string): Promise<{ status: string; id: string; message: string }> {
   const res = await fetchWithTimeout(`${BASE_URL}/${encodeURIComponent(id)}`, {
     method: 'DELETE',

@@ -12,6 +12,8 @@ export interface StaffItem {
   phone?: string | null;
   dob?: string | null;
   academic_title?: string | null;
+  username?: string | null;
+  must_change_password?: boolean;
   is_active: boolean;
   avatar_url?: string | null;
   created_at?: string | null;
@@ -32,6 +34,9 @@ export interface StaffCreatePayload {
   phone?: string;
   dob?: string;
   academic_title?: string;
+  username?: string;
+  password?: string;
+  must_change_password?: boolean;
   is_active?: boolean;
   avatar_url?: string;
 }
@@ -49,8 +54,16 @@ export interface StaffUpdatePayload {
   phone?: string;
   dob?: string;
   academic_title?: string;
+  username?: string;
+  password?: string;
+  must_change_password?: boolean;
   is_active?: boolean;
   avatar_url?: string;
+}
+
+export interface StaffResetPasswordPayload {
+  new_password: string;
+  must_change_password?: boolean;
 }
 
 export interface StaffListResponse {

@@ -63,6 +63,37 @@ async def authenticate_user(username: str, password: str) -> AuthenticatedUser |
                     return user
         except Exception:
             pass
+
+    # Kiểm tra trực tiếp bảng users trong cơ sở dữ liệu bệnh viện
+    from app.database import AsyncSessionLocal
+    from app.models.user import User
+    from sqlalchemy import select, func, or_
+    try:
+        clean_username = (username or "").strip().lower()
+        if clean_username:
+            async with AsyncSessionLocal() as db_session:
+                stmt = select(User).where(
+                    or_(
+                        func.lower(User.username) == clean_username,
+                        func.lower(User.id) == clean_username,
+                    )
+                )
+                res = await db_session.execute(stmt)
+                db_user = res.scalar_one_or_none()
+                if db_user:
+                    if not db_user.is_active:
+                        return None  # Tài khoản tạm ngưng công tác
+                    if db_user.hashed_password and verify_password(password or "", db_user.hashed_password):
+                        effective_role = db_user.role if db_user.role in VALID_ROLES else "nurse"
+                        return AuthenticatedUser(
+                            username=db_user.username or clean_username,
+                            role=effective_role,
+                            account_id=db_user.id,
+                            session_id=f"session_{db_user.id}_{int(datetime.now(timezone.utc).timestamp())}",
+                        )
+    except Exception:
+        pass
+
     return await authenticate_configured_user(username, password)
 
 

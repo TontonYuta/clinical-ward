@@ -5,6 +5,8 @@ import {
   RefreshCw,
   Edit2,
   KeyRound,
+  Key,
+  Lock,
   Eye,
   EyeOff,
   UserX,
@@ -19,11 +21,13 @@ import {
   updateStaff,
   toggleStaffStatus,
   resetStaffPin,
+  resetStaffPassword,
   softDeleteStaff
 } from '../../../services/staffApi';
 import { StaffHeroMetrics } from './StaffHeroMetrics';
 import { StaffModalCreateEdit } from './StaffModalCreateEdit';
 import { StaffResetPinModal } from './StaffResetPinModal';
+import { StaffResetPasswordModal } from './StaffResetPasswordModal';
 
 export const StaffManagementTab: React.FC = () => {
   const [items, setItems] = useState<StaffItem[]>([]);
@@ -44,6 +48,7 @@ export const StaffManagementTab: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffItem | null>(null);
   const [resetPinStaff, setResetPinStaff] = useState<StaffItem | null>(null);
+  const [resetPasswordStaff, setResetPasswordStaff] = useState<StaffItem | null>(null);
   const [revealedPins, setRevealedPins] = useState<Record<string, boolean>>({});
 
   // Show toast notification
@@ -124,6 +129,13 @@ export const StaffManagementTab: React.FC = () => {
   const handleResetPin = async (id: string, newPin: string) => {
     await resetStaffPin(id, newPin);
     notify(`Đã đặt lại mã PIN mới thành công cho nhân sự ${id}!`);
+    await loadData();
+  };
+
+  // Handle Reset Web Password
+  const handleResetPassword = async (id: string, newPassword: string, mustChangePassword: boolean) => {
+    const res = await resetStaffPassword(id, newPassword, mustChangePassword);
+    notify(res.message || `Đã cấp lại mật khẩu mới cho nhân sự ${id}!`);
     await loadData();
   };
 
@@ -307,11 +319,25 @@ export const StaffManagementTab: React.FC = () => {
                       {/* Cột 1: Tên + Mã */}
                       <td className="py-2.5 px-3">
                         <div>
-                          <div className="font-medium text-slate-900 group-hover:text-teal-900 flex items-center gap-1.5">
+                          <div className="font-medium text-slate-900 group-hover:text-teal-900 flex items-center gap-1.5 flex-wrap">
                             <span>{staff.name}</span>
                             {staff.academic_title && !staff.name.toLowerCase().includes(staff.academic_title.toLowerCase()) && (
                               <span className="text-2xs font-mono text-slate-400">
                                 {staff.academic_title}
+                              </span>
+                            )}
+                            {staff.username ? (
+                              <span className="text-3xs font-mono font-medium text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200/60" title={`Tên đăng nhập Web: @${staff.username}`}>
+                                @{staff.username}
+                              </span>
+                            ) : (
+                              <span className="text-3xs font-mono text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                                Chưa có tài khoản
+                              </span>
+                            )}
+                            {staff.must_change_password && (
+                              <span className="text-3xs font-mono text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-200/60" title="Bắt buộc đổi mật khẩu ở lần đăng nhập tiếp theo">
+                                Đổi MK
                               </span>
                             )}
                           </div>
@@ -396,14 +422,24 @@ export const StaffManagementTab: React.FC = () => {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Đổi mã PIN */}
+                          {/* Đổi mã PIN ca trực */}
                           <button
                             type="button"
                             onClick={() => setResetPinStaff(staff)}
-                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-teal-700 transition"
-                            title="Đặt lại mã PIN xác thực"
+                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition"
+                            title="Đặt lại mã PIN ca trực"
                           >
-                            <KeyRound className="w-3.5 h-3.5" />
+                            <Key className="w-3.5 h-3.5 text-slate-500" />
+                          </button>
+
+                          {/* Cấp lại mật khẩu Web */}
+                          <button
+                            type="button"
+                            onClick={() => setResetPasswordStaff(staff)}
+                            className="p-1.5 rounded-md hover:bg-teal-50 text-slate-600 hover:text-teal-700 transition"
+                            title="Cấp lại mật khẩu Web (Argon2id)"
+                          >
+                            <KeyRound className="w-3.5 h-3.5 text-teal-700" />
                           </button>
 
                           {/* Tạm ngưng (Soft Delete) */}
@@ -459,6 +495,13 @@ export const StaffManagementTab: React.FC = () => {
         isOpen={Boolean(resetPinStaff)}
         onClose={() => setResetPinStaff(null)}
         onResetPin={handleResetPin}
+      />
+
+      <StaffResetPasswordModal
+        staff={resetPasswordStaff}
+        isOpen={Boolean(resetPasswordStaff)}
+        onClose={() => setResetPasswordStaff(null)}
+        onResetPassword={handleResetPassword}
       />
     </div>
   );

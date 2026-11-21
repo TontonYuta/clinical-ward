@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Save, RefreshCw, Key, ShieldAlert } from 'lucide-react';
+import { X, UserPlus, Save, RefreshCw, Key, ShieldAlert, Lock, Eye, EyeOff, Sparkles, ShieldCheck } from 'lucide-react';
 import { StaffItem, StaffCreatePayload, StaffUpdatePayload } from '../../../types/staff';
 
 interface StaffModalCreateEditProps {
@@ -51,6 +51,10 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
   const [phone, setPhone] = useState('');
   const [dob, setDob] = useState('');
   const [academicTitle, setAcademicTitle] = useState('BS');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +75,9 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
       setPhone(editingStaff.phone || '');
       setDob(editingStaff.dob || '');
       setAcademicTitle(editingStaff.academic_title || 'BS');
+      setUsername(editingStaff.username || '');
+      setPassword('');
+      setMustChangePassword(editingStaff.must_change_password || false);
       setIsActive(editingStaff.is_active);
     } else {
       const randomHex = Math.floor(1000 + Math.random() * 9000);
@@ -87,10 +94,47 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
       setPhone('');
       setDob('');
       setAcademicTitle('BS');
+      setUsername('');
+      setPassword('Med@2026!');
+      setMustChangePassword(true);
       setIsActive(true);
     }
     setErrorMessage(null);
   }, [editingStaff, isOpen]);
+
+  const handleSuggestUsername = () => {
+    const rolePrefix: Record<string, string> = {
+      doctor: 'bs',
+      nurse: 'dd',
+      pharmacist: 'ds',
+      biomedical_engineer: 'ks',
+      director: 'gd',
+    };
+    const prefix = rolePrefix[role] || 'nv';
+    const clean = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .trim()
+      .toLowerCase();
+    const parts = clean.split(/\s+/).filter(
+      (p) => !['bs', 'bsck', 'bscki', 'bsckii', 'ths', 'ts', 'pgs', 'gs', 'dd', 'ds', 'ks', 'cn'].includes(p)
+    );
+    if (parts.length > 0) {
+      setUsername(`${prefix}_${parts[parts.length - 1]}`);
+    } else {
+      setUsername(`${prefix}_${Math.floor(100 + Math.random() * 900)}`);
+    }
+  };
+
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pwd = 'Med@';
+    for (let i = 0; i < 8; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setPassword(pwd);
+  };
 
   const handleRoleChange = (newRole: string) => {
     setRole(newRole);
@@ -129,6 +173,14 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
       setErrorMessage('Số điện thoại không hợp lệ (gồm 9 - 11 chữ số).');
       return;
     }
+    if (username.trim() && !/^[a-z0-9_.-]{3,50}$/i.test(username.trim())) {
+      setErrorMessage('Tên đăng nhập không hợp lệ. Chỉ chấp nhận chữ cái không dấu, số, dấu gạch dưới (từ 3-50 ký tự).');
+      return;
+    }
+    if (password.trim() && password.trim().length < 6) {
+      setErrorMessage('Mật khẩu phải có độ dài tối thiểu 6 ký tự.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -147,6 +199,9 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
             phone: phone.trim() || undefined,
             dob: dob.trim() || undefined,
             academic_title: academicTitle || undefined,
+            username: username.trim() || undefined,
+            password: password.trim() || undefined,
+            must_change_password: mustChangePassword,
             is_active: isActive,
           },
           true
@@ -167,6 +222,9 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
             phone: phone.trim() || undefined,
             dob: dob.trim() || undefined,
             academic_title: academicTitle || undefined,
+            username: username.trim() || undefined,
+            password: password.trim() || undefined,
+            must_change_password: mustChangePassword,
             is_active: isActive,
           },
           false
@@ -423,6 +481,104 @@ export const StaffModalCreateEdit: React.FC<StaffModalCreateEditProps> = ({
                   <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
                   <span>{isActive ? 'Đang công tác (Active)' : 'Tạm ngưng công tác'}</span>
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Cụm 4: Tài khoản Web & Xác thực Mật khẩu */}
+          <div className="space-y-3 pt-3 border-t border-slate-100">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-teal-700" />
+                <span>4. Tài khoản Đăng nhập Web &amp; Mật khẩu bảo mật</span>
+              </span>
+              <span className="text-3xs font-mono font-normal text-slate-400">
+                Argon2id · Không lưu Plaintext
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
+              {/* Tên đăng nhập (Username) */}
+              <div className="sm:col-span-6">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tên đăng nhập (Username)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ''))}
+                    placeholder="VD: bs_hung, dd_thu"
+                    className="flex-1 h-9 px-3 rounded-lg border border-slate-200 font-mono text-xs text-slate-900 focus:border-teal-600 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSuggestUsername}
+                    disabled={!name.trim()}
+                    className="h-9 px-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-teal-50 hover:border-teal-300 text-xs font-medium text-slate-700 flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
+                    title="Gợi ý tên đăng nhập từ họ tên"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-teal-700" />
+                    <span>Gợi ý</span>
+                  </button>
+                </div>
+                <p className="text-3xs text-slate-400 mt-1">Dùng để đăng nhập hệ thống buồng bệnh qua Web.</p>
+              </div>
+
+              {/* Mật khẩu khởi tạo / thay đổi */}
+              <div className="sm:col-span-6">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {isEditing ? 'Mật khẩu mới (để trống nếu giữ nguyên)' : 'Mật khẩu ban đầu'}
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={isEditing ? '••••••••' : 'Nhập mật khẩu...'}
+                      className="w-full h-9 px-3 pr-8 rounded-lg border border-slate-200 font-mono text-xs text-slate-900 focus:border-teal-600 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                      title={showPassword ? 'Ẩn' : 'Hiện'}
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePassword}
+                    className="h-9 px-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-medium text-slate-700 flex items-center gap-1 transition cursor-pointer"
+                    title="Tạo mật khẩu an toàn ngẫu nhiên"
+                  >
+                    <Key className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Tạo MK</span>
+                  </button>
+                </div>
+                <p className="text-3xs text-slate-400 mt-1">Tối thiểu 6 ký tự. Mã hóa an toàn chuẩn Argon2id.</p>
+              </div>
+
+              {/* Bắt buộc đổi mật khẩu */}
+              <div className="sm:col-span-12">
+                <label className="flex items-center gap-2.5 p-2.5 bg-slate-50/70 rounded-lg border border-slate-200/80 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={mustChangePassword}
+                    onChange={(e) => setMustChangePassword(e.target.checked)}
+                    className="rounded text-teal-700 focus:ring-teal-600 cursor-pointer"
+                  />
+                  <div className="text-xs">
+                    <span className="font-semibold text-slate-800">
+                      Yêu cầu nhân viên đổi mật khẩu ở lần đăng nhập đầu tiên
+                    </span>
+                    <span className="text-3xs text-slate-500 block">
+                      Khuyến nghị chính sách an toàn thông tin y tế ISO 27001 và HIS bệnh viện.
+                    </span>
+                  </div>
+                </label>
               </div>
             </div>
           </div>

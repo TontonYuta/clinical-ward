@@ -155,6 +155,9 @@ async def lifespan(app: FastAPI):
             ("phone", "VARCHAR"),
             ("dob", "VARCHAR"),
             ("academic_title", "VARCHAR"),
+            ("username", "VARCHAR(100)"),
+            ("hashed_password", "VARCHAR(255)"),
+            ("must_change_password", "BOOLEAN DEFAULT 0"),
             ("is_active", "BOOLEAN DEFAULT 1"),
             ("avatar_url", "VARCHAR"),
             ("updated_at", "DATETIME"),
@@ -170,6 +173,24 @@ async def lifespan(app: FastAPI):
         if not user:
             print("Database is empty. Automatically running seed...")
             await seed()
+        else:
+            # Đồng bộ username và password mã hóa cho các tài khoản mẫu ban đầu nếu chưa có
+            default_seed_credentials = {
+                "u-1": ("dieu_duong_test", "$argon2id$v=19$m=65536,t=3,p=4$7+r9w6b6RcRrYWuBMNhAOQ$z1hYuBoo4cFF5LmETfpF6B9MGHn5j1GiyUrz4HX7drQ"),
+                "u-2": ("ky_su_test", "$argon2id$v=19$m=65536,t=3,p=4$dJg7GQ+a3Xltq4bAcwF87w$D5SP4Pin+UYpyPuj37nCQbAPCooaxc1wIy0sCwD8X8w"),
+                "u-3": ("duoc_si_test", "$argon2id$v=19$m=65536,t=3,p=4$Oz9YAegDQmRT5JincRBH7A$rZzZsXh++h4esywOsYDy/bjA7Ox8+HrdyeetDFG/QIs"),
+                "u-4": ("bac_si_test", "$argon2id$v=19$m=65536,t=3,p=4$sNu3Zh2CciyrxlC0KlK0OA$qlmNJiw+sN+WywQOt+ybYWEPHIxeKtXL5LK+POsw/PQ"),
+                "u-5": ("director", "$argon2id$v=19$m=65536,t=3,p=4$GF3Hc+mjNdKugpBguR6tww$KDPSqJ29VEb1mS9e+lsdl2zUEFxlGq0j1c6JRUg9qwU"),
+            }
+            changed = False
+            for uid, (uname, phash) in default_seed_credentials.items():
+                u_row = await session.get(User, uid)
+                if u_row and not u_row.username:
+                    u_row.username = uname
+                    u_row.hashed_password = phash
+                    changed = True
+            if changed:
+                await session.commit()
 
     # Seed 55k DAV drugs if table is empty
     seed_dav_registry_if_needed()

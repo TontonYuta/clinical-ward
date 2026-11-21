@@ -18,31 +18,46 @@ USERS_DATA = [
         "id": "u-1", "role": "nurse", "name": "ĐD. Lê Thị Thu", "role_name": "Điều Dưỡng Ca Trực",
         "department": "Khoa Cấp Cứu A9", "practice_certificate": "004812/HN-CCHN",
         "pin_code": "1111", "rfid_card_id": "RFID-NURSE-8821",
-        "responsibilities": "Ghi nợ thuốc cấp cứu ca đêm (TT 22), báo hỏng máy/phụ kiện (NĐ 98), nộp vỏ ống Morphin (TT 20)"
+        "responsibilities": "Ghi nợ thuốc cấp cứu ca đêm (TT 22), báo hỏng máy/phụ kiện (NĐ 98), nộp vỏ ống Morphin (TT 20)",
+        "username": "dieu_duong_test",
+        "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$7+r9w6b6RcRrYWuBMNhAOQ$z1hYuBoo4cFF5LmETfpF6B9MGHn5j1GiyUrz4HX7drQ",
+        "must_change_password": False,
     },
     {
         "id": "u-2", "role": "biomedical_engineer", "name": "KS. Đặng Văn Nam", "role_name": "Kỹ Sư Trang Thiết Bị Y Tế",
         "department": "Phòng Vật Tư - TBYT", "practice_certificate": "BME-204/VTYT",
         "pin_code": "3333", "rfid_card_id": "RFID-BME-6672",
-        "responsibilities": "Tiếp nhận sửa máy, quản lý sổ lý lịch máy, theo dõi hạn tem kiểm định (NĐ 98), kiểm kê 31/12 (NĐ 151)"
+        "responsibilities": "Tiếp nhận sửa máy, quản lý sổ lý lịch máy, theo dõi hạn tem kiểm định (NĐ 98), kiểm kê 31/12 (NĐ 151)",
+        "username": "ky_su_test",
+        "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$dJg7GQ+a3Xltq4bAcwF87w$D5SP4Pin+UYpyPuj37nCQbAPCooaxc1wIy0sCwD8X8w",
+        "must_change_password": False,
     },
     {
         "id": "u-3", "role": "pharmacist", "name": "DS. Nguyễn Bích Ngọc", "role_name": "Dược Sĩ Kho Dược",
         "department": "Kho Dược Lâm Sàng", "practice_certificate": "001098/BYT-CCHN",
         "pin_code": "2222", "rfid_card_id": "RFID-PHARM-1190",
-        "responsibilities": "Duyệt hoàn bù nợ phiếu (TT 22), xuất kho FEFO (TT 36), giám sát chuỗi lạnh vắc xin, chủ trì hủy vỏ Morphin (TT 20)"
+        "responsibilities": "Duyệt hoàn bù nợ phiếu (TT 22), xuất kho FEFO (TT 36), giám sát chuỗi lạnh vắc xin, chủ trì hủy vỏ Morphin (TT 20)",
+        "username": "duoc_si_test",
+        "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$Oz9YAegDQmRT5JincRBH7A$rZzZsXh++h4esywOsYDy/bjA7Ox8+HrdyeetDFG/QIs",
+        "must_change_password": False,
     },
     {
         "id": "u-4", "role": "doctor", "name": "BS. Trần Văn Hùng", "role_name": "Bác Sĩ Điều Trị",
         "department": "Khoa Hồi Sức Tích Cực (ICU)", "practice_certificate": "002341/HN-CCHN",
         "pin_code": "4444", "rfid_card_id": "RFID-DOC-9943",
-        "responsibilities": "Kê đơn bù thuốc cấp cứu (TT 22), ký biên bản làm chứng hủy vỏ Morphin (TT 20), nghiệm thu máy tiếp nhận (NĐ 98)"
+        "responsibilities": "Kê đơn bù thuốc cấp cứu (TT 22), ký biên bản làm chứng hủy vỏ Morphin (TT 20), nghiệm thu máy tiếp nhận (NĐ 98)",
+        "username": "bac_si_test",
+        "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$sNu3Zh2CciyrxlC0KlK0OA$qlmNJiw+sN+WywQOt+ybYWEPHIxeKtXL5LK+POsw/PQ",
+        "must_change_password": False,
     },
     {
         "id": "u-5", "role": "director", "name": "TS.BS. Nguyễn Văn An", "role_name": "Ban Giám Đốc Bệnh Viện",
         "department": "Ban Giám Đốc", "practice_certificate": "001002/BYT-CCHN",
         "pin_code": "9999", "rfid_card_id": "RFID-DIR-0001",
-        "responsibilities": "Phê duyệt thanh lý tài sản nhà nước (NĐ 151), giải phóng lô vắc xin sau sự cố chuỗi lạnh, giám sát toàn viện"
+        "responsibilities": "Phê duyệt thanh lý tài sản nhà nước (NĐ 151), giải phóng lô vắc xin sau sự cố chuỗi lạnh, giám sát toàn viện",
+        "username": "director",
+        "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$GF3Hc+mjNdKugpBguR6tww$KDPSqJ29VEb1mS9e+lsdl2zUEFxlGq0j1c6JRUg9qwU",
+        "must_change_password": False,
     }
 ]
 

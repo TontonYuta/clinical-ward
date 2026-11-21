@@ -180,16 +180,16 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         header = request.headers.get("authorization", "")
         if header.lower().startswith("bearer "):
             token = header[7:].strip()
-        user = verify_token(token or "", self.secret_key)
+        from app.config import settings
+        user = verify_token(token or "", self.secret_key) or verify_token(token or "", settings.SECRET_KEY)
         if user is None:
-            from app.config import settings
             if not settings.AUTH_REQUIRED:
                 user = AuthenticatedUser(username="test_director", role="director", session_id="sandbox_session")
             else:
                 return JSONResponse({"detail": "Authentication required"}, status_code=401, headers={"WWW-Authenticate": "Bearer"})
         if self.identity_store_enabled:
             from app.config import settings
-            if not settings.AUTH_REQUIRED and getattr(user, "session_id", None) == "sandbox_session":
+            if (not settings.AUTH_REQUIRED and getattr(user, "session_id", None) == "sandbox_session") or not settings.IDENTITY_DATABASE_URL:
                 pass
             else:
                 if not user.session_id:

@@ -16,6 +16,15 @@ router = APIRouter(prefix="/auth", tags=["Staff authentication"])
 _LOGIN_CACHE: dict[str, tuple[float, dict]] = {}
 _LOGIN_CACHE_TTL = 300.0  # 5 phút
 
+def invalidate_login_cache(username: str | None = None) -> None:
+    """Xóa bộ nhớ đệm đăng nhập khi đổi mật khẩu hoặc đổi trạng thái nhân sự."""
+    global _LOGIN_CACHE
+    if username is None:
+        _LOGIN_CACHE.clear()
+    else:
+        prefix = f"{username.strip().lower()}:"
+        _LOGIN_CACHE = {k: v for k, v in _LOGIN_CACHE.items() if not k.lower().startswith(prefix)}
+
 DEMO_ROLES = {
     "admin": "director",
     "director": "director",
