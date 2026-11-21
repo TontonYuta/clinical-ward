@@ -13,6 +13,9 @@ interface AdminSidebarProps {
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   currentTab,
   onTabChange,
+  activeKeyCount = 0,
+  todayUsagePct = 0,
+  esmsBalance,
 }) => {
   const tabs = [
     { id: 'telemetry' as AdminTab, label: 'Giám sát & Ngân sách AI', icon: BarChart3 },
