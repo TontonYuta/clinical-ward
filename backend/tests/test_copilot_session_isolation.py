@@ -87,3 +87,64 @@ def test_conversation_history_evicts_oldest_until_character_budget():
     assert "question-4" in rendered
     assert "question-0" not in rendered
     clear_session("alice:history-eviction")
+
+
+import pytest
+from app.database import get_db
+from app.models.copilot_log import CopilotChatLog
+from app.routers.copilot import get_user_chat_sessions, delete_user_chat_session
+
+
+@pytest.mark.asyncio
+async def test_get_user_chat_sessions_isolated_by_username():
+    async for db in get_db():
+        # Tạo bản ghi log thử nghiệm cho 2 người dùng khác nhau
+        log_lan = CopilotChatLog(
+            id="test-log-lan-1",
+            session_id="bac_si_lan:sess_lan_1",
+            user_name="bac_si_lan",
+            user_role="doctor",
+            query="Bệnh nhân An cần Morphin",
+            reply_text="Đã kiểm tra liều Morphin",
+            is_useful=True
+        )
+        log_hung = CopilotChatLog(
+            id="test-log-hung-1",
+            session_id="dieu_duong_hung:sess_hung_1",
+            user_name="dieu_duong_hung",
+            user_role="nurse",
+            query="Bàn giao ca trực sáng",
+            reply_text="Đã bàn giao nợ vỏ",
+            is_useful=True
+        )
+        db.add(log_lan)
+        db.add(log_hung)
+        await db.commit()
+
+        try:
+            # 1. Bác sĩ Lan truy vấn danh sách phiên
+            req_lan = _request(AuthenticatedUser("bac_si_lan", "doctor"))
+            sessions_lan = await get_user_chat_sessions(req_lan, limit=10, db=db)
+            assert any(s.id == "sess_lan_1" for s in sessions_lan), "Bác sĩ Lan phải thấy phiên của mình"
+            assert not any(s.id == "sess_hung_1" for s in sessions_lan), "Bác sĩ Lan TUYỆT ĐỐI KHÔNG được thấy phiên của Điều dưỡng Hùng"
+
+            # 2. Điều dưỡng Hùng truy vấn danh sách phiên
+            req_hung = _request(AuthenticatedUser("dieu_duong_hung", "nurse"))
+            sessions_hung = await get_user_chat_sessions(req_hung, limit=10, db=db)
+            assert any(s.id == "sess_hung_1" for s in sessions_hung), "Điều dưỡng Hùng phải thấy phiên của mình"
+            assert not any(s.id == "sess_lan_1" for s in sessions_hung), "Điều dưỡng Hùng TUYỆT ĐỐI KHÔNG được thấy phiên của Bác sĩ Lan"
+
+            # 3. Bác sĩ Lan xóa phiên sess_lan_1
+            del_res = await delete_user_chat_session("sess_lan_1", req_lan, db=db)
+            assert del_res["status"] == "ok"
+
+            # Xác nhận phiên của Lan đã xóa, nhưng phiên của Hùng vẫn còn nguyên vẹn 100%
+            recheck_lan = await get_user_chat_sessions(req_lan, limit=10, db=db)
+            assert not any(s.id == "sess_lan_1" for s in recheck_lan)
+            recheck_hung = await get_user_chat_sessions(req_hung, limit=10, db=db)
+            assert any(s.id == "sess_hung_1" for s in recheck_hung)
+        finally:
+            # Dọn dẹp
+            await delete_user_chat_session("sess_hung_1", req_hung, db=db)
+            await delete_user_chat_session("sess_lan_1", req_lan, db=db)
+        break

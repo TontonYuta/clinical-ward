@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Bot, Plus, PanelLeftClose, Search, MessageSquare, Edit3, Trash2, Check, X } from 'lucide-react';
+import { Bot, Plus, PanelLeftClose, Search, MessageSquare, Edit3, Trash2, Check, X, RefreshCw } from 'lucide-react';
 import { ChatSession } from '../../types/chatSession';
 
 interface ChatSessionsSidebarProps {
@@ -17,6 +17,8 @@ interface ChatSessionsSidebarProps {
   onNewSession: () => void;
   onDeleteSession: (sessionId: string) => void;
   onRenameSession: (sessionId: string, newTitle: string) => void;
+  isSyncing?: boolean;
+  onManualSync?: () => void;
 }
 
 export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
@@ -27,7 +29,9 @@ export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
   onSelectSession,
   onNewSession,
   onDeleteSession,
-  onRenameSession
+  onRenameSession,
+  isSyncing = false,
+  onManualSync
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,15 +69,28 @@ export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
               <span className="w-2 h-2 rounded-full bg-teal-500 ring-2 ring-teal-200 shrink-0" title="Trực tuyến" />
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onToggle}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/70 transition cursor-pointer shrink-0"
-            title="Đóng thanh bên"
-            aria-label="Đóng thanh bên"
-          >
-            <PanelLeftClose className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {onManualSync && (
+              <button
+                type="button"
+                onClick={onManualSync}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-slate-200/70 transition cursor-pointer"
+                title={isSyncing ? "Đang đồng bộ đám mây..." : "Đồng bộ đám mây"}
+                aria-label="Đồng bộ đám mây"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-teal-600' : ''}`} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onToggle}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/70 transition cursor-pointer"
+              title="Đóng thanh bên"
+              aria-label="Đóng thanh bên"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <button

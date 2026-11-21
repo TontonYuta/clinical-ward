@@ -17,7 +17,8 @@ import {
   normalizeUserStorageKey,
   getScopedSessionsKey,
   getScopedActiveIdKey,
-  clearUserChatStorage
+  clearUserChatStorage,
+  mergeSessions
 } from '../src/utils/storage/chatSessionStorage';
 import { ChatSession } from '../src/types/chatSession';
 
@@ -177,6 +178,50 @@ assert.equal(localStorage.getItem('clinical_chat_sessions_v1'), null, 'Khóa cũ
 assert.ok(localStorage.getItem('clinical_chat_sessions_admin_portal') !== null, 'Dữ liệu đã chuyển sang key mới của admin');
 console.log('✅ Migration tự động thành công và an toàn tuyệt đối!');
 
+// 11. Kiểm thử Thuật toán Ghép hợp Đám mây & Đồng bộ Xuyên Thiết bị (SWR Cloud Merge)
+console.log('\n--- 11. Kiểm thử Ghép hợp Đám mây & Đồng bộ Xuyên Thiết bị ---');
+const localSess1: ChatSession = {
+  id: 'sess_pc1',
+  title: 'Hội thoại tại Buồng Cấp cứu',
+  createdAt: 1000,
+  updatedAt: 2000,
+  messages: [
+    { id: 'm1', sender: 'user', text: 'Bệnh nhân cần Paracetamol', timestamp: '10:00' },
+    { id: 'm2', sender: 'agent', text: 'Liều 500mg IV', timestamp: '10:01' }
+  ]
+};
+
+const cloudSess2: ChatSession = {
+  id: 'sess_pc2_cloud',
+  title: 'Hội thoại tại Phòng Giao ban',
+  createdAt: 3000,
+  updatedAt: 4000,
+  messages: [
+    { id: 'm3', sender: 'user', text: 'Báo cáo ca trực hôm qua', timestamp: '11:00' },
+    { id: 'm4', sender: 'agent', text: 'Tổng hợp nợ 2 vỏ Morphin', timestamp: '11:01' }
+  ]
+};
+
+// Trường hợp 1: Máy mới chưa có sess_pc2_cloud, nhận từ máy chủ
+const merged1 = mergeSessions([localSess1], [cloudSess2]);
+assert.equal(merged1.length, 2, 'Phải có đủ 2 phiên từ cả máy tính và máy chủ');
+assert.equal(merged1[0].id, 'sess_pc2_cloud', 'Phiên mới hơn updatedAt phải được xếp lên đầu');
+assert.equal(merged1[1].id, 'sess_pc1');
+console.log('✅ Ghép hợp phiên xuyên máy tính thành công, không thiếu phiên nào!');
+
+// Trường hợp 2: Cùng session id nhưng local đang chat dở có nhiều tin nhắn hơn cloud
+const localSess1Updated: ChatSession = {
+  ...localSess1,
+  updatedAt: 5000,
+  messages: [
+    ...localSess1.messages,
+    { id: 'm5', sender: 'user', text: 'Cho thêm liều 1g', timestamp: '10:05' }
+  ]
+};
+const mergedConflict = mergeSessions([localSess1Updated], [localSess1]);
+assert.equal(mergedConflict.find(s => s.id === 'sess_pc1')?.messages.length, 3, 'Phải bảo toàn bản có nhiều tin nhắn nhất');
+console.log('✅ Chống xung đột dữ liệu: Bảo toàn tin nhắn mới nhất thành công!');
+
 console.log('\n======================================================================');
-console.log('🎉 TOÀN BỘ 10 NHÓM KIỂM THỬ ĐA PHIÊN & PHÂN TÁCH TÀI KHOẢN ĐÃ ĐẠT 100% GREEN!');
+console.log('🎉 TOÀN BỘ 11 NHÓM KIỂM THỬ ĐA PHIÊN & ĐỒNG BỘ ĐÁM MÂY ĐÃ ĐẠT 100% GREEN!');
 console.log('======================================================================');

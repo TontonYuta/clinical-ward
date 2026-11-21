@@ -5,7 +5,7 @@
  * Đảm bảo mỗi tài khoản (bác sĩ, điều dưỡng, admin) sở hữu không gian lịch sử trò chuyện độc lập.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChatSession } from '../types/chatSession';
 import { ChatMessage } from '../types/clinical';
 import { INITIAL_CHAT_MESSAGES } from '../data/initialData';
@@ -16,8 +16,10 @@ import {
   saveActiveSessionId,
   createNewSession,
   deleteChatSession,
-  renameChatSession
+  renameChatSession,
+  mergeSessions
 } from '../utils/storage/chatSessionStorage';
+import { fetchUserCloudSessions, deleteUserCloudSession } from '../services/chatSyncApi';
 
 export interface UseUserChatSessionsReturn {
   chatSessions: ChatSession[];
@@ -31,6 +33,9 @@ export interface UseUserChatSessionsReturn {
   handleDeleteSession: (sessionId: string) => void;
   handleRenameSession: (sessionId: string, newTitle: string) => void;
   handleClearCurrentMessages: () => void;
+  isSyncing: boolean;
+  lastSyncedAt: number | null;
+  triggerManualSync: () => Promise<void>;
 }
 
 export function useUserChatSessions(authenticatedUsername?: string): UseUserChatSessionsReturn {
@@ -40,22 +45,55 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
   const [activeChatSessionId, setActiveChatSessionId] = useState<string>(() =>
     getActiveSessionId(chatSessions, authenticatedUsername)
   );
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const syncInProgress = useRef<boolean>(false);
 
-  // 1. Đồng bộ khi chuyển đổi người dùng (login, logout, switch account)
+  // 1. Hàm đồng bộ Đám mây SWR (Stale-While-Revalidate)
+  const syncWithCloud = useCallback(async (user?: string) => {
+    if (!user || user === 'guest' || syncInProgress.current) return;
+    syncInProgress.current = true;
+    setIsSyncing(true);
+    try {
+      const cloudSessions = await fetchUserCloudSessions(user);
+      if (cloudSessions.length > 0) {
+        setChatSessions(prev => {
+          const merged = mergeSessions(prev, cloudSessions);
+          saveChatSessions(merged, user);
+          return merged;
+        });
+        setLastSyncedAt(Date.now());
+      } else {
+        setLastSyncedAt(Date.now());
+      }
+    } catch (err) {
+      console.warn('[useUserChatSessions] Lỗi đồng bộ đám mây:', err);
+    } finally {
+      setIsSyncing(false);
+      syncInProgress.current = false;
+    }
+  }, []);
+
+  // 2. Đồng bộ khi chuyển đổi người dùng (login, logout, switch account)
   useEffect(() => {
     const nextSessions = loadChatSessions(authenticatedUsername);
     const nextActiveId = getActiveSessionId(nextSessions, authenticatedUsername);
     setChatSessions(nextSessions);
     setActiveChatSessionId(nextActiveId);
-  }, [authenticatedUsername]);
 
-  // 2. Tự động lưu bền vững theo tài khoản (chặn ghi I/O khi đang streaming)
+    // Tự động kéo dữ liệu đám mây ngầm nếu là tài khoản đã xác thực
+    if (authenticatedUsername && authenticatedUsername !== 'guest') {
+      void syncWithCloud(authenticatedUsername);
+    }
+  }, [authenticatedUsername, syncWithCloud]);
+
+  // 3. Tự động lưu bền vững theo tài khoản (chặn ghi I/O khi đang streaming)
   useEffect(() => {
     if (chatSessions.some(s => s.messages.some(m => m.isStreaming))) return;
     saveChatSessions(chatSessions, authenticatedUsername);
   }, [chatSessions, authenticatedUsername]);
 
-  // 3. Lấy phiên hiện hành
+  // 4. Lấy phiên hiện hành
   const activeSession = useMemo(() => {
     return (
       chatSessions.find(s => s.id === activeChatSessionId) ||
@@ -66,7 +104,7 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
 
   const chatMessages = activeSession.messages;
 
-  // 4. Cập nhật tin nhắn trong phiên hiện hành
+  // 5. Cập nhật tin nhắn trong phiên hiện hành
   const setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>> = useCallback(
     (action) => {
       setChatSessions(prevSessions => {
@@ -86,7 +124,7 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
     [activeChatSessionId]
   );
 
-  // 5. Thao tác phiên
+  // 6. Thao tác phiên
   const handleNewSession = useCallback(() => {
     const fresh = createNewSession();
     setChatSessions(prev => {
@@ -113,6 +151,10 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
         setActiveChatSessionId(res.nextActiveId);
         return res.sessions;
       });
+      // Xóa đồng thời trên server ngầm để các máy khác cũng được cập nhật
+      if (authenticatedUsername && authenticatedUsername !== 'guest') {
+        void deleteUserCloudSession(sessionId, authenticatedUsername);
+      }
     },
     [authenticatedUsername]
   );
@@ -131,6 +173,10 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
     setChatMessages(INITIAL_CHAT_MESSAGES);
   }, [setChatMessages]);
 
+  const triggerManualSync = useCallback(async () => {
+    await syncWithCloud(authenticatedUsername);
+  }, [syncWithCloud, authenticatedUsername]);
+
   return {
     chatSessions,
     setChatSessions,
@@ -142,6 +188,9 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
     handleSelectSession,
     handleDeleteSession,
     handleRenameSession,
-    handleClearCurrentMessages
+    handleClearCurrentMessages,
+    isSyncing,
+    lastSyncedAt,
+    triggerManualSync
   };
 }

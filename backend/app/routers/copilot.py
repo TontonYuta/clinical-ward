@@ -8,7 +8,8 @@ import asyncio
 import re
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.copilot_log import CopilotChatLog
@@ -404,6 +405,139 @@ async def get_copilot_chat_history(
     stmt = stmt.order_by(CopilotChatLog.created_at.desc()).limit(limit)
     res = await db.execute(stmt)
     return res.scalars().all()
+
+
+def _generate_session_title(first_query: str) -> str:
+    clean = " ".join(first_query.strip().split())
+    if not clean:
+        return "Cuộc trò chuyện mới"
+    bn_match = re.search(r"(?:bệnh nhân|bn)\s+([A-ZÀ-ỸĐa-zà-ỹđ\s]+?)(?:\s+cần|\s+tiêm|\s+dùng|\s+buồng|\s+khoa|$)", clean, re.IGNORECASE)
+    if bn_match and len(bn_match.group(1).strip()) > 1:
+        p_name = " ".join(bn_match.group(1).strip().split()[:3])
+        drug_match = re.search(r"(?:morphin|fentanyl|adrenalin|diazepam|ceftriaxone|kcl|aspirin|paracetamol)", clean, re.IGNORECASE)
+        return f"BN {p_name} - {drug_match.group(0).upper()}" if drug_match else f"Bệnh nhân {p_name}"
+    if re.search(r"tương tác", clean, re.IGNORECASE):
+        return clean[:32] + "..." if len(clean) > 35 else clean
+    if re.search(r"cận hạn|fefo", clean, re.IGNORECASE):
+        return "Kiểm tra FEFO & Hạn dùng"
+    if re.search(r"hỏng|sự cố", clean, re.IGNORECASE):
+        return "Báo cáo sự cố thiết bị"
+    if re.search(r"giao ban|đối soát", clean, re.IGNORECASE):
+        return "Bàn giao ca trực"
+    return clean[:30] + "..." if len(clean) > 32 else clean
+
+
+class CopilotMessageItem(BaseModel):
+    id: str
+    sender: str
+    text: str
+    timestamp: str
+
+
+class CopilotSessionSummary(BaseModel):
+    id: str
+    title: str
+    createdAt: int
+    updatedAt: int
+    messages: list[CopilotMessageItem]
+
+
+@router.get("/user-sessions", response_model=list[CopilotSessionSummary])
+async def get_user_chat_sessions(
+    request: Request,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db)
+):
+    """Lấy danh sách các phiên trò chuyện đám mây của người dùng hiện hành để tự động đồng bộ (SWR)."""
+    authenticated = getattr(request.state, "authenticated_user", None)
+    if authenticated and getattr(authenticated, "username", None):
+        username = authenticated.username.strip()
+    else:
+        username = request.query_params.get("username", "").strip() or "test_director"
+
+    stmt = (
+        select(CopilotChatLog)
+        .where(func.lower(CopilotChatLog.user_name) == username.lower())
+        .order_by(CopilotChatLog.created_at.asc())
+        .limit(300)
+    )
+    res = await db.execute(stmt)
+    logs = res.scalars().all()
+    if not logs:
+        return []
+
+    from collections import defaultdict
+    sessions_map: dict[str, list[CopilotChatLog]] = defaultdict(list)
+    for log in logs:
+        clean_sid = log.session_id
+        prefix = f"{username.lower()}:"
+        if clean_sid.lower().startswith(prefix):
+            clean_sid = clean_sid[len(prefix):]
+        sessions_map[clean_sid].append(log)
+
+    result: list[CopilotSessionSummary] = []
+    for sid, s_logs in sessions_map.items():
+        if not s_logs:
+            continue
+        first_query = s_logs[0].query or "Cuộc trò chuyện mới"
+        title = _generate_session_title(first_query)
+        earliest_ts = int(s_logs[0].created_at.timestamp() * 1000) if s_logs[0].created_at else int(time.time() * 1000)
+        latest_ts = int(s_logs[-1].created_at.timestamp() * 1000) if s_logs[-1].created_at else earliest_ts
+
+        messages: list[CopilotMessageItem] = []
+        for log in s_logs:
+            time_str = log.created_at.strftime("%H:%M") if log.created_at else "10:00"
+            messages.append(CopilotMessageItem(
+                id=f"{log.id}-u",
+                sender="user",
+                text=log.query,
+                timestamp=time_str
+            ))
+            messages.append(CopilotMessageItem(
+                id=f"{log.id}-a",
+                sender="bot",
+                text=log.reply_text,
+                timestamp=time_str
+            ))
+
+        result.append(CopilotSessionSummary(
+            id=sid,
+            title=title,
+            createdAt=earliest_ts,
+            updatedAt=latest_ts,
+            messages=messages
+        ))
+
+    result.sort(key=lambda s: s.updatedAt, reverse=True)
+    return result[:limit]
+
+
+@router.delete("/user-sessions/{session_id}")
+async def delete_user_chat_session(
+    session_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """Xóa toàn bộ log của một phiên thuộc về người dùng hiện tại (bảo mật tuyệt đối, không xóa chéo)."""
+    authenticated = getattr(request.state, "authenticated_user", None)
+    if authenticated and getattr(authenticated, "username", None):
+        username = authenticated.username.strip()
+    else:
+        username = request.query_params.get("username", "").strip() or "test_director"
+
+    prefix = f"{username.lower()}:"
+    target_sids = [session_id, f"{prefix}{session_id}"]
+
+    del_stmt = (
+        delete(CopilotChatLog)
+        .where(
+            func.lower(CopilotChatLog.user_name) == username.lower(),
+            CopilotChatLog.session_id.in_(target_sids)
+        )
+    )
+    await db.execute(del_stmt)
+    await db.commit()
+    return {"status": "ok", "deleted_session_id": session_id}
 
 @router.post("/rag", response_model=RagResponse)
 async def query_pure_clinical_rag(payload: RagQuery):

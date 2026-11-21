@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { MessageSquare, Plus, Trash2, Edit3, Check, X, Search, Clock } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, Edit3, Check, X, Search, Clock, RefreshCw } from 'lucide-react';
 import { ChatSession } from '../../types/chatSession';
 
 interface ChatSessionsDrawerProps {
@@ -17,6 +17,8 @@ interface ChatSessionsDrawerProps {
   onNewSession: () => void;
   onDeleteSession: (sessionId: string) => void;
   onRenameSession: (sessionId: string, newTitle: string) => void;
+  isSyncing?: boolean;
+  onManualSync?: () => void;
 }
 
 export const ChatSessionsDrawer: React.FC<ChatSessionsDrawerProps> = ({
@@ -27,7 +29,9 @@ export const ChatSessionsDrawer: React.FC<ChatSessionsDrawerProps> = ({
   onSelectSession,
   onNewSession,
   onDeleteSession,
-  onRenameSession
+  onRenameSession,
+  isSyncing = false,
+  onManualSync
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,10 +72,27 @@ export const ChatSessionsDrawer: React.FC<ChatSessionsDrawerProps> = ({
           <div className="flex items-center gap-2 font-bold text-sm text-slate-800">
             <Clock className="w-4 h-4 text-teal-700" />
             <span>Lịch sử hội thoại</span>
+            {isSyncing && (
+              <span className="text-[10px] font-normal text-teal-600 flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Đang đồng bộ...
+              </span>
+            )}
           </div>
-          <button type="button" onClick={onClose} className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onManualSync && (
+              <button
+                type="button"
+                onClick={onManualSync}
+                className="p-1 rounded-md text-slate-400 hover:text-teal-700 hover:bg-slate-100 cursor-pointer"
+                title={isSyncing ? "Đang đồng bộ đám mây..." : "Đồng bộ với đám mây"}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-teal-600' : ''}`} />
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="p-3 border-b border-slate-100 space-y-2">

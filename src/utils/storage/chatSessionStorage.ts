@@ -174,3 +174,42 @@ export function clearUserChatStorage(username?: string): void {
     console.warn('[SessionStorage] Lỗi dọn dẹp scoped storage:', err);
   }
 }
+
+/**
+ * Ghép hợp thông minh giữa phiên cục bộ (Local) và phiên đám mây (Cloud)
+ * Đảm bảo không xung đột, không trùng lặp, bảo toàn tối đa số tin nhắn.
+ */
+export function mergeSessions(local: ChatSession[], cloud: ChatSession[]): ChatSession[] {
+  const map = new Map<string, ChatSession>();
+
+  // 1. Nạp danh sách cloud sessions
+  for (const c of cloud) {
+    if (c && c.id) {
+      map.set(c.id, c);
+    }
+  }
+
+  // 2. Ghép local sessions vào (nếu local có nhiều tin nhắn hơn hoặc mới hơn, ưu tiên local)
+  for (const l of local) {
+    if (!l || !l.id) continue;
+    const existing = map.get(l.id);
+    if (!existing) {
+      map.set(l.id, l);
+    } else {
+      const localMsgCount = Array.isArray(l.messages) ? l.messages.length : 0;
+      const cloudMsgCount = Array.isArray(existing.messages) ? existing.messages.length : 0;
+      if (localMsgCount >= cloudMsgCount || (l.updatedAt || 0) >= (existing.updatedAt || 0)) {
+        map.set(l.id, {
+          ...existing,
+          ...l,
+          messages: localMsgCount >= cloudMsgCount ? l.messages : existing.messages
+        });
+      }
+    }
+  }
+
+  // 3. Sắp xếp phiên mới nhất lên đầu, giới hạn tối đa MAX_SESSIONS
+  return Array.from(map.values())
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    .slice(0, MAX_SESSIONS);
+}

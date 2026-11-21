@@ -116,7 +116,9 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     handleSelectSession,
     handleDeleteSession,
     handleRenameSession,
-    handleClearCurrentMessages
+    handleClearCurrentMessages,
+    isSyncing,
+    triggerManualSync
   } = useUserChatSessions(authenticatedUsername);
   const sidebarAutoCollapseTimer = useRef<number | null>(null);
   const sidebarTemporaryPreview = useRef(false);
@@ -2185,6 +2187,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             onNewSession={handleNewSession}
             onDeleteSession={handleDeleteSession}
             onRenameSession={handleRenameSession}
+            isSyncing={isSyncing}
+            onManualSync={triggerManualSync}
           />
         </div>
       )}

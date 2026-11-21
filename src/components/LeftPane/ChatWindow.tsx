@@ -36,6 +36,7 @@ interface ChatWindowProps {
   sessions?: ChatSession[]; activeSessionId?: string; activeSessionTitle?: string;
   onSelectSession?: (sessionId: string) => void; onNewSession?: () => void;
   onDeleteSession?: (sessionId: string) => void; onRenameSession?: (sessionId: string, newTitle: string) => void;
+  isSyncing?: boolean; onManualSync?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -43,7 +44,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
   lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs, onOpenUserGuide,
   isFullScreen = false, onToggleFullScreen,
-  sessions, activeSessionId, activeSessionTitle, onSelectSession, onNewSession, onDeleteSession, onRenameSession
+  sessions, activeSessionId, activeSessionTitle, onSelectSession, onNewSession, onDeleteSession, onRenameSession,
+  isSyncing = false, onManualSync
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const outerContainerRef = useRef<HTMLDivElement>(null);
@@ -148,6 +150,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           onNewSession={() => onNewSession?.()}
           onDeleteSession={(id) => onDeleteSession?.(id)}
           onRenameSession={(id, title) => onRenameSession?.(id, title)}
+          isSyncing={isSyncing}
+          onManualSync={onManualSync}
         />
       )}
 
@@ -470,6 +474,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           onNewSession={() => onNewSession?.()}
           onDeleteSession={(id) => onDeleteSession?.(id)}
           onRenameSession={(id, title) => onRenameSession?.(id, title)}
+          isSyncing={isSyncing}
+          onManualSync={onManualSync}
         />
       )}
 
