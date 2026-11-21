@@ -1,5 +1,5 @@
 # BÁO CÁO THẨM ĐỊNH TÍNH XÁC THỰC BÁO CÁO ĐỒ ÁN 2 (FACT-CHECK AUDIT)
-**Ngày thẩm định:** Sat Nov 21 06:06:15 PM +07 2026  
+**Ngày thẩm định:** Sat Nov 21 06:33:17 PM +07 2026  
 **Tài liệu kiểm tra:** `docs/report/main.pdf` (/home/tontonyuta/Downloads/DoAn2/docs/report/main.pdf)  
 **Công cụ thẩm định:** Report Fact-Checker & Evidence Grounding Engine v2.4  
 
@@ -30,7 +30,7 @@
 | **Mật mã học & Bảo mật** | Thuật toán băm mật khẩu Argon2id (IETF RFC 9106, m=64MB, t=3, p=4) | Thực nghiệm sinh hash và verify thành công bằng module argon2: True | ✅ PASS | Thông số cấu hình m=65536 KiB chống lại hiệu quả tấn công dò vét GPU/ASIC. |
 | **Dược thư Quốc gia** | Trần liều Paracetamol đường toàn thân tối đa 4.000 mg/ngày (4g/ngày) | Chuyên luận Paracetamol - Dược thư Quốc gia Việt Nam Lần thứ III (2022) | ✅ PASS | Ngưỡng an toàn bảo vệ tế bào gan khỏi hoại tử cấp do chất chuyển hóa độc N-acetyl-p-benzoquinone imine (NAPQI). |
 | **Thư tịch & Trích dẫn** | Toàn bộ 8 trích dẫn \cite trong các chương đều có trong references.bib | Đã đối soát 100% khớp: ['argon2id_rfc9106', 'cockcroft_gault_1976', 'dtqg_2022', 'luat_kbcb_2023', 'qd1666_bhxh', 'qd5948_byt', 'tt20_2022_byt', 'tt26_2025_byt'] | ✅ PASS | Không có trích dẫn ma (Citation Hallucination) hoặc trích dẫn chưa định nghĩa. |
-| **Biên dịch PDF** | Quy mô bản báo cáo kỹ thuật hoàn chỉnh: 59 trang | Tệp main.pdf thực tế có 59 trang (Đạt chuẩn đồ án tốt nghiệp chuyên sâu) | ✅ PASS | Kích thước tệp: 449,457 bytes. |
+| **Biên dịch PDF** | Quy mô bản báo cáo kỹ thuật hoàn chỉnh: 62 trang | Tệp main.pdf thực tế có 62 trang (Đạt chuẩn đồ án tốt nghiệp chuyên sâu) | ✅ PASS | Kích thước tệp: 461,492 bytes. |
 
 ---
 

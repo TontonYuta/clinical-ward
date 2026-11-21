@@ -1,10 +1,25 @@
 \section{Kế hoạch và phương pháp kiểm thử hệ thống}
 \label{sec:testing_plan_methodology}
 
-Để kiểm chứng toàn diện chất lượng của hệ thống trước khi đưa vào vận hành, kế hoạch kiểm thử được phân định theo 3 cấp độ độc lập:
+Để kiểm chứng toàn diện độ tin cậy, tính ổn định và an toàn của hệ thống trước khi đưa vào ứng dụng thực nghiệm, kế hoạch kiểm thử được thiết kế theo mô hình kim tự tháp kiểm thử 4 cấp độ:
 
-\begin{enumerate}[leftmargin=1.5em]
-    \item \textbf{Kiểm thử đơn vị (Unit Testing):} Sử dụng framework \code{pytest} (cho Backend Python) và \code{vitest} (cho Frontend TypeScript), kiểm tra tính chính xác của các hàm logic thuần túy: hàm bóc tách hoạt chất INN, hàm tính eGFR Cockcroft-Gault, hàm sinh tích Đề-các tương tác thuốc.
-    \item \textbf{Kiểm thử tích hợp và an toàn lâm sàng (Integration \& Clinical Safety Testing):} Xây dựng bộ kiểm thử 150 kịch bản lâm sàng thực tế (\code{test_chatbot_suite.ts}) bao phủ các tình huống kê đơn có tương tác chống chỉ định (QĐ 5948/QĐ-BYT), vượt trần liều 24 giờ, bệnh nhân suy thận nặng và các trường hợp nhập sai biệt dược.
-    \item \textbf{Kiểm thử tải và hiệu năng thực tế (Load \& Latency Benchmarking):} Thực hiện đo đạc độ trễ phản hồi đệm nóng (Hot Cache) và truy vấn nguội (Cold Query) trực tiếp trên máy chủ Production đám mây qua công cụ \code{benchmark_cache_and_latency.py}.
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{Kiểm thử đơn vị (Unit Testing):}
+    \begin{itemize}[leftmargin=1.5em]
+        \item \textit{Phía Backend:} Sử dụng framework \code{pytest} và \code{pytest-asyncio} để kiểm tra độc lập các hàm toán học và logic thuần túy: hàm bóc tách hoạt chất INN (\code{active_ingredient_normalizer}), hàm tính thanh thải Creatinine theo công thức Cockcroft-Gault, hàm sinh tổ hợp cặp thuốc và hàm kiểm tra trần liều tích lũy 24 giờ.
+        \item \textit{Phía Frontend:} Sử dụng framework \code{vitest} để kiểm thử các hàm tính toán liều lượng trên giao diện và các bộ lọc tìm kiếm thuốc.
+    \end{itemize}
+
+    \item \textbf{Kiểm thử tích hợp và phân quyền bảo mật (Integration \& Security Testing):}
+    \begin{itemize}[leftmargin=1.5em]
+        \item Kiểm tra chu trình xác thực hai kênh (\textit{Dual-Channel Auth}): xác minh việc gửi đồng thời HttpOnly Cookie và Bearer Token; kiểm tra tính hợp lệ của hàm băm Argon2id khi người dùng đăng nhập hoặc đặt lại mật khẩu.
+        \item Kiểm tra cơ chế cách ly phân quyền (RBAC): đảm bảo tài khoản Điều dưỡng không thể gọi các API quản lý nhân sự của Quản trị viên (trả về HTTP 403 Forbidden).
+        \item Kiểm tra cơ chế tự động xoay vòng khóa API (\textit{Key Failover}): giả lập mã lỗi HTTP 429 từ nhà cung cấp để kiểm chứng thời gian chuyển mạch sang khóa dự phòng dưới $50\,\text{ms}$.
+    \end{itemize}
+
+    \item \textbf{Kiểm thử an toàn lâm sàng chuyên sâu (Clinical Safety \& Red-Teaming):}
+    Xây dựng bộ kịch bản kiểm thử lâm sàng gồm 150 tình huống thực tế (\code{test_chatbot_suite.ts}) bao phủ các ca bệnh phức tạp: kê đơn có cặp tương tác cấm (Quyết định 5948/QĐ-BYT), đơn thuốc có nguy cơ suy thận cấp do hội chứng Triple Whammy, người bệnh suy thận nặng cần chỉnh liều Vancomycin/Metformin, và các câu hỏi cố ý dẫn dắt mô hình trả lời ngoài phạm vi y khoa.
+
+    \item \textbf{Đo lường hiệu năng và độ trễ trên môi trường Production (Performance Benchmarking):}
+    Thực hiện đo đạc độ trễ phản hồi đệm nóng (Hot Cache) và truy vấn nguội (Cold Query) trực tiếp từ máy trạm tại Việt Nam đến máy chủ đám mây Production qua công cụ tự động \code{benchmark_cache_and_latency.py}.
 \end{enumerate}

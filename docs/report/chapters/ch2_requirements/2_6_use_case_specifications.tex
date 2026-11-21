@@ -61,3 +61,71 @@ Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ 
 \end{tabularx}
 \caption{Bảng đặc tả ca sử dụng UC02: Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click}
 \end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} Y}
+\toprule
+\textbf{Mục đặc tả} & \textbf{Nội dung chi tiết} \\
+\midrule
+\textbf{Mã ca sử dụng} & \textbf{UC03} \\
+\textbf{Tên ca sử dụng} & Tra cứu y văn Dược thư RAG có đối soát số trang \\
+\textbf{Tác nhân chính} & Bác sĩ điều trị, Dược sĩ lâm sàng \\
+\textbf{Tiền điều kiện} & Người dùng đã đăng nhập hệ thống và mở giao diện buồng bệnh hoặc thư viện tài liệu. \\
+\textbf{Hậu điều kiện} & Phản hồi được hiển thị theo mô hình hai phân vùng kèm con trỏ số trang có thể kiểm chứng. \\
+\midrule
+\textbf{Luồng sự kiện chính (Basic Flow)} & 
+\begin{enumerate}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item Người dùng nhập câu hỏi lâm sàng (ví dụ: liều dùng Ceftriaxon cho bệnh nhân suy gan, khoảng cách đưa thuốc).
+    \item Bộ định tuyến NLU xác thực câu hỏi thuộc phạm vi dược lâm sàng hợp lệ.
+    \item Module chuẩn hóa hoạt chất chuyển đổi danh từ thuốc sang tên INN chuẩn hóa.
+    \item Động cơ truy xuất lai ghép (Hybrid Retrieval) tìm kiếm đoạn trích phù hợp nhất từ Dược thư Quốc gia.
+    \item Mô hình ngôn ngữ lớn tổng hợp câu trả lời dựa trên ngữ cảnh được cung cấp, gán con trỏ trích dẫn số trang chính xác.
+    \item Module hậu kiểm đối soát toàn bộ số liệu định lượng trong câu trả lời với văn bản gốc.
+    \item Giao diện hiển thị tin nhắn phân tách hai vùng và cho phép bấm vào trích dẫn để mở trực tiếp trang PDF tương ứng.
+\end{enumerate} \\
+\midrule
+\textbf{Các luồng rẽ nhánh / ngoại lệ (Alternative Flows)} & 
+\begin{itemize}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item \textbf{2a. Câu hỏi ngoài phạm vi y tế / cố ý can thiệp hệ thống:} Hệ thống từ chối trả lời và hướng dẫn quay lại ca bệnh.
+    \item \textbf{4a. Điểm số tương đồng truy xuất thấp hơn ngưỡng tin cậy ($\theta < 0.72$):} Hệ thống thông báo không đủ căn cứ y văn và dẫn chiếu mở bản PDF đầy đủ.
+    \item \textbf{6a. Phát hiện mâu thuẫn số liệu định lượng:} Kích hoạt cơ chế cắt mạch an toàn, thu hồi câu trả lời và cảnh báo kiểm tra tài liệu giấy.
+\end{itemize} \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả ca sử dụng UC03: Tra cứu y văn Dược thư RAG có đối soát số trang}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} Y}
+\toprule
+\textbf{Mục đặc tả} & \textbf{Nội dung chi tiết} \\
+\midrule
+\textbf{Mã ca sử dụng} & \textbf{UC04} \\
+\textbf{Tên ca sử dụng} & Quản lý nhân sự và xác thực phân quyền hệ thống \\
+\textbf{Tác nhân chính} & Quản trị viên hệ thống \\
+\textbf{Tiền điều kiện} & Quản trị viên đã đăng nhập thành công vào Cổng giám sát quản trị (\code{admin-portal}). \\
+\textbf{Hậu điều kiện} & Hồ sơ nhân viên được lưu trữ trong CSDL SQLite; mật khẩu web được băm bảo mật theo chuẩn Argon2id. \\
+\midrule
+\textbf{Luồng sự kiện chính (Basic Flow)} & 
+\begin{enumerate}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item Quản trị viên mở phân hệ Quản lý nhân viên trên thanh điều hướng.
+    \item Quản trị viên nhập thông tin nhân sự: Mã NV, Họ tên, Vai trò phân quyền, Khoa phòng, Số CCHN, Mã thẻ RFID, Mã PIN ca trực và Tên đăng nhập Web (@username).
+    \item Quản trị viên tạo mật khẩu ban đầu hoặc sử dụng bộ sinh mật khẩu ngẫu nhiên an toàn.
+    \item Hệ thống băm mật khẩu bằng thuật toán Argon2id ($m = 64\,\text{MB}, t = 3, p = 4$) và lưu bản ghi vào bảng \code{users}.
+    \item Hệ thống ghi nhận sự kiện vào nhật ký kiểm toán mật mã (\code{AuditRecord}).
+    \item Nhân viên có thể sử dụng tên đăng nhập và mật khẩu để truy cập Cổng lâm sàng hoặc Cổng quản trị theo đúng vai trò được cấp.
+\end{enumerate} \\
+\midrule
+\textbf{Các luồng rẽ nhánh / ngoại lệ (Alternative Flows)} & 
+\begin{itemize}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item \textbf{2a. Trùng lặp tên đăng nhập Web (@username):} Hệ thống báo lỗi và gợi ý tên đăng nhập dựa trên họ tên không dấu.
+    \item \textbf{4a. Nhân viên quên mật khẩu:} Quản trị viên thực hiện thao tác đặt lại mật khẩu; hệ thống xóa cache xác thực phiên của người dùng ngay lập tức và đánh dấu cờ \code{must_change_password = 1}.
+\end{itemize} \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả ca sử dụng UC04: Quản lý nhân sự và xác thực phân quyền hệ thống}
+\end{table}

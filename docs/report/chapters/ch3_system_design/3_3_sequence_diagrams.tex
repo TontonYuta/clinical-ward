@@ -1,29 +1,70 @@
 \section{Thiết kế luồng xử lý và các biểu đồ tuần tự (Sequence Diagrams)}
 \label{sec:sequence_diagrams}
 
-Hoạt động phối hợp giữa các thành phần trong hệ thống được thể hiện qua các luồng tương tác tuần tự:
+Hoạt động phối hợp giữa các thành phần trong hệ thống được chuẩn hóa qua các luồng tương tác tuần tự có kiểm soát trạng thái:
 
-\subsection{Luồng xử lý câu hỏi lâm sàng đa tầng (Pipeline 9 bước)}
-Khi người dùng gửi một yêu cầu tra cứu từ giao diện:
-\begin{enumerate}[leftmargin=1.5em]
-    \item \textbf{Giao diện React} gửi HTTP POST request đến FastAPI endpoint \code{/api/clinical/chat/stream}.
-    \item \textbf{FastAPI Gateway} kiểm tra cookie phiên và kiểm tra chuỗi băm SHA-256 trong \code{SemanticCache}. Nếu có, trả về kết quả đệm nóng ngay lập tức ($< 3\,\text{ms}$).
-    \item Nếu chưa có trong đệm, chuyển câu hỏi sang \code{GeminiNLURouter} để phân loại ý định (\code{DRUG_DOSAGE}, \code{DDI}, \code{BHYT_RULE}...).
-    \item \code{ActiveIngredientNormalizer} chuẩn hóa các tên thuốc trong câu hỏi về hoạt chất gốc INN.
-    \item \code{CDSS Sentinel} kiểm tra bảng băm tương tác cấm ($O(1)$).
-    \item \code{HybridRetriever} chạy song song tìm kiếm Cosine Similarity trên ma trận vector trong RAM và tìm kiếm từ khóa FTS5 BM25 trên SQLite.
-    \item Đóng gói ngữ cảnh vào XML Prompt và gọi mô hình Gemini với tham số khóa cứng $T = 0.0$.
-    \item \code{SelfRAGVerifier} quét số liệu đầu ra đối chiếu với tài liệu gốc; nếu có số lạ sẽ thu hồi câu trả lời.
-    \item Trả dữ liệu qua luồng Server-Sent Events (SSE) về giao diện React, tự động hiển thị thẻ hành động và nút mở PDF.
-\end{enumerate}
+\subsection{Luồng xử lý câu hỏi lâm sàng đa tầng và kiểm soát ranh giới hội thoại}
+Quá trình xử lý câu hỏi lâm sàng được phân rã thành chuỗi tương tác tuần tự giữa 6 thành phần: Bác sĩ, Giao diện React, Cổng FastAPI, Bộ kiểm tra an toàn/Truy xuất, Dịch vụ AI và Cơ sở dữ liệu:
 
-\subsection{Luồng chặn tương tác cấm và gợi ý thay thế thuốc tại CPOE}
-Khi bác sĩ kê đơn có thuốc vi phạm tương tác:
-\begin{enumerate}[leftmargin=1.5em]
-    \item Bác sĩ thêm thuốc thứ hai vào đơn tại \code{CpoeOrderModal.tsx}.
-    \item Giao diện gửi danh sách hoạt chất tới endpoint \code{/api/clinical/check-interactions}.
-    \item \code{CDSS Sentinel} phát hiện cặp tương tác chống chỉ định theo QĐ 5948/QĐ-BYT (ví dụ Clopidogrel + Nexium).
-    \item Backend phản hồi mã trạng thái HTTP 409 Conflict kèm payload chứa thông tin cặp tương tác và danh sách thuốc thay thế gợi ý (Pantoprazol 40mg).
-    \item Frontend khóa nút "Lưu đơn", hiển thị thông báo vi phạm màu đỏ và nút bấm "Gợi ý thay thế 1-Click".
-    \item Bác sĩ nhấp nút thay thế, đơn thuốc được cập nhật tự động và nút "Lưu đơn" được mở khóa.
-\end{enumerate}
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{C{1.0cm} L{3.0cm} L{3.0cm} L{2.5cm} Y}
+\toprule
+\textbf{Bước} & \textbf{Bên gửi} & \textbf{Bên nhận} & \textbf{Giao thức / Hàm} & \textbf{Mô tả nội dung thông điệp} \\
+\midrule
+1 & Bác sĩ lâm sàng & Giao diện React & Thao tác UI & Nhập câu hỏi và gửi từ hộp thoại buồng bệnh. \\
+\addlinespace
+2 & Giao diện React & Cổng FastAPI & \code{POST /api/chat} & Gửi câu hỏi kèm ID ca bệnh và Header xác thực. \\
+\addlinespace
+3 & Cổng FastAPI & Semantic Cache & Tra cứu SHA-256 & Kiểm tra bộ đệm RAM; nếu trúng đệm, trả về ngay ($< 3\,\text{ms}$). \\
+\addlinespace
+4 & Cổng FastAPI & NLU Intent Router & Phân loại ý định & Xác định miền câu hỏi; từ chối nếu phát hiện câu hỏi ngoài phạm vi. \\
+\addlinespace
+5 & NLU Router & INN Normalizer & Chuẩn hóa thực thể & Chuyển biệt dược thương mại sang hoạt chất INN chuẩn hóa. \\
+\addlinespace
+6 & Cổng FastAPI & Hybrid Retriever & FTS5 + Cosine & Truy xuất đồng thời vector Dược thư trong RAM và từ khóa SQLite. \\
+\addlinespace
+7 & Hybrid Retriever & Gemini Service & Prompting ($T=0$) & Đóng gói Context y văn vào Prompt, khóa cứng nhiệt độ $0.0$. \\
+\addlinespace
+8 & Gemini Service & Self-RAG Verifier & Kiểm tra số liệu & Quét tập số liệu trong câu trả lời; nếu có số lạ, kích hoạt ngắt mạch. \\
+\addlinespace
+9 & Self-RAG Verifier & Giao diện React & Luồng SSE & Phát luồng Server-Sent Events từng token hiển thị giao diện hai vùng. \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả tương tác tuần tự luồng xử lý câu hỏi lâm sàng đa tầng}
+\label{tab:seq_clinical_query}
+\end{table}
+
+\subsection{Luồng kiểm tra tương tác thuốc chống chỉ định tại giao diện CPOE}
+Khi bác sĩ chỉ định thuốc trong quá trình kê đơn điện tử:
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{C{1.0cm} L{3.0cm} L{3.0cm} L{2.5cm} Y}
+\toprule
+\textbf{Bước} & \textbf{Bên gửi} & \textbf{Bên nhận} & \textbf{Giao thức / Hàm} & \textbf{Mô tả nội dung thông điệp} \\
+\midrule
+1 & Bác sĩ điều trị & Giao diện CPOE & Thao tác UI & Chọn thêm một thuốc mới vào danh sách đơn đang kê. \\
+\addlinespace
+2 & Giao diện CPOE & Cổng FastAPI & \code{POST /check-ddi} & Gửi danh sách hoạt chất hiện có trong đơn. \\
+\addlinespace
+3 & Cổng FastAPI & CDSS Sentinel & Tra cứu Hash-Set & Tạo các cặp tổ hợp $\binom{N}{2}$ và tra cứu bảng băm trong RAM ($O(1)$). \\
+\addlinespace
+4 & CDSS Sentinel & Cổng FastAPI & Kết quả kiểm tra & Trả về danh sách tương tác vi phạm Quyết định 5948/QĐ-BYT (nếu có). \\
+\addlinespace
+5 & Cổng FastAPI & Giao diện CPOE & HTTP 409 Conflict & Báo lỗi xung đột, gửi kèm danh sách gợi ý thuốc thay thế an toàn. \\
+\addlinespace
+6 & Giao diện CPOE & Bác sĩ điều trị & Hiển thị cảnh báo & Khóa nút "Lưu đơn", hiển thị thẻ đỏ cảnh báo và nút "Đổi thuốc 1-Click". \\
+\addlinespace
+7 & Bác sĩ điều trị & Giao diện CPOE & Bấm nút thay thế & Chấp nhận thuốc thay thế; hệ thống tự động kiểm tra lại toàn đơn. \\
+\addlinespace
+8 & Giao diện CPOE & Bác sĩ điều trị & Trạng thái an toàn & Đơn thuốc hợp lệ; mở khóa trở lại nút "Lưu đơn thuốc". \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả tương tác tuần tự luồng kiểm tra tương tác cấm CPOE}
+\label{tab:seq_ddi_check}
+\end{table}

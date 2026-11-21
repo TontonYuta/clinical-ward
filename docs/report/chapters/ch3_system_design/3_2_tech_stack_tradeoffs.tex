@@ -16,7 +16,7 @@ Việc lựa chọn công nghệ cho hệ thống y tế được cân nhắc k�
 \addlinespace
 \textbf{Hệ quản trị CSDL} & SQLite (WAL Mode) & PostgreSQL / MySQL & Cho phép triển khai gọn nhẹ trên máy trạm bệnh viện không cần duy trì dịch vụ DB daemon riêng. Cơ chế WAL cho phép đọc đồng thời tốc độ dưới 1ms. \\
 \addlinespace
-\textbf{Vector Cache} & In-Memory NumPy Matrix & Pinecone / Milvus & 2.191 vector Dược thư (kích thước $2191 \times 768$) chỉ chiếm 6.7MB RAM. Tính toán Cosine trên RAM đạt dưới 2ms, không tốn chi phí thuê máy chủ vector đám mây. \\
+\textbf{Vector Cache} & In-Memory NumPy Matrix & Pinecone / Milvus & 2.386 vector phân mảnh Dược thư (kích thước $2386 \times 768$) chỉ chiếm khoảng 7.3MB RAM. Tính toán Cosine trên RAM đạt dưới 2ms, không tốn chi phí thuê máy chủ vector đám mây đắt đỏ. \\
 \bottomrule
 \end{tabularx}
 \caption{Bảng phân tích đánh đổi công nghệ trong hệ thống}

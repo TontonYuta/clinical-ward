@@ -4,15 +4,42 @@
 Dựa trên việc phân tích các yêu cầu chức năng và phân định tác nhân, các ca sử dụng của hệ thống được tổ chức thành 4 phân hệ chính:
 
 \begin{enumerate}[leftmargin=1.5em]
-    \item \textbf{Phân hệ Kê đơn CPOE và Cảnh báo An toàn CDSS:}
-    Bao gồm các ca sử dụng: \textit{Kê đơn thuốc mới, Quét tương tác thuốc chống chỉ định, Cảnh báo hội chứng Triple Whammy / QTc, Gợi ý thuốc thay thế 1-Click, Tính toán mức lọc cầu thận eGFR, Lưu đơn thuốc vào bệnh án}. Tác nhân chính: Bác sĩ điều trị.
+    \item \textbf{Phân hệ Kê đơn CPOE và Cảnh báo an toàn CDSS:}
+    Bao gồm các ca sử dụng: \textit{Kê đơn thuốc mới, Kiểm tra tương tác thuốc chống chỉ định, Cảnh báo hội chứng đa thuốc (Triple Whammy / QTc), Đề xuất thuốc thay thế, Ước tính mức lọc cầu thận eGFR, Lưu đơn thuốc vào bệnh án điện tử, Xuất bản đơn thuốc theo Thông tư 26/2025/TT-BYT}. Tác nhân chính: Bác sĩ điều trị.
     
-    \item \textbf{Phân hệ Trợ lý Y tế Lâm sàng RAG và Đối soát Y văn:}
-    Bao gồm các ca sử dụng: \textit{Hỏi đáp dược lâm sàng bằng ngôn ngữ tự nhiên, Tra cứu chuyên luận Dược thư Quốc gia, Tra cứu danh mục thanh toán BHYT Thông tư 20/2022, Mở trình xem PDF văn bản gốc tại đúng số trang}. Tác nhân chính: Bác sĩ điều trị, Dược sĩ lâm sàng.
+    \item \textbf{Phân hệ Trợ lý Dược lâm sàng RAG và Đối soát y văn:}
+    Bao gồm các ca sử dụng: \textit{Hỏi đáp dược lâm sàng trong ranh giới ngữ cảnh đóng, Tra cứu chuyên luận Dược thư Quốc gia, Đối chiếu danh mục thanh toán BHYT theo hạng bệnh viện (Thông tư 20/2022/TT-BYT), Mở trực tiếp trang tài liệu pháp quy PDF}. Tác nhân chính: Bác sĩ điều trị, Dược sĩ lâm sàng.
     
-    \item \textbf{Phân hệ Quản trị Kho Dược và Tự động hóa Nhập liệu:}
-    Bao gồm các ca sử dụng: \textit{Quét ảnh nhận diện thẻ BHYT, Quét hóa đơn nhập kho dược phẩm, Phân bổ thuốc buồng bệnh theo FEFO, Quản lý nợ vỏ thuốc gây nghiện Morphin}. Tác nhân chính: Dược sĩ lâm sàng, Điều dưỡng viên.
+    \item \textbf{Phân hệ Quản trị Kho dược và Hỗ trợ điều dưỡng buồng bệnh:}
+    Bao gồm các ca sử dụng: \textit{Nhận diện thông tin thẻ BHYT qua ảnh chụp Canvas, Quét thông tin hóa đơn nhập kho dược, Phân bổ xuất kho thuốc theo hạn dùng (FEFO), Theo dõi và xác nhận hoàn trả vỏ thuốc gây nghiện}. Tác nhân chính: Dược sĩ lâm sàng, Điều dưỡng viên.
     
-    \item \textbf{Phân hệ Quản trị Hệ thống và Giám sát An toàn:}
-    Bao gồm các ca sử dụng: \textit{Đăng nhập / Đăng xuất an toàn, Quản lý tài khoản và phân quyền người dùng (RBAC), Tra cứu nhật ký kiểm toán (Audit Log), Cấu hình và giám sát kho khóa API Key Vault}. Tác nhân chính: Quản trị viên hệ thống.
+    \item \textbf{Phân hệ Quản trị hệ thống và Giám sát vận hành AI:}
+    Bao gồm các ca sử dụng: \textit{Đăng nhập/Đăng xuất hệ thống, Quản lý hồ sơ nhân sự CSDL, Cấp phát và đặt lại mật khẩu web (Argon2id), Đồng bộ hóa lịch sử hội chẩn AI theo tài khoản, Giám sát lưu lượng token và ngân sách (Budget Cap), Quản lý kho khóa API và cấu hình chuyển mạch dự phòng}. Tác nhân chính: Quản trị viên hệ thống.
 \end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{L{4.5cm} C{2.2cm} C{2.2cm} C{2.2cm} C{2.2cm}}
+\toprule
+\textbf{Nhóm ca sử dụng} & \textbf{Bác sĩ} & \textbf{Dược sĩ} & \textbf{Điều dưỡng} & \textbf{Quản trị viên} \\
+\midrule
+Kê đơn CPOE \& Cảnh báo CDSS & \textbf{Chính} & Xem xét & Không & Không \\
+\addlinespace
+Trợ lý RAG \& Y văn Dược thư & \textbf{Chính} & \textbf{Chính} & Tham khảo & Tham khảo \\
+\addlinespace
+Quản lý tủ trực \& FEFO & Tham khảo & \textbf{Chính} & \textbf{Chính} & Không \\
+\addlinespace
+Sổ nợ vỏ thuốc gây nghiện & Xem xét & \textbf{Chính} & \textbf{Chính} & Không \\
+\addlinespace
+OCR thẻ BHYT & Tham khảo & Tham khảo & \textbf{Chính} & Không \\
+\addlinespace
+Quản lý nhân sự \& Argon2id & Không & Không & Không & \textbf{Chính} \\
+\addlinespace
+Giám sát Telemetry \& Khóa API & Không & Không & Không & \textbf{Chính} \\
+\bottomrule
+\end{tabularx}
+\caption{Ma trận phân quyền tác nhân và nhóm ca sử dụng trong hệ thống}
+\label{tab:actor_use_case_matrix}
+\end{table}

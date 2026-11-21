@@ -1,13 +1,13 @@
 \section{Thiết kế các thuật toán và mô-đun xử lý cốt lõi}
 \label{sec:core_algorithms}
 
-Trong hệ thống hỗ trợ ra quyết định lâm sàng và trợ lý y tế, việc đảm bảo tính chính xác khoa học, tính tất định và triệt tiêu hoàn toàn rủi ro ảo giác của mô hình ngôn ngữ lớn là yêu cầu sống còn. Phần này trình bày chi tiết các mô hình toán học, cấu trúc dữ liệu và thuật toán lõi được hiện thực hóa trong hệ thống.
+Trong hệ thống hỗ trợ ra quyết định lâm sàng và trợ lý y tế, việc đảm bảo tính chính xác khoa học, tính tất định và kiểm soát chặt chẽ ranh giới câu trả lời của mô hình ngôn ngữ lớn là yêu cầu tiên quyết. Phần này trình bày chi tiết các mô hình toán học, cấu trúc dữ liệu và thuật toán lõi được hiện thực hóa trong hệ thống.
 
 % ==============================================================================
-\subsection{Kiến trúc 7 Tầng Phòng thủ Chống Lệch Hướng và Triệt Tiêu Ảo Giác Chatbot (Anti-Drift \& Anti-Hallucination Framework)}
+\subsection{Kiến trúc 7 Tầng Kiểm Soát Ranh Giới Hội Thoại và Hạn Chế Ảo Giác (Anti-Drift \& Anti-Hallucination Framework)}
 \label{subsec:anti_hallucination_framework}
 
-Để khắc phục triệt để hiện tượng mô hình ngôn ngữ lớn tự suy diễn số liệu liều lượng hoặc bị lệch hướng khỏi ngữ cảnh điều trị buồng bệnh, hệ thống áp dụng mô hình 7 tầng phòng thủ liên hoàn:
+Để giải quyết vấn đề mô hình ngôn ngữ lớn tự suy diễn số liệu liều lượng hoặc bị lệch hướng khỏi ngữ cảnh điều trị buồng bệnh, hệ thống áp dụng mô hình kiểm soát 7 tầng liên hoàn:
 
 \begin{enumerate}[leftmargin=2em]
     \item \textbf{Tầng 1: Bộ định tuyến ý định NLU và Ranh giới ngữ cảnh đóng (\textit{NLU Intent Router \& Bounded Clinical Context}):}
@@ -33,7 +33,7 @@ Trong hệ thống hỗ trợ ra quyết định lâm sàng và trợ lý y tế
         \begin{equation}
             \text{Score}_{\text{BM25}}(D, Q) = \sum_{i=1}^n \text{IDF}(q_i) \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}
         \end{equation}
-        với các siêu tham số được tối ưu cho văn bản y tế tiếng Việt: $k_1 = 1.2$, $b = 0.75$.
+        với các tham số thực nghiệm: $k_1 = 1.2$, $b = 0.75$.
         \item \textbf{Điểm Cosine Similarity:} Đo lường sự tương đồng ngữ nghĩa giữa vector nhúng của câu hỏi $\mathbf{q}$ và đoạn trích văn bản Dược thư $\mathbf{d}_i$:
         \begin{equation}
             S_{\text{vector}}(\mathbf{q}, \mathbf{d}_i) = \frac{\mathbf{q} \cdot \mathbf{d}_i}{\|\mathbf{q}\|_2 \|\mathbf{d}_i\|_2}
@@ -42,11 +42,11 @@ Trong hệ thống hỗ trợ ra quyết định lâm sàng và trợ lý y tế
         \begin{equation}
             S_{\text{final}} = 0.65 \cdot S_{\text{vector}} + 0.35 \cdot S_{\text{BM25}}
         \end{equation}
-        \item \textbf{Ngưỡng lọc CRAG (\textit{Confidence Threshold}):} Nếu $\max_i S_{\text{final}} < \theta_{\text{min}} = 0.72$, hệ thống xác định văn bản truy xuất không đủ độ tin cậy; thay vì để LLM tự suy diễn, hệ thống chủ động thông báo "Chưa đủ cơ sở dữ liệu pháp quy" và dẫn chiếu bác sĩ mở trực tiếp bản PDF gốc.
+        \item \textbf{Ngưỡng lọc CRAG (\textit{Confidence Threshold}):} Nếu $\max_i S_{\text{final}} < \theta_{\text{min}} = 0.72$, hệ thống xác định văn bản truy xuất chưa đủ độ tương đồng tin cậy; thay vì để LLM tự suy diễn, hệ thống chủ động thông báo "Chưa đủ cơ sở dữ liệu pháp quy" và dẫn chiếu bác sĩ mở trực tiếp bản PDF gốc.
     \end{itemize}
 
-    \item \textbf{Tầng 4: Ràng buộc Prompting nghiêm ngặt và Khóa cứng nhiệt độ \texorpdfstring{($T = 0.0$)}{(T = 0.0)}:}
-    Nhiệt độ sinh ngẫu nhiên của mô hình ngôn ngữ lớn được gán cứng tuyệt đối bằng $0.0$ ($T = 0.0$, top-p = 1.0) nhằm triệt tiêu hoàn toàn tính ngẫu nhiên, bảo đảm tính tất định và khả năng tái lập 100\% của kết quả. System Prompt chứa điều khoản cấm ngoại suy (\textit{Strict No-Extrapolation Constraint}): mọi kết luận phải có căn cứ trong đoạn Context được cung cấp.
+    \item \textbf{Tầng 4: Ràng buộc Prompting và Khóa nhiệt độ \texorpdfstring{($T = 0.0$)}{(T = 0.0)}:}
+    Nhiệt độ sinh ngẫu nhiên của mô hình được thiết lập cố định bằng $0.0$ ($T = 0.0$, top-p = 1.0) nhằm hạn chế tính ngẫu nhiên, bảo đảm tính tất định và khả năng tái lập kết quả. System Prompt chứa điều khoản cấm ngoại suy (\textit{Strict No-Extrapolation Constraint}): mọi kết luận phải có căn cứ trong đoạn Context được cung cấp.
 
     \item \textbf{Tầng 5: Định vị nguồn và Trích dẫn số trang chính xác (\textit{Page Grounding with Direct Citations}):}
     Mọi thông tin liên quan đến liều dùng hoặc khuyến cáo bắt buộc phải đính kèm con trỏ tài liệu nguồn có thể kiểm chứng được, theo định dạng chuẩn:
@@ -78,7 +78,7 @@ Trong hệ thống hỗ trợ ra quyết định lâm sàng và trợ lý y tế
 \subsection{Cổng kiểm duyệt an toàn xác định CDSS Sentinel \texorpdfstring{($O(1)$)}{(O(1))}}
 \label{subsec:cdss_sentinel}
 
-Module \code{cdss_sentinel.py} hoạt động hoàn toàn độc lập với LLM, đảm bảo việc kiểm tra tương tác thuốc chống chỉ định (theo Quyết định 5948/QĐ-BYT) diễn ra tức thì với độ tin cậy tuyệt đối 100\%:
+Module \code{cdss_sentinel.py} hoạt động độc lập với LLM, thực hiện kiểm tra tương tác thuốc chống chỉ định (theo danh mục Quyết định 5948/QĐ-BYT) theo phương pháp so khớp bảng băm xác định:
 
 \begin{itemize}[leftmargin=1.5em]
     \item \textbf{Cấu trúc khóa băm đối xứng:} Để tối ưu hóa việc tra cứu hai chiều giữa hoạt chất $A$ và hoạt chất $B$, khóa tra cứu trong bảng băm lưu trữ trong RAM được chuẩn hóa theo thứ tự từ điển:
@@ -199,7 +199,7 @@ với các tham số cấu hình:
 \begin{itemize}[leftmargin=1.5em]
     \item Độ dài muối ngẫu nhiên ngầm định $\text{Salt}$: 16 bytes sinh bằng bộ sinh số ngẫu nhiên mật mã (\code{os.urandom}).
     \item Số vòng lặp thời gian (\textit{Time Cost}) $t = 3$ vòng.
-    \item Bộ nhớ tiêu thụ (\textit{Memory Cost}) $m = 65.536\,\text{KiB}$ ($64\,\text{MB}$). Yêu cầu bộ nhớ lớn triệt tiêu hoàn toàn khả năng giải mã mật khẩu bằng mảng chip GPU hoặc ASIC chuyên dụng.
+    \item Bộ nhớ tiêu thụ (\textit{Memory Cost}) $m = 65.536\,\text{KiB}$ ($64\,\text{MB}$). Tham số bộ nhớ lớn giúp tăng độ phức tạp tính toán và nâng cao khả năng kháng cự trước các kỹ thuật tấn công dò vét bằng phần cứng chuyên dụng (GPU/ASIC).
     \item Mức độ song song hóa (\textit{Parallelism}) $p = 4$ luồng.
     \item Độ dài khóa băm đầu ra $L = 32$ bytes.
 \end{itemize}

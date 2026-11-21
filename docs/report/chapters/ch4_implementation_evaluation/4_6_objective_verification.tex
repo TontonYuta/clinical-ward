@@ -1,9 +1,11 @@
 \section{Đánh giá mức độ hoàn thành so với mục tiêu đặt ra}
 \label{sec:objective_verification}
 
-Đối chiếu với các yêu cầu kỹ thuật đã đặt ra ở Chương 2, hệ thống đã hoàn thành đầy đủ các chỉ tiêu:
+Đối chiếu với các yêu cầu kỹ thuật và phạm vi nghiên cứu đã xác định ở Chương 2, hệ thống đã hoàn thành đầy đủ các chỉ tiêu đặt ra:
+
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Về chức năng:} Đạt tỷ lệ hoàn thành 100\% các ca sử dụng cốt lõi (12/12 yêu cầu chức năng từ FR01 đến FR12).
-    \item \textbf{Về độ tin cậy:} Tỷ lệ ảo giác đo đạc thực tế trên 150 kịch bản kiểm thử lâm sàng đạt $0.0\%$, không có trường hợp nào bịa đặt số liệu liều lượng.
-    \item \textbf{Về hiệu năng:} Thời gian kiểm tra tương tác tại Cổng Sentinel đạt $O(1)$ dưới $1\,\text{ms}$; thời gian phản hồi đệm nóng đạt $193.6\,\text{ms}$, đáp ứng vượt mức yêu cầu NFR01 ($< 250\,\text{ms}$).
+    \item \textbf{Về chức năng:} Đạt tỷ lệ hoàn thành 100\% các ca sử dụng theo kế hoạch (16/16 yêu cầu chức năng từ FR01 đến FR16), bao quát cả Cổng lâm sàng buồng bệnh và Cổng giám sát quản trị AI.
+    \item \textbf{Về độ tin cậy và an toàn lâm sàng:} Trên tập 150 kịch bản kiểm thử lâm sàng chuyên sâu, hệ thống phát hiện chính xác 100\% các cặp tương tác cấm theo Quyết định 5948/QĐ-BYT; tỷ lệ xuất hiện số liệu liều lượng không có căn cứ trong Dược thư đạt $0.0\%$ nhờ bộ hậu kiểm Self-RAG.
+    \item \textbf{Về hiệu năng thời gian thực:} Thời gian kiểm tra tương tác tại Cổng CDSS Sentinel đạt độ phức tạp $O(1)$ với thời gian thực thi nội bộ máy chủ dưới $1\,\text{ms}$; thời gian phản hồi đệm nóng từ máy chủ Production đạt $193.6\,\text{ms}$, đáp ứng tốt yêu cầu không làm gián đoạn thao tác của bác sĩ trong ca trực.
+    \item \textbf{Về tính khả dụng di động:} Giao diện Hybrid PWA hiển thị vừa vặn trên các màn hình điện thoại di động ($< 768\,\text{px}$) với thanh điều hướng ngón tay cái và danh sách dạng thẻ, giải quyết tình trạng vỡ khung hiển thị của các bảng dữ liệu ngang truyền thống.
 \end{itemize}
