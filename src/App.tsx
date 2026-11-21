@@ -2051,7 +2051,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           </div>
         </div>
         <main className="flex-1 flex flex-col overflow-hidden relative pt-0 md:pt-0">
-          <section className="w-full h-full flex flex-col overflow-hidden">
+          <section className="w-full h-full flex flex-col overflow-hidden pb-16 md:pb-0">
             {currentTab === 'documents' ? (
               <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-slate-500">Đang mở thư viện tài liệu…</div>}>
                 <DocumentsLibrary />

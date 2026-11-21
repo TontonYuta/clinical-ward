@@ -1,0 +1,21 @@
+{
+  "short_name": "AI Monitor",
+  "name": "Clinical AI Monitor — Giám sát & Quản trị AI Y Tế",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%23115e59'/><path d='M36 96h32l24-48 24 96 20-48h20' stroke='%23ffffff' stroke-width='16' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>",
+      "type": "image/svg+xml",
+      "sizes": "192x192"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%23115e59'/><path d='M96 256h80l60-120 60 240 50-120h70' stroke='%23ffffff' stroke-width='40' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f8fafc",
+  "theme_color": "#115e59",
+  "display": "standalone",
+  "orientation": "portrait"
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminHeader } from './components/AdminHeader';
 import { AdminSidebar } from './components/AdminSidebar';
+import { AdminMobileBottomNav } from './components/AdminMobileBottomNav';
 import { TelemetryTab } from './components/Tabs/TelemetryTab';
 import { StaffManagementTab } from './components/Tabs/Staff/StaffManagementTab';
 import { AuditTab } from './components/Tabs/AuditTab';
@@ -30,6 +31,7 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
   const [currentTab, setCurrentTab] = useState<AdminTab>('telemetry');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Khởi tạo ngay lập tức từ Local Cache để giao diện xuất hiện trong 0ms (Zero-Delay UX)
   const [telemetry, setTelemetry] = useState<TelemetryOverviewResponse | null>(() => getCachedItem<TelemetryOverviewResponse>(CACHE_KEY_TELEMETRY));
@@ -129,9 +131,38 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
         authEnabled={authEnabled}
         canConfigureAuth={canConfigureAuth}
         onToggleAuth={onToggleAuth}
+        onOpenMobileMenu={() => setIsMobileNavOpen(true)}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Mobile Off-Canvas Drawer (Slide-Over) */}
+      {isMobileNavOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setIsMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Drawer content */}
+          <div className="relative z-50 animate-in slide-in-from-left duration-250">
+            <AdminSidebar
+              currentTab={currentTab}
+              onTabChange={setCurrentTab}
+              activeKeyCount={activeKeyCount}
+              todayUsagePct={todayUsagePct}
+              esmsBalance={esmsBalance}
+              isMobileDrawer
+              onCloseMobile={() => setIsMobileNavOpen(false)}
+              authenticatedUsername={authenticatedUsername}
+              onLogout={onLogout}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Desktop Sidebar (hidden on mobile, perfectly preserved on desktop) */}
         <AdminSidebar
           currentTab={currentTab}
           onTabChange={setCurrentTab}
@@ -140,7 +171,7 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
           esmsBalance={esmsBalance}
         />
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 xl:p-8">
+        <main className="flex-1 overflow-y-auto p-2.5 sm:p-5 lg:p-6 xl:p-8 pb-18 lg:pb-8">
           <div className="w-full max-w-[1920px] mx-auto">
             {(currentTab === 'telemetry' || currentTab === 'budget_cap') && (
               <TelemetryTab
@@ -180,6 +211,15 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
           </div>
         </main>
       </div>
+
+      {/* Mobile Sticky Bottom Nav Bar */}
+      <AdminMobileBottomNav
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
+        onOpenMenu={() => setIsMobileNavOpen(true)}
+        activeKeyCount={activeKeyCount}
+        todayUsagePct={todayUsagePct}
+      />
     </div>
   );
 }

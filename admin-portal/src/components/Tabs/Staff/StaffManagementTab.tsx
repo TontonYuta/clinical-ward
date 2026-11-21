@@ -277,8 +277,164 @@ export const StaffManagementTab: React.FC = () => {
           )}
         </div>
 
-        {/* Data Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile Card List (< md) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {error ? (
+            <div className="py-8 text-center text-xs text-rose-600 px-4">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <AlertCircle className="w-4 h-4" />
+                <span className="font-medium">Lỗi kết nối CSDL</span>
+              </div>
+              <p className="text-2xs text-slate-500">{error}</p>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 px-4">
+              {loading ? 'Đang tải dữ liệu từ CSDL...' : 'Không tìm thấy nhân viên nào phù hợp với bộ lọc.'}
+            </div>
+          ) : (
+            items.map((staff) => {
+              const isPinVisible = Boolean(revealedPins[staff.id]);
+
+              return (
+                <div key={staff.id} className="p-3.5 space-y-2.5 bg-white hover:bg-slate-50/60 transition">
+                  {/* Row 1: Header (Avatar, Name, Status) */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-teal-50 border border-teal-200/60 text-teal-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        {staff.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 text-sm leading-tight flex items-center gap-1.5 flex-wrap">
+                          <span>{staff.name}</span>
+                          {staff.academic_title && !staff.name.toLowerCase().includes(staff.academic_title.toLowerCase()) && (
+                            <span className="text-2xs font-mono text-slate-400">
+                              {staff.academic_title}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          {staff.username ? (
+                            <span className="text-3xs font-mono font-medium text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200/60">
+                              @{staff.username}
+                            </span>
+                          ) : (
+                            <span className="text-3xs font-mono text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                              Chưa có TK
+                            </span>
+                          )}
+                          {staff.must_change_password && (
+                            <span className="text-3xs font-mono text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-200/60">
+                              Đổi MK
+                            </span>
+                          )}
+                          <span className="text-3xs text-slate-400 font-mono">
+                            {staff.id.slice(0, 8)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status badge */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(staff)}
+                      className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border shrink-0 transition ${
+                        staff.is_active
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                          : 'bg-slate-100 text-slate-500 border-slate-200'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${staff.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                      <span>{staff.is_active ? 'Đang trực' : 'Tạm ngưng'}</span>
+                    </button>
+                  </div>
+
+                  {/* Row 2: Details Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-medium block">Vai trò & Khoa</span>
+                      <span className="font-medium text-slate-800">{staff.role_name}</span>
+                      <span className="text-slate-500 block truncate text-2xs">{staff.department}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-medium block">Số CCHN & PIN</span>
+                      <span className="font-mono text-slate-700 text-2xs block truncate">{staff.practice_certificate || 'Chưa cấp'}</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="font-mono font-bold text-slate-900 text-xs">
+                          {isPinVisible ? staff.pin_code : '••••'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => togglePinReveal(staff.id)}
+                          className="text-slate-400 hover:text-slate-700 p-0.5"
+                          title={isPinVisible ? 'Ẩn mã PIN' : 'Hiện mã PIN'}
+                        >
+                          {isPinVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Action Buttons */}
+                  <div className="flex items-center justify-end gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingStaff(staff);
+                        setIsModalOpen(true);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-medium flex items-center gap-1 transition"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Sửa</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setResetPinStaff(staff)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-medium flex items-center gap-1 transition"
+                    >
+                      <Key className="w-3.5 h-3.5 text-slate-500" />
+                      <span>PIN</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setResetPasswordStaff(staff)}
+                      className="px-2.5 py-1.5 rounded-lg border border-teal-200/80 bg-teal-50 text-teal-800 hover:bg-teal-100 text-xs font-semibold flex items-center gap-1 transition"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-teal-700" />
+                      <span>Đổi MK</span>
+                    </button>
+
+                    {staff.is_active ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSoftDelete(staff)}
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition"
+                        title="Tạm ngưng công tác"
+                      >
+                        <UserX className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(staff)}
+                        className="p-1.5 rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition"
+                        title="Khôi phục trạng thái"
+                      >
+                        <UserCheck className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Data Table (hidden on mobile, visible on md+) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-500 font-semibold text-2xs uppercase tracking-wider">
