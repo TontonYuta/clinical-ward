@@ -8,9 +8,22 @@ import { ChatSession } from '../../types/chatSession';
 import { ChatMessage } from '../../types/clinical';
 import { INITIAL_CHAT_MESSAGES } from '../../data/initialData';
 
-const SESSIONS_KEY = 'clinical_chat_sessions_v1';
-const ACTIVE_ID_KEY = 'clinical_active_chat_session_id_v1';
+const LEGACY_SESSIONS_KEY = 'clinical_chat_sessions_v1';
+const LEGACY_ACTIVE_ID_KEY = 'clinical_active_chat_session_id_v1';
 const MAX_SESSIONS = 30;
+
+export function normalizeUserStorageKey(username?: string): string {
+  if (!username || !username.trim()) return 'guest';
+  return username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+}
+
+export function getScopedSessionsKey(username?: string): string {
+  return `clinical_chat_sessions_${normalizeUserStorageKey(username)}`;
+}
+
+export function getScopedActiveIdKey(username?: string): string {
+  return `clinical_active_chat_session_id_${normalizeUserStorageKey(username)}`;
+}
 
 export function generateSessionId(): string {
   return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -47,18 +60,29 @@ export function createNewSession(initialTitle?: string): ChatSession {
   };
 }
 
-export function loadChatSessions(): ChatSession[] {
+export function loadChatSessions(username?: string): ChatSession[] {
   if (typeof window === 'undefined') return [createNewSession()];
+  const scopedKey = getScopedSessionsKey(username);
   try {
-    const raw = localStorage.getItem(SESSIONS_KEY);
+    const raw = localStorage.getItem(scopedKey);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-    // Migration: nếu có tin nhắn cũ từ clinical_chat_messages
-    const legacyRaw = localStorage.getItem('clinical_chat_messages');
+    // Migration: nếu user này chưa có session nhưng có session cũ từ LEGACY_SESSIONS_KEY
+    const legacyRaw = localStorage.getItem(LEGACY_SESSIONS_KEY);
     if (legacyRaw) {
-      const legacyMsgs = JSON.parse(legacyRaw);
+      const legacyParsed = JSON.parse(legacyRaw);
+      if (Array.isArray(legacyParsed) && legacyParsed.length > 0) {
+        saveChatSessions(legacyParsed, username);
+        try { localStorage.removeItem(LEGACY_SESSIONS_KEY); } catch {}
+        return legacyParsed;
+      }
+    }
+    // Migration: nếu có tin nhắn cũ từ clinical_chat_messages
+    const legacyMsgRaw = localStorage.getItem('clinical_chat_messages');
+    if (legacyMsgRaw) {
+      const legacyMsgs = JSON.parse(legacyMsgRaw);
       if (Array.isArray(legacyMsgs) && legacyMsgs.length > 0) {
         const migrated: ChatSession = {
           id: generateSessionId(),
@@ -67,7 +91,7 @@ export function loadChatSessions(): ChatSession[] {
           updatedAt: Date.now(),
           messages: legacyMsgs
         };
-        saveChatSessions([migrated]);
+        saveChatSessions([migrated], username);
         return [migrated];
       }
     }
@@ -75,37 +99,38 @@ export function loadChatSessions(): ChatSession[] {
     console.warn('[SessionStorage] Lỗi đọc session:', err);
   }
   const defaultSession = createNewSession();
-  saveChatSessions([defaultSession]);
+  saveChatSessions([defaultSession], username);
   return [defaultSession];
 }
 
-export function saveChatSessions(sessions: ChatSession[]): void {
+export function saveChatSessions(sessions: ChatSession[], username?: string): void {
   if (typeof window === 'undefined') return;
   try {
     const sanitized = sessions.slice(0, MAX_SESSIONS);
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sanitized));
+    localStorage.setItem(getScopedSessionsKey(username), JSON.stringify(sanitized));
   } catch (err) {
     console.warn('[SessionStorage] Lỗi lưu sessions:', err);
   }
 }
 
-export function getActiveSessionId(availableSessions: ChatSession[]): string {
+export function getActiveSessionId(availableSessions: ChatSession[], username?: string): string {
   if (typeof window === 'undefined') return availableSessions[0]?.id || generateSessionId();
   try {
-    const saved = localStorage.getItem(ACTIVE_ID_KEY);
+    const activeKey = getScopedActiveIdKey(username);
+    const saved = localStorage.getItem(activeKey) || localStorage.getItem(LEGACY_ACTIVE_ID_KEY);
     if (saved && availableSessions.some(s => s.id === saved)) return saved;
   } catch (err) {
     console.warn('[SessionStorage] Lỗi đọc activeId:', err);
   }
   const fallback = availableSessions[0]?.id || generateSessionId();
-  saveActiveSessionId(fallback);
+  saveActiveSessionId(fallback, username);
   return fallback;
 }
 
-export function saveActiveSessionId(sessionId: string): void {
+export function saveActiveSessionId(sessionId: string, username?: string): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(ACTIVE_ID_KEY, sessionId);
+    localStorage.setItem(getScopedActiveIdKey(username), sessionId);
   } catch (err) {
     console.warn('[SessionStorage] Lỗi lưu activeId:', err);
   }
@@ -113,27 +138,39 @@ export function saveActiveSessionId(sessionId: string): void {
 
 export function deleteChatSession(
   sessionId: string,
-  sessions: ChatSession[]
+  sessions: ChatSession[],
+  username?: string
 ): { sessions: ChatSession[]; nextActiveId: string } {
   const filtered = sessions.filter(s => s.id !== sessionId);
   if (filtered.length === 0) {
     const fresh = createNewSession();
-    saveChatSessions([fresh]);
-    saveActiveSessionId(fresh.id);
+    saveChatSessions([fresh], username);
+    saveActiveSessionId(fresh.id, username);
     return { sessions: [fresh], nextActiveId: fresh.id };
   }
-  saveChatSessions(filtered);
+  saveChatSessions(filtered, username);
   const nextActiveId = filtered[0].id;
-  saveActiveSessionId(nextActiveId);
+  saveActiveSessionId(nextActiveId, username);
   return { sessions: filtered, nextActiveId };
 }
 
 export function renameChatSession(
   sessionId: string,
   newTitle: string,
-  sessions: ChatSession[]
+  sessions: ChatSession[],
+  username?: string
 ): ChatSession[] {
   const updated = sessions.map(s => (s.id === sessionId ? { ...s, title: newTitle.trim() || s.title, updatedAt: Date.now() } : s));
-  saveChatSessions(updated);
+  saveChatSessions(updated, username);
   return updated;
+}
+
+export function clearUserChatStorage(username?: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(getScopedSessionsKey(username));
+    localStorage.removeItem(getScopedActiveIdKey(username));
+  } catch (err) {
+    console.warn('[SessionStorage] Lỗi dọn dẹp scoped storage:', err);
+  }
 }

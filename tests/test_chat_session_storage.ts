@@ -13,7 +13,11 @@ import {
   loadChatSessions,
   saveChatSessions,
   getActiveSessionId,
-  saveActiveSessionId
+  saveActiveSessionId,
+  normalizeUserStorageKey,
+  getScopedSessionsKey,
+  getScopedActiveIdKey,
+  clearUserChatStorage
 } from '../src/utils/storage/chatSessionStorage';
 import { ChatSession } from '../src/types/chatSession';
 
@@ -108,6 +112,71 @@ assert.equal(emptyDel.sessions.length, 1);
 assert.ok(emptyDel.sessions[0].id.startsWith('sess_'));
 console.log(`✅ Khi xóa hết phiên, hệ thống tự động sinh phiên trắng tinh mới: ${emptyDel.nextActiveId}`);
 
+// 8. Kiểm thử Chuẩn hóa Key & Phân tách Không gian Tài khoản
+console.log('\n--- 8. Kiểm thử Chuẩn hóa Key theo User ---');
+assert.equal(normalizeUserStorageKey(''), 'guest');
+assert.equal(normalizeUserStorageKey(undefined), 'guest');
+assert.equal(normalizeUserStorageKey('  BacSi_Lan.HoiSuc  '), 'bacsi_lan_hoisuc');
+assert.equal(getScopedSessionsKey('bac_si_lan'), 'clinical_chat_sessions_bac_si_lan');
+assert.equal(getScopedActiveIdKey('bac_si_lan'), 'clinical_active_chat_session_id_bac_si_lan');
+console.log('✅ Chuẩn hóa key thành công!');
+
+// 9. Kiểm thử Cách ly Tuyệt đối giữa các Tài khoản (Multi-User Isolation)
+console.log('\n--- 9. Kiểm thử Cách ly Tuyệt đối giữa các Tài khoản ---');
+storage.clear();
+
+// Bác sĩ Lan đăng nhập và tạo phiên riêng
+const sessLan = createNewSession('Ca cấp cứu của BS Lan');
+sessLan.messages.push({
+  id: 'lan-m1',
+  sender: 'user',
+  text: 'Bệnh nhân tim mạch cần theo dõi liều Adrenalin',
+  timestamp: '11:00'
+});
+saveChatSessions([sessLan], 'bac_si_lan');
+saveActiveSessionId(sessLan.id, 'bac_si_lan');
+
+// Điều dưỡng Hùng đăng nhập trên cùng trình duyệt
+const loadedHung = loadChatSessions('dieu_duong_hung');
+// Hùng KHÔNG ĐƯỢC thấy session của Lan!
+assert.notEqual(loadedHung[0].id, sessLan.id);
+assert.equal(loadedHung[0].messages.some(m => m.text?.includes('Adrenalin')), false);
+console.log('✅ Điều dưỡng Hùng đăng nhập: Hoàn toàn không nhìn thấy phiên của Bác sĩ Lan!');
+
+// Điều dưỡng Hùng tạo phiên riêng của mình
+const sessHung = createNewSession('Giao ban điều dưỡng ca trưa');
+sessHung.messages.push({
+  id: 'hung-m1',
+  sender: 'user',
+  text: 'Kiểm tra nợ vỏ morphin tủ trực cấp cứu',
+  timestamp: '11:30'
+});
+saveChatSessions([sessHung], 'dieu_duong_hung');
+
+// Bác sĩ Lan đăng nhập trở lại
+const reloadedLan = loadChatSessions('bac_si_lan');
+assert.equal(reloadedLan.length, 1);
+assert.equal(reloadedLan[0].id, sessLan.id);
+assert.equal(reloadedLan[0].title, 'Ca cấp cứu của BS Lan');
+assert.ok(reloadedLan[0].messages.some(m => m.text?.includes('Adrenalin')));
+// Lan không thấy phiên của Hùng
+assert.equal(reloadedLan.some(s => s.title.includes('Giao ban')), false);
+console.log('✅ Bác sĩ Lan quay lại: Lịch sử phiên hội thoại được bảo toàn 100%, độc lập tuyệt đối!');
+
+// 10. Kiểm thử Tự động Di chuyển Dữ liệu Cũ (Legacy Migration)
+console.log('\n--- 10. Kiểm thử Tự động Di chuyển Dữ liệu Cũ ---');
+storage.clear();
+const legacySession = createNewSession('Phiên cũ trước khi nâng cấp');
+localStorage.setItem('clinical_chat_sessions_v1', JSON.stringify([legacySession]));
+
+// User đăng nhập lần đầu sau nâng cấp
+const migratedSessions = loadChatSessions('admin_portal');
+assert.equal(migratedSessions.length, 1);
+assert.equal(migratedSessions[0].title, 'Phiên cũ trước khi nâng cấp');
+assert.equal(localStorage.getItem('clinical_chat_sessions_v1'), null, 'Khóa cũ phải được dọn dẹp sau di chuyển');
+assert.ok(localStorage.getItem('clinical_chat_sessions_admin_portal') !== null, 'Dữ liệu đã chuyển sang key mới của admin');
+console.log('✅ Migration tự động thành công và an toàn tuyệt đối!');
+
 console.log('\n======================================================================');
-console.log('🎉 TOÀN BỘ 7 NHÓM KIỂM THỬ ĐA PHIÊN HỘI THOẠI ĐÃ ĐẠT 100% GREEN!');
+console.log('🎉 TOÀN BỘ 10 NHÓM KIỂM THỬ ĐA PHIÊN & PHÂN TÁCH TÀI KHOẢN ĐÃ ĐẠT 100% GREEN!');
 console.log('======================================================================');

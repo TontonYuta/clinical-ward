@@ -33,15 +33,9 @@ import {
 } from './data/initialData';
 import { ChatSession } from './types/chatSession';
 import {
-  loadChatSessions,
-  saveChatSessions,
-  getActiveSessionId,
-  saveActiveSessionId,
-  createNewSession,
-  generateSessionTitle,
-  deleteChatSession,
-  renameChatSession
+  generateSessionTitle
 } from './utils/storage/chatSessionStorage';
+import { useUserChatSessions } from './hooks/useUserChatSessions';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/LeftPane/ChatWindow';
 import { Dashboard, DashboardTab } from './components/RightPane/Dashboard';
@@ -111,51 +105,21 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [coldChainState, setColdChainState] = useState<ColdChainMonitorState>(INITIAL_COLD_CHAIN_STATE);
   const [assets, setAssets] = useState<AssetAuditRecord[]>(INITIAL_ASSET_AUDIT_RECORDS);
   const [auditRecords, setAuditRecords] = useState<AuditTrailRecord[]>(getCachedAuditRecords);
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>(loadChatSessions);
-  const [activeChatSessionId, setActiveChatSessionId] = useState<string>(() => getActiveSessionId(chatSessions));
+  const {
+    chatSessions,
+    setChatSessions,
+    activeChatSessionId,
+    activeSession,
+    chatMessages,
+    setChatMessages,
+    handleNewSession,
+    handleSelectSession,
+    handleDeleteSession,
+    handleRenameSession,
+    handleClearCurrentMessages
+  } = useUserChatSessions(authenticatedUsername);
   const sidebarAutoCollapseTimer = useRef<number | null>(null);
   const sidebarTemporaryPreview = useRef(false);
-
-  const activeSession = chatSessions.find(s => s.id === activeChatSessionId) || chatSessions[0] || createNewSession();
-  const chatMessages = activeSession.messages;
-
-  const setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>> = (action) => {
-    setChatSessions(prevSessions => {
-      const targetId = activeChatSessionId;
-      return prevSessions.map(sess => {
-        if (sess.id !== targetId) return sess;
-        const newMessages = typeof action === 'function' ? (action as any)(sess.messages) : action;
-        return {
-          ...sess,
-          messages: newMessages,
-          updatedAt: Date.now()
-        };
-      });
-    });
-  };
-
-  const handleNewSession = () => {
-    const fresh = createNewSession();
-    setChatSessions(prev => [fresh, ...prev]);
-    setActiveChatSessionId(fresh.id);
-    saveActiveSessionId(fresh.id);
-  };
-
-  const handleSelectSession = (sessionId: string) => {
-    setActiveChatSessionId(sessionId);
-    saveActiveSessionId(sessionId);
-  };
-
-  const handleDeleteSession = (sessionId: string) => {
-    const res = deleteChatSession(sessionId, chatSessions);
-    setChatSessions(res.sessions);
-    setActiveChatSessionId(res.nextActiveId);
-  };
-
-  const handleRenameSession = (sessionId: string, newTitle: string) => {
-    const updated = renameChatSession(sessionId, newTitle, chatSessions);
-    setChatSessions(updated);
-  };
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(authenticatedRole || getInitialUserRole);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlagPayload | null>(() => readCachedFeatureFlags());
@@ -397,7 +361,6 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   // 3. Tự động lưu bền vững các tùy chọn giao diện khi thay đổi (chặn ghi I/O localStorage khi đang stream)
   useEffect(() => {
     if (chatSessions.some(s => s.messages.some(m => m.isStreaming))) return;
-    saveChatSessions(chatSessions);
     saveChatMessages(chatMessages);
   }, [chatSessions, chatMessages]);
   useEffect(() => { saveSidebarCollapsed(isSidebarCollapsed); }, [isSidebarCollapsed]);
@@ -2210,7 +2173,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             onExecuteCardAction={handleExecuteCardAction}
             onClearMessages={() => {
               clearStoredChatMessages();
-              setChatMessages(INITIAL_CHAT_MESSAGES);
+              handleClearCurrentMessages();
             }}
             onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
             onOpenLegalDocs={() => setIsLegalDocsOpen(true)}
