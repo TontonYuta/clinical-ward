@@ -1,7 +1,7 @@
 \section{Đặc tả chi tiết các ca sử dụng cốt lõi (Use Case Specifications)}
 \label{sec:use_case_specifications}
 
-Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ trọng tâm trong hệ thống:
+Dưới đây là đặc tả chi tiết của sáu ca sử dụng nghiệp vụ trọng tâm, đại diện cho đầy đủ bốn phân hệ chức năng và bốn nhóm tác nhân trong hệ thống:
 
 \begin{table}[htbp]
 \centering
@@ -11,9 +11,9 @@ Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ 
 \textbf{Mục đặc tả} & \textbf{Nội dung chi tiết} \\
 \midrule
 \textbf{Mã ca sử dụng} & \textbf{UC01} \\
-\textbf{Tên ca sử dụng} & Kê đơn điện tử và kiểm tra tương tác thuốc CDSS \\
+\textbf{Tên ca sử dụng} & Kê đơn điện tử CPOE và kiểm tra tương tác thuốc CDSS \\
 \textbf{Tác nhân chính} & Bác sĩ điều trị \\
-\textbf{Tiền điều kiện} & Bác sĩ đã đăng nhập hệ thống với quyền hợp lệ và đã chọn hồ sơ bệnh nhân. \\
+\textbf{Tiền điều kiện} & Bác sĩ đã đăng nhập hệ thống với quyền hợp lệ và đã chọn hồ sơ bệnh nhân nội trú. \\
 \textbf{Hậu điều kiện} & Đơn thuốc hợp lệ được lưu vào CSDL; các cảnh báo tương tác được ghi nhận vào nhật ký kiểm toán. \\
 \midrule
 \textbf{Luồng sự kiện chính (Basic Flow)} & 
@@ -21,19 +21,20 @@ Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ 
     \item Bác sĩ mở giao diện kê đơn CPOE từ danh sách buồng bệnh.
     \item Bác sĩ tìm kiếm và chọn thuốc từ danh mục 54.885 số đăng ký DAV.
     \item Bác sĩ nhập liều dùng, đường dùng, số lần dùng và thời gian điều trị.
-    \item Hệ thống tự động kích hoạt Cổng CDSS Sentinel: kiểm tra trần liều 24 giờ và đối chiếu ma trận tương tác với các thuốc đã có trong đơn.
-    \item Không phát hiện vi phạm tương tác hoặc vượt liều. Hệ thống hiển thị trạng thái an toàn (màu xanh).
+    \item Hệ thống tự động kích hoạt Cổng CDSS Sentinel: kiểm tra trần liều 24 giờ và đối chiếu ma trận tương tác với các thuốc đã có trong đơn theo Quyết định 5948/QĐ-BYT.
+    \item Không phát hiện vi phạm tương tác hoặc vượt trần liều. Hệ thống hiển thị trạng thái an toàn (màu xanh).
     \item Bác sĩ bấm nút "Lưu đơn thuốc". Hệ thống lưu dữ liệu và phát thông báo thành công.
 \end{enumerate} \\
 \midrule
 \textbf{Các luồng rẽ nhánh / ngoại lệ (Alternative Flows)} & 
 \begin{itemize}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
     \item \textbf{4a. Phát hiện tương tác chống chỉ định (QĐ 5948):} Cổng Sentinel lập tức khóa nút Lưu đơn, đổi giao diện sang màu đỏ cảnh báo, hiển thị cơ chế nguy hiểm và kích hoạt luồng UC02 (Gợi ý thay thế 1-Click).
-    \item \textbf{4b. Phát hiện bệnh nhân suy thận (eGFR $< 30$):} Hệ thống hiển thị cảnh báo vàng, đề xuất mức giảm liều theo Dược thư Quốc gia.
+    \item \textbf{4b. Phát hiện bệnh nhân suy thận (eGFR $< 30\,\text{mL/min/1.73m}^2$):} Hệ thống hiển thị cảnh báo vàng, đề xuất mức giảm liều theo Dược thư Quốc gia.
 \end{itemize} \\
 \bottomrule
 \end{tabularx}
 \caption{Bảng đặc tả ca sử dụng UC01: Kê đơn điện tử và kiểm tra tương tác CDSS}
+\label{tab:uc01_spec}
 \end{table}
 
 \begin{table}[htbp]
@@ -47,19 +48,20 @@ Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ 
 \textbf{Tên ca sử dụng} & Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click \\
 \textbf{Tác nhân chính} & Bác sĩ điều trị \\
 \textbf{Tiền điều kiện} & Đơn thuốc đang bị khóa do phát hiện tương tác chống chỉ định (từ bước 4a của UC01). \\
-\textbf{Hậu điều kiện} & Thuốc vi phạm được thay thế bằng thuốc an toàn; nút Lưu đơn được mở khóa. \\
+\textbf{Hậu điều kiện} & Thuốc vi phạm được thay thế bằng thuốc an toàn; nút Lưu đơn được mở khóa trở lại. \\
 \midrule
 \textbf{Luồng sự kiện chính (Basic Flow)} & 
 \begin{enumerate}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
-    \item Hệ thống kích hoạt thuật toán tìm kiếm thuốc thay thế 4 chiều: cùng nhóm ATC, được phép kê tại tuyến bệnh viện theo Thông tư 20/2022/TT-BYT, ưu tiên BHYT 100\%, và không tương tác với các thuốc còn lại.
-    \item Hệ thống hiển thị thẻ gợi ý thuốc thay thế kèm lý do lâm sàng trên giao diện (ví dụ: Thay thế Esomeprazol bằng Pantoprazol 40mg).
+    \item Hệ thống kích hoạt thuật toán tìm kiếm thuốc thay thế 4 chiều: cùng nhóm ATC, được phép kê tại tuyến bệnh viện theo Thông tư 20/2022/TT-BYT, ưu tiên BHYT 100\%, và không gây tương tác mới.
+    \item Hệ thống hiển thị thẻ gợi ý thuốc thay thế kèm lý do lâm sàng trên giao diện (ví dụ: Thay thế Esomeprazol bằng Pantoprazol 40mg khi dùng chung Clopidogrel).
     \item Bác sĩ bấm nút "Chấp nhận thay thế 1-Click".
-    \item Hệ thống tự động gỡ bỏ thuốc vi phạm, thêm thuốc mới vào đơn, tính toán lại tương tác toàn đơn.
+    \item Hệ thống tự động gỡ bỏ thuốc vi phạm, thêm thuốc mới vào đơn và tính toán lại ma trận an toàn toàn đơn.
     \item Đơn thuốc đạt trạng thái an toàn, nút "Lưu đơn thuốc" được mở khóa trở lại.
 \end{enumerate} \\
 \bottomrule
 \end{tabularx}
 \caption{Bảng đặc tả ca sử dụng UC02: Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click}
+\label{tab:uc02_spec}
 \end{table}
 
 \begin{table}[htbp]
@@ -95,6 +97,7 @@ Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ 
 \bottomrule
 \end{tabularx}
 \caption{Bảng đặc tả ca sử dụng UC03: Tra cứu y văn Dược thư RAG có đối soát số trang}
+\label{tab:uc03_spec}
 \end{table}
 
 \begin{table}[htbp]
@@ -128,4 +131,73 @@ Dưới đây là đặc tả chi tiết của hai ca sử dụng nghiệp vụ 
 \bottomrule
 \end{tabularx}
 \caption{Bảng đặc tả ca sử dụng UC04: Quản lý nhân sự và xác thực phân quyền hệ thống}
+\label{tab:uc04_spec}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} Y}
+\toprule
+\textbf{Mục đặc tả} & \textbf{Nội dung chi tiết} \\
+\midrule
+\textbf{Mã ca sử dụng} & \textbf{UC05} \\
+\textbf{Tên ca sử dụng} & Quản lý xuất kho dược nội trú theo FEFO và giám sát nợ vỏ thuốc gây nghiện \\
+\textbf{Tác nhân chính} & Dược sĩ lâm sàng, Điều dưỡng viên \\
+\textbf{Tiền điều kiện} & Đơn thuốc đã được duyệt hợp lệ trên hệ thống; kho dược buồng bệnh đã nhập dữ liệu số lô và hạn dùng. \\
+\textbf{Hậu điều kiện} & Số lượng tồn kho được cập nhật trừ theo nguyên tắc FEFO; các thuốc độc/gây nghiện được ghi nhận vào sổ theo dõi hoàn trả vỏ. \\
+\midrule
+\textbf{Luồng sự kiện chính (Basic Flow)} & 
+\begin{enumerate}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item Dược sĩ/Điều dưỡng mở phân hệ Quản lý tủ trực và xuất kho thuốc buồng bệnh.
+    \item Hệ thống tải danh sách các y lệnh cần cấp phát thuốc trong ca trực.
+    \item Động cơ FEFO tự động quét các lô thuốc có sẵn trong kho, chọn lô có hạn sử dụng gần nhất còn hiệu lực để xuất kho trước.
+    \item Nếu đơn thuốc chứa hoạt chất gây nghiện hoặc hướng tâm thần (Morphin, Fentanyl theo Thông tư 26/2025/TT-BYT), hệ thống tự động khởi tạo bản ghi trong \textit{"Sổ nợ vỏ thuốc độc"}.
+    \item Điều dưỡng tiêm/truyền cho bệnh nhân xong mang vỏ rỗng nộp lại; Dược sĩ quét xác nhận đã thu hồi đủ số vỏ rỗng.
+    \item Bản ghi nợ vỏ chuyển sang trạng thái \code{RESOLVED} và lưu vết kiểm toán vĩnh viễn.
+\end{enumerate} \\
+\midrule
+\textbf{Các luồng rẽ nhánh / ngoại lệ (Alternative Flows)} & 
+\begin{itemize}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item \textbf{3a. Thuốc trong kho có hạn dùng dưới 30 ngày:} Hệ thống phát cảnh báo màu cam khuyến nghị ưu tiên xuất kho khẩn cấp hoặc hoàn trả kho tổng.
+    \item \textbf{5a. Phát hiện thiếu hoặc thất thoát vỏ thuốc gây nghiện:} Hệ thống không cho phép đóng sổ ca trực, hiển thị cảnh báo đỏ và gửi thông báo khẩn cấp tới Trưởng khoa Dược.
+\end{itemize} \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả ca sử dụng UC05: Quản lý xuất kho dược FEFO và nợ vỏ thuốc gây nghiện}
+\label{tab:uc05_spec}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{L{3.2cm} Y}
+\toprule
+\textbf{Mục đặc tả} & \textbf{Nội dung chi tiết} \\
+\midrule
+\textbf{Mã ca sử dụng} & \textbf{UC06} \\
+\textbf{Tên ca sử dụng} & Nhận diện thông tin thẻ BHYT và xác thực quyền lợi khám chữa bệnh \\
+\textbf{Tác nhân chính} & Điều dưỡng viên, Bác sĩ điều trị \\
+\textbf{Tiền điều kiện} & Thiết bị người dùng có camera hoặc ảnh chụp thẻ BHYT của bệnh nhân. \\
+\textbf{Hậu điều kiện} & Thông tin mã thẻ BHYT 15 ký tự, mức hưởng, mã nơi KCB ban đầu và hạn sử dụng được điền tự động vào hồ sơ. \\
+\midrule
+\textbf{Luồng sự kiện chính (Basic Flow)} & 
+\begin{enumerate}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item Người dùng chọn chức năng "Quét thẻ BHYT" trên giao diện buồng bệnh.
+    \item Người dùng chụp ảnh hoặc tải ảnh chụp thẻ BHYT lên hệ thống.
+    \item Pipeline xử lý ảnh Canvas tiền xử lý: chuyển ảnh xám, cân bằng độ tương phản và lọc nhiễu thích nghi.
+    \item Động cơ OCR nhận diện vùng văn bản và trích xuất chuỗi ký tự.
+    \item Module kiểm tra quy tắc đối soát chuỗi 15 ký tự theo quy định tại Quyết định 1666/QĐ-BHXH (Mã đối tượng, mức hưởng, mã tỉnh và mã định danh cá nhân).
+    \item Hệ thống hiển thị mức hưởng BHYT (ví dụ: 80\%, 95\%, 100\%) và tự động cập nhật vào thông tin viện phí của bệnh nhân.
+\end{enumerate} \\
+\midrule
+\textbf{Các luồng rẽ nhánh / ngoại lệ (Alternative Flows)} & 
+\begin{itemize}[leftmargin=1.2em, topsep=0pt, partopsep=0pt]
+    \item \textbf{4a. Ảnh chụp bị mờ, lóa hoặc sai góc nghiêng:} Hệ thống yêu cầu chụp lại và hướng dẫn căn chỉnh khung hình.
+    \item \textbf{5a. Mã thẻ không hợp lệ hoặc hết hạn sử dụng:} Hệ thống đánh dấu cờ cảnh báo đỏ để nhân viên y tế kiểm tra thẻ giấy trực tiếp.
+\end{itemize} \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đặc tả ca sử dụng UC06: Nhận diện thẻ BHYT và xác thực quyền lợi KCB}
+\label{tab:uc06_spec}
 \end{table}

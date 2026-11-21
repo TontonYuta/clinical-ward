@@ -1,27 +1,74 @@
 \section{Danh mục yêu cầu phi chức năng (Non-Functional Requirements)}
 \label{sec:nonfunctional_requirements}
 
-Các yêu cầu phi chức năng định hình chất lượng kỹ thuật, tính ổn định và an toàn của hệ thống:
+Các yêu cầu phi chức năng định hình tiêu chuẩn chất lượng kỹ thuật, tính ổn định, độ an toàn và công thái học của hệ thống Clinical Ward CDSS theo khung tiêu chuẩn quốc tế ISO/IEC 25010.
+
+\subsection{Phân tích các khía cạnh chất lượng hệ thống}
+\label{subsec:nfr_aspects}
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item \textbf{Hiệu năng và Thời gian đáp ứng (Performance Efficiency):} Trong môi trường buồng bệnh nội trú và phòng cấp cứu, mỗi giây chần chừ đều có thể ảnh hưởng đến tính mạng người bệnh. Do đó, hệ thống đặt ra các chỉ số ràng buộc khắt khe:
+    \begin{itemize}
+        \item Thời gian thực thi kiểm tra tương tác thuốc CDSS tại máy chủ phải dưới $5\,\text{ms}$ thông qua cấu trúc dữ liệu băm $O(1)$.
+        \item Thời gian phát sinh token đầu tiên (TTFT --- \textit{Time to First Token}) đối với các câu hỏi thường gặp đã được nạp đệm nóng (Hot Cache) không vượt quá $250\,\text{ms}$.
+        \item Tổng thời gian phản hồi của pipeline RAG tìm kiếm y văn (bao gồm bóc tách câu hỏi, nhúng vector và tổng hợp câu trả lời) không vượt quá $2.0\,\text{s}$ ở phân vị $p_{95}$.
+    \end{itemize}
+
+    \item \textbf{Độ tin cậy và Ràng buộc an toàn lâm sàng (Safety \& Reliability):}
+    \begin{itemize}
+        \item \textit{Ràng buộc không ảo giác số liệu (Zero Numerical Hallucination):} Tỷ lệ bịa đặt số liệu liều lượng, nồng độ hoạt chất, khoảng cách đưa thuốc hoặc ngưỡng thanh thải Creatinin phải bằng $0.0\%$ trên các bộ dữ liệu kiểm định lâm sàng.
+        \item \textit{Cơ chế cắt mạch an toàn (Circuit Breaker):} Khi điểm tương đồng ngữ nghĩa của đoạn trích truy xuất thấp hơn ngưỡng tin cậy ($\theta < 0.72$) hoặc module hậu kiểm phát hiện số liệu lạ, hệ thống lập tức từ chối trả lời tự động và yêu cầu bác sĩ đối chiếu trực tiếp văn bản PDF gốc.
+        \item \textit{Chế độ ngoại tuyến an toàn (Offline Safe Mode):} Khi đường truyền Internet bị gián đoạn, cổng CDSS Deterministic vẫn phải duy trì hoạt động 100\% để bảo đảm bác sĩ không bị mất khả năng kiểm tra tương tác thuốc và chỉnh liều eGFR.
+    \end{itemize}
+
+    \item \textbf{An toàn thông tin và Bảo mật dữ liệu y tế (Security \& Compliance):}
+    \begin{itemize}
+        \item Mật khẩu tài khoản nhân viên được băm và bảo vệ bằng thuật toán Argon2id theo chuẩn IETF RFC 9106 với thông số chống tấn công GPU/ASIC chuyên dụng ($m = 64\,\text{MB}, t = 3, p = 4$).
+        \item Quản lý phiên làm việc bằng cơ chế Cookie an toàn (\code{HttpOnly}, \code{Secure}, \code{SameSite=Lax}) nhằm triệt tiêu nguy cơ tấn công đánh cắp phiên qua XSS.
+        \item Kho khóa API Vault được mã hóa đối xứng cấp độ cao theo chuẩn AES-256-GCM.
+        \item Toàn bộ các thao tác kê đơn, ghi nhận vỏ thuốc gây nghiện và sửa đổi cấu hình đều được ghi vào nhật ký kiểm toán bất biến (\textit{Audit Trail}) phục vụ công tác thanh tra y tế.
+    \end{itemize}
+
+    \item \textbf{Tính tiện dụng và Công thái học y tế (Usability \& Clinical Ergonomics):}
+    \begin{itemize}
+        \item Giao diện áp dụng kiến trúc \textit{Dual-Zone} tối ưu công thái học: vùng thao tác hồ sơ bệnh án bên trái kết hợp song song với vùng Trợ lý AI và khung hiển thị tài liệu PDF gốc bên phải.
+        \item Hỗ trợ chế độ nền tối (\textit{Clinical Dark Mode}) đạt chuẩn tương phản WCAG 2.2 AA nhằm hạn chế tình trạng mỏi mắt của bác sĩ và điều dưỡng trong ca trực đêm.
+        \item Thiết kế giao diện di động (Mobile PWA) tuân thủ vùng thao tác ngón cái (\textit{Thumb-Zone}) với kích thước vùng chạm tối thiểu $48 \times 48\,\text{px}$, hỗ trợ điều dưỡng thao tác 1 tay khi đang cầm hồ sơ bệnh án tại giường bệnh.
+    \end{itemize}
+
+    \item \textbf{Khả năng tương thích và Đóng gói triển khai (Portability):}
+    \begin{itemize}
+        \item Hệ thống được đóng gói hoàn chỉnh bằng Docker Container, cho phép triển khai tức thời trên mọi hạ tầng máy chủ cục bộ của bệnh viện chạy Linux/Windows.
+        \item Tương thích hoàn hảo trên các trình duyệt Web hiện đại (Google Chrome, Microsoft Edge, Mozilla Firefox, Apple Safari) mà không yêu cầu cài đặt phần mềm bổ trợ.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Bảng tổng hợp đặc tả yêu cầu phi chức năng}
+\label{subsec:nfr_summary_table}
+
+Bảng~\ref{tab:nonfunctional_requirements} tổng hợp các yêu cầu phi chức năng của hệ thống kèm theo các chỉ số định lượng đo lường cụ thể:
 
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabularx}{\textwidth}{C{2.0cm} L{3.5cm} Y C{2.0cm}}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{C{1.8cm} L{3.5cm} Y C{2.0cm}}
 \toprule
-\textbf{Mã YC} & \textbf{Khía cạnh kỹ thuật} & \textbf{Chỉ số và Tiêu chuẩn định lượng đo lường} & \textbf{Mức ưu tiên} \\
+\textbf{Mã YC} & \textbf{Khía cạnh chất lượng} & \textbf{Chỉ số và Tiêu chuẩn định lượng đo lường} & \textbf{Mức ưu tiên} \\
 \midrule
-\textbf{NFR01} & Hiệu năng \& Độ trễ & Thời gian xử lý kiểm tra tương tác thuốc CDSS tại máy chủ phải dưới $5\,\text{ms}$. Độ trễ phản hồi đệm nóng (Hot Cache TTFT) dưới $250\,\text{ms}$. & Tối cao \\
+\textbf{NFR01} & Hiệu năng \& Độ trễ & Thời gian xử lý kiểm tra tương tác thuốc CDSS $< 5\,\text{ms}$; TTFT đệm nóng $< 250\,\text{ms}$; Độ trễ RAG $p_{95} \le 1.8\,\text{s}$. & Tối cao \\
 \addlinespace
-\textbf{NFR02} & Độ tin cậy \& Ảo giác & Tỷ lệ ảo giác thông tin liều lượng và chỉ định lâm sàng phải đạt $0.0\%$ trên các bộ kiểm thử tự động chuẩn mực. & Tối cao \\
+\textbf{NFR02} & Độ tin cậy \& Ảo giác & Tỷ lệ ảo giác số liệu lâm sàng bằng $0.0\%$; kích hoạt cắt mạch an toàn khi $\theta < 0.72$. & Tối cao \\
 \addlinespace
-\textbf{NFR03} & Tính sẵn sàng \& Chịu lỗi & Hệ thống phải vận hành ổn định 24/7. Hỗ trợ chế độ ngoại tuyến (Offline Safe Mode) khi đứt kết nối mạng Internet. & Bắt buộc \\
+\textbf{NFR03} & Tính sẵn sàng \& Chịu lỗi & Hoạt động ổn định 24/7; hỗ trợ Chế độ ngoại tuyến an toàn khi mất mạng Internet; CSDL SQLite WAL mode. & Bắt buộc \\
 \addlinespace
-\textbf{NFR04} & Bảo mật \& Toàn vẹn & Quản lý phiên bằng HttpOnly Secure Cookie; mật khẩu băm chuẩn Argon2/Bcrypt; danh sách API Key mã hóa AES-256-GCM. & Bắt buộc \\
+\textbf{NFR04} & Bảo mật \& Toàn vẹn & Băm mật khẩu Argon2id (IETF RFC 9106); Cookie HttpOnly Secure; Kho khóa AES-256-GCM; Kiểm toán bất biến. & Bắt buộc \\
 \addlinespace
-\textbf{NFR05} & Tính tiện dụng (Usability) & Giao diện tối ưu công thái học, hỗ trợ điều dưỡng xem hành động nhanh và hỗ trợ bác sĩ mở văn bản PDF gốc đúng số trang chỉ với 1 cú nhấp chuột. & Bắt buộc \\
+\textbf{NFR05} & Tiện dụng \& Công thái học & Kiến trúc Dual-Zone; Dark Mode tương phản WCAG 2.2; PWA Thumb-Zone chạm $\ge 48\,\text{px}$; Mở PDF trong 1-Click. & Bắt buộc \\
 \addlinespace
-\textbf{NFR06} & Khả năng tương thích & Hệ thống đóng gói trong container Docker tiêu chuẩn Linux, tương thích trên mọi trình duyệt hiện đại (Chrome, Edge, Firefox, Safari). & Bắt buộc \\
+\textbf{NFR06} & Tương thích \& Đóng gói & Đóng gói Docker Linux tiêu chuẩn; tương thích 100\% các trình duyệt hiện đại (Chrome, Edge, Firefox, Safari). & Bắt buộc \\
 \bottomrule
 \end{tabularx}
-\caption{Bảng đặc tả danh mục yêu cầu phi chức năng (Non-Functional Requirements)}
+\caption{Bảng đặc tả danh mục yêu cầu phi chức năng theo chuẩn ISO/IEC 25010}
+\label{tab:nonfunctional_requirements}
 \end{table}

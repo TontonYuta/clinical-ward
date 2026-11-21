@@ -1,21 +1,99 @@
 \section{Mô hình hóa ca sử dụng (Use Case Modeling)}
 \label{sec:use_case_modeling}
 
-Dựa trên việc phân tích các yêu cầu chức năng và phân định tác nhân, các ca sử dụng của hệ thống được tổ chức thành 4 phân hệ chính:
+\subsection{Phân loại các nhóm ca sử dụng theo phân hệ}
+\label{subsec:use_case_groups}
 
-\begin{enumerate}[leftmargin=1.5em]
-    \item \textbf{Phân hệ Kê đơn CPOE và Cảnh báo an toàn CDSS:}
-    Bao gồm các ca sử dụng: \textit{Kê đơn thuốc mới, Kiểm tra tương tác thuốc chống chỉ định, Cảnh báo hội chứng đa thuốc (Triple Whammy / QTc), Đề xuất thuốc thay thế, Ước tính mức lọc cầu thận eGFR, Lưu đơn thuốc vào bệnh án điện tử, Xuất bản đơn thuốc theo Thông tư 26/2025/TT-BYT}. Tác nhân chính: Bác sĩ điều trị.
+Dựa trên việc phân tích các yêu cầu chức năng và phân định tác nhân, các ca sử dụng của hệ thống được tổ chức thành bốn phân hệ cốt lõi:
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item \textbf{Phân hệ 1: Kê đơn CPOE và Cảnh báo an toàn CDSS:}
+    Bao gồm các ca sử dụng: \textit{Kê đơn thuốc mới, Kiểm tra tương tác thuốc chống chỉ định (QĐ 5948/QĐ-BYT), Cảnh báo hội chứng đa thuốc (Triple Whammy / QTc), Đề xuất thuốc thay thế 1-Click theo danh mục BHYT, Ước tính mức lọc cầu thận eGFR, Lưu đơn thuốc vào bệnh án điện tử, Xuất bản đơn thuốc theo Thông tư 26/2025/TT-BYT}. Tác nhân chính: Bác sĩ điều trị; Tác nhân giám sát: Dược sĩ lâm sàng.
     
-    \item \textbf{Phân hệ Trợ lý Dược lâm sàng RAG và Đối soát y văn:}
-    Bao gồm các ca sử dụng: \textit{Hỏi đáp dược lâm sàng trong ranh giới ngữ cảnh đóng, Tra cứu chuyên luận Dược thư Quốc gia, Đối chiếu danh mục thanh toán BHYT theo hạng bệnh viện (Thông tư 20/2022/TT-BYT), Mở trực tiếp trang tài liệu pháp quy PDF}. Tác nhân chính: Bác sĩ điều trị, Dược sĩ lâm sàng.
+    \item \textbf{Phân hệ 2: Trợ lý Dược lâm sàng RAG và Đối soát y văn:}
+    Bao gồm các ca sử dụng: \textit{Hỏi đáp dược lâm sàng trong ranh giới ngữ cảnh đóng, Tra cứu chuyên luận Dược thư Quốc gia, Đối chiếu danh mục thanh toán BHYT theo hạng bệnh viện (Thông tư 20/2022/TT-BYT), Đối soát hậu kiểm số liệu định lượng, Mở trực tiếp trang tài liệu pháp quy PDF}. Tác nhân chính: Bác sĩ điều trị, Dược sĩ lâm sàng.
     
-    \item \textbf{Phân hệ Quản trị Kho dược và Hỗ trợ điều dưỡng buồng bệnh:}
-    Bao gồm các ca sử dụng: \textit{Nhận diện thông tin thẻ BHYT qua ảnh chụp Canvas, Quét thông tin hóa đơn nhập kho dược, Phân bổ xuất kho thuốc theo hạn dùng (FEFO), Theo dõi và xác nhận hoàn trả vỏ thuốc gây nghiện}. Tác nhân chính: Dược sĩ lâm sàng, Điều dưỡng viên.
+    \item \textbf{Phân hệ 3: Quản trị Kho dược và Hỗ trợ điều dưỡng buồng bệnh:}
+    Bao gồm các ca sử dụng: \textit{Nhận diện thông tin thẻ BHYT qua ảnh chụp Canvas, Quét thông tin hóa đơn nhập kho dược, Phân bổ xuất kho thuốc theo hạn dùng (FEFO), Theo dõi và xác nhận hoàn trả vỏ thuốc gây nghiện (Morphin, Fentanyl)}. Tác nhân chính: Dược sĩ lâm sàng, Điều dưỡng viên.
     
-    \item \textbf{Phân hệ Quản trị hệ thống và Giám sát vận hành AI:}
+    \item \textbf{Phân hệ 4: Quản trị hệ thống và Giám sát vận hành AI:}
     Bao gồm các ca sử dụng: \textit{Đăng nhập/Đăng xuất hệ thống, Quản lý hồ sơ nhân sự CSDL, Cấp phát và đặt lại mật khẩu web (Argon2id), Đồng bộ hóa lịch sử hội chẩn AI theo tài khoản, Giám sát lưu lượng token và ngân sách (Budget Cap), Quản lý kho khóa API và cấu hình chuyển mạch dự phòng}. Tác nhân chính: Quản trị viên hệ thống.
 \end{enumerate}
+
+\subsection{Sơ đồ ca sử dụng tổng quan hệ thống (Use Case Diagram)}
+\label{subsec:use_case_diagram}
+
+Hình~\ref{fig:use_case_overall} mô tả trực quan sơ đồ ca sử dụng tổng thể của hệ thống Clinical Ward CDSS theo chuẩn UML, thể hiện rõ mối quan hệ tương tác giữa 4 nhóm tác nhân và các ca sử dụng cốt lõi cùng các quan hệ phụ thuộc $\langle\langle\text{include}\rangle\rangle$ và $\langle\langle\text{extend}\rangle\rangle$:
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[
+    font=\sffamily\scriptsize,
+    actor/.style={rectangle, draw=darkslate, fill=darkslate!8, rounded corners=3pt, thick, align=center, text width=2.4cm, minimum height=0.8cm, font=\sffamily\bfseries\scriptsize},
+    usecase/.style={ellipse, draw=primaryteal, fill=primaryteal!6, thick, align=center, text width=2.6cm, minimum height=0.8cm},
+    systembox/.style={rectangle, draw=commentgray, dashed, inner sep=10pt, rounded corners=6pt},
+    link/.style={draw=darkslate, thick},
+    relarrow/.style={draw=primaryteal, dashed, -{Stealth[scale=0.8]}, font=\tiny\sffamily\itshape}
+]
+
+% Boundary Box Coordinates
+\node[usecase] (uc_prescribe) at (0, 4.5) {UC01: Kê đơn CPOE buồng bệnh};
+\node[usecase] (uc_ddi) at (4.0, 5.5) {Kiểm tra tương tác thuốc CDSS};
+\node[usecase] (uc_egfr) at (4.0, 4.0) {Tính eGFR \& Chỉnh liều thận};
+\node[usecase] (uc_alt) at (4.0, 2.5) {UC02: Gợi ý đổi thuốc 1-Click};
+
+\node[usecase] (uc_rag) at (0, 1.2) {UC03: Tra cứu Dược thư RAG};
+\node[usecase] (uc_audit) at (4.0, 1.2) {Hậu kiểm trích dẫn số trang};
+
+\node[usecase] (uc_fefo) at (0, -0.5) {UC05: Xuất kho dược FEFO};
+\node[usecase] (uc_morphine) at (4.0, -0.5) {Quản lý nợ vỏ Morphin};
+
+\node[usecase] (uc_bhyt) at (0, -2.2) {UC06: Nhận diện thẻ BHYT};
+\node[usecase] (uc_staff) at (0, -3.8) {UC04: Quản lý nhân sự Argon2id};
+\node[usecase] (uc_vault) at (4.0, -3.8) {Giám sát AI \& Kho khóa};
+
+% System Boundary
+\node[systembox, fit=(uc_prescribe) (uc_ddi) (uc_egfr) (uc_alt) (uc_rag) (uc_audit) (uc_fefo) (uc_morphine) (uc_bhyt) (uc_staff) (uc_vault), label=above:{\textbf{\small HỆ THỐNG CLINICAL WARD CDSS}}] (sysbox) {};
+
+% Actors
+\node[actor] (act_doc) at (-4.5, 3.5) {Bác sĩ\\điều trị};
+\node[actor] (act_pharma) at (-4.5, 0.5) {Dược sĩ\\lâm sàng};
+\node[actor] (act_nurse) at (8.5, -1.0) {Điều dưỡng\\viên};
+\node[actor] (act_admin) at (8.5, -3.8) {Quản trị viên\\hệ thống};
+
+% Actor Connections
+\draw[link] (act_doc) -- (uc_prescribe);
+\draw[link] (act_doc) -- (uc_rag);
+
+\draw[link] (act_pharma) -- (uc_rag);
+\draw[link] (act_pharma) -- (uc_fefo);
+\draw[link] (act_pharma) -- (uc_morphine);
+
+\draw[link] (act_nurse) -- (uc_fefo);
+\draw[link] (act_nurse) -- (uc_morphine);
+\draw[link] (act_nurse) -- (uc_bhyt);
+
+\draw[link] (act_admin) -- (uc_staff);
+\draw[link] (act_admin) -- (uc_vault);
+
+% Use Case Relationships
+\draw[relarrow] (uc_prescribe) -- node[above, sloped] {$\langle\langle\text{include}\rangle\rangle$} (uc_ddi);
+\draw[relarrow] (uc_prescribe) -- node[above, sloped] {$\langle\langle\text{include}\rangle\rangle$} (uc_egfr);
+\draw[relarrow] (uc_alt) -- node[below, sloped] {$\langle\langle\text{extend}\rangle\rangle$} (uc_prescribe);
+\draw[relarrow] (uc_rag) -- node[above] {$\langle\langle\text{include}\rangle\rangle$} (uc_audit);
+\draw[relarrow] (uc_fefo) -- node[above] {$\langle\langle\text{include}\rangle\rangle$} (uc_morphine);
+
+\end{tikzpicture}
+}
+\caption{Sơ đồ ca sử dụng tổng quan hệ thống Clinical Ward CDSS (UML Use Case Diagram)}
+\label{fig:use_case_overall}
+\end{figure}
+
+\subsection{Ma trận phân quyền tác nhân và nhóm ca sử dụng}
+\label{subsec:actor_use_case_matrix}
+
+Bảng~\ref{tab:actor_use_case_matrix} trình bày ma trận phân quyền tác nhân chi tiết đối với từng nhóm ca sử dụng nghiệp vụ trong toàn bộ hệ thống:
 
 \begin{table}[htbp]
 \centering

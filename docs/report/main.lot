@@ -1,29 +1,33 @@
 \addvspace {10\p@ }
 \contentsline {table}{\numberline {1.1}{\ignorespaces Bảng so sánh và đánh giá các hệ thống CDSS hiện hữu}}{3}{table.1.1}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {2.1}{\ignorespaces Bảng đặc tả danh mục 16 yêu cầu chức năng hệ thống (Functional Requirements)}}{10}{table.2.1}%
-\contentsline {table}{\numberline {2.2}{\ignorespaces Bảng đặc tả danh mục yêu cầu phi chức năng (Non-Functional Requirements)}}{11}{table.2.2}%
-\contentsline {table}{\numberline {2.3}{\ignorespaces Ma trận phân quyền tác nhân và nhóm ca sử dụng trong hệ thống}}{12}{table.2.3}%
-\contentsline {table}{\numberline {2.4}{\ignorespaces Bảng đặc tả ca sử dụng UC01: Kê đơn điện tử và kiểm tra tương tác CDSS}}{13}{table.2.4}%
-\contentsline {table}{\numberline {2.5}{\ignorespaces Bảng đặc tả ca sử dụng UC02: Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click}}{14}{table.2.5}%
-\contentsline {table}{\numberline {2.6}{\ignorespaces Bảng đặc tả ca sử dụng UC03: Tra cứu y văn Dược thư RAG có đối soát số trang}}{15}{table.2.6}%
-\contentsline {table}{\numberline {2.7}{\ignorespaces Bảng đặc tả ca sử dụng UC04: Quản lý nhân sự và xác thực phân quyền hệ thống}}{16}{table.2.7}%
+\contentsline {table}{\numberline {2.1}{\ignorespaces Bảng đối sánh quy trình nghiệp vụ hiện trạng (As-Is) và quy trình đề xuất (To-Be)}}{10}{table.2.1}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Bảng hồ sơ phân tích tác nhân hệ thống (Actor Profiles)}}{13}{table.2.2}%
+\contentsline {table}{\numberline {2.3}{\ignorespaces Bảng đặc tả danh mục 16 yêu cầu chức năng hệ thống theo phân hệ (Functional Requirements)}}{15}{table.2.3}%
+\contentsline {table}{\numberline {2.4}{\ignorespaces Bảng đặc tả danh mục yêu cầu phi chức năng theo chuẩn ISO/IEC 25010}}{17}{table.2.4}%
+\contentsline {table}{\numberline {2.5}{\ignorespaces Ma trận phân quyền tác nhân và nhóm ca sử dụng trong hệ thống}}{19}{table.2.5}%
+\contentsline {table}{\numberline {2.6}{\ignorespaces Bảng đặc tả ca sử dụng UC01: Kê đơn điện tử và kiểm tra tương tác CDSS}}{20}{table.2.6}%
+\contentsline {table}{\numberline {2.7}{\ignorespaces Bảng đặc tả ca sử dụng UC02: Gợi ý thay thế thuốc BHYT tương đương dược lý 1-Click}}{21}{table.2.7}%
+\contentsline {table}{\numberline {2.8}{\ignorespaces Bảng đặc tả ca sử dụng UC03: Tra cứu y văn Dược thư RAG có đối soát số trang}}{22}{table.2.8}%
+\contentsline {table}{\numberline {2.9}{\ignorespaces Bảng đặc tả ca sử dụng UC04: Quản lý nhân sự và xác thực phân quyền hệ thống}}{23}{table.2.9}%
+\contentsline {table}{\numberline {2.10}{\ignorespaces Bảng đặc tả ca sử dụng UC05: Quản lý xuất kho dược FEFO và nợ vỏ thuốc gây nghiện}}{24}{table.2.10}%
+\contentsline {table}{\numberline {2.11}{\ignorespaces Bảng đặc tả ca sử dụng UC06: Nhận diện thẻ BHYT và xác thực quyền lợi KCB}}{25}{table.2.11}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Bảng phân tích đánh đổi công nghệ trong hệ thống}}{19}{table.3.1}%
-\contentsline {table}{\numberline {3.2}{\ignorespaces Bảng đặc tả tương tác tuần tự luồng xử lý câu hỏi lâm sàng đa tầng}}{20}{table.3.2}%
-\contentsline {table}{\numberline {3.3}{\ignorespaces Bảng đặc tả tương tác tuần tự luồng kiểm tra tương tác cấm CPOE}}{21}{table.3.3}%
-\contentsline {table}{\numberline {3.4}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}dav_drugs} (54.885 thuốc Cục Quản lý Dược)}}{29}{table.3.4}%
-\contentsline {table}{\numberline {3.5}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}ddi_rules} (Tương tác chống chỉ định)}}{29}{table.3.5}%
-\contentsline {table}{\numberline {3.6}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}patients} (Quản lý người bệnh nội trú)}}{30}{table.3.6}%
-\contentsline {table}{\numberline {3.7}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}audit_logs} (Nhật ký kiểm toán lâm sàng)}}{30}{table.3.7}%
-\contentsline {table}{\numberline {3.8}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}users} (Quản lý hồ sơ nhân sự và phân quyền bảo mật)}}{31}{table.3.8}%
-\contentsline {table}{\numberline {3.9}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}chat_sessions} (Lưu trữ phiên hội chẩn đám mây theo tài khoản)}}{31}{table.3.9}%
-\contentsline {table}{\numberline {3.10}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}chat_messages} (Chi tiết tin nhắn hội chẩn lâm sàng)}}{32}{table.3.10}%
-\contentsline {table}{\numberline {3.11}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}ingested_documents} (Quản lý tài liệu pháp quy nạp động)}}{32}{table.3.11}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Bảng phân tích đánh đổi công nghệ trong hệ thống}}{28}{table.3.1}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Bảng đặc tả tương tác tuần tự luồng xử lý câu hỏi lâm sàng đa tầng}}{29}{table.3.2}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Bảng đặc tả tương tác tuần tự luồng kiểm tra tương tác cấm CPOE}}{30}{table.3.3}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}dav_drugs} (54.885 thuốc Cục Quản lý Dược)}}{38}{table.3.4}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}ddi_rules} (Tương tác chống chỉ định)}}{38}{table.3.5}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}patients} (Quản lý người bệnh nội trú)}}{39}{table.3.6}%
+\contentsline {table}{\numberline {3.7}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}audit_logs} (Nhật ký kiểm toán lâm sàng)}}{39}{table.3.7}%
+\contentsline {table}{\numberline {3.8}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}users} (Quản lý hồ sơ nhân sự và phân quyền bảo mật)}}{40}{table.3.8}%
+\contentsline {table}{\numberline {3.9}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}chat_sessions} (Lưu trữ phiên hội chẩn đám mây theo tài khoản)}}{40}{table.3.9}%
+\contentsline {table}{\numberline {3.10}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}chat_messages} (Chi tiết tin nhắn hội chẩn lâm sàng)}}{41}{table.3.10}%
+\contentsline {table}{\numberline {3.11}{\ignorespaces Từ điển dữ liệu bảng \texttt {\color {primaryteal}ingested_documents} (Quản lý tài liệu pháp quy nạp động)}}{41}{table.3.11}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Bảng đặc tả các giao tiếp lập trình ứng dụng cốt lõi (API Endpoints)}}{36}{table.4.1}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Ma trận kiểm thử chức năng CDSS Sentinel và an toàn dược học}}{38}{table.4.2}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Ma trận kiểm thử chức năng RAG, Vision OCR và Xoay vòng khóa API}}{39}{table.4.3}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces Ma trận kiểm thử chức năng Bảo mật, Ranh giới hội thoại và Trải nghiệm Hybrid PWA}}{40}{table.4.4}%
-\contentsline {table}{\numberline {4.5}{\ignorespaces Bảng đo lường hiệu năng thời gian thực trên môi trường Production}}{41}{table.4.5}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Bảng đặc tả các giao tiếp lập trình ứng dụng cốt lõi (API Endpoints)}}{45}{table.4.1}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Ma trận kiểm thử chức năng CDSS Sentinel và an toàn dược học}}{47}{table.4.2}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Ma trận kiểm thử chức năng RAG, Vision OCR và Xoay vòng khóa API}}{48}{table.4.3}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Ma trận kiểm thử chức năng Bảo mật, Ranh giới hội thoại và Trải nghiệm Hybrid PWA}}{49}{table.4.4}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Bảng đo lường hiệu năng thời gian thực trên môi trường Production}}{50}{table.4.5}%
 \addvspace {10\p@ }

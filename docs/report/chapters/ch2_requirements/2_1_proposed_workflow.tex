@@ -1,12 +1,103 @@
-\section{Mô hình quy trình nghiệp vụ đề xuất (Mô hình To-Be)}
+\section{Phân tích hiện trạng và mô hình quy trình nghiệp vụ đề xuất}
 \label{sec:proposed_workflow}
 
-Nhằm khắc phục triệt để các điểm nghẽn của quy trình truyền thống (As-Is), hệ thống Clinical Ward CDSS tái cấu trúc quy trình kê đơn và theo dõi dùng thuốc theo mô hình hỗ trợ thời gian thực (To-Be):
+\subsection{Khảo sát hiện trạng quy trình nghiệp vụ lâm sàng (Mô hình As-Is)}
+\label{subsec:as_is_workflow}
 
-\begin{enumerate}[leftmargin=2em]
-    \item \textbf{Khởi tạo đơn thuốc tại giường bệnh (CPOE):} Bác sĩ điều trị chọn người bệnh trên giao diện bảng buồng bệnh nội trú và tiến hành kê đơn.
-    \item \textbf{Cảnh báo an toàn xác định tức thời ($< 5\,\text{ms}$):} Ngay khi bác sĩ chọn cặp thuốc, Cổng CDSS Sentinel kiểm tra bảng băm tương tác chống chỉ định (QĐ 5948/QĐ-BYT). Nếu vi phạm, hệ thống khóa nút lưu đơn, phát cảnh báo đỏ giải thích cơ chế dược lý và hiển thị nút "Gợi ý thay thế 1-Click" theo danh mục BHYT.
-    \item \textbf{Trợ lý Dược lâm sàng thông minh (RAG Grounding):} Bác sĩ có thể đặt câu hỏi bằng ngôn ngữ tự nhiên để tra cứu liều suy thận, chỉnh liều người cao tuổi hoặc đối chiếu văn bản pháp quy. Câu trả lời trả về phân tách rõ ràng giữa hành động khẩn cấp và nút bấm mở trực tiếp trang PDF Dược thư gốc.
-    \item \textbf{Duyệt cấp phát và Quản trị kho dược (FEFO):} Khoa Dược tiếp nhận đơn đã qua kiểm duyệt. Hệ thống tự động đối chiếu hạn dùng theo nguyên tắc FEFO (Hết hạn trước, Xuất trước) và cảnh báo nợ vỏ thuốc gây nghiện (Morphin, Fentanyl) theo quy định.
-    \item \textbf{Thực hiện y lệnh điều dưỡng:} Điều dưỡng quét mã thẻ BHYT hoặc đối chiếu đơn thuốc qua giao diện tablet tại giường bệnh, ghi nhận thời điểm tiêm/truyền vào hồ sơ điện tử.
+Trong mô hình vận hành tại các cơ sở khám chữa bệnh nội trú hiện nay, quy trình kê đơn, thẩm định và cấp phát thuốc vẫn tồn tại nhiều khâu thủ công hoặc chỉ dừng lại ở mức số hóa lưu trữ thông tin cơ bản (hệ thống thông tin bệnh viện --- HIS thuần nghiệp vụ CRUD):
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item \textbf{Khởi tạo đơn thuốc dựa trên trí nhớ và thói quen cá nhân:} Bác sĩ điều trị chọn thuốc dựa trên phác đồ kinh nghiệm. Khi đối mặt với bệnh nhân mắc nhiều bệnh nền (tim mạch, đái tháo đường, suy thận, nhiễm khuẩn), bác sĩ phải tự đối chiếu thủ công hàng chục cặp tương tác thuốc tiềm tàng. Thực tế ca trực lâm sàng căng thẳng khiến việc phát hiện các tương tác nghiêm trọng như \textit{Triple Whammy} (ACEi/ARB + Lợi tiểu + NSAID) hoặc phối hợp \textit{Clopidogrel + Omeprazol} thường xuyên bị bỏ sót.
+    \item \textbf{Điểm nghẽn trong việc tra cứu y văn và thông tin dược lý:} Khi gặp ca bệnh phức tạp cần điều chỉnh liều theo mức lọc cầu thận hoặc cân nặng, bác sĩ hoặc dược sĩ lâm sàng phải tra cứu sách Dược thư Quốc gia Việt Nam bản in dày hơn 1.500 trang hoặc tìm kiếm rời rạc trên mạng Internet. Quá trình tra cứu thủ công này thường tiêu tốn từ 5 đến 10 phút cho mỗi ca bệnh, làm gián đoạn dòng công việc cấp cứu khẩn trương.
+    \item \textbf{Độ trễ và rào cản trong khâu hội chẩn Dược lâm sàng:} Dược sĩ lâm sàng chỉ tiếp nhận đơn thuốc sau khi bác sĩ đã hoàn tất và gửi lên hệ thống. Khi phát hiện đơn thuốc có chống chỉ định, dược sĩ phải liên hệ lại qua điện thoại hoặc văn bản để đề nghị đổi thuốc, dẫn đến độ trễ kéo dài từ 30 phút đến vài giờ, ảnh hưởng trực tiếp đến thời gian bắt đầu dùng thuốc của bệnh nhân.
+    \item \textbf{Rủi ro trong quản lý kho dược và xuất toán BHYT:} Công tác cấp phát thuốc tại tủ trực buồng bệnh thường không áp dụng chặt chẽ nguyên tắc FEFO (\textit{First Expired, First Out}), dẫn đến nguy cơ thuốc hết hạn trước nhưng lại được sử dụng sau. Mặt khác, việc đối chiếu điều kiện thanh toán BHYT (theo Thông tư 20/2022/TT-BYT) thường diễn ra sau khi bệnh nhân đã xuất viện, dẫn đến các khoản xuất toán BHYT lớn mà bệnh viện phải gánh chịu.
+    \item \textbf{Bất cập trong theo dõi thuốc gây nghiện và hướng tâm thần:} Việc bàn giao, sử dụng và hoàn trả vỏ thuốc rỗng (Morphin, Fentanyl) theo quy định của Bộ Y tế chủ yếu thực hiện qua sổ ghi chép tay, gây khó khăn cho công tác kiểm toán, đối soát và tiềm ẩn nguy cơ thất thoát chất gây nghiện.
 \end{enumerate}
+
+\subsection{Mô hình quy trình nghiệp vụ tái cấu trúc đề xuất (Mô hình To-Be)}
+\label{subsec:to_be_workflow}
+
+Nhằm khắc phục toàn diện các điểm nghẽn trên, hệ thống Clinical Ward CDSS tái cấu trúc quy trình lâm sàng theo mô hình hỗ trợ ra quyết định theo thời gian thực (Mô hình To-Be), khép kín từ thời điểm bác sĩ đặt bút kê đơn tại giường bệnh đến lúc điều dưỡng thực hiện y lệnh:
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item \textbf{Kê đơn CPOE tích hợp cổng kiểm soát an toàn $O(1)$ tức thời:} Ngay khi bác sĩ thêm thuốc vào đơn, Cổng CDSS Sentinel tự động đối soát cặp tương tác với cơ sở dữ liệu 701 quy tắc theo Quyết định 5948/QĐ-BYT với độ trễ dưới $5\,\text{ms}$. Nếu xuất hiện tương tác chống chỉ định, nút lưu đơn lập tức bị khóa, đồng thời hệ thống cung cấp giải pháp \textit{"Gợi ý thay thế 1-Click"} theo cùng nhóm giải phẫu điều trị ATC và đảm bảo được BHYT thanh toán 100\%.
+    \item \textbf{Tự động đánh giá suy giảm chức năng thận và trần liều tích lũy:} Dựa trên nồng độ Creatinin huyết thanh, tuổi, giới tính và cân nặng của người bệnh, hệ thống tự động tính mức lọc cầu thận ước tính ($eGFR$) theo công thức Cockcroft-Gault và phân tầng theo tiêu chuẩn KDIGO (2024). Các loại thuốc có độc tính trên thận (như Vancomycin, Gentamicin) hoặc chuyển hóa qua thận (như Metformin, Allopurinol) sẽ tự động bị khóa hoặc đưa ra khuyến cáo hiệu chỉnh liều chính xác.
+    \item \textbf{Trợ lý Dược lâm sàng RAG trong ranh giới ngữ cảnh đóng:} Bác sĩ và dược sĩ có thể tương tác với Trợ lý AI để tra cứu thông tin chuyên sâu. Hệ thống cam kết không bịa đặt số liệu lâm sàng (\textit{Zero Numerical Hallucination}) nhờ module đối soát hậu kiểm và luôn cung cấp con trỏ số trang cụ thể để mở trực tiếp tài liệu gốc trên giao diện hai phân vùng (\textit{Dual-Zone View}).
+    \item \textbf{Quản trị tủ trực thông minh theo nguyên tắc FEFO:} Khoa dược và tủ trực khoa phòng quản lý các lô thuốc theo hạn dùng, tự động cảnh báo các lô cận hạn và ưu tiên xuất kho thuốc sắp hết hạn trước, giảm thiểu tỷ lệ hủy thuốc do quá hạn.
+    \item \textbf{Sổ theo dõi hoàn trả vỏ thuốc gây nghiện số hóa:} Quản lý khép kín vòng đời các hoạt chất đặc biệt (Morphin, Fentanyl) từ khi cấp phát cho bệnh nhân đến khi điều dưỡng nộp lại vỏ ống rỗng, đảm bảo tuân thủ nghiêm ngặt quy định về quản lý dược chất gây nghiện theo Thông tư 26/2025/TT-BYT.
+\end{enumerate}
+
+\subsection{Đối sánh định lượng quy trình As-Is và To-Be}
+\label{subsec:comparison_as_is_to_be}
+
+Bảng~\ref{tab:comparison_as_is_to_be} tóm tắt sự khác biệt cơ bản giữa quy trình lâm sàng truyền thống và quy trình đề xuất tích hợp hệ thống Clinical Ward CDSS:
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{L{3.2cm} L{4.5cm} Y C{2.2cm}}
+\toprule
+\textbf{Tiêu chí nghiệp vụ} & \textbf{Quy trình hiện trạng (As-Is)} & \textbf{Quy trình đề xuất (To-Be)} & \textbf{Hiệu quả cải tiến} \\
+\midrule
+Phát hiện tương tác thuốc & Dựa vào trí nhớ cá nhân hoặc kiểm tra sau khi gửi đơn. & Chặn tự động tức thời ($< 5\,\text{ms}$) ngay lúc chọn thuốc. & Ngăn ngừa 100\% tương tác cấm \\
+\addlinespace
+Tra cứu thông tin Dược thư & Lật sách giấy 1.500 trang hoặc tìm kiếm web (mất 5--10 phút). & Hỏi đáp RAG có trích dẫn số trang chính xác ($< 2\,\text{s}$). & Rút ngắn $> 80\%$ thời gian tra cứu \\
+\addlinespace
+Chỉnh liều suy thận & Tính tay bằng máy tính bỏ túi hoặc ước lượng cảm tính. & Tự động tính Cockcroft-Gault, phân tầng KDIGO ngay trên hồ sơ. & Chính xác hóa phác đồ điều trị \\
+\addlinespace
+Đổi thuốc tương đương & Dược sĩ gọi điện hội chẩn, mất từ 30--60 phút. & Đề xuất 1-Click cùng nhóm ATC, ưu tiên BHYT 100\%. & Thao tác trong vòng 1 giây \\
+\addlinespace
+Quản lý hạn dùng kho & Kiểm kê sổ sách định kỳ, dễ bỏ sót lô cận hạn. & Hệ thống xuất kho ưu tiên FEFO, cảnh báo trước 30 ngày. & Giảm thiểu tối đa hủy thuốc quá hạn \\
+\addlinespace
+Theo dõi vỏ thuốc độc & Ghi sổ tay bàn giao giữa ca trực, khó truy xuất lịch sử. & Ký số điện tử và đối soát tự động trên hệ thống. & Minh bạch 100\% nhật ký kiểm toán \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng đối sánh quy trình nghiệp vụ hiện trạng (As-Is) và quy trình đề xuất (To-Be)}
+\label{tab:comparison_as_is_to_be}
+\end{table}
+
+\subsection{Sơ đồ quy trình nghiệp vụ lâm sàng To-Be}
+\label{subsec:workflow_diagram}
+
+Quy trình vận hành phối hợp giữa các bên liên quan được chuẩn hóa thành lưu đồ nghiệp vụ thể hiện tại Hình~\ref{fig:workflow_to_be}:
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.5cm,
+    font=\footnotesize\sffamily,
+    stepbox/.style={rectangle, draw=primaryteal, fill=primaryteal!8, rounded corners=3pt, thick, align=center, text width=3.2cm, minimum height=0.9cm},
+    decision/.style={diamond, draw=alertred, fill=alertred!10, thick, align=center, text width=2.4cm, inner sep=1pt, aspect=1.8},
+    actorbox/.style={rectangle, draw=darkslate, fill=darkslate!10, rounded corners=2pt, font=\bfseries\small, align=center, text width=3.4cm, minimum height=0.7cm},
+    arrow/.style={-{Stealth[scale=1.0]}, thick, draw=darkslate}
+]
+
+% Actors
+\node[actorbox] (doc) at (0, 0) {Bác sĩ điều trị};
+\node[actorbox] (cdss) at (4.5, 0) {Hệ thống CDSS Core};
+\node[actorbox] (pharma) at (9.0, 0) {Dược lâm sàng / Kho};
+\node[actorbox] (nurse) at (13.5, 0) {Điều dưỡng viên};
+
+% Steps
+\node[stepbox, below=0.8cm of doc] (s1) {1. Chọn bệnh nhân \& thêm thuốc vào đơn CPOE};
+\node[stepbox, below=0.8cm of cdss] (s2) {2. Quét ma trận tương tác DDI ($< 5\,\text{ms}$) \& eGFR};
+\node[decision, below=0.8cm of s2] (d1) {Có vi phạm\\chống chỉ định?};
+\node[stepbox, below=1.0cm of doc] (s3) at (0, -4.2) {3. Nhận cảnh báo đỏ \& bấm "Gợi ý thay thế 1-Click"};
+\node[stepbox, below=2.4cm of s2] (s4) {4. Mở khóa nút lưu \& ghi nhận đơn thuốc hợp lệ};
+\node[stepbox, below=0.8cm of pharma] (s5) at (9.0, -5.6) {5. Cấp phát kho theo FEFO \& giám sát nợ vỏ Morphin};
+\node[stepbox, below=0.8cm of nurse] (s6) at (13.5, -5.6) {6. Nhận diện thẻ BHYT, thực hiện y lệnh \& trả vỏ thuốc};
+
+% Connections
+\draw[arrow] (s1) -- (s2);
+\draw[arrow] (s2) -- (d1);
+\draw[arrow] (d1) -- node[above, font=\tiny\bfseries, color=alertred] {Có} (s3);
+\draw[arrow] (s3) |- (s2);
+\draw[arrow] (d1) -- node[right, font=\tiny\bfseries, color=primaryteal] {Không} (s4);
+\draw[arrow] (s4) -| (s5);
+\draw[arrow] (s5) -- (s6);
+
+\end{tikzpicture}
+\caption{Sơ đồ quy trình phối hợp nghiệp vụ lâm sàng tái cấu trúc (Mô hình To-Be)}
+\label{fig:workflow_to_be}
+\end{figure}

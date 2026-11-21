@@ -1,7 +1,22 @@
 \section{Danh mục yêu cầu chức năng (Functional Requirements)}
 \label{sec:functional_requirements}
 
-Các yêu cầu chức năng của hệ thống được phân rã và mã hóa chi tiết theo từng phân hệ nghiệp vụ, bao trùm cả ứng dụng lâm sàng buồng bệnh và cổng giám sát quản trị:
+\subsection{Cấu trúc phân rã chức năng hệ thống (Functional Decomposition)}
+\label{subsec:functional_decomposition}
+
+Nhằm đáp ứng toàn diện các nghiệp vụ lâm sàng và quản trị vận hành, hệ thống Clinical Ward CDSS được phân rã thành bốn phân hệ chức năng chính:
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item \textbf{Phân hệ 1: Kê đơn CPOE và Cảnh báo an toàn lâm sàng CDSS (Core CDSS):} Bao gồm các chức năng tạo đơn, quét ma trận tương tác $O(1)$, phát hiện hội chứng đa thuốc, ước tính $eGFR$ và kiểm soát trần liều 24 giờ.
+    \item \textbf{Phân hệ 2: Trợ lý Dược lâm sàng RAG và Đối soát y văn (Clinical RAG):} Cung cấp khả năng hỏi đáp y văn trong ranh giới ngữ cảnh đóng, phân tích bằng chứng số trang và kiểm định chống ảo giác định lượng.
+    \item \textbf{Phân hệ 3: Quản trị Kho dược và Hỗ trợ điều dưỡng buồng bệnh (Ward Logistics):} Bao gồm quét nhận diện thẻ BHYT qua thị giác máy tính, xuất kho ưu tiên hạn dùng FEFO và quản lý khép kín vỏ thuốc gây nghiện.
+    \item \textbf{Phân hệ 4: Quản trị hệ thống, Giám sát AI và Bảo mật dữ liệu (Admin \& Security):} Đảm nhiệm xác thực phân quyền Argon2id, quản lý nhân viên CSDL, đồng bộ dữ liệu đám mây đa thiết bị, giám sát lưu lượng token Telemetry và quản lý kho khóa API dự phòng.
+\end{enumerate}
+
+\subsection{Bảng đặc tả chi tiết 16 yêu cầu chức năng}
+\label{subsec:functional_requirements_table}
+
+Bảng~\ref{tab:functional_requirements} trình bày danh mục 16 yêu cầu chức năng được chuẩn hóa, mã hóa từ FR01 đến FR16 kèm theo mức độ ưu tiên triển khai theo phương pháp MoSCoW:
 
 \begin{table}[htbp]
 \centering
@@ -10,6 +25,8 @@ Các yêu cầu chức năng của hệ thống được phân rã và mã hóa 
 \begin{tabularx}{\textwidth}{C{1.5cm} L{3.5cm} Y C{1.8cm}}
 \toprule
 \textbf{Mã YC} & \textbf{Tên chức năng} & \textbf{Mô tả chi tiết yêu cầu kỹ thuật} & \textbf{Mức ưu tiên} \\
+\midrule
+\multicolumn{4}{l}{\textbf{Phân hệ 1: Kê đơn CPOE và Cảnh báo an toàn lâm sàng CDSS}} \\
 \midrule
 \textbf{FR01} & Kê đơn CPOE \& Xuất bản TT 26/2025 & Cho phép bác sĩ chọn bệnh nhân, tìm kiếm thuốc theo tên hoạt chất/biệt dược, nhập hàm lượng, đường dùng; tự động xuất bản 3 mẫu đơn thuốc chuẩn Bộ Y tế (Đơn thông thường, Đơn "N" gây nghiện, Đơn "H" hướng tâm thần). & Bắt buộc \\
 \addlinespace
@@ -22,17 +39,23 @@ Các yêu cầu chức năng của hệ thống được phân rã và mã hóa 
 \textbf{FR05} & Tính eGFR \& Chỉnh liều thận & Tính mức lọc cầu thận ước tính theo công thức Cockcroft-Gault, phân tầng KDIGO và tự động đưa ra khuyến cáo giảm liều/khóa thuốc chống chỉ định. & Bắt buộc \\
 \addlinespace
 \textbf{FR06} & Kiểm soát trần liều 24 giờ & Kiểm tra tổng liều tích lũy của từng hoạt chất trong ngày theo ngưỡng an toàn của Dược thư Quốc gia (ví dụ Paracetamol $\le 4\,\text{g/ngày}$). & Bắt buộc \\
+\midrule
+\multicolumn{4}{l}{\textbf{Phân hệ 2: Trợ lý Dược lâm sàng RAG và Đối soát y văn}} \\
+\midrule
+\textbf{FR07} & Trợ lý RAG \& Bounded Context & Trợ lý AI hỏi đáp Dược thư hoạt động trong ranh giới ngữ cảnh đóng (\textit{Bounded Clinical Context}); bắt buộc trích dẫn số trang Dược thư Quốc gia và văn bản Bộ Y tế gốc. & Bắt buộc \\
 \addlinespace
-\textbf{FR07} & Trợ lý RAG \& Ranh giới ngữ cảnh đóng & Trợ lý AI hỏi đáp Dược thư hoạt động trong ranh giới ngữ cảnh đóng (\textit{Bounded Clinical Context}); bắt buộc trích dẫn số trang Dược thư Quốc gia và văn bản Bộ Y tế gốc. & Bắt buộc \\
-\addlinespace
-\textbf{FR08} & Chống lệch hướng \& Hậu kiểm Self-RAG & Định tuyến ý định NLU loại bỏ câu hỏi ngoài lề; quét đối chiếu số liệu định lượng do LLM sinh ra với đoạn trích gốc, tự động thu hồi câu trả lời nếu xuất hiện số liệu lạ. & Bắt buộc \\
-\addlinespace
+\textbf{FR08} & Chống lệch hướng \& Hậu kiểm số liệu & Định tuyến ý định NLU loại bỏ câu hỏi ngoài lề; quét đối chiếu số liệu định lượng do LLM sinh ra với đoạn trích gốc, tự động thu hồi câu trả lời nếu xuất hiện số liệu lạ. & Bắt buộc \\
+\midrule
+\multicolumn{4}{l}{\textbf{Phân hệ 3: Quản trị Kho dược và Hỗ trợ điều dưỡng buồng bệnh}} \\
+\midrule
 \textbf{FR09} & Quét nhận diện thẻ BHYT & Tiền xử lý ảnh Canvas và bóc tách tự động mã thẻ BHYT 15 ký tự theo QĐ 1666/QĐ-BHXH, xác định mức hưởng và tuyến KCB ban đầu. & Nâng cao \\
 \addlinespace
 \textbf{FR10} & Quản lý kho dược theo FEFO & Quét hóa đơn nhập kho, bóc tách số lô, hạn sử dụng, tự động khớp số đăng ký DAV và kích hoạt xuất kho ưu tiên thuốc hết hạn trước. & Nâng cao \\
 \addlinespace
 \textbf{FR11} & Quản lý nợ vỏ thuốc gây nghiện & Theo dõi số lượng ống tiêm Morphin/Fentanyl đã cấp phát, ghi nhận thời điểm hoàn trả vỏ thuốc rỗng theo quy định kiểm soát dược phẩm độc chất. & Bắt buộc \\
-\addlinespace
+\midrule
+\multicolumn{4}{l}{\textbf{Phân hệ 4: Quản trị hệ thống, Giám sát AI và Bảo mật dữ liệu}} \\
+\midrule
 \textbf{FR12} & Giám sát AI Telemetry \& Ngân sách & Cổng Admin Portal giám sát lưu lượng token, tỷ lệ Cache Hit, chi phí tiết kiệm (VNĐ), cảnh báo khi chạm ngưỡng trần ngân sách (Budget Cap). & Bắt buộc \\
 \addlinespace
 \textbf{FR13} & Kho khóa API \& Failover tự động & Quản lý danh sách khóa API Gemini trong kho mã hóa; tự động chuyển sang khóa dự phòng trong dưới 50ms khi gặp lỗi HTTP 429/403. & Bắt buộc \\
@@ -44,5 +67,6 @@ Các yêu cầu chức năng của hệ thống được phân rã và mã hóa 
 \textbf{FR16} & Đồng bộ Chat đám mây \& Hybrid PWA & Đồng bộ hóa lịch sử hội chẩn AI theo từng tài khoản nhân sự trên CSDL đám mây; giao diện Responsive Hybrid PWA tối ưu cho cả máy trạm và điện thoại di động. & Nâng cao \\
 \bottomrule
 \end{tabularx}
-\caption{Bảng đặc tả danh mục 16 yêu cầu chức năng hệ thống (Functional Requirements)}
+\caption{Bảng đặc tả danh mục 16 yêu cầu chức năng hệ thống theo phân hệ (Functional Requirements)}
+\label{tab:functional_requirements}
 \end{table}

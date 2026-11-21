@@ -1,11 +1,40 @@
-\section{Xác định các tác nhân hệ thống (System Actors)}
+\section{Xác định và phân tích các tác nhân hệ thống (System Actors)}
 \label{sec:system_actors}
 
-Hệ thống phân định 4 nhóm tác nhân người dùng chính với các vai trò và quyền hạn độc lập:
+\subsection{Danh mục và vai trò các tác nhân}
+\label{subsec:actor_list}
 
-\begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Bác sĩ điều trị (Doctor):} Kê đơn điện tử CPOE, xem cảnh báo tương tác thuốc DDI, yêu cầu gợi ý thuốc thay thế 1-Click, tra cứu dược lâm sàng và xem hồ sơ bệnh án.
-    \item \textbf{Dược sĩ lâm sàng (Pharmacist):} Thẩm định đơn thuốc nội trú, đối soát hóa đơn nhập kho dược, quản lý danh mục thuốc DAV, và giám định điều kiện chi trả BHYT.
-    \item \textbf{Điều dưỡng viên (Nurse):} Tiếp nhận kế hoạch dùng thuốc ca trực, quét thẻ BHYT bệnh nhân, ghi nhận thực hiện y lệnh dùng thuốc và hoàn trả vỏ thuốc hướng thần, gây nghiện.
-    \item \textbf{Quản trị viên hệ thống (Administrator):} Quản lý tài khoản và phân quyền người dùng (RBAC), theo dõi nhật ký kiểm toán (Audit Trail) và cấu hình xoay vòng khóa API Vault.
-\end{itemize}
+Hệ thống phục vụ bốn nhóm tác nhân người dùng chính với các vai trò, trách nhiệm pháp lý và thẩm quyền chuyên môn độc lập trong cơ sở khám chữa bệnh:
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item \textbf{Bác sĩ điều trị (Doctor):} Là người chịu trách nhiệm pháp lý cao nhất về chỉ định lâm sàng cho bệnh nhân theo quy định tại Luật Khám bệnh, chữa bệnh số 15/2023/QH15. Bác sĩ thực hiện kê đơn điện tử (CPOE), theo dõi cảnh báo an toàn từ CDSS, tra cứu thông tin dược học từ Trợ lý RAG, và ký số/xác nhận xuất bản đơn thuốc theo Thông tư 26/2025/TT-BYT.
+    \item \textbf{Dược sĩ lâm sàng (Clinical Pharmacist):} Là chuyên gia giám sát và thẩm định việc sử dụng thuốc an toàn, hợp lý trong bệnh viện. Dược sĩ lâm sàng có nhiệm vụ rà soát các tương tác đa thuốc phức tạp, quản lý danh mục thuốc bệnh viện theo danh mục 54.885 số đăng ký của Cục Quản lý Dược (DAV), kiểm soát chi phí thanh toán BHYT theo Thông tư 20/2022/TT-BYT và giám sát quy trình cấp phát thuốc theo hạn dùng FEFO tại kho dược nội trú.
+    \item \textbf{Điều dưỡng viên (Staff Nurse):} Là người trực tiếp thực hiện y lệnh dùng thuốc tại giường bệnh, chịu trách nhiệm bảo đảm đúng 5 nguyên tắc dùng thuốc (Đúng người bệnh, đúng thuốc, đúng liều, đúng đường dùng, đúng thời gian). Điều dưỡng sử dụng ứng dụng di động để quét thẻ BHYT bệnh nhân, đối chiếu y lệnh thời gian thực, ghi nhận thời điểm tiêm/truyền và thực hiện hoàn trả vỏ thuốc gây nghiện (Morphin, Fentanyl) vào sổ nợ số hóa.
+    \item \textbf{Quản trị viên hệ thống (System Administrator):} Chịu trách nhiệm bảo đảm hạ tầng vận hành ổn định 24/7, an toàn thông tin và bảo mật dữ liệu. Quản trị viên thực hiện quản lý hồ sơ nhân sự, phân quyền RBAC, cấp phát tài khoản web mã hóa Argon2id theo IETF RFC 9106, quản lý kho khóa API Gemini (API Vault) kèm cơ chế xoay vòng tự động, giám sát lưu lượng token tiêu thụ và nạp tài liệu y văn PDF mới vào cơ sở tri thức RAG.
+\end{enumerate}
+
+\subsection{Bảng hồ sơ phân tích tác nhân hệ thống}
+\label{subsec:actor_profiles}
+
+Bảng~\ref{tab:actor_profiles} mô tả chi tiết hồ sơ, quyền hạn truy cập và bối cảnh sử dụng của từng tác nhân trong hệ thống Clinical Ward CDSS:
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{L{2.5cm} L{3.5cm} L{3.5cm} Y}
+\toprule
+\textbf{Tác nhân} & \textbf{Trách nhiệm pháp lý \& Nghiệp vụ} & \textbf{Quyền hạn trên hệ thống (RBAC)} & \textbf{Môi trường thiết bị sử dụng} \\
+\midrule
+\textbf{Bác sĩ điều trị} & Ra quyết định điều trị, kê đơn thuốc và chịu trách nhiệm chuyên môn theo Điều 32 Luật KBCB 2023. & Quyền tạo, sửa, ký đơn thuốc; tra cứu y văn RAG; xem xét báo cáo eGFR và tương tác. & Máy tính để bàn buồng khám (Desktop), máy tính bảng tablet khi đi buồng bệnh. \\
+\addlinespace
+\textbf{Dược sĩ lâm sàng} & Thẩm định tương tác, hội chẩn dược và quản lý xuất nhập kho thuốc theo Thông tư 26/2025/TT-BYT. & Quyền duyệt đơn, quản lý danh mục dược DAV, kiểm soát hạn dùng FEFO và sổ nợ vỏ thuốc độc. & Máy trạm Khoa Dược, máy tính cá nhân kết nối mạng nội bộ bệnh viện. \\
+\addlinespace
+\textbf{Điều dưỡng viên} & Thực hiện y lệnh dùng thuốc, kiểm tra mã thẻ BHYT và hoàn trả vỏ thuốc rỗng. & Quyền xem danh sách y lệnh ca trực, ghi nhận thời gian thực hiện, quét OCR thẻ BHYT, nộp vỏ thuốc. & Điện thoại thông minh (Smart Phone / PWA Mobile), máy tính bảng tablet buồng bệnh. \\
+\addlinespace
+\textbf{Quản trị viên} & Bảo đảm an toàn hệ thống, tuân thủ Luật An toàn thông tin mạng và kiểm soát chi phí vận hành. & Toàn quyền trên Cổng Quản trị (\code{admin-portal}): cấp tài khoản, đặt lại mật khẩu, quản lý Vault API, nạp CSDL. & Máy trạm quản trị chuyên dụng bảo mật, hỗ trợ xác thực hai lớp (2FA). \\
+\bottomrule
+\end{tabularx}
+\caption{Bảng hồ sơ phân tích tác nhân hệ thống (Actor Profiles)}
+\label{tab:actor_profiles}
+\end{table}
