@@ -15,6 +15,7 @@ import {
   CleanlinessAuditResponse,
   KnowledgeChatTestResponse
 } from '../types/admin';
+import { getAdminToken } from './authApi';
 
 const BASE_URL = '/api/v1/admin';
 
@@ -28,9 +29,15 @@ export class AdminApiError extends Error {
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = 8000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
+  const headers = new Headers(options.headers || {});
+  const token = getAdminToken();
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
   try {
     const response = await fetch(url, {
       ...options,
+      headers,
       credentials: options.credentials ?? 'include',
       signal: controller.signal,
     });

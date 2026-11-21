@@ -23,15 +23,32 @@ export function AdminLoginGate({ children }: { children: (context: AdminGateCont
 
   useEffect(() => {
     let active = true;
-    readAdminSession().then(value => {
-      if (active) {
-        setSession(value);
-        if (value.enabled && !value.authenticated) clearMonitorPrivateCache();
+    const verifySession = () => {
+      readAdminSession().then(value => {
+        if (active) {
+          setSession(value);
+          if (value.enabled && !value.authenticated) clearMonitorPrivateCache();
+        }
+      })
+        .catch(reason => { if (active) setError(reason instanceof Error ? reason.message : 'Không kết nối được máy chủ xác thực.'); })
+        .finally(() => { if (active) setChecking(false); });
+    };
+
+    verifySession();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        verifySession();
       }
-    })
-      .catch(reason => { if (active) setError(reason instanceof Error ? reason.message : 'Không kết nối được máy chủ xác thực.'); })
-      .finally(() => { if (active) setChecking(false); });
-    return () => { active = false; };
+    };
+    window.addEventListener('focus', onVisibility);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      active = false;
+      window.removeEventListener('focus', onVisibility);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   async function submit(event: FormEvent) {
