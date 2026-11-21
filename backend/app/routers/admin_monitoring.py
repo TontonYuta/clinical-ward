@@ -177,6 +177,11 @@ async def create_api_key(payload: AddApiKeyRequest):
 @router.delete("/keys/{key_id}")
 async def remove_api_key(key_id: str):
     """Xóa một khóa API khỏi bể khóa."""
+    if key_id == "sys-env-gemini-primary":
+        raise HTTPException(
+            status_code=400,
+            detail="Không thể xóa Khóa Hệ Thống Mặc Định từ giao diện web. Khóa này được bảo vệ và cấu hình từ biến môi trường máy chủ Render."
+        )
     from app.config import settings
     if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
         from app.identity_database import get_identity_session_factory

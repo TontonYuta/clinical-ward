@@ -10,8 +10,9 @@ class ApiKeyItem(BaseModel):
     masked_key: str
     provider: str = "gemini"
     status: str = "active"          # "active", "rate_limited", "invalid", "standby"
-    quota_status: str = "15 RPM / Normal"
+    quota_status: str = "15 RPM · 1.000.000 TPM · 1.500 RPD"
     is_active: bool = True
+    is_system_env: bool = False
     created_at: float
     tokens_used_today: int = 0
     requests_count: int = 0

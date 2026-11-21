@@ -129,6 +129,54 @@ def _save_identity_vault_sync(keys: List[Dict[str, Any]]) -> None:
             await session.commit()
     _run_identity(save)
 
+def get_system_env_key_item(existing_keys: Optional[List[Dict[str, Any]]] = None) -> Optional[Dict[str, Any]]:
+    """Tạo bản ghi minh bạch cho Khóa Hệ Thống Mặc Định (Render Environment)."""
+    env_key = settings.GEMINI_API_KEY
+    if not env_key or env_key == "MY_GEMINI_API_KEY" or len(env_key.strip()) < 10:
+        return None
+
+    raw_clean = env_key.strip()
+    masked = _mask_api_key(raw_clean)
+
+    if existing_keys:
+        for k in existing_keys:
+            if k.get("key_id") == "sys-env-gemini-primary" or k.get("masked_key") == masked:
+                return None
+
+    has_active_custom = False
+    if existing_keys:
+        for k in existing_keys:
+            if k.get("is_active") and k.get("status") == "active" and k.get("key_id") != "sys-env-gemini-primary":
+                has_active_custom = True
+                break
+
+    tokens_today = 0
+    try:
+        from app.services.telemetry_store import get_daily_token_usage
+        tokens_today, _ = get_daily_token_usage()
+    except Exception:
+        pass
+
+    is_active = not has_active_custom
+    status = "active" if is_active else "standby"
+
+    return {
+        "key_id": "sys-env-gemini-primary",
+        "name": "Khóa Mặc Định Hệ Thống (Render Environment)",
+        "masked_key": masked,
+        "provider": "gemini",
+        "status": status,
+        "quota_status": "15 RPM · 1.000.000 TPM · 1.500 RPD",
+        "is_active": is_active,
+        "is_system_env": True,
+        "created_at": 1730000000.0,
+        "tokens_used_today": tokens_today,
+        "requests_count": 0,
+        "error_429_count": 0,
+        "latency_ms": None,
+        "last_used_at": None,
+    }
+
 def get_all_masked_keys() -> List[Dict[str, Any]]:
     _require_complete_identity_vault_config()
     if _identity_vault_configured():
@@ -139,7 +187,11 @@ def get_all_masked_keys() -> List[Dict[str, Any]]:
             async def load_masked():
                 async with factory() as session:
                     return await list_provider_keys(session)
-            return _run_identity(load_masked)
+            db_keys = _run_identity(load_masked)
+            sys_item = get_system_env_key_item(db_keys)
+            if sys_item:
+                db_keys.append(sys_item)
+            return db_keys
         except Exception:
             return []
     keys = _load_vault_data()
@@ -151,8 +203,9 @@ def get_all_masked_keys() -> List[Dict[str, Any]]:
             "masked_key": _mask_api_key(k.get("raw_key", "")),
             "provider": k.get("provider", "gemini"),
             "status": k.get("status", "active"),
-            "quota_status": k.get("quota_status", "15 RPM / Normal"),
+            "quota_status": k.get("quota_status", "15 RPM · 1.000.000 TPM · 1.500 RPD"),
             "is_active": k.get("is_active", True),
+            "is_system_env": False,
             "created_at": k.get("created_at", time.time()),
             "tokens_used_today": k.get("tokens_used_today", 0),
             "requests_count": k.get("requests_count", 0),
@@ -160,6 +213,9 @@ def get_all_masked_keys() -> List[Dict[str, Any]]:
             "latency_ms": k.get("latency_ms", None),
             "last_used_at": k.get("last_used_at", None),
         })
+    sys_item = get_system_env_key_item(result)
+    if sys_item:
+        result.append(sys_item)
     return result
 
 def add_api_key(name: str, raw_key: str, provider: str = "gemini") -> Dict[str, Any]:
@@ -274,6 +330,11 @@ async def get_active_api_key_async(provider: str = "gemini") -> Optional[str]:
 
 async def get_raw_key_by_id_async(key_id: str) -> Optional[str]:
     """Lấy raw key theo key_id bất đồng bộ, giải mã an toàn từ DB identity."""
+    if key_id == "sys-env-gemini-primary":
+        env_key = settings.GEMINI_API_KEY
+        if env_key and env_key != "MY_GEMINI_API_KEY" and len(env_key.strip()) >= 10:
+            return env_key.strip()
+
     _require_complete_identity_vault_config()
     if _identity_vault_configured():
         try:

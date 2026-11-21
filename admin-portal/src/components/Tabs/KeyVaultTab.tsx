@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, CheckCircle2, XCircle, Play, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, XCircle, Play, RefreshCw, ShieldCheck, Info } from 'lucide-react';
 import { ApiKeyItem, TestKeyResponse } from '../../types/admin';
 import { addApiKey, deleteApiKey, testApiKey, triggerAutoHeartbeat } from '../../services/adminApi';
 
@@ -177,6 +177,14 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
         </form>
       )}
 
+      {/* Banner thông tin cơ chế bể khóa & tính minh bạch */}
+      <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-lg flex items-start gap-2.5 text-xs text-blue-900">
+        <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+        <div>
+          <span className="font-semibold text-blue-950">Cơ chế quản lý Bể khóa Đa tầng:</span> Hệ thống luôn tự động hiển thị và duy trì <strong>Khóa Mặc Định Hệ Thống</strong> được cấu hình sẵn từ máy chủ Render. Khi bạn bấm <em>"Thêm khóa mới"</em> để nạp các khóa dự phòng, hệ thống sẽ ưu tiên sử dụng các khóa này và tự động xoay vòng dự phòng (Failover &lt; 50ms) nếu một khóa chạm ngưỡng hạn mức 15 RPM.
+        </div>
+      </div>
+
       {/* Bảng Danh Sách Khóa Phẳng (Seamless Table) */}
       <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
@@ -186,6 +194,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                 <th className="py-2.5 px-3">Tên Khóa</th>
                 <th className="py-2.5 px-3">Nhà Cung Cấp</th>
                 <th className="py-2.5 px-3">Khóa Che (Masked)</th>
+                <th className="py-2.5 px-3">Hạn Mức (Quota)</th>
                 <th className="py-2.5 px-3">Tokens Hôm Nay</th>
                 <th className="py-2.5 px-3">Lỗi 429</th>
                 <th className="py-2.5 px-3">Trạng Thái</th>
@@ -195,7 +204,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
             <tbody className="divide-y divide-slate-100">
               {keys.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400">
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
                     Bể khóa API đang trống. Vui lòng bấm "Thêm khóa mới" để nạp khóa.
                   </td>
                 </tr>
@@ -203,12 +212,20 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                 keys.map((k) => {
                   const res = testResult[k.key_id];
                   const isTesting = testingKeyId === k.key_id;
+                  const isSysEnv = k.is_system_env || k.key_id.startsWith('sys-env') || k.name.includes('Hệ Thống');
 
                   return (
                     <React.Fragment key={k.key_id}>
                       <tr className="hover:bg-slate-50/70 transition">
                         <td className="py-2.5 px-3 font-semibold text-slate-900">
-                          {k.name}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span>{k.name}</span>
+                            {isSysEnv && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200" title="Khóa cấu hình từ biến môi trường máy chủ Render">
+                                Mặc định
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-2.5 px-3">
                           <span className="text-2xs font-mono text-slate-500 uppercase">
@@ -217,6 +234,14 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                         </td>
                         <td className="py-2.5 px-3 font-mono text-slate-600">
                           {k.masked_key}
+                        </td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                            title="Hạn mức tiêu chuẩn Google AI Studio: 15 RPM (Lượt gọi/phút), 1M TPM (Token/phút), 1.500 RPD (Lượt gọi/ngày)"
+                          >
+                            {k.quota_status || '15 RPM · 1.000.000 TPM · 1.500 RPD'}
+                          </span>
                         </td>
                         <td className="py-2.5 px-3 font-mono tabular-nums text-slate-900 font-medium">
                           {(k.tokens_used_today || 0).toLocaleString('vi-VN')}
@@ -246,19 +271,28 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                               onClick={() => handleTestKey(k.key_id)}
                               disabled={isTesting}
                               className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-medium inline-flex items-center gap-1 transition disabled:opacity-50"
-                              title="Kiểm tra ping latency"
+                              title="Kiểm tra ping latency và kết nối Google API"
                             >
                               <Play className={`w-3 h-3 ${isTesting ? 'animate-spin text-teal-600' : ''}`} />
                               <span>{isTesting ? 'Ping...' : 'Kiểm tra'}</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(k.key_id)}
-                              className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                              title="Xóa khóa khỏi bể xoay vòng"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {isSysEnv ? (
+                              <span
+                                className="p-1 rounded text-blue-600 bg-blue-50/70 border border-blue-200/60 inline-flex items-center"
+                                title="Khóa hệ thống mặc định được bảo vệ an toàn (quản lý qua Render Cloud)"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(k.key_id)}
+                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                                title="Xóa khóa khỏi bể xoay vòng"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -266,7 +300,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                       {/* Dòng hiển thị kết quả kiểm tra Ping nếu có */}
                       {res && (
                         <tr className="bg-slate-50/50">
-                          <td colSpan={7} className="px-3 py-1.5 border-t border-slate-100 text-2xs">
+                          <td colSpan={8} className="px-3 py-1.5 border-t border-slate-100 text-2xs">
                             <div className="flex items-center gap-2">
                               {res.success ? (
                                 <span className="font-semibold text-emerald-800 flex items-center gap-1">

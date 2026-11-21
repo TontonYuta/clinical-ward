@@ -103,6 +103,7 @@ export interface ApiKeyItem {
   status: 'active' | 'rate_limited' | 'invalid' | 'standby';
   quota_status: string;
   is_active: boolean;
+  is_system_env?: boolean;
   created_at: number;
   latency_ms?: number;
   last_checked_at?: number;
