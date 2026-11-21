@@ -43,14 +43,30 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               key={t.id}
               type="button"
               onClick={() => onTabChange(t.id)}
-              className={`w-full text-left px-2.5 py-2 rounded-lg transition cursor-pointer flex items-center gap-2.5 ${
+              className={`w-full text-left px-3 py-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-between group ${
                 isActive
-                  ? 'bg-slate-100 text-slate-900 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                  ? 'bg-teal-50/90 text-teal-950 font-semibold border-l-2 border-teal-700 shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium'
               }`}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-teal-700' : 'text-slate-400'}`} />
-              <span className="text-xs sm:text-sm truncate">{t.label}</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-teal-800' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                <span className="text-xs sm:text-sm truncate">{t.label}</span>
+              </div>
+              {t.id === 'settings_integrations' && activeKeyCount > 0 && (
+                <span className={`text-3xs font-mono px-1.5 py-0.5 rounded-full shrink-0 font-medium ${
+                  isActive ? 'bg-teal-200/60 text-teal-900' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {activeKeyCount} key
+                </span>
+              )}
+              {t.id === 'telemetry' && todayUsagePct > 0 && (
+                <span className={`text-3xs font-mono px-1.5 py-0.5 rounded-full shrink-0 font-medium ${
+                  todayUsagePct > 85 ? 'bg-rose-100 text-rose-700' : isActive ? 'bg-teal-200/60 text-teal-900' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {todayUsagePct}%
+                </span>
+              )}
             </button>
           );
         })}

@@ -6,10 +6,75 @@ import {
   ChevronsRight,
   Download,
   Search,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { TelemetryEventItem, PaginatedTelemetryResponse } from '../../types/admin';
 import { fetchPaginatedTelemetry } from '../../services/adminApi';
+
+function renderEventTypeBadge(type: string) {
+  switch (type) {
+    case 'CACHE_HIT':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+          CACHE HIT
+        </span>
+      );
+    case 'ADAPTIVE_RAG':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-mono font-semibold bg-sky-50 text-sky-700 border border-sky-200/60">
+          RAG
+        </span>
+      );
+    case 'DDI_BLOCKED':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-mono font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">
+          CHẶN DDI
+        </span>
+      );
+    case 'GUARDRAIL_BLOCKED':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-mono font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+          GUARDRAIL
+        </span>
+      );
+    case 'BHYT_SUBSTITUTION':
+    case 'VISION_OCR_BHYT':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-mono font-semibold bg-purple-50 text-purple-700 border border-purple-200/60">
+          BHYT OCR
+        </span>
+      );
+    case 'MULTIMODAL_CLINICAL_VISION':
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+          VISION
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-mono font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          {type}
+        </span>
+      );
+  }
+}
+
+function renderUserRoleBadge(role: string) {
+  const norm = (role || '').toLowerCase();
+  switch (norm) {
+    case 'doctor':
+      return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200/50">BS</span>;
+    case 'nurse':
+      return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-semibold bg-teal-50 text-teal-700 border border-teal-200/50">ĐD</span>;
+    case 'pharmacist':
+      return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-semibold bg-amber-50 text-amber-700 border border-amber-200/50">DS</span>;
+    case 'director':
+      return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-semibold bg-purple-50 text-purple-700 border border-purple-200/50">GĐ</span>;
+    default:
+      return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-mono font-medium text-slate-500 bg-slate-100">{role || 'NV'}</span>;
+  }
+}
 
 interface TelemetryLiveStreamTableProps {
   events: TelemetryEventItem[];
@@ -179,8 +244,18 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm prompt, câu lệnh, mã CHAT..."
-            className="w-full h-8 pl-8 pr-2.5 bg-white border border-slate-200 rounded-md text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 transition"
+            className="w-full h-8 pl-8 pr-7 bg-white border border-slate-200 rounded-md text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition shadow-2xs"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-0.5 rounded"
+              title="Xóa tìm kiếm"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
 
         {/* Lọc Cơ Chế */}
@@ -291,14 +366,12 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   
                   {/* Cột Cơ Chế Phục Vụ */}
                   <td className="py-2.5 px-3 whitespace-nowrap">
-                    <span className="font-mono text-2xs text-slate-700">
-                      {ev.event_type}
-                    </span>
+                    {renderEventTypeBadge(ev.event_type)}
                   </td>
 
                   {/* Cột Model Đọc */}
                   <td className="py-2.5 px-3 whitespace-nowrap">
-                    <span className="font-mono text-2xs text-slate-500" title={`Nhà cung cấp: ${ev.provider || 'Hệ thống'}`}>
+                    <span className="font-mono text-2xs text-slate-600 bg-slate-100/80 px-1.5 py-0.5 rounded" title={`Nhà cung cấp: ${ev.provider || 'Hệ thống'}`}>
                       {ev.model_name || 'unknown'}
                     </span>
                   </td>
@@ -336,18 +409,20 @@ export const TelemetryLiveStreamTable: React.FC<TelemetryLiveStreamTableProps> =
                   </td>
 
                   {/* Cột Vai Trò */}
-                  <td className="py-2.5 px-3 text-slate-500 text-2xs whitespace-nowrap uppercase font-mono">
-                    {ev.user_role}
+                  <td className="py-2.5 px-3 whitespace-nowrap">
+                    {renderUserRoleBadge(ev.user_role)}
                   </td>
 
                   {/* Cột Độ Trễ */}
                   <td className="py-2.5 px-3 text-right font-mono text-slate-600 text-xs whitespace-nowrap">
-                    {ev.latency_ms} ms
+                    <span className={ev.latency_ms > 1000 ? 'text-amber-600 font-semibold' : 'text-slate-600'}>
+                      {ev.latency_ms} ms
+                    </span>
                   </td>
 
                   {/* Cột Thao Tác */}
                   <td className="py-2.5 pl-2 text-right whitespace-nowrap">
-                    <span className="text-xs text-slate-400 group-hover:text-slate-700 font-medium">
+                    <span className="text-xs text-slate-400 group-hover:text-teal-700 font-medium inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
                       Chi tiết →
                     </span>
                   </td>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Clock, User, Zap, Database, ShieldAlert, CheckCircle2, Copy, FileText, CornerDownRight, Cpu, Image as ImageIcon, Layers, DollarSign } from 'lucide-react';
 import { TelemetryEventItem } from '../../types/admin';
 
@@ -8,6 +8,8 @@ interface QueryDetailDrawerProps {
 }
 
 export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onClose }) => {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -18,8 +20,10 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
 
   if (!event) return null;
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 1800);
   };
 
   const pTokens = event.prompt_tokens || Math.max(15, Math.floor(event.query.length / 3));
@@ -148,11 +152,21 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
               </span>
               <button
                 type="button"
-                onClick={() => copyToClipboard(event.query)}
-                className="text-xs text-slate-500 hover:text-teal-800 flex items-center gap-1 cursor-pointer"
+                onClick={() => copyToClipboard(event.query, 'query')}
+                className={`text-xs flex items-center gap-1 cursor-pointer transition ${
+                  copiedField === 'query' ? 'text-emerald-700 font-semibold' : 'text-slate-500 hover:text-teal-800'
+                }`}
                 title="Sao chép câu hỏi"
               >
-                <Copy className="w-3.5 h-3.5" /> Sao chép
+                {copiedField === 'query' ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Đã sao chép!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" /> Sao chép
+                  </>
+                )}
               </button>
             </div>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 leading-relaxed">
@@ -170,11 +184,21 @@ export const QueryDetailDrawer: React.FC<QueryDetailDrawerProps> = ({ event, onC
               {event.reply_text && (
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(event.reply_text || '')}
-                  className="text-xs text-slate-500 hover:text-teal-800 flex items-center gap-1 cursor-pointer"
+                  onClick={() => copyToClipboard(event.reply_text || '', 'reply')}
+                  className={`text-xs flex items-center gap-1 cursor-pointer transition ${
+                    copiedField === 'reply' ? 'text-emerald-700 font-semibold' : 'text-slate-500 hover:text-teal-800'
+                  }`}
                   title="Sao chép phản hồi"
                 >
-                  <Copy className="w-3.5 h-3.5" /> Sao chép
+                  {copiedField === 'reply' ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Đã sao chép!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" /> Sao chép
+                    </>
+                  )}
                 </button>
               )}
             </div>
