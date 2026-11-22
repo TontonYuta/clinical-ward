@@ -22,6 +22,13 @@ from app.schemas.bhyt import BhytOcrPrescriptionRequest
 
 client = TestClient(app)
 
+def _get_auth_headers():
+    from app.security.auth import issue_token
+    from app.config import settings
+    token = issue_token("bac_si_test", "doctor", settings.SECRET_KEY)
+    return {"Authorization": f"Bearer {token}"}
+
+
 SAMPLE_DRUGS = [
     ("Paracetamol", "500mg", "Uống"),
     ("Diclofenac", "50mg", "Uống"),
@@ -174,7 +181,8 @@ def test_ocr_prescription_api_randomized_trials():
                     "mime_type": "image/jpeg",
                     "hospital_rank": "HANG_I",
                     "treatment_type": "NGOAI_TRU"
-                }
+                },
+                headers=_get_auth_headers()
             )
 
             assert res.status_code == 200
@@ -202,7 +210,8 @@ def test_ocr_prescription_offline_fallback():
     """
     res = client.post(
         "/api/v1/bhyt/ocr-prescription",
-        json={"raw_text": raw_text}
+        json={"raw_text": raw_text},
+        headers=_get_auth_headers()
     )
     assert res.status_code == 200
     data = res.json()

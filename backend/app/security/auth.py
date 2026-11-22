@@ -230,6 +230,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             "/patients": {"doctor", "nurse"},
             "/prescription-advice": {"doctor", "nurse"},
             "/sms": {"doctor", "nurse"},
+            "/bhyt": {"nurse", "doctor", "pharmacist", "director"},
             "/clinical-ddi": set(),
         }
         if suffix == "/auth/logout":
