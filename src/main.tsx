@@ -12,6 +12,7 @@ createRoot(document.getElementById('root')!).render(
       <App
         authenticatedRole={auth.role}
         authenticatedUsername={auth.username}
+        authenticatedProfile={auth.userProfile}
         onLogout={logout}
       />
     )}

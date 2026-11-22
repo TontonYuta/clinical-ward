@@ -5,16 +5,18 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, UserRound, Sliders, LogOut } from 'lucide-react';
-import { UserRole } from '../../types/clinical';
+import { ChevronDown, UserRound, Sliders, LogOut, KeyRound } from 'lucide-react';
+import { UserProfile, UserRole } from '../../types/clinical';
 import type { AppFontScale, AppFontFamily } from '../../utils/storage/appStatePersistence';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { UserProfileModal } from '../Modals/UserProfileModal';
+import { ChangePasswordModal } from '../Modals/ChangePasswordModal';
 import { USER_PROFILES } from '../../data/initialData';
 
 interface SidebarFooterProps {
   isCollapsed: boolean;
   currentUserRole: UserRole;
+  currentUserProfile?: UserProfile;
   onSelectUserRole?: (role: UserRole) => void;
   onLogout?: () => Promise<void>;
   isAuthenticated: boolean;
@@ -29,6 +31,7 @@ interface SidebarFooterProps {
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({
   isCollapsed,
   currentUserRole,
+  currentUserProfile,
   onLogout,
   isAuthenticated,
   username,
@@ -40,9 +43,10 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const profile = USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
+  const profile = currentUserProfile || USER_PROFILES[currentUserRole] || USER_PROFILES.nurse;
 
   // Đóng menu khi click ra ngoài
   useEffect(() => {
@@ -100,7 +104,23 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
             <span>Thông tin cá nhân</span>
           </button>
 
-          {/* Lựa chọn 2: Cấu hình (Cỡ chữ / Hiển thị) */}
+          {/* Lựa chọn 2: Đổi mật khẩu cá nhân */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setIsMenuOpen(false);
+              setIsPasswordModalOpen(true);
+            }}
+            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-teal-50 hover:text-teal-800 transition mt-0.5 cursor-pointer"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 shrink-0">
+              <KeyRound className="h-4 w-4" />
+            </span>
+            <span>Đổi mật khẩu</span>
+          </button>
+
+          {/* Lựa chọn 3: Cấu hình (Cỡ chữ / Hiển thị) */}
           <button
             type="button"
             role="menuitem"
@@ -161,6 +181,13 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         profile={profile}
+        onOpenChangePassword={() => setIsPasswordModalOpen(true)}
+      />
+
+      {/* Modal Đổi mật khẩu tài khoản cá nhân */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
       />
 
       {/* Modal Cấu hình hiển thị (Cỡ chữ & Phông chữ) */}

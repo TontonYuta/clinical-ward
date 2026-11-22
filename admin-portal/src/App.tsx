@@ -27,7 +27,7 @@ function getCachedItem<T>(key: string): T | null {
   }
 }
 
-function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigureAuth, onToggleAuth }: { authenticatedUsername?: string; onLogout?: () => Promise<void>; authEnabled: boolean; canConfigureAuth: boolean; onToggleAuth: () => void }) {
+function MonitorApp({ authenticatedUsername, authenticatedName, onLogout, authEnabled, canConfigureAuth, onToggleAuth }: { authenticatedUsername?: string; authenticatedName?: string; onLogout?: () => Promise<void>; authEnabled: boolean; canConfigureAuth: boolean; onToggleAuth: () => void }) {
   const [currentTab, setCurrentTab] = useState<AdminTab>('telemetry');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -127,6 +127,7 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
         clinicalAppUrl={clinicalAppUrl}
         lastUpdated={lastUpdated}
         authenticatedUsername={authenticatedUsername}
+        authenticatedName={authenticatedName}
         onLogout={onLogout}
         authEnabled={authEnabled}
         canConfigureAuth={canConfigureAuth}
@@ -225,5 +226,19 @@ function MonitorApp({ authenticatedUsername, onLogout, authEnabled, canConfigure
 }
 
 export default function App() {
-  return <AdminLoginGate>{context => <MonitorApp key={context.username ?? 'anonymous'} {...context} />}</AdminLoginGate>;
+  return (
+    <AdminLoginGate>
+      {context => (
+        <MonitorApp
+          key={context.username ?? 'anonymous'}
+          authenticatedUsername={context.username}
+          authenticatedName={context.name}
+          onLogout={context.logout}
+          authEnabled={context.authEnabled}
+          canConfigureAuth={context.canConfigureAuth}
+          onToggleAuth={context.onToggleAuth}
+        />
+      )}
+    </AdminLoginGate>
+  );
 }

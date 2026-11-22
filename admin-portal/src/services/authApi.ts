@@ -3,6 +3,9 @@ export type AdminAuthSession = {
   authenticated: boolean;
   username: string | null;
   role: string | null;
+  name?: string | null;
+  roleName?: string | null;
+  department?: string | null;
 };
 
 const ADMIN_TOKEN_KEY = 'clinical_admin_token';
@@ -45,11 +48,19 @@ export async function loginAdmin(username: string, password: string): Promise<Ad
     method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: username.trim(), password }),
   });
-  const data = await parse<{ username: string; role: string; token?: string }>(response);
+  const data = await parse<{ username: string; role: string; name?: string; role_name?: string; department?: string; token?: string }>(response);
   if (data.token) {
     setAdminToken(data.token);
   }
-  return { enabled: true, authenticated: true, username: data.username, role: data.role };
+  return {
+    enabled: true,
+    authenticated: true,
+    username: data.username,
+    role: data.role,
+    name: data.name || null,
+    roleName: data.role_name || null,
+    department: data.department || null,
+  };
 }
 
 export async function logoutAdmin(): Promise<void> {

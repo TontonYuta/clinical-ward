@@ -722,6 +722,9 @@ QUY TẮC BẮT BUỘC & PHẠM VI CHUYÊN MÔN (CLINICAL GUARDRAILS - CHỈ THU
    - Đơn thuốc / Toa thuốc / Phiếu CPOE: Đọc họ tên, chẩn đoán ICD-10, trích xuất từng thuốc (tên, hàm lượng, số lượng, liều dùng, đường dùng). Cảnh báo tương tác thuốc nghiêm trọng, trùng lặp nhóm điều trị hoặc liều vượt ngưỡng.
    - Vỏ thuốc / Hộp thuốc / Nhãn thuốc: Đọc tên hoạt chất, biệt dược, nồng độ/hàm lượng, SĐK, số lô, hạn dùng (cảnh báo nếu cận hạn theo TT 36). Nếu là thuốc gây nghiện/hướng tâm thần (Morphin, Fentanyl), hướng dẫn thủ tục thu hồi vỏ theo TT 20/2017.
    - Bảng kê chi phí BHYT / Giám định: Phân tích danh mục thuốc theo Cột 8 TT 20/2022, phát hiện nguy cơ xuất toán do sai mã ICD-10, kê vượt tuyến bệnh viện hoặc thiếu biên bản hội chẩn.
+   - QUY TẮC BẢO TOÀN DỮ LIỆU & PHONG CÁCH LÂM SÀNG:
+     + TUYỆT ĐỐI KHÔNG TỰ ĐOÁN GIÁ: Nếu trên đơn thuốc không ghi đơn giá/thành tiền, tuyệt đối không tự ý bịa đặt hoặc phỏng đoán giá tiền.
+     + TUYỆT ĐỐI KHÔNG DÙNG ICON/EMOJI TRANG TRÍ: Không sử dụng các biểu tượng cảm xúc hoặc emoji trang trí (như 📑, 💊, ⚠️, 🚨, ⛔, 💵, 💡, ✅). Trình bày văn bản y khoa nghiêm túc, dùng markdown chuẩn mực.
 
 3. ĐỊNH DẠNG TRẢ VỀ:
 Trả về DUY NHẤT một đối tượng JSON hợp lệ:
@@ -732,9 +735,29 @@ Trả về DUY NHẤT một đối tượng JSON hợp lệ:
   "extracted_sections": [
     {"title": "Tên nhóm thông tin bằng tiếng Việt", "items": ["Một dữ kiện đọc được trên ảnh"]}
   ],
+  "extracted_prescription": {
+    "patient_name": "Họ tên bệnh nhân nếu có",
+    "patient_age": 50,
+    "insurance_card_number": "Mã thẻ BHYT 15 ký tự nếu có",
+    "primary_icd10": "Mã ICD-10 bệnh chính nếu có (ví dụ: I10, E11, J06, K21)",
+    "primary_diagnosis": "Chẩn đoán bệnh chính",
+    "hospital_rank": "HANG_1",
+    "items": [
+      {
+        "drug_name": "Tên thuốc hoặc biệt dược sạch",
+        "active_ingredient": "Hoạt chất nếu có",
+        "dosage": "Hàm lượng (ví dụ: 500mg, 20mg)",
+        "unit": "Viên, gói, lọ...",
+        "quantity": 10.0,
+        "days_supply": 7,
+        "route": "Uống, tiêm...",
+        "instructions": "Cách dùng chi tiết"
+      }
+    ]
+  },
   "extracted_text": "Nội dung quan sát/đọc được trên ảnh, không bổ sung suy đoán...",
   "unreadable_fields": ["Các trường không đọc rõ hoặc không xuất hiện"],
-  "reply_markdown": "Tóm tắt dữ kiện quan sát được; không tự kết luận tương tác, liều phù hợp hay thanh toán BHYT nếu chưa được đối chiếu nguồn.",
+  "reply_markdown": "Tóm tắt dữ kiện quan sát được...",
   "legal_basis": null,
   "suggested_chips": ["Kiểm tra điều kiện BHYT TT 20", "Tra cứu tương tác thuốc Dược Thư"],
   "card": null
@@ -746,7 +769,7 @@ async def query_clinical_multimodal_chat(
     mime_type: str = "image/jpeg",
     user_query: str = "",
     user_role: str = "nurse",
-    timeout_sec: float = 20.0
+    timeout_sec: float = 30.0
 ) -> Optional[dict]:
     """
     Điểm truy vấn Gemini Multimodal Vision dành riêng cho Chatbot Dược Lâm Sàng & BHYT:
@@ -793,7 +816,7 @@ async def query_clinical_multimodal_chat(
 
     deadline = time.monotonic() + timeout_sec
     headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(timeout=httpx.Timeout(min(12.0, timeout_sec), connect=3.0)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(min(25.0, timeout_sec), connect=5.0)) as client:
         for model in models:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -804,7 +827,7 @@ async def query_clinical_multimodal_chat(
                     url,
                     headers=headers,
                     json=payload,
-                    timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
+                    timeout=httpx.Timeout(min(25.0, remaining), connect=min(5.0, remaining))
                 )
                 if res.status_code == 200:
                     data = res.json()

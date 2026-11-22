@@ -21,4 +21,4 @@ services:
       - key: AUTH_REQUIRED
         value: "true"
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261120-dav-registry-chunking-cache-v2"
+        value: "20261122-prescription-vision-ddi-bhyt-v1"

@@ -400,12 +400,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         />
                       )}
 
-                  {/* Tạm thời comment thẻ thông tin Action Card có sẵn theo yêu cầu người dùng để tập trung test SOTA RAG
                   {isAgent && msg.card && msg.card.primaryActionLabel && !['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket', 'medication_safety'].includes((msg.card as any).card_type || (msg.card as any).type || '') && (
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-2xs font-semibold text-slate-800 truncate">{msg.card.title}</p>
-                        {msg.card.summary && <p className="text-3xs text-slate-500 truncate">{msg.card.summary}</p>}
+                        <p className="text-xs font-semibold text-slate-800 truncate">{msg.card.title}</p>
+                        {msg.card.summary && <p className="text-[11px] text-slate-500 truncate">{msg.card.summary}</p>}
                       </div>
                       <button
                         type="button"
@@ -421,7 +420,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       </button>
                     </div>
                   )}
-                  */}
                   {isAgent && msg.suggestedChips && msg.suggestedChips.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-2">
                       <span className="w-full text-xs font-semibold text-slate-500">Gợi ý hỏi tiếp:</span>

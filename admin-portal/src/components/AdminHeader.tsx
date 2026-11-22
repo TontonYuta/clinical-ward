@@ -9,6 +9,7 @@ interface AdminHeaderProps {
   clinicalAppUrl?: string;
   lastUpdated?: string;
   authenticatedUsername?: string;
+  authenticatedName?: string;
   onLogout?: () => Promise<void>;
   authEnabled: boolean;
   canConfigureAuth: boolean;
@@ -28,6 +29,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
     : 'http://localhost:3000',
   lastUpdated,
   authenticatedUsername,
+  authenticatedName,
   onLogout,
   authEnabled,
   canConfigureAuth,
@@ -69,12 +71,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2.5">
-        {authenticatedUsername && (
+        {(authenticatedName || authenticatedUsername) && (
           <div className="hidden md:inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200/70 text-slate-800 text-xs font-medium">
             <div className="w-5 h-5 rounded-full bg-teal-800 text-white text-3xs font-bold flex items-center justify-center uppercase shrink-0">
-              {authenticatedUsername.slice(0, 2)}
+              {(authenticatedName || authenticatedUsername || 'AD').slice(0, 2)}
             </div>
-            <span className="truncate max-w-[120px] font-semibold">{authenticatedUsername}</span>
+            <span className="truncate max-w-[150px] font-semibold">{authenticatedName || authenticatedUsername}</span>
           </div>
         )}
         {canConfigureAuth && (

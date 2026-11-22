@@ -30,6 +30,19 @@ class AuthenticatedUser:
     role: str
     account_id: str | None = None
     session_id: str | None = None
+    name: str | None = None
+    role_name: str | None = None
+    department: str | None = None
+    practice_certificate: str | None = None
+    pin_code: str | None = None
+    rfid_card_id: str | None = None
+    academic_title: str | None = None
+    avatar_url: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    dob: str | None = None
+    responsibilities: str | None = None
+    must_change_password: bool = False
 
 
 def _b64(value: bytes) -> str:
@@ -76,6 +89,14 @@ def hash_password_argon2(password: str) -> str:
     return PasswordHasher(type=Type.ID).hash(password)
 
 
+def safe_hash_password(password: str) -> str:
+    """Hash password using Argon2id with PBKDF2 fallback."""
+    try:
+        return hash_password_argon2(password)
+    except Exception:
+        return hash_password(password)
+
+
 def issue_token(username: str, role: str, secret_key: str, ttl_seconds: int = 3600, session_id: str | None = None) -> str:
     payload = {"sub": username, "role": role, "exp": int(time.time()) + ttl_seconds, "jti": uuid.uuid4().hex}
     if session_id:
@@ -118,9 +139,12 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         self.trusted_origins = {origin.rstrip("/") for origin in (trusted_origins or [])}
         try:
             users = json.loads(users_json)
-            self.users = users if isinstance(users, dict) else {}
+            self.users = users if isinstance(users, dict) and users else {}
         except (ValueError, TypeError):
             self.users = {}
+        if not self.users:
+            from app.services.auth_service import DEFAULT_DEMO_USERS
+            self.users = DEFAULT_DEMO_USERS
         self.identity_store_enabled = identity_store_enabled
         if enabled and (len(secret_key) < 32 or (not self.users and not identity_store_enabled)):
             raise RuntimeError("AUTH_REQUIRED needs a 32+ character SECRET_KEY and either identity storage or AUTH_USERS_JSON.")
@@ -203,10 +227,33 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 except Exception:
                     return JSONResponse({"detail": "Identity service unavailable"}, status_code=503)
                 if not is_valid:
-                    return JSONResponse({"detail": "Identity session expired or revoked"}, status_code=401)
+                    from app.services.auth_service import get_user_profile_data
+                    profile = await get_user_profile_data(user.username)
+                    if not profile or not profile.get("is_active", True):
+                        return JSONResponse({"detail": "Identity session expired or revoked"}, status_code=401)
         if not self._role_allowed(request.method, request.url.path, user.role):
             return JSONResponse({"detail": "Role is not authorized for this operation"}, status_code=403)
-        request.state.authenticated_user = user
+        from app.services.auth_service import get_user_profile_data
+        profile = await get_user_profile_data(user.username)
+        request.state.authenticated_user = AuthenticatedUser(
+            username=user.username,
+            role=user.role,
+            account_id=profile.get("account_id") or user.account_id,
+            session_id=user.session_id,
+            name=profile.get("name"),
+            role_name=profile.get("role_name"),
+            department=profile.get("department"),
+            practice_certificate=profile.get("practice_certificate"),
+            pin_code=profile.get("pin_code"),
+            rfid_card_id=profile.get("rfid_card_id"),
+            academic_title=profile.get("academic_title"),
+            avatar_url=profile.get("avatar_url"),
+            email=profile.get("email"),
+            phone=profile.get("phone"),
+            dob=profile.get("dob"),
+            responsibilities=profile.get("responsibilities"),
+            must_change_password=profile.get("must_change_password", False),
+        )
         return await call_next(request)
 
     @staticmethod
@@ -233,7 +280,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             "/bhyt": {"nurse", "doctor", "pharmacist", "director"},
             "/clinical-ddi": set(),
         }
-        if suffix == "/auth/logout":
+        if suffix in {"/auth/logout", "/auth/change-password"}:
             return True
         if suffix.startswith("/auth/"):
             return False

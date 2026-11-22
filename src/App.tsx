@@ -43,6 +43,7 @@ import { TelegramToast } from './components/Modals/TelegramToast';
 import { ClinicalAuthModal } from './components/Modals/ClinicalAuthModal';
 import { AuditTrailModal } from './components/Modals/AuditTrailModal';
 import { PatientDetailModal } from './components/Modals/PatientDetailModal';
+import { ChangePasswordModal } from './components/Modals/ChangePasswordModal';
 import { fetchPatients, INITIAL_PATIENTS, type PatientProfile } from './services/patientService';
 import { NationalDrugRegistryModal } from './components/Modals/NationalDrugRegistryModal';
 import { DavDrugDetailModal } from './components/Modals/DavDrugDetailModal';
@@ -97,7 +98,17 @@ import {
   clearAllStoredState
 } from './utils/storage/appStatePersistence';
 
-export default function App({ authenticatedRole, authenticatedUsername, onLogout }: { authenticatedRole?: UserRole; authenticatedUsername?: string; onLogout?: () => Promise<void> } = {}) {
+export default function App({
+  authenticatedRole,
+  authenticatedUsername,
+  authenticatedProfile,
+  onLogout
+}: {
+  authenticatedRole?: UserRole;
+  authenticatedUsername?: string;
+  authenticatedProfile?: UserProfile;
+  onLogout?: () => Promise<void>;
+} = {}) {
   // State khôi phục bền vững từ URL Hash & LocalStorage Cache (SWR chống giật layout khi reload)
   const [debts, setDebts] = useState<DebtRecord[]>(getCachedDebts);
   const [tickets, setTickets] = useState<EquipmentTicket[]>(getCachedTickets);
@@ -124,6 +135,18 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const sidebarTemporaryPreview = useRef(false);
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(authenticatedRole || getInitialUserRole);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile>(() => {
+    if (authenticatedProfile) return authenticatedProfile;
+    const initialRole = authenticatedRole || getInitialUserRole();
+    return USER_PROFILES[initialRole] || USER_PROFILES.nurse;
+  });
+
+  useEffect(() => {
+    if (authenticatedProfile) {
+      setCurrentUserProfile(authenticatedProfile);
+      setCurrentUserRole(authenticatedProfile.role);
+    }
+  }, [authenticatedProfile]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlagPayload | null>(() => readCachedFeatureFlags());
   useEffect(() => {
     let active = true;
@@ -180,6 +203,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
   const [drugRegistrySearch, setDrugRegistrySearch] = useState('');
   const [selectedDrugForDavGlobal, setSelectedDrugForDavGlobal] = useState<MasterMedication | null>(null);
   const [selectedPatientForGlobalModal, setSelectedPatientForGlobalModal] = useState<string | null>(null);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [patients, setPatients] = useState<PatientProfile[]>(INITIAL_PATIENTS);
   const [fontScale, setFontScale] = useState(getInitialFontScale);
   useEffect(() => {
@@ -425,6 +449,7 @@ export default function App({ authenticatedRole, authenticatedUsername, onLogout
     setCurrentUserRole(newRole);
     saveUserRole(newRole);
     const profile = USER_PROFILES[newRole];
+    if (profile) setCurrentUserProfile(profile);
     const nextAllowedTabs = getEffectiveAllowedTabs(newRole, featureFlags);
     if (profile && !nextAllowedTabs.includes(currentTab)) {
       const fallbackTab = nextAllowedTabs.includes(profile.defaultTab) ? profile.defaultTab : nextAllowedTabs[0];
@@ -1547,7 +1572,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
       }
       markExecuted();
-    } else if (actionType === 'OPEN_CPOE_PRESCRIPTION') {
+    } else if (actionType === 'OPEN_CPOE' || actionType === 'OPEN_CPOE_PRESCRIPTION') {
       if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
         setCurrentUserRole('doctor');
       }
@@ -1752,7 +1777,9 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       const effectiveRole = isOpeningPrescription && (currentUserRole !== 'doctor' && currentUserRole !== 'director')
         ? 'doctor'
         : currentUserRole;
-      const effectiveProfile = USER_PROFILES[effectiveRole] || USER_PROFILES.doctor;
+      const effectiveProfile = (currentUserProfile && currentUserProfile.role === effectiveRole)
+        ? currentUserProfile
+        : (USER_PROFILES[effectiveRole] || USER_PROFILES.doctor);
 
       const { replyMessage, actionPayload } = await processClinicalAgentQueryAsync(
         trimmed,
@@ -1953,6 +1980,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             setIsMobileSidebarOpen(false);
           }}
           currentUserRole={currentUserRole}
+          currentUserProfile={currentUserProfile}
           onSelectUserRole={authenticatedRole ? undefined : (role) => {
             handleSelectUserRole(role);
             setIsMobileSidebarOpen(false);
@@ -2007,8 +2035,9 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           currentTab={currentTab}
           onTabChange={handleDesktopTabChange}
           currentUserRole={currentUserRole}
-              onSelectUserRole={authenticatedRole ? undefined : handleSelectUserRole}
-              onLogout={onLogout}
+          currentUserProfile={currentUserProfile}
+          onSelectUserRole={authenticatedRole ? undefined : handleSelectUserRole}
+          onLogout={onLogout}
           isAuthenticated={Boolean(authenticatedRole)}
           username={authenticatedUsername}
           fontScale={fontScale}
@@ -2034,6 +2063,23 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
       {/* 4. Main Workspace: Sleek Top Header + Central Clinical Dashboard */}
       <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 bg-slate-100/70 print:hidden w-full">
+        {currentUserProfile?.mustChangePassword && (
+          <div className="bg-amber-500/10 border-b border-amber-300 px-4 py-2 flex items-center justify-between text-xs text-amber-900 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-800 font-bold text-[11px]">!</span>
+              <span>
+                <strong>Bảo mật tài khoản:</strong> Bạn đang sử dụng mật khẩu khởi tạo. Vui lòng đổi mật khẩu mới để bảo vệ an toàn thông tin y tế.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsChangePasswordOpen(true)}
+              className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-xs cursor-pointer transition shadow-2xs"
+            >
+              Đổi mật khẩu ngay
+            </button>
+          </div>
+        )}
         <div className="flex shrink-0 items-center gap-3 border-b border-slate-300 bg-white px-3 py-2 md:hidden">
           <button
             type="button"
@@ -2249,6 +2295,16 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onClose={() => setSelectedPatientForGlobalModal(null)}
           patientIdOrName={selectedPatientForGlobalModal || ''}
           patients={patients}
+        />
+
+        {/* Modal Đổi Mật Khẩu Cá Nhân Chuẩn Bảo Mật Y Tế */}
+        <ChangePasswordModal
+          isOpen={isChangePasswordOpen}
+          onClose={() => setIsChangePasswordOpen(false)}
+          onSuccess={() => {
+            setCurrentUserProfile(prev => prev ? { ...prev, mustChangePassword: false } : prev);
+          }}
+          isMandatoryFirstTime={currentUserProfile?.mustChangePassword}
         />
         </Suspense>
       </div>

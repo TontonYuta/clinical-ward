@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { DashboardTab } from './RightPane/Dashboard';
-import { UserRole } from '../types/clinical';
+import { UserProfile, UserRole } from '../types/clinical';
 import { SidebarHeader } from './Sidebar/SidebarHeader';
 import { SidebarNavLinks } from './Sidebar/SidebarNavLinks';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
@@ -17,6 +17,7 @@ export interface SidebarProps {
   currentTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
   currentUserRole: UserRole;
+  currentUserProfile?: UserProfile;
   onSelectUserRole?: (role: UserRole) => void;
   onLogout?: () => Promise<void>;
   isAuthenticated: boolean;
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onTabChange,
   currentUserRole,
+  currentUserProfile,
   onSelectUserRole,
   onLogout,
   isAuthenticated, username, fontScale, onFontScaleChange,
@@ -97,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Tiện ích & Pháp lý tiếp tục được ẩn khỏi FE. */}
       </div>
 
-      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} onSelectUserRole={onSelectUserRole} onLogout={onLogout} isAuthenticated={isAuthenticated} username={username} fontScale={fontScale} onFontScaleChange={onFontScaleChange} fontFamily={fontFamily} onFontFamilyChange={onFontFamilyChange} onCloseMobile={onCloseMobile} />
+      <SidebarFooter isCollapsed={isCollapsed} currentUserRole={currentUserRole} currentUserProfile={currentUserProfile} onSelectUserRole={onSelectUserRole} onLogout={onLogout} isAuthenticated={isAuthenticated} username={username} fontScale={fontScale} onFontScaleChange={onFontScaleChange} fontFamily={fontFamily} onFontFamilyChange={onFontFamilyChange} onCloseMobile={onCloseMobile} />
     </aside>
   );
 };

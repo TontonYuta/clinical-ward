@@ -602,8 +602,9 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
             </button>
             <button
               type="button"
+              data-testid="chat-attach-image-btn"
               onClick={() => setIsImageOpen(true)}
-              title="Đính kèm ảnh hiện trường sự cố"
+              title="Đính kèm ảnh đơn thuốc hoặc hình ảnh sự cố"
               className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
             >
               <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />

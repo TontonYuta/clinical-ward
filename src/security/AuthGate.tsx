@@ -1,13 +1,40 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { UserRole } from '../types/auth';
+import type { UserProfile, UserRole } from '../types/auth';
 import { LoginPage } from '../components/Auth/LoginPage';
 import { getAuthSession, logoutSession, type AuthSession } from '../services/authApi';
+import { USER_PROFILES } from '../data/initialData';
 
-type AuthState = { enabled: boolean; username: string; role: UserRole };
+export type AuthState = { enabled: boolean; username: string; role: UserRole; userProfile: UserProfile };
 type AuthGateProps = {
   children: (auth: AuthState, logout: () => Promise<void>) => ReactNode;
   allowedRoles?: UserRole[];
 };
+
+function buildUserProfileFromSession(session: AuthSession): UserProfile {
+  const role = (session.role as UserRole) || 'doctor';
+  const fallback = USER_PROFILES[role] || USER_PROFILES.doctor;
+  return {
+    role,
+    name: session.name || session.username || fallback.name,
+    roleName: session.roleName || fallback.roleName,
+    department: session.department || fallback.department,
+    practiceCertificate: session.practiceCertificate || fallback.practiceCertificate,
+    pinCode: session.pinCode || fallback.pinCode,
+    rfidCardId: session.rfidCardId || fallback.rfidCardId,
+    email: session.email || undefined,
+    phone: session.phone || undefined,
+    dob: session.dob || undefined,
+    academicTitle: session.academicTitle || undefined,
+    avatarUrl: session.avatarUrl || undefined,
+    responsibilities: session.responsibilities || fallback.responsibilities,
+    allowedActions: fallback.allowedActions,
+    allowedTabs: fallback.allowedTabs,
+    defaultTab: fallback.defaultTab,
+    badgeColor: fallback.badgeColor,
+    username: session.username || undefined,
+    mustChangePassword: session.mustChangePassword,
+  };
+}
 
 export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   const [auth, setAuth] = useState<AuthState | null>(null);
@@ -17,15 +44,21 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   const sessionCheckInFlight = useRef(false);
 
   function acceptSession(session: AuthSession) {
+    const profile = buildUserProfileFromSession(session);
+    try {
+      sessionStorage.setItem('clinical_active_profile', JSON.stringify(profile));
+    } catch {
+      // storage fallback
+    }
     if (session.enabled === false && session.authenticated) {
-      setAuth({ enabled: false, username: session.username || 'bac_si_test', role: (session.role as UserRole) || 'doctor' });
+      setAuth({ enabled: false, username: session.username || 'bac_si_test', role: (session.role as UserRole) || 'doctor', userProfile: profile });
       return;
     }
     if (!session.authenticated || !session.role || !session.username) {
       setAuth(null);
       return;
     }
-    setAuth({ enabled: session.enabled, username: session.username, role: session.role });
+    setAuth({ enabled: session.enabled, username: session.username, role: session.role, userProfile: profile });
   }
 
   useEffect(() => {
@@ -40,8 +73,16 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
           // Khi cờ auth = false (chế độ chọn vai trò Cách 1)
           const savedRole = sessionStorage.getItem('clinical_active_role') as UserRole | null;
           const savedUser = sessionStorage.getItem('clinical_active_username') || 'bac_si_test';
+          let savedProfile: UserProfile | undefined = undefined;
+          try {
+            const rawProfile = sessionStorage.getItem('clinical_active_profile');
+            if (rawProfile) savedProfile = JSON.parse(rawProfile);
+          } catch {
+            // ignore
+          }
           if (savedRole) {
-            setAuth({ enabled: false, username: savedUser, role: savedRole });
+            const roleProfile = savedProfile || USER_PROFILES[savedRole] || USER_PROFILES.nurse;
+            setAuth({ enabled: false, username: savedUser, role: savedRole, userProfile: roleProfile });
           } else {
             setAuth(null);
           }
@@ -55,7 +96,7 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
           setServerAuthEnabled(false);
           const savedRole = sessionStorage.getItem('clinical_active_role') as UserRole | null;
           if (savedRole) {
-            setAuth({ enabled: false, username: 'bac_si_test', role: savedRole });
+            setAuth({ enabled: false, username: 'bac_si_test', role: savedRole, userProfile: USER_PROFILES[savedRole] || USER_PROFILES.nurse });
           } else {
             setAuth(null);
           }
@@ -99,6 +140,7 @@ export function AuthGate({ children, allowedRoles }: AuthGateProps) {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể kết thúc phiên đăng nhập.'); }
     sessionStorage.removeItem('clinical_active_role');
     sessionStorage.removeItem('clinical_active_username');
+    sessionStorage.removeItem('clinical_active_profile');
     setAuth(null);
   }
 

@@ -53,6 +53,13 @@ export interface UserProfile {
   responsibilities: string;
   defaultTab: DashboardTab;
   badgeColor: string;
+  username?: string;
+  email?: string;
+  phone?: string;
+  dob?: string;
+  academicTitle?: string;
+  avatarUrl?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface ClinicalAuthRequest {

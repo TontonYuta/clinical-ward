@@ -5,6 +5,7 @@ import { clearMonitorPrivateCache, readAuthGatePreference, saveAuthGatePreferenc
 
 export type AdminGateContext = {
   username?: string;
+  name?: string;
   logout?: () => Promise<void>;
   authEnabled: boolean;
   canConfigureAuth: boolean;
@@ -87,6 +88,7 @@ export function AdminLoginGate({ children }: { children: (context: AdminGateCont
   );
   const context: AdminGateContext = {
     username: session?.authenticated ? session.username ?? undefined : 'director_test',
+    name: session?.authenticated ? session.name ?? undefined : undefined,
     logout: session?.authenticated ? logout : undefined,
     authEnabled: false,
     canConfigureAuth,

@@ -124,13 +124,34 @@ async def test_create_and_update_and_soft_delete_staff():
         })
         assert old_login.status_code == 401
 
-        # New password must succeed
+        # New password must succeed and return FULL user profile
         new_login = await ac.post("/api/v1/auth/login", json={
             "username": custom_username,
             "password": new_password,
         })
         assert new_login.status_code == 200
-        assert new_login.json()["role"] == "doctor"
+        user_info = new_login.json()
+        assert user_info["role"] == "doctor"
+        assert user_info["name"] == "BSCKII. Hoàng Minh Tuấn"
+        assert user_info["department"] == "Khoa Ngoại Chấn Thương"
+        assert user_info["practice_certificate"] == unique_cchn
+        assert user_info["pin_code"] == "5555"
+
+        # Verify /auth/me returns the identical full profile
+        user_token = user_info["token"]
+        me_res = await ac.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {user_token}"})
+        assert me_res.status_code == 200
+        me_info = me_res.json()
+        assert me_info["authenticated"] is True
+        assert me_info["name"] == "BSCKII. Hoàng Minh Tuấn"
+        assert me_info["department"] == "Khoa Ngoại Chấn Thương"
+        assert me_info["practice_certificate"] == unique_cchn
+
+        # Verify Copilot chat greets this doctor by their authentic name
+        chat_res = await ac.post("/api/v1/copilot/chat", json={"query": "xin chào"}, headers={"Authorization": f"Bearer {user_token}"})
+        assert chat_res.status_code == 200
+        reply = chat_res.json().get("reply_text", "")
+        assert "Hoàng Minh Tuấn" in reply
 
         # 6. Reset PIN
         pin_res = await ac.patch(f"/api/v1/admin/staff/{staff_id}/reset-pin", json={

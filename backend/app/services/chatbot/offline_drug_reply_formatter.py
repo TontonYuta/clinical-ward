@@ -118,6 +118,8 @@ def _evidence_sections(response: CopilotResponse) -> list[tuple[str, str]]:
 
 def format_offline_drug_reply(response: CopilotResponse) -> CopilotResponse:
     """Normalize reply prose and replace leaked schema using verified evidence."""
+    if response.intent == "MULTIMODAL_CLINICAL_VISION":
+        return response
     response.reply_text = _remove_inline_sources(response.reply_text, response.citations)
     if response.intent != "MEDICATION_SAFETY_PROFILE" or not _is_schema_dump(response.reply_text):
         return response

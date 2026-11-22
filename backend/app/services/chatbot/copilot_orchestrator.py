@@ -130,20 +130,22 @@ def _portal_guidance_text_with_counts(drug_count: int, monograph_count: int) -> 
 
 def resolve_copilot_identity(payload: CopilotQuery, request: Request, session=None) -> tuple[str, str, str]:
     authenticated = getattr(request.state, "authenticated_user", None)
+    generic_placeholders = {"Nhân viên y tế", "Bác sĩ", "ĐD. Lê Thị Thu", "nurse"}
     if authenticated and authenticated.username != "test_director":
-        user_name = payload.user_name if payload.user_name and payload.user_name not in ("Nhân viên y tế", "Bác sĩ") else authenticated.username
-        user_role = payload.user_role if payload.user_role and payload.user_role not in ("nurse", "doctor") else authenticated.role
+        real_auth_name = getattr(authenticated, "name", None) or authenticated.username
+        user_name = payload.user_name if payload.user_name and payload.user_name not in generic_placeholders else real_auth_name
+        user_role = payload.user_role if payload.user_role and payload.user_role != "nurse" else authenticated.role
         req_session = (payload.session_id or getattr(session, "session_id", "default_session")).strip()
         session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
         return user_name, user_role, session_id
 
     if session and getattr(session, "user_name", None):
-        user_name = payload.user_name if payload.user_name and payload.user_name not in ("Nhân viên y tế", "Bác sĩ") else session.user_name
+        user_name = payload.user_name if payload.user_name and payload.user_name not in generic_placeholders else session.user_name
         user_role = payload.user_role if payload.user_role else getattr(session, "user_role", "doctor")
         session_id = session.session_id
         return user_name, user_role, session_id
 
-    user_name = payload.user_name or (authenticated.username if authenticated else "Đồng nghiệp")
+    user_name = payload.user_name if payload.user_name and payload.user_name not in generic_placeholders else (authenticated.username if authenticated else "Đồng nghiệp")
     user_role = payload.user_role or (authenticated.role if authenticated else "doctor")
     req_session = (payload.session_id or "default_session").strip()
     session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
@@ -169,55 +171,59 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             user_role=user_role
         )
         if vision_res and isinstance(vision_res, dict):
-            reply_text = vision_res.get("reply_markdown") or "Đã phân tích hình ảnh đính kèm thành công."
-            evidence = vision_res.get("evidence") or []
-            citations = vision_res.get("citations") or []
             is_non_clinical = vision_res.get("is_clinical") is False or vision_res.get("category") == "NON_CLINICAL"
-            grounded = bool(evidence and citations and vision_res.get("rag_grounded"))
-            if not grounded and not is_non_clinical:
-                from app.services.chatbot.image_report_formatter import format_image_extraction_report
-                extracted_text = vision_res.get("extracted_text") or vision_res.get("reply_markdown")
-                if extracted_text or vision_res.get("extracted_sections"):
-                    reply_text = format_image_extraction_report(vision_res)
-                else:
-                    reply_text = "Chưa đọc được nội dung ảnh. Vui lòng gửi ảnh rõ hơn hoặc dùng chức năng đọc ảnh/biểu mẫu chuyên dụng."
-            legal_basis = vision_res.get("legal_basis") if grounded else None
             if is_non_clinical:
                 reply_text = str(vision_res.get("reply_markdown") or "Hệ thống chỉ hỗ trợ phân tích ảnh thuốc, đơn thuốc và tài liệu BHYT.")
-            suggested_chips = vision_res.get("suggested_chips") or ["Báo hỏng thiết bị", "Tra cứu Dược Thư", "Đối chiếu quy chế"]
-            card_obj = None
-            if grounded and vision_res.get("card") and isinstance(vision_res.get("card"), dict):
-                from app.schemas.copilot import CopilotActionCard
-                c = vision_res["card"]
-                card_obj = CopilotActionCard(
-                    card_type=c.get("card_type", "incident_confirm"),
-                    title=c.get("title", "Phiếu Báo Hỏng Thiết Bị Y Tế"),
-                    summary=c.get("summary", "Đề xuất lập phiếu báo hỏng thiết bị"),
-                    data=c.get("data", {}),
-                    primary_action_label=c.get("primary_action_label", "Tạo Phiếu"),
-                    primary_action_type=c.get("primary_action_type", "CREATE_TICKET"),
-                    target_tab=c.get("target_tab", "asset_audit")
+                return CopilotResponse(
+                    intent="MULTIMODAL_CLINICAL_VISION",
+                    reply_text=reply_text,
+                    legal_basis=None,
+                    clinical_summary=None,
+                    suggested_chips=["Tra cứu Dược Thư", "Quy chế thuốc BHYT", "Hướng dẫn sử dụng"],
+                    card=None,
+                    cdss_alert=None,
+                    rag_grounded=False,
+                    citations=[],
+                    evidence=[],
+                    answer_type="safe_abstention",
+                    source_status="out_of_scope",
+                    abstention_reason="Hình ảnh ngoài phạm vi y tế / dược lâm sàng",
+                    prompt_tokens=vision_res.get("_prompt_tokens", 0),
+                    completion_tokens=vision_res.get("_completion_tokens", 0),
+                    total_tokens=vision_res.get("_total_tokens", 0),
+                    model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
+                    has_image=True,
+                    image_tokens=vision_res.get("_image_tokens", 0)
                 )
-            from app.schemas.copilot import ClinicalSummary
+
+            # Phân tích toàn diện: Bóc tách đơn thuốc + Đối chiếu DDI Dược Thư + Giám định BHYT TT 20
+            from app.services.chatbot.prescription_vision_analyser import analyse_vision_prescription
+            analysis = analyse_vision_prescription(vision_res, user_role=user_role)
+
+            reply_text = analysis["reply_text"]
+            clinical_summary = analysis["clinical_summary"]
+            card_obj = analysis["card"]
+            cdss_alert = analysis["cdss_alert"]
+            evidence = analysis["evidence"]
+            citations = analysis["citations"]
+            grounded = analysis["rag_grounded"]
+            suggested_chips = analysis["suggested_chips"]
+            legal_basis = "Thông tư 20/2022/TT-BYT & QĐ 5948/QĐ-BYT Dược Thư Quốc Gia" if grounded else None
+
             return CopilotResponse(
                 intent="MULTIMODAL_CLINICAL_VISION",
                 reply_text=reply_text,
                 legal_basis=legal_basis,
-                clinical_summary=(
-                    ClinicalSummary(
-                        headline="Kết quả đọc ảnh chưa xác minh",
-                        key_takeaway="Nội dung trích xuất từ ảnh chưa được đối chiếu với nguồn y tế.",
-                        urgency="warning",
-                    ) if not grounded and not is_non_clinical else None
-                ),
+                clinical_summary=clinical_summary,
                 suggested_chips=suggested_chips,
                 card=card_obj,
+                cdss_alert=cdss_alert,
                 rag_grounded=grounded,
                 citations=citations,
                 evidence=evidence,
-                answer_type=("safe_abstention" if is_non_clinical else ("grounded_reference" if grounded else "image_extraction")),
-                source_status="out_of_scope" if is_non_clinical else ("verified_evidence" if grounded else "image_extracted_unverified"),
-                abstention_reason=None if (grounded or is_non_clinical) else "Không có evidence/citation kiểm chứng cho kết quả phân tích ảnh",
+                answer_type="grounded_reference" if grounded else "image_extraction",
+                source_status="verified_evidence" if grounded else "image_extracted_unverified",
+                abstention_reason=None if grounded else "Không có dữ liệu thuốc được kiểm chứng từ ảnh",
                 prompt_tokens=vision_res.get("_prompt_tokens", 0),
                 completion_tokens=vision_res.get("_completion_tokens", 0),
                 total_tokens=vision_res.get("_total_tokens", 0),
@@ -911,7 +917,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
 
 
 def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotResponse:
-    if resp.intent == "MULTIMODAL_CLINICAL_VISION" and resp.answer_type in {"image_extraction", "safe_abstention", "out_of_scope"}:
+    if resp.intent == "MULTIMODAL_CLINICAL_VISION":
         return resp
     non_factual_types = {
         "clarification", "corrective_clarification", "safe_abstention", "feedback_acknowledgment",

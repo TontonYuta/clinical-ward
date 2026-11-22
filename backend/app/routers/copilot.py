@@ -371,7 +371,9 @@ async def chat_with_copilot_stream(
                 yield event
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
             yield _sse_event("error", message="Không thể hoàn tất yêu cầu. Vui lòng thử lại.")
 
     return StreamingResponse(

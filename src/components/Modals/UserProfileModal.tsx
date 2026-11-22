@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Camera, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, Camera, Trash2, CheckCircle2, KeyRound } from 'lucide-react';
 import { UserProfile } from '../../types/clinical';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
@@ -13,6 +13,7 @@ interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   profile: UserProfile;
+  onOpenChangePassword?: () => void;
 }
 
 const TAB_LABELS: Record<string, string> = {
@@ -44,6 +45,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   isOpen,
   onClose,
   profile,
+  onOpenChangePassword,
 }) => {
   useModalDismiss(isOpen, onClose);
   const [customAvatar, setCustomAvatar] = useState<string | null>(null);
@@ -261,7 +263,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="h-16 px-6 sm:px-8 border-t border-slate-100 flex items-center justify-end shrink-0">
+        <div className="h-16 px-6 sm:px-8 border-t border-slate-100 flex items-center justify-between shrink-0">
+          {onOpenChangePassword ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenChangePassword();
+              }}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition cursor-pointer"
+            >
+              <KeyRound className="h-4 w-4 text-teal-600" />
+              <span>Đổi mật khẩu</span>
+            </button>
+          ) : (
+            <div />
+          )}
           <button
             type="button"
             onClick={onClose}

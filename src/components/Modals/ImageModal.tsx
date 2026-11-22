@@ -346,12 +346,13 @@ export const ImageModal: React.FC<ImageModalProps> = ({
           </button>
           <button
             type="button"
+            data-testid="send-image-ai-btn"
             onClick={handleConfirmSend}
             disabled={!selectedFile || isProcessingFile}
             className="flex items-center gap-1.5 px-4.5 py-2 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-bold transition shadow-2xs active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Check className="w-4 h-4" />
-            <span>Đính kèm &amp; Gửi cho AI</span>
+            <span>Đính kèm & Gửi cho AI</span>
           </button>
         </div>
       </div>
