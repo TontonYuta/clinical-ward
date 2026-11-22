@@ -6,18 +6,11 @@ theo nguyên tắc MedAbstain & OWASP LLM01: Answer Briefly + Gentle Clinical St
 import re
 from typing import Optional
 from app.schemas.copilot import CopilotResponse
+from app.services.chatbot.conversational_handler import get_user_salutation, get_role_based_chips
 
 
 def _get_role_label(user_name: str, user_role: str) -> str:
-    r_low = (user_role or "").lower()
-    n_low = (user_name or "").lower()
-    if any(k in r_low for k in ("doctor", "bac_si", "physician", "bs")) or any(k in n_low for k in ("bác", "bac", "bs", "dr")):
-        return "Bác sĩ"
-    if any(k in r_low for k in ("nurse", "dieu_duong", "dd")) or any(k in n_low for k in ("điều dưỡng", "dieu duong", "đd", "yt", "y tá")):
-        return "Điều dưỡng"
-    if any(k in r_low for k in ("pharmacist", "duoc_si", "ds")) or any(k in n_low for k in ("dược", "duoc", "ds")):
-        return "Dược sĩ"
-    return "Đồng nghiệp y tế"
+    return get_user_salutation(user_name, user_role)
 
 
 def handle_capability_opening(
@@ -40,12 +33,7 @@ def handle_capability_opening(
         intent="CAPABILITY_OPENING",
         reply_text=reply_text,
         legal_basis="Dược Thư Quốc Gia Việt Nam & Cục Quản lý Dược",
-        suggested_chips=[
-            "Tra cứu Paracetamol",
-            "Tra cứu Coversyl",
-            "Kiểm tra tương tác thuốc",
-            "Phác đồ cấp cứu phản vệ TT 51"
-        ],
+        suggested_chips=get_role_based_chips(user_role),
         session_id=session_id,
         answer_type="conversational_guidance",
         source_status="capability_acknowledged",

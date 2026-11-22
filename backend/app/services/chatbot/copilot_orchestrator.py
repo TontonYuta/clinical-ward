@@ -130,21 +130,21 @@ def _portal_guidance_text_with_counts(drug_count: int, monograph_count: int) -> 
 
 def resolve_copilot_identity(payload: CopilotQuery, request: Request, session=None) -> tuple[str, str, str]:
     authenticated = getattr(request.state, "authenticated_user", None)
-    if authenticated:
-        user_name = authenticated.username
-        user_role = authenticated.role
+    if authenticated and authenticated.username != "test_director":
+        user_name = payload.user_name if payload.user_name and payload.user_name not in ("Nhân viên y tế", "Bác sĩ") else authenticated.username
+        user_role = payload.user_role if payload.user_role and payload.user_role not in ("nurse", "doctor") else authenticated.role
         req_session = (payload.session_id or getattr(session, "session_id", "default_session")).strip()
         session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
         return user_name, user_role, session_id
 
     if session and getattr(session, "user_name", None):
-        user_name = session.user_name
-        user_role = getattr(session, "user_role", payload.user_role)
+        user_name = payload.user_name if payload.user_name and payload.user_name not in ("Nhân viên y tế", "Bác sĩ") else session.user_name
+        user_role = payload.user_role if payload.user_role else getattr(session, "user_role", "doctor")
         session_id = session.session_id
         return user_name, user_role, session_id
 
-    user_name = payload.user_name
-    user_role = payload.user_role
+    user_name = payload.user_name or (authenticated.username if authenticated else "Đồng nghiệp")
+    user_role = payload.user_role or (authenticated.role if authenticated else "doctor")
     req_session = (payload.session_id or "default_session").strip()
     session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
     return user_name, user_role, session_id

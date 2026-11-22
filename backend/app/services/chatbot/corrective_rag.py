@@ -157,8 +157,8 @@ def build_crag_clarification_response(
     user_name: str,
     user_role: str
 ) -> CopilotResponse:
-    is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
-    role_label = "Bác sĩ" if is_doc else "Nhân viên y tế"
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    role_label = get_user_salutation(user_name, user_role)
 
     top = candidates[0]
     cand_lines = []
@@ -200,8 +200,8 @@ def build_crag_safe_deferral_response(
     user_name: str,
     user_role: str
 ) -> CopilotResponse:
-    is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
-    role_label = "Bác sĩ" if is_doc else "Nhân viên y tế"
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    role_label = get_user_salutation(user_name, user_role)
     clean_target = raw_kw.strip().title() if len(raw_kw) < 25 else raw_kw.strip()
 
     reply = (

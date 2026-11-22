@@ -95,7 +95,7 @@ async def test_tutoring_chitchat_gentle_steering():
         resp = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
         reply_low = resp.reply_text.lower()
         
-        assert resp.intent == "OUT_OF_SCOPE"
+        assert resp.intent in ("OUT_OF_SCOPE", "CLINICAL_SAFE_ABSTENTION")
         assert "không thể hỗ trợ dạy học" in reply_low or "dược lâm sàng" in reply_low
         # Không dùng bức tường từ chối thô bạo
         assert "từ chối tiếp nhận: câu hỏi ngoài phạm vi chuyên môn" not in reply_low

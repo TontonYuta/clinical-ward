@@ -73,8 +73,8 @@ async def handle_prescription_block_audit(
             if drug_name not in med_names_for_ddi:
                 med_names_for_ddi.append(drug_name)
 
-    is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs"))
-    role_label = f"Bác sĩ {user_name}" if is_doc else f"Nhân viên y tế {user_name}"
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    role_label = get_user_salutation(user_name, user_role)
 
     # 1. Rà soát tương tác thuốc qua Multi-DDI Engine
     ddi_result = None

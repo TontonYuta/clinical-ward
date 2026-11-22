@@ -102,9 +102,8 @@ async def handle_deep_rag_consultation(
     inference_required: bool = False,
 ) -> CopilotResponse | None:
     session = get_or_create_session(session_id, user_name, user_role)
-    is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
-    is_nurse = any(k in (user_role or "").lower() for k in ("nurse", "dieu_duong", "dd")) or any(k in (user_name or "").lower() for k in ("đd", "điều dưỡng", "dieu duong", "yt", "y tá"))
-    role_label = "Bác sĩ" if is_doc else ("Điều dưỡng" if is_nurse else "Nhân viên y tế")
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    role_label = get_user_salutation(user_name, user_role)
 
     if not is_qualified_clinical_rag_query(lower_query, session) and not is_deep_pharmacology:
         return CopilotResponse(

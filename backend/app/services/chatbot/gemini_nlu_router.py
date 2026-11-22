@@ -369,6 +369,8 @@ def fallback_nlu_heuristic(
     active_med: Optional[str] = None,
     *,
     matcher=None,
+    user_name: str = "Đồng nghiệp",
+    user_role: str = "doctor",
 ) -> ClinicalNluExtraction:
     """Fallback an toàn cục bộ (< 0.1ms) khi API LLM ngoại tuyến hoặc timeout."""
     clean_q = query.strip()
@@ -459,7 +461,7 @@ def fallback_nlu_heuristic(
 
     # 1. Chào hỏi & Feedback / Phàn nàn / Góp ý dữ liệu
     from app.services.chatbot.conversational_handler import handle_greeting_and_acknowledgment
-    conv_check = handle_greeting_and_acknowledgment(low_q, "Nhân viên y tế", "doctor")
+    conv_check = handle_greeting_and_acknowledgment(low_q, user_name, user_role)
     if conv_check:
         if conv_check.intent in ("FEEDBACK_DATA_ENRICHMENT", "CONVERSATIONAL_CORRECTION", "FEEDBACK_UI_ADJUSTMENT"):
             return ClinicalNluExtraction(

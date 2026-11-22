@@ -69,10 +69,13 @@ async def lookup_drug_authoritative(
     deictic_phrases = ["thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"]
     is_deictic = any(w in query.lower() for w in deictic_phrases) or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
 
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    salutation = get_user_salutation(user_name, user_role)
+
     if is_deictic and not session.active_medication_name:
         return CopilotResponse(
             intent="MEDICATION_LOOKUP_CLARIFICATION",
-            reply_text="Dạ để hỗ trợ tra cứu chính xác nhất, Bác sĩ vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký cần tra cứu giúp em nhé ạ.",
+            reply_text=f"Dạ để hỗ trợ tra cứu chính xác nhất, {salutation} vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký cần tra cứu giúp em nhé ạ (hiện chưa xác định được thuốc trong lượt hội thoại này).",
             answer_type="clarification", source_status="missing_medication_context", confidence=1.0,
             session_id=session.session_id, suggested_chips=["Tra cứu thông tin thuốc", "Nhập tên hoạt chất hoặc biệt dược"]
         )
@@ -84,7 +87,7 @@ async def lookup_drug_authoritative(
     if is_unanchored_info and not session.active_medication_name and (not meds and not sdk or not kw or len(kw) < 2 or kw.lower() in ("tóm tắt", "tom tat", "chi tiết", "thông tin", "hồ sơ")):
         return CopilotResponse(
             intent="MEDICATION_LOOKUP_CLARIFICATION",
-            reply_text="Dạ để hỗ trợ tra cứu thông tin chi tiết hoặc tóm tắt thuốc, Bác sĩ vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký (SĐK) giúp em nhé ạ.",
+            reply_text=f"Dạ để hỗ trợ tra cứu thông tin chi tiết hoặc tóm tắt thuốc, {salutation} vui lòng gửi tên thuốc, hoạt chất hoặc số đăng ký (SĐK) giúp em nhé ạ (hiện chưa xác định được thuốc cần tra cứu).",
             answer_type="clarification", source_status="missing_medication_context", confidence=1.0,
             session_id=session.session_id, suggested_chips=["Tra cứu thuốc Teglutik", "Tra cứu thuốc Paracetamol", "Tra cứu SĐK VD-24757-16"]
         )

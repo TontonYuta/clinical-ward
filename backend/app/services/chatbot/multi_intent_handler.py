@@ -111,10 +111,10 @@ async def handle_multi_intent_chat(
                 combined_chips.append(chip)
 
     composite_reply = "\n\n---\n\n".join(reply_sections)
-    is_doc = any(k in (original_payload.user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs"))
-    role_label = f"Bác sĩ {original_payload.user_name}" if is_doc else f"Nhân viên y tế {original_payload.user_name}"
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    role_label = get_user_salutation(original_payload.user_name, original_payload.user_role)
 
-    final_text = f"Kính gửi {role_label}, dưới đây là phản hồi chi tiết cho từng ý trong câu hỏi của Bác sĩ:\n\n{composite_reply}"
+    final_text = f"Kính gửi {role_label}, dưới đây là phản hồi chi tiết cho từng ý trong câu hỏi của {role_label}:\n\n{composite_reply}"
 
     merged_citations = [c for c in combined_citations if c.get("chunk_id") in evidence_keys]
     has_graph_evidence = any(e.get("evidence_type") == "knowledge_graph" and e.get("content") for e in combined_evidence)

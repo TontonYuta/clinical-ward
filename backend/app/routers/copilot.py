@@ -114,7 +114,7 @@ async def chat_with_copilot(
             history=session.render_recent_history()
         )
         from app.services.chatbot.conversational_handler import attach_correction_empathy
-        response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
+        response.reply_text = attach_correction_empathy(response.reply_text, payload.query, user_name=user_name, user_role=user_role)
         response = format_offline_drug_response(response)
         response.has_image = bool(payload.image_base64 or response.has_image)
         session.append_conversation_turn(payload.query, response.reply_text)

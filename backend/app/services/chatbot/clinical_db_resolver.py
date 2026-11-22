@@ -164,8 +164,8 @@ def build_honest_abstention_reply(
     Tạo phản hồi từ chối trung thực, lịch sự, chuẩn mực ngôn ngữ y khoa.
     TUYỆT ĐỐI KHÔNG chứa từ ngữ kỹ thuật: RAG, CRAG, CSDL, Database, Safe Abstention, MedAbstain.
     """
-    is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
-    role_label = "Bác sĩ" if is_doc else "Nhân viên y tế"
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    role_label = get_user_salutation(user_name, user_role)
     clean_target = raw_kw.strip().title() if len(raw_kw) < 30 else raw_kw.strip()
 
     reply = (
@@ -201,8 +201,8 @@ def build_natural_clarification_reply(
     Tạo phản hồi gợi ý đối soát chính tả tự nhiên, ấm áp, đúng tác phong Dược sĩ lâm sàng.
     TUYỆT ĐỐI KHÔNG chứa thuật ngữ: CRAG, Framework, ICLR 2024, CSDL 54,885.
     """
-    is_doc = any(k in (user_role or "").lower() for k in ("doctor", "bac_si", "physician", "bs")) or any(k in (user_name or "").lower() for k in ("bác", "bac", "bs", "dr", "doctor"))
-    role_label = "Bác sĩ" if is_doc else "Nhân viên y tế"
+    from app.services.chatbot.conversational_handler import get_user_salutation
+    role_label = get_user_salutation(user_name, user_role)
 
     cand_lines = []
     chips = []
