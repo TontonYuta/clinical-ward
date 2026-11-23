@@ -16,6 +16,7 @@ from app.models.copilot_log import CopilotChatLog
 from app.schemas.copilot import CopilotQuery, CopilotResponse, RagQuery, RagResponse, CopilotChatLogResponse
 from app.services.session_context import get_or_create_session
 from app.security.guardrails import validate_input_guardrail, validate_output_guardrail
+from app.services.chatbot.chat_telemetry_logger import reconcile_copilot_telemetry, record_chat_telemetry_log
 from app.services.chatbot.copilot_orchestrator import (
     resolve_copilot_identity,
     handle_copilot_chat
@@ -161,69 +162,26 @@ async def chat_with_copilot(
         m_name = "local-rag-engine"
         prov = "local"
 
-    # Usage stays unknown for handlers/cache paths that did not call an LLM.
-    p_tok = last_exec.get("prompt_tokens", 0)
-    c_tok = last_exec.get("completion_tokens", 0)
-    tot_tok = p_tok + c_tok
-    response.prompt_tokens = p_tok
-    response.completion_tokens = c_tok
-    response.total_tokens = tot_tok
-    response.usage_source = last_exec.get("usage_source", "none")
-    response.model_call_count = last_exec.get("model_call_count", last_exec.get("call_count", 0))
-    response.usage_call_count = last_exec.get("provider_call_count", 0)
-    response.cache_hit_count = last_exec.get("cache_hits", 0)
-    response.availability_mode = "online_ai" if response.model_call_count else "local_only"
-    if cached_resp:
-        response.availability_mode = "local_only"
-        response.model_name = "clinical-cache-engine"
-        response.provider = "local-cache"
-        response.cache_hit_count = max(1, response.cache_hit_count or 0)
-    if last_exec.get("call_count", 0) and last_exec.get("model"):
-        response.model_name = last_exec["model"]
-    if last_exec.get("call_count", 0) and last_exec.get("provider"):
-        response.provider = last_exec["provider"]
-    if not response.usage_call_count and not cached_resp:
-        response.model_name = m_name
-        response.provider = prov
+    # Đồng bộ số lượng token và thông số execution từ execution trace
+    reconcile_copilot_telemetry(
+        response,
+        last_exec=last_exec,
+        cached_resp=bool(cached_resp),
+        default_model=m_name,
+        default_provider=prov,
+    )
 
-    try:
-        from app.security.prompt_utility_scorer import compute_prompt_utility
-        util = compute_prompt_utility(payload.query, reply_text=response.reply_text, intent=response.intent)
-        log_entry = CopilotChatLog(
-            id=f"CHAT-{int(time.time()*1000)}-{uuid.uuid4().hex[:6]}",
-            session_id=session.session_id,
-            user_name=user_name,
-            user_role=user_role,
-            query=payload.query,
-            reply_text=response.reply_text,
-            intent=response.intent,
-            answer_type=response.answer_type,
-            utility_score=util.utility_score,
-            is_useful=util.is_useful,
-            quality_category=util.category,
-            grounded_source=util.grounded_source,
-            prompt_tokens=p_tok,
-            completion_tokens=c_tok,
-            total_tokens=tot_tok,
-            usage_source=response.usage_source,
-            model_call_count=response.model_call_count or 0,
-            usage_call_count=response.usage_call_count or 0,
-            cache_hit_count=response.cache_hit_count or 0,
-            model_name=response.model_name or m_name,
-            provider=response.provider or prov,
-            has_image=has_img,
-            image_tokens=img_tok,
-            latency_ms=latency_ms,
-            availability_mode=response.availability_mode,
-            rag_grounded=bool(response.rag_grounded),
-            evidence_count=len(response.evidence or []),
-            status_reason=response.abstention_reason or response.source_status,
-            telemetry_version="v2",
-        )
-        db.add(log_entry)
-        await db.commit()
-    except Exception:
-        pass
+    await record_chat_telemetry_log(
+        db,
+        payload=payload,
+        response=response,
+        session_id=session.session_id,
+        user_name=user_name,
+        user_role=user_role,
+        latency_ms=latency_ms,
+        has_image=has_img,
+        image_tokens=img_tok,
+    )
 
     return response
 
@@ -295,25 +253,18 @@ async def chat_with_copilot_stream(
 
         from app.services.llm_provider import get_last_llm_execution
         usage = get_last_llm_execution()
-        response.prompt_tokens = usage.get("prompt_tokens", 0)
-        response.completion_tokens = usage.get("completion_tokens", 0)
-        response.total_tokens = usage.get("total_tokens", 0)
-        response.usage_source = usage.get("usage_source", "none")
-        response.model_call_count = usage.get("model_call_count", usage.get("call_count", 0))
-        response.usage_call_count = usage.get("provider_call_count", 0)
-        response.cache_hit_count = usage.get("cache_hits", 0) + (1 if cached_resp else 0)
-        response.availability_mode = "online_ai" if response.model_call_count else "local_only"
-        if cached_resp:
-            response.availability_mode = "local_only"
-            response.model_name = "clinical-cache-engine"
-            response.provider = "local-cache"
+        latency_ms = round((time.monotonic() - start_time) * 1000, 1)
+
+        # Chuẩn hóa telemetry và siêu dữ liệu thực thi
+        reconcile_copilot_telemetry(
+            response,
+            last_exec=usage,
+            cached_resp=bool(cached_resp),
+            default_model="clinical-cache-engine" if cached_resp else "gemini-3.5-flash-lite",
+            default_provider="local-cache" if cached_resp else "gemini",
+        )
         if response.answer_type == "unavailable":
             response.availability_mode = "local_only"
-        if usage.get("call_count", 0) and usage.get("model"):
-            response.model_name = usage["model"]
-        if usage.get("call_count", 0) and usage.get("provider"):
-            response.provider = usage["provider"]
-        latency_ms = round((time.monotonic() - start_time) * 1000, 1)
 
         # Phát nội dung ngay sau khi pipeline hoàn tất. Ghi telemetry phía sau
         # không được chặn TTFT/UX của người dùng; telemetry chỉ là side effect.
@@ -322,44 +273,17 @@ async def chat_with_copilot_stream(
             yield _sse_event("token", content=full_text)
 
         # 2. Ghi nhật ký bất đồng bộ
-        try:
-            from app.security.prompt_utility_scorer import compute_prompt_utility
-            util = compute_prompt_utility(payload.query, reply_text=response.reply_text, intent=response.intent)
-            log_entry = CopilotChatLog(
-                id=f"CHAT-{int(time.time()*1000)}-{uuid.uuid4().hex[:6]}",
-                session_id=session.session_id,
-                user_name=user_name,
-                user_role=user_role,
-                query=payload.query,
-                reply_text=response.reply_text,
-                intent=response.intent,
-                answer_type=response.answer_type,
-                utility_score=util.utility_score,
-                is_useful=util.is_useful,
-                quality_category=util.category,
-                grounded_source=util.grounded_source,
-                prompt_tokens=response.prompt_tokens or 0,
-                completion_tokens=response.completion_tokens or 0,
-                total_tokens=response.total_tokens or 0,
-                usage_source=response.usage_source,
-                model_call_count=response.model_call_count or 0,
-                usage_call_count=response.usage_call_count or 0,
-                cache_hit_count=response.cache_hit_count or 0,
-                has_image=bool(payload.image_base64 or response.has_image),
-                image_tokens=response.image_tokens or 0,
-                model_name=response.model_name,
-                provider=response.provider,
-                latency_ms=latency_ms,
-                availability_mode=response.availability_mode,
-                rag_grounded=bool(response.rag_grounded),
-                evidence_count=len(response.evidence or []),
-                status_reason=response.abstention_reason or response.source_status,
-                telemetry_version="v2",
-            )
-            db.add(log_entry)
-            await db.commit()
-        except Exception:
-            pass
+        await record_chat_telemetry_log(
+            db,
+            payload=payload,
+            response=response,
+            session_id=session.session_id,
+            user_name=user_name,
+            user_role=user_role,
+            latency_ms=latency_ms,
+            has_image=bool(payload.image_base64 or response.has_image),
+            image_tokens=response.image_tokens or 0,
+        )
 
         # 4. Truyền phát gói dữ liệu hoàn tất chứa toàn bộ metadata, cards, alerts
         done_dict = response.model_dump()

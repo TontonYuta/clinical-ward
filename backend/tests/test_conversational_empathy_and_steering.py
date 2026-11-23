@@ -147,3 +147,38 @@ def test_prompt_utility_scoring_categories():
     )
     assert u3.category == "noise_garbage"
     assert u3.utility_score <= 0.35
+
+
+@pytest.mark.asyncio
+async def test_capability_direct_query_ban_co_the_lam_gi():
+    async with AsyncSessionLocal() as db:
+        session = get_or_create_session("empathy_bench_06", "Ban Giám Đốc", "director")
+        q = CopilotQuery(
+            query="bạn có thể làm gì",
+            user_name="Ban Giám Đốc",
+            user_role="director",
+            session_id="empathy_bench_06"
+        )
+        resp = await handle_copilot_chat(q, DummyRequest(), db, session=session, history="")
+        reply_low = resp.reply_text.lower()
+        
+        # Tuyệt đối không bị safe abstention hoặc yêu cầu bằng chứng y khoa
+        assert resp.intent == "CAPABILITY_OPENING"
+        assert resp.answer_type in ("conversational_guidance", "capability_overview")
+        assert "chưa thể xác minh nội dung câu trả lời" not in reply_low
+        assert "sẵn sàng" in reply_low or "được chứ" in reply_low
+        assert "dược thư quốc gia" in reply_low
+        assert "tương tác thuốc" in reply_low
+
+
+@pytest.mark.asyncio
+async def test_director_salutation_no_duplicate_phrasing():
+    from app.services.chatbot.conversational_handler import get_user_salutation, handle_greeting_and_acknowledgment
+    salutation = get_user_salutation("Ban Giám Đốc", "director")
+    assert salutation in ("Ban Giám đốc", "Ban Giám Đốc")
+    assert "Ban Giám đốc Ban Giám Đốc" not in salutation
+
+    resp = handle_greeting_and_acknowledgment("xin chào", "Ban Giám Đốc", "director")
+    assert resp is not None
+    assert "Chào Ban Giám Đốc." in resp.reply_text or "Chào Ban Giám đốc." in resp.reply_text
+    assert "Ban Giám đốc Ban Giám Đốc" not in resp.reply_text

@@ -23,11 +23,12 @@ from app.services.chatbot.pure_rag_handler import handle_contextual_rag_followup
 from app.services.chatbot.drug_comparison import handle_clinical_drug_comparison
 from app.services.chatbot.fsm_router import route_fsm_context
 from app.services.chatbot.sandwich_pipeline import execute_clinical_sandwich_pipeline
+from app.services.chatbot.evidence_contract_validator import (
+    validate_response_evidence_contract,
+    _has_verified_source_version,
+)
+from app.services.chatbot.copilot_response_postprocessor import post_process_copilot_response
 
-
-def _has_verified_source_version(value: object) -> bool:
-    normalized = str(value or "").strip().casefold()
-    return bool(normalized) and normalized not in {"unversioned", "unknown", "none"}
 
 def normalize_conversational_query(text: str) -> str:
     cleaned = (text or "").strip()
@@ -132,9 +133,8 @@ def resolve_copilot_identity(payload: CopilotQuery, request: Request, session=No
     authenticated = getattr(request.state, "authenticated_user", None)
     generic_placeholders = {"Nhân viên y tế", "Bác sĩ", "ĐD. Lê Thị Thu", "nurse"}
     if authenticated and authenticated.username != "test_director":
-        real_auth_name = getattr(authenticated, "name", None) or authenticated.username
-        user_name = payload.user_name if payload.user_name and payload.user_name not in generic_placeholders else real_auth_name
-        user_role = payload.user_role if payload.user_role and payload.user_role != "nurse" else authenticated.role
+        user_name = getattr(authenticated, "name", None) or authenticated.username
+        user_role = authenticated.role
         req_session = (payload.session_id or getattr(session, "session_id", "default_session")).strip()
         session_id = req_session if req_session.startswith(f"{user_name.casefold()}:") else f"{user_name.casefold()}:{req_session}"
         return user_name, user_role, session_id
@@ -163,74 +163,10 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
 
     # NẾU CÓ ẢNH ĐÍNH KÈM: Chuyển thẳng sang luồng Multimodal Vision Analysis chuyên sâu
     if payload.image_base64:
-        from app.services.llm_provider import query_clinical_multimodal_chat
-        vision_res = await query_clinical_multimodal_chat(
-            image_base64=payload.image_base64,
-            mime_type=payload.image_mime_type or "image/jpeg",
-            user_query=payload.query,
-            user_role=user_role
-        )
-        if vision_res and isinstance(vision_res, dict):
-            is_non_clinical = vision_res.get("is_clinical") is False or vision_res.get("category") == "NON_CLINICAL"
-            if is_non_clinical:
-                reply_text = str(vision_res.get("reply_markdown") or "Hệ thống chỉ hỗ trợ phân tích ảnh thuốc, đơn thuốc và tài liệu BHYT.")
-                return CopilotResponse(
-                    intent="MULTIMODAL_CLINICAL_VISION",
-                    reply_text=reply_text,
-                    legal_basis=None,
-                    clinical_summary=None,
-                    suggested_chips=["Tra cứu Dược Thư", "Quy chế thuốc BHYT", "Hướng dẫn sử dụng"],
-                    card=None,
-                    cdss_alert=None,
-                    rag_grounded=False,
-                    citations=[],
-                    evidence=[],
-                    answer_type="safe_abstention",
-                    source_status="out_of_scope",
-                    abstention_reason="Hình ảnh ngoài phạm vi y tế / dược lâm sàng",
-                    prompt_tokens=vision_res.get("_prompt_tokens", 0),
-                    completion_tokens=vision_res.get("_completion_tokens", 0),
-                    total_tokens=vision_res.get("_total_tokens", 0),
-                    model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
-                    has_image=True,
-                    image_tokens=vision_res.get("_image_tokens", 0)
-                )
-
-            # Phân tích toàn diện: Bóc tách đơn thuốc + Đối chiếu DDI Dược Thư + Giám định BHYT TT 20
-            from app.services.chatbot.prescription_vision_analyser import analyse_vision_prescription
-            analysis = analyse_vision_prescription(vision_res, user_role=user_role)
-
-            reply_text = analysis["reply_text"]
-            clinical_summary = analysis["clinical_summary"]
-            card_obj = analysis["card"]
-            cdss_alert = analysis["cdss_alert"]
-            evidence = analysis["evidence"]
-            citations = analysis["citations"]
-            grounded = analysis["rag_grounded"]
-            suggested_chips = analysis["suggested_chips"]
-            legal_basis = "Thông tư 20/2022/TT-BYT & QĐ 5948/QĐ-BYT Dược Thư Quốc Gia" if grounded else None
-
-            return CopilotResponse(
-                intent="MULTIMODAL_CLINICAL_VISION",
-                reply_text=reply_text,
-                legal_basis=legal_basis,
-                clinical_summary=clinical_summary,
-                suggested_chips=suggested_chips,
-                card=card_obj,
-                cdss_alert=cdss_alert,
-                rag_grounded=grounded,
-                citations=citations,
-                evidence=evidence,
-                answer_type="grounded_reference" if grounded else "image_extraction",
-                source_status="verified_evidence" if grounded else "image_extracted_unverified",
-                abstention_reason=None if grounded else "Không có dữ liệu thuốc được kiểm chứng từ ảnh",
-                prompt_tokens=vision_res.get("_prompt_tokens", 0),
-                completion_tokens=vision_res.get("_completion_tokens", 0),
-                total_tokens=vision_res.get("_total_tokens", 0),
-                model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
-                has_image=True,
-                image_tokens=vision_res.get("_image_tokens", 0)
-            )
+        from app.services.chatbot.multimodal_vision_handler import handle_multimodal_vision_turn
+        vision_resp = await handle_multimodal_vision_turn(payload, user_role=user_role)
+        if vision_resp is not None:
+            return vision_resp
 
     query = guard_res.sanitized_query
     lower_query = query.lower()
@@ -386,7 +322,8 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         )
         direct_ddi_meds = get_drug_lexical_matcher().extract_medications(query)
         if (
-            any(term in lower_query for term in interaction_terms)
+            workflow_decision.executor_key != "multi_intent"
+            and any(term in lower_query for term in interaction_terms)
             and len(direct_ddi_meds) >= 2
         ):
             from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
@@ -916,201 +853,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     )
 
 
-def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotResponse:
-    if resp.intent == "MULTIMODAL_CLINICAL_VISION":
-        return resp
-    non_factual_types = {
-        "clarification", "corrective_clarification", "safe_abstention", "feedback_acknowledgment",
-        "conversational_feedback", "conversational_correction",
-        "conversational_guidance", "capability_overview", "unavailable",
-        "operational_result", "action_result", "action_confirmation", "cdss_alert",
-        "guideline", "medication_lookup_guide", "acknowledgment", "image_extraction",
-    }
-    non_factual_intents = {
-        "GREETING_WELCOME", "GREETING_WELLBEING", "CONVERSATIONAL_FEEDBACK",
-        "CONVERSATIONAL_CORRECTION", "FEEDBACK_DATA_ENRICHMENT",
-        "FEEDBACK_UI_ADJUSTMENT", "OUT_OF_SCOPE", "SECURITY_GUARDRAIL_BLOCKED",
-        "CLINICAL_CASE_CLARIFICATION", "MEDICATION_LOOKUP_CLARIFICATION",
-        "CLINICAL_SAFE_ABSTENTION", "CAPABILITY_OPENING",
-        "BUSINESS_OVERVIEW", "GENERAL_CLINICAL_ASSISTANCE", "CLINICAL_ALLERGY_CDSS",
-        "MEDICATION_LOOKUP_GUIDE", "ACKNOWLEDGMENT", "CLINICAL_DDI_INTERACTION_LOOKUP",
-        "CLINICAL_PEDIATRIC_GUIDANCE", "MEDICATION_INTERACTION_CLARIFICATION",
-    }
-    clinical_fact_intents = {
-        "CLINICAL_ALLERGY_CDSS", "CLINICAL_DDI_INTERACTION_LOOKUP",
-        "CLINICAL_PEDIATRIC_GUIDANCE", "MEDICATION_SAFETY_PROFILE",
-        "CLINICAL_AI_CONSULTATION", "ONCOLOGY_SPECIALTY_GUIDANCE",
-        "LEGAL_GUIDANCE", "MULTI_INTENT_COMPOSITE",
-    }
-    clinical_factual_types = {
-        "grounded_reference", "medication_profile", "medication_summary", "medication_field",
-        "medication_fields", "multihop_case_consultation", "composite_answer", "guideline", "cdss_alert",
-    }
-    is_clinical_factual = resp.intent in clinical_fact_intents or resp.answer_type in clinical_factual_types
-    if resp.intent in non_factual_intents and not is_clinical_factual:
-        return resp
-    if resp.intent in clinical_fact_intents and resp.answer_type not in {"safe_abstention", "clarification"}:
-        # Clinical facts always require claim-level validation, regardless of
-        # historical intent allowlists or an attached CDSS alert.
-        pass
-    if resp.answer_type == "safe_abstention" and resp.intent not in non_factual_intents:
-        resp.rag_grounded = False
-        resp.confidence = 0.0
-        resp.citations = []
-        resp.evidence = []
-        resp.claims = []
-        resp.evidence_claim_map = {}
-        is_explicit_explanation = any(
-            phrase in (resp.reply_text or "").casefold()
-            for phrase in ("thiếu nguồn", "chưa thể xác minh", "chưa tìm thấy", "unable to resolve", "vui lòng", "không thể")
-        )
-        if not is_explicit_explanation and resp.source_status in {None, "evidence_provenance_missing", "evidence_validation_failed", "insufficient_retrieval_evidence"}:
-            resp.reply_text = "Chưa thể xác minh nội dung lâm sàng từ nguồn tài liệu có thể truy xuất. Vui lòng thử lại với tài liệu đã được lập chỉ mục hoặc yêu cầu quản trị viên kiểm tra nguồn."
-        return resp
-    if resp.answer_type in non_factual_types and not is_clinical_factual:
-        return resp
-    # Citation and provenance metadata alone cannot prove the returned prose.
-    # The common boundary accepts only claim objects produced by a validated executor.
-    evidence_by_id = {
-        item.get("evidence_id"): item
-        for item in (resp.evidence or [])
-        if isinstance(item, dict) and item.get("evidence_id")
-    }
-    cited_chunk_ids = {
-        str(item.get("chunk_id")) for item in (resp.citations or [])
-        if isinstance(item, dict) and item.get("chunk_id")
-    }
-    valid_claims = []
-    for claim in resp.claims or []:
-        if claim.support_status != "supported" or not claim.evidence_ids:
-            continue
-        linked = [evidence_by_id.get(evidence_id) for evidence_id in claim.evidence_ids]
-        if any(item is None for item in linked):
-            continue
-        if any(
-            item.get("evidence_type") == "document_chunk"
-            and str(item.get("chunk_id")) not in cited_chunk_ids
-            for item in linked
-        ):
-            continue
-        if any(claim.claim_id not in (resp.evidence_claim_map or {}).get(evidence_id, []) for evidence_id in claim.evidence_ids):
-            continue
-        if claim.claim_type == "evidence_inference":
-            continue
-        if any(
-            not item.get("source_id") or not _has_verified_source_version(item.get("source_version"))
-            or (claim.claim_type == "source_fact" and " ".join(str(claim.text).casefold().split()) not in " ".join(str(item.get("content") or "").casefold().split()))
-            for item in linked
-        ):
-            continue
-        valid_claims.append(claim)
-    reply_normalized = " ".join((resp.reply_text or "").casefold().split())
-    if len(valid_claims) != len(resp.claims or []) or any(
-        " ".join(claim.text.casefold().split()) not in reply_normalized for claim in valid_claims
-    ):
-        valid_claims = []
-    if not valid_claims:
-        resp.rag_grounded = False
-        resp.answer_type = "safe_abstention"
-        has_versioned_evidence = any(
-            isinstance(item, dict) and item.get("source_id")
-            and _has_verified_source_version(item.get("source_version"))
-            for item in (resp.evidence or [])
-        )
-        resp.source_status = "evidence_validation_failed" if has_versioned_evidence else "evidence_provenance_missing"
-        resp.abstention_reason = "Không có claim lâm sàng đã xác minh với evidence nguồn"
-        resp.reply_text = (
-            "Chưa thể xác minh nội dung câu trả lời bằng khẳng định đã được liên kết trực tiếp "
-            "với bằng chứng có nguồn gốc rõ ràng."
-        )
-        resp.confidence = 0.0
-        resp.citations = []
-        resp.evidence = []
-        resp.claims = []
-        resp.evidence_claim_map = {}
-        return resp
-    resp.claims = valid_claims
-    # A factual response with zero confidence is not eligible to be grounded,
-    # even if a later stage attached valid provenance metadata.
-    if resp.confidence is not None and resp.confidence <= 0:
-        resp.rag_grounded = False
-        resp.answer_type = "safe_abstention"
-        resp.source_status = resp.source_status or "evidence_validation_failed"
-        resp.abstention_reason = resp.abstention_reason or "Phản hồi factual chưa đạt ngưỡng xác thực"
-        resp.citations = []
-        resp.evidence = []
-        return resp
-
-    evidence, citations = resp.evidence or [], resp.citations or []
-    def is_real_version(value: object) -> bool:
-        normalized = str(value or "").strip().casefold()
-        return bool(normalized) and normalized not in {"unversioned", "unknown", "none"}
-
-    cited_chunks = {str(c.get("chunk_id")) for c in citations if isinstance(c, dict) and c.get("chunk_id")}
-    has_linked_document = any(
-        isinstance(item, dict) and item.get("evidence_type") == "document_chunk"
-        and item.get("chunk_id") in cited_chunks
-        and item.get("source_id") and item.get("content")
-        and is_real_version(item.get("source_version"))
-        for item in evidence
-    )
-    has_versioned_graph = any(
-        isinstance(item, dict) and item.get("evidence_type") == "knowledge_graph"
-        and item.get("content") and item.get("source_id") and item.get("source_version")
-        and is_real_version(item.get("source_version"))
-        for item in evidence
-    )
-    if not (has_linked_document or has_versioned_graph):
-        resp.rag_grounded = False
-        resp.answer_type = "safe_abstention"
-        resp.source_status = "evidence_provenance_missing"
-        resp.abstention_reason = "Không xác minh được evidence gắn với citation của câu trả lời"
-        resp.reply_text = "Chưa thể xác minh câu trả lời từ nguồn tài liệu có thể truy xuất. Vui lòng thử lại với tài liệu đã được lập chỉ mục hoặc yêu cầu quản trị viên kiểm tra nguồn."
-        resp.confidence = 0.0
-    elif not resp.rag_grounded:
-        resp.answer_type = "safe_abstention"
-        resp.abstention_reason = resp.abstention_reason or "Kết quả factual chưa qua xác thực evidence"
-        resp.source_status = "evidence_validation_failed"
-        resp.reply_text = "Đã tìm thấy tài liệu liên quan nhưng chưa xác minh được nội dung trả lời. Vui lòng thử lại hoặc đối chiếu trực tiếp với nguồn được quản trị."
-        resp.confidence = 0.0
-    return resp
+# Lưu ý: validate_response_evidence_contract và _has_verified_source_version đã được
+# tách thành module độc lập backend/app/services/chatbot/evidence_contract_validator.py
+# và được import / re-export tại đầu tệp để đảm bảo tính tinh gọn và tương thích ngược 100%.
 
 
 async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
     """Entrypoint chính của Copilot: Xử lý chat và tự động chuẩn hóa 100% nguồn đối chứng (citations)."""
-    from app.services.chatbot.citation_standardizer import standardize_response_citations
     resp = await _handle_copilot_chat_core(payload, request, db, session=session, history=history)
-    resp = standardize_response_citations(resp, payload.query)
-    resp = validate_response_evidence_contract(resp)
-    route_intent = getattr(getattr(request.state, "workflow_route", None), "intent", None)
-    from app.services.chatbot.answer_operation import apply_reference_note
-    resp = apply_reference_note(resp, getattr(request.state, "clinical_nlu_result", None), route_intent)
-    if resp.answer_type == "safe_abstention":
-        resp.citations = []
-        resp.evidence = []
-        if not resp.clinical_summary:
-            from app.schemas.copilot import ClinicalSummary
-            headline = "Từ chối an toàn (Safe Abstention)"
-            takeaway = (resp.abstention_reason or resp.reply_text[:120]).replace("\n", " ").strip()
-            resp.clinical_summary = ClinicalSummary(headline=headline, key_takeaway=takeaway, urgency="warning")
-        if not resp.clinical_data or not resp.clinical_data.abstention_details:
-            from app.schemas.copilot import StructuredClinicalPayload, AbstentionDetailsSchema
-            reason_code = str(resp.source_status or "SAFE_ABSTENTION").upper()
-            resp.clinical_data = StructuredClinicalPayload(
-                abstention_details=AbstentionDetailsSchema(
-                    reason_code=reason_code,
-                    unresolved_entities=[],
-                    professional_recommendations=[
-                        "Kiểm tra lại tên biệt dược/hoạt chất hoặc tài liệu chuyên môn đã được Bộ Y tế phê duyệt.",
-                        "Tham khảo ý kiến Dược sĩ lâm sàng trước khi chỉ định."
-                    ]
-                )
-            )
-    elif resp.answer_type == "clarification":
-        if not resp.clinical_summary:
-            from app.schemas.copilot import ClinicalSummary
-            headline = "Yêu cầu làm rõ thông tin"
-            takeaway = resp.reply_text[:120].replace("\n", " ").strip()
-            resp.clinical_summary = ClinicalSummary(headline=headline, key_takeaway=takeaway, urgency="routine")
-    return resp
+    return post_process_copilot_response(resp, request, payload)
 

@@ -185,8 +185,10 @@ async def get_availability() -> AvailabilityResponse:
     retrieval_ready = db_state == "available" and fts_state == "available"
     if provider_state == "available" and retrieval_ready:
         mode = "online_ai"
-    else:
+    elif backend_state == "available" and retrieval_ready:
         mode = "local_only"
+    else:
+        mode = "offline"
 
     return AvailabilityResponse(
         mode=mode, backend=backend_state, database=db_state, vector_index=vector_state,

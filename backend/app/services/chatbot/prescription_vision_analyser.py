@@ -135,9 +135,17 @@ def analyse_vision_prescription(vision_res: Dict[str, Any], user_role: str = "do
     # If no medication items found or marked non-clinical, fallback to basic image report
     if not items or vision_res.get("is_clinical") is False or vision_res.get("category") == "NON_CLINICAL":
         from app.services.chatbot.image_report_formatter import format_image_extraction_report
+        is_non_clinical = vision_res.get("is_clinical") is False or vision_res.get("category") == "NON_CLINICAL"
+        summary_obj = (
+            ClinicalSummary(
+                headline="Kết quả đọc ảnh chưa xác minh",
+                key_takeaway="Nội dung trích xuất từ ảnh chưa được đối chiếu với nguồn y tế.",
+                urgency="warning",
+            ) if not is_non_clinical else None
+        )
         return {
             "reply_text": format_image_extraction_report(vision_res),
-            "clinical_summary": None,
+            "clinical_summary": summary_obj,
             "card": None,
             "cdss_alert": None,
             "evidence": [],

@@ -20,22 +20,28 @@ def get_role_display_label(user_name: str = "", user_role: str = "") -> str:
 
 
 def get_user_salutation(user_name: str = "", user_role: str = "") -> str:
-    """Xác định danh xưng trang trọng kèm tên nếu có, tránh lặp lại các account ID vô nghĩa."""
+    """Xác định danh xưng trang trọng kèm tên nếu có, tránh lặp lại các account ID hoặc lặp từ chức danh."""
     role_label = get_role_display_label(user_name, user_role)
     clean_name = (user_name or "").strip()
     generic_ids = {
         "nhân viên y tế", "nhan vien y te", "bác sĩ", "bac si", "dược sĩ", "duoc si",
         "điều dưỡng", "dieu duong", "bac_si_test", "duoc_si_test", "dieu_duong_test",
         "test_director", "director", "admin", "nurse", "doctor", "pharmacist",
-        "user", "default", "guest", "nhan vien", "nhân viên"
+        "user", "default", "guest", "nhan vien", "nhân viên",
+        "ban giám đốc", "ban giam doc", "giám đốc", "giam doc", "lanh dao", "lãnh đạo"
     }
-    if clean_name and clean_name.lower() not in generic_ids:
-        for pfx in ("bs.", "bs", "ds.", "ds", "đd.", "đd", "dd.", "dd"):
-            if clean_name.lower().startswith(pfx + " "):
-                clean_name = clean_name[len(pfx) + 1:].strip()
-                break
-        return f"{role_label} {clean_name}"
-    return role_label
+    if not clean_name or clean_name.lower() in generic_ids:
+        return role_label
+    # Chống trùng lặp từ ngữ khi tên đã chứa sẵn chức danh (ví dụ: role 'Ban Giám đốc' và name 'Ban Giám Đốc')
+    if role_label.lower() in clean_name.lower():
+        return clean_name
+    if clean_name.lower() in role_label.lower():
+        return role_label
+    for pfx in ("bs.", "bs", "ds.", "ds", "đd.", "đd", "dd.", "dd"):
+        if clean_name.lower().startswith(pfx + " "):
+            clean_name = clean_name[len(pfx) + 1:].strip()
+            break
+    return f"{role_label} {clean_name}"
 
 
 def get_role_based_chips(user_role: str = "") -> list[str]:
@@ -131,8 +137,9 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
         "giup toi duoc khong", "giup em duoc khong", "ban giup toi duoc khong",
         "ban giup em duoc khong", "co the giup toi", "co the giup em",
         "hoi ve thong tin cac loai thuoc", "hoi ve thong tin thuoc",
-        "ban co the lam gi", "ban lam duoc gi", "ban co the giup gi",
-        "huong dan su dung", "cach su dung"
+        "ban co the lam gi", "ban lam duoc gi", "ban lam gi duoc", "ban co the giup gi",
+        "ban giup duoc gi", "co the lam gi", "lam duoc gi", "chuc nang cua ban",
+        "nang luc cua ban", "kha nang cua ban", "huong dan su dung", "cach su dung"
     ))
     q_tokens = set(clean_greeting_ascii.split())
     is_non_clinical = bool(q_tokens & {"toan", "tho", "vang"}) or any(w in clean_greeting_ascii for w in (
@@ -140,23 +147,8 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
         "xo so", "so xo", "nguoi yeu", "thoi tiet", "gia vang", "nau an", "bong da", "da banh"
     ))
     if is_capability_or_help and not is_non_clinical:
-        salutation = get_user_salutation(user_name, user_role)
-        return CopilotResponse(
-            intent="GENERAL_CLINICAL_ASSISTANCE",
-            reply_text=(
-                f"Dạ được chứ ạ! Em là Trợ lý Dược lâm sàng & An toàn Thuốc nội viện, luôn sẵn sàng hỗ trợ {salutation} 24/7.\n\n"
-                f"{salutation} có thể tra cứu và thực hiện các nghiệp vụ:\n"
-                f"1. **Tra cứu hồ sơ thuốc & Chuyên luận DĐVN V:** Gửi tên biệt dược, hoạt chất hoặc SĐK (ví dụ: *Coversyl, Paracetamol, Zithromax, Augmentin...*).\n"
-                f"2. **Kiểm tra tương tác thuốc (DDI):** Rà soát các cặp tương tác chống chỉ định theo QĐ 5948/QĐ-BYT (ví dụ: *Clopidogrel + Omeprazol*, hoặc gõ *'lấy ví dụ 3 cặp tương tác chống chỉ định'*).\n"
-                f"3. **Liều dùng & Hiệu chỉnh suy thận:** Liều chuẩn người lớn, liều trẻ em theo cân nặng, hiệu chỉnh liều suy thận theo độ thanh thải Creatinin ($Cl_{{cr}}$).\n"
-                f"4. **Quy chế & Nghiệp vụ nội viện:** Quản lý thuốc gây nghiện (TT 20), xử trí phản vệ (TT 51), thẩm định đơn CPOE (TT 26), quản lý tủ trực & kho GSP (TT 36/TT 22).\n\n"
-                f"{salutation} muốn tra cứu thuốc hoặc chủ đề chuyên môn nào trước ạ?"
-            ),
-            legal_basis="Dược thư Quốc gia Việt Nam DĐVN V & Quyết định 5948/QĐ-BYT",
-            suggested_chips=get_role_based_chips(user_role),
-            answer_type="guideline",
-            confidence=1.0
-        )
+        from app.services.chatbot.conversational_steering import handle_capability_opening
+        return handle_capability_opening(user_role=user_role, user_name=user_name)
 
     # 1. Phát hiện phản hồi góp ý bổ sung dữ liệu lâm sàng
     is_data_enrichment_feedback = any(c in clean_greeting_ascii for c in (
