@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { Bot, Plus, PanelLeftClose, Search, MessageSquare, Edit3, Trash2, Check, X, RefreshCw } from 'lucide-react';
 import { ChatSession } from '../../types/chatSession';
+import type { ChatbotAvailability } from '../../services/api';
 
 interface ChatSessionsSidebarProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface ChatSessionsSidebarProps {
   onRenameSession: (sessionId: string, newTitle: string) => void;
   isSyncing?: boolean;
   onManualSync?: () => void;
+  availabilityMode?: ChatbotAvailability['mode'];
 }
 
 export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
@@ -31,7 +33,8 @@ export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
   onDeleteSession,
   onRenameSession,
   isSyncing = false,
-  onManualSync
+  onManualSync,
+  availabilityMode = 'checking'
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -66,7 +69,13 @@ export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
             </div>
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="font-bold text-sm text-slate-950 truncate">Trợ Lý AI Lâm Sàng</span>
-              <span className="w-2 h-2 rounded-full bg-teal-500 ring-2 ring-teal-200 shrink-0" title="Trực tuyến" />
+              <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
+                availabilityMode === 'online_ai'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-sky-50 text-sky-700 border border-sky-200'
+              }`} role="status">
+                {availabilityMode === 'online_ai' ? '🟢 Online' : (availabilityMode === 'checking' ? '...' : '🔵 Cục bộ')}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">

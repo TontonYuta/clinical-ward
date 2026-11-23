@@ -33,6 +33,10 @@ def standardize_response_citations(resp: CopilotResponse, query: str = "") -> Co
         resp.citations = []
         return resp
 
+    if resp.intent == "GROUNDED_WEB_SEARCH":
+        # Bảo lưu 100% trích dẫn nguồn web đã được kiểm chứng link sống
+        return resp
+
     existing_citations = list(resp.citations or [])
     cleaned_citations: List[Dict[str, Any]] = []
 

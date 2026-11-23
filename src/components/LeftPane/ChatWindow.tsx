@@ -159,6 +159,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           onRenameSession={(id, title) => onRenameSession?.(id, title)}
           isSyncing={isSyncing}
           onManualSync={onManualSync}
+          availabilityMode={availabilityMode}
         />
       )}
 
@@ -259,7 +260,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </button>
             )}
 
-            <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/90 backdrop-blur-xs p-1 rounded-xl border border-slate-200/90 shadow-2xs">
+            <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs p-1 px-2 rounded-xl border border-slate-200/90 shadow-2xs">
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold select-none ${
+                availabilityMode === 'online_ai'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-sky-50 text-sky-700 border border-sky-200'
+              }`} role="status" aria-live="polite">
+                {availabilityMode === 'checking' && 'Đang kiểm tra...'}
+                {availabilityMode === 'online_ai' && '🟢 Online'}
+                {availabilityMode !== 'online_ai' && availabilityMode !== 'checking' && '🔵 Cục bộ'}
+              </span>
               {onToggleFullScreen && (
                 <button
                   type="button"
