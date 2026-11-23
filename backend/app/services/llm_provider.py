@@ -179,13 +179,38 @@ async def _call_gemini_api(
             if remaining <= 0:
                 break
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+            # 1. Thử nghiệm Context Caching để tiết kiệm 75% chi phí input token
+            cached_content_name = None
+            try:
+                from app.services.cache.gemini_context_cache import get_active_context_cache
+                cached_content_name = await get_active_context_cache(key, model)
+            except Exception:
+                cached_content_name = None
+
+            active_payload = dict(payload)
+            if cached_content_name:
+                active_payload["cachedContent"] = cached_content_name
+                active_payload.pop("systemInstruction", None)
+
             try:
                 res = await client.post(
                     url,
                     headers=headers,
-                    json=payload,
+                    json=active_payload,
                     timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
                 )
+
+                # 2. Transparent Fallback: Nếu dùng cachedContent bị từ chối (HTTP 400/404), gọi lại bằng payload chuẩn
+                if res.status_code in (400, 404) and cached_content_name:
+                    logger.debug("Gemini cachedContent %s không khả dụng (HTTP %d). Fallback về payload chuẩn.", cached_content_name, res.status_code)
+                    res = await client.post(
+                        url,
+                        headers=headers,
+                        json=payload,
+                        timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
+                    )
+
                 if res.status_code == 200:
                     data = res.json()
                     candidates = data.get("candidates", [])
@@ -196,6 +221,8 @@ async def _call_gemini_api(
                             usage = data.get("usageMetadata", {})
                             p_value = usage.get("promptTokenCount")
                             c_value = usage.get("candidatesTokenCount")
+                            cached_val = usage.get("cachedContentTokenCount")
+                            cached_tok = int(cached_val) if cached_val is not None else 0
                             p_tok, p_actual = _resolve_usage_token(p_value, prompt)
                             c_tok, c_actual = _resolve_usage_token(c_value, reply)
                             record_llm_execution(
@@ -205,7 +232,7 @@ async def _call_gemini_api(
                             try:
                                 from app.services.telemetry_store import record_llm_token_usage
                                 from app.services.admin_key_vault import record_key_consumption
-                                record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
+                                record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated", cached_tokens=cached_tok)
                                 record_key_consumption(key, p_tok + c_tok)
                             except Exception:
                                 pass
@@ -421,7 +448,9 @@ async def _call_gemini_vision_ocr(
                                 try:
                                     from app.services.telemetry_store import record_llm_token_usage
                                     from app.services.admin_key_vault import record_key_consumption
-                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
+                                    cached_val = usage.get("cachedContentTokenCount")
+                                    cached_tok = int(cached_val) if cached_val is not None else 0
+                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated", cached_tokens=cached_tok)
                                     record_key_consumption(key, p_tok + c_tok)
                                 except Exception:
                                     pass
@@ -857,7 +886,9 @@ async def query_clinical_multimodal_chat(
                                 try:
                                     from app.services.telemetry_store import record_llm_token_usage
                                     from app.services.admin_key_vault import record_key_consumption
-                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
+                                    cached_val = usage.get("cachedContentTokenCount")
+                                    cached_tok = int(cached_val) if cached_val is not None else 0
+                                    record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated", cached_tokens=cached_tok)
                                     record_key_consumption(key, p_tok + c_tok)
                                 except Exception:
                                     pass

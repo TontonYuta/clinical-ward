@@ -52,6 +52,8 @@ def init_telemetry_db() -> None:
         cols = {row[1] for row in conn.execute("PRAGMA table_info(token_ledger)").fetchall()}
         if "usage_source" not in cols:
             conn.execute("ALTER TABLE token_ledger ADD COLUMN usage_source TEXT NOT NULL DEFAULT 'provider'")
+        if "cached_tokens" not in cols:
+            conn.execute("ALTER TABLE token_ledger ADD COLUMN cached_tokens INTEGER NOT NULL DEFAULT 0")
         conn.commit()
 
 init_telemetry_db()
@@ -62,11 +64,13 @@ def record_llm_token_usage(
     model: str = "gemini-auto",
     provider: str = "gemini",
     usage_source: str = "provider",
+    cached_tokens: int = 0,
 ) -> float:
     """
     Store token counts only when supplied by provider metadata. Cost uses configured
     historical rate assumptions and exchange rate, not an invoice total:
-    - Input: $0.075 / 1M tokens
+    - Fresh Input: $0.075 / 1M tokens
+    - Cached Input: $0.01875 / 1M tokens (75% savings via Context Caching)
     - Output: $0.30 / 1M tokens
     """
     # Cost ledger is a billing record; estimated token counts belong in request
@@ -81,10 +85,12 @@ def record_llm_token_usage(
 
     p_tok = max(0, int(prompt_tokens))
     c_tok = max(0, int(completion_tokens))
+    cd_tok = max(0, min(p_tok, int(cached_tokens)))
+    fresh_p_tok = max(0, p_tok - cd_tok)
     total = p_tok + c_tok
 
-    # Estimate cost from configured rate assumptions.
-    input_usd = (p_tok / 1_000_000) * 0.075
+    # Estimate cost from configured rate assumptions with 75% Context Caching discount.
+    input_usd = (fresh_p_tok / 1_000_000) * 0.075 + (cd_tok / 1_000_000) * 0.01875
     output_usd = (c_tok / 1_000_000) * 0.30
     cost_vnd = round((input_usd + output_usd) * 25500.0, 2)
 
@@ -93,9 +99,9 @@ def record_llm_token_usage(
             conn.execute("""
                 INSERT INTO token_ledger (
                     timestamp, date_str, month_str, provider, model,
-                    prompt_tokens, completion_tokens, total_tokens, cost_vnd, usage_source
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (now, date_str, month_str, provider, model, p_tok, c_tok, total, cost_vnd, usage_source))
+                    prompt_tokens, completion_tokens, total_tokens, cost_vnd, usage_source, cached_tokens
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (now, date_str, month_str, provider, model, p_tok, c_tok, total, cost_vnd, usage_source, cd_tok))
             conn.commit()
     except Exception:
         pass
