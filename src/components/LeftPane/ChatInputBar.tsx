@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Image as ImageIcon, AlertCircle, Clock, X } from 'lucide-react';
+import { Send, Mic, MicOff, Image as ImageIcon, AlertCircle, Clock, X, Globe } from 'lucide-react';
 import { QuickSuggestionChip } from '../../types/clinical';
 import { ImageModal } from '../Modals/ImageModal';
 import { clinicalAudio } from '../../utils/audio';
@@ -14,7 +14,7 @@ import { getClipboardImageFile } from '../../utils/clipboardImage';
 const VOICE_SILENCE_DELAY_MS = 1000;
 
 interface ChatInputBarProps {
-  onSendMessage: (text: string, attachment?: any) => void;
+  onSendMessage: (text: string, attachment?: any, enableWebSearch?: boolean) => void;
   suggestionChips?: QuickSuggestionChip[];
   isProcessing: boolean;
   isAudioMuted: boolean;
@@ -43,6 +43,24 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   const [isMicWarmingUp, setIsMicWarmingUp] = useState(false);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const [liveInterimSnippet, setLiveInterimSnippet] = useState('');
+  const [isWebSearchActive, setIsWebSearchActive] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('copilot_enable_web_search') === 'true';
+      } catch {}
+    }
+    return false;
+  });
+
+  const toggleWebSearch = () => {
+    setIsWebSearchActive(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('copilot_enable_web_search', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const inputFieldRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -148,7 +166,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     setIsListening(false);
     if (!isAudioMuted) clinicalAudio.playMicBeep(false);
 
-    onSendMessage(textToSend);
+    onSendMessage(textToSend, undefined, isWebSearchActive);
   };
 
   const stopListening = () => {
@@ -194,7 +212,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       setIsMicWarmingUp(false);
       setIsUserSpeaking(false);
       setLiveInterimSnippet('');
-      onSendMessage(textToSend);
+      onSendMessage(textToSend, undefined, isWebSearchActive);
     } else {
       stopListening();
     }
@@ -432,7 +450,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     setInputText('');
     setIsCountingDown(false);
 
-    onSendMessage(textToSend);
+    onSendMessage(textToSend, undefined, isWebSearchActive);
   };
 
   return (
@@ -571,6 +589,23 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         </div>
       )}
 
+      {isWebSearchActive && (
+        <div className="flex items-center justify-between px-2.5 py-1 mb-1.5 bg-sky-50 border border-sky-300 rounded-lg text-2xs text-sky-900 animate-in fade-in shadow-2xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Globe className="w-3.5 h-3.5 text-sky-600 shrink-0 animate-pulse" />
+            <span className="font-semibold leading-tight">Đang bật tìm kiếm Web thời gian thực (Google / Cổng Bộ Y Tế)</span>
+          </div>
+          <button
+            type="button"
+            onClick={toggleWebSearch}
+            className="text-sky-700 hover:text-sky-950 font-bold px-1 cursor-pointer text-xs"
+            title="Tắt tìm kiếm Web"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2">
         <div className="relative flex-1">
           <input
@@ -583,10 +618,23 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
               hasDispatchedRef.current = false;
             }}
             placeholder={isListening ? '🎙️ Đang nghe tiếng Việt... Hãy nói câu hỏi' : 'Nhập câu hỏi hoặc yêu cầu lâm sàng...'}
-            className="w-full pl-4 pr-20 sm:pr-24 h-11 sm:h-12 text-sm sm:text-base bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
+            className="w-full pl-4 pr-24 sm:pr-28 h-11 sm:h-12 text-sm sm:text-base bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
             disabled={isProcessing}
           />
           <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
+            <button
+              type="button"
+              data-testid="chat-web-search-toggle-btn"
+              onClick={toggleWebSearch}
+              title={isWebSearchActive ? '🌐 Web Search: ĐANG BẬT (Bấm để tắt, chỉ dùng Dược Thư nội bộ)' : '🌐 Web Search: ĐANG TẮT (Bấm để bật tìm kiếm thời gian thực)'}
+              className={`p-1.5 rounded-md transition cursor-pointer ${
+                isWebSearchActive
+                  ? 'bg-sky-600 text-white shadow-2xs ring-2 ring-sky-300 hover:bg-sky-700'
+                  : 'hover:bg-slate-200 text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
             <button
               type="button"
               data-testid="chat-voice-btn"

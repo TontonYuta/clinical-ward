@@ -20,13 +20,17 @@ def post_process_copilot_response(
     resp: CopilotResponse,
     request: Request,
     payload: CopilotQuery,
+    *,
+    validator_fn=None,
 ) -> CopilotResponse:
     """
     Standardize 100% response citations, validate evidence contracts, and enrich
     safe abstention or clarification metadata.
     """
+    if validator_fn is None:
+        validator_fn = validate_response_evidence_contract
     resp = standardize_response_citations(resp, payload.query)
-    resp = validate_response_evidence_contract(resp)
+    resp = validator_fn(resp)
     route_intent = getattr(getattr(request.state, "workflow_route", None), "intent", None)
     resp = apply_reference_note(resp, getattr(request.state, "clinical_nlu_result", None), route_intent)
 

@@ -63,7 +63,7 @@ async def chat_with_copilot(
     clinical_cache = get_clinical_cache()
 
     can_use_cache = True
-    if payload.image_base64:
+    if payload.image_base64 or payload.enable_web_search:
         can_use_cache = False
     lower_q = payload.query.lower()
     if any(w in lower_q for w in (
@@ -130,7 +130,7 @@ async def chat_with_copilot(
             any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc"))
             or (session.active_medication_name and session.active_medication_name.casefold() not in lower_q)
         )
-        if not is_context_dependent and response.answer_type not in ("clarification", "safe_abstention"):
+        if not is_context_dependent and not payload.enable_web_search and response.answer_type not in ("clarification", "safe_abstention"):
             clinical_cache.set(payload.query, user_role, response)
 
     response = format_offline_drug_response(response)
@@ -203,7 +203,7 @@ async def chat_with_copilot_stream(
         clinical_cache = get_clinical_cache()
 
         can_use_cache = True
-        if payload.image_base64:
+        if payload.image_base64 or payload.enable_web_search:
             can_use_cache = False
         lower_q = payload.query.lower()
         if any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc")):
@@ -245,7 +245,7 @@ async def chat_with_copilot_stream(
                 any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc"))
                 or (session.active_medication_name and session.active_medication_name.casefold() not in lower_q)
             )
-            if not is_context_dependent and response.answer_type not in ("clarification", "safe_abstention"):
+            if not is_context_dependent and not payload.enable_web_search and response.answer_type not in ("clarification", "safe_abstention"):
                 clinical_cache.set(payload.query, user_role, response)
 
         response = format_offline_drug_response(response)

@@ -347,12 +347,16 @@ export async function chatCopilotApi(
   userName: string,
   sessionId?: string,
   imageBase64?: string,
-  imageMimeType?: string
+  imageMimeType?: string,
+  enableWebSearch?: boolean
 ) {
   const payload: any = { query, user_role: userRole, user_name: userName, session_id: sessionId };
   if (imageBase64) {
     payload.image_base64 = imageBase64;
     payload.image_mime_type = imageMimeType || 'image/jpeg';
+  }
+  if (enableWebSearch) {
+    payload.enable_web_search = true;
   }
   const res = await apiFetch(`${API_BASE_URL}/copilot/chat`, {
     method: 'POST',
@@ -374,12 +378,16 @@ export async function chatCopilotApiStream(
   sessionId?: string,
   onToken?: (token: string, currentFullText: string) => void,
   imageBase64?: string,
-  imageMimeType?: string
+  imageMimeType?: string,
+  enableWebSearch?: boolean
 ): Promise<any> {
   const payload: any = { query, user_role: userRole, user_name: userName, session_id: sessionId };
   if (imageBase64) {
     payload.image_base64 = imageBase64;
     payload.image_mime_type = imageMimeType || 'image/jpeg';
+  }
+  if (enableWebSearch) {
+    payload.enable_web_search = true;
   }
 
   let response: Response;

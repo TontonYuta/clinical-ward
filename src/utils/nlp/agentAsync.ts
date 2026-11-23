@@ -25,7 +25,8 @@ export async function processClinicalAgentQueryAsync(
   currentUserProfile?: UserProfile,
   onToken?: (token: string, currentFullText: string) => void,
   sessionId?: string,
-  attachment?: any
+  attachment?: any,
+  enableWebSearch?: boolean
 ): Promise<ProcessedQueryResult> {
   const role = currentUserProfile?.role || 'nurse';
   const name = currentUserProfile?.name || 'Điều Dưỡng Trực Ca';
@@ -93,10 +94,10 @@ export async function processClinicalAgentQueryAsync(
     const imageMimeType = attachment?.mimeType || 'image/jpeg';
     let backendData: any = null;
     try {
-      backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken, imageBase64, imageMimeType);
+      backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken, imageBase64, imageMimeType, enableWebSearch);
     } catch (streamErr) {
       console.warn('[AgentAsync] Stream call failed, falling back to direct JSON API:', streamErr);
-      backendData = await chatCopilotApi(cleanInput, role, name, activeSessionId, imageBase64, imageMimeType);
+      backendData = await chatCopilotApi(cleanInput, role, name, activeSessionId, imageBase64, imageMimeType, enableWebSearch);
     }
     if (backendData && backendData.reply_text) {
       let card: AgentActionCard | undefined = undefined;

@@ -26,7 +26,7 @@ import type { ChatbotAvailability } from '../../services/api';
 interface ChatWindowProps {
   messages: ChatMessage[]; suggestionChips: QuickSuggestionChip[];
   availabilityMode?: ChatbotAvailability['mode'];
-  onSendMessage: (text: string, attachment?: any) => void;
+  onSendMessage: (text: string, attachment?: any, enableWebSearch?: boolean) => void;
   isProcessing: boolean; isAudioMuted: boolean; onSelectTab?: (tab: DashboardTab) => void;
   currentUserRole?: UserRole; onClose?: () => void; pendingDebtsCount?: number;
   pendingAmpoulesCount?: number; urgentTicketsCount?: number; lowStockCount?: number;
@@ -77,8 +77,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const activeCits = msg?.citations || [];
     const firstCit = activeCits.length > 0 ? activeCits[0] : undefined;
 
+    const rawUrl = citationRef.url || firstCit?.url;
+    // Nếu là liên kết Web ngoài (http/https không phải file PDF nội bộ) -> Mở tab mới
+    if (rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) && !rawUrl.toLowerCase().endsWith('.pdf')) {
+      window.open(rawUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     const finalPage = citationRef.page || firstCit?.page || undefined;
-    const rawTarget = citationRef.url || firstCit?.url || citationRef.legal_basis || citationRef.title || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
+    const rawTarget = rawUrl || citationRef.legal_basis || citationRef.title || '/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf';
     const target = resolvePdfDocumentTarget(rawTarget, finalPage);
 
     // Mở trực tiếp trong In-App PDF Viewer Modal, chống chặn Pop-up và giữ nguyên ngữ cảnh chat
@@ -132,9 +139,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     onSendMessage(typeof chipOrText === 'string' ? chipOrText : chipOrText.fullPrompt);
   };
 
-  const handleSend = (text: string, attachment?: any) => {
+  const handleSend = (text: string, attachment?: any, enableWebSearch?: boolean) => {
     if (!isAudioMuted) clinicalAudio.playTelegramChime();
-    onSendMessage(text, attachment);
+    onSendMessage(text, attachment, enableWebSearch);
   };
 
   return (

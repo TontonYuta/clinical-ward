@@ -13,3 +13,4 @@ pypdf>=4.0.0
 pytest>=8.0.0
 pytest-asyncio>=1.4.0
 numpy>=2.0.0
+duckduckgo-search>=8.0.0

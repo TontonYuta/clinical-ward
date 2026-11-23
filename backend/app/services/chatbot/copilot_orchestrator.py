@@ -168,6 +168,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         if vision_resp is not None:
             return vision_resp
 
+    # NẾU BẬT TÌM KIẾM WEB THỜI GIAN THỰC (Grounded Web Search)
+    if payload.enable_web_search:
+        from app.services.chatbot.grounded_web_search_handler import handle_grounded_web_search_turn
+        web_search_resp = await handle_grounded_web_search_turn(payload, user_role=user_role)
+        if web_search_resp is not None:
+            return web_search_resp.model_copy(update={"session_id": session_id})
+
     query = guard_res.sanitized_query
     lower_query = query.lower()
 
@@ -861,5 +868,8 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
 async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
     """Entrypoint chính của Copilot: Xử lý chat và tự động chuẩn hóa 100% nguồn đối chứng (citations)."""
     resp = await _handle_copilot_chat_core(payload, request, db, session=session, history=history)
-    return post_process_copilot_response(resp, request, payload)
+    return post_process_copilot_response(
+        resp, request, payload,
+        validator_fn=validate_response_evidence_contract,
+    )
 

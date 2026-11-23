@@ -1702,7 +1702,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   };
 
   // Handler: User sends a message from Left Pane input / chips / voice / image
-  const handleSendMessage = async (inputText: string, attachment?: any) => {
+  const handleSendMessage = async (inputText: string, attachment?: any, enableWebSearch?: boolean) => {
     const trimmed = (inputText || '').trim();
     if (!trimmed) return;
 
@@ -1797,7 +1797,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           );
         },
         activeChatSessionId,
-        attachment
+        attachment,
+        enableWebSearch
       );
 
       // 3. Execute State Updates on Right Pane if actionPayload provided and NOT awaiting card confirmation

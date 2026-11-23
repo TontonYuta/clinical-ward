@@ -16,7 +16,7 @@ def _has_verified_source_version(value: object) -> bool:
 
 def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotResponse:
     """Thẩm định tính xác thực của câu trả lời dựa trên trích dẫn (citations) và bằng chứng (evidence)."""
-    if resp.intent == "MULTIMODAL_CLINICAL_VISION":
+    if resp.intent in ("MULTIMODAL_CLINICAL_VISION", "GROUNDED_WEB_SEARCH"):
         return resp
 
     non_factual_types = {
