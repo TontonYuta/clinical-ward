@@ -2,14 +2,21 @@
 Unit & Integration Tests for Clinical DDI & Polypharmacy Engine (<=195 LOC)
 """
 import pytest
-from fastapi.testclient import TestClient
+import pytest_asyncio
+from httpx import AsyncClient, ASGITransport
 from app.main import app
+from app.config import settings
+from app.security.auth import issue_token
+from app.identity_database import dispose_identity_engine
 from app.services.clinical_ddi_engine import (
     evaluate_prescription, evaluate_pair, normalize_drug_entity,
     DdiSeverity, PatientClinicalContext
 )
 
-client = TestClient(app)
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup():
+    yield
+    await dispose_identity_engine()
 
 def test_hierarchical_normalizer():
     e1 = normalize_drug_entity("Plavix 75mg uống")
@@ -117,24 +124,31 @@ def test_polypharmacy_cumulative_risk():
     rep_tw = evaluate_prescription(["Renitec 10mg", "Lasix 40mg", "Voltaren 75mg"])
     assert any(p.syndrome_id == "POLY_TRIPLE_WHAMMY" for p in rep_tw.polypharmacy_alerts)
 
-def test_clinical_ddi_api_endpoints():
-    res_pair = client.post("/api/v1/clinical-ddi/check-pair", json={
-        "drug_a": "Plavix 75mg", "drug_b": "Nexium 40mg"
-    })
-    assert res_pair.status_code == 200
-    data = res_pair.json()
-    assert data["has_interaction"] is True
-    assert data["alert"]["severity"] == "CONTRAINDICATED"
+@pytest.mark.asyncio
+async def test_clinical_ddi_api_endpoints():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        login_res = await ac.post("/api/v1/auth/login", json={"username": "admin", "password": "admin"})
+        assert login_res.status_code == 200
+        admin_headers = {"Authorization": f"Bearer {login_res.json()['token']}"}
 
-    res_audit = client.post("/api/v1/clinical-ddi/audit", json={
-        "drugs": ["Renitec", "Aldactone", "Panadol"],
-        "patient_context": {"serum_potassium": 5.4, "egfr": 40}
-    })
-    assert res_audit.status_code == 200
-    audit_data = res_audit.json()
-    assert audit_data["total_drugs"] == 3
-    assert audit_data["synergy_count"] >= 0
-    assert audit_data["has_contraindication"] is True
+        res_pair = await ac.post("/api/v1/clinical-ddi/check-pair", headers=admin_headers, json={
+            "drug_a": "Plavix 75mg", "drug_b": "Nexium 40mg"
+        })
+        assert res_pair.status_code == 200
+        data = res_pair.json()
+        assert data["has_interaction"] is True
+        assert data["alert"]["severity"] == "CONTRAINDICATED"
+
+        res_audit = await ac.post("/api/v1/clinical-ddi/audit", headers=admin_headers, json={
+            "drugs": ["Renitec", "Aldactone", "Panadol"],
+            "patient_context": {"serum_potassium": 5.4, "egfr": 40}
+        })
+        assert res_audit.status_code == 200
+        audit_data = res_audit.json()
+        assert audit_data["total_drugs"] == 3
+        assert audit_data["synergy_count"] >= 0
+        assert audit_data["has_contraindication"] is True
 
 def test_newly_registered_high_alert_ddis():
     # 1. Cordarone + Sovaldi -> Nhịp chậm nguy kịch
@@ -155,7 +169,8 @@ def test_newly_registered_high_alert_ddis():
     assert alt_allo.severity == DdiSeverity.CONTRAINDICATED
     assert "SUY TỦY" in alt_allo.title
 
-def test_custom_rule_registration_endpoint():
+@pytest.mark.asyncio
+async def test_custom_rule_registration_endpoint():
     from app.config import settings
     from app.services.clinical_ddi_engine.full_catalog import _FILE_CUSTOM
     import json
@@ -163,35 +178,55 @@ def test_custom_rule_registration_endpoint():
     with open(_FILE_CUSTOM, "r", encoding="utf-8") as f:
         original_data = json.load(f)
     try:
-        # Đăng ký tương tác mới qua API
-        res = client.post("/api/v1/clinical-ddi/register-rule", json={
-            "drug_a": "ThuocThuNghiemA",
-            "drug_b": "ThuocThuNghiemB",
-            "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
-            "consequence": "Thử nghiệm nguy cơ ngộ độc",
-            "action": "Chống chỉ định thử nghiệm",
-            "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
-        })
-        assert res.status_code == 403
-        res = client.post("/api/v1/clinical-ddi/register-rule", headers={"X-DDI-Admin-Token": "test-ddi-admin-token"}, json={
-            "drug_a": "ThuocThuNghiemA",
-            "drug_b": "ThuocThuNghiemB",
-            "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
-            "consequence": "Thử nghiệm nguy cơ ngộ độc",
-            "action": "Chống chỉ định thử nghiệm",
-            "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
-        })
-        assert res.status_code == 200
-        assert res.json()["status"] == "success"
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            # 1. Chưa đăng nhập hoặc không có quyền -> 401 hoặc 403
+            res = await ac.post("/api/v1/clinical-ddi/register-rule", json={
+                "drug_a": "ThuocThuNghiemA",
+                "drug_b": "ThuocThuNghiemB",
+                "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
+                "consequence": "Thử nghiệm nguy cơ ngộ độc",
+                "action": "Chống chỉ định thử nghiệm",
+                "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
+            })
+            assert res.status_code in {401, 403}
 
-        # Kiểm tra check-pair phát hiện ngay lập tức
-        chk = client.post("/api/v1/clinical-ddi/check-pair", json={
-            "drug_a": "ThuocThuNghiemA 100mg",
-            "drug_b": "ThuocThuNghiemB 50mg"
-        })
-        assert chk.status_code == 200
-        assert chk.json()["has_interaction"] is True
-        assert "Thử nghiệm" in chk.json()["alert"]["mechanism"]
+            # 2. Không có token nội bộ hoặc quyền director -> 401 hoặc 403
+            nurse_token = issue_token("nurse_demo", "nurse", settings.SECRET_KEY)
+            res_nurse = await ac.post("/api/v1/clinical-ddi/register-rule", headers={"Authorization": f"Bearer {nurse_token}"}, json={
+                "drug_a": "ThuocThuNghiemA",
+                "drug_b": "ThuocThuNghiemB",
+                "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
+                "consequence": "Thử nghiệm nguy cơ ngộ độc",
+                "action": "Chống chỉ định thử nghiệm",
+                "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
+            })
+            assert res_nurse.status_code in {401, 403}
+
+            # 3. Đăng ký tương tác qua token nội bộ
+            res = await ac.post("/api/v1/clinical-ddi/register-rule", headers={"X-DDI-Admin-Token": "test-ddi-admin-token"}, json={
+                "drug_a": "ThuocThuNghiemA",
+                "drug_b": "ThuocThuNghiemB",
+                "mechanism": "Thử nghiệm cơ chế ức chế cạnh tranh",
+                "consequence": "Thử nghiệm nguy cơ ngộ độc",
+                "action": "Chống chỉ định thử nghiệm",
+                "evidence_source": "Quy chế Bệnh viện Đa khoa 2026"
+            })
+            assert res.status_code == 200
+            assert res.json()["status"] == "success"
+
+            # 4. Kiểm tra check-pair phát hiện ngay lập tức
+            login_res = await ac.post("/api/v1/auth/login", json={"username": "admin", "password": "admin"})
+            assert login_res.status_code == 200
+            admin_headers = {"Authorization": f"Bearer {login_res.json()['token']}"}
+
+            chk = await ac.post("/api/v1/clinical-ddi/check-pair", headers=admin_headers, json={
+                "drug_a": "ThuocThuNghiemA 100mg",
+                "drug_b": "ThuocThuNghiemB 50mg"
+            })
+            assert chk.status_code == 200
+            assert chk.json()["has_interaction"] is True
+            assert "Thử nghiệm" in chk.json()["alert"]["mechanism"]
     finally:
         with open(_FILE_CUSTOM, "w", encoding="utf-8") as f:
             json.dump(original_data, f, ensure_ascii=False, indent=2)

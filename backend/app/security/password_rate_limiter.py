@@ -76,5 +76,6 @@ class PasswordRateLimiter:
             self._lockouts.clear()
 
 
-# Global singleton instance
+# Global singleton instances
 password_rate_limiter = PasswordRateLimiter()
+login_rate_limiter = PasswordRateLimiter(max_attempts=5, lockout_seconds=300)  # 5 lần sai -> khóa 5 phút (300s)

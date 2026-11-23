@@ -269,6 +269,9 @@ async def refresh_login_session(user: AuthenticatedUser, token: str) -> str:
 
 
 async def validate_user_session(user: AuthenticatedUser, token: str) -> bool:
+    from app.security.auth import is_token_revoked
+    if is_token_revoked(token):
+        return False
     if not settings.IDENTITY_DATABASE_URL:
         return True
     from app.identity_database import get_identity_session_factory
@@ -286,10 +289,17 @@ async def validate_user_session(user: AuthenticatedUser, token: str) -> bool:
 
 
 async def revoke_user_session(token: str) -> None:
-    if not token or not settings.IDENTITY_DATABASE_URL:
+    if not token:
+        return
+    from app.security.auth import revoke_token
+    revoke_token(token)
+    if not settings.IDENTITY_DATABASE_URL:
         return
     from app.identity_database import get_identity_session_factory
     from app.services.identity_service import revoke_identity_session
-    _, session_factory = get_identity_session_factory()
-    async with session_factory() as session:
-        await revoke_identity_session(session, token)
+    try:
+        _, session_factory = get_identity_session_factory()
+        async with session_factory() as session:
+            await revoke_identity_session(session, token)
+    except Exception:
+        pass

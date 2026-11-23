@@ -1,13 +1,14 @@
 """Staff authentication HTTP endpoints."""
 import json
 import time
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
 from app.security.auth import verify_token
+from app.security.password_rate_limiter import login_rate_limiter
 from app.services.auth_service import (
     authenticate_user, create_login_session, refresh_login_session, revoke_user_session, validate_user_session,
     get_user_profile_data, AuthenticatedUser
@@ -15,17 +16,21 @@ from app.services.auth_service import (
 
 router = APIRouter(prefix="/auth", tags=["Staff authentication"])
 
-_LOGIN_CACHE: dict[str, tuple[float, dict]] = {}
-_LOGIN_CACHE_TTL = 300.0  # 5 phút
+def _extract_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "127.0.0.1"
 
+# Bộ nhớ đệm phiên xác thực an toàn (không lưu mật khẩu trong RAM)
 def invalidate_login_cache(username: str | None = None) -> None:
-    """Xóa bộ nhớ đệm đăng nhập khi đổi mật khẩu hoặc đổi trạng thái nhân sự."""
-    global _LOGIN_CACHE
-    if username is None:
-        _LOGIN_CACHE.clear()
+    """Xóa bộ nhớ đệm và reset rate limiter khi đổi mật khẩu hoặc đổi trạng thái nhân sự."""
+    if username:
+        clean = username.strip().lower()
+        login_rate_limiter.record_success(f"127.0.0.1:{clean}")
+        login_rate_limiter.record_success(clean)
     else:
-        prefix = f"{username.strip().lower()}:"
-        _LOGIN_CACHE = {k: v for k, v in _LOGIN_CACHE.items() if not k.lower().startswith(prefix)}
+        login_rate_limiter.reset_all()
 
 DEMO_ROLES = {
     "admin": "director",
@@ -50,18 +55,38 @@ async def login(payload: LoginRequest, request: Request, response: Response):
     if origin and origin.rstrip("/") not in trusted:
         raise HTTPException(status_code=403, detail="Cross-origin request rejected")
 
-    clean_user = (payload.username or "").strip()
-    cache_key = f"{clean_user}:{payload.password}"
-    now = time.time()
-    if cache_key in _LOGIN_CACHE:
-        c_time, c_data = _LOGIN_CACHE[cache_key]
-        if now - c_time < _LOGIN_CACHE_TTL:
-            _set_session_cookie(response, c_data["token"])
-            return c_data
+    # Rate Limiting: Chống Brute Force mật khẩu (5 lần sai -> khóa 5 phút)
+    client_ip = _extract_client_ip(request)
+    clean_user = (payload.username or "").strip().lower()
+    rate_limit_key = f"{client_ip}:{clean_user}"
+
+    is_blocked, remaining = login_rate_limiter.check_rate_limit(rate_limit_key)
+    if is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Quá nhiều lần đăng nhập không thành công. Tài khoản tạm thời bị khóa trong {remaining} giây.",
+            headers={"Retry-After": str(remaining)}
+        )
 
     user = await authenticate_user(payload.username, payload.password)
     if user is None:
-        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác")
+        failures = login_rate_limiter.record_failure(rate_limit_key)
+        if failures >= login_rate_limiter.max_attempts:
+            _, remaining = login_rate_limiter.check_rate_limit(rate_limit_key)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Quá nhiều lần đăng nhập không thành công ({failures}/{login_rate_limiter.max_attempts} lần). Tài khoản tạm thời bị khóa trong {remaining} giây.",
+                headers={"Retry-After": str(remaining)}
+            )
+        remaining_attempts = login_rate_limiter.max_attempts - failures
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Tên đăng nhập hoặc mật khẩu không chính xác. Còn lại {remaining_attempts} lần thử."
+        )
+
+    # Đăng nhập thành công -> Xóa bộ đếm số lần sai
+    login_rate_limiter.record_success(rate_limit_key)
+
     token, _ = await create_login_session(user)
     _set_session_cookie(response, token)
     profile = await get_user_profile_data(user.username)
@@ -72,8 +97,6 @@ async def login(payload: LoginRequest, request: Request, response: Response):
         "role_name": profile.get("role_name") or user.role_name or ("Bác Sĩ Điều Trị" if user.role == "doctor" else "Điều Dưỡng Ca Trực"),
         "department": profile.get("department") or user.department or "Khoa Lâm Sàng",
         "practice_certificate": profile.get("practice_certificate") or user.practice_certificate or "000000/BYT-CCHN",
-        "pin_code": profile.get("pin_code") or user.pin_code or "1234",
-        "rfid_card_id": profile.get("rfid_card_id") or user.rfid_card_id or "RFID-STAFF",
         "academic_title": profile.get("academic_title") or user.academic_title,
         "avatar_url": profile.get("avatar_url") or user.avatar_url,
         "email": profile.get("email") or user.email,
@@ -84,7 +107,6 @@ async def login(payload: LoginRequest, request: Request, response: Response):
         "expires_in": settings.AUTH_TOKEN_TTL_SECONDS,
         "token": token,
     }
-    _LOGIN_CACHE[cache_key] = (now, res_data)
     return res_data
 
 
@@ -111,8 +133,6 @@ async def auth_me(request: Request):
         "role_name": profile.get("role_name") or user.role_name or ("Bác Sĩ Điều Trị" if user.role == "doctor" else "Điều Dưỡng Ca Trực"),
         "department": profile.get("department") or user.department or "Khoa Lâm Sàng",
         "practice_certificate": profile.get("practice_certificate") or user.practice_certificate or "000000/BYT-CCHN",
-        "pin_code": profile.get("pin_code") or user.pin_code or "1234",
-        "rfid_card_id": profile.get("rfid_card_id") or user.rfid_card_id or "RFID-STAFF",
         "academic_title": profile.get("academic_title") or user.academic_title,
         "avatar_url": profile.get("avatar_url") or user.avatar_url,
         "email": profile.get("email") or user.email,

@@ -166,7 +166,21 @@
       "representation": "source_pdf",
       "status": "active",
       "verified": true,
-      "verified_at": "2026-11-20T13:55:16Z"
+      "verified_at": "2026-11-22T17:53:36Z"
+    },
+    {
+      "id": "main",
+      "title": "Báo cáo rác",
+      "edition_year": 2026,
+      "category": "Khác",
+      "legal_basis": "không có",
+      "public_path": "public/pdf/main.pdf",
+      "backend_copy": "backend/data/knowledge_base/main.pdf",
+      "sha256": "e55de6b1413556a4c7dae18d38a27d12b4ce26d7fd1c115d9533a8495feb5e93",
+      "bytes": 571047,
+      "representation": "source_pdf",
+      "status": "staged",
+      "verified": true
     }
   ]
 }

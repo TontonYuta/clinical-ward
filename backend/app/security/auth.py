@@ -11,6 +11,7 @@ import secrets
 import time
 import uuid
 from dataclasses import dataclass
+from threading import Lock
 
 from fastapi import HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -97,6 +98,59 @@ def safe_hash_password(password: str) -> str:
         return hash_password(password)
 
 
+_REVOKED_TOKENS: dict[str, float] = {}
+_REVOCATION_LOCK = Lock()
+
+
+def revoke_token(token: str) -> None:
+    """Thu hồi token ngay lập tức và lưu vào blacklist cho đến khi token tự hết hạn."""
+    if not token or not token.strip():
+        return
+    token_str = token.strip()
+    token_hash = hashlib.sha256(token_str.encode()).hexdigest()
+    expiry = time.time() + 3600.0
+    try:
+        encoded, _ = token_str.split(".", 1)
+        payload = json.loads(_unb64(encoded))
+        exp = float(payload.get("exp", 0))
+        if exp > time.time():
+            expiry = exp
+    except Exception:
+        pass
+
+    now = time.time()
+    with _REVOCATION_LOCK:
+        # Tự động dọn dẹp các token đã quá hạn tự nhiên để tránh rò rỉ RAM
+        expired_keys = [k for k, exp_time in _REVOKED_TOKENS.items() if exp_time <= now]
+        for k in expired_keys:
+            del _REVOKED_TOKENS[k]
+        _REVOKED_TOKENS[token_hash] = expiry
+
+
+def is_token_revoked(token: str) -> bool:
+    """Kiểm tra xem token đã bị hủy bỏ/thu hồi trong blacklist chưa."""
+    if not token or not token.strip():
+        return False
+    token_str = token.strip()
+    token_hash = hashlib.sha256(token_str.encode()).hexdigest()
+    now = time.time()
+    with _REVOCATION_LOCK:
+        expiry = _REVOKED_TOKENS.get(token_hash)
+        if expiry is not None:
+            if now < expiry:
+                return True
+            else:
+                del _REVOKED_TOKENS[token_hash]
+                return False
+    return False
+
+
+def clear_revoked_tokens() -> None:
+    """Xóa toàn bộ blacklist token (dùng cho unit tests)."""
+    with _REVOCATION_LOCK:
+        _REVOKED_TOKENS.clear()
+
+
 def issue_token(username: str, role: str, secret_key: str, ttl_seconds: int = 3600, session_id: str | None = None) -> str:
     payload = {"sub": username, "role": role, "exp": int(time.time()) + ttl_seconds, "jti": uuid.uuid4().hex}
     if session_id:
@@ -107,6 +161,8 @@ def issue_token(username: str, role: str, secret_key: str, ttl_seconds: int = 36
 
 
 def verify_token(token: str, secret_key: str) -> AuthenticatedUser | None:
+    if is_token_revoked(token):
+        return None
     try:
         encoded, signature = token.split(".", 1)
         expected = hmac.new(secret_key.encode(), encoded.encode(), hashlib.sha256).digest()
@@ -207,13 +263,21 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         from app.config import settings
         user = verify_token(token or "", self.secret_key) or verify_token(token or "", settings.SECRET_KEY)
         if user is None:
-            if not settings.AUTH_REQUIRED:
+            internal_ddi_token = request.headers.get("x-ddi-admin-token")
+            if (
+                request.url.path == "/api/v1/clinical-ddi/register-rule"
+                and settings.DDI_ADMIN_TOKEN
+                and internal_ddi_token
+                and secrets.compare_digest(internal_ddi_token, settings.DDI_ADMIN_TOKEN)
+            ):
+                user = AuthenticatedUser(username="ddi_internal_service", role="director", session_id="ddi_internal_session")
+            elif not settings.AUTH_REQUIRED:
                 user = AuthenticatedUser(username="test_director", role="director", session_id="sandbox_session")
             else:
                 return JSONResponse({"detail": "Authentication required"}, status_code=401, headers={"WWW-Authenticate": "Bearer"})
         if self.identity_store_enabled:
             from app.config import settings
-            if (not settings.AUTH_REQUIRED and getattr(user, "session_id", None) == "sandbox_session") or not settings.IDENTITY_DATABASE_URL:
+            if (getattr(user, "session_id", None) in {"sandbox_session", "ddi_internal_session"}) or not settings.IDENTITY_DATABASE_URL:
                 pass
             else:
                 if not user.session_id:
@@ -228,13 +292,13 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     return JSONResponse({"detail": "Identity service unavailable"}, status_code=503)
                 if not is_valid:
                     from app.services.auth_service import get_user_profile_data
-                    profile = await get_user_profile_data(user.username)
+                    profile = (await get_user_profile_data(user.username)) or {}
                     if not profile or not profile.get("is_active", True):
                         return JSONResponse({"detail": "Identity session expired or revoked"}, status_code=401)
         if not self._role_allowed(request.method, request.url.path, user.role):
             return JSONResponse({"detail": "Role is not authorized for this operation"}, status_code=403)
         from app.services.auth_service import get_user_profile_data
-        profile = await get_user_profile_data(user.username)
+        profile = (await get_user_profile_data(user.username)) or {}
         request.state.authenticated_user = AuthenticatedUser(
             username=user.username,
             role=user.role,
@@ -286,6 +350,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return False
         if suffix in {"/clinical-ddi/audit", "/clinical-ddi/check-pair", "/clinical-ddi/normalize"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
+        if suffix == "/clinical-ddi/register-rule":
+            return role in {"pharmacist", "director"}
         if suffix in {"/copilot/chat", "/copilot/chat/stream", "/copilot/rag"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
         for prefix, allowed_roles in prefixes.items():

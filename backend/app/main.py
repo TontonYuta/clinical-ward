@@ -252,7 +252,7 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-DDI-Admin-Token"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # GZip Response Compression (Tiết kiệm 70-80% băng thông mạng cho payload lớn)

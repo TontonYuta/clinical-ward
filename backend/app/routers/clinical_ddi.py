@@ -4,7 +4,7 @@ Căn cứ pháp lý: QĐ 5948/QĐ-BYT, QĐ 2033/QĐ-BYT (Dược thư Quốc gia
 """
 from typing import Optional
 import secrets
-from fastapi import APIRouter, Query, HTTPException, status, Header
+from fastapi import APIRouter, Query, HTTPException, status, Header, Request
 from app.config import settings
 from pydantic import BaseModel, Field
 from app.services.clinical_ddi_engine import (
@@ -170,10 +170,16 @@ class RegisterCustomRuleRequest(BaseModel):
     evidence_source: str = Field(..., description="Nguồn căn cứ y văn")
 
 @router.post("/register-rule")
-def register_rule_endpoint(req: RegisterCustomRuleRequest, admin_token: Optional[str] = Header(None, alias="X-DDI-Admin-Token")):
-    # Catalog mutation is an administrative operation. Never accept it when
-    # no server-side token is configured, and compare tokens in constant time.
-    if not settings.DDI_ADMIN_TOKEN or not admin_token or not secrets.compare_digest(admin_token, settings.DDI_ADMIN_TOKEN):
+def register_rule_endpoint(
+    req: RegisterCustomRuleRequest,
+    request: Request,
+    admin_token: Optional[str] = Header(None, alias="X-DDI-Admin-Token"),
+):
+    user = getattr(request.state, "authenticated_user", None)
+    is_admin_user = bool(user and getattr(user, "role", None) in {"director", "pharmacist"})
+    is_valid_internal_token = bool(settings.DDI_ADMIN_TOKEN and admin_token and secrets.compare_digest(admin_token, settings.DDI_ADMIN_TOKEN))
+
+    if not (is_admin_user or is_valid_internal_token):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="DDI catalog mutation is not authorized")
     entry = register_custom_ddi(
         drug_a=req.drug_a, drug_b=req.drug_b,

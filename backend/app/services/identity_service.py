@@ -69,6 +69,19 @@ async def get_active_provider_key(session: AsyncSession, provider: str = "gemini
         raw = decrypt_secret(row.encrypted_key, settings.KEY_ENCRYPTION_KEY)
         if len(raw.strip()) >= 10:
             return raw.strip()
+
+    # Tự động tự phục hồi (Self-Healing Recovery):
+    # Nếu không có khóa nào đang active (ví dụ do xoay vòng tạm thời khi gặp 429),
+    # tự động kích hoạt lại khóa lành lặn đầu tiên trong bể để không làm gián đoạn AI
+    fallback_rows = (await session.scalars(select(ProviderApiKey).where(
+        ProviderApiKey.provider == provider, ProviderApiKey.status == "active"
+    ).order_by(ProviderApiKey.created_at))).all()
+    for row in fallback_rows:
+        raw = decrypt_secret(row.encrypted_key, settings.KEY_ENCRYPTION_KEY)
+        if len(raw.strip()) >= 10:
+            row.is_active = True
+            await session.commit()
+            return raw.strip()
     return None
 
 

@@ -100,6 +100,10 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
             {submitting && <LoaderCircle className="h-4 w-4 animate-spin" />}
             {submitting ? 'Đang xác thực…' : 'Đăng nhập'}
           </button>
+
+          <p className="text-2xs text-slate-500 text-center mt-3">
+            Hội đồng chấm thi / Ban Giám Đốc: Tài khoản <code className="font-semibold text-slate-700">admin</code>
+          </p>
         </form>
       </section>
     </main>

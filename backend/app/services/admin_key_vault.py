@@ -471,6 +471,7 @@ async def auto_heartbeat_all_keys() -> List[Dict[str, Any]]:
             factory = get_identity_session_factory()[1]
             async with factory() as session:
                 db_rows = (await session.scalars(select(ProviderApiKey).order_by(ProviderApiKey.created_at))).all()
+                active_candidate = None
                 for row in db_rows:
                     if not row.encrypted_key:
                         continue
@@ -481,12 +482,25 @@ async def auto_heartbeat_all_keys() -> List[Dict[str, Any]]:
                     row.latency_ms = latency
                     if success:
                         row.status = "active"
+                        row.quota_status = f"15 RPM / Normal ({latency}ms)"
+                        if not active_candidate or (row.latency_ms and row.latency_ms < getattr(active_candidate, "latency_ms", 999999)):
+                            active_candidate = row
                     elif "429" in msg:
                         row.status = "rate_limited"
+                        row.is_active = False
                     else:
                         row.status = "error"
+                if active_candidate:
+                    active_candidate.is_active = True
                 await session.commit()
-            return get_all_masked_keys()
+                from app.services.identity_service import list_provider_keys
+                from app.routers.availability import invalidate_availability_cache
+                invalidate_availability_cache()
+                res = await list_provider_keys(session)
+                sys_item = get_system_env_key_item(res)
+                if sys_item:
+                    res.append(sys_item)
+                return res
         except Exception as e:
             logger.warning(f"[KeyVault] Lỗi auto heartbeat: {e}")
 

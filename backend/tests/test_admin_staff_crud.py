@@ -135,7 +135,7 @@ async def test_create_and_update_and_soft_delete_staff():
         assert user_info["name"] == "BSCKII. Hoàng Minh Tuấn"
         assert user_info["department"] == "Khoa Ngoại Chấn Thương"
         assert user_info["practice_certificate"] == unique_cchn
-        assert user_info["pin_code"] == "5555"
+        assert "pin_code" not in user_info  # Sensitive PIN is protected and not leaked in login response
 
         # Verify /auth/me returns the identical full profile
         user_token = user_info["token"]

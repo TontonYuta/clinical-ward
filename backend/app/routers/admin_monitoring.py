@@ -210,6 +210,25 @@ async def test_api_key_connection(payload: TestKeyRequest):
         raise HTTPException(status_code=400, detail="Thiếu thông tin API Key để kiểm tra")
 
     ok, msg, lat, models = await ping_test_gemini_key(raw_key)
+    if ok and payload.key_id:
+        from app.config import settings
+        if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
+            from app.identity_database import get_identity_session_factory
+            from app.models.identity import ProviderApiKey
+            from sqlalchemy import select
+            factory = get_identity_session_factory()[1]
+            async with factory() as session:
+                target_row = await session.get(ProviderApiKey, payload.key_id)
+                if target_row:
+                    target_row.status = "active"
+                    target_row.latency_ms = lat
+                    target_row.quota_status = f"15 RPM / Normal ({lat}ms)"
+                    active_keys = (await session.scalars(select(ProviderApiKey).where(ProviderApiKey.is_active.is_(True)))).all()
+                    if not active_keys or target_row not in active_keys:
+                        target_row.is_active = True
+                    await session.commit()
+        from app.routers.availability import invalidate_availability_cache
+        invalidate_availability_cache()
     return TestKeyResponse(
         success=ok,
         status="active" if ok else "failed",
