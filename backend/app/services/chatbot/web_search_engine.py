@@ -110,7 +110,8 @@ async def search_serper(
     """
     Tìm kiếm qua Serper.dev REST API (Google Search kết quả thật, ổn định trên VPS/Cloud).
     """
-    key = api_key or os.getenv("SERPER_API_KEY", "").strip()
+    from app.services.admin_key_vault import get_active_api_key
+    key = api_key or os.getenv("SERPER_API_KEY", "").strip() or (get_active_api_key(provider="serper") or "").strip()
     if not key or key == "YOUR_SERPER_API_KEY":
         raise ValueError("Chưa cấu hình SERPER_API_KEY")
 
@@ -170,8 +171,8 @@ def _ddgs_sync_search(query: str, max_results: int = 5) -> List[WebSearchResult]
     """Thực thi tìm kiếm DuckDuckGo đồng bộ (chạy trong worker thread)."""
     try:
         from duckduckgo_search import DDGS
-        with DDGS() as ddgs:
-            raw_items = list(ddgs.text(query, region="vn-vi", max_results=max_results))
+        with DDGS(timeout=5) as ddgs:
+            raw_items = list(ddgs.text(query, max_results=max_results))
             results: List[WebSearchResult] = []
             for r in raw_items:
                 link = r.get("href", "").strip()
