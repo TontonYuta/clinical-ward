@@ -12,8 +12,13 @@ from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from app.main import app
 from app.schemas.copilot import CopilotQuery
+from app.config import settings
 
 client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def disable_auth_for_vision_tests(monkeypatch):
+    monkeypatch.setattr(settings, "AUTH_REQUIRED", False)
 
 # 1x1 transparent png for test fixture
 DUMMY_PNG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="

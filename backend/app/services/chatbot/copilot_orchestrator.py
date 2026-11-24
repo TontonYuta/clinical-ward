@@ -171,8 +171,12 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
     # NẾU BẬT TÌM KIẾM WEB THỜI GIAN THỰC (Grounded Web Search)
     if payload.enable_web_search:
         from app.services.chatbot.grounded_web_search_handler import handle_grounded_web_search_turn
-        web_search_resp = await handle_grounded_web_search_turn(payload, user_role=user_role)
+        web_search_resp = await handle_grounded_web_search_turn(
+            payload, user_role=user_role, session=session, history=history
+        )
         if web_search_resp is not None:
+            if session is not None and hasattr(session, "append_conversation_turn"):
+                session.append_conversation_turn(payload.query, web_search_resp.reply_text)
             return web_search_resp.model_copy(update={"session_id": session_id})
 
     query = guard_res.sanitized_query
