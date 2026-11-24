@@ -279,8 +279,10 @@ async def _call_gemini_api(
                     else:
                         logger.warning("Không còn khóa API dự phòng khả dụng trong Key Pool cho model %s. Thử model tiếp theo.", model)
                         continue
+                else:
+                    logger.warning("Gemini model %s returned HTTP %s: %s", model, res.status_code, (getattr(res, "text", "") or "")[:160])
             except Exception as e:
-                logger.debug("Gemini model %s attempt failed: %s", model, e)
+                logger.warning("Gemini model %s attempt failed (%s): %s", model, type(e).__name__, e)
                 continue
     return None
 

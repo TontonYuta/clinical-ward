@@ -65,6 +65,7 @@ def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotRespons
         resp.evidence = []
         resp.claims = []
         resp.evidence_claim_map = {}
+        resp.suggested_chips = []
         is_explicit_explanation = any(
             phrase in (resp.reply_text or "").casefold()
             for phrase in ("thiếu nguồn", "chưa thể xác minh", "chưa tìm thấy", "unable to resolve", "vui lòng", "không thể")

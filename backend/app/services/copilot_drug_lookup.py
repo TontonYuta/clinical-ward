@@ -32,6 +32,8 @@ def _attach_database_claims(response: CopilotResponse) -> CopilotResponse:
         response.rag_grounded = False
         response.citations = []
         response.evidence = []
+        response.suggested_chips = []
+        response.active_medication_name = None
         response.abstention_reason = "Không có trường dữ liệu với provenance đã xác minh để hỗ trợ câu trả lời"
         response.reply_text = "Chưa thể xác minh nội dung tra cứu từ bản ghi có provenance trong cơ sở dữ liệu hiện tại."
     return response

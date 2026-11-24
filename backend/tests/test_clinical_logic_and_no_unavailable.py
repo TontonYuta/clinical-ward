@@ -164,3 +164,33 @@ async def test_explanatory_drug_query_synthesizes_natural_focused_answer(monkeyp
     assert resp.reply_text.startswith("Không được dùng Aspirin")
     assert "Đối chiếu nguyên văn Dược Thư" in resp.reply_text
     mock_synth.assert_awaited_once()
+
+
+def test_trie_matcher_does_not_extract_generic_giai_doc_as_drug():
+    """Verify generic medical terms like 'giải độc' are never matched as herbal brand names."""
+    from app.services.chatbot.lexical_trie_matcher import DrugLexicalMatcher
+    matcher = DrugLexicalMatcher()
+    matcher.load_from_db()
+    q = "Khi một bệnh nhân uống quá liều thuốc giảm đau, hạ sốt paracetamol (acetaminophen) dẫn đến nguy cơ hoại tử gan cấp tính, thuốc giải độc đặc hiệu nào được chỉ định?"
+    meds = matcher.extract_medications(q)
+    assert any("paracetamol" in m.lower() for m in meds)
+    assert not any("giải độc" in m.lower() for m in meds)
+
+
+def test_attach_database_claims_clears_chips_on_abstention():
+    """Verify safe_abstention due to missing provenance clears stale suggested_chips."""
+    from app.services.copilot_drug_lookup import _attach_database_claims
+    resp = CopilotResponse(
+        intent="MEDICATION_SAFETY_PROFILE",
+        reply_text="Nội dung chưa xác minh",
+        answer_type="medication_summary",
+        rag_grounded=True,
+        suggested_chips=["Thuốc giải độc đặc hiệu cho Giải độc gan xuân quang"],
+        active_medication_name="Giải độc gan xuân quang",
+        citations=[],
+        evidence=[],
+    )
+    out = _attach_database_claims(resp)
+    assert out.answer_type == "safe_abstention"
+    assert out.suggested_chips == []
+    assert out.active_medication_name is None
