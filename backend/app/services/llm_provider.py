@@ -173,7 +173,8 @@ async def _call_gemini_api(
 
     deadline = time.monotonic() + timeout_sec
     headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(timeout=httpx.Timeout(min(12.0, timeout_sec), connect=3.0)) as client:
+    req_client_timeout = max(15.0, timeout_sec)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(req_client_timeout, connect=5.0)) as client:
         for model in models:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -198,7 +199,7 @@ async def _call_gemini_api(
                     url,
                     headers=headers,
                     json=active_payload,
-                    timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
+                    timeout=httpx.Timeout(remaining, connect=min(5.0, remaining))
                 )
 
                 # 2. Transparent Fallback: Nếu dùng cachedContent bị từ chối (HTTP 400/404), gọi lại bằng payload chuẩn
@@ -208,7 +209,7 @@ async def _call_gemini_api(
                         url,
                         headers=headers,
                         json=payload,
-                        timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining))
+                        timeout=httpx.Timeout(remaining, connect=min(5.0, remaining))
                     )
 
                 if res.status_code == 200:
@@ -255,7 +256,7 @@ async def _call_gemini_api(
                         key = next_key
                         headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
                         retry_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-                        retry_res = await client.post(retry_url, headers=headers, json=payload, timeout=httpx.Timeout(min(12.0, remaining), connect=min(3.0, remaining)))
+                        retry_res = await client.post(retry_url, headers=headers, json=payload, timeout=httpx.Timeout(remaining, connect=min(5.0, remaining)))
                         if retry_res.status_code == 200:
                             data = retry_res.json()
                             candidates = data.get("candidates", [])
