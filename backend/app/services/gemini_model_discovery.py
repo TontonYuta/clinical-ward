@@ -33,7 +33,7 @@ SAFE_FALLBACK_GEMINI_MODELS = [
 DISALLOWED_SUBSTRINGS = (
     "-tts", "preview-tts", "embedding", "aqa", "imagen", "whisper",
     "robotics", "computer-vision-internal", "-image", "flash-image",
-    "-omni", "omni-", "live"
+    "-omni", "omni-", "live", "2.5-flash-lite"
 )
 
 
@@ -81,9 +81,16 @@ def filter_and_rank_gemini_models(raw_models: List[str]) -> List[str]:
 
         if "flash" in lower:
             base_score += 100.0
-            # Các dòng Flash Lite được Google cấp hạn ngạch RPD gấp 25x (500/ngày vs 20/ngày) và RPM 3x (15/phút)
+            # Các dòng Flash Lite 3.x được Google cấp hạn ngạch RPD gấp 25x (500/ngày) và RPM 3x (15/phút)
             if "lite" in lower:
-                base_score += 60.0
+                if "3.5" in lower:
+                    base_score += 55.0
+                elif "3." in lower:
+                    base_score += 45.0
+                else:
+                    base_score += 10.0
+            if "latest" in lower:
+                base_score -= 25.0
             if any(term in lower for term in ("preview", "experimental", "exp", "thinking")):
                 base_score -= 50.0
         elif "pro" in lower:

@@ -169,11 +169,15 @@ async def _call_gemini_api(
     deadline = time.monotonic() + timeout_sec
     headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
     req_client_timeout = max(15.0, timeout_sec)
+    dead_models = globals().setdefault("_DEAD_GEMINI_MODELS", set())
     async with httpx.AsyncClient(timeout=httpx.Timeout(req_client_timeout, connect=5.0)) as client:
         for model in models:
+            if model in dead_models:
+                continue
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
+            per_model_timeout = min(remaining, 7.0)
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
             # 1. Thử nghiệm Context Caching để tiết kiệm 75% chi phí input token
@@ -194,7 +198,7 @@ async def _call_gemini_api(
                     url,
                     headers=headers,
                     json=active_payload,
-                    timeout=httpx.Timeout(remaining, connect=min(5.0, remaining))
+                    timeout=httpx.Timeout(per_model_timeout, connect=min(4.0, per_model_timeout))
                 )
 
                 # 2. Transparent Fallback: Nếu dùng cachedContent bị từ chối (HTTP 400/404), gọi lại bằng payload chuẩn
@@ -204,7 +208,7 @@ async def _call_gemini_api(
                         url,
                         headers=headers,
                         json=payload,
-                        timeout=httpx.Timeout(remaining, connect=min(5.0, remaining))
+                        timeout=httpx.Timeout(per_model_timeout, connect=min(4.0, per_model_timeout))
                     )
 
                 if res.status_code == 200:
@@ -280,6 +284,8 @@ async def _call_gemini_api(
                         logger.warning("Không còn khóa API dự phòng khả dụng trong Key Pool cho model %s. Thử model tiếp theo.", model)
                         continue
                 else:
+                    if res.status_code == 404:
+                        dead_models.add(model)
                     logger.warning("Gemini model %s returned HTTP %s: %s", model, res.status_code, (getattr(res, "text", "") or "")[:160])
             except Exception as e:
                 logger.warning("Gemini model %s attempt failed (%s): %s", model, type(e).__name__, e)
