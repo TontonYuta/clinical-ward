@@ -128,14 +128,15 @@ export default function App({
     handleDeleteSession,
     handleRenameSession,
     handleClearCurrentMessages,
+    handleClearAllHistory,
     isSyncing,
     triggerManualSync
   } = useUserChatSessions(authenticatedUsername);
   const [isLauncherWebSearch, setIsLauncherWebSearch] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('copilot_enable_web_search') === 'true';
+      return localStorage.getItem('copilot_enable_web_search') !== 'false';
     } catch {
-      return false;
+      return true;
     }
   });
   useEffect(() => {
@@ -1947,13 +1948,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           onClearMessages={() => {
             clearStoredChatMessages();
             handleClearCurrentMessages();
-            void resetUserSessionWebCache(activeChatSessionId);
           }}
           onClearAllHistory={() => {
             clearStoredChatMessages();
-            chatSessions.forEach((s) => handleDeleteSession(s.id));
-            handleClearCurrentMessages();
-            void resetUserSessionWebCache(activeChatSessionId);
+            handleClearAllHistory();
           }}
           sessions={chatSessions}
           activeSessionId={activeChatSessionId}
@@ -2246,13 +2244,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             onClearMessages={() => {
               clearStoredChatMessages();
               handleClearCurrentMessages();
-              void resetUserSessionWebCache(activeChatSessionId);
             }}
             onClearAllHistory={() => {
               clearStoredChatMessages();
-              chatSessions.forEach((s) => handleDeleteSession(s.id));
-              handleClearCurrentMessages();
-              void resetUserSessionWebCache(activeChatSessionId);
+              handleClearAllHistory();
             }}
             onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
             onOpenLegalDocs={() => setIsLegalDocsOpen(true)}

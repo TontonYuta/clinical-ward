@@ -502,6 +502,24 @@ class CopilotSessionSummary(BaseModel):
     messages: list[CopilotMessageItem]
 
 
+def _resolve_user_identity_names(request: Request) -> tuple[list[str], list[str]]:
+    """Trả về (danh sách tên user_name thường gặp, danh sách prefix session_id) của người dùng hiện hành."""
+    authenticated = getattr(request.state, "authenticated_user", None)
+    names: list[str] = []
+    if authenticated:
+        uname = (getattr(authenticated, "username", None) or "").strip()
+        dname = (getattr(authenticated, "name", None) or "").strip()
+        if uname:
+            names.append(uname.lower())
+        if dname and dname.lower() not in names:
+            names.append(dname.lower())
+    if not names:
+        q_user = request.query_params.get("username", "").strip() or "test_director"
+        names.append(q_user.lower())
+    prefixes = [f"{n}:" for n in names]
+    return names, prefixes
+
+
 @router.get("/user-sessions", response_model=list[CopilotSessionSummary])
 async def get_user_chat_sessions(
     request: Request,
@@ -509,15 +527,11 @@ async def get_user_chat_sessions(
     db: AsyncSession = Depends(get_db)
 ):
     """Lấy danh sách các phiên trò chuyện đám mây của người dùng hiện hành để tự động đồng bộ (SWR)."""
-    authenticated = getattr(request.state, "authenticated_user", None)
-    if authenticated and getattr(authenticated, "username", None):
-        username = authenticated.username.strip()
-    else:
-        username = request.query_params.get("username", "").strip() or "test_director"
+    user_names, prefixes = _resolve_user_identity_names(request)
 
     stmt = (
         select(CopilotChatLog)
-        .where(func.lower(CopilotChatLog.user_name) == username.lower())
+        .where(func.lower(CopilotChatLog.user_name).in_(user_names))
         .order_by(CopilotChatLog.created_at.asc())
         .limit(300)
     )
@@ -530,9 +544,11 @@ async def get_user_chat_sessions(
     sessions_map: dict[str, list[CopilotChatLog]] = defaultdict(list)
     for log in logs:
         clean_sid = log.session_id
-        prefix = f"{username.lower()}:"
-        if clean_sid.lower().startswith(prefix):
-            clean_sid = clean_sid[len(prefix):]
+        lower_sid = clean_sid.lower()
+        for prefix in prefixes:
+            if lower_sid.startswith(prefix):
+                clean_sid = clean_sid[len(prefix):]
+                break
         sessions_map[clean_sid].append(log)
 
     result: list[CopilotSessionSummary] = []
@@ -572,6 +588,27 @@ async def get_user_chat_sessions(
     return result[:limit]
 
 
+@router.delete("/user-sessions")
+async def delete_all_user_chat_sessions(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """Xóa toàn bộ lịch sử chatbot của người dùng hiện tại trên máy chủ để đồng bộ các thiết bị."""
+    user_names, _prefixes = _resolve_user_identity_names(request)
+    del_stmt = (
+        delete(CopilotChatLog)
+        .where(func.lower(CopilotChatLog.user_name).in_(user_names))
+    )
+    await db.execute(del_stmt)
+    await db.commit()
+
+    from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
+    from app.services.chatbot.web_search_engine import clear_search_cache
+    get_grounded_web_cache().clear()
+    clear_search_cache()
+    return {"status": "ok", "cleared_all": True}
+
+
 @router.delete("/user-sessions/{session_id}")
 async def delete_user_chat_session(
     session_id: str,
@@ -579,19 +616,13 @@ async def delete_user_chat_session(
     db: AsyncSession = Depends(get_db)
 ):
     """Xóa toàn bộ log của một phiên thuộc về người dùng hiện tại (bảo mật tuyệt đối, không xóa chéo)."""
-    authenticated = getattr(request.state, "authenticated_user", None)
-    if authenticated and getattr(authenticated, "username", None):
-        username = authenticated.username.strip()
-    else:
-        username = request.query_params.get("username", "").strip() or "test_director"
-
-    prefix = f"{username.lower()}:"
-    target_sids = [session_id, f"{prefix}{session_id}"]
+    user_names, prefixes = _resolve_user_identity_names(request)
+    target_sids = [session_id] + [f"{p}{session_id}" for p in prefixes]
 
     del_stmt = (
         delete(CopilotChatLog)
         .where(
-            func.lower(CopilotChatLog.user_name) == username.lower(),
+            func.lower(CopilotChatLog.user_name).in_(user_names),
             CopilotChatLog.session_id.in_(target_sids)
         )
     )
@@ -614,14 +645,8 @@ async def reset_user_session_web_cache(
     request: Request,
 ):
     """Xóa bộ nhớ đệm Web Search của phiên khi người dùng bấm Làm mới phiên hội thoại."""
-    authenticated = getattr(request.state, "authenticated_user", None)
-    if authenticated and getattr(authenticated, "username", None):
-        username = authenticated.username.strip()
-    else:
-        username = request.query_params.get("username", "").strip() or "test_director"
-
-    prefix = f"{username.lower()}:"
-    target_sids = [session_id, f"{prefix}{session_id}"]
+    _user_names, prefixes = _resolve_user_identity_names(request)
+    target_sids = [session_id] + [f"{p}{session_id}" for p in prefixes]
 
     from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
     from app.services.chatbot.web_search_engine import clear_search_cache

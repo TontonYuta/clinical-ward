@@ -65,6 +65,22 @@ export async function deleteUserCloudSession(sessionId: string, username?: strin
   }
 }
 
+export async function deleteAllUserCloudSessions(username?: string): Promise<boolean> {
+  try {
+    const url = username
+      ? `${API_BASE_URL}/copilot/user-sessions?username=${encodeURIComponent(username)}`
+      : `${API_BASE_URL}/copilot/user-sessions`;
+    const res = await apiFetch(url, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[ChatSyncApi] Lỗi xóa toàn bộ lịch sử phiên trên máy chủ:', err);
+    return false;
+  }
+}
+
 export async function resetUserSessionWebCache(sessionId: string, username?: string): Promise<boolean> {
   if (!sessionId) return false;
   try {

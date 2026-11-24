@@ -56,9 +56,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileWebSearch, setIsMobileWebSearch] = useState<boolean>(() => {
     try {
-      return typeof window !== 'undefined' && localStorage.getItem('copilot_enable_web_search') === 'true';
+      return typeof window === 'undefined' || localStorage.getItem('copilot_enable_web_search') !== 'false';
     } catch {
-      return false;
+      return true;
     }
   });
   useEffect(() => {

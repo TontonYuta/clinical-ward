@@ -19,7 +19,7 @@ import {
   renameChatSession,
   mergeSessions
 } from '../utils/storage/chatSessionStorage';
-import { fetchUserCloudSessions, deleteUserCloudSession } from '../services/chatSyncApi';
+import { fetchUserCloudSessions, deleteUserCloudSession, deleteAllUserCloudSessions, resetUserSessionWebCache } from '../services/chatSyncApi';
 
 export interface UseUserChatSessionsReturn {
   chatSessions: ChatSession[];
@@ -33,6 +33,7 @@ export interface UseUserChatSessionsReturn {
   handleDeleteSession: (sessionId: string) => void;
   handleRenameSession: (sessionId: string, newTitle: string) => void;
   handleClearCurrentMessages: () => void;
+  handleClearAllHistory: () => void;
   isSyncing: boolean;
   lastSyncedAt: number | null;
   triggerManualSync: () => Promise<void>;
@@ -171,7 +172,26 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
 
   const handleClearCurrentMessages = useCallback(() => {
     setChatMessages(INITIAL_CHAT_MESSAGES);
-  }, [setChatMessages]);
+    if (activeChatSessionId) {
+      void resetUserSessionWebCache(activeChatSessionId, authenticatedUsername);
+      if (authenticatedUsername && authenticatedUsername !== 'guest') {
+        void deleteUserCloudSession(activeChatSessionId, authenticatedUsername);
+      }
+    }
+  }, [setChatMessages, activeChatSessionId, authenticatedUsername]);
+
+  const handleClearAllHistory = useCallback(() => {
+    const fresh = createNewSession();
+    setChatSessions([fresh]);
+    saveChatSessions([fresh], authenticatedUsername);
+    setActiveChatSessionId(fresh.id);
+    saveActiveSessionId(fresh.id, authenticatedUsername);
+    if (authenticatedUsername && authenticatedUsername !== 'guest') {
+      void deleteAllUserCloudSessions(authenticatedUsername);
+    } else if (activeChatSessionId) {
+      void resetUserSessionWebCache(activeChatSessionId, authenticatedUsername);
+    }
+  }, [authenticatedUsername, activeChatSessionId]);
 
   const triggerManualSync = useCallback(async () => {
     await syncWithCloud(authenticatedUsername);
@@ -189,6 +209,7 @@ export function useUserChatSessions(authenticatedUsername?: string): UseUserChat
     handleDeleteSession,
     handleRenameSession,
     handleClearCurrentMessages,
+    handleClearAllHistory,
     isSyncing,
     lastSyncedAt,
     triggerManualSync

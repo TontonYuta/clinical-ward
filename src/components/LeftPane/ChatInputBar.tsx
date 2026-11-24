@@ -46,10 +46,10 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   const [isWebSearchActive, setIsWebSearchActive] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       try {
-        return localStorage.getItem('copilot_enable_web_search') === 'true';
+        return localStorage.getItem('copilot_enable_web_search') !== 'false';
       } catch {}
     }
-    return false;
+    return true;
   });
 
   const toggleWebSearch = () => {
