@@ -403,7 +403,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         <>
                           {renderFormattedText(displayText, {
                             isDark: false,
-                            hideInlineSources: isAgent,
+                            hideInlineSources: false,
                             citations: activeCitations,
                             onCitationClick: (ref) => handleInlineCitationClick(msg.id, ref),
                           })}

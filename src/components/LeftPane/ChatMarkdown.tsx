@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, AlertCircle, ShieldCheck, Lightbulb, BookOpen } from 'lucide-react';
+import { AlertTriangle, AlertCircle, ShieldCheck, Lightbulb, BookOpen, ExternalLink, Globe } from 'lucide-react';
 import { RagCitationItem } from '../../types/chat';
 
 export interface MarkdownRenderOptions {
@@ -82,7 +82,7 @@ export const formatInlineMarkdown = (
 
   const text = sanitizeClinicalText(rawText);
   const tokens = text.split(
-    /(\*\*\*[\s\S]+?\*\*\*|\*\*[\s\S]+?\*\*|`[^`\n]+`|\[[^\]]+\]\([^\)]+\)|\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]|\*[^*\n]+?\*|_[^_\n]+?_)/g
+    /(\*\*\*[\s\S]+?\*\*\*|\*\*[\s\S]+?\*\*|`[^`\n]+`|\[[^\]]+\]\([^\)]+\)|\[\d+\]|\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]|\(?https?:\/\/[^\s\)]+\)?|\*[^*\n]+?\*|_[^_\n]+?_)/g
   );
 
   return tokens.map((part, i) => {
@@ -106,7 +106,7 @@ export const formatInlineMarkdown = (
         <code
           key={i}
           className={`px-1.5 py-0.5 rounded font-mono text-2xs font-medium border ${
-            isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-100 text-slate-800 border-slate-200'
+            isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-100 text-teal-900 border-slate-200'
           }`}
         >
           {part.slice(1, -1)}
@@ -121,7 +121,6 @@ export const formatInlineMarkdown = (
       const linkUrl = linkMatch[2];
 
       if (linkUrl.startsWith('/pdf/') || linkUrl.includes('.pdf')) {
-        if (options.hideInlineSources) return null;
         const pageMatch = linkUrl.match(/#page=(\d+)/);
         const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : undefined;
         return (
@@ -136,11 +135,11 @@ export const formatInlineMarkdown = (
                 page: pageNum,
               });
             }}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded text-2xs sm:text-xs font-semibold bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200/80 transition cursor-pointer active:scale-95 align-baseline"
-            title={`Tra cứu y văn: ${linkText}`}
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-950 border border-emerald-200/90 transition cursor-pointer active:scale-95 align-baseline shadow-3xs"
+            title={`Mở chuyên luận y văn Dược thư: ${linkText}`}
           >
-            <BookOpen className="w-2.5 h-2.5 text-teal-600" />
-            <span>{linkText}</span>
+            <BookOpen className="w-3 h-3 text-emerald-600 shrink-0" />
+            <span className="underline decoration-emerald-400/70 underline-offset-2">{linkText}</span>
           </button>
         );
       }
@@ -150,10 +149,90 @@ export const formatInlineMarkdown = (
           key={i}
           href={linkUrl}
           target="_blank"
-          rel="noreferrer"
-          className={`underline font-semibold transition ${isDark ? 'text-teal-300 hover:text-teal-200' : 'text-teal-700 hover:text-teal-900'}`}
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded-md font-semibold text-xs sm:text-sm border transition cursor-pointer group/link align-baseline shadow-3xs ${
+            isDark
+              ? 'bg-teal-950/80 text-teal-300 border-teal-800 hover:bg-teal-900 hover:text-teal-100'
+              : 'bg-teal-50/90 text-teal-800 border-teal-200 hover:bg-teal-100 hover:text-teal-950 hover:border-teal-300'
+          }`}
+          title={`Mở nguồn tài liệu y khoa ngoài: ${linkUrl}`}
         >
-          {linkText}
+          <ExternalLink className="w-3 h-3 text-teal-600 shrink-0 group-hover/link:translate-x-0.5 transition-transform" />
+          <span className="underline decoration-teal-400/80 underline-offset-2">{linkText}</span>
+        </a>
+      );
+    }
+
+    // B. Footnote Citation Token [1], [2], [3]...
+    const footnoteMatch = part.match(/^\[(\d+)\]$/);
+    if (footnoteMatch) {
+      const footnoteNum = parseInt(footnoteMatch[1], 10);
+      const matchedCit = options.citations && options.citations.length >= footnoteNum
+        ? options.citations[footnoteNum - 1]
+        : undefined;
+
+      return (
+        <button
+          key={i}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            if (matchedCit) {
+              if (matchedCit.url && (matchedCit.url.startsWith('http://') || matchedCit.url.startsWith('https://')) && !matchedCit.url.endsWith('.pdf')) {
+                window.open(matchedCit.url, '_blank', 'noopener,noreferrer');
+              } else {
+                onCitationClick?.({
+                  title: matchedCit.title || `Nguồn [${footnoteNum}]`,
+                  url: matchedCit.url,
+                  page: matchedCit.page,
+                  excerpt: matchedCit.excerpt,
+                  legal_basis: matchedCit.legal_basis,
+                  section: matchedCit.section,
+                });
+              }
+            } else {
+              const targetEl = document.getElementById(`citation-ref-${footnoteNum}`);
+              if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            }
+          }}
+          className="inline-flex items-center justify-center px-1.5 py-0.2 min-w-[1.25rem] h-4.5 mx-0.5 text-3xs sm:text-2xs font-bold text-teal-800 bg-teal-100/90 hover:bg-teal-200 border border-teal-300 rounded-full cursor-pointer transition shadow-3xs align-super hover:scale-110 active:scale-95"
+          title={matchedCit ? `Nguồn [${footnoteNum}]: ${matchedCit.title || matchedCit.source || matchedCit.url}` : `Tham chiếu nguồn số [${footnoteNum}]`}
+        >
+          {footnoteNum}
+        </button>
+      );
+    }
+
+    // C. Raw URLs (e.g. https://... or (https://...))
+    const rawUrlMatch = part.match(/^\(?((?:https?:\/\/)[^\s\)]+)\)?$/i);
+    if (rawUrlMatch) {
+      const cleanUrl = rawUrlMatch[1];
+      let domain = '';
+      try {
+        domain = new URL(cleanUrl).hostname.replace('www.', '');
+      } catch {
+        domain = cleanUrl;
+      }
+
+      return (
+        <a
+          key={i}
+          href={cleanUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded-md font-semibold text-xs border transition cursor-pointer group/link align-baseline shadow-3xs ${
+            isDark
+              ? 'bg-teal-950/80 text-teal-300 border-teal-800 hover:bg-teal-900 hover:text-teal-100'
+              : 'bg-teal-50/90 text-teal-800 border-teal-200 hover:bg-teal-100 hover:text-teal-950'
+          }`}
+          title={`Mở liên kết web: ${cleanUrl}`}
+        >
+          <ExternalLink className="w-3 h-3 text-teal-600 shrink-0 group-hover/link:translate-x-0.5 transition-transform" />
+          <span className="underline decoration-teal-400/80 underline-offset-2 truncate max-w-[220px] sm:max-w-[280px]">
+            {domain || cleanUrl}
+          </span>
         </a>
       );
     }
@@ -374,8 +453,9 @@ export const renderFormattedText = (
     const h1 = line.match(/^#\s+(.+)$/);
     if (h1) {
       elements.push(
-        <h2 key={`h1-${i}`} className="font-bold text-base sm:text-lg text-teal-950 mt-3.5 mb-2 border-b border-slate-200/90 pb-1.5 flex items-center gap-1.5">
-          {formatInlineMarkdown(h1[1], options)}
+        <h2 key={`h1-${i}`} className="font-bold text-base sm:text-lg text-teal-950 mt-4 mb-2.5 border-b border-teal-100 pb-2 flex items-center gap-2 tracking-tight">
+          <span className="w-2 h-5 rounded-full bg-teal-700 shrink-0" />
+          <span>{formatInlineMarkdown(h1[1], options)}</span>
         </h2>
       );
       i++; continue;
@@ -383,17 +463,31 @@ export const renderFormattedText = (
     const h2 = line.match(/^##\s+(.+)$/);
     if (h2) {
       elements.push(
-        <h3 key={`h2-${i}`} className="font-bold text-sm sm:text-base text-slate-900 mt-3 mb-1.5 flex items-center gap-1.5">
-          {formatInlineMarkdown(h2[1], options)}
+        <h3 key={`h2-${i}`} className="font-bold text-sm sm:text-base text-slate-900 mt-3.5 mb-2 flex items-center gap-2 border-b border-slate-200/70 pb-1.5 tracking-tight">
+          <span className="w-1.5 h-4 rounded-full bg-teal-600 shrink-0" />
+          <span>{formatInlineMarkdown(h2[1], options)}</span>
         </h3>
       );
       i++; continue;
     }
     const h3 = line.match(/^###\s+(.+)$/);
     if (h3) {
+      const isRefHeader = /nguồn tham khảo|tài liệu tham khảo/i.test(h3[1]);
       elements.push(
-        <h4 key={`h3-${i}`} className="font-bold text-sm sm:text-base text-teal-900 mt-2.5 mb-1 flex items-center gap-1.5 uppercase tracking-wide">
-          {formatInlineMarkdown(h3[1], options)}
+        <h4
+          key={`h3-${i}`}
+          className={`font-bold text-xs sm:text-sm mt-3.5 mb-2 flex items-center gap-2 tracking-wide ${
+            isRefHeader
+              ? 'text-teal-950 border-t border-slate-200/90 pt-3.5 uppercase'
+              : 'text-slate-900 uppercase'
+          }`}
+        >
+          {isRefHeader ? (
+            <Globe className="w-4 h-4 text-teal-600 shrink-0" />
+          ) : (
+            <span className="w-1.5 h-3.5 rounded-full bg-teal-600 shrink-0" />
+          )}
+          <span>{formatInlineMarkdown(h3[1], options)}</span>
         </h4>
       );
       i++; continue;
@@ -401,8 +495,9 @@ export const renderFormattedText = (
     const h4 = line.match(/^####\s+(.+)$/);
     if (h4) {
       elements.push(
-        <h5 key={`h4-${i}`} className="font-semibold text-xs sm:text-sm text-slate-800 mt-2 mb-0.5">
-          {formatInlineMarkdown(h4[1], options)}
+        <h5 key={`h4-${i}`} className="font-semibold text-xs sm:text-sm text-slate-800 mt-2.5 mb-1 flex items-center gap-1.5">
+          <span className="w-1 h-3 rounded-full bg-slate-400 shrink-0" />
+          <span>{formatInlineMarkdown(h4[1], options)}</span>
         </h5>
       );
       i++; continue;
@@ -481,10 +576,19 @@ export const renderFormattedText = (
     const numMatch = line.match(/^(\d+)[\.\)]\s*(.+)$/);
     if (numMatch) {
       const isNested = rawLine.startsWith('  ') || rawLine.startsWith('\t');
+      const itemNum = numMatch[1];
       elements.push(
-        <div key={`num-${i}`} className={`flex items-start gap-1.5 ${options.compact ? 'my-0.5' : 'my-1'} ${isNested ? 'pl-4 sm:pl-5' : 'pl-0.5'} leading-relaxed ${options.compact ? 'text-xs' : 'text-sm sm:text-base'} text-slate-800`}>
-          <span className="font-semibold text-slate-600 text-xs sm:text-sm shrink-0 mt-0.5 min-w-[16px]">{numMatch[1]}.</span>
-          <div className="flex-1">{formatInlineMarkdown(numMatch[2], options)}</div>
+        <div
+          id={`citation-ref-${itemNum}`}
+          key={`num-${i}`}
+          className={`flex items-start gap-2.5 ${options.compact ? 'my-0.5' : 'my-1.5'} ${
+            isNested ? 'pl-4 sm:pl-5' : 'pl-0.5'
+          } leading-relaxed ${options.compact ? 'text-xs' : 'text-sm sm:text-base'} text-slate-800 group/numitem`}
+        >
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 group-hover/numitem:bg-teal-100 text-slate-700 group-hover/numitem:text-teal-900 text-2xs font-bold shrink-0 mt-0.5 border border-slate-200/80 transition">
+            {itemNum}
+          </span>
+          <div className="flex-1 min-w-0 pt-0.5">{formatInlineMarkdown(numMatch[2], options)}</div>
         </div>
       );
       i++;
@@ -498,29 +602,48 @@ export const renderFormattedText = (
       const isDoubleNested = indentSpaces >= 4 || rawLine.startsWith('\t\t');
       const isNested = indentSpaces >= 2 || rawLine.startsWith('\t');
 
-      let bulletIcon = <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 shrink-0" />;
+      let bulletIcon = <span className="w-1.5 h-1.5 rounded-full bg-teal-600/80 mt-2 shrink-0" />;
       if (isDoubleNested) {
         bulletIcon = <span className="w-1 h-1 rounded-full bg-slate-400 mt-2 shrink-0" />;
       } else if (isNested) {
-        bulletIcon = <span className="w-1.5 h-1.5 rounded-xs bg-teal-700/80 mt-2 shrink-0" />;
+        bulletIcon = <span className="w-1.5 h-1.5 rounded-xs bg-slate-500 mt-2 shrink-0" />;
       }
 
       elements.push(
         <div
           key={`bullet-${i}`}
-          className={`flex items-start gap-2 ${options.compact ? 'my-0.5' : 'my-1'} leading-relaxed ${options.compact ? 'text-xs' : 'text-sm sm:text-base'} text-slate-800 ${
+          className={`flex items-start gap-2.5 ${options.compact ? 'my-0.5' : 'my-1.5'} leading-relaxed ${
+            options.compact ? 'text-xs' : 'text-sm sm:text-base'
+          } text-slate-800 ${
             isDoubleNested ? 'pl-7 sm:pl-8' : isNested ? 'pl-3.5 sm:pl-4' : 'pl-0.5'
           }`}
         >
           {bulletIcon}
-          <div className="flex-1">{formatInlineMarkdown(bulletMatch[1], options)}</div>
+          <div className="flex-1 min-w-0">{formatInlineMarkdown(bulletMatch[1], options)}</div>
         </div>
       );
       i++;
       continue;
     }
 
-    // 11. Dòng văn bản bình thường (Gom các dòng liên tiếp thành đoạn văn tự nhiên)
+    // 11. Hộp cảnh báo an toàn y khoa cuối bài (⚠️ Lưu ý: ...)
+    if (line.startsWith('⚠️')) {
+      elements.push(
+        <div
+          key={`disclaimer-${i}`}
+          className="mt-3.5 mb-1 p-3 rounded-xl border border-amber-200/80 bg-amber-50/70 text-xs sm:text-sm text-amber-950 flex items-start gap-2.5 shadow-3xs"
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1 italic font-medium leading-relaxed">
+            {formatInlineMarkdown(line.replace(/^⚠️\s*/, ''), options)}
+          </div>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // 12. Dòng văn bản bình thường (Gom các dòng liên tiếp thành đoạn văn tự nhiên)
     const paraLines: string[] = [line];
     let j = i + 1;
     while (
@@ -529,6 +652,7 @@ export const renderFormattedText = (
       !rawLines[j].trim().startsWith('#') &&
       !rawLines[j].trim().startsWith('>') &&
       !rawLines[j].trim().startsWith('|') &&
+      !rawLines[j].trim().startsWith('⚠️') &&
       !rawLines[j].trim().match(/^[\*\-\+•●▪⁃–]\s*/) &&
       !rawLines[j].trim().match(/^(\d+)[\.\)]\s*/) &&
       !rawLines[j].trim().match(/^\[([^\]]+)\]:?$/) &&
@@ -544,7 +668,7 @@ export const renderFormattedText = (
     elements.push(
       <p
         key={`p-${i}`}
-        className={`${options.compact ? 'my-0.5 text-xs' : 'my-1 text-sm sm:text-base'} leading-relaxed text-slate-800 break-words`}
+        className={`${options.compact ? 'my-0.5 text-xs' : 'my-1.5 text-sm sm:text-base'} leading-relaxed text-slate-800 break-words`}
       >
         {paraLines.map((pLine, pIdx) => (
           <React.Fragment key={pIdx}>
