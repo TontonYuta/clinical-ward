@@ -11,6 +11,13 @@ class ClinicalNluExtraction(BaseModel):
         "direct_lookup",
         description="Kiểu tác vụ cần trả lời: tra cứu dữ kiện, tổng hợp/so sánh chứng cứ, hay suy luận theo tình huống cụ thể"
     )
+    query_mode: Literal["card_lookup", "clinical_qa"] = Field(
+        "clinical_qa",
+        description=(
+            "Phân biệt yêu cầu xem hồ sơ/thẻ thuốc tĩnh ('card_lookup', ví dụ chỉ gõ tên thuốc, SĐK, hoặc xem mục tổng quát) "
+            "với câu hỏi lâm sàng tự nhiên cần tổng hợp câu trả lời trúng trọng tâm từ tài liệu ('clinical_qa')."
+        )
+    )
     conversation_mode: Literal["independent", "contextual_followup", "topic_shift"] = Field(
         "independent",
         description="Phân biệt lượt độc lập, lượt phụ thuộc ngữ cảnh hội thoại, hoặc lượt chuyển chủ đề"

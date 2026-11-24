@@ -155,14 +155,7 @@ async def handle_deep_rag_consultation(
     cleaned_reply, validated_citations, is_grounded = validate_grounded_reply(
         cleaned_reply, [c.to_dict() for c in rag_res.citations], target_drugs, query=query
     )
-    explanatory_cues = (
-        "tại sao", "vì sao", "nguyên nhân", "cơ chế", "lý do",
-        "như thế nào", "thế nào", "có được không", "có nên",
-        "có bị", "làm sao", "nên dùng", "dùng được không",
-        "uống được không", "ảnh hưởng", "sốt do", "nhiễm virus",
-        "phụ nữ có thai", "cho con bú", "suy thận", "suy gan"
-    )
-    if (rag_res.rag_grounded and is_grounded) and any(cue in lower_query for cue in explanatory_cues) and len(cleaned_reply) > 30:
+    if (rag_res.rag_grounded and is_grounded) and len(query.split()) >= 5 and len(cleaned_reply) > 30:
         try:
             from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
             synth_res = await synthesize_grounded_clinical_response(

@@ -256,6 +256,7 @@ async def build_drug_profile_response(
     session: SessionState,
     query: str = "",
     requested_fields: Optional[List[str]] = None,
+    query_mode: str = "card_lookup",
 ) -> CopilotResponse:
     matched = drugs[0]
     clean_name = clean_brand_name(matched.brand_name)
@@ -775,16 +776,13 @@ async def build_drug_profile_response(
         first_detail = field_data[0][2] if field_data else ""
         first_label = field_data[0][1] if field_data else "Thông tin chuyên môn"
 
-        # Nếu là câu hỏi giải thích nhân quả / lâm sàng ("Tại sao...", "Vì sao...", "Có nên...", "Cơ chế..."),
+        # Nếu NLU xác định là câu hỏi lâm sàng tự nhiên (query_mode == "clinical_qa"),
         # tổng hợp bằng Gemini LLM từ chuyên luận CSDL để trả lời trực diện trọng tâm thay vì chỉ in form cứng.
-        explanatory_cues = (
-            "tại sao", "vì sao", "nguyên nhân", "cơ chế", "lý do",
-            "như thế nào", "thế nào", "có được không", "có nên",
-            "có bị", "làm sao", "nên dùng", "dùng được không",
-            "uống được không", "ảnh hưởng", "sốt do", "nhiễm virus",
-            "phụ nữ có thai", "cho con bú", "suy thận", "suy gan"
+        should_synthesize = (
+            query_mode == "clinical_qa"
+            or any(cue in lower_query for cue in ("tại sao", "vì sao", "cơ chế", "lý do", "như thế nào", "có nên", "có được không"))
         )
-        if any(cue in lower_query for cue in explanatory_cues) and field_data:
+        if should_synthesize and field_data:
             try:
                 from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
                 mono_context_parts = [f"Thuốc: {clean_name} (Hoạt chất: {matched.active_ingredient})"]
@@ -858,6 +856,97 @@ async def build_drug_profile_response(
         ing, conc = conc, ing
 
     is_stock_ask = any(w in lower_query for w in ("tồn kho", "ton kho", "trong kho", "còn bao nhiêu", "con bao nhieu", "số lượng", "so luong"))
+
+    if query_mode == "clinical_qa" and not is_summary_request and not is_stock_ask and monograph and getattr(monograph, "source_id", None) and getattr(monograph, "source_version", None):
+        try:
+            from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
+            from app.services.rag.rag_pipeline import get_rag_retriever
+
+            mono_sections = [
+                ("indications", "Chỉ định", getattr(monograph, "indications", None)),
+                ("adult_dosage", "Liều dùng người lớn", getattr(monograph, "adult_dosage", None)),
+                ("pediatric_dosage", "Liều dùng trẻ em", getattr(monograph, "pediatric_dosage", None)),
+                ("contraindications", "Chống chỉ định", getattr(monograph, "contraindications", None)),
+                ("precautions", "Thận trọng", getattr(monograph, "precautions", None)),
+                ("adverse_effects", "Tác dụng không mong muốn", getattr(monograph, "adverse_effects", None)),
+                ("overdose_treatment", "Xử trí quá liều & Ngộ độc", getattr(monograph, "overdose_treatment", None)),
+                ("drug_interactions", "Tương tác thuốc", getattr(monograph, "drug_interactions", None)),
+                ("pharmacokinetics", "Dược động học", getattr(monograph, "pharmacokinetics", None)),
+            ]
+            ctx_parts = [f"Thuốc: {clean_name} (Hoạt chất: {ing})"]
+            qa_citations = []
+            qa_evidence = []
+            ref_lines = []
+            for field_key, f_label, f_val in mono_sections:
+                if f_val and str(f_val).strip():
+                    clean_val = format_clinical_text(str(f_val).strip())
+                    ctx_parts.append(f"- {f_label}: {clean_val[:1200]}")
+                    if len(ref_lines) < 3:
+                        ref_lines.append(f"• **{f_label}:** {clean_val}")
+                        cit = _drug_citation(matched, monograph, prof_source, target_field=field_key)
+                        cit["excerpt"] = clean_val
+                        cit["section"] = field_key
+                        cit["source_id"] = monograph.source_id
+                        cit["source_version"] = monograph.source_version
+                        cit["chunk_id"] = f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:{field_key}"
+                        qa_citations.append(cit)
+                        qa_evidence.extend(_build_drug_evidence([cit]))
+
+            # Bổ sung ngữ cảnh từ Hybrid RAG (ví dụ thông tin thuốc thay thế, phác đồ liên quan)
+            try:
+                retriever = get_rag_retriever()
+                extra_chunks = await retriever.aretrieve(query, top_k=3)
+                for rc in extra_chunks:
+                    if rc.chunk.content and rc.chunk.content.strip():
+                        ctx_parts.append(f"- [Tài liệu liên quan: {rc.chunk.source_doc}]: {rc.chunk.content[:800]}")
+            except Exception:
+                pass
+
+            if qa_citations and qa_evidence:
+                u_role = getattr(session, "user_role", "doctor") or "doctor"
+                synth_res = await synthesize_grounded_clinical_response(
+                    query=query,
+                    evidence_context="\n".join(ctx_parts),
+                    source_label=prof_source,
+                    user_role=u_role,
+                    timeout_sec=8.0,
+                )
+                if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
+                    qa_reply = (
+                        f"{synth_res.conversational_answer}\n\n"
+                        f"---\n"
+                        f"**Đối chiếu nguyên văn Dược Thư ({prof_source}):**\n\n"
+                        + "\n\n".join(ref_lines)
+                    )
+                    session.set_active_medication(
+                        name=clean_name, ingredient=ing, batch=matched.national_code,
+                        stock=f"{in_stock} {matched.standard_unit}" if in_stock > 0 else "Hết tồn kho",
+                        location=loc, sdk=matched.national_code,
+                    )
+                    sum_obj, pay_obj = _build_formatter_structured_payload(
+                        clean_name=clean_name, clean_inn=ing, matched=matched,
+                        headline=f"Tư vấn Dược lâm sàng: {clean_name}",
+                        takeaway=synth_res.conversational_answer.split("\n")[0][:160],
+                    )
+                    return CopilotResponse(
+                        intent="MEDICATION_SAFETY_PROFILE",
+                        reply_text=qa_reply,
+                        clinical_summary=sum_obj,
+                        clinical_data=pay_obj,
+                        card=None,
+                        legal_basis=prof_source,
+                        suggested_chips=contextual_chips,
+                        session_id=session.session_id,
+                        active_medication_name=session.active_medication_name,
+                        answer_type="grounded_reference",
+                        source_status="exact_match",
+                        confidence=0.95,
+                        rag_grounded=True,
+                        citations=qa_citations,
+                        evidence=qa_evidence,
+                    )
+        except Exception:
+            pass
 
     if is_summary_request:
         val_ind = value("indications")

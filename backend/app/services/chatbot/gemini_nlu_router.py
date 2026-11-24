@@ -30,9 +30,12 @@ BẢNG 11 Ý ĐỊNH DUY NHẤT (INTENT TAXONOMY):
 7. PATIENT_CASE_REASONING: Đánh giá ca bệnh phức tạp cá thể hóa (suy thận, người cao tuổi kèm đa bệnh lý, suy gan) cần tính toán ClCr, eGFR hoặc đánh giá phác đồ.
 8. PATIENT_MEDICATION_COUNSELING: Yêu cầu dặn dò bệnh nhân, hướng dẫn dễ hiểu, 3 ý chính cho người nhà, hướng dẫn uống thuốc trước/sau ăn.
 9. SPECIALTY_CLINICAL_PROTOCOL: Tra cứu phác đồ bệnh học chuyên khoa hoặc quy chế hành chính kho dược (sốc phản vệ TT 51, quy chế quản lý thuốc gây nghiện TT 20, chuỗi lạnh TT 36, đơn thuốc TT 26, hạn dùng FEFO, nợ morphin).
-10. CLINICAL_CASE_CLARIFICATION: Người dùng tự kể triệu chứng cá nhân ("tôi bị sốt đau đầu uống gì") cần hướng dẫn làm rõ ca bệnh.
+10. CLINICAL_CASE_CLARIFICATION: Chỉ dùng khi người dùng tự kể triệu chứng cá nhân mơ hồ ("tôi bị sốt đau đầu uống gì") hoặc câu hỏi hoàn toàn thiếu chủ thể lâm sàng/bệnh lý. Nếu câu hỏi nêu rõ bệnh lý hoặc đối tượng lâm sàng (ví dụ: điều trị bệnh X cho đối tượng Y) thì KHÔNG dùng intent này, mà phân loại sang PATIENT_CASE_REASONING hoặc SPECIALTY_CLINICAL_PROTOCOL để hệ thống tra cứu Dược thư.
 11. OUT_OF_SCOPE: Các câu hỏi ngoài phạm vi y tế. BẮT BUỘC gán "out_of_scope_type": "MATH_LOGIC" (nếu là toán học, phép tính "1+1=2", logic số học), "GENERAL_CHITCHAT" (nếu là hỏi tuổi bot, đố vui, "dạy tôi học toán", hỏi thăm ngoài lề), hoặc "DISALLOWED_DOMAIN" (thời tiết, chứng khoán, tiền ảo, bóng đá, giá tiền).
 12. answer_operation: Với mọi câu hỏi chuyên môn, phân loại "direct_lookup" nếu yêu cầu lấy/tóm tắt dữ kiện trực tiếp từ tài liệu; "evidence_synthesis" nếu cần so sánh, tổng hợp nhiều dữ kiện hoặc rút ra nhận định chung; "patient_specific_inference" nếu cần áp dụng dữ kiện vào ca bệnh cụ thể. Chỉ phân loại thao tác, không đánh giá mức độ đúng của câu trả lời.
+13. query_mode: Phân biệt rạch ròi:
+    - "card_lookup": CHỈ dùng khi người dùng gõ tên thuốc/SĐK đơn thuần (VD: "Paracetamol", "SĐK VD-24757-16") hoặc yêu cầu hiển thị hồ sơ tóm tắt/chi tiết một mục cố định ("Thông tin thuốc X", "Tóm tắt thuốc X").
+    - "clinical_qa": Dùng cho MỌI câu hỏi tự nhiên cần giải đáp trúng trọng tâm (hỏi thuốc theo bệnh lý, hỏi thay thế thuốc, hỏi khoảng cách liều/giờ uống, hỏi liều theo cân nặng, hỏi thuốc giải độc, hỏi cơ chế/tại sao, hỏi quy chế thông tư).
 
 QUY TẮC BÓC TÁCH THÔNG SỐ LÂM SÀNG & AN TOÀN NHI KHOA / SUY THẬN:
 - TUỔI VÀ NHI KHOA (PEDIATRIC vs ADULT):

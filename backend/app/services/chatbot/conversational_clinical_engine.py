@@ -655,6 +655,28 @@ async def synthesize_specialty_response(
         special_warnings=[topic]
     ) if sourced else None
 
+    spec_citations = [{
+        "source": legal,
+        "title": topic,
+        "section": "Chuyên luận Hướng dẫn Lâm sàng",
+        "legal_basis": legal,
+        "chunk_id": citation_chunk_id,
+    }] if sourced else []
+    spec_evidence = [{
+        "evidence_id": citation_chunk_id,
+        "evidence_type": "document_chunk",
+        **specialty_source,
+        "chunk_id": citation_chunk_id,
+        "source_name": legal,
+        "section": topic,
+        "content": specialty_content,
+    }] if sourced else []
+
+    from app.services.copilot_drug_formatter import _evidence_claim_contract
+    if sourced and specialty_content and specialty_content not in reply_text:
+        reply_text = f"{reply_text}\n\n---\n**Tài liệu đối chiếu ({legal}):**\n{specialty_content}"
+    claim_contract = _evidence_claim_contract(spec_evidence, reply_text, {citation_chunk_id}) if sourced else {"claims": [], "evidence_claim_map": {}}
+
     return CopilotResponse(
         intent=chosen_intent,
         reply_text=reply_text,
@@ -663,24 +685,12 @@ async def synthesize_specialty_response(
         legal_basis=legal,
         suggested_chips=chips,
         session_id=session_id,
-        answer_type="grounded_reference" if sourced else "safe_abstention",
+        answer_type="grounded_reference" if (sourced and claim_contract["claims"]) else "safe_abstention",
         source_status=synth_res.source_status,
         confidence=synth_res.grounded_confidence if sourced else 0.0,
-        rag_grounded=sourced,
-        citations=[{
-            "source": legal,
-            "title": topic,
-            "section": "Chuyên luận Hướng dẫn Lâm sàng",
-            "legal_basis": legal,
-            "chunk_id": citation_chunk_id,
-        }] if sourced else [],
-        evidence=[{
-            "evidence_id": citation_chunk_id,
-            "evidence_type": "document_chunk",
-            **specialty_source,
-            "chunk_id": citation_chunk_id,
-            "source_name": legal,
-            "section": topic,
-            "content": specialty_content,
-        }] if sourced else []
+        rag_grounded=bool(sourced and claim_contract["claims"]),
+        citations=spec_citations,
+        evidence=spec_evidence,
+        claims=claim_contract["claims"],
+        evidence_claim_map=claim_contract["evidence_claim_map"],
     )

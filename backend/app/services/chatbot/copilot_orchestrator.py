@@ -390,6 +390,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 or resolve_registered_medications(query)
                 or find_matched_med(query.lower())
             )
+            query_mode = getattr(nlu_res, "query_mode", "clinical_qa")
             if nlu_res.primary_drug and not current_medication_supported and not has_contextual_entity:
                 return CopilotResponse(
                     intent="MEDICATION_LOOKUP_CLARIFICATION",
@@ -398,6 +399,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                     confidence=1.0, session_id=session_id,
                 )
             if not current_medication_supported:
+                if not nlu_res.primary_drug and query_mode == "clinical_qa" and len(query.split()) >= 5:
+                    rag_clinical_res = await handle_deep_rag_consultation(
+                        query, lower_query, user_role, history, session_id, user_name,
+                        is_deep_pharmacology=True, inference_required=inference_required,
+                    )
+                    if rag_clinical_res is not None:
+                        return rag_clinical_res
                 return CopilotResponse(
                     intent="MEDICATION_LOOKUP_CLARIFICATION",
                     reply_text="Chưa xác định được thuốc cần tra cứu. Vui lòng nêu tên thuốc, hoạt chất hoặc số đăng ký.",
@@ -405,6 +413,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                     confidence=1.0, session_id=session_id,
                 )
             if not nlu_res.primary_drug and not has_contextual_entity:
+                if query_mode == "clinical_qa" and len(query.split()) >= 5:
+                    rag_clinical_res = await handle_deep_rag_consultation(
+                        query, lower_query, user_role, history, session_id, user_name,
+                        is_deep_pharmacology=True, inference_required=inference_required,
+                    )
+                    if rag_clinical_res is not None:
+                        return rag_clinical_res
                 return CopilotResponse(
                     intent="MEDICATION_LOOKUP_CLARIFICATION",
                     reply_text="Chưa xác định được thuốc cần tra cứu. Vui lòng nêu tên thuốc, hoạt chất hoặc số đăng ký.",
@@ -425,6 +440,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                         getattr(nlu_res, "requested_fields", None),
                     ) or None
                 ),
+                query_mode=query_mode,
             )
             from app.services.copilot_drug_lookup import _attach_database_claims
             return _attach_database_claims(lookup_response)
@@ -555,6 +571,13 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             subflow_res = await dispatch_clinical_subflows(norm_q, norm_q.lower(), user_name, db, user_role=user_role)
             if subflow_res:
                 return subflow_res
+            # Ưu tiên Hybrid RAG trên kho Thông tư & Dược thư chính thức trước để tránh khớp từ khóa sai chủ đề
+            rag_spec_res = await handle_deep_rag_consultation(
+                query, lower_query, user_role, history, session_id, user_name,
+                is_deep_pharmacology=True, inference_required=inference_required,
+            )
+            if rag_spec_res is not None and rag_spec_res.rag_grounded and rag_spec_res.answer_type != "safe_abstention":
+                return rag_spec_res
             spec_res = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_q)
             if spec_res:
                 return await synthesize_specialty_response(query, spec_res, user_name=user_name, user_role=user_role, session_id=session_id)

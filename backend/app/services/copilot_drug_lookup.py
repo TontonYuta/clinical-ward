@@ -40,6 +40,7 @@ async def lookup_drug_authoritative(
     query: str, db: AsyncSession, session_id: str | None = None,
     user_name: str = "Nhân viên y tế", user_role: str = "nurse",
     requested_fields: Optional[List[str]] = None,
+    query_mode: str = "card_lookup",
 ) -> CopilotResponse:
     from app.services.session_context import get_or_create_session
     session = get_or_create_session(session_id, user_name, user_role)
@@ -314,6 +315,6 @@ async def lookup_drug_authoritative(
             return crag_res
 
     response = await build_drug_profile_response(
-        drugs, db, session, query=query, requested_fields=requested_fields
+        drugs, db, session, query=query, requested_fields=requested_fields, query_mode=query_mode
     )
     return _attach_database_claims(response)
