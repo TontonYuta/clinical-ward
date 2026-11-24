@@ -211,3 +211,30 @@ async def test_stream_grounded_web_search_turn_hides_followup_tag_and_emits_done
         assert done_resp is not None
         assert len(done_resp.citations) == 1
         assert len(done_resp.suggested_chips) >= 2
+
+
+@pytest.mark.asyncio
+async def test_generate_session_title_and_gemini_endpoint():
+    from types import SimpleNamespace
+    from app.routers.copilot import _generate_session_title, generate_copilot_session_title, GenerateTitleRequest
+
+    # Must NOT extract "Bệnh nhân nam" from clinical vignette
+    vignette = (
+        "Một bệnh nhân nam 68 tuổi có đa hình kiểu gen CYP2C9*3/*3 và VKORC1 (AA), "
+        "đang suy thận mạn giai đoạn 4 (eGFR 22 mL/phút), đồng thời sử dụng warfarin..."
+    )
+    fallback = _generate_session_title(vignette)
+    assert "Bệnh nhân nam" not in fallback
+    assert "Warfarin" in fallback or "CYP2C9" in fallback
+
+    # Greeting stays generic until real question
+    assert _generate_session_title("Xin chào bạn") == "Cuộc trò chuyện mới"
+
+    # Gemini endpoint returns clean LLM title when available
+    with patch("app.services.llm_provider.query_clinical_llm", return_value='"Warfarin · CYP2C9*3/*3 & Suy thận."'):
+        res = await generate_copilot_session_title(
+            GenerateTitleRequest(query=vignette),
+            request=SimpleNamespace(),
+        )
+        assert res["source"] == "gemini"
+        assert res["title"] == "Warfarin · CYP2C9*3/*3 & Suy thận"

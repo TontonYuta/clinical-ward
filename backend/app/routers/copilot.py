@@ -467,24 +467,101 @@ async def get_copilot_chat_history(
     return res.scalars().all()
 
 
+def _truncate_word_boundary(text: str, max_len: int = 40) -> str:
+    clean = " ".join((text or "").split()).strip(" .,:;\"'")
+    if len(clean) <= max_len:
+        return clean
+    cut = clean[:max_len - 1].rsplit(" ", 1)[0].strip()
+    return (cut or clean[:max_len - 1]).rstrip(" .,:;") + "…"
+
+
 def _generate_session_title(first_query: str) -> str:
-    clean = " ".join(first_query.strip().split())
+    clean = " ".join((first_query or "").strip().split())
     if not clean:
         return "Cuộc trò chuyện mới"
-    bn_match = re.search(r"(?:bệnh nhân|bn)\s+([A-ZÀ-ỸĐa-zà-ỹđ\s]+?)(?:\s+cần|\s+tiêm|\s+dùng|\s+buồng|\s+khoa|$)", clean, re.IGNORECASE)
-    if bn_match and len(bn_match.group(1).strip()) > 1:
-        p_name = " ".join(bn_match.group(1).strip().split()[:3])
-        drug_match = re.search(r"(?:morphin|fentanyl|adrenalin|diazepam|ceftriaxone|kcl|aspirin|paracetamol)", clean, re.IGNORECASE)
-        return f"BN {p_name} - {drug_match.group(0).upper()}" if drug_match else f"Bệnh nhân {p_name}"
-    if re.search(r"tương tác", clean, re.IGNORECASE):
-        return clean[:32] + "..." if len(clean) > 35 else clean
+
+    # Bỏ qua câu chào hỏi đơn thuần
+    if re.fullmatch(r"(?:xin\s+)?(?:chào|hello|hi|alo|ok|cảm\s+ơn)(?:\s+(?:bạn|bot|bác\s+sĩ|dược\s+sĩ))?[!.\s]*", clean, re.IGNORECASE):
+        return "Cuộc trò chuyện mới"
+
+    # Chỉ bắt tên riêng bệnh nhân khi viết hoa đầu từ (tránh bắt nhầm 'nam', 'nữ', 'suy thận'...)
+    bn_match = re.search(
+        r"(?:bệnh nhân|bn)\s+([A-ZÀ-ỸĐ][a-zà-ỹđ]+(?:\s+[A-ZÀ-ỸĐ][a-zà-ỹđ]+){1,2})",
+        clean,
+    )
+    if bn_match:
+        return _truncate_word_boundary(f"BN {bn_match.group(1).strip()}", 38)
+
     if re.search(r"cận hạn|fefo", clean, re.IGNORECASE):
         return "Kiểm tra FEFO & Hạn dùng"
     if re.search(r"hỏng|sự cố", clean, re.IGNORECASE):
         return "Báo cáo sự cố thiết bị"
     if re.search(r"giao ban|đối soát", clean, re.IGNORECASE):
         return "Bàn giao ca trực"
-    return clean[:30] + "..." if len(clean) > 32 else clean
+
+    # Ưu tiên trích xuất thực thể thuốc + chỉ số lâm sàng nếu là ca dài
+    try:
+        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+        drugs = get_drug_lexical_matcher().extract_medications(clean)
+    except Exception:
+        drugs = []
+    markers = re.findall(r"\b(?:CYP\w*(?:\*\d+(?:/\*\d+)?)?|VKORC1|eGFR|INR|HbA1c|TT\s*\d+|Thông tư\s*\d+)\b", clean, re.IGNORECASE)
+    entities = list(dict.fromkeys([*drugs[:2], *markers[:2]]))
+    if entities and len(clean) > 45:
+        return _truncate_word_boundary(" · ".join(entities), 40)
+
+    # Tinh lọc từ đệm mở đầu
+    stripped = re.sub(
+        r"^(?:tôi\s+muốn\s+(?:bạn\s+)?|bạn\s+hãy\s+|hãy\s+|cho\s+(?:tôi|mình)\s+(?:hỏi|biết)\s+|tìm\s+kiếm\s+|tra\s+cứu\s+)(?:thông\s+tin\s+)?(?:về\s+)?",
+        "",
+        clean,
+        flags=re.IGNORECASE,
+    ).strip()
+    return _truncate_word_boundary(stripped or clean, 40)
+
+
+class GenerateTitleRequest(BaseModel):
+    query: str
+    reply_snippet: str | None = None
+    session_id: str | None = None
+
+
+@router.post("/generate-title")
+async def generate_copilot_session_title(
+    payload: GenerateTitleRequest,
+    request: Request,
+):
+    """Dùng Gemini LLM đặt tiêu đề ngắn gọn, chuẩn lâm sàng cho phiên chat (fallback deterministic nếu offline)."""
+    fallback_title = _generate_session_title(payload.query)
+    raw_q = " ".join((payload.query or "").strip().split())
+    if not raw_q or fallback_title == "Cuộc trò chuyện mới":
+        return {"title": fallback_title, "source": "fallback"}
+
+    try:
+        from app.services.llm_provider import query_clinical_llm
+        prompt = (
+            "Đặt MỘT tiêu đề ngắn gọn bằng tiếng Việt (4–8 từ, tối đa 42 ký tự) cho cuộc hội thoại y tế sau.\n"
+            "Quy tắc: Nêu thẳng tên thuốc, bệnh lý, mã gen hoặc văn bản pháp lý chính. Không dùng dấu ngoặc kép, không dấu chấm cuối, không viết 'Cuộc trò chuyện về'.\n\n"
+            f"Câu hỏi: {raw_q[:400]}"
+        )
+        if payload.reply_snippet:
+            prompt += f"\nTóm tắt trả lời: {' '.join(payload.reply_snippet.split())[:200]}"
+
+        llm_title = await query_clinical_llm(
+            prompt=prompt,
+            temperature=0.1,
+            max_output_tokens=32,
+            timeout_sec=5.0,
+        )
+        if llm_title:
+            cleaned = llm_title.strip().splitlines()[0].strip(" \"'`*#.-:")
+            cleaned = _truncate_word_boundary(cleaned, 42)
+            if 4 <= len(cleaned) <= 45:
+                return {"title": cleaned, "source": "gemini"}
+    except Exception:
+        pass
+
+    return {"title": fallback_title, "source": "fallback"}
 
 
 class CopilotMessageItem(BaseModel):

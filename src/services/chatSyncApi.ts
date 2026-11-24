@@ -81,6 +81,32 @@ export async function deleteAllUserCloudSessions(username?: string): Promise<boo
   }
 }
 
+export async function generateAiSessionTitle(
+  query: string,
+  replySnippet?: string,
+  sessionId?: string
+): Promise<string | null> {
+  if (!query || !query.trim()) return null;
+  try {
+    const res = await apiFetch(`${API_BASE_URL}/copilot/generate-title`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        query: query.slice(0, 500),
+        reply_snippet: replySnippet ? replySnippet.slice(0, 250) : undefined,
+        session_id: sessionId,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const title = typeof data?.title === 'string' ? data.title.trim() : '';
+    return title && title !== 'Cuộc trò chuyện mới' ? title : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function resetUserSessionWebCache(sessionId: string, username?: string): Promise<boolean> {
   if (!sessionId) return false;
   try {

@@ -32,7 +32,7 @@ import {
   INITIAL_AUDIT_TRAIL_RECORDS
 } from './data/initialData';
 import { ChatSession } from './types/chatSession';
-import { resetUserSessionWebCache } from './services/chatSyncApi';
+import { generateAiSessionTitle, resetUserSessionWebCache } from './services/chatSyncApi';
 import {
   generateSessionTitle
 } from './utils/storage/chatSessionStorage';
@@ -1772,10 +1772,18 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     setChatMessages(prev => [...prev, userMsg, streamingBotMsg]);
     setIsProcessing(true);
 
-    // Tự động đặt tên thông minh cho phiên hội thoại từ câu hỏi đầu tiên
+    // Tự động đặt tên thông minh cho phiên hội thoại từ câu hỏi thực chất đầu tiên (kèm Gemini Auto-Title chạy ngầm)
     if (activeSession.title === 'Cuộc trò chuyện mới' || activeSession.messages.filter(m => m.sender === 'user').length === 0) {
+      const targetSid = activeChatSessionId;
       const generatedTitle = generateSessionTitle(trimmed);
-      setChatSessions(prev => prev.map(s => s.id === activeChatSessionId ? { ...s, title: generatedTitle } : s));
+      setChatSessions(prev => prev.map(s => s.id === targetSid ? { ...s, title: generatedTitle } : s));
+      if (generatedTitle !== 'Cuộc trò chuyện mới') {
+        void generateAiSessionTitle(trimmed, undefined, targetSid).then((aiTitle) => {
+          if (aiTitle) {
+            setChatSessions(prev => prev.map(s => s.id === targetSid ? { ...s, title: aiTitle } : s));
+          }
+        });
+      }
     }
 
     try {

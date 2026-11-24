@@ -29,25 +29,48 @@ export function generateSessionId(): string {
   return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 }
 
+function truncateWordBoundary(text: string, maxLen = 40): string {
+  const clean = text.replace(/\s+/g, ' ').trim().replace(/^[.,:;'"\s]+|[.,:;'"\s]+$/g, '');
+  if (clean.length <= maxLen) return clean;
+  const sliced = clean.slice(0, maxLen - 1);
+  const lastSpace = sliced.lastIndexOf(' ');
+  const cut = (lastSpace > 12 ? sliced.slice(0, lastSpace) : sliced).replace(/[.,:;\s]+$/, '');
+  return `${cut}…`;
+}
+
 export function generateSessionTitle(query: string): string {
   if (!query || !query.trim()) return 'Cuộc trò chuyện mới';
   const clean = query.trim().replace(/\s+/g, ' ');
 
-  // Nhận diện mẫu bệnh nhân
-  const bnMatch = clean.match(/(?:bệnh nhân|bn)\s+([A-ZÀ-ỸĐa-zà-ỹđ\s]+?)(?:\s+cần|\s+tiêm|\s+dùng|\s+buồng|\s+khoa|$)/i);
-  if (bnMatch && bnMatch[1].trim().length > 1) {
-    const pName = bnMatch[1].trim().split(' ').slice(0, 3).join(' ');
-    const drugMatch = clean.match(/(?:morphin|fentanyl|adrenalin|diazepam|ceftriaxone|kcl|aspirin|paracetamol)/i);
-    return drugMatch ? `BN ${pName} - ${drugMatch[0].toUpperCase()}` : `Bệnh nhân ${pName}`;
+  // Bỏ qua câu chào hỏi ngắn để giữ nguyên 'Cuộc trò chuyện mới' tới câu hỏi thực chất
+  if (/^(?:xin\s+)?(?:chào|hello|hi|alo|ok|cảm\s+ơn)(?:\s+(?:bạn|bot|bác\s+sĩ|dược\s+sĩ))?[!.\s]*$/i.test(clean)) {
+    return 'Cuộc trò chuyện mới';
   }
 
-  // Nhận diện mẫu thao tác nhanh
-  if (/tương tác/i.test(clean)) return clean.length > 35 ? `${clean.substring(0, 32)}...` : clean;
+  // Chỉ nhận diện tên riêng bệnh nhân khi viết hoa đầu từ (không bắt nhầm 'nam', 'nữ'...)
+  const bnMatch = clean.match(/(?:bệnh nhân|bn)\s+([A-ZÀ-ỸĐ][a-zà-ỹđ]+(?:\s+[A-ZÀ-ỸĐ][a-zà-ỹđ]+){1,2})/);
+  if (bnMatch && bnMatch[1].trim().length > 1) {
+    return truncateWordBoundary(`BN ${bnMatch[1].trim()}`, 38);
+  }
+
   if (/cận hạn|fefo/i.test(clean)) return 'Kiểm tra FEFO & Hạn dùng';
   if (/hỏng|sự cố/i.test(clean)) return 'Báo cáo sự cố thiết bị';
   if (/giao ban|đối soát/i.test(clean)) return 'Bàn giao ca trực';
 
-  return clean.length > 32 ? `${clean.substring(0, 30)}...` : clean;
+  // Rút trích thực thể thuốc/gen/chỉ số nếu là ca dài
+  if (clean.length > 45) {
+    const tokens = clean.match(/\b(?:warfarin|amiodaron|metronidazol|paracetamol|ibuprofen|metformin|insulin|omeprazol|esomeprazol|amlodipin|losartan|ciprofloxacin|amoxicillin|morphin|fentanyl|CYP\w*(?:\*\d+(?:\/\*\d+)?)?|VKORC1|eGFR|INR|HbA1c|TT\s*\d+|Thông tư\s*\d+)\b/gi);
+    if (tokens && tokens.length > 0) {
+      const unique = Array.from(new Set(tokens.map(t => t.trim()))).slice(0, 3);
+      return truncateWordBoundary(unique.join(' · '), 40);
+    }
+  }
+
+  const stripped = clean
+    .replace(/^(?:tôi\s+muốn\s+(?:bạn\s+)?|bạn\s+hãy\s+|hãy\s+|cho\s+(?:tôi|mình)\s+(?:hỏi|biết)\s+|tìm\s+kiếm\s+|tra\s+cứu\s+)(?:thông\s+tin\s+)?(?:về\s+)?/i, '')
+    .trim();
+
+  return truncateWordBoundary(stripped || clean, 40);
 }
 
 export function createNewSession(initialTitle?: string): ChatSession {
