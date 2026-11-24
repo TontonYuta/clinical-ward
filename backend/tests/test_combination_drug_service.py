@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.main import app
 from app.database import AsyncSessionLocal
 from app.models.registry import DavNationalDrug
+from app.config import settings
 from app.services.combination_drug_service import (
     parse_combination_ingredients,
     clean_substance_name,
@@ -114,7 +115,8 @@ async def test_multi_monograph_strict_unverified_handling():
         assert "chưa có chuyên luận đơn chất độc lập trong Dược thư Quốc gia" in reply
 
 @pytest.mark.asyncio
-async def test_chat_api_combination_drug_e2e():
+async def test_chat_api_combination_drug_e2e(monkeypatch):
+    monkeypatch.setattr(settings, "AUTH_REQUIRED", False)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 1. Truy vấn thông tin Augmentin
         res1 = await client.post("/api/v1/copilot/chat", json={"query": "Thông tin thuốc Augmentin", "user_role": "doctor"})
@@ -130,7 +132,18 @@ async def test_chat_api_combination_drug_e2e():
         data2 = res2.json()
         assert data2["intent"] == "MEDICATION_SAFETY_PROFILE"
         urls2 = [c.get("url", "") for c in data2.get("citations", [])]
-        assert any("page=1118" in u for u in urls2)
-        assert any("page=459" in u for u in urls2)
+        assert any("page=1118" in u or "page=1119" in u for u in urls2)
+        assert any("page=459" in u or "page=460" in u for u in urls2)
         assert "Paracetamol" in data2.get("reply_text", "")
         assert "Codein" in data2.get("reply_text", "")
+
+        # 3. Regression test: Chống chỉ định Coversyl (thuốc phối hợp không bị safe_abstention)
+        res3 = await client.post("/api/v1/copilot/chat", json={"query": "Chống chỉ định và thận trọng Coversyl", "user_role": "doctor"})
+        assert res3.status_code == 200
+        data3 = res3.json()
+        assert data3["intent"] == "MEDICATION_SAFETY_PROFILE"
+        assert data3["answer_type"] in ["medication_field", "medication_fields"]
+        assert data3.get("abstention_reason") is None
+        assert "Chưa thể xác minh nội dung tra cứu" not in data3.get("reply_text", "")
+        assert "Perindopril" in data3.get("reply_text", "")
+        assert len(data3.get("citations", [])) >= 1

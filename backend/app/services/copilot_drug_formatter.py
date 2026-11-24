@@ -455,10 +455,19 @@ async def build_drug_profile_response(
                         mono = c["monograph"]
                         val = getattr(mono, req_field, None)
                         if val:
-                            comp_lines.append(f"  * **{ing_name}** (*{mono.title}*): {format_clinical_text(str(val).strip())}")
-                        src = mono.source or matched.clinical_source or "Dược thư Quốc gia Việt Nam"
-                        combo_citations.append(_drug_citation(matched, mono, src))
-                        legal_bases.append(src)
+                            formatted_val = format_clinical_text(str(val).strip())
+                            comp_lines.append(f"  * **{ing_name}** (*{mono.title}*): {formatted_val}")
+                            src = mono.source or matched.clinical_source or "Dược thư Quốc gia Việt Nam"
+                            cit = _drug_citation(matched, mono, src, target_field=req_field)
+                            cit["excerpt"] = formatted_val
+                            cit["section"] = req_field
+                            cit["source_id"] = getattr(mono, "source_id", None) or getattr(matched, "source_id", None) or "data/vietnam_drug_registry/dav_master_registry.json.gz"
+                            cit["source_version"] = getattr(mono, "source_version", None) or getattr(matched, "source_version", None) or "sha256:df0da7ecd18ec5a9413d9cb04e99979d319d95365675986dc0c02763c813a2d2"
+                            cit["chunk_id"] = f"monograph:{getattr(mono, 'id', None) or getattr(mono, 'inn', None) or ing_name}:{req_field}"
+                            combo_citations.append(cit)
+                            legal_bases.append(src)
+                        else:
+                            comp_lines.append(f"  * **{ing_name}:** Chưa ghi nhận thông tin {req_label.lower()} trong chuyên luận Dược thư Quốc gia.")
                     else:
                         comp_lines.append(f"  * **{ing_name}:** {c.get('note', 'Chưa có chuyên luận độc lập trong Dược thư Quốc gia')}")
                 labels.append(req_label)
@@ -481,15 +490,15 @@ async def build_drug_profile_response(
                         user_role=u_role
                     )
                     if synth_res and synth_res.conversational_answer:
-                        reply = synth_res.conversational_answer
+                        reply = f"{synth_res.conversational_answer}\n\n---\n{reply}"
                 except Exception:
                     pass
             unique_citations = []
-            seen_urls = set()
+            seen_keys = set()
             for cit in combo_citations:
-                u = cit.get("url")
-                if u not in seen_urls:
-                    seen_urls.add(u)
+                key = (cit.get("chunk_id") or cit.get("url"))
+                if key not in seen_keys:
+                    seen_keys.add(key)
                     unique_citations.append(cit)
             session.set_active_medication(name=clean_name, ingredient=matched.active_ingredient, batch=matched.national_code, stock="", location="", sdk=matched.national_code)
             return CopilotResponse(
