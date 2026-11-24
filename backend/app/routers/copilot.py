@@ -64,10 +64,19 @@ async def chat_with_copilot(
     clinical_cache = get_clinical_cache()
 
     # 0. Kiểm tra kho Q&A đã thẩm định trong Đồ thị Tri thức (Verified Clinical Q&A Node)
-    # Trả về tức thì (< 2ms) 0 token, không cần LLM suy nghĩ hay tìm kiếm lại nếu đã có đáp án chuẩn
+    # Tách biệt hẳn Web Search: chỉ tra cứu đồ thị nội bộ khi tắt Web Search và bỏ qua các node web search cũ
     from app.services.rag.verified_qa_service import get_verified_qa_service
     vqa_service = get_verified_qa_service()
-    verified_node = vqa_service.lookup_verified_qa(payload.query, user_role=user_role) if not payload.image_base64 else None
+    verified_node = (
+        vqa_service.lookup_verified_qa(payload.query, user_role=user_role)
+        if (not payload.image_base64 and not payload.enable_web_search)
+        else None
+    )
+    if verified_node and (
+        verified_node.get("intent") == "GROUNDED_WEB_SEARCH"
+        or "web_search" in str(verified_node.get("verification_source", ""))
+    ):
+        verified_node = None
 
     if verified_node:
         response = vqa_service.format_as_copilot_response(verified_node, session=session)
@@ -168,12 +177,12 @@ async def chat_with_copilot(
         if not is_context_dependent and not payload.enable_web_search and response.answer_type not in ("clarification", "safe_abstention"):
             clinical_cache.set(payload.query, user_role, response)
 
-        # Tự động thăng hạng câu trả lời chất lượng cao (Grounding >= 0.85, citations đầy đủ) vào Đồ thị Tri thức Q&A
-        if not is_context_dependent:
+        # Tự động thăng hạng câu trả lời nội viện chất lượng cao vào Đồ thị Tri thức Q&A (không trộn web search)
+        if not is_context_dependent and not payload.enable_web_search and response.intent != "GROUNDED_WEB_SEARCH":
             vqa_service.auto_register_candidate(
                 payload.query,
                 response,
-                source="grounded_web_search" if payload.enable_web_search else "copilot_rag"
+                source="copilot_rag"
             )
 
     response = format_offline_drug_response(response)
@@ -244,7 +253,16 @@ async def chat_with_copilot_stream(
         # 0. Kiểm tra kho Q&A đã thẩm định trong Đồ thị Tri thức (Verified Clinical Q&A Node)
         from app.services.rag.verified_qa_service import get_verified_qa_service
         vqa_service = get_verified_qa_service()
-        verified_node = vqa_service.lookup_verified_qa(payload.query, user_role=user_role) if not payload.image_base64 else None
+        verified_node = (
+            vqa_service.lookup_verified_qa(payload.query, user_role=user_role)
+            if (not payload.image_base64 and not payload.enable_web_search)
+            else None
+        )
+        if verified_node and (
+            verified_node.get("intent") == "GROUNDED_WEB_SEARCH"
+            or "web_search" in str(verified_node.get("verification_source", ""))
+        ):
+            verified_node = None
 
         # 1. Kiểm tra bộ nhớ đệm lâm sàng (Clinical LRU Cache) để đạt latency < 1ms
         from app.services.cache.clinical_cache import get_clinical_cache
@@ -301,12 +319,12 @@ async def chat_with_copilot_stream(
                 if not is_context_dependent and not payload.enable_web_search and response.answer_type not in ("clarification", "safe_abstention"):
                     clinical_cache.set(payload.query, user_role, response)
 
-                # Tự động thăng hạng câu trả lời chất lượng cao vào Đồ thị Tri thức Q&A
-                if not is_context_dependent:
+                # Tự động thăng hạng câu trả lời nội viện chất lượng cao vào Đồ thị Tri thức Q&A (không trộn web search)
+                if not is_context_dependent and not payload.enable_web_search and response.intent != "GROUNDED_WEB_SEARCH":
                     vqa_service.auto_register_candidate(
                         payload.query,
                         response,
-                        source="grounded_web_search" if payload.enable_web_search else "copilot_rag"
+                        source="copilot_rag"
                     )
 
         response = format_offline_drug_response(response)
