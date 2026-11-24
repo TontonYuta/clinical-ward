@@ -881,6 +881,57 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
 async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: AsyncSession, *, session, history: str) -> CopilotResponse:
     """Entrypoint chính của Copilot: Xử lý chat và tự động chuẩn hóa 100% nguồn đối chứng (citations)."""
     resp = await _handle_copilot_chat_core(payload, request, db, session=session, history=history)
+
+    # Adaptive Corrective RAG (CRAG) Fallback:
+    # Nếu CSDL nội bộ không tìm thấy tài liệu phù hợp (safe_abstention),
+    # và người dùng chưa chủ động bật web search, tự động kích hoạt tìm kiếm Web có thẩm định nếu là câu hỏi lâm sàng hợp lệ.
+    if (
+        not payload.enable_web_search
+        and not payload.image_base64
+        and resp is not None
+        and resp.answer_type == "safe_abstention"
+        and resp.source_status not in ("out_of_scope", "unanchored_turn", "pricing_inquiry", "general_chitchat", "security_guardrail_blocked")
+    ):
+        lower_q = payload.query.lower()
+        is_internal_operational = any(term in lower_q for term in (
+            "tồn kho", "trong kho", "kho dược", "tủ trực", "báo hỏng", "hư hỏng",
+            "máy thở", "monitor", "kiểm kê", "giao ban", "kho viện"
+        ))
+        if not is_internal_operational:
+            user_role = getattr(payload, "user_role", "doctor") or "doctor"
+            user_name = getattr(payload, "user_name", "Bác sĩ") or "Bác sĩ"
+            from app.services.chatbot.semantic_web_intent_router import check_semantic_web_bypass
+            bypass = await check_semantic_web_bypass(payload.query, user_name=user_name, user_role=user_role, history=history)
+            if bypass is None:
+                from app.services.copilot_drug_keyword_extractor import extract_drug_keywords
+                from app.services.chatbot.grounded_web_search_handler import handle_grounded_web_search_turn
+                fallback_payload = payload.model_copy(update={"enable_web_search": True})
+                web_resp = await handle_grounded_web_search_turn(
+                    fallback_payload, user_role=user_role, session=session, history=history
+                )
+                if (
+                    web_resp is not None
+                    and web_resp.answer_type not in ("safe_abstention", "clarification")
+                    and web_resp.source_status != "no_search_results"
+                ):
+                    cand_kw = extract_drug_keywords(lower_q)
+                    clean_kw = cand_kw.split()[0] if cand_kw else ""
+                    has_verified_entity = True
+                    if clean_kw and len(clean_kw) >= 4:
+                        all_web_text = " ".join([
+                            (c.get("title", "") + " " + c.get("snippet", ""))
+                            for c in (web_resp.citations or [])
+                            if isinstance(c, dict)
+                        ]).lower()
+                        # Thuốc ứng viên bắt buộc phải xuất hiện trong dữ liệu tìm kiếm web thực tế
+                        if clean_kw not in all_web_text:
+                            has_verified_entity = False
+
+                    if has_verified_entity:
+                        if session is not None and hasattr(session, "append_conversation_turn"):
+                            session.append_conversation_turn(payload.query, web_resp.reply_text)
+                        resp = web_resp.model_copy(update={"session_id": session.session_id if session else payload.session_id})
+
     return post_process_copilot_response(
         resp, request, payload,
         validator_fn=validate_response_evidence_contract,
