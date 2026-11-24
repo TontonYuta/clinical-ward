@@ -391,8 +391,9 @@ async def build_drug_profile_response(
     is_multi_field_request = len({field[0] for field in requested_fields}) > 1
 
     # ĐIỀU PHỐI THÍCH ỨNG (ADAPTIVE BLUF & DEEP FACET):
-    # Áp dụng cho câu hỏi tổng quan (OVERVIEW) hoặc khi không có requested_fields tĩnh
-    if (not explicit_requested_fields and not is_comprehensive_request
+    # Chỉ áp dụng cho chế độ card_lookup khi không có requested_fields tĩnh;
+    # các câu hỏi lâm sàng tự nhiên (clinical_qa) đi thẳng vào Grounded Gemini Synthesizer.
+    if (query_mode != "clinical_qa" and not explicit_requested_fields and not is_comprehensive_request
             and not is_multi_field_request and not is_combination):
         from app.services.chatbot.clinical_schema_extractor import extract_clinical_query_schema_deterministic
         from app.services.chatbot.adaptive_drug_slicer import slice_clinical_drug_evidence
@@ -807,7 +808,7 @@ async def build_drug_profile_response(
                     evidence_context=evidence_ctx,
                     source_label=source,
                     user_role=u_role,
-                    timeout_sec=8.0,
+                    timeout_sec=12.0,
                 )
                 if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
                     reply_text = (
@@ -912,7 +913,7 @@ async def build_drug_profile_response(
                     evidence_context="\n".join(ctx_parts),
                     source_label=prof_source,
                     user_role=u_role,
-                    timeout_sec=8.0,
+                    timeout_sec=12.0,
                 )
                 if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
                     qa_reply = (
