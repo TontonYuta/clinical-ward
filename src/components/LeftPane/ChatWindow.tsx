@@ -321,6 +321,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           const isUser = msg.sender === 'user';
           const isRightAligned = isUser || isSystem;
           const activeCitations: RagCitationItem[] = msg.citations || [];
+          const isWebSearch =
+            msg.answerType === 'grounded_web_reference' ||
+            msg.intent === 'GROUNDED_WEB_SEARCH' ||
+            (activeCitations.length > 0 && activeCitations.every(c => Boolean(c.url?.startsWith('http')) && !c.document_id));
           const displayText = isAgent ? removeLegacySourceText(msg.text, true) : msg.text;
 
           return (
@@ -410,7 +414,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                           {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-teal-600 animate-pulse align-middle" />}
                         </>
                       )}
-                      {isAgent && !msg.isStreaming && activeCitations.length > 0 && (
+                      {isAgent && !msg.isStreaming && activeCitations.length > 0 && !isWebSearch && (
                         <CitationSourceList
                           citations={activeCitations}
                           onCitationClick={(citation) => handleInlineCitationClick(msg.id, citation)}

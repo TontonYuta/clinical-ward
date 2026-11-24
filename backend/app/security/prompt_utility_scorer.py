@@ -228,7 +228,9 @@ def compute_prompt_utility(
 
     # 4. Xác định Căn cứ CSDL (Grounding Source)
     grounded_source = None
-    if reply_text:
+    if intent == "GROUNDED_WEB_SEARCH":
+        grounded_source = "Nguồn Tìm Kiếm Web Xác Minh (Internet Grounded)"
+    elif reply_text:
         if "Dược Thư Quốc Gia" in reply_text or "Dược thư" in reply_text:
             grounded_source = "Dược Thư Quốc Gia Việt Nam 2015"
         elif "2760/QĐ-BYT" in reply_text or "Sốt xuất huyết" in reply_text:

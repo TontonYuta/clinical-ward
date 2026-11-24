@@ -190,6 +190,7 @@ export interface ChatMessage {
   availabilityMode?: 'online_ai' | 'local_only' | 'checking';
   provider?: string | null;
   ragGrounded?: boolean;
+  intent?: string;
   answerType?: string;
   sourceStatus?: string;
   confidence?: number;

@@ -540,17 +540,19 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
 
     disclaimer = "⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet mang tính chất tham khảo, không thay thế chỉ định chuyên môn của bác sĩ.*"
 
+    # Chỉ tìm tiêu đề khối tham khảo độc lập ở phần cuối bài
     ref_pat = re.compile(
-        r'\n(?:\*+|#{1,4}\s*)?(?:Tham khảo chi tiết tại|Nguồn tham khảo y khoa|Nguồn tham khảo|Tài liệu tham khảo|Tham khảo)[:\s]*\n.*',
+        r'\n(?:\*+|#{1,4}\s*)?(?:Tham khảo chi tiết tại|Nguồn tham khảo y khoa|Nguồn tham khảo|Tài liệu tham khảo)[:\s]*\n.*',
         re.IGNORECASE | re.DOTALL
     )
     ref_match = ref_pat.search(ai_text)
     if ref_match:
         body = ai_text[:ref_match.start()].strip()
     else:
-        disc_idx = ai_text.find("⚠️")
-        if disc_idx != -1:
-            body = ai_text[:disc_idx].strip()
+        # Chỉ loại bỏ disclaimer nếu nó nằm ở cuối câu trả lời (tránh cắt nhầm emoji ⚠️ trong phần cảnh báo lâm sàng)
+        disc_match = re.search(r'\n\s*⚠️\s*\*?Lưu ý:\s*Thông tin tìm kiếm.*$', ai_text, re.IGNORECASE | re.DOTALL)
+        if disc_match:
+            body = ai_text[:disc_match.start()].strip()
         else:
             body = ai_text.strip()
 
@@ -558,7 +560,8 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
     ref_lines = ["### Nguồn tham khảo y khoa:"]
     for idx, r in enumerate(results[:5], 1):
         domain_tag = f" - *{r.source_domain}*" if r.source_domain else ""
-        ref_lines.append(f"{idx}. [{r.title}]({r.url}){domain_tag}")
+        title = r.title.strip() if r.title else r.source_domain or "Tài liệu y khoa trực tuyến"
+        ref_lines.append(f"{idx}. [{title}]({r.url}){domain_tag}")
 
     return f"{body}\n\n" + "\n".join(ref_lines) + f"\n\n{disclaimer}"
 

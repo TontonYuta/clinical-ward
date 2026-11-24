@@ -136,6 +136,7 @@ export async function processClinicalAgentQueryAsync(
           citations: backendData.citations || [],
           evidence: backendData.evidence || [],
           ragGrounded: backendData.rag_grounded,
+          intent: backendData.intent || backendData.query_intent,
           answerType: backendData.answer_type,
           sourceStatus: backendData.source_status,
           confidence: backendData.confidence,
