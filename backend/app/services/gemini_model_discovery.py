@@ -37,23 +37,25 @@ DISALLOWED_SUBSTRINGS = (
 
 
 def extract_model_version(name: str) -> float:
-    """Trích xuất số phiên bản (ví dụ 2.5, 2.0, 1.5) để xếp hạng ưu tiên."""
-    match = re.search(r"(\d+(?:\.\d+)?)", name)
+    """Trích xuất số phiên bản thực tế của model (sau gemini/gemma, ví dụ 2.5, 2.0, 1.5)."""
+    match = re.search(r"(?:gemini|gemma)[-_](\d+(?:\.\d+)?)", name.lower())
     if match:
         try:
-            return float(match.group(1))
+            ver = float(match.group(1))
+            if ver <= 3.0:
+                return ver
         except ValueError:
-            return 1.0
+            pass
     return 1.0
 
 
 def filter_and_rank_gemini_models(raw_models: List[str]) -> List[str]:
     """
     Lọc bỏ các model không phù hợp (TTS, Embedding) và xếp hạng thông minh:
-    1. Flash production models (phiên bản cao nhất trước: 2.5 -> 2.0 -> 1.5).
+    1. Stable Production Models (được chứng thực hạn ngạch ổn định: gemini-2.5-flash -> 2.0-flash -> 1.5-flash).
     2. Pro reasoning models (2.5-pro -> 1.5-pro).
     3. Gemma / Open weight models.
-    4. Các model sinh văn bản khác.
+    4. Các model experimental/preview được hạ mức ưu tiên để tránh 429 quota exhaustion.
     """
     valid_candidates: List[str] = []
     for m in raw_models:
@@ -67,24 +69,29 @@ def filter_and_rank_gemini_models(raw_models: List[str]) -> List[str]:
         return list(SAFE_FALLBACK_GEMINI_MODELS)
 
     def score_model(name: str) -> float:
-        lower = name.lower()
-        ver = extract_model_version(name)
+        clean = name.strip().replace("models/", "")
+        lower = clean.lower()
+        ver = extract_model_version(clean)
         base_score = 0.0
 
+        # Ưu tiên cực lớn cho các model chính thức nằm trong danh sách Safe Fallback
+        if clean in SAFE_FALLBACK_GEMINI_MODELS:
+            base_score += 50.0
+
         if "flash" in lower:
-            base_score = 100.0
+            base_score += 100.0
             if "lite" in lower:
                 base_score -= 10.0
-            if "preview" in lower or "experimental" in lower or "exp" in lower:
-                base_score -= 15.0
+            if any(term in lower for term in ("preview", "experimental", "exp", "thinking")):
+                base_score -= 50.0
         elif "pro" in lower:
-            base_score = 60.0
-            if "preview" in lower or "experimental" in lower or "exp" in lower:
-                base_score -= 10.0
+            base_score += 60.0
+            if any(term in lower for term in ("preview", "experimental", "exp", "thinking")):
+                base_score -= 50.0
         elif "gemma" in lower:
-            base_score = 40.0
+            base_score += 40.0
         else:
-            base_score = 20.0
+            base_score += 20.0
 
         # Ưu tiên phiên bản cao hơn (2.5 > 2.0 > 1.5)
         return base_score + (ver * 2.0)

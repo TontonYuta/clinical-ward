@@ -937,7 +937,7 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
                 if (
                     web_resp is not None
                     and web_resp.answer_type not in ("safe_abstention", "clarification")
-                    and web_resp.source_status != "no_search_results"
+                    and (web_resp.source_status != "no_search_results" or payload.enable_web_search)
                 ):
                     cand_kw = extract_drug_keywords(lower_q)
                     clean_kw = cand_kw.split()[0] if cand_kw else ""

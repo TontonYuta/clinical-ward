@@ -175,10 +175,10 @@ async def execute_clinical_rag(
     rag_res.claims = generated_claims
     rag_res.evidence = [record.to_dict() for record in evidence_records]
 
-    # Offline direct lookup may expose source text verbatim, but never synthesize claims.
-    # Graph evidence is a versioned source in the same contract as document chunks;
-    # excluding it here made valid offline LightRAG answers fail provenance checks.
-    if not gemini_key and not inference_required and not rag_res.claims:
+    # Offline direct lookup or LLM synthesis failure/quota exhaustion:
+    # If no LLM claims were generated, extract verbatim source claims from the
+    # retrieved evidence chunks so the response remains grounded and factual.
+    if not rag_res.claims and evidence_records and not inference_required:
         rag_res.claims = _source_fact_claims(evidence_records)
 
     # 7. Verify model-declared claim/evidence links; claim IDs are only proposals.
