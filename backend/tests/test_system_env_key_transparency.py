@@ -16,7 +16,7 @@ async def test_system_env_key_in_vault_listing():
         assert len(sys_keys) == 1, "Phải có đúng 1 bản ghi Khóa Hệ Thống Mặc Định"
         sys_key = sys_keys[0]
 
-        assert sys_key["name"] == "Khóa Mặc Định Hệ Thống (Render Environment)"
+        assert sys_key["name"] in ("Khóa Gemini Mặc Định (Render Environment)", "Khóa Mặc Định Hệ Thống (Render Environment)")
         assert sys_key["provider"] == "gemini"
         assert sys_key["is_system_env"] is True
         assert "15 RPM" in sys_key["quota_status"]

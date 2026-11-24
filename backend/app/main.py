@@ -115,7 +115,7 @@ async def lifespan(app: FastAPI):
             ("model_call_count", "INTEGER DEFAULT 0"),
             ("usage_call_count", "INTEGER DEFAULT 0"),
             ("cache_hit_count", "INTEGER DEFAULT 0"),
-            ("model_name", "VARCHAR(64) DEFAULT 'gemini-3.5-flash-lite'"),
+            ("model_name", "VARCHAR(64) DEFAULT 'gemini-2.5-flash'"),
             ("provider", "VARCHAR(64) DEFAULT 'gemini'"),
             ("has_image", "BOOLEAN DEFAULT 0"),
             ("image_tokens", "INTEGER DEFAULT 0"),

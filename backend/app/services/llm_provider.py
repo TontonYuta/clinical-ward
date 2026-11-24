@@ -152,13 +152,8 @@ async def _call_gemini_api(
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         return None
 
-    models = [
-        "gemini-3.5-flash-lite",
-        "gemini-flash-lite-latest",
-        "gemini-3.8-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite",
-    ]
+    from app.services.gemini_model_discovery import get_available_gemini_models_async
+    models = await get_available_gemini_models_async(api_key=key)
     generation_config = {"temperature": temperature, "maxOutputTokens": max_output_tokens}
     if response_schema:
         generation_config["responseMimeType"] = "application/json"
@@ -364,7 +359,7 @@ async def _call_gemini_vision_ocr(
 ) -> Optional[dict]:
     """
     Gọi Gemini Multimodal API trích xuất đơn thuốc với mô hình thị giác và cascading fallback.
-    Ưu tiên gemini-2.5-flash / gemini-3-flash, tự động trượt xuống gemini-3.5-flash-lite khi hết hạn ngạch.
+    Ưu tiên các model Flash production (như gemini-2.5-flash) theo danh mục Dynamic Discovery của Google API.
     """
     from app.services.admin_key_vault import get_active_api_key_async, rotate_to_next_key
     key = api_key
@@ -380,13 +375,8 @@ async def _call_gemini_vision_ocr(
         return None
 
     ocr_prompt = prompt or DEFAULT_PRESCRIPTION_OCR_PROMPT
-    models = [
-        "gemini-3.5-flash-lite",
-        "gemini-flash-lite-latest",
-        "gemini-3.8-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite",
-    ]
+    from app.services.gemini_model_discovery import get_available_gemini_models_async
+    models = await get_available_gemini_models_async(api_key=key)
 
     payload = {
         "contents": [{
@@ -826,13 +816,8 @@ async def query_clinical_multimodal_chat(
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         return None
 
-    models = [
-        "gemini-3.5-flash-lite",
-        "gemini-flash-lite-latest",
-        "gemini-3.8-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite",
-    ]
+    from app.services.gemini_model_discovery import get_available_gemini_models_async
+    models = await get_available_gemini_models_async(api_key=key)
 
     prompt_text = f"Câu hỏi / Yêu cầu của nhân viên y tế ({user_role}): {user_query or 'Phân tích đơn thuốc / hình ảnh thuốc đính kèm: trích xuất danh mục hoạt chất, liều dùng, tương tác thuốc và rà soát điều kiện thanh toán BHYT.'}"
     payload = {

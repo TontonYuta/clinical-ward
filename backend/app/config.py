@@ -28,6 +28,8 @@ class Settings(BaseModel):
     # Never read browser-prefixed VITE secrets on the backend: VITE values are
     # intended for public frontend bundles and may be exposed to every user.
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
+    GEMINI_DEFAULT_MODEL: str | None = os.getenv("GEMINI_DEFAULT_MODEL")
+    GEMINI_FALLBACK_MODELS: str | None = os.getenv("GEMINI_FALLBACK_MODELS")
     SERPER_API_KEY: str | None = os.getenv("SERPER_API_KEY")
     # Universal LLM Gateway: "gemini" | "openai_compatible" (Ollama/vLLM/DeepSeek/Groq) | "offline"
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini").strip().lower()

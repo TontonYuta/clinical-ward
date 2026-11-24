@@ -73,7 +73,7 @@ class TelemetryEventItem(BaseModel):
     total_tokens: int = 0
     usage_source: str = "none"
     cache_hit_count: int = 0
-    model_name: Optional[str] = "gemini-3.5-flash-lite"
+    model_name: Optional[str] = "gemini-2.5-flash"
     provider: Optional[str] = "gemini"
     has_image: bool = False
     image_tokens: int = 0

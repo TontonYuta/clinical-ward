@@ -320,7 +320,7 @@ async def chat_with_copilot_stream(
             response,
             last_exec=usage,
             cached_resp=bool(cached_resp),
-            default_model="clinical-cache-engine" if cached_resp else "gemini-3.5-flash-lite",
+            default_model="clinical-cache-engine" if cached_resp else (getattr(settings, "GEMINI_DEFAULT_MODEL", None) or "gemini-2.5-flash"),
             default_provider="local-cache" if cached_resp else "gemini",
         )
         if response.answer_type == "unavailable":

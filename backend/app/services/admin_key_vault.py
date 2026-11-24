@@ -292,6 +292,11 @@ def add_api_key(name: str, raw_key: str, provider: str = "gemini") -> Dict[str, 
     keys.append(new_item)
     _save_vault_data(keys)
     _ACTIVE_KEY_CACHE.clear()
+    try:
+        from app.services.gemini_model_discovery import invalidate_gemini_model_cache
+        invalidate_gemini_model_cache()
+    except Exception:
+        pass
     return {
         "key_id": key_id,
         "name": name,
@@ -343,6 +348,11 @@ def delete_api_key(key_id: str) -> bool:
     if len(filtered) != len(keys):
         _save_vault_data(filtered)
         _ACTIVE_KEY_CACHE.clear()
+        try:
+            from app.services.gemini_model_discovery import invalidate_gemini_model_cache
+            invalidate_gemini_model_cache()
+        except Exception:
+            pass
         return True
     return False
 

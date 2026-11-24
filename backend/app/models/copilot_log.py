@@ -27,7 +27,7 @@ class CopilotChatLog(Base):
     model_call_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     usage_call_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     cache_hit_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    model_name: Mapped[str | None] = mapped_column(String(64), nullable=True, default="gemini-3.5-flash-lite")
+    model_name: Mapped[str | None] = mapped_column(String(64), nullable=True, default="gemini-2.5-flash")
     provider: Mapped[str | None] = mapped_column(String(64), nullable=True, default="gemini")
     has_image: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     image_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=True)

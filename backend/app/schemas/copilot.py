@@ -131,7 +131,7 @@ class CopilotResponse(BaseModel):
     provider: str | None = None
     claims: list[AnswerClaim] = Field(default_factory=list)
     evidence_claim_map: dict[str, list[str]] = Field(default_factory=dict)
-    model_name: str | None = "gemini-3.5-flash-lite"
+    model_name: str | None = "gemini-2.5-flash"
     has_image: bool | None = False
     image_tokens: int | None = 0
 

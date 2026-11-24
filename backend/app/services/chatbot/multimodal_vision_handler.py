@@ -48,7 +48,7 @@ async def handle_multimodal_vision_turn(
             prompt_tokens=vision_res.get("_prompt_tokens", 0),
             completion_tokens=vision_res.get("_completion_tokens", 0),
             total_tokens=vision_res.get("_total_tokens", 0),
-            model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
+            model_name=vision_res.get("_model_used", "gemini-2.5-flash"),
             has_image=True,
             image_tokens=vision_res.get("_image_tokens", 0),
         )
@@ -83,7 +83,7 @@ async def handle_multimodal_vision_turn(
         prompt_tokens=vision_res.get("_prompt_tokens", 0),
         completion_tokens=vision_res.get("_completion_tokens", 0),
         total_tokens=vision_res.get("_total_tokens", 0),
-        model_name=vision_res.get("_model_used", "gemini-3.5-flash-lite"),
+        model_name=vision_res.get("_model_used", "gemini-2.5-flash"),
         has_image=True,
         image_tokens=vision_res.get("_image_tokens", 0),
     )
