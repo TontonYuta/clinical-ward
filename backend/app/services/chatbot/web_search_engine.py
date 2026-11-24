@@ -321,7 +321,16 @@ async def search_serper(
     Tìm kiếm qua Serper.dev REST API (Google Search kết quả thật, ổn định trên VPS/Cloud).
     Lấy dôi dư ứng viên (fetch_num) để sẵn sàng lọc domain và xếp hạng độ uy tín y tế.
     """
-    from app.services.admin_key_vault import get_active_api_key
+    from app.services.admin_key_vault import get_active_api_key, record_key_consumption, rotate_to_next_key
+    from app.services.admin_monitoring_service import check_search_budget_gate
+    from app.services.telemetry_store import record_search_query_usage
+
+    # Kiểm tra cổng ngân sách tìm kiếm Web hàng ngày (Search Budget Cap Gate)
+    gate_ok, gate_reason = check_search_budget_gate()
+    if not gate_ok:
+        logger.warning("[Serper Search] Bị chặn bởi Budget Gate: %s", gate_reason)
+        raise ValueError(gate_reason)
+
     key = api_key or os.getenv("SERPER_API_KEY", "").strip() or (get_active_api_key(provider="serper") or "").strip()
     if not key or key == "YOUR_SERPER_API_KEY":
         raise ValueError("Chưa cấu hình SERPER_API_KEY")
@@ -339,10 +348,22 @@ async def search_serper(
         "num": fetch_num
     }
 
+    start_serper_t = time.monotonic()
     async with httpx.AsyncClient(timeout=6.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
+        elapsed_serper_ms = round((time.monotonic() - start_serper_t) * 1000, 1)
+
+        if resp.status_code in (403, 429):
+            rotate_to_next_key(key, reason="rate_limited" if resp.status_code == 429 else "quota_exhausted", provider="serper")
+            record_search_query_usage(provider="serper", query=query, credits=0, cost_vnd=0.0, latency_ms=elapsed_serper_ms, status=f"error_{resp.status_code}")
+            resp.raise_for_status()
+
         resp.raise_for_status()
         data = resp.json()
+
+    # Ghi nhận truy vấn thành công vào sổ cái và tiêu thụ key
+    record_search_query_usage(provider="serper", query=query, credits=1, cost_vnd=25.5, latency_ms=elapsed_serper_ms, status="success")
+    record_key_consumption(key, tokens=1, is_error_429=False)
 
     results: List[WebSearchResult] = []
     # 1. Trích xuất AnswerBox (nếu Google có khung trả lời nổi bật)

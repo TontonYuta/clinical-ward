@@ -9,18 +9,18 @@ from app.config import settings
 
 
 def _admin_headers():
-    return {"Authorization": f"Bearer {issue_token('test-director', 'director', settings.SECRET_KEY)}"}
+    return {"Authorization": f"Bearer {issue_token('test-director', 'director', settings.SECRET_KEY, session_id='sandbox_session')}"}
 
 @pytest.mark.asyncio
 async def test_admin_telemetry_overview():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        res = await client.get("/api/v1/admin/monitoring/overview")
+        res = await client.get("/api/v1/admin/monitoring/overview", headers=_admin_headers())
         assert res.status_code == 200
         data = res.json()
         assert "total_queries" in data
         assert "cache_hit_rate_pct" in data
         assert "tokens_consumed" in data
-        telemetry = await client.get("/api/v1/admin/monitoring/telemetry-logs?page_size=200")
+        telemetry = await client.get("/api/v1/admin/monitoring/telemetry-logs?page_size=200", headers=_admin_headers())
         assert telemetry.status_code == 200
         assert data["total_queries"] == telemetry.json()["total_items"]
         assert "tokens_saved" in data
@@ -46,11 +46,16 @@ async def test_admin_key_vault_crud(monkeypatch):
     from datetime import datetime, timedelta, timezone
     import uuid
 
-    identity_engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    from sqlalchemy.pool import StaticPool
+    identity_engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool
+    )
     async with identity_engine.begin() as connection:
         await connection.run_sync(IdentityBase.metadata.create_all)
     identity_factory = async_sessionmaker(identity_engine, expire_on_commit=False)
-    monkeypatch.setattr(settings, "IDENTITY_DATABASE_URL", "sqlite+aiosqlite:///monitor-test-identity.db")
+    monkeypatch.setattr(settings, "IDENTITY_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
     import base64
     monkeypatch.setattr(settings, "KEY_ENCRYPTION_KEY", base64.urlsafe_b64encode(b"t" * 32).decode())
     from app import identity_database
@@ -59,50 +64,53 @@ async def test_admin_key_vault_crud(monkeypatch):
     monkeypatch.setattr(admin_key_vault, "_VAULT_FILE", "/tmp/monitor-test-api-key-vault.json")
     monkeypatch.setattr(admin_key_vault, "_identity_vault_configured", lambda: False)
     monkeypatch.setattr(admin_key_vault, "_require_complete_identity_vault_config", lambda: None)
-    async with identity_factory() as session:
-        staff_id, account_id = str(uuid.uuid4()), str(uuid.uuid4())
-        session.add(StaffProfile(id=staff_id, full_name="Test Director", department="Test", job_title="Director"))
-        session.add(StaffAccount(id=account_id, staff_id=staff_id, username="test-director", password_hash=hash_password_argon2("test-password")))
-        await session.flush()
-        session.add(StaffRoleGrant(id=str(uuid.uuid4()), account_id=account_id, role="director"))
-        await session.flush()
-        token = issue_token("test-director", "director", settings.SECRET_KEY, session_id="monitor-test-session")
-        await create_identity_session(session, account_id, token, datetime.now(timezone.utc) + timedelta(minutes=5), "monitor-test-session")
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # 1. Liệt kê keys
-        test_headers = {"Authorization": f"Bearer {token}"}
-        list_res = await client.get("/api/v1/admin/keys", headers=test_headers)
-        assert list_res.status_code == 200
-        keys = list_res.json()
-        assert isinstance(keys, list)
+    try:
+        async with identity_factory() as session:
+            staff_id, account_id = str(uuid.uuid4()), str(uuid.uuid4())
+            session.add(StaffProfile(id=staff_id, full_name="Test Director", department="Test", job_title="Director"))
+            session.add(StaffAccount(id=account_id, staff_id=staff_id, username="test-director", password_hash=hash_password_argon2("test-password")))
+            await session.flush()
+            session.add(StaffRoleGrant(id=str(uuid.uuid4()), account_id=account_id, role="director"))
+            await session.flush()
+            token = issue_token("test-director", "director", settings.SECRET_KEY, session_id="monitor-test-session")
+            await create_identity_session(session, account_id, token, datetime.now(timezone.utc) + timedelta(minutes=5), "monitor-test-session")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # 1. Liệt kê keys
+            test_headers = {"Authorization": f"Bearer {token}"}
+            list_res = await client.get("/api/v1/admin/keys", headers=test_headers)
+            assert list_res.status_code == 200
+            keys = list_res.json()
+            assert isinstance(keys, list)
 
-        # 2. Thêm key mới
-        add_res = await client.post("/api/v1/admin/keys", json={
-            "name": "Test Hospital Unit Key",
-            "api_key": "AIzaSyTestMockKeyForAdminUnitTesting123456",
-            "provider": "gemini"
-        }, headers=test_headers)
-        assert add_res.status_code == 200
-        new_key = add_res.json()
-        assert new_key["name"] == "Test Hospital Unit Key"
-        # Xác nhận khóa đã được che mờ an toàn
-        assert "..." in new_key["masked_key"]
-        assert "123456" not in new_key["masked_key"] or new_key["masked_key"].endswith("3456")
-        test_key_id = new_key["key_id"]
+            # 2. Thêm key mới
+            add_res = await client.post("/api/v1/admin/keys", json={
+                "name": "Test Hospital Unit Key",
+                "api_key": "AIzaSyTestMockKeyForAdminUnitTesting123456",
+                "provider": "gemini"
+            }, headers=test_headers)
+            assert add_res.status_code == 200
+            new_key = add_res.json()
+            assert new_key["name"] == "Test Hospital Unit Key"
+            # Xác nhận khóa đã được che mờ an toàn
+            assert "..." in new_key["masked_key"]
+            assert "123456" not in new_key["masked_key"] or new_key["masked_key"].endswith("3456")
+            test_key_id = new_key["key_id"]
 
-        # 3. Xóa key vừa tạo
-        del_res = await client.delete(f"/api/v1/admin/keys/{test_key_id}", headers=test_headers)
-        assert del_res.status_code == 200
-        from app.routers import availability
-        assert availability._provider_state.get("checked_at") == 0.0
-    await identity_engine.dispose()
+            # 3. Xóa key vừa tạo
+            del_res = await client.delete(f"/api/v1/admin/keys/{test_key_id}", headers=test_headers)
+            assert del_res.status_code == 200
+            from app.routers import availability
+            assert availability._provider_state.get("checked_at") == 0.0
+    finally:
+        await identity_engine.dispose()
+        await identity_database.dispose_identity_engine()
 
 
 @pytest.mark.asyncio
 async def test_admin_token_budget_crud():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 1. Lấy thông tin budget
-        get_res = await client.get("/api/v1/admin/budget")
+        get_res = await client.get("/api/v1/admin/budget", headers=_admin_headers())
         assert get_res.status_code == 200
         b_data = get_res.json()
         assert "config" in b_data
@@ -114,14 +122,18 @@ async def test_admin_token_budget_crud():
             "monthly_token_limit": 15000000,
             "auto_offline_fallback": True,
             "alert_on_threshold_pct": 85
-        })
+        }, headers=_admin_headers())
         assert update_res.status_code == 200
         updated = update_res.json()
         assert updated["daily_token_limit"] == 600000
         assert updated["alert_on_threshold_pct"] == 85
 
 @pytest.mark.asyncio
-async def test_key_vault_rotation_and_budget_gate():
+async def test_key_vault_rotation_and_budget_gate(monkeypatch):
+    from app.services import admin_key_vault
+    monkeypatch.setattr(admin_key_vault, "_VAULT_FILE", "/tmp/monitor-test-api-key-vault.json")
+    monkeypatch.setattr(admin_key_vault, "_identity_vault_configured", lambda: False)
+    monkeypatch.setattr(admin_key_vault, "_require_complete_identity_vault_config", lambda: None)
     from app.services.admin_key_vault import get_active_api_key, rotate_to_next_key, add_api_key, delete_api_key
     from app.services.admin_monitoring_service import check_token_budget_gate, save_budget_config, load_budget_config
     from app.schemas.admin_monitoring_schema import BudgetCapConfig
@@ -171,7 +183,11 @@ async def test_key_vault_rotation_and_budget_gate():
         delete_api_key(k2["key_id"])
 
 @pytest.mark.asyncio
-async def test_real_token_ledger_and_auto_heartbeat():
+async def test_real_token_ledger_and_auto_heartbeat(monkeypatch):
+    from app.services import admin_key_vault
+    monkeypatch.setattr(admin_key_vault, "_VAULT_FILE", "/tmp/monitor-test-api-key-vault.json")
+    monkeypatch.setattr(admin_key_vault, "_identity_vault_configured", lambda: False)
+    monkeypatch.setattr(admin_key_vault, "_require_complete_identity_vault_config", lambda: None)
     from app.services.telemetry_store import (
         record_llm_token_usage, get_daily_token_usage,
         get_monthly_token_usage, get_all_time_token_usage
@@ -244,13 +260,17 @@ async def test_real_token_ledger_and_auto_heartbeat():
 
     # 2. Test API auto-heartbeat
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        res = await client.post("/api/v1/admin/keys/auto-heartbeat")
+        res = await client.post("/api/v1/admin/keys/auto-heartbeat", headers=_admin_headers())
         assert res.status_code == 200
         keys = res.json()
         assert isinstance(keys, list)
 
 @pytest.mark.asyncio
-async def test_per_key_consumption_telemetry():
+async def test_per_key_consumption_telemetry(monkeypatch):
+    from app.services import admin_key_vault
+    monkeypatch.setattr(admin_key_vault, "_VAULT_FILE", "/tmp/monitor-test-api-key-vault.json")
+    monkeypatch.setattr(admin_key_vault, "_identity_vault_configured", lambda: False)
+    monkeypatch.setattr(admin_key_vault, "_require_complete_identity_vault_config", lambda: None)
     from app.services.admin_key_vault import add_api_key, delete_api_key, record_key_consumption, get_all_masked_keys
     raw_test_key = "AIzaSyTestPerKeyConsumption12345678"
     new_k = add_api_key("Key Test Telemetry", raw_test_key)
@@ -293,7 +313,7 @@ async def test_admin_bhyt_monitoring_logs():
             "at_risk_cost_vnd": 150000.0,
             "violations_count": 1,
             "violations_json": '[{"id":"VIO-01","severity":"REJECT","category":"RANK","title":"Vượt tuyến","detail":"Chi tiết lỗi test"}]'
-        })
+        }, headers=_admin_headers())
         assert log_res.status_code == 200
         assert log_res.json()["status"] == "success"
 
@@ -302,25 +322,25 @@ async def test_admin_bhyt_monitoring_logs():
             "prescription_id": "RX-ERR-02",
             "patient_name": "Bệnh Nhân Lỗi OCR",
             "error_detail": "Lỗi phân tích cú pháp đơn thuốc OCR: Thiếu mã hoạt chất"
-        })
+        }, headers=_admin_headers())
         assert err_res.status_code == 200
         assert err_res.json()["status"] == "success"
 
         # 3. Tra cứu danh sách log qua endpoint monitoring chuyên dụng
-        mon_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?limit=10")
+        mon_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?limit=10", headers=_admin_headers())
         assert mon_res.status_code == 200
         logs = mon_res.json()
         assert len(logs) >= 2
         assert any(l["prescription_id"] == "RX-MONITOR-TEST-01" for l in logs)
 
         # 4. Lọc theo trạng thái REJECT
-        reject_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?status=REJECT")
+        reject_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?status=REJECT", headers=_admin_headers())
         assert reject_res.status_code == 200
         reject_logs = reject_res.json()
         assert all(l["status"] == "REJECT" for l in reject_logs)
 
         # 5. Lọc theo tìm kiếm từ khóa
-        search_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?q=Test%20Monitor")
+        search_res = await client.get("/api/v1/admin/monitoring/bhyt-logs?q=Test%20Monitor", headers=_admin_headers())
         assert search_res.status_code == 200
         search_logs = search_res.json()
         assert len(search_logs) >= 1
@@ -330,7 +350,7 @@ async def test_admin_bhyt_monitoring_logs():
 async def test_admin_paginated_telemetry_logs():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 1. Truy vấn trang 1 với pageSize 25
-        res = await client.get("/api/v1/admin/monitoring/telemetry-logs?page=1&page_size=25")
+        res = await client.get("/api/v1/admin/monitoring/telemetry-logs?page=1&page_size=25", headers=_admin_headers())
         assert res.status_code == 200
         data = res.json()
         assert "total_items" in data
@@ -351,13 +371,13 @@ async def test_admin_paginated_telemetry_logs():
             assert "model_name" in item
 
         # 2. Kiểm tra bộ lọc theo event_type
-        rag_res = await client.get("/api/v1/admin/monitoring/telemetry-logs?event_type=ADAPTIVE_RAG&page_size=10")
+        rag_res = await client.get("/api/v1/admin/monitoring/telemetry-logs?event_type=ADAPTIVE_RAG&page_size=10", headers=_admin_headers())
         assert rag_res.status_code == 200
         rag_data = rag_res.json()
         assert isinstance(rag_data["items"], list)
 
         # 3. Kiểm tra trang 2
-        page2_res = await client.get("/api/v1/admin/monitoring/telemetry-logs?page=2&page_size=10")
+        page2_res = await client.get("/api/v1/admin/monitoring/telemetry-logs?page=2&page_size=10", headers=_admin_headers())
         assert page2_res.status_code == 200
         page2_data = page2_res.json()
         assert page2_data["current_page"] == 2

@@ -55,18 +55,49 @@ def check_token_budget_gate() -> tuple[bool, str]:
         pass
     return True, "Hạn mức khả dụng"
 
+def check_search_budget_gate() -> tuple[bool, str]:
+    """
+    Kiểm tra hạn mức ngân sách truy vấn Web Search thực tế trước khi gọi Serper.
+    Trả về (allowed, reason). Nếu False, tự động fallback sang tra cứu Dược thư nội bộ.
+    """
+    try:
+        cfg = load_budget_config()
+        from app.services.telemetry_store import get_daily_search_query_usage
+        today_queries_used, _ = get_daily_search_query_usage()
+        limit = getattr(cfg, "daily_search_query_limit", 200)
+        if limit > 0 and today_queries_used >= limit:
+            return False, f"Chạm trần hạn mức tìm kiếm Web ngày ({today_queries_used}/{limit} queries). Tự động dùng Dược Thư Local 0 VNĐ."
+    except Exception:
+        pass
+    return True, "Hạn mức khả dụng"
+
 async def get_budget_status() -> BudgetCapResponse:
     cfg = load_budget_config()
-    from app.services.telemetry_store import get_daily_token_usage, get_monthly_token_usage
+    from app.services.telemetry_store import (
+        get_daily_token_usage, get_monthly_token_usage,
+        get_daily_search_query_usage, get_monthly_search_query_usage
+    )
     today_real_tok, today_real_cost = get_daily_token_usage()
     month_real_tok, month_real_cost = get_monthly_token_usage()
+
+    today_queries, today_search_cost = get_daily_search_query_usage()
+    month_queries, month_search_cost = get_monthly_search_query_usage()
 
     today_tokens_used = today_real_tok
     month_tokens_used = month_real_tok
     today_pct = min(100.0, round((today_tokens_used / cfg.daily_token_limit) * 100, 1)) if cfg.daily_token_limit > 0 else 0.0
-    
+
+    search_limit = getattr(cfg, "daily_search_query_limit", 200)
+    search_usage_pct = min(100.0, round((today_queries / search_limit) * 100, 1)) if search_limit > 0 else 0.0
+    search_gate_open = today_queries < search_limit if search_limit > 0 else True
+    search_throttling = "normal"
+    if search_usage_pct >= 100.0:
+        search_throttling = "quota_exhausted"
+    elif search_usage_pct >= getattr(cfg, "alert_on_threshold_pct", 80):
+        search_throttling = "warning"
+
     saved_cost_vnd = 0.0
-    est_cost_vnd = today_real_cost
+    est_cost_vnd = today_real_cost + today_search_cost
 
     # Tự động tính toán trạng thái thích ứng ngân sách (Auto Adaptive Throttling)
     throttling_status = "normal"
@@ -80,6 +111,12 @@ async def get_budget_status() -> BudgetCapResponse:
         today_tokens_used=today_tokens_used,
         month_tokens_used=month_tokens_used,
         today_usage_pct=today_pct,
+        today_search_queries_used=today_queries,
+        month_search_queries_used=month_queries,
+        daily_search_query_limit=search_limit,
+        today_search_usage_pct=search_usage_pct,
+        search_budget_gate_open=search_gate_open,
+        search_throttling_status=search_throttling,
         estimated_cost_vnd=est_cost_vnd,
         saved_cost_vnd=saved_cost_vnd,
         throttling_status=throttling_status
@@ -408,6 +445,61 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
     # 8. Xu hướng 7 ngày thực tế từ Sổ cái Token Ledger
     timeline_trend = get_last_7_days_token_trend()
 
+    # 9. Tách biệt chỉ số Web Search Serper & Tỷ lệ leo thang nguồn (Source Escalation Ratio)
+    from app.services.telemetry_store import get_daily_search_query_usage, get_avg_search_latency
+    web_queries_today, _ = get_daily_search_query_usage()
+
+    web_lookup_res = await db.execute(
+        select(func.count(CopilotChatLog.id)).where(
+            (CopilotChatLog.answer_type == "grounded_web_reference") |
+            (CopilotChatLog.grounded_source.ilike("%Internet%")) |
+            (CopilotChatLog.provider == "serper")
+        )
+    )
+    web_lookups_count = int(web_lookup_res.scalar() or 0)
+    internal_lookups_count = max(0, total_queries - web_lookups_count)
+
+    if total_queries > 0:
+        internal_ratio = round((internal_lookups_count / total_queries) * 100, 1)
+        web_ratio = round((web_lookups_count / total_queries) * 100, 1)
+    else:
+        internal_ratio = 100.0
+        web_ratio = 0.0
+
+    # Độ trễ thành phần: Serper Search vs LLM Generation
+    avg_serper_lat = get_avg_search_latency()
+    if avg_serper_lat <= 0.0 and web_lookups_count > 0:
+        web_lat_res = await db.execute(
+            select(func.avg(CopilotChatLog.latency_ms)).where(
+                (CopilotChatLog.answer_type == "grounded_web_reference") |
+                (CopilotChatLog.grounded_source.ilike("%Internet%"))
+            )
+        )
+        avg_serper_lat = round(float(web_lat_res.scalar() or 0.0), 1)
+
+    llm_lat_res = await db.execute(
+        select(func.avg(CopilotChatLog.latency_ms)).where(
+            CopilotChatLog.telemetry_version == "v2",
+            CopilotChatLog.model_call_count > 0
+        )
+    )
+    avg_llm_lat = round(float(llm_lat_res.scalar() or 0.0), 1)
+
+    # Top các câu hỏi phải Fallback ra Web nhiều nhất để dược sĩ bổ sung Dược Thư
+    top_fallback_stmt = select(CopilotChatLog.query, func.count(CopilotChatLog.id)).where(
+        (CopilotChatLog.answer_type == "grounded_web_reference") |
+        (CopilotChatLog.grounded_source.ilike("%Internet%"))
+    ).group_by(CopilotChatLog.query).order_by(func.count(CopilotChatLog.id).desc()).limit(5)
+    fallback_rows = (await db.execute(top_fallback_stmt)).all()
+    top_unindexed = [
+        {
+            "query": row[0],
+            "count": int(row[1]),
+            "recommendation": "Đề xuất lập chuyên khảo bổ sung vào Dược Thư Bệnh Viện"
+        }
+        for row in fallback_rows if row[0]
+    ]
+
     return TelemetryOverviewResponse(
         total_queries=total_queries,
         cache_hit_rate_pct=hit_rate,
@@ -421,6 +513,12 @@ async def aggregate_telemetry_overview(db: AsyncSession) -> TelemetryOverviewRes
         bhyt_rejection_saved_vnd=bhyt_saved_vnd,
         ddi_blocks_count=ddi_blocks_count,
         guardrail_blocks_count=guardrail_blocks_count,
+        web_search_queries_today=web_queries_today,
+        internal_pharmacopoeia_ratio_pct=internal_ratio,
+        web_fallback_ratio_pct=web_ratio,
+        avg_serper_latency_ms=avg_serper_lat,
+        avg_llm_latency_ms=avg_llm_lat,
+        top_unindexed_fallback_queries=top_unindexed,
         recent_events=recent_events[:30],
         intent_distribution=intent_distribution,
         timeline_trend=timeline_trend,

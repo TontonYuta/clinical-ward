@@ -28,6 +28,7 @@ class AddApiKeyRequest(BaseModel):
 class TestKeyRequest(BaseModel):
     key_id: Optional[str] = None
     api_key: Optional[str] = None
+    provider: Optional[str] = "gemini"
 
 class TestKeyResponse(BaseModel):
     success: bool
@@ -39,6 +40,8 @@ class TestKeyResponse(BaseModel):
 class BudgetCapConfig(BaseModel):
     daily_token_limit: int = Field(default=500000, ge=10000)
     monthly_token_limit: int = Field(default=10000000, ge=100000)
+    daily_search_query_limit: int = Field(default=200, ge=10)
+    monthly_search_query_limit: int = Field(default=5000, ge=50)
     auto_offline_fallback: bool = True
     alert_on_threshold_pct: int = 80
 
@@ -47,6 +50,12 @@ class BudgetCapResponse(BaseModel):
     today_tokens_used: int
     month_tokens_used: int
     today_usage_pct: float
+    today_search_queries_used: int = 0
+    month_search_queries_used: int = 0
+    daily_search_query_limit: int = 200
+    today_search_usage_pct: float = 0.0
+    search_budget_gate_open: bool = True
+    search_throttling_status: str = "normal"
     estimated_cost_vnd: float
     saved_cost_vnd: float
     throttling_status: str = "normal"
@@ -137,6 +146,12 @@ class TelemetryOverviewResponse(BaseModel):
     bhyt_rejection_saved_vnd: float
     ddi_blocks_count: int
     guardrail_blocks_count: int
+    web_search_queries_today: int = 0
+    internal_pharmacopoeia_ratio_pct: float = 0.0
+    web_fallback_ratio_pct: float = 0.0
+    avg_serper_latency_ms: float = 0.0
+    avg_llm_latency_ms: float = 0.0
+    top_unindexed_fallback_queries: List[Dict[str, Any]] = Field(default_factory=list)
     recent_events: List[TelemetryEventItem]
     intent_distribution: List[Dict[str, Any]]
     timeline_trend: List[Dict[str, Any]]

@@ -17,8 +17,8 @@ from app.schemas.admin_monitoring_schema import (
 from app.models.feature_flag import ClinicalFeatureFlag
 from sqlalchemy import update
 from app.services.admin_key_vault import (
-    get_all_masked_keys, add_api_key, delete_api_key, ping_test_gemini_key, _load_vault_data,
-    get_raw_key_by_id_async
+    get_all_masked_keys, add_api_key, delete_api_key, ping_test_gemini_key,
+    ping_test_serper_key, ping_test_key, _load_vault_data, get_raw_key_by_id_async
 )
 from app.services.admin_monitoring_service import (
     aggregate_telemetry_overview, get_budget_status, save_budget_config,
@@ -177,7 +177,7 @@ async def create_api_key(payload: AddApiKeyRequest):
 @router.delete("/keys/{key_id}")
 async def remove_api_key(key_id: str):
     """Xóa một khóa API khỏi bể khóa."""
-    if key_id == "sys-env-gemini-primary":
+    if key_id in ("sys-env-gemini-primary", "sys-env-serper-primary"):
         raise HTTPException(
             status_code=400,
             detail="Không thể xóa Khóa Hệ Thống Mặc Định từ giao diện web. Khóa này được bảo vệ và cấu hình từ biến môi trường máy chủ Render."
@@ -199,34 +199,54 @@ async def remove_api_key(key_id: str):
 
 @router.post("/keys/test", response_model=TestKeyResponse)
 async def test_api_key_connection(payload: TestKeyRequest):
-    """Kiểm tra kết nối và hạn ngạch (Ping Test) cho API Key."""
+    """Kiểm tra kết nối và hạn ngạch (Ping Test) cho API Key (Gemini hoặc Serper)."""
     raw_key = None
+    prov = (payload.provider or "gemini").lower()
+
+    if payload.key_id == "sys-env-serper-primary":
+        prov = "serper"
+    elif payload.key_id == "sys-env-gemini-primary":
+        prov = "gemini"
+
     if payload.api_key:
         raw_key = payload.api_key
     elif payload.key_id:
         raw_key = await get_raw_key_by_id_async(payload.key_id)
+        if prov == "gemini":
+            # Kiểm tra xem key trong kho thuộc provider nào
+            keys = _load_vault_data()
+            for k in keys:
+                if k.get("key_id") == payload.key_id:
+                    prov = k.get("provider", "gemini")
+                    break
 
     if not raw_key:
         raise HTTPException(status_code=400, detail="Thiếu thông tin API Key để kiểm tra")
 
-    ok, msg, lat, models = await ping_test_gemini_key(raw_key)
-    if ok and payload.key_id:
+    ok, msg, lat, models = await ping_test_key(raw_key, provider=prov)
+    if ok and payload.key_id and not payload.key_id.startswith("sys-env-"):
         from app.config import settings
         if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
-            from app.identity_database import get_identity_session_factory
-            from app.models.identity import ProviderApiKey
-            from sqlalchemy import select
-            factory = get_identity_session_factory()[1]
-            async with factory() as session:
-                target_row = await session.get(ProviderApiKey, payload.key_id)
-                if target_row:
-                    target_row.status = "active"
-                    target_row.latency_ms = lat
-                    target_row.quota_status = f"15 RPM / Normal ({lat}ms)"
-                    active_keys = (await session.scalars(select(ProviderApiKey).where(ProviderApiKey.is_active.is_(True)))).all()
-                    if not active_keys or target_row not in active_keys:
-                        target_row.is_active = True
-                    await session.commit()
+            try:
+                from app.identity_database import get_identity_session_factory
+                from app.models.identity import ProviderApiKey
+                from sqlalchemy import select
+                factory = get_identity_session_factory()[1]
+                async with factory() as session:
+                    target_row = await session.get(ProviderApiKey, payload.key_id)
+                    if target_row:
+                        target_row.status = "active"
+                        target_row.latency_ms = lat
+                        def_quota = f"2.500 Queries / Normal ({lat}ms)" if prov == "serper" else f"15 RPM / Normal ({lat}ms)"
+                        target_row.quota_status = def_quota
+                        active_keys = (await session.scalars(select(ProviderApiKey).where(
+                            ProviderApiKey.provider == prov, ProviderApiKey.is_active.is_(True)
+                        ))).all()
+                        if not active_keys or target_row not in active_keys:
+                            target_row.is_active = True
+                        await session.commit()
+            except Exception:
+                pass
         from app.routers.availability import invalidate_availability_cache
         invalidate_availability_cache()
     return TestKeyResponse(

@@ -54,6 +54,24 @@ def init_telemetry_db() -> None:
             conn.execute("ALTER TABLE token_ledger ADD COLUMN usage_source TEXT NOT NULL DEFAULT 'provider'")
         if "cached_tokens" not in cols:
             conn.execute("ALTER TABLE token_ledger ADD COLUMN cached_tokens INTEGER NOT NULL DEFAULT 0")
+
+        # Bảng sổ cái truy vấn Web Search (Serper / DuckDuckGo)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS search_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                date_str TEXT NOT NULL,
+                month_str TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                query TEXT NOT NULL,
+                credits INTEGER NOT NULL DEFAULT 1,
+                cost_vnd REAL NOT NULL DEFAULT 0.0,
+                latency_ms REAL NOT NULL DEFAULT 0.0,
+                status TEXT NOT NULL DEFAULT 'success'
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_search_ledger_date ON search_ledger(date_str)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_search_ledger_month ON search_ledger(month_str)")
         conn.commit()
 
 init_telemetry_db()
@@ -185,3 +203,103 @@ def get_last_7_days_token_trend() -> list:
     except Exception:
         pass
     return results
+
+
+def record_search_query_usage(
+    provider: str = "serper",
+    query: str = "",
+    credits: int = 1,
+    cost_vnd: float = 25.5,
+    latency_ms: float = 0.0,
+    status: str = "success"
+) -> float:
+    """
+    Ghi nhận lượt gọi tìm kiếm Web (Serper.dev hoặc Fallback Engine) vào Sổ cái Truy vấn Web.
+    Serper định mức ~0.001 USD/query (~25.5 VNĐ/query).
+    """
+    now = time.time()
+    dt = datetime.fromtimestamp(now)
+    date_str = dt.strftime("%Y-%m-%d")
+    month_str = dt.strftime("%Y-%m")
+
+    try:
+        with _get_connection() as conn:
+            conn.execute("""
+                INSERT INTO search_ledger (
+                    timestamp, date_str, month_str, provider, query,
+                    credits, cost_vnd, latency_ms, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (now, date_str, month_str, provider, query[:500], max(1, credits), cost_vnd, latency_ms, status))
+            conn.commit()
+    except Exception:
+        pass
+
+    return cost_vnd
+
+
+def get_daily_search_query_usage(date_str: Optional[str] = None) -> Tuple[int, float]:
+    """Trả về (total_search_queries, total_search_cost_vnd) trong ngày."""
+    target_date = date_str or datetime.now().strftime("%Y-%m-%d")
+    try:
+        with _get_connection() as conn:
+            cur = conn.execute("""
+                SELECT COALESCE(SUM(credits), 0) as q_cnt, COALESCE(SUM(cost_vnd), 0.0) as cost
+                FROM search_ledger WHERE date_str = ? AND status = 'success'
+            """, (target_date,))
+            row = cur.fetchone()
+            if row:
+                return int(row["q_cnt"]), float(row["cost"])
+    except Exception:
+        pass
+    return 0, 0.0
+
+
+def get_monthly_search_query_usage(month_str: Optional[str] = None) -> Tuple[int, float]:
+    """Trả về (total_search_queries, total_search_cost_vnd) trong tháng."""
+    target_month = month_str or datetime.now().strftime("%Y-%m")
+    try:
+        with _get_connection() as conn:
+            cur = conn.execute("""
+                SELECT COALESCE(SUM(credits), 0) as q_cnt, COALESCE(SUM(cost_vnd), 0.0) as cost
+                FROM search_ledger WHERE month_str = ? AND status = 'success'
+            """, (target_month,))
+            row = cur.fetchone()
+            if row:
+                return int(row["q_cnt"]), float(row["cost"])
+    except Exception:
+        pass
+    return 0, 0.0
+
+
+def get_all_time_search_query_usage() -> Tuple[int, float]:
+    """Trả về (total_search_queries, total_cost_vnd) toàn thời gian."""
+    try:
+        with _get_connection() as conn:
+            cur = conn.execute("""
+                SELECT COALESCE(SUM(credits), 0) as q_cnt, COALESCE(SUM(cost_vnd), 0.0) as cost
+                FROM search_ledger WHERE status = 'success'
+            """)
+            row = cur.fetchone()
+            if row:
+                return int(row["q_cnt"]), float(row["cost"])
+    except Exception:
+        pass
+    return 0, 0.0
+
+
+def get_avg_search_latency(date_str: Optional[str] = None) -> float:
+    """Trả về độ trễ trung bình của các truy vấn Serper (ms)."""
+    target_date = date_str or datetime.now().strftime("%Y-%m-%d")
+    try:
+        with _get_connection() as conn:
+            cur = conn.execute("""
+                SELECT AVG(latency_ms) as avg_lat
+                FROM search_ledger WHERE date_str = ? AND status = 'success' AND latency_ms > 0
+            """, (target_date,))
+            row = cur.fetchone()
+            if row and row["avg_lat"] is not None:
+                return round(float(row["avg_lat"]), 1)
+    except Exception:
+        pass
+    return 0.0
+

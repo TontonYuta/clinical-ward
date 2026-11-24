@@ -17,6 +17,9 @@ from app.services.chatbot.semantic_navigation_router import (
     is_clinical_or_educational_inquiry,
 )
 
+# Backward compatibility alias
+is_inquiry_or_clinical_question = is_clinical_or_educational_inquiry
+
 async def dispatch_clinical_subflows(
     query: str, lower_query: str, user_name: str, db: AsyncSession, user_role: str = "doctor"
 ) -> CopilotResponse | None:

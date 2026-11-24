@@ -7,7 +7,13 @@ thành các Action Card quản trị kho / thiết bị / giao ban sai ngữ c�
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
+from app.security.auth import issue_token
+from app.config import settings
 from app.services.chatbot.hospital_business_dispatcher import is_inquiry_or_clinical_question
+
+
+def _doc_headers():
+    return {"Authorization": f"Bearer {issue_token('test-doctor', 'doctor', settings.SECRET_KEY, session_id='sandbox_session')}"}
 
 
 def test_is_inquiry_or_clinical_question_helper():
@@ -54,7 +60,8 @@ async def test_trap_dialysis_machine_does_not_trigger_equipment_incident():
             json={
                 "query": "Bệnh nhân suy thận dùng máy lọc máu có uống được Paracetamol không?",
                 "user_role": "doctor"
-            }
+            },
+            headers=_doc_headers()
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -77,7 +84,8 @@ async def test_trap_temperature_does_not_trigger_cold_chain_card():
             json={
                 "query": "Bệnh nhân sốt cao nhiệt độ 39.5 độ C thì dùng Paracetamol liều bao nhiêu?",
                 "user_role": "doctor"
-            }
+            },
+            headers=_doc_headers()
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -97,7 +105,8 @@ async def test_trap_out_of_stock_does_not_trigger_restock_report():
             json={
                 "query": "Hết thuốc Paracetamol thì có thể thay thế bằng thuốc gì cho bệnh nhân?",
                 "user_role": "doctor"
-            }
+            },
+            headers=_doc_headers()
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -116,7 +125,8 @@ async def test_trap_night_shift_does_not_trigger_shift_handover():
             json={
                 "query": "Bệnh nhân vào viện trong ca trực đêm bị sốt có dùng được Paracetamol không?",
                 "user_role": "doctor"
-            }
+            },
+            headers=_doc_headers()
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -136,7 +146,8 @@ async def test_trap_doctor_advice_does_not_trigger_email_sms_modal():
             json={
                 "query": "Bác sĩ dặn uống Paracetamol cách nhau mấy tiếng?",
                 "user_role": "doctor"
-            }
+            },
+            headers=_doc_headers()
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -156,7 +167,8 @@ async def test_trap_pregnancy_three_months_does_not_create_debt_card():
             json={
                 "query": "Phụ nữ mang thai 3 tháng đầu bị sốt có dùng được Paracetamol không?",
                 "user_role": "doctor"
-            }
+            },
+            headers=_doc_headers()
         )
         assert resp.status_code == 200
         data = resp.json()
