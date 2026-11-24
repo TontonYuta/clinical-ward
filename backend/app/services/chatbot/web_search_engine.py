@@ -556,6 +556,24 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
         else:
             body = ai_text.strip()
 
+    # Khử dòng dở dang do đứt gãy token nếu xuất hiện thẻ markdown/ngoặc không đóng ở dòng cuối cùng
+    body_lines = body.splitlines()
+    while body_lines:
+        last = body_lines[-1].strip()
+        if not last:
+            body_lines.pop()
+            continue
+        is_truncated = (
+            (last.count("**") % 2 != 0) or
+            (last.count("(") > last.count(")")) or
+            (last.count("[") > last.count("]"))
+        )
+        if is_truncated:
+            body_lines.pop()
+        else:
+            break
+    body = "\n".join(body_lines).strip()
+
     # Tạo danh mục nguồn tham khảo y khoa đầy đủ, khớp 100% với các footnote [1], [2]...
     ref_lines = ["### Nguồn tham khảo y khoa:"]
     for idx, r in enumerate(results[:5], 1):

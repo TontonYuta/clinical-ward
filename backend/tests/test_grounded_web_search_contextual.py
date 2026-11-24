@@ -125,3 +125,51 @@ async def test_handle_grounded_web_search_turn_full_flow():
         assert len(resp.suggested_chips) == 3
         # Phải là dynamic chips về hạ sốt
         assert any("Paracetamol" in c for c in resp.suggested_chips)
+
+
+@pytest.mark.asyncio
+async def test_contextualize_web_query_skips_long_standalone_queries():
+    """
+    Câu hỏi lâm sàng dài và hoàn chỉnh (>= 10 từ) dù có chứa 'Tại sao'
+    vẫn được xác định là standalone query và giữ nguyên 100%, không bị rewrite hay cắt cụt.
+    """
+    history = (
+        "Bác sĩ: Tra cứu thông tin thuốc\n"
+        "Trợ lý: Tôi có thể giúp bác sĩ tra cứu liều dùng, chỉ định, chống chỉ định, tương tác thuốc."
+    )
+    long_q = (
+        "Chống chỉ định trên nhóm đối tượng đặc biệt: Tại sao nhóm thuốc ức chế men chuyển "
+        "(ACEi - như Enalapril, Lisinopril) và nhóm Statin lại nằm trong danh mục chống chỉ định "
+        "tuyệt đối đối với phụ nữ có thai?"
+    )
+    q, rewritten = await contextualize_web_query(long_q, history=history, api_key="dummy_key_123456789")
+    assert q == long_q
+    assert rewritten is False
+
+
+def test_standardize_web_references_cleans_dangling_lines():
+    """
+    Kiểm tra hàm standardize_web_references tự động lọc bỏ các dòng dở dang do chạm trần token
+    (như thẻ bold không đóng hoặc ngoặc đơn chưa đóng).
+    """
+    from app.services.chatbot.web_search_engine import standardize_web_references
+    raw_ai = (
+        "Chào bạn, dưới đây là lý do:\n\n"
+        "### 1. Nhóm thuốc ức chế men chuyển (ACEi)\n"
+        "* **Cơ chế:** Tác động lên hệ RAAS.\n\n"
+        "### 2. Nhóm thuốc Statin (Thuốc điều trị rối loạn"
+    )
+    fake_results = [
+        WebSearchResult(
+            title="Tài liệu y khoa",
+            url="https://benhvien108.vn/tai-lieu.htm",
+            snippet="Hướng dẫn điều trị...",
+            source_domain="benhvien108.vn",
+            is_live=True
+        )
+    ]
+    out = standardize_web_references(raw_ai, fake_results)
+    assert "### 2. Nhóm thuốc Statin" not in out
+    assert "### 1. Nhóm thuốc ức chế men chuyển (ACEi)" in out
+    assert "### Nguồn tham khảo y khoa:" in out
+    assert "1. [Tài liệu y khoa](https://benhvien108.vn/tai-lieu.htm)" in out

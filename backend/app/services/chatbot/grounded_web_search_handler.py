@@ -35,6 +35,23 @@ FOLLOW_UP_INDICATORS = [
 ]
 
 
+def is_likely_standalone_query(query: str) -> bool:
+    """
+    Kiểm tra xem câu hỏi có phải là câu hỏi độc lập, tự chứa đủ ngữ cảnh (self-contained) hay không.
+    Nếu câu hỏi dài (>= 10 từ) và không bắt đầu bằng đại từ chỉ định nối tiếp, KHÔNG BAO GIỜ coi là follow-up.
+    Tránh gọi LLM rewrite lãng phí token và làm sai lệch từ khóa tìm kiếm.
+    """
+    clean_q = query.strip()
+    words = clean_q.split()
+    if len(words) >= 10:
+        first_word = words[0].lower().rstrip(",:;")
+        two_words = f"{first_word} {words[1].lower().rstrip(',:;')}" if len(words) > 1 else ""
+        continuation_prefixes = ("sao mới", "thế còn", "vậy còn", "còn loại", "thêm loại", "uống cùng", "thế thì")
+        if two_words not in continuation_prefixes and first_word not in ("sao", "thế"):
+            return True
+    return False
+
+
 def is_internal_operational_query(query: str) -> bool:
     q = query.lower()
     return any(k in q for k in INTERNAL_OPERATIONAL_KEYWORDS)
@@ -113,6 +130,10 @@ async def contextualize_web_query(
         history = session.render_recent_history()
         
     if not history or len(history.strip()) < 10:
+        return clean_q, False
+
+    # 0. Nếu câu hỏi đã đủ dài và độc lập, giữ nguyên 100% ngữ cảnh gốc
+    if is_likely_standalone_query(clean_q):
         return clean_q, False
 
     # Kiểm tra xem câu hỏi có phải là câu hỏi nối tiếp/đại từ phụ thuộc không
@@ -332,14 +353,14 @@ async def handle_grounded_web_search_turn(
         + f"Hãy tổng hợp câu trả lời theo đúng các quy tắc trên."
     )
 
-    # 4. Gọi Gemini LLM để tổng hợp (tăng trần token lên 1500 để chống ngắt câu)
+    # 4. Gọi Gemini LLM để tổng hợp (tăng trần token lên 2048 để chống tuyệt đối việc ngắt cụt câu)
     raw_ai_text = await query_clinical_llm(
         prompt=prompt,
         system_instruction=system_instruction,
         api_key=api_key or "",
         temperature=0.2,
-        max_output_tokens=1500,
-        timeout_sec=15.0
+        max_output_tokens=2048,
+        timeout_sec=20.0
     )
 
     # Nếu LLM không khả dụng (offline / hết quota), hiển thị kết quả tìm kiếm thô có cấu trúc

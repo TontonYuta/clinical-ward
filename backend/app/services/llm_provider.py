@@ -215,6 +215,12 @@ async def _call_gemini_api(
                     data = res.json()
                     candidates = data.get("candidates", [])
                     if candidates:
+                        finish_reason = candidates[0].get("finishReason")
+                        if finish_reason == "MAX_TOKENS":
+                            logger.warning(
+                                "Gemini model %s chạm trần MAX_TOKENS (maxOutputTokens=%d). Câu trả lời có thể bị gián đoạn.",
+                                model, max_output_tokens
+                            )
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts and "text" in parts[0]:
                             reply = parts[0]["text"].strip()
@@ -418,6 +424,12 @@ async def _call_gemini_vision_ocr(
                     data = res.json()
                     candidates = data.get("candidates", [])
                     if candidates:
+                        finish_reason = candidates[0].get("finishReason")
+                        if finish_reason == "MAX_TOKENS":
+                            logger.warning(
+                                "Gemini model %s chạm trần MAX_TOKENS (maxOutputTokens=%d). Câu trả lời có thể bị gián đoạn.",
+                                model, max_output_tokens
+                            )
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts and "text" in parts[0]:
                             raw_text = parts[0]["text"].strip()
@@ -862,6 +874,12 @@ async def query_clinical_multimodal_chat(
                     data = res.json()
                     candidates = data.get("candidates", [])
                     if candidates:
+                        finish_reason = candidates[0].get("finishReason")
+                        if finish_reason == "MAX_TOKENS":
+                            logger.warning(
+                                "Gemini model %s chạm trần MAX_TOKENS (maxOutputTokens=%d). Câu trả lời có thể bị gián đoạn.",
+                                model, max_output_tokens
+                            )
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts and "text" in parts[0]:
                             raw_text = parts[0]["text"].strip()
