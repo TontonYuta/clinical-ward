@@ -18,7 +18,7 @@ from app.config import settings
 logger = logging.getLogger("clinical_embeddings")
 
 # Mô hình Embedding Gemini chuẩn mực (CSDL được index theo không gian vector của model này)
-DEFAULT_GEMINI_EMBED_MODEL = "gemini-embedding-2"
+DEFAULT_GEMINI_EMBED_MODEL = "gemini-embedding-001"
 DEFAULT_EMBEDDING_DIM = 768
 MAX_BATCH_SIZE = 30
 MAX_RETRIES = 2
@@ -95,6 +95,18 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
     def dimension(self) -> int:
         return self._dimension
 
+    async def _resolve_api_key_async(self) -> Optional[str]:
+        if self._api_key and self._api_key != "MY_GEMINI_API_KEY" and len(self._api_key.strip()) >= 10:
+            return self._api_key.strip()
+        try:
+            from app.services.admin_key_vault import get_active_api_key_async
+            key = await get_active_api_key_async("gemini")
+            if key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10:
+                return key.strip()
+        except Exception:
+            pass
+        return self._resolve_api_key()
+
     def _resolve_api_key(self) -> Optional[str]:
         if self._api_key and self._api_key != "MY_GEMINI_API_KEY" and len(self._api_key.strip()) >= 10:
             return self._api_key.strip()
@@ -120,7 +132,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         if cache_key in self._query_cache:
             return self._query_cache[cache_key]
 
-        api_key = self._resolve_api_key()
+        api_key = await self._resolve_api_key_async()
         if not api_key:
             logger.warning("[GeminiEmbedding] Thiếu API key hợp lệ, bỏ qua embedding.")
             return None

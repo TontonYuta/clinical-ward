@@ -266,6 +266,15 @@ async def handle_grounded_web_search_turn(
         logger.info("Web search đang bật nhưng query mang tính nghiệp vụ ca trực nội viện, bỏ qua search web.")
         return None
 
+    # 0. Semantic Intent Router qua Vector Embedding (Zero Hardcoding)
+    # Kiểm tra xem câu hỏi có thuộc nhóm Chào hỏi hoặc Giới thiệu năng lực để bypass Web Search
+    from app.services.chatbot.semantic_web_intent_router import check_semantic_web_bypass
+    semantic_bypass_resp = await check_semantic_web_bypass(
+        query, user_name=payload.user_name, user_role=user_role
+    )
+    if semantic_bypass_resp is not None:
+        return semantic_bypass_resp
+
     # Lấy API key để sử dụng cho query rewriting và tổng hợp
     from app.services.llm_provider import query_clinical_llm
     from app.services.admin_key_vault import get_active_api_key
