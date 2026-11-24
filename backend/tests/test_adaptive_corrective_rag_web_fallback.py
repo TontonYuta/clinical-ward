@@ -39,7 +39,7 @@ async def test_crag_web_fallback_triggers_for_unindexed_real_drug(monkeypatch):
         req = SimpleNamespace(state=SimpleNamespace(), scope={"app": None})
         payload = CopilotQuery(
             query="Thuốc Lecanemab điều trị Alzheimer liều dùng thế nào?",
-            enable_web_search=False
+            enable_web_search=True
         )
         resp = await handle_copilot_chat(payload, req, db, session=session, history="")
         assert resp.intent == "GROUNDED_WEB_SEARCH"
@@ -47,6 +47,15 @@ async def test_crag_web_fallback_triggers_for_unindexed_real_drug(monkeypatch):
         assert resp.source_status == "grounded_web_search"
         assert len(resp.citations or []) == 1
         assert "Lecanemab" in resp.reply_text
+
+        # Khi TẮT web search (enable_web_search=False), tuyệt đối không được gọi web search
+        payload_off = CopilotQuery(
+            query="Thuốc Lecanemab điều trị Alzheimer liều dùng thế nào?",
+            enable_web_search=False
+        )
+        resp_off = await handle_copilot_chat(payload_off, req, db, session=session, history="")
+        assert resp_off.intent != "GROUNDED_WEB_SEARCH"
+        assert resp_off.answer_type != "grounded_web_reference"
 
 
 @pytest.mark.asyncio

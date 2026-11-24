@@ -22,7 +22,7 @@ async def test_ddi_paracetamol_and_ibuprofen_grounded_contract():
         session = get_or_create_session("s_test_ddi_para_ibu", "Bác sĩ", "doctor")
         payload = CopilotQuery(
             query="Paracetamol và Ibuprofen dùng chung được không?",
-            enable_web_search=True
+            enable_web_search=False
         )
         resp = await handle_copilot_chat(payload, req, db, session=session, history="")
 
@@ -41,7 +41,7 @@ async def test_zithromax_timing_monograph_grounded_lookup():
         session = get_or_create_session("s_test_zith_timing", "Bác sĩ", "doctor")
         payload = CopilotQuery(
             query="Kháng sinh Zithromax uống trước hay sau ăn?",
-            enable_web_search=True
+            enable_web_search=False
         )
         resp = await handle_copilot_chat(payload, req, db, session=session, history="")
 
@@ -60,7 +60,7 @@ async def test_circular_22_crash_cart_regulation_grounded():
         session = get_or_create_session("s_test_tt22_cart", "Bác sĩ", "doctor")
         payload = CopilotQuery(
             query="Quy định về tủ trực cấp cứu tại khoa lâm sàng theo Thông tư 22/TT-BYT",
-            enable_web_search=True
+            enable_web_search=False
         )
         resp = await handle_copilot_chat(payload, req, db, session=session, history="")
 

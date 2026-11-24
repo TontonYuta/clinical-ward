@@ -180,30 +180,17 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             session.append_conversation_turn(payload.query, nav_response.reply_text)
         return nav_response.model_copy(update={"session_id": session_id})
 
-    # NẾU BẬT TÌM KIẾM WEB THỜI GIAN THỰC (Grounded Web Search)
+    # NẾU BẬT TÌM KIẾM WEB THỜI GIAN THỰC (Grounded Web Search Mode)
+    # Tách biệt hoàn toàn: Khi bật Web Search -> đi thẳng luồng Web Search + Gemini tổng hợp.
     if payload.enable_web_search:
-        # Nếu câu hỏi nhắm vào một thuốc có trong Dược thư Quốc gia hoặc Thông tư/Quy chế chuyên môn nội viện,
-        # ưu tiên tra cứu nguồn Dược thư chính thống trước. Nếu Dược thư không có dữ liệu phù hợp,
-        # sẽ tự động fallback sang Grounded Web Search tại tầng Adaptive CRAG.
-        lower_q = query.lower()
-        is_explicit_web_intent = any(term in lower_q for term in (
-            "tìm trên mạng", "tim tren mang", "search web", "tìm web", "tra trên web",
-            "tìm kiếm trên web", "google", "search google", "tin tức", "mới nhất 202",
-            "cập nhật 202", "khuyến cáo 202", "trên internet", "thông tin trên mạng"
-        ))
-        has_internal_kb_anchor = (
-            bool(get_drug_lexical_matcher().extract_medications(query))
-            or any(t in lower_q for t in ("thông tư", "tt 22", "tt 20", "tt 51", "qđ 5948", "qd 5948", "phác đồ"))
+        from app.services.chatbot.grounded_web_search_handler import handle_grounded_web_search_turn
+        web_search_resp = await handle_grounded_web_search_turn(
+            payload, user_role=user_role, session=session, history=history
         )
-        if is_explicit_web_intent or not has_internal_kb_anchor:
-            from app.services.chatbot.grounded_web_search_handler import handle_grounded_web_search_turn
-            web_search_resp = await handle_grounded_web_search_turn(
-                payload, user_role=user_role, session=session, history=history
-            )
-            if web_search_resp is not None:
-                if session is not None and hasattr(session, "append_conversation_turn"):
-                    session.append_conversation_turn(payload.query, web_search_resp.reply_text)
-                return web_search_resp.model_copy(update={"session_id": session_id})
+        if web_search_resp is not None:
+            if session is not None and hasattr(session, "append_conversation_turn"):
+                session.append_conversation_turn(payload.query, web_search_resp.reply_text)
+            return web_search_resp.model_copy(update={"session_id": session_id})
 
     # Stage 1: Clinical text sanitization & modifier deconstruction
     from app.services.chatbot.clinical_text_sanitizer import sanitize_clinical_input
@@ -943,7 +930,8 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         and resp.source_status not in ("out_of_scope", "unanchored_turn", "pricing_inquiry", "general_chitchat", "security_guardrail_blocked", "missing_clinical_subject", "missing_medication_context")
     )
     if (
-        not payload.image_base64
+        payload.enable_web_search
+        and not payload.image_base64
         and is_abstention_or_unindexed
     ):
         lower_q = payload.query.lower()
