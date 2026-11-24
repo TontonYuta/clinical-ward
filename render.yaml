@@ -21,4 +21,4 @@ services:
       - key: AUTH_REQUIRED
         value: "true"
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261124-grounded-web-search-serper-monitor-v1"
+        value: "20261124-grounded-web-search-serper-monitor-v2"

@@ -8,7 +8,7 @@ import io
 import re
 import time
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from urllib.parse import quote
 import pypdf
 from pydantic import BaseModel
