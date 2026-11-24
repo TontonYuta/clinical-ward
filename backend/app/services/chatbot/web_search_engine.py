@@ -131,13 +131,28 @@ TRUSTED_MEDICAL_DOMAINS: Dict[str, int] = {
     "dantri.com.vn": 3,             # Báo Dân Trí Sức khỏe
 }
 
-# Danh sách domain mạng xã hội / diễn đàn tự do / blog chưa kiểm duyệt bị loại bỏ triệt để
+# Danh sách domain mạng xã hội / diễn đàn tự do / blog / trang công nghệ & hỗ trợ tài khoản không liên quan y tế
 EXCLUDED_DOMAINS: Set[str] = {
     "facebook.com", "fb.com", "instagram.com", "tiktok.com", "twitter.com", "x.com",
     "youtube.com", "youtu.be", "pinterest.com", "reddit.com", "quora.com",
     "voz.vn", "webtretho.com", "lamchame.com", "tinhte.vn",
-    "blogspot.com", "wordpress.com", "wixsite.com", "weebly.com"
+    "blogspot.com", "wordpress.com", "wixsite.com", "weebly.com",
+    # Trang công nghệ, tài khoản, hỗ trợ phần mềm, lập trình & thương mại điện tử
+    "microsoft.com", "answers.microsoft.com", "support.microsoft.com",
+    "apple.com", "support.apple.com", "google.com", "support.google.com",
+    "github.com", "gitlab.com", "stackoverflow.com", "stackexchange.com",
+    "medium.com", "shopee.vn", "lazada.vn", "tiki.vn", "sendo.vn",
+    "thegioididong.com", "fptshop.com.vn", "cellphones.com.vn"
 }
+
+# Danh mục từ khóa y dược học chuẩn mực dùng để kiểm duyệt nội dung ngoài danh mục chính thức
+CLINICAL_RELEVANCE_KEYWORDS: Tuple[str, ...] = (
+    "thuốc", "dược", "bệnh", "điều trị", "triệu chứng", "bác sĩ", "y tế", "sức khỏe",
+    "liều dùng", "chỉ định", "chống chỉ định", "tác dụng phụ", "y khoa", "bệnh viện",
+    "dược phẩm", "hoạt chất", "chuyên luận", "dược thư", "kháng sinh", "paracetamol",
+    "ibuprofen", "aspirin", "hạ sốt", "giảm đau", "phòng ngừa", "vắc xin", "tiêm chủng",
+    "clinic", "hospital", "pharma", "medical", "health", "medicine", "drug", "dosage"
+)
 
 # Regex nhận diện Prompt Injection / Jailbreak & Thẻ Script trong Snippet từ Web
 INJECTION_PATTERN = re.compile(
@@ -196,27 +211,35 @@ def sanitize_search_snippet(text: str) -> str:
 
 def rank_and_filter_results(results: List[WebSearchResult], max_results: int = 5) -> List[WebSearchResult]:
     """
-    Lọc bỏ domain không an toàn (mạng xã hội, diễn đàn rác).
+    Lọc bỏ domain không an toàn (mạng xã hội, trang công nghệ, hỗ trợ tài khoản).
     Làm sạch prompt injection trong snippet.
-    Sắp xếp ưu tiên:
-    1. Tier 1 (Cơ quan quản lý, BV TW, WHO, PubMed...)
-    2. Tier 2 (BV lớn, Cẩm nang MIMS, MSD Manuals...)
-    3. Tier 3 (Báo y tế chính thống, Dược phẩm...)
-    4. Tier 4 (Nguồn khác hợp lệ để bao phủ 100% câu hỏi hiếm)
-    Sau đó lấy top `max_results`.
+    Rào chắn Y tế nghiêm ngặt:
+    - Tier 1 -> Tier 3: Được chấp nhận trực tiếp (Bộ Y Tế, Bệnh viện lớn, Cẩm nang Dược, Báo Y tế uy tín).
+    - Tier 4 (Domain khác): Bắt buộc tiêu đề hoặc tóm tắt phải chứa từ khóa y dược học hợp lệ.
+      Nếu không chứa từ khóa y tế, loại bỏ 100% để triệt tiêu tình trạng dẫn link rác.
+    Sắp xếp ưu tiên theo Tier tăng dần (1 -> 2 -> 3 -> 4) rồi lấy top `max_results`.
     """
     filtered: List[WebSearchResult] = []
     for r in results:
         if is_domain_excluded(r.source_domain):
-            logger.info("Loại bỏ domain không phù hợp/mạng xã hội: %s (%s)", r.source_domain, r.url)
+            logger.info("Loại bỏ domain không phù hợp/ngoài y tế: %s (%s)", r.source_domain, r.url)
             continue
         clean_snippet = sanitize_search_snippet(r.snippet)
         tier = classify_domain_tier(r.source_domain)
+
+        # Rào chắn kiểm duyệt nội dung cho Tier 4: Bắt buộc phải có từ khóa y dược
+        if tier >= 4:
+            content_lower = f"{r.title} {clean_snippet}".lower()
+            has_medical_context = any(k in content_lower for k in CLINICAL_RELEVANCE_KEYWORDS)
+            if not has_medical_context:
+                logger.info("Loại bỏ kết quả Tier 4 do không có nội dung y tế liên quan: %s - %s", r.title, r.url)
+                continue
+
         r.snippet = clean_snippet
         r.credibility_tier = tier
         filtered.append(r)
 
-    # Sắp xếp ổn định theo Tier tăng dần (1 -> 2 -> 3 -> 4)
+    # Sắp xếp ổn định theo độ uy tín Tier tăng dần (Tier 1 -> Tier 2 -> Tier 3 -> Tier 4)
     filtered.sort(key=lambda x: x.credibility_tier)
     return filtered[:max_results]
 
@@ -593,9 +616,11 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
         if disc_match:
             body = body[:disc_match.start()].strip()
 
-    # Khử tối đa 2 dòng dở dang ở cuối nếu LLM bị đứt gãy token ở dòng cuối cùng
+    # Rào chắn ranh giới câu (Sentence Boundary Guard):
+    # Khử triệt để hiện tượng đứt gãy câu giữa chừng do chạm trần token LLM.
+    # Đảm bảo văn bản AI trước khối trích dẫn luôn kết thúc bằng một câu hoàn chỉnh trọn vẹn ý nghĩa.
     body_lines = body.splitlines()
-    for _ in range(2):
+    for _ in range(3):
         if not body_lines:
             break
         last = body_lines[-1].strip()
@@ -611,8 +636,22 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
         )
         if is_dangling:
             body_lines.pop()
-        else:
-            break
+            continue
+
+        # Kiểm tra kết thúc câu hoàn chỉnh: Dòng phải kết thúc bằng dấu ngắt câu hoặc thẻ danh sách hợp lệ
+        clean_last = last.rstrip("*_>`\"')]} ")
+        if clean_last and clean_last[-1] not in (".", "!", "?", ":", ";", "…"):
+            # Dòng bị cắt cụt giữa chừng (ví dụ: 'Dùng quá liều Paracetamol có thể gây tổn thương')
+            # Tìm dấu chấm câu hoàn chỉnh gần nhất trong dòng
+            last_punct_idx = max(last.rfind(". "), last.rfind(".\n"), last.rfind("; "), last.rfind("! "), last.rfind("? "))
+            if last_punct_idx != -1 and last_punct_idx >= 15:
+                body_lines[-1] = last[:last_punct_idx + 1].strip()
+                break
+            else:
+                # Toàn bộ dòng là một câu dở dang chưa hoàn chỉnh, loại bỏ để dừng ở câu hoàn chỉnh trước đó
+                body_lines.pop()
+                continue
+        break
     body = "\n".join(body_lines).strip()
 
     # Tự động cân bằng và đóng các thẻ markdown chưa khép kín thay vì xóa dòng nội dung của AI

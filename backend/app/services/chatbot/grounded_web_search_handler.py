@@ -35,6 +35,31 @@ FOLLOW_UP_INDICATORS = [
     "tác dụng phụ", "chống chỉ định", "uống lúc nào", "cho trẻ em", "cho bà bầu"
 ]
 
+# Các mẫu cụm từ đệm giao tiếp / mở đầu tìm kiếm cần tinh lọc để lấy từ khóa lâm sàng cốt lõi
+CONVERSATIONAL_SEARCH_PATTERNS = [
+    r"^(?:tôi\s+muốn\s+bạn\s+|bạn\s+hãy\s+|hãy\s+|vui\s+lòng\s+|cho\s+(?:tôi|mình)\s+hỏi\s+|nhờ\s+bạn\s+)?(?:tìm\s+kiếm|tra\s+cứu|tìm|search)(?:\s+giúp\s+(?:tôi|mình)|\s+hộ\s+tôi|\s+giùm\s+tôi)?(?:\s+thông\s+tin|\s+trên\s+mạng|\s+trên\s+web|\s+trên\s+internet|\s+tài\s+liệu|\s+kiến\s+thức)?(?:\s+về|\s+cho)?\s+",
+    r"^(?:cho\s+(?:tôi|mình)\s+(?:biết|hỏi)|tìm\s+hiểu|giải\s+thích|cho\s+hỏi|tra\s+giúp|giúp\s+(?:tôi|mình))\s+(?:thông\s+tin\s+về\s+|về\s+)?",
+    r"^(?:bác\s+sĩ\s+ơi|dược\s+sĩ\s+ơi|chào\s+bạn|alo|bot\s+ơi)[,\s:]+",
+]
+
+
+def clean_conversational_search_query(query: str) -> str:
+    """
+    Tinh lọc các từ đệm hội thoại, kính ngữ và yêu cầu tìm kiếm mở đầu để lấy từ khóa lâm sàng cốt lõi.
+    Ví dụ: 'tôi muốn bạn tìm kiếm thông tin về thuốc hạ sốt' -> 'thuốc hạ sốt'.
+    Bảo toàn 100% tên thuốc và các thực thể y tế.
+    """
+    clean_q = query.strip()
+    changed = True
+    while changed:
+        changed = False
+        for pat in CONVERSATIONAL_SEARCH_PATTERNS:
+            new_q = re.sub(pat, "", clean_q, flags=re.IGNORECASE).strip()
+            if new_q != clean_q and len(new_q) >= 2:
+                clean_q = new_q
+                changed = True
+    return clean_q or query.strip()
+
 
 def is_likely_standalone_query(query: str) -> bool:
     """
@@ -42,7 +67,7 @@ def is_likely_standalone_query(query: str) -> bool:
     Nếu câu hỏi dài (>= 10 từ) và không bắt đầu bằng đại từ chỉ định nối tiếp, KHÔNG BAO GIỜ coi là follow-up.
     Tránh gọi LLM rewrite lãng phí token và làm sai lệch từ khóa tìm kiếm.
     """
-    clean_q = query.strip()
+    clean_q = clean_conversational_search_query(query)
     words = clean_q.split()
     if len(words) >= 10:
         first_word = words[0].lower().rstrip(",:;")
@@ -312,10 +337,11 @@ async def handle_grounded_web_search_turn(
 
     api_key = get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
 
-    # 1. Phân giải ngữ cảnh câu hỏi nếu là câu nối tiếp
+    # 1. Phân giải ngữ cảnh câu hỏi nếu là câu nối tiếp và tinh lọc từ đệm đàm thoại
     search_query, is_rewritten = await contextualize_web_query(
         query, history=history, session=session, api_key=api_key
     )
+    search_query = clean_conversational_search_query(search_query)
     if is_rewritten:
         logger.info("Grounded Web Search: rewrote query from '%s' to '%s'", query, search_query)
 
@@ -332,7 +358,7 @@ async def handle_grounded_web_search_turn(
     except Exception:
         q_vec = None
 
-    cached_web_resp = web_cache.get(search_query, query_vec=q_vec)
+    cached_web_resp = web_cache.get(search_query, query_vec=q_vec) or web_cache.get(query, query_vec=q_vec)
     if cached_web_resp is not None:
         logger.info("Grounded Web Search: HIT SEMANTIC CACHE cho query='%s' (0 tokens, 0ms)", search_query)
         return cached_web_resp
@@ -379,14 +405,14 @@ async def handle_grounded_web_search_turn(
         + f"Hãy tổng hợp câu trả lời theo đúng các quy tắc trên."
     )
 
-    # 4. Gọi Gemini LLM để tổng hợp (đặt ngân sách an toàn 1024 tokens để tối ưu chi phí và độ trễ)
+    # 4. Gọi Gemini LLM để tổng hợp (đặt ngân sách an toàn 2048 tokens đảm bảo câu trả lời y khoa trọn vẹn 100%, không cụt lửng)
     raw_ai_text = await query_clinical_llm(
         prompt=prompt,
         system_instruction=system_instruction,
         api_key=api_key or "",
         temperature=0.2,
-        max_output_tokens=1024,
-        timeout_sec=30.0
+        max_output_tokens=2048,
+        timeout_sec=35.0
     )
 
     # Nếu LLM không khả dụng (offline / hết quota), hiển thị kết quả tìm kiếm thô có cấu trúc
@@ -431,6 +457,8 @@ async def handle_grounded_web_search_turn(
         suggested_chips=dynamic_chips
     )
 
-    # Lưu vào Semantic Response Cache cho các câu hỏi tương đương sau này
+    # Lưu vào Semantic Response Cache cho các câu hỏi tương đương sau này (theo cả query gốc và search_query)
     web_cache.put(search_query, response, query_vec=q_vec)
+    if query.strip().lower() != search_query.strip().lower():
+        web_cache.put(query.strip().lower(), response, query_vec=q_vec)
     return response

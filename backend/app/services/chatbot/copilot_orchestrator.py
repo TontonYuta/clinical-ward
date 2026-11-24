@@ -883,14 +883,20 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     resp = await _handle_copilot_chat_core(payload, request, db, session=session, history=history)
 
     # Adaptive Corrective RAG (CRAG) Fallback:
-    # Nếu CSDL nội bộ không tìm thấy tài liệu phù hợp (safe_abstention),
+    # Nếu CSDL nội bộ không tìm thấy tài liệu phù hợp (safe_abstention hoặc thuốc chưa đăng ký trong CSDL nội viện),
     # và người dùng chưa chủ động bật web search, tự động kích hoạt tìm kiếm Web có thẩm định nếu là câu hỏi lâm sàng hợp lệ.
+    is_abstention_or_unindexed = (
+        resp is not None
+        and (
+            resp.answer_type == "safe_abstention"
+            or resp.source_status in ("unsupported_medication_entity", "unindexed_clinical_drug")
+        )
+        and resp.source_status not in ("out_of_scope", "unanchored_turn", "pricing_inquiry", "general_chitchat", "security_guardrail_blocked", "missing_clinical_subject", "missing_medication_context")
+    )
     if (
         not payload.enable_web_search
         and not payload.image_base64
-        and resp is not None
-        and resp.answer_type == "safe_abstention"
-        and resp.source_status not in ("out_of_scope", "unanchored_turn", "pricing_inquiry", "general_chitchat", "security_guardrail_blocked")
+        and is_abstention_or_unindexed
     ):
         lower_q = payload.query.lower()
         is_internal_operational = any(term in lower_q for term in (
