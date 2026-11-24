@@ -774,6 +774,53 @@ async def build_drug_profile_response(
             )
         first_detail = field_data[0][2] if field_data else ""
         first_label = field_data[0][1] if field_data else "Thông tin chuyên môn"
+
+        # Nếu là câu hỏi giải thích nhân quả / lâm sàng ("Tại sao...", "Vì sao...", "Có nên...", "Cơ chế..."),
+        # tổng hợp bằng Gemini LLM từ chuyên luận CSDL để trả lời trực diện trọng tâm thay vì chỉ in form cứng.
+        explanatory_cues = (
+            "tại sao", "vì sao", "nguyên nhân", "cơ chế", "lý do",
+            "như thế nào", "thế nào", "có được không", "có nên",
+            "có bị", "làm sao", "nên dùng", "dùng được không",
+            "uống được không", "ảnh hưởng", "sốt do", "nhiễm virus",
+            "phụ nữ có thai", "cho con bú", "suy thận", "suy gan"
+        )
+        if any(cue in lower_query for cue in explanatory_cues) and field_data:
+            try:
+                from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
+                mono_context_parts = [f"Thuốc: {clean_name} (Hoạt chất: {matched.active_ingredient})"]
+                for _, f_label, f_detail in field_data:
+                    mono_context_parts.append(f"- {f_label}: {f_detail}")
+                if monograph:
+                    existing_labels = {fl for _, fl, _ in field_data}
+                    extra_sections = [
+                        ("Chống chỉ định", getattr(monograph, "contraindications", None)),
+                        ("Thận trọng", getattr(monograph, "precautions", None)),
+                        ("Tác dụng không mong muốn", getattr(monograph, "adverse_effects", None)),
+                        ("Dược động học", getattr(monograph, "pharmacokinetics", None)),
+                    ]
+                    for e_label, e_val in extra_sections:
+                        if e_label not in existing_labels and e_val and str(e_val).strip():
+                            mono_context_parts.append(f"- {e_label}: {format_clinical_text(str(e_val).strip())[:800]}")
+
+                evidence_ctx = "\n".join(mono_context_parts)
+                u_role = getattr(session, "user_role", "doctor") or "doctor"
+                synth_res = await synthesize_grounded_clinical_response(
+                    query=query,
+                    evidence_context=evidence_ctx,
+                    source_label=source,
+                    user_role=u_role,
+                    timeout_sec=8.0,
+                )
+                if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
+                    reply_text = (
+                        f"{synth_res.conversational_answer}\n\n"
+                        f"---\n"
+                        f"**Đối chiếu nguyên văn Dược Thư ({source}):**\n\n"
+                        f"{reply_text}"
+                    )
+            except Exception:
+                pass
+
         summary, payload = _build_formatter_structured_payload(
             clean_name=clean_name,
             clean_inn=clean_inn,

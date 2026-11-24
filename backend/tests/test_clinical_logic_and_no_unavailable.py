@@ -110,3 +110,57 @@ def test_copilot_router_settings_import():
     from app.routers import copilot
     assert hasattr(copilot, "settings")
     assert getattr(copilot.settings, "API_V1_STR", None) is not None
+
+
+def test_flash_lite_prioritized_over_low_quota_3_8_flash():
+    """Verify Flash Lite models (500 RPD) rank above 20-RPD non-lite models."""
+    from app.services.gemini_model_discovery import filter_and_rank_gemini_models
+
+    models = [
+        "gemini-3.8-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash",
+    ]
+    ranked = filter_and_rank_gemini_models(models)
+    assert ranked[0] == "gemini-3.5-flash-lite"
+    assert ranked[1] == "gemini-3.1-flash-lite"
+    assert ranked.index("gemini-3.5-flash-lite") < ranked.index("gemini-3.8-flash")
+
+
+@pytest.mark.asyncio
+async def test_explanatory_drug_query_synthesizes_natural_focused_answer(monkeypatch):
+    """Verify causal/explanatory questions ('Tại sao...') synthesize natural grounded answer at top."""
+    from unittest.mock import AsyncMock
+    from app.services.rag.claim_attributor import PaperQASynthesisResult
+    from app.services.copilot_drug_lookup import lookup_drug_authoritative
+    from app.database import AsyncSessionLocal
+
+    mock_synth = AsyncMock(return_value=PaperQASynthesisResult(
+        conversational_answer=(
+            "Không được dùng Aspirin cho trẻ em dưới 16 tuổi bị sốt do nhiễm virus vì nguy cơ khởi phát **Hội chứng Reye** "
+            "(tổn thương gan cấp tính và phù não nguy hiểm tính mạng). [Dược thư Quốc gia Việt Nam]"
+        ),
+        citations=[],
+        grounded_confidence=0.95,
+        source_status="exact_match",
+    ))
+    monkeypatch.setattr(
+        "app.services.rag.paperqa_synthesizer.synthesize_grounded_clinical_response",
+        mock_synth,
+    )
+
+    q = "Tại sao không được dùng thuốc hạ sốt, giảm đau aspirin cho trẻ em dưới 16 tuổi bị sốt do nhiễm virus (như cúm, thủy đậu)?"
+    async with AsyncSessionLocal() as db:
+        resp = await lookup_drug_authoritative(
+            q, db, session_id="test-aspirin-reye", user_role="doctor",
+            requested_fields=["pediatric_dosage", "contraindications"]
+        )
+
+    assert resp.rag_grounded is True
+    assert resp.claims, "Claims must remain attached for evidence provenance"
+    assert "Hội chứng Reye" in resp.reply_text
+    assert resp.reply_text.startswith("Không được dùng Aspirin")
+    assert "Đối chiếu nguyên văn Dược Thư" in resp.reply_text
+    mock_synth.assert_awaited_once()

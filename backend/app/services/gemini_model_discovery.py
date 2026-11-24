@@ -38,12 +38,12 @@ DISALLOWED_SUBSTRINGS = (
 
 
 def extract_model_version(name: str) -> float:
-    """Trích xuất số phiên bản thực tế của model (sau gemini/gemma, ví dụ 2.5, 2.0, 1.5)."""
+    """Trích xuất số phiên bản thực tế của model (sau gemini/gemma, ví dụ 3.5, 2.5, 2.0, 1.5)."""
     match = re.search(r"(?:gemini|gemma)[-_](\d+(?:\.\d+)?)", name.lower())
     if match:
         try:
             ver = float(match.group(1))
-            if ver <= 3.0:
+            if ver <= 4.0:
                 return ver
         except ValueError:
             pass
@@ -81,8 +81,9 @@ def filter_and_rank_gemini_models(raw_models: List[str]) -> List[str]:
 
         if "flash" in lower:
             base_score += 100.0
+            # Các dòng Flash Lite được Google cấp hạn ngạch RPD gấp 25x (500/ngày vs 20/ngày) và RPM 3x (15/phút)
             if "lite" in lower:
-                base_score -= 10.0
+                base_score += 60.0
             if any(term in lower for term in ("preview", "experimental", "exp", "thinking")):
                 base_score -= 50.0
         elif "pro" in lower:
