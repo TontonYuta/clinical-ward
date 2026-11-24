@@ -860,7 +860,10 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:
                 return sandwich_res
-        return await lookup_drug_authoritative(norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+        return await lookup_drug_authoritative(
+            norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role,
+            query_mode=(getattr(nlu_res, "query_mode", None) or ("clinical_qa" if len(query.split()) >= 5 else "card_lookup")),
+        )
 
     contextual_rag = await handle_contextual_rag_followup(query, lower_query, user_role, history, session_id, user_name, is_interaction_q, explicit_named, session.active_medication_name, inference_required=inference_required)
     if contextual_rag:
@@ -888,7 +891,16 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             sandwich_res = await execute_clinical_sandwich_pipeline(query, user_role, user_name, session_id, db)
             if sandwich_res:
                 return sandwich_res
-        return await lookup_drug_authoritative(norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role)
+        return await lookup_drug_authoritative(
+            norm_query, db, session_id=session_id, user_name=user_name, user_role=user_role,
+            query_mode=(getattr(nlu_res, "query_mode", None) or ("clinical_qa" if len(query.split()) >= 5 else "card_lookup")),
+        )
+
+    clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
+    if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:
+        deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm, inference_required=inference_required)
+        if deep_rag and deep_rag.rag_grounded and deep_rag.answer_type != "safe_abstention":
+            return deep_rag
 
     if not is_deep_pharm and not is_deep_complex:
         from app.services.chatbot.conversational_clinical_engine import find_clinical_specialty_consultation, synthesize_specialty_response, get_clinical_persona_greeting
@@ -896,10 +908,8 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
         if spec_direct:
             return await synthesize_specialty_response(query, spec_direct, user_name=user_name, user_role=user_role, session_id=session_id)
 
-    clean_greeting = re.sub(r"[^\w\s]", "", lower_query).strip()
     if len(lower_query.strip()) >= 4 and clean_greeting not in {"ừ", "uhm", "uh", "123", "abc", "test", "vâng", "dạ"}:
-        deep_rag = await handle_deep_rag_consultation(query, lower_query, user_role, history, session_id, user_name, is_deep_pharm, inference_required=inference_required)
-        if deep_rag:
+        if "deep_rag" in locals() and deep_rag is not None:
             return deep_rag
 
     greeting = get_clinical_persona_greeting(user_name, user_role)

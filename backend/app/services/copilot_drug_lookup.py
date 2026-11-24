@@ -67,8 +67,12 @@ async def lookup_drug_authoritative(
     if kw:
         kw = re.sub(r"[\s\xa0]+", " ", kw).strip()
 
-    deictic_phrases = ["thuốc đó", "thuốc này", "nó", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"]
-    is_deictic = any(w in query.lower() for w in deictic_phrases) or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
+    deictic_phrases = ["thuốc đó", "thuốc này", "thuốc vừa nói", "thuốc vừa gợi ý", "thuốc trên", "thuốc đang hỏi", "thuốc vừa khuyên"]
+    is_deictic = (not meds and not sdk) and (
+        any(w in query.lower() for w in deictic_phrases)
+        or bool(re.search(r"\bnó\b", query.lower()))
+        or kw.lower() in ["đó", "này", "kia", "nó", "vừa nói", "vừa gợi ý", "thuốc đó", "thuốc này"]
+    )
 
     from app.services.chatbot.conversational_handler import get_user_salutation
     salutation = get_user_salutation(user_name, user_role)

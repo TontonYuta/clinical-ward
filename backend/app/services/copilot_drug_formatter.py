@@ -857,7 +857,10 @@ async def build_drug_profile_response(
 
     is_stock_ask = any(w in lower_query for w in ("tồn kho", "ton kho", "trong kho", "còn bao nhiêu", "con bao nhieu", "số lượng", "so luong"))
 
-    if query_mode == "clinical_qa" and not is_summary_request and not is_stock_ask and monograph and getattr(monograph, "source_id", None) and getattr(monograph, "source_version", None):
+    eff_source_id = getattr(monograph, "source_id", None) or getattr(matched, "source_id", None) if monograph else None
+    eff_source_ver = getattr(monograph, "source_version", None) or getattr(matched, "source_version", None) if monograph else None
+
+    if query_mode == "clinical_qa" and not is_summary_request and not is_stock_ask and monograph and eff_source_id and eff_source_ver:
         try:
             from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
             from app.services.rag.rag_pipeline import get_rag_retriever
@@ -886,8 +889,8 @@ async def build_drug_profile_response(
                         cit = _drug_citation(matched, monograph, prof_source, target_field=field_key)
                         cit["excerpt"] = clean_val
                         cit["section"] = field_key
-                        cit["source_id"] = monograph.source_id
-                        cit["source_version"] = monograph.source_version
+                        cit["source_id"] = eff_source_id
+                        cit["source_version"] = eff_source_ver
                         cit["chunk_id"] = f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:{field_key}"
                         qa_citations.append(cit)
                         qa_evidence.extend(_build_drug_evidence([cit]))
