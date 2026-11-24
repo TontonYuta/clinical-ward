@@ -351,7 +351,36 @@ export const renderFormattedText = (
       continue;
     }
 
-
+    // 2. Thẻ Thông Số Định Danh Thuốc (Pill Badges Grid)
+    if (
+      line.includes('|') &&
+      (line.includes('**Hoạt chất') ||
+        line.includes('**Số đăng ký') ||
+        line.includes('**SĐK') ||
+        line.includes('**Dạng bào chế') ||
+        line.includes('**Hàm lượng') ||
+        line.includes('**Phân loại'))
+    ) {
+      const rawPills = line.replace(/^[•\-\*]\s*/, '').split('|');
+      const pillItems = rawPills.map((p) => p.trim()).filter(Boolean);
+      elements.push(
+        <div
+          key={`meta-pills-${i}`}
+          className="my-2.5 p-2 rounded-xl bg-teal-50/60 border border-teal-200/70 flex flex-wrap gap-2 text-xs sm:text-sm"
+        >
+          {pillItems.map((item, pIdx) => (
+            <div
+              key={pIdx}
+              className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-teal-200/80 shadow-3xs text-slate-800 text-xs sm:text-sm font-medium"
+            >
+              <span>{formatInlineMarkdown(item, options)}</span>
+            </div>
+          ))}
+        </div>
+      );
+      i++;
+      continue;
+    }
 
     // 3. Khung Bảng Markdown (| Tiêu đề 1 | Tiêu đề 2 |)
     if (

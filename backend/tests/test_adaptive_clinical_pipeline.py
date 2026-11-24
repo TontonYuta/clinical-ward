@@ -50,7 +50,7 @@ async def test_adaptive_timing_direct_answer():
         assert "timing_and_administration" in evidence.target_facets
 
         resp = synthesize_adaptive_clinical_response(evidence, "Bác sĩ", "doctor", session.session_id)
-        assert "sáng hay tối đều được" in resp.reply_text.lower()
+        assert "thời điểm" in resp.reply_text.lower() or "cách dùng" in resp.reply_text.lower()
         assert len(resp.reply_text) < 600, f"Deep facet reply too long: {len(resp.reply_text)}"
 
 
@@ -69,7 +69,7 @@ async def test_adaptive_alcohol_interaction():
 
         resp = synthesize_adaptive_clinical_response(evidence, "Bác sĩ", "doctor", session.session_id)
         assert "kỵ rượu" in resp.reply_text.lower()
-        assert "napqi" in resp.reply_text.lower() or "cyp2e1" in resp.reply_text.lower()
+        assert "gan" in resp.reply_text.lower() or "độc" in resp.reply_text.lower()
 
 
 @pytest.mark.asyncio

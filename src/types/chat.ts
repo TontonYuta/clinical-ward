@@ -29,7 +29,8 @@ export interface ActionPayload {
     | 'RESTOCK_APPROVED'
     | 'PRESCRIPTION_CREATED'
     | 'MEDICATION_SCHEDULE_CREATED'
-    | 'MEDICATION_REMINDER_SENT';
+    | 'MEDICATION_REMINDER_SENT'
+    | 'NAVIGATE_TAB';
   data?: any;
   targetTab?: DashboardTab;
 }
