@@ -20,5 +20,7 @@ services:
         value: sqlite+aiosqlite:////app/clinical_hospital.db
       - key: AUTH_REQUIRED
         value: "true"
+      - key: SERPER_API_KEY
+        value: 86050e529246f10e1d17c0f371abb84622cfe65c
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261124-grounded-web-search-serper-monitor-v2"
+        value: "20261124-grounded-web-search-serper-monitor-v3"
