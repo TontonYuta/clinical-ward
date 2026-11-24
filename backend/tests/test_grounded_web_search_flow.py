@@ -1,7 +1,12 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from app.schemas.copilot import CopilotQuery, CopilotResponse
-from app.services.chatbot.web_search_engine import WebSearchResult
+from app.services.chatbot.web_search_engine import (
+    WebSearchResult,
+    unwrap_search_url,
+    sanitize_ai_response_urls,
+    standardize_web_references
+)
 from app.services.chatbot.grounded_web_search_handler import (
     handle_grounded_web_search_turn,
     is_internal_operational_query
@@ -116,3 +121,46 @@ def test_evidence_contract_validator_allows_grounded_web_search():
     assert validated.intent == "GROUNDED_WEB_SEARCH"
     assert validated.reply_text == "Phác đồ tham khảo từ Cổng thông tin Bộ Y Tế"
     assert len(validated.citations) == 1
+
+
+def test_unwrap_search_url_google_translate_and_redirect():
+    # Google Translate proxy url
+    t_url = "https://translate.google.com/translate?u=https://pmc.ncbi.nlm.nih.gov/articles/PMC10455514/&hl=vi&sl=en&tl=vi&client=srp"
+    assert unwrap_search_url(t_url) == "https://pmc.ncbi.nlm.nih.gov/articles/PMC10455514/"
+
+    # Google redirect url
+    r_url = "https://www.google.com/url?q=https://vinmec.com/bai-viet&sa=U&ved=2ahUKE"
+    assert unwrap_search_url(r_url) == "https://vinmec.com/bai-viet"
+
+    # Standard direct url
+    normal = "https://bvdhydcantho.com/detail_article?id=291"
+    assert unwrap_search_url(normal) == normal
+
+
+def test_sanitize_ai_response_urls_nested_and_parentheses():
+    allowed = {"https://pmc.ncbi.nlm.nih.gov/articles/PMC10455514/"}
+    # Raw URL wrapped in parentheses
+    text = "Xem tại (https://pmc.ncbi.nlm.nih.gov/articles/PMC10455514/) và (https://phishing.bad/evil)"
+    sanitized = sanitize_ai_response_urls(text, allowed)
+    assert "https://pmc.ncbi.nlm.nih.gov/articles/PMC10455514/" in sanitized
+    assert "phishing.bad" not in sanitized
+    assert "[Link đã ẩn do không nằm trong nguồn tìm kiếm xác minh]" in sanitized
+
+
+def test_standardize_web_references_replaces_messy_citations():
+    results = [
+        WebSearchResult("Warfarin và kháng sinh", "https://pmc.ncbi.nlm.nih.gov/1", "snippet", "pmc.ncbi.nlm.nih.gov"),
+        WebSearchResult("10 tương tác", "https://goodrx.com/2", "snippet", "goodrx.com"),
+    ]
+    messy_ai_text = (
+        "Cần theo dõi chỉ số INR khi phối hợp Warfarin và Ciprofloxacin [1].\n\n"
+        "Tham khảo chi tiết tại:\n"
+        "* (https://translate.google.com/translate?u=[Link đã ẩn do không nằm trong nguồn tìm kiếm xác minh])\n"
+        "* [5]\n\n"
+        "⚠️ *Lưu ý: Thông tin mang tính tham khảo.*"
+    )
+    clean = standardize_web_references(messy_ai_text, results)
+    assert "[Link đã ẩn" not in clean
+    assert "* [5]" not in clean
+    assert "### Nguồn tham khảo y khoa:" in clean
+    assert "1. [Warfarin và kháng sinh](https://pmc.ncbi.nlm.nih.gov/1) - *pmc.ncbi.nlm.nih.gov*" in clean

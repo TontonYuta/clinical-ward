@@ -14,7 +14,7 @@ import logging
 import os
 import re
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, unquote
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -40,9 +40,37 @@ def clear_search_cache() -> None:
     _SEARCH_CACHE.clear()
 
 
+def unwrap_search_url(url: str) -> str:
+    """
+    Giải mã URL chuyển tiếp hoặc proxy của Google (như translate.google.com hoặc google.com/url)
+    để lấy URL bài viết y khoa gốc sạch sẽ.
+    """
+    if not url:
+        return ""
+    clean = url.strip()
+    try:
+        parsed = urlparse(clean)
+        # 1. Google Translate proxy: translate.google.com/translate?u=<REAL_URL>...
+        if "translate.google." in parsed.netloc:
+            qs = parse_qs(parsed.query)
+            target = qs.get("u", [None])[0]
+            if target:
+                clean = unquote(target)
+        # 2. Google redirect: google.com/url?q=<REAL_URL>...
+        elif "google." in parsed.netloc and parsed.path == "/url":
+            qs = parse_qs(parsed.query)
+            target = qs.get("q", [None])[0] or qs.get("url", [None])[0]
+            if target:
+                clean = unquote(target)
+    except Exception:
+        pass
+    return clean
+
+
 def extract_domain(url: str) -> str:
     try:
-        netloc = urlparse(url).netloc
+        clean = unwrap_search_url(url)
+        netloc = urlparse(clean).netloc
         return netloc.lower().replace("www.", "")
     except Exception:
         return ""
@@ -138,7 +166,7 @@ async def search_serper(
         ans_box = data["answerBox"]
         ans_snippet = ans_box.get("answer") or ans_box.get("snippet") or ""
         ans_title = ans_box.get("title") or "Khung trả lời trực tiếp Google"
-        ans_link = ans_box.get("link") or ""
+        ans_link = unwrap_search_url(ans_box.get("link") or "")
         if ans_snippet and ans_link:
             results.append(
                 WebSearchResult(
@@ -151,7 +179,7 @@ async def search_serper(
 
     # 2. Trích xuất Organic Results
     for item in data.get("organic", [])[:max_results]:
-        link = item.get("link", "").strip()
+        link = unwrap_search_url(item.get("link", "").strip())
         title = item.get("title", "").strip()
         snippet = item.get("snippet", "").strip()
         if link and title:
@@ -175,7 +203,7 @@ def _ddgs_sync_search(query: str, max_results: int = 5) -> List[WebSearchResult]
             raw_items = list(ddgs.text(query, max_results=max_results))
             results: List[WebSearchResult] = []
             for r in raw_items:
-                link = r.get("href", "").strip()
+                link = unwrap_search_url(r.get("href", "").strip())
                 title = r.get("title", "").strip()
                 snippet = r.get("body", "").strip()
                 if link and title:
@@ -263,29 +291,77 @@ def sanitize_ai_response_urls(ai_text: str, allowed_urls: Set[str]) -> str:
     """
     if not ai_text:
         return ""
-    
-    # Chuẩn hóa whitelist
-    normalized_allowed = {u.rstrip("/.,;:") for u in allowed_urls}
 
-    def _replace_markdown_link(match: re.Match) -> str:
-        label = match.group(1)
-        url = match.group(2).rstrip("/.,;:")
-        if any(url.startswith(allowed) or allowed.startswith(url) for allowed in normalized_allowed):
-            return match.group(0)
-        return f"{label} (Nguồn chưa được xác thực trên Internet)"
+    # Chuẩn hóa whitelist gồm cả URL nguyên bản và URL đã unwrap
+    normalized_allowed = set()
+    for u in allowed_urls:
+        if not u:
+            continue
+        u_clean = u.rstrip("/.,;:")
+        normalized_allowed.add(u_clean)
+        unwrapped = unwrap_search_url(u).rstrip("/.,;:")
+        if unwrapped:
+            normalized_allowed.add(unwrapped)
 
-    # Xử lý [Label](URL)
-    sanitized = re.sub(r'\[([^\]]+)\]\((https?://[^\s\)]+)\)', _replace_markdown_link, ai_text)
+    def is_url_allowed(test_url: str) -> bool:
+        clean = unwrap_search_url(test_url.rstrip("/.,;:"))
+        return any(clean.startswith(a) or a.startswith(clean) for a in normalized_allowed)
 
-    # Xử lý raw URLs
-    def _replace_raw_url(match: re.Match) -> str:
-        raw_url = match.group(0).rstrip("/.,;:")
-        if any(raw_url.startswith(allowed) or allowed.startswith(raw_url) for allowed in normalized_allowed):
-            return match.group(0)
-        return "[Link đã ẩn do không nằm trong nguồn tìm kiếm xác minh]"
+    # Tokenizer đơn lượt: Ưu tiên bắt toàn bộ [Label](URL) markdown trước, phần còn lại mới là raw URL
+    pattern = re.compile(
+        r'\[(?P<label>[^\]]+)\]\((?P<md_url>https?://[^\s\)]+)\)|(?P<raw_url>https?://[^\s\)\]\>\"\'”]+)'
+    )
 
-    sanitized = re.sub(r'(?<!\()https?://[^\s\)\]\>\"\'”]+', _replace_raw_url, sanitized)
-    return sanitized
+    def _replace_token(match: re.Match) -> str:
+        if match.group("md_url"):
+            label = match.group("label")
+            md_url = match.group("md_url")
+            if is_url_allowed(md_url):
+                return match.group(0)
+            return f"[{label}] (Nguồn chưa được xác thực trên Internet)"
+        else:
+            raw_url = match.group("raw_url")
+            if is_url_allowed(raw_url):
+                return raw_url
+            return "[Link đã ẩn do không nằm trong nguồn tìm kiếm xác minh]"
+
+    return pattern.sub(_replace_token, ai_text)
+
+
+def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> str:
+    """
+    Chuẩn hóa khối nguồn tham khảo y khoa cuối câu trả lời:
+    - Loại bỏ các dòng trích dẫn cụt mồ côi (như `* [5]`) hoặc danh sách link vỡ do LLM sinh thiếu/lỗi proxy.
+    - Tạo danh sách tham khảo y khoa chuẩn mực Markdown:
+      `1. [Tiêu đề](URL) - *domain*`
+    - Đảm bảo có lưu ý an toàn y khoa chuẩn mực ở cuối bài.
+    """
+    if not ai_text or not results:
+        return ai_text
+
+    disclaimer = "⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet mang tính chất tham khảo, không thay thế chỉ định chuyên môn của bác sĩ.*"
+
+    ref_pat = re.compile(
+        r'\n(?:\*+|#{1,4}\s*)?(?:Tham khảo chi tiết tại|Nguồn tham khảo y khoa|Nguồn tham khảo|Tài liệu tham khảo|Tham khảo)[:\s]*\n.*',
+        re.IGNORECASE | re.DOTALL
+    )
+    ref_match = ref_pat.search(ai_text)
+    if ref_match:
+        body = ai_text[:ref_match.start()].strip()
+    else:
+        disc_idx = ai_text.find("⚠️")
+        if disc_idx != -1:
+            body = ai_text[:disc_idx].strip()
+        else:
+            body = ai_text.strip()
+
+    # Tạo danh mục nguồn tham khảo y khoa đầy đủ, khớp 100% với các footnote [1], [2]...
+    ref_lines = ["### Nguồn tham khảo y khoa:"]
+    for idx, r in enumerate(results[:5], 1):
+        domain_tag = f" - *{r.source_domain}*" if r.source_domain else ""
+        ref_lines.append(f"{idx}. [{r.title}]({r.url}){domain_tag}")
+
+    return f"{body}\n\n" + "\n".join(ref_lines) + f"\n\n{disclaimer}"
 
 
 def format_web_search_context(results: List[WebSearchResult]) -> str:

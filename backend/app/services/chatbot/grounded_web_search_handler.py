@@ -14,6 +14,7 @@ from app.services.chatbot.web_search_engine import (
     search_and_verify_web,
     format_web_search_context,
     sanitize_ai_response_urls,
+    standardize_web_references,
     WebSearchResult
 )
 
@@ -318,7 +319,7 @@ async def handle_grounded_web_search_turn(
         "QUY TẮC BẮT BUỘC:\n"
         "1. CHỈ sử dụng thông tin và đường dẫn URL có trong danh sách tìm kiếm được cung cấp. Tuyệt đối không tự bịa đặt hay suy đoán URL khác.\n"
         "2. Trả lời HOÀN CHỈNH, không ngắt cụt câu giữa chừng. Nếu người dùng yêu cầu N loại thuốc/phương pháp nhưng các nguồn y tế khuyến cáo ít hơn (do các loại khác có chống chỉ định nguy hiểm như Aspirin gây hội chứng Reye hoặc xuất huyết), hãy giải thích rõ ràng lý do chuyên môn này cho người dùng.\n"
-        "3. Định dạng nguồn tham khảo ở cuối câu trả lời theo chuẩn Markdown: [Tên nguồn/Tiêu đề](URL).\n"
+        "3. Trích dẫn thông tin trong bài viết kèm chỉ số nguồn dạng [1], [2] tương ứng với tài liệu tham khảo.\n"
         "4. Kết thúc câu trả lời bằng lưu ý an toàn y khoa ngắn gọn: '⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet mang tính chất tham khảo, không thay thế chỉ định chuyên môn của bác sĩ.*'"
     )
 
@@ -349,8 +350,9 @@ async def handle_grounded_web_search_turn(
         summary_lines.append("\n⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet mang tính chất tham khảo.*")
         final_text = "\n".join(summary_lines)
     else:
-        # Hậu kiểm chống link ảo (Anti-hallucination URL Sanitization)
-        final_text = sanitize_ai_response_urls(raw_ai_text, allowed_urls)
+        # Hậu kiểm chống link ảo và chuẩn hóa danh mục tham khảo y khoa
+        sanitized = sanitize_ai_response_urls(raw_ai_text, allowed_urls)
+        final_text = standardize_web_references(sanitized, results)
 
     # 5. Xây dựng danh sách citations
     citations: List[Dict[str, Any]] = [
