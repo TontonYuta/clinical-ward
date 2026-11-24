@@ -125,7 +125,8 @@ async def _check_provider() -> str:
                 import httpx
                 url = "https://generativelanguage.googleapis.com/v1beta/models"
                 async with httpx.AsyncClient(timeout=_PROVIDER_TIMEOUT_SECONDS) as client:
-                    response = await client.get(
+                    call_fn = getattr(client, "get", getattr(client, "post", None))
+                    response = await call_fn(
                         url,
                         params={"key": key},
                     )
