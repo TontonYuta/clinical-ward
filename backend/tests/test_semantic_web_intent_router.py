@@ -69,7 +69,9 @@ async def test_out_of_scope_intent_bypasses_web_search():
         "1+1 = ?",
         "1 + 1 bằng mấy",
         "thời tiết ngày mai có mưa không",
-        "kể một câu chuyện cười đi"
+        "kể một câu chuyện cười đi",
+        "về văn học thì sao",
+        "kết quả bóng đá hôm nay"
     ]
     for q in queries:
         resp = await check_semantic_web_bypass(q, user_name="BS. Test", user_role="doctor")

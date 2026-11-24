@@ -292,7 +292,7 @@ async def handle_grounded_web_search_turn(
     # Kiểm tra xem câu hỏi có thuộc nhóm Chào hỏi hoặc Giới thiệu năng lực để bypass Web Search
     from app.services.chatbot.semantic_web_intent_router import check_semantic_web_bypass
     semantic_bypass_resp = await check_semantic_web_bypass(
-        query, user_name=payload.user_name, user_role=user_role
+        query, user_name=payload.user_name, user_role=user_role, history=history
     )
     if semantic_bypass_resp is not None:
         return semantic_bypass_resp

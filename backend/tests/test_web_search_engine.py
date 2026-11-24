@@ -227,3 +227,30 @@ def test_format_web_search_context_xml_sandboxing():
     assert "TIER 1" in ctx
     assert "baohiemxahoi.gov.vn" in ctx
 
+
+def test_standardize_web_references_no_false_truncation():
+    """Kiểm tra hàm standardize_web_references không được cắt nhầm thân bài mở đầu."""
+    from app.services.chatbot.web_search_engine import standardize_web_references
+
+    results = [
+        WebSearchResult(title="Canh Giác Dược", url="https://canhgiacduoc.org.vn/1", snippet="Cảnh báo", source_domain="canhgiacduoc.org.vn", credibility_tier=1)
+    ]
+
+    ai_text = (
+        "Dưới đây là tổng hợp thông tin chuyên môn từ các nguồn tài liệu tham khảo:\n\n"
+        "1. **Cơ chế tác động (Pathophysiology)**:\n"
+        "Thuốc ức chế men chuyển làm suy giảm lưu lượng tưới máu qua thận thai nhi.\n"
+        "2. **Hậu quả lâm sàng**:\n"
+        "Gây thiểu ối, vô niệu và dị tật sọ mặt nghiêm trọng (đặc biệt trong quý 2 và quý 3 của thai kỳ).\n\n"
+        "### Nguồn tham khảo y khoa:\n"
+        "1. [Canh Giác Dược](https://canhgiacduoc.org.vn/1) - *canhgiacduoc.org.vn*"
+    )
+
+    standardized = standardize_web_references(ai_text, results)
+    assert "Cơ chế tác động" in standardized
+    assert "Hậu quả lâm sàng" in standardized
+    assert "thiểu ối" in standardized
+    assert "### Nguồn tham khảo y khoa:" in standardized
+    assert "⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet" in standardized
+
+

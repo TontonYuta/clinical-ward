@@ -34,14 +34,37 @@ GREETING_ANCHOR_PROTOTYPES = [
 ]
 
 OUT_OF_SCOPE_ANCHOR_PROTOTYPES = [
+    # 1. Văn học, Thơ ca, Nghệ thuật
+    "văn học nghệ thuật tác phẩm thơ ca tiểu thuyết nhà văn",
+    "phân tích tác phẩm văn học tác giả nhân vật văn xuôi",
+    # 2. Toán học, Số học, Khoa học phi y tế
     "1 + 1 bằng mấy, tính toán số học",
-    "giải bài toán toán học phương trình",
-    "dự báo thời tiết ngày mai mưa hay nắng",
-    "kết quả xổ số kiến thiết miền bắc hôm nay",
-    "kể một câu chuyện cười vui hoặc làm bài thơ",
-    "viết code phần mềm thuật toán lập trình máy tính",
+    "giải bài toán toán học phương trình đại số hình học",
+    # 3. Lịch sử, Địa lý, Chính trị thế giới
+    "lịch sử chiến tranh địa lý thế giới di tích lịch sử",
+    "chính trị thế giới tổng thống nguyên thủ quốc gia lãnh đạo",
+    # 4. Đời sống, Giải trí, Thể thao, Thời tiết
+    "dự báo thời tiết ngày mai mưa hay nắng nhiệt độ",
+    "kết quả xổ số kiến thiết miền bắc hôm nay vietlott",
+    "kể một câu chuyện cười vui hoặc làm bài thơ giải trí",
+    "kết quả bóng đá ngoại hạng anh thể thao thế giới",
+    "showbiz giải trí phim ảnh diễn viên ca sĩ âm nhạc bài hát",
+    # 5. Công nghệ & Lập trình
+    "viết code phần mềm thuật toán lập trình máy tính công nghệ",
+    "trò chơi điện tử game online máy chơi game",
+    # 6. Tài chính, Kinh tế, Bất động sản
     "giá vàng hôm nay bao nhiêu một lượng, tỷ giá ngoại tệ",
-    "kết quả bóng đá ngoại hạng anh thể thao"
+    "thị trường chứng khoán cổ phiếu bất động sản",
+    # 7. Ẩm thực & Du lịch
+    "nấu ăn công thức làm bánh món ngon ẩm thực du lịch khách sạn"
+]
+
+CLINICAL_DOMAIN_PROTOTYPES = [
+    "hướng dẫn chỉ định liều dùng tác dụng phụ của thuốc điều trị",
+    "chẩn đoán bệnh triệu chứng phác đồ điều trị y khoa bệnh viện",
+    "an toàn sử dụng thuốc tương tác thuốc chống chỉ định dị ứng",
+    "quy chế kê đơn bảo hiểm y tế danh mục thuốc thông tư bộ y tế",
+    "cập nhật dịch bệnh vắc xin y tế dự phòng tổ chức y tế thế giới"
 ]
 
 CLINICAL_ANCHORS = {
@@ -49,7 +72,9 @@ CLINICAL_ANCHORS = {
     "phác đồ", "tồn kho", "tủ trực", "bệnh nhân", "huyết áp", "truyền dịch", "paracetamol",
     "morphin", "tác dụng", "chống chỉ định", "độc tính", "ngộ độc", "quá liều", "men gan",
     "thai kỳ", "cho con bú", "suy thận", "suy gan", "suy tim", "aspirin", "insulin",
-    "dị ứng", "phản vệ", "cpoe", "fefo", "tương tác", "vắc xin", "vacxin", "chỉ định"
+    "dị ứng", "phản vệ", "cpoe", "fefo", "tương tác", "vắc xin", "vacxin", "chỉ định",
+    "uống", "tiêm", "truyền", "viên", "gói", "lọ", "ống", "kê đơn", "đơn thuốc",
+    "bác sĩ", "dược sĩ", "điều dưỡng", "bệnh viện", "xét nghiệm", "chẩn đoán", "dược thư"
 }
 
 # Bộ đệm Vector Anchors trong bộ nhớ (In-memory Anchor Cache)
@@ -82,7 +107,8 @@ async def _get_anchor_vectors(prototypes: List[str], cache_key: str) -> Optional
 async def check_semantic_web_bypass(
     query: str,
     user_name: str = "Bác sĩ",
-    user_role: str = "doctor"
+    user_role: str = "doctor",
+    history: str = ""
 ) -> Optional[CopilotResponse]:
     """
     Kiểm tra xem câu hỏi có thuộc nhóm Chào hỏi hoặc Giới thiệu năng lực hay không bằng Vector Embedding.
@@ -158,38 +184,72 @@ async def check_semantic_web_bypass(
                     suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Cập nhật y tế thời gian thực"]
                 )
 
-        # 3. So khớp với nhóm Ngoài phạm vi (Out-of-Scope / Math / Non-Clinical) bằng Vector Embedding
+        # 3. So khớp với nhóm Ngoài phạm vi (Out-of-Scope / Non-Clinical / Medical Relevance Gate)
         # Kiểm tra an toàn: Nếu câu hỏi có chứa thực thể/thuật ngữ lâm sàng bảo vệ thì không reject nhầm
         has_clinical_anchor = any(anc in clean_q.lower() for anc in CLINICAL_ANCHORS)
+        has_drug_match = False
         if not has_clinical_anchor:
-            oos_matrix = await _get_anchor_vectors(OUT_OF_SCOPE_ANCHOR_PROTOTYPES, "out_of_scope_anchors")
-            if oos_matrix is not None:
-                oos_sims = np.dot(oos_matrix, q_vec)
-                max_oos_sim = float(np.max(oos_sims))
-                if max_oos_sim >= 0.68:
-                    logger.info(
-                        "Semantic Web Router: bypassed Web Search -> OUT_OF_SCOPE / SAFE_ABSTENTION (sim=%.4f) for query='%s'",
-                        max_oos_sim, clean_q
-                    )
-                    role_display = "Bác sĩ" if user_role == "doctor" else ("Dược sĩ" if user_role == "pharmacist" else "Điều dưỡng")
-                    reply_text = (
-                        f"Xin lỗi {role_display} {user_name}! Tôi là **Trợ lý Trí tuệ Nhân tạo Dược Lâm Sàng & Nghiệp vụ Bệnh viện chuyên dụng**.\n\n"
-                        "Hệ thống tuân thủ nghiêm ngặt quy chế an toàn y tế và **chỉ hỗ trợ** các nội dung chuyên môn sau:\n"
-                        "1. **Dược lý & Tra cứu thuốc:** Chỉ định, liều dùng tối đa, chống chỉ định, thận trọng (Dược thư Quốc gia & 54.885 thuốc Cục QLD).\n"
-                        "2. **An toàn kê đơn:** Tương tác thuốc chống chỉ định (QĐ 5948/QĐ-BYT), chỉnh liều suy thận/suy gan.\n"
-                        "3. **Thẩm định BHYT & Pháp quy:** Điều kiện thanh toán TT 20/2022/TT-BYT, quy chế kê đơn ngoại trú.\n"
-                        "4. **Phác đồ & Dịch tễ y tế:** Cập nhật thông tin dịch bệnh, vắc xin thời gian thực từ Bộ Y tế & WHO.\n\n"
-                        f"{role_display} vui lòng đặt câu hỏi liên quan đến thuốc hoặc chuyên môn y tế nhé!"
-                    )
-                    return CopilotResponse(
-                        intent="CLINICAL_SAFE_ABSTENTION",
-                        reply_text=reply_text,
-                        legal_basis="Quy chế Trợ lý Dược Lâm Sàng & An toàn CDSS",
-                        answer_type="safe_abstention",
-                        source_status="out_of_scope",
-                        confidence=round(max_oos_sim, 2),
-                        suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Cập nhật y tế thời gian thực"]
-                    )
+            try:
+                from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+                if get_drug_lexical_matcher().extract_medications(clean_q):
+                    has_drug_match = True
+            except Exception:
+                pass
+
+        # 3a. Kiểm tra khoảng cách tới các chủ đề ngoài phạm vi
+        oos_matrix = await _get_anchor_vectors(OUT_OF_SCOPE_ANCHOR_PROTOTYPES, "out_of_scope_anchors")
+        max_oos_sim = 0.0
+        if oos_matrix is not None:
+            oos_sims = np.dot(oos_matrix, q_vec)
+            max_oos_sim = float(np.max(oos_sims))
+
+        # Nếu độ tương đồng áp đảo với chủ đề phi y tế (>= 0.70) thì chắc chắn từ chối (vd: văn học, thơ ca, bóng đá, toán học)
+        is_definite_oos = max_oos_sim >= 0.70
+
+        # Nếu câu hỏi là câu nối tiếp có ngữ cảnh lâm sàng từ trước (vd: "sao mới có 2 loại", "uống mấy viên")
+        has_history_clinical = False
+        if history:
+            lower_hist = history.lower()
+            if any(anc in lower_hist for anc in CLINICAL_ANCHORS):
+                has_history_clinical = True
+
+        is_followup = any(w in clean_q.lower() for w in ("sao", "tại sao", "loại", "thêm", "còn", "thế", "nữa", "kia", "đó", "này"))
+        if has_history_clinical and is_followup and not is_definite_oos:
+            has_clinical_anchor = True
+
+        if is_definite_oos or (not has_clinical_anchor and not has_drug_match):
+            # 3b. Kiểm tra khoảng cách tới các chủ đề chuyên môn y tế (Medical Domain Whitelist)
+            clin_matrix = await _get_anchor_vectors(CLINICAL_DOMAIN_PROTOTYPES, "clinical_domain_anchors")
+            max_clin_sim = 0.0
+            if clin_matrix is not None:
+                clin_sims = np.dot(clin_matrix, q_vec)
+                max_clin_sim = float(np.max(clin_sims))
+
+            # Từ chối nếu: rõ ràng ngoài phạm vi (is_definite_oos) HOẶC (không có keyword y tế VÀ độ liên quan y tế thấp < 0.54)
+            if is_definite_oos or max_oos_sim >= 0.60 or max_clin_sim < 0.54:
+                logger.info(
+                    "Semantic Web Router: bypassed Web Search -> OUT_OF_SCOPE / SAFE_ABSTENTION (oos_sim=%.4f, clin_sim=%.4f) for query='%s'",
+                    max_oos_sim, max_clin_sim, clean_q
+                )
+                role_display = "Bác sĩ" if user_role == "doctor" else ("Dược sĩ" if user_role == "pharmacist" else "Điều dưỡng")
+                reply_text = (
+                    f"Xin lỗi {role_display} {user_name}! Tôi là **Trợ lý Trí tuệ Nhân tạo Dược Lâm Sàng & Nghiệp vụ Bệnh viện chuyên dụng**.\n\n"
+                    "Hệ thống tuân thủ nghiêm ngặt quy chế an toàn y tế và **chỉ hỗ trợ** các nội dung chuyên môn sau:\n"
+                    "1. **Dược lý & Tra cứu thuốc:** Chỉ định, liều dùng tối đa, chống chỉ định, thận trọng (Dược thư Quốc gia & 54.885 thuốc Cục QLD).\n"
+                    "2. **An toàn kê đơn:** Tương tác thuốc chống chỉ định (QĐ 5948/QĐ-BYT), chỉnh liều suy thận/suy gan.\n"
+                    "3. **Thẩm định BHYT & Pháp quy:** Điều kiện thanh toán TT 20/2022/TT-BYT, quy chế kê đơn ngoại trú.\n"
+                    "4. **Phác đồ & Dịch tễ y tế:** Cập nhật thông tin dịch bệnh, vắc xin thời gian thực từ Bộ Y tế & WHO.\n\n"
+                    f"{role_display} vui lòng đặt câu hỏi liên quan đến thuốc hoặc chuyên môn y tế nhé!"
+                )
+                return CopilotResponse(
+                    intent="CLINICAL_SAFE_ABSTENTION",
+                    reply_text=reply_text,
+                    legal_basis="Quy chế Trợ lý Dược Lâm Sàng & An toàn CDSS",
+                    answer_type="safe_abstention",
+                    source_status="out_of_scope",
+                    confidence=round(max(max_oos_sim, 0.75), 2),
+                    suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Cập nhật y tế thời gian thực"]
+                )
 
     except Exception as e:
         err_msg = str(e)

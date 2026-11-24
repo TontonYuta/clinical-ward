@@ -540,39 +540,60 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
 
     disclaimer = "⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet mang tính chất tham khảo, không thay thế chỉ định chuyên môn của bác sĩ.*"
 
-    # Chỉ tìm tiêu đề khối tham khảo độc lập ở phần cuối bài
+    # Chỉ tìm tiêu đề khối tham khảo độc lập ở phần CUỐI câu trả lời (tránh cắt nhầm lời mở đầu bài viết)
     ref_pat = re.compile(
         r'\n(?:\*+|#{1,4}\s*)?(?:Tham khảo chi tiết tại|Nguồn tham khảo y khoa|Nguồn tham khảo|Tài liệu tham khảo)[:\s]*\n.*',
         re.IGNORECASE | re.DOTALL
     )
-    ref_match = ref_pat.search(ai_text)
-    if ref_match:
-        body = ai_text[:ref_match.start()].strip()
-    else:
-        # Chỉ loại bỏ disclaimer nếu nó nằm ở cuối câu trả lời (tránh cắt nhầm emoji ⚠️ trong phần cảnh báo lâm sàng)
-        disc_match = re.search(r'\n\s*⚠️\s*\*?Lưu ý:\s*Thông tin tìm kiếm.*$', ai_text, re.IGNORECASE | re.DOTALL)
-        if disc_match:
-            body = ai_text[:disc_match.start()].strip()
-        else:
-            body = ai_text.strip()
+    ref_matches = list(ref_pat.finditer(ai_text))
+    body = ai_text.strip()
+    found_ref_tail = False
 
-    # Khử dòng dở dang do đứt gãy token nếu xuất hiện thẻ markdown/ngoặc không đóng ở dòng cuối cùng
+    # Quét từ dưới lên: Chấp nhận khối tham khảo xuất hiện sau ít nhất 30 ký tự hoặc sau 25% văn bản
+    for m in reversed(ref_matches):
+        if m.start() >= 30 or m.start() >= len(ai_text) * 0.25:
+            body = ai_text[:m.start()].strip()
+            found_ref_tail = True
+            break
+
+    if not found_ref_tail:
+        # Chỉ loại bỏ disclaimer nếu nó nằm ở cuối câu trả lời (tránh cắt nhầm emoji ⚠️ trong phần cảnh báo lâm sàng)
+        disc_match = re.search(r'\n\s*⚠️\s*\*?Lưu ý:\s*Thông tin tìm kiếm.*$', body, re.IGNORECASE | re.DOTALL)
+        if disc_match:
+            body = body[:disc_match.start()].strip()
+
+    # Khử tối đa 2 dòng dở dang ở cuối nếu LLM bị đứt gãy token ở dòng cuối cùng
     body_lines = body.splitlines()
-    while body_lines:
+    for _ in range(2):
+        if not body_lines:
+            break
         last = body_lines[-1].strip()
         if not last:
             body_lines.pop()
             continue
-        is_truncated = (
-            (last.count("**") % 2 != 0) or
-            (last.count("(") > last.count(")")) or
-            (last.count("[") > last.count("]"))
+        is_dangling = (
+            (last.count("(") > last.count(")"))
+            or (last.count("[") > last.count("]"))
+            or (last.count("**") % 2 != 0 and len(last) < 40)
+            or (last.startswith("#") and not last.endswith((".", "!", ":", ")", "]")))
+            or (len(last) <= 4 and last in ("*", "-", "•", "* [", "[", "1.", "2.", "3."))
         )
-        if is_truncated:
+        if is_dangling:
             body_lines.pop()
         else:
             break
     body = "\n".join(body_lines).strip()
+
+    # Tự động cân bằng và đóng các thẻ markdown chưa khép kín thay vì xóa dòng nội dung của AI
+    if body:
+        if body.count("**") % 2 != 0:
+            body += "**"
+        open_parens = body.count("(") - body.count(")")
+        if open_parens > 0:
+            body += ")" * open_parens
+        open_brackets = body.count("[") - body.count("]")
+        if open_brackets > 0:
+            body += "]" * open_brackets
 
     # Tạo danh mục nguồn tham khảo y khoa đầy đủ, khớp 100% với các footnote [1], [2]...
     ref_lines = ["### Nguồn tham khảo y khoa:"]
