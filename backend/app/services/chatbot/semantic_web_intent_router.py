@@ -33,6 +33,25 @@ GREETING_ANCHOR_PROTOTYPES = [
     "chúc bạn một ngày tốt lành"
 ]
 
+OUT_OF_SCOPE_ANCHOR_PROTOTYPES = [
+    "1 + 1 bằng mấy, tính toán số học",
+    "giải bài toán toán học phương trình",
+    "dự báo thời tiết ngày mai mưa hay nắng",
+    "kết quả xổ số kiến thiết miền bắc hôm nay",
+    "kể một câu chuyện cười vui hoặc làm bài thơ",
+    "viết code phần mềm thuật toán lập trình máy tính",
+    "giá vàng hôm nay bao nhiêu một lượng, tỷ giá ngoại tệ",
+    "kết quả bóng đá ngoại hạng anh thể thao"
+]
+
+CLINICAL_ANCHORS = {
+    "thuốc", "liều", "dược", "bệnh", "chữa", "điều trị", "kháng sinh", "sốt", "đau", "viêm",
+    "phác đồ", "tồn kho", "tủ trực", "bệnh nhân", "huyết áp", "truyền dịch", "paracetamol",
+    "morphin", "tác dụng", "chống chỉ định", "độc tính", "ngộ độc", "quá liều", "men gan",
+    "thai kỳ", "cho con bú", "suy thận", "suy gan", "suy tim", "aspirin", "insulin",
+    "dị ứng", "phản vệ", "cpoe", "fefo", "tương tác", "vắc xin", "vacxin", "chỉ định"
+}
+
 # Bộ đệm Vector Anchors trong bộ nhớ (In-memory Anchor Cache)
 _ANCHOR_CACHE: Dict[str, np.ndarray] = {}
 
@@ -139,7 +158,44 @@ async def check_semantic_web_bypass(
                     suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Cập nhật y tế thời gian thực"]
                 )
 
+        # 3. So khớp với nhóm Ngoài phạm vi (Out-of-Scope / Math / Non-Clinical) bằng Vector Embedding
+        # Kiểm tra an toàn: Nếu câu hỏi có chứa thực thể/thuật ngữ lâm sàng bảo vệ thì không reject nhầm
+        has_clinical_anchor = any(anc in clean_q.lower() for anc in CLINICAL_ANCHORS)
+        if not has_clinical_anchor:
+            oos_matrix = await _get_anchor_vectors(OUT_OF_SCOPE_ANCHOR_PROTOTYPES, "out_of_scope_anchors")
+            if oos_matrix is not None:
+                oos_sims = np.dot(oos_matrix, q_vec)
+                max_oos_sim = float(np.max(oos_sims))
+                if max_oos_sim >= 0.68:
+                    logger.info(
+                        "Semantic Web Router: bypassed Web Search -> OUT_OF_SCOPE / SAFE_ABSTENTION (sim=%.4f) for query='%s'",
+                        max_oos_sim, clean_q
+                    )
+                    role_display = "Bác sĩ" if user_role == "doctor" else ("Dược sĩ" if user_role == "pharmacist" else "Điều dưỡng")
+                    reply_text = (
+                        f"Xin lỗi {role_display} {user_name}! Tôi là **Trợ lý Trí tuệ Nhân tạo Dược Lâm Sàng & Nghiệp vụ Bệnh viện chuyên dụng**.\n\n"
+                        "Hệ thống tuân thủ nghiêm ngặt quy chế an toàn y tế và **chỉ hỗ trợ** các nội dung chuyên môn sau:\n"
+                        "1. **Dược lý & Tra cứu thuốc:** Chỉ định, liều dùng tối đa, chống chỉ định, thận trọng (Dược thư Quốc gia & 54.885 thuốc Cục QLD).\n"
+                        "2. **An toàn kê đơn:** Tương tác thuốc chống chỉ định (QĐ 5948/QĐ-BYT), chỉnh liều suy thận/suy gan.\n"
+                        "3. **Thẩm định BHYT & Pháp quy:** Điều kiện thanh toán TT 20/2022/TT-BYT, quy chế kê đơn ngoại trú.\n"
+                        "4. **Phác đồ & Dịch tễ y tế:** Cập nhật thông tin dịch bệnh, vắc xin thời gian thực từ Bộ Y tế & WHO.\n\n"
+                        f"{role_display} vui lòng đặt câu hỏi liên quan đến thuốc hoặc chuyên môn y tế nhé!"
+                    )
+                    return CopilotResponse(
+                        intent="CLINICAL_SAFE_ABSTENTION",
+                        reply_text=reply_text,
+                        legal_basis="Quy chế Trợ lý Dược Lâm Sàng & An toàn CDSS",
+                        answer_type="safe_abstention",
+                        source_status="out_of_scope",
+                        confidence=round(max_oos_sim, 2),
+                        suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Cập nhật y tế thời gian thực"]
+                    )
+
     except Exception as e:
-        logger.warning("Lỗi trong Semantic Web Intent Router: %s, tiếp tục luồng Web Search bình thường.", e)
+        err_msg = str(e)
+        if "429" in err_msg or "ResourceExhausted" in err_msg or "quota" in err_msg.lower():
+            logger.error("⚠️ GEMINI EMBEDDING QUOTA EXHAUSTED / RATE LIMITED: %s", err_msg)
+        else:
+            logger.warning("Lỗi trong Semantic Web Intent Router: %s, tiếp tục luồng Web Search bình thường.", e)
 
     return None

@@ -60,3 +60,21 @@ async def test_handle_grounded_web_search_turn_integrates_semantic_bypass():
     assert resp is not None
     assert resp.intent == "CAPABILITY_OPENING"
     assert resp.source_status == "internal_knowledge"
+
+
+@pytest.mark.asyncio
+async def test_out_of_scope_intent_bypasses_web_search():
+    """Kiểm tra câu hỏi phi lâm sàng / toán học được nhận diện và từ chối an toàn bằng Vector Embedding."""
+    queries = [
+        "1+1 = ?",
+        "1 + 1 bằng mấy",
+        "thời tiết ngày mai có mưa không",
+        "kể một câu chuyện cười đi"
+    ]
+    for q in queries:
+        resp = await check_semantic_web_bypass(q, user_name="BS. Test", user_role="doctor")
+        assert resp is not None, f"Expected out-of-scope bypass for '{q}' but got None"
+        assert resp.intent == "CLINICAL_SAFE_ABSTENTION"
+        assert resp.answer_type == "safe_abstention"
+        assert resp.source_status == "out_of_scope"
+        assert "Trợ lý Trí tuệ Nhân tạo Dược Lâm Sàng" in resp.reply_text
