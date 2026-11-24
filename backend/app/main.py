@@ -5,7 +5,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy import select
 from app.config import settings
 from app.security.http_headers import SecurityHeadersMiddleware
-from app.security.auth import AuthenticationMiddleware
+from app.security.auth import AuthenticationMiddleware, DEV_LAN_ORIGIN_REGEX
 from app.database import engine, Base, AsyncSessionLocal
 from app.models.user import User
 from app.models.cpoe import CpoePrescription
@@ -250,6 +250,7 @@ app.add_middleware(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=DEV_LAN_ORIGIN_REGEX if settings.APP_ENV.lower() not in {"production", "prod"} else None,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

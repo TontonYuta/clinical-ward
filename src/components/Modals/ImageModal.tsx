@@ -40,6 +40,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
   onInitialFileConsumed
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<{
     file: File;
     previewUrl: string;
@@ -199,42 +200,72 @@ export const ImageModal: React.FC<ImageModalProps> = ({
             onChange={handleFileChange}
             className="hidden"
           />
+          <input
+            type="file"
+            ref={cameraInputRef}
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileChange}
+            className="hidden"
+          />
 
           {/* Vùng chọn ảnh hoặc Preview ảnh */}
           {!selectedFile ? (
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleProcessFile(file);
-              }}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2.5 ${
-                isDragging
-                  ? 'border-teal-600 bg-teal-50/50 ring-2 ring-teal-500/20'
-                  : 'border-slate-300 hover:border-teal-600 hover:bg-slate-50/80 bg-slate-50/30'
-              }`}
-            >
-              <div className="w-12 h-12 rounded-full bg-teal-50 border border-teal-200 text-teal-700 flex items-center justify-center shadow-2xs">
-                {isProcessingFile ? (
-                  <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
-                ) : (
-                  <Upload className="w-6 h-6" />
-                )}
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={isProcessingFile}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm shadow-sm transition cursor-pointer active:scale-95"
+                >
+                  <Camera className="w-5 h-5" />
+                  <span>Chụp ảnh trực tiếp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessingFile}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-300 shadow-2xs transition cursor-pointer active:scale-95"
+                >
+                  <Upload className="w-5 h-5 text-teal-700" />
+                  <span>Chọn ảnh từ thiết bị</span>
+                </button>
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">
-                  {isProcessingFile ? 'Đang tối ưu hóa hình ảnh...' : 'Nhấn để chọn ảnh hoặc kéo thả ảnh vào đây'}
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Chụp rõ nét đơn thuốc, nhãn thuốc hoặc bảng kê chi phí BHYT (PNG, JPG, WEBP - tự động nén Canvas)
-                </p>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleProcessFile(file);
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                  isDragging
+                    ? 'border-teal-600 bg-teal-50/50 ring-2 ring-teal-500/20'
+                    : 'border-slate-300 hover:border-teal-600 hover:bg-slate-50/80 bg-slate-50/30'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-200 text-teal-700 flex items-center justify-center shadow-2xs">
+                  {isProcessingFile ? (
+                    <RefreshCw className="w-5 h-5 animate-spin text-teal-600" />
+                  ) : (
+                    <Upload className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">
+                    {isProcessingFile ? 'Đang tối ưu hóa hình ảnh...' : 'Hoặc kéo thả ảnh vào đây'}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Chụp rõ nét đơn thuốc, nhãn thuốc hoặc bảng kê chi phí BHYT (PNG, JPG, WEBP - tự động nén Canvas)
+                  </p>
+                </div>
               </div>
             </div>
           ) : (

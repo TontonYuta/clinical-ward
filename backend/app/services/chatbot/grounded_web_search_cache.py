@@ -7,6 +7,7 @@ hệ thống phản hồi tức thì (< 30ms), tiết kiệm 100% token Gemini v
 """
 
 from typing import Optional, Dict, List, Any, Tuple
+import re
 import time
 import logging
 from collections import OrderedDict
@@ -16,9 +17,27 @@ from app.schemas.copilot import CopilotResponse
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL_SECONDS = 86400  # 24 giờ
+CACHE_TTL_SECONDS = 3600  # 1 giờ
 MAX_CACHE_ENTRIES = 500
 SEMANTIC_SIMILARITY_THRESHOLD = 0.95
+
+_QUANTITATIVE_PARAM_PAT = re.compile(
+    r"(?i)(?:\b\d+(?:[.,]\d+)?\s*(?:tuổi|ml|mg|mcg|g|kg|giờ|h|ngày|tuần|tháng|%)\b"
+    r"|\b(?:egfr|crcl|inr|hba1c)\s*[:=]?\s*\d+"
+    r"|\b(?:cyp\w*|vkorc1)\s*\*?\s*\d+)",
+)
+
+
+def should_allow_semantic_cache(query: str) -> bool:
+    """
+    Chỉ cho phép Semantic Hit (>= 0.95) khi câu hỏi không chứa thông số định lượng lâm sàng
+    (tuổi, liều, eGFR, INR, kiểu gen) để tránh ghép nhầm 2 ca bệnh khác con số.
+    """
+    if not query:
+        return False
+    if _QUANTITATIVE_PARAM_PAT.search(query):
+        return False
+    return True
 
 
 class GroundedWebSearchCache:
@@ -35,30 +54,39 @@ class GroundedWebSearchCache:
         self.semantic_hits = 0
         self.misses = 0
 
+    @staticmethod
+    def _make_key(query: str, session_id: Optional[str] = None) -> str:
+        clean_q = query.strip().lower()
+        scope = (session_id or "_global").strip()
+        return f"{scope}::{clean_q}"
+
     def get(
         self,
         query: str,
-        query_vec: Optional[np.ndarray] = None
+        query_vec: Optional[np.ndarray] = None,
+        allow_semantic: Optional[bool] = None,
+        session_id: Optional[str] = None
     ) -> Optional[CopilotResponse]:
-        clean_q = query.strip().lower()
+        cache_key = self._make_key(query, session_id)
         now = time.time()
 
-        # 1. Exact Match O(1)
-        if clean_q in self._entries:
-            entry = self._entries[clean_q]
+        # 1. Exact Match O(1) (tách biệt hoàn toàn theo session_id)
+        if cache_key in self._entries:
+            entry = self._entries[cache_key]
             if now - entry["timestamp"] < self.ttl_sec:
                 self.exact_hits += 1
-                self._entries.move_to_end(clean_q)
-                logger.info("Grounded Web Search Cache: EXACT HIT cho query='%s'", query)
+                self._entries.move_to_end(cache_key)
+                logger.info("Grounded Web Search Cache: EXACT HIT cho query='%s' (session=%s)", query, session_id)
                 cached_resp: CopilotResponse = entry["response"]
                 return cached_resp.model_copy(update={
                     "source_status": "cache_exact_hit"
                 })
             else:
-                self._entries.pop(clean_q, None)
+                self._entries.pop(cache_key, None)
 
-        # 2. Semantic Vector Cosine Similarity Search
-        if query_vec is not None and len(self._entries) > 0:
+        # 2. Semantic Vector Cosine Similarity Search (chỉ khớp trong cùng session_id và khi không có thông số định lượng)
+        semantic_enabled = should_allow_semantic_cache(query) if allow_semantic is None else allow_semantic
+        if semantic_enabled and query_vec is not None and len(self._entries) > 0:
             q_norm = np.linalg.norm(query_vec)
             if q_norm > 0:
                 q_unit = query_vec / q_norm
@@ -68,6 +96,8 @@ class GroundedWebSearchCache:
                 for k, entry in list(self._entries.items()):
                     if now - entry["timestamp"] >= self.ttl_sec:
                         self._entries.pop(k, None)
+                        continue
+                    if entry.get("session_id") != session_id:
                         continue
                     if entry.get("vector") is not None:
                         valid_entries.append(entry)
@@ -99,7 +129,8 @@ class GroundedWebSearchCache:
         self,
         query: str,
         response: CopilotResponse,
-        query_vec: Optional[np.ndarray] = None
+        query_vec: Optional[np.ndarray] = None,
+        session_id: Optional[str] = None
     ) -> None:
         clean_q = query.strip().lower()
         if not clean_q or not response or not response.reply_text:
@@ -119,12 +150,28 @@ class GroundedWebSearchCache:
         if len(self._entries) >= self.max_size:
             self._entries.popitem(last=False)  # LRU Eviction
 
-        self._entries[clean_q] = {
+        cache_key = self._make_key(query, session_id)
+        self._entries[cache_key] = {
             "query": query,
             "vector": normed_vec,
             "response": response,
-            "timestamp": now
+            "timestamp": now,
+            "session_id": session_id,
         }
+
+    def invalidate_session(self, session_id: str) -> int:
+        """Xóa toàn bộ entry cache gắn với một phiên chat cụ thể khi user xóa lịch sử."""
+        if not session_id:
+            return 0
+        keys_to_remove = [
+            k for k, entry in self._entries.items()
+            if entry.get("session_id") == session_id
+        ]
+        for k in keys_to_remove:
+            self._entries.pop(k, None)
+        if keys_to_remove:
+            logger.info("Grounded Web Search Cache: invalidated %d entries for session_id='%s'", len(keys_to_remove), session_id)
+        return len(keys_to_remove)
 
     def clear(self) -> None:
         self._entries.clear()

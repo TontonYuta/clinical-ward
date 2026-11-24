@@ -8,17 +8,18 @@ class GuardrailResult(NamedTuple):
     safe_response: Optional[str] = None
 
 SQLI_PATTERNS = [
-    (r"(?i)\b(?:OR|AND|WHERE)\s+['\"]?1['\"]?\s*=\s*['\"]?1['\"]?", "SQLi: Phép so sánh hằng đúng (Tautology 1=1 / '1'='1')"),
-    (r"(?i)\b(?:OR|AND|WHERE)\s+(?:true\b|1\s*=\s*1|'a'\s*=\s*'a')", "SQLi: Mẫu boolean tautology"),
+    (r"(?i)(?:['\"]\s*|\b(?:OR|AND|WHERE)\s+)(['\"]?)([a-z0-9_]+)\1\s*=\s*\1\2\1(?=\s|$|['\";\-])", "SQLi: Phép so sánh hằng đúng (Tautology)"),
+    (r"(?i)\b(?:OR|AND)\s+(?:true\b|1\s*<\s*2|1\s*!=\s*2|NOT\s+0\b|1\s+LIKE\s+1\b)", "SQLi: Mẫu boolean tautology"),
     (r"(?i)\bUNION\s+(?:ALL\s+)?SELECT\b", "SQLi: Tấn công trích xuất dữ liệu qua UNION SELECT"),
-    (r"(?i);\s*(?:DROP|TRUNCATE|ALTER|DELETE\s+FROM|INSERT\s+INTO|UPDATE)\s+[\w`\"']+", "SQLi: Kỹ thuật Stacked Query thực thi lệnh phá hoại CSDL"),
-    (r"(?i)\bDROP\s+TABLE\b", "SQLi: Lệnh xóa bảng DROP TABLE"),
-    (r"(?i)\bTRUNCATE\s+TABLE\b", "SQLi: Lệnh làm rỗng bảng TRUNCATE TABLE"),
-    (r"(?i)\b(?:INFORMATION_SCHEMA|SQLITE_MASTER|SYS\.TABLES|SYSOBJECTS)\b", "SQLi: Do thám lược đồ hệ quản trị CSDL (Schema Reconnaissance)"),
-    (r"(?i)\bPRAGMA\s+(?:table_info|database_list)\b", "SQLi: Truy vấn cấu trúc nội bộ SQLite PRAGMA"),
-    (r"(?:--|/\*|\*/|#)", "SQLi: Ký tự ngắt dòng / đóng chú thích câu lệnh SQL"),
+    (r"(?i);\s*(?:DROP|TRUNCATE|ALTER|DELETE\s+FROM|INSERT\s+INTO|UPDATE|ATTACH\s+DATABASE|DETACH\s+DATABASE|PRAGMA|VACUUM)\b", "SQLi: Kỹ thuật Stacked Query thực thi lệnh phá hoại CSDL"),
+    (r"(?i)\b(?:DROP|TRUNCATE)\s+(?:TABLE|DATABASE|VIEW|INDEX)\b", "SQLi: Lệnh xóa/làm rỗng cấu trúc bảng (DROP/TRUNCATE)"),
+    (r"(?i)\b(?:INFORMATION_SCHEMA|SQLITE_MASTER|SQLITE_SCHEMA|SQLITE_TEMP_MASTER|SYS\.TABLES|SYSOBJECTS)\b", "SQLi: Do thám lược đồ hệ quản trị CSDL (Schema Reconnaissance)"),
+    (r"(?i)\bPRAGMA\s+(?:table_info|database_list|writable_schema)\b", "SQLi: Truy vấn cấu trúc nội bộ SQLite PRAGMA"),
+    (r"(?i)\b(?:ATTACH\s+DATABASE|LOAD_EXTENSION\s*\(|RANDOMBLOB\s*\()", "SQLi: Lệnh/hàm mở rộng nguy hiểm trên SQLite"),
+    (r"['\"]\s*(?:--|#|/\*)", "SQLi: Thoát chuỗi kết hợp ký tự chú thích SQL"),
+    (r"(?i)\b(?:OR|AND|UNION|SELECT|FROM|WHERE)\b[^.\n]{0,40}(?:--|/\*)", "SQLi: Từ khóa SQL kết hợp ký tự ngắt câu lệnh"),
     (r"(?i)\b(?:EXEC|EXECUTE)\s*(?:xp_|sp_)", "SQLi: Kích hoạt stored procedure nguy hiểm (xp_cmdshell)"),
-    (r"(?i)\b(?:BENCHMARK|PG_SLEEP|SLEEP)\s*\(", "SQLi: Tấn công trễ thời gian (Time-based Blind SQLi)"),
+    (r"(?i)\b(?:BENCHMARK|PG_SLEEP|WAITFOR\s+DELAY)\s*\(", "SQLi: Tấn công trễ thời gian (Time-based Blind SQLi)"),
 ]
 
 PROMPT_INJECTION_PATTERNS = [

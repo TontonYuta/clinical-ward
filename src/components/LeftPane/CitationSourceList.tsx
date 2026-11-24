@@ -4,6 +4,7 @@ import { RagCitationItem } from '../../types/chat';
 
 type CitationSourceListProps = {
   citations?: RagCitationItem[];
+  isWebSearch?: boolean;
   onCitationClick?: (citation: {
     title: string;
     url?: string | null;
@@ -15,7 +16,7 @@ type CitationSourceListProps = {
   }) => void;
 };
 
-export function CitationSourceList({ citations = [], onCitationClick }: CitationSourceListProps) {
+export function CitationSourceList({ citations = [], isWebSearch = false, onCitationClick }: CitationSourceListProps) {
   const uniqueCitations = Array.from(
     new Map(
       citations.map((citation) => [
@@ -27,11 +28,21 @@ export function CitationSourceList({ citations = [], onCitationClick }: Citation
 
   if (uniqueCitations.length === 0) return null;
 
+  const isAllWeb =
+    isWebSearch ||
+    uniqueCitations.every((citation) =>
+      Boolean(
+        citation.url &&
+        (citation.url.startsWith('http://') || citation.url.startsWith('https://')) &&
+        !citation.document_id
+      )
+    );
+
   return (
-    <section aria-label="Nguồn tài liệu" className="mt-3 border-t border-slate-100 pt-2.5">
+    <section aria-label={isAllWeb ? 'Nguồn tham khảo Internet' : 'Nguồn tài liệu'} className="mt-3 border-t border-slate-100 pt-2.5">
       <div className="mb-1.5 flex items-center gap-1.5 text-2xs uppercase tracking-wider font-bold text-slate-400">
         <Globe className="h-3 w-3 text-teal-600" aria-hidden="true" />
-        <span>Nguồn tài liệu & Căn cứ y văn</span>
+        <span>{isAllWeb ? 'Nguồn tham khảo Internet' : 'Nguồn tài liệu & Căn cứ y văn'}</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {uniqueCitations.map((citation, index) => {
@@ -41,11 +52,23 @@ export function CitationSourceList({ citations = [], onCitationClick }: Citation
             : citation.section || '';
           const label = location ? `${sourceName} · ${location}` : sourceName;
           
-          const isWeb = Boolean(
-            citation.url &&
-            (citation.url.startsWith('http://') || citation.url.startsWith('https://')) &&
-            !citation.url.toLowerCase().endsWith('.pdf')
-          );
+          const isWeb =
+            isWebSearch ||
+            Boolean(
+              citation.url &&
+              (citation.url.startsWith('http://') || citation.url.startsWith('https://')) &&
+              !citation.url.toLowerCase().endsWith('.pdf') &&
+              !citation.document_id
+            );
+
+          const displayIndex = citation.index ?? index + 1;
+          const domainLabel = citation.domain || '';
+          const tierBadge =
+            isWeb && citation.credibility_tier && citation.credibility_tier <= 2
+              ? citation.credibility_tier === 1
+                ? 'Chính thống'
+                : 'Uy tín'
+              : '';
 
           const icon = isWeb ? (
             <ExternalLink className="h-3 w-3 shrink-0 text-teal-600" aria-hidden="true" />
@@ -56,7 +79,20 @@ export function CitationSourceList({ citations = [], onCitationClick }: Citation
           const content = (
             <>
               {icon}
-              <span className="truncate max-w-[260px] sm:max-w-[340px]">{label}</span>
+              {isWeb && (
+                <span className="font-bold text-teal-700 shrink-0">[{displayIndex}]</span>
+              )}
+              <span className="truncate max-w-[220px] sm:max-w-[300px]">{label}</span>
+              {isWeb && domainLabel && (
+                <span className="text-[11px] font-normal text-slate-500 shrink-0 hidden sm:inline">
+                  · {domainLabel}
+                </span>
+              )}
+              {tierBadge && (
+                <span className="rounded bg-teal-100 px-1 py-0.5 text-[10px] font-bold text-teal-800 shrink-0">
+                  {tierBadge}
+                </span>
+              )}
             </>
           );
 

@@ -64,3 +64,19 @@ export async function deleteUserCloudSession(sessionId: string, username?: strin
     return false;
   }
 }
+
+export async function resetUserSessionWebCache(sessionId: string, username?: string): Promise<boolean> {
+  if (!sessionId) return false;
+  try {
+    const url = username
+      ? `${API_BASE_URL}/copilot/user-sessions/${encodeURIComponent(sessionId)}/reset-cache?username=${encodeURIComponent(username)}`
+      : `${API_BASE_URL}/copilot/user-sessions/${encodeURIComponent(sessionId)}/reset-cache`;
+    const res = await apiFetch(url, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

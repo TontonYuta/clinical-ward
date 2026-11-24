@@ -102,6 +102,10 @@ export interface RagCitationItem {
   url?: string | null;
   document_id?: string | null;
   page?: number | null;
+  index?: number;
+  domain?: string;
+  verified_live?: boolean;
+  credibility_tier?: number;
 }
 
 export interface ClinicalSummary {

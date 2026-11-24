@@ -32,6 +32,7 @@ import {
   INITIAL_AUDIT_TRAIL_RECORDS
 } from './data/initialData';
 import { ChatSession } from './types/chatSession';
+import { resetUserSessionWebCache } from './services/chatSyncApi';
 import {
   generateSessionTitle
 } from './utils/storage/chatSessionStorage';
@@ -130,6 +131,34 @@ export default function App({
     isSyncing,
     triggerManualSync
   } = useUserChatSessions(authenticatedUsername);
+  const [isLauncherWebSearch, setIsLauncherWebSearch] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('copilot_enable_web_search') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    const syncWebSearch = (e: Event) => {
+      const detail = (e as CustomEvent<boolean>).detail;
+      if (typeof detail === 'boolean') setIsLauncherWebSearch(detail);
+    };
+    window.addEventListener('copilot-web-search-changed', syncWebSearch);
+    return () => window.removeEventListener('copilot-web-search-changed', syncWebSearch);
+  }, []);
+
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(max-width: 767px)').matches;
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handleChange = (e: MediaQueryListEvent) => setIsMobileViewport(e.matches);
+    setIsMobileViewport(mq.matches);
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, []);
   const sidebarAutoCollapseTimer = useRef<number | null>(null);
   const sidebarTemporaryPreview = useRef(false);
   const [currentTab, setCurrentTab] = useState<DashboardTab>(getInitialTab);
@@ -1900,6 +1929,46 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     }, 1800);
   };
 
+  if (isMobileViewport) {
+    return (
+      <div className="h-[100dvh] w-screen overflow-hidden bg-white">
+        <ChatWindow
+          isMobileOnly
+          messages={chatMessages}
+          suggestionChips={[]}
+          availabilityMode={chatbotAvailability}
+          onSendMessage={handleSendMessage}
+          isProcessing={isProcessing}
+          isAudioMuted={isAudioMuted}
+          currentUserRole={currentUserRole}
+          currentUserName={currentUserProfile?.name || authenticatedUsername || undefined}
+          onLogout={onLogout ? () => { void onLogout(); } : undefined}
+          onExecuteCardAction={handleExecuteCardAction}
+          onClearMessages={() => {
+            clearStoredChatMessages();
+            handleClearCurrentMessages();
+            void resetUserSessionWebCache(activeChatSessionId);
+          }}
+          onClearAllHistory={() => {
+            clearStoredChatMessages();
+            chatSessions.forEach((s) => handleDeleteSession(s.id));
+            handleClearCurrentMessages();
+            void resetUserSessionWebCache(activeChatSessionId);
+          }}
+          sessions={chatSessions}
+          activeSessionId={activeChatSessionId}
+          activeSessionTitle={activeSession.title}
+          onSelectSession={handleSelectSession}
+          onNewSession={handleNewSession}
+          onDeleteSession={handleDeleteSession}
+          onRenameSession={handleRenameSession}
+          isSyncing={isSyncing}
+          onManualSync={triggerManualSync}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-row h-[100dvh] min-h-0 w-screen overflow-hidden bg-slate-900 text-slate-800 print:h-auto print:w-auto print:overflow-visible print:bg-white print:block relative">
       {/* 1. Mobile Drawer Backdrop Overlay */}
@@ -2111,10 +2180,17 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       >
         <Bot className="h-6 w-6 text-white shrink-0" />
         <span className="sr-only">Trợ lý AI (⌘K / Ctrl+K)</span>
-        <span className="absolute -top-8 right-0 whitespace-nowrap rounded-md bg-slate-900/90 px-2 py-1 text-[11px] font-medium text-white shadow" role="status" aria-live="polite">
-          {chatbotAvailability === 'checking' && <><LoaderCircle className="mr-1 inline h-3 w-3 animate-spin" />Đang kiểm tra</>}
-          {chatbotAvailability === 'online_ai' && <><Wifi className="mr-1 inline h-3 w-3 text-emerald-400" />Online</>}
-          {chatbotAvailability !== 'online_ai' && chatbotAvailability !== 'checking' && <><CloudOff className="mr-1 inline h-3 w-3 text-sky-400" />Cục bộ</>}
+        <span
+          className="absolute -top-9 right-0 whitespace-nowrap rounded-full bg-slate-900/95 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg border border-slate-700/80 flex items-center gap-1.5 backdrop-blur-xs"
+          role="status"
+          aria-live="polite"
+        >
+          {chatbotAvailability === 'checking' && <><LoaderCircle className="h-3 w-3 animate-spin text-slate-300" /><span>Đang kiểm tra</span></>}
+          {chatbotAvailability === 'online_ai' && <><Wifi className="h-3 w-3 text-emerald-400" /><span>Online</span></>}
+          {chatbotAvailability !== 'online_ai' && chatbotAvailability !== 'checking' && <><CloudOff className="h-3 w-3 text-sky-400" /><span>Cục bộ</span></>}
+          {isLauncherWebSearch && (
+            <span className="ml-0.5 pl-1.5 border-l border-slate-700 text-teal-300 font-bold">🌐 Web</span>
+          )}
         </span>
       </button>
 
@@ -2170,6 +2246,13 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             onClearMessages={() => {
               clearStoredChatMessages();
               handleClearCurrentMessages();
+              void resetUserSessionWebCache(activeChatSessionId);
+            }}
+            onClearAllHistory={() => {
+              clearStoredChatMessages();
+              chatSessions.forEach((s) => handleDeleteSession(s.id));
+              handleClearCurrentMessages();
+              void resetUserSessionWebCache(activeChatSessionId);
             }}
             onOpenAuditTrail={() => setIsAuditTrailOpen(true)}
             onOpenLegalDocs={() => setIsLegalDocsOpen(true)}

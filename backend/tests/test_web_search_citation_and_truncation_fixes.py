@@ -115,3 +115,89 @@ def test_sentence_boundary_guard_trims_dangling_cut_off_lines():
     assert "### Nguồn tham khảo y khoa:" in output
     assert "bachmai.gov.vn" in output
     assert "⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet mang tính chất tham khảo" in output
+
+
+def test_reconcile_web_citations_renumbers_and_drops_uncited():
+    from app.services.chatbot.web_search_engine import reconcile_web_citations
+
+    results = [
+        WebSearchResult(title="Src 1", url="https://fda.gov/a", snippet="A", source_domain="fda.gov"),
+        WebSearchResult(title="Src 2", url="https://bachmai.gov.vn/b", snippet="B", source_domain="bachmai.gov.vn"),
+        WebSearchResult(title="Nguồn Bộ Y tế", url="https://moh.gov.vn/c", snippet="C", source_domain="moh.gov.vn"),
+    ]
+    ai_text = "Theo hướng dẫn [3], cần theo dõi sát [1]. Không có trong nguồn [9]."
+    reconciled_text, reconciled_results = reconcile_web_citations(ai_text, results)
+
+    assert "[1]" in reconciled_text
+    assert "[2]" in reconciled_text
+    assert "[3]" not in reconciled_text
+    assert "[9]" not in reconciled_text
+    assert [r.title for r in reconciled_results] == ["Nguồn Bộ Y tế", "Src 1"]
+
+    # Grouped citations like [1, 3] must preserve both Src 1 and Nguồn Bộ Y tế (Vietnamese ranked #1)
+    grouped_text, grouped_results = reconcile_web_citations("Thông tin tổng hợp [1, 3].", results)
+    assert "[2][1]" in grouped_text
+    assert [r.title for r in grouped_results] == ["Nguồn Bộ Y tế", "Src 1"]
+
+
+def test_rank_and_filter_results_prioritizes_vietnamese_sources():
+    results = [
+        WebSearchResult(
+            title="Warfarin Dosing Guidelines - FDA",
+            url="https://fda.gov/drugs/warfarin",
+            snippet="FDA approved warfarin dosing and CYP2C9 label",
+            source_domain="fda.gov",
+        ),
+        WebSearchResult(
+            title="Hướng dẫn sử dụng thuốc Warfarin và theo dõi INR",
+            url="https://vinmec.com/vi/tin-tuc/warfarin",
+            snippet="Hướng dẫn theo dõi chỉ số INR và tương tác thuốc warfarin",
+            source_domain="vinmec.com",
+        ),
+    ]
+    ranked = rank_and_filter_results(results, max_results=5)
+    assert ranked[0].source_domain == "vinmec.com"
+    assert ranked[1].source_domain == "fda.gov"
+
+
+def test_sanitize_ai_response_urls_strict_path_check():
+    from app.services.chatbot.web_search_engine import sanitize_ai_response_urls
+
+    allowed = {"https://moh.gov.vn/bai-viet-a"}
+    text = (
+        "Xem [Bài A](https://moh.gov.vn/bai-viet-a?utm_source=test) "
+        "và [Bài giả](https://moh.gov.vn/bai-gia-mao)."
+    )
+    sanitized = sanitize_ai_response_urls(text, allowed)
+    assert "https://moh.gov.vn/bai-viet-a?utm_source=test" in sanitized
+    assert "https://moh.gov.vn/bai-gia-mao" not in sanitized
+    assert "Nguồn chưa được xác thực" in sanitized
+
+
+def test_parse_follow_up_questions_and_quality_gate():
+    from app.services.chatbot.grounded_web_search_handler import (
+        parse_follow_up_questions_block,
+        filter_and_rank_web_chips,
+        generate_dynamic_web_chips,
+    )
+
+    raw = (
+        "### Tóm tắt nhanh\nThông tin về Budesonide.\n\n"
+        "<follow_up_questions>\n"
+        "- Liều dùng Budesonide cho trẻ em?\n"
+        "- Cách súc miệng sau khi hít Budesonide\n"
+        "- https://fake.link/bad\n"
+        "- Tác dụng phụ thường gặp của Budesonide\n"
+        "</follow_up_questions>"
+    )
+    cleaned, chips = parse_follow_up_questions_block(raw)
+    assert "<follow_up_questions>" not in cleaned
+    assert "Tóm tắt nhanh" in cleaned
+    filtered = filter_and_rank_web_chips(chips, "Thuốc Budesonide", max_chips=3)
+    assert len(filtered) == 3
+    assert all("http" not in c for c in filtered)
+
+    # Fallback theo thực thể khi không có LLM chips
+    fallback_chips = generate_dynamic_web_chips("Thuốc Montelukast", "Montelukast là thuốc...", [])
+    assert len(fallback_chips) == 3
+    assert any("Montelukast" in c for c in fallback_chips)

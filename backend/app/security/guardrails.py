@@ -1,6 +1,7 @@
 import re
 import unicodedata
 from typing import Optional
+from urllib.parse import unquote
 from app.security.guardrail_patterns import GuardrailResult, SQLI_PATTERNS, PROMPT_INJECTION_PATTERNS
 from app.security.output_guardrail import validate_output_guardrail
 
@@ -9,6 +10,7 @@ __all__ = [
     "SQLI_PATTERNS",
     "PROMPT_INJECTION_PATTERNS",
     "sanitize_input_text",
+    "normalize_for_sqli_scan",
     "detect_sql_injection",
     "detect_prompt_injection",
     "validate_input_guardrail",
@@ -28,11 +30,44 @@ def sanitize_input_text(text: str) -> str:
         text = text[:MAX_QUERY_LENGTH]
     return text.strip().lstrip("\\/")
 
+def normalize_for_sqli_scan(query: str) -> list[str]:
+    """
+    Chuẩn hóa chuỗi phục vụ quét SQLi chống kỹ thuật lách luật (URL encoding, inline comment /* */):
+    Trả về các biến thể đã giải mã để quét song song với chuỗi gốc.
+    """
+    if not query:
+        return []
+    decoded = query
+    for _ in range(2):
+        nxt = unquote(decoded)
+        if nxt == decoded:
+            break
+        decoded = nxt
+
+    variants = [query]
+    if decoded != query:
+        variants.append(decoded)
+
+    if "/*" in decoded and "*/" in decoded:
+        # Khử /*...*/ thành rỗng (bắt UN/**/ION) và thành khoảng trắng (bắt SELECT/*x*/FROM)
+        decomment_empty = re.sub(r'/\*[\s\S]*?\*/', '', decoded)
+        decomment_space = re.sub(r'/\*[\s\S]*?\*/', ' ', decoded)
+        for v in (decomment_empty, decomment_space):
+            collapsed = re.sub(r'[ \t]+', ' ', v).strip()
+            if collapsed and collapsed not in variants:
+                variants.append(collapsed)
+
+    return variants
+
+
 def detect_sql_injection(query: str) -> tuple[bool, Optional[str]]:
-    """Phát hiện các mẫu SQL Injection độc hại."""
-    for pattern, desc in SQLI_PATTERNS:
-        if re.search(pattern, query):
-            return True, desc
+    """Phát hiện các mẫu SQL Injection độc hại theo ngữ cảnh và chống obfuscation."""
+    if not query:
+        return False, None
+    for candidate in normalize_for_sqli_scan(query):
+        for pattern, desc in SQLI_PATTERNS:
+            if re.search(pattern, candidate):
+                return True, desc
     return False, None
 
 def detect_prompt_injection(query: str) -> tuple[bool, Optional[str]]:

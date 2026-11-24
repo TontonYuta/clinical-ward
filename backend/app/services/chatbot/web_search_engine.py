@@ -209,6 +209,22 @@ def sanitize_search_snippet(text: str) -> str:
     return cleaned.strip()
 
 
+_VI_DIACRITIC_PAT = re.compile(
+    r"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]",
+    re.IGNORECASE,
+)
+
+
+def is_vietnamese_source(result: WebSearchResult) -> bool:
+    """Xác định nguồn/link tiếng Việt dựa trên domain (.vn), URL (/vi/) hoặc dấu tiếng Việt trong tiêu đề/tóm tắt."""
+    domain = (result.source_domain or "").lower().strip()
+    url = (result.url or "").lower()
+    if domain.endswith(".vn") or "/vi/" in url or "lang=vi" in url or "hl=vi" in url:
+        return True
+    sample = f"{result.title or ''} {result.snippet or ''}"
+    return bool(_VI_DIACRITIC_PAT.search(sample))
+
+
 def rank_and_filter_results(results: List[WebSearchResult], max_results: int = 5) -> List[WebSearchResult]:
     """
     Lọc bỏ domain không an toàn (mạng xã hội, trang công nghệ, hỗ trợ tài khoản).
@@ -239,8 +255,8 @@ def rank_and_filter_results(results: List[WebSearchResult], max_results: int = 5
         r.credibility_tier = tier
         filtered.append(r)
 
-    # Sắp xếp ổn định theo độ uy tín Tier tăng dần (Tier 1 -> Tier 2 -> Tier 3 -> Tier 4)
-    filtered.sort(key=lambda x: x.credibility_tier)
+    # Ưu tiên nguồn tiếng Việt trước, sau đó sắp xếp ổn định theo độ uy tín Tier tăng dần (Tier 1 -> Tier 4)
+    filtered.sort(key=lambda x: (0 if is_vietnamese_source(x) else 1, x.credibility_tier))
     return filtered[:max_results]
 
 
@@ -298,11 +314,11 @@ async def is_url_alive(client: httpx.AsyncClient, url: str) -> bool:
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
     try:
-        # Thử HEAD trước với timeout ngắn 1.2s để tiết kiệm băng thông và độ trễ
-        resp = await client.head(url, headers=headers, timeout=1.2)
+        # Thử HEAD trước với timeout ngắn 0.8s để tiết kiệm băng thông và độ trễ
+        resp = await client.head(url, headers=headers, timeout=0.8)
         # 405 Method Not Allowed -> thử nhanh GET stream
         if resp.status_code == 405:
-            async with client.stream("GET", url, headers=headers, timeout=1.2) as get_resp:
+            async with client.stream("GET", url, headers=headers, timeout=0.7) as get_resp:
                 return get_resp.status_code < 400 or get_resp.status_code == 403
 
         # 403 Forbidden: Nhiều trang tin tức / Cổng thông tin (VnExpress, Bộ Y Tế) có Cloudflare chặn bot HEAD
@@ -338,7 +354,8 @@ async def verify_live_urls(results: List[WebSearchResult]) -> List[WebSearchResu
 async def search_serper(
     query: str,
     api_key: Optional[str] = None,
-    max_results: int = 5
+    max_results: int = 5,
+    lang_restrict: Optional[str] = None,
 ) -> List[WebSearchResult]:
     """
     Tìm kiếm qua Serper.dev REST API (Google Search kết quả thật, ổn định trên VPS/Cloud).
@@ -363,13 +380,15 @@ async def search_serper(
         "X-API-KEY": key,
         "Content-Type": "application/json"
     }
-    fetch_num = max(max_results * 2, 8)
-    payload = {
+    fetch_num = max(max_results * 3, 12)
+    payload: dict = {
         "q": query,
         "gl": "vn",
         "hl": "vi",
         "num": fetch_num
     }
+    if lang_restrict:
+        payload["lr"] = lang_restrict
 
     start_serper_t = time.monotonic()
     async with httpx.AsyncClient(timeout=6.0) as client:
@@ -428,7 +447,7 @@ def _ddgs_sync_search(query: str, max_results: int = 5) -> List[WebSearchResult]
     try:
         from duckduckgo_search import DDGS
         with DDGS(timeout=5) as ddgs:
-            raw_items = list(ddgs.text(query, max_results=max_results))
+            raw_items = list(ddgs.text(query, region="vn-vi", max_results=max_results))
             results: List[WebSearchResult] = []
             for r in raw_items:
                 link = unwrap_search_url(r.get("href", "").strip())
@@ -511,6 +530,27 @@ async def search_and_verify_web(
     # Lấy top ứng viên tối ưu nhất (max_results + 1) để xác minh độ sống thay vì tốn băng thông quét toàn bộ
     candidates = rank_and_filter_results(results, max_results=max_results + 1)
 
+    # Nếu Serper trả về ít hơn 2 nguồn tiếng Việt, bổ sung 1 lượt tìm kiếm ưu tiên ngôn ngữ tiếng Việt (lr=lang_vi)
+    if source_used == "serper" and sum(1 for r in candidates if is_vietnamese_source(r)) < 2:
+        try:
+            vi_results = await search_serper(
+                query,
+                api_key=custom_serper_key,
+                max_results=max_results,
+                lang_restrict="lang_vi",
+            )
+            if vi_results:
+                seen_urls = {_normalize_url_parts(r.url) for r in results}
+                merged = list(results)
+                for vr in vi_results:
+                    vk = _normalize_url_parts(vr.url)
+                    if vk not in seen_urls:
+                        seen_urls.add(vk)
+                        merged.append(vr)
+                candidates = rank_and_filter_results(merged, max_results=max_results + 1)
+        except Exception:
+            pass
+
     # 5. Xác minh link sống (Live URL Verifier) song song chỉ trên top ứng viên đạt chuẩn
     verified_results = await verify_live_urls(candidates)
     final_results = verified_results[:max_results] if verified_results else candidates[:max_results]
@@ -518,6 +558,30 @@ async def search_and_verify_web(
     # 6. Lưu vào cache
     _SEARCH_CACHE[clean_query] = (now, final_results)
     return final_results, source_used
+
+
+def _normalize_url_parts(url: str) -> tuple[str, str, str]:
+    """Chuẩn hóa URL thành (netloc_no_www, clean_path, clean_query_key) để đối soát chặt chẽ."""
+    raw = unwrap_search_url((url or "").strip().rstrip("/.,;:"))
+    if not raw:
+        return ("", "", "")
+    try:
+        parsed = urlparse(raw)
+        netloc = parsed.netloc.lower()
+        if netloc.startswith("www."):
+            netloc = netloc[4:]
+        path = parsed.path.rstrip("/")
+        # Loại bỏ các tracking query params phổ biến
+        qs = parse_qs(parsed.query, keep_blank_values=False)
+        filtered_qs = sorted(
+            (k, tuple(sorted(v)))
+            for k, v in qs.items()
+            if not k.lower().startswith(("utm_", "fbclid", "gclid", "ref"))
+        )
+        query_key = "&".join(f"{k}={','.join(v)}" for k, v in filtered_qs)
+        return (netloc, path, query_key)
+    except Exception:
+        return ("", raw.lower(), "")
 
 
 def sanitize_ai_response_urls(ai_text: str, allowed_urls: Set[str]) -> str:
@@ -530,8 +594,9 @@ def sanitize_ai_response_urls(ai_text: str, allowed_urls: Set[str]) -> str:
     if not ai_text:
         return ""
 
-    # Chuẩn hóa whitelist gồm cả URL nguyên bản và URL đã unwrap
+    # Chuẩn hóa whitelist gồm cả URL nguyên bản và cặp (netloc, path, query_key)
     normalized_allowed = set()
+    allowed_parts: List[tuple[str, str, str]] = []
     for u in allowed_urls:
         if not u:
             continue
@@ -540,10 +605,27 @@ def sanitize_ai_response_urls(ai_text: str, allowed_urls: Set[str]) -> str:
         unwrapped = unwrap_search_url(u).rstrip("/.,;:")
         if unwrapped:
             normalized_allowed.add(unwrapped)
+        parts = _normalize_url_parts(u)
+        if parts[0]:
+            allowed_parts.append(parts)
 
     def is_url_allowed(test_url: str) -> bool:
         clean = unwrap_search_url(test_url.rstrip("/.,;:"))
-        return any(clean.startswith(a) or a.startswith(clean) for a in normalized_allowed)
+        if clean in normalized_allowed:
+            return True
+        t_netloc, t_path, t_query = _normalize_url_parts(clean)
+        if not t_netloc:
+            return False
+        for a_netloc, a_path, a_query in allowed_parts:
+            if t_netloc != a_netloc:
+                continue
+            # Khớp chính xác path (cho phép bỏ qua tracking query hoặc fragment)
+            if t_path == a_path and (not t_query or not a_query or t_query == a_query):
+                return True
+            # Cho phép subpath chỉ khi allowed path là một thư mục cụ thể (không phải root rỗng)
+            if a_path and t_path.startswith(a_path + "/"):
+                return True
+        return False
 
     # Tokenizer đơn lượt: Ưu tiên bắt toàn bộ [Label](URL) markdown trước, phần còn lại mới là raw URL
     pattern = re.compile(
@@ -564,6 +646,61 @@ def sanitize_ai_response_urls(ai_text: str, allowed_urls: Set[str]) -> str:
             return "[Link đã ẩn do không nằm trong nguồn tìm kiếm xác minh]"
 
     return pattern.sub(_replace_token, ai_text)
+
+
+def reconcile_web_citations(
+    ai_text: str,
+    results: List[WebSearchResult],
+    fallback_top_n: int = 3
+) -> tuple[str, List[WebSearchResult]]:
+    """
+    Đối soát chỉ số trích dẫn [n] trong bài viết với danh sách kết quả tìm kiếm thực tế:
+    1. Loại bỏ các chỉ số [n] nằm ngoài phạm vi (n < 1 hoặc n > len(results)).
+    2. Đánh số lại liên tục [1], [2], ... theo thứ tự xuất hiện thực tế trong văn bản.
+    3. Chỉ giữ lại đúng các nguồn được trích dẫn (hoặc top N nguồn uy tín nếu bài viết không gắn [n]).
+    """
+    if not ai_text or not results:
+        return ai_text, results
+
+    max_idx = len(results)
+    # Tách cụm trích dẫn gộp dạng [1, 2] hoặc [1, 3, 4] thành [1][2] để không sót nguồn nào
+    grouped_pat = re.compile(r'\[(\d+(?:\s*,\s*\d+)+)\](?!\()')
+    ai_text = grouped_pat.sub(
+        lambda m: "".join(f"[{n.strip()}]" for n in m.group(1).split(",") if n.strip()),
+        ai_text,
+    )
+    # Bỏ qua [n](url) markdown link, chỉ bắt standalone citation marker [n]
+    citation_pat = re.compile(r'\[(\d+)\](?!\()')
+
+    ordered_valid: List[int] = []
+    seen: Set[int] = set()
+    for match in citation_pat.finditer(ai_text):
+        idx = int(match.group(1))
+        if 1 <= idx <= max_idx and idx not in seen:
+            seen.add(idx)
+            ordered_valid.append(idx)
+
+    if not ordered_valid:
+        # Nếu LLM không gắn [n] trong bài, vẫn loại bỏ [n] ngoài phạm vi và giữ top N nguồn uy tín (đã xếp tiếng Việt trước)
+        cleaned = citation_pat.sub("", ai_text)
+        cleaned = re.sub(r'[ \t]{2,}', ' ', cleaned).strip()
+        return cleaned, results[:min(fallback_top_n, max_idx)]
+
+    # Luôn sắp xếp nguồn tiếng Việt lên đầu [1], [2]... rồi mới tới nguồn tiếng Anh
+    order_pos = {old_idx: pos for pos, old_idx in enumerate(ordered_valid)}
+    ordered_valid.sort(key=lambda idx: (0 if is_vietnamese_source(results[idx - 1]) else 1, order_pos[idx]))
+
+    remap: Dict[int, int] = {old_idx: new_idx for new_idx, old_idx in enumerate(ordered_valid, 1)}
+
+    def _rewrite_marker(match: re.Match) -> str:
+        old_idx = int(match.group(1))
+        new_idx = remap.get(old_idx)
+        return f"[{new_idx}]" if new_idx is not None else ""
+
+    reconciled_text = citation_pat.sub(_rewrite_marker, ai_text)
+    reconciled_text = re.sub(r'\s+([.,;:!?])', r'\1', reconciled_text)
+    reconciled_results = [results[old_idx - 1] for old_idx in ordered_valid]
+    return reconciled_text, reconciled_results
 
 
 def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> str:

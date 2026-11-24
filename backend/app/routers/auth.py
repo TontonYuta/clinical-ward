@@ -50,9 +50,11 @@ async def login(payload: LoginRequest, request: Request, response: Response):
     if not settings.AUTH_REQUIRED:
         raise HTTPException(status_code=404, detail="Đăng nhập bị tắt khi AUTH_REQUIRED=false")
 
+    from app.security.auth import is_trusted_request_origin
     origin = request.headers.get("origin")
-    trusted = {item.rstrip("/") for item in settings.CORS_ORIGINS} | {str(request.base_url).rstrip("/")}
-    if origin and origin.rstrip("/") not in trusted:
+    trusted = {item.rstrip("/") for item in settings.CORS_ORIGINS}
+    same_origin = str(request.base_url).rstrip("/")
+    if not is_trusted_request_origin(origin, trusted, same_origin):
         raise HTTPException(status_code=403, detail="Cross-origin request rejected")
 
     # Rate Limiting: Chống Brute Force mật khẩu (5 lần sai -> khóa 5 phút)

@@ -10,6 +10,7 @@ class CopilotQuery(BaseModel):
     image_base64: str | None = None
     image_mime_type: str | None = "image/jpeg"
     enable_web_search: bool = False
+    bypass_cache: bool = False
 
 class CopilotActionCard(BaseModel):
     card_type: str

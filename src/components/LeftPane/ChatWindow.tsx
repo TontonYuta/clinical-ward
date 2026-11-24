@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, ShieldCheck, RotateCcw, Maximize2, Minimize2, ChevronDown, ChevronRight, FileText, History, Plus, PanelLeftOpen, PanelLeftClose, ZoomIn } from 'lucide-react';
+import { Bot, User, X, ShieldCheck, RotateCcw, Maximize2, Minimize2, ChevronDown, ChevronRight, FileText, History, Plus, PanelLeftOpen, PanelLeftClose, ZoomIn, Settings } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { ChatSession } from '../../types/chatSession';
 import { ChatSessionsDrawer } from './ChatSessionsDrawer';
@@ -20,7 +20,7 @@ import { ImageLightboxModal } from '../Modals/ImageLightboxModal';
 import { PdfViewerModal } from '../Modals/PdfViewerModal';
 import { resolvePdfDocumentTarget } from '../../utils/pdfDocumentResolver';
 import { CitationSourceList } from './CitationSourceList';
-import { removeLegacySourceText } from '../../utils/chatAnswerPresentation';
+import { removeLegacySourceText, stripWebReferenceTail } from '../../utils/chatAnswerPresentation';
 import type { ChatbotAvailability } from '../../services/api';
 
 interface ChatWindowProps {
@@ -31,27 +31,44 @@ interface ChatWindowProps {
   currentUserRole?: UserRole; onClose?: () => void; pendingDebtsCount?: number;
   pendingAmpoulesCount?: number; urgentTicketsCount?: number; lowStockCount?: number;
   onExecuteCardAction?: (messageId: string, actionType: string, cardData: any) => void;
-  onClearMessages?: () => void; onOpenAuditTrail?: () => void; onOpenLegalDocs?: () => void;
+  onClearMessages?: () => void; onClearAllHistory?: () => void; onOpenAuditTrail?: () => void; onOpenLegalDocs?: () => void;
   onOpenUserGuide?: () => void; isFullScreen?: boolean; onToggleFullScreen?: () => void;
   sessions?: ChatSession[]; activeSessionId?: string; activeSessionTitle?: string;
   onSelectSession?: (sessionId: string) => void; onNewSession?: () => void;
   onDeleteSession?: (sessionId: string) => void; onRenameSession?: (sessionId: string, newTitle: string) => void;
   isSyncing?: boolean; onManualSync?: () => void;
+  isMobileOnly?: boolean; currentUserName?: string; onLogout?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   messages, suggestionChips, availabilityMode = 'checking', onSendMessage, isProcessing, isAudioMuted, onSelectTab,
   currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
-  lowStockCount = 0, onExecuteCardAction, onClearMessages, onOpenLegalDocs, onOpenUserGuide,
+  lowStockCount = 0, onExecuteCardAction, onClearMessages, onClearAllHistory, onOpenLegalDocs, onOpenUserGuide,
   isFullScreen = false, onToggleFullScreen,
   sessions, activeSessionId, activeSessionTitle, onSelectSession, onNewSession, onDeleteSession, onRenameSession,
-  isSyncing = false, onManualSync
+  isSyncing = false, onManualSync,
+  isMobileOnly = false, currentUserName, onLogout
 }) => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const outerContainerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUpRef = useRef(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobileWebSearch, setIsMobileWebSearch] = useState<boolean>(() => {
+    try {
+      return typeof window !== 'undefined' && localStorage.getItem('copilot_enable_web_search') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    const syncWeb = (e: Event) => {
+      const detail = (e as CustomEvent<boolean>).detail;
+      if (typeof detail === 'boolean') setIsMobileWebSearch(detail);
+    };
+    window.addEventListener('copilot-web-search-changed', syncWeb);
+    return () => window.removeEventListener('copilot-web-search-changed', syncWeb);
+  }, []);
   const [isSessionsDrawerOpen, setIsSessionsDrawerOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -160,6 +177,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           isSyncing={isSyncing}
           onManualSync={onManualSync}
           availabilityMode={availabilityMode}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
       )}
 
@@ -176,15 +194,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <h3 className="text-base font-bold text-slate-950 whitespace-nowrap">
                   Trợ Lý AI Lâm Sàng
                 </h3>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold ${
-                  availabilityMode === 'online_ai'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-sky-50 text-sky-700 border border-sky-200'
-                }`} role="status" aria-live="polite">
-                  {availabilityMode === 'checking' && 'Đang kiểm tra...'}
-                  {availabilityMode === 'online_ai' && '🟢 Online'}
-                  {availabilityMode !== 'online_ai' && availabilityMode !== 'checking' && '🔵 Cục bộ'}
-                </span>
+                {isMobileOnly && (
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${
+                    availabilityMode === 'online_ai'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-sky-50 text-sky-700 border border-sky-200'
+                  }`}>
+                    {availabilityMode === 'online_ai' ? 'Online' : availabilityMode === 'checking' ? '...' : 'Cục bộ'}
+                    {isMobileWebSearch && <span className="text-teal-700 font-bold">· 🌐 Web</span>}
+                  </span>
+                )}
                 {activeSessionTitle && (
                   <span className="hidden sm:inline-block max-w-[130px] truncate text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200" title={activeSessionTitle}>
                     {activeSessionTitle}
@@ -194,6 +213,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+                title="Cấu hình AI & Trạng thái Online (Gemini / Serper)"
+                aria-label="Cấu hình AI & Trạng thái Online"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
               {onNewSession && (
                 <button
                   type="button"
@@ -221,24 +249,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   )}
                 </button>
               )}
-              {onToggleFullScreen && (
+              {!isMobileOnly && onToggleFullScreen && (
                 <button type="button" onClick={onToggleFullScreen} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Toàn màn hình" aria-label="Toàn màn hình">
                   <Maximize2 className="w-4 h-4" />
                 </button>
               )}
-              {onClearMessages && (
-                <button
-                  type="button"
-                  data-testid="chat-clear-btn"
-                  onClick={onClearMessages}
-                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
-                  title="Làm mới phiên hội thoại"
-                  aria-label="Làm mới phiên hội thoại"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              )}
-              {onClose && (
+              {!isMobileOnly && onClose && (
                 <button onClick={onClose} className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Đóng Trợ lý AI">
                   <X className="w-4.5 h-4.5" />
                 </button>
@@ -261,15 +277,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             )}
 
             <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs p-1 px-2 rounded-xl border border-slate-200/90 shadow-2xs">
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold select-none ${
-                availabilityMode === 'online_ai'
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  : 'bg-sky-50 text-sky-700 border border-sky-200'
-              }`} role="status" aria-live="polite">
-                {availabilityMode === 'checking' && 'Đang kiểm tra...'}
-                {availabilityMode === 'online_ai' && '🟢 Online'}
-                {availabilityMode !== 'online_ai' && availabilityMode !== 'checking' && '🔵 Cục bộ'}
-              </span>
               {onToggleFullScreen && (
                 <button
                   type="button"
@@ -279,18 +286,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   aria-label="Thu nhỏ cửa sổ"
                 >
                   <Minimize2 className="w-4 h-4" />
-                </button>
-              )}
-              {onClearMessages && (
-                <button
-                  type="button"
-                  data-testid="chat-clear-btn"
-                  onClick={onClearMessages}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-                  title="Làm mới cuộc trò chuyện"
-                  aria-label="Làm mới cuộc trò chuyện"
-                >
-                  <RotateCcw className="w-4 h-4" />
                 </button>
               )}
               {onClose && (
@@ -325,7 +320,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             msg.answerType === 'grounded_web_reference' ||
             msg.intent === 'GROUNDED_WEB_SEARCH' ||
             (activeCitations.length > 0 && activeCitations.every(c => Boolean(c.url?.startsWith('http')) && !c.document_id));
-          const displayText = isAgent ? removeLegacySourceText(msg.text, true) : msg.text;
+          const rawDisplayText = isAgent ? removeLegacySourceText(msg.text, true) : msg.text;
+          const displayText = isAgent && isWebSearch && activeCitations.length > 0
+            ? stripWebReferenceTail(rawDisplayText)
+            : rawDisplayText;
 
           return (
             <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-3 w-full ${isRightAligned ? 'ml-auto flex-row-reverse max-w-[96%] sm:max-w-[85%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
@@ -414,9 +412,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                           {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-teal-600 animate-pulse align-middle" />}
                         </>
                       )}
-                      {isAgent && !msg.isStreaming && activeCitations.length > 0 && !isWebSearch && (
+                      {isAgent && !msg.isStreaming && activeCitations.length > 0 && (
                         <CitationSourceList
                           citations={activeCitations}
+                          isWebSearch={isWebSearch}
                           onCitationClick={(citation) => handleInlineCitationClick(msg.id, citation)}
                         />
                       )}
@@ -427,18 +426,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         <p className="text-xs font-semibold text-slate-800 truncate">{msg.card.title}</p>
                         {msg.card.summary && <p className="text-[11px] text-slate-500 truncate">{msg.card.summary}</p>}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => onExecuteCardAction?.(
-                          msg.id,
-                          msg.card?.primaryActionType || 'NAVIGATE',
-                          { ...(msg.card?.data || {}), target_tab: msg.card?.targetTab || msg.card?.data?.targetTab }
-                        )}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-800 hover:bg-teal-900 text-white shadow-2xs hover:shadow transition flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>{msg.card.primaryActionLabel}</span>
-                      </button>
+                      {isMobileOnly ? (
+                        <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 shrink-0">
+                          Xem trên máy tính
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onExecuteCardAction?.(
+                            msg.id,
+                            msg.card?.primaryActionType || 'NAVIGATE',
+                            { ...(msg.card?.data || {}), target_tab: msg.card?.targetTab || msg.card?.data?.targetTab }
+                          )}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-800 hover:bg-teal-900 text-white shadow-2xs hover:shadow transition flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>{msg.card.primaryActionLabel}</span>
+                        </button>
+                      )}
                     </div>
                   )}
                   {isAgent && msg.suggestedChips && msg.suggestedChips.length > 0 && (
@@ -480,7 +485,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* 4. Settings Modal */}
-      <ChatSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <ChatSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        availabilityMode={availabilityMode}
+        onClearMessages={onClearMessages}
+        onClearAllHistory={onClearAllHistory}
+        currentUserName={currentUserName}
+        onLogout={onLogout}
+      />
 
       {/* 5. Multi-Session History Drawer for compact popup mode */}
       {!isFullScreen && (

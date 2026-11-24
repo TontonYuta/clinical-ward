@@ -7,15 +7,45 @@ import base64
 import hashlib
 import hmac
 import json
+import re
 import secrets
 import time
 import uuid
 from dataclasses import dataclass
 from threading import Lock
+from typing import Optional
 
 from fastapi import HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+from app.config import settings
+
+DEV_LAN_ORIGIN_REGEX = (
+    r"^https?://("
+    r"localhost|127\.0\.0\.1|"
+    r"192\.168\.\d{1,3}\.\d{1,3}|"
+    r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+    r"172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}"
+    r")(:\d+)?$"
+)
+_DEV_LAN_ORIGIN_PAT = re.compile(DEV_LAN_ORIGIN_REGEX, re.IGNORECASE)
+
+
+def is_trusted_request_origin(
+    origin: Optional[str],
+    trusted_origins: set[str],
+    same_origin: str = "",
+) -> bool:
+    """Kiểm tra Origin hợp lệ; chỉ nới cho IP mạng LAN nội bộ khi không ở production."""
+    if not origin:
+        return True
+    clean_origin = origin.rstrip("/")
+    allowed = trusted_origins | ({same_origin.rstrip("/")} if same_origin else set())
+    if clean_origin in allowed:
+        return True
+    if settings.APP_ENV.lower() not in {"production", "prod"} and _DEV_LAN_ORIGIN_PAT.match(clean_origin):
+        return True
+    return False
 
 try:
     from argon2 import PasswordHasher, Type
@@ -220,7 +250,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
                 proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",", 1)[0].strip()
                 same_origin = f"{proto}://{host}".rstrip("/") if host else ""
-                if origin and origin.rstrip("/") not in self.trusted_origins | {same_origin}:
+                if not is_trusted_request_origin(origin, self.trusted_origins, same_origin):
                     return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
             return await call_next(request)
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
@@ -228,7 +258,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             forwarded_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
             forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",", 1)[0].strip()
             same_origin = f"{forwarded_proto}://{forwarded_host}".rstrip("/") if forwarded_host else ""
-            if origin and origin.rstrip("/") not in self.trusted_origins | {same_origin}:
+            if not is_trusted_request_origin(origin, self.trusted_origins, same_origin):
                 return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
         public_auth_requests = {
             ("/api/v1/auth/me", "GET"),

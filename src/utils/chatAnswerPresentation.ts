@@ -28,6 +28,26 @@ export function removeLegacySourceText(rawText: string, hasCitations: boolean = 
     .trim();
 }
 
+/**
+ * Loại bỏ khối danh mục "### Nguồn tham khảo y khoa:" ở cuối câu trả lời Web Search
+ * khi Frontend đã render danh sách nguồn có cấu trúc bên dưới (CitationSourceList),
+ * nhưng vẫn giữ lại phần cảnh báo an toàn (⚠️ Lưu ý: ...).
+ */
+export function stripWebReferenceTail(rawText: string): string {
+  if (!rawText) return '';
+  const refHeaderRegex = /\n+(?:#{1,4}\s*|\*{1,2})?(?:Nguồn tham khảo y khoa|Nguồn tham khảo|Tài liệu tham khảo)[:\s]*\n/i;
+  const match = refHeaderRegex.exec(rawText);
+  if (!match) return rawText;
+
+  const before = rawText.slice(0, match.index).trim();
+  const after = rawText.slice(match.index + match[0].length);
+  const disclaimerMatch = after.match(/(⚠️\s*\*?Lưu ý:.*$)/is);
+  if (disclaimerMatch) {
+    return `${before}\n\n${disclaimerMatch[1].trim()}`;
+  }
+  return before;
+}
+
 export function formatCitationLabel(citation: RagCitationItem): { title: string; subtitle?: string; pageTag?: string } {
   const rawBasis = (citation.legal_basis || citation.source || '').trim();
   const rawSource = (citation.source || '').trim();

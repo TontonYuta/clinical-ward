@@ -134,6 +134,39 @@ def _compute_prompt_hash(provider: str, model: str, prompt: str, system: Optiona
     raw = f"{provider}:{model}:{system or ''}:{prompt.strip()}".encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
+_COOLDOWN_TTL_SEC = 90.0
+_MODEL_COOLDOWN_UNTIL: Dict[str, float] = {}
+_LAST_HEALTHY_MODEL: Optional[str] = None
+
+
+def _order_models_by_health(models: List[str], dead_models: set[str]) -> List[str]:
+    """Ưu tiên model vừa chạy thành công, đẩy các model đang 503/Timeout xuống cuối hàng đợi."""
+    now = time.monotonic()
+    healthy: List[str] = []
+    cooling: List[str] = []
+    for m in models:
+        if m in dead_models:
+            continue
+        if _MODEL_COOLDOWN_UNTIL.get(m, 0.0) > now:
+            cooling.append(m)
+        else:
+            healthy.append(m)
+    if _LAST_HEALTHY_MODEL and _LAST_HEALTHY_MODEL in healthy:
+        healthy.remove(_LAST_HEALTHY_MODEL)
+        healthy.insert(0, _LAST_HEALTHY_MODEL)
+    return healthy + cooling
+
+
+def _mark_model_healthy(model: str) -> None:
+    global _LAST_HEALTHY_MODEL
+    _LAST_HEALTHY_MODEL = model
+    _MODEL_COOLDOWN_UNTIL.pop(model, None)
+
+
+def _mark_model_cooldown(model: str) -> None:
+    _MODEL_COOLDOWN_UNTIL[model] = time.monotonic() + _COOLDOWN_TTL_SEC
+
+
 async def _call_gemini_api(
     prompt: str,
     system_instruction: Optional[str] = None,
@@ -170,23 +203,25 @@ async def _call_gemini_api(
     headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
     req_client_timeout = max(15.0, timeout_sec)
     dead_models = globals().setdefault("_DEAD_GEMINI_MODELS", set())
+    ordered_models = _order_models_by_health(models, dead_models)
     async with httpx.AsyncClient(timeout=httpx.Timeout(req_client_timeout, connect=5.0)) as client:
-        for model in models:
+        for model in ordered_models:
             if model in dead_models:
                 continue
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            per_model_timeout = min(remaining, 7.0)
+            per_model_timeout = min(remaining, max(10.0, timeout_sec * 0.45))
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-            # 1. Thử nghiệm Context Caching để tiết kiệm 75% chi phí input token
+            # 1. Chỉ dùng Context Caching khi không truyền system_instruction tùy biến (tránh mất round-trip & ghi đè prompt)
             cached_content_name = None
-            try:
-                from app.services.cache.gemini_context_cache import get_active_context_cache
-                cached_content_name = await get_active_context_cache(key, model)
-            except Exception:
-                cached_content_name = None
+            if not system_instruction:
+                try:
+                    from app.services.cache.gemini_context_cache import get_active_context_cache
+                    cached_content_name = await get_active_context_cache(key, model)
+                except Exception:
+                    cached_content_name = None
 
             active_payload = dict(payload)
             if cached_content_name:
@@ -242,6 +277,7 @@ async def _call_gemini_api(
                                 record_key_consumption(key, p_tok + c_tok)
                             except Exception:
                                 pass
+                            _mark_model_healthy(model)
                             return reply
                 elif res.status_code == 429 or "RESOURCE_EXHAUSTED" in getattr(res, "text", ""):
                     logger.warning("Gemini 429 Quota Exceeded on %s. Auto-rotating key.", model)
@@ -279,6 +315,7 @@ async def _call_gemini_api(
                                         record_key_consumption(key, p_tok + c_tok)
                                     except Exception:
                                         pass
+                                    _mark_model_healthy(model)
                                     return reply
                     else:
                         logger.warning("Không còn khóa API dự phòng khả dụng trong Key Pool cho model %s. Thử model tiếp theo.", model)
@@ -286,8 +323,12 @@ async def _call_gemini_api(
                 else:
                     if res.status_code == 404:
                         dead_models.add(model)
+                    elif res.status_code >= 500:
+                        _mark_model_cooldown(model)
                     logger.warning("Gemini model %s returned HTTP %s: %s", model, res.status_code, (getattr(res, "text", "") or "")[:160])
             except Exception as e:
+                if isinstance(e, httpx.TimeoutException):
+                    _mark_model_cooldown(model)
                 logger.warning("Gemini model %s attempt failed (%s): %s", model, type(e).__name__, e)
                 continue
     return None
@@ -742,6 +783,144 @@ async def query_clinical_llm(
         record_llm_execution(model_identifier, provider, usage_source="estimated")
 
     return result
+
+
+async def stream_clinical_llm(
+    prompt: str,
+    system_instruction: Optional[str] = None,
+    api_key: Optional[str] = None,
+    temperature: float = 0.2,
+    max_output_tokens: int = 2048,
+    timeout_sec: float = 35.0,
+):
+    """
+    True Streaming generator cho Google Gemini (streamGenerateContent?alt=sse).
+    Phát từng đoạn text ngay khi mô hình sinh ra để giảm TTFT xuống ~1–2s.
+    """
+    from app.services.admin_key_vault import get_active_api_key_async, rotate_to_next_key
+    from app.services.admin_monitoring_service import check_token_budget_gate
+    from app.services.gemini_discovery import get_ranked_gemini_models
+    from app.config import settings
+
+    budget_allowed, budget_msg = check_token_budget_gate()
+    if not budget_allowed:
+        logger.warning("Token budget gate closed during stream: %s", budget_msg)
+        set_last_llm_execution({"model": "local-extractive", "provider": "local", "usage_source": "none"})
+        return
+
+    key = (api_key or "").strip() or (await get_active_api_key_async(provider="gemini") or "").strip() or (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
+    if not key or key.startswith("YOUR_"):
+        return
+
+    models = await get_ranked_gemini_models(key)
+    dead_models = globals().setdefault("_DEAD_GEMINI_MODELS", set())
+    ordered_models = _order_models_by_health(models, dead_models)
+
+    payload: Dict[str, Any] = {
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_output_tokens,
+        },
+    }
+    if system_instruction:
+        payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
+
+    deadline = time.monotonic() + timeout_sec
+    headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
+    req_client_timeout = max(15.0, timeout_sec)
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(req_client_timeout, connect=5.0)) as client:
+        for model in ordered_models:
+            if model in dead_models:
+                continue
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+
+            per_model_timeout = min(remaining, max(10.0, timeout_sec * 0.5))
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse"
+            yielded_any = False
+            accumulated_parts: List[str] = []
+            last_usage: Dict[str, Any] = {}
+
+            try:
+                async with client.stream(
+                    "POST",
+                    url,
+                    headers=headers,
+                    json=payload,
+                    timeout=httpx.Timeout(per_model_timeout, connect=min(4.0, per_model_timeout)),
+                ) as res:
+                    if res.status_code == 404:
+                        dead_models.add(model)
+                        logger.warning("Gemini stream model %s returned 404 (marked dead).", model)
+                        continue
+                    if res.status_code == 429:
+                        next_key = rotate_to_next_key(key, "Chạm hạn ngạch 429")
+                        if next_key and next_key != key:
+                            key = next_key
+                            headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
+                        continue
+                    if res.status_code >= 500:
+                        _mark_model_cooldown(model)
+                        logger.warning("Gemini stream model %s returned HTTP %s", model, res.status_code)
+                        continue
+                    if res.status_code != 200:
+                        logger.warning("Gemini stream model %s returned HTTP %s", model, res.status_code)
+                        continue
+
+                    async for raw_line in res.aiter_lines():
+                        line = raw_line.strip()
+                        if not line or not line.startswith("data:"):
+                            continue
+                        data_str = line[5:].strip()
+                        if not data_str or data_str == "[DONE]":
+                            continue
+                        try:
+                            chunk_json = json.loads(data_str)
+                        except Exception:
+                            continue
+                        if isinstance(chunk_json.get("usageMetadata"), dict):
+                            last_usage = chunk_json["usageMetadata"]
+                        candidates = chunk_json.get("candidates", [])
+                        if not candidates:
+                            continue
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        for part in parts:
+                            delta = part.get("text")
+                            if delta:
+                                yielded_any = True
+                                accumulated_parts.append(delta)
+                                yield delta
+
+                if yielded_any:
+                    _mark_model_healthy(model)
+                    full_reply = "".join(accumulated_parts)
+                    p_val = last_usage.get("promptTokenCount")
+                    c_val = last_usage.get("candidatesTokenCount")
+                    p_tok, p_actual = _resolve_usage_token(p_val, prompt)
+                    c_tok, c_actual = _resolve_usage_token(c_val, full_reply)
+                    record_llm_execution(
+                        model, "gemini", p_tok, c_tok,
+                        usage_source="provider" if p_actual and c_actual else "estimated",
+                    )
+                    try:
+                        from app.services.telemetry_store import record_llm_token_usage
+                        from app.services.admin_key_vault import record_key_consumption
+                        record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_val is not None and c_val is not None else "estimated")
+                        record_key_consumption(key, p_tok + c_tok)
+                    except Exception:
+                        pass
+                    return
+            except Exception as e:
+                if isinstance(e, httpx.TimeoutException):
+                    _mark_model_cooldown(model)
+                logger.warning("Gemini stream model %s attempt failed (%s): %s", model, type(e).__name__, e)
+                if yielded_any:
+                    # Đã phát một phần nội dung cho user, dừng gọn thay vì nối sang model khác
+                    return
+                continue
 
 
 CLINICAL_MULTIMODAL_SYSTEM_PROMPT = """Bạn là Trợ Lý Trí Tuệ Nhân Tạo Dược Lâm Sàng & Kê Đơn BHYT (Clinical Pharmacist & BHYT Audit AI Copilot) chuyên nghiệp tại Bệnh viện Việt Nam.

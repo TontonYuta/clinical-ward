@@ -57,10 +57,22 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       const next = !prev;
       try {
         localStorage.setItem('copilot_enable_web_search', String(next));
+        window.dispatchEvent(new CustomEvent('copilot-web-search-changed', { detail: next }));
       } catch {}
       return next;
     });
   };
+
+  useEffect(() => {
+    const handleSync = (e: Event) => {
+      const detail = (e as CustomEvent<boolean>).detail;
+      if (typeof detail === 'boolean') {
+        setIsWebSearchActive(detail);
+      }
+    };
+    window.addEventListener('copilot-web-search-changed', handleSync);
+    return () => window.removeEventListener('copilot-web-search-changed', handleSync);
+  }, []);
 
   const inputFieldRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);

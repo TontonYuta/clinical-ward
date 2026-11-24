@@ -268,6 +268,7 @@ async def chat_with_copilot_stream(
         from app.services.cache.clinical_cache import get_clinical_cache
         clinical_cache = get_clinical_cache()
 
+        streamed_live = False
         if verified_node:
             response = vqa_service.format_as_copilot_response(verified_node, session=session)
             session.append_conversation_turn(payload.query, response.reply_text)
@@ -299,12 +300,35 @@ async def chat_with_copilot_stream(
                 if response.active_medication_name:
                     session.set_active_medication(name=response.active_medication_name)
             else:
-                # Xử lý câu truy vấn qua bộ máy Copilot Orchestrator
-                response = await handle_copilot_chat(
-                    payload, request, db,
-                    session=session,
-                    history=session.render_recent_history()
-                )
+                response = None
+                if payload.enable_web_search and not payload.image_base64:
+                    guard_res = validate_input_guardrail(payload.query, user_role=user_role)
+                    if guard_res.is_safe:
+                        from app.services.chatbot.grounded_web_search_handler import stream_grounded_web_search_turn
+                        from app.services.chatbot.copilot_response_postprocessor import post_process_copilot_response
+                        from app.services.chatbot.evidence_contract_validator import validate_response_evidence_contract
+                        async for ev_kind, ev_data in stream_grounded_web_search_turn(
+                            payload,
+                            user_role=user_role,
+                            session=session,
+                            history=session.render_recent_history(),
+                        ):
+                            if ev_kind == "token" and ev_data:
+                                streamed_live = True
+                                yield _sse_event("token", content=ev_data)
+                            elif ev_kind == "done" and ev_data is not None:
+                                response = post_process_copilot_response(
+                                    ev_data, request, payload,
+                                    validator_fn=validate_response_evidence_contract,
+                                )
+
+                if response is None:
+                    # Xử lý câu truy vấn qua bộ máy Copilot Orchestrator (non-stream hoặc fallback)
+                    response = await handle_copilot_chat(
+                        payload, request, db,
+                        session=session,
+                        history=session.render_recent_history()
+                    )
                 from app.services.chatbot.conversational_handler import attach_correction_empathy
                 response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
                 response = format_offline_drug_response(response)
@@ -348,7 +372,7 @@ async def chat_with_copilot_stream(
         # Phát nội dung ngay sau khi pipeline hoàn tất. Ghi telemetry phía sau
         # không được chặn TTFT/UX của người dùng; telemetry chỉ là side effect.
         full_text = response.reply_text or ""
-        if full_text:
+        if full_text and not streamed_live:
             yield _sse_event("token", content=full_text)
 
         # 2. Ghi nhật ký bất đồng bộ
@@ -542,7 +566,38 @@ async def delete_user_chat_session(
     )
     await db.execute(del_stmt)
     await db.commit()
+
+    from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
+    from app.services.chatbot.web_search_engine import clear_search_cache
+    web_cache = get_grounded_web_cache()
+    for sid in target_sids:
+        web_cache.invalidate_session(sid)
+    clear_search_cache()
+
     return {"status": "ok", "deleted_session_id": session_id}
+
+
+@router.post("/user-sessions/{session_id}/reset-cache")
+async def reset_user_session_web_cache(
+    session_id: str,
+    request: Request,
+):
+    """Xóa bộ nhớ đệm Web Search của phiên khi người dùng bấm Làm mới phiên hội thoại."""
+    authenticated = getattr(request.state, "authenticated_user", None)
+    if authenticated and getattr(authenticated, "username", None):
+        username = authenticated.username.strip()
+    else:
+        username = request.query_params.get("username", "").strip() or "test_director"
+
+    prefix = f"{username.lower()}:"
+    target_sids = [session_id, f"{prefix}{session_id}"]
+
+    from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
+    from app.services.chatbot.web_search_engine import clear_search_cache
+    web_cache = get_grounded_web_cache()
+    removed = sum(web_cache.invalidate_session(sid) for sid in target_sids)
+    clear_search_cache()
+    return {"status": "ok", "cleared_entries": removed}
 
 @router.post("/rag", response_model=RagResponse)
 async def query_pure_clinical_rag(payload: RagQuery):

@@ -80,7 +80,10 @@ export const formatInlineMarkdown = (
     typeof isDarkOrOptions === 'boolean' ? { isDark: isDarkOrOptions } : isDarkOrOptions;
   const { isDark = false, onCitationClick } = options;
 
-  const text = sanitizeClinicalText(rawText);
+  const text = sanitizeClinicalText(rawText).replace(
+    /\[(\d+(?:\s*,\s*\d+)+)\](?!\()/g,
+    (_, nums: string) => nums.split(',').map((n) => `[${n.trim()}]`).join('')
+  );
   const tokens = text.split(
     /(\*\*\*[\s\S]+?\*\*\*|\*\*[\s\S]+?\*\*|`[^`\n]+`|\[[^\]]+\]\([^\)]+\)|\[\d+\]|\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]|\(?https?:\/\/[^\s\)]+\)?|\*[^*\n]+?\*|_[^_\n]+?_)/g
   );
@@ -273,7 +276,10 @@ export const renderFormattedText = (
     typeof isDarkOrOptions === 'boolean' ? { isDark: isDarkOrOptions } : isDarkOrOptions;
   const { isDark = false } = options;
 
-  const text = sanitizeClinicalText(rawText);
+  const text = sanitizeClinicalText(rawText).replace(
+    /\[(\d+(?:\s*,\s*\d+)+)\](?!\()/g,
+    (_, nums: string) => nums.split(',').map((n) => `[${n.trim()}]`).join('')
+  );
   const rawLines = text.split('\n');
   const elements: React.ReactNode[] = [];
   let i = 0;

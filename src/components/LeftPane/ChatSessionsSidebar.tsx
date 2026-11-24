@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Bot, Plus, PanelLeftClose, Search, MessageSquare, Edit3, Trash2, Check, X, RefreshCw } from 'lucide-react';
+import { Bot, Plus, PanelLeftClose, Search, MessageSquare, Edit3, Trash2, Check, X, RefreshCw, Settings } from 'lucide-react';
 import { ChatSession } from '../../types/chatSession';
 import type { ChatbotAvailability } from '../../services/api';
 
@@ -21,6 +21,7 @@ interface ChatSessionsSidebarProps {
   isSyncing?: boolean;
   onManualSync?: () => void;
   availabilityMode?: ChatbotAvailability['mode'];
+  onOpenSettings?: () => void;
 }
 
 export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
@@ -34,7 +35,8 @@ export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
   onRenameSession,
   isSyncing = false,
   onManualSync,
-  availabilityMode = 'checking'
+  availabilityMode = 'checking',
+  onOpenSettings
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,13 +71,6 @@ export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
             </div>
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="font-bold text-sm text-slate-950 truncate">Trợ Lý AI Lâm Sàng</span>
-              <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
-                availabilityMode === 'online_ai'
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  : 'bg-sky-50 text-sky-700 border border-sky-200'
-              }`} role="status">
-                {availabilityMode === 'online_ai' ? '🟢 Online' : (availabilityMode === 'checking' ? '...' : '🔵 Cục bộ')}
-              </span>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -200,10 +195,22 @@ export const ChatSessionsSidebar: React.FC<ChatSessionsSidebarProps> = ({
         )}
       </div>
 
-      {/* 3. Footer tinh gọn */}
-      <div className="p-2.5 border-t border-slate-200/70 text-[11px] text-slate-500 flex items-center justify-between bg-slate-100/50">
-        <span>Tổng cộng {sessions.length} phiên</span>
-        <span className="font-mono text-[10px] text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">AMIE Isolate</span>
+      {/* 3. Footer tinh gọn + Nút Cài đặt */}
+      <div className="p-2.5 border-t border-slate-200/70 text-[11px] text-slate-500 flex items-center justify-between bg-slate-100/50 gap-2">
+        <span className="truncate">Tổng cộng {sessions.length} phiên</span>
+        {onOpenSettings ? (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-teal-50 hover:text-teal-800 border border-slate-200 hover:border-teal-300 shadow-2xs transition cursor-pointer active:scale-95 shrink-0"
+            title="Cài đặt AI, Web Search & Quản lý lịch sử"
+          >
+            <Settings className="w-3.5 h-3.5 text-teal-700" />
+            <span>Cài đặt</span>
+          </button>
+        ) : (
+          <span className="font-mono text-[10px] text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">AMIE Isolate</span>
+        )}
       </div>
     </aside>
   );

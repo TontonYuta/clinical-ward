@@ -164,3 +164,50 @@ def test_standardize_web_references_replaces_messy_citations():
     assert "* [5]" not in clean
     assert "### Nguồn tham khảo y khoa:" in clean
     assert "1. [Warfarin và kháng sinh](https://pmc.ncbi.nlm.nih.gov/1) - *pmc.ncbi.nlm.nih.gov*" in clean
+
+
+@pytest.mark.asyncio
+async def test_stream_grounded_web_search_turn_hides_followup_tag_and_emits_done():
+    from app.services.chatbot.grounded_web_search_handler import stream_grounded_web_search_turn
+
+    payload = CopilotQuery(
+        query="Tương tác Warfarin và Amiodaron",
+        enable_web_search=True,
+        session_id="stream-test-sess",
+        bypass_cache=True,
+    )
+    mock_results = [
+        WebSearchResult(
+            title="Tương tác Warfarin Amiodaron - Vinmec",
+            url="https://vinmec.com/vi/warfarin-amiodaron",
+            snippet="Amiodaron ức chế CYP2C9 làm tăng nồng độ Warfarin.",
+            source_domain="vinmec.com",
+            is_live=True,
+        )
+    ]
+
+    async def fake_stream(**_kwargs):
+        for piece in [
+            "### Tóm tắt nhanh\n",
+            "Amiodaron làm tăng tác dụng chống đông của Warfarin [1].\n\n",
+            "<follow_up_ques",
+            "tions>\n- Theo dõi INR bao lâu một lần?\n- Mức giảm liều Warfarin khuyến cáo?\n</follow_up_questions>",
+        ]:
+            yield piece
+
+    with patch("app.services.chatbot.grounded_web_search_handler.search_and_verify_web", return_value=(mock_results, "serper")), \
+         patch("app.services.llm_provider.stream_clinical_llm", side_effect=fake_stream):
+        tokens = []
+        done_resp = None
+        async for kind, data in stream_grounded_web_search_turn(payload, user_role="doctor"):
+            if kind == "token":
+                tokens.append(data)
+            elif kind == "done":
+                done_resp = data
+
+        streamed_text = "".join(tokens)
+        assert "Tóm tắt nhanh" in streamed_text
+        assert "<follow_up_questions" not in streamed_text
+        assert done_resp is not None
+        assert len(done_resp.citations) == 1
+        assert len(done_resp.suggested_chips) >= 2
