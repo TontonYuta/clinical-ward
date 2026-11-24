@@ -26,10 +26,199 @@ class WebSearchResult:
     snippet: str
     source_domain: str
     is_live: bool = True
+    credibility_tier: int = 4  # 1: Official/Gov/Top Hospital/Global, 2: Large Clinical/DrugBank, 3: General Health/News, 4: Other Verified
 
 # Cache lưu trữ: {clean_query: (timestamp, list[WebSearchResult])}
 _SEARCH_CACHE: Dict[str, Tuple[float, List[WebSearchResult]]] = {}
 CACHE_TTL_SECONDS: float = 1800.0  # 30 phút
+
+# ==============================================================================
+# DANH MỤC NGUỒN Y TẾ UY TÍN TOÀN DIỆN (COMPREHENSIVE TRUSTED MEDICAL REPOSITORIES)
+# Bao phủ toàn diện: Dược thư, Quản lý, Pháp chế, BHYT, Bệnh viện TW/Đa khoa/Chuyên khoa,
+# Cẩm nang Dược MIMS/MSD, Viện nghiên cứu, Đại học Y Dược và Y tế Quốc tế.
+# ==============================================================================
+TRUSTED_MEDICAL_DOMAINS: Dict[str, int] = {
+    # --- TIER 1: Cơ quan Quản lý, Pháp quy Y tế, Bệnh viện TW & Tổ chức Toàn cầu ---
+    "moh.gov.vn": 1,                # Bộ Y tế Việt Nam
+    "dav.gov.vn": 1,                # Cục Quản lý Dược
+    "kcb.vn": 1,                    # Cục Quản lý Khám, chữa bệnh
+    "baohiemxahoi.gov.vn": 1,       # Bảo hiểm Xã hội Việt Nam (Chính sách thanh toán BHYT)
+    "vncdc.gov.vn": 1,              # Cục Y tế Dự phòng
+    "canhgiacduoc.org.vn": 1,       # Trung tâm DI & ADR Quốc gia (Cảnh giác dược, tương tác thuốc)
+    "drugbank.vn": 1,               # Ngân hàng Dữ liệu Ngành Dược (Cục Quản lý Dược)
+    "thuvienphapluat.vn": 1,        # Văn bản pháp luật Y tế, TT 20/2022/TT-BYT, TT 51/2017
+    "luatvietnam.vn": 1,            # CSDL văn bản quy phạm pháp luật Y tế
+    "vfa.gov.vn": 1,                # Cục An toàn thực phẩm
+    "hiv.gov.vn": 1,                # Cục Phòng, chống HIV/AIDS
+    "vihema.gov.vn": 1,             # Cục Quản lý Môi trường Y tế
+    "bachmai.gov.vn": 1,            # Bệnh viện Bạch Mai
+    "bachmai.org.vn": 1,            # Bệnh viện Bạch Mai
+    "choray.vn": 1,                 # Bệnh viện Chợ Rẫy
+    "vietduc.gov.vn": 1,            # Bệnh viện Hữu nghị Việt Đức
+    "benhvien108.vn": 1,            # Bệnh viện Trung ương Quân đội 108
+    "benhvienk.vn": 1,              # Bệnh viện K (Ung bướu)
+    "bvdaihoc.com.vn": 1,           # Bệnh viện Đại học Y Dược TP.HCM
+    "bvnd2.org.vn": 1,              # Bệnh viện Nhi Đồng 2
+    "nhidong.org.vn": 1,            # Bệnh viện Nhi Đồng 1
+    "tudu.com.vn": 1,               # Bệnh viện Từ Dũ (Sản phụ khoa)
+    "benhvienhungvuong.vn": 1,      # Bệnh viện Hùng Vương (Sản phụ khoa)
+    "tai-mui-hong.gov.vn": 1,       # Bệnh viện Tai Mũi Họng Trung ương
+    "mattrunguong.org.vn": 1,       # Bệnh viện Mắt Trung ương
+    "dalieu.vn": 1,                 # Bệnh viện Da liễu Trung ương
+    "bvhue.org.vn": 1,              # Bệnh viện Trung ương Huế
+    "benhvientrunguonghue.vn": 1,   # BV Trung ương Huế
+    "bvdakhoatrunguongcantho.com": 1, # BV Đa khoa Trung ương Cần Thơ
+    "bvbnd.vn": 1,                  # Bệnh viện Bệnh Nhiệt đới TP.HCM
+    "nhietdoi.vn": 1,               # Bệnh viện Bệnh Nhiệt đới Trung ương
+    "phoitw.gov.vn": 1,             # Bệnh viện Phổi Trung ương
+    "bvnoitiet.vn": 1,              # Bệnh viện Nội tiết Trung ương
+    "vienhuyethoc.vn": 1,           # Viện Huyết học - Truyền máu Trung ương
+    "yhoccotruyentw.gov.vn": 1,     # Bệnh viện Y học Cổ truyền Trung ương
+    "tamthan.gov.vn": 1,            # Bệnh viện Tâm thần Trung ương
+    "who.int": 1,                   # Tổ chức Y tế Thế giới (WHO)
+    "cdc.gov": 1,                   # US Centers for Disease Control and Prevention
+    "fda.gov": 1,                   # US Food and Drug Administration
+    "nih.gov": 1,                   # National Institutes of Health (NIH)
+    "ncbi.nlm.nih.gov": 1,          # National Center for Biotechnology Information / NLM
+    "pubmed.ncbi.nlm.nih.gov": 1,   # PubMed Y sinh toàn cầu
+
+    # --- TIER 2: Hệ thống Bệnh viện lớn, Cẩm nang Dược, ĐH Y Dược & Lâm sàng Quốc tế ---
+    "vinmec.com": 2,                # Hệ thống Y tế Vinmec
+    "tamanhhospital.vn": 2,         # Hệ thống Bệnh viện Đa khoa Tâm Anh
+    "medlatec.vn": 2,               # Hệ thống Y tế MEDLATEC (Xét nghiệm & Chẩn đoán)
+    "hoanmy.com": 2,                # Tập đoàn Y khoa Hoàn Mỹ
+    "fvhospital.com": 2,            # Bệnh viện FV
+    "hanoifrenchhospital.com.vn": 2,# Bệnh viện Việt Pháp Hà Nội
+    "benhvienthucuc.vn": 2,         # Bệnh viện Đa khoa Quốc tế Thu Cúc
+    "hongngochospital.vn": 2,       # Bệnh viện Đa khoa Hồng Ngọc
+    "mims.com": 2,                  # Cẩm nang Dược MIMS Việt Nam & Châu Á
+    "msdmanuals.com": 2,            # Cẩm nang Chẩn đoán & Điều trị MSD Manuals
+    "mayoclinic.org": 2,            # Mayo Clinic
+    "clevelandclinic.org": 2,       # Cleveland Clinic
+    "hopkinsmedicine.org": 2,       # Johns Hopkins Medicine
+    "uptodate.com": 2,              # UpToDate Clinical Decision Support
+    "medscape.com": 2,              # Medscape Clinical Reference
+    "drugs.com": 2,                 # Drugs.com Comprehensive Drug Information
+    "hmu.edu.vn": 2,                # Đại học Y Hà Nội
+    "ump.edu.vn": 2,                # Đại học Y Dược TP.HCM
+    "ypct.edu.vn": 2,               # Đại học Y Dược Cần Thơ
+    "huemed-univ.edu.vn": 2,        # Trường Đại học Y Dược - Đại học Huế
+    "pnt.edu.vn": 2,                # Đại học Y khoa Phạm Ngọc Thạch
+    "medvnu.edu.vn": 2,             # Trường Đại học Y Dược - ĐHQG Hà Nội
+
+    # --- TIER 3: Báo chí Y tế, Cổng Dược phẩm, Tạp chí Khoa học & Nhà thuốc Uy tín ---
+    "suckhoedoisong.vn": 3,         # Báo Sức Khỏe & Đời Sống (Cơ quan ngôn luận Bộ Y tế)
+    "chinhphu.vn": 3,               # Cổng Thông tin điện tử Chính phủ
+    "nhandan.vn": 3,                # Báo Nhân Dân (Chuyên trang Y tế)
+    "vtv.vn": 3,                    # Đài Truyền hình Việt Nam (Chuyên mục Sức khỏe)
+    "thuocbietduoc.com.vn": 3,      # Tra cứu biệt dược, tương tác & hoạt chất
+    "trungtamthuoc.com": 3,         # Trung tâm thuốc Central Pharmacy
+    "youmed.vn": 3,                 # YouMed Y khoa có bác sĩ kiểm duyệt
+    "hellobacsi.com": 3,            # HelloBacsi (Tham vấn sức khỏe y học)
+    "nhathuoclongchau.com.vn": 3,   # Nhà thuốc Long Châu (Tờ rơi thuốc lưu hành)
+    "nhathuoclongchau.com": 3,      # Nhà thuốc Long Châu
+    "pharmacity.vn": 3,             # Pharmacity (Thông tin sản phẩm dược)
+    "medigoapp.com": 3,             # Medigo Dược phẩm
+    "duocdienvietnam.com": 3,       # Dược điển Việt Nam
+    "cochrane.org": 3,              # Cochrane Library (Hệ thống y học chứng cứ)
+    "webmd.com": 3,                 # WebMD Health Reference
+    "thelancet.com": 3,             # Tạp chí Y khoa The Lancet
+    "bmj.com": 3,                   # British Medical Journal
+    "nejm.org": 3,                  # New England Journal of Medicine
+    "vnexpress.net": 3,             # VnExpress Sức khỏe
+    "tuoitre.vn": 3,                # Báo Tuổi Trẻ Sức khỏe
+    "thanhnien.vn": 3,              # Báo Thanh Niên Sức khỏe
+    "dantri.com.vn": 3,             # Báo Dân Trí Sức khỏe
+}
+
+# Danh sách domain mạng xã hội / diễn đàn tự do / blog chưa kiểm duyệt bị loại bỏ triệt để
+EXCLUDED_DOMAINS: Set[str] = {
+    "facebook.com", "fb.com", "instagram.com", "tiktok.com", "twitter.com", "x.com",
+    "youtube.com", "youtu.be", "pinterest.com", "reddit.com", "quora.com",
+    "voz.vn", "webtretho.com", "lamchame.com", "tinhte.vn",
+    "blogspot.com", "wordpress.com", "wixsite.com", "weebly.com"
+}
+
+# Regex nhận diện Prompt Injection / Jailbreak & Thẻ Script trong Snippet từ Web
+INJECTION_PATTERN = re.compile(
+    r'(?i)(ignore\s+(all\s+)?(previous|prior)\s+instructions|system\s+override|disregard\s+all|'
+    r'b\u1ecf\s+qua\s+h\u01b0\u1edbng\s+d\u1eabn|b\u1ecf\s+qua\s+ch\u1ec9\s+th\u1ecb|b\u1ecf\s+qua\s+quy\s+t\u1eafc|'
+    r'you\s+are\s+now|act\s+as\s+an?\s+unrestricted|jailbreak|DAN\s+mode|prompt\s+injection|'
+    r'system\s+prompt|new\s+system\s+instruction)',
+    re.IGNORECASE
+)
+
+SCRIPT_PATTERN = re.compile(r'<\s*script[^>]*>.*?<\s*/\s*script\s*>|javascript:|onerror\s*=', re.IGNORECASE | re.DOTALL)
+
+
+def classify_domain_tier(domain: str) -> int:
+    """
+    Xác định cấp độ uy tín của domain:
+    Tier 1: Cơ quan nhà nước, Bệnh viện TW, Viện nghiên cứu đầu ngành, WHO, CDC, PubMed.
+    Tier 2: Hệ thống bệnh viện lớn, Cẩm nang Dược MIMS, MSD Manuals, Mayo Clinic, ĐH Y Dược.
+    Tier 3: Báo chí y tế chính thống, Cổng Dược, Tạp chí y khoa.
+    Tier 4: Các website thông thường khác (được giữ lại nếu không nằm trong blacklist để đảm bảo tính bao phủ).
+    """
+    if not domain:
+        return 4
+    clean_domain = domain.lower().replace("www.", "").strip()
+    for trusted_domain, tier in TRUSTED_MEDICAL_DOMAINS.items():
+        if clean_domain == trusted_domain or clean_domain.endswith("." + trusted_domain):
+            return tier
+    return 4
+
+
+def is_domain_excluded(domain: str) -> bool:
+    """Kiểm tra xem domain có nằm trong danh sách mạng xã hội / diễn đàn rác bị loại bỏ không."""
+    if not domain:
+        return False
+    clean_domain = domain.lower().replace("www.", "").strip()
+    for ex in EXCLUDED_DOMAINS:
+        if clean_domain == ex or clean_domain.endswith("." + ex):
+            return True
+    return False
+
+
+def sanitize_search_snippet(text: str) -> str:
+    """
+    Làm sạch snippet tìm kiếm từ Web (OWASP LLM01 Indirect Prompt Injection Defense):
+    - Loại bỏ thẻ script độc hại
+    - Loại bỏ các chuỗi kích hoạt Prompt Injection / Jailbreak
+    - Giới hạn độ dài an toàn
+    """
+    if not text:
+        return ""
+    cleaned = SCRIPT_PATTERN.sub("[script blocked]", text)
+    if INJECTION_PATTERN.search(cleaned):
+        cleaned = INJECTION_PATTERN.sub("[untrusted instruction removed]", cleaned)
+    return cleaned.strip()
+
+
+def rank_and_filter_results(results: List[WebSearchResult], max_results: int = 5) -> List[WebSearchResult]:
+    """
+    Lọc bỏ domain không an toàn (mạng xã hội, diễn đàn rác).
+    Làm sạch prompt injection trong snippet.
+    Sắp xếp ưu tiên:
+    1. Tier 1 (Cơ quan quản lý, BV TW, WHO, PubMed...)
+    2. Tier 2 (BV lớn, Cẩm nang MIMS, MSD Manuals...)
+    3. Tier 3 (Báo y tế chính thống, Dược phẩm...)
+    4. Tier 4 (Nguồn khác hợp lệ để bao phủ 100% câu hỏi hiếm)
+    Sau đó lấy top `max_results`.
+    """
+    filtered: List[WebSearchResult] = []
+    for r in results:
+        if is_domain_excluded(r.source_domain):
+            logger.info("Loại bỏ domain không phù hợp/mạng xã hội: %s (%s)", r.source_domain, r.url)
+            continue
+        clean_snippet = sanitize_search_snippet(r.snippet)
+        tier = classify_domain_tier(r.source_domain)
+        r.snippet = clean_snippet
+        r.credibility_tier = tier
+        filtered.append(r)
+
+    # Sắp xếp ổn định theo Tier tăng dần (1 -> 2 -> 3 -> 4)
+    filtered.sort(key=lambda x: x.credibility_tier)
+    return filtered[:max_results]
 
 
 def get_cache_size() -> int:
@@ -137,6 +326,7 @@ async def search_serper(
 ) -> List[WebSearchResult]:
     """
     Tìm kiếm qua Serper.dev REST API (Google Search kết quả thật, ổn định trên VPS/Cloud).
+    Lấy dôi dư ứng viên (fetch_num) để sẵn sàng lọc domain và xếp hạng độ uy tín y tế.
     """
     from app.services.admin_key_vault import get_active_api_key
     key = api_key or os.getenv("SERPER_API_KEY", "").strip() or (get_active_api_key(provider="serper") or "").strip()
@@ -148,11 +338,12 @@ async def search_serper(
         "X-API-KEY": key,
         "Content-Type": "application/json"
     }
+    fetch_num = max(max_results * 2, 8)
     payload = {
         "q": query,
         "gl": "vn",
         "hl": "vi",
-        "num": max_results
+        "num": fetch_num
     }
 
     async with httpx.AsyncClient(timeout=6.0) as client:
@@ -178,7 +369,7 @@ async def search_serper(
             )
 
     # 2. Trích xuất Organic Results
-    for item in data.get("organic", [])[:max_results]:
+    for item in data.get("organic", [])[:fetch_num]:
         link = unwrap_search_url(item.get("link", "").strip())
         title = item.get("title", "").strip()
         snippet = item.get("snippet", "").strip()
@@ -239,8 +430,12 @@ async def search_and_verify_web(
     1. Kiểm tra RAM Cache (30 phút)
     2. Nguồn chính Serper (Google Search thật)
     3. Nguồn phụ DuckDuckGo
-    Sau đó tự động xác minh độ sống của link (Live Check).
-    Trả về: (danh sách kết quả đã xác minh, tên nguồn 'cache' | 'serper' | 'duckduckgo' | 'none')
+    Sau đó:
+    - Xác minh độ sống của link (Live Check)
+    - Phân hạng uy tín y tế (Tier 1 -> Tier 4)
+    - Loại bỏ các trang rác / mạng xã hội không kiểm duyệt
+    - Khử độc Indirect Prompt Injection trong nội dung snippet.
+    Trả về: (danh sách kết quả đã xác minh & xếp hạng, tên nguồn 'cache' | 'serper' | 'duckduckgo' | 'none')
     """
     clean_query = query.strip().lower()
     now = time.time()
@@ -252,11 +447,12 @@ async def search_and_verify_web(
             logger.info("Search cache HIT cho query: '%s'", query)
             return cached_results, "cache"
 
-    # 2. Thử nguồn chính Serper
+    # 2. Thử nguồn chính Serper (lấy dư ứng viên để lọc xếp hạng)
     source_used = "none"
     results: List[WebSearchResult] = []
+    fetch_num = max(max_results * 2, 8)
     try:
-        results = await search_serper(query, api_key=custom_serper_key, max_results=max_results)
+        results = await search_serper(query, api_key=custom_serper_key, max_results=fetch_num)
         if results:
             source_used = "serper"
     except Exception as serper_err:
@@ -265,7 +461,7 @@ async def search_and_verify_web(
     # 3. Nếu Serper không có kết quả hoặc lỗi, fallback sang DuckDuckGo
     if not results:
         try:
-            results = await search_duckduckgo(query, max_results=max_results)
+            results = await search_duckduckgo(query, max_results=fetch_num)
             if results:
                 source_used = "duckduckgo"
         except Exception as ddg_err:
@@ -277,9 +473,12 @@ async def search_and_verify_web(
     # 4. Xác minh link sống (Live URL Verifier)
     verified_results = await verify_live_urls(results)
 
-    # 5. Lưu vào cache
-    _SEARCH_CACHE[clean_query] = (now, verified_results)
-    return verified_results, source_used
+    # 5. Phân hạng uy tín y tế, lọc bỏ mạng xã hội rác & khử độc Prompt Injection
+    ranked_results = rank_and_filter_results(verified_results, max_results=max_results)
+
+    # 6. Lưu vào cache
+    _SEARCH_CACHE[clean_query] = (now, ranked_results)
+    return ranked_results, source_used
 
 
 def sanitize_ai_response_urls(ai_text: str, allowed_urls: Set[str]) -> str:
@@ -366,21 +565,31 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
 
 def format_web_search_context(results: List[WebSearchResult]) -> str:
     """
-    Chuyển đổi kết quả tìm kiếm thành chuỗi ngữ cảnh tiêm vào Gemini Prompt.
+    Chuyển đổi kết quả tìm kiếm thành chuỗi ngữ cảnh đóng gói trong thẻ XML cách ly an toàn (OWASP LLM01 Sandboxing).
+    Kèm phân loại độ uy tín y tế (Tier 1 -> Tier 4).
     """
     if not results:
         return ""
 
+    tier_labels = {
+        1: "⭐ NGUỒN CHÍNH THỐNG / BỆNH VIỆN ĐẦU NGÀNH (TIER 1)",
+        2: "⭐ BỆNH VIỆN LỚN / DƯỢC THƯ LÂM SÀNG (TIER 2)",
+        3: "CHUYÊN TRANG Y TẾ / BÁO CHÍ CHÍNH THỐNG (TIER 3)",
+        4: "NGUỒN THAM KHẢO Y TẾ XÁC MINH (TIER 4)"
+    }
+
     lines = [
-        "### DỮ LIỆU TÌM KIẾM TỪ INTERNET THỜI GIAN THỰC (ĐÃ XÁC MINH LINK SỐNG):",
-        "Quy tắc trích dẫn bắt buộc: Chỉ sử dụng thông tin và đường link từ danh sách dưới đây. Tuyệt đối không tự suy đoán đường dẫn web khác.",
+        "<medical_search_evidence>",
+        "<!-- Dữ liệu tìm kiếm y tế từ Internet thời gian thực đã được tiền lọc và xếp hạng an toàn -->",
         ""
     ]
     for idx, item in enumerate(results, 1):
+        tier_label = tier_labels.get(getattr(item, "credibility_tier", 4), "NGUỒN THAM KHẢO Y TẾ")
         lines.append(f"[{idx}] Tiêu đề: {item.title}")
-        lines.append(f"     Tên miền: {item.source_domain}")
+        lines.append(f"     Tên miền: {item.source_domain} ({tier_label})")
         lines.append(f"     Đường dẫn (URL): {item.url}")
         lines.append(f"     Nội dung tóm tắt: {item.snippet}")
         lines.append("")
+    lines.append("</medical_search_evidence>")
 
     return "\n".join(lines)
