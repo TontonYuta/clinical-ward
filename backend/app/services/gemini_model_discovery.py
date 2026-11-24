@@ -32,7 +32,8 @@ SAFE_FALLBACK_GEMINI_MODELS = [
 # Các từ khóa nhận diện model không dùng cho sinh văn bản / chat hội thoại y tế
 DISALLOWED_SUBSTRINGS = (
     "-tts", "preview-tts", "embedding", "aqa", "imagen", "whisper",
-    "robotics", "computer-vision-internal"
+    "robotics", "computer-vision-internal", "-image", "flash-image",
+    "-omni", "omni-", "live"
 )
 
 
