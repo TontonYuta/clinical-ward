@@ -9,6 +9,8 @@ giúp phản hồi tức thì (< 150ms) và tiết kiệm 100% quota tìm kiếm
 from typing import Optional, List, Dict, Tuple
 import logging
 import time
+import os
+import asyncio
 import re
 import numpy as np
 from app.schemas.copilot import CopilotResponse
@@ -81,6 +83,22 @@ CLINICAL_ANCHORS = {
 # Bộ đệm Vector Anchors trong bộ nhớ (In-memory Anchor Cache)
 _ANCHOR_CACHE: Dict[str, np.ndarray] = {}
 
+def _init_anchor_cache_from_disk() -> None:
+    """Tải trước các ma trận vector anchor tĩnh từ tệp .npz (Độ trễ = 0ms, tiết kiệm 100% chi phí)."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    npz_path = os.path.join(current_dir, "semantic_anchors.npz")
+    if os.path.exists(npz_path):
+        try:
+            with np.load(npz_path) as data:
+                for key in data.files:
+                    _ANCHOR_CACHE[key] = data[key]
+            logger.info("Semantic Router: Loaded %d pre-computed vector matrices from %s", len(_ANCHOR_CACHE), npz_path)
+        except Exception as e:
+            logger.warning("Không thể nạp semantic_anchors.npz: %s", e)
+
+_init_anchor_cache_from_disk()
+
+
 # Biểu thức chính quy phát hiện nhanh các chủ đề tuyệt đối phi y tế (Deterministic Lexical Guardrail)
 # Giúp phản hồi ngay lập tức (< 1ms), tiết kiệm quota embedding và hoạt động tin cậy kể cả khi mất mạng
 DETERMINISTIC_OOS_REGEX = re.compile(
@@ -126,15 +144,16 @@ def _build_safe_abstention_response(
 
 
 async def _get_anchor_vectors(prototypes: List[str], cache_key: str) -> Optional[np.ndarray]:
-    """Lấy hoặc tính toán trước ma trận vector chuẩn hóa của các anchor prototypes."""
+    """Lấy từ cache tĩnh hoặc tính toán song song ma trận vector chuẩn hóa (Batch / Parallel)."""
     if cache_key in _ANCHOR_CACHE:
         return _ANCHOR_CACHE[cache_key]
 
     provider = get_embedding_provider()
+    # Batch / Parallel Embedding: Gọi song song qua asyncio.gather thay vì lặp tuần tự
+    raw_vectors = await asyncio.gather(*[provider.embed_query(text) for text in prototypes], return_exceptions=True)
     vectors = []
-    for text in prototypes:
-        v = await provider.embed_query(text)
-        if v:
+    for v in raw_vectors:
+        if isinstance(v, list) and v:
             arr = np.asarray(v, dtype=np.float32)
             norm = np.linalg.norm(arr)
             if norm > 0:

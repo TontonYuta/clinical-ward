@@ -5,6 +5,8 @@ Tuân thủ chuẩn Berkeley Function Calling & Semantic Router Pattern.
 """
 
 import re
+import os
+import asyncio
 import logging
 from typing import Optional, Dict, List
 import numpy as np
@@ -128,6 +130,23 @@ TAB_PROTOTYPES: Dict[str, List[str]] = {
 # Cache ma trận embedding prototypes trong bộ nhớ
 _NAV_MATRIX_CACHE: Dict[str, np.ndarray] = {}
 
+def _init_nav_cache_from_disk() -> None:
+    """Tải trước các ma trận vector điều hướng tab tĩnh từ semantic_anchors.npz (Độ trễ = 0ms)."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    npz_path = os.path.join(current_dir, "semantic_anchors.npz")
+    if os.path.exists(npz_path):
+        try:
+            with np.load(npz_path) as data:
+                for tab_key in TAB_PROTOTYPES.keys():
+                    disk_key = f"nav_{tab_key}"
+                    if disk_key in data.files:
+                        _NAV_MATRIX_CACHE[tab_key] = data[disk_key]
+            logger.info("Navigation Router: Loaded %d pre-computed tab matrices from %s", len(_NAV_MATRIX_CACHE), npz_path)
+        except Exception as e:
+            logger.warning("Không thể nạp nav semantic_anchors.npz: %s", e)
+
+_init_nav_cache_from_disk()
+
 def is_clinical_or_educational_inquiry(query: str, lower_query: str) -> bool:
     """
     Xác định câu hỏi là tra cứu chuyên môn lâm sàng / dược lý / hướng dẫn điều trị.
@@ -158,10 +177,10 @@ async def _get_tab_matrix(tab_key: str, prototypes: List[str]) -> Optional[np.nd
         return _NAV_MATRIX_CACHE[tab_key]
 
     provider = get_embedding_provider()
+    raw_vectors = await asyncio.gather(*[provider.embed_query(text) for text in prototypes], return_exceptions=True)
     vectors = []
-    for text in prototypes:
-        v = await provider.embed_query(text)
-        if v:
+    for v in raw_vectors:
+        if isinstance(v, list) and v:
             arr = np.asarray(v, dtype=np.float32)
             norm = np.linalg.norm(arr)
             if norm > 0:
