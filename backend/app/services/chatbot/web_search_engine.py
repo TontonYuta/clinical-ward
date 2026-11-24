@@ -268,32 +268,25 @@ def extract_domain(url: str) -> str:
 async def is_url_alive(client: httpx.AsyncClient, url: str) -> bool:
     """
     Kiểm tra nhanh xem link có sống không (Status 200..399 hoặc 403 WAF).
-    Loại bỏ link 404, 410, 5xx hoặc timeout / host không tồn tại.
+    Sử dụng timeout ngắn (1.2s) để tối ưu độ trễ, loại bỏ link chết 404, 5xx hoặc timeout.
     """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
     try:
-        # Thử HEAD trước để tiết kiệm băng thông
-        resp = await client.head(url, headers=headers, timeout=2.5)
-        # 405 Method Not Allowed -> thử GET stream=True
+        # Thử HEAD trước với timeout ngắn 1.2s để tiết kiệm băng thông và độ trễ
+        resp = await client.head(url, headers=headers, timeout=1.2)
+        # 405 Method Not Allowed -> thử nhanh GET stream
         if resp.status_code == 405:
-            async with client.stream("GET", url, headers=headers, timeout=2.5) as get_resp:
+            async with client.stream("GET", url, headers=headers, timeout=1.2) as get_resp:
                 return get_resp.status_code < 400 or get_resp.status_code == 403
-        
+
         # 403 Forbidden: Nhiều trang tin tức / Cổng thông tin (VnExpress, Bộ Y Tế) có Cloudflare chặn bot HEAD
         # nhưng link là thật và người dùng vẫn bấm vào đọc bình thường.
         if resp.status_code < 400 or resp.status_code == 403:
             return True
         return False
-    except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPError):
-        # Fallback thử stream GET nhanh
-        try:
-            async with client.stream("GET", url, headers=headers, timeout=2.0) as get_resp:
-                return get_resp.status_code < 400 or get_resp.status_code == 403
-        except Exception:
-            return False
     except Exception:
         return False
 
@@ -470,15 +463,17 @@ async def search_and_verify_web(
     if not results:
         return [], "none"
 
-    # 4. Xác minh link sống (Live URL Verifier)
-    verified_results = await verify_live_urls(results)
+    # 4. Phân hạng uy tín y tế, lọc bỏ mạng xã hội rác & khử độc Prompt Injection TRƯỚC (Rank-First)
+    # Lấy top ứng viên tối ưu nhất (max_results + 1) để xác minh độ sống thay vì tốn băng thông quét toàn bộ
+    candidates = rank_and_filter_results(results, max_results=max_results + 1)
 
-    # 5. Phân hạng uy tín y tế, lọc bỏ mạng xã hội rác & khử độc Prompt Injection
-    ranked_results = rank_and_filter_results(verified_results, max_results=max_results)
+    # 5. Xác minh link sống (Live URL Verifier) song song chỉ trên top ứng viên đạt chuẩn
+    verified_results = await verify_live_urls(candidates)
+    final_results = verified_results[:max_results] if verified_results else candidates[:max_results]
 
     # 6. Lưu vào cache
-    _SEARCH_CACHE[clean_query] = (now, ranked_results)
-    return ranked_results, source_used
+    _SEARCH_CACHE[clean_query] = (now, final_results)
+    return final_results, source_used
 
 
 def sanitize_ai_response_urls(ai_text: str, allowed_urls: Set[str]) -> str:
