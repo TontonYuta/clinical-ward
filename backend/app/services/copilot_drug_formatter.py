@@ -38,32 +38,46 @@ def _scope_alcohol_evidence(value: Optional[str]) -> str:
     return " ".join(sentence for sentence in sentences if any(term in sentence.casefold() for term in alcohol_terms))
 
 
-def _extract_timing_guidance(mono) -> str:
-    """Trích xuất hướng dẫn thời điểm uống, trước/sau ăn trực tiếp từ chuyên luận DĐVN V."""
+def _extract_timing_guidance_with_source(mono) -> tuple[str, str]:
+    """Trích xuất hướng dẫn thời điểm uống, trước/sau ăn trực tiếp từ chuyên luận DĐVN V kèm tên trường nguồn."""
     if not mono:
-        return ""
-    candidates = [
-        getattr(mono, "adult_dosage", None),
-        getattr(mono, "precautions", None),
-        getattr(mono, "dosage_forms", None),
+        return "", "adult_dosage"
+    candidate_fields = [
+        ("adult_dosage", getattr(mono, "adult_dosage", None)),
+        ("pharmacokinetics", getattr(mono, "pharmacokinetics", None)),
+        ("precautions", getattr(mono, "precautions", None)),
+        ("dosage_forms", getattr(mono, "dosage_forms", None)),
     ]
     cues = (
-        "trước khi ăn", "sau khi ăn", "trước bữa ăn", "sau bữa ăn",
-        "lúc đói", "lúc no", "cùng bữa ăn", "trong bữa ăn",
-        "buổi sáng", "trước khi đi ngủ", "uống lúc", "khi đói", "khi no",
+        "trước khi ăn", "sau khi ăn", "trước bữa ăn", "sau bữa ăn", "trước ăn", "sau ăn",
+        "lúc đói", "lúc no", "khi đói", "khi no",
+        "cùng bữa ăn", "trong bữa ăn", "cùng với thức ăn", "với thức ăn", "kèm thức ăn",
+        "thức ăn trong dạ dày",
+        "buổi sáng", "trước khi đi ngủ", "uống lúc", "uống vào",
         "uống nguyên viên", "nuốt nguyên viên", "uống cùng với", "uống trước", "uống sau"
     )
     extracted = []
-    for cand in candidates:
+    first_field = "adult_dosage"
+    for field_name, cand in candidate_fields:
         if not cand:
             continue
-        sentences = [s.strip() for s in re.split(r"(?<=[.!?\n])\s+", str(cand)) if s.strip()]
+        normalized_cand = re.sub(r"[ \t]+", " ", str(cand))
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n{2,}", normalized_cand) if s.strip()]
         for s in sentences:
-            if any(cue in s.lower() for cue in cues) and len(s) > 10:
-                extracted.append(s)
+            s_clean = " ".join(s.split())
+            if any(cue in s_clean.lower() for cue in cues) and len(s_clean) > 10:
+                if not extracted:
+                    first_field = field_name
+                extracted.append(s_clean)
     if extracted:
-        return " ".join(extracted[:3])
-    return ""
+        return " ".join(extracted[:3]), first_field
+    return "", "adult_dosage"
+
+
+def _extract_timing_guidance(mono) -> str:
+    """Trích xuất hướng dẫn thời điểm uống, trước/sau ăn trực tiếp từ chuyên luận DĐVN V."""
+    text, _ = _extract_timing_guidance_with_source(mono)
+    return text
 
 
 def _evidence_claim_contract(
@@ -683,16 +697,16 @@ async def build_drug_profile_response(
                     field_evidence.extend(_build_drug_evidence([citation]))
                 continue
             if field_key == "timing":
-                timing_guidance = _extract_timing_guidance(monograph)
+                timing_guidance, timing_field = _extract_timing_guidance_with_source(monograph)
                 if not timing_guidance:
                     continue
-                citation = build_drug_citation(matched, monograph, source, target_field="adult_dosage")
+                citation = build_drug_citation(matched, monograph, source, target_field=timing_field)
                 citation.update({
                     "excerpt": format_clinical_text(timing_guidance),
-                    "section": "adult_dosage",
+                    "section": timing_field,
                     "source_id": getattr(monograph, "source_id", None) or getattr(matched, "source_id", None),
                     "source_version": getattr(monograph, "source_version", None) or getattr(matched, "source_version", None),
-                    "chunk_id": f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:adult_dosage",
+                    "chunk_id": f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:{timing_field}",
                 })
                 if citation["source_id"] and citation["source_version"]:
                     field_citations.append(citation)

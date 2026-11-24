@@ -182,14 +182,28 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
 
     # NẾU BẬT TÌM KIẾM WEB THỜI GIAN THỰC (Grounded Web Search)
     if payload.enable_web_search:
-        from app.services.chatbot.grounded_web_search_handler import handle_grounded_web_search_turn
-        web_search_resp = await handle_grounded_web_search_turn(
-            payload, user_role=user_role, session=session, history=history
+        # Nếu câu hỏi nhắm vào một thuốc có trong Dược thư Quốc gia hoặc Thông tư/Quy chế chuyên môn nội viện,
+        # ưu tiên tra cứu nguồn Dược thư chính thống trước. Nếu Dược thư không có dữ liệu phù hợp,
+        # sẽ tự động fallback sang Grounded Web Search tại tầng Adaptive CRAG.
+        lower_q = query.lower()
+        is_explicit_web_intent = any(term in lower_q for term in (
+            "tìm trên mạng", "tim tren mang", "search web", "tìm web", "tra trên web",
+            "tìm kiếm trên web", "google", "search google", "tin tức", "mới nhất 202",
+            "cập nhật 202", "khuyến cáo 202", "trên internet", "thông tin trên mạng"
+        ))
+        has_internal_kb_anchor = (
+            bool(get_drug_lexical_matcher().extract_medications(query))
+            or any(t in lower_q for t in ("thông tư", "tt 22", "tt 20", "tt 51", "qđ 5948", "qd 5948", "phác đồ"))
         )
-        if web_search_resp is not None:
-            if session is not None and hasattr(session, "append_conversation_turn"):
-                session.append_conversation_turn(payload.query, web_search_resp.reply_text)
-            return web_search_resp.model_copy(update={"session_id": session_id})
+        if is_explicit_web_intent or not has_internal_kb_anchor:
+            from app.services.chatbot.grounded_web_search_handler import handle_grounded_web_search_turn
+            web_search_resp = await handle_grounded_web_search_turn(
+                payload, user_role=user_role, session=session, history=history
+            )
+            if web_search_resp is not None:
+                if session is not None and hasattr(session, "append_conversation_turn"):
+                    session.append_conversation_turn(payload.query, web_search_resp.reply_text)
+                return web_search_resp.model_copy(update={"session_id": session_id})
 
     # Stage 1: Clinical text sanitization & modifier deconstruction
     from app.services.chatbot.clinical_text_sanitizer import sanitize_clinical_input
@@ -883,8 +897,10 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
     resp = await _handle_copilot_chat_core(payload, request, db, session=session, history=history)
 
     # Adaptive Corrective RAG (CRAG) Fallback:
-    # Nếu CSDL nội bộ không tìm thấy tài liệu phù hợp (safe_abstention hoặc thuốc chưa đăng ký trong CSDL nội viện),
-    # và người dùng chưa chủ động bật web search, tự động kích hoạt tìm kiếm Web có thẩm định nếu là câu hỏi lâm sàng hợp lệ.
+    # 1. Khi ở chế độ ONLINE (enable_web_search=True): Bất kỳ câu hỏi lâm sàng nào bị safe_abstention / unindexed
+    #    đều tự động kích hoạt Grounded Web Search để trả lời, không bao giờ rơi vào Request_Unavailable.
+    # 2. Khi ở chế độ OFFLINE (enable_web_search=False): Tự động kích hoạt Web Search nếu CSDL nội bộ
+    #    chưa có thông tin thuốc thực tế (unindexed_clinical_drug / unsupported_medication_entity).
     is_abstention_or_unindexed = (
         resp is not None
         and (
@@ -894,14 +910,17 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
         and resp.source_status not in ("out_of_scope", "unanchored_turn", "pricing_inquiry", "general_chitchat", "security_guardrail_blocked", "missing_clinical_subject", "missing_medication_context")
     )
     if (
-        not payload.enable_web_search
-        and not payload.image_base64
+        not payload.image_base64
         and is_abstention_or_unindexed
     ):
         lower_q = payload.query.lower()
-        is_internal_operational = any(term in lower_q for term in (
+        is_regulatory = any(w in lower_q for w in (
+            "thông tư", "quy định", "quy chế", "nghị định", "hướng dẫn", "tiêu chuẩn",
+            "pháp lý", "văn bản", "chính sách", "luật", "phác đồ"
+        ))
+        is_internal_operational = not is_regulatory and any(term in lower_q for term in (
             "tồn kho", "trong kho", "kho dược", "tủ trực", "báo hỏng", "hư hỏng",
-            "máy thở", "monitor", "kiểm kê", "giao ban", "kho viện"
+            "máy thở", "monitor", "kiểm kê", "giao ban", "kho viện", "phiếu lĩnh"
         ))
         if not is_internal_operational:
             user_role = getattr(payload, "user_role", "doctor") or "doctor"
@@ -923,13 +942,13 @@ async def handle_copilot_chat(payload: CopilotQuery, request: Request, db: Async
                     cand_kw = extract_drug_keywords(lower_q)
                     clean_kw = cand_kw.split()[0] if cand_kw else ""
                     has_verified_entity = True
-                    if clean_kw and len(clean_kw) >= 4:
+                    if not payload.enable_web_search and clean_kw and len(clean_kw) >= 4:
                         all_web_text = " ".join([
                             (c.get("title", "") + " " + c.get("snippet", ""))
                             for c in (web_resp.citations or [])
                             if isinstance(c, dict)
                         ]).lower()
-                        # Thuốc ứng viên bắt buộc phải xuất hiện trong dữ liệu tìm kiếm web thực tế
+                        # Thuốc ứng viên bắt buộc phải xuất hiện trong dữ liệu tìm kiếm web thực tế khi ở chế độ offline
                         if clean_kw not in all_web_text:
                             has_verified_entity = False
 

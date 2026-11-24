@@ -80,6 +80,13 @@ def is_likely_standalone_query(query: str) -> bool:
 
 def is_internal_operational_query(query: str) -> bool:
     q = query.lower()
+    # Nếu câu hỏi chứa từ khóa pháp lý, quy chế, thông tư, hướng dẫn chuyên môn -> KHÔNG PHẢI ca trực nội bộ
+    is_regulatory_or_guideline = any(w in q for w in (
+        "thông tư", "quy định", "quy chế", "nghị định", "hướng dẫn", "tiêu chuẩn",
+        "pháp lý", "văn bản", "chính sách", "luật", "phác đồ"
+    ))
+    if is_regulatory_or_guideline:
+        return False
     return any(k in q for k in INTERNAL_OPERATIONAL_KEYWORDS)
 
 

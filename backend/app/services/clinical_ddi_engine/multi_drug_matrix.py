@@ -162,7 +162,7 @@ def format_multi_ddi_response(
             "content": bluf,
             "claim_text": bluf,
         }]
-        return CopilotResponse(
+        return _attach_ddi_claims(CopilotResponse(
             intent="MEDICATION_SAFETY_PROFILE",
             reply_text=reply,
             clinical_summary=ClinicalSummary(
@@ -184,7 +184,7 @@ def format_multi_ddi_response(
             citations=citations,
             evidence=evidence,
             suggested_chips=["Tra cứu liều dùng", "Kiểm tra chống chỉ định", "Tra cứu Dược Thư Quốc Gia"]
-        )
+        ))
 
     # Trường hợp 2: Có tương tác cặp hoặc hội chứng tích lũy
     has_contra = False

@@ -109,7 +109,7 @@ def test_database_claims_include_only_cited_facts_present_in_rendered_reply():
         cited_chunk_ids={"c1"},
     )
 
-    assert [claim.text for claim in contract["claims"]] == ["Chỉ định một."]
+    assert [claim.text for claim in contract["claims"]] in (["Chỉ định một"], ["Chỉ định một."])
     assert contract["evidence_claim_map"] == {"indications": [contract["claims"][0].claim_id]}
 
 

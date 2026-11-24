@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.config import settings
 from app.models.copilot_log import CopilotChatLog
 from app.schemas.copilot import CopilotQuery, CopilotResponse, RagQuery, RagResponse, CopilotChatLogResponse
 from app.services.session_context import get_or_create_session
