@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, ShieldCheck, Coins, Timer } from 'lucide-react';
+import { Zap, ShieldCheck, Coins, Timer, Globe } from 'lucide-react';
 import { TelemetryOverviewResponse } from '../../types/admin';
 
 interface TelemetryHeroCardsProps {
@@ -98,6 +98,49 @@ export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d 
           <span className="text-emerald-700 font-medium">SLA Chuẩn</span>
           <span className="text-slate-400">(&lt;500ms)</span>
         </p>
+      </div>
+
+      {/* Thanh Thông Tin Leo Thang Nguồn & Tìm Kiếm Web Fallback */}
+      <div className="col-span-2 lg:col-span-4 bg-white border border-slate-200/90 rounded-xl p-3 sm:px-4 sm:py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+            <Globe className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <div className="font-semibold text-slate-900 flex items-center gap-1.5 flex-wrap">
+              <span>Tỷ lệ leo thang nguồn:</span>
+              <span className="text-emerald-700 font-mono font-bold">
+                {d.internal_pharmacopoeia_ratio_pct ?? 100}% Dược Thư (0₫)
+              </span>
+              <span className="text-slate-400">vs</span>
+              <span className="text-indigo-700 font-mono font-bold">
+                {d.web_fallback_ratio_pct ?? 0}% Web Fallback
+              </span>
+            </div>
+            <p className="text-2xs text-slate-500 mt-0.5">
+              Ưu tiên tra cứu Dược thư Quốc gia Việt Nam V nội viện; tự động tìm kiếm Serper khi thuốc chưa lập chuyên khảo
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-2xs font-mono border-t md:border-t-0 pt-2 md:pt-0 border-slate-100 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500">Lượt search hôm nay:</span>
+            <span className="px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              {d.web_search_queries_today || 0} queries
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500">Độ trễ TB:</span>
+            <span className="text-slate-700 font-bold" title="Độ trễ trung bình của Serper API">
+              T<sub className="font-sans">serper</sub> {d.avg_serper_latency_ms || 0}ms
+            </span>
+            <span className="text-slate-300">|</span>
+            <span className="text-slate-700 font-bold" title="Độ trễ trung bình của LLM Gemini">
+              T<sub className="font-sans">llm</sub> {d.avg_llm_latency_ms || 0}ms
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

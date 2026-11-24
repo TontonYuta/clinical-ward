@@ -116,6 +116,8 @@ export interface ApiKeyItem {
 export interface BudgetCapConfig {
   daily_token_limit: number;
   monthly_token_limit: number;
+  daily_search_query_limit?: number;
+  monthly_search_query_limit?: number;
   auto_offline_fallback: boolean;
   alert_on_threshold_pct: number;
 }
@@ -125,6 +127,12 @@ export interface BudgetCapResponse {
   today_tokens_used: number;
   month_tokens_used: number;
   today_usage_pct: number;
+  today_search_queries_used?: number;
+  month_search_queries_used?: number;
+  daily_search_query_limit?: number;
+  today_search_usage_pct?: number;
+  search_budget_gate_open?: boolean;
+  search_throttling_status?: string;
   estimated_cost_vnd: number;
   saved_cost_vnd: number;
   throttling_status?: 'normal' | 'adaptive_throttling' | 'offline_fallback';
@@ -208,6 +216,12 @@ export interface TelemetryOverviewResponse {
   bhyt_rejection_saved_vnd: number;
   ddi_blocks_count: number;
   guardrail_blocks_count: number;
+  web_search_queries_today?: number;
+  internal_pharmacopoeia_ratio_pct?: number;
+  web_fallback_ratio_pct?: number;
+  avg_serper_latency_ms?: number;
+  avg_llm_latency_ms?: number;
+  top_unindexed_fallback_queries?: Array<{ query: string; count: number; recommendation: string }>;
   recent_events: TelemetryEventItem[];
   bhyt_logs?: BhytAuditLogItem[];
   intent_distribution: Array<{

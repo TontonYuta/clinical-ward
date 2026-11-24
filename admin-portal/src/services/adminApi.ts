@@ -125,11 +125,11 @@ export async function triggerAutoHeartbeat(): Promise<ApiKeyItem[]> {
   return res.json();
 }
 
-export async function testApiKey(keyId?: string, apiKey?: string): Promise<TestKeyResponse> {
+export async function testApiKey(keyId?: string, apiKey?: string, provider?: string): Promise<TestKeyResponse> {
   const res = await fetchWithTimeout(`${BASE_URL}/keys/test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key_id: keyId, api_key: apiKey }),
+    body: JSON.stringify({ key_id: keyId, api_key: apiKey, provider }),
   }, 10000);
   if (!res.ok) throw new Error(`Lỗi kiểm tra kết nối API Key: HTTP ${res.status}`);
   return res.json();

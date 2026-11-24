@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, Activity, Coins } from 'lucide-react';
+import { Zap, Activity, Coins, Sparkles } from 'lucide-react';
 import { TelemetryOverviewResponse, TelemetryEventItem, BudgetCapResponse } from '../../types/admin';
 import { TelemetryHeroCards } from './TelemetryHeroCards';
 import { TelemetryCharts } from './TelemetryCharts';
@@ -99,6 +99,49 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({
 
           {/* Biểu đồ Xu Hướng 7 Ngày & Phân Bổ Ý Định Lâm Sàng */}
           <TelemetryCharts data={d} />
+
+          {/* Khuyến nghị bổ sung Dược Thư từ Fallback Queries nếu có */}
+          {d.top_unindexed_fallback_queries && d.top_unindexed_fallback_queries.length > 0 && (
+            <div className="p-3 sm:px-4 sm:py-3.5 bg-white rounded-lg border border-indigo-200/90 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+                      Đề Xuất Mở Rộng Dược Thư Nội Viện (Từ Web Fallback)
+                    </h3>
+                    <p className="text-2xs text-slate-500">
+                      Các hoạt chất/truy vấn lâm sàng chưa có trong Dược thư Quốc gia V nội viện đã kích hoạt tìm kiếm ngoài
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded text-2xs font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {d.top_unindexed_fallback_queries.length} câu hỏi cần nạp chuyên khảo
+                </span>
+              </div>
+
+              <div className="divide-y divide-slate-100 border border-slate-100 rounded-md overflow-hidden text-xs">
+                {d.top_unindexed_fallback_queries.slice(0, 5).map((q, idx) => (
+                  <div key={idx} className="p-2.5 flex items-start justify-between gap-3 hover:bg-slate-50/70 transition">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="font-medium text-slate-800 break-words flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                        <span>{q.query}</span>
+                      </div>
+                      <div className="text-2xs text-slate-500 pl-3">
+                        {q.recommendation}
+                      </div>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded text-2xs font-mono font-bold bg-slate-100 text-slate-700 shrink-0" title="Tần suất truy vấn">
+                      {q.count} lượt
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Bảng Nhật Ký Telemetry Live Stream kèm Bộ Lọc */}
           <TelemetryLiveStreamTable

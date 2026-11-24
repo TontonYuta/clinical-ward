@@ -63,10 +63,10 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
     }
   };
 
-  const handleTestKey = async (keyId: string) => {
+  const handleTestKey = async (keyId: string, provider?: string) => {
     setTestingKeyId(keyId);
     try {
-      const res = await testApiKey(keyId);
+      const res = await testApiKey(keyId, undefined, provider);
       setTestResult((prev) => ({ ...prev, [keyId]: res }));
     } catch (err: any) {
       alert(`Lỗi kiểm tra: ${err.message}`);
@@ -142,7 +142,8 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                 onChange={(e) => setNewKeyProvider(e.target.value)}
                 className="w-full h-8 px-2.5 rounded-md border border-slate-300 bg-white text-xs font-medium text-slate-800 focus:border-teal-600 focus:outline-none cursor-pointer"
               >
-                <option value="gemini">Google Gemini Cloud (Chính thức)</option>
+                <option value="gemini">Google Gemini Cloud (LLM Chính thức)</option>
+                <option value="serper">Google Serper API (Tìm kiếm Web Fallback)</option>
                 <option value="openai_compatible">OpenAI-Compatible (Ollama / vLLM)</option>
               </select>
             </div>
@@ -192,10 +193,10 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-500 font-semibold text-2xs uppercase tracking-wider">
                 <th className="py-2.5 px-3">Tên Khóa</th>
-                <th className="py-2.5 px-3">Nhà Cung Cấp</th>
+                <th className="py-2.5 px-3">Phân Loại / Nhà Cung Cấp</th>
                 <th className="py-2.5 px-3">Khóa Che (Masked)</th>
                 <th className="py-2.5 px-3">Hạn Mức (Quota)</th>
-                <th className="py-2.5 px-3">Tokens Hôm Nay</th>
+                <th className="py-2.5 px-3">Sản Lượng Hôm Nay</th>
                 <th className="py-2.5 px-3">Lỗi 429</th>
                 <th className="py-2.5 px-3">Trạng Thái</th>
                 <th className="py-2.5 px-3 text-right">Thao Tác</th>
@@ -228,9 +229,21 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                           </div>
                         </td>
                         <td className="py-2.5 px-3">
-                          <span className="text-2xs font-mono text-slate-500 uppercase">
-                            {k.provider}
-                          </span>
+                          {k.provider === 'serper' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                              SERPER (SEARCH)
+                            </span>
+                          ) : k.provider === 'gemini' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              GEMINI (LLM)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-purple-50 text-purple-700 border border-purple-200">
+                              {k.provider}
+                            </span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-slate-600">
                           {k.masked_key}
@@ -238,13 +251,21 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           <span
                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200"
-                            title="Hạn mức tiêu chuẩn Google AI Studio: 15 RPM (Lượt gọi/phút), 1M TPM (Token/phút), 1.500 RPD (Lượt gọi/ngày)"
+                            title={k.provider === 'serper' ? 'Hạn mức Google Serper API: 2.500 Free Queries / Month' : 'Hạn mức tiêu chuẩn Google AI Studio: 15 RPM · 1.000.000 TPM · 1.500 RPD'}
                           >
-                            {k.quota_status || '15 RPM · 1.000.000 TPM · 1.500 RPD'}
+                            {k.quota_status || (k.provider === 'serper' ? '2.500 Free Queries / Month' : '15 RPM · 1.000.000 TPM · 1.500 RPD')}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 font-mono tabular-nums text-slate-900 font-medium">
-                          {(k.tokens_used_today || 0).toLocaleString('vi-VN')}
+                          {k.provider === 'serper' ? (
+                            <span className="text-indigo-700 font-bold">
+                              {(k.requests_count || 0).toLocaleString('vi-VN')} <span className="text-3xs font-normal text-slate-500">lượt search</span>
+                            </span>
+                          ) : (
+                            <span>
+                              {(k.tokens_used_today || 0).toLocaleString('vi-VN')} <span className="text-3xs font-normal text-slate-500">tokens</span>
+                            </span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 font-mono tabular-nums">
                           <span className={(k.error_429_count || 0) > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}>
@@ -268,10 +289,10 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
-                              onClick={() => handleTestKey(k.key_id)}
+                              onClick={() => handleTestKey(k.key_id, k.provider)}
                               disabled={isTesting}
                               className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-medium inline-flex items-center gap-1 transition disabled:opacity-50"
-                              title="Kiểm tra ping latency và kết nối Google API"
+                              title="Kiểm tra ping latency và kết nối API"
                             >
                               <Play className={`w-3 h-3 ${isTesting ? 'animate-spin text-teal-600' : ''}`} />
                               <span>{isTesting ? 'Ping...' : 'Kiểm tra'}</span>
