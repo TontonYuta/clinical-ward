@@ -399,6 +399,7 @@ async def handle_grounded_web_search_turn(
         legal_basis=f"Tìm kiếm thời gian thực qua {source_label} & Kiểm tra link sống",
         answer_type="grounded_web_reference",
         source_status="grounded_web_search",
+        rag_grounded=True,
         confidence=0.92,
         citations=citations,
         suggested_chips=dynamic_chips

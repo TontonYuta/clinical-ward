@@ -739,3 +739,59 @@ async def chat_test_knowledge_stream(
     )
 
 
+class CreateVerifiedQARequest(BaseModel):
+    query: str
+    answer_markdown: str
+    citations: Optional[List[Dict[str, Any]]] = None
+    entities: Optional[List[str]] = None
+    intent: str = "DRUG_INFO"
+    legal_basis: Optional[str] = "Dược thư Quốc gia Việt Nam & Hướng dẫn BYT"
+    suggested_chips: Optional[List[str]] = None
+    verification_source: str = "admin_verified"
+    grounding_score: float = 1.0
+
+
+@router.get("/qa-nodes")
+async def get_verified_qa_nodes(limit: int = 50):
+    """Lấy danh sách các node Q&A đã thẩm định trong Đồ thị Tri thức."""
+    from app.services.rag.verified_qa_service import get_verified_qa_service
+    svc = get_verified_qa_service()
+    nodes = svc.list_qa_nodes(limit=limit)
+    stats = svc.get_stats()
+    return {"status": "success", "stats": stats, "nodes": nodes}
+
+
+@router.post("/qa-nodes")
+async def create_verified_qa_node(req: CreateVerifiedQARequest):
+    """Đăng ký mới hoặc cập nhật một Verified Q&A Node vào Đồ thị Tri thức."""
+    from app.services.rag.verified_qa_service import get_verified_qa_service
+    svc = get_verified_qa_service()
+    try:
+        qa_id = svc.register_qa_node(
+            query=req.query,
+            answer_markdown=req.answer_markdown,
+            citations=req.citations,
+            entities=req.entities,
+            intent=req.intent,
+            legal_basis=req.legal_basis or "Dược thư Quốc gia Việt Nam & Hướng dẫn BYT",
+            suggested_chips=req.suggested_chips,
+            verification_source=req.verification_source,
+            grounding_score=req.grounding_score
+        )
+        return {"status": "success", "qa_id": qa_id, "message": "Đã lưu vào Đồ thị Tri thức chuẩn"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/qa-nodes/{qa_id}")
+async def delete_verified_qa_node(qa_id: str):
+    """Vô hiệu hóa một Verified Q&A Node khỏi Đồ thị Tri thức."""
+    from app.services.rag.verified_qa_service import get_verified_qa_service
+    svc = get_verified_qa_service()
+    ok = svc.delete_qa_node(qa_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Không tìm thấy node để xóa")
+    return {"status": "success", "message": f"Đã vô hiệu hóa node {qa_id}"}
+
+
+

@@ -146,6 +146,22 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
             })
 
     # --------------------------------------------------------------------------
+    # 2.5. VERIFIED CLINICAL Q&A NODES: Tri thức Q&A đã thẩm định liên kết trong đồ thị
+    # --------------------------------------------------------------------------
+    verified_faqs: list[dict] = []
+    try:
+        from app.services.rag.verified_qa_service import get_verified_qa_service
+        vqa_svc = get_verified_qa_service()
+        entities_for_lookup = [inn.lower() for inn in matched_inns] + [c.lower() for c in high_level_classes]
+        matched_faqs = vqa_svc.find_qa_nodes_by_entities(entities_for_lookup)
+        if matched_faqs:
+            for faq in matched_faqs[:3]:
+                kg_entities.append(f"VERIFIED_QA:{faq['qa_id']}")
+                verified_faqs.append(faq)
+    except Exception:
+        pass
+
+    # --------------------------------------------------------------------------
     # 3. GRAPH CONTEXT FUSION: Đóng gói khối ngữ cảnh Đồ thị Tri thức Đa Tầng
     # --------------------------------------------------------------------------
     context_sections: list[str] = []
@@ -184,6 +200,15 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
             )
         context_sections.append("### 💡 Khuyến Cáo Thay Thế Dược Lâm Sàng (Therapeutic Alternatives):\n" + "\n".join(lines))
 
+    if verified_faqs:
+        lines = []
+        for vq in verified_faqs:
+            lines.append(
+                f"- **CÂU HỎI THẨM ĐỊNH:** {vq['canonical_query']}\n"
+                f"  * Trích xuất: {vq['answer_summary']}"
+            )
+        context_sections.append("### 📚 Tri Thức Q&A Đã Thẩm Định Trong Đồ Thị:\n" + "\n".join(lines))
+
     graph_context_text = "\n\n".join(context_sections)
 
     graph_data_path = Path(__file__).with_name("lightrag_data.py")
@@ -206,5 +231,6 @@ def expand_clinical_graph(query: str, patient_info: Optional[dict] = None) -> di
         "class_interactions": class_interactions,
         "organ_condition_risks": organ_condition_risks,
         "therapeutic_alternatives": therapeutic_alternatives,
+        "verified_faqs": verified_faqs,
         "graph_context_text": graph_context_text
     }

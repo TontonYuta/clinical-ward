@@ -171,3 +171,12 @@ class ClinicalGraphTraversalService:
             "metabolic_notes": metabolic_notes,
             "subgraph_narrative": "\n\n".join(subgraph_lines)
         }
+
+    @staticmethod
+    def get_connected_verified_qa(entities: List[str]) -> List[Dict[str, Any]]:
+        """Lấy các node Q&A đã thẩm định kết nối với các thực thể trong Đồ thị Tri thức."""
+        try:
+            from app.services.rag.verified_qa_service import get_verified_qa_service
+            return get_verified_qa_service().find_qa_nodes_by_entities(entities)
+        except Exception:
+            return []

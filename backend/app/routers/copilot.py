@@ -62,6 +62,40 @@ async def chat_with_copilot(
     from app.services.cache.clinical_cache import get_clinical_cache
     clinical_cache = get_clinical_cache()
 
+    # 0. Kiểm tra kho Q&A đã thẩm định trong Đồ thị Tri thức (Verified Clinical Q&A Node)
+    # Trả về tức thì (< 2ms) 0 token, không cần LLM suy nghĩ hay tìm kiếm lại nếu đã có đáp án chuẩn
+    from app.services.rag.verified_qa_service import get_verified_qa_service
+    vqa_service = get_verified_qa_service()
+    verified_node = vqa_service.lookup_verified_qa(payload.query, user_role=user_role) if not payload.image_base64 else None
+
+    if verified_node:
+        response = vqa_service.format_as_copilot_response(verified_node, session=session)
+        session.append_conversation_turn(payload.query, response.reply_text)
+        from app.services.chatbot.citation_standardizer import standardize_response_citations
+        response = standardize_response_citations(response, payload.query)
+        response = format_offline_drug_response(response)
+
+        latency_ms = round((time.monotonic() - start_time) * 1000, 1)
+        reconcile_copilot_telemetry(
+            response,
+            last_exec=None,
+            cached_resp=True,
+            default_model="verified-knowledge-graph",
+            default_provider="knowledge-graph-qa",
+        )
+        await record_chat_telemetry_log(
+            db,
+            payload=payload,
+            response=response,
+            session_id=session.session_id,
+            user_name=user_name,
+            user_role=user_role,
+            latency_ms=latency_ms,
+            has_image=False,
+            image_tokens=0,
+        )
+        return response
+
     can_use_cache = True
     if payload.image_base64 or payload.enable_web_search:
         can_use_cache = False
@@ -133,6 +167,14 @@ async def chat_with_copilot(
         if not is_context_dependent and not payload.enable_web_search and response.answer_type not in ("clarification", "safe_abstention"):
             clinical_cache.set(payload.query, user_role, response)
 
+        # Tự động thăng hạng câu trả lời chất lượng cao (Grounding >= 0.85, citations đầy đủ) vào Đồ thị Tri thức Q&A
+        if not is_context_dependent:
+            vqa_service.auto_register_candidate(
+                payload.query,
+                response,
+                source="grounded_web_search" if payload.enable_web_search else "copilot_rag"
+            )
+
     response = format_offline_drug_response(response)
 
     latency_ms = round((time.monotonic() - start_time) * 1000, 1)
@@ -198,55 +240,73 @@ async def chat_with_copilot_stream(
     session = get_or_create_session(session_id, user_name, user_role)
 
     async def response_events():
+        # 0. Kiểm tra kho Q&A đã thẩm định trong Đồ thị Tri thức (Verified Clinical Q&A Node)
+        from app.services.rag.verified_qa_service import get_verified_qa_service
+        vqa_service = get_verified_qa_service()
+        verified_node = vqa_service.lookup_verified_qa(payload.query, user_role=user_role) if not payload.image_base64 else None
+
         # 1. Kiểm tra bộ nhớ đệm lâm sàng (Clinical LRU Cache) để đạt latency < 1ms
         from app.services.cache.clinical_cache import get_clinical_cache
         clinical_cache = get_clinical_cache()
 
-        can_use_cache = True
-        if payload.image_base64 or payload.enable_web_search:
-            can_use_cache = False
-        lower_q = payload.query.lower()
-        if any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc")):
-            can_use_cache = False
-        elif session.active_medication_name:
-            has_explicit_drug = bool(session.active_medication_name.casefold() in lower_q)
-            if not has_explicit_drug:
-                try:
-                    from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
-                    has_explicit_drug = bool(get_drug_lexical_matcher().extract_medications(payload.query))
-                except Exception:
-                    has_explicit_drug = False
-            if not has_explicit_drug:
-                can_use_cache = False
-
-        cached_resp = clinical_cache.get(payload.query, user_role=user_role) if can_use_cache else None
-        if cached_resp:
-            response = cached_resp.model_copy(deep=True)
-            response = validate_cached_chat_response(response)
-            response.session_id = session.session_id
+        if verified_node:
+            response = vqa_service.format_as_copilot_response(verified_node, session=session)
             session.append_conversation_turn(payload.query, response.reply_text)
-            if response.active_medication_name:
-                session.set_active_medication(name=response.active_medication_name)
+            cached_resp = response
         else:
-            # Xử lý câu truy vấn qua bộ máy Copilot Orchestrator
-            response = await handle_copilot_chat(
-                payload, request, db,
-                session=session,
-                history=session.render_recent_history()
-            )
-            from app.services.chatbot.conversational_handler import attach_correction_empathy
-            response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
-            response = format_offline_drug_response(response)
-            session.append_conversation_turn(payload.query, response.reply_text)
-            response.session_id = session.session_id
+            can_use_cache = True
+            if payload.image_base64 or payload.enable_web_search:
+                can_use_cache = False
+            lower_q = payload.query.lower()
+            if any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc")):
+                can_use_cache = False
+            elif session.active_medication_name:
+                has_explicit_drug = bool(session.active_medication_name.casefold() in lower_q)
+                if not has_explicit_drug:
+                    try:
+                        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+                        has_explicit_drug = bool(get_drug_lexical_matcher().extract_medications(payload.query))
+                    except Exception:
+                        has_explicit_drug = False
+                if not has_explicit_drug:
+                    can_use_cache = False
 
-            # Lưu vào cache lâm sàng nếu độc lập ngữ cảnh và không phải clarification/abstention
-            is_context_dependent = (
-                any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc"))
-                or (session.active_medication_name and session.active_medication_name.casefold() not in lower_q)
-            )
-            if not is_context_dependent and not payload.enable_web_search and response.answer_type not in ("clarification", "safe_abstention"):
-                clinical_cache.set(payload.query, user_role, response)
+            cached_resp = clinical_cache.get(payload.query, user_role=user_role) if can_use_cache else None
+            if cached_resp:
+                response = cached_resp.model_copy(deep=True)
+                response = validate_cached_chat_response(response)
+                response.session_id = session.session_id
+                session.append_conversation_turn(payload.query, response.reply_text)
+                if response.active_medication_name:
+                    session.set_active_medication(name=response.active_medication_name)
+            else:
+                # Xử lý câu truy vấn qua bộ máy Copilot Orchestrator
+                response = await handle_copilot_chat(
+                    payload, request, db,
+                    session=session,
+                    history=session.render_recent_history()
+                )
+                from app.services.chatbot.conversational_handler import attach_correction_empathy
+                response.reply_text = attach_correction_empathy(response.reply_text, payload.query)
+                response = format_offline_drug_response(response)
+                session.append_conversation_turn(payload.query, response.reply_text)
+                response.session_id = session.session_id
+
+                # Lưu vào cache lâm sàng nếu độc lập ngữ cảnh và không phải clarification/abstention
+                is_context_dependent = (
+                    any(w in lower_q for w in ("này", "đó", "kia", "nó", "vừa rồi", "thuốc này", "thuốc đó", "thuốc có", "thuốc kia", "hai thuốc", "2 thuốc"))
+                    or (session.active_medication_name and session.active_medication_name.casefold() not in lower_q)
+                )
+                if not is_context_dependent and not payload.enable_web_search and response.answer_type not in ("clarification", "safe_abstention"):
+                    clinical_cache.set(payload.query, user_role, response)
+
+                # Tự động thăng hạng câu trả lời chất lượng cao vào Đồ thị Tri thức Q&A
+                if not is_context_dependent:
+                    vqa_service.auto_register_candidate(
+                        payload.query,
+                        response,
+                        source="grounded_web_search" if payload.enable_web_search else "copilot_rag"
+                    )
 
         response = format_offline_drug_response(response)
         response.has_image = bool(payload.image_base64 or response.has_image)

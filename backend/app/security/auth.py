@@ -252,6 +252,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             or (request.url.path.startswith("/api/v1/pdf") and request.method in {"GET", "HEAD", "OPTIONS"})
             or (request.url.path.startswith("/pdf") and request.method in {"GET", "HEAD", "OPTIONS"})
             or (request.url.path == "/api/v1/admin/knowledge/documents" and request.method in {"GET", "HEAD", "OPTIONS"})
+            or (request.url.path == "/api/v1/admin/knowledge/qa-nodes" and request.method in {"GET", "HEAD", "OPTIONS"})
             or (request.url.path == "/api/v1/admin/knowledge/query" and request.method in {"POST", "OPTIONS"})
             or ((request.url.path, request.method) in public_auth_requests)
         ):

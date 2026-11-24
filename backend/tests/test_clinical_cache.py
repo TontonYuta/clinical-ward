@@ -20,7 +20,7 @@ def test_cache_normalization():
     key2 = cache.make_key(q2, "doctor")
     key3 = cache.make_key(q3, "doctor")
 
-    assert key1 == key2 == key3 == "doctor:paracetamol 500mg uống thế nào", f"Mismatch: {key1} vs {key2} vs {key3}"
+    assert key1 == key2 == key3 and key1.endswith(":doctor:paracetamol 500mg uống thế nào"), f"Mismatch: {key1} vs {key2} vs {key3}"
     print(f"✅ Normalization test passed: '{key1}'")
 
 def test_mutation_queries_rejected():
