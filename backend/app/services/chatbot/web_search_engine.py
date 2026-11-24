@@ -540,18 +540,33 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
 
     disclaimer = "⚠️ *Lưu ý: Thông tin tìm kiếm từ Internet mang tính chất tham khảo, không thay thế chỉ định chuyên môn của bác sĩ.*"
 
-    # Chỉ tìm tiêu đề khối tham khảo độc lập ở phần CUỐI câu trả lời (tránh cắt nhầm lời mở đầu bài viết)
+    # Chỉ tìm tiêu đề khối tham khảo độc lập ở phần CUỐI câu trả lời (tránh cắt nhầm lời mở đầu/thân bài viết)
     ref_pat = re.compile(
-        r'\n(?:\*+|#{1,4}\s*)?(?:Tham khảo chi tiết tại|Nguồn tham khảo y khoa|Nguồn tham khảo|Tài liệu tham khảo)[:\s]*\n.*',
-        re.IGNORECASE | re.DOTALL
+        r'\n(?:\*+|#{1,4}\s*)?(?:Tham khảo chi tiết tại|Nguồn tham khảo y khoa|Nguồn tham khảo|Tài liệu tham khảo)[:\s]*\n',
+        re.IGNORECASE
     )
     ref_matches = list(ref_pat.finditer(ai_text))
     body = ai_text.strip()
     found_ref_tail = False
+    total_len = len(ai_text)
 
-    # Quét từ dưới lên: Chấp nhận khối tham khảo xuất hiện sau ít nhất 30 ký tự hoặc sau 25% văn bản
+    # Quét từ dưới lên: Chấp nhận khối tham khảo nếu:
+    # 1. Nằm ở phần đuôi (ít nhất 70% văn bản hoặc 600 ký tự cuối) VÀ có cấu trúc citations
+    # 2. HOẶC toàn bộ nội dung phía sau tiêu đề tham khảo là danh sách bullet trích dẫn / links / disclaimer
     for m in reversed(ref_matches):
-        if m.start() >= 30 or m.start() >= len(ai_text) * 0.25:
+        is_in_tail = (m.start() >= total_len * 0.70) or (total_len - m.start() <= 600 and m.start() >= 120)
+        tail_content = ai_text[m.start():]
+        has_citations = bool(re.search(r'\[.+?\]|\d+\.\s*\[|[-*•]\s*\[|https?://', tail_content))
+
+        tail_after_header = ai_text[m.end():]
+        tail_lines = [l.strip() for l in tail_after_header.splitlines() if l.strip()]
+        is_pure_citation_block = bool(tail_lines) and all(
+            l.startswith(("*", "-", "•", "[", "http", "1.", "2.", "3.", "4.", "5.", "⚠️", "(http"))
+            or "link đã ẩn" in l.lower()
+            for l in tail_lines
+        )
+
+        if (is_in_tail and has_citations) or is_pure_citation_block:
             body = ai_text[:m.start()].strip()
             found_ref_tail = True
             break
@@ -575,7 +590,7 @@ def standardize_web_references(ai_text: str, results: List[WebSearchResult]) -> 
             (last.count("(") > last.count(")"))
             or (last.count("[") > last.count("]"))
             or (last.count("**") % 2 != 0 and len(last) < 40)
-            or (last.startswith("#") and not last.endswith((".", "!", ":", ")", "]")))
+            or (last.startswith("#") and len(last.lstrip("#").strip()) <= 3)
             or (len(last) <= 4 and last in ("*", "-", "•", "* [", "[", "1.", "2.", "3."))
         )
         if is_dangling:

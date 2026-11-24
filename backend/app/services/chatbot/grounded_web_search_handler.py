@@ -283,6 +283,13 @@ async def handle_grounded_web_search_turn(
     if not query:
         return None
 
+    # 0a. Nếu câu hỏi là lệnh điều hướng phân hệ hoặc mở biểu mẫu nội viện, ưu tiên thực thi giao diện ngay
+    from app.services.chatbot.semantic_navigation_router import route_semantic_navigation
+    nav_resp = await route_semantic_navigation(query, query.lower(), user_role=user_role)
+    if nav_resp is not None:
+        logger.info("Web search đang bật nhưng query mang ý định điều hướng giao diện nội viện, chuyển sang Navigation Router.")
+        return nav_resp
+
     # Nếu câu hỏi là nghiệp vụ ca trực nội bộ, nhường quyền cho DB nội bộ
     if is_internal_operational_query(query):
         logger.info("Web search đang bật nhưng query mang tính nghiệp vụ ca trực nội viện, bỏ qua search web.")

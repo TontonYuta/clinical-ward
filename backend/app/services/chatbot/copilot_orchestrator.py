@@ -161,12 +161,24 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             suggested_chips=["Tra cứu Dược Thư Quốc Gia", "Quy chế thuốc gây nghiện TT 20", "Hướng dẫn sử dụng hệ thống"]
         )
 
+    query = guard_res.sanitized_query
+    lower_query = query.lower()
+
     # NẾU CÓ ẢNH ĐÍNH KÈM: Chuyển thẳng sang luồng Multimodal Vision Analysis chuyên sâu
     if payload.image_base64:
         from app.services.chatbot.multimodal_vision_handler import handle_multimodal_vision_turn
         vision_resp = await handle_multimodal_vision_turn(payload, user_role=user_role)
         if vision_resp is not None:
             return vision_resp
+
+    # Ưu tiên số 1: Điều hướng Phân hệ & Mở Form nội viện (Semantic Navigation Router)
+    # Bất kể người dùng đang bật hay tắt Web Search, nếu câu lệnh là hành động chuyển tab/mở form trong viện thì phải ưu tiên thực thi ngay
+    from app.services.chatbot.semantic_navigation_router import route_semantic_navigation
+    nav_response = await route_semantic_navigation(query, lower_query=lower_query, user_role=user_role)
+    if nav_response is not None:
+        if session is not None and hasattr(session, "append_conversation_turn"):
+            session.append_conversation_turn(payload.query, nav_response.reply_text)
+        return nav_response.model_copy(update={"session_id": session_id})
 
     # NẾU BẬT TÌM KIẾM WEB THỜI GIAN THỰC (Grounded Web Search)
     if payload.enable_web_search:
@@ -178,9 +190,6 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             if session is not None and hasattr(session, "append_conversation_turn"):
                 session.append_conversation_turn(payload.query, web_search_resp.reply_text)
             return web_search_resp.model_copy(update={"session_id": session_id})
-
-    query = guard_res.sanitized_query
-    lower_query = query.lower()
 
     # Stage 1: Clinical text sanitization & modifier deconstruction
     from app.services.chatbot.clinical_text_sanitizer import sanitize_clinical_input

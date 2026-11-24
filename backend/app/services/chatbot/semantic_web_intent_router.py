@@ -9,6 +9,7 @@ giúp phản hồi tức thì (< 150ms) và tiết kiệm 100% quota tìm kiếm
 from typing import Optional, List, Dict, Tuple
 import logging
 import time
+import re
 import numpy as np
 from app.schemas.copilot import CopilotResponse
 from app.services.rag.embeddings.provider import get_embedding_provider
@@ -80,6 +81,49 @@ CLINICAL_ANCHORS = {
 # Bộ đệm Vector Anchors trong bộ nhớ (In-memory Anchor Cache)
 _ANCHOR_CACHE: Dict[str, np.ndarray] = {}
 
+# Biểu thức chính quy phát hiện nhanh các chủ đề tuyệt đối phi y tế (Deterministic Lexical Guardrail)
+# Giúp phản hồi ngay lập tức (< 1ms), tiết kiệm quota embedding và hoạt động tin cậy kể cả khi mất mạng
+DETERMINISTIC_OOS_REGEX = re.compile(
+    r"(?:"
+    r"thời tiết|dự báo thời tiết|mưa hay nắng|nhiệt độ hôm nay|"
+    r"kết quả bóng đá|ngoại hạng anh|world cup|cúp c1|v-league|bóng đá hôm nay|"
+    r"kết quả xổ số|xổ số|vietlott|lô đề|soi cầu|"
+    r"showbiz|scandal|diễn viên|ca sĩ|bài hát|phim hay|rạp chiếu phim|"
+    r"câu chuyện cười|kể chuyện cười|làm thơ|bài thơ|viết bài thơ|"
+    r"giá vàng|giá bitcoin|tiền ảo|thị trường chứng khoán|giá cổ phiếu|"
+    r"công thức làm bánh|cách làm bánh|cách nấu món|"
+    r"viết code|lập trình python|lập trình javascript|giải phương trình"
+    r")",
+    re.IGNORECASE
+)
+
+
+def _build_safe_abstention_response(
+    clean_q: str,
+    user_name: str,
+    user_role: str,
+    confidence: float = 0.95
+) -> CopilotResponse:
+    role_display = "Bác sĩ" if user_role == "doctor" else ("Dược sĩ" if user_role == "pharmacist" else "Điều dưỡng")
+    reply_text = (
+        f"Xin lỗi {role_display} {user_name}! Tôi là **Trợ lý Trí tuệ Nhân tạo Dược Lâm Sàng & Nghiệp vụ Bệnh viện chuyên dụng**.\n\n"
+        "Hệ thống tuân thủ nghiêm ngặt quy chế an toàn y tế và **chỉ hỗ trợ** các nội dung chuyên môn sau:\n"
+        "1. **Dược lý & Tra cứu thuốc:** Chỉ định, liều dùng tối đa, chống chỉ định, thận trọng (Dược thư Quốc gia & 54.885 thuốc Cục QLD).\n"
+        "2. **An toàn kê đơn:** Tương tác thuốc chống chỉ định (QĐ 5948/QĐ-BYT), chỉnh liều suy thận/suy gan.\n"
+        "3. **Thẩm định BHYT & Pháp quy:** Điều kiện thanh toán TT 20/2022/TT-BYT, quy chế kê đơn ngoại trú.\n"
+        "4. **Phác đồ & Dịch tễ y tế:** Cập nhật thông tin dịch bệnh, vắc xin thời gian thực từ Bộ Y tế & WHO.\n\n"
+        f"{role_display} vui lòng đặt câu hỏi liên quan đến thuốc hoặc chuyên môn y tế nhé!"
+    )
+    return CopilotResponse(
+        intent="CLINICAL_SAFE_ABSTENTION",
+        reply_text=reply_text,
+        legal_basis="Quy chế Trợ lý Dược Lâm Sàng & An toàn CDSS",
+        answer_type="safe_abstention",
+        source_status="out_of_scope",
+        confidence=confidence,
+        suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Cập nhật y tế thời gian thực"]
+    )
+
 
 async def _get_anchor_vectors(prototypes: List[str], cache_key: str) -> Optional[np.ndarray]:
     """Lấy hoặc tính toán trước ma trận vector chuẩn hóa của các anchor prototypes."""
@@ -118,6 +162,16 @@ async def check_semantic_web_bypass(
     clean_q = query.strip()
     if not clean_q or len(clean_q) > 300:
         return None
+
+    # Chốt chặn nhanh 1: Deterministic Lexical Guardrail cho các chủ đề tuyệt đối phi y tế
+    # Phản hồi ngay < 1ms, không tốn quota token và hoạt động độc lập ngay cả khi mạng lỗi
+    lower_q = clean_q.lower()
+    has_explicit_clinical_action = any(
+        k in lower_q for k in ("tương tác", "chống chỉ định", "dược lực", "chỉnh liều", "suy thận", "suy gan", "phản vệ")
+    )
+    if not has_explicit_clinical_action and DETERMINISTIC_OOS_REGEX.search(lower_q):
+        logger.info("Semantic Web Router: deterministic lexical match -> OUT_OF_SCOPE for query='%s'", clean_q)
+        return _build_safe_abstention_response(clean_q, user_name, user_role, confidence=0.98)
 
     try:
         provider = get_embedding_provider()
@@ -185,8 +239,19 @@ async def check_semantic_web_bypass(
                 )
 
         # 3. So khớp với nhóm Ngoài phạm vi (Out-of-Scope / Non-Clinical / Medical Relevance Gate)
-        # Kiểm tra an toàn: Nếu câu hỏi có chứa thực thể/thuật ngữ lâm sàng bảo vệ thì không reject nhầm
-        has_clinical_anchor = any(anc in clean_q.lower() for anc in CLINICAL_ANCHORS)
+        oos_matrix = await _get_anchor_vectors(OUT_OF_SCOPE_ANCHOR_PROTOTYPES, "out_of_scope_anchors")
+        max_oos_sim = 0.0
+        if oos_matrix is not None:
+            oos_sims = np.dot(oos_matrix, q_vec)
+            max_oos_sim = float(np.max(oos_sims))
+
+        clin_matrix = await _get_anchor_vectors(CLINICAL_DOMAIN_PROTOTYPES, "clinical_domain_anchors")
+        max_clin_sim = 0.0
+        if clin_matrix is not None:
+            clin_sims = np.dot(clin_matrix, q_vec)
+            max_clin_sim = float(np.max(clin_sims))
+
+        has_clinical_anchor = any(anc in lower_q for anc in CLINICAL_ANCHORS)
         has_drug_match = False
         if not has_clinical_anchor:
             try:
@@ -196,16 +261,6 @@ async def check_semantic_web_bypass(
             except Exception:
                 pass
 
-        # 3a. Kiểm tra khoảng cách tới các chủ đề ngoài phạm vi
-        oos_matrix = await _get_anchor_vectors(OUT_OF_SCOPE_ANCHOR_PROTOTYPES, "out_of_scope_anchors")
-        max_oos_sim = 0.0
-        if oos_matrix is not None:
-            oos_sims = np.dot(oos_matrix, q_vec)
-            max_oos_sim = float(np.max(oos_sims))
-
-        # Nếu độ tương đồng áp đảo với chủ đề phi y tế (>= 0.70) thì chắc chắn từ chối (vd: văn học, thơ ca, bóng đá, toán học)
-        is_definite_oos = max_oos_sim >= 0.70
-
         # Nếu câu hỏi là câu nối tiếp có ngữ cảnh lâm sàng từ trước (vd: "sao mới có 2 loại", "uống mấy viên")
         has_history_clinical = False
         if history:
@@ -213,49 +268,36 @@ async def check_semantic_web_bypass(
             if any(anc in lower_hist for anc in CLINICAL_ANCHORS):
                 has_history_clinical = True
 
-        is_followup = any(w in clean_q.lower() for w in ("sao", "tại sao", "loại", "thêm", "còn", "thế", "nữa", "kia", "đó", "này"))
-        if has_history_clinical and is_followup and not is_definite_oos:
+        is_followup = any(w in lower_q for w in ("sao", "tại sao", "loại", "thêm", "còn", "thế", "nữa", "kia", "đó", "này"))
+        is_clinical_followup = has_history_clinical and is_followup
+        if is_clinical_followup:
             has_clinical_anchor = True
 
-        if is_definite_oos or (not has_clinical_anchor and not has_drug_match):
-            # 3b. Kiểm tra khoảng cách tới các chủ đề chuyên môn y tế (Medical Domain Whitelist)
-            clin_matrix = await _get_anchor_vectors(CLINICAL_DOMAIN_PROTOTYPES, "clinical_domain_anchors")
-            max_clin_sim = 0.0
-            if clin_matrix is not None:
-                clin_sims = np.dot(clin_matrix, q_vec)
-                max_clin_sim = float(np.max(clin_sims))
+        # Quyết định từ chối câu hỏi phi y tế:
+        # a) Rõ ràng thuộc chủ đề phi y tế áp đảo (max_oos_sim >= 0.70)
+        # b) Không phải câu hỏi nối tiếp lâm sàng VÀ độ tương đồng phi y tế vượt trội (max_oos_sim > max_clin_sim and max_oos_sim >= 0.58)
+        # c) Không chứa thực thể thuốc / thuật ngữ lâm sàng VÀ độ liên quan y tế thấp (< 0.54)
+        is_definite_oos = max_oos_sim >= 0.70
+        is_predominantly_oos = (not is_clinical_followup) and (max_oos_sim > max_clin_sim) and (max_oos_sim >= 0.58)
+        is_low_medical_relevance = (not has_clinical_anchor and not has_drug_match) and (max_clin_sim < 0.54)
 
-            # Từ chối nếu: rõ ràng ngoài phạm vi (is_definite_oos) HOẶC (không có keyword y tế VÀ độ liên quan y tế thấp < 0.54)
-            if is_definite_oos or max_oos_sim >= 0.60 or max_clin_sim < 0.54:
-                logger.info(
-                    "Semantic Web Router: bypassed Web Search -> OUT_OF_SCOPE / SAFE_ABSTENTION (oos_sim=%.4f, clin_sim=%.4f) for query='%s'",
-                    max_oos_sim, max_clin_sim, clean_q
-                )
-                role_display = "Bác sĩ" if user_role == "doctor" else ("Dược sĩ" if user_role == "pharmacist" else "Điều dưỡng")
-                reply_text = (
-                    f"Xin lỗi {role_display} {user_name}! Tôi là **Trợ lý Trí tuệ Nhân tạo Dược Lâm Sàng & Nghiệp vụ Bệnh viện chuyên dụng**.\n\n"
-                    "Hệ thống tuân thủ nghiêm ngặt quy chế an toàn y tế và **chỉ hỗ trợ** các nội dung chuyên môn sau:\n"
-                    "1. **Dược lý & Tra cứu thuốc:** Chỉ định, liều dùng tối đa, chống chỉ định, thận trọng (Dược thư Quốc gia & 54.885 thuốc Cục QLD).\n"
-                    "2. **An toàn kê đơn:** Tương tác thuốc chống chỉ định (QĐ 5948/QĐ-BYT), chỉnh liều suy thận/suy gan.\n"
-                    "3. **Thẩm định BHYT & Pháp quy:** Điều kiện thanh toán TT 20/2022/TT-BYT, quy chế kê đơn ngoại trú.\n"
-                    "4. **Phác đồ & Dịch tễ y tế:** Cập nhật thông tin dịch bệnh, vắc xin thời gian thực từ Bộ Y tế & WHO.\n\n"
-                    f"{role_display} vui lòng đặt câu hỏi liên quan đến thuốc hoặc chuyên môn y tế nhé!"
-                )
-                return CopilotResponse(
-                    intent="CLINICAL_SAFE_ABSTENTION",
-                    reply_text=reply_text,
-                    legal_basis="Quy chế Trợ lý Dược Lâm Sàng & An toàn CDSS",
-                    answer_type="safe_abstention",
-                    source_status="out_of_scope",
-                    confidence=round(max(max_oos_sim, 0.75), 2),
-                    suggested_chips=["Tra cứu thông tin thuốc", "Kiểm tra tương tác thuốc", "Cập nhật y tế thời gian thực"]
-                )
+        if is_definite_oos or is_predominantly_oos or is_low_medical_relevance:
+            logger.info(
+                "Semantic Web Router: bypassed Web Search -> OUT_OF_SCOPE / SAFE_ABSTENTION (oos_sim=%.4f, clin_sim=%.4f) for query='%s'",
+                max_oos_sim, max_clin_sim, clean_q
+            )
+            return _build_safe_abstention_response(
+                clean_q, user_name, user_role, confidence=round(max(max_oos_sim, 0.75), 2)
+            )
 
     except Exception as e:
         err_msg = str(e)
         if "429" in err_msg or "ResourceExhausted" in err_msg or "quota" in err_msg.lower():
             logger.error("⚠️ GEMINI EMBEDDING QUOTA EXHAUSTED / RATE LIMITED: %s", err_msg)
         else:
-            logger.warning("Lỗi trong Semantic Web Intent Router: %s, tiếp tục luồng Web Search bình thường.", e)
+            logger.warning("Lỗi trong Semantic Web Intent Router: %s", e)
+        # Fallback an toàn: Nếu embedding lỗi nhưng câu hỏi không có bất kỳ dấu hiệu lâm sàng nào, từ chối an toàn
+        if not any(anc in clean_q.lower() for anc in CLINICAL_ANCHORS):
+            return _build_safe_abstention_response(clean_q, user_name, user_role, confidence=0.70)
 
     return None
