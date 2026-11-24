@@ -113,8 +113,10 @@ export async function processClinicalAgentQueryAsync(
           targetTab: backendData.card.target_tab as any,
           status: 'pending'
         };
-        if (card.targetTab && (card.cardType === 'borrow_confirm' || card.cardType === 'incident_confirm')) {
-          actionPayload = { type: card.cardType === 'borrow_confirm' ? 'DEBT_ADDED' : 'TICKET_CREATED', targetTab: card.targetTab };
+        if (backendData.intent === 'NAVIGATE_TAB' || backendData.query_intent === 'NAVIGATE_TAB') {
+          actionPayload = { type: 'NAVIGATE_TAB', targetTab: (backendData.card?.target_tab || backendData.card?.data?.target_tab) as any };
+        } else if (card.targetTab && (card.cardType === 'borrow_confirm' || card.cardType === 'incident_confirm')) {
+          actionPayload = { type: card.cardType === 'borrow_confirm' ? 'DEBT_ADDED' : 'TICKET_CREATED' };
         }
       }
       return {

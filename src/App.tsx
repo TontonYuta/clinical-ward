@@ -54,7 +54,6 @@ import type { PrintableFormType } from './components/Modals/PrintableFormModal';
 import { getEffectiveAllowedTabs, loadFeatureFlags, readCachedFeatureFlags, type FeatureFlagPayload } from './services/featureFlags';
 import { MobileBottomNav } from './components/Navigation/MobileBottomNav';
 import { processClinicalAgentQueryAsync } from './utils/clinicalNLP';
-import { isPrescriptionFormIntent } from './utils/nlp/cpoeFormMatcher';
 import { borrowEmergencyItemApi, reportIncidentApi } from './services/api';
 import { debtApi, equipmentApi, inventoryApi } from './services/api/index';
 import { cpoeApi } from './services/api/cpoeApi';
@@ -1546,7 +1545,8 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         }
       }
     } else if (actionType === 'NAVIGATE' || actionType === 'NAVIGATE_TAB') {
-      const targetTab = cardData?.target_tab || cardData?.targetTab;
+      const rawTargetTab = cardData?.target_tab || cardData?.targetTab;
+      const targetTab = rawTargetTab === 'debts' ? 'debt' : rawTargetTab === 'inventory' ? 'fefo' : rawTargetTab;
       if (targetTab) {
         const userAllowedTabs = effectiveTabs;
         if (userAllowedTabs.includes(targetTab)) {
@@ -1720,30 +1720,6 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
     const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
-    // Kiểm tra ý định mở biểu mẫu kê đơn CPOE từ câu lệnh người dùng
-    const isOpeningPrescription = isPrescriptionFormIntent(trimmed);
-
-    // KHI YÊU CẦU MỞ FORM KÊ ĐƠN: Ẩn Chatbot & Kích hoạt Form Kê Đơn CPOE hiện lên luôn
-    if (isOpeningPrescription) {
-      // 1. Ẩn Chatbot ngay lập tức
-      setIsCopilotOpen(false);
-
-      // 2. Chuyển sang vai trò Bác Sĩ nếu vai trò hiện tại chưa có quyền kê đơn
-      if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
-        setCurrentUserRole('doctor');
-      }
-
-      // 3. Chuyển sang Tab Kê Đơn CPOE
-      setCurrentTab('cpoe');
-
-      // 4. Kích hoạt mở modal form kê đơn CPOE trực tiếp
-      sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
-      window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: { openModal: 'cpoe_prescription' } }));
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: { openModal: 'cpoe_prescription' } }));
-      }, 100);
-    }
-
     // 1. Add user message
     const userMsg: ChatMessage = {
       id: `msg-user-${Date.now()}`,
@@ -1774,9 +1750,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
 
     try {
       // 2. Process query with clinical agent engine (FastAPI Copilot REST API + Local Clinical fallback)
-      const effectiveRole = isOpeningPrescription && (currentUserRole !== 'doctor' && currentUserRole !== 'director')
-        ? 'doctor'
-        : currentUserRole;
+      const effectiveRole = currentUserRole;
       const effectiveProfile = (currentUserProfile && currentUserProfile.role === effectiveRole)
         ? currentUserProfile
         : (USER_PROFILES[effectiveRole] || USER_PROFILES.doctor);
@@ -1828,20 +1802,32 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           if (!isAudioMuted) clinicalAudio.playSuccessChime();
         }
 
-        // Switch to corresponding tab (Enforcing strict RBAC isolation)
-        if (actionPayload.targetTab) {
-          const userAllowedTabs = effectiveTabs;
-          if (userAllowedTabs.includes(actionPayload.targetTab)) {
-            setCurrentTab(actionPayload.targetTab);
-          } else {
-            const rbacWarningMsg: ChatMessage = {
-              id: `msg-rbac-${Date.now()}`,
-              sender: 'system',
-              text: `⚠️ **Phân quyền truy cập (${USER_PROFILES[currentUserRole]?.roleName})**: Bạn không có thẩm quyền truy cập phân hệ **${actionPayload.targetTab}**. Dữ liệu đã được hệ thống lưu vết nhưng giao diện làm việc chỉ hiển thị trong phạm vi phân quyền của bạn.`,
-              timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-            };
-            setChatMessages(prev => [...prev, rbacWarningMsg]);
+      }
+
+      // Điều hướng màn hình CHỈ KHI có ý định điều hướng rõ ràng (NAVIGATE_TAB) từ người dùng
+      const isExplicitNavigation = replyMessage.intent === 'NAVIGATE_TAB' || actionPayload?.type === 'NAVIGATE_TAB';
+      if (isExplicitNavigation) {
+        const rawTab = actionPayload?.targetTab || replyMessage.card?.data?.target_tab || replyMessage.card?.data?.targetTab || replyMessage.card?.targetTab;
+        const normalizedTab = rawTab === 'debts' ? 'debt' : rawTab === 'inventory' ? 'fefo' : rawTab;
+        if (normalizedTab && effectiveTabs.includes(normalizedTab as DashboardTab)) {
+          setCurrentTab(normalizedTab as DashboardTab);
+        } else if (normalizedTab) {
+          const rbacWarningMsg: ChatMessage = {
+            id: `msg-rbac-${Date.now()}`,
+            sender: 'system',
+            text: `⚠️ **Phân quyền truy cập (${USER_PROFILES[currentUserRole]?.roleName})**: Bạn không có thẩm quyền truy cập phân hệ **${normalizedTab}**. Giao diện làm việc chỉ hiển thị trong phạm vi phân quyền của bạn.`,
+            timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          };
+          setChatMessages(prev => [...prev, rbacWarningMsg]);
+        }
+
+        // Nếu người dùng yêu cầu mở form CPOE cụ thể, kích hoạt modal nhưng KHÔNG đóng Chatbot thô bạo
+        if (replyMessage.card?.data?.openModal === 'cpoe_prescription') {
+          if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
+            setCurrentUserRole('doctor');
           }
+          sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
+          setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: replyMessage.card?.data })), 100);
         }
       }
 
@@ -1857,45 +1843,6 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         }
         return [...prev, finalBotMsg];
       });
-
-      // Tự động mở form theo phân quyền nếu phản hồi có Action Card mở biểu mẫu CPOE hoặc Email/SMS
-      const actionType = replyMessage.card?.primaryActionType;
-      const cardData = replyMessage.card?.data || {};
-      if (actionType === 'OPEN_CPOE_PRESCRIPTION' || cardData?.openModal === 'cpoe_prescription') {
-        if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
-          setCurrentUserRole('doctor');
-        }
-        if (getEffectiveAllowedTabs('doctor', featureFlags).includes('cpoe')) {
-          setCurrentTab('cpoe');
-        }
-        setIsCopilotOpen(false); // Ẩn Chatbot
-        sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
-        setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
-      } else if (actionType === 'OPEN_SEND_EMAIL_SMS' || actionType === 'OPEN_PRESCRIPTION_ADVICE' || cardData?.openModal === 'prescription_advice') {
-        if (effectiveTabs.includes('cpoe')) {
-          setCurrentTab('cpoe');
-        }
-        setIsCopilotOpen(false); // Ẩn Chatbot
-        sessionStorage.setItem('trigger_open_advice_modal', 'true');
-        setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
-      } else if (actionType === 'NAVIGATE' || actionType === 'NAVIGATE_TAB') {
-        const targetTab = cardData?.target_tab || cardData?.targetTab;
-        if (targetTab && effectiveTabs.includes(targetTab)) {
-          setCurrentTab(targetTab);
-        }
-        if (cardData?.openModal === 'cpoe_prescription') {
-          if (currentUserRole !== 'doctor' && currentUserRole !== 'director') {
-            setCurrentUserRole('doctor');
-          }
-          setIsCopilotOpen(false); // Ẩn Chatbot
-          sessionStorage.setItem('trigger_open_cpoe_modal', 'true');
-          setTimeout(() => window.dispatchEvent(new CustomEvent('open_cpoe_prescription_modal', { detail: cardData })), 100);
-        } else if (cardData?.openModal === 'prescription_advice') {
-          setIsCopilotOpen(false); // Ẩn Chatbot
-          sessionStorage.setItem('trigger_open_advice_modal', 'true');
-          setTimeout(() => window.dispatchEvent(new CustomEvent('open_prescription_advice_modal', { detail: cardData })), 100);
-        }
-      }
     } catch (err) {
       console.error('Lỗi phân tích cú pháp AI Agent:', err);
       const errorMsg: ChatMessage = {

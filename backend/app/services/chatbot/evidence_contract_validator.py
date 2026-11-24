@@ -25,6 +25,7 @@ def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotRespons
         "conversational_guidance", "capability_overview", "unavailable",
         "operational_result", "action_result", "action_confirmation", "cdss_alert",
         "guideline", "medication_lookup_guide", "acknowledgment", "image_extraction",
+        "navigation", "system_navigation",
     }
     non_factual_intents = {
         "GREETING_WELCOME", "GREETING_WELLBEING", "CONVERSATIONAL_FEEDBACK",
@@ -35,6 +36,7 @@ def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotRespons
         "BUSINESS_OVERVIEW", "GENERAL_CLINICAL_ASSISTANCE", "CLINICAL_ALLERGY_CDSS",
         "MEDICATION_LOOKUP_GUIDE", "ACKNOWLEDGMENT", "CLINICAL_DDI_INTERACTION_LOOKUP",
         "CLINICAL_PEDIATRIC_GUIDANCE", "MEDICATION_INTERACTION_CLARIFICATION",
+        "NAVIGATE_TAB",
     }
     clinical_fact_intents = {
         "CLINICAL_ALLERGY_CDSS", "CLINICAL_DDI_INTERACTION_LOOKUP",
