@@ -12,6 +12,8 @@ def validate_output_guardrail(raw_response: str, query: str = "") -> str:
         raw_response = raw_response[:12000] + "\n\n[Phần còn lại đã được lược bỏ do giới hạn độ dài.]"
 
     scrubbed = re.sub(r'(?i)(AIzaSy[A-Za-z0-9_-]{28,35}|sk-[A-Za-z0-9]{32,}|Bearer\s+[A-Za-z0-9_\-\.]{20,})', '[REDACTED_API_KEY]', raw_response)
+    scrubbed = re.sub(r'\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b', '[REDACTED_JWT]', scrubbed)
+    scrubbed = re.sub(r'(?i)\b(?:CCCD|CMND)\s*[:#]?\s*\d{9,12}\b', '[REDACTED_ID]', scrubbed)
     scrubbed = re.sub(r'(?i)(postgres://|mysql://|sqlite://)[^\s]+', '[REDACTED_DB_CONNECTION]', scrubbed)
 
     if "OperationalError" in scrubbed or "sqlite3.IntegrityError" in scrubbed or "syntax error" in scrubbed.lower():

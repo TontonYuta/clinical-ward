@@ -10,6 +10,7 @@ Kèm cơ chế chống link ảo (Whitelist) và chống link chết (Async HTTP
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Tuple, Set
 import asyncio
+import ipaddress
 import logging
 import os
 import re
@@ -196,14 +197,15 @@ def is_domain_excluded(domain: str) -> bool:
 
 def sanitize_search_snippet(text: str) -> str:
     """
-    Làm sạch snippet tìm kiếm từ Web (OWASP LLM01 Indirect Prompt Injection Defense):
-    - Loại bỏ thẻ script độc hại
+    Làm sạch snippet/title tìm kiếm từ Web (OWASP LLM01 Indirect Prompt Injection Defense):
+    - Loại bỏ thẻ script độc hại và thẻ XML breakout (<medical_search_evidence>)
     - Loại bỏ các chuỗi kích hoạt Prompt Injection / Jailbreak
     - Giới hạn độ dài an toàn
     """
     if not text:
         return ""
     cleaned = SCRIPT_PATTERN.sub("[script blocked]", text)
+    cleaned = re.sub(r'</?\s*medical_search_evidence\s*>', '', cleaned, flags=re.IGNORECASE)
     if INJECTION_PATTERN.search(cleaned):
         cleaned = INJECTION_PATTERN.sub("[untrusted instruction removed]", cleaned)
     return cleaned.strip()
@@ -240,17 +242,19 @@ def rank_and_filter_results(results: List[WebSearchResult], max_results: int = 5
         if is_domain_excluded(r.source_domain):
             logger.info("Loại bỏ domain không phù hợp/ngoài y tế: %s (%s)", r.source_domain, r.url)
             continue
+        clean_title = sanitize_search_snippet(r.title)
         clean_snippet = sanitize_search_snippet(r.snippet)
         tier = classify_domain_tier(r.source_domain)
 
         # Rào chắn kiểm duyệt nội dung cho Tier 4: Bắt buộc phải có từ khóa y dược
         if tier >= 4:
-            content_lower = f"{r.title} {clean_snippet}".lower()
+            content_lower = f"{clean_title} {clean_snippet}".lower()
             has_medical_context = any(k in content_lower for k in CLINICAL_RELEVANCE_KEYWORDS)
             if not has_medical_context:
-                logger.info("Loại bỏ kết quả Tier 4 do không có nội dung y tế liên quan: %s - %s", r.title, r.url)
+                logger.info("Loại bỏ kết quả Tier 4 do không có nội dung y tế liên quan: %s - %s", clean_title, r.url)
                 continue
 
+        r.title = clean_title
         r.snippet = clean_snippet
         r.credibility_tier = tier
         filtered.append(r)
@@ -304,11 +308,40 @@ def extract_domain(url: str) -> str:
         return ""
 
 
+def is_safe_public_url(url: str) -> bool:
+    """Chống SSRF: chỉ cho phép http/https tới host công cộng, chặn IP nội bộ, loopback và cloud metadata."""
+    try:
+        parsed = urlparse((url or "").strip())
+        if parsed.scheme.lower() not in ("http", "https"):
+            return False
+        host = (parsed.hostname or "").strip().lower()
+        if not host or host in ("localhost", "metadata.google.internal") or host.endswith((".local", ".internal", ".localhost")):
+            return False
+        try:
+            ip_obj = ipaddress.ip_address(host)
+            if (
+                ip_obj.is_private
+                or ip_obj.is_loopback
+                or ip_obj.is_link_local
+                or ip_obj.is_multicast
+                or ip_obj.is_reserved
+                or ip_obj.is_unspecified
+            ):
+                return False
+        except ValueError:
+            pass
+        return True
+    except Exception:
+        return False
+
+
 async def is_url_alive(client: httpx.AsyncClient, url: str) -> bool:
     """
     Kiểm tra nhanh xem link có sống không (Status 200..399 hoặc 403 WAF).
     Sử dụng timeout ngắn (1.2s) để tối ưu độ trễ, loại bỏ link chết 404, 5xx hoặc timeout.
     """
+    if not is_safe_public_url(url):
+        return False
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

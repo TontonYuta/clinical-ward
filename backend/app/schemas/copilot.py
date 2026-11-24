@@ -7,7 +7,7 @@ class CopilotQuery(BaseModel):
     user_role: str = "nurse"
     user_name: str = "ĐD. Lê Thị Thu"
     session_id: str | None = None
-    image_base64: str | None = None
+    image_base64: str | None = Field(default=None, max_length=8_000_000)
     image_mime_type: str | None = "image/jpeg"
     enable_web_search: bool = False
     bypass_cache: bool = False

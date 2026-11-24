@@ -147,6 +147,10 @@ export const formatInlineMarkdown = (
         );
       }
 
+      if (!/^https?:\/\//i.test(linkUrl)) {
+        return <span key={i}>{linkText}</span>;
+      }
+
       return (
         <a
           key={i}

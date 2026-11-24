@@ -6,7 +6,7 @@ import time
 import json
 import asyncio
 import re
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select, func, delete
@@ -44,6 +44,28 @@ def format_offline_drug_response(response: CopilotResponse) -> CopilotResponse:
     from app.services.chatbot.offline_drug_reply_formatter import format_offline_drug_reply
     return format_offline_drug_reply(response)
 
+_CHAT_RATE_BUCKETS: dict[str, list[float]] = {}
+_CHAT_RATE_LIMIT_MAX = 30
+_CHAT_RATE_WINDOW_SEC = 60.0
+
+
+def _check_chat_rate_limit(request: Request, user_name: str) -> None:
+    """Giới hạn tần suất gọi AI theo người dùng/IP (chống spam đốt quota - OWASP LLM10)."""
+    client_host = getattr(getattr(request, "client", None), "host", None) or "unknown"
+    key = f"{client_host}:{(user_name or 'anon').strip().lower()}"
+    now = time.monotonic()
+    history = [ts for ts in _CHAT_RATE_BUCKETS.get(key, []) if now - ts < _CHAT_RATE_WINDOW_SEC]
+    if len(history) >= _CHAT_RATE_LIMIT_MAX:
+        _CHAT_RATE_BUCKETS[key] = history
+        raise HTTPException(
+            status_code=429,
+            detail="Bạn đang gửi yêu cầu quá nhanh. Vui lòng chờ vài giây rồi thử lại.",
+            headers={"Retry-After": "10"},
+        )
+    history.append(now)
+    _CHAT_RATE_BUCKETS[key] = history
+
+
 def _sse_event(event_type: str, **payload) -> str:
     event_payload = json.dumps({"type": event_type, **payload}, ensure_ascii=False)
     return f"data: {event_payload}\n\n"
@@ -58,6 +80,7 @@ async def chat_with_copilot(
     reset_llm_execution()
     start_time = time.monotonic()
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
+    _check_chat_rate_limit(request, user_name)
     session = get_or_create_session(session_id, user_name, user_role)
 
     from app.services.cache.clinical_cache import get_clinical_cache
@@ -247,6 +270,7 @@ async def chat_with_copilot_stream(
     reset_llm_execution()
     start_time = time.monotonic()
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
+    _check_chat_rate_limit(request, user_name)
     session = get_or_create_session(session_id, user_name, user_role)
 
     async def response_events():
@@ -421,17 +445,24 @@ async def get_copilot_cache_stats():
 
 @router.get("/history", response_model=list[CopilotChatLogResponse])
 async def get_copilot_chat_history(
+    request: Request,
     limit: int = 5,
     filter_useful: bool = False,
     min_score: float = 0.0,
     db: AsyncSession = Depends(get_db)
 ):
+    safe_limit = max(1, min(limit, 50))
     stmt = select(CopilotChatLog)
+    authenticated = getattr(request.state, "authenticated_user", None)
+    if authenticated and getattr(authenticated, "role", None) != "director":
+        caller_name = (getattr(authenticated, "name", None) or getattr(authenticated, "username", "")).strip()
+        if caller_name:
+            stmt = stmt.where(func.lower(CopilotChatLog.user_name) == caller_name.lower())
     if filter_useful:
         stmt = stmt.where(CopilotChatLog.is_useful.is_(True))
     if min_score > 0.0:
         stmt = stmt.where(CopilotChatLog.utility_score >= min_score)
-    stmt = stmt.order_by(CopilotChatLog.created_at.desc()).limit(limit)
+    stmt = stmt.order_by(CopilotChatLog.created_at.desc()).limit(safe_limit)
     res = await db.execute(stmt)
     return res.scalars().all()
 
