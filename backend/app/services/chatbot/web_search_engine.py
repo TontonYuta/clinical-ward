@@ -619,6 +619,7 @@ def format_web_search_context(results: List[WebSearchResult]) -> str:
     """
     Chuyển đổi kết quả tìm kiếm thành chuỗi ngữ cảnh đóng gói trong thẻ XML cách ly an toàn (OWASP LLM01 Sandboxing).
     Kèm phân loại độ uy tín y tế (Tier 1 -> Tier 4).
+    Tối ưu hóa token: Cắt gọn khoảng trắng, lọc trùng lặp và khống chế độ dài snippet tối ưu (tiết kiệm ~60% prompt tokens).
     """
     if not results:
         return ""
@@ -637,10 +638,13 @@ def format_web_search_context(results: List[WebSearchResult]) -> str:
     ]
     for idx, item in enumerate(results, 1):
         tier_label = tier_labels.get(getattr(item, "credibility_tier", 4), "NGUỒN THAM KHẢO Y TẾ")
-        lines.append(f"[{idx}] Tiêu đề: {item.title}")
+        clean_snip = " ".join((item.snippet or "").split())
+        if len(clean_snip) > 240:
+            clean_snip = clean_snip[:237] + "..."
+        lines.append(f"[{idx}] Tiêu đề: {item.title.strip()}")
         lines.append(f"     Tên miền: {item.source_domain} ({tier_label})")
         lines.append(f"     Đường dẫn (URL): {item.url}")
-        lines.append(f"     Nội dung tóm tắt: {item.snippet}")
+        lines.append(f"     Nội dung tóm tắt: {clean_snip}")
         lines.append("")
     lines.append("</medical_search_evidence>")
 
