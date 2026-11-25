@@ -209,12 +209,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Warning: Không thể warm up FTS: {e}")
 
-    # Khởi động trước bộ khớp Lexical Trie để triệt tiêu độ trễ cold-start cho Chatbot (<1ms)
-    try:
-        from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
-        get_drug_lexical_matcher()
-    except Exception as e:
-        print(f"Warning: Không thể warm up lexical matcher: {e}")
+    # DrugLexicalMatcher sẽ tự lazy-load ở lần trích xuất thuốc đầu tiên để giảm RAM & thời gian boot startup.
 
     # Khởi tạo bộ nhớ đệm lâm sàng đa tầng (Clinical LRU Cache - GPTCache pattern)
     try:

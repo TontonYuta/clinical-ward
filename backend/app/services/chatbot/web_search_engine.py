@@ -32,6 +32,7 @@ class WebSearchResult:
 # Cache lưu trữ: {clean_query: (timestamp, list[WebSearchResult])}
 _SEARCH_CACHE: Dict[str, Tuple[float, List[WebSearchResult]]] = {}
 CACHE_TTL_SECONDS: float = 1800.0  # 30 phút
+MAX_SEARCH_CACHE_ENTRIES: int = 150
 
 # ==============================================================================
 # DANH MỤC NGUỒN Y TẾ UY TÍN TOÀN DIỆN (COMPREHENSIVE TRUSTED MEDICAL REPOSITORIES)
@@ -588,7 +589,14 @@ async def search_and_verify_web(
     verified_results = await verify_live_urls(candidates)
     final_results = verified_results[:max_results] if verified_results else candidates[:max_results]
 
-    # 6. Lưu vào cache
+    # 6. Lưu vào cache (giới hạn kích thước chống phình RAM)
+    if len(_SEARCH_CACHE) >= MAX_SEARCH_CACHE_ENTRIES:
+        expired = [k for k, (ts, _) in _SEARCH_CACHE.items() if now - ts >= CACHE_TTL_SECONDS]
+        for k in expired:
+            _SEARCH_CACHE.pop(k, None)
+        while len(_SEARCH_CACHE) >= MAX_SEARCH_CACHE_ENTRIES:
+            oldest_key = next(iter(_SEARCH_CACHE))
+            _SEARCH_CACHE.pop(oldest_key, None)
     _SEARCH_CACHE[clean_query] = (now, final_results)
     return final_results, source_used
 

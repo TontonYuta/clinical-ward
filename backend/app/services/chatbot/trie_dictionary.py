@@ -11,10 +11,10 @@ def strip_accents(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c)).lower()
 
 class TrieNode:
-    """Nút cây tiền tố Trie đa ký tự."""
+    """Nút cây tiền tố Trie đa ký tự (lazy-allocate children để giảm RAM)."""
     __slots__ = ("children", "is_end", "canonical", "entity_type")
     def __init__(self):
-        self.children: Dict[str, "TrieNode"] = {}
+        self.children: Optional[Dict[str, "TrieNode"]] = None
         self.is_end: bool = False
         self.canonical: Optional[str] = None
         self.entity_type: Optional[str] = None

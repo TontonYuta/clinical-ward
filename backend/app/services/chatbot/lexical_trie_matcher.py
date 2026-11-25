@@ -38,6 +38,8 @@ class DrugLexicalMatcher:
         for key in set(keys):
             node = self.root
             for char in key:
+                if node.children is None:
+                    node.children = {}
                 if char not in node.children:
                     node.children[char] = TrieNode()
                 node = node.children[char]
@@ -143,7 +145,7 @@ class DrugLexicalMatcher:
                 node = self.root
                 j = i
                 longest = None
-                while j < n and src[j] in node.children:
+                while j < n and node.children is not None and src[j] in node.children:
                     node = node.children[src[j]]
                     if node.is_end:
                         if j + 1 == n or not src[j+1].isalnum():

@@ -37,6 +37,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Environment Configuration
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    MALLOC_ARENA_MAX=2 \
     PORT=8000 \
     DATABASE_URL="sqlite+aiosqlite:////app/clinical_hospital.db" \
     CORS_ORIGINS="http://localhost:3000,http://localhost:3001,https://clinical-ward.vercel.app,https://clinical-ai-monitor.vercel.app" \

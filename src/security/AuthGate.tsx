@@ -36,10 +36,23 @@ function buildUserProfileFromSession(session: AuthSession): UserProfile {
   };
 }
 
+function hasStoredAuthHint(): boolean {
+  try {
+    const hasToken = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('clinical_auth_token'));
+    const hasRole = typeof sessionStorage !== 'undefined' && Boolean(sessionStorage.getItem('clinical_active_role'));
+    return hasToken || hasRole;
+  } catch {
+    return false;
+  }
+}
+
 export function AuthGate({ children, allowedRoles }: AuthGateProps) {
   const [auth, setAuth] = useState<AuthState | null>(null);
-  const [checking, setChecking] = useState(true);
-  const [serverAuthEnabled, setServerAuthEnabled] = useState(false);
+  const [checking, setChecking] = useState<boolean>(() => hasStoredAuthHint());
+  const [serverAuthEnabled, setServerAuthEnabled] = useState<boolean>(() => {
+    const raw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_AUTH_REQUIRED;
+    return raw !== 'false';
+  });
   const [error, setError] = useState('');
   const sessionCheckInFlight = useRef(false);
 
