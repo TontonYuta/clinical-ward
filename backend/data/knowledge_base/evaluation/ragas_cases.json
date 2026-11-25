@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ragas_paracetamol_dose",
+    "category": "drug_dosing",
+    "query": "Paracetamol liều tối đa trong ngày cho người lớn là bao nhiêu?",
+    "ground_truth": "Người lớn thường dùng 500 mg đến 1000 mg mỗi 4-6 giờ khi cần, liều tối đa không quá 4 g mỗi ngày."
+  },
+  {
+    "id": "ragas_tt51_anaphylaxis",
+    "category": "emergency_protocol",
+    "query": "Liều Adrenalin tiêm bắp xử trí phản vệ cho người lớn theo Thông tư 51/2017/TT-BYT là bao nhiêu?",
+    "ground_truth": "Người lớn tiêm bắp Adrenalin 1 mg/1 ml với liều 0,5 ml (tương đương 0,5 mg) vào mặt trước ngoài đùi."
+  },
+  {
+    "id": "ragas_tt26_prescription_days",
+    "category": "regulatory_circular",
+    "query": "Theo Thông tư 26/2025/TT-BYT, kê đơn thuốc ngoại trú tối đa bao nhiêu ngày?",
+    "ground_truth": "Đơn thuốc ngoại trú thông thường kê tối đa 30 ngày; với một số bệnh mạn tính thuộc danh mục quy định tại Điều 6 khoản 8 có thể kê tối đa 90 ngày."
+  },
+  {
+    "id": "ragas_tt23_adr",
+    "category": "regulatory_circular",
+    "query": "Theo Thông tư 23/2011/TT-BYT, khi xảy ra phản ứng có hại của thuốc (ADR) tại bệnh viện cần làm gì?",
+    "ground_truth": "Ngừng thuốc nghi ngờ, xử trí cấp cứu kịp thời cho người bệnh và lập báo cáo ADR gửi đơn vị dược lâm sàng hoặc Trung tâm DI & ADR Quốc gia."
+  },
+  {
+    "id": "ragas_nd188_bhyt",
+    "category": "regulatory_circular",
+    "query": "Nghị định 188/2025/NĐ-CP quy định gì về thanh toán bảo hiểm y tế?",
+    "ground_truth": "Nghị định 188/2025/NĐ-CP quy định chi tiết và hướng dẫn thi hành một số điều của Luật BHYT sửa đổi về mức hưởng, phạm vi thanh toán và thanh toán trực tiếp."
+  },
+  {
+    "id": "ragas_qd130_xml",
+    "category": "regulatory_circular",
+    "query": "Quyết định 130/QĐ-BYT quy định chuẩn dữ liệu đầu ra BHYT gồm những bảng XML nào?",
+    "ground_truth": "Quyết định 130/QĐ-BYT quy định chuẩn và định dạng dữ liệu đầu ra phục vụ quản lý, giám định, thanh toán chi phí khám chữa bệnh BHYT với các bảng XML1, XML2, XML3 và các bảng liên quan."
+  }
+]

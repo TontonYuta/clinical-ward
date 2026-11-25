@@ -300,41 +300,74 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
         source_version=ddi_manifest_version
     ))
 
-    # 3. Thông tư cấp cứu phản vệ TT 51/2017
-    tt51_path = active_dir / "regulatory_circulars" / "tt51_2017_anaphylaxis_protocol.md"
-    tt51_version = _verified_source_version(KB_BASE_DIR, "tt-51-2017")
-    all_chunks.extend(_parse_markdown_chunks(
-        tt51_path,
-        source_doc="Phác Đồ Cấp Cứu Phản Vệ",
-        legal_basis="Thông tư 51/2017/TT-BYT",
-        entity_type="circular",
-        source_id="tt-51-2017",
-        source_version=tt51_version
-    ))
-
-    # 4. Quản lý thuốc gây nghiện TT 20/2017
-    tt20_path = active_dir / "regulatory_circulars" / "tt20_2017_narcotics_management.md"
-    tt20_version = _verified_source_version(KB_BASE_DIR, "tt-20-2017")
-    all_chunks.extend(_parse_markdown_chunks(
-        tt20_path,
-        source_doc="Quy Chế Quản Lý Thuốc Kiểm Soát Đặc Biệt",
-        legal_basis="Thông tư 20/2017/TT-BYT",
-        entity_type="circular",
-        source_id="tt-20-2017",
-        source_version=tt20_version
-    ))
-
-    # 5. Khoa dược & Tủ trực TT 22/2011
-    tt22_path = active_dir / "regulatory_circulars" / "tt22_2011_hospital_pharmacy_ward.md"
-    tt22_version = _verified_source_version(KB_BASE_DIR, "tt-22-2011")
-    all_chunks.extend(_parse_markdown_chunks(
-        tt22_path,
-        source_doc="Quy Chế Tủ Thuốc Cấp Cứu & Tủ Trực Khoa Lâm Sàng",
-        legal_basis="Thông tư 22/2011/TT-BYT",
-        entity_type="circular",
-        source_id="tt-22-2011",
-        source_version=tt22_version
-    ))
+    # 3. Văn bản quy phạm pháp luật & Quy chế chuyên môn (Regulatory Circulars)
+    regulatory_circular_specs = [
+        (
+            "tt51_2017_anaphylaxis_protocol.md",
+            "Phác Đồ Cấp Cứu Phản Vệ",
+            "Thông tư 51/2017/TT-BYT",
+            "tt-51-2017",
+        ),
+        (
+            "tt20_2017_narcotics_management.md",
+            "Quy Chế Quản Lý Thuốc Kiểm Soát Đặc Biệt",
+            "Thông tư 20/2017/TT-BYT",
+            "tt-20-2017",
+        ),
+        (
+            "tt22_2011_hospital_pharmacy_ward.md",
+            "Quy Chế Tủ Thuốc Cấp Cứu & Tủ Trực Khoa Lâm Sàng",
+            "Thông tư 22/2011/TT-BYT",
+            "tt-22-2011",
+        ),
+        (
+            "tt23_2011_drug_usage.md",
+            "Hướng Dẫn Sử Dụng Thuốc Trong Cơ Sở Y Tế Có Giường Bệnh",
+            "Thông tư 23/2011/TT-BYT",
+            "tt-23-2011",
+        ),
+        (
+            "tt26_2025_prescription.md",
+            "Quy Định Về Đơn Thuốc Và Kê Đơn Thuốc Ngoại Trú",
+            "Thông tư 26/2025/TT-BYT",
+            "tt-26-2025",
+        ),
+        (
+            "nd188_2025_bhyt.md",
+            "Quy Định Chi Tiết Và Hướng Dẫn Thi Hành Luật Bảo Hiểm Y Tế",
+            "Nghị định 188/2025/NĐ-CP",
+            "nd-188-2025",
+        ),
+        (
+            "tt20_2022_bhyt_drug_list.md",
+            "Danh Mục Và Tỷ Lệ, Điều Kiện Thanh Toán Thuốc BHYT",
+            "Thông tư 20/2022/TT-BYT",
+            "tt-20-2022",
+        ),
+        (
+            "qd130_2023_xml_bhyt.md",
+            "Chuẩn Và Định Dạng Dữ Liệu Đầu Ra Giám Định BHYT (XML)",
+            "Quyết định 130/QĐ-BYT",
+            "qd-130-2023",
+        ),
+        (
+            "qd3618_2022_giam_dinh_bhyt.md",
+            "Quy Trình Giám Định Bảo Hiểm Y Tế",
+            "Quyết định 3618/QĐ-BHXH",
+            "qd-3618-2022",
+        ),
+    ]
+    for filename, source_doc, legal_basis, source_id in regulatory_circular_specs:
+        circ_path = active_dir / "regulatory_circulars" / filename
+        circ_version = _verified_source_version(KB_BASE_DIR, source_id)
+        all_chunks.extend(_parse_markdown_chunks(
+            circ_path,
+            source_doc=source_doc,
+            legal_basis=legal_basis,
+            entity_type="circular",
+            source_id=source_id,
+            source_version=circ_version,
+        ))
 
     # 6. Hướng dẫn Dược Lâm Sàng & An Toàn Thuốc Chuyên Sâu (Specialty Clinical Guidelines)
     try:

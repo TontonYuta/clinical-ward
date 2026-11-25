@@ -20,6 +20,8 @@ class AllergyCdssScenario(BaseScenario):
 
         if has_drug and not has_patient_clue and not ctx.patient:
             return False
+        if not ctx.patient and any(term in lower_query for term in ("thông tư", "thong tu", "nghị định", "nghi dinh", "quyết định", "quyet dinh", "tt-byt", "quy định", "nguyên tắc")):
+            return False
         if not ctx.patient and any(term in lower_query for term in ("egfr", "crcl", "creatinine", "suy thận", "chức năng thận", "chỉnh liều")):
             return False
         if not ctx.patient and (has_patient_clue or any(term in lower_query for term in ("thẩm định", "an toàn đơn", "5 đúng"))):

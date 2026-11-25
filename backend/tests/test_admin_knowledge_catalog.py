@@ -42,9 +42,32 @@ def test_catalog_includes_registered_medical_pdfs_but_not_unregistered_internal_
         project_root / "backend/data/knowledge_base/clinical_source_manifest.json",
         project_root / "public/pdf",
     )
-    assert len(documents) == 15
+    assert len(documents) == 38
     assert any(document["filename"] == "Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" for document in documents)
     assert any(document["filename"] == "Thong_Tu_36_2018_TT_BYT_GSP.pdf" for document in documents)
+    assert any(document["id"] == "qd-708-2015" and document["public_url"].startswith("https://") for document in documents)
+    assert any(document["id"] == "qd-2388-2024" and document["public_url"].startswith("https://") for document in documents)
     assert not any(document["filename"] == "BAO_CAO_THAM_DINH_LAM_SANG_CPOE_AI.pdf" for document in documents)
     assert not any(document["id"] in {"qd-9999-alpha", "tt-99-2026"} for document in documents)
     assert not any(document["filename"] in {"Huong_Dan_Tanoduoc_Alpha_2026.pdf", "Thong_Tu_99_2026_TT_BYT.pdf"} for document in documents)
+
+
+def test_catalog_uses_external_url_when_configured_without_local_pdf(tmp_path):
+    pdf_root = tmp_path / "pdf"
+    pdf_root.mkdir()
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"sources": [{
+        "id": "qd-708-2015",
+        "title": "Hướng dẫn sử dụng kháng sinh",
+        "legal_basis": "Quyết định 708/QĐ-BYT",
+        "category": "Hướng dẫn điều trị",
+        "edition_year": 2015,
+        "external_url": "https://kcb.vn/example.pdf",
+        "bytes": 3123435,
+    }]}), encoding="utf-8")
+
+    documents = build_document_catalog(manifest, pdf_root)
+
+    assert len(documents) == 1
+    assert documents[0]["public_url"] == "https://kcb.vn/example.pdf"
+    assert documents[0]["bytes"] == 3123435

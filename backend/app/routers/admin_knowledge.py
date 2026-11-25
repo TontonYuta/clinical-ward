@@ -93,6 +93,10 @@ def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:
         status_val = str(source.get("status") or "active")
         is_verified = bool(source.get("verified", True if status_val == "active" else False))
         safe_rel_path = rel_path if rel_path else filename
+        external_url = str(source.get("external_url") or source.get("public_url") or "").strip()
+        use_external = external_url.startswith(("http://", "https://")) and (
+            not path_value or found_file is None or (file_bytes is not None and file_bytes <= 2048)
+        )
 
         documents.append({
             "id": doc_id,
@@ -101,7 +105,7 @@ def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:
             "category": str(source.get("category") or "Văn bản y tế"),
             "edition_year": source.get("edition_year"),
             "filename": filename,
-            "public_url": f"/api/v1/pdf/{quote(safe_rel_path, safe='/')}",
+            "public_url": external_url if use_external else f"/api/v1/pdf/{quote(safe_rel_path, safe='/')}",
             "sha256": str(source.get("sha256") or ""),
             "bytes": file_bytes if file_bytes is not None else 0,
             "status": status_val,

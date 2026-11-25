@@ -52,10 +52,19 @@ def handle_gentle_chitchat_steering(
     role_label = _get_role_label(user_name, user_role)
     low_q = query.lower().strip()
 
-    # Phân tích toán học đơn giản (chỉ áp dụng nếu không phải SĐK thuốc)
-    is_sdk_pattern = bool(re.search(r'[A-Za-z]{2,3}-\d+-\d+', query) or "sđk" in low_q or "sdk" in low_q)
+    # Phân tích toán học đơn giản (chỉ áp dụng nếu không phải SĐK thuốc, số hiệu thông tư/nghị định, hay nồng độ)
+    is_sdk_or_regulatory_pattern = bool(
+        re.search(r'[A-Za-z]{2,3}-\d+-\d+', query)
+        or any(
+            kw in low_q
+            for kw in (
+                "sđk", "sdk", "thông tư", "nghị định", "quyết định", "tt-byt",
+                "qđ-byt", "nđ-cp", "mg/ml", "mg/kg", "mmol/l", "ui/ml",
+            )
+        )
+    )
     math_match = None
-    if not is_sdk_pattern:
+    if not is_sdk_or_regulatory_pattern:
         math_match = re.search(r'(?<![A-Za-z\-])\b(\d+)\s*([\+\*\/])\s*(\d+)\b', low_q)
         if not math_match:
             # Chỉ khớp phép trừ '-' khi có khoảng trắng hoặc có từ khóa toán học/phép tính

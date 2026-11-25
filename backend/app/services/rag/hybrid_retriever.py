@@ -546,6 +546,34 @@ class HybridRetriever:
             if is_protocol_query and chunk.entity_type in {"circular", "protocol", "guideline", "regulatory", "regulatory_pdf"}:
                 rrf_score += 0.30
                 reasons.append("Clinical circular / regulatory protocol match")
+                # Phân hóa Điều/Khoản bên trong cùng văn bản theo từ khóa nội dung & số hiệu
+                chunk_title_low = (chunk.title or "").casefold()
+                chunk_body_low = (chunk.content or "").casefold()
+                chunk_legal_low = (chunk.legal_basis or "").casefold()
+                doc_nums = re.findall(r"\b\d{1,3}/\d{4}\b", lower_query)
+                if doc_nums and any(num in chunk_legal_low or num in chunk_title_low for num in doc_nums):
+                    rrf_score += 0.05
+                _proto_stop = {
+                    "thông", "tư", "nghị", "định", "quyết", "quy", "chế", "theo", "của",
+                    "cho", "biết", "như", "thế", "nào", "bao", "lâu", "nhiêu", "những",
+                    "các", "trong", "khi", "nào", "được", "phải", "thuốc", "bệnh", "nhân",
+                    "người", "viện", "tt-byt", "qđ-byt", "nđ-cp", "là", "gì", "về",
+                }
+                q_toks = [
+                    t.strip(".,;:?!\"'()")
+                    for t in lower_query.split()
+                    if len(t.strip(".,;:?!\"'()")) >= 2
+                    and not re.match(r"^\d{1,3}/\d{4}$", t.strip(".,;:?!\"'()"))
+                    and t.strip(".,;:?!\"'()") not in _proto_stop
+                ]
+                if q_toks:
+                    matched_cnt = sum(1 for t in set(q_toks) if t in chunk_title_low or t in chunk_body_low)
+                    rrf_score += min(0.09, 0.015 * matched_cnt)
+                    for i_tok in range(len(q_toks) - 1):
+                        bigram = f"{q_toks[i_tok]} {q_toks[i_tok + 1]}"
+                        if bigram in chunk_title_low or bigram in chunk_body_low:
+                            rrf_score += 0.03
+                            break
             elif chunk.entity_type == "regulatory_pdf":
                 chunk_title_lower = (chunk.title or "").casefold()
                 chunk_legal = (chunk.legal_basis or "").casefold()

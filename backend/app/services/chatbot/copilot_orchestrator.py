@@ -568,6 +568,8 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             spec_res = find_clinical_specialty_consultation(query) or find_clinical_specialty_consultation(norm_q)
             if spec_res:
                 return await synthesize_specialty_response(query, spec_res, user_name=user_name, user_role=user_role, session_id=session_id)
+            if rag_spec_res is not None:
+                return rag_spec_res
 
 
 

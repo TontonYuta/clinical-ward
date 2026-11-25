@@ -255,8 +255,16 @@ def fallback_nlu_heuristic(
 
     # 2. Out of scope (Toán học, Chitchat đời thường, Thời tiết, thể thao, giá cả...)
     is_sdk = bool(matcher.extract_sdk(clean_q) or re.search(r'[A-Za-z]{2,3}-\d+-\d+', clean_q))
+    is_regulatory_or_clinical_ratio = any(
+        kw in low_q
+        for kw in (
+            "thông tư", "thong tu", "nghị định", "nghi dinh", "quyết định", "quyet dinh",
+            "tt-byt", "qđ-byt", "qd-byt", "nđ-cp", "nd-cp", "vbhn",
+            "mg/ml", "mg/kg", "mmol/l", "ui/ml", "ngày",
+        )
+    )
     has_math_pattern = False
-    if not meds and not is_sdk:
+    if not meds and not is_sdk and not is_regulatory_or_clinical_ratio:
         has_math_pattern = bool(re.search(r'(?<![A-Za-z\-])\b\d+\s*[\+\*\/=]\s*\d+', low_q)) or (
             bool(re.search(r'(?<![A-Za-z\-])\b\d+\s*-\s*\d+\b', low_q))
             and any(w in low_q for w in ("=", "bằng", "bang", "tính", "tinh", "kết quả", "ket qua", "học toán", "dạy toán", "toán", "đúng không"))
@@ -337,7 +345,14 @@ def fallback_nlu_heuristic(
         )
 
     # 5. Quy chế hành chính bệnh viện & Phác đồ chuyên khoa (Specialty Clinical Protocol)
-    is_protocol = any(w in low_q for w in ("thông tư", "tt 20", "tt 51", "tt 36", "tt 26", "tt 52", "sốc phản vệ", "vỏ ống", "chuỗi lạnh", "tủ trực", "nợ morphin", "fefo", "nhiệt độ tủ lạnh", "báo hỏng", "máy thở", "giao ban", "dự trù cơ số", "soc phan ve", "chuoi lanh", "tu truc", "no morphin"))
+    is_protocol = any(w in low_q for w in (
+        "thông tư", "nghị định", "nghi dinh", "nđ-cp", "nd-cp", "tt-byt", "qđ-byt",
+        "tt 20", "tt 51", "tt 36", "tt 26", "tt 52", "tt 23", "tt 22",
+        "bảo hiểm y tế", "bao hiem y te", "thanh toán trực tiếp",
+        "sốc phản vệ", "vỏ ống", "chuỗi lạnh", "tủ trực", "nợ morphin", "fefo",
+        "nhiệt độ tủ lạnh", "báo hỏng", "máy thở", "giao ban", "dự trù cơ số",
+        "soc phan ve", "chuoi lanh", "tu truc", "no morphin",
+    ))
     if is_protocol:
         return ClinicalNluExtraction(
             intent="SPECIALTY_CLINICAL_PROTOCOL",
