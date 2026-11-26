@@ -100,6 +100,14 @@ def seed_dav_registry_if_needed(db_file: str | None = None) -> int:
                 f"sha256:{hashlib.sha256(source_file.read()).hexdigest()}",
             )
     if existing_count >= 1900 and linked_count > 0:
+        try:
+            mono_count = cursor.execute("SELECT COUNT(*) FROM clinical_drug_monographs").fetchone()[0]
+        except Exception:
+            mono_count = 0
+        # Fast-path for fully prebaked DBs (avoids dirtying 800MB+ SQLite pages on low-RAM containers)
+        if existing_count >= 50000 and mono_count >= 700:
+            conn.close()
+            return existing_count
         if os.path.exists(curated_path):
             update_curated_enrichment(cursor, curated_path, source_id=curated_metadata[0], source_version=curated_metadata[1])
             conn.commit()
