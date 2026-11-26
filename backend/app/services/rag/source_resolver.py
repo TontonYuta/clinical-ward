@@ -349,7 +349,8 @@ def resolve_citation_document(
                 page = 1
 
     public_path = match.get("public_path")
-    url = f"/{public_path.removeprefix('public/')}" if public_path else None
+    external_url = match.get("external_url")
+    url = f"/{public_path.removeprefix('public/')}" if public_path else (external_url or None)
     if url and page:
         url += f"#page={page}"
 

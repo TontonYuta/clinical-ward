@@ -186,7 +186,7 @@ async def _call_gemini_api(
         return None
 
     from app.services.gemini_model_discovery import get_available_gemini_models_async
-    models = await get_available_gemini_models_async(api_key=key)
+    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True)
     generation_config = {"temperature": temperature, "maxOutputTokens": max_output_tokens}
     if response_schema:
         generation_config["responseMimeType"] = "application/json"
@@ -211,7 +211,7 @@ async def _call_gemini_api(
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            per_model_timeout = min(remaining, max(10.0, timeout_sec * 0.45))
+            per_model_timeout = min(remaining, max(8.0, timeout_sec * 0.55))
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
             # 1. Chỉ dùng Context Caching khi không truyền system_instruction tùy biến (tránh mất round-trip & ghi đè prompt)
@@ -257,8 +257,12 @@ async def _call_gemini_api(
                                 model, max_output_tokens
                             )
                         parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts and "text" in parts[0]:
-                            reply = parts[0]["text"].strip()
+                        text_parts = [
+                            p.get("text", "") for p in parts
+                            if isinstance(p, dict) and p.get("text") and not p.get("thought")
+                        ]
+                        reply = "".join(text_parts).strip()
+                        if reply:
                             usage = data.get("usageMetadata", {})
                             p_value = usage.get("promptTokenCount")
                             c_value = usage.get("candidatesTokenCount")
@@ -425,7 +429,7 @@ async def _call_gemini_vision_ocr(
 
     ocr_prompt = prompt or DEFAULT_PRESCRIPTION_OCR_PROMPT
     from app.services.gemini_model_discovery import get_available_gemini_models_async
-    models = await get_available_gemini_models_async(api_key=key)
+    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True)
 
     payload = {
         "contents": [{
@@ -799,7 +803,7 @@ async def stream_clinical_llm(
     """
     from app.services.admin_key_vault import get_active_api_key_async, rotate_to_next_key
     from app.services.admin_monitoring_service import check_token_budget_gate
-    from app.services.gemini_discovery import get_ranked_gemini_models
+    from app.services.gemini_model_discovery import get_available_gemini_models_async
     from app.config import settings
 
     budget_allowed, budget_msg = check_token_budget_gate()
@@ -812,7 +816,7 @@ async def stream_clinical_llm(
     if not key or key.startswith("YOUR_"):
         return
 
-    models = await get_ranked_gemini_models(key)
+    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True)
     dead_models = globals().setdefault("_DEAD_GEMINI_MODELS", set())
     ordered_models = _order_models_by_health(models, dead_models)
 
@@ -1004,7 +1008,7 @@ async def query_clinical_multimodal_chat(
         return None
 
     from app.services.gemini_model_discovery import get_available_gemini_models_async
-    models = await get_available_gemini_models_async(api_key=key)
+    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True)
 
     prompt_text = f"Câu hỏi / Yêu cầu của nhân viên y tế ({user_role}): {user_query or 'Phân tích đơn thuốc / hình ảnh thuốc đính kèm: trích xuất danh mục hoạt chất, liều dùng, tương tác thuốc và rà soát điều kiện thanh toán BHYT.'}"
     payload = {

@@ -18,9 +18,15 @@ services:
         value: https://clinical-ward.vercel.app,http://localhost:3000,http://localhost:3001,https://clinical-ai-monitor.vercel.app
       - key: DATABASE_URL
         value: sqlite+aiosqlite:////app/clinical_hospital.db
+      - key: IDENTITY_DATABASE_URL
+        sync: false
+      - key: KEY_ENCRYPTION_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
       - key: AUTH_REQUIRED
         value: "true"
       - key: SERPER_API_KEY
-        value: 86050e529246f10e1d17c0f371abb84622cfe65c
+        sync: false
       - key: RENDER_DEPLOY_TRIGGER
         value: "20261124-grounded-web-search-serper-monitor-v3"

@@ -20,21 +20,68 @@ logger = logging.getLogger(__name__)
 _MODEL_CACHE: Dict[str, Tuple[List[str], float]] = {}
 MODEL_CACHE_TTL_SEC = 43200  # 12 giờ
 
-# Danh sách an toàn dự phòng khi hoàn toàn mất kết nối mạng hoặc key lỗi
+# Danh sách an toàn dự phòng (chỉ gồm các model Flash-Lite / Flash hạn ngạch request cao, phản hồi ổn định)
 SAFE_FALLBACK_GEMINI_MODELS = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-2.5-pro",
-    "gemini-1.5-pro"
+    "gemini-3.1-flash-lite",
+    "gemini-flash-lite-latest",
+    "gemini-3.5-flash-lite",
+    "gemini-3-flash-preview",
+    "gemini-3.6-flash",
 ]
 
 # Các từ khóa nhận diện model không dùng cho sinh văn bản / chat hội thoại y tế
 DISALLOWED_SUBSTRINGS = (
     "-tts", "preview-tts", "embedding", "aqa", "imagen", "whisper",
-    "robotics", "computer-vision-internal", "-image", "flash-image",
-    "-omni", "omni-", "live", "2.5-flash-lite"
+    "robotics", "computer-vision-internal", "computer-use", "-image", "flash-image",
+    "-omni", "omni-", "live", "2.5-flash-lite", "nano-banana",
+    "gemini-4-", "deep-research",
+    "lyria", "antigravity-", "veo", "learnlm", "-audio", "transcribe"
 )
+
+# Các model không phù hợp cho luồng hỏi đáp (404 với key mới, timeout thường xuyên, hoặc RPD thấp)
+_UNSTABLE_OR_LOW_QUOTA_QA_MODELS = {
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.5-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+}
+
+
+def filter_high_quota_chat_models(models: List[str]) -> List[str]:
+    """
+    Lọc danh sách model đã xếp hạng để chỉ giữ các model hỏi đáp có hạn ngạch request (RPD/RPM) cao
+    và độ ổn định tốt (ưu tiên Flash-Lite trước, kế đến Flash ổn định; loại Pro/Gemma/model hay timeout).
+    """
+    preferred_order = [
+        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-3-flash-preview",
+        "gemini-flash-lite-latest",
+    ]
+    cleaned = [m.strip().replace("models/", "") for m in models if m and m.strip()]
+    high_quota: List[str] = []
+    for m in cleaned:
+        lower = m.lower()
+        if m in _UNSTABLE_OR_LOW_QUOTA_QA_MODELS:
+            continue
+        if "flash" not in lower:
+            continue
+        if "lite" in lower or m in preferred_order:
+            if m not in high_quota:
+                high_quota.append(m)
+
+    if high_quota:
+        rank_map = {name: idx for idx, name in enumerate(preferred_order)}
+        high_quota.sort(key=lambda name: rank_map.get(name, 100))
+        return high_quota
+
+    # Fallback an toàn nếu danh sách đầu vào (hoặc mock test) không có dòng 3.x flash-lite
+    flash_only = [m for m in cleaned if "flash" in m.lower()]
+    return flash_only or cleaned
 
 
 def extract_model_version(name: str) -> float:
@@ -62,6 +109,8 @@ def filter_and_rank_gemini_models(raw_models: List[str]) -> List[str]:
     for m in raw_models:
         clean = m.strip().replace("models/", "")
         lower = clean.lower()
+        if not (lower.startswith("gemini-") or lower.startswith("gemma-")):
+            continue
         if any(bad in lower for bad in DISALLOWED_SUBSTRINGS):
             continue
         valid_candidates.append(clean)
@@ -75,9 +124,17 @@ def filter_and_rank_gemini_models(raw_models: List[str]) -> List[str]:
         ver = extract_model_version(clean)
         base_score = 0.0
 
-        # Ưu tiên cực lớn cho các model chính thức nằm trong danh sách Safe Fallback
-        if clean in SAFE_FALLBACK_GEMINI_MODELS:
-            base_score += 50.0
+        # Ưu tiên model có hạn ngạch RPD/RPM cao nhất (Flash Lite 500 RPD / 15 RPM) trước các model 20 RPD / 5 RPM
+        if clean == "gemini-3.5-flash-lite":
+            base_score += 180.0
+        elif clean == "gemini-3.1-flash-lite":
+            base_score += 170.0
+        elif clean == "gemini-3-flash-preview":
+            base_score += 110.0
+        elif clean == "gemini-3.5-flash":
+            base_score += 100.0
+        elif clean in SAFE_FALLBACK_GEMINI_MODELS:
+            base_score += 20.0
 
         if "flash" in lower:
             base_score += 100.0
@@ -112,7 +169,8 @@ def filter_and_rank_gemini_models(raw_models: List[str]) -> List[str]:
 
 async def get_available_gemini_models_async(
     api_key: Optional[str] = None,
-    force_refresh: bool = False
+    force_refresh: bool = False,
+    high_quota_only: bool = False,
 ) -> List[str]:
     """
     Lấy danh sách các model Gemini khả dụng cho API Key.
@@ -121,7 +179,11 @@ async def get_available_gemini_models_async(
     2. Bộ nhớ đệm RAM (0ms).
     3. Tự động truy vấn Google API (GET /v1beta/models) và lưu RAM.
     4. Danh sách Safe Fallback nếu lỗi kết nối.
+    Khi `high_quota_only=True`, lọc chỉ giữ các model hỏi đáp có RPD/RPM cao và ổn định.
     """
+    def _maybe_filter(candidates: List[str]) -> List[str]:
+        return filter_high_quota_chat_models(candidates) if high_quota_only else list(candidates)
+
     # 1. Kiểm tra cấu hình override từ biến môi trường máy chủ
     env_default = (getattr(settings, "GEMINI_DEFAULT_MODEL", None) or os.getenv("GEMINI_DEFAULT_MODEL", "")).strip()
     env_fallbacks_raw = (getattr(settings, "GEMINI_FALLBACK_MODELS", None) or os.getenv("GEMINI_FALLBACK_MODELS", "")).strip()
@@ -142,7 +204,7 @@ async def get_available_gemini_models_async(
         key = (await get_active_api_key_async(provider="gemini")) or (settings.GEMINI_API_KEY or "").strip()
 
     if not key or key == "MY_GEMINI_API_KEY" or len(key) < 10:
-        return list(SAFE_FALLBACK_GEMINI_MODELS)
+        return _maybe_filter(SAFE_FALLBACK_GEMINI_MODELS)
 
     # 2. Kiểm tra bộ nhớ đệm RAM
     key_hash = hashlib.sha256(key.encode("utf-8")).hexdigest()
@@ -150,7 +212,7 @@ async def get_available_gemini_models_async(
     if not force_refresh and key_hash in _MODEL_CACHE:
         cached_models, cached_at = _MODEL_CACHE[key_hash]
         if now - cached_at < MODEL_CACHE_TTL_SEC and cached_models:
-            return list(cached_models)
+            return _maybe_filter(cached_models)
 
     # 3. Khám phá từ Google Generative AI API trong thời gian thực
     url = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -168,7 +230,7 @@ async def get_available_gemini_models_async(
                 if ranked:
                     _MODEL_CACHE[key_hash] = (ranked, now)
                     logger.info("Gemini Dynamic Discovery: Đã nạp %d model cho key (%s...)", len(ranked), key[:6])
-                    return list(ranked)
+                    return _maybe_filter(ranked)
             else:
                 logger.warning("Gemini Dynamic Discovery trả về HTTP %d: %s", res.status_code, res.text[:120])
     except Exception as e:
@@ -176,7 +238,7 @@ async def get_available_gemini_models_async(
 
     # 4. Fallback nếu không kết nối được Google
     _MODEL_CACHE[key_hash] = (SAFE_FALLBACK_GEMINI_MODELS, now)
-    return list(SAFE_FALLBACK_GEMINI_MODELS)
+    return _maybe_filter(SAFE_FALLBACK_GEMINI_MODELS)
 
 
 def invalidate_gemini_model_cache(api_key: Optional[str] = None) -> None:

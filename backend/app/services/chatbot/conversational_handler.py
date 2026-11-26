@@ -107,6 +107,19 @@ def handle_greeting_and_acknowledgment(lower_query: str, user_name: str, user_ro
             confidence=1.0
         )
 
+    is_farewell = clean_greeting in {
+        "tạm biệt", "tam biet", "bye", "goodbye", "see you", "hẹn gặp lại", "hen gap lai",
+        "chào tạm biệt", "chao tam biet", "tạm biệt nhé", "tam biet nhe", "bai", "pai"
+    }
+    if is_farewell:
+        salutation = get_user_salutation(user_name, user_role)
+        return CopilotResponse(
+            intent="GREETING_WELLBEING",
+            reply_text=f"Chào tạm biệt {salutation}. Khi cần tra cứu thông tin thuốc, tương tác hoặc phác đồ lâm sàng, {salutation} cứ nhắn lại nhé.",
+            suggested_chips=get_role_based_chips(user_role),
+            confidence=1.0
+        )
+
     if is_pure_greeting:
         salutation = get_user_salutation(user_name, user_role)
         if wellbeing:

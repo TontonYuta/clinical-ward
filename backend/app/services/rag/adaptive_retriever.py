@@ -71,8 +71,8 @@ def classify_query_complexity(query: str, resolved_drugs: Optional[List[str]] = 
     if num_drugs == 1 and has_single_attr:
         return QueryBudgetConfig(
             complexity_level=1,
-            top_k=1,
-            max_context_chars=1400,
+            top_k=4,
+            max_context_chars=3600,
             include_graph=False,
             reason="single_drug_specific_attribute"
         )
@@ -81,17 +81,17 @@ def classify_query_complexity(query: str, resolved_drugs: Optional[List[str]] = 
     if num_drugs == 1:
         return QueryBudgetConfig(
             complexity_level=1,
-            top_k=1,
-            max_context_chars=1600,
+            top_k=2,
+            max_context_chars=3000,
             include_graph=False,
             reason="single_drug_general_lookup"
         )
 
-    # 4. Fallback mặc định cho các câu hỏi tổng quát
+    # 4. Câu hỏi tổng quát / hướng dẫn / phác đồ (không nhắm vào 1 thuốc đơn lẻ)
     return QueryBudgetConfig(
-        complexity_level=1,
-        top_k=2,
-        max_context_chars=2000,
+        complexity_level=2,
+        top_k=4,
+        max_context_chars=4500,
         include_graph=False,
-        reason="default_general_clinical_query"
+        reason="general_clinical_or_guideline_query"
     )

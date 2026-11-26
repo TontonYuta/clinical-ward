@@ -43,7 +43,7 @@ _RESPONSE_CACHE: dict[str, tuple[str, float]] = {}
 CACHE_TTL_SEC = 3600.0  # 1 hour
 MAX_CACHE_ITEMS = 200
 PROMPT_CACHE_VERSION = "v2"
-TOTAL_GEMINI_DEADLINE_SEC = 12.0
+TOTAL_GEMINI_DEADLINE_SEC = 18.0
 
 def _cache_key(prompt: str) -> str:
     material = f"{PROMPT_CACHE_VERSION}\0{SYSTEM_PROMPT}\0{prompt.strip()}".encode("utf-8")
@@ -59,7 +59,7 @@ async def query_gemini_models(prompt: str, api_key: str) -> str | None:
         system_instruction=SYSTEM_PROMPT,
         api_key=api_key,
         temperature=0.2,
-        max_output_tokens=800,
+        max_output_tokens=4096,
         timeout_sec=TOTAL_GEMINI_DEADLINE_SEC
     )
 

@@ -370,7 +370,10 @@ def fallback_nlu_heuristic(
             "tương tác", "tuong tac", "tương kỵ", "kỵ nhau", "kỵ", "ky",
             "uống cùng", "dung cung", "uong cung", "uống chung", "dùng chung",
             "kết hợp", "phối hợp", "uống với", "dùng với", "đi kèm"
-        )) or (len(meds) >= 2 and any(w in low_q for w in (" và ", " cùng ", " với ", "+", " va ", " voi ", " cung ", "kỵ", "ky", "được không", "duoc khong")))
+        )) or (len(meds) >= 2 and any(w in low_q for w in (
+            " và ", " cùng ", " với ", "+", " va ", " voi ", " cung ", "kỵ", "ky",
+            "được không", "duoc khong", "chống chỉ định", "chong chi dinh", "nguy cơ", "nguy co"
+        )))
         if has_ddi:
             if len(meds) >= 2:
                 return ClinicalNluExtraction(

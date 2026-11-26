@@ -155,26 +155,6 @@ async def handle_deep_rag_consultation(
     cleaned_reply, validated_citations, is_grounded = validate_grounded_reply(
         cleaned_reply, [c.to_dict() for c in rag_res.citations], target_drugs, query=query
     )
-    if (rag_res.rag_grounded and is_grounded) and len(query.split()) >= 5 and len(cleaned_reply) > 30:
-        try:
-            from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
-            synth_res = await synthesize_grounded_clinical_response(
-                query=query,
-                evidence_context=cleaned_reply,
-                source_label=rag_res.legal_basis or "Dược Thư Quốc Gia Việt Nam & Hướng dẫn Bộ Y tế",
-                user_role=user_role,
-                user_name=user_name,
-                timeout_sec=8.0,
-            )
-            if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
-                cleaned_reply = (
-                    f"{synth_res.conversational_answer}\n\n"
-                    f"---\n"
-                    f"**Tài liệu đối chiếu từ CSDL:**\n\n"
-                    f"{cleaned_reply}"
-                )
-        except Exception:
-            pass
     active_key = target_drugs[0] if target_drugs else None
     # chips = generate_suggested_chips(active_key, "general")
     return CopilotResponse(

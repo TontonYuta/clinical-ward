@@ -116,3 +116,27 @@ async def test_get_available_gemini_models_fallback_on_network_failure(monkeypat
     with patch("httpx.AsyncClient.get", side_effect=Exception("Connection reset by peer")):
         models = await get_available_gemini_models_async("AIzaSyFailedKey1234567890")
         assert models == SAFE_FALLBACK_GEMINI_MODELS
+
+
+def test_filter_high_quota_chat_models_keeps_only_high_rpd_flash_models():
+    from app.services.gemini_model_discovery import filter_high_quota_chat_models
+
+    raw_ranked = [
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-3.8-flash",
+        "gemini-2.5-flash",
+        "gemini-3-flash-preview",
+        "gemini-3.6-flash",
+        "gemini-flash-lite-latest",
+        "gemini-2.5-pro",
+        "gemma-4-31b-it",
+    ]
+    filtered = filter_high_quota_chat_models(raw_ranked)
+    assert filtered == [
+        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-3-flash-preview",
+        "gemini-flash-lite-latest",
+    ]

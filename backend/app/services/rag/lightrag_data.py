@@ -240,6 +240,23 @@ ORGAN_CONDITION_HIERARCHY: Dict[str, Dict[str, Any]] = {
             "Chống chỉ định tuyệt đối NSAID và Corticoid liều cao khi đang có loét tiến triển.",
             "Nếu bắt buộc dùng thuốc chống huyết khối (Aspirin, Clopidogrel), phải phối hợp kèm PPI (Esomeprazol, Pantoprazol) để dự phòng xuất huyết."
         ]
+    },
+    "DIABETES_METABOLIC": {
+        "title": "Đái tháo đường típ 2 & Biến chứng tim mạch - thận (QĐ 5481/QĐ-BYT)",
+        "keywords": ["đái tháo đường", "tiểu đường", "hba1c", "sglt2i", "empagliflozin", "dapagliflozin", "dpp-4", "sitagliptin", "linagliptin", "glp-1", "insulin"],
+        "critical_rules": [
+            "Ngưỡng chẩn đoán ĐTĐ (QĐ 5481/QĐ-BYT): HbA1c >= 6,5% hoặc Glucose huyết tương lúc đói >= 7,0 mmol/L (126 mg/dL) hoặc OGTT 2h >= 11,1 mmol/L.",
+            "Bệnh nhân ĐTĐ típ 2 có bệnh tim mạch xơ vữa, suy tim hoặc CKD: ưu tiên SGLT2i (Empagliflozin, Dapagliflozin) hoặc GLP-1 RA có lợi ích tim-thận.",
+            "Ngừng Metformin khi eGFR < 30 mL/phút/1,73m2; giảm tối đa 1000 mg/ngày khi eGFR 30–44 mL/phút/1,73m2."
+        ]
+    },
+    "RESPIRATORY_ASTHMA_COPD": {
+        "title": "Hen phế quản (QĐ 1851) & Bệnh phổi tắc nghẽn mạn tính COPD (QĐ 2767)",
+        "keywords": ["hen", "hen phế quản", "copd", "bptnmt", "ics", "laba", "lama", "saba", "budesonid", "formoterol", "tiotropium", "salbutamol"],
+        "critical_rules": [
+            "Hen phế quản (QĐ 1851/QĐ-BYT): Không khuyến cáo dùng SABA đơn độc không kèm ICS; ưu tiên ICS-formoterol cắt cơn và kiểm soát theo bậc.",
+            "COPD (QĐ 2767/QĐ-BYT): Chẩn đoán xác định khi FEV1/FVC sau test giãn phế quản < 0,70; điều trị nền bằng LABA/LAMA, thêm ICS khi có nhiều đợt cấp và Bạch cầu ái toan máu >= 300/uL."
+        ]
     }
 }
 

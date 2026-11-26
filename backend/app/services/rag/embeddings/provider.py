@@ -56,17 +56,25 @@ class BaseEmbeddingProvider(abc.ABC):
         pass
 
     def embed_query_sync(self, text: str) -> Optional[List[float]]:
-        """Gọi đồng bộ embed_query."""
+        """Gọi đồng bộ embed_query (tránh mở asyncpg pool trong event loop tạm thời)."""
+        sync_key = self._resolve_api_key()
+        if not sync_key:
+            return None
+        prev_key = self._api_key
+        if not self._api_key:
+            self._api_key = sync_key
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # Trường hợp đang trong async loop
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    return pool.submit(lambda: asyncio.run(self.embed_query(text))).result()
-            return loop.run_until_complete(self.embed_query(text))
-        except RuntimeError:
-            return asyncio.run(self.embed_query(text))
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                        return pool.submit(lambda: asyncio.run(self.embed_query(text))).result()
+                return loop.run_until_complete(self.embed_query(text))
+            except RuntimeError:
+                return asyncio.run(self.embed_query(text))
+        finally:
+            self._api_key = prev_key
 
 
 class GeminiEmbeddingProvider(BaseEmbeddingProvider):
@@ -96,8 +104,10 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         return self._dimension
 
     async def _resolve_api_key_async(self) -> Optional[str]:
-        if self._api_key and self._api_key != "MY_GEMINI_API_KEY" and len(self._api_key.strip()) >= 10:
-            return self._api_key.strip()
+        import os
+        for candidate in (self._api_key, settings.GEMINI_API_KEY, os.environ.get("GEMINI_API_KEY")):
+            if candidate and candidate != "MY_GEMINI_API_KEY" and len(candidate.strip()) >= 10:
+                return candidate.strip()
         try:
             from app.services.admin_key_vault import get_active_api_key_async
             key = await get_active_api_key_async("gemini")
@@ -105,21 +115,23 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
                 return key.strip()
         except Exception:
             pass
-        return self._resolve_api_key()
+        return None
 
     def _resolve_api_key(self) -> Optional[str]:
-        if self._api_key and self._api_key != "MY_GEMINI_API_KEY" and len(self._api_key.strip()) >= 10:
-            return self._api_key.strip()
+        import os
+        for candidate in (self._api_key, settings.GEMINI_API_KEY, os.environ.get("GEMINI_API_KEY")):
+            if candidate and candidate != "MY_GEMINI_API_KEY" and len(candidate.strip()) >= 10:
+                return candidate.strip()
         try:
-            from app.services.admin_key_vault import get_active_api_key
+            from app.services.admin_key_vault import _ACTIVE_KEY_CACHE, get_active_api_key
+            cached = _ACTIVE_KEY_CACHE.get("gemini")
+            if cached and cached[0] and len(cached[0].strip()) >= 10:
+                return cached[0].strip()
             key = get_active_api_key("gemini")
             if key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10:
                 return key.strip()
         except Exception:
             pass
-        key = settings.GEMINI_API_KEY
-        if key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10:
-            return key.strip()
         return None
 
     async def embed_query(self, text: str) -> Optional[List[float]]:

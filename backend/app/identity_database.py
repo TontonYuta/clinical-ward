@@ -6,6 +6,7 @@ import os
 from threading import Lock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.engine import make_url
+from sqlalchemy.pool import NullPool
 from app.models.identity import IdentityBase
 from app.config import settings
 
@@ -40,7 +41,8 @@ def validate_identity_database_url(identity_url: str, clinical_url: str | None =
 
 def create_identity_session_factory(database_url: str):
     url = validate_identity_database_url(database_url)
-    engine = create_async_engine(url, pool_pre_ping=True)
+    # NullPool ensures asyncpg connections never outlive transient worker event loops (prevents Event loop is closed / SIGSEGV).
+    engine = create_async_engine(url, poolclass=NullPool)
     return engine, async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 

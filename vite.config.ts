@@ -48,6 +48,7 @@ export default defineConfig(() => {
       },
     },
     server: {
+      allowedHosts: true,
       proxy: {
         '/api-dav': {
           target: 'https://dichvucong.dav.gov.vn',
@@ -58,6 +59,7 @@ export default defineConfig(() => {
         '/api': {
           target: process.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000',
           changeOrigin: true,
+          xfwd: true,
         },
       },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

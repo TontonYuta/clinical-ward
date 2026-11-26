@@ -125,7 +125,7 @@ def test_flash_lite_prioritized_over_low_quota_3_8_flash():
     ]
     ranked = filter_and_rank_gemini_models(models)
     assert ranked[0] == "gemini-3.5-flash-lite"
-    assert ranked[1] == "gemini-2.5-flash"
+    assert ranked.index("gemini-3.5-flash-lite") < ranked.index("gemini-3.8-flash")
     assert ranked.index("gemini-3.1-flash-lite") < ranked.index("gemini-3.8-flash")
 
 

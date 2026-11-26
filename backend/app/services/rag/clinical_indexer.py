@@ -69,12 +69,31 @@ def _extract_keywords(text: str) -> list[str]:
     keywords = {t.strip().lower() for t in tokens if len(t.strip()) >= 3 and t.strip().lower() not in stopwords}
     return sorted(list(keywords))[:40]
 
+def _extract_doc_abbreviations(content: str) -> dict[str, str]:
+    """Automatically learn `<Full Phrase> (<ABBR>)` definitions from the document's own text."""
+    abbr_map: dict[str, str] = {}
+    for m in re.finditer(r"([A-Za-zÀ-ỹĐđ][A-Za-zÀ-ỹĐđ\s-]{6,90}?)\s*\(([A-ZÀ-ỸĐ]{2,10})\)", content):
+        phrase = " ".join(m.group(1).split()).strip(" -:,.")
+        abbr = m.group(2).strip()
+        words = phrase.split()
+        # Keep the trailing 2-7 words that actually form the expanded term
+        if len(words) >= 2 and abbr not in abbr_map:
+            abbr_map[abbr] = " ".join(words[-min(7, len(words)):])
+    return abbr_map
+
+
 def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, entity_type: str, *, source_id: str | None = None, source_version: str | None = None) -> list[RagChunk]:
     if not file_path.exists():
         return []
     content = file_path.read_text(encoding="utf-8")
-    sections = re.split(r"\n(?=###\s+)", content)
+    doc_abbrs = _extract_doc_abbreviations(content)
+    sections = (
+        re.split(r"\n(?=###\s+)", content)
+        if ("\n### " in content or content.startswith("### "))
+        else re.split(r"\n(?=##\s+)", content)
+    )
     chunks: list[RagChunk] = []
+    pending_heading = ""
 
     for i, sec in enumerate(sections):
         sec = sec.strip()
@@ -82,11 +101,40 @@ def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, e
             continue
         lines = sec.split("\n")
         title_line = lines[0].replace("#", "").strip() if lines else "Tài liệu Y tế"
-        # Bound retrieval units by characters while respecting paragraph and
-        # line boundaries where possible. Carry the section heading as metadata.
+        # Clean page-marker & digital-signature watermark noise before chunking.
+        cleaned_sec_lines = [
+            re.sub(r"\b[a-z0-9_.]+_[A-Za-zÀ-ỹ\s]+_\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2}\b", "", ln.strip()).strip()
+            for ln in lines
+            if ln.strip()
+            and not re.match(r"^##\s+Hướng dẫn\s+.*\(Trang\s+\d+", ln.strip(), re.IGNORECASE)
+            and not ln.strip().startswith("**Nguồn:**")
+        ]
+        cleaned_sec_lines = [ln for ln in cleaned_sec_lines if ln]
+        if not cleaned_sec_lines:
+            continue
+        raw_joined = "\n".join(cleaned_sec_lines)
+        # Merge bare heading-only stub sections into the following content section
+        # so empty headings/TOC lines never crowd out substantive guideline chunks.
+        if len(raw_joined) < 130 and len(cleaned_sec_lines) <= 2 and not re.search(r"[.!?]", raw_joined):
+            pending_heading = f"{pending_heading} — {title_line}".strip(" —") if pending_heading else title_line
+            continue
+        if pending_heading:
+            title_line = f"{pending_heading} — {title_line}" if title_line != pending_heading else title_line
+            cleaned_sec_lines.insert(0, f"### {pending_heading}")
+            pending_heading = ""
+        merged_sec: list[str] = []
+        for ln in cleaned_sec_lines:
+            is_item = ln.startswith("#") or bool(re.match(r"^(?:[-•*]|\d+[.)]|[a-z]\))\s+", ln))
+            if is_item or not merged_sec or merged_sec[-1].endswith((".", ":", ";", "!", "?")):
+                merged_sec.append(ln)
+            else:
+                merged_sec[-1] = f"{merged_sec[-1]} {ln}"
+        sec = "\n".join(merged_sec)
+
+        # Bound retrieval units by characters while respecting sentence and bullet boundaries.
         pieces: list[str] = []
         current = ""
-        for paragraph in re.split(r"\n\s*\n", sec):
+        for paragraph in re.split(r"\n\s*\n|\n(?=(?:\d+\.\s+[A-ZÀ-Ỹ]|[a-z]\)\s+|#{1,3}\s+))", sec):
             paragraph = paragraph.strip()
             if not paragraph:
                 continue
@@ -94,22 +142,24 @@ def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, e
                 if current:
                     pieces.append(current)
                     current = ""
-                lines = paragraph.splitlines()
-                line_chunk = ""
-                for line in lines:
-                    line = line.strip()
-                    if len(line) > 1200:
-                        if line_chunk:
-                            pieces.append(line_chunk)
-                            line_chunk = ""
-                        pieces.extend(line[start:start + 1200] for start in range(0, len(line), 1200))
-                    elif line_chunk and len(line_chunk) + len(line) + 1 > 1200:
-                        pieces.append(line_chunk)
-                        line_chunk = line
+                units = re.split(r"(?<=[.!?])\s+|\n(?=[-*•]|\d+[.)]|[a-z]\))", paragraph)
+                unit_chunk = ""
+                for unit in units:
+                    unit = unit.strip()
+                    if not unit:
+                        continue
+                    if len(unit) > 1200:
+                        if unit_chunk:
+                            pieces.append(unit_chunk)
+                            unit_chunk = ""
+                        pieces.extend(unit[start:start + 1200] for start in range(0, len(unit), 1200))
+                    elif unit_chunk and len(unit_chunk) + len(unit) + 1 > 1200:
+                        pieces.append(unit_chunk)
+                        unit_chunk = unit
                     else:
-                        line_chunk = f"{line_chunk}\n{line}".strip()
-                if line_chunk:
-                    pieces.append(line_chunk)
+                        unit_chunk = f"{unit_chunk}\n{unit}".strip()
+                if unit_chunk:
+                    pieces.append(unit_chunk)
             elif current and len(current) + len(paragraph) + 2 > 1200:
                 pieces.append(current)
                 current = paragraph
@@ -119,21 +169,152 @@ def _parse_markdown_chunks(file_path: Path, source_doc: str, legal_basis: str, e
             pieces.append(current)
 
         for part_idx, part in enumerate(pieces, start=1):
+            clean_part = part.strip()
+            if not clean_part:
+                continue
             chunk_id = f"{file_path.stem}_{i+1}_{part_idx}"
-            keywords = _extract_keywords(title_line + " " + part[:300])
+            expanded_terms = " ".join(
+                expansion for abbr, expansion in doc_abbrs.items()
+                if re.search(rf"\b{re.escape(abbr)}\b", clean_part)
+            )
+            keywords = _extract_keywords(f"{title_line} {clean_part[:300]} {expanded_terms}")
             chunks.append(RagChunk(
                 chunk_id=chunk_id,
                 source_doc=source_doc,
                 legal_basis=legal_basis,
                 page_or_section=title_line,
                 title=title_line,
-                content=part,
+                content=clean_part,
                 keywords=keywords,
                 entity_type=entity_type,
                 source_id=source_id or _stable_source_id(file_path),
                 source_version=source_version or _file_sha256(file_path),
             ))
     return chunks
+
+def _split_text_preserving_content(text: str, max_chars: int = 1250, overlap: int = 150) -> list[str]:
+    """Split long clinical text at newline/sentence boundaries without dropping any content."""
+    clean = (text or "").strip()
+    if not clean:
+        return []
+    if len(clean) <= max_chars:
+        return [clean]
+
+    # Tokenize into natural units (lines first, then sentences/clauses if a line is too long)
+    units: list[str] = []
+    for line in clean.splitlines():
+        ln = line.strip()
+        if not ln:
+            continue
+        if len(ln) <= max_chars:
+            units.append(ln)
+            continue
+        for sent in re.split(r"(?<=[.;!?])\s+", ln):
+            s = sent.strip()
+            if not s:
+                continue
+            if len(s) <= max_chars:
+                units.append(s)
+            else:
+                # Hard wrap only at whitespace boundaries if a single sentence exceeds max_chars
+                words = s.split()
+                cur = ""
+                for w in words:
+                    cand = f"{cur} {w}".strip() if cur else w
+                    if len(cand) > max_chars and cur:
+                        units.append(cur)
+                        cur = w
+                    else:
+                        cur = cand
+                if cur:
+                    units.append(cur)
+
+    parts: list[str] = []
+    idx = 0
+    while idx < len(units):
+        buf: list[str] = []
+        buf_len = 0
+        start_idx = idx
+        while idx < len(units):
+            u = units[idx]
+            add_len = len(u) + (1 if buf else 0)
+            if buf and buf_len + add_len > max_chars:
+                break
+            buf.append(u)
+            buf_len += add_len
+            idx += 1
+        parts.append("\n".join(buf))
+        if idx >= len(units):
+            break
+        # Step back by up to 1 unit (<= overlap chars) so context across boundaries stays intact
+        if idx - start_idx > 1 and len(units[idx - 1]) <= overlap:
+            idx -= 1
+    return parts
+
+
+_DTQG_CHUNK_GROUPS: tuple[tuple[str, str, tuple[tuple[str, str], ...], str], ...] = (
+    (
+        "overview",
+        "Thông tin chung & Dạng bào chế",
+        (("drug_class", "Nhóm dược lý"), ("atc_code", "Mã ATC"), ("dosage_forms", "Dạng bào chế")),
+        "nhóm dược lý atc dạng bào chế thành phần",
+    ),
+    (
+        "indications",
+        "Chỉ định điều trị",
+        (("indications", "Chỉ định điều trị"),),
+        "chỉ định điều trị công dụng",
+    ),
+    (
+        "adult_dosage",
+        "Liều dùng người lớn",
+        (("adult_dosage", "Liều người lớn"),),
+        "liều dùng người lớn liều tối đa cách dùng",
+    ),
+    (
+        "pediatric_dosage",
+        "Liều dùng trẻ em",
+        (("pediatric_dosage", "Liều trẻ em"),),
+        "liều dùng trẻ em nhi khoa",
+    ),
+    (
+        "organ_adjustment",
+        "Hiệu chỉnh liều suy thận & suy gan",
+        (("renal_adjustment", "Hiệu chỉnh liều suy thận"), ("hepatic_adjustment", "Hiệu chỉnh liều suy gan")),
+        "hiệu chỉnh liều suy thận clcr egfr suy gan",
+    ),
+    (
+        "contraindications",
+        "Chống chỉ định & Thai kỳ",
+        (("contraindications", "Chống chỉ định"), ("pregnancy_warning", "Thai kỳ & Cho con bú")),
+        "chống chỉ định thai kỳ phụ nữ có thai cho con bú",
+    ),
+    (
+        "precautions",
+        "Thận trọng lâm sàng",
+        (("precautions", "Thận trọng"),),
+        "thận trọng cảnh báo lưu ý",
+    ),
+    (
+        "adr",
+        "Tác dụng không mong muốn (ADR)",
+        (("adverse_effects", "Tác dụng không mong muốn (ADR)"),),
+        "tác dụng phụ tác dụng không mong muốn adr",
+    ),
+    (
+        "interactions",
+        "Tương tác thuốc",
+        (("drug_interactions", "Tương tác thuốc"),),
+        "tương tác thuốc tương kỵ",
+    ),
+    (
+        "overdose",
+        "Quá liều & Giải độc",
+        (("overdose_treatment", "Xử trí quá liều"), ("antidote", "Thuốc giải độc đặc hiệu")),
+        "quá liều ngộ độc xử trí giải độc",
+    ),
+)
+
 
 def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
     candidates = (
@@ -162,82 +343,55 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
         title = m.get("title") or inn
         slug = re.sub(r"[^a-zA-Z0-9]", "_", inn).lower()[:20]
         page = m.get("start_page")
-        legal_basis = m.get("source") or (f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {page}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf" if page else "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf")
-        page_sec = f"{title} (Trang {page})" if page else title
+        legal_basis = m.get("source") or (
+            f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {page}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
+            if page else
+            "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
+        )
         lines = (m.get("drug_class") or "").splitlines()
         drug_class_first = lines[0].strip() if lines else ""
 
-        # 1. Chunk Chỉ định & Liều lượng
-        dosage_parts = []
-        if m.get("drug_class"): dosage_parts.append(f"* **Nhóm dược lý:** {m['drug_class']}")
-        if m.get("atc_code"): dosage_parts.append(f"* **Mã ATC:** {m['atc_code']}")
-        if m.get("dosage_forms"): dosage_parts.append(f"* **Dạng bào chế:** {m['dosage_forms']}")
-        if m.get("indications"): dosage_parts.append(f"* **Chỉ định điều trị:** {m['indications']}")
-        if m.get("adult_dosage"): dosage_parts.append(f"* **Liều người lớn:** {m['adult_dosage']}")
-        if m.get("pediatric_dosage"): dosage_parts.append(f"* **Liều trẻ em:** {m['pediatric_dosage']}")
-        if m.get("renal_adjustment"): dosage_parts.append(f"* **Hiệu chỉnh liều suy thận:** {m['renal_adjustment']}")
-        if m.get("hepatic_adjustment"): dosage_parts.append(f"* **Hiệu chỉnh liều suy gan:** {m['hepatic_adjustment']}")
-        if dosage_parts:
-            content_a = f"### Chỉ định & Liều dùng: {title} (Hoạt chất: {inn})\n" + "\n".join(dosage_parts)
-            kws_a = _extract_keywords(f"{inn} {title} {drug_class_first} {(m.get('indications') or '')[:300]} chỉ định liều dùng người lớn trẻ em suy thận suy gan")
-            if m.get("atc_code"): kws_a.append(m["atc_code"].lower())
-            dosage_title = f"Chỉ định & Liều lượng: {inn} ({title}) - {drug_class_first}" if drug_class_first else f"Chỉ định & Liều lượng: {inn} ({title})"
-            chunks.append(RagChunk(
-                chunk_id=f"dtqg_{slug}_{idx}_dosage",
-                source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
-                legal_basis=legal_basis,
-                page_or_section=page_sec,
-                title=dosage_title,
-                content=content_a,
-                keywords=kws_a,
-                entity_type="monograph",
-                source_id=source_id,
-                source_version=source_version,
-            ))
+        for group_key, group_label, field_defs, extra_kws in _DTQG_CHUNK_GROUPS:
+            section_parts = [
+                f"* **{field_label}:** {str(m[field_name]).strip()}"
+                for field_name, field_label in field_defs
+                if m.get(field_name) and str(m[field_name]).strip()
+            ]
+            if not section_parts:
+                continue
 
-        # 2. Chunk Chống chỉ định & Thận trọng
-        safety_parts = []
-        if m.get("contraindications"): safety_parts.append(f"* **Chống chỉ định:** {m['contraindications']}")
-        if m.get("precautions"): safety_parts.append(f"* **Thận trọng:** {m['precautions']}")
-        if m.get("pregnancy_warning"): safety_parts.append(f"* **Thai kỳ & Cho con bú:** {m['pregnancy_warning']}")
-        if safety_parts:
-            content_b = f"### Chống chỉ định & An toàn lâm sàng: {title} (Hoạt chất: {inn})\n" + "\n".join(safety_parts)
-            kws_b = _extract_keywords(f"{inn} {title} {(m.get('contraindications') or '')[:200]} {(m.get('precautions') or '')[:200]} chống chỉ định thận trọng cảnh báo thai kỳ phụ nữ có thai cho con bú")
-            chunks.append(RagChunk(
-                chunk_id=f"dtqg_{slug}_{idx}_safety",
-                source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
-                legal_basis=legal_basis,
-                page_or_section=f"{title} - An toàn lâm sàng (Trang {page})" if page else f"{title} - An toàn lâm sàng",
-                title=f"Chống chỉ định & Thận trọng: {inn} ({title})",
-                content=content_b,
-                keywords=kws_b,
-                entity_type="monograph",
-                source_id=source_id,
-                source_version=source_version,
-            ))
+            combined_body = "\n".join(section_parts)
+            sub_parts = _split_text_preserving_content(combined_body, max_chars=1250, overlap=150)
+            total_parts = len(sub_parts)
+            for part_idx, part_body in enumerate(sub_parts, 1):
+                part_suffix = f"_{part_idx}" if total_parts > 1 else ""
+                part_note = f" (phần {part_idx}/{total_parts})" if total_parts > 1 else ""
+                header = f"### {group_label}: {title} (Hoạt chất: {inn}){part_note}"
+                content = f"{header}\n{part_body}"
+                kws = _extract_keywords(
+                    f"{inn} {title} {drug_class_first} {part_body[:300]} {extra_kws}"
+                )
+                if group_key == "overview" and m.get("atc_code"):
+                    kws.append(str(m["atc_code"]).lower())
+                if group_key == "overdose" and m.get("antidote"):
+                    kws.append(str(m["antidote"]).lower())
 
-        # 3. Chunk Tác dụng phụ, Tương tác & Quá liều
-        inter_parts = []
-        if m.get("adverse_effects"): inter_parts.append(f"* **Tác dụng không mong muốn (ADR):** {m['adverse_effects']}")
-        if m.get("drug_interactions"): inter_parts.append(f"* **Tương tác thuốc:** {m['drug_interactions']}")
-        if m.get("overdose_treatment"): inter_parts.append(f"* **Xử trí quá liều:** {m['overdose_treatment']}")
-        if m.get("antidote"): inter_parts.append(f"* **Thuốc giải độc đặc hiệu:** {m['antidote']}")
-        if inter_parts:
-            content_c = f"### Tác dụng phụ, Tương tác & Quá liều: {title} (Hoạt chất: {inn})\n" + "\n".join(inter_parts)
-            kws_c = _extract_keywords(f"{inn} {title} {(m.get('adverse_effects') or '')[:200]} {(m.get('drug_interactions') or '')[:200]} tác dụng phụ tác dụng không mong muốn adr tương tác thuốc quá liều ngộ độc giải độc")
-            if m.get("antidote"): kws_c.append(m["antidote"].lower())
-            chunks.append(RagChunk(
-                chunk_id=f"dtqg_{slug}_{idx}_inter",
-                source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
-                legal_basis=legal_basis,
-                page_or_section=f"{title} - Tương tác & Quá liều (Trang {page})" if page else f"{title} - Tương tác & Quá liều",
-                title=f"Tác dụng phụ, Tương tác & Quá liều: {inn} ({title})",
-                content=content_c,
-                keywords=kws_c,
-                entity_type="monograph",
-                source_id=source_id,
-                source_version=source_version,
-            ))
+                page_sec = (
+                    f"{title} - {group_label}{part_note} (Trang {page})"
+                    if page else f"{title} - {group_label}{part_note}"
+                )
+                chunks.append(RagChunk(
+                    chunk_id=f"dtqg_{slug}_{idx}_{group_key}{part_suffix}",
+                    source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
+                    legal_basis=legal_basis,
+                    page_or_section=page_sec,
+                    title=f"{group_label}: {inn} ({title}){part_note}",
+                    content=content,
+                    keywords=kws,
+                    entity_type="monograph",
+                    source_id=source_id,
+                    source_version=source_version,
+                ))
 
     return chunks
 
@@ -367,6 +521,53 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
             entity_type="circular",
             source_id=source_id,
             source_version=circ_version,
+        ))
+
+    # 5b. Hướng dẫn chẩn đoán và điều trị chuyên khoa Bộ Y tế (Clinical Guidelines)
+    clinical_guideline_specs = [
+        (
+            "qd708_2015_khang_sinh.md",
+            "Hướng dẫn sử dụng kháng sinh",
+            "Quyết định 708/QĐ-BYT",
+            "qd-708-2015",
+        ),
+        (
+            "vpcd_2026_viem_phoi.md",
+            "Hướng dẫn chẩn đoán và điều trị viêm phổi mắc phải cộng đồng ở người lớn",
+            "Quyết định Bộ Y tế (Cập nhật 2026)",
+            "qd-vpmpcd-2026",
+        ),
+        (
+            "qd5481_2020_dai_thao_duong.md",
+            "Hướng dẫn chẩn đoán và điều trị đái tháo đường típ 2",
+            "Quyết định 5481/QĐ-BYT",
+            "qd-5481-2020",
+        ),
+        (
+            "qd2767_2023_copd.md",
+            "Hướng dẫn chẩn đoán và điều trị bệnh phổi tắc nghẽn mạn tính (COPD)",
+            "Quyết định 2767/QĐ-BYT",
+            "qd-2767-2023",
+        ),
+        (
+            "qd1851_2020_hen_phe_quan.md",
+            "Hướng dẫn chẩn đoán và điều trị hen phế quản người lớn và trẻ em >= 12 tuổi",
+            "Quyết định 1851/QĐ-BYT",
+            "qd-1851-2020",
+        ),
+    ]
+    for filename, source_doc, legal_basis, source_id in clinical_guideline_specs:
+        guide_path = active_dir / "clinical_guidelines" / filename
+        if not guide_path.is_file():
+            continue
+        guide_version = _verified_source_version(KB_BASE_DIR, source_id)
+        all_chunks.extend(_parse_markdown_chunks(
+            guide_path,
+            source_doc=source_doc,
+            legal_basis=legal_basis,
+            entity_type="guideline",
+            source_id=source_id,
+            source_version=guide_version,
         ))
 
     # 6. Hướng dẫn Dược Lâm Sàng & An Toàn Thuốc Chuyên Sâu (Specialty Clinical Guidelines)

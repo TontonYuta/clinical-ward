@@ -500,14 +500,14 @@ def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited", provid
     candidate_item = None
     target_provider = provider
 
-    # Bước 1: Đánh dấu vô hiệu hóa tạm thời khóa bị lỗi hạn ngạch và xác định provider
+    # Bước 1: Xác định provider và đếm lỗi 429 của khóa hiện tại (chưa tắt nếu chưa có khóa dự phòng)
+    failed_item = None
     for k in keys:
         if k.get("raw_key") == failed_raw_key:
             target_provider = target_provider or k.get("provider", "gemini")
-            k["status"] = reason
-            k["is_active"] = False
+            failed_item = k
             k["error_429_count"] = k.get("error_429_count", 0) + 1
-            k["quota_status"] = "429 Cạn Quota (Tự động chuyển khóa dự phòng)"
+            break
 
     target_provider = target_provider or "gemini"
 
@@ -521,8 +521,12 @@ def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited", provid
                 next_key = raw.strip()
                 break
 
-    # Bước 3: Thăng cấp kích hoạt khóa dự phòng mới làm Active Key
+    # Bước 3: Chỉ tắt khóa cũ khi có khóa dự phòng để chuyển giao; nếu chỉ có 1 khóa, giữ active để model khác cùng key tiếp tục chạy
     if candidate_item:
+        if failed_item:
+            failed_item["status"] = reason
+            failed_item["is_active"] = False
+            failed_item["quota_status"] = "429 Cạn Quota (Tự động chuyển khóa dự phòng)"
         candidate_item["is_active"] = True
         candidate_item["status"] = "active"
         candidate_item["quota_status"] = "Khả dụng (Đã tự động chuyển giao)"

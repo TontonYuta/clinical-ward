@@ -24,16 +24,16 @@ export const ChatSettingsModal: React.FC<Props> = ({
 }) => {
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('copilot_enable_web_search') !== 'false';
+      return localStorage.getItem('copilot_enable_web_search') === 'true';
     } catch {
-      return true;
+      return false;
     }
   });
 
   useEffect(() => {
     if (!isOpen) return;
     try {
-      setIsWebSearchEnabled(localStorage.getItem('copilot_enable_web_search') !== 'false');
+      setIsWebSearchEnabled(localStorage.getItem('copilot_enable_web_search') === 'true');
     } catch {
       // ignore
     }

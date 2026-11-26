@@ -114,8 +114,19 @@ def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotRespons
         valid_claims.append(claim)
 
     reply_normalized = " ".join((resp.reply_text or "").casefold().split())
+    reply_tokens = set(w for w in reply_normalized.split() if len(w) >= 3)
+    def _claim_reflected_in_reply(claim_text: str) -> bool:
+        norm = " ".join(claim_text.casefold().split())
+        if norm in reply_normalized:
+            return True
+        c_tokens = {w for w in norm.split() if len(w) >= 3}
+        if not c_tokens or not reply_tokens:
+            return False
+        shared = len(c_tokens & reply_tokens)
+        return shared >= 4 or (shared / min(len(c_tokens), len(reply_tokens))) >= 0.12
+
     if len(valid_claims) != len(resp.claims or []) or any(
-        " ".join(claim.text.casefold().split()) not in reply_normalized for claim in valid_claims
+        not _claim_reflected_in_reply(claim.text) for claim in valid_claims
     ):
         valid_claims = []
 

@@ -56,9 +56,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileWebSearch, setIsMobileWebSearch] = useState<boolean>(() => {
     try {
-      return typeof window === 'undefined' || localStorage.getItem('copilot_enable_web_search') !== 'false';
+      return typeof window !== 'undefined' && localStorage.getItem('copilot_enable_web_search') === 'true';
     } catch {
-      return true;
+      return false;
     }
   });
   useEffect(() => {
@@ -95,8 +95,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const firstCit = activeCits.length > 0 ? activeCits[0] : undefined;
 
     const rawUrl = citationRef.url || firstCit?.url;
-    // Nếu là liên kết Web ngoài (http/https không phải file PDF nội bộ) -> Mở tab mới
-    if (rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) && !rawUrl.toLowerCase().endsWith('.pdf')) {
+    // Nếu là liên kết Web ngoài (http/https) -> Mở tab mới (kể cả PDF ngoài để tránh lỗi CORS ở In-App Viewer)
+    if (rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))) {
       window.open(rawUrl, '_blank', 'noopener,noreferrer');
       return;
     }

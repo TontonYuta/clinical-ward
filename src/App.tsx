@@ -134,9 +134,9 @@ export default function App({
   } = useUserChatSessions(authenticatedUsername);
   const [isLauncherWebSearch, setIsLauncherWebSearch] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('copilot_enable_web_search') !== 'false';
+      return localStorage.getItem('copilot_enable_web_search') === 'true';
     } catch {
-      return true;
+      return false;
     }
   });
   useEffect(() => {
@@ -178,6 +178,7 @@ export default function App({
   }, [authenticatedProfile]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlagPayload | null>(() => readCachedFeatureFlags());
   useEffect(() => {
+    if (!authenticatedUsername && !authenticatedProfile) return;
     let active = true;
     let refreshTimer: number | undefined;
     const refresh = () => {
@@ -196,7 +197,7 @@ export default function App({
       document.removeEventListener('visibilitychange', refreshWhenVisible);
       window.removeEventListener('focus', refreshWhenVisible);
     };
-  }, []);
+  }, [authenticatedUsername, authenticatedProfile]);
   const effectiveTabs = getEffectiveAllowedTabs(currentUserRole, featureFlags);
   useEffect(() => {
     if (effectiveTabs.length > 0 && !effectiveTabs.includes(currentTab)) {

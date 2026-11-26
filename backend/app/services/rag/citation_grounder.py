@@ -8,14 +8,17 @@ from app.services.rag.types import RagCitation, RetrievedChunk, RagResult
 from app.services.rag.source_resolver import resolve_citation_document
 
 _QUERY_STOPWORDS = {
-    "bao", "bằng", "biết", "các", "có", "của", "được", "gì", "hãy",
-    "không", "là", "làm", "một", "muốn", "nào", "như", "thế",
-    "thì", "tôi", "và", "về", "với", "xin", "cho", "hôm", "nay",
+    "bao", "bằng", "biết", "bị", "bi", "các", "cần", "can", "cho", "có", "của",
+    "đang", "dang", "để", "de", "định", "dinh", "được", "duoc", "gì", "giúp", "giup",
+    "hãy", "hay", "hỏi", "hoi", "hôm", "hom", "khi", "không", "khong", "là", "la",
+    "làm", "lam", "lưu", "luu", "một", "mot", "muốn", "muon", "nào", "nao", "nay",
+    "nên", "nen", "nếu", "neu", "nhiêu", "nhieu", "như", "nhu", "những", "nhung",
+    "ở", "quan", "quy", "ra", "sao", "sử", "su", "tại", "tai", "theo", "thế", "the",
+    "thì", "thi", "thông", "thong", "tin", "tôi", "toi", "trọng", "trong", "và", "va",
+    "về", "ve", "với", "voi", "xin",
     "thuốc", "thuoc", "bệnh", "benh", "nhân", "nhan", "người", "nguoi",
-    "dùng", "dung", "uống", "uong", "tiêm", "tiem", "truyền", "truyen",
-    "điều", "dieu", "trị", "tri", "thông", "thong", "tin", "ở", "tại", "tai",
-    "giúp", "giup", "hỏi", "hoi", "bác", "bac", "sĩ", "si", "dược", "duoc",
-    "tương", "tuong", "tác", "tac", "chú", "chu", "ý", "y", "cần", "can"
+    "dùng", "dung", "dụng", "uống", "uong", "tiêm", "tiem", "truyền", "truyen",
+    "điều", "dieu", "trị", "tri", "bác", "bac", "sĩ", "si", "dược", "duoc", "ý", "y"
 }
 
 def _normalize_terms(text: str) -> set[str]:
@@ -35,6 +38,21 @@ def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
     resolved_query_drugs = list(dict.fromkeys(
         [d.lower() for d in resolve_registered_medications(query)] + [m.lower() for m in lex_drugs]
     ))
+
+    # General morphological guard: unknown drug-like tokens (e.g. "Zyxelomycin-999" or "-mycin/-statin/-mab")
+    # not present in the retrieved chunk must trigger safe abstention rather than answering on disease words alone.
+    unknown_drug_tokens = [
+        tok.lower() for tok in re.findall(
+            r"\b(?:[A-Za-z]{4,}-\d+|[A-Za-z]{4,}(?:mycin|cillin|floxacin|cycline|statin|sartan|pril|olol|dipine|prazole|mab|nib|conazole|gliptin|gliflozin|glutide))\b",
+            query,
+            flags=re.IGNORECASE,
+        )
+        if tok.lower() not in resolved_query_drugs
+    ]
+    if unknown_drug_tokens:
+        chunk_text = f"{chunk.chunk.title} {chunk.chunk.content} {chunk.chunk.page_or_section}".casefold()
+        if not all(tok in chunk_text for tok in unknown_drug_tokens):
+            return False
 
     if resolved_query_drugs:
         chunk_text = f"{chunk.chunk.title} {chunk.chunk.content} {chunk.chunk.page_or_section}".casefold()
@@ -61,6 +79,8 @@ def _has_evidence_overlap(query: str, chunk: RetrievedChunk) -> bool:
         return True
 
     overlap = query_terms & evidence_terms
+    if (resolved_query_drugs or unknown_drug_tokens) and chunk.chunk.entity_type in {"monograph", "ddi"} and len(overlap) >= 2:
+        return True
     min_count = 2 if len(query_terms) >= 3 else 1
     return bool(overlap) and len(overlap) >= min_count and len(overlap) / len(query_terms) >= 0.25
 

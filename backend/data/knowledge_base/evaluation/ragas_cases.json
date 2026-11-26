@@ -1,13 +1,67 @@
 [
   {
+    "id": "ragas_ddi_ceftriaxone_calci",
+    "category": "ddi_safety",
+    "query": "Có thể pha Ceftriaxon vào dung dịch Ringer Lactat chứa Calci không?",
+    "ground_truth": "Chống chỉ định pha hoặc truyền cùng lúc Ceftriaxon với dung dịch chứa Calci (như Ringer Lactat) do tạo muối kết tủa Ceftriaxon-Calci gây tắc mạch phổi và thận."
+  },
+  {
+    "id": "ragas_ddi_nitrate_pde5",
+    "category": "ddi_safety",
+    "query": "Nitroglycerin và Sildenafil có tương tác gì?",
+    "ground_truth": "Chống chỉ định phối hợp Nitroglycerin với thuốc ức chế PDE-5 (Sildenafil) vì làm tăng tích tụ cGMP gây giãn mạch quá mức, tụt huyết áp nặng và trụy mạch."
+  },
+  {
+    "id": "ragas_ddi_clopidogrel_ppi",
+    "category": "ddi_safety",
+    "query": "Bệnh nhân uống Clopidogrel có dùng chung Omeprazol hoặc Esomeprazol được không?",
+    "ground_truth": "Không nên phối hợp Clopidogrel với Omeprazol hoặc Esomeprazol do ức chế CYP2C19 làm giảm hoạt hóa Clopidogrel và tăng nguy cơ huyết khối; nên chuyển sang Pantoprazol."
+  },
+  {
+    "id": "ragas_ddi_allopurinol_azathioprine",
+    "category": "ddi_safety",
+    "query": "Dùng đồng thời Allopurinol và Azathioprin có nguy cơ gì?",
+    "ground_truth": "Allopurinol ức chế men xanthine oxidase làm tăng nồng độ và độc tính của Azathioprin, gây suy tủy và giảm bạch cầu nặng; cần tránh phối hợp hoặc giảm liều Azathioprin."
+  },
+  {
     "id": "ragas_paracetamol_dose",
-    "category": "drug_dosing",
+    "category": "ddi_safety",
     "query": "Paracetamol liều tối đa trong ngày cho người lớn là bao nhiêu?",
-    "ground_truth": "Người lớn thường dùng 500 mg đến 1000 mg mỗi 4-6 giờ khi cần, liều tối đa không quá 4 g mỗi ngày."
+    "ground_truth": "Người lớn thường dùng 500 mg đến 1000 mg mỗi 4-6 giờ khi cần, liều tối đa không quá 4 g (4000 mg) mỗi ngày."
+  },
+  {
+    "id": "ragas_qd5481_dtd",
+    "category": "clinical_guideline",
+    "query": "Theo Quyết định 5481/QĐ-BYT, tiêu chuẩn chẩn đoán đái tháo đường típ 2 gồm những chỉ số nào?",
+    "ground_truth": "Chẩn đoán đái tháo đường khi HbA1c >= 6,5%, hoặc glucose huyết tương lúc đói >= 7,0 mmol/L (126 mg/dL), hoặc glucose huyết tương 2 giờ sau nghiệm pháp dung nạp glucose >= 11,1 mmol/L, hoặc glucose bất kỳ >= 11,1 mmol/L kèm triệu chứng."
+  },
+  {
+    "id": "ragas_qd708_prophylaxis",
+    "category": "clinical_guideline",
+    "query": "Theo Quyết định 708/QĐ-BYT, nguyên tắc sử dụng kháng sinh dự phòng trong phẫu thuật là gì?",
+    "ground_truth": "Kháng sinh dự phòng phẫu thuật nên dùng đường tĩnh mạch trong vòng 30-60 phút trước khi rạch da để đạt nồng độ tối ưu tại mô, thường dùng liều duy nhất và không kéo dài quá 24 giờ sau mổ."
+  },
+  {
+    "id": "ragas_vpcd_2026_icu",
+    "category": "clinical_guideline",
+    "query": "Theo hướng dẫn viêm phổi mắc phải cộng đồng 2026, tiêu chuẩn chính nhập khoa điều trị tích cực ICU là gì?",
+    "ground_truth": "Tiêu chuẩn chính nhập ICU theo ATS gồm bệnh nhân suy hô hấp cần thở máy xâm nhập hoặc sốc nhiễm khuẩn cần dùng thuốc vận mạch."
+  },
+  {
+    "id": "ragas_qd2767_copd",
+    "category": "clinical_guideline",
+    "query": "Theo Quyết định 2767/QĐ-BYT, tiêu chuẩn chẩn đoán xác định bệnh phổi tắc nghẽn mạn tính (COPD) là gì?",
+    "ground_truth": "Chẩn đoán xác định COPD dựa vào đo chức năng hô hấp có chỉ số FEV1/FVC sau nghiệm pháp giãn phế quản nhỏ hơn 0,70 (< 70%)."
+  },
+  {
+    "id": "ragas_qd1851_hen",
+    "category": "clinical_guideline",
+    "query": "Theo Quyết định 1851/QĐ-BYT, điều trị kiểm soát hen phế quản bậc 1 và bậc 2 khuyến cáo thuốc gì?",
+    "ground_truth": "Không khuyến cáo dùng SABA đơn độc; điều trị ưu tiên cho hen bậc 1 và bậc 2 là ICS-formoterol liều thấp khi cần hoặc ICS liều thấp hằng ngày."
   },
   {
     "id": "ragas_tt51_anaphylaxis",
-    "category": "emergency_protocol",
+    "category": "regulatory_circular",
     "query": "Liều Adrenalin tiêm bắp xử trí phản vệ cho người lớn theo Thông tư 51/2017/TT-BYT là bao nhiêu?",
     "ground_truth": "Người lớn tiêm bắp Adrenalin 1 mg/1 ml với liều 0,5 ml (tương đương 0,5 mg) vào mặt trước ngoài đùi."
   },
@@ -21,18 +75,48 @@
     "id": "ragas_tt23_adr",
     "category": "regulatory_circular",
     "query": "Theo Thông tư 23/2011/TT-BYT, khi xảy ra phản ứng có hại của thuốc (ADR) tại bệnh viện cần làm gì?",
-    "ground_truth": "Ngừng thuốc nghi ngờ, xử trí cấp cứu kịp thời cho người bệnh và lập báo cáo ADR gửi đơn vị dược lâm sàng hoặc Trung tâm DI & ADR Quốc gia."
+    "ground_truth": "Ngừng thuốc nghi ngờ, xử trí cấp cứu kịp thời cho người bệnh và lập báo cáo ADR gửi cấp trên và Trung tâm DI & ADR Quốc gia."
   },
   {
     "id": "ragas_nd188_bhyt",
     "category": "regulatory_circular",
-    "query": "Nghị định 188/2025/NĐ-CP quy định gì về thanh toán bảo hiểm y tế?",
-    "ground_truth": "Nghị định 188/2025/NĐ-CP quy định chi tiết và hướng dẫn thi hành một số điều của Luật BHYT sửa đổi về mức hưởng, phạm vi thanh toán và thanh toán trực tiếp."
+    "query": "Nghị định 188/2025/NĐ-CP quy định gì về mức hưởng bảo hiểm y tế?",
+    "ground_truth": "Nghị định 188/2025/NĐ-CP quy định chi tiết mức hưởng 100%, 95%, 80% chi phí khám chữa bệnh BHYT theo nhóm đối tượng và lộ trình tỷ lệ hưởng ngoại trú."
   },
   {
     "id": "ragas_qd130_xml",
     "category": "regulatory_circular",
     "query": "Quyết định 130/QĐ-BYT quy định chuẩn dữ liệu đầu ra BHYT gồm những bảng XML nào?",
-    "ground_truth": "Quyết định 130/QĐ-BYT quy định chuẩn và định dạng dữ liệu đầu ra phục vụ quản lý, giám định, thanh toán chi phí khám chữa bệnh BHYT với các bảng XML1, XML2, XML3 và các bảng liên quan."
+    "ground_truth": "Quyết định 130/QĐ-BYT quy định chuẩn và định dạng dữ liệu đầu ra phục vụ quản lý, giám định BHYT gồm các bảng XML1, XML2, XML3 và các bảng chuyên khoa liên quan."
+  },
+  {
+    "id": "ragas_organ_metformin_ckd",
+    "category": "organ_dosing",
+    "query": "Bệnh nhân đái tháo đường có độ thanh thải creatinin ClCr < 30 mL/phút có dùng tiếp Metformin không và đổi sang thuốc gì?",
+    "ground_truth": "Chống chỉ định và bắt buộc ngừng Metformin khi ClCr < 30 mL/phút do nguy cơ nhiễm toan lactic; có thể chuyển sang DPP-4i (Linagliptin không cần chỉnh liều thận) hoặc Insulin."
+  },
+  {
+    "id": "ragas_organ_cipro_renal",
+    "category": "organ_dosing",
+    "query": "Bệnh nhân suy thận có ClCr < 50 mL/phút cần lưu ý gì khi dùng Ciprofloxacin hoặc Levofloxacin?",
+    "ground_truth": "Khi ClCr < 50 mL/phút, cần giảm liều Ciprofloxacin hoặc Levofloxacin hoặc kéo dài khoảng cách đưa liều để tránh tích lũy gây độc tính."
+  },
+  {
+    "id": "ragas_organ_acei_pregnancy",
+    "category": "organ_dosing",
+    "query": "Phụ nữ mang thai bị tăng huyết áp có dùng được thuốc nhóm ACEi hoặc ARB không?",
+    "ground_truth": "Chống chỉ định tuyệt đối nhóm ACEi và ARB trong thai kỳ do nguy cơ gây quái thai, thiểu ối và suy thận thai nhi; ưu tiên Methyldopa, Labetalol hoặc Nifedipin."
+  },
+  {
+    "id": "ragas_subst_acei_cough",
+    "category": "organ_dosing",
+    "query": "Bệnh nhân ho khan kéo dài do dùng thuốc ức chế men chuyển (ACEi) nên đổi sang nhóm thuốc nào?",
+    "ground_truth": "Khuyến cáo chuyển từ nhóm ACEi sang nhóm chẹn thụ thể Angiotensin II (ARB như Losartan, Telmisartan, Valsartan) vì không làm tích tụ Bradykinin nên hết ho khan."
+  },
+  {
+    "id": "ragas_abstention_unknown_drug",
+    "category": "organ_dosing",
+    "query": "Liều dùng của thuốc giả định Zyxelomycin-999 trong điều trị viêm phổi là bao nhiêu?",
+    "ground_truth": "Không có dữ liệu chính thức về thuốc này trong Dược thư Quốc gia hoặc hướng dẫn điều trị; cần từ chối an toàn và không tự suy diễn liều dùng."
   }
 ]

@@ -48,7 +48,7 @@ async def _call_llm_synthesis(
         system_instruction=system_instruction,
         api_key=api_key,
         temperature=0.1,
-        max_output_tokens=600,
+        max_output_tokens=1500,
         timeout_sec=timeout_sec
     )
     if res:

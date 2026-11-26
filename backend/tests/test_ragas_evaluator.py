@@ -5,6 +5,7 @@ import pytest
 
 from app.services.rag.ragas_evaluator import (
     RagasSample,
+    compute_answer_correctness,
     compute_answer_relevance,
     compute_context_precision,
     compute_context_recall,
@@ -33,13 +34,15 @@ async def _mock_judge(prompt: str):
                 {"index": 2, "relevant": True},
             ]
         }
-    if "Ground Truth" in prompt:
+    if "Ground Truth" in prompt and "classifications" in prompt:
         return {
             "classifications": [
                 {"statement": "Ý 1", "attributed": True},
                 {"statement": "Ý 2", "attributed": False},
             ]
         }
+    if "RAGAS Answer Correctness" in prompt:
+        return {"tp": 2, "fp": 0, "fn": 1}
     return {}
 
 
@@ -130,7 +133,21 @@ async def test_context_recall_and_dataset_aggregation():
     assert report["case_count"] == 1
     assert report["summary"]["faithfulness"] == pytest.approx(0.5)
     assert report["summary"]["context_recall"] == pytest.approx(0.5)
+    assert report["summary"]["answer_correctness"] is not None
     assert report["summary"]["ragas_overall"] > 0.6
+
+
+@pytest.mark.asyncio
+async def test_answer_correctness_combines_factual_f1_and_semantic_similarity():
+    # tp=2, fp=0, fn=1 -> F1 = 4/5 = 0.8; identical mock vectors -> sim=1.0
+    # 0.75 * 0.8 + 0.25 * 1.0 = 0.85
+    score = await compute_answer_correctness(
+        answer="Liều tối đa 4 g/ngày.",
+        ground_truth="Liều tối đa 4 g/ngày cho người lớn.",
+        judge_fn=_mock_judge,
+        embed_fn=_mock_embed,
+    )
+    assert score == pytest.approx(0.85, abs=1e-4)
 
 
 def test_ragas_cases_json_schema_is_valid():
@@ -142,7 +159,9 @@ def test_ragas_cases_json_schema_is_valid():
         / "ragas_cases.json"
     )
     cases = json.loads(cases_path.read_text(encoding="utf-8"))
-    assert len(cases) >= 6
+    assert len(cases) >= 20
+    categories = {c["category"] for c in cases}
+    assert {"ddi_safety", "clinical_guideline", "regulatory_circular", "organ_dosing"} <= categories
     for case in cases:
         assert case["id"]
         assert case["query"]

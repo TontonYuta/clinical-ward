@@ -31,6 +31,13 @@ DEV_LAN_ORIGIN_REGEX = (
 _DEV_LAN_ORIGIN_PAT = re.compile(DEV_LAN_ORIGIN_REGEX, re.IGNORECASE)
 
 
+def resolve_same_origin(request: Request) -> str:
+    """Resolve external scheme://host when behind a reverse proxy or tunnel."""
+    host = request.headers.get("x-forwarded-host", request.headers.get("host", "")).split(",", 1)[0].strip()
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",", 1)[0].strip()
+    return f"{proto}://{host}".rstrip("/") if host else str(request.base_url).rstrip("/")
+
+
 def is_trusted_request_origin(
     origin: Optional[str],
     trusted_origins: set[str],
@@ -247,17 +254,13 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         if request.url.path == "/api/v1/auth/login":
             if request.method not in {"GET", "HEAD", "OPTIONS"}:
                 origin = request.headers.get("origin")
-                host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-                proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",", 1)[0].strip()
-                same_origin = f"{proto}://{host}".rstrip("/") if host else ""
+                same_origin = resolve_same_origin(request)
                 if not is_trusted_request_origin(origin, self.trusted_origins, same_origin):
                     return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
             return await call_next(request)
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
             origin = request.headers.get("origin")
-            forwarded_host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-            forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",", 1)[0].strip()
-            same_origin = f"{forwarded_proto}://{forwarded_host}".rstrip("/") if forwarded_host else ""
+            same_origin = resolve_same_origin(request)
             if not is_trusted_request_origin(origin, self.trusted_origins, same_origin):
                 return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
         public_auth_requests = {

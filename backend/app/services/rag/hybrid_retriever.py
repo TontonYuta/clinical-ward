@@ -53,7 +53,12 @@ def calculate_adaptive_rrf_weights(
     # 1. Nhận diện đặc tính Lexical / Mã kỹ thuật / Quy chế
     has_sdk = bool(re.search(r"\b(?:vn|vd|gc|qlsp|vs)-[0-9]+-[0-9]+\b", lower_q))
     has_tech_code = any(code in lower_q for code in ("sđk", "số đăng ký", "sdk", "mã thuốc", "số công bố"))
-    has_regulatory = any(reg in lower_q for reg in ("thông tư", "nghị định", "tt 26", "tt 51", "tt 36", "tt 20", "qđ 5948", "5948"))
+    has_regulatory = any(reg in lower_q for reg in (
+        "thông tư", "nghị định", "quyết định", "qđ-byt", "nđ-cp", "tt-byt",
+        "tt 26", "tt 51", "tt 36", "tt 20", "tt 23", "qđ 5948", "5948",
+        "5481", "708", "2767", "1851", "4815", "188", "130", "3618",
+        "26/2025", "23/2011", "20/2022",
+    ))
     has_dosage_exact = bool(re.search(r"\b\d+(?:\.\d+)?\s*(?:mg|g|mcg|ml|iu|ui)\b", lower_q))
 
     # 2. Nhận diện đặc tính Semantic / Suy luận ca bệnh / Cơ chế / Tác dụng phụ
@@ -145,6 +150,192 @@ class HybridRetriever:
         # SOTA Dense Vector Retrieval
         self.vector_store = vector_store or get_vector_store()
         self.embedding_provider = embedding_provider or get_embedding_provider()
+        self._dtqg_inn_terms = self._build_dtqg_inn_index(self.all_chunks)
+
+    @staticmethod
+    def _build_dtqg_inn_index(chunks: list[RagChunk]) -> list[str]:
+        """Extract unique DTQG drug names/aliases from indexed monograph titles (zero hardcode)."""
+        terms: set[str] = set()
+        for c in chunks:
+            if not c.chunk_id.startswith("dtqg_") or ": " not in (c.title or ""):
+                continue
+            after_colon = c.title.split(": ", 1)[1]
+            inn_part = after_colon.split(" (", 1)[0].strip().casefold()
+            if len(inn_part) >= 4:
+                terms.add(inn_part)
+            for sub in re.split(r"[,;/]", inn_part):
+                s = sub.strip()
+                if len(s) >= 4:
+                    terms.add(s)
+        return sorted(terms, key=len, reverse=True)
+
+    _DTQG_SECTION_INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+        ("indications", ("chỉ định", "điều trị bệnh", "dùng để", "công dụng")),
+        ("pediatric_dosage", ("trẻ em", "nhi khoa", "trẻ sơ sinh", "nhũ nhi")),
+        ("adult_dosage", ("liều người lớn", "người lớn", "liều dùng", "liều tối đa", "liều lượng")),
+        ("organ_adjustment", ("suy thận", "suy gan", "clcr", "egfr", "hiệu chỉnh liều", "lọc cầu thận")),
+        ("contraindications", ("chống chỉ định", "thai kỳ", "phụ nữ có thai", "cho con bú")),
+        ("precautions", ("thận trọng", "lưu ý khi sử dụng", "lưu ý khi dùng")),
+        ("adr", ("tác dụng không mong muốn", "tác dụng phụ", "adr", "biến cố bất lợi")),
+        ("interactions", ("tương tác thuốc", "tương tác", "tương kỵ")),
+        ("overdose", ("quá liều", "ngộ độc", "giải độc")),
+    )
+
+    @classmethod
+    def _detect_dtqg_section_intents(cls, lower_query: str) -> set[str]:
+        matched: set[str] = set()
+        for sec_key, cues in cls._DTQG_SECTION_INTENTS:
+            if any(cue in lower_query for cue in cues):
+                matched.add(sec_key)
+        # If pediatric is asked explicitly without adult, don't boost adult_dosage
+        if "pediatric_dosage" in matched and "người lớn" not in lower_query:
+            matched.discard("adult_dosage")
+        return matched
+
+    def _resolve_query_drugs(self, query: str, lower_query: str, dual_kw) -> list[str]:
+        drugs = list(dict.fromkeys(resolve_registered_medications(query) + dual_kw.identified_drugs))
+        existing_low = {d.casefold() for d in drugs}
+        for term in self._dtqg_inn_terms:
+            if term in existing_low:
+                continue
+            if re.search(rf"(?<!\w){re.escape(term)}(?!\w)", lower_query):
+                drugs.append(term)
+                existing_low.add(term)
+        return drugs
+
+    @staticmethod
+    def _analyze_ddi_intent(
+        lower_query: str,
+        resolved_query_drugs: list[str],
+        subgraph_info: dict,
+    ) -> tuple[bool, bool, bool]:
+        """Return (asks_about_interactions, mentions_multiple_known_drugs, allow_ddi)."""
+        co_admin_cues = (
+            "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
+            "kết hợp", "uống chung", "dùng chung", "cặp thuốc",
+        )
+        asks_co_admin = any(term in lower_query for term in co_admin_cues)
+        asks_about_interactions = asks_co_admin or bool(subgraph_info.get("active_class_ddis"))
+        mentions_multiple_known_drugs = len(resolved_query_drugs) >= 2
+        if not resolved_query_drugs:
+            return asks_about_interactions, mentions_multiple_known_drugs, False
+        if asks_co_admin:
+            return asks_about_interactions, mentions_multiple_known_drugs, True
+        padded = f" {lower_query} "
+        is_or_comparison = " hoặc " in padded or " hay " in padded
+        if is_or_comparison:
+            return asks_about_interactions, mentions_multiple_known_drugs, False
+        return asks_about_interactions, mentions_multiple_known_drugs, (
+            mentions_multiple_known_drugs or bool(subgraph_info.get("active_class_ddis"))
+        )
+
+    @classmethod
+    def _should_allow_ddi(
+        cls,
+        lower_query: str,
+        resolved_query_drugs: list[str],
+        subgraph_info: dict,
+    ) -> bool:
+        """Enable DDI retrieval for co-administration/interaction queries, not 'A hoặc B' comparisons."""
+        return cls._analyze_ddi_intent(lower_query, resolved_query_drugs, subgraph_info)[2]
+
+    def _merge_per_drug_bm25(
+        self,
+        bm25_rank_map: Dict[str, int],
+        resolved_query_drugs: list[str],
+        clinical_domains: list[str],
+        section_intents: Optional[set[str]] = None,
+    ) -> None:
+        """Ensure every drug explicitly named in the query enters the BM25 candidate pool."""
+        if not resolved_query_drugs:
+            return
+        section_kw_map = {
+            "indications": "chỉ định",
+            "pediatric_dosage": "liều trẻ em",
+            "adult_dosage": "liều người lớn",
+            "organ_adjustment": "suy thận suy gan",
+            "contraindications": "chống chỉ định",
+            "precautions": "thận trọng",
+            "adr": "tác dụng không mong muốn",
+            "interactions": "tương tác thuốc",
+            "overdose": "quá liều",
+        }
+        sec_hint = " ".join(section_kw_map[s] for s in (section_intents or ()) if s in section_kw_map)
+        domain_hint = " ".join(clinical_domains[:3]).strip()
+        for drug in resolved_query_drugs[:4]:
+            for q_variant in (
+                f"{drug} {sec_hint}".strip(),
+                f"{drug} {domain_hint}".strip() if domain_hint else "",
+                drug,
+            ):
+                if not q_variant:
+                    continue
+                for idx, r in enumerate(self.fts_index.search_bm25(q_variant, top_k=12)):
+                    cid = r.chunk.chunk_id
+                    rank = idx + 1
+                    if cid not in bm25_rank_map or rank < bm25_rank_map[cid]:
+                        bm25_rank_map[cid] = rank
+
+    def _merge_intra_doc_candidates(
+        self,
+        bm25_rank_map: Dict[str, int],
+        lower_query: str,
+    ) -> Dict[str, float]:
+        """Rank chunks inside explicitly referenced guidelines/circulars by intra-document IDF."""
+        import math
+
+        doc_nums = set(re.findall(r"\b\d{2,4}\b", lower_query))
+        if not doc_nums:
+            return {}
+        doc_chunks = [
+            c for c in self.all_chunks
+            if c.entity_type in {"guideline", "circular"}
+            and len(c.content or "") >= 150
+            and any(
+                re.search(rf"(?<!\d){re.escape(num)}(?!\d)", f"{c.source_doc} {c.legal_basis} {c.chunk_id}".casefold())
+                for num in doc_nums
+            )
+        ]
+        if not doc_chunks:
+            return {}
+
+        stop = {
+            "theo", "quyết", "định", "thông", "tư", "nghị", "hướng", "dẫn", "của", "các",
+            "những", "nào", "như", "thế", "gì", "bao", "nhiêu", "trong", "khi", "cho",
+            "được", "quy", "cần", "lưu", "về", "với", "là", "có", "và", "gồm",
+        }
+        q_tokens = [
+            w for w in re.findall(r"[\w]+", lower_query)
+            if len(w) >= 2 and w not in doc_nums and w not in stop
+        ]
+        if not q_tokens:
+            return {}
+
+        n_docs = len(doc_chunks)
+        doc_lows = [(c.chunk_id, f"{c.title} {c.content}".casefold()) for c in doc_chunks]
+        df = {tok: sum(1 for _, txt in doc_lows if tok in txt) for tok in set(q_tokens)}
+        idf = {tok: math.log(1.0 + (n_docs - cnt + 0.5) / (cnt + 0.5)) for tok, cnt in df.items() if cnt > 0}
+        if not idf:
+            return {}
+
+        scored: list[tuple[float, str]] = []
+        for cid, txt in doc_lows:
+            matched_toks = [tok for tok in idf if tok in txt]
+            if not matched_toks:
+                continue
+            score = sum(idf[tok] for tok in matched_toks) * (1.0 + 0.35 * len(matched_toks))
+            scored.append((score, cid))
+        scored.sort(reverse=True)
+        if not scored:
+            return {}
+        top_score = scored[0][0] or 1.0
+        intra_bonus: Dict[str, float] = {}
+        for idx, (sc, cid) in enumerate(scored[:20]):
+            rank = idx + 1
+            if cid not in bm25_rank_map or rank < bm25_rank_map[cid]:
+                bm25_rank_map[cid] = rank
+            intra_bonus[cid] = round(0.28 * (sc / top_score), 5)
+        return intra_bonus
 
     def retrieve(
         self,
@@ -168,13 +359,11 @@ class HybridRetriever:
             condition_terms=dual_kw.clinical_domains
         )
 
-        asks_about_interactions = any(term in lower_query for term in (
-            "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
-            "kết hợp", "uống chung", "dùng chung", "cặp thuốc"
-        )) or bool(subgraph_info.get("active_class_ddis"))
-        resolved_query_drugs = list(dict.fromkeys(resolve_registered_medications(query) + dual_kw.identified_drugs))
-        mentions_multiple_known_drugs = len(resolved_query_drugs) >= 2
-        allow_ddi = bool(resolved_query_drugs) and (asks_about_interactions or mentions_multiple_known_drugs)
+        resolved_query_drugs = self._resolve_query_drugs(query, lower_query, dual_kw)
+        section_intents = self._detect_dtqg_section_intents(lower_query)
+        asks_about_interactions, mentions_multiple_known_drugs, allow_ddi = self._analyze_ddi_intent(
+            lower_query, resolved_query_drugs, subgraph_info
+        )
 
         candidate_limit = max(50, top_k * 5)
 
@@ -192,6 +381,8 @@ class HybridRetriever:
                 cid = r.chunk.chunk_id
                 if cid not in bm25_rank_map or (idx + 1) < bm25_rank_map[cid]:
                     bm25_rank_map[cid] = idx + 1
+        self._merge_per_drug_bm25(bm25_rank_map, resolved_query_drugs, dual_kw.clinical_domains, section_intents)
+        intra_doc_scores = self._merge_intra_doc_candidates(bm25_rank_map, lower_query)
 
         # 2. Dense Semantic Vector Retrieval qua VectorStore & Google MRL 768-dim
         dense_rank_map: Dict[str, int] = {}
@@ -224,7 +415,8 @@ class HybridRetriever:
             asks_about_interactions=asks_about_interactions,
             mentions_multiple_known_drugs=mentions_multiple_known_drugs,
             allow_ddi=allow_ddi,
-            top_k=top_k
+            top_k=top_k,
+            intra_doc_scores=intra_doc_scores,
         )
 
     async def retrieve_async(
@@ -247,13 +439,11 @@ class HybridRetriever:
             condition_terms=dual_kw.clinical_domains
         )
 
-        asks_about_interactions = any(term in lower_query for term in (
-            "tương tác", "tương kỵ", "phối hợp", "uống cùng", "dùng cùng",
-            "kết hợp", "uống chung", "dùng chung", "cặp thuốc"
-        )) or bool(subgraph_info.get("active_class_ddis"))
-        resolved_query_drugs = list(dict.fromkeys(resolve_registered_medications(query) + dual_kw.identified_drugs))
-        mentions_multiple_known_drugs = len(resolved_query_drugs) >= 2
-        allow_ddi = bool(resolved_query_drugs) and (asks_about_interactions or mentions_multiple_known_drugs)
+        resolved_query_drugs = self._resolve_query_drugs(query, lower_query, dual_kw)
+        section_intents = self._detect_dtqg_section_intents(lower_query)
+        asks_about_interactions, mentions_multiple_known_drugs, allow_ddi = self._analyze_ddi_intent(
+            lower_query, resolved_query_drugs, subgraph_info
+        )
 
         candidate_limit = max(50, top_k * 5)
 
@@ -291,6 +481,8 @@ class HybridRetriever:
                 cid = r.chunk.chunk_id
                 if cid not in bm25_rank_map or (idx + 1) < bm25_rank_map[cid]:
                     bm25_rank_map[cid] = idx + 1
+        self._merge_per_drug_bm25(bm25_rank_map, resolved_query_drugs, dual_kw.clinical_domains, section_intents)
+        intra_doc_scores = self._merge_intra_doc_candidates(bm25_rank_map, lower_query)
 
         # 2. Dense Semantic Vector Retrieval qua VectorStore & Google MRL 768-dim
         dense_rank_map: Dict[str, int] = {}
@@ -321,7 +513,8 @@ class HybridRetriever:
             asks_about_interactions=asks_about_interactions,
             mentions_multiple_known_drugs=mentions_multiple_known_drugs,
             allow_ddi=allow_ddi,
-            top_k=top_k
+            top_k=top_k,
+            intra_doc_scores=intra_doc_scores,
         )
 
     def _fuse_and_rank(
@@ -338,7 +531,8 @@ class HybridRetriever:
         asks_about_interactions: bool,
         mentions_multiple_known_drugs: bool,
         allow_ddi: bool,
-        top_k: int
+        top_k: int,
+        intra_doc_scores: Optional[Dict[str, float]] = None,
     ) -> List[RetrievedChunk]:
         """Tầng hợp nhất xếp hạng đa tầng Reciprocal Rank Fusion với trọng số động Adaptive RRF."""
         # Thưởng điểm cho KG Entities nếu có
@@ -353,12 +547,15 @@ class HybridRetriever:
 
         # 3. Lọc an toàn DDI (Tương tác thuốc)
         allowed_ddi_ids: Set[str] = set()
+        canonical_q_drugs = set(resolve_registered_medications(query))
         for chunk in self.all_chunks:
             if chunk.entity_type != "ddi":
                 continue
             chunk_text = f"{chunk.title} {chunk.content} {' '.join(chunk.keywords)}"
             chunk_drugs = set(resolve_registered_medications(chunk_text))
-            if len(resolved_query_drugs) >= 2 and set(resolved_query_drugs).issubset(chunk_drugs):
+            if (len(canonical_q_drugs) >= 2 and canonical_q_drugs.issubset(chunk_drugs)) or (
+                len(set(resolved_query_drugs) & chunk_drugs) >= 2
+            ):
                 allowed_ddi_ids.add(chunk.chunk_id)
 
         ddi_ids = {chunk.chunk_id for chunk in self.all_chunks if chunk.entity_type == "ddi"}
@@ -393,6 +590,8 @@ class HybridRetriever:
         # 4. Tập hợp toàn bộ ứng viên từ cả 2 nguồn Sparse & Dense
         chunk_map: Dict[str, RagChunk] = {c.chunk_id: c for c in self.all_chunks}
         all_candidate_ids = set(bm25_rank_map.keys()).union(dense_rank_map.keys()).union(kg_matched_ids)
+        if allow_ddi and allowed_ddi_ids:
+            all_candidate_ids.update(allowed_ddi_ids)
 
         # Lọc an toàn: Tuyệt đối không đưa chunks thuộc tài liệu chưa duyệt (staged / superseded) vào phản hồi của Bác sĩ
         try:
@@ -455,7 +654,9 @@ class HybridRetriever:
             "quy trình", "tiêu hủy", "thu hồi", "vỏ ống", "thông tư", "nghị định",
             "phản vệ", "xử trí", "cấp cứu", "tủ trực", "quy định", "quyết định",
             "hướng dẫn", "văn bản", "pháp luật", "luật", "chính sách", "bảo hiểm",
-            "bhyt", "tiêu chuẩn", "phác đồ"
+            "bhyt", "tiêu chuẩn", "phác đồ", "đái tháo đường", "tiểu đường",
+            "viêm phổi", "copd", "phổi tắc nghẽn", "hen phế quản", "kháng sinh",
+            "708/qđ", "5481/qđ", "2767/qđ", "1851/qđ", "4815/qđ"
         ))
 
         target_drugs_for_filtering = list(resolved_query_drugs)
@@ -502,7 +703,7 @@ class HybridRetriever:
         if "sốt" in lower_query and not any(term in lower_query for term in ("rét", "vàng", "xuất huyết")):
             offtarget_fever_ids = {
                 cid for cid in all_candidate_ids
-                if any(k in chunk_map[cid].title.casefold() for k in ("sốt rét", "sốt vàng"))
+                if cid in chunk_map and any(k in chunk_map[cid].title.casefold() for k in ("sốt rét", "sốt vàng"))
             }
             all_candidate_ids -= offtarget_fever_ids
             for c in self.all_chunks:
@@ -567,12 +768,45 @@ class HybridRetriever:
                     and t.strip(".,;:?!\"'()") not in _proto_stop
                 ]
                 if q_toks:
-                    matched_cnt = sum(1 for t in set(q_toks) if t in chunk_title_low or t in chunk_body_low)
-                    rrf_score += min(0.09, 0.015 * matched_cnt)
+                    unique_q_toks = list(dict.fromkeys(q_toks))
+                    # Document-frequency weighting across candidates: rarer terms (e.g. "dự phòng", "phẫu thuật")
+                    # carry higher discriminative power than frequent terms (e.g. "nguyên tắc", "kháng sinh").
+                    n_cands = max(1, len(all_candidate_ids))
+                    tok_weights = {}
+                    for t in unique_q_toks:
+                        df = sum(
+                            1 for c_id in all_candidate_ids
+                            if (c_id in chunk_map) and (t in (chunk_map[c_id].title or "").casefold() or t in (chunk_map[c_id].content or "").casefold())
+                        )
+                        tok_weights[t] = 1.0 + max(0.0, (n_cands - df) / n_cands)
+
+                    weighted_hits = sum(tok_weights[t] for t in unique_q_toks if t in chunk_title_low or t in chunk_body_low)
+                    rrf_score += min(0.14, 0.015 * weighted_hits)
+
+                    # Opening-line / internal heading boost: reward chunks whose first 240 chars directly introduce the queried topic
+                    opening_low = chunk_body_low[:240]
+                    opening_hits = sum(tok_weights[t] for t in unique_q_toks if t in opening_low)
+                    rrf_score += min(0.12, 0.02 * opening_hits)
+
+                    bigram_hits = 0
+                    opening_bigrams = 0
                     for i_tok in range(len(q_toks) - 1):
                         bigram = f"{q_toks[i_tok]} {q_toks[i_tok + 1]}"
                         if bigram in chunk_title_low or bigram in chunk_body_low:
-                            rrf_score += 0.03
+                            bigram_hits += 1
+                        if bigram in opening_low:
+                            opening_bigrams += 1
+                    if bigram_hits:
+                        rrf_score += min(0.14, 0.04 * bigram_hits)
+                    if opening_bigrams:
+                        rrf_score += min(0.10, 0.05 * opening_bigrams)
+                    for i_tok in range(len(q_toks) - 2):
+                        trigram = f"{q_toks[i_tok]} {q_toks[i_tok + 1]} {q_toks[i_tok + 2]}"
+                        if trigram in opening_low:
+                            rrf_score += 0.12
+                            break
+                        if trigram in chunk_title_low or trigram in chunk_body_low:
+                            rrf_score += 0.08
                             break
             elif chunk.entity_type == "regulatory_pdf":
                 chunk_title_lower = (chunk.title or "").casefold()
@@ -587,6 +821,9 @@ class HybridRetriever:
                     rrf_score += 0.20
                     reasons.append("Dynamic regulatory document relevant context")
             else:
+                if chunk.entity_type in {"monograph", "medication", "drug_profile"} and len(resolved_query_drugs) == 1 and not is_protocol_query:
+                    rrf_score += 0.15
+                    reasons.append("Single-drug monograph priority over disease guidelines")
                 title_drug_match = any(d in chunk.title.casefold() for d in resolved_query_drugs)
                 if title_drug_match:
                     rrf_score += 0.25
@@ -613,8 +850,12 @@ class HybridRetriever:
                     reasons.append(f"Clinical topic relevance ({', '.join(matched_topics[:3])})")
 
             if chunk.entity_type == "ddi" and cid in allowed_ddi_ids:
-                rrf_score += 0.20
-                reasons.append("Registered medicine overlap with DDI evidence")
+                if allow_ddi:
+                    rrf_score += 0.35
+                    reasons.append("Multi-drug DDI exact overlap (QĐ 5948)")
+                else:
+                    rrf_score += 0.24
+                    reasons.append("Registered medicine overlap with DDI evidence")
 
             if cid in kg_matched_ids:
                 rrf_score += 0.20
@@ -627,14 +868,18 @@ class HybridRetriever:
                 if _matches_substitution_trigger(query, s_info.get("trigger", [])):
                     rrf_score += 0.30
                     reasons.append("LightRAG dual-level therapeutic substitution match")
-                else:
-                    rrf_score += 0.15
-                    reasons.append("LightRAG therapeutic substitution relevance")
 
             elif chunk.entity_type == "graph_class_ddi":
                 if allow_class_ddi:
-                    rrf_score += 0.30
-                    reasons.append("LightRAG dual-level class interaction match")
+                    class_ddi_text = f"{chunk.title} {' '.join(chunk.keywords)}".casefold()
+                    if any(d in class_ddi_text for d in resolved_query_drugs) or any(
+                        cls.lower().replace("_", " ") in class_ddi_text for cls in detected_classes
+                    ):
+                        rrf_score += 0.30
+                        reasons.append("LightRAG dual-level class interaction match")
+                    else:
+                        rrf_score += 0.05
+                        reasons.append("LightRAG secondary class interaction")
 
             elif chunk.entity_type == "graph_condition_risk":
                 cond_slug = chunk.chunk_id.replace("lightrag_organ_risk_", "").upper()
@@ -669,6 +914,86 @@ class HybridRetriever:
                 match_reasons=reasons
             ))
 
-        # Sắp xếp theo điểm RRF giảm dần
+        # Sắp xếp theo điểm RRF giảm dần và rerank nhẹ Top-15 -> Top-k
         rrf_scored.sort(key=lambda x: x.score, reverse=True)
-        return rrf_scored[:top_k]
+        rerank_pool = rrf_scored[:max(25, top_k * 5)]
+        section_intents = self._detect_dtqg_section_intents(lower_query)
+        is_dose_query = any(k in lower_query for k in ("liều tối đa", "liều dùng", "24 giờ", "tối đa", "bao nhiêu mg", "bao nhiêu g"))
+        asks_adult_only = "người lớn" in lower_query and "trẻ em" not in lower_query
+        asks_renal = any(k in lower_query for k in ("suy thận", "creatinin", "clcr", "egfr", "lọc cầu thận"))
+        is_calci_infusion = allow_ddi and ("calci" in lower_query or "ringer" in lower_query) and any(
+            k in lower_query for k in ("pha", "truyền", "ceftriaxon", "dung dịch")
+        )
+        query_doc_nums = set(re.findall(r"\b\d{2,4}\b", lower_query))
+        q_heading_tokens = {
+            w for w in re.findall(r"[\w]+", lower_query)
+            if len(w) >= 3 and w not in query_doc_nums and w not in {
+                "theo", "quyết", "định", "thông", "nghị", "hướng", "dẫn", "của", "các",
+                "những", "nào", "như", "thế", "gì", "bao", "nhiêu", "trong", "khi", "cho",
+                "điều", "trị", "bệnh", "nhân", "được", "quy", "cần", "lưu", "về", "với",
+            }
+        }
+        for item in rerank_pool:
+            c = item.chunk
+            c_title_low = (c.title or "").casefold()
+            c_low = f"{c.title} {c.content}".casefold()
+            bonus = 0.0
+            if c.entity_type in {"guideline", "circular"}:
+                if intra_doc_scores and c.chunk_id in intra_doc_scores:
+                    bonus += intra_doc_scores[c.chunk_id]
+                    item.match_reasons.append("Rerank: intra-document IDF specificity")
+                if len(c.content or "") < 150 or "....." in (c.content or ""):
+                    bonus -= 0.25
+                doc_meta_low = f"{c.source_doc} {c.legal_basis} {c.chunk_id}".casefold()
+                if query_doc_nums and any(re.search(rf"(?<!\d){re.escape(num)}(?!\d)", doc_meta_low) for num in query_doc_nums):
+                    bonus += 0.25
+                    item.match_reasons.append("Rerank: explicit document number/year match")
+                heading_zone = f"{c_title_low} {(c.page_or_section or '').casefold()} {(c.content or '')[:140].casefold()}"
+                heading_hits = sum(1 for tok in q_heading_tokens if tok in heading_zone)
+                if heading_hits >= 2:
+                    bonus += min(0.20, 0.06 * heading_hits)
+                    item.match_reasons.append(f"Rerank: guideline/circular heading match ({heading_hits})")
+            if section_intents and c.chunk_id.startswith("dtqg_"):
+                matched_sec = next((sec for sec in section_intents if f"_{sec}" in c.chunk_id), None)
+                if matched_sec:
+                    bonus += 0.25
+                    tail = c.chunk_id.rsplit("_", 1)[-1]
+                    if tail.isdigit():
+                        bonus -= min(0.02, 0.002 * int(tail))
+                    item.match_reasons.append(f"Rerank: DTQG section match ({matched_sec})")
+                else:
+                    bonus -= 0.08
+            if is_protocol_query and item.bm25_rank in (1, 2):
+                bonus += 0.04 if item.bm25_rank == 1 else 0.02
+            if is_calci_infusion and ("chẹn kênh calci" in c_title_low or "calcitonin" in c_title_low):
+                bonus -= 0.25
+            if is_dose_query and c.entity_type == "monograph":
+                if any(k in c_low for k in ("liều tối đa", "không quá", "24 giờ", "4 g", "4000")):
+                    bonus += 0.08
+                    item.match_reasons.append("Rerank: dose specificity match")
+            if asks_adult_only:
+                if "người lớn" in c_title_low:
+                    bonus += 0.06
+                elif "trẻ em" in c_title_low and "người lớn" not in c_title_low:
+                    bonus -= 0.06
+            if asks_renal and ("suy thận" in c_title_low or "chống chỉ định" in c_title_low):
+                bonus += 0.05
+            if c.entity_type in {"circular", "protocol"} and any(k in lower_query for k in ("phản vệ", "adrenalin", "sốc phản vệ")):
+                if "phản vệ" in c_title_low or "adrenalin" in c_title_low:
+                    bonus += 0.06
+                    item.match_reasons.append("Rerank: anaphylaxis protocol match")
+            if allow_ddi and c.entity_type == "ddi" and len(resolved_query_drugs) >= 2:
+                if sum(1 for d in set(resolved_query_drugs) if d in c_low) >= 2:
+                    bonus += 0.08
+                    item.match_reasons.append("Rerank: dual-drug DDI coverage")
+            elif not allow_ddi and c.entity_type == "monograph" and len(resolved_query_drugs) >= 2:
+                if any(d in c_title_low for d in set(resolved_query_drugs)):
+                    bonus += 0.16
+                    item.match_reasons.append("Rerank: comparative drug monograph title match")
+                elif any(d in c_low for d in set(resolved_query_drugs)):
+                    bonus += 0.10
+                    item.match_reasons.append("Rerank: comparative drug monograph match")
+            if bonus:
+                item.score = round(item.score + bonus, 5)
+        rerank_pool.sort(key=lambda x: x.score, reverse=True)
+        return rerank_pool[:top_k]
