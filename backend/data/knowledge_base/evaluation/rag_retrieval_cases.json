@@ -79,7 +79,8 @@
     "id": "para_synonym",
     "query": "Thuốc hạ sốt paracetamol uống tối đa mấy gam mỗi ngày?",
     "expected_chunk_ids": [
-      "core_inns_monographs_2"
+      "core_inns_monographs_2",
+      "dtqg_paracetamol_499_adult_dosage"
     ],
     "expected_entity_type": "monograph",
     "clinical_review": "candidate_unreviewed"

@@ -84,10 +84,10 @@ class SqliteFtsIndex:
         with self._get_connection() as conn:
             # Chỉ đồng bộ các chunks tĩnh (DTQG, phác đồ mặc định), giữ nguyên tuyệt đối các chunks PDF do Admin nạp
             count = conn.execute("SELECT COUNT(*) FROM clinical_rag_fts WHERE entity_type != 'regulatory_pdf'").fetchone()[0]
-            fingerprint = hashlib.sha256(json.dumps([
-                (c.chunk_id, c.source_doc, c.legal_basis, c.page_or_section, c.title, c.content, c.keywords, c.entity_type, c.source_id, c.source_version)
-                for c in chunks
-            ], ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+            h = hashlib.sha256()
+            for c in chunks:
+                h.update(f"{c.chunk_id}|{c.source_doc}|{c.legal_basis}|{c.page_or_section}|{c.title}|{c.content}|{' '.join(c.keywords)}|{c.entity_type}|{c.source_id}|{c.source_version}\n".encode("utf-8"))
+            fingerprint = h.hexdigest()
             try:
                 row = conn.execute("SELECT value FROM clinical_rag_meta WHERE key = ?", ("chunk_fingerprint",)).fetchone()
             except sqlite3.OperationalError:

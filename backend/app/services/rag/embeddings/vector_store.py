@@ -143,6 +143,10 @@ class VectorStore:
         cursor = conn.cursor()
 
         if loaded_from_cache:
+            # Nếu số vector trong SQLite không vượt quá cache NPZ, bỏ qua quét toàn bộ BLOB để tiết kiệm RAM
+            if self.count() <= len(self._chunk_ids):
+                return len(self._chunk_ids)
+
             # Bổ sung các vector động trong SQLite chưa có trong cache NPZ
             cursor.execute("SELECT chunk_id, embedding, dimension FROM clinical_chunk_vectors")
             rows = cursor.fetchall()
@@ -158,10 +162,10 @@ class VectorStore:
                 new_raw = np.vstack(new_vectors).astype(np.float32)
                 new_norms = np.linalg.norm(new_raw, axis=1, keepdims=True)
                 new_norms[new_norms == 0] = 1.0
-                new_normed = new_raw / new_norms
+                new_normed = (new_raw / new_norms).astype(np.float16)
 
-                combined = np.vstack([self._matrix, new_normed]) if self._matrix is not None else new_normed
-                self._matrix = np.ascontiguousarray(combined, dtype=np.float32)
+                combined = np.vstack([self._matrix.astype(np.float16), new_normed]) if self._matrix is not None else new_normed
+                self._matrix = np.ascontiguousarray(combined, dtype=np.float16)
                 start_idx = len(self._chunk_ids)
                 for idx, cid in enumerate(new_chunk_ids):
                     self._chunk_ids.append(cid)
@@ -191,10 +195,10 @@ class VectorStore:
             vectors.append(arr)
 
         raw_matrix = np.vstack(vectors).astype(np.float32)
-        # Chuẩn hóa ma trận L2 norm để phép tính Dot Product tương đương Cosine Similarity
+        # Chuẩn hóa ma trận L2 norm để phép tính Dot Product tương đương Cosine Similarity (lưu float16 giảm 50% RAM)
         norms = np.linalg.norm(raw_matrix, axis=1, keepdims=True)
         norms[norms == 0] = 1.0  # Tránh chia cho 0
-        self._matrix = np.ascontiguousarray(raw_matrix / norms, dtype=np.float32)
+        self._matrix = np.ascontiguousarray((raw_matrix / norms).astype(np.float16), dtype=np.float16)
         self._chunk_ids = chunk_ids
         self._id_to_idx = {cid: idx for idx, cid in enumerate(chunk_ids)}
 
@@ -221,8 +225,8 @@ class VectorStore:
             return []
         q_norm = q / norm_q
 
-        # Ma trận Dot Product: (N, dim) dot (dim,) -> (N,)
-        scores = np.dot(self._matrix, q_norm)
+        # Ma trận Dot Product: (N, dim) dot (dim,) -> (N,), cast query về dtype của ma trận để không nhân bản RAM
+        scores = np.dot(self._matrix, q_norm.astype(self._matrix.dtype)).astype(np.float32)
 
         if id_prefix:
             clean_pfx = id_prefix.strip().lower()
@@ -300,7 +304,7 @@ class VectorStore:
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(
             file_path,
-            matrix=self._matrix,
+            matrix=self._matrix.astype(np.float16),
             chunk_ids=np.array(self._chunk_ids, dtype=object)
         )
         logger.info(f"[VectorStore] Đã xuất cache file {file_path}")
