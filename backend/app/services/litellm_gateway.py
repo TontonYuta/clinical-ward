@@ -1,7 +1,9 @@
 """
-Unified Multi-Provider Free-Tier LLM Gateway built on LiteLLM Router.
+Lightweight Multi-Provider Free-Tier LLM Gateway (zero-overhead httpx router).
 Automatically routes and falls back across active keys in admin_key_vault / env:
   Gemini -> Groq -> OpenRouter (:free) -> Mistral -> Ollama (optional local).
+Designed to stay well under 512 MiB RAM on Render Free tier while keeping
+identical multi-provider failover semantics.
 """
 
 from __future__ import annotations
@@ -12,16 +14,20 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 
-import litellm
-from litellm import Router
+import httpx
 
 from app.config import settings
 from app.services.admin_key_vault import get_active_api_key_async
 
 logger = logging.getLogger(__name__)
-litellm.suppress_debug_info = True
 
 DEFAULT_FALLBACK_CHAIN = ["gemini-tier", "groq-tier", "openrouter-tier", "mistral-tier", "ollama-tier"]
+
+_OPENAI_BASE_URLS = {
+    "groq": "https://api.groq.com/openai/v1/chat/completions",
+    "openrouter": "https://openrouter.ai/api/v1/chat/completions",
+    "mistral": "https://api.mistral.ai/v1/chat/completions",
+}
 
 
 def _extract_json_dict(raw_text: str) -> Dict[str, Any]:
@@ -45,7 +51,7 @@ def _extract_json_dict(raw_text: str) -> Dict[str, Any]:
 
 
 async def build_router_model_list() -> List[Dict[str, Any]]:
-    """Build LiteLLM Router model_list dynamically from active vault keys & env vars."""
+    """Build ordered multi-provider model list dynamically from active vault keys & env vars."""
     model_list: List[Dict[str, Any]] = []
 
     gemini_key = await get_active_api_key_async("gemini") or (
@@ -106,6 +112,72 @@ async def build_router_model_list() -> List[Dict[str, Any]]:
     return model_list
 
 
+async def _call_provider_entry(
+    client: httpx.AsyncClient,
+    entry: Dict[str, Any],
+    prompt: str,
+    *,
+    system_prompt: Optional[str],
+    json_mode: bool,
+    temperature: float,
+    max_tokens: int,
+) -> Optional[str]:
+    params = entry.get("litellm_params") or {}
+    full_model = str(params.get("model") or "")
+    api_key = str(params.get("api_key") or "").strip()
+    if "/" not in full_model:
+        return None
+    provider, model_id = full_model.split("/", 1)
+
+    if provider == "gemini":
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent"
+        gen_cfg: Dict[str, Any] = {"temperature": temperature, "maxOutputTokens": max_tokens}
+        if json_mode:
+            gen_cfg["responseMimeType"] = "application/json"
+        payload: Dict[str, Any] = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": gen_cfg,
+        }
+        if system_prompt:
+            payload["systemInstruction"] = {"parts": [{"text": system_prompt}]}
+        resp = await client.post(url, headers={"x-goog-api-key": api_key, "Content-Type": "application/json"}, json=payload)
+        if resp.status_code != 200:
+            return None
+        parts = (((resp.json().get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
+        text = "".join(p.get("text", "") for p in parts if isinstance(p, dict) and not p.get("thought"))
+        return text or None
+
+    messages: List[Dict[str, str]] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
+    if provider == "ollama":
+        api_base = str(params.get("api_base") or "http://localhost:11434").rstrip("/")
+        url = f"{api_base}/v1/chat/completions"
+        headers = {"Content-Type": "application/json"}
+    else:
+        url = _OPENAI_BASE_URLS.get(provider, "")
+        if not url:
+            return None
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+    payload_oa: Dict[str, Any] = {
+        "model": model_id,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    if json_mode and provider != "ollama":
+        payload_oa["response_format"] = {"type": "json_object"}
+
+    resp = await client.post(url, headers=headers, json=payload_oa)
+    if resp.status_code != 200:
+        return None
+    content = ((resp.json().get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+    return content or None
+
+
 async def routed_completion(
     prompt: str,
     *,
@@ -117,8 +189,8 @@ async def routed_completion(
     preferred_order: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
-    Execute chat completion across configured free/low-cost providers using LiteLLM Router
-    with automatic cross-provider fallbacks.
+    Execute chat completion across configured free/low-cost providers
+    with automatic cross-provider fallbacks and zero heavy SDK memory overhead.
     """
     model_list = await build_router_model_list()
     if not model_list:
@@ -129,42 +201,28 @@ async def routed_completion(
     if not order:
         order = available_tiers
 
-    primary = order[0]
-    fallbacks = [{primary: order[1:]}] if len(order) > 1 else []
+    ordered_entries: List[Dict[str, Any]] = []
+    for tier in order:
+        ordered_entries.extend(m for m in model_list if m["model_name"] == tier)
 
-    router = Router(
-        model_list=model_list,
-        fallbacks=fallbacks,
-        num_retries=1,
-        allowed_fails=2,
-        cooldown_time=30,
-        set_verbose=False,
-    )
-
-    messages: List[Dict[str, str]] = []
-    if system_prompt:
-        messages.append({"role": "system", "content": system_prompt})
-    messages.append({"role": "user", "content": prompt})
-
-    kwargs: Dict[str, Any] = {
-        "model": primary,
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "timeout": timeout_sec,
-    }
-    if json_mode:
-        kwargs["response_format"] = {"type": "json_object"}
-
-    try:
-        resp = await router.acompletion(**kwargs)
-        choice = (resp.choices or [None])[0]
-        content = getattr(getattr(choice, "message", None), "content", "") or ""
-        used_model = getattr(resp, "model", "") or primary
-        return {"text": content, "model": used_model}
-    except Exception as exc:
-        logger.warning("LiteLLM Router exhausted all providers (%s): %s", order, exc)
-        return {}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout_sec, connect=5.0)) as client:
+        for entry in ordered_entries:
+            try:
+                text = await _call_provider_entry(
+                    client,
+                    entry,
+                    prompt,
+                    system_prompt=system_prompt,
+                    json_mode=json_mode,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+                if text:
+                    return {"text": text, "model": entry["litellm_params"]["model"]}
+            except Exception as exc:
+                logger.warning("Routed provider %s failed: %s", entry.get("litellm_params", {}).get("model"), exc)
+                continue
+    return {}
 
 
 async def routed_json_completion(
@@ -176,7 +234,7 @@ async def routed_json_completion(
     timeout_sec: float = 25.0,
     preferred_order: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Structured JSON completion across free-tier providers via LiteLLM Router."""
+    """Structured JSON completion across free-tier providers."""
     res = await routed_completion(
         prompt,
         system_prompt=system_prompt,

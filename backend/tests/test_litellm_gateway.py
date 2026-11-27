@@ -29,10 +29,6 @@ class TestLiteLLMGateway(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("mistral-tier", tiers)
 
     async def test_routed_json_completion_parses_router_response(self) -> None:
-        fake_resp = SimpleNamespace(
-            model="groq/openai/gpt-oss-120b",
-            choices=[SimpleNamespace(message=SimpleNamespace(content='{"verdict": "ok", "score": 1}'))],
-        )
         with (
             patch(
                 "app.services.litellm_gateway.build_router_model_list",
@@ -43,15 +39,14 @@ class TestLiteLLMGateway(unittest.IsolatedAsyncioTestCase):
                     ]
                 ),
             ),
-            patch("app.services.litellm_gateway.Router") as mock_router_cls,
+            patch(
+                "app.services.litellm_gateway._call_provider_entry",
+                new=AsyncMock(side_effect=[None, '{"verdict": "ok", "score": 1}']),
+            ) as mock_call,
         ):
-            mock_router_cls.return_value.acompletion = AsyncMock(return_value=fake_resp)
             parsed = await routed_json_completion("Return JSON")
             self.assertEqual(parsed, {"verdict": "ok", "score": 1})
-
-            # Verify fallback chain was passed to Router
-            _, kwargs = mock_router_cls.call_args
-            self.assertEqual(kwargs["fallbacks"], [{"gemini-tier": ["groq-tier"]}])
+            self.assertEqual(mock_call.call_count, 2)
 
     async def test_routed_completion_returns_empty_when_no_keys(self) -> None:
         with patch("app.services.litellm_gateway.build_router_model_list", new=AsyncMock(return_value=[])):
