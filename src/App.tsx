@@ -32,7 +32,7 @@ import {
   INITIAL_AUDIT_TRAIL_RECORDS
 } from './data/initialData';
 import { ChatSession } from './types/chatSession';
-import { generateAiSessionTitle, resetUserSessionWebCache } from './services/chatSyncApi';
+import { deleteAllUserCloudSessions, generateAiSessionTitle, resetUserSessionWebCache } from './services/chatSyncApi';
 import {
   generateSessionTitle
 } from './utils/storage/chatSessionStorage';
@@ -570,6 +570,7 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
   const handleResetData = () => {
     clinicalAudio.stopAlarm();
     clearAllStoredState();
+    void deleteAllUserCloudSessions();
     setDebts(INITIAL_DEBT_RECORDS);
     setTickets(INITIAL_EQUIPMENT_TICKETS);
     setBatches(INITIAL_INVENTORY_BATCHES);

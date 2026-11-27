@@ -40,6 +40,8 @@ class TestKeyResponse(BaseModel):
 class BudgetCapConfig(BaseModel):
     daily_token_limit: int = Field(default=500000, ge=10000)
     monthly_token_limit: int = Field(default=10000000, ge=100000)
+    daily_cost_limit_vnd: float = Field(default=500000.0, ge=0.0)
+    monthly_cost_limit_vnd: float = Field(default=10000000.0, ge=0.0)
     daily_search_query_limit: int = Field(default=200, ge=10)
     monthly_search_query_limit: int = Field(default=5000, ge=50)
     auto_offline_fallback: bool = True
@@ -57,6 +59,8 @@ class BudgetCapResponse(BaseModel):
     search_budget_gate_open: bool = True
     search_throttling_status: str = "normal"
     estimated_cost_vnd: float
+    month_cost_vnd: float = 0.0
+    daily_cost_limit_vnd: float = 500000.0
     saved_cost_vnd: float
     throttling_status: str = "normal"
 

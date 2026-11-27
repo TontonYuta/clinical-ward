@@ -76,6 +76,35 @@ def init_telemetry_db() -> None:
 
 init_telemetry_db()
 
+_MODEL_USD_PRICING_PER_1M: tuple[tuple[str, tuple[float, float, float]], ...] = (
+    ("flash-lite", (0.075, 0.01875, 0.30)),
+    ("flash", (0.15, 0.0375, 0.60)),
+    ("pro", (1.25, 0.3125, 10.00)),
+)
+
+
+def estimate_model_cost_vnd(
+    model: str,
+    fresh_prompt_tokens: int,
+    cached_tokens: int,
+    completion_tokens: int,
+) -> float:
+    """Estimate VND charge from model tier pricing (fresh input, cached input, output)."""
+    lower_m = (model or "").lower()
+    in_rate, cached_rate, out_rate = (0.075, 0.01875, 0.30)
+    for marker, rates in _MODEL_USD_PRICING_PER_1M:
+        if marker in lower_m:
+            in_rate, cached_rate, out_rate = rates
+            break
+    try:
+        fx_rate = float(os.getenv("USD_TO_VND_RATE", "25500.0"))
+    except ValueError:
+        fx_rate = 25500.0
+    input_usd = (fresh_prompt_tokens / 1_000_000) * in_rate + (cached_tokens / 1_000_000) * cached_rate
+    output_usd = (completion_tokens / 1_000_000) * out_rate
+    return round((input_usd + output_usd) * fx_rate, 2)
+
+
 def record_llm_token_usage(
     prompt_tokens: int,
     completion_tokens: int,
@@ -85,11 +114,8 @@ def record_llm_token_usage(
     cached_tokens: int = 0,
 ) -> float:
     """
-    Store token counts only when supplied by provider metadata. Cost uses configured
-    historical rate assumptions and exchange rate, not an invoice total:
-    - Fresh Input: $0.075 / 1M tokens
-    - Cached Input: $0.01875 / 1M tokens (75% savings via Context Caching)
-    - Output: $0.30 / 1M tokens
+    Store token counts only when supplied by provider metadata using tier-aware
+    pricing assumptions (Flash-Lite vs Flash vs Pro, with 75% Context Caching discount).
     """
     # Cost ledger is a billing record; estimated token counts belong in request
     # telemetry and must never be converted into a provider charge.
@@ -107,10 +133,7 @@ def record_llm_token_usage(
     fresh_p_tok = max(0, p_tok - cd_tok)
     total = p_tok + c_tok
 
-    # Estimate cost from configured rate assumptions with 75% Context Caching discount.
-    input_usd = (fresh_p_tok / 1_000_000) * 0.075 + (cd_tok / 1_000_000) * 0.01875
-    output_usd = (c_tok / 1_000_000) * 0.30
-    cost_vnd = round((input_usd + output_usd) * 25500.0, 2)
+    cost_vnd = estimate_model_cost_vnd(model, fresh_p_tok, cd_tok, c_tok)
 
     try:
         with _get_connection() as conn:

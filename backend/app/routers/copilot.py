@@ -44,26 +44,16 @@ def format_offline_drug_response(response: CopilotResponse) -> CopilotResponse:
     from app.services.chatbot.offline_drug_reply_formatter import format_offline_drug_reply
     return format_offline_drug_reply(response)
 
-_CHAT_RATE_BUCKETS: dict[str, list[float]] = {}
-_CHAT_RATE_LIMIT_MAX = 30
-_CHAT_RATE_WINDOW_SEC = 60.0
+from app.security.chat_rate_limiter import chat_rate_limiter
+
+# Legacy aliases retained for rate-limiter tests/diagnostics.
+_CHAT_RATE_BUCKETS = chat_rate_limiter._minute_buckets
+_CHAT_RATE_LIMIT_MAX = chat_rate_limiter.standard_per_minute
 
 
-def _check_chat_rate_limit(request: Request, user_name: str) -> None:
-    """Giới hạn tần suất gọi AI theo người dùng/IP (chống spam đốt quota - OWASP LLM10)."""
-    client_host = getattr(getattr(request, "client", None), "host", None) or "unknown"
-    key = f"{client_host}:{(user_name or 'anon').strip().lower()}"
-    now = time.monotonic()
-    history = [ts for ts in _CHAT_RATE_BUCKETS.get(key, []) if now - ts < _CHAT_RATE_WINDOW_SEC]
-    if len(history) >= _CHAT_RATE_LIMIT_MAX:
-        _CHAT_RATE_BUCKETS[key] = history
-        raise HTTPException(
-            status_code=429,
-            detail="Bạn đang gửi yêu cầu quá nhanh. Vui lòng chờ vài giây rồi thử lại.",
-            headers={"Retry-After": "10"},
-        )
-    history.append(now)
-    _CHAT_RATE_BUCKETS[key] = history
+def _check_chat_rate_limit(request: Request, user_name: str, user_role: str = "staff") -> None:
+    """Giới hạn tần suất gọi AI theo người dùng/IP và hạn mức ngày (OWASP LLM10 / FinOps)."""
+    chat_rate_limiter.check_and_consume(request, user_name, user_role)
 
 
 def _sse_event(event_type: str, **payload) -> str:
@@ -80,7 +70,7 @@ async def chat_with_copilot(
     reset_llm_execution()
     start_time = time.monotonic()
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
-    _check_chat_rate_limit(request, user_name)
+    _check_chat_rate_limit(request, user_name, user_role)
     session = get_or_create_session(session_id, user_name, user_role)
 
     from app.services.cache.clinical_cache import get_clinical_cache
@@ -270,7 +260,7 @@ async def chat_with_copilot_stream(
     reset_llm_execution()
     start_time = time.monotonic()
     user_name, user_role, session_id = resolve_copilot_identity(payload, request)
-    _check_chat_rate_limit(request, user_name)
+    _check_chat_rate_limit(request, user_name, user_role)
     session = get_or_create_session(session_id, user_name, user_role)
 
     async def response_events():
@@ -665,6 +655,27 @@ async def get_user_chat_sessions(
     return result[:limit]
 
 
+def _clear_all_copilot_caches(target_sids: list[str] | None = None) -> int:
+    """Clear clinical response cache, web search cache, auto-QA cache, and PDF highlight cache."""
+    from app.services.cache.clinical_cache import get_clinical_cache
+    from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
+    from app.services.chatbot.web_search_engine import clear_search_cache
+    from app.services.rag.gemini_highlight_selector import clear_highlight_selector_cache
+    from app.services.rag.verified_qa_service import get_verified_qa_service
+
+    web_cache = get_grounded_web_cache()
+    removed = 0
+    if target_sids:
+        removed = sum(web_cache.invalidate_session(sid) for sid in target_sids)
+    else:
+        web_cache.clear()
+    clear_search_cache()
+    get_clinical_cache().clear()
+    clear_highlight_selector_cache()
+    removed += get_verified_qa_service().clear_auto_cached_nodes()
+    return removed
+
+
 @router.delete("/user-sessions")
 async def delete_all_user_chat_sessions(
     request: Request,
@@ -679,10 +690,7 @@ async def delete_all_user_chat_sessions(
     await db.execute(del_stmt)
     await db.commit()
 
-    from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
-    from app.services.chatbot.web_search_engine import clear_search_cache
-    get_grounded_web_cache().clear()
-    clear_search_cache()
+    _clear_all_copilot_caches(None)
     return {"status": "ok", "cleared_all": True}
 
 
@@ -706,13 +714,7 @@ async def delete_user_chat_session(
     await db.execute(del_stmt)
     await db.commit()
 
-    from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
-    from app.services.chatbot.web_search_engine import clear_search_cache
-    web_cache = get_grounded_web_cache()
-    for sid in target_sids:
-        web_cache.invalidate_session(sid)
-    clear_search_cache()
-
+    _clear_all_copilot_caches(target_sids)
     return {"status": "ok", "deleted_session_id": session_id}
 
 
@@ -721,15 +723,11 @@ async def reset_user_session_web_cache(
     session_id: str,
     request: Request,
 ):
-    """Xóa bộ nhớ đệm Web Search của phiên khi người dùng bấm Làm mới phiên hội thoại."""
+    """Xóa toàn bộ bộ nhớ đệm hội thoại, Web Search và Highlight khi người dùng bấm Làm mới phiên hội thoại."""
     _user_names, prefixes = _resolve_user_identity_names(request)
     target_sids = [session_id] + [f"{p}{session_id}" for p in prefixes]
 
-    from app.services.chatbot.grounded_web_search_cache import get_grounded_web_cache
-    from app.services.chatbot.web_search_engine import clear_search_cache
-    web_cache = get_grounded_web_cache()
-    removed = sum(web_cache.invalidate_session(sid) for sid in target_sids)
-    clear_search_cache()
+    removed = _clear_all_copilot_caches(target_sids)
     return {"status": "ok", "cleared_entries": removed}
 
 @router.post("/rag", response_model=RagResponse)
@@ -793,3 +791,24 @@ async def search_copilot_entities(
             results.append({"name": f, "type": "medication", "matched_by": "fuzzy_search"})
 
     return {"query": clean_q, "total": len(results), "items": results}
+
+
+class HighlightHeadingsRequest(BaseModel):
+    query: str
+    page_candidates: list[str]
+    drug_anchor: str | None = None
+
+
+HighlightHeadingsRequest.model_rebuild()
+
+
+@router.post("/highlight-headings")
+async def select_pdf_highlight_headings(payload: HighlightHeadingsRequest):
+    """Dùng Gemini (gemini-2.5-flash-lite) chọn đúng tiêu đề mục trên trang PDF theo ngữ nghĩa câu hỏi."""
+    from app.services.rag.gemini_highlight_selector import select_highlight_headings_with_gemini
+
+    return await select_highlight_headings_with_gemini(
+        query=payload.query,
+        page_candidates=payload.page_candidates,
+        drug_anchor=payload.drug_anchor,
+    )

@@ -376,6 +376,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             "/prescription-advice": {"doctor", "nurse"},
             "/sms": {"doctor", "nurse"},
             "/bhyt": {"nurse", "doctor", "pharmacist", "director"},
+            "/copilot/user-sessions": {"nurse", "doctor", "pharmacist", "director"},
             "/clinical-ddi": set(),
         }
         if suffix in {"/auth/logout", "/auth/change-password"}:
@@ -386,7 +387,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return role in {"nurse", "doctor", "pharmacist", "director"}
         if suffix == "/clinical-ddi/register-rule":
             return role in {"pharmacist", "director"}
-        if suffix in {"/copilot/chat", "/copilot/chat/stream", "/copilot/rag"}:
+        if suffix in {"/copilot/chat", "/copilot/chat/stream", "/copilot/rag", "/copilot/highlight-headings", "/copilot/generate-title"}:
             return role in {"nurse", "doctor", "pharmacist", "director"}
         for prefix, allowed_roles in prefixes.items():
             if suffix == prefix or suffix.startswith(prefix + "/"):

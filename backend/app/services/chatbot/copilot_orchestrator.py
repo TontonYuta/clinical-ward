@@ -350,7 +350,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
             from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
             session.set_comparison_drugs(direct_ddi_meds)
             ddi_res = format_multi_ddi_response(direct_ddi_meds, query, session_id=session_id)
-            if ddi_res:
+            if ddi_res and ddi_res.source_status != "unresolved_drug_entity":
                 return ddi_res
 
         # Xử lý câu hỏi kép / đa ý định -> phân rã sub_queries song song
@@ -535,7 +535,7 @@ async def _handle_copilot_chat_core(payload: CopilotQuery, request: Request, db:
                 if nlu_res.primary_drug:
                     session.set_active_medication(name=nlu_res.primary_drug)
                 ddi_res = format_multi_ddi_response(all_ddi_meds, query, session_id=session_id)
-                if ddi_res:
+                if ddi_res and ddi_res.source_status != "unresolved_drug_entity":
                     ddi_res.active_medication_name = session.active_medication_name
                     return ddi_res
                 clarification_res = await handle_interaction_clarification(query, lower_query, session_id, user_name, user_role, session=session)

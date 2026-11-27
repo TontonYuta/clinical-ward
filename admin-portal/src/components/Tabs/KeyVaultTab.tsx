@@ -143,6 +143,9 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                 className="w-full h-8 px-2.5 rounded-md border border-slate-300 bg-white text-xs font-medium text-slate-800 focus:border-teal-600 focus:outline-none cursor-pointer"
               >
                 <option value="gemini">Google Gemini Cloud (LLM Chính thức)</option>
+                <option value="groq">Groq API (Free Tier - gpt-oss-120b)</option>
+                <option value="openrouter">OpenRouter API (:free models)</option>
+                <option value="mistral">Mistral API (Free Tier)</option>
                 <option value="serper">Google Serper API (Tìm kiếm Web Fallback)</option>
                 <option value="openai_compatible">OpenAI-Compatible (Ollama / vLLM)</option>
               </select>
@@ -239,6 +242,16 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               GEMINI (LLM)
                             </span>
+                          ) : k.provider === 'groq' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-amber-50 text-amber-800 border border-amber-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                              GROQ (LLM)
+                            </span>
+                          ) : k.provider === 'openrouter' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-sky-50 text-sky-800 border border-sky-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                              OPENROUTER (FREE)
+                            </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-purple-50 text-purple-700 border border-purple-200">
                               {k.provider}
@@ -249,12 +262,24 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                           {k.masked_key}
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap">
-                          <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200"
-                            title={k.provider === 'serper' ? 'Hạn mức Google Serper API: 2.500 Free Queries / Month' : 'Hạn mức tiêu chuẩn Google AI Studio: 15 RPM · 1.000.000 TPM · 1.500 RPD'}
-                          >
-                            {k.quota_status || (k.provider === 'serper' ? '2.500 Free Queries / Month' : '15 RPM · 1.000.000 TPM · 1.500 RPD')}
-                          </span>
+                          {(() => {
+                            const defaultQuota =
+                              k.provider === 'serper'
+                                ? '2.500 Free Queries / Month'
+                                : k.provider === 'groq'
+                                  ? '30 RPM · 8.000 TPM · 1.000 RPD'
+                                  : k.provider === 'openrouter' || k.provider === 'mistral'
+                                    ? 'Free Tier (Multi-Provider Fallback)'
+                                    : '15 RPM · 1.000.000 TPM · 1.500 RPD';
+                            return (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                                title={`Hạn mức ${k.provider.toUpperCase()}: ${defaultQuota}`}
+                              >
+                                {k.quota_status || defaultQuota}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="py-2.5 px-3 font-mono tabular-nums text-slate-900 font-medium">
                           {k.provider === 'serper' ? (

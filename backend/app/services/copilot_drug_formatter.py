@@ -330,6 +330,7 @@ async def build_drug_profile_response(
         "pediatric_dosage": ("pediatric_dosage", "pediatric_dosage", "Liều dùng trẻ em"),
         "adult_dosage": ("adult_dosage", "adult_dosage", "Liều dùng người lớn"),
         "contraindications": ("contraindications", "contraindications", "Chống chỉ định"),
+        "precautions": ("precautions", "precautions", "Thận trọng"),
         "adverse_effects": ("adverse_effects", "adverse_effects", "Tác dụng không mong muốn"),
         "drug_interactions": ("interaction", "drug_interactions", "Tương tác thuốc"),
         "overdose_treatment": ("overdose", "overdose_treatment", "Xử trí quá liều & Ngộ độc"),
@@ -347,7 +348,26 @@ async def build_drug_profile_response(
         "pharmacodynamics": ("pharmacodynamics", "pharmacodynamics", "Dược lực học"),
     }
     explicit_requested_fields = None
-    if requested_fields:
+    is_synthesized_inquiry = any(
+        k in lower_query
+        for k in (
+            "thay thế", "thay the", "đổi thuốc", "doi thuoc", "thuốc khác", "lựa chọn khác",
+            "cách tính", "tính liều", "theo mg/kg", "mg/kg",
+        )
+    )
+    # Primary Intent > Patient Modifier: if query asks for overdose/interaction/contraindication/ADR
+    # for a specific population (e.g. "quá liều ... ở trẻ em"), keep the safety intent instead of dumping dosage.
+    _safety_priority_fields = {
+        "overdose", "overdose_treatment",
+        "interaction", "drug_interactions",
+        "contraindications", "adverse_effects",
+    }
+    if requested_fields and len(requested_fields) > 1 and any(rf[0] in _safety_priority_fields for rf in requested_fields):
+        primary_only = [rf for rf in requested_fields if rf[0] in _safety_priority_fields]
+        if primary_only:
+            requested_fields = primary_only
+
+    if requested_fields and not is_synthesized_inquiry:
         explicit_requested_fields = [
             (intent_to_field[name][0], (), intent_to_field[name][1], intent_to_field[name][2])
             for name in requested_fields if name in intent_to_field
@@ -372,9 +392,18 @@ async def build_drug_profile_response(
     ]
     if any(term in lower_query for term in ("theo dõi", "xét nghiệm", "giám sát")):
         lexical_requested_fields.append(("monitoring", (), "description", "Theo dõi / xét nghiệm"))
-    # Preserve the structured NLU contract. Lexical intent ranking is only a
-    # fallback when the caller did not provide requested fields.
-    requested_fields = explicit_requested_fields if explicit_requested_fields is not None else lexical_requested_fields
+    # Preserve explicit NLU fields while merging high-confidence lexical intents
+    # (e.g. "Chống chỉ định và thận trọng") so multi-facet questions never drop a requested section.
+    if explicit_requested_fields is not None:
+        existing_keys = {f[0] for f in explicit_requested_fields}
+        if "timing" not in existing_keys:
+            for lf in lexical_requested_fields:
+                if lf[0] not in existing_keys:
+                    explicit_requested_fields.append(lf)
+                    existing_keys.add(lf[0])
+        requested_fields = explicit_requested_fields
+    else:
+        requested_fields = lexical_requested_fields
 
     from app.services.clinical_reasoning.pediatric_dosage_reasoner import extract_demographic_slots
     _pre_demo = extract_demographic_slots(query)
@@ -433,7 +462,26 @@ async def build_drug_profile_response(
         stmt = select(InventoryBatch).where(or_(func.lower(InventoryBatch.item_name).like(f"%{matched.brand_name.lower()}%"), func.lower(InventoryBatch.item_name).like(f"%{first_active}%")))
         return (await db.execute(stmt)).scalars().all()
 
-    if requested_fields:
+    is_synthesized_inquiry = any(
+        k in lower_query
+        for k in (
+            "thay thế", "thay the", "đổi thuốc", "doi thuoc", "thuốc khác", "lựa chọn khác",
+            "cách tính", "tính liều", "theo mg/kg", "mg/kg",
+        )
+    )
+    # Primary Intent > Patient Modifier: if query asks for overdose/interaction/contraindication/ADR
+    # for a specific population (e.g. "quá liều ... ở trẻ em"), keep the safety intent instead of dumping dosage.
+    _safety_priority_fields = {
+        "overdose", "overdose_treatment",
+        "interaction", "drug_interactions",
+        "contraindications", "adverse_effects",
+    }
+    if requested_fields and len(requested_fields) > 1 and any(rf[0] in _safety_priority_fields for rf in requested_fields):
+        primary_only = [rf for rf in requested_fields if rf[0] in _safety_priority_fields]
+        if primary_only:
+            requested_fields = primary_only
+
+    if requested_fields and not is_synthesized_inquiry:
         if is_combination and not primary_mono and len(components) >= 2:
             labels, details = [], []
             combo_citations = []
@@ -574,7 +622,7 @@ async def build_drug_profile_response(
                     ddi_block = "\n\n#### CÁC TƯƠNG TÁC ĐÁNG CHÚ Ý THEO QUYẾT ĐỊNH 5948/QĐ-BYT & HDSD:\n"
                     for idx, item in enumerate(combined_ddis, 1):
                         ddi_block += (
-                            f"• **{idx}. Phối hợp với {item.get('partner')}:**\n"
+                            f"- **{idx}. Phối hợp với {item.get('partner')}:**\n"
                             f"  - **Mức độ:** `{item.get('severity')}`\n"
                             f"  - **Cơ chế:** {item.get('mechanism')}\n"
                             f"  - **Hậu quả:** {item.get('consequence')}\n"
@@ -583,7 +631,15 @@ async def build_drug_profile_response(
                         )
                 raw_val = value(req_field)
                 if raw_val:
-                    detail = f"{format_clinical_text(str(raw_val).strip())}{ddi_block}"
+                    mono_ddi_clean = format_clinical_text(str(raw_val).strip())
+                    if len(mono_ddi_clean) > 500:
+                        sents = [s.strip() for s in re.split(r"(?<=[.!?])\s+", mono_ddi_clean) if s.strip()]
+                        grouped = [
+                            "- " + " ".join(sents[k : k + 2])
+                            for k in range(0, len(sents), 2)
+                        ]
+                        mono_ddi_clean = "\n".join(grouped)
+                    detail = f"{mono_ddi_clean}{ddi_block}"
                 elif combined_ddis:
                     detail = f"Thông tin tương tác đối soát từ Dược thư Quốc gia và Quyết định 5948/QĐ-BYT cho **{clean_name}** ({clean_inn.title()}):\n{ddi_block}"
                 else:
@@ -777,48 +833,8 @@ async def build_drug_profile_response(
         first_detail = field_data[0][2] if field_data else ""
         first_label = field_data[0][1] if field_data else "Thông tin chuyên môn"
 
-        # Nếu NLU xác định là câu hỏi lâm sàng tự nhiên (query_mode == "clinical_qa"),
-        # tổng hợp bằng Gemini LLM từ chuyên luận CSDL để trả lời trực diện trọng tâm thay vì chỉ in form cứng.
-        should_synthesize = (
-            query_mode == "clinical_qa"
-            or any(cue in lower_query for cue in ("tại sao", "vì sao", "cơ chế", "lý do", "như thế nào", "có nên", "có được không"))
-        )
-        if should_synthesize and field_data:
-            try:
-                from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
-                mono_context_parts = [f"Thuốc: {clean_name} (Hoạt chất: {matched.active_ingredient})"]
-                for _, f_label, f_detail in field_data:
-                    mono_context_parts.append(f"- {f_label}: {f_detail}")
-                if monograph:
-                    existing_labels = {fl for _, fl, _ in field_data}
-                    extra_sections = [
-                        ("Chống chỉ định", getattr(monograph, "contraindications", None)),
-                        ("Thận trọng", getattr(monograph, "precautions", None)),
-                        ("Tác dụng không mong muốn", getattr(monograph, "adverse_effects", None)),
-                        ("Dược động học", getattr(monograph, "pharmacokinetics", None)),
-                    ]
-                    for e_label, e_val in extra_sections:
-                        if e_label not in existing_labels and e_val and str(e_val).strip():
-                            mono_context_parts.append(f"- {e_label}: {format_clinical_text(str(e_val).strip())[:800]}")
-
-                evidence_ctx = "\n".join(mono_context_parts)
-                u_role = getattr(session, "user_role", "doctor") or "doctor"
-                synth_res = await synthesize_grounded_clinical_response(
-                    query=query,
-                    evidence_context=evidence_ctx,
-                    source_label=source,
-                    user_role=u_role,
-                    timeout_sec=12.0,
-                )
-                if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
-                    reply_text = (
-                        f"{synth_res.conversational_answer}\n\n"
-                        f"---\n"
-                        f"**Đối chiếu nguyên văn Dược Thư ({source}):**\n\n"
-                        f"{reply_text}"
-                    )
-            except Exception:
-                pass
+        # Giữ nguyên văn Dược Thư đã chuẩn hóa từ format_flat_field_inquiry (100% chuẩn xác,
+        # không chèn đoạn tóm tắt LLM phân mảnh ở phần đầu gây nhiễu hoặc lỗi markdown).
 
         summary, payload = _build_formatter_structured_payload(
             clean_name=clean_name,
@@ -880,29 +896,65 @@ async def build_drug_profile_response(
             ctx_parts = [f"Thuốc: {clean_name} (Hoạt chất: {ing})"]
             qa_citations = []
             qa_evidence = []
-            ref_lines = []
+            ref_candidates = []
+            _section_keywords = {
+                "drug_interactions": ("tương tác", "thay thế", "phối hợp", "dùng chung", "tránh"),
+                "contraindications": ("chống chỉ định", "cấm", "kiêng", "thay thế"),
+                "precautions": ("thận trọng", "lưu ý", "thai", "suy thận", "suy gan"),
+                "adverse_effects": ("tác dụng phụ", "adr", "tác dụng không mong muốn", "dị ứng"),
+                "overdose_treatment": ("quá liều", "ngộ độc"),
+                "adult_dosage": ("liều", "người lớn", "cách dùng"),
+                "pediatric_dosage": ("trẻ em", "bé", "nhi"),
+                "indications": ("chỉ định", "điều trị", "tác dụng"),
+                "pharmacokinetics": ("dược động", "hấp thu", "thải trừ"),
+            }
             for field_key, f_label, f_val in mono_sections:
                 if f_val and str(f_val).strip():
                     clean_val = format_clinical_text(str(f_val).strip())
                     ctx_parts.append(f"- {f_label}: {clean_val[:1200]}")
-                    if len(ref_lines) < 3:
-                        ref_lines.append(f"• **{f_label}:** {clean_val}")
-                        cit = _drug_citation(matched, monograph, prof_source, target_field=field_key)
-                        cit["excerpt"] = clean_val
-                        cit["section"] = field_key
-                        cit["source_id"] = eff_source_id
-                        cit["source_version"] = eff_source_ver
-                        cit["chunk_id"] = f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:{field_key}"
-                        qa_citations.append(cit)
-                        qa_evidence.extend(_build_drug_evidence([cit]))
 
-            # Bổ sung ngữ cảnh từ Hybrid RAG (ví dụ thông tin thuốc thay thế, phác đồ liên quan)
+                    cit = _drug_citation(matched, monograph, prof_source, target_field=field_key)
+                    cit["excerpt"] = clean_val
+                    cit["section"] = field_key
+                    cit["source_id"] = eff_source_id
+                    cit["source_version"] = eff_source_ver
+                    cit["chunk_id"] = f"monograph:{getattr(monograph, 'id', None) or clean_inn or clean_name}:{field_key}"
+                    qa_citations.append(cit)
+                    qa_evidence.extend(_build_drug_evidence([cit]))
+
+                    display_val = clean_val
+                    if len(display_val) > 500:
+                        display_val = re.sub(
+                            r"(?<=[.!?])\s+((?:Trẻ em|Giảm đau và hạ sốt|Viêm khớp dạng thấp[^:]*|Thông ống động mạch[^:]*|Đặt thuốc hậu môn|Suy thận|Suy gan):)\s*",
+                            r"\n  - **\1** ",
+                            display_val,
+                        )
+                    score = sum(1 for kw in _section_keywords.get(field_key, ()) if kw in lower_query)
+                    ref_candidates.append((score, f"- **{f_label}:** {display_val}"))
+
+            ref_candidates.sort(key=lambda x: x[0], reverse=True)
+            ref_lines = [line for _, line in ref_candidates[:3]]
+
+            # Bổ sung ngữ cảnh từ Hybrid RAG & đồng bộ qa_citations / qa_evidence ("What LLM Sees = What Verifier Checks")
             try:
                 retriever = get_rag_retriever()
                 extra_chunks = await retriever.aretrieve(query, top_k=3)
-                for rc in extra_chunks:
+                for idx_rc, rc in enumerate(extra_chunks, 1):
                     if rc.chunk.content and rc.chunk.content.strip():
-                        ctx_parts.append(f"- [Tài liệu liên quan: {rc.chunk.source_doc}]: {rc.chunk.content[:800]}")
+                        rc_text = rc.chunk.content.strip()[:800]
+                        rc_doc = rc.chunk.source_doc or prof_source
+                        ctx_parts.append(f"- [Tài liệu liên quan: {rc_doc}]: {rc_text}")
+                        rc_cit = {
+                            "chunk_id": f"rag-extra:{getattr(rc.chunk, 'chunk_id', idx_rc)}",
+                            "source": rc_doc,
+                            "legal_basis": rc_doc,
+                            "section": getattr(rc.chunk, "section", None) or "Tài liệu tham khảo",
+                            "excerpt": rc_text,
+                            "document_id": getattr(rc.chunk, "document_id", None) or "duoc-thu-quoc-gia-vn",
+                            "page": getattr(rc.chunk, "page", None) or 1,
+                        }
+                        qa_citations.append(rc_cit)
+                        qa_evidence.extend(_build_drug_evidence([rc_cit]))
             except Exception:
                 pass
 
@@ -918,7 +970,7 @@ async def build_drug_profile_response(
                 if synth_res and synth_res.conversational_answer and synth_res.source_status == "exact_match":
                     qa_reply = (
                         f"{synth_res.conversational_answer}\n\n"
-                        f"---\n"
+                        f"---\n\n"
                         f"**Đối chiếu nguyên văn Dược Thư ({prof_source}):**\n\n"
                         + "\n\n".join(ref_lines)
                     )

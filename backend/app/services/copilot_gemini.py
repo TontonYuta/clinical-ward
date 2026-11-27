@@ -69,8 +69,8 @@ async def ask_backend_gemini_copilot(
     user_name: str,
     db: AsyncSession
 ) -> str | None:
-    from app.services.admin_key_vault import get_active_api_key
-    api_key = get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key_async
+    api_key = await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
     if not api_key or api_key == "MY_GEMINI_API_KEY" or len(api_key.strip()) < 10:
         return None
 

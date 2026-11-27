@@ -180,9 +180,9 @@ async def parse_clinical_nlu(
     )
 
     from app.services.llm_provider import query_clinical_llm
-    from app.services.admin_key_vault import get_active_api_key
+    from app.services.admin_key_vault import get_active_api_key_async
 
-    api_key = get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    api_key = await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
     if not api_key or api_key == "MY_GEMINI_API_KEY" or len(api_key.strip()) < 10:
         return fallback_nlu_heuristic(clean_q, active_med)
 

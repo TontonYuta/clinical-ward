@@ -89,10 +89,18 @@ async def test_zero_gemini_usage_metadata_is_estimated():
     assert usage["total_tokens"] > 0
 
 @pytest.mark.asyncio
-async def test_gemini_auto_failover_on_429():
+async def test_gemini_auto_failover_on_429(monkeypatch, tmp_path):
     """Kiểm tra tự động chuyển đổi sang API key khác khi gặp HTTP 429 (hết token/quota)."""
+    from unittest.mock import AsyncMock
+    from app.config import settings
+    from app.services import admin_key_vault
     from app.services.llm_provider import _call_gemini_api
     from app.services.admin_key_vault import add_api_key, delete_api_key
+
+    monkeypatch.setattr(settings, "IDENTITY_DATABASE_URL", "")
+    monkeypatch.setattr(settings, "KEY_ENCRYPTION_KEY", "")
+    monkeypatch.setattr(admin_key_vault, "_VAULT_FILE", str(tmp_path / "vault.json"))
+    admin_key_vault._ACTIVE_KEY_CACHE.clear()
 
     raw_fail = "AIzaSyMockFailKey429Testing111111"
     raw_succ = "AIzaSyMockSuccKey200Testing222222"
@@ -115,18 +123,21 @@ async def test_gemini_auto_failover_on_429():
     async def mock_post(url, *args, **kwargs):
         nonlocal call_count
         call_count += 1
-        if raw_fail in str(url):
+        sent_key = (kwargs.get("headers") or {}).get("x-goog-api-key", "")
+        if raw_fail in str(url) or sent_key == raw_fail:
             return resp_429
         return resp_200
 
     try:
-        with patch("httpx.AsyncClient.post", side_effect=mock_post):
+        with patch("app.services.gemini_model_discovery.get_available_gemini_models_async", AsyncMock(return_value=["gemini-3.1-flash-lite"])), \
+             patch("httpx.AsyncClient.post", side_effect=mock_post):
             answer = await _call_gemini_api("Xin chào", api_key=raw_fail, timeout_sec=5.0)
             assert answer == "Phản hồi thành công từ key dự phòng."
             assert call_count >= 2
     finally:
         delete_api_key(k_fail["key_id"])
         delete_api_key(k_succ["key_id"])
+        admin_key_vault._ACTIVE_KEY_CACHE.clear()
 
 @pytest.mark.asyncio
 async def test_gemini_sends_json_schema_in_generation_config():

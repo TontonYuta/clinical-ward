@@ -28,11 +28,11 @@ async def _call_llm_synthesis(
         "Nhiệm vụ: Trả lời câu hỏi của bác sĩ/nhân viên y tế một cách trực diện, súc tích, chuyên nghiệp và ấm áp.\n\n"
         "Nguyên tắc bắt buộc (Zero Free Claims Policy):\n"
         "1. CHỈ sử dụng các dữ kiện được cung cấp trong [CHỨNG CỨ Y VĂN CSDL] dưới đây. Tuyệt đối KHÔNG suy diễn thêm liều dùng hoặc tương tác ngoài văn bản.\n"
-        "2. Phong cách Y khoa Thụy Sĩ (Swiss Medical / UpToDate): Tuyệt đối KHÔNG sử dụng emoji/icon (💊, 💉, 📦, 👶, ⚠️, 💡, 📋) trong tiêu đề, danh sách hoặc nội dung. Dùng nhãn y khoa ngoặc vuông: [Đường uống], [Truyền tĩnh mạch], [Đặt trực tràng], [Lưu ý an toàn].\n"
+        "2. Phong cách Y khoa Thụy Sĩ (Swiss Medical / UpToDate): Tuyệt đối KHÔNG sử dụng emoji/icon (💊, 💉, 📦, 👶, ⚠️, 💡, 📋) trong tiêu đề, danh sách hoặc nội dung.\n"
         "3. Đi thẳng vào câu hỏi của người dùng và đúng nhóm tuổi/thể trọng được hỏi, không dump lại toàn bộ thông tin các lứa tuổi khác không liên quan.\n"
         "4. Nếu có tương tác nguy hiểm hoặc cảnh báo sốc/độc tính, BẮT BUỘC nêu cảnh báo ngay dòng đầu tiên.\n"
-        f"5. Đính kèm thẻ nguồn trích dẫn [{source_label}] ở cuối các câu khẳng định quan trọng.\n"
-        "6. Định dạng Markdown rõ ràng, dùng bullet points, in đậm tên thuốc và số liều cụ thể."
+        f"5. Đính kèm nguồn trích dẫn ({source_label}) ở cuối các khẳng định quan trọng.\n"
+        "6. Định dạng Markdown chuẩn: dùng tiêu đề `### Tên mục` (KHÔNG dùng ngoặc vuông `[Tên mục]`), dùng gạch đầu dòng `- `, in đậm tên thuốc và số liều cụ thể, viết trọn vẹn câu hoàn chỉnh."
     )
 
     prompt = (
@@ -48,7 +48,7 @@ async def _call_llm_synthesis(
         system_instruction=system_instruction,
         api_key=api_key,
         temperature=0.1,
-        max_output_tokens=1500,
+        max_output_tokens=2400,
         timeout_sec=timeout_sec
     )
     if res:
@@ -223,8 +223,8 @@ async def synthesize_grounded_clinical_response(
     Tổng hợp ngôn ngữ tự nhiên mềm mại từ CSDL -> Lọc khử ảo giác -> Đảm bảo an toàn 100%.
     """
     start_time = time.time()
-    from app.services.admin_key_vault import get_active_api_key
-    key = api_key or get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key_async
+    key = api_key or await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
 
     # 1. Nếu có API Key khả dụng: Gọi LLM tổng hợp ngôn ngữ tự nhiên
     if key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10:

@@ -162,8 +162,8 @@ async def rewrite_clinical_query(
         fast_res.latency_ms = round((time.time() - start_time) * 1000, 2)
         return fast_res
 
-    from app.services.admin_key_vault import get_active_api_key
-    key = api_key or get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key_async
+    key = api_key or await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
     if key and key != "MY_GEMINI_API_KEY" and len(key.strip()) >= 10:
         try:
             rewritten_text = await _call_llm_rewriter(clean_q, history, key, timeout_sec=timeout_sec)

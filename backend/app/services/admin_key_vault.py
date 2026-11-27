@@ -83,54 +83,98 @@ def _run_identity(coroutine_factory):
         return pool.submit(asyncio.run, coroutine_factory()).result()
 
 
-def _load_identity_vault_sync() -> List[Dict[str, Any]]:
+async def _load_identity_vault_async() -> List[Dict[str, Any]]:
     from app.services.identity_service import list_provider_keys
-    async def load():
-        factory = _identity_factory_sync()
-        async with factory() as session:
-            rows = await list_provider_keys(session)
-            # Keep sync vault callers compatible with existing service code.
-            from app.security.secret_encryption import decrypt_secret
-            from sqlalchemy import select
-            from app.models.identity import ProviderApiKey
-            db_rows = (await session.scalars(select(ProviderApiKey).order_by(ProviderApiKey.created_at))).all()
-            for item, row in zip(rows, db_rows):
-                item["raw_key"] = decrypt_secret(row.encrypted_key, settings.KEY_ENCRYPTION_KEY)
-            return rows
-    return _run_identity(load)
+    from app.security.secret_encryption import decrypt_secret
+    from sqlalchemy import select
+    from app.models.identity import ProviderApiKey
+
+    factory = _identity_factory_sync()
+    async with factory() as session:
+        rows = await list_provider_keys(session)
+        db_rows = (await session.scalars(select(ProviderApiKey).order_by(ProviderApiKey.created_at))).all()
+        for item, row in zip(rows, db_rows):
+            item["raw_key"] = decrypt_secret(row.encrypted_key, settings.KEY_ENCRYPTION_KEY)
+        return rows
 
 
-def _save_identity_vault_sync(keys: List[Dict[str, Any]]) -> None:
+def _load_identity_vault_sync() -> List[Dict[str, Any]]:
+    return _run_identity(_load_identity_vault_async)
+
+
+async def _save_identity_vault_async(keys: List[Dict[str, Any]]) -> None:
     from app.models.identity import ProviderApiKey
     from app.security.secret_encryption import encrypt_secret
     from sqlalchemy import select
-    async def save():
-        factory = _identity_factory_sync()
-        async with factory() as session:
-            current = (await session.scalars(select(ProviderApiKey))).all()
-            by_id = {row.key_id: row for row in current}
-            wanted = {str(item.get("key_id")): item for item in keys}
-            for row in current:
-                if row.key_id not in wanted:
-                    await session.delete(row)
-            for key_id, item in wanted.items():
-                row = by_id.get(key_id)
-                if row is None:
-                    row = ProviderApiKey(key_id=key_id, name=item.get("name", ""), provider=item.get("provider", "gemini"), encrypted_key=encrypt_secret(item.get("raw_key", ""), settings.KEY_ENCRYPTION_KEY))
-                    session.add(row)
-                row.name = item.get("name", row.name)
-                row.provider = item.get("provider", row.provider)
-                row.encrypted_key = encrypt_secret(item.get("raw_key", ""), settings.KEY_ENCRYPTION_KEY)
-                row.status = item.get("status", row.status)
-                row.quota_status = item.get("quota_status", row.quota_status)
-                row.is_active = bool(item.get("is_active", row.is_active))
-                row.tokens_used_today = int(item.get("tokens_used_today", row.tokens_used_today or 0))
-                row.requests_count = int(item.get("requests_count", row.requests_count or 0))
-                row.error_429_count = int(item.get("error_429_count", row.error_429_count or 0))
-                row.latency_ms = item.get("latency_ms", row.latency_ms)
-                row.last_used_at = item.get("last_used_at", row.last_used_at)
-            await session.commit()
-    _run_identity(save)
+
+    factory = _identity_factory_sync()
+    async with factory() as session:
+        current = (await session.scalars(select(ProviderApiKey))).all()
+        by_id = {row.key_id: row for row in current}
+        wanted = {str(item.get("key_id")): item for item in keys}
+        for row in current:
+            if row.key_id not in wanted:
+                await session.delete(row)
+        for key_id, item in wanted.items():
+            row = by_id.get(key_id)
+            if row is None:
+                row = ProviderApiKey(
+                    key_id=key_id,
+                    name=item.get("name", ""),
+                    provider=item.get("provider", "gemini"),
+                    encrypted_key=encrypt_secret(item.get("raw_key", ""), settings.KEY_ENCRYPTION_KEY),
+                )
+                session.add(row)
+            row.name = item.get("name", row.name)
+            row.provider = item.get("provider", row.provider)
+            row.encrypted_key = encrypt_secret(item.get("raw_key", ""), settings.KEY_ENCRYPTION_KEY)
+            row.status = item.get("status", row.status)
+            row.quota_status = item.get("quota_status", row.quota_status)
+            row.is_active = bool(item.get("is_active", row.is_active))
+            row.tokens_used_today = int(item.get("tokens_used_today", row.tokens_used_today or 0))
+            row.requests_count = int(item.get("requests_count", row.requests_count or 0))
+            row.error_429_count = int(item.get("error_429_count", row.error_429_count or 0))
+            row.latency_ms = item.get("latency_ms", row.latency_ms)
+            row.last_used_at = item.get("last_used_at", row.last_used_at)
+        await session.commit()
+
+
+def _save_identity_vault_sync(keys: List[Dict[str, Any]]) -> None:
+    _run_identity(lambda: _save_identity_vault_async(keys))
+
+
+def _write_vault_json_backup(keys: List[Dict[str, Any]]) -> None:
+    try:
+        os.makedirs(os.path.dirname(_VAULT_FILE), exist_ok=True)
+        with open(_VAULT_FILE, "w", encoding="utf-8") as f:
+            json.dump(keys, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+async def _load_vault_data_async() -> List[Dict[str, Any]]:
+    _require_complete_identity_vault_config()
+    if _identity_vault_configured():
+        try:
+            return await _load_identity_vault_async()
+        except Exception:
+            pass
+    if not os.path.exists(_VAULT_FILE):
+        default_keys: List[Dict[str, Any]] = []
+        _write_vault_json_backup(default_keys)
+        return default_keys
+    try:
+        with open(_VAULT_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+async def _save_vault_data_async(keys: List[Dict[str, Any]]) -> None:
+    _require_complete_identity_vault_config()
+    if _identity_vault_configured():
+        await _save_identity_vault_async(keys)
+    _write_vault_json_backup(keys)
 
 def get_system_env_key_items(existing_keys: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """Tạo bản ghi minh bạch cho Khóa Hệ Thống Mặc Định (Gemini & Serper từ Render Environment)."""
@@ -313,18 +357,16 @@ def add_api_key(name: str, raw_key: str, provider: str = "gemini") -> Dict[str, 
         "last_used_at": None,
     }
 
-def record_key_consumption(raw_key: str, tokens: int, is_error_429: bool = False) -> None:
-    """Ghi nhận mức độ tiêu thụ token, số lượt request, và lỗi 429 theo từng khóa API."""
-    if not raw_key:
-        return
+def _apply_consumption_update(
+    keys: List[Dict[str, Any]],
+    raw_key: str,
+    tokens: int,
+    is_error_429: bool = False,
+) -> bool:
     from datetime import datetime
-    keys = _load_vault_data()
-    modified = False
     target = raw_key.strip()
-
     for k in keys:
-        raw = (k.get("raw_key") or "").strip()
-        if raw == target:
+        if (k.get("raw_key") or "").strip() == target:
             if is_error_429:
                 k["error_429_count"] = k.get("error_429_count", 0) + 1
                 k["status"] = "rate_limited"
@@ -336,11 +378,26 @@ def record_key_consumption(raw_key: str, tokens: int, is_error_429: bool = False
                 if k.get("status") == "rate_limited":
                     k["status"] = "active"
                     k["quota_status"] = "Hoạt động"
-            modified = True
-            break
+            return True
+    return False
 
-    if modified:
+
+def record_key_consumption(raw_key: str, tokens: int, is_error_429: bool = False) -> None:
+    """Ghi nhận mức độ tiêu thụ token, số lượt request, và lỗi 429 theo từng khóa API."""
+    if not raw_key:
+        return
+    keys = _load_vault_data()
+    if _apply_consumption_update(keys, raw_key, tokens, is_error_429=is_error_429):
         _save_vault_data(keys)
+
+
+async def record_key_consumption_async(raw_key: str, tokens: int, is_error_429: bool = False) -> None:
+    """Phiên bản async thuần cho hot-path request handler, không tạo thread/event loop phụ."""
+    if not raw_key:
+        return
+    keys = await _load_vault_data_async()
+    if _apply_consumption_update(keys, raw_key, tokens, is_error_429=is_error_429):
+        await _save_vault_data_async(keys)
 
 def delete_api_key(key_id: str) -> bool:
     keys = _load_vault_data()
@@ -493,14 +550,15 @@ def get_active_api_key(provider: str = "gemini") -> Optional[str]:
 
     return None
 
-def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited", provider: Optional[str] = None) -> Optional[str]:
-    """Tự động đánh dấu khóa bị lỗi hạn ngạch 429/cạn token và xoay vòng kích hoạt khóa dự phòng tiếp theo cùng provider."""
-    keys = _load_vault_data()
+def _apply_key_rotation(
+    keys: List[Dict[str, Any]],
+    failed_raw_key: str,
+    reason: str = "rate_limited",
+    provider: Optional[str] = None,
+) -> tuple[Optional[str], str]:
     next_key = None
     candidate_item = None
     target_provider = provider
-
-    # Bước 1: Xác định provider và đếm lỗi 429 của khóa hiện tại (chưa tắt nếu chưa có khóa dự phòng)
     failed_item = None
     for k in keys:
         if k.get("raw_key") == failed_raw_key:
@@ -508,10 +566,7 @@ def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited", provid
             failed_item = k
             k["error_429_count"] = k.get("error_429_count", 0) + 1
             break
-
     target_provider = target_provider or "gemini"
-
-    # Bước 2: Tìm khóa dự phòng khả dụng tiếp theo trong bể cùng provider
     for k in keys:
         raw = k.get("raw_key")
         k_prov = k.get("provider", "gemini")
@@ -520,8 +575,6 @@ def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited", provid
                 candidate_item = k
                 next_key = raw.strip()
                 break
-
-    # Bước 3: Chỉ tắt khóa cũ khi có khóa dự phòng để chuyển giao; nếu chỉ có 1 khóa, giữ active để model khác cùng key tiếp tục chạy
     if candidate_item:
         if failed_item:
             failed_item["status"] = reason
@@ -530,8 +583,27 @@ def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited", provid
         candidate_item["is_active"] = True
         candidate_item["status"] = "active"
         candidate_item["quota_status"] = "Khả dụng (Đã tự động chuyển giao)"
+    return next_key, target_provider
 
+
+def rotate_to_next_key(failed_raw_key: str, reason: str = "rate_limited", provider: Optional[str] = None) -> Optional[str]:
+    """Tự động đánh dấu khóa bị lỗi hạn ngạch 429/cạn token và xoay vòng kích hoạt khóa dự phòng tiếp theo cùng provider."""
+    keys = _load_vault_data()
+    next_key, target_provider = _apply_key_rotation(keys, failed_raw_key, reason=reason, provider=provider)
     _save_vault_data(keys)
+    _ACTIVE_KEY_CACHE.pop(target_provider, None)
+    return next_key
+
+
+async def rotate_to_next_key_async(
+    failed_raw_key: str,
+    reason: str = "rate_limited",
+    provider: Optional[str] = None,
+) -> Optional[str]:
+    """Phiên bản async thuần để xoay vòng API key khi gặp 429 trong request bất đồng bộ."""
+    keys = await _load_vault_data_async()
+    next_key, target_provider = _apply_key_rotation(keys, failed_raw_key, reason=reason, provider=provider)
+    await _save_vault_data_async(keys)
     _ACTIVE_KEY_CACHE.pop(target_provider, None)
     return next_key
 
@@ -581,10 +653,40 @@ async def ping_test_gemini_key(raw_key: str) -> tuple[bool, str, float, List[str
         elapsed = round((time.monotonic() - start_t) * 1000, 1)
         return False, f"Không thể kết nối đến máy chủ Google: {str(e)[:60]}", elapsed, []
 
+_OPENAI_PROVIDER_ENDPOINTS: Dict[str, tuple[str, str]] = {
+    "groq": ("https://api.groq.com/openai/v1/models", "Groq"),
+    "openrouter": ("https://openrouter.ai/api/v1/models", "OpenRouter"),
+    "mistral": ("https://api.mistral.ai/v1/models", "Mistral"),
+}
+
+
+async def ping_test_openai_compatible_key(raw_key: str, provider: str) -> tuple[bool, str, float, List[str]]:
+    """Ping test cho các provider chuẩn OpenAI (Groq, OpenRouter, Mistral)."""
+    endpoint, label = _OPENAI_PROVIDER_ENDPOINTS[provider]
+    start_t = time.monotonic()
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            res = await client.get(endpoint, headers={"Authorization": f"Bearer {raw_key.strip()}"})
+            elapsed = round((time.monotonic() - start_t) * 1000, 1)
+            if res.status_code == 200:
+                data = res.json().get("data") or []
+                models = [str(m.get("id")) for m in data if isinstance(m, dict) and m.get("id")][:6]
+                return True, f"Kết nối {label} thành công ({len(data)} models)", elapsed, models
+            if res.status_code == 429:
+                return False, f"Rate Limit {label} (429)", elapsed, []
+            return False, f"Lỗi xác thực {label} API (HTTP {res.status_code})", elapsed, []
+    except Exception as e:
+        elapsed = round((time.monotonic() - start_t) * 1000, 1)
+        return False, f"Không thể kết nối đến {label}: {str(e)[:60]}", elapsed, []
+
+
 async def ping_test_key(raw_key: str, provider: str = "gemini") -> tuple[bool, str, float, List[str]]:
     """Định tuyến ping test tương ứng theo provider."""
-    if (provider or "").lower() == "serper":
+    prov = (provider or "gemini").lower()
+    if prov == "serper":
         return await ping_test_serper_key(raw_key)
+    if prov in _OPENAI_PROVIDER_ENDPOINTS:
+        return await ping_test_openai_compatible_key(raw_key, prov)
     return await ping_test_gemini_key(raw_key)
 
 async def auto_heartbeat_all_keys() -> List[Dict[str, Any]]:

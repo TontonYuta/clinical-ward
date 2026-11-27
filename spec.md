@@ -84,3 +84,8 @@ flowchart TD
 1. **Milestone 1**: Cấu hình Chế độ làm việc (Module Switcher: Thuốc vs TBYT). Mặc định 100% giao diện hiển thị chuyên biệt về Thuốc.
 2. **Milestone 2**: Tinh giản Sidebar và Dashboard — khi chọn Phân hệ Thuốc, chỉ hiển thị 4 tab Dược cốt lõi (`fefo`, `debt`, `cpoe`, `coldchain`) và nút Tra cứu Thông tin thuốc.
 3. **Milestone 3**: Tối ưu Chatbot AI chuyên biệt hóa cho Dược thư, thành phần hoạt chất, liều lượng và an toàn người bệnh.
+4. **Milestone 4 (Enterprise Giai Đoạn 1 — Pay-as-you-go & FinOps)**:
+   - **Per-User/Per-Role Rate Limiting & Daily Quota**: Giới hạn số request/phút và request/ngày theo từng tài khoản/IP tại `/api/v1/copilot/chat` và `/chat/stream` để chống spam đốt tiền API Pay-as-you-go.
+   - **FinOps Cost Ledger & Spend Cap**: Tính đơn giá chính xác theo từng dòng model (Flash-Lite vs Flash vs Pro), hỗ trợ `daily_cost_limit_vnd` trong `BudgetCapConfig` và chặn tự động tại `check_token_budget_gate()`.
+   - **Pay-as-you-go Model Tiering**: Cấu hình `GEMINI_TIER_MODE` (`payg` / `enterprise` vs `free`) hỗ trợ `tier="standard" | "reasoning"` (không còn bị bó bởi giới hạn 20 RPD của free tier).
+   - **Async-First Key Vault & Clean CI**: Bổ sung `record_key_consumption_async` / `rotate_to_next_key_async` cho hot-path async và đảm bảo bộ test HTTP hoạt động chuẩn dưới `AUTH_REQUIRED=true`.

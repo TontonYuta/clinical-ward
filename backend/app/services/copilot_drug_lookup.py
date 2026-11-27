@@ -58,7 +58,9 @@ async def lookup_drug_authoritative(
             is_interaction = any(term in query.casefold() for term in ("tương tác", "tương kỵ", "phối hợp", "kết hợp", "uống cùng", "dùng cùng", "uống chung", "uong cung", "dung cung", "tuong tac", "uống được không", "dùng được không", "đang dùng", "đang uống", "có uống được", "có dùng được", "kèm theo", "đi kèm", "+")) or ("được" in query.lower() and "không" in query.lower())
             if is_interaction and not is_dispense_action and not is_comparison:
                 from app.services.clinical_ddi_engine.multi_drug_matrix import format_multi_ddi_response
-                return format_multi_ddi_response(meds, query, session_id=session.session_id)
+                ddi_resp = format_multi_ddi_response(meds, query, session_id=session.session_id)
+                if ddi_resp.source_status != "unresolved_drug_entity":
+                    return ddi_resp
 
             combined_brand = f"{meds[0]} {meds[1]}"
             cand_res = await db.execute(select(DavNationalDrug.brand_name).where(func.lower(DavNationalDrug.brand_name).like(f"{combined_brand.lower()}%")).limit(1))

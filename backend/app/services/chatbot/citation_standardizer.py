@@ -57,6 +57,8 @@ def standardize_response_citations(resp: CopilotResponse, query: str = "") -> Co
         # is already tied to a retrieved chunk. RAG sets links during retrieval.
         if has_chunk_identity and has_verified_source_version:
             item.setdefault("title", basis_str or source_str or "Tài liệu nguồn")
+            if drug_hint and not item.get("drug_anchor"):
+                item["drug_anchor"] = drug_hint
             cleaned_citations.append(item)
             continue
 
@@ -82,6 +84,8 @@ def standardize_response_citations(resp: CopilotResponse, query: str = "") -> Co
             item["url"] = f"{item['url'].split('#')[0]}#page={item['page']}"
         if not item.get("inn"):
             item["inn"] = drug_hint or sec_str or None
+        if drug_hint and not item.get("drug_anchor"):
+            item["drug_anchor"] = drug_hint
 
         cleaned_citations.append(item)
 

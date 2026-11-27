@@ -176,7 +176,11 @@ async def _call_gemini_api(
     timeout_sec: float = 15.0,
     response_schema: Optional[dict] = None,
 ) -> Optional[str]:
-    from app.services.admin_key_vault import get_active_api_key_async, rotate_to_next_key
+    from app.services.admin_key_vault import (
+        get_active_api_key_async,
+        record_key_consumption_async,
+        rotate_to_next_key_async,
+    )
     key = api_key
     if not key or key == "MY_GEMINI_API_KEY" or len(key.strip()) < 10:
         key = await get_active_api_key_async(provider="gemini")
@@ -186,7 +190,8 @@ async def _call_gemini_api(
         return None
 
     from app.services.gemini_model_discovery import get_available_gemini_models_async
-    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True)
+    model_tier = "reasoning" if (response_schema is not None or max_output_tokens >= 1400) else "standard"
+    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True, model_tier=model_tier)
     generation_config = {"temperature": temperature, "maxOutputTokens": max_output_tokens}
     if response_schema:
         generation_config["responseMimeType"] = "application/json"
@@ -276,9 +281,8 @@ async def _call_gemini_api(
                             )
                             try:
                                 from app.services.telemetry_store import record_llm_token_usage
-                                from app.services.admin_key_vault import record_key_consumption
                                 record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated", cached_tokens=cached_tok)
-                                record_key_consumption(key, p_tok + c_tok)
+                                await record_key_consumption_async(key, p_tok + c_tok)
                             except Exception:
                                 pass
                             _mark_model_healthy(model)
@@ -286,11 +290,10 @@ async def _call_gemini_api(
                 elif res.status_code == 429 or "RESOURCE_EXHAUSTED" in getattr(res, "text", ""):
                     logger.warning("Gemini 429 Quota Exceeded on %s. Auto-rotating key.", model)
                     try:
-                        from app.services.admin_key_vault import record_key_consumption
-                        record_key_consumption(key, 0, is_error_429=True)
+                        await record_key_consumption_async(key, 0, is_error_429=True)
                     except Exception:
                         pass
-                    next_key = rotate_to_next_key(key, "Chạm hạn ngạch 429")
+                    next_key = await rotate_to_next_key_async(key, "Chạm hạn ngạch 429")
                     if next_key and next_key != key:
                         key = next_key
                         headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
@@ -314,9 +317,8 @@ async def _call_gemini_api(
                                     )
                                     try:
                                         from app.services.telemetry_store import record_llm_token_usage
-                                        from app.services.admin_key_vault import record_key_consumption
                                         record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_value is not None and c_value is not None else "estimated")
-                                        record_key_consumption(key, p_tok + c_tok)
+                                        await record_key_consumption_async(key, p_tok + c_tok)
                                     except Exception:
                                         pass
                                     _mark_model_healthy(model)
@@ -759,7 +761,7 @@ async def query_clinical_llm(
             timeout_sec=timeout_sec,
         )
     else:
-        # Mặc định: Google Gemini
+        # Mặc định: Google Gemini, tự động fallback sang LiteLLM Router (Groq -> OpenRouter -> Mistral -> Ollama) nếu hết quota
         result = await _call_gemini_api(
             prompt=prompt,
             system_instruction=system_instruction,
@@ -769,6 +771,22 @@ async def query_clinical_llm(
             timeout_sec=timeout_sec,
             response_schema=response_schema,
         )
+        if not result:
+            from app.services.litellm_gateway import routed_completion
+
+            routed = await routed_completion(
+                prompt,
+                system_prompt=system_instruction,
+                json_mode=bool(response_schema),
+                temperature=temperature,
+                max_tokens=max_output_tokens,
+                timeout_sec=timeout_sec,
+                preferred_order=["groq-tier", "openrouter-tier", "mistral-tier", "ollama-tier"],
+            )
+            if routed and routed.get("text"):
+                result = routed["text"]
+                model_identifier = routed.get("model") or "litellm-fallback"
+                provider = model_identifier.split("/")[0] if "/" in model_identifier else "litellm"
 
     # 4. Lưu cache nếu thành công
     if result:
@@ -801,7 +819,11 @@ async def stream_clinical_llm(
     True Streaming generator cho Google Gemini (streamGenerateContent?alt=sse).
     Phát từng đoạn text ngay khi mô hình sinh ra để giảm TTFT xuống ~1–2s.
     """
-    from app.services.admin_key_vault import get_active_api_key_async, rotate_to_next_key
+    from app.services.admin_key_vault import (
+        get_active_api_key_async,
+        record_key_consumption_async,
+        rotate_to_next_key_async,
+    )
     from app.services.admin_monitoring_service import check_token_budget_gate
     from app.services.gemini_model_discovery import get_available_gemini_models_async
     from app.config import settings
@@ -816,7 +838,8 @@ async def stream_clinical_llm(
     if not key or key.startswith("YOUR_"):
         return
 
-    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True)
+    model_tier = "reasoning" if max_output_tokens >= 1400 else "standard"
+    models = await get_available_gemini_models_async(api_key=key, high_quota_only=True, model_tier=model_tier)
     dead_models = globals().setdefault("_DEAD_GEMINI_MODELS", set())
     ordered_models = _order_models_by_health(models, dead_models)
 
@@ -861,7 +884,8 @@ async def stream_clinical_llm(
                         logger.warning("Gemini stream model %s returned 404 (marked dead).", model)
                         continue
                     if res.status_code == 429:
-                        next_key = rotate_to_next_key(key, "Chạm hạn ngạch 429")
+                        await record_key_consumption_async(key, 0, is_error_429=True)
+                        next_key = await rotate_to_next_key_async(key, "Chạm hạn ngạch 429")
                         if next_key and next_key != key:
                             key = next_key
                             headers = {"x-goog-api-key": key, "Content-Type": "application/json"}
@@ -911,9 +935,8 @@ async def stream_clinical_llm(
                     )
                     try:
                         from app.services.telemetry_store import record_llm_token_usage
-                        from app.services.admin_key_vault import record_key_consumption
                         record_llm_token_usage(p_tok, c_tok, model=model, provider="gemini", usage_source="provider" if p_val is not None and c_val is not None else "estimated")
-                        record_key_consumption(key, p_tok + c_tok)
+                        await record_key_consumption_async(key, p_tok + c_tok)
                     except Exception:
                         pass
                     return
@@ -925,6 +948,26 @@ async def stream_clinical_llm(
                     # Đã phát một phần nội dung cho user, dừng gọn thay vì nối sang model khác
                     return
                 continue
+
+    # Nếu Gemini stream không trả về được dữ liệu (hết quota/429), fallback sang LiteLLM Router
+    from app.services.litellm_gateway import routed_completion
+
+    routed = await routed_completion(
+        prompt,
+        system_prompt=system_instruction,
+        temperature=temperature,
+        max_tokens=max_output_tokens,
+        timeout_sec=timeout_sec,
+        preferred_order=["groq-tier", "openrouter-tier", "mistral-tier", "ollama-tier"],
+    )
+    if routed and routed.get("text"):
+        fallback_text = routed["text"]
+        used_model = routed.get("model") or "litellm-fallback"
+        used_prov = used_model.split("/")[0] if "/" in used_model else "litellm"
+        p_tok, _ = _resolve_usage_token(None, prompt)
+        c_tok, _ = _resolve_usage_token(None, fallback_text)
+        record_llm_execution(used_model, used_prov, p_tok, c_tok, usage_source="estimated")
+        yield fallback_text
 
 
 CLINICAL_MULTIMODAL_SYSTEM_PROMPT = """Bạn là Trợ Lý Trí Tuệ Nhân Tạo Dược Lâm Sàng & Kê Đơn BHYT (Clinical Pharmacist & BHYT Audit AI Copilot) chuyên nghiệp tại Bệnh viện Việt Nam.

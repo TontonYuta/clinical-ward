@@ -40,17 +40,21 @@ def save_budget_config(cfg: BudgetCapConfig) -> None:
 
 def check_token_budget_gate() -> tuple[bool, str]:
     """
-    Kiểm tra hạn mức ngân sách token thực tế trước khi gọi LLM.
+    Kiểm tra hạn mức ngân sách token và chi phí VNĐ thực tế trước khi gọi LLM.
     Trả về (allowed, reason). Nếu False và auto_offline_fallback, chuyển về local mode.
     """
     try:
         cfg = load_budget_config()
-        from app.services.telemetry_store import get_daily_token_usage
-        today_tokens_used, _ = get_daily_token_usage()
-        # The daily token gate uses provider reported calls only. Legacy estimates
-        # remain display telemetry and must not trigger a billing/budget cutoff.
+        from app.services.telemetry_store import get_daily_token_usage, get_daily_search_query_usage
+        today_tokens_used, today_llm_cost = get_daily_token_usage()
+        _, today_search_cost = get_daily_search_query_usage()
+        today_total_cost = today_llm_cost + today_search_cost
+        # The daily token/cost gate uses provider reported calls only.
         if cfg.daily_token_limit > 0 and today_tokens_used >= cfg.daily_token_limit:
             return False, "Chạm trần ngân sách Token ngày (Tự động chuyển về Dược thư Local 0 VNĐ)"
+        cost_limit = getattr(cfg, "daily_cost_limit_vnd", 0.0)
+        if cost_limit > 0 and today_total_cost >= cost_limit:
+            return False, f"Chạm trần chi phí ngày ({today_total_cost:,.0f}/{cost_limit:,.0f} VNĐ). Tự động chuyển về Dược thư Local 0 VNĐ"
     except Exception:
         pass
     return True, "Hạn mức khả dụng"
@@ -97,13 +101,17 @@ async def get_budget_status() -> BudgetCapResponse:
         search_throttling = "warning"
 
     saved_cost_vnd = 0.0
-    est_cost_vnd = today_real_cost + today_search_cost
+    est_cost_vnd = round(today_real_cost + today_search_cost, 2)
+    month_cost_vnd = round(month_real_cost + month_search_cost, 2)
+    cost_limit = getattr(cfg, "daily_cost_limit_vnd", 500000.0)
+    cost_pct = min(100.0, round((est_cost_vnd / cost_limit) * 100, 1)) if cost_limit > 0 else 0.0
+    effective_pct = max(today_pct, cost_pct)
 
     # Tự động tính toán trạng thái thích ứng ngân sách (Auto Adaptive Throttling)
     throttling_status = "normal"
-    if today_pct >= 100.0:
+    if effective_pct >= 100.0:
         throttling_status = "offline_fallback"
-    elif today_pct >= cfg.alert_on_threshold_pct:
+    elif effective_pct >= cfg.alert_on_threshold_pct:
         throttling_status = "adaptive_throttling"
 
     return BudgetCapResponse(
@@ -118,6 +126,8 @@ async def get_budget_status() -> BudgetCapResponse:
         search_budget_gate_open=search_gate_open,
         search_throttling_status=search_throttling,
         estimated_cost_vnd=est_cost_vnd,
+        month_cost_vnd=month_cost_vnd,
+        daily_cost_limit_vnd=cost_limit,
         saved_cost_vnd=saved_cost_vnd,
         throttling_status=throttling_status
     )

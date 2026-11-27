@@ -172,7 +172,17 @@ async def default_gemini_judge(prompt: str, timeout_sec: float = 25.0) -> Dict[s
                 except Exception as exc:
                     logger.warning("RAGAS judge model %s failed: %s", model, exc)
                     break
-    return {}
+
+    # Fallback to multi-provider LiteLLM Router (Groq -> OpenRouter -> Mistral -> Ollama)
+    from app.services.litellm_gateway import routed_json_completion
+
+    return await routed_json_completion(
+        prompt,
+        temperature=0.0,
+        max_tokens=1800,
+        timeout_sec=timeout_sec,
+        preferred_order=["groq-tier", "openrouter-tier", "mistral-tier", "ollama-tier"],
+    )
 
 
 async def default_embed_texts(texts: List[str]) -> List[Optional[List[float]]]:

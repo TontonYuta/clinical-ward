@@ -30,6 +30,7 @@ class Settings(BaseModel):
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
     GEMINI_DEFAULT_MODEL: str | None = os.getenv("GEMINI_DEFAULT_MODEL")
     GEMINI_FALLBACK_MODELS: str | None = os.getenv("GEMINI_FALLBACK_MODELS")
+    GEMINI_TIER_MODE: str = os.getenv("GEMINI_TIER_MODE", "payg").strip().lower()
     SERPER_API_KEY: str | None = os.getenv("SERPER_API_KEY")
     # Universal LLM Gateway: "gemini" | "openai_compatible" (Ollama/vLLM/DeepSeek/Groq) | "offline"
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini").strip().lower()

@@ -214,8 +214,8 @@ async def execute_clinical_sandwich_pipeline(
     db: AsyncSession, api_key: Optional[str] = None
 ) -> Optional[CopilotResponse]:
     """Hàm điều phối tổng thể Sandwich Pipeline: NLU -> DB Retrieval -> Synthesis -> Guardrails."""
-    from app.services.admin_key_vault import get_active_api_key
-    active_key = api_key or get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    from app.services.admin_key_vault import get_active_api_key_async
+    active_key = api_key or await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
     if active_key == "MY_GEMINI_API_KEY":
         active_key = None
 

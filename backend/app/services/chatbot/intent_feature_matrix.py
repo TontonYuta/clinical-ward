@@ -45,6 +45,9 @@ INTENT_FEATURE_WEIGHTS: Dict[str, List[Tuple[str, float]]] = {
         (r"\b(?:có\s+dùng\s+được\s+không|có\s+uống\s+được\s+không|dùng\s+được\s+không)\b", 2.0),
         (r"\b(?:bị\s+hen|suy\s+gan|suy\s+thận|dị\s+ứng|loét\s+dạ\s+dày)\b", 1.5),
     ],
+    "precautions": [
+        (r"\b(?:thận\s+trọng|lưu\s+ý\s+thận\s+trọng|cảnh\s+báo\s+thận\s+trọng)\b", 3.0),
+    ],
     "adverse_effects": [
         (r"\btác\s+dụng\s+(?:phụ|không\s+mong\s+muốn|có\s+hại)\b", 3.0),
         (r"\b(?:adr|dị\s+ứng|nổi\s+ban|phát\s+ban|buồn\s+nôn|chóng\s+mặt)\b", 2.0),

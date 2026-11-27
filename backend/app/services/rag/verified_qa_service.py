@@ -493,14 +493,20 @@ class VerifiedQAService:
                 if score < threshold or score <= best_score:
                     continue
 
-                # Medical Entity Guardrail:
-                # Nếu câu hỏi có thực thể thuốc (ví dụ Lisinopril), node ứng viên phải chứa thực thể đó
-                # Ngăn chặn hiện tượng match nhầm giữa hai câu hỏi có cấu trúc giống nhau nhưng khác tên thuốc
+                # Medical Entity & Intent Guardrail:
+                # Nếu câu hỏi có thực thể thuốc hoặc khác ý định lâm sàng (vd: thuốc thay thế vs tương tác), không match nhầm
                 node_entities = set(node.get("entities", []))
                 if query_entities and node_entities:
                     overlap = query_entities.intersection(node_entities)
                     if not overlap:
                         continue
+
+                from app.services.cache.clinical_cache import get_clinical_cache
+                _cc = get_clinical_cache()
+                q_intents = _cc.extract_clinical_features(query)["intent"]
+                n_intents = _cc.extract_clinical_features(node.get("question_raw") or node.get("question_canonical") or "")["intent"]
+                if q_intents != n_intents:
+                    continue
 
                 best_score = score
                 best_node = node
@@ -670,6 +676,28 @@ class VerifiedQAService:
         except Exception as e:
             logger.warning("Lỗi xóa node Q&A %s: %s", qa_id, e)
             return False
+
+    def clear_auto_cached_nodes(self) -> int:
+        """Xóa toàn bộ các node Q&A tự động cache (auto_*) trong CSDL và RAM, giữ nguyên node do dược sĩ thẩm định."""
+        auto_ids = [
+            qid for qid, n in list(self._nodes_cache.items())
+            if str(n.get("verification_source") or "").startswith("auto_")
+        ]
+        try:
+            with self._get_conn() as conn:
+                conn.execute(
+                    "UPDATE verified_clinical_qa_nodes SET is_active = 0, updated_at = ? WHERE verification_source LIKE 'auto_%'",
+                    (time.time(),)
+                )
+                conn.commit()
+        except Exception as e:
+            logger.warning("Lỗi xóa auto-cached Q&A nodes: %s", e)
+
+        for qid in auto_ids:
+            node = self._nodes_cache.pop(qid, None)
+            if node:
+                self._exact_canonical_index.pop(node.get("canonical_query", ""), None)
+        return len(auto_ids)
 
     def get_stats(self) -> Dict[str, Any]:
         """Thống kê vận hành của Verified Q&A Service."""

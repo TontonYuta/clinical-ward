@@ -44,7 +44,9 @@ async def handle_interaction_clarification(
     matcher = get_drug_lexical_matcher()
     trie_meds = matcher.extract_medications(query)
     if len(trie_meds) >= 2:
-        return format_multi_ddi_response(trie_meds, query, session_id=session_id)
+        ddi_resp = format_multi_ddi_response(trie_meds, query, session_id=session_id)
+        if ddi_resp.source_status != "unresolved_drug_entity":
+            return ddi_resp
 
     is_deictic = any(ref in lower_query for ref in ("2 thuốc", "hai thuốc", "thuốc kia", "thuốc đó", "hai loại", "2 loại", "vừa rồi", "chúng nó", "cơ mà")) and any(t in lower_query for t in ("tương tác", "tương kỵ", "kỵ", "tuong tac", "tuong ky", "phối hợp", "uống cùng", "dùng cùng"))
     if is_deictic and session and getattr(session, "conversation_turns", None):

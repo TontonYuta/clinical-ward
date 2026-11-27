@@ -16,13 +16,12 @@ import {
   X, 
   Download, 
   ExternalLink, 
-  FileText, 
   Maximize2, 
   Minimize2, 
-  RefreshCw,
   BookOpen
 } from 'lucide-react';
 import { resolvePdfDocumentTarget, ResolvedPdfTarget } from '../../utils/pdfDocumentResolver';
+import { PdfHighlightViewer } from '../LeftPane/PdfHighlightViewer';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
@@ -31,6 +30,9 @@ interface PdfViewerModalProps {
   docCode?: string;
   title?: string;
   pageNumber?: number;
+  highlightText?: string;
+  citationTitle?: string;
+  citationSection?: string;
 }
 
 export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
@@ -39,15 +41,16 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   pdfUrl,
   docCode,
   title,
-  pageNumber
+  pageNumber,
+  highlightText,
+  citationTitle,
+  citationSection
 }) => {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [resolved, setResolved] = useState<ResolvedPdfTarget | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setIsLoading(true);
       const target = resolvePdfDocumentTarget({
         url: pdfUrl,
         docCode,
@@ -174,25 +177,14 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </div>
         </div>
 
-        {/* Iframe Stage */}
-        <div className="flex-1 bg-slate-100 relative overflow-hidden flex items-center justify-center">
-          {isLoading && (
-            <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 z-10">
-              <RefreshCw className="w-7 h-7 text-teal-700 animate-spin" />
-              <p className="text-xs font-semibold text-slate-700">
-                Đang nạp tài liệu đối chứng (Trang {resolved.pageNumber})...
-              </p>
-              <p className="text-3xs text-slate-500">
-                Nếu tài liệu tải chậm, bạn có thể bấm nút "Tab mới" ở góc trên để xem.
-              </p>
-            </div>
-          )}
-
-          <iframe
-            src={`${resolved.exactHashUrl}&toolbar=1&navpanes=1`}
-            title={resolved.documentTitle}
-            className="w-full h-full border-0 block bg-white"
-            onLoad={() => setIsLoading(false)}
+        {/* Unified PdfHighlightViewer Stage (giống hệt UI & bôi đen 50/50) */}
+        <div className="flex-1 min-h-0 bg-slate-100 flex flex-col select-text">
+          <PdfHighlightViewer
+            pdfUrl={resolved.pdfUrl}
+            initialPage={resolved.pageNumber}
+            highlightText={highlightText}
+            citationTitle={citationTitle || resolved.documentTitle}
+            citationSection={citationSection}
           />
         </div>
 

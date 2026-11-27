@@ -257,6 +257,8 @@ class ClinicalLRUCache:
 
         # 1. Nhóm ý định lâm sàng (Hỗ trợ đa ý định / compound intents để chống nhầm cache)
         intents = set()
+        if any(k in norm for k in ["thay thế", "thay the", "đổi thuốc", "doi thuoc", "thuốc khác", "lựa chọn khác"]):
+            intents.add("alternative_drug")
         if any(k in norm for k in ["tương tác", "tuong tac", "dùng chung", "uống chung", "uống cùng", "phối hợp", "kết hợp"]):
             intents.add("interaction")
         if any(k in norm for k in ["chống chỉ định", "chong chi dinh", "không được dùng", "kiêng"]):

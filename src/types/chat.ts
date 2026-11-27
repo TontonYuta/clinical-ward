@@ -106,6 +106,7 @@ export interface RagCitationItem {
   domain?: string;
   verified_live?: boolean;
   credibility_tier?: number;
+  drug_anchor?: string;
 }
 
 export interface ClinicalSummary {

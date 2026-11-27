@@ -118,10 +118,16 @@ def _evidence_sections(response: CopilotResponse) -> list[tuple[str, str]]:
 
 def format_offline_drug_reply(response: CopilotResponse) -> CopilotResponse:
     """Normalize reply prose and replace leaked schema using verified evidence."""
+    from app.services.chatbot.output_layout_normalizer import normalize_clinical_markdown_output
+
     if response.intent in ("MULTIMODAL_CLINICAL_VISION", "GROUNDED_WEB_SEARCH"):
+        if response.reply_text:
+            response.reply_text = normalize_clinical_markdown_output(response.reply_text)
         return response
     response.reply_text = _remove_inline_sources(response.reply_text, response.citations)
     if response.intent != "MEDICATION_SAFETY_PROFILE" or not _is_schema_dump(response.reply_text):
+        if response.reply_text:
+            response.reply_text = normalize_clinical_markdown_output(response.reply_text)
         return response
 
     sections = _evidence_sections(response)
@@ -161,4 +167,7 @@ def format_offline_drug_reply(response: CopilotResponse) -> CopilotResponse:
         response.evidence = []
         response.claims = []
         response.evidence_claim_map = {}
+    from app.services.chatbot.output_layout_normalizer import normalize_clinical_markdown_output
+    if response.reply_text:
+        response.reply_text = normalize_clinical_markdown_output(response.reply_text)
     return response

@@ -3,7 +3,7 @@
 Xử lý ma trận tam giác kết hợp O(N^2) dưới 1ms, trả lời tất định không ảo giác.
 Quy chuẩn: Không sử dụng icon/emoji trang trí, 100% dữ liệu đối soát chuẩn QĐ 5948/QĐ-BYT.
 """
-from typing import List, Optional, Dict, Tuple
+from typing import Any, List, Optional, Dict, Tuple
 from app.schemas.copilot import (
     CopilotResponse,
     CopilotActionCard,
@@ -16,6 +16,60 @@ from app.schemas.copilot import (
 from app.services.clinical_ddi_engine.detector import ClinicalDdiDetector
 from app.services.clinical_ddi_engine.schemas import DdiSeverity, DdiAlert, PatientClinicalContext
 from app.schemas.copilot import AnswerClaim
+
+
+def _format_ddi_full_evidence(alert: Any, substitute_advice: str = "") -> str:
+    """Build complete DDI evidence text (severity, title, consequence, mechanism, action, alternatives)."""
+    sev_label = (
+        "CHỐNG CHỈ ĐỊNH TUYỆT ĐỐI"
+        if getattr(alert, "severity", None) == DdiSeverity.CONTRAINDICATED
+        else "CẢNH BÁO / THẬN TRỌNG"
+    )
+    drug_pair = f"{getattr(alert, 'drug_a', '')} + {getattr(alert, 'drug_b', '')}".strip(" +")
+    parts = [
+        f"Mức độ an toàn: {sev_label}.",
+        f"Cặp thuốc: {drug_pair}." if drug_pair else "",
+        f"{alert.title}: {str(alert.clinical_consequence).rstrip('.')}.",
+        f"Cơ chế: {str(alert.mechanism).rstrip('.')}.",
+        f"Xử trí: {str(alert.action_recommendation).rstrip('.')}.",
+    ]
+    if substitute_advice:
+        parts.append(f"Giải pháp thay thế an toàn: {substitute_advice.rstrip('.')}.")
+    return " ".join(p for p in parts if p)
+
+
+def _append_alert_provenance(
+    citations: list,
+    evidence: list,
+    cid: str,
+    alert: Any,
+    manifest_source_id: str,
+    manifest_version: str,
+    substitute_advice: str = "",
+) -> None:
+    full_text = _format_ddi_full_evidence(alert, substitute_advice=substitute_advice)
+    citations.append({
+        "chunk_id": cid,
+        "source": alert.legal_evidence,
+        "legal_basis": alert.legal_evidence,
+        "section": alert.title,
+        "excerpt": full_text,
+        "document_id": "qd-5948-2021",
+        "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
+        "page": 1,
+    })
+    evidence.append({
+        "evidence_id": f"document:{cid}",
+        "evidence_type": "document_chunk",
+        "chunk_id": cid,
+        "source_id": manifest_source_id,
+        "source_version": manifest_version,
+        "source_name": alert.legal_evidence,
+        "section": alert.title,
+        "content": full_text,
+        "claim_text": str(alert.clinical_consequence).rstrip("."),
+    })
+
 
 def _attach_ddi_claims(response: CopilotResponse) -> CopilotResponse:
     """Bind each rendered interaction consequence to its versioned evidence chunk."""
@@ -110,6 +164,77 @@ def format_multi_ddi_response(
     matrix_markdown = _build_cross_matrix_markdown(
         display_names, pair_map, {name.strip().title().casefold() for name in report.unresolved_entities}
     )
+
+    # Nếu QĐ 5948 chưa nhận diện được thực thể hoặc chưa có rule cặp, ưu tiên truy xuất
+    # Drug-Class DDI Knowledge Graph (1-hop & 2-hop có kiểm chứng trích dẫn nguyên văn),
+    # chỉ fallback sang đối chiếu trực tiếp ClinicalDrugMonograph nếu đồ thị chưa có cạnh.
+    if (report.unresolved_entities or (not report.pair_alerts and not report.polypharmacy_alerts)) and len(raw_drugs) >= 2:
+        from app.services.clinical_ddi_engine.ddi_graph_retriever import retrieve_graph_ddi_pair
+        from app.services.clinical_ddi_engine.monograph_ddi_lookup import lookup_monograph_pair_interaction
+        mono_findings = []
+        for i in range(len(raw_drugs)):
+            for j in range(i + 1, len(raw_drugs)):
+                hit = retrieve_graph_ddi_pair(raw_drugs[i], raw_drugs[j])
+                if not hit:
+                    hit = lookup_monograph_pair_interaction(raw_drugs[i], raw_drugs[j])
+                if hit:
+                    mono_findings.append(hit)
+        if mono_findings:
+            bullets = []
+            citations = []
+            evidence = []
+            for idx, f in enumerate(mono_findings, 1):
+                joined_sents = " ".join(f["sentences"])
+                path_note = f" | Đường dẫn: {f['explanation_path']}" if f.get("explanation_path") else ""
+                provenance_content = f"[{f['source']} | Tương tác {f['drug_a']} + {f['drug_b']}{path_note}] {joined_sents}"
+                bullets.append(f"• **Tương tác {f['drug_a']} + {f['drug_b']} ({f['source']}):** {joined_sents}")
+                cid = f"monograph-ddi:{f['drug_a'].lower()}:{f['drug_b'].lower()}:{idx}"
+                citations.append({
+                    "chunk_id": cid,
+                    "source": f["source"],
+                    "legal_basis": f["source"],
+                    "section": "Tương tác thuốc",
+                    "excerpt": joined_sents,
+                    "document_id": "duoc-thu-quoc-gia-vn",
+                    "url": f"/pdf/Duoc_Thu_Quoc_Gia_Viet_Nam.pdf#page={f['page']}",
+                    "page": f["page"],
+                    "drug_anchor": f["drug_a"],
+                })
+                evidence.append({
+                    "evidence_id": f"document:{cid}",
+                    "evidence_type": "document_chunk",
+                    "chunk_id": cid,
+                    "source_id": f["source_id"],
+                    "source_version": f["source_version"],
+                    "source_name": f["source"],
+                    "section": "Tương tác thuốc",
+                    "content": provenance_content,
+                    "claim_text": f["sentences"][0].rstrip("."),
+                })
+            reply_mono = (
+                "Dưới đây là thông tin tương tác thuốc đối chiếu trực tiếp từ Dược thư Quốc gia Việt Nam:\n\n"
+                + "\n".join(bullets)
+                + "\n\nĐồng nghiệp cần tra cứu thêm liều dùng hoặc phác đồ thay thế nào khác không ạ?"
+            )
+            return _attach_ddi_claims(CopilotResponse(
+                intent="MEDICATION_SAFETY_PROFILE",
+                reply_text=reply_mono,
+                clinical_summary=ClinicalSummary(
+                    headline=f"Ghi nhận tương tác theo Dược thư Quốc gia ({len(mono_findings)} cặp)",
+                    key_takeaway=mono_findings[0]["sentences"][0][:140],
+                    urgency="warning",
+                ),
+                card=None,
+                legal_basis=mono_findings[0]["source"],
+                answer_type="grounded_reference",
+                source_status="retrieved_evidence",
+                confidence=0.95,
+                rag_grounded=True,
+                session_id=session_id,
+                citations=citations,
+                evidence=evidence,
+                suggested_chips=["Tra cứu liều dùng", "Kiểm tra chống chỉ định", "Tra cứu Dược Thư Quốc Gia"],
+            ))
 
     # Chỉ từ chối toàn bộ khi không còn cặp thuốc nào đã xác minh. Nếu có
     # cảnh báo đã xác minh, vẫn hiển thị cảnh báo đó và tách phần chưa đủ dữ liệu.
@@ -365,10 +490,10 @@ def format_multi_ddi_response(
 
     if top_alert:
         citation_section = top_alert.title
-        citation_excerpt = top_alert.clinical_consequence
+        citation_excerpt = _format_ddi_full_evidence(top_alert, substitute_advice=substitute_advice)
     elif report.polypharmacy_alerts:
         citation_section = report.polypharmacy_alerts[0].title
-        citation_excerpt = report.polypharmacy_alerts[0].clinical_consequence
+        citation_excerpt = _format_ddi_full_evidence(report.polypharmacy_alerts[0])
     else:
         citation_section = "Tương tác thuốc lâm sàng"
         citation_excerpt = "Đối soát tương tác theo danh mục 633 cặp thuốc QĐ 5948/QĐ-BYT"
@@ -379,51 +504,19 @@ def format_multi_ddi_response(
     manifest_version = "sha256:33752c720a342ff68136623c25a2d31041c31cde8245bee009d2b7de8ef1919a"
 
     for alert in report.pair_alerts:
-        cid = f"qd-5948:{alert.rule_id}"
-        citations.append({
-            "chunk_id": cid,
-            "source": alert.legal_evidence,
-            "legal_basis": alert.legal_evidence,
-            "section": alert.title,
-            "excerpt": alert.clinical_consequence,
-            "document_id": "qd-5948-2021",
-            "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
-            "page": 1,
-        })
-        evidence.append({
-            "evidence_id": f"document:{cid}",
-            "evidence_type": "document_chunk",
-            "chunk_id": cid,
-            "source_id": manifest_source_id,
-            "source_version": manifest_version,
-            "source_name": alert.legal_evidence,
-            "section": alert.title,
-            "content": f"{alert.title}: {alert.clinical_consequence}. Cơ chế: {alert.mechanism}. Xử trí: {alert.action_recommendation}",
-            "claim_text": alert.clinical_consequence.rstrip("."),
-        })
+        _append_alert_provenance(
+            citations,
+            evidence,
+            f"qd-5948:{alert.rule_id}",
+            alert,
+            manifest_source_id,
+            manifest_version,
+            substitute_advice=substitute_advice,
+        )
     for alert in report.polypharmacy_alerts:
-        cid = f"qd-5948:{alert.syndrome_id}"
-        citations.append({
-            "chunk_id": cid,
-            "source": alert.legal_evidence,
-            "legal_basis": alert.legal_evidence,
-            "section": alert.title,
-            "excerpt": alert.clinical_consequence,
-            "document_id": "qd-5948-2021",
-            "url": "/pdf/Quyet_Dinh_5948_QD_BYT_Danh_Muc_Tuong_Tac_Chong_Chi_Dinh.pdf",
-            "page": 1,
-        })
-        evidence.append({
-            "evidence_id": f"document:{cid}",
-            "evidence_type": "document_chunk",
-            "chunk_id": cid,
-            "source_id": manifest_source_id,
-            "source_version": manifest_version,
-            "source_name": alert.legal_evidence,
-            "section": alert.title,
-            "content": f"{alert.title}: {alert.clinical_consequence}. Cơ chế: {alert.mechanism}. Xử trí: {alert.action_recommendation}",
-            "claim_text": alert.clinical_consequence.rstrip("."),
-        })
+        _append_alert_provenance(
+            citations, evidence, f"qd-5948:{alert.syndrome_id}", alert, manifest_source_id, manifest_version
+        )
 
     if not citations:
         fallback_cid = f"qd-5948:report:{'-'.join(sorted(raw_drugs))[:40]}"

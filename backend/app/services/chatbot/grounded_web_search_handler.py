@@ -506,10 +506,10 @@ async def handle_grounded_web_search_turn(
 
     # Lấy API key để sử dụng cho query rewriting và tổng hợp
     from app.services.llm_provider import query_clinical_llm
-    from app.services.admin_key_vault import get_active_api_key
+    from app.services.admin_key_vault import get_active_api_key_async
     from app.config import settings
 
-    api_key = get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    api_key = await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
 
     # 1. Phân giải ngữ cảnh câu hỏi nếu là câu nối tiếp và nén từ khóa nếu là ca lâm sàng dài
     search_query, is_rewritten = await contextualize_web_query(
@@ -717,10 +717,10 @@ async def stream_grounded_web_search_turn(
             return
 
     from app.services.llm_provider import stream_clinical_llm, query_clinical_llm
-    from app.services.admin_key_vault import get_active_api_key
+    from app.services.admin_key_vault import get_active_api_key_async
     from app.config import settings
 
-    api_key = get_active_api_key(provider="gemini") or settings.GEMINI_API_KEY
+    api_key = await get_active_api_key_async(provider="gemini") or settings.GEMINI_API_KEY
 
     search_query, is_rewritten = await contextualize_web_query(
         query, history=history, session=session, api_key=api_key

@@ -303,6 +303,44 @@ def split_clinical_chunks(raw_text: str) -> list[str]:
     return deduped
 
 
+_CITATION_TAG_RE = re.compile(r"\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]")
+_INLINE_SUBHEADING_RE = re.compile(r"^([A-ZÀ-Ỹa-zà-ỹ0-9\s/(),+-]{2,38}?)\s*:\s*(.*)$")
+
+
+def _format_lossless_subsection_bullets(val: str, nested: bool = False) -> str:
+    """Structure long clinical text into bold subheadings & bullets without dropping any content."""
+    chunks = split_clinical_chunks(val) or [val.strip()]
+    lines: list[str] = []
+    in_sub_group = False
+
+    for raw_chunk in chunks:
+        c_clean = _CITATION_TAG_RE.sub("", raw_chunk).strip()
+        if not c_clean:
+            continue
+        m = _INLINE_SUBHEADING_RE.match(c_clean)
+        if m and len(m.group(1).split()) <= 6:
+            label = m.group(1).strip()
+            rest = m.group(2).strip()
+            if not rest:
+                in_sub_group = True
+                prefix = "  - " if nested else "\n• "
+                lines.append(f"{prefix}**{label}:**")
+                continue
+            bullet = "  - " if nested else "• "
+            lines.append(f"{bullet}**{label}:** {rest}")
+            in_sub_group = False
+            continue
+
+        if nested:
+            lines.append(f"  - {c_clean}")
+        elif in_sub_group:
+            lines.append(f"  - {c_clean}")
+        else:
+            lines.append(f"• {c_clean}")
+
+    return "\n".join(lines).lstrip("\n")
+
+
 def format_flat_field_inquiry(
     drug_name: str,
     drug_inn: str,
@@ -312,8 +350,21 @@ def format_flat_field_inquiry(
 ) -> str:
     """Định dạng phản hồi Cụm Thông Tin Lâm Sàng: trực diện, súc tích, gắn duy nhất 1 nguồn ở cuối phản hồi."""
     default_token = extract_inline_citation_token(source)
-    inn_title = drug_inn.title() if drug_inn else ""
-    drug_title = drug_name if (drug_inn and drug_inn.lower() in drug_name.lower()) else (f"{drug_name} ({inn_title})" if inn_title else drug_name)
+    clean_drug_name = re.sub(r"\s*\(\s*\)", "", (drug_name or "")).strip()
+    while clean_drug_name.count("(") > clean_drug_name.count(")"):
+        clean_drug_name = clean_drug_name[:clean_drug_name.rfind("(")].strip()
+    clean_drug_name = re.sub(r"[\s(\[\-,;:/]+$", "", clean_drug_name).strip()
+
+    clean_inn = re.sub(r"\s*\(\s*\)", "", (drug_inn or "")).strip()
+    while clean_inn.count("(") > clean_inn.count(")"):
+        clean_inn = clean_inn[:clean_inn.rfind("(")].strip()
+    clean_inn = re.sub(r"[\s(\[\-,;:/]+$", "", clean_inn).strip()
+    inn_title = clean_inn.title() if clean_inn else ""
+    drug_title = (
+        clean_drug_name
+        if (clean_inn and clean_inn.lower() in clean_drug_name.lower())
+        else (f"{clean_drug_name} ({inn_title})" if inn_title else clean_drug_name)
+    )
     labels = [fd[1] for fd in field_data]
 
     if len(field_data) == 1:
@@ -351,14 +402,7 @@ def format_flat_field_inquiry(
                 lines.append(cleaned)
             body_parts.append("\n".join(lines))
         else:
-            chunks = split_clinical_chunks(val)
-            if not chunks:
-                chunks = [val.strip()]
-            clean_chunks = []
-            for c in chunks:
-                c_clean = re.sub(r'\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]', '', c).strip()
-                clean_chunks.append(f"• {c_clean}")
-            body_parts.append("\n".join(clean_chunks))
+            body_parts.append(_format_lossless_subsection_bullets(val, nested=False))
     else:
         single_token = default_token
 
@@ -369,7 +413,7 @@ def format_flat_field_inquiry(
                     sl = l.strip()
                     if not sl:
                         continue
-                    sl_clean = re.sub(r'\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]', '', sl)
+                    sl_clean = _CITATION_TAG_RE.sub("", sl)
                     if sl_clean.startswith(">") or sl_clean.startswith("#"):
                         sub_lines.append(f"  {sl_clean}")
                     elif re.match(r"^[•\-\*]", sl_clean):
@@ -379,14 +423,7 @@ def format_flat_field_inquiry(
                         sub_lines.append(f"  - {sl_clean}")
                 body_parts.append(f"• **{label}:**\n" + "\n".join(sub_lines))
             else:
-                chunks = split_clinical_chunks(val)
-                if not chunks:
-                    chunks = [val.strip()]
-                sub_lines = []
-                for c in chunks:
-                    c_clean = re.sub(r'\s*\[(?:DTQG|Dược thư|QĐ\s*5948|QĐ-BYT|TT\s*\d+)[\s\w.:,/–-]*\]', '', c).strip()
-                    sub_lines.append(f"  - {c_clean}")
-                body_parts.append(f"• **{label}:**\n" + "\n".join(sub_lines))
+                body_parts.append(f"• **{label}:**\n" + _format_lossless_subsection_bullets(val, nested=True))
 
     return f"{header}\n\n" + "\n\n".join(body_parts) + f"\n\nNguồn: {single_token}"
 

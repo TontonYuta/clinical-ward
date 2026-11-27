@@ -50,18 +50,33 @@ _UNSTABLE_OR_LOW_QUOTA_QA_MODELS = {
 }
 
 
-def filter_high_quota_chat_models(models: List[str]) -> List[str]:
+def filter_high_quota_chat_models(
+    models: List[str],
+    tier: str = "standard",
+    tier_mode: Optional[str] = None,
+) -> List[str]:
     """
-    Lọc danh sách model đã xếp hạng để chỉ giữ các model hỏi đáp có hạn ngạch request (RPD/RPM) cao
-    và độ ổn định tốt (ưu tiên Flash-Lite trước, kế đến Flash ổn định; loại Pro/Gemma/model hay timeout).
+    Lọc danh sách model cho luồng hỏi đáp theo cấp độ tác vụ & gói API:
+    - standard (hoặc tier_mode='free'): ưu tiên Flash-Lite tốc độ cao & tiết kiệm chi phí.
+    - reasoning (khi tier_mode='payg'/'enterprise'): ưu tiên Flash suy luận mạnh trước, fallback về Flash-Lite.
     """
-    preferred_order = [
-        "gemini-3.1-flash-lite",
-        "gemini-3.5-flash-lite",
-        "gemini-3.6-flash",
-        "gemini-3-flash-preview",
-        "gemini-flash-lite-latest",
-    ]
+    mode = (tier_mode or getattr(settings, "GEMINI_TIER_MODE", "payg") or "payg").strip().lower()
+    if tier == "reasoning" and mode in {"payg", "enterprise", "paid"}:
+        preferred_order = [
+            "gemini-3-flash-preview",
+            "gemini-3.6-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-lite-latest",
+        ]
+    else:
+        preferred_order = [
+            "gemini-3.1-flash-lite",
+            "gemini-3.5-flash-lite",
+            "gemini-3.6-flash",
+            "gemini-3-flash-preview",
+            "gemini-flash-lite-latest",
+        ]
     cleaned = [m.strip().replace("models/", "") for m in models if m and m.strip()]
     high_quota: List[str] = []
     for m in cleaned:
@@ -171,6 +186,7 @@ async def get_available_gemini_models_async(
     api_key: Optional[str] = None,
     force_refresh: bool = False,
     high_quota_only: bool = False,
+    model_tier: str = "standard",
 ) -> List[str]:
     """
     Lấy danh sách các model Gemini khả dụng cho API Key.
@@ -179,10 +195,10 @@ async def get_available_gemini_models_async(
     2. Bộ nhớ đệm RAM (0ms).
     3. Tự động truy vấn Google API (GET /v1beta/models) và lưu RAM.
     4. Danh sách Safe Fallback nếu lỗi kết nối.
-    Khi `high_quota_only=True`, lọc chỉ giữ các model hỏi đáp có RPD/RPM cao và ổn định.
+    Khi `high_quota_only=True`, lọc theo `model_tier` ('standard' hoặc 'reasoning' cho Pay-as-you-go).
     """
     def _maybe_filter(candidates: List[str]) -> List[str]:
-        return filter_high_quota_chat_models(candidates) if high_quota_only else list(candidates)
+        return filter_high_quota_chat_models(candidates, tier=model_tier) if high_quota_only else list(candidates)
 
     # 1. Kiểm tra cấu hình override từ biến môi trường máy chủ
     env_default = (getattr(settings, "GEMINI_DEFAULT_MODEL", None) or os.getenv("GEMINI_DEFAULT_MODEL", "")).strip()

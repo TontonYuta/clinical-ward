@@ -8,6 +8,7 @@ from app.database import AsyncSessionLocal
 from app.models.cpoe import CpoePrescription
 from app.database import engine, Base
 from app.models import cpoe as _cpoe_model
+from tests.auth_helpers import make_auth_headers
 
 @pytest_asyncio.fixture(autouse=True, scope="module")
 async def ensure_cpoe_test_schema():
@@ -34,7 +35,7 @@ async def test_cpoe_rejects_contraindicated_pair_before_persisting():
     order_id = "RX-DDI-BLOCK-TEST"
     request_payload = payload([item("Plavix", "clopidogrel"), item("Losec", "omeprazol")])
     request_payload["id"] = order_id
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", headers=make_auth_headers("doctor")) as client:
         response = await client.post("/api/v1/cpoe", json=request_payload)
     assert response.status_code == 409
     assert response.json()["detail"]["source_status"] == "contraindicated_pair"
@@ -46,7 +47,7 @@ async def test_cpoe_rejects_contraindicated_pair_before_persisting():
 
 @pytest.mark.asyncio
 async def test_cpoe_accepts_multi_drug_draft_without_contraindicated_pair():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", headers=make_auth_headers("doctor")) as client:
         response = await client.post("/api/v1/cpoe", json=payload([
             item("Paracetamol", "paracetamol"), item("Amoxicillin", "amoxicillin")
         ]))

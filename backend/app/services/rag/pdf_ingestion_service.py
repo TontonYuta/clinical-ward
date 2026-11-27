@@ -83,40 +83,120 @@ def _extract_keywords(text: str) -> list[str]:
 
 
 def _chunk_page_text(text: str, max_chars: int = 1200) -> list[str]:
-    clean = re.sub(r"\r\n", "\n", text).strip()
-    if not clean:
+    """
+    Chia văn bản Markdown của 1 trang thành các chunk ngữ nghĩa theo Heading -> Đoạn -> Câu.
+    Không cắt ngang bảng biểu hoặc giữa câu.
+    """
+    from app.services.chatbot.output_layout_normalizer import normalize_clinical_markdown_output
+
+    normalized = normalize_clinical_markdown_output(text)
+    if not normalized:
         return []
-    paragraphs = re.split(r"\n\s*\n", clean)
+
+    sections = re.split(r"(?m)(?=^#{1,4}\s+)", normalized)
     chunks: list[str] = []
-    current = ""
-    for para in paragraphs:
-        p = para.strip()
-        if not p:
+
+    for sec in sections:
+        sec = sec.strip()
+        if not sec:
             continue
-        if len(p) > max_chars:
-            if current:
+        if len(sec) <= max_chars:
+            chunks.append(sec)
+            continue
+
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", sec) if p.strip()]
+        current = ""
+        for para in paragraphs:
+            if len(para) > max_chars:
+                if current:
+                    chunks.append(current)
+                    current = ""
+                sentences = re.split(r"(?<=[.!?])\s+", para)
+                buf = ""
+                for sent in sentences:
+                    if buf and len(buf) + len(sent) + 1 > max_chars:
+                        chunks.append(buf)
+                        buf = sent
+                    else:
+                        buf = f"{buf} {sent}".strip() if buf else sent
+                if buf:
+                    chunks.append(buf)
+                continue
+
+            if current and len(current) + len(para) + 2 > max_chars:
                 chunks.append(current)
-                current = ""
-            lines = p.splitlines()
-            line_chunk = ""
-            for line in lines:
-                l = line.strip()
-                if len(line_chunk) + len(l) + 1 > max_chars:
-                    if line_chunk:
-                        chunks.append(line_chunk)
-                    line_chunk = l
-                else:
-                    line_chunk = f"{line_chunk}\n{l}".strip()
-            if line_chunk:
-                chunks.append(line_chunk)
-        elif current and len(current) + len(p) + 2 > max_chars:
+                current = para
+            else:
+                current = f"{current}\n\n{para}".strip() if current else para
+        if current:
             chunks.append(current)
-            current = p
-        else:
-            current = f"{current}\n\n{p}".strip()
-    if current:
-        chunks.append(current)
+
     return chunks
+
+
+async def _extract_pdf_pages_markdown(file_bytes: bytes) -> tuple[int, list[tuple[int, str]], int]:
+    """
+    Trích xuất PDF bằng PyMuPDF4LLM (giữ heading & bảng biểu Markdown),
+    tự động fallback sang Vision OCR cho trang scan ảnh không có lớp chữ.
+    Returns: (total_pages, [(page_idx, page_markdown), ...], ocr_pages_count)
+    """
+    import base64
+    import pymupdf
+    import pymupdf4llm
+
+    try:
+        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+        total_pages = len(doc)
+    except Exception as read_err:
+        raise ValueError(f"Tệp PDF bị hỏng hoặc cấu trúc tệp không hợp lệ: {str(read_err)}")
+
+    if total_pages == 0:
+        raise ValueError("Tệp PDF không chứa trang nào.")
+
+    md_by_page: dict[int, str] = {}
+    try:
+        page_items = pymupdf4llm.to_markdown(doc, page_chunks=True)
+        for idx, item in enumerate(page_items, start=1):
+            if isinstance(item, dict):
+                p_num = int((item.get("metadata") or {}).get("page") or idx)
+                md_by_page[p_num] = str(item.get("text") or "")
+    except Exception:
+        pass
+
+    extracted: list[tuple[int, str]] = []
+    ocr_pages_used = 0
+    max_ocr_pages = 10
+
+    for page_idx in range(1, total_pages + 1):
+        page = doc[page_idx - 1]
+        page_text = (md_by_page.get(page_idx) or "").strip()
+        if len(page_text) < 40:
+            raw_txt = (page.get_text("text") or "").strip()
+            if len(raw_txt) > len(page_text):
+                page_text = raw_txt
+
+        if len(re.sub(r"\s+", "", page_text)) < 30 and ocr_pages_used < max_ocr_pages:
+            try:
+                from app.services.llm_provider import query_vision_ocr
+
+                pix = page.get_pixmap(dpi=150)
+                b64_img = base64.b64encode(pix.tobytes("png")).decode("ascii")
+                ocr_text = await query_vision_ocr(
+                    b64_img,
+                    mime_type="image/png",
+                    prompt="Trích xuất nguyên văn toàn bộ chữ và bảng biểu y khoa trong trang tài liệu này sang Markdown chuẩn.",
+                )
+                if ocr_text and ocr_text.strip():
+                    page_text = ocr_text.strip()
+                    ocr_pages_used += 1
+            except Exception:
+                pass
+
+        if page_text.strip():
+            extracted.append((page_idx, page_text.strip()))
+
+    doc.close()
+    return total_pages, extracted, ocr_pages_used
 
 
 def _update_manifest(
@@ -268,29 +348,14 @@ async def ingest_pdf_bytes(
     if not doc_id:
         doc_id = re.sub(r"[^\w\-]", "_", Path(safe_filename).stem).lower()
 
-    # 2. Bóc tách cấu trúc trang trên bộ nhớ (In-Memory Pre-Extraction)
-    try:
-        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-        total_pages = len(reader.pages)
-    except Exception as read_err:
-        raise ValueError(f"Tệp PDF bị hỏng hoặc cấu trúc tệp không hợp lệ: {str(read_err)}")
-
-    if total_pages == 0:
-        raise ValueError("Tệp PDF không chứa trang nào.")
+    # 2. Bóc tách cấu trúc trang trên bộ nhớ (PyMuPDF4LLM Markdown + OCR fallback)
+    total_pages, extracted_pages, ocr_pages_used = await _extract_pdf_pages_markdown(file_bytes)
 
     chunks: List[RagChunk] = []
     source_id = f"backend/data/knowledge_base/{safe_filename}"
     source_ver = f"sha256:{sha256_hex}"
 
-    for page_idx, page in enumerate(reader.pages, start=1):
-        try:
-            page_text = page.extract_text() or ""
-        except Exception:
-            page_text = ""
-
-        if not page_text.strip():
-            continue
-
+    for page_idx, page_text in extracted_pages:
         page_chunks = _chunk_page_text(page_text)
         for chunk_idx, chunk_text in enumerate(page_chunks, start=1):
             cid = f"{doc_id}_p{page_idx}_{chunk_idx}"
@@ -430,6 +495,33 @@ async def ingest_pdf_bytes(
 
         raise exc
 
+    # 4. Tự động học cạnh tương tác mới từ tài liệu vừa nạp vào DDI Knowledge Graph (Exact-Substring Guard)
+    graph_edges_added = 0
+    if is_default_instance:
+        try:
+            from app.services.clinical_ddi_engine.ddi_graph_builder import ingest_monographs_to_graph
+            from app.services.clinical_ddi_engine.ddi_graph_store import DdiGraphStore
+
+            ddi_pages = [
+                {
+                    "id": f"{doc_id}:p{p_idx}",
+                    "inn": title,
+                    "drug_class": category or "",
+                    "drug_interactions": p_txt,
+                    "section_pages": json.dumps({"drug_interactions": p_idx}),
+                    "source": legal_basis or title,
+                    "source_id": source_id,
+                    "source_version": source_ver,
+                }
+                for p_idx, p_txt in extracted_pages
+                if any(kw in p_txt.lower() for kw in ("tương tác", "chống chỉ định phối hợp", "cyp3a4"))
+            ]
+            if ddi_pages:
+                g_stats = await ingest_monographs_to_graph(DdiGraphStore(), ddi_pages, use_gemini=False)
+                graph_edges_added = int(g_stats.get("edges_accepted", 0))
+        except Exception:
+            pass
+
     return {
         "status": "success",
         "doc_id": doc_id,
@@ -440,6 +532,8 @@ async def ingest_pdf_bytes(
         "source_id": source_id,
         "source_version": source_ver,
         "total_pages": total_pages,
+        "ocr_pages_used": ocr_pages_used,
+        "graph_edges_added": graph_edges_added,
         "extracted_chunks_count": len(chunks),
         "indexed_vectors_count": indexed_vectors_count,
         "file_bytes": len(file_bytes),
