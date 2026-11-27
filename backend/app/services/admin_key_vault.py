@@ -262,6 +262,44 @@ def get_system_env_key_items(existing_keys: Optional[List[Dict[str, Any]]] = Non
                 "last_used_at": None,
             })
 
+    # 3 & 4. Khóa Groq & OpenRouter Mặc định (Multi-Provider Fallback Pool)
+    extra_env_providers = [
+        ("GROQ_API_KEY", "groq", "sys-env-groq-primary", "Khóa Groq Mặc Định (Render Environment)", "30 RPM · 14.400 RPD"),
+        ("OPENROUTER_API_KEY", "openrouter", "sys-env-openrouter-primary", "Khóa OpenRouter Mặc Định (Render Environment)", "20 RPM · Free/Fallback Tier"),
+    ]
+    for env_name, provider_id, sys_key_id, display_name, quota_label in extra_env_providers:
+        raw_val = getattr(settings, env_name, "") or os.getenv(env_name, "")
+        if not raw_val or len(raw_val.strip()) < 10:
+            continue
+        masked_val = _mask_api_key(raw_val.strip())
+        already = any(
+            k.get("provider") == provider_id and (k.get("key_id") == sys_key_id or k.get("masked_key") == masked_val)
+            for k in (existing_keys or [])
+        )
+        if already:
+            continue
+        has_custom = any(
+            k.get("provider") == provider_id and k.get("is_active") and k.get("status") == "active"
+            for k in (existing_keys or [])
+        )
+        is_act = not has_custom
+        items.append({
+            "key_id": sys_key_id,
+            "name": display_name,
+            "masked_key": masked_val,
+            "provider": provider_id,
+            "status": "active" if is_act else "standby",
+            "quota_status": quota_label,
+            "is_active": is_act,
+            "is_system_env": True,
+            "created_at": 1730000000.0,
+            "tokens_used_today": 0,
+            "requests_count": 0,
+            "error_429_count": 0,
+            "latency_ms": None,
+            "last_used_at": None,
+        })
+
     return items
 
 

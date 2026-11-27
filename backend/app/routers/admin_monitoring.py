@@ -153,9 +153,12 @@ async def list_api_keys():
     if settings.IDENTITY_DATABASE_URL and settings.KEY_ENCRYPTION_KEY:
         from app.identity_database import get_identity_session_factory
         from app.services.identity_service import list_provider_keys
+        from app.services.admin_key_vault import get_system_env_key_items
         factory = get_identity_session_factory()[1]
         async with factory() as session:
-            return await list_provider_keys(session)
+            db_keys = await list_provider_keys(session)
+        db_keys.extend(get_system_env_key_items(db_keys))
+        return db_keys
     return get_all_masked_keys()
 
 @router.post("/keys", response_model=ApiKeyItem)
