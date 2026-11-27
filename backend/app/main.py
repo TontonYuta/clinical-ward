@@ -218,6 +218,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Warning: Không thể khởi tạo clinical cache: {e}")
 
+    import gc, resource
+    gc.collect()
+    peak_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    print(f"Lifespan startup complete. Peak RSS: {peak_mb:.1f} MiB")
+
     yield
     identity_engine = getattr(app.state, "identity_engine", None)
     if identity_engine is not None:
