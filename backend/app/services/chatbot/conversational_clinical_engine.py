@@ -23,45 +23,82 @@ from app.services.copilot_drug_citation_helper import (
 from app.services.chatbot.smart_chip_engine import generate_smart_clinical_chips
 from app.services.clinical_ddi_engine.full_catalog import find_all_interactions_for_drug
 
-def _link_medication_profile_evidence(response: CopilotResponse, monograph: Any) -> CopilotResponse:
-    """Attach versioned evidence from the exact database monograph used to compose the reply."""
+def _has_verified_provenance(record: Any) -> bool:
+    """Return True when a monograph or DAV drug record carries a versioned provenance artifact."""
+    if record is None:
+        return False
+    source_id = getattr(record, "source_id", None)
+    source_version = getattr(record, "source_version", None)
+    return bool(
+        source_id
+        and source_version
+        and str(source_version).strip().casefold() != "unversioned"
+    )
+
+
+def _link_medication_profile_evidence(
+    response: CopilotResponse,
+    monograph: Any,
+    matched_drug: Any = None,
+) -> CopilotResponse:
+    """Attach versioned evidence from the exact database monograph or DAV drug record used to compose the reply."""
     # Provenance can support a factual answer, but must never promote an
     # already rejected/unverified response back to a grounded one.
     if response.answer_type == "safe_abstention" or not response.rag_grounded or (
         response.confidence is not None and response.confidence <= 0
     ):
         return response
-    if not monograph or not getattr(monograph, "source_id", None) or not getattr(monograph, "source_version", None):
+    record = (
+        monograph if _has_verified_provenance(monograph)
+        else (matched_drug if _has_verified_provenance(matched_drug) else None)
+    )
+    if record is None:
         return response
     fields = ("indications", "adult_dosage", "pediatric_dosage", "contraindications",
               "precautions", "renal_adjustment", "hepatic_adjustment", "pregnancy_warning",
               "adverse_effects", "drug_interactions", "overdose_treatment", "antidote")
     content = "\n".join(f"{field}: {value}" for field in fields
-                        if (value := str(getattr(monograph, field, None) or "").strip()))
+                        if (value := str(getattr(record, field, None) or "").strip()))
     if not content:
         return response
 
-    chunk_id = f"monograph:{monograph.id}:profile"
-    mono_section = monograph.title or monograph.inn or "Chuyên luận Dược thư"
+    is_monograph = monograph is not None and record is monograph
+    prefix = "monograph" if is_monograph else "dav"
+    chunk_id = f"{prefix}:{record.id}:profile"
+    mono_section = (
+        getattr(record, "title", None)
+        or getattr(record, "inn", None)
+        or getattr(record, "brand_name", None)
+        or getattr(record, "active_ingredient", None)
+        or ("Chuyên luận Dược thư" if is_monograph else "Cơ sở dữ liệu đăng ký thuốc DAV")
+    )
+    source_label = (
+        (getattr(record, "source", None) if is_monograph else getattr(record, "clinical_source", None))
+        or "Dược thư Quốc gia Việt Nam"
+    )
+    doc_id = "dtqg-v2-2015" if is_monograph else "dav-registry"
 
-    citation = next((item for item in response.citations or [] if item.get("document_id") == "dtqg-v2-2015"), None)
+    citation = next(
+        (item for item in response.citations or [] if item.get("document_id") in ("dtqg-v2-2015", doc_id)),
+        None,
+    )
     if citation is not None:
         citation.update({
             "chunk_id": chunk_id,
-            "source_id": monograph.source_id,
-            "source_version": monograph.source_version,
+            "source_id": record.source_id,
+            "source_version": record.source_version,
             "section": mono_section,
         })
     else:
         new_citation = {
             "chunk_id": chunk_id,
-            "source": monograph.source or "Dược thư Quốc gia Việt Nam",
-            "legal_basis": monograph.source or "Dược thư Quốc gia Việt Nam",
+            "source": source_label,
+            "legal_basis": source_label,
             "section": mono_section,
             "excerpt": content[:200],
-            "document_id": "dtqg-v2-2015",
-            "source_id": monograph.source_id,
-            "source_version": monograph.source_version,
+            "document_id": doc_id,
+            "source_id": record.source_id,
+            "source_version": record.source_version,
         }
         if response.citations is None:
             response.citations = []
@@ -70,10 +107,10 @@ def _link_medication_profile_evidence(response: CopilotResponse, monograph: Any)
     response.evidence = [{
         "evidence_id": chunk_id,
         "evidence_type": "document_chunk",
-        "source_id": monograph.source_id,
-        "source_version": monograph.source_version,
+        "source_id": record.source_id,
+        "source_version": record.source_version,
         "chunk_id": chunk_id,
-        "source_name": monograph.source or "Dược thư Quốc gia Việt Nam",
+        "source_name": source_label,
         "section": mono_section,
         "content": content,
     }]
@@ -293,11 +330,10 @@ async def build_fluent_drug_profile_response(
     # Source identity must come from the exact record used for the answer. A
     # second name-based lookup cannot prove that its fields match this record.
     artifact_monograph = None
-    has_monograph_provenance = bool(
-        monograph
-        and getattr(monograph, "source_id", None)
-        and getattr(monograph, "source_version", None)
-    )
+    has_monograph_provenance = _has_verified_provenance(monograph)
+    has_dav_provenance = _has_verified_provenance(matched_drug)
+    provenance_record = monograph if has_monograph_provenance else (matched_drug if has_dav_provenance else None)
+    has_record_provenance = provenance_record is not None
 
     has_real_clinical_data = bool(monograph and (ind or adult_d or contra)) or bool(ind or adult_d or contra)
     if not has_real_clinical_data:
@@ -336,12 +372,12 @@ async def build_fluent_drug_profile_response(
 
     source_str = (monograph.source if monograph and monograph.source else matched_drug.clinical_source) or ""
 
-    # RAG Retrieval: Lấy chunks thực tế từ CSDL RAG FTS
-    from app.services.rag.hybrid_retriever import HybridRetriever
+    # RAG Retrieval: Reuse shared HybridRetriever singleton to avoid duplicating ~60 MiB chunk/vector state on Render 512 MiB
+    from app.services.rag.rag_pipeline import get_rag_retriever
     from app.services.rag.citation_grounder import build_claim_citations
     from app.services.rag.paperqa_synthesizer import synthesize_grounded_clinical_response
 
-    retriever = HybridRetriever()
+    retriever = get_rag_retriever()
     search_q = f"{clean_name} {active_ing}"
     retrieved_chunks = await retriever.retrieve_async(search_q, top_k=3)
 
@@ -379,14 +415,14 @@ async def build_fluent_drug_profile_response(
         citations = [c.to_dict() for c in build_claim_citations(relevant_chunks)]
         # Do not claim indexed clinical fields are DB-grounded unless the DB row
         # itself has an independently recorded source artifact/version.
-    if not has_monograph_provenance:
+    if not has_record_provenance:
         relevant_chunks = []
         citations = []
-
-    if not citations and has_monograph_provenance:
-        citations = [build_drug_citation(matched_drug, monograph, source_str)]
     else:
-        citations = [c for c in citations if c.get("chunk_id") in {r.chunk.chunk_id for r in relevant_chunks if r.chunk.source_version}]
+        valid_chunk_ids = {r.chunk.chunk_id for r in relevant_chunks if r.chunk.source_version}
+        citations = [c for c in citations if c.get("chunk_id") in valid_chunk_ids]
+        if not citations:
+            citations = [build_drug_citation(matched_drug, monograph, source_str)]
 
     linked_evidence = []
     cited_chunk_ids = {c.get("chunk_id") for c in citations if isinstance(c, dict) and c.get("chunk_id")}
@@ -423,6 +459,8 @@ async def build_fluent_drug_profile_response(
         header_block += f"• **Hoạt chất chính:** **{matched_drug.active_ingredient}**"
         if matched_drug.dosage_form:
             header_block += f" ({matched_drug.dosage_form})"
+        if getattr(matched_drug, "national_code", None):
+            header_block += f" • SĐK: `{matched_drug.national_code}`"
 
     sections = [header_block]
 
@@ -500,11 +538,12 @@ async def build_fluent_drug_profile_response(
     source_chunk_ids = {r.chunk.chunk_id for r in retrieved_chunks if r.chunk.source_version}
     has_source_linked_chunk = bool(source_chunk_ids.intersection(cited_chunk_ids))
     has_source_linked_monograph = bool(
-        has_monograph_provenance
+        has_record_provenance
+        and provenance_record is not None
         and citations
         and any(
-            citation.get("source_id") == monograph.source_id
-            and citation.get("source_version") == monograph.source_version
+            citation.get("source_id") == provenance_record.source_id
+            and citation.get("source_version") == provenance_record.source_version
             for citation in citations
         )
     )
@@ -561,21 +600,21 @@ async def build_fluent_drug_profile_response(
         abstention_reason=None if sourced else "Không xác minh được evidence có provenance cho nội dung thuốc",
         citations=citations,
         evidence=linked_evidence + ([{
-            "evidence_id": f"monograph:{monograph.id}",
+            "evidence_id": f"{'monograph' if provenance_record is monograph else 'dav'}:{provenance_record.id}",
             "evidence_type": "document_chunk",
-            "source_id": monograph.source_id,
-            "source_version": monograph.source_version,
+            "source_id": provenance_record.source_id,
+            "source_version": provenance_record.source_version,
             "chunk_id": citations[0].get("chunk_id"),
             "source_name": source_str,
-            "section": monograph.title,
+            "section": getattr(provenance_record, "title", None) or getattr(provenance_record, "brand_name", None) or clean_name,
             "content": "\n".join(
-                str(getattr(monograph, field, None) or "")
+                str(getattr(provenance_record, field, None) or "")
                 for field in ("indications", "adult_dosage", "pediatric_dosage", "contraindications", "precautions", "renal_adjustment", "hepatic_adjustment", "pregnancy_warning", "adverse_effects", "drug_interactions", "overdose_treatment", "antidote")
-                if getattr(monograph, field, None)
+                if getattr(provenance_record, field, None)
             ),
-        }] if sourced and has_source_linked_monograph else [])
+        }] if sourced and has_source_linked_monograph and provenance_record is not None else [])
     )
-    return _link_medication_profile_evidence(response, monograph)
+    return _link_medication_profile_evidence(response, monograph, matched_drug)
 
 # ==============================================================================
 # HỆ TRI THỨC LÂM SÀNG CHUYÊN SÂU (DYNAMIC SPECIALTY KNOWLEDGE REGISTRY)

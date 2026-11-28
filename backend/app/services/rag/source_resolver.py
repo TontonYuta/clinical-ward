@@ -52,12 +52,47 @@ def _strip_accents(s: str) -> str:
 def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict]]:
     """
     Nạp và lập chỉ mục CSDL nguồn văn bản và 682 chuyên luận Dược Thư Quốc Gia.
+    Chỉ giữ các trường metadata nhẹ trong cache RAM để tránh ôm 27-50 MB JSON trên Render 512MiB.
     Returns: (sources_list, by_inn_map, token_map)
     """
+    import gc
     try:
         manifest = json.loads(_SOURCE_MANIFEST_PATH.read_text(encoding="utf-8")) if _SOURCE_MANIFEST_PATH.exists() else {}
+        artifact_id = None
+        artifact_version = None
         if _MONOGRAPHS_PATH.exists():
-            records = json.loads(_MONOGRAPHS_PATH.read_text(encoding="utf-8"))
+            artifact_id = _MONOGRAPHS_PATH.resolve().relative_to(_BACKEND_DIR.resolve().parent).as_posix()
+            h = hashlib.sha256()
+            with _MONOGRAPHS_PATH.open("rb") as f:
+                for block in iter(lambda: f.read(1024 * 1024), b""):
+                    h.update(block)
+            artifact_version = f"sha256:{h.hexdigest()}"
+            with _MONOGRAPHS_PATH.open("rb") as f:
+                raw_records = json.load(f)
+            # Project immediately to lightweight citation/page metadata only so full JSON text is freed.
+            records = []
+            for idx in range(len(raw_records)):
+                item = raw_records[idx]
+                raw_records[idx] = None
+                if not isinstance(item, dict):
+                    continue
+                light = {
+                    "id": item.get("id"),
+                    "inn": item.get("inn"),
+                    "title": item.get("title"),
+                    "start_page": item.get("start_page"),
+                    "section_pages": item.get("section_pages"),
+                    "source": item.get("source"),
+                    "source_id": item.get("source_id") or artifact_id,
+                    "source_version": item.get("source_version") or artifact_version,
+                }
+                if item.get("indications"):
+                    light["indications"] = str(item["indications"])[:280]
+                records.append(light)
+            del raw_records
+            gc.collect()
+            from app.config import trim_process_memory
+            trim_process_memory()
         else:
             # Fallback siêu nhẹ: Nạp trực tiếp từ SQLite FTS5 (Không cần ôm theo file JSON 67MB)
             import sqlite3
@@ -66,19 +101,11 @@ def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict
             conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT id, inn, title, atc_code, drug_class, source_id, source_version, indications, contraindications, adult_dosage, pediatric_dosage, precautions, renal_adjustment, hepatic_adjustment, pregnancy_warning, adverse_effects, drug_interactions, overdose_treatment, antidote FROM clinical_drug_monographs")
+            cursor.execute("SELECT id, inn, title, section_pages, source, source_id, source_version, indications FROM clinical_drug_monographs")
             records = [dict(row) for row in cursor.fetchall()]
             conn.close()
 
         sources = manifest.get("sources", []) if isinstance(manifest, dict) else []
-        if _MONOGRAPHS_PATH.exists():
-            artifact_id = _MONOGRAPHS_PATH.resolve().relative_to(_BACKEND_DIR.resolve().parent).as_posix()
-            artifact_hash = hashlib.sha256(_MONOGRAPHS_PATH.read_bytes()).hexdigest()
-            for record in records:
-                if not record.get("source_id"):
-                    record["source_id"] = artifact_id
-                if not record.get("source_version"):
-                    record["source_version"] = f"sha256:{artifact_hash}"
 
         by_inn = {}
         token_map = {}

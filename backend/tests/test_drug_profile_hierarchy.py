@@ -208,6 +208,28 @@ async def test_profile_abstains_when_database_monograph_lacks_source_provenance(
 
 
 @pytest.mark.asyncio
+async def test_profile_succeeds_for_verified_standalone_dav_drug_without_monograph():
+    """Verify standalone DAV drug with verified source_id/source_version (e.g. Teglutik) succeeds."""
+    async with AsyncSessionLocal() as db:
+        drug = (await db.execute(select(DavNationalDrug).filter(DavNationalDrug.brand_name == "Teglutik"))).scalars().first()
+        assert drug is not None
+        assert drug.clinical_monograph_id is None
+        assert drug.source_id and drug.source_version
+
+        resp = await build_fluent_drug_profile_response(
+            drug, None, 0, "", "Teglutik"
+        )
+
+    assert resp.answer_type == "medication_profile"
+    assert resp.source_status == "exact_match"
+    assert resp.rag_grounded is True
+    assert resp.confidence == 1.0
+    assert "Riluzole" in resp.reply_text
+    assert resp.citations and any(c.get("source_version") == drug.source_version for c in resp.citations)
+    assert resp.evidence and any(e.get("source_version") == drug.source_version for e in resp.evidence)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("requested_field,query", [
     ("adult_dosage", "Liều dùng Paracetamol"),
     ("indications", "Chỉ định Paracetamol"),

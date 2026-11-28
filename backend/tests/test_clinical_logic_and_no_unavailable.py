@@ -194,3 +194,14 @@ def test_attach_database_claims_clears_chips_on_abstention():
     assert out.answer_type == "safe_abstention"
     assert out.suggested_chips == []
     assert out.active_medication_name is None
+
+
+def test_trie_matcher_uses_compact_lookup_without_per_char_nodes():
+    """Verify 55k DB matcher preserves exact drug extraction while keeping root.children unpopulated."""
+    from app.services.chatbot.lexical_trie_matcher import DrugLexicalMatcher
+    matcher = DrugLexicalMatcher()
+    matcher.load_from_db()
+    assert matcher.root.children is None
+    assert any("teglutik" in m.lower() for m in matcher.extract_medications("Teglutik"))
+    assert any("venclexta" in m.lower() for m in matcher.extract_medications("Venclexta"))
+    assert any("vancomycin" in m.lower() for m in matcher.extract_medications("Liều dùng Vancomycin"))

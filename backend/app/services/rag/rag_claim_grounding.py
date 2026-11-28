@@ -377,15 +377,21 @@ def verify_and_finalize_claims(
         filtered_citations = []
 
     if validated_answer and filtered_citations:
+        top_basis = rag_res.legal_basis or (
+            filtered_citations[0].legal_basis if filtered_citations else "Tài liệu chuyên môn"
+        )
         if not used_deterministic_fallback and answer_text and len(answer_text.strip()) > 40 and answer_text.strip() not in validated_answer:
             clean_llm = answer_text.strip()
+            if top_basis and top_basis.casefold() not in clean_llm.casefold():
+                # Ensure verified circular/pharmacopoeia identifier is always visible even when LLM omits its number.
+                doc_match = re.search(r"\b\d{1,3}/\d{4}/[A-Z0-9-]+\b", top_basis, flags=re.IGNORECASE)
+                has_doc_num = bool(doc_match and doc_match.group(0).casefold() in clean_llm.casefold())
+                if not has_doc_num:
+                    clean_llm = f"{clean_llm}\n\n*Căn cứ: {top_basis}.*"
             if inference_required and "chỉ mang tính tham khảo" not in clean_llm.casefold():
                 clean_llm = f"**Chỉ mang tính tham khảo.**\n\n{clean_llm}"
             rag_res.answer = clean_llm
         else:
-            top_basis = rag_res.legal_basis or (
-                rag_res.citations[0].legal_basis if rag_res.citations else "Tài liệu chuyên môn"
-            )
             clean_body = validated_answer.removeprefix("**Chỉ mang tính tham khảo.**").strip()
             prefix_note = "**Chỉ mang tính tham khảo.**\n\n" if (inference_required or validated_answer.startswith("**Chỉ mang tính tham khảo.**")) else ""
             summary_lines = build_extractive_summary(query, clean_body)

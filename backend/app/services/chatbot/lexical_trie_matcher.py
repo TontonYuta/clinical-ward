@@ -2,7 +2,9 @@
 Aho-Corasick Lexical Trie Matcher cho 55,000 thuốc DAV & Chuyên luận DĐVN V.
 Đảm bảo trích xuất thực thể thuốc chuẩn xác < 0.1ms, kháng lỗi chính tả và gõ không dấu (<= 150 LOC).
 """
+import gc
 import re
+import sys
 import sqlite3
 from typing import List, Optional, Tuple, Dict, Set
 from app.seed_registry import resolve_db_path
@@ -12,46 +14,64 @@ from app.services.chatbot.fuzzy_drug_resolver import FuzzyDrugResolver
 __all__ = ["strip_accents", "COMMON_EXCLUSIONS", "TrieNode", "DrugLexicalMatcher", "get_drug_lexical_matcher"]
 
 class DrugLexicalMatcher:
-    """Trie đối khớp từ khóa thực thể dược phẩm siêu tốc độ O(L)."""
+    """Bộ đối khớp từ khóa thực thể dược phẩm tối ưu RAM cho 55,000 thuốc DAV."""
     def __init__(self):
         self.root = TrieNode()
         self.canonical_brands: Set[str] = set()
         self.canonical_inns: Set[str] = set()
         self._name_map: Dict[str, str] = {}
         self._candidates_by_first: Dict[str, List[str]] = {}
+        self._exact_terms: Dict[str, Tuple[str, str]] = {}
+        self._first_chars: Set[str] = set()
+        self._max_term_len: int = 0
+        self._bulk_loading: bool = False
         self._is_loaded = False
 
     def insert(self, term: str, canonical: str, entity_type: str = "brand") -> None:
         term_clean = term.strip().lower()
         if len(term_clean) < 2 or len(term_clean) > 255 or term_clean in COMMON_EXCLUSIONS:
             return
+        canon_intern = sys.intern(canonical)
+        type_intern = sys.intern(entity_type)
         if entity_type == "brand":
-            self.canonical_brands.add(canonical)
+            self.canonical_brands.add(canon_intern)
         else:
-            self.canonical_inns.add(canonical)
+            self.canonical_inns.add(canon_intern)
 
         keys = [term_clean]
         unacc = strip_accents(term_clean)
         if (len(unacc) >= 4 or term_clean == unacc) and unacc not in COMMON_EXCLUSIONS:
             keys.append(unacc)
 
+        has_upper_new = any(c.isupper() for c in canon_intern)
         for key in set(keys):
-            node = self.root
-            for char in key:
-                if node.children is None:
-                    node.children = {}
-                if char not in node.children:
-                    node.children[char] = TrieNode()
-                node = node.children[char]
-            node.is_end = True
-            if not node.canonical or (any(c.isupper() for c in canonical) and not any(c.isupper() for c in node.canonical)):
-                node.canonical = canonical
-                node.entity_type = entity_type
+            existing = self._exact_terms.get(key)
+            if existing is None or (has_upper_new and not any(c.isupper() for c in existing[0])):
+                self._exact_terms[key] = (canon_intern, type_intern)
+                self._first_chars.add(key[0])
+                if len(key) > self._max_term_len:
+                    self._max_term_len = len(key)
+
+            # Only build character Trie nodes for ad-hoc manual insertions outside 55k DB bulk load
+            # (saves ~100 MiB RAM on 512 MiB Render containers while keeping manual root tests intact).
+            if not self._bulk_loading:
+                node = self.root
+                for char in key:
+                    if node.children is None:
+                        node.children = {}
+                    if char not in node.children:
+                        node.children[char] = TrieNode()
+                    node = node.children[char]
+                node.is_end = True
+                if not node.canonical or (has_upper_new and not any(c.isupper() for c in node.canonical)):
+                    node.canonical = canon_intern
+                    node.entity_type = type_intern
 
     def load_from_db(self, db_path: Optional[str] = None) -> None:
         if self._is_loaded:
             return
         actual_path = resolve_db_path(db_path)
+        self._bulk_loading = True
         try:
             conn = sqlite3.connect(actual_path)
             conn.execute("PRAGMA cache_size = -2000;")
@@ -122,35 +142,60 @@ class DrugLexicalMatcher:
             for c in self.canonical_brands | self.canonical_inns:
                 low = strip_accents(c.lower())
                 if low and 3 <= len(low) <= 25:
-                    self._name_map[low] = c
-                    self._candidates_by_first.setdefault(low[0], []).append(low)
+                    low_intern = sys.intern(low)
+                    self._name_map[low_intern] = c
+                    self._candidates_by_first.setdefault(low_intern[0], []).append(low_intern)
             self._is_loaded = True
+            gc.collect()
+            from app.config import trim_process_memory
+            trim_process_memory()
         except Exception:
             pass
+        finally:
+            self._bulk_loading = False
 
     def extract_medications(self, text: str) -> List[str]:
         """Trích xuất tất cả các thực thể thuốc có trong văn bản (kể cả không dấu & lỗi chính tả)."""
         if not self._is_loaded:
             self.load_from_db()
 
+        from bisect import bisect_left, bisect_right
+
         text_norm = text.lower()
         text_unacc = strip_accents(text)
         candidates: List[Tuple[int, int, str, str]] = []
+        exact_terms = self._exact_terms
+        first_chars = self._first_chars
+        max_len = self._max_term_len
+        has_trie = self.root.children is not None
 
         for src in (text_norm, text_unacc):
             n = len(src)
+            if not n:
+                continue
+            end_positions = [k + 1 for k in range(n) if k + 1 == n or not src[k + 1].isalnum()]
             for i in range(n):
                 if i > 0 and src[i-1].isalnum():
                     continue
-                node = self.root
-                j = i
                 longest = None
-                while j < n and node.children is not None and src[j] in node.children:
-                    node = node.children[src[j]]
-                    if node.is_end:
-                        if j + 1 == n or not src[j+1].isalnum():
-                            longest = (i, j + 1, node.canonical or "", node.entity_type or "")
-                    j += 1
+                if max_len > 0 and src[i] in first_chars:
+                    lo = bisect_left(end_positions, i + 2)
+                    hi = bisect_right(end_positions, i + max_len)
+                    for idx_pos in range(hi - 1, lo - 1, -1):
+                        end = end_positions[idx_pos]
+                        hit = exact_terms.get(src[i:end])
+                        if hit is not None:
+                            longest = (i, end, hit[0], hit[1])
+                            break
+                if has_trie:
+                    node = self.root
+                    j = i
+                    while j < n and node.children is not None and src[j] in node.children:
+                        node = node.children[src[j]]
+                        if node.is_end and (j + 1 == n or not src[j+1].isalnum()):
+                            if longest is None or (j + 1) > longest[1]:
+                                longest = (i, j + 1, node.canonical or "", node.entity_type or "")
+                        j += 1
                 if longest and len(longest[2]) >= 3 and longest[2].lower() not in COMMON_EXCLUSIONS:
                     matched_slice = src[longest[0]:longest[1]].lower()
                     original_slice = text_norm[longest[0]:longest[1]].lower()

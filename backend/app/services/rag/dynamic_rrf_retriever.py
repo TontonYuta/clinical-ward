@@ -53,7 +53,10 @@ class DynamicHybridRetriever:
     """Bộ truy xuất lai ghép BM25 & Semantic với cơ chế cắt tỉa động."""
 
     def __init__(self, base_retriever: Optional[HybridRetriever] = None):
-        self.base_retriever = base_retriever or HybridRetriever()
+        if base_retriever is None:
+            from app.services.rag.rag_pipeline import get_rag_retriever
+            base_retriever = get_rag_retriever()
+        self.base_retriever = base_retriever
 
     def retrieve(
         self,

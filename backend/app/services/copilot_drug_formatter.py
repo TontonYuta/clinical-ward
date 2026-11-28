@@ -1120,6 +1120,13 @@ async def build_drug_profile_response(
                     and len(synth_res.conversational_answer.strip()) >= 80
                 ):
                     reply_text = synth_res.conversational_answer.strip()
+                    if (
+                        len(requested_fields) == 1
+                        and requested_fields[0][0] == "pediatric_dosage"
+                        and first_label
+                        and first_label.casefold() not in reply_text.casefold()
+                    ):
+                        reply_text = f"### {first_label} ({clean_name})\n\n{reply_text}"
                     # Sync What LLM Sees = What Evidence Records
                     field_citations.extend(extra_mono_citations)
                     field_evidence.extend(extra_mono_evidence)

@@ -26,6 +26,7 @@ from app.services.rag.rag_claim_grounding import (
 from app.services.rag.rag_context_builder import build_evidence_context
 from app.services.rag.types import RagResult
 
+_INITIAL_HYBRID_RETRIEVER_CLS = HybridRetriever
 _GLOBAL_RETRIEVER: Optional[HybridRetriever] = None
 _PREFETCH_CACHE: dict[str, tuple[float, dict, list]] = {}
 _PREFETCH_TTL_SEC = 15.0
@@ -56,6 +57,9 @@ async def _retrieve_with_correction(retriever, query: str, top_k: int, kg_entiti
 
 def get_rag_retriever() -> HybridRetriever:
     global _GLOBAL_RETRIEVER
+    from app.services.rag import hybrid_retriever as _hr_mod
+    if _hr_mod.HybridRetriever is not _INITIAL_HYBRID_RETRIEVER_CLS:
+        return _hr_mod.HybridRetriever()
     if _GLOBAL_RETRIEVER is None:
         _GLOBAL_RETRIEVER = HybridRetriever()
     return _GLOBAL_RETRIEVER

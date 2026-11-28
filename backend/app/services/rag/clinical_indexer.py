@@ -2,8 +2,10 @@
 Clinical Indexer: Ingestion & Semantic Chunking for Medical Knowledge
 Chunking theo từng chuyên luận, điều khoản và tương tác thuốc (<=180 LOC)
 """
+import gc
 import os
 import re
+import sys
 import json
 import hashlib
 from pathlib import Path
@@ -328,15 +330,22 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
         return []
 
     try:
-        data = json.loads(json_path.read_text(encoding="utf-8"))
+        with json_path.open("rb") as f:
+            data = json.load(f)
     except Exception:
         return []
 
     chunks: list[RagChunk] = []
     extracted_version = _file_sha256(json_path)
-    source_id = _stable_source_id(json_path)
-    source_version = f"sha256:{extracted_version}" if extracted_version else None
-    for idx, m in enumerate(data, 1):
+    source_id = sys.intern(_stable_source_id(json_path))
+    source_version = sys.intern(f"sha256:{extracted_version}") if extracted_version else None
+    source_doc_name = sys.intern("Dược thư Quốc gia Việt Nam, lần xuất bản II")
+    entity_mono = sys.intern("monograph")
+    for idx in range(1, len(data) + 1):
+        m = data[idx - 1]
+        data[idx - 1] = None
+        if not isinstance(m, dict):
+            continue
         raw_inn = (m.get("inn") or "").strip()
         inn = re.split(r"\s{4,}", raw_inn)[0].strip() if raw_inn else ""
         if not inn:
@@ -345,11 +354,11 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
         title = re.split(r"\s{4,}", raw_title)[0].strip() or inn
         slug = re.sub(r"[^a-zA-Z0-9]", "_", inn).lower()[:20]
         page = m.get("start_page")
-        legal_basis = m.get("source") or (
+        legal_basis = sys.intern(m.get("source") or (
             f"Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT, Trang {page}) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
             if page else
             "Dược thư Quốc gia Việt Nam (Lần xuất bản II - 2015, QĐ 2033/QĐ-BYT) • Tệp: Duoc_Thu_Quoc_Gia_Viet_Nam.pdf"
-        )
+        ))
         lines = (m.get("drug_class") or "").splitlines()
         drug_class_first = lines[0].strip() if lines else ""
 
@@ -370,13 +379,16 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
                 part_note = f" (phần {part_idx}/{total_parts})" if total_parts > 1 else ""
                 header = f"### {group_label}: {title} (Hoạt chất: {inn}){part_note}"
                 content = f"{header}\n{part_body}"
-                kws = _extract_keywords(
-                    f"{inn} {title} {drug_class_first} {part_body[:300]} {extra_kws}"
-                )
+                # Keep compact interned metadata keywords only (content & title already carry full body text)
+                kws = [
+                    sys.intern(kw) for kw in _extract_keywords(
+                        f"{inn} {title} {drug_class_first} {extra_kws}"
+                    )[:12]
+                ]
                 if group_key == "overview" and m.get("atc_code"):
-                    kws.append(str(m["atc_code"]).lower())
+                    kws.append(sys.intern(str(m["atc_code"]).lower()))
                 if group_key == "overdose" and m.get("antidote"):
-                    kws.append(str(m["antidote"]).lower())
+                    kws.append(sys.intern(str(m["antidote"]).lower()))
 
                 page_sec = (
                     f"{title} - {group_label}{part_note} (Trang {page})"
@@ -384,17 +396,21 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
                 )
                 chunks.append(RagChunk(
                     chunk_id=f"dtqg_{slug}_{idx}_{group_key}{part_suffix}",
-                    source_doc="Dược thư Quốc gia Việt Nam, lần xuất bản II",
+                    source_doc=source_doc_name,
                     legal_basis=legal_basis,
                     page_or_section=page_sec,
                     title=f"{group_label}: {inn} ({title}){part_note}",
                     content=content,
                     keywords=kws,
-                    entity_type="monograph",
+                    entity_type=entity_mono,
                     source_id=source_id,
                     source_version=source_version,
                 ))
 
+    del data
+    gc.collect()
+    from app.config import trim_process_memory
+    trim_process_memory()
     return chunks
 
 def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:

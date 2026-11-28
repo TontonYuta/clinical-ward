@@ -211,9 +211,15 @@ def build_drug_citation(
         "text_fragment_url": text_fragment_url,
         "page": page if has_dtqg_provenance else None,
     }
-    source_id = getattr(monograph, "source_id", None) if monograph is not None else None
-    source_version = getattr(monograph, "source_version", None) if monograph is not None else None
-    if source_id and source_version:
+    source_id = (
+        (getattr(monograph, "source_id", None) if monograph is not None else None)
+        or getattr(matched, "source_id", None)
+    )
+    source_version = (
+        (getattr(monograph, "source_version", None) if monograph is not None else None)
+        or getattr(matched, "source_version", None)
+    )
+    if source_id and source_version and str(source_version).strip().casefold() != "unversioned":
         citation["source_id"] = source_id
         citation["source_version"] = source_version
     return citation

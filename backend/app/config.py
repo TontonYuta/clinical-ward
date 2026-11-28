@@ -66,3 +66,12 @@ if settings.APP_ENV.strip().lower() in {"production", "prod"} and (
     not os.getenv("SECRET_KEY") or len(settings.SECRET_KEY) < 32
 ):
     raise RuntimeError("Production requires SECRET_KEY with at least 32 characters.")
+
+
+def trim_process_memory() -> None:
+    """Ask glibc to release freed temporary heap arenas back to the OS (512 MiB Render guard)."""
+    try:
+        import ctypes
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except Exception:
+        pass

@@ -50,7 +50,9 @@ def _current_workflow_namespace() -> str:
     managed_data_dir = backend_dir / "data/knowledge_base"
     for path in sorted(managed_data_dir.rglob("*.json")):
         digest.update(path.relative_to(root_dir).as_posix().encode())
-        digest.update(path.read_bytes())
+        with path.open("rb") as f:
+            for block in iter(lambda: f.read(1024 * 1024), b""):
+                digest.update(block)
     return digest.hexdigest()[:20]
 
 _WORKFLOW_NAMESPACE = _current_workflow_namespace()
