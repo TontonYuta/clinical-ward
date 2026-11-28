@@ -54,8 +54,8 @@ COPY backend/app /app/app
 COPY backend/data /app/data
 COPY public/pdf /app/public/pdf
 
-# Apply idempotent monograph OCR INN/duplicate cleanup onto prebaked SQLite during image build (0 runtime RSS cost)
-RUN python -c "import sqlite3; from app.seed_monographs import cleanup_and_merge_monograph_records; conn = sqlite3.connect('/app/clinical_hospital.db'); print('Prebaked DB cleanup:', cleanup_and_merge_monograph_records(conn)); conn.close()"
+# Apply idempotent monograph cleanup & pre-sync SQLite FTS5 static KB signature during image build (0 runtime RSS cost)
+RUN python -c "import sqlite3; from app.seed_monographs import cleanup_and_merge_monograph_records; from app.services.rag.clinical_indexer import load_all_clinical_chunks, compute_kb_fast_signature; from app.services.rag.sqlite_fts import SqliteFtsIndex; conn = sqlite3.connect('/app/clinical_hospital.db'); print('Prebaked DB cleanup:', cleanup_and_merge_monograph_records(conn)); conn.close(); fts = SqliteFtsIndex('/app/clinical_hospital.db'); chunks = load_all_clinical_chunks(); fts.sync_chunks(chunks, kb_fast_sig=compute_kb_fast_signature()); print('Prebaked FTS5 synced chunks:', len(chunks))"
 
 EXPOSE 8000
 

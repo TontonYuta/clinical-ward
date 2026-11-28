@@ -136,51 +136,33 @@ def _chunk_page_text(text: str, max_chars: int = 1200) -> list[str]:
 
 async def _extract_pdf_pages_markdown(file_bytes: bytes) -> tuple[int, list[tuple[int, str]], int]:
     """
-    Trích xuất PDF bằng PyMuPDF4LLM (giữ heading & bảng biểu Markdown),
+    Trích xuất PDF bằng PyMuPDF4LLM trong subprocess ngắn hạn (tránh giữ ~100 MiB C-heap trên web worker),
     tự động fallback sang Vision OCR cho trang scan ảnh không có lớp chữ.
     Returns: (total_pages, [(page_idx, page_markdown), ...], ocr_pages_count)
     """
-    import base64
-    import pymupdf
-    import pymupdf4llm
+    import asyncio
+    from app.services.rag.pdf_worker import run_pdf_worker
 
     try:
-        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
-        total_pages = len(doc)
+        worker_res = await asyncio.to_thread(run_pdf_worker, "extract", file_bytes, 10, 120)
     except Exception as read_err:
         raise ValueError(f"Tệp PDF bị hỏng hoặc cấu trúc tệp không hợp lệ: {str(read_err)}")
 
+    total_pages = int(worker_res.get("total_pages") or 0)
     if total_pages == 0:
         raise ValueError("Tệp PDF không chứa trang nào.")
-
-    md_by_page: dict[int, str] = {}
-    try:
-        page_items = pymupdf4llm.to_markdown(doc, page_chunks=True)
-        for idx, item in enumerate(page_items, start=1):
-            if isinstance(item, dict):
-                p_num = int((item.get("metadata") or {}).get("page") or idx)
-                md_by_page[p_num] = str(item.get("text") or "")
-    except Exception:
-        pass
 
     extracted: list[tuple[int, str]] = []
     ocr_pages_used = 0
     max_ocr_pages = 10
 
-    for page_idx in range(1, total_pages + 1):
-        page = doc[page_idx - 1]
-        page_text = (md_by_page.get(page_idx) or "").strip()
-        if len(page_text) < 40:
-            raw_txt = (page.get_text("text") or "").strip()
-            if len(raw_txt) > len(page_text):
-                page_text = raw_txt
-
-        if len(re.sub(r"\s+", "", page_text)) < 30 and ocr_pages_used < max_ocr_pages:
+    for item in worker_res.get("pages") or []:
+        page_idx = int(item.get("page") or 0)
+        page_text = str(item.get("text") or "").strip()
+        b64_img = item.get("image_b64")
+        if b64_img and ocr_pages_used < max_ocr_pages and len(re.sub(r"\s+", "", page_text)) < 30:
             try:
                 from app.services.llm_provider import query_vision_ocr
-
-                pix = page.get_pixmap(dpi=150)
-                b64_img = base64.b64encode(pix.tobytes("png")).decode("ascii")
                 ocr_text = await query_vision_ocr(
                     b64_img,
                     mime_type="image/png",
@@ -194,8 +176,6 @@ async def _extract_pdf_pages_markdown(file_bytes: bytes) -> tuple[int, list[tupl
 
         if page_text.strip():
             extracted.append((page_idx, page_text.strip()))
-
-    doc.close()
 
     # Fallback an toàn sang pypdf nếu PyMuPDF không đọc được lớp chữ (VD: stream PDF đặc thù hoặc test mock)
     if not extracted:

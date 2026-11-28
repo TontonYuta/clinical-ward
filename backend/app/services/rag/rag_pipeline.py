@@ -68,9 +68,14 @@ def get_rag_retriever() -> HybridRetriever:
 def reload_rag_retriever() -> HybridRetriever:
     """Tải lại HybridRetriever và xóa cache manifest + prefetch khi có tài liệu PDF mới được nạp hoặc xóa."""
     global _GLOBAL_RETRIEVER
+    import gc
+    from app.config import trim_process_memory
     from app.services.rag.source_resolver import reload_source_documents
     reload_source_documents()
     _PREFETCH_CACHE.clear()
+    _GLOBAL_RETRIEVER = None
+    gc.collect()
+    trim_process_memory()
     _GLOBAL_RETRIEVER = HybridRetriever()
     return _GLOBAL_RETRIEVER
 

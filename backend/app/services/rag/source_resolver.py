@@ -52,15 +52,55 @@ def _strip_accents(s: str) -> str:
 def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict]]:
     """
     Nạp và lập chỉ mục CSDL nguồn văn bản và 682 chuyên luận Dược Thư Quốc Gia.
-    Chỉ giữ các trường metadata nhẹ trong cache RAM để tránh ôm 27-50 MB JSON trên Render 512MiB.
+    Ưu tiên đọc bảng clinical_drug_monographs trực tiếp từ SQLite để tránh giải mã 27 MB JSON trên Render 512MiB.
     Returns: (sources_list, by_inn_map, token_map)
     """
     import gc
+    import sqlite3
+    from app.config import settings, trim_process_memory
+
+    def _extract_start_page(sec_pages_raw: str | dict | None) -> int | None:
+        if not sec_pages_raw:
+            return None
+        try:
+            sp = json.loads(sec_pages_raw) if isinstance(sec_pages_raw, str) else sec_pages_raw
+            if isinstance(sp, dict):
+                pages = []
+                for val in sp.values():
+                    p = val.get("page") if isinstance(val, dict) else val
+                    if isinstance(p, (int, float)) or (isinstance(p, str) and p.isdigit()):
+                        pages.append(int(p))
+                return min(pages) if pages else None
+        except Exception:
+            pass
+        return None
+
     try:
         manifest = json.loads(_SOURCE_MANIFEST_PATH.read_text(encoding="utf-8")) if _SOURCE_MANIFEST_PATH.exists() else {}
-        artifact_id = None
-        artifact_version = None
-        if _MONOGRAPHS_PATH.exists():
+        records = []
+        db_path = settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+        if db_path and Path(db_path).is_file():
+            try:
+                conn = sqlite3.connect(db_path)
+                conn.row_factory = sqlite3.Row
+                conn.execute("PRAGMA cache_size = -1000;")
+                mono_cnt = conn.execute(
+                    "SELECT COUNT(*) FROM clinical_drug_monographs WHERE section_pages IS NOT NULL"
+                ).fetchone()[0]
+                if mono_cnt >= 600:
+                    cursor = conn.execute(
+                        "SELECT id, inn, title, section_pages, source, source_id, source_version, substr(indications, 1, 280) AS indications "
+                        "FROM clinical_drug_monographs"
+                    )
+                    for row in cursor.fetchall():
+                        rec = dict(row)
+                        rec["start_page"] = _extract_start_page(rec.get("section_pages"))
+                        records.append(rec)
+                conn.close()
+            except Exception:
+                records = []
+
+        if not records and _MONOGRAPHS_PATH.exists():
             artifact_id = _MONOGRAPHS_PATH.resolve().relative_to(_BACKEND_DIR.resolve().parent).as_posix()
             h = hashlib.sha256()
             with _MONOGRAPHS_PATH.open("rb") as f:
@@ -70,7 +110,6 @@ def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict
             with _MONOGRAPHS_PATH.open("rb") as f:
                 raw_records = json.load(f)
             # Project immediately to lightweight citation/page metadata only so full JSON text is freed.
-            records = []
             for idx in range(len(raw_records)):
                 item = raw_records[idx]
                 raw_records[idx] = None
@@ -91,19 +130,20 @@ def load_source_documents() -> tuple[list[dict], dict[str, dict], dict[str, dict
                 records.append(light)
             del raw_records
             gc.collect()
-            from app.config import trim_process_memory
             trim_process_memory()
-        else:
-            # Fallback siêu nhẹ: Nạp trực tiếp từ SQLite FTS5 (Không cần ôm theo file JSON 67MB)
-            import sqlite3
-            from app.config import settings
-            db_path = settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
-            conn = sqlite3.connect(db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, inn, title, section_pages, source, source_id, source_version, indications FROM clinical_drug_monographs")
-            records = [dict(row) for row in cursor.fetchall()]
-            conn.close()
+        elif not records and db_path and Path(db_path).is_file():
+            try:
+                conn = sqlite3.connect(db_path)
+                conn.row_factory = sqlite3.Row
+                records = [
+                    dict(row)
+                    for row in conn.execute(
+                        "SELECT id, inn, title, section_pages, source, source_id, source_version, substr(indications, 1, 280) AS indications FROM clinical_drug_monographs"
+                    ).fetchall()
+                ]
+                conn.close()
+            except Exception:
+                records = []
 
         sources = manifest.get("sources", []) if isinstance(manifest, dict) else []
 

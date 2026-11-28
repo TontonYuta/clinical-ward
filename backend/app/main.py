@@ -209,7 +209,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Warning: Không thể warm up FTS: {e}")
 
-    # DrugLexicalMatcher sẽ tự lazy-load ở lần trích xuất thuốc đầu tiên để giảm RAM & thời gian boot startup.
+    # DrugLexicalMatcher/HybridRetriever tự lazy-load trên Render 512MiB; bật PREWARM_ON_STARTUP=true trên server riêng >=2GB RAM.
+    if settings.PREWARM_ON_STARTUP:
+        try:
+            from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+            from app.services.rag.rag_pipeline import get_rag_retriever
+            from app.services.rag.source_resolver import load_source_documents
+            get_drug_lexical_matcher()
+            get_rag_retriever()
+            load_source_documents()
+        except Exception as e:
+            print(f"Warning: Prewarm startup partial failure: {e}")
 
     # Khởi tạo bộ nhớ đệm lâm sàng đa tầng (Clinical LRU Cache - GPTCache pattern)
     try:

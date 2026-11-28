@@ -410,6 +410,13 @@ async def build_fluent_drug_profile_response(
                 from app.services.rag.types import RetrievedChunk
                 relevant_chunks.append(RetrievedChunk(chunk=chunk, score=0.0, match_reasons=["direct monograph subject and requested facet"]))
 
+    missing_content_ids = [r.chunk.chunk_id for r in relevant_chunks if not r.chunk.content]
+    if missing_content_ids and hasattr(retriever, "fts_index"):
+        hydrated_map = retriever.fts_index.get_chunks_by_ids(missing_content_ids)
+        for item in relevant_chunks:
+            if item.chunk.chunk_id in hydrated_map:
+                item.chunk = hydrated_map[item.chunk.chunk_id]
+
     citations = []
     if relevant_chunks:
         citations = [c.to_dict() for c in build_claim_citations(relevant_chunks)]

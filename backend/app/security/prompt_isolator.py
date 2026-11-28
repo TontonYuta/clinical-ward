@@ -328,50 +328,51 @@ def inspect_document_poisoning_risk(text: str) -> Dict[str, Any]:
     }
 
 
-def inspect_pdf_hidden_layers(file_bytes: bytes, max_pages: int = 20) -> Dict[str, Any]:
+def inspect_pdf_hidden_layers(
+    file_bytes: bytes,
+    max_pages: int = 20,
+    precomputed_spans: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
     """
     Detect stealth hidden text layers in PDFs (tiny font < 2.5pt or near-white text color on light page)
     commonly used in PoisonedRAG / Invisible Indirect Prompt Injection attacks.
+    Runs PyMuPDF extraction in an isolated subprocess so Uvicorn never retains MuPDF C-heap.
     """
     tiny_suspicious_spans = 0
     white_suspicious_spans = 0
     samples: List[str] = []
     try:
-        import pymupdf
+        spans = precomputed_spans
+        if spans is None:
+            from app.services.rag.pdf_worker import run_pdf_worker
+            spans = run_pdf_worker("spans", file_bytes, max_pages).get("spans", [])
 
-        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
-        for i in range(min(len(doc), max_pages)):
-            page_dict = doc[i].get_text("dict") or {}
-            for block in page_dict.get("blocks", []):
-                for line in block.get("lines", []):
-                    for span in line.get("spans", []):
-                        txt = (span.get("text") or "").strip()
-                        if len(txt) < 8:
-                            continue
-                        size = float(span.get("size") or 10.0)
-                        color = int(span.get("color") or 0)
-                        r = (color >> 16) & 0xFF
-                        g = (color >> 8) & 0xFF
-                        b = color & 0xFF
-                        is_tiny = size < 2.5
-                        is_near_white = r >= 245 and g >= 245 and b >= 245
-                        if not (is_tiny or is_near_white):
-                            continue
-                        folded = strip_vietnamese_diacritics(fold_homoglyphs(txt))
-                        is_directive = bool(
-                            any(p.search(txt) for p in _INDIRECT_DIRECTIVE_PATTERNS)
-                            or _INDIRECT_ASCII_RE.search(folded)
-                            or _MODEL_CONTROL_TOKEN_RE.search(txt)
-                            or re.search(r"(?i)\b(?:ignore|override|system\s+prompt|bo\s+qua|chi\s+dan)\b", folded)
-                        )
-                        if is_directive:
-                            if is_tiny:
-                                tiny_suspicious_spans += 1
-                            if is_near_white:
-                                white_suspicious_spans += 1
-                            if len(samples) < 3:
-                                samples.append(txt[:100])
-        doc.close()
+        for span in spans:
+            txt = str(span.get("text") or "").strip()
+            if len(txt) < 8:
+                continue
+            size = float(span.get("size") or 10.0)
+            r = int(span.get("r") or 0)
+            g = int(span.get("g") or 0)
+            b = int(span.get("b") or 0)
+            is_tiny = size < 2.5
+            is_near_white = r >= 245 and g >= 245 and b >= 245
+            if not (is_tiny or is_near_white):
+                continue
+            folded = strip_vietnamese_diacritics(fold_homoglyphs(txt))
+            is_directive = bool(
+                any(p.search(txt) for p in _INDIRECT_DIRECTIVE_PATTERNS)
+                or _INDIRECT_ASCII_RE.search(folded)
+                or _MODEL_CONTROL_TOKEN_RE.search(txt)
+                or re.search(r"(?i)\b(?:ignore|override|system\s+prompt|bo\s+qua|chi\s+dan)\b", folded)
+            )
+            if is_directive:
+                if is_tiny:
+                    tiny_suspicious_spans += 1
+                if is_near_white:
+                    white_suspicious_spans += 1
+                if len(samples) < 3:
+                    samples.append(txt[:100])
     except Exception:
         pass
 

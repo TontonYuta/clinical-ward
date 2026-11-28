@@ -60,6 +60,8 @@ class Settings(BaseModel):
         "WORKFLOW_POLICY_PATH",
         os.path.join(_BACKEND_DIR, "data", "knowledge_base", "workflow", "routing_policy.json"),
     )
+    LOW_MEMORY_MODE: bool = os.getenv("LOW_MEMORY_MODE", "true").strip().lower() in {"1", "true", "yes", "on"}
+    PREWARM_ON_STARTUP: bool = os.getenv("PREWARM_ON_STARTUP", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 settings = Settings()
 if settings.APP_ENV.strip().lower() in {"production", "prod"} and (

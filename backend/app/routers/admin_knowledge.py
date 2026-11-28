@@ -235,6 +235,7 @@ async def inspect_pdf_before_upload(
     - Đánh giá mật độ chữ (phát hiện file scan cần OCR)
     - Tự động gợi ý Tiêu đề, Căn cứ pháp lý, Phân loại và Năm hiệu lực.
     """
+    import asyncio
     import hashlib
     from app.services.rag.pdf_ingestion_service import MAX_FILE_BYTES
 
@@ -267,24 +268,20 @@ async def inspect_pdf_before_upload(
             duplicate_doc = d
             break
 
-    # Trích xuất nhanh 15 trang đầu để đánh giá độ sạch & auto-fill metadata
+    # Trích xuất nhanh 15 trang đầu + spans ẩn qua subprocess ngắn hạn để Uvicorn không ôm PyMuPDF C-heap
     total_pages = 0
     empty_pages = 0
     total_chars = 0
     sample_texts: List[str] = []
+    precomputed_spans: List[dict] | None = None
     try:
-        import pymupdf
-        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
-        total_pages = len(doc)
-        pages_to_check = min(total_pages, 15)
-        for i in range(pages_to_check):
-            txt = (doc[i].get_text("text") or "").strip()
-            total_chars += len(txt)
-            if len(re.sub(r"\s+", "", txt)) < 30:
-                empty_pages += 1
-            elif len(sample_texts) < 3:
-                sample_texts.append(txt[:1000])
-        doc.close()
+        from app.services.rag.pdf_worker import run_pdf_worker
+        worker_out = await asyncio.to_thread(run_pdf_worker, "inspect", file_bytes, 15)
+        total_pages = int(worker_out.get("total_pages") or 0)
+        empty_pages = int(worker_out.get("empty_pages") or 0)
+        total_chars = int(worker_out.get("total_chars") or 0)
+        sample_texts = list(worker_out.get("sample_texts") or [])
+        precomputed_spans = list(worker_out.get("spans") or [])
     except Exception:
         try:
             reader = pypdf.PdfReader(io.BytesIO(file_bytes))
@@ -312,7 +309,9 @@ async def inspect_pdf_before_upload(
 
     raw_sample_joined = "\n".join(sample_texts)
     poison_report = inspect_document_poisoning_risk(raw_sample_joined)
-    hidden_report = inspect_pdf_hidden_layers(file_bytes, max_pages=15)
+    hidden_report = await asyncio.to_thread(
+        inspect_pdf_hidden_layers, file_bytes, 15, precomputed_spans
+    )
     quarantine_recommended = bool(
         poison_report["quarantine_recommended"] or hidden_report["hidden_layer_detected"]
     )

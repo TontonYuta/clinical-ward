@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import sqlite3
 import hashlib
 import json
@@ -80,7 +81,63 @@ class SqliteFtsIndex:
                 conn.execute(CREATE_FTS_TABLE_SQL)
                 conn.commit()
 
-    def sync_chunks(self, chunks: list[RagChunk]):
+    def is_kb_synced(self, kb_fast_sig: str) -> bool:
+        """Return True when clinical_rag_fts already matches the current static KB signature."""
+        if self.db_path == ":memory:" or not kb_fast_sig:
+            return False
+        try:
+            with self._get_connection() as conn:
+                row = conn.execute(
+                    "SELECT value FROM clinical_rag_meta WHERE key = ?", ("kb_fast_sig",)
+                ).fetchone()
+                if not row or row[0] != kb_fast_sig:
+                    return False
+                cnt = conn.execute(
+                    "SELECT COUNT(*) FROM clinical_rag_fts WHERE entity_type != 'regulatory_pdf'"
+                ).fetchone()[0]
+                return cnt > 0
+        except sqlite3.OperationalError:
+            return False
+
+    def load_index_chunks(self, slim_monographs: bool = True) -> list[RagChunk]:
+        """Load indexed KB chunks from SQLite without parsing dtqg_monographs_extracted.json.
+
+        When slim_monographs=True, heavy static monograph chunks keep metadata/title only
+        (saving ~55 MiB RAM); full text is fetched on demand via get_chunks_by_ids().
+        """
+        chunks: list[RagChunk] = []
+        with self._get_connection() as conn:
+            cur = conn.execute(
+                """
+                SELECT chunk_id, source_doc, legal_basis, page_or_section,
+                       title, content, keywords, entity_type, source_id, source_version
+                FROM clinical_rag_fts
+                WHERE entity_type != 'regulatory_pdf'
+                """
+            )
+            while True:
+                rows = cur.fetchmany(500)
+                if not rows:
+                    break
+                for row in rows:
+                    etype = sys.intern(row["entity_type"] or "")
+                    cid = row["chunk_id"]
+                    is_slim = slim_monographs and etype == "monograph" and str(cid).startswith("dtqg_")
+                    chunks.append(RagChunk(
+                        chunk_id=cid,
+                        source_doc=sys.intern(row["source_doc"] or ""),
+                        legal_basis=sys.intern(row["legal_basis"] or ""),
+                        page_or_section=row["page_or_section"] or "",
+                        title=row["title"] or "",
+                        content="" if is_slim else (row["content"] or ""),
+                        keywords=[] if is_slim else (row["keywords"].split() if row["keywords"] else []),
+                        entity_type=etype,
+                        source_id=sys.intern(row["source_id"]) if row["source_id"] else None,
+                        source_version=sys.intern(row["source_version"]) if row["source_version"] else None,
+                    ))
+        return chunks
+
+    def sync_chunks(self, chunks: list[RagChunk], kb_fast_sig: Optional[str] = None):
         with self._get_connection() as conn:
             # Chỉ đồng bộ các chunks tĩnh (DTQG, phác đồ mặc định), giữ nguyên tuyệt đối các chunks PDF do Admin nạp
             count = conn.execute("SELECT COUNT(*) FROM clinical_rag_fts WHERE entity_type != 'regulatory_pdf'").fetchone()[0]
@@ -93,6 +150,13 @@ class SqliteFtsIndex:
             except sqlite3.OperationalError:
                 row = None
             if count == len(chunks) and count > 0 and row and row[0] == fingerprint:
+                if kb_fast_sig:
+                    conn.execute("CREATE TABLE IF NOT EXISTS clinical_rag_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+                    conn.execute(
+                        "INSERT INTO clinical_rag_meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                        ("kb_fast_sig", kb_fast_sig),
+                    )
+                    conn.commit()
                 return
 
             conn.execute("DELETE FROM clinical_rag_fts WHERE entity_type != 'regulatory_pdf'")
@@ -110,6 +174,11 @@ class SqliteFtsIndex:
                 "INSERT INTO clinical_rag_meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 ("chunk_fingerprint", fingerprint)
             )
+            if kb_fast_sig:
+                conn.execute(
+                    "INSERT INTO clinical_rag_meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                    ("kb_fast_sig", kb_fast_sig),
+                )
             conn.commit()
 
     def upsert_chunks(self, chunks: list[RagChunk]):

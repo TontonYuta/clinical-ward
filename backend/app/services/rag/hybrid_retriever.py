@@ -143,9 +143,28 @@ class HybridRetriever:
         vector_store: Optional[VectorStore] = None,
         embedding_provider: Optional[BaseEmbeddingProvider] = None
     ):
+        import gc
+        from app.config import settings, trim_process_memory
+        from app.services.rag.clinical_indexer import compute_kb_fast_signature
+
         self.fts_index = fts_index or SqliteFtsIndex()
-        self.all_chunks = load_all_clinical_chunks()
-        self.fts_index.sync_chunks(self.all_chunks)
+        fast_sig = compute_kb_fast_signature() if fts_index is None else ""
+        if (
+            settings.LOW_MEMORY_MODE
+            and fast_sig
+            and self.fts_index.is_kb_synced(fast_sig)
+        ):
+            self.all_chunks = self.fts_index.load_index_chunks(slim_monographs=True)
+        else:
+            self.all_chunks = load_all_clinical_chunks()
+            self.fts_index.sync_chunks(self.all_chunks, kb_fast_sig=fast_sig or None)
+            if settings.LOW_MEMORY_MODE:
+                for c in self.all_chunks:
+                    if c.entity_type == "monograph" and str(c.chunk_id).startswith("dtqg_"):
+                        c.content = ""
+                        c.keywords = []
+                gc.collect()
+                trim_process_memory()
 
         # SOTA Dense Vector Retrieval
         self.vector_store = vector_store or get_vector_store()
@@ -605,10 +624,13 @@ class HybridRetriever:
         except Exception:
             pass
 
-        # Bổ sung các chunks động từ PDF tải lên (nếu có trong candidate_ids mà chưa có trong self.all_chunks)
-        missing_candidate_ids = [cid for cid in all_candidate_ids if cid not in chunk_map]
-        if missing_candidate_ids:
-            dynamic_chunks = self.fts_index.get_chunks_by_ids(missing_candidate_ids)
+        # Bổ sung/hydrate các chunks động hoặc metadata stub (content="") từ SQLite FTS5
+        missing_or_slim_ids = [
+            cid for cid in all_candidate_ids
+            if cid not in chunk_map or not chunk_map[cid].content
+        ]
+        if missing_or_slim_ids:
+            dynamic_chunks = self.fts_index.get_chunks_by_ids(missing_or_slim_ids)
             chunk_map.update(dynamic_chunks)
 
         # 4b. Chủ động đưa các Graph Chunks phù hợp vào ứng viên (Dual-Level Knowledge Routing)
@@ -718,6 +740,13 @@ class HybridRetriever:
 
         if not all_candidate_ids:
             return []
+
+        remaining_slim = [
+            cid for cid in all_candidate_ids
+            if cid not in chunk_map or not chunk_map[cid].content
+        ]
+        if remaining_slim:
+            chunk_map.update(self.fts_index.get_chunks_by_ids(remaining_slim))
 
         # 5. Thuật toán Reciprocal Rank Fusion (Adaptive RRF k=60)
         w_sparse, w_dense = calculate_adaptive_rrf_weights(query, resolved_query_drugs)

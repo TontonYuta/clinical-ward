@@ -643,3 +643,45 @@ def load_all_clinical_chunks(base_dir: Path | None = None) -> list[RagChunk]:
         pass
 
     return all_chunks
+
+
+def compute_kb_fast_signature(base_dir: Path | None = None) -> str:
+    """Compute a zero-JSON-parse SHA256 signature over static KB artifacts for SQLite FTS sync checks."""
+    active_dir = base_dir or get_active_kb_dir()
+    digest = hashlib.sha256()
+    watched_paths: list[Path] = []
+    for candidate in (
+        active_dir / "dtqg_monographs_extracted.json",
+        active_dir / "data" / "knowledge_base" / "dtqg_monographs_extracted.json",
+        Path(__file__).resolve().parents[3] / "data" / "knowledge_base" / "dtqg_monographs_extracted.json",
+        Path(__file__).resolve().parents[2] / "data" / "knowledge_base" / "dtqg_monographs_extracted.json",
+    ):
+        if candidate.is_file():
+            watched_paths.append(candidate)
+            break
+
+    for sub in (
+        "clinical_pharmacopoeia",
+        "regulatory_circulars",
+        "ddi_interactions",
+        "clinical_guidelines",
+        "specialty_guidelines",
+    ):
+        sub_dir = active_dir / sub
+        if sub_dir.is_dir():
+            watched_paths.extend(sorted(sub_dir.glob("*")))
+
+    for extra in (
+        active_dir / "drug_registry.json",
+        active_dir / "timing_guidelines.json",
+        active_dir / "clinical_source_manifest.json",
+        Path(__file__).with_name("lightrag_data.py"),
+    ):
+        if extra.is_file():
+            watched_paths.append(extra)
+
+    for p in watched_paths:
+        if p.is_file():
+            st = p.stat()
+            digest.update(f"{p.name}:{st.st_size}:{_file_sha256(p)}\n".encode("utf-8"))
+    return digest.hexdigest()
