@@ -13,6 +13,7 @@ from app.schemas.availability import AvailabilityResponse
 
 router = APIRouter(prefix="/availability", tags=["Availability"])
 _provider_state = {"value": "unknown", "checked_at": 0.0, "checked_at_wall": 0.0, "fingerprint": None}
+_web_search_state = {"value": "unknown", "checked_at": 0.0, "fingerprint": None}
 _provider_lock: asyncio.Lock | None = None
 _PROVIDER_CACHE_SECONDS = 60.0
 _PROVIDER_TIMEOUT_SECONDS = 4.0
@@ -48,6 +49,27 @@ async def _provider_fingerprint() -> str:
 
 def invalidate_availability_cache() -> None:
     _provider_state.update(value="unknown", checked_at=0.0, checked_at_wall=0.0, fingerprint=None)
+    _web_search_state.update(value="unknown", checked_at=0.0, fingerprint=None)
+
+
+async def _check_web_search() -> str:
+    """Check whether Serper / Web Search is configured & ready without consuming search credits."""
+    now = time.monotonic()
+    try:
+        key = await _active_provider_key_async("serper") or settings.SERPER_API_KEY or ""
+        clean_key = key.strip()
+        fp = f"serper:{bool(clean_key)}:{hash(clean_key) if clean_key else 0}"
+        if _web_search_state.get("fingerprint") == fp and now - _web_search_state["checked_at"] < _PROVIDER_CACHE_SECONDS:
+            return _web_search_state["value"]
+
+        if not clean_key or clean_key.upper().startswith("MY_") or len(clean_key) < 10:
+            state = "not_configured"
+        else:
+            state = "available"
+        _web_search_state.update(value=state, checked_at=now, fingerprint=fp)
+        return state
+    except Exception:
+        return "unavailable"
 
 
 def _inspect_vector_index_sync() -> tuple[str, str, int]:
@@ -185,6 +207,7 @@ async def get_availability() -> AvailabilityResponse:
     vector_state, vector_reason, vector_count = await _get_vector_index_status()
 
     provider_state = await _check_provider()
+    web_search_state = await _check_web_search()
     backend_state = "available"
     retrieval_ready = db_state == "available" and fts_state == "available"
     if provider_state == "available" and retrieval_ready:
@@ -196,7 +219,8 @@ async def get_availability() -> AvailabilityResponse:
 
     return AvailabilityResponse(
         mode=mode, backend=backend_state, database=db_state, vector_index=vector_state,
-        provider=provider_state, checked_at=datetime.now(timezone.utc).isoformat(),
+        provider=provider_state, web_search=web_search_state,
+        checked_at=datetime.now(timezone.utc).isoformat(),
         provider_checked_at=datetime.fromtimestamp(
             _provider_state.get("checked_at_wall", 0.0), timezone.utc
         ).isoformat() if _provider_state.get("checked_at_wall", 0.0) else None,

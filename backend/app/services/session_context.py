@@ -46,6 +46,33 @@ class SessionState:
         self.turn_count: int = 0
         self.conversation_turns: list[ConversationTurn] = []
 
+        # Crescendo Multi-Turn Security Risk Accumulator (arXiv:2404.01833 / LlamaFirewall)
+        self.security_risk_score: float = 0.0
+        self.blocked_turn_count: int = 0
+        self.security_risk_events: list[dict[str, Any]] = []
+
+    def record_security_signal(self, delta: float, reason: str, *, blocked: bool = False) -> float:
+        """Accumulate multi-turn adversarial escalation risk within this session."""
+        if delta > 0:
+            self.security_risk_score = round(min(2.0, self.security_risk_score + float(delta)), 3)
+        if blocked:
+            self.blocked_turn_count += 1
+        self.security_risk_events.append({
+            "ts": round(time.time(), 2),
+            "delta": round(float(delta), 3),
+            "reason": reason[:140],
+            "blocked": blocked,
+        })
+        self.security_risk_events = self.security_risk_events[-10:]
+        return self.security_risk_score
+
+    def decay_security_risk(self, factor: float = 0.65) -> None:
+        """Decay accumulated risk on verified benign clinical turns to prevent sticky false positives."""
+        if self.security_risk_score > 0.0:
+            self.security_risk_score = round(self.security_risk_score * factor, 3)
+            if self.security_risk_score < 0.05:
+                self.security_risk_score = 0.0
+
     def append_conversation_turn(self, user_text: str, assistant_text: str) -> None:
         user = self._truncate_history_text(user_text)
         assistant = self._truncate_history_text(assistant_text)
@@ -173,6 +200,96 @@ class SessionState:
 _SESSIONS: Dict[str, SessionState] = {}
 SESSION_TTL_SECONDS = 1800  # 30 phút
 
+def _resolve_session_sqlite_path() -> Optional[str]:
+    try:
+        from app.config import settings
+        db_url = str(getattr(settings, "DATABASE_URL", "") or "")
+        if "sqlite" in db_url:
+            path = db_url.split(":///")[-1]
+            if path and path != ":memory:":
+                return path
+    except Exception:
+        pass
+    return None
+
+
+def hydrate_session_from_db(
+    session: SessionState,
+    *,
+    db_path: Optional[str] = None,
+    max_turns: int = 5,
+) -> int:
+    """
+    Recover up to `max_turns` recent valid turns & active medication from `copilot_chat_logs`
+    when a session is first materialized in RAM after a server restart.
+    """
+    import os
+    import sqlite3
+
+    if session.conversation_turns or not session.session_id:
+        return 0
+    raw_suffix = session.session_id.split(":", 1)[-1]
+    if raw_suffix in ("", "default_session"):
+        return 0
+
+    target_db = db_path or _resolve_session_sqlite_path()
+    if not target_db or not os.path.isfile(target_db):
+        return 0
+
+    try:
+        conn = sqlite3.connect(target_db, timeout=1.5)
+        try:
+            rows = conn.execute(
+                """
+                SELECT query, reply_text, intent
+                FROM copilot_chat_logs
+                WHERE session_id IN (?, ?)
+                  AND COALESCE(intent, '') != 'SECURITY_GUARDRAIL_BLOCKED'
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (session.session_id, raw_suffix, int(max_turns)),
+            ).fetchall()
+        finally:
+            conn.close()
+    except Exception:
+        return 0
+
+    if not rows:
+        return 0
+
+    rows.reverse()
+    loaded = 0
+    last_med_intent = None
+    last_query = ""
+    for q_text, r_text, intent in rows:
+        if q_text or r_text:
+            session.conversation_turns.append(
+                ConversationTurn(
+                    SessionState._truncate_history_text(q_text or ""),
+                    SessionState._truncate_history_text(r_text or ""),
+                )
+            )
+            loaded += 1
+            last_med_intent = intent
+            last_query = q_text or ""
+
+    if loaded:
+        session.last_query = last_query
+        session.last_intent = last_med_intent
+        if last_med_intent == "MEDICATION_SAFETY_PROFILE" and last_query:
+            try:
+                from app.services.chatbot.lexical_trie_matcher import get_drug_lexical_matcher
+                meds = get_drug_lexical_matcher().extract_medications(last_query)
+                if meds:
+                    session.active_medication_name = meds[0]
+                    session.last_active_medication_name = meds[0]
+                    session.fsm_state = "DRUG_FOCUSED"
+            except Exception:
+                pass
+    return loaded
+
+
 def get_or_create_session(session_id: Optional[str], user_name: str = "Nhân viên y tế", user_role: str = "nurse") -> SessionState:
     # Session keys are namespaced by the owner. Callers may provide a
     # pre-namespaced key when authenticated identity differs from display name.
@@ -187,7 +304,9 @@ def get_or_create_session(session_id: Optional[str], user_name: str = "Nhân vi�
         _SESSIONS.pop(k, None)
 
     if key not in _SESSIONS:
-        _SESSIONS[key] = SessionState(session_id=key, user_name=user_name, user_role=user_role)
+        fresh = SessionState(session_id=key, user_name=user_name, user_role=user_role)
+        hydrate_session_from_db(fresh)
+        _SESSIONS[key] = fresh
     else:
         _SESSIONS[key].touch()
 

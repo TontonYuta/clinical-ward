@@ -337,10 +337,12 @@ def _parse_extracted_dtqg_chunks(base_dir: Path) -> list[RagChunk]:
     source_id = _stable_source_id(json_path)
     source_version = f"sha256:{extracted_version}" if extracted_version else None
     for idx, m in enumerate(data, 1):
-        inn = m.get("inn") or ""
+        raw_inn = (m.get("inn") or "").strip()
+        inn = re.split(r"\s{4,}", raw_inn)[0].strip() if raw_inn else ""
         if not inn:
             continue
-        title = m.get("title") or inn
+        raw_title = (m.get("title") or inn).strip()
+        title = re.split(r"\s{4,}", raw_title)[0].strip() or inn
         slug = re.sub(r"[^a-zA-Z0-9]", "_", inn).lower()[:20]
         page = m.get("start_page")
         legal_basis = m.get("source") or (

@@ -330,7 +330,10 @@ def handle_out_of_scope_or_pricing(lower_query: str) -> CopilotResponse | None:
             abstention_reason="Ngoài phạm vi hoặc thiếu dữ liệu đơn thuốc",
         )
 
-    if any(w in lower_query for w in ("dạy tôi", "học toán", "kể chuyện", "làm thơ", "hát", "chuyện cười")):
+    if re.search(
+        r"(?<!\w)(?:dạy tôi|học toán|kể chuyện|làm thơ|chuyện cười|ca hát|hát\s+(?:nhạc|bài|một|cho|đi|nhé))(?!\w)",
+        lower_query,
+    ):
         from app.services.chatbot.conversational_steering import handle_gentle_chitchat_steering
         return handle_gentle_chitchat_steering(lower_query, out_of_scope_type="GENERAL_CHITCHAT")
 

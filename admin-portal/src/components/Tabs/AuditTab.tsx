@@ -93,143 +93,134 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* 1. Dải Thống Kê Giám Định BHYT */}
-      <div className="bg-white border border-slate-200/90 rounded-lg grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-        <div className="p-3.5 sm:px-5 sm:py-4">
-          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Hồ sơ đã giám định</div>
-          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
-            {auditedCount} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
+    <div className="space-y-6">
+      {/* 1. 4 Thẻ Thống Kê Giám Định BHYT Full-Width (Airy Main-App proportions) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[126px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hồ sơ đã giám định</span>
+            <span className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+              <FileCheck className="w-4 h-4" />
+            </span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tabular-nums mt-3 leading-none">
+            {auditedCount} <span className="text-sm font-normal text-slate-500 font-sans">ca</span>
           </div>
         </div>
 
-        <div className="p-3.5 sm:px-5 sm:py-4">
-          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Xuất toán bảo toàn</div>
-          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
-            {bhytSaved.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-400 font-sans">₫</span>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[126px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Xuất toán bảo toàn</span>
+            <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
+            </span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tabular-nums mt-3 leading-none">
+            {bhytSaved.toLocaleString('vi-VN')} <span className="text-sm font-normal text-slate-500 font-sans">₫</span>
           </div>
         </div>
 
-        <div className="p-3.5 sm:px-5 sm:py-4">
-          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Đạt chuẩn thanh toán</div>
-          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
-            {counts.pass} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[126px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đạt chuẩn thanh toán</span>
+            <span className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4" />
+            </span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tabular-nums mt-3 leading-none">
+            {counts.pass} <span className="text-sm font-normal text-slate-500 font-sans">ca</span>
           </div>
         </div>
 
-        <div className="p-3.5 sm:px-5 sm:py-4">
-          <div className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Cảnh báo &amp; Lỗi xuất toán</div>
-          <div className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tabular-nums mt-1">
-            {counts.warning + counts.rejectError} <span className="text-xs font-normal text-slate-400 font-sans">ca</span>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[126px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cảnh báo &amp; Lỗi xuất toán</span>
+            <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+              <AlertOctagon className="w-4 h-4" />
+            </span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tabular-nums mt-3 leading-none">
+            {counts.warning + counts.rejectError} <span className="text-sm font-normal text-slate-500 font-sans">ca</span>
           </div>
         </div>
       </div>
 
       {/* 2. Sổ Nhật Ký Giám Định BHYT & Check Lỗi */}
-      <div className="bg-white rounded-lg border border-slate-200/90 overflow-hidden flex flex-col space-y-3 p-3 sm:px-4 sm:py-3.5">
-          {/* Header & Bộ lọc */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Lịch sử Giám định Đơn thuốc BHYT (Căn cứ TT 20/2022 &amp; QĐ 3618)
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Bấm vào từng đơn thuốc để kiểm tra danh sách vi phạm, lỗi xuất toán, và căn cứ pháp lý xử lý
-              </p>
-            </div>
-
-            {/* Ô tìm kiếm */}
-            <div className="relative w-full md:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm mã đơn, tên BN, thẻ BHYT, ICD-10..."
-                className="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition shadow-2xs"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+        {/* Header & Tìm kiếm */}
+        <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+              Lịch sử giám định đơn thuốc BHYT (TT 20/2022 &amp; QĐ 3618)
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Bấm vào từng đơn thuốc để xem chi tiết vi phạm, nguy cơ xuất toán và căn cứ xử lý
+            </p>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === 'ALL'
-                  ? 'bg-slate-900 text-white font-semibold'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <span>Tất cả</span>
-              <span className="font-mono text-2xs opacity-70">({counts.all})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStatusFilter('REJECT_ERROR')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === 'REJECT_ERROR'
-                  ? 'bg-slate-900 text-white font-semibold'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <span>Bị xuất toán / Lỗi</span>
-              <span className="font-mono text-2xs opacity-70">({counts.rejectError})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStatusFilter('WARNING')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === 'WARNING'
-                  ? 'bg-slate-900 text-white font-semibold'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <span>Cảnh báo</span>
-              <span className="font-mono text-2xs opacity-70">({counts.warning})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStatusFilter('PASS')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === 'PASS'
-                  ? 'bg-slate-900 text-white font-semibold'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <span>Đạt chuẩn</span>
-              <span className="font-mono text-2xs opacity-70">({counts.pass})</span>
-            </button>
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm mã đơn, tên BN, thẻ BHYT, ICD-10..."
+              className="w-full h-9 pl-9 pr-8 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:border-teal-600 focus:outline-none transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                aria-label="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
+        </div>
 
-          {/* Bảng dữ liệu Log Giám Định */}
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-3xs tracking-wider select-none">
-                  <th className="py-2.5 px-3">Thời gian</th>
-                  <th className="py-2.5 px-3">Mã đơn / Bệnh nhân</th>
-                  <th className="py-2.5 px-3">Mã thẻ BHYT</th>
-                  <th className="py-2.5 px-3">Tuyến BV &amp; ĐT</th>
-                  <th className="py-2.5 px-3">ICD-10</th>
-                  <th className="py-2.5 px-3 text-center">Trạng thái</th>
-                  <th className="py-2.5 px-3 text-right">Xuất toán rủi ro</th>
-                  <th className="py-2.5 px-3 text-right">Thao tác</th>
-                </tr>
-              </thead>
+        {/* Filter Pills (Consistent Teal accent, scrollable on mobile) */}
+        <div className="px-5 sm:px-6 py-3 bg-slate-50/70 border-b border-slate-200/80 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {(
+            [
+              ['ALL', 'Tất cả', counts.all],
+              ['REJECT_ERROR', 'Bị xuất toán / Lỗi', counts.rejectError],
+              ['WARNING', 'Cảnh báo', counts.warning],
+              ['PASS', 'Đạt chuẩn', counts.pass],
+            ] as const
+          ).map(([key, label, count]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setStatusFilter(key)}
+              className={`h-8 px-3 rounded-lg text-xs font-medium transition cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border ${
+                statusFilter === key
+                  ? 'bg-teal-50 text-teal-900 border-teal-300 font-semibold'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <span>{label}</span>
+              <span className="font-mono text-2xs opacity-75">({count})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-semibold uppercase text-2xs tracking-wider select-none">
+                <th className="py-2.5 pl-5 sm:pl-6 pr-3">Thời gian</th>
+                <th className="py-2.5 px-3">Mã đơn / Bệnh nhân</th>
+                <th className="py-2.5 px-3">Mã thẻ BHYT</th>
+                <th className="py-2.5 px-3">Tuyến BV &amp; ĐT</th>
+                <th className="py-2.5 px-3">ICD-10</th>
+                <th className="py-2.5 px-3 text-center">Trạng thái</th>
+                <th className="py-2.5 px-3 text-right">Xuất toán rủi ro</th>
+                <th className="py-2.5 pl-3 pr-5 sm:pr-6 text-right">Thao tác</th>
+              </tr>
+            </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBhytLogs.length === 0 ? (
                   <tr>
@@ -335,6 +326,44 @@ export const AuditTab: React.FC<AuditTabProps> = ({ data }) => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card List (BHYT Audit — zero clipping on 390px) */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {filteredBhytLogs.length === 0 ? (
+              <div className="py-10 px-4 text-center text-slate-500 text-xs">
+                Không tìm thấy bản ghi giám định BHYT nào.
+              </div>
+            ) : (
+              filteredBhytLogs.map((log) => (
+                <button
+                  key={log.id}
+                  type="button"
+                  onClick={() => setSelectedLog(log)}
+                  className="w-full text-left p-4 hover:bg-teal-50/40 transition-colors space-y-2 cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-900 truncate">
+                        {log.patient_name || 'Bệnh nhân'}
+                      </div>
+                      <div className="text-2xs font-mono text-slate-500 truncate mt-0.5">
+                        {log.prescription_id} · {log.primary_icd10 || '---'}
+                      </div>
+                    </div>
+                    <span className="text-2xs font-mono font-semibold text-slate-700 shrink-0">
+                      {log.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-2xs text-slate-500">
+                    <span className="font-mono">{log.insurance_card_number || '---'}</span>
+                    <span className="font-mono font-semibold text-slate-800">
+                      {Number(log.at_risk_cost_vnd || 0).toLocaleString('vi-VN')} ₫
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
 

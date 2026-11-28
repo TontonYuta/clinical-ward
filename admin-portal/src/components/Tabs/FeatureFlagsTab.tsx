@@ -49,95 +49,100 @@ export const FeatureFlagsTab: React.FC<{ data: FeatureFlagResponse | null; onSav
   };
 
   return (
-    <div className="space-y-4">
-      {/* Flat Header Toolbar */}
-      <div className="bg-white border border-slate-200/90 rounded-lg p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-5">
+      {/* Header Toolbar */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-            Cấu Hình Bật / Ẩn Chức Năng Clinical Ward
+          <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+            Cấu hình bật / ẩn chức năng Clinical Ward
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Bật hoặc ẩn tab hiển thị trên Cổng Bác sĩ &amp; Điều dưỡng. Phân quyền theo vai trò vẫn được áp dụng riêng.
+          <p className="text-xs text-slate-500 mt-1">
+            Bật hoặc ẩn từng phân hệ hiển thị trên Cổng Bác sĩ &amp; Điều dưỡng. Phân quyền theo vai trò vẫn được áp dụng riêng.
           </p>
         </div>
         <button
           type="button"
           onClick={() => void save()}
           disabled={saving}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold shadow-2xs transition disabled:opacity-50 active:scale-98 self-start sm:self-auto shrink-0"
+          className="h-9 inline-flex items-center gap-1.5 px-4 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold shadow-2xs transition cursor-pointer disabled:opacity-50 active:scale-[0.98] self-start sm:self-auto shrink-0"
         >
           <Save className="w-3.5 h-3.5" />
-          <span>{saving ? 'Đang lưu…' : 'Lưu Thay Đổi'}</span>
+          <span>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</span>
         </button>
       </div>
 
       {message && (
-        <div className="p-3 rounded-lg bg-teal-50 border border-teal-200 text-xs text-teal-900 font-medium flex items-center gap-2 animate-in fade-in">
+        <div className="px-5 py-3.5 rounded-2xl bg-teal-50 border border-teal-200 text-xs text-teal-900 font-medium flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-teal-700 shrink-0" />
           <span>{message}</span>
         </div>
       )}
 
-      {/* Flat Settings List (Seamless Table / List) */}
-      <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden divide-y divide-slate-100">
-        <div className="hidden sm:grid sm:grid-cols-12 px-4 py-2 bg-slate-50/60 text-2xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-          <div className="sm:col-span-4">Chức Năng Phân Hệ</div>
-          <div className="sm:col-span-6">Mục Tiêu Lâm Sàng &amp; Pháp Lý</div>
-          <div className="sm:col-span-2 text-right">Trạng Thái</div>
-        </div>
-
+      {/* Full-Width 3-Column Capability Toggle Cards (matching Main App OverviewCapabilities) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
         {draft.flags.map((flag) => {
           const isFixed = flag.key === 'overview';
 
           return (
             <div
               key={flag.key}
-              className={`p-3 sm:px-4 sm:py-3 flex flex-col sm:grid sm:grid-cols-12 items-start sm:items-center gap-2 sm:gap-4 hover:bg-slate-50/70 transition ${
-                flag.enabled ? '' : 'bg-slate-50/30'
+              className={`rounded-2xl border p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[156px] transition ${
+                flag.enabled
+                  ? 'bg-white border-slate-200 hover:border-teal-400'
+                  : 'bg-slate-50/80 border-slate-200/80'
               }`}
             >
-              {/* Cột 1: Tên chức năng & Key */}
-              <div className="sm:col-span-4 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-xs sm:text-sm text-slate-900">
-                    {flag.label}
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-2xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                    {flag.key}
                   </span>
-                  {isFixed && (
-                    <span className="text-2xs font-mono text-slate-400 shrink-0">
-                      (Cố định)
+                  {isFixed ? (
+                    <span className="text-2xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                      Cố định
                     </span>
+                  ) : (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={flag.enabled}
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          flags: draft.flags.map((item) =>
+                            item.key === flag.key ? { ...item, enabled: !item.enabled } : item
+                          ),
+                        })
+                      }
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        flag.enabled ? 'bg-teal-700' : 'bg-slate-300'
+                      }`}
+                      title={flag.enabled ? 'Tắt hiển thị phân hệ này' : 'Bật hiển thị phân hệ này'}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition-transform ${
+                          flag.enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
                   )}
                 </div>
-                <span className="text-3xs font-mono text-slate-400">
-                  key: {flag.key}
-                </span>
+
+                <h3 className="text-base font-bold text-slate-900 leading-snug">
+                  {flag.label}
+                </h3>
+                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  {flag.description}
+                </p>
               </div>
 
-              {/* Cột 2: Mô tả lâm sàng */}
-              <div className="sm:col-span-6 text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                {flag.description}
-              </div>
-
-              {/* Cột 3: Nút Bật / Tắt */}
-              <div className="sm:col-span-2 sm:text-right w-full sm:w-auto flex justify-end">
-                <button
-                  type="button"
-                  disabled={isFixed}
-                  onClick={() =>
-                    setDraft({
-                      ...draft,
-                      flags: draft.flags.map((item) =>
-                        item.key === flag.key ? { ...item, enabled: !item.enabled } : item
-                      ),
-                    })
-                  }
-                  className="inline-flex items-center gap-1.5 text-xs font-medium transition cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${flag.enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-                  <span className={flag.enabled ? 'text-slate-800' : 'text-slate-400'}>
-                    {flag.enabled ? 'Đang hiện' : 'Đang ẩn'}
+              <div className="pt-3 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-medium">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${flag.enabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                  <span className={flag.enabled ? 'text-teal-800 font-semibold' : 'text-slate-500'}>
+                    {flag.enabled ? 'Đang hiển thị trên App chính' : 'Đang ẩn khỏi App chính'}
                   </span>
-                </button>
+                </span>
               </div>
             </div>
           );

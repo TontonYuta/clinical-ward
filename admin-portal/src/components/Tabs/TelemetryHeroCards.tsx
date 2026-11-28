@@ -7,141 +7,171 @@ interface TelemetryHeroCardsProps {
 }
 
 export const TelemetryHeroCards: React.FC<TelemetryHeroCardsProps> = ({ data: d }) => {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-      {/* KPI 1: Cache Hit */}
-      <div className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl p-3 sm:p-5 transition-all shadow-2xs hover:shadow-xs group flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-2xs font-semibold text-slate-500 uppercase tracking-wider truncate">Tỷ lệ Cache Hit</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 flex-wrap">
-            <span className="text-xl sm:text-2xl lg:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums">
-              {d.cache_hit_rate_pct}%
-            </span>
-            <span className="inline-flex items-center text-[10px] sm:text-3xs font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-              +{(d.exact_hits + d.semantic_hits).toLocaleString()}
-            </span>
-          </div>
-        </div>
-        <p className="mt-2 text-[11px] sm:text-2xs text-slate-500 flex items-center gap-1 truncate">
-          <span>Tiết kiệm</span>
-          <strong className="text-slate-700 font-mono font-medium">{(d.tokens_saved / 1000).toFixed(1)}k tokens</strong>
-        </p>
-      </div>
+  const totalQueries = Number(d.total_queries || 0);
+  const hasTraffic = totalQueries > 0 || Number(d.p95_latency_ms || 0) > 0;
+  const p95 = Number(d.p95_latency_ms || 0);
+  const internalRatio = Math.min(100, Math.max(0, Number(d.internal_pharmacopoeia_ratio_pct ?? 100)));
+  const webRatio = Math.min(100, Math.max(0, Number(d.web_fallback_ratio_pct ?? 0)));
 
-      {/* KPI 2: BHYT Bảo toàn */}
-      <div className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl p-3 sm:p-5 transition-all shadow-2xs hover:shadow-xs group flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-2xs font-semibold text-slate-500 uppercase tracking-wider truncate">BHYT bảo toàn</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
+  const slaMeta = !hasTraffic
+    ? { dot: 'bg-slate-300', text: 'text-slate-500', label: 'Chưa có lưu lượng', hint: '' }
+    : p95 <= 500
+    ? { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Đạt chuẩn SLA', hint: '(<500ms)' }
+    : p95 <= 1500
+    ? { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Độ trễ trung bình', hint: '(≤1.5s)' }
+    : { dot: 'bg-rose-500', text: 'text-rose-700', label: 'Vượt ngưỡng SLA', hint: '(>1.5s)' };
+
+  return (
+    <section aria-label="Chỉ số vận hành tổng quan" className="space-y-4">
+      {/* 4 Separate Airy Full-Width KPI Cards (matching Clinical Ward Main App) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+        {/* KPI 1: Cache Hit */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[144px] hover:border-teal-300 transition">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+              Tỷ lệ Cache Hit
+            </span>
+            <span className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4" />
+            </span>
           </div>
-          <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1">
-            <span className="text-lg xs:text-xl sm:text-2xl lg:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums truncate">
+          <div className="mt-3 flex items-baseline gap-2 flex-wrap">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums leading-none">
+              {hasTraffic ? `${d.cache_hit_rate_pct}%` : '—'}
+            </span>
+            {hasTraffic && (d.exact_hits + d.semantic_hits) > 0 && (
+              <span className="inline-flex items-center text-2xs font-mono font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                +{(d.exact_hits + d.semantic_hits).toLocaleString()}
+              </span>
+            )}
+          </div>
+          <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-500 truncate">
+            Tiết kiệm{' '}
+            <strong className="text-slate-800 font-mono font-semibold tabular-nums">
+              {(Number(d.tokens_saved || 0) / 1000).toFixed(1)}k
+            </strong>{' '}
+            tokens
+          </p>
+        </div>
+
+        {/* KPI 2: BHYT Bảo toàn */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[144px] hover:border-teal-300 transition">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+              BHYT bảo toàn
+            </span>
+            <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4" />
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline gap-1 min-w-0">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums leading-none truncate">
               {Number(d.bhyt_rejection_saved_vnd || 0).toLocaleString('vi-VN')}
             </span>
-            <span className="text-xs font-semibold text-slate-500 font-sans">₫</span>
+            <span className="text-sm font-semibold text-slate-500 shrink-0">₫</span>
           </div>
-        </div>
-        <p className="mt-2 text-[11px] sm:text-2xs text-slate-500 flex items-center gap-1 truncate">
-          <span>Đã kiểm</span>
-          <strong className="text-slate-700 font-mono font-medium">{d.bhyt_audited.toLocaleString()} ca</strong>
-        </p>
-      </div>
-
-      {/* KPI 3: Token tiêu thụ & chi phí */}
-      <div className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl p-3 sm:p-5 transition-all shadow-2xs hover:shadow-xs group flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-2xs font-semibold text-slate-500 uppercase tracking-wider truncate">Tokens phục vụ</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-              <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl lg:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums">
-              {(d.tokens_consumed / 1000).toFixed(1)}k
-            </span>
-            <span className="text-xs font-medium text-slate-400 font-mono">tokens</span>
-          </div>
-        </div>
-        <p className="mt-2 text-[11px] sm:text-2xs text-slate-500 flex items-center gap-1 truncate">
-          <span>Tiết kiệm</span>
-          <strong className="text-slate-700 font-mono font-medium">{Number(d.cost_saved_vnd || 0).toLocaleString('vi-VN')} ₫</strong>
-        </p>
-      </div>
-
-      {/* KPI 4: Độ trễ P95 (SLA) */}
-      <div className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-xl p-3 sm:p-5 transition-all shadow-2xs hover:shadow-xs group flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-2xs font-semibold text-slate-500 uppercase tracking-wider truncate">Độ trễ P95 (SLA)</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-              <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl lg:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums">
-              {d.p95_latency_ms}
-            </span>
-            <span className="text-xs font-medium text-slate-400 font-mono">ms</span>
-          </div>
-        </div>
-        <p className="mt-2 text-[11px] sm:text-2xs text-slate-500 flex items-center gap-1 truncate">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0"></span>
-          <span className="text-emerald-700 font-medium">SLA Chuẩn</span>
-          <span className="text-slate-400">(&lt;500ms)</span>
-        </p>
-      </div>
-
-      {/* Thanh Thông Tin Leo Thang Nguồn & Tìm Kiếm Web Fallback */}
-      <div className="col-span-2 lg:col-span-4 bg-white border border-slate-200/90 rounded-xl p-3 sm:px-4 sm:py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
-            <Globe className="w-3.5 h-3.5" />
-          </div>
-          <div>
-            <div className="font-semibold text-slate-900 flex items-center gap-1.5 flex-wrap">
-              <span>Tỷ lệ leo thang nguồn:</span>
-              <span className="text-emerald-700 font-mono font-bold">
-                {d.internal_pharmacopoeia_ratio_pct ?? 100}% Dược Thư (0₫)
-              </span>
-              <span className="text-slate-400">vs</span>
-              <span className="text-indigo-700 font-mono font-bold">
-                {d.web_fallback_ratio_pct ?? 0}% Web Fallback
-              </span>
-            </div>
-            <p className="text-2xs text-slate-500 mt-0.5">
-              Ưu tiên tra cứu Dược thư Quốc gia Việt Nam V nội viện; tự động tìm kiếm Serper khi thuốc chưa lập chuyên khảo
-            </p>
-          </div>
+          <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-500 truncate">
+            Đã giám định{' '}
+            <strong className="text-slate-800 font-mono font-semibold tabular-nums">
+              {Number(d.bhyt_audited || 0).toLocaleString('vi-VN')}
+            </strong>{' '}
+            ca
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-2xs font-mono border-t md:border-t-0 pt-2 md:pt-0 border-slate-100 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-500">Lượt search hôm nay:</span>
-            <span className="px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              {d.web_search_queries_today || 0} queries
+        {/* KPI 3: Tokens phục vụ */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[144px] hover:border-teal-300 transition">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+              Tokens phục vụ
+            </span>
+            <span className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+              <Coins className="w-4 h-4" />
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-500">Độ trễ TB:</span>
-            <span className="text-slate-700 font-bold" title="Độ trễ trung bình của Serper API">
-              T<sub className="font-sans">serper</sub> {d.avg_serper_latency_ms || 0}ms
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums leading-none">
+              {(Number(d.tokens_consumed || 0) / 1000).toFixed(1)}k
             </span>
-            <span className="text-slate-300">|</span>
-            <span className="text-slate-700 font-bold" title="Độ trễ trung bình của LLM Gemini">
-              T<sub className="font-sans">llm</sub> {d.avg_llm_latency_ms || 0}ms
+            <span className="text-xs font-medium text-slate-500 font-mono">tokens</span>
+          </div>
+          <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-500 truncate">
+            Chi phí tiết kiệm{' '}
+            <strong className="text-slate-800 font-mono font-semibold tabular-nums">
+              {Number(d.cost_saved_vnd || 0).toLocaleString('vi-VN')} ₫
+            </strong>
+          </p>
+        </div>
+
+        {/* KPI 4: Độ trễ P95 (SLA) */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-2xs flex flex-col justify-between min-h-[144px] hover:border-teal-300 transition">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+              Độ trễ P95 (SLA)
+            </span>
+            <span className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+              <Timer className="w-4 h-4" />
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tracking-tight tabular-nums leading-none">
+              {hasTraffic ? p95.toLocaleString('vi-VN') : '—'}
+            </span>
+            {hasTraffic && <span className="text-xs font-medium text-slate-500 font-mono">ms</span>}
+          </div>
+          <p className="mt-3 pt-2.5 border-t border-slate-100 text-xs flex items-center gap-1.5 truncate">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${slaMeta.dot}`} />
+            <span className={`font-medium ${slaMeta.text}`}>{slaMeta.label}</span>
+            {slaMeta.hint && <span className="text-slate-400 font-mono">{slaMeta.hint}</span>}
+          </p>
+        </div>
+      </div>
+
+      {/* Full-Width Source Escalation Strip */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs px-5 sm:px-6 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5 min-w-0 flex-wrap">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-800 shrink-0">
+            <Globe className="w-4 h-4 text-teal-700" />
+            Phân bổ nguồn tra cứu
+          </span>
+
+          {/* Proportion bar */}
+          <div
+            className="hidden sm:flex w-36 h-2 rounded-full bg-slate-100 overflow-hidden shrink-0"
+            title={`Nội viện ${internalRatio}% · Web ngoài ${webRatio}%`}
+          >
+            <div className="bg-teal-600 h-full" style={{ width: `${internalRatio}%` }} />
+            <div className="bg-sky-500 h-full" style={{ width: `${webRatio}%` }} />
+          </div>
+
+          <div className="flex items-center gap-2.5 text-xs font-mono">
+            <span className="inline-flex items-center gap-1.5 text-teal-800 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-teal-600" />
+              {internalRatio}% Dược thư Quốc gia
+            </span>
+            <span className="text-slate-300">·</span>
+            <span className="inline-flex items-center gap-1.5 text-slate-600 font-medium">
+              <span className="w-2 h-2 rounded-full bg-sky-500" />
+              {webRatio}% Tra cứu Web
             </span>
           </div>
         </div>
+
+        <div className="flex items-center gap-3.5 text-xs font-mono text-slate-600 shrink-0 flex-wrap">
+          <span>
+            Web hôm nay:{' '}
+            <strong className="text-slate-900 tabular-nums">{d.web_search_queries_today || 0}</strong> lượt
+          </span>
+          <span className="text-slate-300">|</span>
+          <span title="Độ trễ trung bình tìm kiếm Web">
+            Web <strong className="text-slate-800 tabular-nums">{d.avg_serper_latency_ms || 0}ms</strong>
+          </span>
+          <span className="text-slate-300">·</span>
+          <span title="Độ trễ trung bình tổng hợp AI">
+            AI <strong className="text-slate-800 tabular-nums">{d.avg_llm_latency_ms || 0}ms</strong>
+          </span>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };

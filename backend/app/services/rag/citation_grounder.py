@@ -116,13 +116,17 @@ def build_claim_citations(retrieved_chunks: list[RetrievedChunk], query: str = "
         from app.services.copilot_drug_citation_helper import truncate_clinical_excerpt
         excerpt = truncate_clinical_excerpt(excerpt_text, max_length=240)
 
-        document_url, document_id, _ = resolve_citation_document(
+        document_url, document_id, resolved_page = resolve_citation_document(
             c.source_doc, c.legal_basis, c.page_or_section, query=""
         )
         if c.source_version is None:
-            document_url, document_id = None, None
+            document_url, document_id, resolved_page = None, None, None
         page_match = re.search(r"\b(?:page|trang)\s*(\d+)\b", c.page_or_section, re.IGNORECASE)
         document_page = int(page_match.group(1)) if page_match else None
+        if document_page is None and resolved_page is not None and c.entity_type in {
+            "circular", "guideline", "regulatory", "protocol", "regulatory_pdf"
+        }:
+            document_page = resolved_page
         if document_url and "#page=" in document_url and document_page is None:
             document_url = document_url.split("#page=", 1)[0]
         elif document_url and document_page is not None:

@@ -47,8 +47,8 @@ QUY TẮC BÓC TÁCH THÔNG SỐ LÂM SÀNG & AN TOÀN NHI KHOA / SUY THẬN:
   + Đơn vị: "um mol/l", "umol/l", "micromol/l" -> "umol_l"; "mg/dl" -> "mg_dl".
   + Khi có chỉ số creatinin hoặc câu hỏi liên quan đến suy thận, độ thanh thải, ClCr, eGFR: BẮT BUỘC gán "is_renal_inquiry": true và "requested_field": "renal".
 - ĐẠI TỪ CHỈ ĐỊNH & CHUYỂN CHỦ ĐỀ (TOPIC SHIFT):
-  + Kế thừa tên thuốc từ <last_active_medication> nếu có đại từ ("thuốc đó", "nó").
-  + Nếu người dùng hỏi một thuốc mới khác hoàn toàn so với <last_active_medication> hoặc chuyển sang hỏi quy chế/hành chính: gán "is_topic_shift": true.
+  + Nếu câu chỉ có đại từ thay thế ("thuốc đó", "thuốc này", "nó", "còn liều dùng thì sao") mà không nêu tên thuốc cụ thể: gán "conversation_mode": "contextual_followup" và "is_deictic_referent": true (hệ thống sẽ tự đối chiếu thuốc đang theo dõi của phiên).
+  + Nếu người dùng nêu tên thuốc mới rõ ràng hoặc chuyển sang hỏi quy chế/hành chính/chủ đề mới: gán "is_topic_shift": true.
 - CÂU HỎI KÉP & ĐA Ý ĐỊNH (MULTI-INTENT SUB-QUERIES):
   + Khi câu hỏi chứa 2 vế độc lập có liên từ nối ("và", "đồng thời", "với cả", "cho tôi hỏi thêm"): BẮT BUỘC rã trường "sub_queries" thành mảng các câu hỏi độc lập (ví dụ: ["liều Paracetamol cho bé 15kg", "Paracetamol có tương tác với Ibuprofen không"]).
 - KHỐI ĐƠN THUỐC THÔ NHIỀU DÒNG (RAW PRESCRIPTION BLOCK):
@@ -57,18 +57,11 @@ QUY TẮC BÓC TÁCH THÔNG SỐ LÂM SÀNG & AN TOÀN NHI KHOA / SUY THẬN:
   + "DETAILED": nếu yêu cầu "chi tiết", "đầy đủ", "toàn văn", "chuyên sâu".
   + "COUNSELING": nếu yêu cầu "dặn dò", "dễ hiểu", "3 ý", "cho người nhà".
   + "SUMMARY": mặc định.
-- Gán answer_operation dựa trên yêu cầu của câu hiện tại, không dựa riêng vào việc câu có tên nhiều thuốc hay nhiều trường thông tin. Câu liệt kê/tóm tắt nhiều dữ kiện theo yêu cầu vẫn là direct_lookup; câu hỏi "so sánh" hoặc yêu cầu kết luận tổng hợp là evidence_synthesis; đánh giá một người bệnh cụ thể là patient_specific_inference.
-- Phân biệt thực thể thuốc với thực thể không phải thuốc theo loại thực thể và dữ liệu định danh được cung cấp. Không gán một thực thể không được xác minh là thuốc vào secondary_drug. Nếu yêu cầu cần tổng hợp nhiều bằng chứng hoặc áp dụng chúng để rút ra kết luận, gán answer_operation=evidence_synthesis; nếu chỉ trích xuất một trường, giữ direct_lookup.
-- Khi yêu cầu đánh giá tương tác nêu một thuốc và một nhóm dược lý/enzym/chất vận chuyển thay vì thuốc thứ hai, vẫn chọn MEDICATION_INTERACTION_CHECK; giữ nguyên thực thể thứ hai trong secondary_entity và gán đúng secondary_entity_type. Chỉ yêu cầu làm rõ nếu không nhận diện được thực thể tương tác thứ hai.
-- TRƯỜNG ĐƯỢC YÊU CẦU: điền requested_fields với TOÀN BỘ các khía cạnh độc lập được hỏi trong câu hiện tại, dùng tên trường schema tương ứng; không chỉ chọn một trường đại diện. Nếu không yêu cầu trường cụ thể, trả mảng rỗng.
-- GIỚI HẠN PHẠM VI TRƯỜNG: requested_fields chỉ gồm các khía cạnh người dùng yêu cầu trực tiếp hoặc các khía cạnh được nêu rõ là cần so sánh/tổng hợp. Không thêm trường liên quan chỉ vì có thể hữu ích; thông tin bệnh nền làm bối cảnh không tự động biến thành yêu cầu trả lời mọi trường liên quan.
-- CHẾ ĐỘ HỘI THOẠI: Phân loại ý nghĩa câu hiện tại độc lập trước khi dùng lịch sử. Chọn "contextual_followup" chỉ khi hiểu câu hiện tại cần lượt trước; chọn "topic_shift" khi bắt đầu chủ đề mới; còn lại là "independent". Không kế thừa thuốc hoặc thực thể từ lượt trước cho câu độc lập.
-
-NGUYÊN TẮC ĐỐI CHIẾU:
-- Phân biệt câu tra cứu đơn, câu đa ý và câu theo ca bệnh; chỉ tạo sub_queries khi có nhiều yêu cầu độc lập.
-- Trích chính xác thuốc, trường yêu cầu, thông số bệnh nhân; kế thừa thuốc chỉ khi có tham chiếu hội thoại rõ.
-- Với tương tác, xác định đủ hai thực thể và phân biệt thuốc với nhóm dược lý/enzym/chất vận chuyển.
-- Với câu ngoài chuyên môn, phân loại đúng loại ngoài phạm vi và không gán dữ kiện y khoa.
+- PHÂN LOẠI THAO TÁC & THỰC THỂ TƯƠNG TÁC:
+  + Gán `answer_operation` theo yêu cầu hiện tại (không dựa riêng vào số lượng thuốc/trường): liệt kê/tóm tắt dữ kiện = `direct_lookup`; so sánh/tổng hợp nhiều bằng chứng = `evidence_synthesis`; đánh giá ca bệnh cụ thể = `patient_specific_inference`.
+  + Chỉ gán thực thể đã xác minh là thuốc vào `secondary_drug`. Nếu thực thể tương tác thứ hai là nhóm dược lý/enzym/chất vận chuyển, vẫn chọn `MEDICATION_INTERACTION_CHECK` và điền `secondary_entity` + `secondary_entity_type`; chỉ chọn `MEDICATION_INTERACTION_CLARIFICATION` khi thiếu hẳn thực thể thứ hai.
+- TRƯỜNG ĐƯỢC YÊU CẦU (`requested_fields`): điền toàn bộ khía cạnh độc lập được hỏi trực tiếp (hoặc nêu rõ cần so sánh/tổng hợp) theo đúng tên trường schema; không tự suy diễn thêm trường thừa từ bối cảnh bệnh nền. Nếu không hỏi trường cụ thể, trả mảng rỗng.
+- CHẾ ĐỘ HỘI THOẠI (`conversation_mode`): phân loại độc lập trước khi dùng ngữ cảnh; chọn `contextual_followup` chỉ khi hiểu câu hiện tại cần lượt trước, `topic_shift` khi sang chủ đề mới, còn lại là `independent`. Tuyệt đối không kế thừa thuốc từ lượt trước cho câu độc lập.
 """
 def _compute_cache_key(
     query: str, active_med: Optional[str] = None, history: str = ""
@@ -169,15 +162,21 @@ async def parse_clinical_nlu(
     # Fast-Path tức thì không tiêu tốn token (Zero-Token Serving)
     fast_res = try_deterministic_fast_path(clean_q, active_med)
     if fast_res:
-        _NLU_CACHE[cache_key] = (fast_res, now)
+        fast_cache_val = fast_res.model_copy(deep=True)
+        if fast_cache_val.conversation_mode == "contextual_followup" or fast_cache_val.is_deictic_referent:
+            fast_cache_val.primary_drug = None
+        _NLU_CACHE[cache_key] = (fast_cache_val, now)
         return fast_res
 
-    # Xây dựng prompt kèm thẻ XML cách ly an toàn (OWASP LLM01 Prompt Injection Defense)
-    context_block = ""
+    # Xây dựng prompt kèm thẻ XML Nonce ngẫu nhiên & phân cấp đặc quyền (Spotlighting + Instruction Hierarchy)
+    from app.security.prompt_isolator import build_hierarchy_preamble, wrap_untrusted_block
+
+    wrapped_input, input_tag = wrap_untrusted_block("user_input", clean_q)
     user_prompt = (
-        f"<user_input>{clean_q}</user_input>\n"
+        f"{wrapped_input}\n"
         "Hãy trả về duy nhất chuỗi JSON phân tích cú pháp theo đúng schema:"
     )
+    isolated_system = f"{GEMINI_NLU_SYSTEM_PROMPT}\n\n{build_hierarchy_preamble([input_tag])}"
 
     from app.services.llm_provider import query_clinical_llm
     from app.services.admin_key_vault import get_active_api_key_async
@@ -189,10 +188,10 @@ async def parse_clinical_nlu(
     try:
         raw_json = await query_clinical_llm(
             prompt=user_prompt,
-            system_instruction=GEMINI_NLU_SYSTEM_PROMPT,
+            system_instruction=isolated_system,
             api_key=api_key,
             temperature=0.0,
-            max_output_tokens=350,
+            max_output_tokens=512,
             timeout_sec=timeout_sec,
             response_schema=_structured_output_schema()
         )

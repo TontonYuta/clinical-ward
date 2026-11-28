@@ -89,7 +89,7 @@ class VerifiedQAService:
         self,
         db_path: Optional[str] = None,
         embedding_provider: Optional[BaseEmbeddingProvider] = None,
-        similarity_threshold: float = 0.88
+        similarity_threshold: float = 0.93
     ):
         self.db_path = db_path or _resolve_default_db_path()
         self.similarity_threshold = similarity_threshold
@@ -444,6 +444,19 @@ class VerifiedQAService:
         logger.info("Đã đăng ký Verified Q&A Node [%s] cho câu hỏi: '%s'", qa_id, canonical)
         return qa_id
 
+    @staticmethod
+    def _is_stale_auto_node(node: Dict[str, Any]) -> bool:
+        """Bypass legacy auto-saved raw book dumps so upgraded Gemini Answer-First synthesis can refresh them."""
+        vsrc = str(node.get("verification_source") or "").lower()
+        if not vsrc.startswith("auto_"):
+            return False
+        ans = str(node.get("answer_markdown") or "")
+        if "xem chuyên luận" in ans.lower() or "đối chiếu nguyên văn dược thư" in ans.lower():
+            return True
+        if len(ans) >= 400 and "### " not in ans:
+            return True
+        return False
+
     def lookup_verified_qa(
         self,
         query: str,
@@ -459,13 +472,23 @@ class VerifiedQAService:
         if not canonical:
             return None
 
+        # Clinical Safety Gate: never match personalized/patient-parameter or deictic follow-up queries to static VQA
+        lower_q = (query or "").lower()
+        unsafe_vqa_cues = (
+            "thuốc này", "thuốc đó", "thuốc kia", "vừa rồi", "bệnh nhân này",
+            "creatinin", "crcl", "egfr", "chỉnh liều", "tuổi", "kg",
+        )
+        if any(cue in lower_q for cue in unsafe_vqa_cues) or bool(re.search(r"\bnó\b", lower_q)):
+            self.misses += 1
+            return None
+
         threshold = min_similarity if min_similarity is not None else self.similarity_threshold
 
         # 1. Exact Match O(1)
         if canonical in self._exact_canonical_index:
             qa_id = self._exact_canonical_index[canonical]
             node = self._nodes_cache.get(qa_id)
-            if node and node.get("is_active"):
+            if node and node.get("is_active") and not self._is_stale_auto_node(node):
                 self.exact_hits += 1
                 self._increment_hit(qa_id)
                 node_copy = node.copy()
@@ -473,16 +496,19 @@ class VerifiedQAService:
                 node_copy["similarity_score"] = 1.0
                 return node_copy
 
-        # 2. Semantic Vector Match (Query-to-Query)
+        # 2. Semantic Vector Match (Query-to-Query) with full Clinical Feature Guardrail
         query_vec = self.embed_query_sync(canonical)
         query_entities = set(self.extract_entities(query))
+        from app.services.cache.clinical_cache import get_clinical_cache
+        _cc = get_clinical_cache()
+        q_feats = _cc.extract_clinical_features(query, auto_embed=False)
 
         best_score = 0.0
         best_node = None
 
         if query_vec is not None:
             for qa_id, node in self._nodes_cache.items():
-                if not node.get("is_active"):
+                if not node.get("is_active") or self._is_stale_auto_node(node):
                     continue
                 cached_vec = node.get("query_vector")
                 if cached_vec is None:
@@ -493,19 +519,30 @@ class VerifiedQAService:
                 if score < threshold or score <= best_score:
                     continue
 
-                # Medical Entity & Intent Guardrail:
-                # Nếu câu hỏi có thực thể thuốc hoặc khác ý định lâm sàng (vd: thuốc thay thế vs tương tác), không match nhầm
+                # Medical Entity Guardrail
                 node_entities = set(node.get("entities", []))
                 if query_entities and node_entities:
                     overlap = query_entities.intersection(node_entities)
                     if not overlap:
                         continue
 
-                from app.services.cache.clinical_cache import get_clinical_cache
-                _cc = get_clinical_cache()
-                q_intents = _cc.extract_clinical_features(query)["intent"]
-                n_intents = _cc.extract_clinical_features(node.get("question_raw") or node.get("question_canonical") or "")["intent"]
-                if q_intents != n_intents:
+                # Clinical Intent, Facet, Quantitative & Condition Safety Guardrail (fixes canonical_query key bug)
+                node_query_text = (
+                    node.get("canonical_query")
+                    or node.get("question_raw")
+                    or node.get("question_canonical")
+                    or ""
+                )
+                n_feats = _cc.extract_clinical_features(node_query_text, auto_embed=False)
+                if q_feats["intent"] != n_feats["intent"]:
+                    continue
+                if q_feats.get("requested_fields", frozenset()) != n_feats.get("requested_fields", frozenset()):
+                    continue
+                if q_feats["numbers"] != n_feats["numbers"]:
+                    continue
+                if q_feats["meds"] != n_feats["meds"]:
+                    continue
+                if (q_feats.get("conditions") or n_feats.get("conditions")) and q_feats.get("conditions") != n_feats.get("conditions"):
                     continue
 
                 best_score = score

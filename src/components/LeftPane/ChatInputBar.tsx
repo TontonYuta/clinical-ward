@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Image as ImageIcon, AlertCircle, Clock, X, Globe } from 'lucide-react';
+import { Send, ArrowUp, Square, Mic, MicOff, Image as ImageIcon, AlertCircle, Clock, X, Globe } from 'lucide-react';
 import { QuickSuggestionChip } from '../../types/clinical';
 import { ImageModal } from '../Modals/ImageModal';
 import { clinicalAudio } from '../../utils/audio';
@@ -15,16 +15,20 @@ const VOICE_SILENCE_DELAY_MS = 1000;
 
 interface ChatInputBarProps {
   onSendMessage: (text: string, attachment?: any, enableWebSearch?: boolean) => void;
+  onStopGenerating?: () => void;
   suggestionChips?: QuickSuggestionChip[];
   isProcessing: boolean;
   isAudioMuted: boolean;
   onChipClick?: (chipOrText: string | QuickSuggestionChip) => void;
+  compact?: boolean;
 }
 
 export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   onSendMessage,
+  onStopGenerating,
   isProcessing,
   isAudioMuted,
+  compact = false,
 }) => {
   const [inputText, setInputText] = useState('');
   const [clipboardImage, setClipboardImage] = useState<File | null>(null);
@@ -70,16 +74,35 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         setIsWebSearchActive(detail);
       }
     };
+    const handleVoiceSync = (e: Event) => {
+      const detail = (e as CustomEvent<boolean>).detail;
+      if (typeof detail === 'boolean') {
+        setAutoSendOnSilence(detail);
+      }
+    };
     window.addEventListener('copilot-web-search-changed', handleSync);
-    return () => window.removeEventListener('copilot-web-search-changed', handleSync);
+    window.addEventListener('clinical-voice-auto-send-changed', handleVoiceSync);
+    return () => {
+      window.removeEventListener('copilot-web-search-changed', handleSync);
+      window.removeEventListener('clinical-voice-auto-send-changed', handleVoiceSync);
+    };
   }, []);
 
-  const inputFieldRef = useRef<HTMLInputElement>(null);
+  const inputFieldRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const baseTextRef = useRef<string>('');
   const latestSpokenTextRef = useRef<string>('');
   const silenceTimerRef = useRef<number | null>(null);
   const hasDispatchedRef = useRef<boolean>(false);
+
+  // Tự động giãn chiều cao textarea mượt mà theo số dòng (tối đa 144px)
+  useEffect(() => {
+    const el = inputFieldRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const nextHeight = Math.min(el.scrollHeight, 144);
+    el.style.height = `${Math.max(nextHeight, 24)}px`;
+  }, [inputText]);
 
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
@@ -466,7 +489,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   };
 
   return (
-    <div className="p-2 sm:p-3 bg-white shrink-0">
+    <div className={`${compact ? 'px-2.5 py-2' : 'p-2 sm:p-3'} bg-white shrink-0`}>
       {isListening && (
         <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-1.5 mb-1.5 bg-rose-50/95 border border-rose-200 rounded-lg text-xs text-rose-800 animate-in fade-in shadow-2xs">
           <div className="flex items-center gap-2 font-medium min-w-0 max-w-[65%]">
@@ -601,85 +624,103 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         </div>
       )}
 
-      {isWebSearchActive && (
-        <div className="flex items-center justify-between px-2.5 py-1 mb-1.5 bg-sky-50 border border-sky-300 rounded-lg text-2xs text-sky-900 animate-in fade-in shadow-2xs">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Globe className="w-3.5 h-3.5 text-sky-600 shrink-0 animate-pulse" />
-            <span className="font-semibold leading-tight">Đang bật tìm kiếm Web thời gian thực (Google / Cổng Bộ Y Tế)</span>
-          </div>
-          <button
-            type="button"
-            onClick={toggleWebSearch}
-            className="text-sky-700 hover:text-sky-950 font-bold px-1 cursor-pointer text-xs"
-            title="Tắt tìm kiếm Web"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2">
-        <div className="relative flex-1">
-          <input
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-slate-200/95 bg-white shadow-xs focus-within:border-slate-400/90 focus-within:shadow-sm transition-all duration-150"
+      >
+        <div className={compact ? 'px-3 pt-2 pb-0.5' : 'px-3.5 pt-2.5 pb-1'}>
+          <textarea
             ref={inputFieldRef}
             data-testid="chat-input-field"
-            type="text"
+            rows={1}
             value={inputText}
             onChange={(e) => {
               setInputText(e.target.value);
               hasDispatchedRef.current = false;
             }}
-            placeholder={isListening ? '🎙️ Đang nghe tiếng Việt... Hãy nói câu hỏi' : 'Nhập câu hỏi hoặc yêu cầu lâm sàng...'}
-            className="w-full pl-4 pr-24 sm:pr-28 h-11 sm:h-12 text-sm sm:text-base bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-teal-700 focus:bg-white text-slate-900 transition shadow-2xs font-medium"
-            disabled={isProcessing}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+            placeholder={isListening ? 'Đang nghe tiếng Việt... Hãy nói câu hỏi' : 'Hỏi thông tin thuốc hoặc ca lâm sàng...'}
+            className={`w-full resize-none bg-transparent ${compact ? 'text-[14px]' : 'text-sm sm:text-[15px]'} leading-relaxed text-slate-900 placeholder:text-slate-400 focus:outline-hidden max-h-36 overflow-y-auto`}
           />
-          <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 sm:gap-1">
+        </div>
+
+        <div className={`flex items-center justify-between gap-2 ${compact ? 'px-2 pb-1.5 pt-0.5' : 'px-2.5 pb-2 pt-0.5'}`}>
+          <div className="flex items-center gap-1">
             <button
               type="button"
               data-testid="chat-web-search-toggle-btn"
               onClick={toggleWebSearch}
-              title={isWebSearchActive ? '🌐 Web Search: ĐANG BẬT (Bấm để tắt, chỉ dùng Dược Thư nội bộ)' : '🌐 Web Search: ĐANG TẮT (Bấm để bật tìm kiếm thời gian thực)'}
-              className={`p-1.5 rounded-md transition cursor-pointer ${
+              aria-pressed={isWebSearchActive}
+              title={isWebSearchActive ? 'Đang tìm kiếm trên Internet (Bấm để tắt)' : 'Tìm kiếm thêm trên Internet'}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition-colors duration-150 cursor-pointer select-none ${
                 isWebSearchActive
-                  ? 'bg-sky-600 text-white shadow-2xs ring-2 ring-sky-300 hover:bg-sky-700'
-                  : 'hover:bg-slate-200 text-slate-500 hover:text-slate-800'
+                  ? 'bg-sky-50 text-sky-700 border border-sky-200/90 font-semibold hover:bg-sky-100/80'
+                  : 'text-slate-500 border border-transparent font-medium hover:bg-slate-100 hover:text-slate-800'
               }`}
             >
-              <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Globe className={`w-3.5 h-3.5 shrink-0 ${isWebSearchActive ? 'text-sky-600' : 'text-slate-400'}`} />
+              <span>Tìm kiếm</span>
             </button>
-            <button
-              type="button"
-              data-testid="chat-voice-btn"
-              onClick={toggleListening}
-              title={isListening ? 'Đang thu âm giọng nói (Bấm để dừng)' : 'Nhập bằng giọng nói (Micro tiếng Việt)'}
-              className={`p-1.5 rounded-md transition cursor-pointer ${
-                isListening
-                  ? 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-300 hover:bg-rose-700'
-                  : 'hover:bg-slate-200 text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {isListening ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
-            </button>
+
             <button
               type="button"
               data-testid="chat-attach-image-btn"
               onClick={() => setIsImageOpen(true)}
               title="Đính kèm ảnh đơn thuốc hoặc hình ảnh sự cố"
-              className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              className="p-1.5 rounded-full text-slate-500 hover:bg-slate-200/70 hover:text-slate-800 transition-colors duration-150 cursor-pointer"
+              aria-label="Đính kèm ảnh"
             >
-              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <ImageIcon className="w-4 h-4" />
             </button>
           </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={!inputText.trim() || isProcessing}
-          className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg bg-teal-800 text-white hover:bg-teal-900 disabled:opacity-40 transition shrink-0 flex items-center justify-center shadow-2xs cursor-pointer active:scale-98"
-          title="Gửi yêu cầu"
-        >
-          <Send className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
-        </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {isProcessing && onStopGenerating ? (
+              <button
+                type="button"
+                data-testid="chat-stop-btn"
+                onClick={onStopGenerating}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold transition cursor-pointer active:scale-95"
+                title="Dừng tạo câu trả lời"
+                aria-label="Dừng tạo câu trả lời"
+              >
+                <Square className="w-3 h-3 fill-current" />
+                <span>Dừng</span>
+              </button>
+            ) : inputText.trim().length > 0 ? (
+              <button
+                type="submit"
+                data-testid="chat-send-btn"
+                disabled={isProcessing}
+                className="h-8 w-8 rounded-full bg-teal-800 text-white hover:bg-teal-900 disabled:bg-slate-200 disabled:text-slate-400 transition flex items-center justify-center cursor-pointer active:scale-95 disabled:cursor-not-allowed"
+                title="Gửi câu hỏi (Enter)"
+                aria-label="Gửi câu hỏi"
+              >
+                <ArrowUp className="w-4 h-4 stroke-[2.25]" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                data-testid="chat-voice-btn"
+                onClick={toggleListening}
+                title={isListening ? 'Đang thu âm giọng nói (Bấm để dừng)' : 'Nhập bằng giọng nói (Micro tiếng Việt)'}
+                className={`h-8 w-8 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 ${
+                  isListening
+                    ? 'bg-rose-600 text-white hover:bg-rose-700'
+                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                }`}
+                aria-label={isListening ? 'Dừng thu âm' : 'Nhập bằng giọng nói'}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
+        </div>
       </form>
 
       <ImageModal

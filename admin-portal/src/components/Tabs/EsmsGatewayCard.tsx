@@ -50,29 +50,29 @@ export const EsmsGatewayCard: React.FC<EsmsGatewayCardProps> = ({ esms, onRefres
   };
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden">
-      <div className="p-3 sm:px-4 sm:py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold text-slate-900 text-sm">Cổng Viễn Thông eSMS.vn Brandname</h3>
-          <p className="text-2xs text-slate-500 mt-0.5">API Viễn thông thật • Số dư: <strong className="text-slate-800 font-mono font-bold">{(Number(esms?.balance_vnd) || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
+          <h3 className="font-semibold text-slate-900 text-base tracking-tight">Cổng Viễn Thông eSMS.vn Brandname</h3>
+          <p className="text-xs text-slate-500 mt-0.5">API Viễn thông • Số dư: <strong className="text-slate-900 font-mono font-semibold">{(Number(esms?.balance_vnd) || 0).toLocaleString('vi-VN')} VNĐ</strong></p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handlePing}
             disabled={isPinging}
-            className="px-2.5 py-1 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition"
+            className="h-9 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin text-teal-700' : ''}`} />
-            <span>{isPinging ? 'Đang kiểm tra...' : 'Ping Số Dư Thật'}</span>
+            <span>{isPinging ? 'Đang kiểm tra...' : 'Ping số dư'}</span>
           </button>
           <button
             type="button"
             onClick={() => setShowEdit(true)}
-            className="px-3 py-1 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition active:scale-98"
+            className="h-9 px-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer transition active:scale-[0.98]"
           >
             <Edit3 className="w-3.5 h-3.5" />
-            <span>Cấu Hình</span>
+            <span>Cấu hình</span>
           </button>
         </div>
       </div>
@@ -111,22 +111,22 @@ export const EsmsGatewayCard: React.FC<EsmsGatewayCardProps> = ({ esms, onRefres
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="text-2xs font-semibold text-slate-500 border-b border-slate-200">
-                <th className="pb-2">Mã SMS</th>
-                <th className="pb-2">Bệnh Nhân / SĐT</th>
-                <th className="pb-2">Thời Gian</th>
-                <th className="pb-2">Trạng Thái</th>
-                <th className="pb-2">Nội Dung</th>
+                <th className="pb-2.5 pr-3 whitespace-nowrap">Mã SMS</th>
+                <th className="pb-2.5 pr-3 whitespace-nowrap">Bệnh Nhân / SĐT</th>
+                <th className="pb-2.5 pr-3 whitespace-nowrap">Thời Gian</th>
+                <th className="pb-2.5 pr-3 whitespace-nowrap">Trạng Thái</th>
+                <th className="pb-2.5">Nội Dung</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {esms?.recent_logs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50/80">
-                  <td className="py-2.5 font-mono text-2xs text-slate-600 font-bold">{log.id}</td>
-                  <td className="py-2.5 font-semibold text-slate-800">
-                    {log.patient_name} <span className="font-mono font-normal text-slate-500">({log.recipient_phone})</span>
+                  <td className="py-2.5 pr-3 font-mono text-2xs text-slate-600 font-bold whitespace-nowrap">{log.id}</td>
+                  <td className="py-2.5 pr-3 font-semibold text-slate-800 whitespace-nowrap">
+                    {log.patient_name} <span className="font-mono font-normal text-slate-500 block text-3xs">{log.recipient_phone}</span>
                   </td>
-                  <td className="py-2.5 text-2xs font-mono text-slate-500">{log.created_at}</td>
-                  <td className="py-2.5">
+                  <td className="py-2.5 pr-3 text-2xs font-mono text-slate-500 whitespace-nowrap">{log.created_at}</td>
+                  <td className="py-2.5 pr-3 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1 font-mono text-2xs uppercase">
                       <span className={`w-1.5 h-1.5 rounded-full ${log.status === 'delivered' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                       <span className={log.status === 'delivered' ? 'text-emerald-700 font-medium' : 'text-slate-600 font-medium'}>
@@ -134,7 +134,7 @@ export const EsmsGatewayCard: React.FC<EsmsGatewayCardProps> = ({ esms, onRefres
                       </span>
                     </span>
                   </td>
-                  <td className="py-2.5 text-2xs text-slate-600 max-w-xs truncate" title={log.content}>
+                  <td className="py-2.5 text-2xs text-slate-600 max-w-[260px] truncate" title={log.content}>
                     {log.content}
                   </td>
                 </tr>

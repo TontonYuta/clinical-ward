@@ -206,6 +206,37 @@ async def lookup_drug_authoritative(
         res = await db.execute(stmt)
         drugs = res.scalars().all()
 
+    # Exact-INN Monograph Priority: if user explicitly named an exact INN from Dược thư Quốc gia
+    # (e.g. "Ergometrine") and DAV only matched a substring derivative (e.g. "Methylergometrine"),
+    # prefer the exact monograph directly so we never mismatch clinical safety fields.
+    has_exact_dav_match = any(
+        (d.brand_name or "").strip().lower() == kw_clean.lower()
+        or (d.active_ingredient or "").strip().lower() == kw_clean.lower()
+        or (d.national_code or "").strip().lower() == kw_clean.lower()
+        for d in (drugs or [])
+    )
+    if not has_exact_dav_match:
+        exact_mono_res = await db.execute(
+            select(ClinicalDrugMonograph).where(
+                or_(
+                    func.lower(ClinicalDrugMonograph.inn) == kw_clean.lower(),
+                    func.lower(ClinicalDrugMonograph.title) == kw_clean.lower(),
+                )
+            ).limit(1)
+        )
+        exact_mono = exact_mono_res.scalar_one_or_none()
+        if exact_mono:
+            drugs = [DavNationalDrug(
+                id=f"MONO-{exact_mono.id}", national_code=exact_mono.atc_code or "DĐVN V",
+                brand_name=exact_mono.title or exact_mono.inn.title(), active_ingredient=exact_mono.inn,
+                atc_code=exact_mono.atc_code, drug_class=exact_mono.drug_class,
+                indications=exact_mono.indications, contraindications=exact_mono.contraindications,
+                adverse_effects=exact_mono.adverse_effects, drug_interactions=exact_mono.drug_interactions,
+                adult_dosage=exact_mono.adult_dosage, clinical_source=exact_mono.source or "Dược Thư Quốc Gia Việt Nam",
+                clinical_monograph_id=exact_mono.id,
+                source_id=exact_mono.source_id, source_version=exact_mono.source_version,
+            )]
+
     if not drugs and len(kw.split()) == 1:
         token = kw.casefold()
         candidate_res = await db.execute(

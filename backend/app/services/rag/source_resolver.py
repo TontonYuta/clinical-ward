@@ -347,6 +347,14 @@ def resolve_citation_document(
                 page = 15
             else:
                 page = 1
+        elif doc_id == "tt-20-2022":
+            if any(w in unacc_pool for w in ("phu luc", "danh muc", "ty le", "thanh toan")):
+                page = 3
+            else:
+                page = 1
+        elif doc_id and doc_id != "dtqg-v2-2015":
+            # Mọi văn bản quy phạm khác (QĐ 5948, NĐ 188, QĐ 3618, PDF nạp động...) mặc định tối thiểu trang 1
+            page = 1
 
     public_path = match.get("public_path")
     external_url = match.get("external_url")

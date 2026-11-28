@@ -123,7 +123,8 @@ async def handle_multi_intent_chat(
     for claim in combined_claims:
         for evidence_id in claim["evidence_ids"]:
             evidence_claim_map.setdefault(evidence_id, []).append(claim["claim_id"])
-    claim_text_is_rendered = all(claim["text"] in final_text for claim in combined_claims)
+    final_text_low = final_text.casefold()
+    claim_text_is_rendered = all(str(claim["text"]).casefold() in final_text_low for claim in combined_claims)
     grounded = grounded and bool(combined_claims) and claim_text_is_rendered
     if not grounded:
         final_text = "Chưa thể xác minh một hoặc nhiều ý trong yêu cầu từ nguồn tài liệu có thể truy xuất. Vui lòng tách câu hỏi hoặc kiểm tra kho nguồn trước khi sử dụng nội dung chuyên môn."

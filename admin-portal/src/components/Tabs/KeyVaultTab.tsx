@@ -76,71 +76,80 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed top-18 right-6 z-50 p-3.5 bg-teal-900 text-white rounded-lg shadow-lg border border-teal-700/80 flex items-center gap-2.5 text-xs font-medium animate-in slide-in-from-top-2">
+        <div className="fixed top-16 right-6 z-50 px-4 py-3 bg-teal-900 text-white rounded-xl shadow-lg border border-teal-700/80 flex items-center gap-2.5 text-xs font-medium animate-in slide-in-from-top-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMsg}</span>
         </div>
       )}
 
-      {/* Header Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:px-4 sm:py-3 bg-white rounded-lg border border-slate-200/90">
-        <div>
-          <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-            Bể Khóa API Đa Tầng (Key Vault)
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Tự động chia tải và chuyển đổi dự phòng (failover) khi có key chạm rate-limit (429)
-          </p>
+      {/* Header Toolbar + Integrated Subtle Note */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden">
+        <div className="px-5 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+              Bể khóa API đa tầng (Key Vault)
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Tự động xoay vòng và chuyển đổi dự phòng khi có khóa chạm ngưỡng giới hạn (429)
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+            <button
+              type="button"
+              onClick={handleAutoHeartbeat}
+              disabled={isHeartbeating}
+              className="h-9 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-slate-200 whitespace-nowrap"
+              title="Tự động kiểm tra độ trễ và trạng thái khả dụng của toàn bộ khóa"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-teal-700 ${isHeartbeating ? 'animate-spin' : ''}`} />
+              <span>{isHeartbeating ? 'Đang quét...' : 'Quét trạng thái'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAdding(!isAdding)}
+              className="h-9 px-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium inline-flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isAdding ? 'Đóng form' : 'Thêm khóa mới'}</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={handleAutoHeartbeat}
-            disabled={isHeartbeating}
-            className="px-2.5 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-slate-300 whitespace-nowrap"
-            title="Tự động kiểm tra latency và khả dụng của toàn bộ danh sách key"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-teal-700 ${isHeartbeating ? 'animate-spin' : ''}`} />
-            <span>{isHeartbeating ? 'Đang quét...' : 'Quét trạng thái key'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsAdding(!isAdding)}
-            className="px-3 py-1.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap active:scale-98"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{isAdding ? 'Đóng form' : 'Thêm khóa mới'}</span>
-          </button>
+
+        <div className="px-5 sm:px-6 py-2.5 bg-slate-50/70 border-t border-slate-100 flex items-center gap-2 text-2xs text-slate-600">
+          <Info className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+          <span>
+            Hệ thống duy trì khóa mặc định từ môi trường máy chủ và ưu tiên xoay vòng các khóa dự phòng bạn thêm (chuyển đổi &lt; 50ms).
+          </span>
         </div>
       </div>
 
       {/* Form Thêm Key Mới (Inline Flat) */}
       {isAdding && (
-        <form onSubmit={handleAddKey} className="p-3 sm:px-4 sm:py-3.5 bg-white rounded-lg border border-slate-200/90 space-y-3 animate-in fade-in">
-          <div className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-            Thêm API Key Mới Vào Bể Khóa Xoay Vòng
+        <form onSubmit={handleAddKey} className="p-5 sm:p-6 bg-white rounded-2xl border border-slate-200/90 space-y-4 animate-in fade-in">
+          <div className="text-sm font-semibold text-slate-900">
+            Thêm API Key mới vào bể khóa xoay vòng
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">Tên Gợi Nhớ</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1.5">Tên gợi nhớ</label>
               <input
                 type="text"
                 placeholder="VD: Key Khoa Cấp Cứu 1"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-slate-300 bg-white text-xs text-slate-800 focus:border-teal-600 focus:outline-none"
+                className="w-full h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:border-teal-600 focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">Nhà Cung Cấp</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1.5">Nhà cung cấp</label>
               <select
                 value={newKeyProvider}
                 onChange={(e) => setNewKeyProvider(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-slate-300 bg-white text-xs font-medium text-slate-800 focus:border-teal-600 focus:outline-none cursor-pointer"
+                className="w-full h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:border-teal-600 focus:outline-none cursor-pointer"
               >
                 <option value="gemini">Google Gemini Cloud (LLM Chính thức)</option>
                 <option value="groq">Groq API (Free Tier - gpt-oss-120b)</option>
@@ -151,65 +160,57 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
               </select>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">Khóa API (Bảo Mật)</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1.5">Khóa API (Bảo mật)</label>
               <input
                 type="password"
                 placeholder="Dán mã khóa API tại đây..."
                 value={newKeyValue}
                 onChange={(e) => setNewKeyValue(e.target.value)}
-                className="w-full h-8 px-2.5 rounded-md border border-slate-300 bg-white font-mono text-xs text-slate-800 focus:border-teal-600 focus:outline-none"
+                className="w-full h-9 px-3 rounded-xl border border-slate-200 bg-white font-mono text-xs text-slate-800 focus:border-teal-600 focus:outline-none"
                 required
               />
             </div>
           </div>
           {errorMsg && <div className="text-xs text-rose-600 font-medium">{errorMsg}</div>}
-          <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="px-2.5 py-1 rounded-md border border-slate-300 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+              className="h-9 px-3.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-3.5 py-1 rounded-md bg-teal-700 text-white text-xs font-semibold hover:bg-teal-800 transition"
+              className="h-9 px-4 rounded-xl bg-teal-700 text-white text-xs font-semibold hover:bg-teal-800 transition cursor-pointer"
             >
-              Lưu Vào Bể Khóa
+              Lưu vào bể khóa
             </button>
           </div>
         </form>
       )}
 
-      {/* Banner thông tin cơ chế bể khóa & tính minh bạch */}
-      <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-lg flex items-start gap-2.5 text-xs text-blue-900">
-        <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-blue-950">Cơ chế quản lý Bể khóa Đa tầng:</span> Hệ thống luôn tự động hiển thị và duy trì <strong>Khóa Mặc Định Hệ Thống</strong> được cấu hình sẵn từ máy chủ Render. Khi bạn bấm <em>"Thêm khóa mới"</em> để nạp các khóa dự phòng, hệ thống sẽ ưu tiên sử dụng các khóa này và tự động xoay vòng dự phòng (Failover &lt; 50ms) nếu một khóa chạm ngưỡng hạn mức 15 RPM.
-        </div>
-      </div>
-
-      {/* Bảng Danh Sách Khóa Phẳng (Seamless Table) */}
-      <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+      {/* Bảng Danh Sách Khóa (Desktop Table + Mobile Card List) */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden">
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-500 font-semibold text-2xs uppercase tracking-wider">
-                <th className="py-2.5 px-3">Tên Khóa</th>
-                <th className="py-2.5 px-3">Phân Loại / Nhà Cung Cấp</th>
-                <th className="py-2.5 px-3">Khóa Che (Masked)</th>
-                <th className="py-2.5 px-3">Hạn Mức (Quota)</th>
-                <th className="py-2.5 px-3">Sản Lượng Hôm Nay</th>
-                <th className="py-2.5 px-3">Lỗi 429</th>
-                <th className="py-2.5 px-3">Trạng Thái</th>
-                <th className="py-2.5 px-3 text-right">Thao Tác</th>
+              <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-500 font-semibold text-2xs uppercase tracking-wider">
+                <th className="py-3 pl-5 sm:pl-6 pr-3">Tên khóa</th>
+                <th className="py-3 px-3">Nhà cung cấp</th>
+                <th className="py-3 px-3">Khóa che</th>
+                <th className="py-3 px-3">Hạn mức</th>
+                <th className="py-3 px-3">Sản lượng hôm nay</th>
+                <th className="py-3 px-3">Lỗi 429</th>
+                <th className="py-3 px-3">Trạng thái</th>
+                <th className="py-3 pl-3 pr-5 sm:pr-6 text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {keys.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400">
-                    Bể khóa API đang trống. Vui lòng bấm "Thêm khóa mới" để nạp khóa.
+                  <td colSpan={8} className="py-12 text-center text-slate-500 text-xs">
+                    Bể khóa API đang trống. Nhấn &quot;Thêm khóa mới&quot; để nạp khóa dự phòng.
                   </td>
                 </tr>
               ) : (
@@ -220,12 +221,12 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
 
                   return (
                     <React.Fragment key={k.key_id}>
-                      <tr className="hover:bg-slate-50/70 transition">
-                        <td className="py-2.5 px-3 font-semibold text-slate-900">
+                      <tr className="hover:bg-teal-50/40 transition-colors">
+                        <td className="py-3 pl-5 sm:pl-6 pr-3 font-semibold text-slate-900">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span>{k.name}</span>
                             {isSysEnv && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200" title="Khóa cấu hình từ biến môi trường máy chủ Render">
+                              <span className="px-1.5 py-0.5 rounded-md text-3xs font-semibold uppercase bg-sky-50 text-sky-700 border border-sky-200/80" title="Khóa cấu hình từ biến môi trường máy chủ">
                                 Mặc định
                               </span>
                             )}
@@ -324,8 +325,8 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                             </button>
                             {isSysEnv ? (
                               <span
-                                className="p-1 rounded text-blue-600 bg-blue-50/70 border border-blue-200/60 inline-flex items-center"
-                                title="Khóa hệ thống mặc định được bảo vệ an toàn (quản lý qua Render Cloud)"
+                                className="p-1.5 rounded-lg text-sky-700 bg-sky-50 border border-sky-200/70 inline-flex items-center"
+                                title="Khóa hệ thống mặc định được bảo vệ an toàn từ môi trường máy chủ"
                               >
                                 <ShieldCheck className="w-3.5 h-3.5" />
                               </span>
@@ -333,7 +334,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                               <button
                                 type="button"
                                 onClick={() => handleDelete(k.key_id)}
-                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                                 title="Xóa khóa khỏi bể xoay vòng"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -346,8 +347,8 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                       {/* Dòng hiển thị kết quả kiểm tra Ping nếu có */}
                       {res && (
                         <tr className="bg-slate-50/50">
-                          <td colSpan={8} className="px-3 py-1.5 border-t border-slate-100 text-2xs">
-                            <div className="flex items-center gap-2">
+                          <td colSpan={8} className="px-5 py-2 border-t border-slate-100 text-2xs">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {res.success ? (
                                 <span className="font-semibold text-emerald-800 flex items-center gap-1">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -359,7 +360,7 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
                                   <span>{res.message}</span>
                                 </span>
                               )}
-                              <span className="font-mono text-slate-600 font-bold">({res.latency_ms} ms)</span>
+                              <span className="font-mono text-slate-600 font-semibold">({res.latency_ms} ms)</span>
                               {res.available_models.length > 0 && (
                                 <span className="text-slate-500 font-mono">
                                   · Models: {res.available_models.join(', ')}
@@ -375,6 +376,65 @@ export const KeyVaultTab: React.FC<KeyVaultTabProps> = ({ keys, onRefresh }) => 
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card List (zero clipped text on 390px) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {keys.length === 0 ? (
+            <div className="py-10 px-4 text-center text-slate-500 text-xs">
+              Bể khóa API đang trống. Nhấn &quot;Thêm khóa mới&quot; để nạp khóa dự phòng.
+            </div>
+          ) : (
+            keys.map((k) => {
+              const isTesting = testingKeyId === k.key_id;
+              const isSysEnv = k.is_system_env || k.key_id.startsWith('sys-env') || k.name.includes('Hệ Thống');
+              return (
+                <div key={k.key_id} className="p-4 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-900 truncate">{k.name}</div>
+                      <div className="text-2xs font-mono text-slate-500 mt-0.5">{k.masked_key}</div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md text-3xs font-mono font-semibold uppercase bg-slate-100 text-slate-700 shrink-0">
+                      {k.provider}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-2xs text-slate-600">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${k.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                      {k.is_active ? 'Đang phục vụ' : 'Dự phòng'}
+                    </span>
+                    <span className="font-mono">
+                      {k.provider === 'serper'
+                        ? `${(k.requests_count || 0).toLocaleString('vi-VN')} lượt`
+                        : `${(k.tokens_used_today || 0).toLocaleString('vi-VN')} tok`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleTestKey(k.key_id, k.provider)}
+                      disabled={isTesting}
+                      className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-2xs font-medium inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Play className={`w-3 h-3 ${isTesting ? 'animate-spin text-teal-600' : ''}`} />
+                      {isTesting ? 'Đang ping...' : 'Kiểm tra'}
+                    </button>
+                    {!isSysEnv && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(k.key_id)}
+                        className="ml-auto h-8 w-8 inline-flex items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer"
+                        aria-label="Xóa khóa"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

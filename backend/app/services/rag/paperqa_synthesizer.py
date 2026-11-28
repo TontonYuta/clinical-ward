@@ -24,31 +24,49 @@ async def _call_llm_synthesis(
 ) -> str:
     """Gọi Gemini Flash để tổng hợp câu trả lời ngôn ngữ tự nhiên từ dữ kiện CSDL đã trích xuất."""
     system_instruction = (
-        "Bạn là Chuyên gia Dược lâm sàng & An toàn Thuốc Bệnh viện (PaperQA2 Evidence Synthesizer).\n"
-        "Nhiệm vụ: Trả lời câu hỏi của bác sĩ/nhân viên y tế một cách trực diện, súc tích, chuyên nghiệp và ấm áp.\n\n"
+        "Bạn là Chuyên gia Dược lâm sàng & An toàn Thuốc Nội viện (PaperQA2 Evidence Synthesizer).\n"
+        "Đối tượng hỏi là bác sĩ/dược sĩ/điều dưỡng bệnh viện. Nhiệm vụ: đọc toàn văn chứng cứ Dược thư bên dưới và trả lời ĐẦY ĐỦ CHUYÊN MÔN, TRỰC DIỆN, CỰC KỲ DỄ QUÉT MẮT (Scannable Clinical Layout — tuyệt đối không tạo bức tường chữ dù nội dung dài).\n\n"
         "Nguyên tắc bắt buộc (Zero Free Claims Policy):\n"
-        "1. CHỈ sử dụng các dữ kiện được cung cấp trong [CHỨNG CỨ Y VĂN CSDL] dưới đây. Tuyệt đối KHÔNG suy diễn thêm liều dùng hoặc tương tác ngoài văn bản.\n"
-        "2. Phong cách Y khoa Thụy Sĩ (Swiss Medical / UpToDate): Tuyệt đối KHÔNG sử dụng emoji/icon (💊, 💉, 📦, 👶, ⚠️, 💡, 📋) trong tiêu đề, danh sách hoặc nội dung.\n"
-        "3. Đi thẳng vào câu hỏi của người dùng và đúng nhóm tuổi/thể trọng được hỏi, không dump lại toàn bộ thông tin các lứa tuổi khác không liên quan.\n"
-        "4. Nếu có tương tác nguy hiểm hoặc cảnh báo sốc/độc tính, BẮT BUỘC nêu cảnh báo ngay dòng đầu tiên.\n"
-        f"5. Đính kèm nguồn trích dẫn ({source_label}) ở cuối các khẳng định quan trọng.\n"
-        "6. Định dạng Markdown chuẩn: dùng tiêu đề `### Tên mục` (KHÔNG dùng ngoặc vuông `[Tên mục]`), dùng gạch đầu dòng `- `, in đậm tên thuốc và số liều cụ thể, viết trọn vẹn câu hoàn chỉnh."
+        "1. CHỈ sử dụng các dữ kiện, liều lượng, đơn vị, ngưỡng số học có trong [CHỨNG CỨ Y VĂN CSDL]. Tuyệt đối KHÔNG tự bịa số liệu hay tương tác ngoài văn bản.\n"
+        "2. Phong cách Y khoa Thụy Sĩ (UpToDate / OpenEvidence): TUYỆT ĐỐI KHÔNG dùng emoji/icon, KHÔNG sinh mã HTML hay mã lập trình, KHÔNG viết câu sáo rỗng kiểu 'Hãy tham khảo ý kiến bác sĩ chuyên khoa', KHÔNG chào hỏi dài dòng, KHÔNG giữ lại cụm rác trong sách như '(xem chuyên luận ...)' hoặc '(xem mục ...)'. Dùng ký tự Unicode chuẩn (≥, ≤, °C, µg, β-lactam, ±, ×) — TUYỆT ĐỐI KHÔNG xuất mã LaTeX (`\\ge`, `\\le`, `$...$`, `^\\circ\\text{C}`).\n"
+        "3. BỐ CỤC PHÂN TẦNG DỄ ĐỌC (BẮT BUỘC áp dụng để phá vỡ bức tường chữ):\n"
+        "   - Mở đầu bằng khung tóm tắt Markdown blockquote 1–2 câu đi thẳng vào câu hỏi:\n"
+        "     > **Tóm tắt nhanh:** <1–2 câu kết luận trực diện kèm thông số trọng tâm nhất>\n"
+        "   - KHÔNG dồn tất cả vào một mục `### Thông tin chi tiết` dài dằng dặc. Thay vào đó, chia thành các mục `###` riêng biệt theo nội dung câu hỏi (chỉ đưa các mục liên quan, VD: `### Chỉ định chính`, `### Liều dùng & Cách dùng`, `### Xử trí quá liều`, `### Tương tác thuốc quan trọng`, `### Tác dụng không mong muốn & Dược động học`).\n"
+        "   - BẮT BUỘC dùng **Bảng Markdown gọn** khi trình bày **Liều dùng theo đối tượng/đường dùng** (`| Đối tượng / Chỉ định | Liều dùng | Liều tối đa / Ghi chú |`) hoặc khi có từ **3 tương tác thuốc trở lên** (`| Thuốc / Nhóm thuốc | Ảnh hưởng & Xử trí |`). Quy tắc bảng: mỗi ô chỉ viết 1 dòng gọn, TUYỆT ĐỐI KHÔNG đặt dấu gạch đầu dòng nhiều dòng hay ký tự xuống dòng bên trong ô `|...|`.\n"
+        "   - Luật bullet chống dày chữ: mỗi gạch đầu dòng tối đa 1–2 dòng ngắn, in đậm từ khóa đầu dòng; KHÔNG viết 1 câu liệt kê 6–7 bệnh lý nối bằng dấu `;` (hãy tách thành các bullet ngắn).\n"
+        "   - Nếu có chống chỉ định, cảnh báo độc tính hoặc theo dõi quan trọng trong chứng cứ, đóng khung nổi bật ở cuối bằng blockquote:\n"
+        "     > **Cảnh báo an toàn & Chống chỉ định:**\n"
+        "     > - **Chống chỉ định:** ...\n"
+        "     > - **Thận trọng / Theo dõi:** ...\n"
+        f"4. Chỉ nhắc gọn nguồn ({source_label}) khi cần thiết, không lặp lại máy móc cuối mọi dòng."
     )
 
+    from app.security.prompt_isolator import (
+        build_hierarchy_preamble,
+        generate_boundary_nonce,
+        wrap_untrusted_block,
+    )
+
+    nonce = generate_boundary_nonce()
+    ev_block, ev_tag = wrap_untrusted_block("rag_evidence", evidence_context, nonce=nonce, datamark=True)
+    query_block, query_tag = wrap_untrusted_block("user_query", query, nonce=nonce)
+    isolated_system = f"{system_instruction}\n\n{build_hierarchy_preamble([ev_tag, query_tag])}"
+
+    # Instruction Hierarchy: KHÔNG nhân bản system_instruction vào user turn
     prompt = (
-        f"{system_instruction}\n\n"
-        f"=== [CHỨNG CỨ Y VĂN CSDL CUNG CẤP] ===\n{evidence_context}\n\n"
-        f"Câu hỏi của đồng nghiệp ({user_role}): \"{query}\"\n\n"
+        f"=== [CHỨNG CỨ Y VĂN CSDL CUNG CẤP] ===\n{ev_block}\n\n"
+        f"Câu hỏi của đồng nghiệp ({user_role}):\n{query_block}\n\n"
         "Phản hồi dược lâm sàng có bảo chứng:"
     )
 
     from app.services.llm_provider import query_clinical_llm
     res = await query_clinical_llm(
         prompt=prompt,
-        system_instruction=system_instruction,
+        system_instruction=isolated_system,
         api_key=api_key,
         temperature=0.1,
-        max_output_tokens=2400,
+        max_output_tokens=3600,
         timeout_sec=timeout_sec
     )
     if res:

@@ -4,6 +4,7 @@ Tách từ copilot_orchestrator.py nhằm tinh gọn kiến trúc, độc lập 
 Đảm bảo 100% phản hồi lâm sàng factual có xuất xứ chứng cứ, đồng thời cho phép các ý định
 hội thoại / hướng dẫn nghiệp vụ (non-factual) phản hồi tức thì mà không bị chặn nhầm.
 """
+import re
 from typing import Any
 from app.schemas.copilot import CopilotResponse
 
@@ -113,22 +114,37 @@ def validate_response_evidence_contract(resp: CopilotResponse) -> CopilotRespons
             continue
         valid_claims.append(claim)
 
+    def _clean_tokens(text: str) -> set[str]:
+        stripped = re.sub(r"[*`#_>|]", " ", (text or "").casefold())
+        return {t for t in re.findall(r"[^\W_]+", stripped) if len(t) >= 3 or any(ch.isdigit() for ch in t)}
+
     reply_normalized = " ".join((resp.reply_text or "").casefold().split())
-    reply_tokens = set(w for w in reply_normalized.split() if len(w) >= 3)
+    reply_tokens = _clean_tokens(resp.reply_text or "")
+
     def _claim_reflected_in_reply(claim_text: str) -> bool:
         norm = " ".join(claim_text.casefold().split())
         if norm in reply_normalized:
             return True
-        c_tokens = {w for w in norm.split() if len(w) >= 3}
+        c_tokens = _clean_tokens(claim_text)
         if not c_tokens or not reply_tokens:
             return False
         shared = len(c_tokens & reply_tokens)
-        return shared >= 4 or (shared / min(len(c_tokens), len(reply_tokens))) >= 0.12
+        return shared >= 3 or (shared / min(len(c_tokens), len(reply_tokens))) >= 0.12
 
-    if len(valid_claims) != len(resp.claims or []) or any(
-        not _claim_reflected_in_reply(claim.text) for claim in valid_claims
-    ):
+    if len(valid_claims) != len(resp.claims or []):
         valid_claims = []
+    elif valid_claims:
+        reflected_claims = [claim for claim in valid_claims if _claim_reflected_in_reply(claim.text)]
+        if not reflected_claims:
+            valid_claims = []
+        elif len(reflected_claims) < len(valid_claims):
+            # Strict fail-closed for small synthetic/unit claim sets; for rich multi-claim
+            # synthesized monographs (>= 4 verified source_fact claims), retain reflected verified claims
+            # instead of nuking the entire grounded clinical answer when 1 fragment was paraphrased.
+            if len(valid_claims) >= 4 and (len(reflected_claims) / len(valid_claims)) >= 0.5:
+                valid_claims = reflected_claims
+            else:
+                valid_claims = []
 
     if not valid_claims:
         resp.rag_grounded = False

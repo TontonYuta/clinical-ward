@@ -45,7 +45,7 @@ export const AdminMobileBottomNav: React.FC<AdminMobileBottomNavProps> = ({
             </span>
           )}
         </div>
-        <span className="text-3xs mt-1 tracking-tight font-medium">Tổng quan</span>
+        <span className="text-3xs mt-1 tracking-tight font-medium whitespace-nowrap leading-none">Tổng quan</span>
       </button>
 
       {/* 2. Nhân sự CSDL */}
@@ -57,7 +57,7 @@ export const AdminMobileBottomNav: React.FC<AdminMobileBottomNavProps> = ({
         }`}
       >
         <Users className={`w-5 h-5 transition-transform ${isStaff ? 'text-teal-700 stroke-[2.5] scale-110' : 'text-slate-400'}`} />
-        <span className="text-3xs mt-1 tracking-tight font-medium">Nhân sự</span>
+        <span className="text-3xs mt-1 tracking-tight font-medium whitespace-nowrap leading-none">Nhân sự</span>
       </button>
 
       {/* 3. Giám định BHYT */}
@@ -69,7 +69,7 @@ export const AdminMobileBottomNav: React.FC<AdminMobileBottomNavProps> = ({
         }`}
       >
         <FileCheck className={`w-5 h-5 transition-transform ${isBhyt ? 'text-teal-700 stroke-[2.5] scale-110' : 'text-slate-400'}`} />
-        <span className="text-3xs mt-1 tracking-tight font-medium">BHYT</span>
+        <span className="text-3xs mt-1 tracking-tight font-medium whitespace-nowrap leading-none">BHYT</span>
       </button>
 
       {/* 4. Cài đặt & Cổng */}
@@ -88,7 +88,7 @@ export const AdminMobileBottomNav: React.FC<AdminMobileBottomNavProps> = ({
             </span>
           )}
         </div>
-        <span className="text-3xs mt-1 tracking-tight font-medium">Cài đặt</span>
+        <span className="text-3xs mt-1 tracking-tight font-medium whitespace-nowrap leading-none">Cài đặt</span>
       </button>
 
       {/* 5. Menu Drawer (Mở RAG, Audit chi tiết, Logout, ...) */}
@@ -106,7 +106,7 @@ export const AdminMobileBottomNav: React.FC<AdminMobileBottomNavProps> = ({
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-teal-600 ring-1 ring-white" />
           )}
         </div>
-        <span className="text-3xs mt-1 tracking-tight font-medium">Menu</span>
+        <span className="text-3xs mt-1 tracking-tight font-medium whitespace-nowrap leading-none">Menu</span>
       </button>
     </nav>
   );

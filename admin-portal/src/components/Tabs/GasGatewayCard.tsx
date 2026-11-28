@@ -44,18 +44,18 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
   };
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden">
-      <div className="p-3 sm:px-4 sm:py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold text-slate-900 text-sm">Cổng Google Apps Script (Email Dặn Dò Lâm Sàng)</h3>
-          <p className="text-2xs text-slate-500 mt-0.5">Tự động gửi email dặn dò uống thuốc &amp; cảnh báo tương tác theo TT 26/2025/TT-BYT</p>
+          <h3 className="font-semibold text-slate-900 text-base tracking-tight">Cổng Google Apps Script (Email dặn dò)</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Tự động gửi email dặn dò uống thuốc &amp; cảnh báo tương tác theo TT 26/2025/TT-BYT</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handlePing}
             disabled={isPinging || !gas?.configured}
-            className="px-2.5 py-1 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition"
+            className="h-9 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin text-teal-700' : ''}`} />
             <span>{isPinging ? 'Đang ping...' : 'Ping Webhook'}</span>
@@ -63,7 +63,7 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
           <button
             type="button"
             onClick={() => setIsEditing(!isEditing)}
-            className="px-3 py-1 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition active:scale-98"
+            className="h-9 px-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer transition active:scale-[0.98]"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>{isEditing ? 'Đóng' : 'Sửa Webhook'}</span>
@@ -122,25 +122,25 @@ export const GasGatewayCard: React.FC<GasGatewayCardProps> = ({ gas, onRefresh }
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="text-2xs font-semibold text-slate-500 border-b border-slate-200">
-                <th className="pb-2">Mã Dặn Dò</th>
-                <th className="pb-2">Bệnh Nhân / Email</th>
-                <th className="pb-2">Chẩn Đoán</th>
-                <th className="pb-2">Thời Gian Gửi</th>
-                <th className="pb-2">Trạng Thái</th>
+                <th className="pb-2.5 pr-3 whitespace-nowrap">Mã Dặn Dò</th>
+                <th className="pb-2.5 pr-3 whitespace-nowrap">Bệnh Nhân / Email</th>
+                <th className="pb-2.5 pr-3">Chẩn Đoán</th>
+                <th className="pb-2.5 pr-3 whitespace-nowrap">Thời Gian Gửi</th>
+                <th className="pb-2.5 whitespace-nowrap">Trạng Thái</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {gas?.recent_logs.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/80">
-                  <td className="py-2.5 font-mono text-2xs text-slate-600 font-bold">{item.id}</td>
-                  <td className="py-2.5 font-semibold text-slate-800">
-                    {item.patient_name} <span className="font-mono font-normal text-slate-500">({item.patient_email})</span>
+                  <td className="py-2.5 pr-3 font-mono text-2xs text-slate-600 font-bold whitespace-nowrap">{item.id}</td>
+                  <td className="py-2.5 pr-3 font-semibold text-slate-800 whitespace-nowrap">
+                    {item.patient_name} <span className="font-mono font-normal text-slate-500 block text-3xs">{item.patient_email}</span>
                   </td>
-                  <td className="py-2.5 text-2xs text-slate-600 max-w-xs truncate" title={item.diagnosis || ''}>
+                  <td className="py-2.5 pr-3 text-2xs text-slate-600 max-w-[240px] truncate" title={item.diagnosis || ''}>
                     {item.diagnosis || 'Dặn dò điều trị ngoại trú'}
                   </td>
-                  <td className="py-2.5 text-2xs font-mono text-slate-500">{item.created_at}</td>
-                  <td className="py-2.5">
+                  <td className="py-2.5 pr-3 text-2xs font-mono text-slate-500 whitespace-nowrap">{item.created_at}</td>
+                  <td className="py-2.5 whitespace-nowrap">
                     <span className="px-2 py-0.5 rounded-md text-2xs font-bold uppercase bg-emerald-100 text-emerald-800">
                       {item.notification_status}
                     </span>

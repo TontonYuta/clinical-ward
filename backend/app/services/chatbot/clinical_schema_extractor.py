@@ -302,19 +302,30 @@ async def extract_clinical_query_schema_async(
     Tự động fallback về deterministic trie resolver nếu mất mạng hoặc lỗi parse.
     """
     from app.services.llm_provider import query_clinical_llm
+    from app.security.prompt_isolator import (
+        build_hierarchy_preamble,
+        generate_boundary_nonce,
+        wrap_untrusted_block,
+    )
 
+    nonce = generate_boundary_nonce()
+    query_block, q_tag = wrap_untrusted_block("user_query", query, nonce=nonce, max_chars=800)
+    untrusted_tags = [q_tag]
     session_summary = ""
     if session_context:
         active = session_context.get("active_medication") or session_context.get("active_medication_name")
         if active:
-            session_summary = f"\n[Ngữ cảnh phiên trước: Thuốc đang hoạt động là '{active}']"
+            med_block, med_tag = wrap_untrusted_block("active_medication", str(active), nonce=nonce, max_chars=120)
+            untrusted_tags.append(med_tag)
+            session_summary = f"\nNgữ cảnh phiên trước (thuốc đang hoạt động):\n{med_block}"
 
-    prompt = f"Câu hỏi của Bác sĩ / NVYT: \"{query}\"{session_summary}\n\nHãy trích xuất JSON:"
+    prompt = f"Câu hỏi của Bác sĩ / NVYT:\n{query_block}{session_summary}\n\nHãy trích xuất JSON:"
+    hardened_system = f"{_SCHEMA_PROMPT_SYSTEM}\n\n{build_hierarchy_preamble(untrusted_tags)}"
 
     try:
         raw_json = await query_clinical_llm(
             prompt=prompt,
-            system_instruction=_SCHEMA_PROMPT_SYSTEM,
+            system_instruction=hardened_system,
             temperature=0.0,
             max_output_tokens=600,
             timeout_sec=2.0

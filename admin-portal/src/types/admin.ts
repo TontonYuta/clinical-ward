@@ -24,6 +24,29 @@ export interface KnowledgeDocumentItem {
   status?: 'staged' | 'active' | 'superseded';
   verified?: boolean;
   verified_at?: string;
+  total_pages?: number;
+  chunks_count?: number;
+  vectors_count?: number;
+  ocr_pages_used?: number;
+}
+
+export interface PdfInspectResponse {
+  filename: string;
+  file_bytes: number;
+  sha256: string;
+  total_pages: number;
+  avg_chars_per_page: number;
+  empty_pages: number;
+  needs_ocr: boolean;
+  cleanliness_score: number;
+  status: 'clean' | 'warning' | 'ocr_needed';
+  is_duplicate: boolean;
+  duplicate_doc_id?: string | null;
+  duplicate_title?: string | null;
+  suggested_title: string;
+  suggested_legal_basis: string;
+  suggested_category: string;
+  suggested_year: number;
 }
 
 export interface IngestPdfResponse {

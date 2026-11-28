@@ -31,8 +31,9 @@ def post_process_copilot_response(
         validator_fn = validate_response_evidence_contract
     resp = standardize_response_citations(resp, payload.query)
     resp = validator_fn(resp)
-    route_intent = getattr(getattr(request.state, "workflow_route", None), "intent", None)
-    resp = apply_reference_note(resp, getattr(request.state, "clinical_nlu_result", None), route_intent)
+    req_state = getattr(request, "state", None)
+    route_intent = getattr(getattr(req_state, "workflow_route", None), "intent", None)
+    resp = apply_reference_note(resp, getattr(req_state, "clinical_nlu_result", None), route_intent)
 
     if resp.answer_type == "safe_abstention":
         resp.citations = []
@@ -58,5 +59,16 @@ def post_process_copilot_response(
             headline = "Yêu cầu làm rõ thông tin"
             takeaway = resp.reply_text[:120].replace("\n", " ").strip()
             resp.clinical_summary = ClinicalSummary(headline=headline, key_takeaway=takeaway, urgency="routine")
+        if not resp.clinical_data or not resp.clinical_data.abstention_details:
+            reason_code = str(resp.source_status or "CLARIFICATION_REQUIRED").upper()
+            resp.clinical_data = StructuredClinicalPayload(
+                abstention_details=AbstentionDetailsSchema(
+                    reason_code=reason_code,
+                    unresolved_entities=[],
+                    professional_recommendations=[
+                        "Vui lòng nêu rõ tên biệt dược, hoạt chất, số đăng ký hoặc tình huống lâm sàng cần tra cứu.",
+                    ],
+                )
+            )
 
     return resp

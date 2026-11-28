@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Bot, User, X, Maximize2, Minimize2, FileText, History, Plus, PanelLeftOpen, PanelRightOpen, PanelRightClose, ZoomIn, Settings, BookOpen, Globe, ArrowRight, Sparkles } from 'lucide-react';
+import { Bot, User, X, Maximize2, Minimize2, FileText, History, SquarePen, PanelLeftOpen, PanelRightOpen, PanelRightClose, ZoomIn, Settings, BookOpen, Globe, ArrowRight, ArrowDown, Sparkles, Copy, Check, RotateCcw } from 'lucide-react';
 import { ChatMessage, QuickSuggestionChip, UserRole, DashboardTab } from '../../types/clinical';
 import { ChatSession } from '../../types/chatSession';
 import { ChatSessionsDrawer } from './ChatSessionsDrawer';
@@ -20,8 +20,12 @@ import { ChatSettingsModal } from './ChatSettingsModal';
 import { ImageLightboxModal } from '../Modals/ImageLightboxModal';
 import { PdfViewerModal } from '../Modals/PdfViewerModal';
 import { resolvePdfDocumentTarget } from '../../utils/pdfDocumentResolver';
+import { buildTextFragmentUrl } from '../../utils/webTextFragment';
 import { citationToActiveSourceDoc, resolveAutoSyncedInspectorState } from '../../utils/inspectorAutoSync';
+import { extractShortSourceLabel } from '../../utils/citationLabel';
 import { CitationSourceList } from './CitationSourceList';
+import { ClinicalThinkingIndicator } from './ClinicalThinkingIndicator';
+import { ServiceStatusBadge } from './ServiceStatusBadge';
 import { removeLegacySourceText, stripWebReferenceTail } from '../../utils/chatAnswerPresentation';
 import type { ChatbotAvailability } from '../../services/api';
 import type { KnowledgeDocument } from '../../types/documents';
@@ -29,7 +33,10 @@ import type { KnowledgeDocument } from '../../types/documents';
 interface ChatWindowProps {
   messages: ChatMessage[]; suggestionChips: QuickSuggestionChip[];
   availabilityMode?: ChatbotAvailability['mode'];
+  availabilityInfo?: ChatbotAvailability | null;
+  onRefreshAvailability?: () => Promise<void> | void;
   onSendMessage: (text: string, attachment?: any, enableWebSearch?: boolean) => void;
+  onStopGenerating?: () => void;
   isProcessing: boolean; isAudioMuted: boolean; onSelectTab?: (tab: DashboardTab) => void;
   currentUserRole?: UserRole; onClose?: () => void; pendingDebtsCount?: number;
   pendingAmpoulesCount?: number; urgentTicketsCount?: number; lowStockCount?: number;
@@ -44,7 +51,7 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
-  messages, suggestionChips, availabilityMode = 'checking', onSendMessage, isProcessing, isAudioMuted, onSelectTab,
+  messages, suggestionChips, availabilityMode = 'checking', availabilityInfo = null, onRefreshAvailability, onSendMessage, onStopGenerating, isProcessing, isAudioMuted, onSelectTab,
   currentUserRole = 'nurse', onClose, pendingDebtsCount = 0, urgentTicketsCount = 0,
   lowStockCount = 0, onExecuteCardAction, onClearMessages, onClearAllHistory, onOpenLegalDocs, onOpenUserGuide,
   isFullScreen = false, onToggleFullScreen,
@@ -56,6 +63,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const outerContainerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUpRef = useRef(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const copyResetTimerRef = useRef<number | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileWebSearch, setIsMobileWebSearch] = useState<boolean>(() => {
     try {
@@ -169,14 +179,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const rawUrl = citationRef.url || matchedCit?.url;
     const finalPage = citationRef.page || matchedCit?.page || undefined;
+    const excerptText = citationRef.excerpt || citationRef.snippet || matchedCit?.excerpt || matchedCit?.snippet;
 
-    // Trên desktop (kể cả khi đang ở chế độ popup thu nhỏ): tự động mở rộng sang chia đôi 50/50 NotebookLM + bôi vàng PDF bên phải, không mở modal nổi ở giữa
+    // Nguồn Web ngoài (http/https, không phải PDF nội bộ):
+    // - Ở chế độ Fullscreen (isNotebookMode): mở tab ở sidebar phải kèm Reader View in đậm 2 tầng
+    // - Ở chế độ thu nhỏ (popup) / mobile: mở thẳng tab mới kèm #:~:text= để không làm chật popup
+    const isExternalWeb = Boolean(
+      rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) && !matchedCit?.document_id
+    );
+    if (isExternalWeb && !isNotebookMode) {
+      window.open(buildTextFragmentUrl(rawUrl, excerptText), '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // Trên desktop: mở ngăn phải NotebookLM (Fullscreen cho cả PDF & Web; Popup cho PDF nội bộ)
     if (!isMobileOnly && (isNotebookMode || onToggleFullScreen)) {
       handleOpenInspectorForMessage(msgId, {
         title: citationRef.title || matchedCit?.source || matchedCit?.title || citationRef.legal_basis || 'Tài liệu y văn',
         url: rawUrl,
         page: finalPage,
-        excerpt: citationRef.excerpt || matchedCit?.excerpt,
+        excerpt: excerptText,
         legal_basis: citationRef.legal_basis || matchedCit?.legal_basis,
         section: citationRef.section || matchedCit?.section,
         document_id: matchedCit?.document_id,
@@ -186,12 +208,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       if (!isNotebookMode && onToggleFullScreen) {
         onToggleFullScreen();
       }
-      return;
-    }
-
-    // Nếu là liên kết Web ngoài (http/https) ở chế độ popup -> Mở tab mới
-    if (rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))) {
-      window.open(rawUrl, '_blank', 'noopener,noreferrer');
       return;
     }
 
@@ -241,6 +257,54 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const el = e.currentTarget;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isUserScrolledUpRef.current = distanceFromBottom > 80;
+    setShowScrollToBottom(distanceFromBottom > 180);
+  };
+
+  const scrollToBottomSmooth = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    isUserScrolledUpRef.current = false;
+    setShowScrollToBottom(false);
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current) window.clearTimeout(copyResetTimerRef.current);
+    };
+  }, []);
+
+  const handleCopyMessage = async (msgId: string, textToCopy: string) => {
+    let copied = false;
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+    }
+    if (!copied) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = textToCopy;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        copied = false;
+      }
+    }
+    if (copied) {
+      setCopiedMessageId(msgId);
+      if (copyResetTimerRef.current) window.clearTimeout(copyResetTimerRef.current);
+      copyResetTimerRef.current = window.setTimeout(() => {
+        setCopiedMessageId((prev) => (prev === msgId ? null : prev));
+      }, 2000);
+    }
   };
 
   const handleChipClick = (chipOrText: string | QuickSuggestionChip) => {
@@ -275,81 +339,67 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Main Chat Viewport */}
-      <div ref={outerContainerRef} className={`flex-1 flex flex-col h-full min-h-0 min-w-0 relative overflow-hidden ${isNotebookMode ? 'bg-slate-50/35' : 'bg-slate-50/70'}`}>
-        {/* 1. Header: Popup thu nhỏ giữ header cũ; Fullscreen dùng Top Bar mảnh thống nhất */}
+      <div ref={outerContainerRef} className="flex-1 flex flex-col h-full min-h-0 min-w-0 relative overflow-hidden bg-white">
+        {/* 1. Header: Popup thu nhỏ & Fullscreen đồng bộ thiết kế tinh gọn */}
         {!isFullScreen ? (
-          <div className="h-14 sm:h-12 px-3.5 sm:px-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
-            <div data-testid="chat-window-drag-handle" className="flex items-center gap-2.5 min-w-0 cursor-grab select-none">
-              <div className="w-8 h-8 rounded-lg bg-teal-800 flex items-center justify-center text-white shrink-0 shadow-2xs">
-                <Bot className="w-4.5 h-4.5" />
+          <div className="h-12 px-3 bg-white border-b border-slate-100 flex items-center justify-between gap-2 shrink-0">
+            <div data-testid="chat-window-drag-handle" className="flex items-center gap-2 min-w-0 cursor-grab select-none">
+              <div className="w-7 h-7 rounded-lg bg-teal-800 flex items-center justify-center text-white shrink-0">
+                <Bot className="w-4 h-4" />
               </div>
-              <div className="flex items-center gap-2 min-w-0">
-                <h3 className="text-base font-bold text-slate-950 whitespace-nowrap">
-                  Trợ Lý AI Lâm Sàng
-                </h3>
-                {isMobileOnly && (
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${
-                    availabilityMode === 'online_ai'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-sky-50 text-sky-700 border border-sky-200'
-                  }`}>
-                    {availabilityMode === 'online_ai' ? 'Online' : availabilityMode === 'checking' ? '...' : 'Cục bộ'}
-                    {isMobileWebSearch && <span className="text-teal-700 font-bold">· 🌐 Web</span>}
-                  </span>
-                )}
-                {activeSessionTitle && (
-                  <span className="hidden sm:inline-block max-w-[130px] truncate text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200" title={activeSessionTitle}>
-                    {activeSessionTitle}
-                  </span>
-                )}
-              </div>
+              <h3 className="clinical-prose text-[14px] font-semibold text-slate-900 truncate">
+                {activeSessionTitle && activeSessionTitle !== 'Cuộc trò chuyện mới'
+                  ? activeSessionTitle
+                  : 'Trợ Lý Lâm Sàng'}
+              </h3>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
-                title="Cấu hình AI & Trạng thái Online (Gemini / Serper)"
-                aria-label="Cấu hình AI & Trạng thái Online"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-0.5 shrink-0">
+              <ServiceStatusBadge
+                availabilityMode={availabilityMode}
+                availabilityInfo={availabilityInfo}
+                onRefresh={onRefreshAvailability}
+                align="right"
+              />
               {onNewSession && (
                 <button
                   type="button"
                   onClick={onNewSession}
-                  className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
                   title="Cuộc trò chuyện mới"
                   aria-label="Cuộc trò chuyện mới"
                 >
-                  <Plus className="w-4 h-4" />
+                  <SquarePen className="w-4 h-4" />
                 </button>
               )}
               {sessions && sessions.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setIsSessionsDrawerOpen(true)}
-                  className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0 relative"
-                  title="Lịch sử các phiên hội thoại"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+                  title={`Lịch sử (${sessions.length} phiên)`}
                   aria-label="Lịch sử các phiên hội thoại"
                 >
                   <History className="w-4 h-4" />
-                  {sessions.length > 1 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-teal-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                      {sessions.length}
-                    </span>
-                  )}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0"
+                title="Cài đặt"
+                aria-label="Cài đặt"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
               {!isMobileOnly && onToggleFullScreen && (
-                <button type="button" onClick={onToggleFullScreen} className="p-1.5 rounded-md text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Toàn màn hình" aria-label="Toàn màn hình">
-                  <Maximize2 className="w-4 h-4" />
+                <button type="button" onClick={onToggleFullScreen} className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Toàn màn hình" aria-label="Toàn màn hình">
+                  <Maximize2 className="w-3.5 h-3.5" />
                 </button>
               )}
               {!isMobileOnly && onClose && (
-                <button onClick={onClose} className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Đóng Trợ lý AI">
-                  <X className="w-4.5 h-4.5" />
+                <button onClick={onClose} className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer active:scale-95 shrink-0" title="Đóng Trợ lý AI" aria-label="Đóng Trợ lý AI">
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -370,29 +420,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 </button>
               )}
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm font-bold text-slate-900 truncate max-w-[200px] sm:max-w-[340px]">
+                <span className="text-sm font-semibold text-slate-900 truncate max-w-[220px] sm:max-w-[380px]">
                   {activeSessionTitle || 'Không gian Tra cứu Y văn'}
-                </span>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${
-                  availabilityMode === 'online_ai'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                    : 'bg-sky-50 text-sky-700 border border-sky-200/80'
-                }`}>
-                  {availabilityMode === 'online_ai' ? 'Online' : availabilityMode === 'checking' ? '...' : 'Cục bộ'}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-slate-100 transition cursor-pointer"
-                title="Cấu hình AI"
-                aria-label="Cấu hình AI"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <ServiceStatusBadge
+                availabilityMode={availabilityMode}
+                availabilityInfo={availabilityInfo}
+                onRefresh={onRefreshAvailability}
+                align="right"
+              />
+              {!isSidebarOpen && (
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+                  title="Cài đặt"
+                  aria-label="Cài đặt"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              )}
               {onToggleFullScreen && (
                 <button
                   type="button"
@@ -423,56 +474,105 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       <div
         ref={messagesContainerRef}
         onScroll={handleContainerScroll}
-        className={`flex-1 min-h-0 overflow-y-auto ${isNotebookMode ? 'px-4 sm:px-8 py-6' : 'p-3.5 sm:p-5'} ${isFullScreen && !isNotebookMode ? 'pt-14 sm:pt-16' : ''}`}
+        className={`flex-1 min-h-0 overflow-y-auto ${
+          isNotebookMode
+            ? isInspectorOpen
+              ? 'px-4 sm:px-6 pt-5 pb-12'
+              : 'px-5 sm:px-8 lg:px-10 pt-5 pb-12'
+            : 'p-3.5 sm:p-5 pb-8'
+        } ${isFullScreen && !isNotebookMode ? 'pt-14 sm:pt-16' : ''}`}
       >
-        <div className={`${isNotebookMode ? 'w-full max-w-3xl mx-auto space-y-6' : isFullScreen ? 'w-full max-w-4xl mx-auto px-2 sm:px-6 space-y-4' : 'w-full space-y-4'}`}>
-          {/* NotebookLM Empty Workspace Header khi phiên mới chưa có câu hỏi của người dùng */}
-          {isNotebookMode && !messages.some((m) => m.sender === 'user') && (
-            <div className="rounded-2xl bg-white border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-800 text-white flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4.5 h-4.5" />
+        <div className={`${
+          isNotebookMode
+            ? isInspectorOpen
+              ? 'w-full max-w-4xl mx-auto space-y-6'
+              : 'w-full max-w-5xl mx-auto space-y-6'
+            : isFullScreen
+            ? 'w-full max-w-5xl mx-auto px-2 sm:px-6 space-y-4'
+            : 'w-full space-y-4'
+        }`}>
+          {/* Empty Workspace Header cho cả Fullscreen và Popup thu nhỏ */}
+          {!messages.some((m) => m.sender === 'user') && (
+            isNotebookMode ? (
+              <div className="rounded-2xl bg-white border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-teal-800 text-white flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                      Không gian Nghiên cứu & Tra cứu Dược Lâm Sàng
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      Mọi câu trả lời đều đối soát trực tiếp từ Dược thư Quốc gia 2022, Danh mục QĐ 5948 và các Thông tư Bộ Y Tế. Chọn một tình huống mẫu hoặc đặt câu hỏi bên dưới:
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                    Không gian Nghiên cứu & Tra cứu Dược Lâm Sàng
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(suggestionChips.length > 0
+                    ? suggestionChips.slice(0, 4).map((c) => ({ label: c.label, prompt: c.fullPrompt }))
+                    : [
+                        { label: 'Chống chỉ định & chỉnh liều Paracetamol ở người suy gan', prompt: 'Paracetamol dùng cho người suy gan cần lưu ý và chỉnh liều như thế nào theo Dược thư Quốc gia?' },
+                        { label: 'Kiểm tra tương tác Warfarin và Ciprofloxacin', prompt: 'Phối hợp Warfarin và Ciprofloxacin có tương tác gì nghiêm trọng không?' },
+                        { label: 'Phác đồ xử trí phản vệ theo Thông tư 51/2017/TT-BYT', prompt: 'Phác đồ cấp cứu phản vệ bằng Adrenalin theo Thông tư 51/2017/TT-BYT' },
+                        { label: 'Quy định tủ trực cấp cứu theo Thông tư 22/TT-BYT', prompt: 'Quy định về tủ trực cấp cứu tại khoa lâm sàng theo Thông tư 22/TT-BYT' },
+                      ]
+                  ).map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleChipClick(item.prompt)}
+                      className="text-left p-3 rounded-xl bg-slate-50/70 hover:bg-teal-50/70 border border-slate-200/80 hover:border-teal-300 transition cursor-pointer group flex items-center justify-between gap-2"
+                    >
+                      <span className="text-xs font-medium text-slate-700 group-hover:text-teal-900 line-clamp-2">
+                        {item.label}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-700 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="clinical-prose pt-6 pb-2 space-y-5">
+                <div className="space-y-1.5">
+                  <h2 className="text-[16px] font-semibold text-slate-950">
+                    Tra cứu nhanh dược lâm sàng
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Mọi câu trả lời đều đối soát trực tiếp từ Dược thư Quốc gia 2022, Danh mục QĐ 5948 và các Thông tư Bộ Y Tế. Chọn một tình huống mẫu hoặc đặt câu hỏi bên dưới:
+                  <p className="text-[13.5px] text-slate-500 leading-relaxed">
+                    Đối soát Dược thư Quốc gia, QĐ 5948 và các Thông tư Bộ Y tế.
                   </p>
                 </div>
+                <div className="space-y-1.5">
+                  {[
+                    { label: 'Chống chỉ định Paracetamol ở người suy gan', prompt: 'Paracetamol dùng cho người suy gan cần lưu ý và chỉnh liều như thế nào theo Dược thư Quốc gia?' },
+                    { label: 'Tương tác Warfarin và Ciprofloxacin', prompt: 'Phối hợp Warfarin và Ciprofloxacin có tương tác gì nghiêm trọng không?' },
+                    { label: 'Phác đồ cấp cứu phản vệ TT 51/2017', prompt: 'Phác đồ cấp cứu phản vệ bằng Adrenalin theo Thông tư 51/2017/TT-BYT' },
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleChipClick(item.prompt)}
+                      className="w-full text-left px-3 py-2.5 rounded-xl bg-slate-50/80 hover:bg-slate-100/90 border border-slate-200/75 hover:border-slate-300 transition cursor-pointer group flex items-center justify-between gap-2"
+                    >
+                      <span className="text-[13px] font-medium text-slate-700 group-hover:text-slate-950">
+                        {item.label}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0" />
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {(suggestionChips.length > 0
-                  ? suggestionChips.slice(0, 4).map((c) => ({ label: c.label, prompt: c.fullPrompt }))
-                  : [
-                      { label: 'Chống chỉ định & chỉnh liều Paracetamol ở người suy gan', prompt: 'Paracetamol dùng cho người suy gan cần lưu ý và chỉnh liều như thế nào theo Dược thư Quốc gia?' },
-                      { label: 'Kiểm tra tương tác Warfarin và Ciprofloxacin', prompt: 'Phối hợp Warfarin và Ciprofloxacin có tương tác gì nghiêm trọng không?' },
-                      { label: 'Phác đồ xử trí phản vệ theo Thông tư 51/2017/TT-BYT', prompt: 'Phác đồ cấp cứu phản vệ bằng Adrenalin theo Thông tư 51/2017/TT-BYT' },
-                      { label: 'Quy định tủ trực cấp cứu theo Thông tư 22/TT-BYT', prompt: 'Quy định về tủ trực cấp cứu tại khoa lâm sàng theo Thông tư 22/TT-BYT' },
-                    ]
-                ).map((item, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleChipClick(item.prompt)}
-                    className="text-left p-3 rounded-xl bg-slate-50/70 hover:bg-teal-50/70 border border-slate-200/80 hover:border-teal-300 transition cursor-pointer group flex items-center justify-between gap-2"
-                  >
-                    <span className="text-xs font-medium text-slate-700 group-hover:text-teal-900 line-clamp-2">
-                      {item.label}
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-700 shrink-0" />
-                  </button>
-                ))}
-              </div>
-            </div>
+            )
           )}
 
-          {messages.map((msg) => {
+          {messages.map((msg, msgIndex) => {
           const isAgent = msg.sender === 'agent';
           const isSystem = msg.sender === 'system';
           const isUser = msg.sender === 'user';
           const isRightAligned = isUser || isSystem;
+          const precedingUserMsg = isAgent
+            ? [...messages.slice(0, msgIndex)].reverse().find((m) => m.sender === 'user')
+            : undefined;
           const activeCitations: RagCitationItem[] = msg.citations || [];
           const isWebSearch =
             msg.answerType === 'grounded_web_reference' ||
@@ -482,26 +582,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           const displayText = isAgent && isWebSearch && activeCitations.length > 0
             ? stripWebReferenceTail(rawDisplayText)
             : rawDisplayText;
-          // Ẩn tin nhắn chào mặc định rời rạc khi đang ở NotebookLM Empty State
-          if (isNotebookMode && !messages.some((m) => m.sender === 'user') && isAgent && activeCitations.length === 0) {
+          // Ẩn tin nhắn chào mặc định rời rạc khi đang ở Empty State
+          if (!messages.some((m) => m.sender === 'user') && isAgent && activeCitations.length === 0) {
             return null;
           }
 
           return (
-            <div key={msg.id} data-testid={`chat-message-${msg.sender}`} className={`flex gap-3 w-full ${isRightAligned ? 'ml-auto flex-row-reverse max-w-[92%] sm:max-w-[78%]' : 'max-w-full'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
-              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${
-                isAgent
-                  ? isNotebookMode
-                    ? 'bg-teal-50 text-teal-800 border border-teal-200/80 mt-0.5'
-                    : 'bg-teal-800 text-white shadow-2xs'
-                  : isSystem
-                  ? 'bg-slate-200 text-slate-700'
-                  : 'bg-teal-700 text-white shadow-2xs'
-              }`}>
-                {isAgent ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-              </div>
-
-              <div className="space-y-2.5 min-w-0 flex-1 max-w-full">
+            <div
+              key={msg.id}
+              data-testid={`chat-message-${msg.sender}`}
+              className={`flex gap-3 w-full ${
+                isRightAligned
+                  ? 'justify-end'
+                  : 'max-w-full'
+              } animate-in fade-in slide-in-from-bottom-2 duration-200`}
+            >
+              <div className={`space-y-2 min-w-0 ${isRightAligned ? 'w-fit max-w-[86%] sm:max-w-[78%]' : 'flex-1 max-w-full'}`}>
                 {msg.cdssAlert && (
                   <div>
                     <CdssAlertBanner
@@ -514,12 +610,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 )}
                 <div className={`${
                   isUser
-                    ? 'p-3.5 sm:px-4.5 sm:py-3 rounded-2xl rounded-tr-xs bg-teal-50/90 border border-teal-200/90 text-slate-900 shadow-2xs text-sm sm:text-[15px]'
+                    ? isNotebookMode
+                      ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-slate-100/95 text-slate-900 text-sm sm:text-[15px] leading-relaxed'
+                      : 'px-3.5 py-2 rounded-2xl rounded-tr-sm bg-slate-100/95 text-slate-900 text-[14px] leading-relaxed'
                     : isSystem
-                    ? 'p-3.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 text-sm'
+                    ? 'p-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 text-sm'
                     : isNotebookMode
-                    ? 'p-4 sm:p-5 rounded-2xl rounded-tl-xs bg-white border border-slate-200/90 text-slate-900 shadow-2xs text-[15px] leading-relaxed'
-                    : 'p-3.5 sm:p-4.5 rounded-xl rounded-tl-xs bg-white border border-slate-200 text-slate-900 shadow-2xs text-sm sm:text-base'
+                    ? 'py-0.5 text-slate-800 text-[15px] sm:text-[15.5px] leading-[1.7] clinical-prose'
+                    : 'py-0.5 text-slate-800 text-[14.5px] leading-[1.68] clinical-prose'
                 } break-words space-y-2`}>
                       {/* Hiển thị ảnh đính kèm nếu có trong tin nhắn */}
                       {msg.attachments && msg.attachments.length > 0 && (
@@ -573,12 +671,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       )}
 
                       {msg.isStreaming && !msg.text ? (
-                        <div className="flex items-center gap-2 py-1 text-slate-500">
-                          <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
-                          <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:150ms]" />
-                          <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse [animation-delay:300ms]" />
-                          <span className="text-xs sm:text-sm text-slate-500 font-medium ml-1.5">Trợ lý AI đang tra cứu y văn...</span>
-                        </div>
+                        <ClinicalThinkingIndicator
+                          isWebSearch={isMobileWebSearch}
+                          query={precedingUserMsg?.text}
+                        />
                       ) : (
                         <>
                           {renderFormattedText(displayText, {
@@ -590,34 +686,54 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                           {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-teal-600 animate-pulse align-middle" />}
                         </>
                       )}
-                      {isAgent && !msg.isStreaming && activeCitations.length > 0 && (
-                        isNotebookMode ? (
-                          <div className="pt-1">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenInspectorForMessage(msg.id, null)}
-                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${
-                                isInspectorOpen && inspectedMessage?.id === msg.id
-                                  ? 'bg-teal-50 text-teal-900 border-teal-300'
-                                  : 'bg-white text-slate-600 border-slate-200/90 hover:text-teal-800 hover:border-teal-300'
-                              }`}
-                            >
-                              {isWebSearch ? <Globe className="w-3.5 h-3.5 text-teal-700 shrink-0" /> : <BookOpen className="w-3.5 h-3.5 text-teal-700 shrink-0" />}
-                              <span className="truncate max-w-[260px] sm:max-w-[360px]">
-                                {activeCitations.length} căn cứ từ{' '}
-                                {Array.from(new Set(activeCitations.map((c) => c.source || c.title || 'y văn'))).slice(0, 2).join(', ')}
-                              </span>
-                              <span className="text-teal-700 font-semibold shrink-0 whitespace-nowrap">· Xem đối chiếu →</span>
-                            </button>
-                          </div>
-                        ) : (
+                      {isAgent && !msg.isStreaming && activeCitations.length > 0 && (() => {
+                        const hasOnlyWebCitations = activeCitations.every(
+                          (c) => Boolean(c.url && (c.url.startsWith('http://') || c.url.startsWith('https://')) && !c.document_id)
+                        );
+                        if (isNotebookMode) {
+                          const isWebFooter = isWebSearch || hasOnlyWebCitations;
+                          const uniqueLabels = Array.from(
+                            new Set(activeCitations.map((c, idx) => extractShortSourceLabel(c, idx + 1)))
+                          );
+                          const previewLabels = uniqueLabels.slice(0, 3).join(', ');
+                          const extraLabels = uniqueLabels.length > 3 ? ` +${uniqueLabels.length - 3}` : '';
+                          return (
+                            <div className="pt-1.5">
+                              <button
+                                type="button"
+                                data-testid={isWebFooter ? 'web-citation-summary-btn' : 'pdf-citation-summary-btn'}
+                                onClick={() => handleOpenInspectorForMessage(msg.id, null)}
+                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${
+                                  isInspectorOpen && inspectedMessage?.id === msg.id
+                                    ? 'bg-teal-50/90 text-teal-900 border-teal-300'
+                                    : 'bg-slate-50/90 text-slate-600 border-slate-200/90 hover:bg-slate-100/80 hover:text-slate-900 hover:border-slate-300'
+                                }`}
+                              >
+                                {isWebFooter ? (
+                                  <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                ) : (
+                                  <BookOpen className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                                )}
+                                <span className="truncate max-w-[280px] sm:max-w-[420px]">
+                                  <strong className="font-semibold text-slate-800">{activeCitations.length} nguồn</strong>
+                                  {' · '}
+                                  {previewLabels}
+                                  {extraLabels}
+                                </span>
+                                <span className="text-teal-700 font-semibold shrink-0 whitespace-nowrap">Xem đối chiếu →</span>
+                              </button>
+                            </div>
+                          );
+                        }
+                        return (
                           <CitationSourceList
                             citations={activeCitations}
-                            isWebSearch={isWebSearch}
+                            isWebSearch={isWebSearch || hasOnlyWebCitations}
+                            openWebInSidebar={isNotebookMode}
                             onCitationClick={(citation) => handleInlineCitationClick(msg.id, citation)}
                           />
-                        )
-                      )}
+                        );
+                      })()}
 
                   {isAgent && msg.card && msg.card.primaryActionLabel && !['borrow_confirm', 'incident_confirm', 'debt_settle', 'equipment_ticket', 'medication_safety'].includes((msg.card as any).card_type || (msg.card as any).type || '') && (
                     <div className={isNotebookMode
@@ -649,17 +765,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </div>
                   )}
                   {isAgent && msg.suggestedChips && msg.suggestedChips.length > 0 && (
-                    <div className={isNotebookMode ? 'pt-1.5 flex flex-wrap items-center gap-1.5' : 'mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-2'}>
-                      {!isNotebookMode && <span className="w-full text-xs font-semibold text-slate-500">Gợi ý hỏi tiếp:</span>}
+                    <div className="pt-1.5 flex flex-wrap items-center gap-1.5">
                       {Array.from(new Set(msg.suggestedChips.filter(c => c && c.trim().length >= 4))).map((chip, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => handleChipClick(chip)}
-                          className={isNotebookMode
-                            ? 'px-3 py-1 rounded-full text-xs font-medium bg-white text-slate-600 hover:text-teal-900 hover:bg-teal-50/70 border border-slate-200/90 hover:border-teal-300 transition cursor-pointer text-left'
-                            : 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-teal-50 text-teal-800 hover:bg-teal-100 hover:text-teal-950 border border-teal-200 transition cursor-pointer active:scale-95 text-left shadow-2xs'
-                          }
+                          className="px-3 py-1 rounded-full text-xs font-medium bg-white text-slate-600 hover:text-slate-950 hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition cursor-pointer text-left"
                         >
                           {chip}
                         </button>
@@ -668,11 +780,39 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   )}
 
                   {isAgent && msg.answerType === 'safe_abstention' && (
-                    <div role="status" className={isNotebookMode
-                      ? 'mt-2 border-l-2 border-amber-400 bg-amber-50/70 px-3.5 py-2 rounded-r-lg text-xs sm:text-sm text-amber-950 leading-relaxed'
-                      : 'mt-2.5 border border-amber-300 bg-amber-50 px-3 py-2.5 rounded-lg text-xs sm:text-sm text-amber-950 leading-relaxed'
-                    }>
+                    <div role="status" className="mt-2 border-l-2 border-amber-400 bg-amber-50/70 px-3.5 py-2 rounded-r-lg text-xs sm:text-[13.5px] text-amber-950 leading-relaxed">
                       Chưa đủ căn cứ trong nguồn đang tra cứu để kết luận. Hãy đối chiếu tài liệu gốc hoặc nhờ dược sĩ lâm sàng xác minh trước khi áp dụng.
+                    </div>
+                  )}
+
+                  {isAgent && !msg.isStreaming && precedingUserMsg && displayText.trim().length > 0 && (
+                    <div className="pt-1 flex items-center gap-0.5 text-slate-400">
+                      <button
+                        type="button"
+                        data-testid="chat-copy-btn"
+                        onClick={() => void handleCopyMessage(msg.id, displayText)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
+                        title={copiedMessageId === msg.id ? 'Đã sao chép' : 'Sao chép câu trả lời'}
+                        aria-label={copiedMessageId === msg.id ? 'Đã sao chép' : 'Sao chép câu trả lời'}
+                      >
+                        {copiedMessageId === msg.id ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        data-testid="chat-regenerate-btn"
+                        disabled={isProcessing}
+                        onClick={() => handleSend(precedingUserMsg.text, undefined, isWebSearch)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-40 transition-colors cursor-pointer active:scale-95 disabled:cursor-not-allowed"
+                        title="Tạo lại câu trả lời"
+                        aria-label="Tạo lại câu trả lời"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -685,10 +825,38 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       </div>
 
-      {/* 3. Input Area */}
-      <div className={isNotebookMode ? 'bg-gradient-to-t from-white via-white to-transparent pt-2 pb-3 shrink-0' : 'bg-white border-t border-slate-200 shrink-0'}>
-        <div className={isNotebookMode ? 'w-full max-w-3xl mx-auto px-3 sm:px-4' : isFullScreen ? 'w-full max-w-4xl mx-auto px-2 sm:px-6' : 'w-full'}>
-          <ChatInputBar onSendMessage={handleSend} suggestionChips={suggestionChips} isProcessing={isProcessing} isAudioMuted={isAudioMuted} onChipClick={handleChipClick} />
+      {/* 3. Input Area + Floating Scroll-to-Bottom Button */}
+      <div className={`relative ${isNotebookMode ? 'bg-gradient-to-t from-white via-white to-transparent pt-2 pb-3 shrink-0' : 'bg-white border-t border-slate-200 shrink-0'}`}>
+        {showScrollToBottom && (
+          <button
+            type="button"
+            data-testid="chat-scroll-bottom-btn"
+            onClick={scrollToBottomSmooth}
+            className="absolute -top-11 left-1/2 -translate-x-1/2 z-20 w-8 h-8 rounded-full bg-white/95 border border-slate-200/90 text-slate-600 hover:text-slate-950 hover:border-slate-300 shadow-md flex items-center justify-center transition cursor-pointer active:scale-95"
+            title="Cuộn xuống cuối"
+            aria-label="Cuộn xuống cuối"
+          >
+            <ArrowDown className="w-4 h-4" />
+          </button>
+        )}
+        <div className={
+          isNotebookMode
+            ? isInspectorOpen
+              ? 'w-full max-w-4xl mx-auto px-4 sm:px-6'
+              : 'w-full max-w-5xl mx-auto px-5 sm:px-8 lg:px-10'
+            : isFullScreen
+            ? 'w-full max-w-5xl mx-auto px-2 sm:px-6'
+            : 'w-full'
+        }>
+          <ChatInputBar
+            onSendMessage={handleSend}
+            onStopGenerating={onStopGenerating}
+            suggestionChips={suggestionChips}
+            isProcessing={isProcessing}
+            isAudioMuted={isAudioMuted}
+            onChipClick={handleChipClick}
+            compact={!isFullScreen}
+          />
         </div>
       </div>
 

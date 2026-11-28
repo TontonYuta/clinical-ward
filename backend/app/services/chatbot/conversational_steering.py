@@ -137,7 +137,9 @@ def handle_gentle_chitchat_steering(
         )
 
     # Chitchat ngoài lề hoặc yêu cầu dạy học ngoài ngành
-    if out_of_scope_type in ("MATH_LOGIC", "GENERAL_CHITCHAT") or any(w in low_q for w in ("dạy tôi", "học toán", "kể chuyện", "làm thơ", "hát")):
+    if out_of_scope_type in ("MATH_LOGIC", "GENERAL_CHITCHAT") or bool(
+        re.search(r"(?<!\w)(?:dạy tôi|học toán|kể chuyện|làm thơ|ca hát|hát\s+(?:nhạc|bài|một|cho|đi|nhé))(?!\w)", low_q)
+    ):
         reply_text = (
             f"Dạ em là **Trợ lý Dược Lâm Sàng & Nghiệp vụ Bệnh viện**, được lập trình chuyên sâu phục vụ y tế nên em không thể hỗ trợ dạy học hoặc các chủ đề ngoài ngành được ạ.\n\n"
             f"Em luôn sẵn sàng hỗ trợ {role_label} tra cứu chuyên luận Dược thư DĐVN V, tính liều theo chức năng thận/nhi khoa, rà soát tương tác thuốc QĐ 5948 hoặc quy chế kho Dược. "

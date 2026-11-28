@@ -29,4 +29,4 @@ services:
       - key: SERPER_API_KEY
         sync: false
       - key: RENDER_DEPLOY_TRIGGER
-        value: "20261124-grounded-web-search-serper-monitor-v3"
+        value: "20261128-chatbot-security-workflow-ragas-v4"

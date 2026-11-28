@@ -93,11 +93,12 @@ def _extract_matching_sentences(text: str, target_variants: List[str]) -> List[s
         return []
     clean = re.sub(r"\s+", " ", text).strip()
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean) if len(s.strip()) >= 12]
+    compiled = [re.compile(rf"(?<!\w){re.escape(v)}(?!\w)", re.IGNORECASE) for v in target_variants if len(v) >= 4]
     matched: List[str] = []
     seen = set()
     for s in sentences:
         low = s.lower()
-        if any(v in low for v in target_variants):
+        if any(pat.search(low) for pat in compiled):
             if low not in seen:
                 seen.add(low)
                 matched.append(s)
@@ -146,24 +147,24 @@ def lookup_monograph_pair_interaction(drug_a: str, drug_b: str) -> Optional[Dict
     primary_mono = mono_a or mono_b
 
     if mono_a:
-        b_variants = _name_variants(drug_b) + _extract_class_keywords(mono_b.get("drug_class") if mono_b else None)
+        b_variants = _name_variants(drug_b)
         found_a = _extract_matching_sentences(mono_a.get("drug_interactions") or "", b_variants)
         if not found_a:
             found_a = _extract_matching_sentences(
                 f"{mono_a.get('contraindications') or ''} {mono_a.get('precautions') or ''}",
-                _name_variants(drug_b),
+                b_variants,
             )
         if found_a:
             sentences.extend(found_a)
             primary_mono = mono_a
 
     if mono_b:
-        a_variants = _name_variants(drug_a) + _extract_class_keywords(mono_a.get("drug_class") if mono_a else None)
+        a_variants = _name_variants(drug_a)
         found_b = _extract_matching_sentences(mono_b.get("drug_interactions") or "", a_variants)
         if not found_b:
             found_b = _extract_matching_sentences(
                 f"{mono_b.get('contraindications') or ''} {mono_b.get('precautions') or ''}",
-                _name_variants(drug_a),
+                a_variants,
             )
         for s in found_b:
             if s.lower() not in {x.lower() for x in sentences}:

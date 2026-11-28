@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 _MODEL_CACHE: Dict[str, Tuple[List[str], float]] = {}
 MODEL_CACHE_TTL_SEC = 43200  # 12 giờ
 
-# Danh sách an toàn dự phòng (chỉ gồm các model Flash-Lite / Flash hạn ngạch request cao, phản hồi ổn định)
+# Danh sách an toàn dự phòng (ưu tiên 3.5-flash-lite & flash-lite-latest nhanh/ổn định trước 3.1-flash-lite)
 SAFE_FALLBACK_GEMINI_MODELS = [
-    "gemini-3.1-flash-lite",
-    "gemini-flash-lite-latest",
     "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest",
     "gemini-3-flash-preview",
     "gemini-3.6-flash",
+    "gemini-3.1-flash-lite",
 ]
 
 # Các từ khóa nhận diện model không dùng cho sinh văn bản / chat hội thoại y tế
@@ -63,19 +63,19 @@ def filter_high_quota_chat_models(
     mode = (tier_mode or getattr(settings, "GEMINI_TIER_MODE", "payg") or "payg").strip().lower()
     if tier == "reasoning" and mode in {"payg", "enterprise", "paid"}:
         preferred_order = [
+            "gemini-3.5-flash-lite",
+            "gemini-flash-lite-latest",
             "gemini-3-flash-preview",
             "gemini-3.6-flash",
             "gemini-3.1-flash-lite",
-            "gemini-3.5-flash-lite",
-            "gemini-flash-lite-latest",
         ]
     else:
         preferred_order = [
-            "gemini-3.1-flash-lite",
             "gemini-3.5-flash-lite",
-            "gemini-3.6-flash",
-            "gemini-3-flash-preview",
             "gemini-flash-lite-latest",
+            "gemini-3-flash-preview",
+            "gemini-3.6-flash",
+            "gemini-3.1-flash-lite",
         ]
     cleaned = [m.strip().replace("models/", "") for m in models if m and m.strip()]
     high_quota: List[str] = []

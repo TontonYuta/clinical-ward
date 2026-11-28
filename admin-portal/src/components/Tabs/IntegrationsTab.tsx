@@ -33,34 +33,34 @@ export const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
   }, [loadIntegrationsData]);
 
   return (
-    <div className="space-y-4">
-      {/* Header Toolbar Phẳng */}
-      <div className="bg-white border border-slate-200/90 rounded-lg p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-5">
+      {/* Header Toolbar */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900">
-              Cổng Tích Hợp Viễn Thông SMS &amp; Email Dặn Dò
-            </h1>
-            <span className="inline-flex items-center gap-1 text-2xs text-slate-500 font-mono">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">
+              Cổng tích hợp viễn thông SMS &amp; Email dặn dò
+            </h2>
+            <span className="inline-flex items-center gap-1.5 text-2xs text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-full font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               Đang hoạt động
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 mt-1">
             Tự động gửi SMS Brandname (eSMS) và Email dặn dò (Google Apps Script) khi bác sĩ ký số đơn thuốc điện tử.
           </p>
         </div>
 
-        <div className="text-2xs font-mono text-slate-400 shrink-0">
+        <div className="text-xs font-mono text-slate-500 shrink-0 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl">
           Độ trễ &lt; 20ms · NĐ 130/2018
         </div>
       </div>
 
-      {/* Cổng eSMS Brandname Viễn Thông */}
-      <EsmsGatewayCard esms={esms} onRefresh={loadIntegrationsData} />
-
-      {/* Cổng Google Apps Script Webhook */}
-      <GasGatewayCard gas={gas} onRefresh={loadIntegrationsData} />
+      {/* 2 Gateways Side-by-Side on Wide Screens, Stacked on Medium/Mobile */}
+      <div className="grid grid-cols-1 2xl:grid-cols-2 gap-5 items-start">
+        <EsmsGatewayCard esms={esms} onRefresh={loadIntegrationsData} />
+        <GasGatewayCard gas={gas} onRefresh={loadIntegrationsData} />
+      </div>
     </div>
   );
 };

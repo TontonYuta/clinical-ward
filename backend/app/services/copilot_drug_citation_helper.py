@@ -12,6 +12,10 @@ def format_clinical_text(text: str) -> str:
     current: list[str] = []
 
     def repair_pdf_wrap_space(value: str) -> str:
+        # Heal PDF hyphenated word wraps (e.g. "amino-\nglycosid" / "amino- glycosid")
+        value = re.sub(r"\b([a-zà-ỹ]{3,})-\s+([a-zà-ỹ]{3,})\b", r"\1\2", value)
+        # Heal PDF temperature OCR artifact "2 - 8 o C" -> "2 - 8 °C"
+        value = re.sub(r"(?<=\d)\s*o\s*C\b", " °C", value)
         # Restore a missing separator after a numeric quantity when the next
         # token starts with a lowercase word (for example, `6giờ`). Preserve
         # uppercase scientific identifiers such as CYP3A4 and B12.
@@ -38,6 +42,26 @@ def format_clinical_text(text: str) -> str:
     if current:
         paragraphs.append(" ".join(current))
     return repair_pdf_wrap_space("\n\n".join(paragraphs))
+
+
+_FOREIGN_SECTION_BLEED_RE = re.compile(
+    r"(?im)^\s*(?:Độ ổn định và bảo quản|Bảo quản và độ ổn định|Tương kỵ|Dạng thuốc và hàm lượng|Dược lý và cơ chế tác dụng|Dược động học|Thông tin quy chế)\s*$"
+)
+_SECTION_EXEMPT_FIELDS = frozenset({
+    "storage", "stability", "dosage_forms", "pharmacology", "pharmacokinetics", "incompatibilities",
+})
+
+
+def trim_monograph_section_bleed(raw_text: str, field_key: str) -> str:
+    """Trim unrelated trailing DTQG section headers accidentally merged by PDF extraction (zero content fabrication)."""
+    if not raw_text or field_key in _SECTION_EXEMPT_FIELDS:
+        return raw_text or ""
+    m = _FOREIGN_SECTION_BLEED_RE.search(raw_text)
+    if m and m.start() >= 25:
+        trimmed = raw_text[:m.start()].rstrip()
+        if len(trimmed) >= 20:
+            return trimmed
+    return raw_text
 
 
 def truncate_clinical_excerpt(text: str, max_length: int = 240) -> str:

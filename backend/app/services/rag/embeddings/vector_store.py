@@ -113,6 +113,12 @@ class VectorStore:
         with conn:
             conn.executemany(sql, records)
 
+        # Gỡ các chunk_id vừa lưu lại khỏi danh sách đã xóa trong phiên
+        deleted_set = getattr(self, "_deleted_chunk_ids", None)
+        if deleted_set:
+            for chunk_id, _, _ in items:
+                deleted_set.discard(chunk_id)
+
         # Cập nhật lại in-memory index nếu được yêu cầu
         if auto_reload:
             self.load_in_memory_index()
@@ -120,12 +126,14 @@ class VectorStore:
 
     def load_in_memory_index(self, prefer_cache: bool = True) -> int:
         """
-        Nạp toàn bộ vector từ SQLite hoặc file cache NPZ lên RAM dưới dạng ma trận NumPy đã chuẩn hóa.
-        Chỉ tốn ~6.3 MB RAM cho 2.163 vector 768 float32.
+        Nạp toàn bộ vector từ SQLite (và tùy chọn file cache NPZ cho DB mặc định) lên RAM dưới dạng ma trận NumPy đã chuẩn hóa.
+        Luôn hợp nhất mọi dynamic vector mới trong SQLite (như PDF do Admin tải lên) bất kể số lượng dòng SQLite nhỏ hơn NPZ.
         """
         is_default_db = False
         try:
-            is_default_db = (Path(self.db_path).resolve() == Path(get_fts_db_path()).resolve())
+            default_backend_db = (Path(__file__).resolve().parents[4] / "clinical_hospital.db").resolve()
+            current_db = Path(self.db_path).resolve()
+            is_default_db = (current_db == default_backend_db)
         except Exception:
             pass
 
@@ -143,20 +151,44 @@ class VectorStore:
         cursor = conn.cursor()
 
         if loaded_from_cache:
-            # Nếu số vector trong SQLite không vượt quá cache NPZ, bỏ qua quét toàn bộ BLOB để tiết kiệm RAM
-            if self.count() <= len(self._chunk_ids):
+            # Truy vấn nhanh danh sách chunk_id hiện có trong SQLite (chỉ quét PK, <1ms, không đọc BLOB)
+            cursor.execute("SELECT chunk_id FROM clinical_chunk_vectors")
+            sqlite_ids = [row["chunk_id"] for row in cursor.fetchall()]
+
+            # Lọc bỏ các chunk_id đã bị xóa (nếu có trong bộ theo dõi xóa trong phiên)
+            deleted_set = getattr(self, "_deleted_chunk_ids", set())
+            if deleted_set and self._matrix is not None:
+                keep_indices = [i for i, cid in enumerate(self._chunk_ids) if cid not in deleted_set]
+                if len(keep_indices) != len(self._chunk_ids):
+                    if keep_indices:
+                        self._matrix = np.ascontiguousarray(self._matrix[keep_indices], dtype=np.float16)
+                        self._chunk_ids = [self._chunk_ids[i] for i in keep_indices]
+                        self._id_to_idx = {cid: idx for idx, cid in enumerate(self._chunk_ids)}
+                    else:
+                        self._matrix = None
+                        self._chunk_ids = []
+                        self._id_to_idx = {}
+
+            # Tìm mọi vector mới/cập nhật trong SQLite chưa có trong ma trận RAM NPZ
+            missing_ids = [cid for cid in sqlite_ids if cid not in self._id_to_idx]
+            if not missing_ids:
                 return len(self._chunk_ids)
 
-            # Bổ sung các vector động trong SQLite chưa có trong cache NPZ
-            cursor.execute("SELECT chunk_id, embedding, dimension FROM clinical_chunk_vectors")
-            rows = cursor.fetchall()
             new_chunk_ids = []
             new_vectors = []
-            for row in rows:
-                cid = row["chunk_id"]
-                if cid not in self._id_to_idx:
-                    new_chunk_ids.append(cid)
-                    new_vectors.append(np.frombuffer(row["embedding"], dtype=np.float32))
+            batch_size = 500
+            for start in range(0, len(missing_ids), batch_size):
+                batch = missing_ids[start:start + batch_size]
+                placeholders = ",".join("?" for _ in batch)
+                cursor.execute(
+                    f"SELECT chunk_id, embedding, dimension FROM clinical_chunk_vectors WHERE chunk_id IN ({placeholders})",
+                    batch,
+                )
+                for row in cursor.fetchall():
+                    arr = np.frombuffer(row["embedding"], dtype=np.float32)
+                    if arr.shape[0] == self._dimension:
+                        new_chunk_ids.append(row["chunk_id"])
+                        new_vectors.append(arr)
 
             if new_vectors:
                 new_raw = np.vstack(new_vectors).astype(np.float32)
@@ -170,7 +202,7 @@ class VectorStore:
                 for idx, cid in enumerate(new_chunk_ids):
                     self._chunk_ids.append(cid)
                     self._id_to_idx[cid] = start_idx + idx
-                logger.info(f"[VectorStore] Đã nạp thêm {len(new_chunk_ids)} dynamic vectors từ SQLite vào ma trận RAM.")
+                logger.info(f"[VectorStore] Đã hợp nhất thêm {len(new_chunk_ids)} dynamic vectors từ SQLite vào ma trận RAM.")
             return len(self._chunk_ids)
 
         conn = self._get_connection()
@@ -330,7 +362,10 @@ class VectorStore:
         placeholders = ",".join("?" for _ in chunk_ids)
         with conn:
             conn.execute(f"DELETE FROM clinical_chunk_vectors WHERE chunk_id IN ({placeholders})", chunk_ids)
-        # Nạp lại RAM
+        if not hasattr(self, "_deleted_chunk_ids"):
+            self._deleted_chunk_ids = set()
+        self._deleted_chunk_ids.update(chunk_ids)
+        # Nạp lại RAM (loại bỏ triệt để chunk_ids đã xóa khỏi ma trận RAM kể cả khi nạp từ NPZ)
         self.load_in_memory_index(prefer_cache=True)
         return len(chunk_ids)
 

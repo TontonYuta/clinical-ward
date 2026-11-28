@@ -581,16 +581,41 @@ async def ocr_prescription_endpoint(
                     message=msg
                 )
 
-            seller_name = raw_ocr_data.get("seller_name") or ""
-            seller_tax_id = raw_ocr_data.get("seller_tax_id") or ""
-            invoice_no = raw_ocr_data.get("invoice_number") or ""
-            patient_name = raw_ocr_data.get("patient_name") or ""
+            from app.security.prompt_isolator import sanitize_untrusted_text
+
+            def _clean_ocr_str(val: Any, max_len: int = 240) -> str:
+                if val is None:
+                    return ""
+                return sanitize_untrusted_text(str(val), max_chars=max_len).strip()
+
+            seller_name = _clean_ocr_str(raw_ocr_data.get("seller_name"), 160)
+            seller_tax_id = _clean_ocr_str(raw_ocr_data.get("seller_tax_id"), 40)
+            invoice_no = _clean_ocr_str(raw_ocr_data.get("invoice_number"), 60)
+            patient_name = _clean_ocr_str(raw_ocr_data.get("patient_name"), 120)
             patient_age = int(raw_ocr_data.get("patient_age") or 0)
-            card_no = raw_ocr_data.get("insurance_card_number") or ""
-            icd10 = raw_ocr_data.get("primary_icd10") or ""
-            diag = raw_ocr_data.get("primary_diagnosis") or ""
-            sec_icds = raw_ocr_data.get("secondary_icd10s") or []
-            ocr_items = raw_ocr_data.get("items") or []
+            card_no = _clean_ocr_str(raw_ocr_data.get("insurance_card_number"), 40)
+            icd10 = _clean_ocr_str(raw_ocr_data.get("primary_icd10"), 24)
+            diag = _clean_ocr_str(raw_ocr_data.get("primary_diagnosis"), 240)
+            sec_icds = [_clean_ocr_str(x, 24) for x in (raw_ocr_data.get("secondary_icd10s") or []) if _clean_ocr_str(x, 24)]
+            raw_ocr_items = raw_ocr_data.get("items") or []
+            ocr_items = []
+            for item in raw_ocr_items:
+                if not isinstance(item, dict):
+                    continue
+                sanitized_item = dict(item)
+                for str_field, flen in (
+                    ("drug_name", 160),
+                    ("active_ingredient", 160),
+                    ("dosage", 60),
+                    ("unit", 40),
+                    ("route", 60),
+                    ("instructions", 240),
+                    ("batch_number", 60),
+                    ("expiry_date", 40),
+                ):
+                    if str_field in sanitized_item and sanitized_item[str_field] is not None:
+                        sanitized_item[str_field] = _clean_ocr_str(sanitized_item[str_field], flen)
+                ocr_items.append(sanitized_item)
         else:
             # Fallback ngoại tuyến: Hỗ trợ cả PDF (pypdf/pdftoppm) và Ảnh (tesseract)
             provider = "offline_extractor"

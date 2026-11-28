@@ -9,6 +9,101 @@ import sqlite3
 import hashlib
 from app.services.active_ingredient_normalizer import extract_candidate_inns, clean_key
 
+_TRUNCATED_INN_FIXES = {
+    "Cefotiam hydrochloride (cefotiam hexetil": "Cefotiam hydrochloride (cefotiam hexetil)",
+    "Vaccinum tetani adsorbatum (Tetanus toxoid,": "Vaccinum tetani adsorbatum (Tetanus toxoid)",
+    "Multienzymes (Lipase, protease etc": "Multienzymes (Lipase, protease)",
+    "Tolazoline hydrochloride (benzazoline": "Tolazoline hydrochloride (benzazoline)",
+}
+
+_MERGEABLE_CLINICAL_FIELDS = (
+    "atc_code", "drug_class", "dosage_forms", "pharmacodynamics", "pharmacokinetics",
+    "indications", "contraindications", "precautions", "pregnancy_warning", "lactation_warning",
+    "adverse_effects", "adr_management", "adult_dosage", "pediatric_dosage",
+    "renal_adjustment", "hepatic_adjustment", "drug_interactions", "incompatibilities",
+    "storage_stability", "overdose_treatment", "antidote", "section_pages",
+)
+
+
+def cleanup_and_merge_monograph_records(conn: sqlite3.Connection) -> dict[str, int]:
+    """
+    Merge PDF-page-bleed duplicate monographs (4+ space OCR header bleed, e.g. DTQG-0704..0721)
+    into their clean canonical monograph without losing any clinical columns, then repair
+    truncated parenthetical INNs. Idempotent and safe to run on live SQLite DB.
+    """
+    cursor = conn.cursor()
+    fixed_inns = 0
+    merged_dups = 0
+
+    for bad_inn, clean_inn in _TRUNCATED_INN_FIXES.items():
+        cur = cursor.execute(
+            "UPDATE clinical_drug_monographs SET inn = ? WHERE inn = ?",
+            (clean_inn, bad_inn),
+        )
+        fixed_inns += cur.rowcount or 0
+
+    col_sql = ", ".join(_MERGEABLE_CLINICAL_FIELDS)
+    all_rows = cursor.execute(
+        f"SELECT id, inn, title, {col_sql} FROM clinical_drug_monographs ORDER BY id"
+    ).fetchall()
+
+    clean_by_prefix: dict[str, list[tuple]] = {}
+    bleed_rows: list[tuple] = []
+    for row in all_rows:
+        mid, inn, title = row[0], row[1] or "", row[2] or ""
+        if re.search(r"\s{4,}", inn) or (mid.startswith("DTQG-07") and inn.rstrip().endswith("-")):
+            bleed_rows.append(row)
+        else:
+            prefix = inn.split(",")[0].split("(")[0].strip().lower()
+            clean_by_prefix.setdefault(prefix, []).append(row)
+            full_k = inn.strip().lower()
+            if full_k != prefix:
+                clean_by_prefix.setdefault(full_k, []).append(row)
+
+    for dup in bleed_rows:
+        dup_id, dup_inn = dup[0], dup[1] or ""
+        head_inn = re.split(r"\s{4,}", dup_inn)[0].strip().rstrip("-").strip()
+        head_clean = _TRUNCATED_INN_FIXES.get(head_inn, head_inn)
+        candidates = (
+            clean_by_prefix.get(head_clean.lower())
+            or clean_by_prefix.get(head_clean.split(",")[0].split("(")[0].strip().lower())
+            or []
+        )
+        # Prefer exact stem match (e.g. extravas -> extravascular adm, intravas -> intravascular adm)
+        best_canon = None
+        if candidates:
+            if "extravas" in head_clean.lower():
+                best_canon = next((c for c in candidates if "extravas" in (c[1] or "").lower()), candidates[0])
+            elif "intravas" in head_clean.lower():
+                best_canon = next((c for c in candidates if "intravas" in (c[1] or "").lower()), candidates[0])
+            else:
+                best_canon = next((c for c in candidates if (c[1] or "").lower() == head_clean.lower()), candidates[0])
+
+        if best_canon:
+            canon_id = best_canon[0]
+            updates: dict[str, str] = {}
+            for offset, col in enumerate(_MERGEABLE_CLINICAL_FIELDS, start=3):
+                dup_val = dup[offset]
+                canon_val = best_canon[offset]
+                if dup_val and (not canon_val or len(str(dup_val)) > len(str(canon_val)) + 40):
+                    updates[col] = dup_val
+            if updates:
+                set_sql = ", ".join(f"{col} = ?" for col in updates)
+                cursor.execute(
+                    f"UPDATE clinical_drug_monographs SET {set_sql} WHERE id = ?",
+                    (*updates.values(), canon_id),
+                )
+            cursor.execute(
+                "UPDATE dav_national_drugs SET clinical_monograph_id = ? WHERE clinical_monograph_id = ?",
+                (canon_id, dup_id),
+            )
+            cursor.execute("DELETE FROM clinical_drug_monographs WHERE id = ?", (dup_id,))
+            merged_dups += 1
+
+    conn.commit()
+    return {"fixed_inns": fixed_inns, "merged_duplicates": merged_dups}
+
+
 def sanitize_title(title: str | None, inn: str) -> str:
     if not title or not title.strip():
         return inn.upper()
@@ -103,6 +198,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
     )
     stale_source_count = cursor.fetchone()[0]
     if existing_rich_count >= 650 and existing_linked >= 10000 and source_version_count >= 650 and stale_source_count == 0:
+        cleanup_and_merge_monograph_records(conn)
         return existing_rich_count
 
     if not src:
@@ -305,6 +401,7 @@ def seed_clinical_monographs(conn: sqlite3.Connection):
             WHERE clinical_monograph_id IS NOT NULL AND (atc_code IS NULL OR atc_code = '' OR drug_class IS NULL OR drug_class = '')
         """)
         conn.commit()
+        cleanup_and_merge_monograph_records(conn)
         print(f"✅ Đã nạp {len(rows)} chuyên luận Dược Thư 2015 vào clinical_drug_monographs!")
         return len(rows)
     except Exception as e:

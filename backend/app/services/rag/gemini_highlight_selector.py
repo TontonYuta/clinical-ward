@@ -27,15 +27,31 @@ def build_highlight_prompt(
     page_candidates: List[str],
     drug_anchor: Optional[str] = None,
 ) -> str:
-    """Build a compact strict-JSON prompt for Gemini to pick headings from page_candidates."""
-    candidates_block = "\n".join(f"- {c}" for c in page_candidates[:60])
-    anchor_line = f"Thuốc / chuyên luận mục tiêu: {drug_anchor}\n" if drug_anchor else ""
+    """Build a Spotlighting-isolated strict-JSON prompt for Gemini to pick headings from page_candidates."""
+    from app.security.prompt_isolator import (
+        build_hierarchy_preamble,
+        generate_boundary_nonce,
+        wrap_untrusted_block,
+    )
+
+    nonce = generate_boundary_nonce()
+    query_block, q_tag = wrap_untrusted_block("user_query", query.strip(), nonce=nonce, max_chars=400)
+    raw_candidates = "\n".join(f"- {c}" for c in page_candidates[:60])
+    cand_block, c_tag = wrap_untrusted_block("pdf_headings", raw_candidates, nonce=nonce, datamark=True)
+    tags = [q_tag, c_tag]
+    anchor_line = ""
+    if drug_anchor:
+        anchor_block, a_tag = wrap_untrusted_block("drug_anchor", drug_anchor, nonce=nonce, max_chars=120)
+        tags.append(a_tag)
+        anchor_line = f"Thuốc / chuyên luận mục tiêu:\n{anchor_block}\n"
+
     return (
+        f"{build_hierarchy_preamble(tags)}\n\n"
         "Bạn là bộ chọn chỉ mục tài liệu y khoa chính xác tuyệt đối.\n"
-        f"Câu hỏi lâm sàng: {query.strip()}\n"
+        f"Câu hỏi lâm sàng:\n{query_block}\n"
         f"{anchor_line}"
         "Danh sách các dòng/tiêu đề ngắn thực tế đang hiển thị trên trang PDF:\n"
-        f"{candidates_block}\n\n"
+        f"{cand_block}\n\n"
         "Yêu cầu:\n"
         "1. Chỉ chọn 1 đến 3 chuỗi CHÍNH XÁC có trong danh sách trên là tiêu đề/chỉ mục trả lời trực tiếp cho câu hỏi.\n"
         "2. Nếu trang có nhiều thuốc khác nhau, chỉ chọn chỉ mục thuộc thuốc mục tiêu.\n"
@@ -76,7 +92,12 @@ def parse_highlight_response(
                 selected.append(matched)
 
     anchor = data.get("drug_anchor") if isinstance(data, dict) else None
-    clean_anchor = anchor.strip() if isinstance(anchor, str) and anchor.strip() else None
+    clean_anchor = None
+    if isinstance(anchor, str) and anchor.strip():
+        from app.security.prompt_isolator import sanitize_untrusted_text
+        sanitized_anchor = sanitize_untrusted_text(anchor.strip(), max_chars=80)
+        if sanitized_anchor and "[untrusted" not in sanitized_anchor.lower():
+            clean_anchor = sanitized_anchor
     return {
         "drug_anchor": clean_anchor,
         "selected_headings": selected[:4],
@@ -103,7 +124,13 @@ async def select_highlight_headings_with_gemini(
     Call gemini-2.5-flash-lite to semantically select relevant headings on a PDF page.
     Returns {"drug_anchor": str | None, "selected_headings": List[str], "cached": bool}.
     """
+    from app.security.guardrails import validate_input_guardrail
+
     clean_query = (query or "").strip()
+    guard_res = validate_input_guardrail(clean_query)
+    if not guard_res.is_safe:
+        return {"drug_anchor": None, "selected_headings": [], "cached": False, "blocked": True}
+    clean_query = guard_res.sanitized_query
     clean_candidates = [c.strip() for c in page_candidates if isinstance(c, str) and 3 <= len(c.strip()) <= 65]
     if not clean_query or not clean_candidates:
         return {"drug_anchor": drug_anchor, "selected_headings": [], "cached": False}

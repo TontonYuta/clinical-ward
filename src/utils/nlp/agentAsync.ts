@@ -26,7 +26,8 @@ export async function processClinicalAgentQueryAsync(
   onToken?: (token: string, currentFullText: string) => void,
   sessionId?: string,
   attachment?: any,
-  enableWebSearch?: boolean
+  enableWebSearch?: boolean,
+  signal?: AbortSignal
 ): Promise<ProcessedQueryResult> {
   const role = currentUserProfile?.role || 'nurse';
   const name = currentUserProfile?.name || 'Điều Dưỡng Trực Ca';
@@ -94,10 +95,13 @@ export async function processClinicalAgentQueryAsync(
     const imageMimeType = attachment?.mimeType || 'image/jpeg';
     let backendData: any = null;
     try {
-      backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken, imageBase64, imageMimeType, enableWebSearch);
-    } catch (streamErr) {
+      backendData = await chatCopilotApiStream(cleanInput, role, name, activeSessionId, onToken, imageBase64, imageMimeType, enableWebSearch, signal);
+    } catch (streamErr: any) {
+      if (signal?.aborted || streamErr?.name === 'AbortError') {
+        throw streamErr;
+      }
       console.warn('[AgentAsync] Stream call failed, falling back to direct JSON API:', streamErr);
-      backendData = await chatCopilotApi(cleanInput, role, name, activeSessionId, imageBase64, imageMimeType, enableWebSearch);
+      backendData = await chatCopilotApi(cleanInput, role, name, activeSessionId, imageBase64, imageMimeType, enableWebSearch, signal);
     }
     if (backendData && backendData.reply_text) {
       let card: AgentActionCard | undefined = undefined;
@@ -163,6 +167,9 @@ export async function processClinicalAgentQueryAsync(
       };
     }
   } catch (err: any) {
+    if (signal?.aborted || err?.name === 'AbortError') {
+      throw err;
+    }
     console.warn('[AgentAsync] Backend call failed:', err);
     const errMsg = String(err?.message || '');
     const isAuth = errMsg.includes('401') || errMsg.includes('xác thực') || errMsg.includes('hết hạn');

@@ -34,8 +34,58 @@ def _is_structural_line(line: str) -> bool:
     return bool(_LIST_OR_STRUCT_RE.match(line))
 
 
+_LATEX_SYMBOL_REPLACEMENTS = (
+    (r"\\geq\b|\\ge\b", "≥"),
+    (r"\\leq\b|\\le\b", "≤"),
+    (r"\\neq\b|\\ne\b", "≠"),
+    (r"\\approx\b", "≈"),
+    (r"\\pm\b", "±"),
+    (r"\\times\b", "×"),
+    (r"\\cdot\b", "·"),
+    (r"\\rightarrow\b|\\to\b", "→"),
+    (r"\\alpha\b", "α"),
+    (r"\\beta\b", "β"),
+    (r"\\gamma\b", "γ"),
+    (r"\\delta\b", "δ"),
+    (r"\\mu\b", "µ"),
+    (r"\\Delta\b", "Δ"),
+    (r"\^\s*\\circ\s*\\text\{([CF])\}", r"°\1"),
+    (r"\^\s*\\circ\s*([CF])\b", r"°\1"),
+    (r"\^\s*\\circ\b|\\circ\b", "°"),
+)
+
+
+def _normalize_inline_latex_to_unicode(text: str) -> str:
+    """Convert inline clinical LaTeX math ($\\ge 38.5^\\circ\\text{C}$) into clean Unicode for non-KaTeX Markdown."""
+    if "\\" not in text and "$" not in text:
+        return text
+
+    def _clean_math_expr(expr: str) -> str:
+        s = expr.strip()
+        s = re.sub(r"\\text\{([^}]*)\}", r"\1", s)
+        s = re.sub(r"\\mathrm\{([^}]*)\}", r"\1", s)
+        for pattern, repl in _LATEX_SYMBOL_REPLACEMENTS:
+            s = re.sub(pattern, repl, s)
+        s = re.sub(r"\s{2,}", " ", s).strip()
+        return s
+
+    # Replace inline $...$ only when it actually contains LaTeX commands (never touch currency like $100)
+    text = re.sub(
+        r"\$([^$\n]*\\[A-Za-z][^$\n]*)\$",
+        lambda m: _clean_math_expr(m.group(1)),
+        text,
+    )
+    # Also clean any stray bare LaTeX macros outside $...$
+    if "\\" in text:
+        text = re.sub(r"\\text\{([^}]*)\}", r"\1", text)
+        for pattern, repl in _LATEX_SYMBOL_REPLACEMENTS:
+            text = re.sub(pattern, repl, text)
+    return text
+
+
 def _strip_extra_tags_and_fix_markdown(text: str) -> str:
     """Convert custom/admonition tags into pure standard Markdown with zero extra tags."""
+    text = _normalize_inline_latex_to_unicode(text)
     # Remove internal LLM/XML tracking tags such as <ANSWER_CLAIMS> [] or <EVIDENCE>
     text = re.sub(r"<ANSWER_CLAIMS>[\s\S]*$", "", text, flags=re.IGNORECASE)
     text = re.sub(r"</?[A-Z][A-Z0-9_]{2,}(?:\s[^>]*)?>", "", text)

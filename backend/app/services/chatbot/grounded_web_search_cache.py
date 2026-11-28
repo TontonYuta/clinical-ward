@@ -40,9 +40,23 @@ def should_allow_semantic_cache(query: str) -> bool:
     return True
 
 
+_DEICTIC_CUES = ("này", "đó", "kia", "vừa rồi", "thuốc này", "thuốc đó", "bệnh nhân này")
+
+
+def _is_shareable_independent_query(query: str) -> bool:
+    """Allow cross-session Exact Hit sharing only for independent non-quantitative guideline queries."""
+    if not should_allow_semantic_cache(query):
+        return False
+    low = (query or "").strip().lower()
+    if len(low) < 10 or any(c in low for c in _DEICTIC_CUES) or re.search(r"\bnó\b", low):
+        return False
+    return True
+
+
 class GroundedWebSearchCache:
     """
-    Bộ đệm kết hợp O(1) Exact Key Match và Vector Cosine Similarity Dense Retrieval.
+    Bộ đệm kết hợp O(1) Exact Key Match (ưu tiên phiên + chia sẻ an toàn cho câu hỏi độc lập)
+    và Vector Cosine Similarity Dense Retrieval.
     An toàn lâm sàng: Ngưỡng Cosine >= 0.95 cực kỳ nghiêm ngặt nhằm chống ghép nhầm câu hỏi y khoa.
     """
     def __init__(self, max_size: int = MAX_CACHE_ENTRIES, ttl_sec: int = CACHE_TTL_SECONDS):
@@ -60,6 +74,10 @@ class GroundedWebSearchCache:
         scope = (session_id or "_global").strip()
         return f"{scope}::{clean_q}"
 
+    @staticmethod
+    def _make_shared_key(query: str) -> str:
+        return f"_global_independent::{query.strip().lower()}"
+
     def get(
         self,
         query: str,
@@ -70,19 +88,26 @@ class GroundedWebSearchCache:
         cache_key = self._make_key(query, session_id)
         now = time.time()
 
-        # 1. Exact Match O(1) (tách biệt hoàn toàn theo session_id)
-        if cache_key in self._entries:
-            entry = self._entries[cache_key]
-            if now - entry["timestamp"] < self.ttl_sec:
-                self.exact_hits += 1
-                self._entries.move_to_end(cache_key)
-                logger.info("Grounded Web Search Cache: EXACT HIT cho query='%s' (session=%s)", query, session_id)
-                cached_resp: CopilotResponse = entry["response"]
-                return cached_resp.model_copy(update={
-                    "source_status": "cache_exact_hit"
-                })
-            else:
-                self._entries.pop(cache_key, None)
+        # 1. Exact Match O(1): kiểm tra theo session_id trước, sau đó kiểm tra shared independent key nếu an toàn
+        candidate_keys = [cache_key]
+        if _is_shareable_independent_query(query):
+            shared_key = self._make_shared_key(query)
+            if shared_key != cache_key:
+                candidate_keys.append(shared_key)
+
+        for key in candidate_keys:
+            if key in self._entries:
+                entry = self._entries[key]
+                if now - entry["timestamp"] < self.ttl_sec:
+                    self.exact_hits += 1
+                    self._entries.move_to_end(key)
+                    logger.info("Grounded Web Search Cache: EXACT HIT cho query='%s' (key=%s)", query, key[:40])
+                    cached_resp: CopilotResponse = entry["response"]
+                    return cached_resp.model_copy(update={
+                        "source_status": "cache_exact_hit"
+                    })
+                else:
+                    self._entries.pop(key, None)
 
         # 2. Semantic Vector Cosine Similarity Search (chỉ khớp trong cùng session_id và khi không có thông số định lượng)
         semantic_enabled = should_allow_semantic_cache(query) if allow_semantic is None else allow_semantic
@@ -151,13 +176,20 @@ class GroundedWebSearchCache:
             self._entries.popitem(last=False)  # LRU Eviction
 
         cache_key = self._make_key(query, session_id)
-        self._entries[cache_key] = {
+        entry_payload = {
             "query": query,
             "vector": normed_vec,
             "response": response,
             "timestamp": now,
             "session_id": session_id,
         }
+        self._entries[cache_key] = entry_payload
+        if _is_shareable_independent_query(query):
+            shared_key = self._make_shared_key(query)
+            if shared_key != cache_key:
+                if len(self._entries) >= self.max_size:
+                    self._entries.popitem(last=False)
+                self._entries[shared_key] = {**entry_payload, "session_id": "_global_independent"}
 
     def invalidate_session(self, session_id: str) -> int:
         """Xóa toàn bộ entry cache gắn với một phiên chat cụ thể khi user xóa lịch sử."""

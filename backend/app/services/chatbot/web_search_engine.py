@@ -83,6 +83,16 @@ TRUSTED_MEDICAL_DOMAINS: Dict[str, int] = {
     "nih.gov": 1,                   # National Institutes of Health (NIH)
     "ncbi.nlm.nih.gov": 1,          # National Center for Biotechnology Information / NLM
     "pubmed.ncbi.nlm.nih.gov": 1,   # PubMed Y sinh toàn cầu
+    "kdigo.org": 1,                 # Kidney Disease: Improving Global Outcomes (KDIGO)
+    "nice.org.uk": 1,               # UK National Institute for Health and Care Excellence
+    "escardio.org": 1,              # European Society of Cardiology (ESC)
+    "heart.org": 1,                 # American Heart Association (AHA)
+    "diabetes.org": 1,              # American Diabetes Association (ADA)
+    "diabetesjournals.org": 1,      # ADA Diabetes Care Journals
+    "idsociety.org": 1,             # Infectious Diseases Society of America (IDSA)
+    "goldcopd.org": 1,              # Global Initiative for Chronic Obstructive Lung Disease
+    "ginasthma.org": 1,             # Global Initiative for Asthma (GINA)
+    "who.int": 1,                   # Tổ chức Y tế Thế giới (WHO)
 
     # --- TIER 2: Hệ thống Bệnh viện lớn, Cẩm nang Dược, ĐH Y Dược & Lâm sàng Quốc tế ---
     "vinmec.com": 2,                # Hệ thống Y tế Vinmec
@@ -139,6 +149,9 @@ EXCLUDED_DOMAINS: Set[str] = {
     "youtube.com", "youtu.be", "pinterest.com", "reddit.com", "quora.com",
     "voz.vn", "webtretho.com", "lamchame.com", "tinhte.vn",
     "blogspot.com", "wordpress.com", "wixsite.com", "weebly.com",
+    # Trang chia sẻ slide/tài liệu cộng đồng chưa kiểm duyệt y khoa & paywall
+    "slideshare.net", "scribd.com", "studocu.com", "123docz.net", "123doc.net",
+    "tailieu.vn", "academia.edu", "docplayer.net", "issuu.com",
     # Trang công nghệ, tài khoản, hỗ trợ phần mềm, lập trình & thương mại điện tử
     "microsoft.com", "answers.microsoft.com", "support.microsoft.com",
     "apple.com", "support.apple.com", "google.com", "support.google.com",
@@ -198,15 +211,17 @@ def is_domain_excluded(domain: str) -> bool:
 
 def sanitize_search_snippet(text: str) -> str:
     """
-    Làm sạch snippet/title tìm kiếm từ Web (OWASP LLM01 Indirect Prompt Injection Defense):
-    - Loại bỏ thẻ script độc hại và thẻ XML breakout (<medical_search_evidence>)
-    - Loại bỏ các chuỗi kích hoạt Prompt Injection / Jailbreak
-    - Giới hạn độ dài an toàn
+    Làm sạch snippet/title/deep-article tìm kiếm từ Web (OWASP LLM01 Indirect Prompt Injection Defense):
+    - Ủy quyền cho Prompt Isolator (Spotlighting + StruQ) để chặn script, thẻ XML breakout
+      (<medical_search_evidence>, <deep_article_extracts>, <follow_up_questions>, <ANSWER_CLAIMS>),
+      token điều khiển LLM, ảnh Markdown rò rỉ dữ liệu và câu lệnh injection đa ngôn ngữ/không dấu.
     """
     if not text:
         return ""
+    from app.security.prompt_isolator import sanitize_untrusted_text
+
     cleaned = SCRIPT_PATTERN.sub("[script blocked]", text)
-    cleaned = re.sub(r'</?\s*medical_search_evidence\s*>', '', cleaned, flags=re.IGNORECASE)
+    cleaned = sanitize_untrusted_text(cleaned, datamark=False)
     if INJECTION_PATTERN.search(cleaned):
         cleaned = INJECTION_PATTERN.sub("[untrusted instruction removed]", cleaned)
     return cleaned.strip()

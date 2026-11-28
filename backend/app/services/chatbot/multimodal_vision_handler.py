@@ -28,9 +28,14 @@ async def handle_multimodal_vision_turn(
     if not vision_res or not isinstance(vision_res, dict):
         return None
 
+    from app.security.guardrails import validate_output_guardrail
+
     is_non_clinical = vision_res.get("is_clinical") is False or vision_res.get("category") == "NON_CLINICAL"
     if is_non_clinical:
-        reply_text = str(vision_res.get("reply_markdown") or "Hệ thống chỉ hỗ trợ phân tích ảnh thuốc, đơn thuốc và tài liệu BHYT.")
+        reply_text = validate_output_guardrail(
+            str(vision_res.get("reply_markdown") or "Hệ thống chỉ hỗ trợ phân tích ảnh thuốc, đơn thuốc và tài liệu BHYT."),
+            payload.query,
+        )
         return CopilotResponse(
             intent="MULTIMODAL_CLINICAL_VISION",
             reply_text=reply_text,
@@ -56,7 +61,7 @@ async def handle_multimodal_vision_turn(
     # Phân tích toàn diện: Bóc tách đơn thuốc + Đối chiếu DDI Dược Thư + Giám định BHYT TT 20
     analysis = analyse_vision_prescription(vision_res, user_role=user_role)
 
-    reply_text = analysis["reply_text"]
+    reply_text = validate_output_guardrail(analysis["reply_text"], payload.query)
     clinical_summary = analysis["clinical_summary"]
     card_obj = analysis["card"]
     cdss_alert = analysis["cdss_alert"]

@@ -57,12 +57,14 @@ class BaseEmbeddingProvider(abc.ABC):
 
     def embed_query_sync(self, text: str) -> Optional[List[float]]:
         """Gọi đồng bộ embed_query (tránh mở asyncpg pool trong event loop tạm thời)."""
-        sync_key = self._resolve_api_key()
-        if not sync_key:
-            return None
-        prev_key = self._api_key
-        if not self._api_key:
-            self._api_key = sync_key
+        has_resolver = hasattr(self, "_resolve_api_key")
+        prev_key = getattr(self, "_api_key", None)
+        if has_resolver:
+            sync_key = self._resolve_api_key()
+            if not sync_key:
+                return None
+            if not prev_key:
+                self._api_key = sync_key
         try:
             try:
                 loop = asyncio.get_event_loop()
@@ -74,7 +76,8 @@ class BaseEmbeddingProvider(abc.ABC):
             except RuntimeError:
                 return asyncio.run(self.embed_query(text))
         finally:
-            self._api_key = prev_key
+            if has_resolver:
+                self._api_key = prev_key
 
 
 class GeminiEmbeddingProvider(BaseEmbeddingProvider):

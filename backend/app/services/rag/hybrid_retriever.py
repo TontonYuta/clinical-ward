@@ -938,14 +938,19 @@ class HybridRetriever:
             c_title_low = (c.title or "").casefold()
             c_low = f"{c.title} {c.content}".casefold()
             bonus = 0.0
-            if c.entity_type in {"guideline", "circular"}:
+            if c.entity_type in {"guideline", "circular", "regulatory_pdf"}:
                 if intra_doc_scores and c.chunk_id in intra_doc_scores:
                     bonus += intra_doc_scores[c.chunk_id]
                     item.match_reasons.append("Rerank: intra-document IDF specificity")
                 if len(c.content or "") < 150 or "....." in (c.content or ""):
                     bonus -= 0.25
-                doc_meta_low = f"{c.source_doc} {c.legal_basis} {c.chunk_id}".casefold()
-                if query_doc_nums and any(re.search(rf"(?<!\d){re.escape(num)}(?!\d)", doc_meta_low) for num in query_doc_nums):
+                # Khớp số hiệu văn bản chính xác trên source_doc / legal_basis / title (tránh khớp nhầm số thứ tự chunk_id)
+                doc_meta_low = f"{c.source_doc} {c.legal_basis} {c.title}".casefold()
+                exact_doc_codes = re.findall(r"\b\d{1,4}/\d{4}\b", lower_query)
+                if exact_doc_codes and any(code in doc_meta_low for code in exact_doc_codes):
+                    bonus += 0.35
+                    item.match_reasons.append("Rerank: exact circular/decision code match")
+                elif query_doc_nums and any(re.search(rf"(?<!\d){re.escape(num)}(?!\d)", doc_meta_low) for num in query_doc_nums):
                     bonus += 0.25
                     item.match_reasons.append("Rerank: explicit document number/year match")
                 heading_zone = f"{c_title_low} {(c.page_or_section or '').casefold()} {(c.content or '')[:140].casefold()}"

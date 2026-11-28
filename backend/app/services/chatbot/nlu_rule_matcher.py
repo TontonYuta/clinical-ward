@@ -46,6 +46,25 @@ def try_deterministic_fast_path(clean_q: str, active_med: Optional[str] = None) 
         res.intent = "MEDICATION_LOOKUP_GUIDE"
         return res
 
+    # 2B. Nhóm thuốc phổ biến ngắn gọn (0-token Fast-Path, tránh gọi thừa Gemini NLU & ReadTimeout)
+    therapeutic_class_fast = (
+        "thuốc hạ sốt", "thuoc ha sot", "thuốc giảm đau", "thuoc giam dau",
+        "thuốc kháng sinh", "thuoc khang sinh", "thuốc chống đông", "thuoc chong dong",
+        "thuốc huyết áp", "thuoc huyet ap", "thuốc tiểu đường", "thuoc tieu duong",
+        "thuốc dạ dày", "thuoc da day", "thuốc chống viêm", "thuoc chong viem",
+    )
+    if len(clean_q.split()) <= 5 and not matcher.extract_medications(clean_q) and any(
+        low_q == tc or low_q.startswith(tc + " ") for tc in therapeutic_class_fast
+    ):
+        return ClinicalNluExtraction(
+            intent="SPECIALTY_CLINICAL_PROTOCOL",
+            conversation_mode="independent",
+            query_mode="clinical_qa",
+            answer_operation="direct_lookup",
+            is_topic_shift=bool(active_med),
+            confidence=0.95,
+        )
+
     # 3. Tra cứu trực tiếp theo SĐK (Số đăng ký)
     sdk = matcher.extract_sdk(clean_q)
     if sdk and len(clean_q.split()) <= 4:
@@ -284,8 +303,9 @@ def fallback_nlu_heuristic(
         any(w in low_q for w in (
             "bạn là ai", "bạn là chatbot", "bạn là bot", "phải chatbot", "phải bot",
             "bạn là gì", "bạn tên gì", "em là ai", "mày là ai", "em tên gì", "bạn mấy tuổi",
-            "ai tạo ra bạn", "giới thiệu bản thân", "kể chuyện", "làm thơ", "hát", "chơi game", "đố vui", "dạy tôi"
+            "ai tạo ra bạn", "giới thiệu bản thân", "kể chuyện", "làm thơ", "ca hát", "chơi game", "đố vui", "dạy tôi"
         ))
+        or bool(re.search(r'(?<!\w)hát\s+(?:nhạc|bài|một|cho|đi|nhé)(?!\w)', low_q))
         or bool(re.search(r'\b(?:bạn|em|mày)\s+(?:là|ten\s+la)\s+(?:ai|gì|chatbot|bot|trợ lý|tro ly|con\s+bot)\b', low_q))
     )
     if is_identity_q:

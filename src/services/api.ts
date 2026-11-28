@@ -21,6 +21,7 @@ export interface ChatbotAvailability {
   database: 'available' | 'unavailable';
   vector_index: 'available' | 'unavailable';
   provider: 'available' | 'unavailable' | 'not_configured' | 'unknown';
+  web_search?: 'available' | 'unavailable' | 'not_configured' | 'unknown';
   checked_at: string;
   vector_index_reason?: string | null;
   vector_count?: number | null;
@@ -348,7 +349,8 @@ export async function chatCopilotApi(
   sessionId?: string,
   imageBase64?: string,
   imageMimeType?: string,
-  enableWebSearch?: boolean
+  enableWebSearch?: boolean,
+  signal?: AbortSignal
 ) {
   const payload: any = { query, user_role: userRole, user_name: userName, session_id: sessionId };
   if (imageBase64) {
@@ -361,7 +363,8 @@ export async function chatCopilotApi(
   const res = await apiFetch(`${API_BASE_URL}/copilot/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal,
   });
   if (!res.ok) throw new Error('Lỗi gửi tin nhắn đến Trợ lý AI');
   return res.json();
@@ -379,7 +382,8 @@ export async function chatCopilotApiStream(
   onToken?: (token: string, currentFullText: string) => void,
   imageBase64?: string,
   imageMimeType?: string,
-  enableWebSearch?: boolean
+  enableWebSearch?: boolean,
+  signal?: AbortSignal
 ): Promise<any> {
   const payload: any = { query, user_role: userRole, user_name: userName, session_id: sessionId };
   if (imageBase64) {
@@ -396,9 +400,13 @@ export async function chatCopilotApiStream(
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal,
     });
-  } catch {
+  } catch (err: any) {
+    if (signal?.aborted || err?.name === 'AbortError') {
+      throw err;
+    }
     throw new Error('Copilot backend unavailable');
   }
 
@@ -408,12 +416,21 @@ export async function chatCopilotApiStream(
 
   const streamBody = response.body;
   const streamBuffer = onToken ? new SmoothStreamBuffer(onToken) : null;
+  const onAbort = () => {
+    streamBuffer?.stop();
+    void streamBody.cancel().catch(() => {});
+  };
+  signal?.addEventListener('abort', onAbort, { once: true });
 
   try {
     const finalResponseData = await consumeCopilotSse(streamBody, (token, currentFullText) => {
+      if (signal?.aborted) return;
       if (streamBuffer) streamBuffer.push(token);
       else onToken?.(token, currentFullText);
     });
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
     if (streamBuffer) {
       await streamBuffer.finish();
     }
@@ -422,6 +439,7 @@ export async function chatCopilotApiStream(
     try { await streamBody.cancel(); } catch { /* stream may already be closed */ }
     throw error;
   } finally {
+    signal?.removeEventListener('abort', onAbort);
     streamBuffer?.stop();
   }
 }

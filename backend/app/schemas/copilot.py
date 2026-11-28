@@ -128,6 +128,8 @@ class CopilotResponse(BaseModel):
     model_call_count: int | None = 0
     usage_call_count: int | None = 0
     cache_hit_count: int | None = 0
+    stage_timings_ms: dict[str, float] | None = None
+    workflow_executor: str | None = None
     availability_mode: str | None = None
     provider: str | None = None
     claims: list[AnswerClaim] = Field(default_factory=list)

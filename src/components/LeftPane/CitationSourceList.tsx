@@ -1,10 +1,13 @@
 import React from 'react';
 import { BookOpen, ExternalLink, Globe } from 'lucide-react';
 import { RagCitationItem } from '../../types/chat';
+import { buildTextFragmentUrl } from '../../utils/webTextFragment';
+import { extractShortSourceLabel } from '../../utils/citationLabel';
 
 type CitationSourceListProps = {
   citations?: RagCitationItem[];
   isWebSearch?: boolean;
+  openWebInSidebar?: boolean;
   onCitationClick?: (citation: {
     title: string;
     url?: string | null;
@@ -13,16 +16,29 @@ type CitationSourceListProps = {
     legal_basis?: string;
     section?: string;
     text_fragment_url?: string;
+    index?: number;
   }) => void;
 };
 
-export function CitationSourceList({ citations = [], isWebSearch = false, onCitationClick }: CitationSourceListProps) {
+export function CitationSourceList({
+  citations = [],
+  isWebSearch = false,
+  openWebInSidebar = false,
+  onCitationClick,
+}: CitationSourceListProps) {
   const uniqueCitations = Array.from(
     new Map(
-      citations.map((citation) => [
-        [citation.document_id, citation.url, citation.page, citation.section].join('|'),
-        citation,
-      ]),
+      citations.map((citation) => {
+        const isWebItem = Boolean(
+          citation.url &&
+          (citation.url.startsWith('http://') || citation.url.startsWith('https://')) &&
+          !citation.document_id
+        );
+        const dedupKey = isWebItem
+          ? `web|${citation.url}`
+          : `doc|${citation.document_id || citation.source}|${citation.page ?? ''}`;
+        return [dedupKey, citation];
+      }),
     ).values(),
   );
 
@@ -62,7 +78,7 @@ export function CitationSourceList({ citations = [], isWebSearch = false, onCita
             );
 
           const displayIndex = citation.index ?? index + 1;
-          const domainLabel = citation.domain || '';
+          const shortLabel = extractShortSourceLabel(citation, displayIndex);
           const tierBadge =
             isWeb && citation.credibility_tier && citation.credibility_tier <= 2
               ? citation.credibility_tier === 1
@@ -71,27 +87,24 @@ export function CitationSourceList({ citations = [], isWebSearch = false, onCita
               : '';
 
           const icon = isWeb ? (
-            <ExternalLink className="h-3 w-3 shrink-0 text-teal-600" aria-hidden="true" />
+            <Globe className="h-3 w-3 shrink-0 text-slate-400" aria-hidden="true" />
           ) : (
-            <BookOpen className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden="true" />
+            <BookOpen className="h-3 w-3 shrink-0 text-teal-600" aria-hidden="true" />
           );
 
           const content = (
             <>
               {icon}
-              {isWeb && (
-                <span className="font-bold text-teal-700 shrink-0">[{displayIndex}]</span>
-              )}
-              <span className="truncate max-w-[220px] sm:max-w-[300px]">{label}</span>
-              {isWeb && domainLabel && (
-                <span className="text-[11px] font-normal text-slate-500 shrink-0 hidden sm:inline">
-                  · {domainLabel}
-                </span>
-              )}
+              <span className="truncate max-w-[190px] sm:max-w-[230px]">
+                {isWeb ? shortLabel : label}
+              </span>
               {tierBadge && (
-                <span className="rounded bg-teal-100 px-1 py-0.5 text-[10px] font-bold text-teal-800 shrink-0">
+                <span className="rounded-full bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 shrink-0">
                   {tierBadge}
                 </span>
+              )}
+              {isWeb && (
+                <ExternalLink className="h-2.5 w-2.5 shrink-0 text-slate-400" aria-hidden="true" />
               )}
             </>
           );
@@ -100,10 +113,27 @@ export function CitationSourceList({ citations = [], isWebSearch = false, onCita
             return (
               <span
                 key={`${citation.document_id || sourceName}-${index}`}
-                className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-600"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600"
               >
                 {content}
               </span>
+            );
+          }
+
+          if (isWeb && citation.url && !openWebInSidebar) {
+            const highlightUrl = buildTextFragmentUrl(citation.url, citation.excerpt || citation.snippet);
+            return (
+              <a
+                key={`${citation.document_id || sourceName}-${index}`}
+                href={highlightUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="web-citation-link"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200/90 bg-slate-50/90 px-2.5 py-1 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 hover:border-slate-300 focus-visible:outline-2 focus-visible:outline-teal-700"
+                title={`Mở & tự tô vàng đoạn trích: ${citation.title || sourceName}`}
+              >
+                {content}
+              </a>
             );
           }
 
@@ -111,21 +141,19 @@ export function CitationSourceList({ citations = [], isWebSearch = false, onCita
             <button
               key={`${citation.document_id || sourceName}-${index}`}
               type="button"
+              data-testid={isWeb ? 'web-citation-tab-btn' : 'pdf-citation-btn'}
               onClick={() => onCitationClick?.({
                 title: citation.title || sourceName,
                 url: citation.url,
                 page: citation.page,
-                excerpt: citation.excerpt,
+                excerpt: citation.excerpt || citation.snippet,
                 legal_basis: citation.legal_basis,
                 section: citation.section,
                 text_fragment_url: (citation as RagCitationItem & { text_fragment_url?: string }).text_fragment_url,
+                index: displayIndex,
               })}
-              className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2.5 py-1 text-left text-xs font-semibold transition shadow-3xs cursor-pointer active:scale-95 focus-visible:outline-2 ${
-                isWeb
-                  ? 'border-teal-200/90 bg-teal-50/80 text-teal-900 hover:bg-teal-100 hover:border-teal-300 focus-visible:outline-teal-700'
-                  : 'border-emerald-200/90 bg-emerald-50/80 text-emerald-900 hover:bg-emerald-100 hover:border-emerald-300 focus-visible:outline-emerald-700'
-              }`}
-              title={citation.legal_basis || citation.title || sourceName}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200/90 bg-slate-50/90 px-2.5 py-1 text-left text-xs font-medium text-slate-700 transition cursor-pointer hover:bg-slate-100 hover:text-slate-950 hover:border-slate-300 focus-visible:outline-2 focus-visible:outline-teal-700"
+              title={isWeb ? `Mở tab đối chiếu & in đậm đoạn trích: ${citation.title || sourceName}` : (citation.legal_basis || citation.title || sourceName)}
             >
               {content}
             </button>

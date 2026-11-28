@@ -54,6 +54,9 @@ COPY backend/app /app/app
 COPY backend/data /app/data
 COPY public/pdf /app/public/pdf
 
+# Apply idempotent monograph OCR INN/duplicate cleanup onto prebaked SQLite during image build (0 runtime RSS cost)
+RUN python -c "import sqlite3; from app.seed_monographs import cleanup_and_merge_monograph_records; conn = sqlite3.connect('/app/clinical_hospital.db'); print('Prebaked DB cleanup:', cleanup_and_merge_monograph_records(conn)); conn.close()"
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \

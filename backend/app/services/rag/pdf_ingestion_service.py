@@ -196,7 +196,45 @@ async def _extract_pdf_pages_markdown(file_bytes: bytes) -> tuple[int, list[tupl
             extracted.append((page_idx, page_text.strip()))
 
     doc.close()
+
+    # Fallback an toàn sang pypdf nếu PyMuPDF không đọc được lớp chữ (VD: stream PDF đặc thù hoặc test mock)
+    if not extracted:
+        try:
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            total_pages = max(total_pages, len(reader.pages))
+            for page_idx, page in enumerate(reader.pages, start=1):
+                txt = (page.extract_text() or "").strip()
+                if txt:
+                    extracted.append((page_idx, txt))
+        except Exception:
+            pass
+
     return total_pages, extracted, ocr_pages_used
+
+
+def _invalidate_chatbot_caches_after_kb_change(reason: str = "kb_change") -> None:
+    """
+    Làm mới hoàn toàn Retriever, Source Manifest và xóa sạch Semantic/Context Cache
+    mỗi khi kho tri thức PDF thay đổi (nạp mới, kích hoạt, tạm ẩn hoặc xóa).
+    Đảm bảo Chatbot không bao giờ trả lại câu trả lời cũ từ cache trước khi cập nhật PDF.
+    """
+    try:
+        from app.services.rag.rag_pipeline import reload_rag_retriever
+        reload_rag_retriever()
+    except Exception as e:
+        logger.warning(f"[PdfIngestion] Cảnh báo reload retriever ({reason}): {e}")
+
+    try:
+        from app.services.cache.clinical_cache import get_clinical_cache
+        get_clinical_cache().clear()
+    except Exception as e:
+        logger.debug(f"[PdfIngestion] Cảnh báo xóa clinical_cache ({reason}): {e}")
+
+    try:
+        from app.services.cache.gemini_context_cache import GeminiContextCache
+        GeminiContextCache.invalidate_all_caches()
+    except Exception:
+        pass
 
 
 def _update_manifest(
@@ -210,7 +248,14 @@ def _update_manifest(
     category: str = "",
     representation: str = "source_pdf",
     status: str = "staged",
-    verified: bool = False
+    verified: bool = False,
+    total_pages: int = 0,
+    extracted_chunks_count: int = 0,
+    indexed_vectors_count: int = 0,
+    ocr_pages_used: int = 0,
+    security_risk_level: str = "low",
+    quarantine_recommended: bool = False,
+    security_warnings: Optional[List[str]] = None,
 ) -> None:
     KB_DIR.mkdir(parents=True, exist_ok=True)
     manifest_data = {"manifest_version": 1, "sources": []}
@@ -224,11 +269,20 @@ def _update_manifest(
 
     existing_status = None
     existing_verified = None
+    existing_sha256 = None
     for s in sources:
         if s.get("id") == doc_id or s.get("backend_copy") == f"backend/data/knowledge_base/{filename}":
             existing_status = s.get("status")
             existing_verified = s.get("verified")
+            existing_sha256 = s.get("sha256")
             break
+
+    # Chốt chặn an toàn: Nếu nạp đè phiên bản nội dung mới (SHA256 thay đổi) hoặc phát hiện nguy cơ PoisonedRAG,
+    # bắt buộc đưa về 'staged' & verified=False để kiểm thử/cách ly trước khi phát hành toàn viện.
+    content_changed = bool(existing_sha256 and sha256_hex and existing_sha256 != sha256_hex)
+    force_stage = content_changed or quarantine_recommended
+    final_status = "staged" if force_stage else (existing_status or status)
+    final_verified = False if force_stage else (existing_verified if existing_verified is not None else verified)
 
     entry = {
         "id": doc_id,
@@ -241,8 +295,16 @@ def _update_manifest(
         "sha256": sha256_hex,
         "bytes": file_bytes_len,
         "representation": representation,
-        "status": existing_status or status,
-        "verified": existing_verified if existing_verified is not None else verified,
+        "status": final_status,
+        "verified": final_verified,
+        "total_pages": total_pages,
+        "chunks_count": extracted_chunks_count,
+        "vectors_count": indexed_vectors_count,
+        "ocr_pages_used": ocr_pages_used,
+        "security_risk_level": security_risk_level,
+        "quarantine_recommended": quarantine_recommended,
+        "security_warnings": list(security_warnings or []),
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
     replaced = False
@@ -273,7 +335,13 @@ def get_inactive_document_prefixes() -> list[str]:
         return []
 
 
-def update_document_status(doc_id: str, new_status: str, verified: Optional[bool] = None) -> dict:
+def update_document_status(
+    doc_id: str,
+    new_status: str,
+    verified: Optional[bool] = None,
+    *,
+    force_clear_quarantine: bool = False,
+) -> dict:
     """Cập nhật trạng thái vòng đời tài liệu: staged -> active -> superseded."""
     if not MANIFEST_PATH.exists():
         raise ValueError("Không tìm thấy manifest nguồn tài liệu.")
@@ -288,9 +356,16 @@ def update_document_status(doc_id: str, new_status: str, verified: Optional[bool
         raise ValueError(f"Không tìm thấy tài liệu với mã '{doc_id}'.")
 
     if new_status == "active":
+        if target.get("quarantine_recommended") and not force_clear_quarantine:
+            raise ValueError(
+                "Tài liệu đang bị cách ly bảo mật (PoisonedRAG Quarantine) do phát hiện chỉ dẫn đối kháng hoặc lớp chữ tàng hình. "
+                "Vui lòng kiểm tra và làm sạch tệp PDF trước khi phát hành toàn viện."
+            )
         is_verified = verified if verified is not None else target.get("verified", False)
         if not is_verified:
             raise ValueError("Tài liệu chưa được kiểm thử Chatbot thành công. Vui lòng thực hiện kiểm thử trên sandbox trước khi kích hoạt vào CSDL chính thức.")
+        if force_clear_quarantine:
+            target["quarantine_recommended"] = False
         target["status"] = "active"
         target["verified"] = True
         target["verified_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -302,6 +377,8 @@ def update_document_status(doc_id: str, new_status: str, verified: Optional[bool
         raise ValueError(f"Trạng thái '{new_status}' không hợp lệ. Chỉ chấp nhận 'active', 'staged', 'superseded'.")
 
     MANIFEST_PATH.write_text(json.dumps(manifest_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    # Làm mới retriever + source_resolver + xóa sạch cache câu trả lời cũ ngay lập tức
+    _invalidate_chatbot_caches_after_kb_change(reason=f"status:{doc_id}->{new_status}")
     return target
 
 
@@ -355,8 +432,29 @@ async def ingest_pdf_bytes(
     source_id = f"backend/data/knowledge_base/{safe_filename}"
     source_ver = f"sha256:{sha256_hex}"
 
+    from app.security.prompt_isolator import (
+        inspect_document_poisoning_risk,
+        inspect_pdf_hidden_layers,
+        sanitize_untrusted_document_text,
+    )
+
+    raw_doc_sample = "\n\n".join(txt for _, txt in extracted_pages[:20])
+    poison_report = inspect_document_poisoning_risk(raw_doc_sample)
+    hidden_report = inspect_pdf_hidden_layers(file_bytes, max_pages=20)
+    quarantine_recommended = bool(
+        poison_report["quarantine_recommended"] or hidden_report["hidden_layer_detected"]
+    )
+    security_risk_level = "high" if quarantine_recommended else poison_report["risk_level"]
+    security_warnings = list(poison_report["reasons"])
+    if hidden_report["hidden_layer_detected"]:
+        security_warnings.append(
+            f"Phát hiện lớp chữ tàng hình chứa chỉ dẫn đối kháng trong PDF "
+            f"(cỡ chữ siêu nhỏ: {hidden_report['tiny_suspicious_spans']}, chữ trùng màu nền: {hidden_report['white_suspicious_spans']})."
+        )
+
     for page_idx, page_text in extracted_pages:
-        page_chunks = _chunk_page_text(page_text)
+        safe_page_text = sanitize_untrusted_document_text(page_text)
+        page_chunks = _chunk_page_text(safe_page_text)
         for chunk_idx, chunk_text in enumerate(page_chunks, start=1):
             cid = f"{doc_id}_p{page_idx}_{chunk_idx}"
             title_line = f"{title} (Trang {page_idx})"
@@ -428,8 +526,14 @@ async def ingest_pdf_bytes(
         if not save_items:
             raise RuntimeError("Không thể tạo vector embeddings hợp lệ cho tài liệu.")
 
-        # 3.3. Index vào SQLite FTS5
+        # 3.3. Index vào SQLite FTS5 (dọn sạch chunks cũ của cùng doc_id nếu nạp đè phiên bản mới)
         fts_index = SqliteFtsIndex()
+        stale_chunk_ids = fts_index.delete_chunks_by_prefix(f"{doc_id}_")
+        if stale_chunk_ids:
+            try:
+                vector_store.delete_embeddings(stale_chunk_ids)
+            except Exception:
+                pass
         fts_index.upsert_chunks(chunks)
         inserted_chunk_ids = [c.chunk_id for c in chunks]
 
@@ -453,17 +557,20 @@ async def ingest_pdf_bytes(
             sha256_hex=sha256_hex,
             file_bytes_len=len(file_bytes),
             category=category,
-            representation="source_pdf"
+            representation="source_pdf",
+            total_pages=total_pages,
+            extracted_chunks_count=len(chunks),
+            indexed_vectors_count=indexed_vectors_count,
+            ocr_pages_used=ocr_pages_used,
+            security_risk_level=security_risk_level,
+            quarantine_recommended=quarantine_recommended,
+            security_warnings=security_warnings,
         )
         manifest_updated = True
 
-        # Tải lại retriever toàn hệ thống để lập tức truy xuất tài liệu mới
+        # Tải lại retriever & xóa cache toàn hệ thống để đồng bộ ngay lập tức
         if is_default_instance:
-            try:
-                from app.services.rag.rag_pipeline import reload_rag_retriever
-                reload_rag_retriever()
-            except Exception as e:
-                logger.warning(f"[PdfIngestion] Cảnh báo reload retriever: {e}")
+            _invalidate_chatbot_caches_after_kb_change(reason=f"ingest:{doc_id}")
 
     except Exception as exc:
         logger.error(f"[PdfIngestion] Gặp sự cố khi nạp PDF '{filename}'. Kích hoạt Rollback toàn diện: {exc}")
@@ -495,32 +602,9 @@ async def ingest_pdf_bytes(
 
         raise exc
 
-    # 4. Tự động học cạnh tương tác mới từ tài liệu vừa nạp vào DDI Knowledge Graph (Exact-Substring Guard)
+    # 4. Giữ cô lập DDI Knowledge Graph: Tài liệu ở trạng thái 'staged' chưa được phê duyệt
+    # không được tự ý ghi cạnh vào Đồ thị Tương tác thuốc toàn viện.
     graph_edges_added = 0
-    if is_default_instance:
-        try:
-            from app.services.clinical_ddi_engine.ddi_graph_builder import ingest_monographs_to_graph
-            from app.services.clinical_ddi_engine.ddi_graph_store import DdiGraphStore
-
-            ddi_pages = [
-                {
-                    "id": f"{doc_id}:p{p_idx}",
-                    "inn": title,
-                    "drug_class": category or "",
-                    "drug_interactions": p_txt,
-                    "section_pages": json.dumps({"drug_interactions": p_idx}),
-                    "source": legal_basis or title,
-                    "source_id": source_id,
-                    "source_version": source_ver,
-                }
-                for p_idx, p_txt in extracted_pages
-                if any(kw in p_txt.lower() for kw in ("tương tác", "chống chỉ định phối hợp", "cyp3a4"))
-            ]
-            if ddi_pages:
-                g_stats = await ingest_monographs_to_graph(DdiGraphStore(), ddi_pages, use_gemini=False)
-                graph_edges_added = int(g_stats.get("edges_accepted", 0))
-        except Exception:
-            pass
 
     return {
         "status": "success",
@@ -537,6 +621,9 @@ async def ingest_pdf_bytes(
         "extracted_chunks_count": len(chunks),
         "indexed_vectors_count": indexed_vectors_count,
         "file_bytes": len(file_bytes),
+        "security_risk_level": security_risk_level,
+        "quarantine_recommended": quarantine_recommended,
+        "security_warnings": security_warnings,
         "public_url": f"/api/v1/pdf/{safe_filename}",
     }
 
@@ -604,13 +691,9 @@ def delete_ingested_pdf(
             vector_store = get_vector_store()
         deleted_vectors_count = vector_store.delete_embeddings(deleted_chunk_ids)
 
-    # Tải lại retriever toàn hệ thống để xóa sạch vết tích tài liệu đã xóa
+    # Tải lại retriever & xóa cache toàn hệ thống để xóa sạch vết tích tài liệu đã xóa
     if is_default_store:
-        try:
-            from app.services.rag.rag_pipeline import reload_rag_retriever
-            reload_rag_retriever()
-        except Exception as e:
-            logger.warning(f"[PdfIngestion] Cảnh báo reload retriever khi xóa: {e}")
+        _invalidate_chatbot_caches_after_kb_change(reason=f"delete:{doc_id}")
 
     return {
         "status": "success",

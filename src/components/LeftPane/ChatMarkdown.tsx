@@ -7,6 +7,8 @@
 import React from 'react';
 import { AlertTriangle, AlertCircle, ShieldCheck, Lightbulb, BookOpen, ExternalLink, Globe } from 'lucide-react';
 import { RagCitationItem } from '../../types/chat';
+import { normalizeInlineCitations } from '../../utils/citationLabel';
+import { InlineCitationPill } from './InlineCitationPill';
 
 export interface MarkdownRenderOptions {
   isDark?: boolean;
@@ -23,6 +25,7 @@ export interface MarkdownRenderOptions {
     searchTerm?: string;
     keywords?: string[];
     text_fragment_url?: string;
+    index?: number;
   }) => void;
   compact?: boolean;
 }
@@ -80,26 +83,23 @@ export const formatInlineMarkdown = (
     typeof isDarkOrOptions === 'boolean' ? { isDark: isDarkOrOptions } : isDarkOrOptions;
   const { isDark = false, onCitationClick } = options;
 
-  const text = sanitizeClinicalText(rawText).replace(
-    /\[(\d+(?:\s*,\s*\d+)+)\](?!\()/g,
-    (_, nums: string) => nums.split(',').map((n) => `[${n.trim()}]`).join('')
-  );
+  const text = normalizeInlineCitations(sanitizeClinicalText(rawText));
   const tokens = text.split(
-    /(\*\*\*[\s\S]+?\*\*\*|\*\*[\s\S]+?\*\*|`[^`\n]+`|\[[^\]]+\]\([^\)]+\)|\[\d+\]|\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]|\(?https?:\/\/[^\s\)]+\)?|\*[^*\n]+?\*|_[^_\n]+?_)/g
+    /(\*\*\*[\s\S]+?\*\*\*|\*\*[\s\S]+?\*\*|`[^`\n]+`|\[[^\]]+\]\([^\)]+\)|(?:\[\d+\])+|\[(?:DTQG|DĐVN|Dược thư|QĐ|TT|NĐ|Luật|Nguồn|Bộ Y tế)[^\]\n]+\]|\(?https?:\/\/[^\s\)]+\)?|\*[^*\n]+?\*|_[^_\n]+?_)/g
   );
 
   return tokens.map((part, i) => {
     if (!part) return null;
     if (part.startsWith('***') && part.endsWith('***') && part.length >= 6) {
       return (
-        <strong key={i} className={`font-bold italic ${isDark ? 'text-white' : 'text-slate-900'}`}>
+        <strong key={i} className={`font-semibold italic ${isDark ? 'text-white' : 'text-slate-950'}`}>
           {part.slice(3, -3)}
         </strong>
       );
     }
     if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
       return (
-        <strong key={i} className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+        <strong key={i} className={`font-semibold ${isDark ? 'text-white' : 'text-slate-950'}`}>
           {part.slice(2, -2)}
         </strong>
       );
@@ -123,7 +123,7 @@ export const formatInlineMarkdown = (
       const linkText = linkMatch[1];
       const linkUrl = linkMatch[2];
 
-      if (linkUrl.startsWith('/pdf/') || linkUrl.includes('.pdf')) {
+      if (linkUrl.startsWith('/pdf/') || /^https?:\/\/[^\s]+\.pdf(?:[#?].*)?$/i.test(linkUrl)) {
         const pageMatch = linkUrl.match(/#page=(\d+)/);
         const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : undefined;
         return (
@@ -170,45 +170,17 @@ export const formatInlineMarkdown = (
       );
     }
 
-    // B. Footnote Citation Token [1], [2], [3]...
-    const footnoteMatch = part.match(/^\[(\d+)\]$/);
-    if (footnoteMatch) {
-      const footnoteNum = parseInt(footnoteMatch[1], 10);
-      const matchedCit = options.citations && options.citations.length >= footnoteNum
-        ? options.citations[footnoteNum - 1]
-        : undefined;
-
+    // B. Footnote Citation Cluster [1], [2], [3][4]... -> ChatGPT-style Domain/Source Pill + Hover Card
+    if (/^(?:\[\d+\])+$/.test(part)) {
+      const nums = Array.from(part.matchAll(/\[(\d+)\]/g), (m) => parseInt(m[1], 10));
       return (
-        <button
+        <InlineCitationPill
           key={i}
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            if (matchedCit) {
-              if (matchedCit.url && (matchedCit.url.startsWith('http://') || matchedCit.url.startsWith('https://')) && !matchedCit.url.endsWith('.pdf')) {
-                window.open(matchedCit.url, '_blank', 'noopener,noreferrer');
-              } else {
-                onCitationClick?.({
-                  title: matchedCit.title || `Nguồn [${footnoteNum}]`,
-                  url: matchedCit.url,
-                  page: matchedCit.page,
-                  excerpt: matchedCit.excerpt,
-                  legal_basis: matchedCit.legal_basis,
-                  section: matchedCit.section,
-                });
-              }
-            } else {
-              const targetEl = document.getElementById(`citation-ref-${footnoteNum}`);
-              if (targetEl) {
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
-            }
-          }}
-          className="inline-flex items-center justify-center px-1.5 py-0.2 min-w-[1.25rem] h-4.5 mx-0.5 text-3xs sm:text-2xs font-bold text-teal-800 bg-teal-100/90 hover:bg-teal-200 border border-teal-300 rounded-full cursor-pointer transition shadow-3xs align-super hover:scale-110 active:scale-95"
-          title={matchedCit ? `Nguồn [${footnoteNum}]: ${matchedCit.title || matchedCit.source || matchedCit.url}` : `Tham chiếu nguồn số [${footnoteNum}]`}
-        >
-          {footnoteNum}
-        </button>
+          indices={nums}
+          citations={options.citations}
+          isDark={isDark}
+          onCitationClick={onCitationClick}
+        />
       );
     }
 
@@ -423,29 +395,34 @@ export const renderFormattedText = (
       elements.push(
         <div
           key={`table-${i}`}
-          className="my-2.5 overflow-x-auto rounded-xl border border-slate-200/90 shadow-3xs"
+          className="my-4 overflow-x-auto rounded-xl border border-slate-200/80 bg-white"
         >
-          <table className="w-full text-left text-xs sm:text-sm border-collapse">
-            <thead className="bg-slate-100/90 text-slate-900 font-bold border-b border-slate-200">
+          <table className="w-full text-left text-[13.5px] sm:text-[14px] border-collapse">
+            <thead className="bg-slate-50/90 text-slate-500 border-b border-slate-200/80">
               <tr>
                 {headerCells.map((h, hIdx) => (
                   <th
                     key={hIdx}
-                    className="px-3 py-2 text-xs uppercase tracking-wider text-slate-700 font-bold"
+                    className="px-4 py-2.5 text-[11px] uppercase tracking-wider text-slate-500 font-semibold"
                   >
                     {formatInlineMarkdown(h, options)}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
+            <tbody className="divide-y divide-slate-100 text-slate-600">
               {bodyRows.map((row, rIdx) => (
                 <tr
                   key={rIdx}
-                  className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}
+                  className={rIdx % 2 === 0 ? 'bg-white hover:bg-slate-50/60 transition-colors' : 'bg-slate-50/35 hover:bg-slate-50/80 transition-colors'}
                 >
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-3 py-2 leading-relaxed text-xs sm:text-sm">
+                    <td
+                      key={cIdx}
+                      className={`px-4 py-2.5 leading-[1.6] text-[13.5px] sm:text-[14px] align-top ${
+                        cIdx === 0 ? 'font-medium text-slate-900' : 'text-slate-600'
+                      }`}
+                    >
                       {formatInlineMarkdown(cell, options)}
                     </td>
                   ))}
@@ -471,30 +448,49 @@ export const renderFormattedText = (
         j++;
       }
       i = j;
+      const firstQuoteLine = quoteLines[0] || '';
+      if (quoteLines.length === 1 && /^\*\*[^*]+:\*\*$/.test(firstQuoteLine.trim())) {
+        continue;
+      }
+      const isDangerQuote = /^\*\*(?:Cảnh báo|Chống chỉ định|Ngộ độc|Quá liều)/i.test(firstQuoteLine);
+      const isSummaryQuote = /^\*\*(?:Tóm tắt|Kết luận|Lưu ý)/i.test(firstQuoteLine);
+      const quoteStyle = isDangerQuote
+        ? 'my-4 px-4 py-3.5 rounded-r-xl border-l-[3px] border-rose-500 bg-rose-50/55 text-slate-800 not-italic'
+        : isSummaryQuote
+          ? 'my-3 px-4 py-3 rounded-r-xl border-l-[3px] border-teal-600 bg-teal-50/45 text-slate-800 not-italic'
+          : 'my-3 pl-4 py-2.5 border-l-[3px] border-slate-300 bg-slate-50/70 rounded-r-lg text-slate-700 italic';
       elements.push(
         <blockquote
           key={`quote-${i}`}
-          className="my-2 pl-3.5 py-1.5 border-l-3 border-teal-700 bg-slate-50/80 rounded-r-lg text-xs sm:text-sm text-slate-800 italic leading-relaxed space-y-1 border-y border-r border-slate-200/50"
+          className={`text-[14.5px] sm:text-[15px] leading-[1.7] space-y-1.5 ${quoteStyle}`}
         >
-          {quoteLines.map((qLine, qIdx) => (
-            <div key={qIdx}>{formatInlineMarkdown(qLine, options)}</div>
-          ))}
+          {quoteLines.map((qLine, qIdx) => {
+            const qBullet = qLine.match(/^[\*\-\+•]\s+(.+)$/);
+            if (qBullet) {
+              return (
+                <div key={qIdx} className="flex items-start gap-2.5 pl-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full mt-[10px] shrink-0 ${isDangerQuote ? 'bg-rose-400' : 'bg-teal-500'}`} />
+                  <div className="flex-1">{formatInlineMarkdown(qBullet[1], options)}</div>
+                </div>
+              );
+            }
+            return <div key={qIdx}>{formatInlineMarkdown(qLine, options)}</div>;
+          })}
         </blockquote>
       );
       continue;
     }
     if (/^(\-{3,}|\*{3,}|_{3,})$/.test(line)) {
-      elements.push(<hr key={`hr-${i}`} className="my-2.5 border-slate-200/80" />);
+      elements.push(<hr key={`hr-${i}`} className="my-4 border-slate-200/70" />);
       i++; continue;
     }
 
-    // 5. Tiêu đề Markdown (#, ##, ###, ####)
+    // 5. Tiêu đề Markdown (#, ##, ###, ####) — Phân cấp 3 tầng chuẩn rõ ràng (Cấp 1 > Cấp 2 > Cấp 3)
     const h1 = line.match(/^#\s+(.+)$/);
     if (h1) {
       elements.push(
-        <h2 key={`h1-${i}`} className="font-bold text-base sm:text-lg text-teal-950 mt-4 mb-2.5 border-b border-teal-100 pb-2 flex items-center gap-2 tracking-tight">
-          <span className="w-2 h-5 rounded-full bg-teal-700 shrink-0" />
-          <span>{formatInlineMarkdown(h1[1], options)}</span>
+        <h2 key={`h1-${i}`} className="font-bold text-lg sm:text-[21px] text-slate-950 mt-6 mb-3 border-b border-slate-200/80 pb-2">
+          {formatInlineMarkdown(h1[1], options)}
         </h2>
       );
       i++; continue;
@@ -502,9 +498,8 @@ export const renderFormattedText = (
     const h2 = line.match(/^##\s+(.+)$/);
     if (h2) {
       elements.push(
-        <h3 key={`h2-${i}`} className="font-bold text-sm sm:text-base text-slate-900 mt-3.5 mb-2 flex items-center gap-2 border-b border-slate-200/70 pb-1.5 tracking-tight">
-          <span className="w-1.5 h-4 rounded-full bg-teal-600 shrink-0" />
-          <span>{formatInlineMarkdown(h2[1], options)}</span>
+        <h3 key={`h2-${i}`} className="font-bold text-[17px] sm:text-[19px] text-slate-950 mt-6 mb-2.5 pb-1.5 border-b border-slate-100">
+          {formatInlineMarkdown(h2[1], options)}
         </h3>
       );
       i++; continue;
@@ -512,20 +507,20 @@ export const renderFormattedText = (
     const h3 = line.match(/^###\s+(.+)$/);
     if (h3) {
       const isRefHeader = /nguồn tham khảo|tài liệu tham khảo/i.test(h3[1]);
+      const isDangerHeader = /chống chỉ định|cảnh báo|quá liều|ngộ độc|lưu ý an toàn/i.test(h3[1]);
+      const hasPriorContent = elements.length > 0;
       elements.push(
         <h4
           key={`h3-${i}`}
-          className={`font-bold text-xs sm:text-sm mt-3.5 mb-2 flex items-center gap-2 tracking-wide ${
+          className={`font-bold text-[16.5px] sm:text-[18px] leading-snug mb-2.5 flex items-center gap-2 ${
             isRefHeader
-              ? 'text-teal-950 border-t border-slate-200/90 pt-3.5 uppercase'
-              : 'text-slate-900 uppercase'
+              ? 'mt-7 pt-5 border-t border-slate-200/80 text-slate-900'
+              : hasPriorContent
+                ? `mt-7 pt-5 border-t border-slate-100 ${isDangerHeader ? 'text-rose-800' : 'text-slate-950'}`
+                : `mt-1 ${isDangerHeader ? 'text-rose-800' : 'text-slate-950'}`
           }`}
         >
-          {isRefHeader ? (
-            <Globe className="w-4 h-4 text-teal-600 shrink-0" />
-          ) : (
-            <span className="w-1.5 h-3.5 rounded-full bg-teal-600 shrink-0" />
-          )}
+          {isRefHeader && <Globe className="w-4 h-4 text-slate-500 shrink-0" />}
           <span>{formatInlineMarkdown(h3[1], options)}</span>
         </h4>
       );
@@ -534,19 +529,18 @@ export const renderFormattedText = (
     const h4 = line.match(/^####\s+(.+)$/);
     if (h4) {
       elements.push(
-        <h5 key={`h4-${i}`} className="font-semibold text-xs sm:text-sm text-slate-800 mt-2.5 mb-1 flex items-center gap-1.5">
-          <span className="w-1 h-3 rounded-full bg-slate-400 shrink-0" />
-          <span>{formatInlineMarkdown(h4[1], options)}</span>
+        <h5 key={`h4-${i}`} className="font-semibold text-[14.5px] sm:text-[15.5px] text-slate-900 mt-4 mb-1.5">
+          {formatInlineMarkdown(h4[1], options)}
         </h5>
       );
       i++; continue;
     }
-    // Xử lý dòng trống: gom các dòng trống liên tiếp thành một khoảng cách thống nhất
+    // Xử lý dòng trống: gom các dòng trống liên tiếp thành khoảng đệm nhẹ (tránh làm loãng luật gần nhau)
     if (line === '') {
       while (i + 1 < rawLines.length && rawLines[i + 1].trim() === '') {
         i++;
       }
-      elements.push(<div key={`spacer-${i}`} className={options.compact ? 'h-1' : 'h-1.5'} />);
+      elements.push(<div key={`spacer-${i}`} className="h-1" />);
       i++;
       continue;
     }
@@ -622,12 +616,12 @@ export const renderFormattedText = (
           key={`num-${i}`}
           className={`flex items-start gap-2.5 ${options.compact ? 'my-0.5' : 'my-1.5'} ${
             isNested ? 'pl-4 sm:pl-5' : 'pl-0.5'
-          } leading-relaxed ${options.compact ? 'text-xs' : 'text-sm sm:text-base'} text-slate-800 group/numitem`}
+          } leading-[1.7] ${options.compact ? 'text-xs' : 'text-[15px] sm:text-[15.5px]'} text-slate-800 group/numitem`}
         >
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 group-hover/numitem:bg-teal-100 text-slate-700 group-hover/numitem:text-teal-900 text-2xs font-bold shrink-0 mt-0.5 border border-slate-200/80 transition">
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold shrink-0 mt-0.5">
             {itemNum}
           </span>
-          <div className="flex-1 min-w-0 pt-0.5">{formatInlineMarkdown(numMatch[2], options)}</div>
+          <div className="flex-1 min-w-0">{formatInlineMarkdown(numMatch[2], options)}</div>
         </div>
       );
       i++;
@@ -641,18 +635,18 @@ export const renderFormattedText = (
       const isDoubleNested = indentSpaces >= 4 || rawLine.startsWith('\t\t');
       const isNested = indentSpaces >= 2 || rawLine.startsWith('\t');
 
-      let bulletIcon = <span className="w-1.5 h-1.5 rounded-full bg-teal-600/80 mt-2 shrink-0" />;
+      let bulletIcon = <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-[10px] shrink-0" />;
       if (isDoubleNested) {
-        bulletIcon = <span className="w-1 h-1 rounded-full bg-slate-400 mt-2 shrink-0" />;
+        bulletIcon = <span className="w-1 h-1 rounded-full bg-slate-300 mt-[11px] shrink-0" />;
       } else if (isNested) {
-        bulletIcon = <span className="w-1.5 h-1.5 rounded-xs bg-slate-500 mt-2 shrink-0" />;
+        bulletIcon = <span className="w-1.5 h-1.5 rounded-full border border-slate-400 mt-[10px] shrink-0" />;
       }
 
       elements.push(
         <div
           key={`bullet-${i}`}
-          className={`flex items-start gap-2.5 ${options.compact ? 'my-0.5' : 'my-1.5'} leading-relaxed ${
-            options.compact ? 'text-xs' : 'text-sm sm:text-base'
+          className={`flex items-start gap-2.5 ${options.compact ? 'my-0.5' : 'my-1.5'} leading-[1.7] ${
+            options.compact ? 'text-xs' : 'text-[15px] sm:text-[15.5px]'
           } text-slate-800 ${
             isDoubleNested ? 'pl-7 sm:pl-8' : isNested ? 'pl-3.5 sm:pl-4' : 'pl-0.5'
           }`}
@@ -670,10 +664,10 @@ export const renderFormattedText = (
       elements.push(
         <div
           key={`disclaimer-${i}`}
-          className="mt-3.5 mb-1 p-3 rounded-xl border border-amber-200/80 bg-amber-50/70 text-xs sm:text-sm text-amber-950 flex items-start gap-2.5 shadow-3xs"
+          className="mt-4 mb-1 px-4 py-2.5 rounded-r-xl border-l-[3px] border-amber-400 bg-amber-50/55 text-[13px] sm:text-[13.5px] text-amber-950/90 flex items-start gap-2.5"
         >
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <div className="flex-1 italic font-medium leading-relaxed">
+          <div className="flex-1 leading-[1.6]">
             {formatInlineMarkdown(line.replace(/^⚠️\s*/, ''), options)}
           </div>
         </div>
@@ -707,7 +701,7 @@ export const renderFormattedText = (
     elements.push(
       <p
         key={`p-${i}`}
-        className={`${options.compact ? 'my-0.5 text-xs' : 'my-1.5 text-sm sm:text-base'} leading-relaxed text-slate-800 break-words`}
+        className={`${options.compact ? 'my-0.5 text-xs' : 'my-1.5 text-[15px] sm:text-[15.5px]'} leading-[1.7] text-slate-800 break-words`}
       >
         {paraLines.map((pLine, pIdx) => (
           <React.Fragment key={pIdx}>

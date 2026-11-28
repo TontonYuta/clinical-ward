@@ -11,6 +11,7 @@ import {
   FeatureFlagResponse,
   KnowledgeDocumentItem,
   IngestPdfResponse,
+  PdfInspectResponse,
   DocumentQueryResponse,
   CleanlinessAuditResponse,
   KnowledgeChatTestResponse
@@ -218,6 +219,24 @@ export async function fetchKnowledgeDocuments(): Promise<KnowledgeDocumentItem[]
   if (!res.ok) throw new Error(`Lỗi tải danh mục tài liệu: HTTP ${res.status}`);
   const data = await res.json();
   return data.documents || [];
+}
+
+export async function inspectKnowledgePdf(file: File): Promise<PdfInspectResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetchWithTimeout(`${BASE_URL}/knowledge/inspect-pdf`, {
+    method: 'POST',
+    body: formData,
+  }, 20000);
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.detail) detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+    } catch {}
+    throw new Error(`Không thể kiểm tra tệp PDF: ${detail}`);
+  }
+  return res.json();
 }
 
 export async function uploadKnowledgePdf(formData: FormData): Promise<IngestPdfResponse> {

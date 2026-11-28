@@ -1,4 +1,5 @@
 export type CopilotSseEvent =
+  | { type: 'status'; phase: string; label?: string }
   | { type: 'token'; content: string }
   | { type: 'done'; response: Record<string, any> }
   | { type: 'error'; message?: string };
@@ -12,19 +13,25 @@ function parseFrame(frame: string): CopilotSseEvent | null {
   if (!data) return null;
   let event: CopilotSseEvent;
   try { event = JSON.parse(data) as CopilotSseEvent; } catch { throw new CopilotSseError('Malformed SSE data event'); }
-  if (!event || typeof event !== 'object' || !['token', 'done', 'error'].includes(event.type)) throw new CopilotSseError('Unsupported SSE event');
+  if (!event || typeof event !== 'object' || !['status', 'token', 'done', 'error'].includes(event.type)) throw new CopilotSseError('Unsupported SSE event');
+  if (event.type === 'status' && typeof event.phase !== 'string') throw new CopilotSseError('Malformed SSE status event');
   if (event.type === 'token' && typeof event.content !== 'string') throw new CopilotSseError('Malformed SSE token event');
   if (event.type === 'done' && (!event.response || typeof event.response !== 'object')) throw new CopilotSseError('Malformed SSE done event');
   return event;
 }
 
-export async function consumeCopilotSse(stream: ReadableStream<Uint8Array>, onToken?: (token: string, currentFullText: string) => void): Promise<Record<string, any>> {
+export async function consumeCopilotSse(
+  stream: ReadableStream<Uint8Array>,
+  onToken?: (token: string, currentFullText: string) => void,
+  onStatus?: (phase: string, label?: string) => void
+): Promise<Record<string, any>> {
   const reader = stream.getReader(); const decoder = new TextDecoder('utf-8'); const lf = String.fromCharCode(10); const delimiterText = lf + lf;
   let buffer = ''; let accumulatedText = ''; let finalResponse: Record<string, any> | null = null; let terminalSeen = false;
   const processFrame = (frame: string) => {
     const event = parseFrame(frame); if (!event) return;
     if (terminalSeen) throw new CopilotSseError('SSE event received after terminal event');
-    if (event.type === 'token') { accumulatedText += event.content; onToken?.(event.content, accumulatedText); }
+    if (event.type === 'status') { onStatus?.(event.phase, event.label); }
+    else if (event.type === 'token') { accumulatedText += event.content; onToken?.(event.content, accumulatedText); }
     else if (event.type === 'done') { terminalSeen = true; finalResponse = event.response; }
     else { terminalSeen = true; throw new CopilotSseError(event.message || 'Copilot stream failed'); }
   };

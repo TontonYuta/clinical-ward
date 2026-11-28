@@ -98,7 +98,7 @@ def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:
             not path_value or found_file is None or (file_bytes is not None and file_bytes <= 2048)
         )
 
-        documents.append({
+        doc_record = {
             "id": doc_id,
             "title": title,
             "legal_basis": str(source.get("legal_basis") or ""),
@@ -111,7 +111,11 @@ def build_document_catalog(manifest_path: Path, pdf_root: Path) -> list[dict]:
             "status": status_val,
             "verified": is_verified,
             "verified_at": source.get("verified_at"),
-        })
+        }
+        for opt_key in ("total_pages", "chunks_count", "vectors_count", "ocr_pages_used"):
+            if source.get(opt_key) is not None:
+                doc_record[opt_key] = source.get(opt_key)
+        documents.append(doc_record)
 
     return sorted(documents, key=lambda d: (d.get("status") != "staged", d["title"].casefold()))
 
@@ -154,6 +158,199 @@ async def update_doc_status_endpoint(doc_id: str, payload: UpdateDocStatusReques
 async def list_knowledge_documents():
     """Danh sách PDF đang có trong kho ứng dụng, ghép metadata khi có manifest."""
     return {"documents": build_document_catalog(_manifest_path(), _public_pdf_dir())}
+
+
+def _infer_pdf_metadata(filename: str, sample_text: str) -> dict[str, Any]:
+    """Tự động suy luận Tiêu đề, Căn cứ pháp lý, Phân loại và Năm hiệu lực từ tên tệp & trang đầu PDF."""
+    clean_stem = Path(filename or "tai_lieu.pdf").stem
+    clean_name = re.sub(r"[_\-]+", " ", clean_stem).strip()
+    head = (sample_text or "")[:2500]
+    combined = f"{clean_name}\n{head}"
+
+    # 1. Tìm số hiệu Thông tư / Quyết định / Nghị định (VD: 26/2025/TT-BYT, 5948/QĐ-BYT, 188/2025/NĐ-CP)
+    legal_basis = ""
+    reg_patterns = [
+        (r"(?:Thông\s*tư\s*(?:số\s*)?)?(\d{1,4}/\d{4}/TT-[A-ZĐ]+)", "Thông tư "),
+        (r"(?:Quyết\s*định\s*(?:số\s*)?)?(\d{1,5}/(?:(?:\d{4}/)?Q[ĐD]-[A-ZĐ]+))", "Quyết định "),
+        (r"(?:Nghị\s*định\s*(?:số\s*)?)?(\d{1,4}/\d{4}/N[ĐD]-CP)", "Nghị định "),
+    ]
+    for pat, prefix in reg_patterns:
+        m = re.search(pat, combined, flags=re.IGNORECASE)
+        if m:
+            code = m.group(1).upper().replace("QD-", "QĐ-").replace("ND-", "NĐ-")
+            legal_basis = f"{prefix}{code}"
+            break
+
+    # 2. Tìm năm ban hành/hiệu lực
+    year_val = 2026
+    m_year_in_code = re.search(r"/((?:19|20)\d{2})/", legal_basis)
+    if m_year_in_code:
+        year_val = int(m_year_in_code.group(1))
+    else:
+        years = [int(y) for y in re.findall(r"\b(20[0-3]\d)\b", combined)]
+        if years:
+            year_val = max(years)
+
+    # 3. Phân loại tự động
+    low = combined.casefold()
+    if "dược thư" in low or "duoc thu" in low:
+        category = "Dược thư quốc gia"
+    elif "phản vệ" in low or "cấp cứu" in low:
+        category = "Cấp cứu & Sốc phản vệ"
+    elif "thông tư" in low or "tt-byt" in low:
+        category = "Thông tư Bộ Y tế"
+    elif "quyết định" in low or "qđ-byt" in low or "qd-byt" in low:
+        category = "Quyết định Bộ Y tế"
+    elif "phác đồ" in low or "hướng dẫn chẩn đoán" in low or "điều trị" in low:
+        category = "Phác đồ điều trị"
+    elif "quy trình" in low or "quy chuẩn" in low or "nội viện" in low:
+        category = "Quy chuẩn bệnh viện"
+    else:
+        category = "Khác"
+
+    # 4. Tiêu đề gợi ý
+    suggested_title = clean_name
+    if legal_basis and legal_basis.casefold() not in clean_name.casefold():
+        suggested_title = f"{legal_basis} — {clean_name}"
+    if not legal_basis:
+        legal_basis = clean_name
+
+    return {
+        "suggested_title": suggested_title[:180],
+        "suggested_legal_basis": legal_basis[:140],
+        "suggested_category": category,
+        "suggested_year": year_val,
+    }
+
+
+@router.post("/inspect-pdf")
+async def inspect_pdf_before_upload(
+    request: Request,
+    file: UploadFile = File(..., description="Tệp PDF cần kiểm tra trước khi nạp"),
+):
+    """
+    Kiểm tra nhanh tệp PDF trước khi nạp (không lưu đĩa/CSDL):
+    - Xác thực Magic Bytes %PDF-, dung lượng <= 50MB
+    - Kiểm tra trùng lặp SHA256 trong kho hiện có
+    - Đánh giá mật độ chữ (phát hiện file scan cần OCR)
+    - Tự động gợi ý Tiêu đề, Căn cứ pháp lý, Phân loại và Năm hiệu lực.
+    """
+    import hashlib
+    from app.services.rag.pdf_ingestion_service import MAX_FILE_BYTES
+
+    user = getattr(request.state, "authenticated_user", None)
+    if user and user.role not in {"admin", "director"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ Quản trị viên mới có quyền kiểm tra tài liệu nạp vào hệ thống.",
+        )
+
+    filename = file.filename or "tai_lieu.pdf"
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chỉ chấp nhận tệp định dạng .pdf.")
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tệp PDF rỗng (0 bytes).")
+    if len(file_bytes) > MAX_FILE_BYTES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dung lượng tệp vượt quá giới hạn 50MB.")
+    if not file_bytes.startswith(b"%PDF"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Không tìm thấy chữ ký Magic Bytes '%PDF'.")
+
+    sha256_hex = hashlib.sha256(file_bytes).hexdigest()
+
+    # Kiểm tra trùng lặp SHA256 trong manifest hiện tại
+    duplicate_doc = None
+    catalog = build_document_catalog(_manifest_path(), _public_pdf_dir())
+    for d in catalog:
+        if d.get("sha256") and d["sha256"] == sha256_hex:
+            duplicate_doc = d
+            break
+
+    # Trích xuất nhanh 15 trang đầu để đánh giá độ sạch & auto-fill metadata
+    total_pages = 0
+    empty_pages = 0
+    total_chars = 0
+    sample_texts: List[str] = []
+    try:
+        import pymupdf
+        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+        total_pages = len(doc)
+        pages_to_check = min(total_pages, 15)
+        for i in range(pages_to_check):
+            txt = (doc[i].get_text("text") or "").strip()
+            total_chars += len(txt)
+            if len(re.sub(r"\s+", "", txt)) < 30:
+                empty_pages += 1
+            elif len(sample_texts) < 3:
+                sample_texts.append(txt[:1000])
+        doc.close()
+    except Exception:
+        try:
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            total_pages = len(reader.pages)
+            pages_to_check = min(total_pages, 15)
+            for i in range(pages_to_check):
+                txt = (reader.pages[i].extract_text() or "").strip()
+                total_chars += len(txt)
+                if len(re.sub(r"\s+", "", txt)) < 30:
+                    empty_pages += 1
+                elif len(sample_texts) < 3:
+                    sample_texts.append(txt[:1000])
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Không thể đọc cấu trúc PDF: {e}")
+
+    pages_checked = max(1, min(total_pages, 15))
+    avg_chars = round(total_chars / pages_checked)
+    score = 100
+    if empty_pages > 0:
+        score -= min(45, int((empty_pages / pages_checked) * 60))
+    if avg_chars < 120:
+        score -= 25
+
+    from app.security.prompt_isolator import inspect_document_poisoning_risk, inspect_pdf_hidden_layers
+
+    raw_sample_joined = "\n".join(sample_texts)
+    poison_report = inspect_document_poisoning_risk(raw_sample_joined)
+    hidden_report = inspect_pdf_hidden_layers(file_bytes, max_pages=15)
+    quarantine_recommended = bool(
+        poison_report["quarantine_recommended"] or hidden_report["hidden_layer_detected"]
+    )
+    security_reasons = list(poison_report["reasons"])
+    if hidden_report["hidden_layer_detected"]:
+        security_reasons.append(
+            f"Phát hiện lớp chữ tàng hình trong PDF (cỡ chữ siêu nhỏ: {hidden_report['tiny_suspicious_spans']}, chữ trùng màu nền: {hidden_report['white_suspicious_spans']})."
+        )
+    if quarantine_recommended:
+        score -= 40
+    elif poison_report["risk_level"] == "medium":
+        score -= 15
+
+    score = max(10, min(100, score))
+    health_status = (
+        "quarantine" if quarantine_recommended
+        else ("clean" if score >= 80 else ("warning" if score >= 50 else "ocr_needed"))
+    )
+
+    meta = _infer_pdf_metadata(filename, raw_sample_joined)
+    return {
+        "filename": filename,
+        "file_bytes": len(file_bytes),
+        "sha256": sha256_hex,
+        "total_pages": total_pages,
+        "avg_chars_per_page": avg_chars,
+        "empty_pages": empty_pages,
+        "needs_ocr": empty_pages > 0,
+        "cleanliness_score": score,
+        "status": health_status,
+        "security_risk_level": "high" if quarantine_recommended else poison_report["risk_level"],
+        "quarantine_recommended": quarantine_recommended,
+        "security_warnings": security_reasons,
+        "is_duplicate": duplicate_doc is not None,
+        "duplicate_doc_id": duplicate_doc["id"] if duplicate_doc else None,
+        "duplicate_title": duplicate_doc["title"] if duplicate_doc else None,
+        **meta,
+    }
 
 
 @router.post("/upload-pdf")
@@ -349,21 +546,35 @@ async def audit_pdf_cleanliness(
                 combined_sample = "\n\n".join(sample_snippets)
                 golden_questions = []
                 if combined_sample:
-                    prompt = (
-                        f"Bạn là chuyên gia thẩm định dữ liệu y tế. Dưới đây là trích đoạn tài liệu y tế ({doc_title}):\n"
-                        f"{combined_sample[:1500]}\n\n"
-                        "Hãy đóng vai trò Bác sĩ/Dược sĩ lâm sàng. Đặt 3 câu hỏi kiểm chứng (Golden Test Questions) ngắn gọn, "
-                        "thực tế nhất về quy định, điều kiện, liều dùng hoặc thủ tục được nêu trong văn bản trên để kiểm tra chatbot.\n"
+                    from app.security.prompt_isolator import (
+                        build_hierarchy_preamble,
+                        generate_boundary_nonce,
+                        sanitize_untrusted_text,
+                        wrap_untrusted_block,
+                    )
+                    nonce = generate_boundary_nonce()
+                    sample_block, s_tag = wrap_untrusted_block(
+                        "untrusted_pdf_sample", combined_sample[:1500], nonce=nonce, datamark=True
+                    )
+                    sys_instr = (
+                        f"{build_hierarchy_preamble([s_tag])}\n\n"
+                        "Bạn là chuyên gia thẩm định dữ liệu y tế.\n"
+                        "Hãy đóng vai trò Bác sĩ/Dược sĩ lâm sàng, đặt 3 câu hỏi kiểm chứng (Golden Test Questions) ngắn gọn, "
+                        "thực tế nhất về quy định, điều kiện, liều dùng hoặc thủ tục được nêu trong văn bản.\n"
                         "Chỉ trả về 1 mảng JSON chứa đúng 3 chuỗi câu hỏi: [\"câu 1\", \"câu 2\", \"câu 3\"]."
                     )
+                    prompt = f"Trích đoạn tài liệu y tế ({sanitize_untrusted_text(doc_title, max_chars=120)}):\n{sample_block}\n\nHãy tạo 3 câu hỏi kiểm chứng JSON:"
                     try:
-                        llm_res = await query_clinical_llm(prompt, timeout_sec=8.0)
+                        llm_res = await query_clinical_llm(prompt, system_instruction=sys_instr, timeout_sec=8.0)
                         if llm_res:
                             match_json = re.search(r"\[.*\]", llm_res, re.DOTALL)
                             if match_json:
                                 parsed = json.loads(match_json.group(0))
                                 if isinstance(parsed, list) and len(parsed) >= 2:
-                                    golden_questions = [str(q).strip(' "') for q in parsed[:3]]
+                                    golden_questions = [
+                                        sanitize_untrusted_text(str(q).strip(' "'), max_chars=180)
+                                        for q in parsed[:3]
+                                    ]
                     except Exception:
                         pass
                 if len(golden_questions) < 3:
@@ -448,31 +659,60 @@ async def audit_pdf_cleanliness(
         score -= 20
         issues.append(f"Phát hiện tỷ lệ ký tự rác/lỗi font UTF-8 cao ({artifact_ratio*100:.1f}%).")
 
+    from app.security.prompt_isolator import (
+        build_hierarchy_preamble,
+        generate_boundary_nonce,
+        inspect_document_poisoning_risk,
+        inspect_pdf_hidden_layers,
+        sanitize_untrusted_text,
+        wrap_untrusted_block,
+    )
+
+    combined_sample = "\n\n".join(sample_text_snippets)
+    poison_report = inspect_document_poisoning_risk(combined_sample)
+    hidden_report = inspect_pdf_hidden_layers(file_bytes, max_pages=pages_to_check)
+    if poison_report["reasons"]:
+        issues.extend(poison_report["reasons"])
+        score -= 35 if poison_report["quarantine_recommended"] else 15
+    if hidden_report["hidden_layer_detected"]:
+        issues.append(
+            f"CẢNH BÁO PoisonedRAG: Phát hiện lớp chữ tàng hình chứa chỉ dẫn đối kháng "
+            f"(cỡ chữ siêu nhỏ: {hidden_report['tiny_suspicious_spans']}, chữ trùng màu nền: {hidden_report['white_suspicious_spans']})."
+        )
+        score -= 40
+
     score = max(10, min(100, score))
     status_str = "clean" if score >= 80 else ("warning" if score >= 50 else "unreadable")
 
     if not issues:
-        issues.append("Văn bản trích xuất rõ ràng, cấu trúc đầy đủ, không phát hiện lỗi ký tự UTF-8.")
+        issues.append("Văn bản trích xuất rõ ràng, cấu trúc đầy đủ, không phát hiện lỗi ký tự UTF-8 hoặc chỉ dẫn ẩn.")
 
-    # Tự động sinh 3 Golden Test Questions
+    # Tự động sinh 3 Golden Test Questions (có Spotlighting + Nonce Isolation)
     golden_questions: List[str] = []
-    combined_sample = "\n\n".join(sample_text_snippets)
     if combined_sample:
-        prompt = (
-            f"Bạn là chuyên gia thẩm định dữ liệu y tế. Dưới đây là trích đoạn tài liệu y tế ({filename}):\n"
-            f"{combined_sample[:1500]}\n\n"
-            "Hãy đóng vai trò Bác sĩ/Dược sĩ lâm sàng. Đặt 3 câu hỏi kiểm chứng (Golden Test Questions) ngắn gọn, "
-            "thực tế nhất về quy định, điều kiện, liều dùng hoặc thủ tục được nêu trong văn bản trên để kiểm tra chatbot.\n"
+        nonce = generate_boundary_nonce()
+        sample_block, s_tag = wrap_untrusted_block(
+            "untrusted_pdf_sample", combined_sample[:1500], nonce=nonce, datamark=True
+        )
+        sys_instr = (
+            f"{build_hierarchy_preamble([s_tag])}\n\n"
+            "Bạn là chuyên gia thẩm định dữ liệu y tế.\n"
+            "Hãy đóng vai trò Bác sĩ/Dược sĩ lâm sàng, đặt 3 câu hỏi kiểm chứng (Golden Test Questions) ngắn gọn, "
+            "thực tế nhất về quy định, điều kiện, liều dùng hoặc thủ tục được nêu trong văn bản.\n"
             "Chỉ trả về 1 mảng JSON chứa đúng 3 chuỗi câu hỏi: [\"câu 1\", \"câu 2\", \"câu 3\"]."
         )
+        prompt = f"Trích đoạn tài liệu y tế ({sanitize_untrusted_text(filename, max_chars=120)}):\n{sample_block}\n\nHãy tạo 3 câu hỏi kiểm chứng JSON:"
         try:
-            llm_res = await query_clinical_llm(prompt, timeout_sec=8.0)
+            llm_res = await query_clinical_llm(prompt, system_instruction=sys_instr, timeout_sec=8.0)
             if llm_res:
                 match_json = re.search(r"\[.*\]", llm_res, re.DOTALL)
                 if match_json:
                     parsed = json.loads(match_json.group(0))
                     if isinstance(parsed, list) and len(parsed) >= 2:
-                        golden_questions = [str(q).strip(' "') for q in parsed[:3]]
+                        golden_questions = [
+                            sanitize_untrusted_text(str(q).strip(' "'), max_chars=180)
+                            for q in parsed[:3]
+                        ]
         except Exception:
             pass
 
@@ -529,7 +769,29 @@ async def _execute_chat_test_logic(
     request: Request,
     db: AsyncSession
 ) -> KnowledgeChatTestResponse:
-    query = request_data.query.strip()
+    from app.security.guardrails import validate_input_guardrail, validate_output_guardrail
+    from app.security.prompt_isolator import (
+        build_hierarchy_preamble,
+        generate_boundary_nonce,
+        sanitize_untrusted_document_text,
+        wrap_untrusted_block,
+    )
+
+    raw_query = request_data.query.strip()
+    guard_res = validate_input_guardrail(raw_query, user_role=request_data.user_role)
+    if not guard_res.is_safe:
+        return KnowledgeChatTestResponse(
+            reply_text=guard_res.refusal_message or "Yêu cầu không hợp lệ do vi phạm chính sách bảo mật lâm sàng.",
+            citations=[],
+            legal_basis="OWASP LLM01:2025 & Chính sách An toàn Lâm sàng",
+            rag_grounded=False,
+            confidence=1.0,
+            provider="security-guardrail",
+            model_name="input-guardrail-v2",
+            suggested_chips=["Tra cứu quy định chính của tài liệu"],
+        )
+
+    query = guard_res.sanitized_query
     doc_id = request_data.doc_id
 
     # 1. Chế độ Scoped Test (Kiểm thử trên tài liệu vừa thêm hoặc chỉ định)
@@ -580,17 +842,18 @@ async def _execute_chat_test_logic(
             legal = r.get("legal_basis", "")
             page_sec = r.get("page_or_section", "")
             source = r.get("source_doc", "")
-            content = r.get("content", "")
+            raw_content = r.get("content", "")
+            safe_content = sanitize_untrusted_document_text(raw_content)
             if not primary_legal and legal:
                 primary_legal = legal
-            evidence_lines.append(f"=== [TRÍCH ĐOẠN #{idx+1}] Căn cứ: {legal} | {page_sec} | Nguồn: {source} ===\n{content}")
+            evidence_lines.append(f"=== [TRÍCH ĐOẠN #{idx+1}] Căn cứ: {legal} | {page_sec} | Nguồn: {source} ===\n{safe_content}")
             citations_list.append(KnowledgeChatCitation(
                 chunk_id=cid,
                 title=doc_title or source,
                 legal_basis=legal or primary_legal or "Quy định Y tế",
                 page_or_section=page_sec or f"Mục {idx+1}",
                 source_doc=source,
-                snippet=content[:240] + ("..." if len(content) > 240 else "")
+                snippet=safe_content[:240] + ("..." if len(safe_content) > 240 else "")
             ))
 
         if not results:
@@ -603,18 +866,26 @@ async def _execute_chat_test_logic(
                 suggested_chips=["Tra cứu phạm vi áp dụng", "Xem danh mục quy định", "Kiểm tra toàn viện"]
             )
 
-        prompt = f"""Bạn là Trợ lý Lâm sàng AI Bệnh viện. Dưới đây là các căn cứ trích xuất từ tài liệu y tế chính thức:
-{chr(10).join(evidence_lines)}
+        role_title = "Dược sĩ lâm sàng" if request_data.user_role == "pharmacist" else "Bác sĩ điều trị"
+        nonce = generate_boundary_nonce()
+        evidence_block, ev_tag = wrap_untrusted_block(
+            "pdf_evidence", "\n\n".join(evidence_lines), nonce=nonce, datamark=True
+        )
+        query_block, q_tag = wrap_untrusted_block(
+            "user_query", f"Người hỏi ({role_title} - {request_data.user_name}): {query}", nonce=nonce
+        )
+        system_instructions = (
+            build_hierarchy_preamble([ev_tag, q_tag])
+            + "\n\nBạn là Trợ lý Lâm sàng AI Bệnh viện đang kiểm thử tài liệu nội viện trong Sandbox.\n"
+            "YÊU CẦU ĐÁP ỨNG LÂM SÀNG:\n"
+            "1. Chỉ trả lời dựa trên khối tài liệu y tế được cô lập.\n"
+            "2. Trả lời trực tiếp, khúc chiết, chuẩn mực y khoa tiếng Việt.\n"
+            "3. Trích dẫn rõ Căn cứ pháp lý (Tên thông tư/văn bản) và Số trang/Khoản/Điều quy định.\n"
+            '4. Nếu nội dung không có trong tài liệu trên, nêu rõ: "Tài liệu này không chứa thông tin quy định về vấn đề trên".'
+        )
+        prompt = f"{evidence_block}\n\n{query_block}\n\nHãy trả lời câu hỏi lâm sàng theo đúng dữ liệu trong tài liệu."
 
-Câu hỏi của {request_data.user_role == 'pharmacist' and 'Dược sĩ lâm sàng' or 'Bác sĩ điều trị'} ({request_data.user_name}):
-"{query}"
-
-YÊU CẦU ĐÁP ỨNG LÂM SÀNG:
-1. Trả lời trực tiếp, khúc chiết, chuẩn mực y khoa tiếng Việt.
-2. Trích dẫn rõ Căn cứ pháp lý (Tên thông tư/văn bản) và Số trang/Khoản/Điều quy định.
-3. Nếu nội dung không có trong tài liệu trên, nêu rõ: "Tài liệu này không chứa thông tin quy định về vấn đề trên"."""
-
-        llm_reply = await query_clinical_llm(prompt, timeout_sec=20.0)
+        llm_reply = await query_clinical_llm(prompt, system_instruction=system_instructions, timeout_sec=20.0)
         last_exec = get_last_llm_execution()
         prov = last_exec.get("provider", "gemini")
         mod = last_exec.get("model", "gemini-2.5-flash")
@@ -628,7 +899,7 @@ YÊU CẦU ĐÁP ỨNG LÂM SÀNG:
             prov = "local-extractive"
             mod = "fts-rrf-engine"
         else:
-            reply_text = llm_reply
+            reply_text = validate_output_guardrail(llm_reply, query)
 
         suggested_chips = [
             f"Chi tiết quy định tại {citations_list[0].page_or_section}" if citations_list else "Xem thêm quy định",

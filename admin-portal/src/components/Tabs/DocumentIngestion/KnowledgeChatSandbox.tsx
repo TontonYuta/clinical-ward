@@ -140,10 +140,15 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
     }
   };
 
-  // Automatically trigger audit when activeDocId or uploadedFile changes
+  // Automatically trigger audit only when authenticated (avoids noisy 401 red banner when auth form is hidden)
   useEffect(() => {
-    if (activeDocId || uploadedFile) {
+    const hasToken =
+      typeof window !== 'undefined' &&
+      Boolean(localStorage.getItem('clinical_admin_token') || localStorage.getItem('clinical_auth_token'));
+    if ((activeDocId || uploadedFile) && hasToken) {
       runAudit();
+    } else {
+      setAuditError('');
     }
   }, [activeDocId, uploadedFile]);
 
@@ -256,47 +261,40 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
   const isDocStaged = currentDocItem?.status === 'staged' || !currentDocItem?.status;
 
   const sandboxContent = (
-    <div className={`bg-white flex flex-col ${isFullScreen ? 'h-full w-full' : 'h-[740px] rounded-lg border border-slate-200/90 overflow-hidden'}`}>
-      {/* 1. Header Toolbar */}
-      <div className="p-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/70">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-md bg-teal-50 text-teal-800 border border-teal-200/80 flex items-center justify-center shrink-0">
-            <Bot className="w-4.5 h-4.5" />
+    <div className={`bg-white flex flex-col ${isFullScreen ? 'h-full w-full' : 'h-[680px] rounded-xl border border-slate-200/90 overflow-hidden'}`}>
+      {/* 1. Header Toolbar (Clean 2-zone flex wrap, zero clipping) */}
+      <div className="px-4 py-3 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/70">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-800 border border-teal-200/80 flex items-center justify-center shrink-0">
+            <Bot className="w-4 h-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
-                Khung Thử Nghiệm Chatbot Lâm Sàng
-              </h3>
-              <span className="text-2xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
-                100% Logic App Bác Sĩ
-              </span>
-            </div>
-            <p className="text-2xs text-slate-500">
-              Kiểm tra trực tiếp độ hoàn chỉnh, trích dẫn số trang và an toàn CDSS với API Key thật
+          <div className="min-w-0">
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 tracking-tight truncate">
+              Khung thử nghiệm Chatbot lâm sàng
+            </h3>
+            <p className="text-2xs text-slate-500 truncate">
+              Kiểm tra trích dẫn số trang và đối chiếu an toàn trên tài liệu trước khi áp dụng toàn viện
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap text-xs">
-          {/* Role selector */}
           <select
             value={userRole}
             onChange={(e) => setUserRole(e.target.value as 'doctor' | 'pharmacist')}
-            className="text-2xs font-semibold px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-700 outline-hidden"
+            className="h-7 text-2xs font-medium px-2 bg-white border border-slate-200 rounded-md text-slate-700 focus:border-teal-600 focus:outline-none"
           >
             <option value="doctor">Vai trò: Bác sĩ điều trị</option>
             <option value="pharmacist">Vai trò: Dược sĩ lâm sàng</option>
           </select>
 
-          {/* Test Scope Toggle */}
-          <div className="flex rounded-md border border-slate-200 bg-white p-0.5 text-2xs font-medium">
+          <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-2xs font-medium">
             <button
               type="button"
               onClick={() => setTestScope('scoped')}
-              className={`px-2 py-1 rounded cursor-pointer transition ${
-                testScope === 'scoped' ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2 py-0.5 rounded cursor-pointer transition whitespace-nowrap ${
+                testScope === 'scoped' ? 'bg-teal-700 text-white font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Chỉ tra cứu trong văn bản được chọn"
             >
@@ -305,16 +303,15 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
             <button
               type="button"
               onClick={() => setTestScope('integrated')}
-              className={`px-2 py-1 rounded cursor-pointer transition ${
+              className={`px-2 py-0.5 rounded cursor-pointer transition whitespace-nowrap ${
                 testScope === 'integrated' ? 'bg-teal-700 text-white font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Tra cứu tích hợp toàn bộ kho tri thức bệnh viện"
             >
-              Toàn viện (Integrated)
+              Toàn viện
             </button>
           </div>
 
-          {/* Clear messages */}
           {messages.length > 0 && (
             <button
               type="button"
@@ -323,19 +320,18 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
                 setHasVerifiedAnswer(Boolean(currentDocItem?.verified));
                 setActivationSuccess('');
               }}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md cursor-pointer transition"
+              className="h-7 w-7 inline-flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md cursor-pointer transition"
               title="Xóa phiên thử nghiệm"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           )}
 
-          {/* Maximize / Minimize Full-Screen Button */}
           <button
             type="button"
             onClick={() => setIsFullScreen((prev) => !prev)}
-            className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-100 text-slate-700 transition cursor-pointer flex items-center gap-1 text-2xs font-medium"
-            title={isFullScreen ? 'Thu nhỏ cửa sổ' : 'Mở toàn màn hình để kiểm tra chi tiết'}
+            className="h-7 px-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition cursor-pointer inline-flex items-center gap-1 text-2xs font-medium"
+            title={isFullScreen ? 'Thu nhỏ cửa sổ' : 'Mở toàn màn hình'}
           >
             {isFullScreen ? (
               <>
@@ -345,58 +341,52 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
             ) : (
               <>
                 <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
-                <span className="hidden sm:inline">Mở Full Form</span>
+                <span className="hidden sm:inline">Toàn màn hình</span>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* 2. Target Document Picker & Cleanliness Healthcheck Bar */}
-      <div className="p-3 bg-white border-b border-slate-100 space-y-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+      {/* 2. Target Document Picker & Cleanliness Healthcheck Bar (Zero overlap: strict min-w-0 grid) */}
+      <div className="px-4 py-2.5 bg-white border-b border-slate-100 space-y-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <FileText className="w-4 h-4 text-teal-700 shrink-0" />
-            <span className="font-semibold text-slate-700 shrink-0">Văn bản kiểm thử:</span>
+            <span className="text-xs font-semibold text-slate-700 shrink-0 whitespace-nowrap">Văn bản:</span>
             <select
               value={activeDocId}
               onChange={(e) => setActiveDocId(e.target.value)}
-              className="text-2xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-slate-800 truncate flex-1 max-w-md font-medium"
+              className="w-full min-w-0 h-8 text-xs px-2.5 bg-white border border-slate-200 rounded-md text-slate-800 font-medium focus:border-teal-600 focus:outline-none"
             >
               {displayDocs.map((doc) => (
                 <option key={doc.id} value={doc.id}>
-                  [{doc.status === 'active' ? 'ĐANG DÙNG' : doc.status === 'superseded' ? 'HẾT HIỆU LỰC' : 'CHỜ DUYỆT'}] {doc.title} ({doc.filename})
+                  [{doc.status === 'active' ? 'ĐANG DÙNG' : doc.status === 'superseded' ? 'HẾT HIỆU LỰC' : 'CHỜ DUYỆT'}] {doc.title}
                 </option>
               ))}
             </select>
-            {uploadedFile && (
-              <span className="truncate font-mono text-amber-900 text-2xs bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shrink-0">
-                Đang chờ tải lên: {uploadedFile.name}
-              </span>
-            )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Status indicator badge */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <span
-              className={`px-2 py-0.5 rounded text-2xs font-semibold border flex items-center gap-1 ${
+              className={`h-7 px-2 rounded-md text-2xs font-semibold border inline-flex items-center gap-1 whitespace-nowrap ${
                 isDocActive
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                  : 'bg-amber-50 text-amber-800 border-amber-200/80'
               }`}
             >
               {isDocActive ? <Check className="w-3 h-3 text-emerald-600" /> : <Lock className="w-3 h-3 text-amber-600" />}
-              <span>{isDocActive ? 'Đang áp dụng toàn viện' : 'Chờ kiểm duyệt (Staged)'}</span>
+              <span>{isDocActive ? 'Đang áp dụng toàn viện' : 'Chờ duyệt (Staged)'}</span>
             </span>
 
             <button
               type="button"
               onClick={runAudit}
               disabled={auditLoading}
-              className="text-2xs font-semibold text-slate-700 hover:text-teal-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded cursor-pointer transition flex items-center gap-1"
+              className="h-7 text-2xs font-medium text-slate-700 hover:text-teal-800 bg-white hover:bg-slate-50 border border-slate-200 px-2.5 rounded-md cursor-pointer transition inline-flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50"
             >
-              <Activity className={`w-3.5 h-3.5 ${auditLoading ? 'animate-spin text-teal-600' : ''}`} />
-              <span>{auditLoading ? 'Đang quét...' : 'Kiểm định độ sạch AI'}</span>
+              <Activity className={`w-3.5 h-3.5 ${auditLoading ? 'animate-spin text-teal-600' : 'text-slate-500'}`} />
+              <span>{auditLoading ? 'Đang quét...' : 'Kiểm định độ sạch'}</span>
             </button>
           </div>
         </div>
@@ -407,12 +397,12 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded border ${
+                  className={`text-2xs font-semibold px-2 py-0.5 rounded-md border ${
                     auditResult.status === 'clean'
-                      ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                       : auditResult.status === 'warning'
-                      ? 'bg-amber-100 text-amber-900 border-amber-300'
-                      : 'bg-rose-100 text-rose-900 border-rose-300'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : 'bg-rose-50 text-rose-800 border-rose-200'
                   }`}
                 >
                   Độ sạch: {auditResult.cleanliness_score}/100
@@ -421,17 +411,26 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
                   {auditResult.total_pages} trang · {(auditResult.extracted_chars / 1000).toFixed(1)}k ký tự · {auditResult.avg_chars_per_page} kt/trang
                 </span>
               </div>
-              <span className="text-2xs font-medium text-slate-700">
-                {auditResult.status === 'clean' ? '✅ Văn bản sạch, đầy đủ text layer' : '⚠️ Cần lưu ý một số trang scan'}
+              <span className="text-2xs font-medium text-slate-700 inline-flex items-center gap-1">
+                {auditResult.status === 'clean' ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Văn bản sạch, đủ lớp văn bản
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                    Cần lưu ý một số trang scan
+                  </>
+                )}
               </span>
             </div>
 
-            {/* Golden Questions Chips */}
             {auditResult.golden_questions && auditResult.golden_questions.length > 0 && (
               <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
                 <div className="text-2xs font-semibold text-slate-600 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Câu hỏi kiểm chứng vàng (Nhấp để Chatbot trả lời ngay với API Key thật):</span>
+                  <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Câu hỏi kiểm chứng gợi ý (nhấp để thử nghiệm ngay):</span>
                 </div>
                 <div className="grid grid-cols-1 gap-1.5">
                   {auditResult.golden_questions.map((q, idx) => (
@@ -442,7 +441,9 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
                       disabled={isSending}
                       className="text-2xs font-medium text-slate-800 bg-white hover:bg-teal-50 hover:text-teal-900 hover:border-teal-300 border border-slate-200 px-2.5 py-1.5 rounded-md text-left transition cursor-pointer flex items-center justify-between group disabled:opacity-50"
                     >
-                      <span className="truncate pr-2">{idx + 1}. {q}</span>
+                      <span className="truncate pr-2">
+                        {idx + 1}. {q}
+                      </span>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-600 shrink-0" />
                     </button>
                   ))}
@@ -453,9 +454,13 @@ export const KnowledgeChatSandbox: React.FC<KnowledgeChatSandboxProps> = ({
         )}
 
         {auditError && (
-          <div className="p-2 rounded bg-rose-50 border border-rose-200 text-rose-800 text-2xs flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-            <span>{auditError}</span>
+          <div className="px-2.5 py-1.5 rounded-md bg-amber-50 border border-amber-200/80 text-amber-900 text-2xs flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>
+              {/authentication|401|403/i.test(auditError)
+                ? 'Cần đăng nhập phiên quản trị để chạy kiểm định độ sạch tài liệu.'
+                : auditError}
+            </span>
           </div>
         )}
       </div>

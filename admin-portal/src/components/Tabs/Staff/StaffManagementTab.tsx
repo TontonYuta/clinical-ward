@@ -171,16 +171,16 @@ export const StaffManagementTab: React.FC = () => {
         items={items}
       />
 
-      {/* Main Staff Section: Flat & Seamless */}
-      <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden flex flex-col">
+      {/* Main Staff Section: Full-Width Airy Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden flex flex-col">
         {/* Header & Tool Bar */}
-        <div className="p-3 sm:px-4 sm:py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
-              Danh Sách Nhân Sự Bệnh Viện
+        <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+              Danh sách nhân sự bệnh viện
             </h2>
-            <span className="text-xs font-mono text-slate-400">
-              ({items.length})
+            <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+              {items.length}
             </span>
             {loading && <RefreshCw className="w-3.5 h-3.5 text-teal-600 animate-spin" />}
           </div>
@@ -190,10 +190,10 @@ export const StaffManagementTab: React.FC = () => {
               type="button"
               onClick={loadData}
               disabled={loading}
-              className="p-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition disabled:opacity-50"
+              className="h-9 w-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition inline-flex items-center justify-center cursor-pointer disabled:opacity-50"
               title="Tải lại từ CSDL"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-700' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-teal-700' : ''}`} />
             </button>
             <button
               type="button"
@@ -201,25 +201,25 @@ export const StaffManagementTab: React.FC = () => {
                 setEditingStaff(null);
                 setIsModalOpen(true);
               }}
-              className="px-3 py-1.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-98"
+              className="h-9 px-4 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Thêm Nhân Viên</span>
+              <UserPlus className="w-4 h-4" />
+              <span>Thêm nhân viên</span>
             </button>
           </div>
         </div>
 
         {/* Filter Bar */}
-        <div className="px-3 sm:px-4 py-2.5 bg-slate-50/70 border-b border-slate-200/80 flex flex-wrap items-center gap-2.5">
+        <div className="px-5 sm:px-6 py-3 bg-slate-50/70 border-b border-slate-200/80 flex flex-wrap items-center gap-2.5">
           {/* Ô Tìm Kiếm Nhanh */}
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm theo tên, mã NV, CCHN, khoa phòng..."
-              className="w-full h-8 pl-8 pr-2.5 bg-white border border-slate-300/80 rounded-md text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition"
+              className="w-full h-9 pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-600 transition"
             />
           </div>
 
@@ -227,23 +227,23 @@ export const StaffManagementTab: React.FC = () => {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-8 bg-white border border-slate-300/80 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
+            className="h-9 bg-white border border-slate-200 rounded-xl px-3 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
           >
-            <option value="all">Mọi Vai Trò</option>
-            <option value="doctor">Bác Sĩ</option>
-            <option value="nurse">Điều Dưỡng</option>
-            <option value="pharmacist">Dược Sĩ</option>
-            <option value="biomedical_engineer">Kỹ Sư TBYT</option>
-            <option value="director">Ban Giám Đốc</option>
+            <option value="all">Mọi vai trò</option>
+            <option value="doctor">Bác sĩ</option>
+            <option value="nurse">Điều dưỡng</option>
+            <option value="pharmacist">Dược sĩ</option>
+            <option value="biomedical_engineer">Kỹ sư TBYT</option>
+            <option value="director">Ban Giám đốc</option>
           </select>
 
           {/* Lọc Khoa Phòng */}
           <select
             value={deptFilter}
             onChange={(e) => setDeptFilter(e.target.value)}
-            className="h-8 bg-white border border-slate-300/80 rounded-md px-2 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer max-w-[180px] truncate"
+            className="h-9 bg-white border border-slate-200 rounded-xl px-3 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer max-w-[220px] truncate"
           >
-            <option value="all">Mọi Khoa Phòng</option>
+            <option value="all">Mọi khoa phòng</option>
             {departmentsList.map((dept) => (
               <option key={dept} value={dept}>{dept}</option>
             ))}
@@ -253,9 +253,9 @@ export const StaffManagementTab: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="h-8 bg-white border border-slate-200 rounded-md px-2 text-xs text-slate-700 focus:border-slate-400 focus:outline-none cursor-pointer"
+            className="h-9 bg-white border border-slate-200 rounded-xl px-3 text-xs font-medium text-slate-700 focus:border-teal-600 focus:outline-none cursor-pointer"
           >
-            <option value="all">Mọi Trạng Thái</option>
+            <option value="all">Mọi trạng thái</option>
             <option value="active">Đang trực</option>
             <option value="suspended">Tạm ngưng</option>
           </select>

@@ -95,8 +95,19 @@ async def test_end_to_end_ingested_knowledge_retrieval_and_copilot_chat(monkeypa
         embedding_provider=provider
     )
 
-    # 3. Test Truy Xuất Đạt 100% Top #1 (Hybrid Retrieval Performance)
     test_query = "Theo Thông tư 88/2026 quy định tiệt trùng bộ dây máy thở ICU như thế nào?"
+
+    # 2b. Kiểm chứng cô lập Staged: Khi chưa kích hoạt ('staged'), Chatbot bác sĩ KHÔNG được trả tài liệu này
+    staged_retrieved = retriever.retrieve(query=test_query, top_k=5)
+    assert all("tt-88-icu-ventilator" not in r.chunk.chunk_id for r in staged_retrieved), (
+        "Tài liệu ở trạng thái staged không được rò rỉ ra Chatbot bác sĩ"
+    )
+
+    # 2c. Phê duyệt và kích hoạt tài liệu ('staged' -> 'active')
+    pdf_ingestion_service.update_document_status("tt-88-icu-ventilator", "active", verified=True)
+    sr.reload_source_documents()
+
+    # 3. Test Truy Xuất Đạt 100% Top #1 (Hybrid Retrieval Performance)
     retrieved = retriever.retrieve(query=test_query, top_k=5)
 
     assert len(retrieved) > 0, "Phải truy xuất được tài liệu mới nạp"

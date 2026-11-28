@@ -34,6 +34,7 @@ function MonitorApp({ authenticatedUsername, authenticatedName, onLogout, authEn
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Khởi tạo ngay lập tức từ Local Cache để giao diện xuất hiện trong 0ms (Zero-Delay UX)
   const [telemetry, setTelemetry] = useState<TelemetryOverviewResponse | null>(() => getCachedItem<TelemetryOverviewResponse>(CACHE_KEY_TELEMETRY));
@@ -165,17 +166,19 @@ function MonitorApp({ authenticatedUsername, authenticatedName, onLogout, authEn
       )}
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Desktop Sidebar (hidden on mobile, perfectly preserved on desktop) */}
+        {/* Desktop Sidebar (collapsible, matching main Clinical Ward app) */}
         <AdminSidebar
           currentTab={currentTab}
           onTabChange={setCurrentTab}
           activeKeyCount={activeKeyCount}
           todayUsagePct={todayUsagePct}
           esmsBalance={esmsBalance}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed((v) => !v)}
         />
 
-        <main className="flex-1 overflow-y-auto p-2.5 sm:p-5 lg:p-6 xl:p-8 pb-18 lg:pb-8">
-          <div className="w-full max-w-[1920px] mx-auto">
+        <main className="flex-1 overflow-y-auto bg-slate-50/70 p-4 sm:p-6 pb-20 lg:pb-10">
+          <div className="w-full">
             {(currentTab === 'telemetry' || currentTab === 'budget_cap') && (
               <TelemetryTab
                 data={telemetry}

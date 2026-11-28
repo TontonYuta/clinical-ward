@@ -221,13 +221,17 @@ def build_reasoned_renal_dose_response(
         f"Thuốc thay thế an toàn cho thận"
     ]
 
+    evidence_id = f"document:{rec.citation_document_id}"
+    claim_text = rec.recommended_dose.strip().rstrip(".")
     evidence = [{
+        "evidence_id": evidence_id,
         "evidence_type": "document_chunk",
         "chunk_id": rec.citation_document_id,
         "source_id": source["id"],
         "source_version": f"sha256:{source_digest}",
+        "source_name": source.get("title") or rec.legal_basis,
         "section": f"Hiệu chỉnh liều trong suy thận: {rec.drug_name}",
-        "content": f"CrCl {assessment.crcl_ml_min} ml/phút: {rec.recommended_dose} {rec.dosing_interval}.",
+        "content": f"CrCl {assessment.crcl_ml_min} ml/phút ({assessment.kdigo_stage}): {rec.recommended_dose} {rec.dosing_interval}. {rec.safety_warning}",
     }]
     citations = [{
         "chunk_id": rec.citation_document_id,
@@ -237,6 +241,14 @@ def build_reasoned_renal_dose_response(
         "page": rec.citation_page, "section": evidence[0]["section"],
         "excerpt": evidence[0]["content"],
     }]
+    from app.schemas.copilot import AnswerClaim
+    renal_claim = AnswerClaim(
+        claim_id="renal-dose-1",
+        text=claim_text,
+        claim_type="source_fact",
+        evidence_ids=[evidence_id],
+        support_status="supported",
+    )
     return CopilotResponse(
         intent="MEDICATION_SAFETY_PROFILE",
         reply_text=reply_text,
@@ -246,7 +258,10 @@ def build_reasoned_renal_dose_response(
         active_patient_id=session.active_patient_id if session else None,
         active_patient_name=session.active_patient_name if session else None,
         active_medication_name=rec.drug_name,
-        citations=citations, evidence=evidence,
+        citations=citations,
+        evidence=evidence,
+        claims=[renal_claim],
+        evidence_claim_map={evidence_id: [renal_claim.claim_id]},
         rag_grounded=True,
         answer_type="grounded_reference",
         source_status="exact_match",

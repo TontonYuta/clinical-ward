@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { Bot, Menu, Wifi, WifiOff, CloudOff, LoaderCircle } from 'lucide-react';
 import {
   DebtRecord,
@@ -210,6 +210,7 @@ export default function App({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(getInitialCopilotOpen);
   const [chatbotAvailability, setChatbotAvailability] = useState<ChatbotAvailability['mode']>('checking');
+  const [chatbotAvailabilityInfo, setChatbotAvailabilityInfo] = useState<ChatbotAvailability | null>(null);
   const [isCopilotExpanded, setIsCopilotExpanded] = useState<boolean>(getInitialCopilotExpanded);
   const [isLegalDocsOpen, setIsLegalDocsOpen] = useState<boolean>(false);
   const [isAuditTrailOpen, setIsAuditTrailOpen] = useState<boolean>(false);
@@ -228,6 +229,7 @@ export default function App({
   const dragFrame = useRef<number | null>(null);
   const pendingChatPosition = useRef<{ x: number; y: number } | null>(null);
   const lastSentMessageRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
+  const activeRequestAbortRef = useRef<AbortController | null>(null);
   const [showTelegramToast, setShowTelegramToast] = useState<boolean>(false);
   const [isDrugRegistryOpen, setIsDrugRegistryOpen] = useState<boolean>(false);
   const [drugRegistrySearch, setDrugRegistrySearch] = useState('');
@@ -426,26 +428,35 @@ export default function App({
     }
   }, []);
   useEffect(() => { saveCopilotOpen(isCopilotOpen); }, [isCopilotOpen]);
+  const refreshChatbotAvailability = useCallback(async () => {
+    try {
+      const status = await fetchChatbotAvailability();
+      setChatbotAvailabilityInfo(status);
+      setChatbotAvailability(status.mode === 'online_ai' ? 'online_ai' : 'local_only');
+    } catch {
+      setChatbotAvailabilityInfo(null);
+      setChatbotAvailability('local_only');
+    }
+  }, []);
+
   useEffect(() => {
-    let active = true;
-    const refresh = async () => {
-      try {
-        const status = await fetchChatbotAvailability();
-        if (active) setChatbotAvailability(status.mode === 'online_ai' ? 'online_ai' : 'local_only');
-      } catch {
-        if (active) setChatbotAvailability('local_only');
-      }
-    };
-    void refresh();
+    void refreshChatbotAvailability();
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') refresh();
+      if (document.visibilityState === 'visible') void refreshChatbotAvailability();
     }, 60000);
-    const onOnline = () => void refresh();
-    const onOffline = () => { if (active) setChatbotAvailability('local_only'); };
+    const onOnline = () => void refreshChatbotAvailability();
+    const onOffline = () => {
+      setChatbotAvailabilityInfo(null);
+      setChatbotAvailability('local_only');
+    };
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
-    return () => { active = false; window.clearInterval(timer); window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
-  }, []);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, [refreshChatbotAvailability]);
   useEffect(() => { saveCopilotExpanded(isCopilotExpanded); }, [isCopilotExpanded]);
   useEffect(() => { saveAudioMuted(isAudioMuted); }, [isAudioMuted]);
 
@@ -1733,6 +1744,13 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
     }
   };
 
+  const handleStopGenerating = () => {
+    if (activeRequestAbortRef.current) {
+      activeRequestAbortRef.current.abort();
+      activeRequestAbortRef.current = null;
+    }
+  };
+
   // Handler: User sends a message from Left Pane input / chips / voice / image
   const handleSendMessage = async (inputText: string, attachment?: any, enableWebSearch?: boolean) => {
     const trimmed = (inputText || '').trim();
@@ -1788,6 +1806,12 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
       }
     }
 
+    if (activeRequestAbortRef.current) {
+      activeRequestAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    activeRequestAbortRef.current = controller;
+
     try {
       // 2. Process query with clinical agent engine (FastAPI Copilot REST API + Local Clinical fallback)
       const effectiveRole = currentUserRole;
@@ -1806,13 +1830,15 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         },
         effectiveProfile,
         (_token, currentFullText) => {
+          if (controller.signal.aborted) return;
           setChatMessages(prev =>
             prev.map(m => m.id === botMsgId ? { ...m, text: currentFullText } : m)
           );
         },
         activeChatSessionId,
         attachment,
-        enableWebSearch
+        enableWebSearch,
+        controller.signal
       );
 
       // 3. Execute State Updates on Right Pane if actionPayload provided and NOT awaiting card confirmation
@@ -1883,23 +1909,40 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         }
         return [...prev, finalBotMsg];
       });
-    } catch (err) {
-      console.error('Lỗi phân tích cú pháp AI Agent:', err);
-      const errorMsg: ChatMessage = {
-        id: botMsgId,
-        sender: 'agent',
-        text: 'Đã xảy ra sự cố khi kết nối với máy chủ AI Copilot. Vui lòng kiểm tra lại đường truyền mạng hoặc thử lại bằng các lệnh nhanh.',
-        timestamp: nowStr,
-        isStreaming: false
-      };
-      setChatMessages(prev => {
-        const exists = prev.some(m => m.id === botMsgId);
-        if (exists) {
-          return prev.map(m => m.id === botMsgId ? errorMsg : m);
-        }
-        return [...prev, errorMsg];
-      });
+    } catch (err: any) {
+      if (controller.signal.aborted || err?.name === 'AbortError') {
+        setChatMessages(prev =>
+          prev.map(m =>
+            m.id === botMsgId
+              ? {
+                  ...m,
+                  text: m.text?.trim() ? m.text : '*Đã dừng tạo câu trả lời.*',
+                  isStreaming: false,
+                }
+              : m
+          )
+        );
+      } else {
+        console.error('Lỗi phân tích cú pháp AI Agent:', err);
+        const errorMsg: ChatMessage = {
+          id: botMsgId,
+          sender: 'agent',
+          text: 'Đã xảy ra sự cố khi kết nối với máy chủ AI Copilot. Vui lòng kiểm tra lại đường truyền mạng hoặc thử lại bằng các lệnh nhanh.',
+          timestamp: nowStr,
+          isStreaming: false
+        };
+        setChatMessages(prev => {
+          const exists = prev.some(m => m.id === botMsgId);
+          if (exists) {
+            return prev.map(m => m.id === botMsgId ? errorMsg : m);
+          }
+          return [...prev, errorMsg];
+        });
+      }
     } finally {
+      if (activeRequestAbortRef.current === controller) {
+        activeRequestAbortRef.current = null;
+      }
       setIsProcessing(false);
     }
   };
@@ -1948,7 +1991,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
           messages={chatMessages}
           suggestionChips={[]}
           availabilityMode={chatbotAvailability}
+          availabilityInfo={chatbotAvailabilityInfo}
+          onRefreshAvailability={refreshChatbotAvailability}
           onSendMessage={handleSendMessage}
+          onStopGenerating={handleStopGenerating}
           isProcessing={isProcessing}
           isAudioMuted={isAudioMuted}
           currentUserRole={currentUserRole}
@@ -2183,23 +2229,23 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
         type="button"
         onClick={() => setIsCopilotOpen((prev) => !prev)}
         aria-label="Trợ lý AI lâm sàng"
-        title={`Trợ lý AI lâm sàng · ${chatbotAvailability.replace('_', ' ')} (⌘K / Ctrl+K)`}
+        title={`Trợ lý AI lâm sàng · ${chatbotAvailability === 'online_ai' ? 'AI sẵn sàng' : chatbotAvailability === 'checking' ? 'Đang kiểm tra' : 'Chế độ cục bộ'} (⌘K / Ctrl+K)`}
         className={`fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex h-12 w-12 md:h-13 md:w-13 items-center justify-center rounded-full bg-teal-700 hover:bg-teal-800 text-white shadow-xl hover:shadow-2xl border-2 border-teal-500/50 hover:border-teal-400 ring-4 ring-teal-500/20 transition-all duration-200 ease-out hover:scale-105 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 chatbot-launcher-glow ${isCopilotOpen ? 'translate-y-16 opacity-0 pointer-events-none' : ''}`}
       >
         <Bot className="h-6 w-6 text-white shrink-0" />
         <span className="sr-only">Trợ lý AI (⌘K / Ctrl+K)</span>
         <span
-          className="absolute -top-9 right-0 whitespace-nowrap rounded-full bg-slate-900/95 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg border border-slate-700/80 flex items-center gap-1.5 backdrop-blur-xs"
           role="status"
           aria-live="polite"
-        >
-          {chatbotAvailability === 'checking' && <><LoaderCircle className="h-3 w-3 animate-spin text-slate-300" /><span>Đang kiểm tra</span></>}
-          {chatbotAvailability === 'online_ai' && <><Wifi className="h-3 w-3 text-emerald-400" /><span>Online</span></>}
-          {chatbotAvailability !== 'online_ai' && chatbotAvailability !== 'checking' && <><CloudOff className="h-3 w-3 text-sky-400" /><span>Cục bộ</span></>}
-          {isLauncherWebSearch && (
-            <span className="ml-0.5 pl-1.5 border-l border-slate-700 text-teal-300 font-bold">🌐 Web</span>
-          )}
-        </span>
+          aria-label={chatbotAvailability === 'online_ai' ? 'AI đang hoạt động' : chatbotAvailability === 'checking' ? 'Đang kiểm tra kết nối' : 'Chế độ cục bộ'}
+          className={`absolute top-0.5 right-0.5 h-3 w-3 rounded-full border-2 border-white shadow-xs ${
+            chatbotAvailability === 'online_ai'
+              ? 'bg-emerald-400'
+              : chatbotAvailability === 'checking'
+              ? 'bg-slate-300'
+              : 'bg-sky-400'
+          }`}
+        />
       </button>
 
       {/* 6. AI Assistant Pop-up / Fullscreen on Mobile */}
@@ -2218,10 +2264,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             pendingChatPosition.current = null;
             setIsDraggingChat(false);
           }}
-          className={`fixed z-50 flex flex-col bg-white shadow-2xl overflow-hidden print:hidden ${
+          className={`fixed z-50 flex flex-col bg-white overflow-hidden print:hidden ${
             isCopilotExpanded
               ? 'inset-0 h-dvh w-screen max-w-none rounded-none border-0 shadow-none'
-              : 'w-[calc(100vw-24px)] sm:w-[540px] md:w-[620px] lg:w-[720px] xl:w-[780px] max-w-[calc(100vw-24px)] h-[min(640px,calc(100dvh-70px))] sm:h-[min(680px,calc(100dvh-28px))] max-h-[calc(100dvh-28px)] rounded-xl border border-slate-300 ring-1 ring-slate-900/10'
+              : 'w-[calc(100vw-24px)] sm:w-[440px] lg:w-[460px] max-w-[calc(100vw-24px)] h-[min(640px,calc(100dvh-70px))] sm:h-[min(640px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] rounded-2xl border border-slate-200/95 shadow-[0_16px_48px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/5'
           } ${!isCopilotExpanded && !chatPosition ? 'right-4 bottom-20 sm:bottom-5 sm:right-5' : ''} ${isDraggingChat ? 'cursor-grabbing' : ''}`}
           style={!isCopilotExpanded && chatPosition ? { left: chatPosition.x, top: chatPosition.y, right: 'auto', bottom: 'auto' } : undefined}
         >
@@ -2229,7 +2275,10 @@ ${witness ? `• **Người làm chứng**: ${witness.name} (${witness.roleName}
             messages={chatMessages}
             suggestionChips={[]}
             availabilityMode={chatbotAvailability}
+            availabilityInfo={chatbotAvailabilityInfo}
+            onRefreshAvailability={refreshChatbotAvailability}
             onSendMessage={handleSendMessage}
+            onStopGenerating={handleStopGenerating}
             isProcessing={isProcessing}
             isAudioMuted={isAudioMuted}
             onSelectTab={(tab) => {

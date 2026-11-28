@@ -11,6 +11,7 @@ class AvailabilityResponse(BaseModel):
     database: Literal["available", "unavailable"]
     vector_index: Literal["available", "unavailable"]
     provider: Literal["available", "unavailable", "not_configured", "unknown"]
+    web_search: Literal["available", "unavailable", "not_configured", "unknown"] = "unknown"
     checked_at: str
     provider_checked_at: str | None = None
     vector_index_reason: str | None = None

@@ -21,6 +21,19 @@ button, input, select, textarea { font: inherit; }
 .text-sm { font-size: 0.875rem; line-height: 1.45; }
 .text-base { font-size: 1rem; line-height: 1.5; }
 
+/* Native OS system font stack matching ChatGPT (SF Pro / Segoe UI / Roboto) */
+.clinical-prose {
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: normal;
+  font-feature-settings: normal;
+}
+.clinical-prose h2,
+.clinical-prose h3,
+.clinical-prose h4,
+.clinical-prose h5 {
+  letter-spacing: -0.01em;
+}
+
 /* The BHYT workspace contains dense forms and tables. Let controls grow with
    the user-selected root font size instead of clipping text at fixed heights. */
 .bhyt-audit-tab button,

@@ -19,7 +19,10 @@ import {
 } from 'lucide-react';
 import { RagCitationItem } from '../../types/chat';
 import { resolvePdfDocumentTarget } from '../../utils/pdfDocumentResolver';
+import { extractShortSourceLabel } from '../../utils/citationLabel';
+import { buildTextFragmentUrl } from '../../utils/webTextFragment';
 import { PdfHighlightViewer } from './PdfHighlightViewer';
+import { WebHighlightReader } from './WebHighlightReader';
 
 export interface ActiveSourceDocument {
   title: string;
@@ -113,6 +116,19 @@ export const NotebookSourceInspector: React.FC<NotebookSourceInspectorProps> = (
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          {isExternalWebUrl && activeDocument?.url && (
+            <a
+              data-testid="web-open-fragment-link"
+              href={buildTextFragmentUrl(activeDocument.url, activeDocument.excerpt)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-teal-800 hover:bg-teal-50 border border-teal-200/80 transition shrink-0"
+              title="Mở trang gốc & tự cuộn tới đoạn trích"
+            >
+              <span>Mở bài gốc</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
           {resolvedPdf && (
             <a
               href={resolvedPdf.pdfUrl}
@@ -161,19 +177,21 @@ export const NotebookSourceInspector: React.FC<NotebookSourceInspectorProps> = (
         <div className="px-2.5 py-1.5 bg-slate-50/80 border-b border-slate-200/70 flex items-center gap-1.5 overflow-x-auto shrink-0">
           {uniqueCitations.map((c, idx) => {
             const title = c.source || c.title || c.legal_basis || `Nguồn ${idx + 1}`;
+            const shortTabLabel = extractShortSourceLabel(c, c.index ?? idx + 1);
             const isSelected =
-              activeDocument.title === title &&
-              (activeDocument.page ?? null) === (c.page ?? null);
+              (activeDocument.url && c.url && activeDocument.url === c.url) ||
+              (activeDocument.title === title && (activeDocument.page ?? null) === (c.page ?? null));
             return (
               <button
                 key={`tab-cit-${idx}`}
                 type="button"
+                title={title}
                 onClick={() =>
                   onSelectDocument({
                     title,
                     url: c.url,
                     page: c.page,
-                    excerpt: c.excerpt,
+                    excerpt: c.excerpt || c.snippet,
                     legal_basis: c.legal_basis,
                     section: c.section,
                     document_id: c.document_id,
@@ -181,14 +199,13 @@ export const NotebookSourceInspector: React.FC<NotebookSourceInspectorProps> = (
                     credibility_tier: c.credibility_tier,
                   })
                 }
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 shrink-0 max-w-[180px] transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-full text-[11px] font-medium flex items-center gap-1.5 shrink-0 max-w-[190px] transition cursor-pointer ${
                   isSelected
-                    ? 'bg-teal-800 text-white'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:border-teal-300 hover:text-teal-800'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white text-slate-600 border border-slate-200/90 hover:border-slate-300 hover:text-slate-900'
                 }`}
               >
-                <span className="shrink-0">[{c.index ?? idx + 1}]</span>
-                <span className="truncate">{title}</span>
+                <span className="truncate">{shortTabLabel}</span>
               </button>
             );
           })}
@@ -218,32 +235,14 @@ export const NotebookSourceInspector: React.FC<NotebookSourceInspectorProps> = (
               )}
             </div>
           ) : isExternalWebUrl ? (
-            /* 2. Xem chi tiết nguồn Web ngoài */
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <div className="p-3.5 rounded-xl bg-white border border-slate-200/90 space-y-2">
-                <div className="flex items-center gap-2 text-[11px] font-semibold text-teal-700">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>{activeDocument.domain || 'Nguồn tham khảo Internet'}</span>
-                </div>
-                <h5 className="text-sm font-bold text-slate-900 leading-snug">{activeDocument.title}</h5>
-                {activeDocument.excerpt && (
-                  <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
-                    {activeDocument.excerpt}
-                  </p>
-                )}
-              </div>
-              {activeDocument.url && (
-                <a
-                  href={activeDocument.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2 px-3 rounded-lg bg-teal-800 hover:bg-teal-900 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Mở bài viết gốc trên tab mới</span>
-                </a>
-              )}
-            </div>
+            /* 2. Xem chi tiết nguồn Web ngoài kèm Highlight & Reader View (gộp header gọn 2 tầng) */
+            <WebHighlightReader
+              url={activeDocument.url}
+              title={activeDocument.title}
+              domain={activeDocument.domain}
+              excerpt={activeDocument.excerpt}
+              hideTopBar
+            />
           ) : resolvedPdf ? (
             /* 3. Inline PDF Viewer đúng số trang kèm Highlight */
             <PdfHighlightViewer
@@ -295,7 +294,7 @@ export const NotebookSourceInspector: React.FC<NotebookSourceInspectorProps> = (
                       title,
                       url: c.url,
                       page: c.page,
-                      excerpt: c.excerpt,
+                      excerpt: c.excerpt || c.snippet,
                       legal_basis: c.legal_basis,
                       section: c.section,
                       document_id: c.document_id,

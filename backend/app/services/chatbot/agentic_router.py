@@ -62,11 +62,26 @@ async def classify_intent_with_llm(query: str, history: str = "") -> Optional[In
 
     try:
         from app.services.llm_provider import query_clinical_llm
+        from app.security.prompt_isolator import (
+            build_hierarchy_preamble,
+            generate_boundary_nonce,
+            sanitize_history_for_prompt,
+            wrap_untrusted_block,
+        )
 
-        prompt = f"Ngữ cảnh hội thoại trước đó (nếu có):\n{history}\n\nCâu nói của nhân viên y tế:\n\"{query}\""
+        nonce = generate_boundary_nonce()
+        clean_hist = sanitize_history_for_prompt(history, max_chars=700)
+        hist_block, hist_tag = wrap_untrusted_block("chat_history", clean_hist or "(không có)", nonce=nonce)
+        query_block, query_tag = wrap_untrusted_block("user_query", query, nonce=nonce)
+
+        prompt = (
+            f"Ngữ cảnh hội thoại trước đó (chỉ để tham chiếu đại từ):\n{hist_block}\n\n"
+            f"Câu nói của nhân viên y tế:\n{query_block}"
+        )
+        isolated_system = f"{SYSTEM_NLU_PROMPT}\n\n{build_hierarchy_preamble([hist_tag, query_tag])}"
         raw_json = await query_clinical_llm(
             prompt=prompt,
-            system_instruction=SYSTEM_NLU_PROMPT,
+            system_instruction=isolated_system,
             api_key=api_key,
             temperature=0.0,
             max_output_tokens=400,

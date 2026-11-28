@@ -97,6 +97,7 @@ export interface RagCitationItem {
   section?: string;
   title?: string;
   excerpt?: string;
+  snippet?: string;
   relevance_score?: number;
   chunk_id?: string;
   url?: string | null;

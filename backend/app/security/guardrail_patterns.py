@@ -6,6 +6,8 @@ class GuardrailResult(NamedTuple):
     threat_description: Optional[str] = None
     sanitized_query: str = ""
     safe_response: Optional[str] = None
+    risk_score: float = 0.0
+    soft_risk_delta: float = 0.0
 
 SQLI_PATTERNS = [
     (r"(?i)(?:['\"]\s*|\b(?:OR|AND|WHERE)\s+)(['\"]?)([a-z0-9_]+)\1\s*=\s*\1\2\1(?=\s|$|['\";\-])", "SQLi: Phép so sánh hằng đúng (Tautology)"),
